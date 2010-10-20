@@ -2,10 +2,10 @@
 #include "core.h"
 #include <string>
 
-struct PeCaStCore
+struct PECACore
 {
 public:
-  PeCaStCore() : mYP(), mYPPort(7144) {}
+  PECACore() : mYP(), mYPPort(7144) {}
 
   void SetYP(const std::string& addr, short port)
   {
@@ -28,28 +28,28 @@ private:
   short       mYPPort;
 };
 
-PeCaStCore* PECAAPI PeCaStCoreInitialize()
+PECACore* PECAAPI PECACoreInitialize()
 {
-  return new PeCaStCore();
+  return new PECACore();
 }
 
-void PECAAPI PeCaStCoreTerminate(PeCaStCore* core)
+void PECAAPI PECACoreTerminate(PECACore* core)
 {
   delete core;
 }
 
-void PECAAPI PeCaStCoreSetYP(
-    PeCaStCore* core, const char* addr, short port)
+void PECAAPI PECACoreSetYP(
+    PECACore* core, const char* addr, short port)
 {
   core->SetYP(addr, port);
 }
 
-const char* PECAAPI PeCaStCoreGetYP(PeCaStCore* core)
+const char* PECAAPI PECACoreGetYP(PECACore* core)
 {
   return core->GetYPAddress().c_str();
 }
 
-short PECAAPI PeCaStCoreGetYPPort(PeCaStCore* core)
+short PECAAPI PECACoreGetYPPort(PECACore* core)
 {
   return core->GetYPPort();
 }

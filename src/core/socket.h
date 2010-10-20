@@ -1,6 +1,6 @@
 
-#ifndef PECAST_CORE_SOCKET_H_
-#define PECAST_CORE_SOCKET_H_
+#ifndef PECA_CORE_SOCKET_H_
+#define PECA_CORE_SOCKET_H_
 
 #include <stddef.h>
 
@@ -16,12 +16,12 @@
 extern "C" {
 #endif //__cplusplus
 
-struct PeCaStSocket;
+struct PECASocket;
 typedef enum {
   SOCK_PROTO_ANY,   ///< 指定無し
   SOCK_PROTO_INET,  ///< IPv4
   SOCK_PROTO_INET6, ///< IPv6
-} PeCaStSockProto;
+} PECASockProto;
 
 typedef enum {
   SOCK_E_NOERROR = 0,      ///< エラー無し
@@ -36,9 +36,9 @@ typedef enum {
   SOCK_E_SERVICE_NOTFOUND, ///< 指定したサービス名が見つからなかった
   SOCK_E_DNS,              ///< 名前を引くのに失敗した
   SOCK_E_NET,              ///< その他のネットワークエラーが発生した
-} PeCaStSockError;
+} PECASockError;
 
-PeCaStSockError PECAAPI PeCaStSockGetLastError();
+PECASockError PECAAPI PECASockGetLastError();
 
 /**
  * TCPクライアントソケットを作成し指定したアドレスに接続します。
@@ -48,14 +48,14 @@ PeCaStSockError PECAAPI PeCaStSockGetLastError();
  * @param [in] port 接続先のポート番号
  * @return 接続したソケットハンドル。失敗した場合はNULL
  */
-PeCaStSocket* PECAAPI PeCaStSockOpen(PeCaStSockProto protocol, const char* addr, unsigned short port);
+PECASocket* PECAAPI PECASockOpen(PECASockProto protocol, const char* addr, unsigned short port);
 
 /**
  * ソケットの接続を閉じます。
  *
  * @param [inout] sock 閉じるソケットへのハンドル。NULLの場合は何もしない
  */
-void PECAAPI PeCaStSockClose(PeCaStSocket* sock);
+void PECAAPI PECASockClose(PECASocket* sock);
 
 /**
  * ソケットからデータを読み取ります。
@@ -67,7 +67,7 @@ void PECAAPI PeCaStSockClose(PeCaStSocket* sock);
  * @retval 0  EOF
  * @retval >0 destに格納したバイト数
  */
-int PECAAPI PeCaStSockRead(PeCaStSocket* sock, void* dest, int size);
+int PECAAPI PECASockRead(PECASocket* sock, void* dest, int size);
 
 /**
  * ソケットにデータを書き込みます。
@@ -79,11 +79,11 @@ int PECAAPI PeCaStSockRead(PeCaStSocket* sock, void* dest, int size);
  * @retval 0  EOF
  * @retval >0 書き込めたバイト数
  */
-int PECAAPI PeCaStSockWrite(PeCaStSocket* sock, const void* data, int size);
+int PECAAPI PECASockWrite(PECASocket* sock, const void* data, int size);
 
 #ifdef __cplusplus
 } //extern "C"
 #endif //__cplusplus
 
-#endif //PECAST_CORE_SOCKET_H_
+#endif //PECA_CORE_SOCKET_H_
 

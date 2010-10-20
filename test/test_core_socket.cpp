@@ -5,7 +5,7 @@
 #include "Poco/Thread.h"
 #include <iostream>
 
-class PeCaStSocketTest
+class PECASocketTest
   : public testing::Test
 {
  protected:
@@ -25,36 +25,36 @@ class PeCaStSocketTest
   Poco::ProcessHandle* mHandle;
 };
 
-TEST_F(PeCaStSocketTest, Open) 
+TEST_F(PECASocketTest, Open) 
 {
-  EXPECT_EQ(SOCK_E_NOERROR, PeCaStSockGetLastError());
-  PeCaStSocket* sock = PeCaStSockOpen(SOCK_PROTO_ANY, "localhost", 1234);
-  EXPECT_EQ(SOCK_E_NOERROR, PeCaStSockGetLastError());
+  EXPECT_EQ(SOCK_E_NOERROR, PECASockGetLastError());
+  PECASocket* sock = PECASockOpen(SOCK_PROTO_ANY, "localhost", 1234);
+  EXPECT_EQ(SOCK_E_NOERROR, PECASockGetLastError());
   EXPECT_TRUE(sock);
-  PeCaStSockClose(sock);
-  EXPECT_EQ(SOCK_E_NOERROR, PeCaStSockGetLastError());
+  PECASockClose(sock);
+  EXPECT_EQ(SOCK_E_NOERROR, PECASockGetLastError());
 }
 
-TEST_F(PeCaStSocketTest, OpenRefused) 
+TEST_F(PECASocketTest, OpenRefused) 
 {
-  EXPECT_EQ(SOCK_E_NOERROR, PeCaStSockGetLastError());
-  PeCaStSocket* sock = PeCaStSockOpen(SOCK_PROTO_ANY, "localhost", 1235);
-  EXPECT_EQ(SOCK_E_CONN_REFUSE, PeCaStSockGetLastError());
+  EXPECT_EQ(SOCK_E_NOERROR, PECASockGetLastError());
+  PECASocket* sock = PECASockOpen(SOCK_PROTO_ANY, "localhost", 1235);
+  EXPECT_EQ(SOCK_E_CONN_REFUSE, PECASockGetLastError());
   EXPECT_FALSE(sock);
 }
 
-TEST_F(PeCaStSocketTest, ReadWrite) 
+TEST_F(PECASocketTest, ReadWrite) 
 {
-  PeCaStSocket* sock = PeCaStSockOpen(SOCK_PROTO_ANY, "localhost", 1234);
-  EXPECT_EQ(SOCK_E_NOERROR, PeCaStSockGetLastError());
-  EXPECT_EQ(6, PeCaStSockWrite(sock, "Hello\n", 6));
-  EXPECT_EQ(SOCK_E_NOERROR, PeCaStSockGetLastError());
+  PECASocket* sock = PECASockOpen(SOCK_PROTO_ANY, "localhost", 1234);
+  EXPECT_EQ(SOCK_E_NOERROR, PECASockGetLastError());
+  EXPECT_EQ(6, PECASockWrite(sock, "Hello\n", 6));
+  EXPECT_EQ(SOCK_E_NOERROR, PECASockGetLastError());
   char buf[256];
-  EXPECT_EQ(6, PeCaStSockRead(sock, buf, 6));
+  EXPECT_EQ(6, PECASockRead(sock, buf, 6));
   buf[6] = 0;
-  EXPECT_EQ(SOCK_E_NOERROR, PeCaStSockGetLastError());
+  EXPECT_EQ(SOCK_E_NOERROR, PECASockGetLastError());
   EXPECT_STREQ("Hello\n", buf);
-  PeCaStSockClose(sock);
-  EXPECT_EQ(SOCK_E_NOERROR, PeCaStSockGetLastError());
+  PECASockClose(sock);
+  EXPECT_EQ(SOCK_E_NOERROR, PECASockGetLastError());
 }
 

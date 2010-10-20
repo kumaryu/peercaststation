@@ -10,7 +10,7 @@ add_executable(
   gtest-all.cc
 )
 
-target_link_libraries(test_core PeCaStCore)
+target_link_libraries(test_core PECACore)
 
 add_definitions(-DCURRENT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 

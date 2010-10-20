@@ -9,13 +9,13 @@
 
 #include "socket.h"
 
-static Poco::ThreadLocal<PeCaStSockError> s_SockError;
-static inline void PeCaStSockSetError(PeCaStSockError err)
+static Poco::ThreadLocal<PECASockError> s_SockError;
+static inline void PECASockSetError(PECASockError err)
 {
   s_SockError.get() = err;
 }
 
-static inline PeCaStSockError s_SockExceptionToError(const Poco::Net::NetException& e)
+static inline PECASockError s_SockExceptionToError(const Poco::Net::NetException& e)
 {
   if (typeid(e)==typeid(const Poco::Net::ConnectionAbortedException&)) {
     return SOCK_E_CONN_ABORT;
@@ -49,26 +49,26 @@ static inline PeCaStSockError s_SockExceptionToError(const Poco::Net::NetExcepti
   }
 }
 
-PeCaStSockError PECAAPI PeCaStSockGetLastError()
+PECASockError PECAAPI PECASockGetLastError()
 {
   return s_SockError.get();
 }
 
-struct PeCaStSocket
+struct PECASocket
 {
 public:
-  PeCaStSocket(PeCaStSockProto protocol)
+  PECASocket(PECASockProto protocol)
     : mProto(protocol),
       mSocket(NULL)
   {
   }
 
-  ~PeCaStSocket()
+  ~PECASocket()
   {
     Close();
   }
 
-  PeCaStSockError Connect(const char* addr, unsigned short port)
+  PECASockError Connect(const char* addr, unsigned short port)
   {
     try {
       const Poco::Net::HostEntry& entry = Poco::Net::DNS::resolve(addr);
@@ -123,11 +123,11 @@ public:
         return mSocket->receiveBytes(dest, size);
       }
       catch (Poco::TimeoutException&) {
-        PeCaStSockSetError(SOCK_E_TIMEOUT);
+        PECASockSetError(SOCK_E_TIMEOUT);
         return -1;
       }
       catch (Poco::Net::NetException& e) {
-        PeCaStSockSetError(s_SockExceptionToError(e));
+        PECASockSetError(s_SockExceptionToError(e));
         return -1;
       }
     }
@@ -143,11 +143,11 @@ public:
         return mSocket->sendBytes(data, size);
       }
       catch (Poco::TimeoutException&) {
-        PeCaStSockSetError(SOCK_E_TIMEOUT);
+        PECASockSetError(SOCK_E_TIMEOUT);
         return -1;
       }
       catch (Poco::Net::NetException& e) {
-        PeCaStSockSetError(s_SockExceptionToError(e));
+        PECASockSetError(s_SockExceptionToError(e));
         return -1;
       }
     }
@@ -157,15 +157,15 @@ public:
   }
 
 private:
-  PeCaStSockProto mProto;
+  PECASockProto mProto;
   Poco::Net::StreamSocket* mSocket;
 };
 
-PeCaStSocket* PECAAPI PeCaStSockOpen(PeCaStSockProto protocol, const char* addr, unsigned short port)
+PECASocket* PECAAPI PECASockOpen(PECASockProto protocol, const char* addr, unsigned short port)
 {
-  PeCaStSocket* sock = new PeCaStSocket(protocol);
-  PeCaStSockError res = sock->Connect(addr, port);
-  PeCaStSockSetError(res);
+  PECASocket* sock = new PECASocket(protocol);
+  PECASockError res = sock->Connect(addr, port);
+  PECASockSetError(res);
   if (res==SOCK_E_NOERROR) {
     return sock;
   }
@@ -175,16 +175,16 @@ PeCaStSocket* PECAAPI PeCaStSockOpen(PeCaStSockProto protocol, const char* addr,
   }
 }
 
-void PECAAPI PeCaStSockClose(PeCaStSocket* sock)
+void PECAAPI PECASockClose(PECASocket* sock)
 {
   delete sock;
 }
 
-int PECAAPI PeCaStSockRead(PeCaStSocket* sock, void* dest, int size)
+int PECAAPI PECASockRead(PECASocket* sock, void* dest, int size)
 {
   if (sock) {
     int res = sock->Read(dest, size);
-    if (res>=0) PeCaStSockSetError(SOCK_E_NOERROR);
+    if (res>=0) PECASockSetError(SOCK_E_NOERROR);
     return res;
   }
   else {
@@ -192,11 +192,11 @@ int PECAAPI PeCaStSockRead(PeCaStSocket* sock, void* dest, int size)
   }
 }
 
-int PECAAPI PeCaStSockWrite(PeCaStSocket* sock, const void* data, int size)
+int PECAAPI PECASockWrite(PECASocket* sock, const void* data, int size)
 {
   if (sock) {
     int res = sock->Write(data, size);
-    if (res>=0) PeCaStSockSetError(SOCK_E_NOERROR);
+    if (res>=0) PECASockSetError(SOCK_E_NOERROR);
     return res;
   }
   else {
