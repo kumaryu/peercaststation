@@ -4,10 +4,12 @@
 
 #include <stddef.h>
 
-#ifdef WIN32
-#define PECAAPI __stdcall
-#else
-#define PECAAPI
+#ifndef PECAAPI
+#  ifdef WIN32
+#    define PECAAPI __stdcall
+#  else
+#    define PECAAPI
+#  endif
 #endif
 
 #ifdef __cplusplus
