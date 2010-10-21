@@ -5,7 +5,9 @@
 #include <Poco/Net/StreamSocket.h>
 #include <Poco/Net/IPAddress.h>
 #include <Poco/Net/NetException.h>
+#include <Poco/Net/TCPServer.h>
 #include <Poco/ThreadLocal.h>
+#include <Poco/ThreadPool.h>
 
 #include "socket.h"
 
@@ -57,9 +59,13 @@ PECASockError PECAAPI PECASockGetLastError()
 struct PECASocket
 {
 public:
-  PECASocket(PECASockProto protocol)
-    : mProto(protocol),
-      mSocket(NULL)
+  PECASocket()
+    : mSocket(NULL), mOwn(true)
+  {
+  }
+
+  PECASocket(Poco::Net::StreamSocket& socket, bool own)
+    : mSocket(new Poco::Net::StreamSocket(socket)), mOwn(own)
   {
   }
 
@@ -68,34 +74,19 @@ public:
     Close();
   }
 
-  PECASockError Connect(const char* addr, unsigned short port)
+  PECASockError Connect(PECASockProto proto, const char* addr, unsigned short port)
   {
     try {
-      const Poco::Net::HostEntry& entry = Poco::Net::DNS::resolve(addr);
-      const Poco::Net::HostEntry::AddressList& addrlist = entry.addresses();
-      Poco::Net::IPAddress ipaddr;
-      for (Poco::Net::HostEntry::AddressList::const_iterator a=addrlist.begin(); a!=addrlist.end(); a++) {
-        switch (mProto) {
-        case SOCK_PROTO_ANY:
-          ipaddr = *a;
-          break;
-        case SOCK_PROTO_INET:
-          if (a->af()==AF_INET) ipaddr = *a;
-          break;
-        case SOCK_PROTO_INET6:
-          if (a->af()==AF_INET6) ipaddr = *a;
-          break;
-        }
-        if (!ipaddr.isWildcard()) break;
-      }
-      if (!ipaddr.isWildcard()) {
-        mSocket = new Poco::Net::StreamSocket(Poco::Net::SocketAddress(ipaddr, port));
+      Poco::Net::SocketAddress sock_addr;
+      PECASockError err = Resolve(sock_addr, proto, addr, port);
+      if (err==SOCK_E_NOERROR) {
+        mSocket = new Poco::Net::StreamSocket(sock_addr);
         mSocket->setReceiveTimeout(Poco::Timespan(3, 0));
         mSocket->setSendTimeout(Poco::Timespan(3, 0));
         return SOCK_E_NOERROR;
       }
       else {
-        return SOCK_E_HOST_NOTFOUND;
+        return err;
       }
     }
     catch (Poco::Net::NetException& e) {
@@ -109,10 +100,17 @@ public:
   void Close()
   {
     if (mSocket) {
-      mSocket->shutdown();
-      mSocket->close();
+      try {
+        mSocket->shutdown();
+        mSocket->close();
+      }
+      catch (Poco::Net::NetException&) {
+        //既に閉じてたら例外が出るが気にしない
+      }
     }
-    delete mSocket;
+    if (mOwn) {
+      delete mSocket;
+    }
     mSocket = NULL;
   }
 
@@ -156,15 +154,55 @@ public:
     }
   }
 
+  static PECASockError Resolve(
+      Poco::Net::SocketAddress& dest,
+      PECASockProto proto,
+      const char* addr,
+      unsigned short port)
+  {
+    try {
+      const Poco::Net::HostEntry& entry = Poco::Net::DNS::resolve(addr);
+      const Poco::Net::HostEntry::AddressList& addrlist = entry.addresses();
+      Poco::Net::IPAddress ipaddr;
+      for (Poco::Net::HostEntry::AddressList::const_iterator a=addrlist.begin(); a!=addrlist.end(); a++) {
+        switch (proto) {
+        case SOCK_PROTO_ANY:
+          ipaddr = *a;
+          break;
+        case SOCK_PROTO_INET:
+          if (a->af()==AF_INET) ipaddr = *a;
+          break;
+        case SOCK_PROTO_INET6:
+          if (a->af()==AF_INET6) ipaddr = *a;
+          break;
+        }
+        if (!ipaddr.isWildcard()) break;
+      }
+      if (!ipaddr.isWildcard()) {
+        dest = Poco::Net::SocketAddress(ipaddr, port);
+        return SOCK_E_NOERROR;
+      }
+      else {
+        return SOCK_E_INTF_NOTFOUND;
+      }
+    }
+    catch (Poco::Net::NetException& e) {
+      return s_SockExceptionToError(e);
+    }
+    catch (Poco::IOException&) {
+      return SOCK_E_NET;
+    }
+  }
+
 private:
-  PECASockProto mProto;
   Poco::Net::StreamSocket* mSocket;
+  bool mOwn;
 };
 
 PECASocket* PECAAPI PECASockOpen(PECASockProto protocol, const char* addr, unsigned short port)
 {
-  PECASocket* sock = new PECASocket(protocol);
-  PECASockError res = sock->Connect(addr, port);
+  PECASocket* sock = new PECASocket();
+  PECASockError res = sock->Connect(protocol, addr, port);
   PECASockSetError(res);
   if (res==SOCK_E_NOERROR) {
     return sock;
@@ -202,5 +240,133 @@ int PECAAPI PECASockWrite(PECASocket* sock, const void* data, int size)
   else {
     return -1;
   }
+}
+
+struct PECAServerSocket
+{
+private:
+  class PECAServerConnection
+    : public Poco::Net::TCPServerConnection
+  {
+  public:
+    PECAServerConnection(const Poco::Net::StreamSocket& socket, PECASockCallback proc, void* proc_arg)
+      : TCPServerConnection(socket), mProc(proc), mProcArg(proc_arg)
+    {
+    }
+
+    virtual void run()
+    {
+      PECASocket* sock = new PECASocket(socket(), false);
+      mProc(sock, mProcArg);
+      delete sock;
+    }
+
+  private:
+    PECASockCallback mProc;
+    void* mProcArg;
+  };
+
+  class PECAServerConnectionFactory
+    : public Poco::Net::TCPServerConnectionFactory 
+  {
+  public:
+    PECAServerConnectionFactory(PECASockCallback proc, void* proc_arg)
+      : mProc(proc), mProcArg(proc_arg)
+    {
+    }
+
+    virtual Poco::Net::TCPServerConnection* createConnection(
+        const Poco::Net::StreamSocket& socket)
+    {
+      return new PECAServerConnection(socket, mProc, mProcArg);
+    }
+
+  private:
+    PECASockCallback mProc;
+    void* mProcArg;
+  };
+
+public:
+  PECAServerSocket(unsigned int max_clients)
+    : mThreadPool(2, max_clients),
+      mSocket(NULL),
+      mServer(NULL)
+  {
+  }
+
+  ~PECAServerSocket()
+  {
+    Close();
+  }
+
+  PECASockError Listen(
+    PECASockProto    proto,
+    const char*      intf,
+    unsigned short   port,
+    PECASockCallback proc,
+    void*            proc_arg)
+  {
+    if (intf) {
+      Poco::Net::SocketAddress sock_addr;
+      PECASockError err = PECASocket::Resolve(sock_addr, proto, intf, port);
+      if (err!=SOCK_E_NOERROR) return err;
+      mSocket = new Poco::Net::ServerSocket(sock_addr);
+    }
+    else {
+      mSocket = new Poco::Net::ServerSocket(port);
+    }
+    mServer = new Poco::Net::TCPServer(
+        new PECAServerConnectionFactory(proc, proc_arg),
+        mThreadPool,
+        *mSocket);
+    mServer->start();
+    return SOCK_E_NOERROR;
+  }
+
+  void Close()
+  {
+    if (mServer) {
+      mServer->stop();
+    }
+    delete mServer;
+    delete mSocket;
+    mServer = NULL;
+    mSocket = NULL;
+  }
+
+private:
+  Poco::ThreadPool         mThreadPool;
+  Poco::Net::ServerSocket* mSocket;
+  Poco::Net::TCPServer*    mServer;
+};
+
+PECAServerSocket* PECAAPI PECAServerSockOpen(
+    PECASockProto    proto,
+    const char*      intf,
+    unsigned short   port,
+    unsigned int     max_clients,
+    PECASockCallback proc,
+    void*            proc_arg)
+{
+  PECAServerSocket* sock = new PECAServerSocket(max_clients);
+  PECASockError err = sock->Listen(proto, intf, port, proc, proc_arg);
+  if (err==SOCK_E_NOERROR) {
+    PECASockSetError(SOCK_E_NOERROR);
+    return sock;
+  }
+  else {
+    PECASockSetError(err);
+    delete sock;
+    return NULL;
+  }
+}
+
+void PECAAPI PECAServerSockClose(PECAServerSocket* sock)
+{
+  if (sock) {
+    sock->Close();
+    delete sock;
+  }
+  PECASockSetError(SOCK_E_NOERROR);
 }
 

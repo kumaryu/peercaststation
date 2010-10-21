@@ -17,6 +17,8 @@ extern "C" {
 #endif //__cplusplus
 
 struct PECASocket;
+struct PECAServerSocket;
+
 typedef enum {
   SOCK_PROTO_ANY,   ///< 指定無し
   SOCK_PROTO_INET,  ///< IPv4
@@ -80,6 +82,48 @@ int PECAAPI PECASockRead(PECASocket* sock, void* dest, int size);
  * @retval >0 書き込めたバイト数
  */
 int PECAAPI PECASockWrite(PECASocket* sock, const void* data, int size);
+
+/**
+ * サーバソケットにクライアントが接続された時に呼ばれるコールバック関数です。
+ *
+ * @param [in] sock      クライアントと接続済みのソケットハンドル
+ * @param [in] proc_data @ref PECAServerSockOpenに渡した引数
+ *
+ * @note
+ * @ref PECAServerSockOpenを呼び出したスレッドとは別の
+ * クライアントソケット毎のスレッドから呼びだされます。
+ */
+typedef void PECAAPI (*PECASockCallback)(PECASocket* sock, void* proc_data);
+
+/**
+ * サーバソケットを作成し、クライアントの接続を待ち受けます。
+ *
+ * 待ち受けと接続は別スレッドで行なわれます。
+ *
+ * @param [in] protocol 接続プロトコル指定。@ref SOCKET_PROTO_ANYを指定した場合は自動で判別
+ * @param [in] intf 待ち受けるインターフェースのアドレス。NULLで省略可
+ * @param [in] port 待ち受けるポート番号
+ * @param [in] max_clients 最大同時接続クライアント数
+ * @param [in] proc クライアントが接続された時に呼び出されるコールバック関数
+ * @param [in] proc_arg procに渡される引数
+ * @return 作成したサーバソケットハンドル。失敗した場合はNULL
+ */
+PECAServerSocket* PECAAPI PECAServerSockOpen(
+    PECASockProto    protocol,
+    const char*      intf,
+    unsigned short   port,
+    unsigned int     max_clients,
+    PECASockCallback proc,
+    void*            proc_arg);
+
+/**
+ * サーバソケットの待ち受けを終了します。
+ *
+ * 既に接続されているクライアントソケットは閉じません。
+ *
+ * @param [in] sock サーバソケットハンドル
+ */
+void PECAAPI PECAServerSockClose(PECAServerSocket* sock);
 
 #ifdef __cplusplus
 } //extern "C"
