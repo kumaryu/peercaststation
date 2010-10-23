@@ -16,6 +16,8 @@
 extern "C" {
 #endif //__cplusplus
 
+struct PECAIOStream; // in stream.h
+
 struct PECASocket;
 struct PECAServerSocket;
 
@@ -82,6 +84,17 @@ int PECAAPI PECASockRead(PECASocket* sock, void* dest, int size);
  * @retval >0 書き込めたバイト数
  */
 int PECAAPI PECASockWrite(PECASocket* sock, const void* data, int size);
+
+/**
+ * ソケットをPECAIOStreamに変換します。
+ *
+ * 変換後のIOStreamはソケットを共有します。
+ * IOStreamが閉じられたらソケットも閉じられ、無効になります。
+ *
+ * @param [in]  sock ソケットハンドル
+ * @return sockをPECAIOStreamに変換したハンドル
+ */
+PECAIOStream* PECASockToIOStream(PECASocket* sock);
 
 /**
  * サーバソケットにクライアントが接続された時に呼ばれるコールバック関数です。

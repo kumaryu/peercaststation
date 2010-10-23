@@ -10,6 +10,7 @@
 #include <Poco/ThreadPool.h>
 
 #include "socket.h"
+#include "stream.h"
 
 static Poco::ThreadLocal<PECASockError> s_SockError;
 static inline void PECASockSetError(PECASockError err)
@@ -60,12 +61,12 @@ struct PECASocket
 {
 public:
   PECASocket()
-    : mSocket(NULL), mOwn(true)
+    : mSocket(NULL), mOwn(true), mStream(this)
   {
   }
 
   PECASocket(Poco::Net::StreamSocket& socket, bool own)
-    : mSocket(new Poco::Net::StreamSocket(socket)), mOwn(own)
+    : mSocket(new Poco::Net::StreamSocket(socket)), mOwn(own), mStream(this)
   {
   }
 
@@ -194,10 +195,45 @@ public:
     }
   }
 
+  PECAIOStream* GetStream()
+  {
+    return &mStream;
+  }
+
 private:
   Poco::Net::StreamSocket* mSocket;
   bool mOwn;
+
+  struct SocketStream
+    : public PECAIOStream
+  {
+    SocketStream(PECASocket* sock)
+      : mSocket(sock)
+    {
+      this->Close = s_Close;
+      this->Read  = s_Read;
+      this->Write = s_Write;
+    }
+    static void PECAAPI s_Close(PECAIOStream* s)
+    {
+      PECASockClose(static_cast<SocketStream*>(s)->mSocket);
+    }
+    static int  PECAAPI s_Read(PECAIOStream* s, void* dest, int size)
+    {
+      return PECASockRead(static_cast<SocketStream*>(s)->mSocket, dest, size);
+    }
+    static int  PECAAPI s_Write(PECAIOStream* s, const void* data, int size)
+    {
+      return PECASockWrite(static_cast<SocketStream*>(s)->mSocket, data, size);
+    }
+    PECASocket* mSocket;
+  } mStream;
 };
+
+PECAIOStream* PECASockToIOStream(PECASocket* sock)
+{
+  return sock->GetStream();
+}
 
 PECASocket* PECAAPI PECASockOpen(PECASockProto protocol, const char* addr, unsigned short port)
 {

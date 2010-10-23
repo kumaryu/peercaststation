@@ -1,6 +1,7 @@
 
 #include "gtest/gtest.h"
 #include "core/socket.h"
+#include "core/stream.h"
 #include "Poco/Process.h"
 #include "Poco/Thread.h"
 #include <iostream>
@@ -53,6 +54,21 @@ TEST_F(PECASocketTest, ReadWrite)
   EXPECT_EQ(SOCK_E_NOERROR, PECASockGetLastError());
   EXPECT_STREQ("Hello\n", buf);
   PECASockClose(sock);
+  EXPECT_EQ(SOCK_E_NOERROR, PECASockGetLastError());
+}
+
+TEST_F(PECASocketTest, StreamReadWrite) 
+{
+  PECAIOStream* stream = PECASockToIOStream(PECASockOpen(SOCK_PROTO_ANY, "localhost", 1234));
+  EXPECT_EQ(SOCK_E_NOERROR, PECASockGetLastError());
+  EXPECT_EQ(6, stream->Write(stream, "Hello\n", 6));
+  EXPECT_EQ(SOCK_E_NOERROR, PECASockGetLastError());
+  char buf[256];
+  EXPECT_EQ(6, stream->Read(stream, buf, 6));
+  buf[6] = 0;
+  EXPECT_EQ(SOCK_E_NOERROR, PECASockGetLastError());
+  EXPECT_STREQ("Hello\n", buf);
+  stream->Close(stream);
   EXPECT_EQ(SOCK_E_NOERROR, PECASockGetLastError());
 }
 
