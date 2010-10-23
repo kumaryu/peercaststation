@@ -9,8 +9,8 @@
 #include <Poco/ThreadLocal.h>
 #include <Poco/ThreadPool.h>
 
-#include "socket.h"
-#include "stream.h"
+#include "core/socket.h"
+#include "core/stream.h"
 
 static Poco::ThreadLocal<PECASockError> s_SockError;
 static inline void PECASockSetError(PECASockError err)
