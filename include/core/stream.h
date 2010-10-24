@@ -47,7 +47,7 @@ typedef struct PECAIOStream
    * @retval 0  EOF
    * @retval >0 書き込めたバイト数
    */
-  int PECAAPI (*Write)(PECAIOStream* sock, const void* data, int size);
+  int PECAAPI (*Write)(PECAIOStream* s, const void* data, int size);
 } PECAIOStream;
 
 #ifdef __cplusplus

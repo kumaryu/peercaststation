@@ -1,5 +1,9 @@
 
-add_library(PECACore SHARED core.cpp socket.cpp)
+add_library(PECACore SHARED
+  core.cpp
+  socket.cpp
+  atom.cpp
+)
 
 find_package(Threads REQUIRED)
 find_package(POCO REQUIRED)

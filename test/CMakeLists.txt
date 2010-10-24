@@ -6,6 +6,7 @@ add_executable(
   test_core
   test_core_core.cpp
   test_core_socket.cpp
+  test_core_atom.cpp
   src/gtest_main.cc
   gtest-all.cc
 )
