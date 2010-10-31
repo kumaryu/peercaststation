@@ -1,0 +1,234 @@
+@startuml core-class.png
+
+class HostAddress {
+  + ip_address
+  + port
+  + ToString() : string
+}
+
+class Host {
+  + addresses : HostAdress[]
+  + sessionID : UUID
+  + bcID : UUID
+  + isFirewalled
+  + extensions : string[]
+  + extra : Atom
+}
+Host *-- "1..*" HostAddress
+
+class Node {
+  + host : Host
+  + relays
+  + direct
+  + isRelayFull
+  + isDelayFull
+  + extra : Atom
+}
+Node *-- Host
+
+interface IPlugIn {
+  + getName() : string
+  + getExtensions() : string[]
+  + getDescription() : string
+  + getContact() : URI
+}
+
+interface IPlugInLoader {
+  + getName() : string
+  + load(uri : URI) : IPlugIn
+}
+
+class Core {
+  + addPlugInLoader(loader : IPlugInLoader)
+  + removePlugInLoader(loader : IPlugInLoader)
+  + getPlugInLoaders() : IPlugInLoader[]
+  + loadPlugIn(uri : URI) : IPlugIn
+  + getPlugIns() : IPlugIn[]
+
+  + addYellowPage(yp : IYellowPage)
+  + removeYellowPage(yp : IYellowPage)
+  + getYellowPages() : IYellowPage[]
+
+  + relayChannel(channel_id : UUID) : Channel
+  + relayChannel(channel_id : UUID, protocol : string, tracker : HostAddress) : Channel
+  + broadcastChannel(yp : IYellowPage, channel_id : UUID, source : URI, protocol : string) : Channel
+
+  +   registerYellowPageFactory(yp_protocol : string, factory : IYellowPageFactory)
+  + unregisterYellowPageFactory(yp_protocol : string)
+  + getYellowPageProtocols() : string[]
+
+  +   registerOutputStreamFactory(output_protocol : string, factory : IOutputStreamFactory)
+  + unregisterOutputStreamFactory(output_protocol : string)
+  + getOutputStreamFactory(output_protocol : string) : IOutputStreamFactory
+  + getOutputStreamProtocols() : string[]
+
+  +   registerSourceStreamFactory(source_protocol : string, factory : ISourceStreamFactory)
+  + unregisterSourceStreamFactory(source_protocol : string)
+  + getSourceStreamFactory(source_protocol : string) : ISourceStreamFactory
+  + getSourceStreamProtocols() : string[]
+
+  + getHostInfo() : Host
+  + setHostInfo(host : Host)
+}
+Core o-- "*" Channel
+Core o-- "*" IYellowPage
+Core *-- Host
+Core o-- "*" ISourceStreamFactory
+Core o-- "*" IOutputStreamFactory
+Core o-- "*" IYellowPageFactory
+Core o-- "*" IPlugInLoader
+Core o-- "*" IPlugIn
+
+interface IYellowPageFactory {
+  + create(uri : URI) : YelloPage
+  + release()
+}
+
+interface IYellowPage {
+  + findTracker(channel_id : UUID) : Host
+  + listChannels() : ChannelInfo[]
+  + announce(channel : Channel)
+}
+
+class ChannelInfo {
+  + tracker   : Host
+  + channelID : UUID
+  + name      : string
+  + extra     : Atom
+}
+
+class Channel {
+  + Channel(src : ISourceStream)
+  + replaceSourceStream(stream : ISourceStream)
+  + getSourceStream() : ISourceStream
+
+  + addOutputStream(stream : IOutputStream)
+  + removeOutputStream(stream : IOutputStream)
+  + getOutputStreams() : IOutputStream[]
+
+  + addNode(node : Node)
+  + removeNode(node : Node)
+  + setNode(node : Node)
+  + getNodes() : Node[]
+
+  + getInfo() : ChannelInfo 
+  + setInfo(info : ChannelInfo)
+
+  + pushContent(content : Content)
+  + getContentRange(first : size_t*, last : size_t*)
+  + getContent(pos : size_t) : Content
+
+  + addOnStatusChanged(func : void (*)(arg : void*, channel : Channel), arg : void*)
+  + addOnInfoUpdated(func : void (*)(arg : void*, channel : Channel), arg : void*)
+  + addOnContentUpdated(func : void (*)(arg : void*, channel : Channel), arg : void*)
+  + addOnNodeUpdated(func : void (*)(arg : void*, channel : Channel), arg : void*)
+  + addOnMetadataReceived(func : void (*)(arg : void*, channel : Channel), arg : void*)
+  + addOnError(func : void (*)(arg : void*, channel : Channel), arg : void*)
+  + removeOnStatusChanged(func : void (*)(arg : void*, channel : Channel), arg : void*)
+  + removeOnInfoUpdated(func : void (*)(arg : void*, channel : Channel), arg : void*)
+  + removeOnContentUpdated(func : void (*)(arg : void*, channel : Channel), arg : void*)
+  + removeOnNodeUpdated(func : void (*)(arg : void*, channel : Channel), arg : void*)
+  + removeOnMetadataReceived(func : void (*)(arg : void*, channel : Channel), arg : void*)
+  + removeOnError(func : void (*)(arg : void*, channel : Channel), arg : void*)
+}
+Channel o-- "*" IOutputStream
+Channel o-- ISourceStream
+Channel *-- ChannelInfo
+Channel *-- "*" Node
+Channel *-- "*" Content
+
+class Content {
+  + position : size_t
+  + data : byte[]
+}
+
+interface IOutputStreamFactory {
+  + create() : IOutputStream
+  + release()
+}
+
+interface IOutputStream {
+  + start(socket : IOStream, channel : Channel)
+  + close()
+}
+
+interface ISourceStreamFactory {
+  + create() : ISourceStreamFactory
+  + release()
+}
+
+interface ISourceStream {
+  + start(tracker : Host, channel : Channel)
+  + close()
+}
+
+@enduml
+
+@startuml core-sequence-plugins.png
+title プラグイン登録の流れ
+loop 読み込むプラグイン
+  UI -> Core : loadPlugIn(uri)
+  loop 全PlugInLoaderについて
+    Core -> PlugInLoader : load(uri)
+    alt 読み込めた
+      create PlugIn
+      PlugInLoader -> PlugIn : new(Core)
+      PlugIn -> Core : registerSourceStreamFactory
+      PlugIn -> Core : registerOutputStreamFactory
+      PlugIn -> Core : registerYellowPageFactory
+      PlugIn -> Core : addPlugInLoader
+      Core <-- PlugInLoader : PlugIn
+    else 読み込めなかった
+      Core <-- PlugInLoader : NULL
+    end
+  end
+end
+@enduml
+
+@startuml core-sequence-relay.png
+title リレーの流れ
+UI   ->  Core : relayChannel(channel_id)
+Core ->  YellowPage : findTracker(channel_id)
+activate YellowPage
+Core <-- YellowPage : tracker : Host, protocol
+deactivate YellowPage
+create SourceStream
+Core ->  SourceStream : new(protocol)
+create Channel
+Core -> Channel : new
+Core ->  SourceStream : start(tracker, Channel)
+UI <-- Core : channel : Channel
+SourceStream -> Channel : setChannelInfo
+SourceStream -> Channel : addNode
+loop 切れるまで
+  SourceStream -> Channel : addContent
+  OutputStream -> Channel : getContent
+  OutputStream <-- Channel : content
+end
+
+@enduml
+
+@startuml core-sequence-output.png
+title クライアントがつないできてコンテントストリームをもらう流れ
+クライアント -> 出力待ち受けスレッド : connect
+activate 出力待ち受けスレッド
+create OutputStreamSelector
+出力待ち受けスレッド -> OutputStreamSelector : new(socket)
+deactivate 出力待ち受けスレッド
+activate OutputStreamSelector
+クライアント <-- 出力待ち受けスレッド : OutputStreamSelector(socket)
+クライアント -> OutputStreamSelector : リクエスト
+create OutputStream
+OutputStreamSelector -> OutputStream : new(protocol)
+OutputStreamSelector -> OutputStream : start(channel_id, socket)
+deactivate OutputStreamSelector
+OutputStream -> Core : getChannel(channel_id)
+OutputStream <-- Core : Channel
+OutputStream -> Channel : addOutputStream()
+loop 切れるまで
+  OutputStream -> Channel : getContent()
+  OutputStream <-- Channel : content
+  クライアント <-- OutputStream : content
+end
+@enduml
+
