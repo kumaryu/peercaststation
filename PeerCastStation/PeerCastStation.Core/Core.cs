@@ -219,43 +219,104 @@ namespace PeerCastStation.Core
     }
   }
 
-  public class Channel
+  public enum ChannelStatus
   {
-    public enum ChannelStatus
-    {
-      Idle,
-      Searching,
-      Connecting,
-      Receiving,
-      Error,
-      Closed
-    }
-    public ChannelStatus Status { get; set; }
-    public ISourceStream SourceStream         { get; set; }
-    public IList<IOutputStream> OutputStreams { get; private set; }
-    public IList<Node> Nodes                  { get; private set; }
-    public ChannelInfo ChannelInfo            { get; set; }
-    public Content ContentHeader              { get; set; }
-    public IList<Content> Contents            { get; private set; }
+    Idle,
+    Searching,
+    Connecting,
+    Receiving,
+    Error,
+    Closed
+  }
 
-    public event EventHandler StatusChanged;
-    public event EventHandler ChannelInfoUpdated;
-    public event EventHandler NodeUpdated;
-    public event EventHandler ContentUpdated;
-    public event EventHandler Error;
+  public class Channel
+    : INotifyPropertyChanged
+  {
+    private ChannelStatus status = ChannelStatus.Idle;
+    private ISourceStream sourceStream = null;
+    private ObservableCollection<IOutputStream> outputStreams = new ObservableCollection<IOutputStream>();
+    private ObservableCollection<Node> nodes = new ObservableCollection<Node>();
+    private ChannelInfo channelInfo;
+    private Content contentHeader = null;
+    private ObservableCollection<Content> contents = new ObservableCollection<Content>();
+    public ChannelStatus Status {
+      get { return status; }
+      set
+      {
+        status = value;
+        OnPropertyChanged("Status");
+      }
+    }
+    public ISourceStream SourceStream {
+      get { return sourceStream; }
+      set
+      {
+        sourceStream = value;
+        OnPropertyChanged("SourceStream");
+      }
+    }
+    public IList<IOutputStream> OutputStreams { get { return outputStreams; } }
+    public IList<Node> Nodes { get { return nodes; } }
+    public ChannelInfo ChannelInfo { get { return channelInfo; } }
+    public Content ContentHeader {
+      get { return contentHeader; }
+      set
+      {
+        contentHeader = value;
+        OnPropertyChanged("ContentHeader");
+        OnContentChanged();
+      }
+    }
+    public IList<Content> Contents { get { return contents; } }
+    public event PropertyChangedEventHandler PropertyChanged;
+    private void OnPropertyChanged(string name)
+    {
+      if (PropertyChanged != null) {
+        PropertyChanged(this, new PropertyChangedEventArgs(name));
+      }
+    }
+    private void OnContentChanged()
+    {
+      if (ContentChanged != null) {
+        ContentChanged(this, new EventArgs());
+      }
+    }
+    public event EventHandler ContentChanged;
     public event EventHandler Closed;
+    private void OnClosed()
+    {
+      if (Closed != null) {
+        Closed(this, new EventArgs());
+      }
+    }
 
     public void Close()
     {
+      sourceStream.Close();
+      foreach (var os in outputStreams) {
+        os.Close();
+      }
+      Status = ChannelStatus.Closed;
+      OnClosed();
     }
 
-    internal Channel(Guid channel_id, ISourceStream source)
+    public Channel(Guid channel_id, ISourceStream source)
     {
-      SourceStream  = source;
-      ChannelInfo   = new ChannelInfo(channel_id);
-      ContentHeader = null;
-      Contents      = new List<Content>();
-      Nodes         = new List<Node>();
+      sourceStream  = source;
+      channelInfo   = new ChannelInfo(channel_id);
+      channelInfo.PropertyChanged += (sender, e) => {
+        OnPropertyChanged("ChannelInfo");
+      };
+      contents.CollectionChanged += (sender, e) => {
+        OnPropertyChanged("Contents");
+        OnContentChanged();
+      };
+      outputStreams.CollectionChanged += (sender, e) => {
+        OnPropertyChanged("OutputStreams");
+      };
+      nodes.CollectionChanged += (sender, e) => {
+        OnPropertyChanged("Nodes");
+      };
     }
   }
 
