@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.ComponentModel;
+using System.Collections.ObjectModel;
 
 namespace PeerCastStation.Core
 {
@@ -76,7 +78,7 @@ namespace PeerCastStation.Core
     public Guid BroadcastID { get; set; }
     public bool IsFirewalled { get; set; }
     public IList<string> Extensions { get; private set; }
-    public IList<Atom> Extra { get; private set; }
+    public AtomCollection Extra { get; private set; }
 
     public Host()
     {
@@ -85,7 +87,7 @@ namespace PeerCastStation.Core
       BroadcastID  = Guid.Empty;
       IsFirewalled = false;
       Extensions   = new List<string>();
-      Extra        = new List<Atom>();
+      Extra        = new AtomCollection();
     }
   }
 
@@ -104,14 +106,137 @@ namespace PeerCastStation.Core
     }
   }
 
+  public class AtomCollection : ObservableCollection<Atom>
+  {
+  }
+
+  public class ChannelInfo
+    : INotifyPropertyChanged
+  {
+    private Guid channelID;
+    private Host tracker = null;
+    private string name = "";
+    public Host Tracker {
+      get { return tracker; }
+      set {
+        tracker = value;
+        OnPropertyChanged("Tracker");
+      }
+    }
+    public Guid ChannelID {
+      get { return channelID; }
+    }
+    public string Name {
+      get { return name; }
+      set {
+        name = value;
+        OnPropertyChanged("Name");
+      }
+    }
+    private AtomCollection extra = new AtomCollection();
+    public AtomCollection Extra { get { return extra; } }
+    public event PropertyChangedEventHandler PropertyChanged;
+    private void OnPropertyChanged(string name)
+    {
+      if (PropertyChanged != null) {
+        PropertyChanged(this, new PropertyChangedEventArgs(name));
+      }
+    }
+
+    public ChannelInfo(Guid channel_id)
+    {
+      channelID = channel_id;
+      extra.CollectionChanged += (sender, e) => {
+        OnPropertyChanged("Extra");
+      };
+    }
+  }
+
+  public class Node
+    : INotifyPropertyChanged
+  {
+    private Host host = null;
+    private int relayCount = 0;
+    private int directCount = 0;
+    private bool isRelayFull = false;
+    private bool isDirectFull = false;
+    private AtomCollection extra = new AtomCollection();
+    public Host Host {
+      get { return host; }
+      set
+      {
+        host = value;
+        OnPropertyChanged("Host");
+      }
+    }
+    public int RelayCount {
+      get { return relayCount; }
+      set
+      {
+        relayCount = value;
+        OnPropertyChanged("RelayCount");
+      }
+    }
+    public int DirectCount {
+      get { return directCount; }
+      set
+      {
+        directCount = value;
+        OnPropertyChanged("DirectCount");
+      }
+    }
+    public bool IsRelayFull {
+      get { return isRelayFull; }
+      set
+      {
+        isRelayFull = value;
+        OnPropertyChanged("IsRelayFull");
+      }
+    }
+    public bool IsDirectFull {
+      get { return isDirectFull; }
+      set
+      {
+        isDirectFull = value;
+        OnPropertyChanged("IsDirectFull");
+      }
+    }
+    public AtomCollection Extra { get { return extra; } }
+    public event PropertyChangedEventHandler PropertyChanged;
+    private void OnPropertyChanged(string name)
+    {
+      if (PropertyChanged != null) {
+        PropertyChanged(this, new PropertyChangedEventArgs(name));
+      }
+    }
+
+    public Node(Host host)
+    {
+      Host = host;
+      extra.CollectionChanged += (sender, e) => {
+        OnPropertyChanged("Extra");
+      };
+    }
+  }
+
   public class Channel
   {
-    public ISourceStream SourceStream { get; set; }
+    public enum ChannelStatus
+    {
+      Idle,
+      Searching,
+      Connecting,
+      Receiving,
+      Error,
+      Closed
+    }
+    public ChannelStatus Status { get; set; }
+    public ISourceStream SourceStream         { get; set; }
     public IList<IOutputStream> OutputStreams { get; private set; }
-    public IList<Node> Nodes       { get; private set; }
-    public ChannelInfo ChannelInfo { get; set; }
-    public Content ContentHeader { get; set; }
-    public IList<Content> Contents { get; private set; }
+    public IList<Node> Nodes                  { get; private set; }
+    public ChannelInfo ChannelInfo            { get; set; }
+    public Content ContentHeader              { get; set; }
+    public IList<Content> Contents            { get; private set; }
 
     public event EventHandler StatusChanged;
     public event EventHandler ChannelInfoUpdated;
@@ -126,47 +251,11 @@ namespace PeerCastStation.Core
 
     internal Channel(Guid channel_id, ISourceStream source)
     {
-      SourceStream = source;
-      ChannelInfo = new ChannelInfo(channel_id);
+      SourceStream  = source;
+      ChannelInfo   = new ChannelInfo(channel_id);
       ContentHeader = null;
-      Contents = new List<Content>();
-      Nodes = new List<Node>();
-    }
-  }
-
-  public class Node
-  {
-    public Host Host         { get; set; }
-    public int RelayCount    { get; set; }
-    public int DirectCount   { get; set; }
-    public bool IsRelayFull  { get; set; }
-    public bool IsDirectFull { get; set; }
-    public IList<Atom> Extra { get; private set; }
-
-    public Node(Host host)
-    {
-      Host = host;
-      RelayCount = 0;
-      DirectCount = 0;
-      IsRelayFull = false;
-      IsDirectFull = false;
-      Extra = new List<Atom>();
-    }
-  }
-
-  public class ChannelInfo
-  {
-    public Host Tracker      { get; set; }
-    public Guid ChannelID    { get; set; }
-    public string Name       { get; set; }
-    public IList<Atom> Extra { get; private set; }
-
-    public ChannelInfo(Guid channel_id)
-    {
-      Tracker = new Host();
-      ChannelID = channel_id;
-      Name = "";
-      Extra = new List<Atom>();
+      Contents      = new List<Content>();
+      Nodes         = new List<Node>();
     }
   }
 
@@ -200,7 +289,6 @@ namespace PeerCastStation.Core
 
     public Channel RelayChannel(Guid channel_id)
     {
-      string protocol = null;
       foreach (var yp in YellowPages) {
         var tracker = yp.FindTracker(channel_id);
         if (tracker!=null && tracker.Host!=null && tracker.Host.Addresses.Count>0) {

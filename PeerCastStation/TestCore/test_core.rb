@@ -39,6 +39,63 @@ class TestCoreHost < Test::Unit::TestCase
   end
 end
 
+class TestCoreChannelInfo < Test::Unit::TestCase
+  def test_construct
+    obj = PeerCastStation::Core::ChannelInfo.new(System::Guid.empty)
+    assert_equal(System::Guid.empty, obj.ChannelID)
+    assert_nil(obj.tracker)
+    assert_equal('', obj.name)
+    assert_not_nil(obj.extra)
+    assert_equal(0, obj.extra.count)
+  end
+  
+  def test_changed
+    log = []
+    obj = PeerCastStation::Core::ChannelInfo.new(System::Guid.empty)
+    obj.property_changed {|sender, e| log << e.property_name }
+    obj.name = 'test'
+    obj.tracker = PeerCastStation::Core::Host.new
+    obj.extra.add(PeerCastStation::Core::Atom.new('test', 'foo'))
+    assert_equal(3, log.size)
+    assert_equal('Name',    log[0])
+    assert_equal('Tracker', log[1])
+    assert_equal('Extra',   log[2])
+  end
+end
+
+class TestCoreNode < Test::Unit::TestCase
+  def test_construct
+    host = PeerCastStation::Core::Host.new
+    obj = PeerCastStation::Core::Node.new(host)
+    assert_equal(host, obj.host)
+    assert_equal(0, obj.relay_count)
+    assert_equal(0, obj.direct_count)
+    assert(!obj.is_relay_full)
+    assert(!obj.is_direct_full)
+    assert_not_nil(obj.extra)
+    assert_equal(0, obj.extra.count)
+  end
+  
+  def test_changed
+    log = []
+    obj = PeerCastStation::Core::Node.new(PeerCastStation::Core::Host.new)
+    obj.property_changed {|sender, e| log << e.property_name }
+    obj.relay_count = 1
+    obj.direct_count = 1
+    obj.is_relay_full = true
+    obj.is_direct_full = true
+    obj.host = PeerCastStation::Core::Host.new
+    obj.extra.add(PeerCastStation::Core::Atom.new('test', 'foo'))
+    assert_equal(6, log.size)
+    assert_equal('RelayCount',   log[0])
+    assert_equal('DirectCount',  log[1])
+    assert_equal('IsRelayFull',  log[2])
+    assert_equal('IsDirectFull', log[3])
+    assert_equal('Host',         log[4])
+    assert_equal('Extra',        log[5])
+  end
+end
+
 class TestCore < Test::Unit::TestCase
   def test_construct
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('0.0.0.0'), 7144)
