@@ -21,9 +21,7 @@ class MockYellowPage
   def find_tracker(channel_id)
     @log << [:find_tracker, channel_id]
     addr = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('0.0.0.0'), 7144)
-    host = PeerCastStation::Core::Host.new()
-    host.addresses.add(addr)
-    PeerCastStation::Core::TrackerDescription.new(host, 'mock')
+    System::Uri.new("mock://#{addr}")
   end
   
   def list_channels
@@ -42,8 +40,8 @@ class MockSourceStreamFactory
   end
   attr_reader :log
   
-  def create
-    @log << [:create]
+  def create(uri)
+    @log << [:create, uri]
     MockSourceStream.new
   end
 end
@@ -134,7 +132,7 @@ class TestCoreChannelInfo < Test::Unit::TestCase
     obj = PeerCastStation::Core::ChannelInfo.new(System::Guid.empty)
     obj.property_changed {|sender, e| log << e.property_name }
     obj.name = 'test'
-    obj.tracker = PeerCastStation::Core::Host.new
+    obj.tracker = System::Uri.new('mock://0.0.0.0:7144')
     obj.extra.add(PeerCastStation::Core::Atom.new('test', 'foo'))
     assert_equal(3, log.size)
     assert_equal('Name',    log[0])
@@ -199,17 +197,17 @@ class TestCore < Test::Unit::TestCase
   
   def test_relay_from_tracker
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('0.0.0.0'), 7144)
-    tracker = PeerCastStation::Core::Host.new()
-    tracker.addresses.add(endpoint)
     core = PeerCastStation::Core::Core.new(endpoint)
     core.source_stream_factories['mock'] = MockSourceStreamFactory.new
     
+    tracker = System::Uri.new('pcp://0.0.0.0:7144')
     channel_id = System::Guid.empty
     assert_raise(System::ArgumentException) {
-      core.relay_channel(channel_id, 'pcp', tracker);
+      core.relay_channel(channel_id, tracker);
     }
     
-    channel = core.relay_channel(channel_id, 'mock', tracker);
+    tracker = System::Uri.new('mock://0.0.0.0:7144')
+    channel = core.relay_channel(channel_id, tracker);
     assert_not_nil(channel)
     assert_kind_of(MockSourceStream, channel.source_stream)
     source = channel.source_stream
@@ -236,7 +234,8 @@ class TestCore < Test::Unit::TestCase
     source = channel.source_stream
     assert_equal(1, source.log.size)
     assert_equal(:start,   source.log[0][0])
-    assert_equal(endpoint, source.log[0][1].addresses[0])
+    assert_equal(endpoint.address.to_s, source.log[0][1].host)
+    assert_equal(endpoint.port,         source.log[0][1].port)
     assert_equal(channel,  source.log[0][2])
     
     assert_equal(1, core.channels.count)
@@ -245,12 +244,11 @@ class TestCore < Test::Unit::TestCase
   
   def test_close_channel
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('0.0.0.0'), 7144)
-    tracker = PeerCastStation::Core::Host.new()
-    tracker.addresses.add(endpoint)
+    tracker = System::Uri.new('mock://0.0.0.0:7144')
     core = PeerCastStation::Core::Core.new(endpoint)
     core.source_stream_factories['mock'] = MockSourceStreamFactory.new
     channel_id = System::Guid.empty
-    channel = core.relay_channel(channel_id, 'mock', tracker);
+    channel = core.relay_channel(channel_id, tracker);
     assert_equal(1, core.channels.count)
     core.close_channel(channel)
     assert_equal(0, core.channels.count)
