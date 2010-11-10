@@ -174,6 +174,51 @@ class TestCoreNode < Test::Unit::TestCase
   end
 end
 
+class MockPlugIn
+  include PeerCastStation::Core::IPlugIn
+  def initialize
+    @log = []
+  end
+  attr_reader :log
+  
+  def name
+    'MockPlugIn'
+  end
+  
+  def description
+    'Dummy plugin for test.'
+  end
+  
+  def register(core)
+    @log << [:register, core]
+  end
+  
+  def unregister(core)
+    @log << [:unregister, core]
+  end
+end
+
+class MockPlugInLoader
+  include PeerCastStation::Core::IPlugInLoader
+  def initialize
+    @log = []
+  end
+  attr_reader :log
+  
+  def name
+    'MockPlugInLoader'
+  end 
+  
+  def load(uri)
+    @log << [:load, uri]
+    if /mock/=~uri.to_s then
+      MockPlugIn.new
+    else
+      nil
+    end
+  end
+end 
+
 class TestCore < Test::Unit::TestCase
   def test_construct
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('0.0.0.0'), 7144)
@@ -252,6 +297,22 @@ class TestCore < Test::Unit::TestCase
     assert_equal(1, core.channels.count)
     core.close_channel(channel)
     assert_equal(0, core.channels.count)
+  end
+  
+  def test_plugin
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('0.0.0.0'), 7144)
+    core = PeerCastStation::Core::Core.new(endpoint)
+    assert_nil(core.load_plug_in(System::Uri.new('file://mock')))
+    
+    loader = MockPlugInLoader.new
+    core.plug_in_loaders.add(loader)
+    plug_in = core.load_plug_in(System::Uri.new('file://mock'))
+    assert_equal([:load, System::Uri.new('file://mock')], loader.log[0])
+    assert_not_nil(plug_in)
+    assert_kind_of(MockPlugIn, plug_in)
+    
+    assert_equal(1, plug_in.log.size)
+    assert_equal([:register, core], plug_in.log[0])
   end
 end
 

@@ -622,6 +622,13 @@ namespace PeerCastStation.Core
     /// <returns>読み込めた場合はPlugInのインスタンス、それ以外はnull</returns>
     public IPlugIn LoadPlugIn(Uri uri)
     {
+      foreach (var loader in PlugInLoaders) {
+        var plugin = loader.Load(uri);
+        if (plugin!=null) {
+          plugin.Register(this);
+          return plugin;
+        }
+      }
       return null;
     }
 
