@@ -449,6 +449,7 @@ namespace PeerCastStation.Core
   public class Channel
     : INotifyPropertyChanged
   {
+    private Uri sourceUri = null;
     private ChannelStatus status = ChannelStatus.Idle;
     private ISourceStream sourceStream = null;
     private ObservableCollection<IOutputStream> outputStreams = new ObservableCollection<IOutputStream>();
@@ -456,6 +457,7 @@ namespace PeerCastStation.Core
     private ChannelInfo channelInfo;
     private Content contentHeader = null;
     private ObservableCollection<Content> contents = new ObservableCollection<Content>();
+    private Thread sourceThread = null;
     /// <summary>
     /// チャンネルの状態を取得および設定します
     /// </summary>
@@ -466,6 +468,13 @@ namespace PeerCastStation.Core
         status = value;
         OnPropertyChanged("Status");
       }
+    }
+    /// <summary>
+    /// コンテント取得元のUriを取得します
+    /// </summary>
+    public Uri SourceUri
+    {
+      get { return sourceUri; }
     }
     /// <summary>
     /// ソースストリームを取得および設定します
@@ -534,17 +543,37 @@ namespace PeerCastStation.Core
       }
     }
 
+    public void Start()
+    {
+      sourceThread = new Thread(SourceThreadFunc);
+      sourceThread.Start();
+    }
+
+    private void SourceThreadFunc()
+    {
+      try {
+        sourceStream.Start(sourceUri, this);
+      }
+      finally {
+        sourceStream.Close();
+      }
+    }
+
     /// <summary>
     /// チャンネル接続を終了します。ソースストリームと接続している出力ストリームを全て閉じます
     /// </summary>
     public void Close()
     {
-      sourceStream.Close();
-      foreach (var os in outputStreams) {
-        os.Close();
+      if (Status != ChannelStatus.Closed) {
+        if (sourceThread != null) {
+          sourceThread.Abort();
+        }
+        foreach (var os in outputStreams) {
+          os.Close();
+        }
+        Status = ChannelStatus.Closed;
+        OnClosed();
       }
-      Status = ChannelStatus.Closed;
-      OnClosed();
     }
 
     /// <summary>
@@ -552,8 +581,10 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="channel_id">チャンネルID</param>
     /// <param name="source">ソースストリーム</param>
-    public Channel(Guid channel_id, ISourceStream source)
+    /// <param name="source_uri">ソースURI</param>
+    public Channel(Guid channel_id, ISourceStream source, Uri source_uri)
     {
+      sourceUri = source_uri;
       sourceStream  = source;
       channelInfo   = new ChannelInfo(channel_id);
       channelInfo.PropertyChanged += (sender, e) => {
@@ -688,9 +719,9 @@ namespace PeerCastStation.Core
         throw new ArgumentException(String.Format("Protocol `{0}' is not found", tracker.Scheme));
       }
       var source_stream = source_factory.Create(tracker);
-      var channel = new Channel(channel_id, source_stream);
+      var channel = new Channel(channel_id, source_stream, tracker);
       channels.Add(channel);
-      source_stream.Start(tracker, channel);
+      channel.Start();
       return channel;
     }
 
