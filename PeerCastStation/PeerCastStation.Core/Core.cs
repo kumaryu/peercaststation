@@ -12,7 +12,7 @@ namespace PeerCastStation.Core
   /// <summary>
   /// 指定されたプラグインを読み込むためのインターフェース
   /// </summary>
-  public interface IPlugInLoader : IDisposable
+  public interface IPlugInLoader
   {
     /// <summary>
     /// プラグインローダの名前を取得します
@@ -29,7 +29,7 @@ namespace PeerCastStation.Core
   /// <summary>
   /// プラグインのインスタンスを表すインターフェースです
   /// </summary>
-  public interface IPlugIn : IDisposable
+  public interface IPlugIn
   {
     /// <summary>
     /// プラグインの名前を取得します
@@ -62,7 +62,7 @@ namespace PeerCastStation.Core
   /// <summary>
   /// YellowPageのインターフェースです
   /// </summary>
-  public interface IYellowPage : IDisposable
+  public interface IYellowPage
   {
     /// <summary>
     /// YwlloePageに関連付けられた名前を取得します
@@ -93,8 +93,12 @@ namespace PeerCastStation.Core
   /// <summary>
   /// YellowPageのインスタンスを作成するためのファクトリインターフェースです
   /// </summary>
-  public interface IYellowPageFactory : IDisposable
+  public interface IYellowPageFactory
   {
+    /// <summary>
+    /// このYellowPageFactoryが扱うプロトコルの名前を取得します
+    /// </summary>
+    string Name { get; }
     /// <summary>
     /// YellowPageインスタンスを作成し返します
     /// </summary>
@@ -107,7 +111,7 @@ namespace PeerCastStation.Core
   /// <summary>
   /// 上流からチャンネルにContentを追加するストリームを表すインターフェースです
   /// </summary>
-  public interface ISourceStream : IDisposable
+  public interface ISourceStream
   {
     /// <summary>
     /// 指定したホストを起点にストリームの取得を開始します
@@ -124,8 +128,12 @@ namespace PeerCastStation.Core
   /// <summary>
   /// SourceStreamのインスタンスを作成するファクトリインターフェースです
   /// </summary>
-  public interface ISourceStreamFactory : IDisposable
+  public interface ISourceStreamFactory
   {
+    /// <summary>
+    /// このSourceStreamFactoryが扱うプロトコルの名前を取得します
+    /// </summary>
+    string Name { get; }
     /// <summary>
     /// URIからプロトコルを判別しSourceStreamのインスタンスを作成します。
     /// </summary>
@@ -137,7 +145,7 @@ namespace PeerCastStation.Core
   /// <summary>
   /// 下流にチャンネルのContentを流すストリームを表わすインターフェースです
   /// </summary>
-  public interface IOutputStream : IDisposable
+  public interface IOutputStream
   {
     /// <summary>
     /// 指定されたStreamへChannelのContentを流しはじめます
@@ -154,8 +162,12 @@ namespace PeerCastStation.Core
   /// <summary>
   /// OutputStreamのインスタンスを作成するファクトリインターフェースです
   /// </summary>
-  public interface IOutputStreamFactory : IDisposable
+  public interface IOutputStreamFactory
   {
+    /// <summary>
+    /// このOutputStreamが扱うプロトコルの名前を取得します
+    /// </summary>
+    string Name { get; }
     /// <summary>
     /// OutpuStreamのインスタンスを作成します
     /// </summary>

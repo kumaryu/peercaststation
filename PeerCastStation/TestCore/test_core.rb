@@ -5,6 +5,11 @@ require 'test/unit'
 
 class MockYellowPageFactory
   include PeerCastStation::Core::IYellowPageFactory
+  
+  def name
+    'MockYellowPage'
+  end
+  
   def create(name, uri)
     MockYellowPage.new(name, uri)
   end
@@ -40,6 +45,10 @@ class MockSourceStreamFactory
     @log = []
   end
   attr_reader :log
+  
+  def name
+    'MockSourceStream'
+  end
   
   def create(uri)
     @log << [:create, uri]
@@ -88,6 +97,10 @@ class MockOutputStreamFactory
     @log = []
   end
   attr_reader :log
+  
+  def name
+    'MockOutputStream'
+  end
   
   def ParseChannelID(header)
     @log << [:parse_channel_id, header]
