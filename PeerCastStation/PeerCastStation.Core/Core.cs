@@ -4,6 +4,8 @@ using System.IO;
 using System.Net;
 using System.ComponentModel;
 using System.Collections.ObjectModel;
+using System.Threading;
+using System.Net.Sockets;
 
 namespace PeerCastStation.Core
 {
@@ -155,11 +157,16 @@ namespace PeerCastStation.Core
   public interface IOutputStreamFactory : IDisposable
   {
     /// <summary>
-    /// 下流からのリクエストからプロトコルを判別しOutpuStreamのインスタンスを作成します
+    /// OutpuStreamのインスタンスを作成します
     /// </summary>
-    /// <param name="header">下流から受け取ったリクエスト</param>
-    /// <returns>headerからプロトコルに適合するのが判別できた場合はOutputStreamのインスタンス、それ以外はnull</returns>
-    IOutputStream Create(byte[] header);
+    /// <returns>OutputStream</returns>
+    IOutputStream Create();
+    /// <summary>
+    /// クライアントのリクエストからチャンネルIDを取得し返します
+    /// </summary>
+    /// <param name="header">クライアントから受け取ったリクエスト</param>
+    /// <returns>headerからチャンネルIDを取得できた場合はチャンネルID、できなかった場合はnull</returns>
+    Guid? ParseChannelID(byte[] header);
   }
 
   /// <summary>
@@ -615,6 +622,12 @@ namespace PeerCastStation.Core
     /// </summary>
     public ICollection<Channel> Channels { get { return channels; } }
     private List<Channel> channels = new List<Channel>();
+
+    /// <summary>
+    /// 待ち受けが閉じられたかどうかを取得します
+    /// </summary>
+    public bool IsClosed { get; private set; }
+
     /// <summary>
     /// 指定したファイルをプラグインとして読み込みます
     /// </summary>
@@ -695,8 +708,8 @@ namespace PeerCastStation.Core
     /// <param name="ip">接続を待ち受けるアドレス</param>
     public Core(IPEndPoint ip)
     {
+      IsClosed = false;
       Host = new Host();
-      Host.Addresses.Add(ip);
       Host.SessionID = Guid.NewGuid();
 
       PlugInLoaders = new List<IPlugInLoader>();
@@ -705,6 +718,84 @@ namespace PeerCastStation.Core
       YellowPageFactories = new Dictionary<string, IYellowPageFactory>();
       SourceStreamFactories = new Dictionary<string, ISourceStreamFactory>();
       OutputStreamFactories = new List<IOutputStreamFactory>();
+
+      outputWaitThread = new Thread(OutputWaitThreadFunc);
+      outputWaitThread.Start(ip);
+    }
+
+    /// <summary>
+    /// 待ち受けと全ての接続を終了します
+    /// </summary>
+    public void Close()
+    {
+      IsClosed = true;
+      outputWaitThread.Join();
+      foreach (var output_thread in outputThreads) {
+        output_thread.Abort();
+      }
+    }
+
+    private List<Thread> outputThreads = new List<Thread>();
+    private Thread outputWaitThread = null;
+    private void OutputWaitThreadFunc(object arg)
+    {
+      var ip = (IPEndPoint)arg;
+      var server = new TcpListener(ip);
+      server.Start();
+      Host.Addresses.Add((IPEndPoint)server.LocalEndpoint);
+      while (!IsClosed) {
+        if (server.Pending()) {
+          var client = server.AcceptTcpClient();
+          var output_thread = new Thread(OutputThreadFunc);
+          output_thread.Start(client);
+          outputThreads.Add(output_thread);
+        }
+        else {
+          Thread.Sleep(10);
+        }
+      }
+      server.Stop();
+    }
+
+    private void OutputThreadFunc(object arg)
+    {
+      var client = (TcpClient)arg;
+      var stream = client.GetStream();
+      IOutputStream output_stream = null;
+      try {
+        var header = new List<byte>();
+        Guid? channel_id = null;
+        while (output_stream == null && header.Count <= 1024) {
+          var val = stream.ReadByte();
+          if (val < 0) {
+            break;
+          }
+          else {
+            header.Add((byte)val);
+          }
+          var header_ary = header.ToArray();
+          foreach (var factory in OutputStreamFactories) {
+            channel_id = factory.ParseChannelID(header_ary);
+            if (channel_id != null) {
+              output_stream = factory.Create();
+              break;
+            }
+          }
+        }
+        if (output_stream != null) {
+          var channel = channels.Find((c) => { return c.ChannelInfo.ChannelID == channel_id; });
+          output_stream.Start(stream, channel);
+        }
+      }
+      finally {
+        if (output_stream != null) {
+          output_stream.Close();
+        }
+        stream.Close();
+        client.Close();
+        outputThreads.Remove(Thread.CurrentThread);
+      }
     }
   }
 }
+

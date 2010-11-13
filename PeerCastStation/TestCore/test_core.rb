@@ -1,5 +1,6 @@
 $: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.Core', 'bin', 'Debug')
 require 'PeerCastStation.Core.dll'
+require 'socket'
 require 'test/unit'
 
 class MockYellowPageFactory
@@ -77,6 +78,30 @@ class MockOutputStream
   
   def close
     @log << [:close]
+  end
+end
+
+class MockOutputStreamFactory
+  include PeerCastStation::Core::IOutputStreamFactory
+  
+  def initialize
+    @log = []
+  end
+  attr_reader :log
+  
+  def ParseChannelID(header)
+    @log << [:parse_channel_id, header]
+    header = header.to_a.pack('C*')
+    if /^mock ([a-fA-F0-9]{32})/=~header then
+      System::Guid.new($1.to_clr_string)
+    else
+      nil
+    end
+  end
+  
+  def create
+    @log << [:create]
+    MockOutputStream.new
   end
 end
   
@@ -220,39 +245,51 @@ class MockPlugInLoader
 end 
 
 class TestCore < Test::Unit::TestCase
+  def setup
+  end
+  
+  def teardown
+    @core.close if @core and not @core.is_closed
+  end
+  
   def test_construct
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('0.0.0.0'), 7144)
-    obj = PeerCastStation::Core::Core.new(endpoint)
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
+    @core = PeerCastStation::Core::Core.new(endpoint)
     #assert_not_equal(0, obj.plug_in_loaders.count)
-    assert_equal(0, obj.plug_ins.count)
-    assert_equal(0, obj.yellow_pages.count)
-    assert_equal(0, obj.yellow_page_factories.count)
-    assert_equal(0, obj.source_stream_factories.count)
-    assert_equal(0, obj.output_stream_factories.count)
-    assert_equal(0, obj.channels.count)
+    assert_equal(0, @core.plug_ins.count)
+    assert_equal(0, @core.yellow_pages.count)
+    assert_equal(0, @core.yellow_page_factories.count)
+    assert_equal(0, @core.source_stream_factories.count)
+    assert_equal(0, @core.output_stream_factories.count)
+    assert_equal(0, @core.channels.count)
+    assert(!@core.is_closed)
     
-    assert_equal(1, obj.host.addresses.count)
-    assert_equal(endpoint, obj.host.addresses[0])
-    assert_not_equal(System::Guid.empty, obj.host.SessionID)
-    assert_equal(System::Guid.empty, obj.host.BroadcastID)
-    assert(!obj.host.is_firewalled)
-    assert_equal(0, obj.host.extensions.count)
-    assert_equal(0, obj.host.extra.count)
+    sleep(1)
+    assert_equal(1, @core.host.addresses.count)
+    assert_equal(endpoint, @core.host.addresses[0])
+    assert_not_equal(System::Guid.empty, @core.host.SessionID)
+    assert_equal(System::Guid.empty, @core.host.BroadcastID)
+    assert(!@core.host.is_firewalled)
+    assert_equal(0, @core.host.extensions.count)
+    assert_equal(0, @core.host.extra.count)
+    
+    @core.close
+    assert(@core.is_closed)
   end
   
   def test_relay_from_tracker
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('0.0.0.0'), 7144)
-    core = PeerCastStation::Core::Core.new(endpoint)
-    core.source_stream_factories['mock'] = MockSourceStreamFactory.new
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
+    @core = PeerCastStation::Core::Core.new(endpoint)
+    @core.source_stream_factories['mock'] = MockSourceStreamFactory.new
     
     tracker = System::Uri.new('pcp://0.0.0.0:7144')
     channel_id = System::Guid.empty
     assert_raise(System::ArgumentException) {
-      core.relay_channel(channel_id, tracker);
+      @core.relay_channel(channel_id, tracker);
     }
     
     tracker = System::Uri.new('mock://0.0.0.0:7144')
-    channel = core.relay_channel(channel_id, tracker);
+    channel = @core.relay_channel(channel_id, tracker);
     assert_not_nil(channel)
     assert_kind_of(MockSourceStream, channel.source_stream)
     source = channel.source_stream
@@ -261,19 +298,19 @@ class TestCore < Test::Unit::TestCase
     assert_equal(tracker, source.log[0][1])
     assert_equal(channel,  source.log[0][2])
     
-    assert_equal(1, core.channels.count)
-    assert_equal(channel, core.channels[0])
+    assert_equal(1, @core.channels.count)
+    assert_equal(channel, @core.channels[0])
   end
   
   def test_relay_from_yp
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('0.0.0.0'), 7144)
-    core = PeerCastStation::Core::Core.new(endpoint)
-    core.yellow_page_factories['mock_yp'] = MockYellowPageFactory.new
-    core.source_stream_factories['mock'] = MockSourceStreamFactory.new
-    core.yellow_pages.add(core.yellow_page_factories['mock_yp'].create('mock_yp', System::Uri.new('pcp:example.com:7144')))
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
+    @core = PeerCastStation::Core::Core.new(endpoint)
+    @core.yellow_page_factories['mock_yp'] = MockYellowPageFactory.new
+    @core.source_stream_factories['mock'] = MockSourceStreamFactory.new
+    @core.yellow_pages.add(@core.yellow_page_factories['mock_yp'].create('mock_yp', System::Uri.new('pcp:example.com:7144')))
     
     channel_id = System::Guid.empty
-    channel = core.relay_channel(channel_id)
+    channel = @core.relay_channel(channel_id)
     assert_not_nil(channel)
     assert_kind_of(MockSourceStream, channel.source_stream)
     source = channel.source_stream
@@ -283,36 +320,57 @@ class TestCore < Test::Unit::TestCase
     assert_equal(endpoint.port,         source.log[0][1].port)
     assert_equal(channel,  source.log[0][2])
     
-    assert_equal(1, core.channels.count)
-    assert_equal(channel, core.channels[0])
+    assert_equal(1, @core.channels.count)
+    assert_equal(channel, @core.channels[0])
   end
   
   def test_close_channel
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('0.0.0.0'), 7144)
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
     tracker = System::Uri.new('mock://0.0.0.0:7144')
-    core = PeerCastStation::Core::Core.new(endpoint)
-    core.source_stream_factories['mock'] = MockSourceStreamFactory.new
+    @core = PeerCastStation::Core::Core.new(endpoint)
+    @core.source_stream_factories['mock'] = MockSourceStreamFactory.new
     channel_id = System::Guid.empty
-    channel = core.relay_channel(channel_id, tracker);
-    assert_equal(1, core.channels.count)
-    core.close_channel(channel)
-    assert_equal(0, core.channels.count)
+    channel = @core.relay_channel(channel_id, tracker);
+    assert_equal(1, @core.channels.count)
+    @core.close_channel(channel)
+    assert_equal(0, @core.channels.count)
   end
   
   def test_plugin
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('0.0.0.0'), 7144)
-    core = PeerCastStation::Core::Core.new(endpoint)
-    assert_nil(core.load_plug_in(System::Uri.new('file://mock')))
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
+    @core = PeerCastStation::Core::Core.new(endpoint)
+    assert_nil(@core.load_plug_in(System::Uri.new('file://mock')))
     
     loader = MockPlugInLoader.new
-    core.plug_in_loaders.add(loader)
-    plug_in = core.load_plug_in(System::Uri.new('file://mock'))
+    @core.plug_in_loaders.add(loader)
+    plug_in = @core.load_plug_in(System::Uri.new('file://mock'))
     assert_equal([:load, System::Uri.new('file://mock')], loader.log[0])
     assert_not_nil(plug_in)
     assert_kind_of(MockPlugIn, plug_in)
     
     assert_equal(1, plug_in.log.size)
-    assert_equal([:register, core], plug_in.log[0])
+    assert_equal([:register, @core], plug_in.log[0])
+  end
+  
+  def test_output_connection
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
+    @core = PeerCastStation::Core::Core.new(endpoint)
+    sleep(1)
+    assert_equal(1, @core.host.addresses.count)
+    assert_equal(System::Net::IPAddress.any, @core.host.addresses[0].address)
+    assert_equal(7144, @core.host.addresses[0].port)
+    
+    output_stream_factory = MockOutputStreamFactory.new
+    @core.output_stream_factories.add(output_stream_factory)
+    
+    sock = TCPSocket.new('localhost', 7144)
+    sock.write('mock 9778E62BDC59DF56F9216D0387F80BF2')
+    sock.close
+    
+    sleep(1)
+    assert_equal(38, output_stream_factory.log.size)
+    assert_equal(:parse_channel_id, output_stream_factory.log[36][0])
+    assert_equal(:create,           output_stream_factory.log[37][0])
   end
 end
 
