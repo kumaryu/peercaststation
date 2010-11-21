@@ -227,31 +227,447 @@ namespace PeerCastStation.Core
 
   /// <summary>
   /// PCPプロトコルの基本通信単位を表すクラスです。
-  /// 4文字以下の名前と対応すう値を保持します
+  /// 4文字以下の名前と対応する値を保持します
   /// </summary>
   public class Atom
   {
+    private byte[] value = null;
+    private AtomCollection children = null;
+
     /// <summary>
     /// 名前を取得します
     /// </summary>
     public string Name  { get; private set; }
+
     /// <summary>
-    /// 保持している値を取得します
+    /// 子ATOMを保持しているかどうかを取得します
     /// </summary>
-    public object Value { get; private set; }
+    public bool HasChildren { get { return children!=null; } }
+
+    /// <summary>
+    /// 値を保持しているかどうかを取得します
+    /// </summary>
+    public bool HasValue { get { return value!=null; } }
+
+    /// <summary>
+    /// 子Atomのコレクションを取得します。値を保持している場合はnullを返します
+    /// </summary>
+    public AtomCollection Children { get { return children; } }
+
+    /// <summary>
+    /// 保持している値をbyteとして取得します。
+    /// </summary>
+    /// <returns>保持している値</returns>
+    /// <exception cref="FormatException">
+    /// 値の長さが合わない、または値を保持していません
+    /// </exception>
+    public byte GetByte()
+    {
+      byte res;
+      if (TryGetByte(out res)) {
+        return res;
+      }
+      else {
+        throw new FormatException();
+      }
+    }
+
+    /// <summary>
+    /// 保持している値をbyteとして取得しようと試みます。
+    /// </summary>
+    /// <param name="res">保持している値の書き込み先</param>
+    /// <returns>値がbyteとして解析できた場合はtrue、そうでない場合はfalse</returns>
+    public bool TryGetByte(out byte res)
+    {
+      if (value != null && value.Length == 1) {
+        res = value[0];
+        return true;
+      }
+      else {
+        res = 0;
+        return false;
+      }
+    }
+
+    /// <summary>
+    /// 保持している値をInt16として取得します。
+    /// </summary>
+    /// <returns>保持している値</returns>
+    /// <exception cref="FormatException">
+    /// 値の長さが合わない、または値を保持していません
+    /// </exception>
+    public short GetInt16()
+    {
+      short res;
+      if (TryGetInt16(out res)) {
+        return res;
+      }
+      else {
+        throw new FormatException();
+      }
+    }
+
+    /// <summary>
+    /// 保持している値をInt16として取得しようと試みます。
+    /// </summary>
+    /// <param name="res">保持している値の書き込み先</param>
+    /// <returns>値がInt16として解析できた場合はtrue、そうでない場合はfalse</returns>
+    public bool TryGetInt16(out short res)
+    {
+      if (value != null && value.Length == 2) {
+        res = BitConverter.ToInt16(value, 0);
+        return true;
+      }
+      else {
+        res = 0;
+        return false;
+      }
+    }
+
+    /// <summary>
+    /// 保持している値をInt32として取得します。
+    /// </summary>
+    /// <returns>保持している値</returns>
+    /// <exception cref="FormatException">
+    /// 値の長さが合わない、または値を保持していません
+    /// </exception>
+    public int GetInt32()
+    {
+      int res;
+      if (TryGetInt32(out res)) {
+        return res;
+      }
+      else {
+        throw new FormatException();
+      }
+    }
+
+    /// <summary>
+    /// 保持している値をInt32として取得しようと試みます。
+    /// </summary>
+    /// <param name="res">保持している値の書き込み先</param>
+    /// <returns>値がInt32として解析できた場合はtrue、そうでない場合はfalse</returns>
+    public bool TryGetInt32(out int res)
+    {
+      if (value != null && value.Length == 4) {
+        res = BitConverter.ToInt32(value, 0);
+        return true;
+      }
+      else {
+        res = 0;
+        return false;
+      }
+    }
+
+    /// <summary>
+    /// 保持している値を文字列として取得します。
+    /// </summary>
+    /// <returns>保持している値</returns>
+    /// <exception cref="FormatException">
+    /// 値がNULL文字で終端されていない、または値を保持していません
+    /// </exception>
+    public string GetString()
+    {
+      string res;
+      if (TryGetString(out res)) {
+        return res;
+      }
+      else {
+        throw new FormatException();
+      }
+    }
+
+    /// <summary>
+    /// 保持している値をInt32として取得しようと試みます。
+    /// </summary>
+    /// <param name="res">保持している値の書き込み先</param>
+    /// <returns>値がInt32として解析できた場合はtrue、そうでない場合はfalse</returns>
+    public bool TryGetString(out string res)
+    {
+      if (value != null && value[value.Length - 1] == 0) {
+        res = System.Text.Encoding.UTF8.GetString(value, 0, value.Length - 1);
+        return true;
+      }
+      else {
+        res = "";
+        return false;
+      }
+    }
+
+    /// <summary>
+    /// 保持している値をバイト配列として取得します
+    /// </summary>
+    /// <exception cref="FormatException">
+    /// 値を保持していません
+    /// </exception>
+    /// <returns>値のバイト列</returns>
+    public byte[] GetBytes()
+    {
+      if (value != null) {
+        return value;
+      }
+      else {
+        throw new FormatException();
+      }
+    }
 
     /// <summary>
     /// 名前と値を指定してAtomを初期化します。
     /// </summary>
     /// <param name="name">4文字以下の名前</param>
-    /// <param name="value">値</param>
-    public Atom(string name, object value)
+    /// <param name="value">byte値</param>
+    public Atom(string name, byte value)
     {
       if (name.Length > 4) {
         throw new ArgumentException("Atom Name length must be 4 or less.");
       }
       Name = name;
-      Value = value;
+      this.value = new byte[] { value };
+    }
+
+    /// <summary>
+    /// 名前と値を指定してAtomを初期化します。
+    /// </summary>
+    /// <param name="name">4文字以下の名前</param>
+    /// <param name="value">Int16値</param>
+    public Atom(string name, short value)
+    {
+      if (name.Length > 4) {
+        throw new ArgumentException("Atom Name length must be 4 or less.");
+      }
+      Name = name;
+      this.value = BitConverter.GetBytes(value);
+      if (!BitConverter.IsLittleEndian) Array.Reverse(this.value);
+    }
+
+    /// <summary>
+    /// 名前と値を指定してAtomを初期化します。
+    /// </summary>
+    /// <param name="name">4文字以下の名前</param>
+    /// <param name="value">Int32値</param>
+    public Atom(string name, int value)
+    {
+      if (name.Length > 4) {
+        throw new ArgumentException("Atom Name length must be 4 or less.");
+      }
+      Name = name;
+      this.value = BitConverter.GetBytes(value);
+      if (!BitConverter.IsLittleEndian) Array.Reverse(this.value);
+    }
+
+    /// <summary>
+    /// 名前と値を指定してAtomを初期化します。
+    /// </summary>
+    /// <param name="name">4文字以下の名前</param>
+    /// <param name="value">byte配列</param>
+    public Atom(string name, byte[] value)
+    {
+      if (name.Length > 4) {
+        throw new ArgumentException("Atom Name length must be 4 or less.");
+      }
+      Name = name;
+      this.value = value;
+    }
+
+    /// <summary>
+    /// 名前と値を指定してAtomを初期化します。
+    /// </summary>
+    /// <param name="name">4文字以下の名前</param>
+    /// <param name="value">文字列</param>
+    public Atom(string name, string value)
+    {
+      if (name.Length > 4) {
+        throw new ArgumentException("Atom Name length must be 4 or less.");
+      }
+      Name = name;
+      var str = System.Text.Encoding.UTF8.GetBytes(value);
+      this.value = new byte[str.Length + 1];
+      str.CopyTo(this.value, 0);
+      this.value[str.Length] = 0;
+    }
+
+    /// <summary>
+    /// 名前と子のコレクションを指定してAtomを初期化します。
+    /// </summary>
+    /// <param name="name">4文字以下の名前</param>
+    /// <param name="children">保持する子のコレクション</param>
+    public Atom(string name, AtomCollection children)
+    {
+      if (name.Length > 4) {
+        throw new ArgumentException("Atom Name length must be 4 or less.");
+      }
+      Name = name;
+      this.children = children;
+    }
+  }
+
+  /// <summary>
+  /// ストリームにAtomを書き込むためのアダプタクラスです
+  /// </summary>
+  public class AtomWriter
+    : IDisposable
+  {
+    private bool disposed = false;
+    private Stream stream;
+    private System.Text.Encoding encoding = new System.Text.UTF8Encoding(false);
+
+    /// <summary>
+    /// 指定したストリームに書き込むインスタンスを初期化します
+    /// </summary>
+    /// <param name="stream">書き込み先のストリーム</param>
+    public AtomWriter(Stream stream)
+    {
+      this.stream = stream;
+    }
+
+    /// <summary>
+    /// 基になるストリームを取得します
+    /// </summary>
+    public Stream BaseStream
+    {
+      get
+      {
+        return stream;
+      }
+    }
+
+    /// <summary>
+    /// 保持しているストリームを閉じます
+    /// </summary>
+    public void Close()
+    {
+      stream.Close();
+    }
+
+    /// <summary>
+    /// このインスタンスによって使用されているすべてのリソースを解放します
+    /// </summary>
+    public void Dispose()
+    {
+      Dispose(true);
+      GC.SuppressFinalize(this);
+    }
+
+    protected void Dispose(bool disposing)
+    {
+      if (!disposed) {
+        if (disposing) {
+          stream.Dispose();
+        }
+        disposed = true;
+      }
+    }
+
+    /// <summary>
+    /// Atom全体をストリームに書き込みます
+    /// </summary>
+    /// <param name="atom">書き込むAtom</param>
+    public void Write(Atom atom)
+    {
+      var name = encoding.GetBytes(atom.Name);
+      stream.Write(name, 0, Math.Min(name.Length, 4));
+      for (var i = name.Length; i < 4; i++) {
+        stream.WriteByte(0);
+      }
+      if (atom.HasValue) {
+        var value = atom.GetBytes();
+        var len = BitConverter.GetBytes(value.Length);
+        if (!BitConverter.IsLittleEndian) Array.Reverse(len);
+        stream.Write(len, 0, len.Length);
+        stream.Write(value, 0, value.Length);
+      }
+      else {
+        var cnt = BitConverter.GetBytes(0x80000000U | (uint)atom.Children.Count);
+        if (!BitConverter.IsLittleEndian) Array.Reverse(cnt);
+        stream.Write(cnt, 0, cnt.Length);
+        foreach (var child in atom.Children) {
+          Write(child);
+        }
+      }
+    }
+  }
+
+  /// <summary>
+  /// ストリームからAtomを読み取るアダプタクラスです
+  /// </summary>
+  public class AtomReader
+    : IDisposable
+  {
+    private bool disposed = false;
+    private Stream stream;
+    private System.Text.Encoding encoding = new System.Text.UTF8Encoding(false);
+
+    /// <summary>
+    /// 指定したストリームから読み取るインスタンスを初期化します
+    /// </summary>
+    /// <param name="stream">読み取り元のストリーム</param>
+    public AtomReader(Stream stream)
+    {
+      this.stream = stream;
+    }
+
+    /// <summary>
+    /// 基になるストリームを取得します
+    /// </summary>
+    public Stream BaseStream
+    {
+      get
+      {
+        return stream;
+      }
+    }
+
+    /// <summary>
+    /// 現在のAtomReaderと基になるストリームを閉じます。 
+    /// </summary>
+    public void Close()
+    {
+      stream.Close();
+    }
+
+    /// <summary>
+    /// このインスタンスによって使用されているすべてのリソースを解放します
+    /// </summary>
+    public void Dispose()
+    {
+      Dispose(true);
+      GC.SuppressFinalize(this);
+    }
+
+    protected void Dispose(bool disposing)
+    {
+      if (!disposed) {
+        if (disposing) {
+          stream.Dispose();
+        }
+        disposed = true;
+      }
+    }
+
+    /// <summary>
+    /// ストリームからAtomを読み取ります
+    /// </summary>
+    /// <returns>読み取ったAtomのインスタンス</returns>
+    public Atom Read()
+    {
+      var header = new byte[8];
+      stream.Read(header, 0, 8);
+      var namelen = Array.FindIndex<byte>(header, 0, 4, (x) => { return x==0; });
+      var name = encoding.GetString(header, 0, namelen<0 ? 4 : namelen);
+      if (!BitConverter.IsLittleEndian) Array.Reverse(header, 4, 4);
+      uint len = BitConverter.ToUInt32(header, 4);
+      if ((len & 0x80000000U)!=0) {
+        var children = new AtomCollection();
+        for (var i=0; i<(len&0x7FFFFFFF); i++) {
+          children.Add(Read());
+        }
+        return new Atom(name, children);
+      }
+      else {
+        var value = new byte[len];
+        stream.Read(value, 0, (int)len);
+        return new Atom(name, value);
+      }
     }
   }
 
