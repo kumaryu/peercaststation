@@ -229,10 +229,11 @@ namespace PeerCastStation.Core
   /// <summary>
   /// 主にAtomの名前などに使われる4文字の識別子クラスです
   /// </summary>
-  public class ID4
+  public struct ID4
+    : IEquatable<ID4>
   {
     private static System.Text.UTF8Encoding encoding = new System.Text.UTF8Encoding(false);
-    private byte[] value = new byte[4] { 0, 0, 0, 0 };
+    private uint value;
 
     /// <summary>
     /// 文字列からID4インスタンスを初期化します
@@ -244,7 +245,9 @@ namespace PeerCastStation.Core
       if (nameb.Length > 4) {
         throw new ArgumentException("ID4 length must be 4 or less.");
       }
-      nameb.CopyTo(value, 0);
+      var v = new byte[] { 0, 0, 0, 0 };
+      nameb.CopyTo(v, 0);
+      this.value = BitConverter.ToUInt32(v, 0);
     }
 
     /// <summary>
@@ -256,7 +259,9 @@ namespace PeerCastStation.Core
       if (value.Length > 4) {
         throw new ArgumentException("ID4 length must be 4 or less.");
       }
-      value.CopyTo(this.value, 0);
+      var v = new byte[] { 0, 0, 0, 0 };
+      value.CopyTo(v, 0);
+      this.value = BitConverter.ToUInt32(v, 0);
     }
 
     /// <summary>
@@ -266,7 +271,9 @@ namespace PeerCastStation.Core
     /// <param name="index">valueの先頭からのオフセット</param>
     public ID4(byte[] value, int index)
     {
-      Array.Copy(value, index, this.value, 0, Math.Min(value.Length-index, 4));
+      var v = new byte[] { 0, 0, 0, 0 };
+      Array.Copy(value, index, v, 0, 4);
+      this.value = BitConverter.ToUInt32(v, 0);
     }
 
     /// <summary>
@@ -275,7 +282,7 @@ namespace PeerCastStation.Core
     /// <returns>4バイトのバイト配列</returns>
     public byte[] GetBytes()
     {
-      return value;
+      return BitConverter.GetBytes(value);
     }
 
     /// <summary>
@@ -284,29 +291,42 @@ namespace PeerCastStation.Core
     /// <returns>文字列に変換された値</returns>
     public override string ToString()
     {
-      return encoding.GetString(value.TakeWhile((x) => { return x != 0; }).ToArray());
+      return encoding.GetString(GetBytes().TakeWhile(x => x != 0).ToArray());
     }
 
     public override int GetHashCode()
     {
-      return value[0] << 24 | value[0] << 16 | value[0] << 8 | value[0] << 0;
+      return (int)value;
     }
 
     public override bool Equals(object obj)
     {
-      var x = obj as ID4;
-      if (x != null) {
-        var vx = x.GetBytes();
-        return
-          vx.Length == value.Length &&
-          value[0] == vx[0] &&
-          value[1] == vx[1] &&
-          value[2] == vx[2] &&
-          value[3] == vx[3];
+      if (obj is ID4) {
+        return Equals((ID4)obj);
       }
       else {
         return false;
       }
+    }
+
+    public bool Equals(ID4 x)
+    {
+      if (x != null) {
+        return x.value == value;
+      }
+      else {
+        return false;
+      }
+    }
+
+    public static bool operator ==(ID4 a, ID4 b)
+    {
+      return a.Equals(b);
+    }
+
+    public static bool operator !=(ID4 a, ID4 b)
+    {
+      return !a.Equals(b);
     }
   }
 
@@ -387,6 +407,13 @@ namespace PeerCastStation.Core
     public static readonly ID4 PCP_HOST_UPHOST_PORT       = new ID4("uppt");
     public static readonly ID4 PCP_HOST_UPHOST_HOPS       = new ID4("uphp");
     public static readonly ID4 PCP_QUIT                   = new ID4("quit");
+    public const byte PCP_HOST_FLAGS1_TRACKER = 0x01;
+    public const byte PCP_HOST_FLAGS1_RELAY   = 0x02;
+    public const byte PCP_HOST_FLAGS1_DIRECT  = 0x04;
+    public const byte PCP_HOST_FLAGS1_PUSH    = 0x08;
+    public const byte PCP_HOST_FLAGS1_RECV    = 0x10;
+    public const byte PCP_HOST_FLAGS1_CIN     = 0x20;
+    public const byte PCP_HOST_FLAGS1_PRIVATE = 0x40;
 
     private byte[] value = null;
     private AtomCollection children = null;
@@ -808,6 +835,37 @@ namespace PeerCastStation.Core
 
   public class AtomCollection : ObservableCollection<Atom>
   {
+    /// <summary>
+    /// コレクションから指定した名前を持つAtomを探して取得します
+    /// </summary>
+    /// <param name="name">検索する名前</param>
+    /// <returns>指定した名前を持つ最初のAtom、無かった場合はnull</returns>
+    public Atom FindByName(ID4 name)
+    {
+      return this.FirstOrDefault((x) => { return x.Name==name; });
+    }
+
+    /// <summary>
+    /// 他のAtomCollectionの内容をこのインスタンスに上書きします。
+    /// 同じ名前の要素は上書きされ、異なる名前の要素は追加または残されます
+    /// </summary>
+    /// <param name="other">上書きするコレクション</param>
+    public void Update(AtomCollection other)
+    {
+      foreach (var atom in other) {
+        var updated = false;
+        for (var i = 0; i < this.Count; i++) {
+          if (atom.Name == this[i].Name) {
+            updated = true;
+            this[i] = atom;
+            break;
+          }
+        }
+        if (!updated) {
+          this.Add(atom);
+        }
+      }
+    }
   }
 
   /// <summary>
@@ -882,6 +940,8 @@ namespace PeerCastStation.Core
     private int directCount = 0;
     private bool isRelayFull = false;
     private bool isDirectFull = false;
+    private bool isReceiving = false;
+    private bool isControlFull = false;
     private AtomCollection extra = new AtomCollection();
     /// <summary>
     /// 接続情報を取得および設定します
@@ -938,6 +998,31 @@ namespace PeerCastStation.Core
         OnPropertyChanged("IsDirectFull");
       }
     }
+
+    /// <summary>
+    /// コンテントの受信中かどうかを取得および設定します
+    /// </summary>
+    public bool IsReceiving {
+      get { return isReceiving; }
+      set
+      {
+        isReceiving = value;
+        OnPropertyChanged("IsReceiving");
+      }
+    }
+
+    /// <summary>
+    /// Control接続数が一杯かどうかを取得および設定します
+    /// </summary>
+    public bool IsControlFull {
+      get { return isControlFull; }
+      set
+      {
+        isControlFull = value;
+        OnPropertyChanged("IsControlFull");
+      }
+    }
+
     /// <summary>
     /// その他の情報のリストを取得します
     /// </summary>

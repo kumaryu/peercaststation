@@ -358,6 +358,8 @@ class TestCoreNode < Test::Unit::TestCase
     assert_equal(0, obj.direct_count)
     assert(!obj.is_relay_full)
     assert(!obj.is_direct_full)
+    assert(!obj.is_control_full)
+    assert(!obj.is_receiving)
     assert_not_nil(obj.extra)
     assert_equal(0, obj.extra.count)
   end
@@ -370,15 +372,19 @@ class TestCoreNode < Test::Unit::TestCase
     obj.direct_count = 1
     obj.is_relay_full = true
     obj.is_direct_full = true
+    obj.is_control_full = true
+    obj.is_receiving = true
     obj.host = PeerCastStation::Core::Host.new
     obj.extra.add(PeerCastStation::Core::Atom.new(PeerCastStation::Core::ID4.new('test'.to_clr_string), 'foo'.to_clr_string))
-    assert_equal(6, log.size)
+    assert_equal(8, log.size)
     assert_equal('RelayCount',   log[0])
     assert_equal('DirectCount',  log[1])
     assert_equal('IsRelayFull',  log[2])
     assert_equal('IsDirectFull', log[3])
-    assert_equal('Host',         log[4])
-    assert_equal('Extra',        log[5])
+    assert_equal('IsControlFull',log[4])
+    assert_equal('IsReceiving',  log[5])
+    assert_equal('Host',         log[6])
+    assert_equal('Extra',        log[7])
   end
 end
 
