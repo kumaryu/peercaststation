@@ -118,42 +118,74 @@ class MockOutputStreamFactory
   end
 end
   
+class TestCoreID4 < Test::Unit::TestCase
+  def test_construct
+    id4 = PeerCastStation::Core::ID4.new('name'.to_clr_string)
+    assert_equal('name', id4.to_string)
+    assert_equal('name'.unpack('C*'), id4.get_bytes)
+    
+    id4 = PeerCastStation::Core::ID4.clr_ctor.overload(System::Array[System::Byte]).call('name')
+    assert_equal('name', id4.to_string)
+    assert_equal('name'.unpack('C*'), id4.get_bytes)
+    
+    id4 = PeerCastStation::Core::ID4.new('nagai_name', 0)
+    assert_equal('naga', id4.to_string)
+    assert_equal('naga'.unpack('C*'), id4.get_bytes)
+  end
+  
+  def test_name_length
+    assert_raise(System::ArgumentException) {
+      id4 = PeerCastStation::Core::ID4.new('nagai_name'.to_clr_string)
+    }
+    assert_raise(System::ArgumentException) {
+      id4 = PeerCastStation::Core::ID4.clr_ctor.overload(System::Array[System::Byte]).call('nagai_name')
+    }
+    assert_nothing_raised {
+      id4 = PeerCastStation::Core::ID4.new('nagai_name', 4)
+    }
+  end
+end
+
 class TestCoreAtom < Test::Unit::TestCase
+  def id4(s)
+    PeerCastStation::Core::ID4.new(s.to_clr_string)
+  end
+  
   def test_construct_string
-    obj = PeerCastStation::Core::Atom.new('peer', 'cast'.to_clr_string)
-    assert_equal('peer', obj.name)
+    obj = PeerCastStation::Core::Atom.new(id4('peer'), 'cast'.to_clr_string)
+    assert_equal(id4('peer'), obj.name)
     assert(obj.has_value)
     assert(!obj.has_children)
     assert_equal('cast', obj.get_string)
   end
   
   def test_construct_byte
-    obj = PeerCastStation::Core::Atom.clr_ctor.overload(System::String, System::Byte).call('peer', 42)
-    assert_equal('peer', obj.name)
+    obj = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Byte).call(id4('peer'), 42)
+    assert_equal(id4('peer'), obj.name)
     assert(obj.has_value)
     assert(!obj.has_children)
     assert_equal(42, obj.get_byte)
   end
   
   def test_construct_short
-    obj = PeerCastStation::Core::Atom.clr_ctor.overload(System::String, System::Int16).call('peer', 7144)
-    assert_equal('peer', obj.name)
+    obj = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Int16).call(id4('peer'), 7144)
+    assert_equal(id4('peer'), obj.name)
     assert(obj.has_value)
     assert(!obj.has_children)
     assert_equal(7144, obj.get_int16)
   end
   
   def test_construct_int
-    obj = PeerCastStation::Core::Atom.clr_ctor.overload(System::String, System::Int32).call('peer', 714400)
-    assert_equal('peer', obj.name)
+    obj = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Int32).call(id4('peer'), 714400)
+    assert_equal(id4('peer'), obj.name)
     assert(obj.has_value)
     assert(!obj.has_children)
     assert_equal(714400, obj.get_int32)
   end
   
   def test_construct_bytes
-    obj = PeerCastStation::Core::Atom.clr_ctor.overload(System::String, System::Array[System::Byte]).call('peer', 'cast')
-    assert_equal('peer', obj.name)
+    obj = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Array[System::Byte]).call(id4('peer'), 'cast')
+    assert_equal(id4('peer'), obj.name)
     assert(obj.has_value)
     assert(!obj.has_children)
     assert_equal('cast'.unpack('C*'), obj.get_bytes.to_a)
@@ -161,25 +193,23 @@ class TestCoreAtom < Test::Unit::TestCase
   
   def test_write_children
     children = PeerCastStation::Core::AtomCollection.new
-    children.Add(PeerCastStation::Core::Atom.new('c1', 0))
-    children.Add(PeerCastStation::Core::Atom.new('c2', 1))
-    children.Add(PeerCastStation::Core::Atom.new('c3', 2))
-    children.Add(PeerCastStation::Core::Atom.new('c4', 3))
-    obj = PeerCastStation::Core::Atom.new('peer', children)
-    assert_equal('peer', obj.name)
+    children.Add(PeerCastStation::Core::Atom.new(id4('c1'), 0))
+    children.Add(PeerCastStation::Core::Atom.new(id4('c2'), 1))
+    children.Add(PeerCastStation::Core::Atom.new(id4('c3'), 2))
+    children.Add(PeerCastStation::Core::Atom.new(id4('c4'), 3))
+    obj = PeerCastStation::Core::Atom.new(id4('peer'), children)
+    assert_equal(id4('peer'), obj.name)
     assert(!obj.has_value)
     assert(obj.has_children)
     assert_equal(children, obj.children)
   end
-  
-  def test_name_length
-    assert_raise(System::ArgumentException) {
-      obj = PeerCastStation::Core::Atom.new('nagai_name', 7144)
-    }
-  end
 end
 
 class TestCoreAtomWriter < Test::Unit::TestCase
+  def id4(s)
+    PeerCastStation::Core::ID4.new(s.to_clr_string)
+  end
+  
   def test_construct
     stream = System::IO::MemoryStream.new
     writer = PeerCastStation::Core::AtomWriter.new(stream)
@@ -190,7 +220,7 @@ class TestCoreAtomWriter < Test::Unit::TestCase
   def test_write_value
     stream = System::IO::MemoryStream.new
     writer = PeerCastStation::Core::AtomWriter.new(stream)
-    atom = PeerCastStation::Core::Atom.new('peer', 7144)
+    atom = PeerCastStation::Core::Atom.new(id4('peer'), 7144)
     writer.write(atom)
     assert_equal(12, stream.Length)
     assert_equal(['peer', atom.get_bytes.Length].pack('Z4V').unpack('C*')+atom.get_bytes.to_a, stream.to_array.to_a)
@@ -199,11 +229,11 @@ class TestCoreAtomWriter < Test::Unit::TestCase
   
   def test_write_children
     children = PeerCastStation::Core::AtomCollection.new
-    children.Add(PeerCastStation::Core::Atom.new('c1', 0))
-    children.Add(PeerCastStation::Core::Atom.new('c2', 1))
-    children.Add(PeerCastStation::Core::Atom.new('c3', 2))
-    children.Add(PeerCastStation::Core::Atom.new('c4', 3))
-    atom = PeerCastStation::Core::Atom.new('peer', children)
+    children.Add(PeerCastStation::Core::Atom.new(id4('c1'), 0))
+    children.Add(PeerCastStation::Core::Atom.new(id4('c2'), 1))
+    children.Add(PeerCastStation::Core::Atom.new(id4('c3'), 2))
+    children.Add(PeerCastStation::Core::Atom.new(id4('c4'), 3))
+    atom = PeerCastStation::Core::Atom.new(id4('peer'), children)
     stream = System::IO::MemoryStream.new
     writer = PeerCastStation::Core::AtomWriter.new(stream)
     writer.write(atom)
@@ -221,6 +251,10 @@ class TestCoreAtomWriter < Test::Unit::TestCase
 end
 
 class TestCoreAtomReader < Test::Unit::TestCase
+  def id4(s)
+    PeerCastStation::Core::ID4.new(s.to_clr_string)
+  end
+  
   def test_construct
     stream = System::IO::MemoryStream.new
     reader = PeerCastStation::Core::AtomReader.new(stream)
@@ -236,7 +270,7 @@ class TestCoreAtomReader < Test::Unit::TestCase
     stream.position = 0
     atom = reader.read()
     
-    assert_equal('peer', atom.name)
+    assert_equal(id4('peer'), atom.name)
     assert(atom.has_value)
     assert(!atom.has_children)
     assert_nothing_raised {
@@ -255,19 +289,18 @@ class TestCoreAtomReader < Test::Unit::TestCase
     stream.position = 0
     reader = PeerCastStation::Core::AtomReader.new(stream)
     atom = reader.read()
-    assert_equal('peer', atom.name)
+    assert_equal(id4('peer'), atom.name)
     assert(!atom.has_value)
     assert(atom.has_children)
     assert_nothing_raised do
       4.times do |i|
-        assert_equal("c#{i+1}", atom.children[i].name)
+        assert_equal(id4("c#{i+1}"), atom.children[i].name)
         assert_equal(i, atom.children[i].get_int32)
       end
     end
     reader.close
   end
 end
-
 
 class TestCoreContent < Test::Unit::TestCase
   def test_construct
@@ -308,7 +341,7 @@ class TestCoreChannelInfo < Test::Unit::TestCase
     obj.property_changed {|sender, e| log << e.property_name }
     obj.name = 'test'
     obj.tracker = System::Uri.new('mock://0.0.0.0:7144')
-    obj.extra.add(PeerCastStation::Core::Atom.new('test', 'foo'.to_clr_string))
+    obj.extra.add(PeerCastStation::Core::Atom.new(PeerCastStation::Core::ID4.new('test'.to_clr_string), 'foo'.to_clr_string))
     assert_equal(3, log.size)
     assert_equal('Name',    log[0])
     assert_equal('Tracker', log[1])
@@ -338,7 +371,7 @@ class TestCoreNode < Test::Unit::TestCase
     obj.is_relay_full = true
     obj.is_direct_full = true
     obj.host = PeerCastStation::Core::Host.new
-    obj.extra.add(PeerCastStation::Core::Atom.new('test', 'foo'.to_clr_string))
+    obj.extra.add(PeerCastStation::Core::Atom.new(PeerCastStation::Core::ID4.new('test'.to_clr_string), 'foo'.to_clr_string))
     assert_equal(6, log.size)
     assert_equal('RelayCount',   log[0])
     assert_equal('DirectCount',  log[1])

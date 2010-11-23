@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.ComponentModel;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading;
 using System.Net.Sockets;
 
@@ -226,18 +227,174 @@ namespace PeerCastStation.Core
   }
 
   /// <summary>
+  /// 主にAtomの名前などに使われる4文字の識別子クラスです
+  /// </summary>
+  public class ID4
+  {
+    private static System.Text.UTF8Encoding encoding = new System.Text.UTF8Encoding(false);
+    private byte[] value = new byte[4] { 0, 0, 0, 0 };
+
+    /// <summary>
+    /// 文字列からID4インスタンスを初期化します
+    /// </summary>
+    /// <param name="name">設定する4文字以内のASCII文字列</param>
+    public ID4(string name)
+    {
+      var nameb = encoding.GetBytes(name);
+      if (nameb.Length > 4) {
+        throw new ArgumentException("ID4 length must be 4 or less.");
+      }
+      nameb.CopyTo(value, 0);
+    }
+
+    /// <summary>
+    /// バイト列からID4インスタンスを初期化します
+    /// </summary>
+    /// <param name="value">設定する4バイト以内のバイト配列</param>
+    public ID4(byte[] value)
+    {
+      if (value.Length > 4) {
+        throw new ArgumentException("ID4 length must be 4 or less.");
+      }
+      value.CopyTo(this.value, 0);
+    }
+
+    /// <summary>
+    /// バイト列の一部からID4インスタンスを初期化します
+    /// </summary>
+    /// <param name="value">設定する4バイト以内のバイト配列</param>
+    /// <param name="index">valueの先頭からのオフセット</param>
+    public ID4(byte[] value, int index)
+    {
+      Array.Copy(value, index, this.value, 0, Math.Min(value.Length-index, 4));
+    }
+
+    /// <summary>
+    /// 保持しているバイト列を取得します
+    /// </summary>
+    /// <returns>4バイトのバイト配列</returns>
+    public byte[] GetBytes()
+    {
+      return value;
+    }
+
+    /// <summary>
+    /// 保持しているバイト列を文字列として取得します
+    /// </summary>
+    /// <returns>文字列に変換された値</returns>
+    public override string ToString()
+    {
+      return encoding.GetString(value.TakeWhile((x) => { return x != 0; }).ToArray());
+    }
+
+    public override int GetHashCode()
+    {
+      return value[0] << 24 | value[0] << 16 | value[0] << 8 | value[0] << 0;
+    }
+
+    public override bool Equals(object obj)
+    {
+      var x = obj as ID4;
+      if (x != null) {
+        var vx = x.GetBytes();
+        return
+          vx.Length == value.Length &&
+          value[0] == vx[0] &&
+          value[1] == vx[1] &&
+          value[2] == vx[2] &&
+          value[3] == vx[3];
+      }
+      else {
+        return false;
+      }
+    }
+  }
+
+  /// <summary>
   /// PCPプロトコルの基本通信単位を表すクラスです。
   /// 4文字以下の名前と対応する値を保持します
   /// </summary>
   public class Atom
   {
+    public static readonly ID4 PCP_HELO                   = new ID4("helo");
+    public static readonly ID4 PCP_HELO_AGENT             = new ID4("agnt");
+    public static readonly ID4 PCP_HELO_OSTYPE            = new ID4("ostp");
+    public static readonly ID4 PCP_HELO_SESSIONID         = new ID4("sid");
+    public static readonly ID4 PCP_HELO_PORT              = new ID4("port");
+    public static readonly ID4 PCP_HELO_PING              = new ID4("ping");
+    public static readonly ID4 PCP_HELO_PONG              = new ID4("pong");
+    public static readonly ID4 PCP_HELO_REMOTEIP          = new ID4("rip");
+    public static readonly ID4 PCP_HELO_VERSION           = new ID4("ver");
+    public static readonly ID4 PCP_HELO_BCID              = new ID4("bcid");
+    public static readonly ID4 PCP_HELO_DISABLE           = new ID4("dis");
+    public static readonly ID4 PCP_OLEH                   = new ID4("oleh");
+    public static readonly ID4 PCP_OK                     = new ID4("ok");
+    public static readonly ID4 PCP_CHAN                   = new ID4("chan");
+    public static readonly ID4 PCP_CHAN_ID                = new ID4("id");
+    public static readonly ID4 PCP_CHAN_BCID              = new ID4("bcid");
+    public static readonly ID4 PCP_CHAN_PKT               = new ID4("pkt");
+    public static readonly ID4 PCP_CHAN_PKT_TYPE          = new ID4("type");
+    public static readonly ID4 PCP_CHAN_PKT_HEAD          = new ID4("head");
+    public static readonly ID4 PCP_CHAN_PKT_META          = new ID4("meta");
+    public static readonly ID4 PCP_CHAN_PKT_POS           = new ID4("pos");
+    public static readonly ID4 PCP_CHAN_PKT_DATA          = new ID4("data");
+    public static readonly ID4 PCP_CHAN_PKT_TYPE_HEAD     = new ID4("head");
+    public static readonly ID4 PCP_CHAN_PKT_TYPE_META     = new ID4("meta");
+    public static readonly ID4 PCP_CHAN_PKT_TYPE_DATA     = new ID4("data");
+    public static readonly ID4 PCP_CHAN_INFO              = new ID4("info");
+    public static readonly ID4 PCP_CHAN_INFO_TYPE         = new ID4("type");
+    public static readonly ID4 PCP_CHAN_INFO_BITRATE      = new ID4("bitr");
+    public static readonly ID4 PCP_CHAN_INFO_GENRE        = new ID4("gnre");
+    public static readonly ID4 PCP_CHAN_INFO_NAME         = new ID4("name");
+    public static readonly ID4 PCP_CHAN_INFO_URL          = new ID4("url");
+    public static readonly ID4 PCP_CHAN_INFO_DESC         = new ID4("desc");
+    public static readonly ID4 PCP_CHAN_INFO_COMMENT      = new ID4("cmnt");
+    public static readonly ID4 PCP_CHAN_INFO_PPFLAGS      = new ID4("pflg");
+    public static readonly ID4 PCP_CHAN_TRACK             = new ID4("trck");
+    public static readonly ID4 PCP_CHAN_TRACK_TITLE       = new ID4("titl");
+    public static readonly ID4 PCP_CHAN_TRACK_CREATOR     = new ID4("crea");
+    public static readonly ID4 PCP_CHAN_TRACK_URL         = new ID4("url");
+    public static readonly ID4 PCP_CHAN_TRACK_ALBUM       = new ID4("albm");
+    public static readonly ID4 PCP_BCST                   = new ID4("bcst");
+    public static readonly ID4 PCP_BCST_TTL               = new ID4("ttl");
+    public static readonly ID4 PCP_BCST_HOPS              = new ID4("hops");
+    public static readonly ID4 PCP_BCST_FROM              = new ID4("from");
+    public static readonly ID4 PCP_BCST_DEST              = new ID4("dest");
+    public static readonly ID4 PCP_BCST_GROUP             = new ID4("grp");
+    public static readonly ID4 PCP_BCST_CHANID            = new ID4("cid");
+    public static readonly ID4 PCP_BCST_VERSION           = new ID4("vers");
+    public static readonly ID4 PCP_BCST_VERSION_VP        = new ID4("vrvp");
+    public static readonly ID4 PCP_BCST_VERSION_EX_PREFIX = new ID4("vexp");
+    public static readonly ID4 PCP_BCST_VERSION_EX_NUMBER = new ID4("vexn");
+    public static readonly ID4 PCP_HOST                   = new ID4("host");
+    public static readonly ID4 PCP_HOST_ID                = new ID4("id");
+    public static readonly ID4 PCP_HOST_IP                = new ID4("ip");
+    public static readonly ID4 PCP_HOST_PORT              = new ID4("port");
+    public static readonly ID4 PCP_HOST_CHANID            = new ID4("cid");
+    public static readonly ID4 PCP_HOST_NUML              = new ID4("numl");
+    public static readonly ID4 PCP_HOST_NUMR              = new ID4("numr");
+    public static readonly ID4 PCP_HOST_UPTIME            = new ID4("uptm");
+    public static readonly ID4 PCP_HOST_TRACKER           = new ID4("trkr");
+    public static readonly ID4 PCP_HOST_VERSION           = new ID4("ver");
+    public static readonly ID4 PCP_HOST_VERSION_VP        = new ID4("vevp");
+    public static readonly ID4 PCP_HOST_VERSION_EX_PREFIX = new ID4("vexp");
+    public static readonly ID4 PCP_HOST_VERSION_EX_NUMBER = new ID4("vexn");
+    public static readonly ID4 PCP_HOST_CLAP_PP           = new ID4("clap");
+    public static readonly ID4 PCP_HOST_OLDPOS            = new ID4("oldp");
+    public static readonly ID4 PCP_HOST_NEWPOS            = new ID4("newp");
+    public static readonly ID4 PCP_HOST_FLAGS1            = new ID4("flg1");
+    public static readonly ID4 PCP_HOST_UPHOST_IP         = new ID4("upip");
+    public static readonly ID4 PCP_HOST_UPHOST_PORT       = new ID4("uppt");
+    public static readonly ID4 PCP_HOST_UPHOST_HOPS       = new ID4("uphp");
+    public static readonly ID4 PCP_QUIT                   = new ID4("quit");
+
     private byte[] value = null;
     private AtomCollection children = null;
 
     /// <summary>
     /// 名前を取得します
     /// </summary>
-    public string Name  { get; private set; }
+    public ID4 Name  { get; private set; }
 
     /// <summary>
     /// 子ATOMを保持しているかどうかを取得します
@@ -416,11 +573,8 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="name">4文字以下の名前</param>
     /// <param name="value">byte値</param>
-    public Atom(string name, byte value)
+    public Atom(ID4 name, byte value)
     {
-      if (name.Length > 4) {
-        throw new ArgumentException("Atom Name length must be 4 or less.");
-      }
       Name = name;
       this.value = new byte[] { value };
     }
@@ -430,11 +584,8 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="name">4文字以下の名前</param>
     /// <param name="value">Int16値</param>
-    public Atom(string name, short value)
+    public Atom(ID4 name, short value)
     {
-      if (name.Length > 4) {
-        throw new ArgumentException("Atom Name length must be 4 or less.");
-      }
       Name = name;
       this.value = BitConverter.GetBytes(value);
       if (!BitConverter.IsLittleEndian) Array.Reverse(this.value);
@@ -445,11 +596,8 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="name">4文字以下の名前</param>
     /// <param name="value">Int32値</param>
-    public Atom(string name, int value)
+    public Atom(ID4 name, int value)
     {
-      if (name.Length > 4) {
-        throw new ArgumentException("Atom Name length must be 4 or less.");
-      }
       Name = name;
       this.value = BitConverter.GetBytes(value);
       if (!BitConverter.IsLittleEndian) Array.Reverse(this.value);
@@ -460,11 +608,8 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="name">4文字以下の名前</param>
     /// <param name="value">byte配列</param>
-    public Atom(string name, byte[] value)
+    public Atom(ID4 name, byte[] value)
     {
-      if (name.Length > 4) {
-        throw new ArgumentException("Atom Name length must be 4 or less.");
-      }
       Name = name;
       this.value = value;
     }
@@ -474,11 +619,8 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="name">4文字以下の名前</param>
     /// <param name="value">文字列</param>
-    public Atom(string name, string value)
+    public Atom(ID4 name, string value)
     {
-      if (name.Length > 4) {
-        throw new ArgumentException("Atom Name length must be 4 or less.");
-      }
       Name = name;
       var str = System.Text.Encoding.UTF8.GetBytes(value);
       this.value = new byte[str.Length + 1];
@@ -491,11 +633,8 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="name">4文字以下の名前</param>
     /// <param name="children">保持する子のコレクション</param>
-    public Atom(string name, AtomCollection children)
+    public Atom(ID4 name, AtomCollection children)
     {
-      if (name.Length > 4) {
-        throw new ArgumentException("Atom Name length must be 4 or less.");
-      }
       Name = name;
       this.children = children;
     }
@@ -564,11 +703,8 @@ namespace PeerCastStation.Core
     /// <param name="atom">書き込むAtom</param>
     public void Write(Atom atom)
     {
-      var name = encoding.GetBytes(atom.Name);
-      stream.Write(name, 0, Math.Min(name.Length, 4));
-      for (var i = name.Length; i < 4; i++) {
-        stream.WriteByte(0);
-      }
+      var name = atom.Name.GetBytes();
+      stream.Write(name, 0, name.Length);
       if (atom.HasValue) {
         var value = atom.GetBytes();
         var len = BitConverter.GetBytes(value.Length);
@@ -652,8 +788,7 @@ namespace PeerCastStation.Core
     {
       var header = new byte[8];
       stream.Read(header, 0, 8);
-      var namelen = Array.FindIndex<byte>(header, 0, 4, (x) => { return x==0; });
-      var name = encoding.GetString(header, 0, namelen<0 ? 4 : namelen);
+      var name = new ID4(header, 0);
       if (!BitConverter.IsLittleEndian) Array.Reverse(header, 4, 4);
       uint len = BitConverter.ToUInt32(header, 4);
       if ((len & 0x80000000U)!=0) {
