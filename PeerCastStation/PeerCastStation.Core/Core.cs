@@ -311,12 +311,7 @@ namespace PeerCastStation.Core
 
     public bool Equals(ID4 x)
     {
-      if (x != null) {
-        return x.value == value;
-      }
-      else {
-        return false;
-      }
+      return x.value == value;
     }
 
     public static bool operator ==(ID4 a, ID4 b)
@@ -675,7 +670,6 @@ namespace PeerCastStation.Core
   {
     private bool disposed = false;
     private Stream stream;
-    private System.Text.Encoding encoding = new System.Text.UTF8Encoding(false);
 
     /// <summary>
     /// 指定したストリームに書き込むインスタンスを初期化します
@@ -758,7 +752,6 @@ namespace PeerCastStation.Core
   {
     private bool disposed = false;
     private Stream stream;
-    private System.Text.Encoding encoding = new System.Text.UTF8Encoding(false);
 
     /// <summary>
     /// 指定したストリームから読み取るインスタンスを初期化します
