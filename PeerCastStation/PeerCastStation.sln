@@ -5,6 +5,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Core", "Pee
 EndProject
 Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestCore", "TestCore\TestCore.rbproj", "{03C928C9-7AA8-4995-9D44-3F373BCF3CB3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.PCP", "PeerCastStation.PCP\PeerCastStation.PCP.csproj", "{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}"
+	ProjectSection(ProjectDependencies) = postProject
+		{387996F5-E31D-4D92-BD86-8983C599F748} = {387996F5-E31D-4D92-BD86-8983C599F748}
+	EndProjectSection
+EndProject
+Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestPCP", "TestPCP\TestPCP.rbproj", "{AD0E6E1A-2A22-4CDC-8DE9-7F9E8F4DFE3C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,6 +26,14 @@ Global
 		{03C928C9-7AA8-4995-9D44-3F373BCF3CB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{03C928C9-7AA8-4995-9D44-3F373BCF3CB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{03C928C9-7AA8-4995-9D44-3F373BCF3CB3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD0E6E1A-2A22-4CDC-8DE9-7F9E8F4DFE3C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD0E6E1A-2A22-4CDC-8DE9-7F9E8F4DFE3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD0E6E1A-2A22-4CDC-8DE9-7F9E8F4DFE3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD0E6E1A-2A22-4CDC-8DE9-7F9E8F4DFE3C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

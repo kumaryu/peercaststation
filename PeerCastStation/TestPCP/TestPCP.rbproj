@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{ad0e6e1a-2a22-4cdc-8de9-7f9e8f4dfe3c}</ProjectGuid>
+    <ProjectHome>.</ProjectHome>
+    <StartupFile>C:\Users\Administrator\Documents\working\peercaststation\PeerCastStation\TestPCP\test_pcp.rb</StartupFile>
+    <SearchPath>
+    </SearchPath>
+    <WorkingDirectory>.</WorkingDirectory>
+    <AssemblyName>TestPCP</AssemblyName>
+    <Name>TestPCP</Name>
+    <RootNamespace>TestPCP</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="peca.rb" />
+    <None Include="Program.rb" />
+    <None Include="test_pcp.rb" />
+  </ItemGroup>
+</Project>
