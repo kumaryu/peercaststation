@@ -557,10 +557,10 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
-    /// 保持している値をInt32として取得しようと試みます。
+    /// 保持している値を文字列として取得しようと試みます。
     /// </summary>
     /// <param name="res">保持している値の書き込み先</param>
-    /// <returns>値がInt32として解析できた場合はtrue、そうでない場合はfalse</returns>
+    /// <returns>値が文字列として解析できた場合はtrue、そうでない場合はfalse</returns>
     public bool TryGetString(out string res)
     {
       if (value != null && value[value.Length - 1] == 0) {
@@ -1185,6 +1185,7 @@ namespace PeerCastStation.Core
       }
       finally {
         sourceStream.Close();
+        Status = ChannelStatus.Closed;
       }
     }
 
