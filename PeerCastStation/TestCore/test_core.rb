@@ -2,6 +2,7 @@ $: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.Core', 'bin', 'De
 require 'PeerCastStation.Core.dll'
 require 'socket'
 require 'test/unit'
+using_clr_extensions PeerCastStation::Core
 
 class MockYellowPageFactory
   include PeerCastStation::Core::IYellowPageFactory
@@ -250,6 +251,205 @@ class TestCoreAtomWriter < Test::Unit::TestCase
   end
 end
 
+class TestCoreAtomCollectionExtensions < Test::Unit::TestCase
+  def self.define_test_atom(name, method_name='get_'+name.downcase)
+    module_eval(<<EOS)
+    def test_#{method_name}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_nil(collection.#{method_name})
+      atom = PeerCastStation::Core::Atom.new(
+        PeerCastStation::Core::Atom.PCP_#{name},
+        PeerCastStation::Core::AtomCollection.new)
+      collection.add(atom)
+      assert_equal(atom, collection.#{method_name})
+    end
+EOS
+  end
+  
+  def self.define_test_string(name, method_name='get_'+name.downcase)
+    module_eval(<<EOS)
+    def test_#{method_name}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_nil(collection.#{method_name})
+      atom = PeerCastStation::Core::Atom.new(
+        PeerCastStation::Core::Atom.PCP_#{name},
+        'test'.to_clr_string)
+      collection.add(atom)
+      assert_equal('test', collection.#{method_name})
+    end
+EOS
+  end
+  
+  def self.define_test_byte(name, method_name='get_'+name.downcase)
+    module_eval(<<EOS)
+    def test_#{method_name}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_nil(collection.#{method_name})
+      atom = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Byte).call(
+        PeerCastStation::Core::Atom.PCP_#{name},
+        71)
+      collection.add(atom)
+      assert_equal(71, collection.#{method_name})
+    end
+EOS
+  end
+  
+  def self.define_test_short(name, method_name='get_'+name.downcase)
+    module_eval(<<EOS)
+    def test_#{method_name}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_nil(collection.#{method_name})
+      atom = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Int16).call(
+        PeerCastStation::Core::Atom.PCP_#{name},
+        7144)
+      collection.add(atom)
+      assert_equal(7144, collection.#{method_name})
+    end
+EOS
+  end
+  
+  def self.define_test_int(name, method_name='get_'+name.downcase)
+    module_eval(<<EOS)
+    def test_#{method_name}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_nil(collection.#{method_name})
+      atom = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Int32).call(
+        PeerCastStation::Core::Atom.PCP_#{name},
+        714400)
+      collection.add(atom)
+      assert_equal(714400, collection.#{method_name})
+    end
+EOS
+  end
+  
+  def self.define_test_bytes(name, method_name='get_'+name.downcase)
+    module_eval(<<EOS)
+    def test_#{method_name}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_nil(collection.#{method_name})
+      atom = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Array[System::Byte]).call(
+        PeerCastStation::Core::Atom.PCP_#{name},
+        'bytes')
+      collection.add(atom)
+      assert_equal('bytes'.unpack('C*'), collection.#{method_name}.to_a)
+    end
+EOS
+  end
+  
+  def self.define_test_id(name, method_name='get_'+name.downcase)
+    module_eval(<<EOS)
+    def test_#{method_name}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_nil(collection.#{method_name})
+      value = System::Guid.new_guid
+      atom = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Array[System::Byte]).call(
+        PeerCastStation::Core::Atom.PCP_#{name},
+        value.to_byte_array)
+      collection.add(atom)
+      assert_equal(value, collection.#{method_name})
+    end
+EOS
+  end
+  
+  def self.define_test_ip_address(name, method_name='get_'+name.downcase)
+    module_eval(<<EOS)
+    def test_#{method_name}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_nil(collection.#{method_name})
+      value = System::Net::IPAddress.new([127, 0, 0, 1].pack('C*'))
+      atom = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Array[System::Byte]).call(
+        PeerCastStation::Core::Atom.PCP_#{name},
+        [1, 0, 0, 127].pack('C*'))
+      collection.add(atom)
+      assert_equal(value, collection.#{method_name})
+    end
+EOS
+  end
+  
+  def self.define_test_id4(name, method_name='get_'+name.downcase)
+    module_eval(<<EOS)
+    def test_#{method_name}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_nil(collection.#{method_name})
+      value = PeerCastStation::Core::ID4.new('peer'.to_clr_string)
+      atom = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Array[System::Byte]).call(
+        PeerCastStation::Core::Atom.PCP_#{name},
+        'peer')
+      collection.add(atom)
+      assert_equal(value, collection.#{method_name})
+    end
+EOS
+  end
+  
+  define_test_atom('HELO')
+  define_test_string('HELO_AGENT')
+  define_test_id('HELO_BCID', 'GetHeloBCID')
+  define_test_int('HELO_DISABLE')
+  define_test_short('HELO_PING')
+  define_test_short('HELO_PORT')
+  define_test_ip_address('HELO_REMOTEIP', 'GetHeloRemoteIP')
+  define_test_id('HELO_SESSIONID', 'GetHeloSessionID')
+  define_test_int('HELO_VERSION')
+  
+  define_test_atom('BCST')
+  define_test_id('BCST_CHANID', 'GetBcstChannelID')
+  define_test_id('BCST_DEST', 'GetBcstDest')
+  define_test_id('BCST_FROM', 'GetBcstFrom')
+  define_test_byte('BCST_GROUP')
+  define_test_byte('BCST_HOPS')
+  define_test_byte('BCST_TTL', 'GetBcstTTL')
+  define_test_int('BCST_VERSION')
+  define_test_int('BCST_VERSION_VP')
+  define_test_short('BCST_VERSION_EX_NUMBER', 'GetBcstVersionEXNumber')
+  define_test_bytes('BCST_VERSION_EX_PREFIX', 'GetBcstVersionEXPrefix')
+  
+  define_test_atom('CHAN')
+  define_test_id('CHAN_BCID', 'GetChanBCID')
+  define_test_id('CHAN_ID', 'GetChanID')
+  define_test_atom('CHAN_INFO')
+  define_test_int('CHAN_INFO_BITRATE')
+  define_test_int('CHAN_INFO_PPFLAGS', 'GetChanInfoPPFlags')
+  define_test_string('CHAN_INFO_COMMENT')
+  define_test_string('CHAN_INFO_DESC')
+  define_test_string('CHAN_INFO_GENRE')
+  define_test_string('CHAN_INFO_NAME')
+  define_test_string('CHAN_INFO_TYPE')
+  define_test_string('CHAN_INFO_URL', 'GetChanInfoURL')
+  define_test_atom('CHAN_PKT')
+  define_test_bytes('CHAN_PKT_DATA')
+  define_test_int('CHAN_PKT_POS')
+  define_test_id4('CHAN_PKT_TYPE')
+  define_test_atom('CHAN_TRACK')
+  define_test_string('CHAN_TRACK_ALBUM')
+  define_test_string('CHAN_TRACK_CREATOR')
+  define_test_string('CHAN_TRACK_TITLE')
+  define_test_string('CHAN_TRACK_URL', 'GetChanTrackURL')
+  
+  define_test_atom('HOST')
+  define_test_id('HOST_CHANID', 'GetHostChannelID')
+  define_test_int('HOST_CLAP_PP', 'GetHostClapPP')
+  define_test_byte('HOST_FLAGS1')
+  define_test_ip_address('HOST_IP', 'GetHostIP')
+  define_test_int('HOST_NEWPOS', 'GetHostNewPos')
+  define_test_int('HOST_OLDPOS', 'GetHostOldPos')
+  define_test_int('HOST_NUML', 'GetHostNumListeners')
+  define_test_int('HOST_NUMR', 'GetHostNumRelays')
+  define_test_short('HOST_PORT')
+  define_test_id('HOST_ID', 'GetHostSessionID')
+  define_test_byte('HOST_UPHOST_HOPS')
+  define_test_ip_address('HOST_UPHOST_IP', 'GetHostUphostIP')
+  define_test_int('HOST_UPHOST_PORT')
+  define_test_int('HOST_UPTIME')
+  define_test_int('HOST_VERSION')
+  define_test_int('HOST_VERSION_VP', 'GetHostVersionVP')
+  define_test_short('HOST_VERSION_EX_NUMBER', 'GetHostVersionEXNumber')
+  define_test_bytes('HOST_VERSION_EX_PREFIX', 'GetHostVersionEXPrefix')
+  
+  define_test_int('OK')
+  define_test_atom('OLEH')
+  define_test_int('QUIT')
+end
+ 
 class TestCoreAtomReader < Test::Unit::TestCase
   def id4(s)
     PeerCastStation::Core::ID4.new(s.to_clr_string)
