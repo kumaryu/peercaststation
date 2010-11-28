@@ -591,6 +591,23 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
+    /// 保持している値をバイト配列として取得しようと試みます。
+    /// </summary>
+    /// <param name="res">保持している値の書き込み先</param>
+    /// <returns>値を保持していた場合はtrue、そうでない場合はfalse</returns>
+    public bool TryGetBytes(out byte[] res)
+    {
+      if (value != null) {
+        res = value;
+        return true;
+      }
+      else {
+        res = null;
+        return false;
+      }
+    }
+
+    /// <summary>
     /// 名前と値を指定してAtomを初期化します。
     /// </summary>
     /// <param name="name">4文字以下の名前</param>
