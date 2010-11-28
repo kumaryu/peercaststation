@@ -252,169 +252,303 @@ class TestCoreAtomWriter < Test::Unit::TestCase
 end
 
 class TestCoreAtomCollectionExtensions < Test::Unit::TestCase
-  def self.define_test_atom(name, method_name='get_'+name.downcase)
+  def self.getter_method_name(name, method_name)
+    unless method_name then
+      'get_' + name.downcase
+    else
+      'Get' +method_name
+    end
+  end
+  
+  def self.setter_method_name(name, method_name)
+    unless method_name then
+      'set_' + name.downcase
+    else
+      'Set' + method_name
+    end
+  end
+  
+  def self.define_test_atom(name, method_name=nil)
+    getter = getter_method_name(name, method_name)
+    setter = setter_method_name(name, method_name)
     module_eval(<<EOS)
-    def test_#{method_name}
+    def test_#{getter}
       collection = PeerCastStation::Core::AtomCollection.new
-      assert_nil(collection.#{method_name})
+      assert_nil(collection.#{getter})
+      value = PeerCastStation::Core::AtomCollection.new
       atom = PeerCastStation::Core::Atom.new(
         PeerCastStation::Core::Atom.PCP_#{name},
-        PeerCastStation::Core::AtomCollection.new)
+        value)
       collection.add(atom)
-      assert_equal(atom, collection.#{method_name})
+      assert_equal(value, collection.#{getter})
+    end
+    
+    def test_#{setter}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_equal(0, collection.count)
+      value = PeerCastStation::Core::AtomCollection.new
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      assert_equal(value, collection.#{getter})
     end
 EOS
   end
   
-  def self.define_test_string(name, method_name='get_'+name.downcase)
+  def self.define_test_string(name, method_name=nil)
+    getter = getter_method_name(name, method_name)
+    setter = setter_method_name(name, method_name)
     module_eval(<<EOS)
-    def test_#{method_name}
+    def test_#{getter}
       collection = PeerCastStation::Core::AtomCollection.new
-      assert_nil(collection.#{method_name})
+      assert_nil(collection.#{getter})
       atom = PeerCastStation::Core::Atom.new(
         PeerCastStation::Core::Atom.PCP_#{name},
         'test'.to_clr_string)
       collection.add(atom)
-      assert_equal('test', collection.#{method_name})
+      assert_equal('test', collection.#{getter})
+    end
+    
+    def test_#{setter}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_equal(0, collection.count)
+      value = 'test'
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      assert_equal('test', collection.#{getter})
     end
 EOS
   end
   
-  def self.define_test_byte(name, method_name='get_'+name.downcase)
+  def self.define_test_byte(name, method_name=nil)
+    getter = getter_method_name(name, method_name)
+    setter = setter_method_name(name, method_name)
     module_eval(<<EOS)
-    def test_#{method_name}
+    def test_#{getter}
       collection = PeerCastStation::Core::AtomCollection.new
-      assert_nil(collection.#{method_name})
+      assert_nil(collection.#{getter})
       atom = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Byte).call(
         PeerCastStation::Core::Atom.PCP_#{name},
         71)
       collection.add(atom)
-      assert_equal(71, collection.#{method_name})
+      assert_equal(71, collection.#{getter})
+    end
+    
+    def test_#{setter}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_equal(0, collection.count)
+      value = 71
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      assert_equal(71, collection.#{getter})
     end
 EOS
   end
   
-  def self.define_test_short(name, method_name='get_'+name.downcase)
+  def self.define_test_short(name, method_name=nil)
+    getter = getter_method_name(name, method_name)
+    setter = setter_method_name(name, method_name)
     module_eval(<<EOS)
-    def test_#{method_name}
+    def test_#{getter}
       collection = PeerCastStation::Core::AtomCollection.new
-      assert_nil(collection.#{method_name})
+      assert_nil(collection.#{getter})
       atom = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Int16).call(
         PeerCastStation::Core::Atom.PCP_#{name},
         7144)
       collection.add(atom)
-      assert_equal(7144, collection.#{method_name})
+      assert_equal(7144, collection.#{getter})
+    end
+    
+    def test_#{setter}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_equal(0, collection.count)
+      value = 7144
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      assert_equal(7144, collection.#{getter})
     end
 EOS
   end
   
-  def self.define_test_int(name, method_name='get_'+name.downcase)
+  def self.define_test_int(name, method_name=nil)
+    getter = getter_method_name(name, method_name)
+    setter = setter_method_name(name, method_name)
     module_eval(<<EOS)
-    def test_#{method_name}
+    def test_#{getter}
       collection = PeerCastStation::Core::AtomCollection.new
-      assert_nil(collection.#{method_name})
+      assert_nil(collection.#{getter})
       atom = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Int32).call(
         PeerCastStation::Core::Atom.PCP_#{name},
         714400)
       collection.add(atom)
-      assert_equal(714400, collection.#{method_name})
+      assert_equal(714400, collection.#{getter})
+    end
+    
+    def test_#{setter}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_equal(0, collection.count)
+      value = 714400
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      assert_equal(714400, collection.#{getter})
     end
 EOS
   end
   
-  def self.define_test_bytes(name, method_name='get_'+name.downcase)
+  def self.define_test_bytes(name, method_name=nil)
+    getter = getter_method_name(name, method_name)
+    setter = setter_method_name(name, method_name)
     module_eval(<<EOS)
-    def test_#{method_name}
+    def test_#{getter}
       collection = PeerCastStation::Core::AtomCollection.new
-      assert_nil(collection.#{method_name})
+      assert_nil(collection.#{getter})
       atom = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Array[System::Byte]).call(
         PeerCastStation::Core::Atom.PCP_#{name},
         'bytes')
       collection.add(atom)
-      assert_equal('bytes'.unpack('C*'), collection.#{method_name}.to_a)
+      assert_equal('bytes'.unpack('C*'), collection.#{getter}.to_a)
+    end
+    
+    def test_#{setter}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_equal(0, collection.count)
+      value = 'bytes'
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      assert_equal('bytes'.unpack('C*'), collection.#{getter}.to_a)
     end
 EOS
   end
   
-  def self.define_test_id(name, method_name='get_'+name.downcase)
+  def self.define_test_id(name, method_name=nil)
+    getter = getter_method_name(name, method_name)
+    setter = setter_method_name(name, method_name)
     module_eval(<<EOS)
-    def test_#{method_name}
+    def test_#{getter}
       collection = PeerCastStation::Core::AtomCollection.new
-      assert_nil(collection.#{method_name})
+      assert_nil(collection.#{getter})
       value = System::Guid.new_guid
       atom = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Array[System::Byte]).call(
         PeerCastStation::Core::Atom.PCP_#{name},
         value.to_byte_array)
       collection.add(atom)
-      assert_equal(value, collection.#{method_name})
+      assert_equal(value, collection.#{getter})
+    end
+    
+    def test_#{setter}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_equal(0, collection.count)
+      value = System::Guid.new_guid
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      assert_equal(value, collection.#{getter})
     end
 EOS
   end
   
-  def self.define_test_ip_address(name, method_name='get_'+name.downcase)
+  def self.define_test_ip_address(name, method_name=nil)
+    getter = getter_method_name(name, method_name)
+    setter = setter_method_name(name, method_name)
     module_eval(<<EOS)
-    def test_#{method_name}
+    def test_#{getter}
       collection = PeerCastStation::Core::AtomCollection.new
-      assert_nil(collection.#{method_name})
+      assert_nil(collection.#{getter})
       value = System::Net::IPAddress.new([127, 0, 0, 1].pack('C*'))
       atom = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Array[System::Byte]).call(
         PeerCastStation::Core::Atom.PCP_#{name},
         [1, 0, 0, 127].pack('C*'))
       collection.add(atom)
-      assert_equal(value, collection.#{method_name})
+      assert_equal(value, collection.#{getter})
+    end
+    
+    def test_#{setter}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_equal(0, collection.count)
+      value = System::Net::IPAddress.new([127, 0, 0, 1].pack('C*'))
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      assert_equal(value, collection.#{getter})
     end
 EOS
   end
   
-  def self.define_test_id4(name, method_name='get_'+name.downcase)
+  def self.define_test_id4(name, method_name=nil)
+    getter = getter_method_name(name, method_name)
+    setter = setter_method_name(name, method_name)
     module_eval(<<EOS)
-    def test_#{method_name}
+    def test_#{getter}
       collection = PeerCastStation::Core::AtomCollection.new
-      assert_nil(collection.#{method_name})
+      assert_nil(collection.#{getter})
       value = PeerCastStation::Core::ID4.new('peer'.to_clr_string)
       atom = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Array[System::Byte]).call(
         PeerCastStation::Core::Atom.PCP_#{name},
         'peer')
       collection.add(atom)
-      assert_equal(value, collection.#{method_name})
+      assert_equal(value, collection.#{getter})
+    end
+    
+    def test_#{setter}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_equal(0, collection.count)
+      value = PeerCastStation::Core::ID4.new('peer'.to_clr_string)
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      assert_equal(value, collection.#{getter})
     end
 EOS
   end
   
   define_test_atom('HELO')
-  define_test_string('HELO_AGENT')
-  define_test_id('HELO_BCID', 'GetHeloBCID')
+  define_test_string('HELO_AGENT', 'HeloAgent')
+  define_test_id('HELO_BCID', 'HeloBCID')
   define_test_int('HELO_DISABLE')
   define_test_short('HELO_PING')
   define_test_short('HELO_PORT')
-  define_test_ip_address('HELO_REMOTEIP', 'GetHeloRemoteIP')
-  define_test_id('HELO_SESSIONID', 'GetHeloSessionID')
+  define_test_ip_address('HELO_REMOTEIP', 'HeloRemoteIP')
+  define_test_id('HELO_SESSIONID', 'HeloSessionID')
   define_test_int('HELO_VERSION')
   
   define_test_atom('BCST')
-  define_test_id('BCST_CHANID', 'GetBcstChannelID')
-  define_test_id('BCST_DEST', 'GetBcstDest')
-  define_test_id('BCST_FROM', 'GetBcstFrom')
+  define_test_id('BCST_CHANID', 'BcstChannelID')
+  define_test_id('BCST_DEST', 'BcstDest')
+  define_test_id('BCST_FROM', 'BcstFrom')
   define_test_byte('BCST_GROUP')
   define_test_byte('BCST_HOPS')
-  define_test_byte('BCST_TTL', 'GetBcstTTL')
+  define_test_byte('BCST_TTL', 'BcstTTL')
   define_test_int('BCST_VERSION')
-  define_test_int('BCST_VERSION_VP')
-  define_test_short('BCST_VERSION_EX_NUMBER', 'GetBcstVersionEXNumber')
-  define_test_bytes('BCST_VERSION_EX_PREFIX', 'GetBcstVersionEXPrefix')
+  define_test_int('BCST_VERSION_VP', 'BcstVersionVP')
+  define_test_short('BCST_VERSION_EX_NUMBER', 'BcstVersionEXNumber')
+  define_test_bytes('BCST_VERSION_EX_PREFIX', 'BcstVersionEXPrefix')
   
   define_test_atom('CHAN')
-  define_test_id('CHAN_BCID', 'GetChanBCID')
-  define_test_id('CHAN_ID', 'GetChanID')
+  define_test_id('CHAN_BCID', 'ChanBCID')
+  define_test_id('CHAN_ID', 'ChanID')
   define_test_atom('CHAN_INFO')
   define_test_int('CHAN_INFO_BITRATE')
-  define_test_int('CHAN_INFO_PPFLAGS', 'GetChanInfoPPFlags')
+  define_test_int('CHAN_INFO_PPFLAGS', 'ChanInfoPPFlags')
   define_test_string('CHAN_INFO_COMMENT')
   define_test_string('CHAN_INFO_DESC')
   define_test_string('CHAN_INFO_GENRE')
   define_test_string('CHAN_INFO_NAME')
   define_test_string('CHAN_INFO_TYPE')
-  define_test_string('CHAN_INFO_URL', 'GetChanInfoURL')
+  define_test_string('CHAN_INFO_URL', 'ChanInfoURL')
   define_test_atom('CHAN_PKT')
   define_test_bytes('CHAN_PKT_DATA')
   define_test_int('CHAN_PKT_POS')
@@ -423,27 +557,27 @@ EOS
   define_test_string('CHAN_TRACK_ALBUM')
   define_test_string('CHAN_TRACK_CREATOR')
   define_test_string('CHAN_TRACK_TITLE')
-  define_test_string('CHAN_TRACK_URL', 'GetChanTrackURL')
+  define_test_string('CHAN_TRACK_URL', 'ChanTrackURL')
   
   define_test_atom('HOST')
-  define_test_id('HOST_CHANID', 'GetHostChannelID')
-  define_test_int('HOST_CLAP_PP', 'GetHostClapPP')
+  define_test_id('HOST_CHANID', 'HostChannelID')
+  define_test_int('HOST_CLAP_PP', 'HostClapPP')
   define_test_byte('HOST_FLAGS1')
-  define_test_ip_address('HOST_IP', 'GetHostIP')
-  define_test_int('HOST_NEWPOS', 'GetHostNewPos')
-  define_test_int('HOST_OLDPOS', 'GetHostOldPos')
-  define_test_int('HOST_NUML', 'GetHostNumListeners')
-  define_test_int('HOST_NUMR', 'GetHostNumRelays')
+  define_test_ip_address('HOST_IP', 'HostIP')
+  define_test_int('HOST_NEWPOS', 'HostNewPos')
+  define_test_int('HOST_OLDPOS', 'HostOldPos')
+  define_test_int('HOST_NUML', 'HostNumListeners')
+  define_test_int('HOST_NUMR', 'HostNumRelays')
   define_test_short('HOST_PORT')
-  define_test_id('HOST_ID', 'GetHostSessionID')
+  define_test_id('HOST_ID', 'HostSessionID')
   define_test_byte('HOST_UPHOST_HOPS')
-  define_test_ip_address('HOST_UPHOST_IP', 'GetHostUphostIP')
+  define_test_ip_address('HOST_UPHOST_IP', 'HostUphostIP')
   define_test_int('HOST_UPHOST_PORT')
   define_test_int('HOST_UPTIME')
   define_test_int('HOST_VERSION')
-  define_test_int('HOST_VERSION_VP', 'GetHostVersionVP')
-  define_test_short('HOST_VERSION_EX_NUMBER', 'GetHostVersionEXNumber')
-  define_test_bytes('HOST_VERSION_EX_PREFIX', 'GetHostVersionEXPrefix')
+  define_test_int('HOST_VERSION_VP', 'HostVersionVP')
+  define_test_short('HOST_VERSION_EX_NUMBER', 'HostVersionEXNumber')
+  define_test_bytes('HOST_VERSION_EX_PREFIX', 'HostVersionEXPrefix')
   
   define_test_int('OK')
   define_test_atom('OLEH')
