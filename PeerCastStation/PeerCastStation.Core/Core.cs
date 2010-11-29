@@ -608,6 +608,44 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
+    /// 保持している値をIPv4アドレスとして取得します
+    /// </summary>
+    /// <exception cref="FormatException">
+    /// 値の長さが合わない、または値を保持していません
+    /// </exception>
+    /// <returns>値のIPv4アドレス</returns>
+    public IPAddress GetIPv4Address()
+    {
+      IPAddress res;
+      if (TryGetIPv4Address(out res)) {
+        return res;
+      }
+      else {
+        throw new FormatException();
+      }
+    }
+
+    /// <summary>
+    /// 保持している値をIPv4アドレスとして取得しようと試みます。
+    /// </summary>
+    /// <param name="res">保持している値の書き込み先</param>
+    /// <returns>値がIPv4アドレスとして解析できた場合はtrue、そうでない場合はfalse</returns>
+    public bool TryGetIPv4Address(out IPAddress res)
+    {
+      if (value != null && value.Length==4) {
+        var ip_ary = new byte[value.Length];
+        value.CopyTo(ip_ary, 0);
+        Array.Reverse(ip_ary);
+        res = new IPAddress(ip_ary);
+        return true;
+      }
+      else {
+        res = null;
+        return false;
+      }
+    }
+
+    /// <summary>
     /// 名前と値を指定してAtomを初期化します。
     /// </summary>
     /// <param name="name">4文字以下の名前</param>
@@ -665,6 +703,20 @@ namespace PeerCastStation.Core
       this.value = new byte[str.Length + 1];
       str.CopyTo(this.value, 0);
       this.value[str.Length] = 0;
+    }
+
+    /// <summary>
+    /// 名前と値を指定してAtomを初期化します。
+    /// </summary>
+    /// <param name="name">4文字以下の名前</param>
+    /// <param name="value">IPアドレス</param>
+    public Atom(ID4 name, IPAddress value)
+    {
+      Name = name;
+      var ip = value.GetAddressBytes();
+      Array.Reverse(ip);
+      this.value = new byte[ip.Length];
+      ip.CopyTo(this.value, 0);
     }
 
     /// <summary>

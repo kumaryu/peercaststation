@@ -81,12 +81,9 @@ namespace PeerCastStation.Core
     public static IPAddress GetIPAddressFrom(AtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
-      byte[] value = null;
-      if (atom != null && atom.TryGetBytes(out value) && value.Length==4) {
-        var ip_ary = new byte[value.Length];
-        value.CopyTo(ip_ary, 0);
-        Array.Reverse(ip_ary);
-        return new IPAddress(ip_ary);
+      IPAddress value = null;
+      if (atom != null && atom.TryGetIPv4Address(out value)) {
+        return value;
       }
       else {
         return null;
@@ -479,9 +476,7 @@ namespace PeerCastStation.Core
 
     public static void SetHeloRemoteIP(this AtomCollection collection, IPAddress value)
     {
-      var ip = value.GetAddressBytes();
-      Array.Reverse(ip);
-      SetAtomTo(collection, new Atom(Atom.PCP_HELO_REMOTEIP, ip));
+      SetAtomTo(collection, new Atom(Atom.PCP_HELO_REMOTEIP, value));
     }
 
     public static void SetHeloSessionID(this AtomCollection collection, Guid value)
@@ -676,9 +671,7 @@ namespace PeerCastStation.Core
 
     public static void SetHostIP(this AtomCollection collection, IPAddress value)
     {
-      var ip = value.GetAddressBytes();
-      Array.Reverse(ip);
-      SetAtomTo(collection, new Atom(Atom.PCP_HOST_IP, ip));
+      SetAtomTo(collection, new Atom(Atom.PCP_HOST_IP, value));
     }
 
     public static void SetHostNewPos(this AtomCollection collection, int value)
@@ -718,9 +711,7 @@ namespace PeerCastStation.Core
 
     public static void SetHostUphostIP(this AtomCollection collection, IPAddress value)
     {
-      var ip = value.GetAddressBytes();
-      Array.Reverse(ip);
-      SetAtomTo(collection, new Atom(Atom.PCP_HOST_UPHOST_IP, ip));
+      SetAtomTo(collection, new Atom(Atom.PCP_HOST_UPHOST_IP, value));
     }
 
     public static void SetHostUphostPort(this AtomCollection collection, int value)
