@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{03c928c9-7aa8-4995-9d44-3f373bcf3cb3}</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>test_core.rb</StartupFile>
+    <StartupFile>C:\Users\Administrator\Documents\working\peercaststation\PeerCastStation\TestCore\startup.rb</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -24,6 +24,9 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="Program.rb" />
+    <None Include="startup.rb" />
     <None Include="test_core.rb" />
+    <None Include="test_core.rb" />
+    <None Include="test_queuedsynchronizationcontext.rb" />
   </ItemGroup>
 </Project>
