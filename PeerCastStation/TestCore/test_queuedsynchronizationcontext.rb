@@ -52,14 +52,14 @@ class TestQueuedSynchronizationContext < Test::Unit::TestCase
     main_th = Thread.current
     t = Thread.new {
       value = nil
-      ctx.send(proc {|s|
+      ctx.Send(proc {|s|
         assert_equal(main_th, Thread.current)
         value = s
       }, 'foo')
       assert_equal('foo', value)
     }
     sleep(1)
-    ctx.process
+    assert(ctx.process)
   end
 end
 

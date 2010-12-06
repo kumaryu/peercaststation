@@ -765,7 +765,7 @@ namespace PeerCastStation.Core
     /// </summary>
     public void Close()
     {
-      stream.Close();
+      Dispose();
     }
 
     /// <summary>
@@ -811,6 +811,32 @@ namespace PeerCastStation.Core
         }
       }
     }
+
+    /// <summary>
+    /// Atom全体を指定したストリームに書き込みます
+    /// </summary>
+    /// <param name="stream">書き込み先のストリーム</param>
+    /// <param name="atom">書き込むAtom</param>
+    static public void Write(Stream stream, Atom atom)
+    {
+      var name = atom.Name.GetBytes();
+      stream.Write(name, 0, name.Length);
+      if (atom.HasValue) {
+        var value = atom.GetBytes();
+        var len = BitConverter.GetBytes(value.Length);
+        if (!BitConverter.IsLittleEndian) Array.Reverse(len);
+        stream.Write(len, 0, len.Length);
+        stream.Write(value, 0, value.Length);
+      }
+      else {
+        var cnt = BitConverter.GetBytes(0x80000000U | (uint)atom.Children.Count);
+        if (!BitConverter.IsLittleEndian) Array.Reverse(cnt);
+        stream.Write(cnt, 0, cnt.Length);
+        foreach (var child in atom.Children) {
+          Write(stream, child);
+        }
+      }
+    }
   }
 
   /// <summary>
@@ -843,11 +869,11 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
-    /// 現在のAtomReaderと基になるストリームを閉じます。 
+    /// 現在のAtomReaderと基になるストリームを閉じます
     /// </summary>
     public void Close()
     {
-      stream.Close();
+      Dispose();
     }
 
     /// <summary>
@@ -873,10 +899,13 @@ namespace PeerCastStation.Core
     /// ストリームからAtomを読み取ります
     /// </summary>
     /// <returns>読み取ったAtomのインスタンス</returns>
+    /// <exception cref="EndOfStreamException">ストリームの末尾に達しました</exception>
     public Atom Read()
     {
       var header = new byte[8];
-      stream.Read(header, 0, 8);
+      if (stream.Read(header, 0, 8) < 8) {
+        throw new EndOfStreamException();
+      }
       var name = new ID4(header, 0);
       if (!BitConverter.IsLittleEndian) Array.Reverse(header, 4, 4);
       uint len = BitConverter.ToUInt32(header, 4);
@@ -889,7 +918,40 @@ namespace PeerCastStation.Core
       }
       else {
         var value = new byte[len];
-        stream.Read(value, 0, (int)len);
+        if (stream.Read(value, 0, (int)len) < (int)len) {
+          throw new EndOfStreamException();
+        }
+        return new Atom(name, value);
+      }
+    }
+
+    /// <summary>
+    /// 指定したストリームからAtomを読み取ります
+    /// </summary>
+    /// <param name="stream">読み取り元のストリーム</param>
+    /// <returns>読み取ったAtomのインスタンス</returns>
+    /// <exception cref="EndOfStreamException">ストリームの末尾に達しました</exception>
+    static public Atom Read(Stream stream)
+    {
+      var header = new byte[8];
+      if (stream.Read(header, 0, 8) < 8) {
+        throw new EndOfStreamException();
+      }
+      var name = new ID4(header, 0);
+      if (!BitConverter.IsLittleEndian) Array.Reverse(header, 4, 4);
+      uint len = BitConverter.ToUInt32(header, 4);
+      if ((len & 0x80000000U)!=0) {
+        var children = new AtomCollection();
+        for (var i=0; i<(len&0x7FFFFFFF); i++) {
+          children.Add(Read(stream));
+        }
+        return new Atom(name, children);
+      }
+      else {
+        var value = new byte[len];
+        if (stream.Read(value, 0, (int)len) < (int)len) {
+          throw new EndOfStreamException();
+        }
         return new Atom(name, value);
       }
     }
@@ -1265,7 +1327,8 @@ namespace PeerCastStation.Core
     {
       if (Status != ChannelStatus.Closed) {
         if (sourceThread != null) {
-          sourceThread.Abort();
+          sourceStream.Close();
+          sourceThread = null;
         }
         foreach (var os in outputStreams) {
           os.Close();
@@ -1366,6 +1429,11 @@ namespace PeerCastStation.Core
     private List<Channel> channels = new List<Channel>();
 
     /// <summary>
+    /// 所属するスレッドのSynchronizationContextを取得および設定します
+    /// </summary>
+    public SynchronizationContext SynchronizationContext { get; set; }
+
+    /// <summary>
     /// 待ち受けが閉じられたかどうかを取得します
     /// </summary>
     public bool IsClosed { get; private set; }
@@ -1450,6 +1518,10 @@ namespace PeerCastStation.Core
     /// <param name="ip">接続を待ち受けるアドレス</param>
     public Core(IPEndPoint ip)
     {
+      if (SynchronizationContext.Current == null) {
+        SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+      }
+      this.SynchronizationContext = SynchronizationContext.Current;
       IsClosed = false;
       Host = new Host();
       Host.SessionID = Guid.NewGuid();
@@ -1461,44 +1533,45 @@ namespace PeerCastStation.Core
       SourceStreamFactories = new Dictionary<string, ISourceStreamFactory>();
       OutputStreamFactories = new List<IOutputStreamFactory>();
 
-      outputWaitThread = new Thread(OutputWaitThreadFunc);
-      outputWaitThread.Start(ip);
+      var server = new TcpListener(ip);
+      server.Start();
+      Host.Addresses.Add((IPEndPoint)server.LocalEndpoint);
+      listenThread = new Thread(ListenThreadFunc);
+      listenThread.Start(server);
     }
 
     /// <summary>
-    /// 待ち受けと全ての接続を終了します
+    /// 待ち受けと全てのチャンネルを終了します
     /// </summary>
     public void Close()
     {
       IsClosed = true;
-      outputWaitThread.Join();
-      foreach (var output_thread in outputThreads) {
-        output_thread.Abort();
+      if (listenThread != null) {
+        listenThread.Join();
+        listenThread = null;
+      }
+      foreach (var channel in channels) {
+        channel.Close();
       }
     }
 
-    private List<Thread> outputThreads = new List<Thread>();
-    private Thread outputWaitThread = null;
-    private void OutputWaitThreadFunc(object arg)
+    private Thread listenThread = null;
+    private void ListenThreadFunc(object arg)
     {
-      var ip = (IPEndPoint)arg;
-      var server = new TcpListener(ip);
-      server.Start();
-      Host.Addresses.Add((IPEndPoint)server.LocalEndpoint);
+      var server = (TcpListener)arg;
       while (!IsClosed) {
-        if (server.Pending()) {
+        while (server.Pending()) {
           var client = server.AcceptTcpClient();
           var output_thread = new Thread(OutputThreadFunc);
           output_thread.Start(client);
           outputThreads.Add(output_thread);
         }
-        else {
-          Thread.Sleep(10);
-        }
+        Thread.Sleep(1);
       }
       server.Stop();
     }
 
+    private List<Thread> outputThreads = new List<Thread>();
     private void OutputThreadFunc(object arg)
     {
       var client = (TcpClient)arg;
