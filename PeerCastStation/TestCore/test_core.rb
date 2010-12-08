@@ -838,6 +838,7 @@ class TestCore < Test::Unit::TestCase
     assert_not_nil(channel)
     assert_kind_of(MockSourceStream, channel.source_stream)
     source = channel.source_stream
+    sleep(0.1) while channel.status!=PeerCastStation::Core::ChannelStatus.closed
     assert_equal(2, source.log.size)
     assert_equal(:start,   source.log[0][0])
     assert_equal(endpoint.address.to_s, source.log[0][1].host)

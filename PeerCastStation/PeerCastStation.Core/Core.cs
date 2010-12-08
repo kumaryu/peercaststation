@@ -1225,8 +1225,10 @@ namespace PeerCastStation.Core
       get { return status; }
       set
       {
-        status = value;
-        OnPropertyChanged("Status");
+        if (status != value) {
+          status = value;
+          OnPropertyChanged("Status");
+        }
       }
     }
     /// <summary>
@@ -1243,8 +1245,10 @@ namespace PeerCastStation.Core
       get { return sourceStream; }
       set
       {
-        sourceStream = value;
-        OnPropertyChanged("SourceStream");
+        if (sourceStream != value) {
+          sourceStream = value;
+          OnPropertyChanged("SourceStream");
+        }
       }
     }
     /// <summary>
@@ -1266,9 +1270,11 @@ namespace PeerCastStation.Core
       get { return contentHeader; }
       set
       {
-        contentHeader = value;
-        OnPropertyChanged("ContentHeader");
-        OnContentChanged();
+        if (contentHeader != value) {
+          contentHeader = value;
+          OnPropertyChanged("ContentHeader");
+          OnContentChanged();
+        }
       }
     }
     /// <summary>
@@ -1305,18 +1311,29 @@ namespace PeerCastStation.Core
 
     public void Start()
     {
+      var sync = SynchronizationContext.Current ?? new SynchronizationContext();
       sourceThread = new Thread(SourceThreadFunc);
-      sourceThread.Start();
+      sourceThread.Start(sync);
     }
 
-    private void SourceThreadFunc()
+    private void SourceThreadFunc(object arg)
     {
+      var sync = (SynchronizationContext)arg;
       try {
         sourceStream.Start(sourceUri, this);
       }
       finally {
         sourceStream.Close();
-        Status = ChannelStatus.Closed;
+        sync.Post(thread => {
+          if (sourceThread == thread) {
+            sourceThread = null;
+          }
+          foreach (var os in outputStreams) {
+            os.Close();
+          }
+          Status = ChannelStatus.Closed;
+          OnClosed();
+        }, Thread.CurrentThread);
       }
     }
 
@@ -1326,15 +1343,7 @@ namespace PeerCastStation.Core
     public void Close()
     {
       if (Status != ChannelStatus.Closed) {
-        if (sourceThread != null) {
-          sourceStream.Close();
-          sourceThread = null;
-        }
-        foreach (var os in outputStreams) {
-          os.Close();
-        }
-        Status = ChannelStatus.Closed;
-        OnClosed();
+        sourceStream.Close();
       }
     }
 
