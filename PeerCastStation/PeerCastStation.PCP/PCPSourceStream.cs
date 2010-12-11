@@ -28,9 +28,11 @@ namespace PeerCastStation.PCP
   public class PCPSourceStream : ISourceStream
   {
     private PeerCastStation.Core.Core core;
+    private Channel channel;
     private TcpClient connection;
     private NetworkStream stream;
-    private Channel channel;
+    private IPEndPoint tracker = null;
+    private IPEndPoint uphost = null;
     private bool closed = true;
     public enum SourceStreamState {
       Idle,
@@ -41,8 +43,10 @@ namespace PeerCastStation.PCP
     }
     private enum CloseReason {
       ConnectionError,
+      Unavailable,
       AccessDenied,
       ChannelExit,
+      ChannelNotFound,
       RetryLimit,
       NodeNotFound,
       UserShutdown,
@@ -111,15 +115,41 @@ namespace PeerCastStation.PCP
     private void Close(CloseReason reason)
     {
       switch (reason) {
-      case CloseReason.ChannelExit:
       case CloseReason.UserShutdown:
       case CloseReason.NodeNotFound:
         state = SourceStreamState.Closed;
         closed = true;
         break;
+      case CloseReason.ChannelExit:
+        if (uphost == tracker) {
+          state = SourceStreamState.Closed;
+          closed = true;
+        }
+        else {
+          ignoredHosts.Add(uphost);
+          state = SourceStreamState.Connect;
+        }
+        break;
       case CloseReason.ConnectionError:
+        if (uphost == tracker) {
+          //TODO: 時間をおいてリトライ
+          state = SourceStreamState.Connect;
+        }
+        else {
+          ignoredHosts.Add(uphost);
+          state = SourceStreamState.Connect;
+        }
+        break;
       case CloseReason.AccessDenied:
-        state = SourceStreamState.Connect;
+      case CloseReason.ChannelNotFound:
+        if (uphost == tracker) {
+          state = SourceStreamState.Closed;
+          closed = true;
+        }
+        else {
+          ignoredHosts.Add(uphost);
+          state = SourceStreamState.Connect;
+        }
         break;
       }
       if (connection != null) {
@@ -160,8 +190,11 @@ namespace PeerCastStation.PCP
         if (match.Success) {
           response_code = Convert.ToInt32(match.Groups[1].Value);
         }
-        if (response_code == 200 || response_code == 504) {
+        if (response_code == 200 || response_code == 503) {
           StartHandshake();
+        }
+        else if (response_code == 404) {
+          Close(CloseReason.ChannelNotFound);
         }
         else {
           Close(CloseReason.AccessDenied);
@@ -187,48 +220,67 @@ namespace PeerCastStation.PCP
           recvStream.Seek(0, SeekOrigin.Begin);
           var atom = AtomReader.Read(recvStream);
           recvStream = dropStream(recvStream);
-          var quit = ProcessAtom(atom);
-          if (quit) {
-            Close(CloseReason.ChannelExit);
-          }
+          ProcessAtom(atom);
         }
         catch (EndOfStreamException) {
         }
       }
     }
 
-    List<IPEndPoint> ignoredHosts = new List<IPEndPoint>();
-    private IPEndPoint SelectHost(Uri tracker)
+    private class IgnoredHosts
+    {
+      private Dictionary<IPEndPoint, int> ignoredHosts = new Dictionary<IPEndPoint, int>();
+      private int threshold;
+      public IgnoredHosts(int threshold)
+      {
+        this.threshold = threshold;
+      }
+
+      public void Add(IPEndPoint host)
+      {
+        ignoredHosts[host] = Environment.TickCount;
+      }
+
+      public bool Contains(IPEndPoint host)
+      {
+        if (ignoredHosts.ContainsKey(host)) {
+          int tick = Environment.TickCount;
+          return threshold < tick - ignoredHosts[host];
+        }
+        else {
+          return false;
+        }
+      }
+
+      public void Clear()
+      {
+        ignoredHosts.Clear();
+      }
+    }
+    private IgnoredHosts ignoredHosts = new IgnoredHosts(30 * 1000); //30sec
+    private IPEndPoint SelectHost()
     {
       var hosts = new List<IPEndPoint>();
-      if (tracker != null) {
-        var port = tracker.Port < 0 ? 7144 : tracker.Port;
-        foreach (var addr in Dns.GetHostAddresses(tracker.DnsSafeHost)) {
-          var host = new IPEndPoint(addr, port);
-          if (host.AddressFamily==AddressFamily.InterNetwork && !ignoredHosts.Exists(x => x == host)) {
-            hosts.Add(host);
-          }
-        }
+      if (!ignoredHosts.Contains(tracker)) {
+        hosts.Add(tracker);
       }
       foreach (var node in channel.Nodes) {
         foreach (var host in node.Host.Addresses) {
-          if (!ignoredHosts.Exists(x => x == host)) {
+          if (!ignoredHosts.Contains(host)) {
             hosts.Add(host);
           }
         }
       }
       if (hosts.Count > 0) {
         int idx = new Random().Next(hosts.Count);
-        ignoredHosts.Add(hosts[idx]);
         return hosts[idx];
       }
       else {
-        ignoredHosts.Clear();
         return null;
       }
     }
 
-    public void Start(Uri tracker, Channel channel)
+    public void Start(Uri tracker_uri, Channel channel)
     {
       if (this.syncContext == null) {
         this.syncContext = new QueuedSynchronizationContext();
@@ -236,15 +288,24 @@ namespace PeerCastStation.PCP
       }
       this.closed = false;
       this.channel = channel;
+      if (tracker_uri != null) {
+        var port = tracker_uri.Port < 0 ? 7144 : tracker_uri.Port;
+        foreach (var addr in Dns.GetHostAddresses(tracker_uri.DnsSafeHost)) {
+          var host = new IPEndPoint(addr, port);
+          if (host.AddressFamily==AddressFamily.InterNetwork) {
+            this.tracker = host;
+          }
+        }
+      }
       state = SourceStreamState.Connect;
       while (!closed) {
         switch (state) {
         case SourceStreamState.Idle:
           break;
         case SourceStreamState.Connect:
-          var host = SelectHost(tracker);
-          if (host != null) {
-            Connect(host);
+          uphost = SelectHost();
+          if (uphost != null) {
+            Connect(uphost);
             StartReceive();
           }
           else {
@@ -265,9 +326,8 @@ namespace PeerCastStation.PCP
       }
     }
 
-    protected bool ProcessAtom(Atom atom)
+    protected void ProcessAtom(Atom atom)
     {
-      bool quit = false;
       if (atom.Name==Atom.PCP_HELO) {
         var res = new Atom(Atom.PCP_OLEH, new AtomCollection());
         if (connection.Client.RemoteEndPoint.AddressFamily==AddressFamily.InterNetwork) {
@@ -389,9 +449,13 @@ namespace PeerCastStation.PCP
         }
       }
       else if (atom.Name==Atom.PCP_QUIT) {
-        quit = true;
+        if (atom.GetInt32() == Atom.PCP_ERROR_QUIT + Atom.PCP_ERROR_UNAVAILABLE) {
+          Close(CloseReason.Unavailable);
+        }
+        else {
+          Close(CloseReason.ChannelExit);
+        }
       }
-      return quit;
     }
 
     public void Close()

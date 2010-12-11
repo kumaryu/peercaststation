@@ -409,6 +409,23 @@ namespace PeerCastStation.Core
     public const byte PCP_HOST_FLAGS1_RECV    = 0x10;
     public const byte PCP_HOST_FLAGS1_CIN     = 0x20;
     public const byte PCP_HOST_FLAGS1_PRIVATE = 0x40;
+    public const int PCP_ERROR_QUIT    = 1000;
+    public const int PCP_ERROR_BCST    = 2000;
+    public const int PCP_ERROR_READ    = 3000;
+    public const int PCP_ERROR_WRITE   = 4000;
+    public const int PCP_ERROR_GENERAL = 5000;
+
+    public const int PCP_ERROR_SKIP             = 1;
+    public const int PCP_ERROR_ALREADYCONNECTED = 2;
+    public const int PCP_ERROR_UNAVAILABLE      = 3;
+    public const int PCP_ERROR_LOOPBACK         = 4;
+    public const int PCP_ERROR_NOTIDENTIFIED    = 5;
+    public const int PCP_ERROR_BADRESPONSE      = 6;
+    public const int PCP_ERROR_BADAGENT         = 7;
+    public const int PCP_ERROR_OFFAIR           = 8;
+    public const int PCP_ERROR_SHUTDOWN         = 9;
+    public const int PCP_ERROR_NOROOT           = 10;
+    public const int PCP_ERROR_BANNED           = 11;
 
     private byte[] value = null;
     private AtomCollection children = null;
