@@ -1227,6 +1227,7 @@ namespace PeerCastStation.Core
     : INotifyPropertyChanged
   {
     private Uri sourceUri = null;
+    private Host sourceHost = null;
     private ChannelStatus status = ChannelStatus.Idle;
     private ISourceStream sourceStream = null;
     private ObservableCollection<IOutputStream> outputStreams = new ObservableCollection<IOutputStream>();
@@ -1255,6 +1256,12 @@ namespace PeerCastStation.Core
     {
       get { return sourceUri; }
     }
+
+    public Host SourceHost
+    {
+      get { return sourceHost; }
+    }
+
     /// <summary>
     /// ソースストリームを取得および設定します
     /// </summary>
@@ -1326,6 +1333,73 @@ namespace PeerCastStation.Core
       }
     }
 
+    private class IgnoredHosts
+    {
+      private Dictionary<Host, int> ignoredHosts = new Dictionary<Host, int>();
+      private int threshold;
+      public IgnoredHosts(int threshold)
+      {
+        this.threshold = threshold;
+      }
+
+      public void Add(Host host)
+      {
+        ignoredHosts[host] = Environment.TickCount;
+      }
+
+      public bool Contains(Host host)
+      {
+        if (ignoredHosts.ContainsKey(host)) {
+          int tick = Environment.TickCount;
+          return threshold < tick - ignoredHosts[host];
+        }
+        else {
+          return false;
+        }
+      }
+
+      public void Clear()
+      {
+        ignoredHosts.Clear();
+      }
+    }
+    private IgnoredHosts ignoredHosts = new IgnoredHosts(30 * 1000); //30sec
+
+    /// <summary>
+    /// 指定したホストが接続先として選択されないように指定します。
+    /// 一度無視されたホストは一定時間経過した後、再度選択されるようになります
+    /// </summary>
+    /// <param name="host">接続先として選択されないようにするホスト</param>
+    public void IgnoreHost(Host host)
+    {
+      ignoredHosts.Add(host);
+    }
+
+    /// <summary>
+    /// SourceStreamが次に接続しにいくべき場所を選択して返します。
+    /// IgnoreHostで無視されているホストは一定時間選択されません
+    /// </summary>
+    /// <returns>次に接続すべきホスト。無い場合はnull</returns>
+    public Host SelectSourceHost()
+    {
+      var hosts = new List<Host>();
+      foreach (var node in nodes) {
+        if (!ignoredHosts.Contains(node.Host)) {
+          hosts.Add(node.Host);
+        }
+      }
+      if (hosts.Count > 0) {
+        int idx = new Random().Next(hosts.Count);
+        return hosts[idx];
+      }
+      else if (!ignoredHosts.Contains(sourceHost)) {
+        return sourceHost;
+      }
+      else {
+        return null;
+      }
+    }
+
     public void Start()
     {
       var sync = SynchronizationContext.Current ?? new SynchronizationContext();
@@ -1373,8 +1447,13 @@ namespace PeerCastStation.Core
     public Channel(Guid channel_id, ISourceStream source, Uri source_uri)
     {
       sourceUri = source_uri;
-      sourceStream  = source;
-      channelInfo   = new ChannelInfo(channel_id);
+      sourceStream = source;
+      sourceHost = new Host();
+      var port = sourceUri.Port < 0 ? 7144 : sourceUri.Port;
+      foreach (var addr in Dns.GetHostAddresses(sourceUri.DnsSafeHost)) {
+        sourceHost.Addresses.Add(new IPEndPoint(addr, port));
+      }
+      channelInfo = new ChannelInfo(channel_id);
       channelInfo.PropertyChanged += (sender, e) => {
         OnPropertyChanged("ChannelInfo");
       };

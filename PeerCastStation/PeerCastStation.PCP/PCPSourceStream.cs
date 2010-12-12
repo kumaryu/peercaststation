@@ -31,8 +31,7 @@ namespace PeerCastStation.PCP
     private Channel channel;
     private TcpClient connection;
     private NetworkStream stream;
-    private IPEndPoint tracker = null;
-    private IPEndPoint uphost = null;
+    private Host uphost = null;
     private bool closed = true;
     public enum SourceStreamState {
       Idle,
@@ -104,12 +103,35 @@ namespace PeerCastStation.PCP
       syncContext.ProcessAll();
     }
 
-    private void Connect(IPEndPoint host)
+    private Host SelectSourceHost()
+    {
+      var res = new Host[1];
+      core.SynchronizationContext.Send(r => {
+        ((Host[])r)[0] = channel.SelectSourceHost();
+      }, res);
+      if (res[0] != null &&
+          res[0].Addresses.Any(x => x.AddressFamily == AddressFamily.InterNetwork)) {
+        return res[0];
+      }
+      else {
+        return null;
+      }
+    }
+
+    private void Connect(Host host)
     {
       connection = new TcpClient();
-      connection.Connect(host);
+      IPEndPoint point = host.Addresses.First(x => x.AddressFamily == AddressFamily.InterNetwork);
+      connection.Connect(point);
       stream = connection.GetStream();
       StartRelayRequest();
+    }
+
+    private void IgnoreHost(Host host)
+    {
+      core.SynchronizationContext.Post(dummy => {
+        channel.IgnoreHost(host);
+      }, null);
     }
 
     private void Close(CloseReason reason)
@@ -121,33 +143,33 @@ namespace PeerCastStation.PCP
         closed = true;
         break;
       case CloseReason.ChannelExit:
-        if (uphost == tracker) {
+        if (uphost == channel.SourceHost) {
           state = SourceStreamState.Closed;
           closed = true;
         }
         else {
-          ignoredHosts.Add(uphost);
+          IgnoreHost(uphost);
           state = SourceStreamState.Connect;
         }
         break;
       case CloseReason.ConnectionError:
-        if (uphost == tracker) {
+        if (uphost == channel.SourceHost) {
           //TODO: 時間をおいてリトライ
           state = SourceStreamState.Connect;
         }
         else {
-          ignoredHosts.Add(uphost);
+          IgnoreHost(uphost);
           state = SourceStreamState.Connect;
         }
         break;
       case CloseReason.AccessDenied:
       case CloseReason.ChannelNotFound:
-        if (uphost == tracker) {
+        if (uphost == channel.SourceHost) {
           state = SourceStreamState.Closed;
           closed = true;
         }
         else {
-          ignoredHosts.Add(uphost);
+          IgnoreHost(uphost);
           state = SourceStreamState.Connect;
         }
         break;
@@ -227,59 +249,6 @@ namespace PeerCastStation.PCP
       }
     }
 
-    private class IgnoredHosts
-    {
-      private Dictionary<IPEndPoint, int> ignoredHosts = new Dictionary<IPEndPoint, int>();
-      private int threshold;
-      public IgnoredHosts(int threshold)
-      {
-        this.threshold = threshold;
-      }
-
-      public void Add(IPEndPoint host)
-      {
-        ignoredHosts[host] = Environment.TickCount;
-      }
-
-      public bool Contains(IPEndPoint host)
-      {
-        if (ignoredHosts.ContainsKey(host)) {
-          int tick = Environment.TickCount;
-          return threshold < tick - ignoredHosts[host];
-        }
-        else {
-          return false;
-        }
-      }
-
-      public void Clear()
-      {
-        ignoredHosts.Clear();
-      }
-    }
-    private IgnoredHosts ignoredHosts = new IgnoredHosts(30 * 1000); //30sec
-    private IPEndPoint SelectHost()
-    {
-      var hosts = new List<IPEndPoint>();
-      if (!ignoredHosts.Contains(tracker)) {
-        hosts.Add(tracker);
-      }
-      foreach (var node in channel.Nodes) {
-        foreach (var host in node.Host.Addresses) {
-          if (!ignoredHosts.Contains(host)) {
-            hosts.Add(host);
-          }
-        }
-      }
-      if (hosts.Count > 0) {
-        int idx = new Random().Next(hosts.Count);
-        return hosts[idx];
-      }
-      else {
-        return null;
-      }
-    }
-
     public void Start(Uri tracker_uri, Channel channel)
     {
       if (this.syncContext == null) {
@@ -288,22 +257,13 @@ namespace PeerCastStation.PCP
       }
       this.closed = false;
       this.channel = channel;
-      if (tracker_uri != null) {
-        var port = tracker_uri.Port < 0 ? 7144 : tracker_uri.Port;
-        foreach (var addr in Dns.GetHostAddresses(tracker_uri.DnsSafeHost)) {
-          var host = new IPEndPoint(addr, port);
-          if (host.AddressFamily==AddressFamily.InterNetwork) {
-            this.tracker = host;
-          }
-        }
-      }
       state = SourceStreamState.Connect;
       while (!closed) {
         switch (state) {
         case SourceStreamState.Idle:
           break;
         case SourceStreamState.Connect:
-          uphost = SelectHost();
+          uphost = SelectSourceHost();
           if (uphost != null) {
             Connect(uphost);
             StartReceive();
