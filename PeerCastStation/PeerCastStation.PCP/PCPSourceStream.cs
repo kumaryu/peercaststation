@@ -313,133 +313,165 @@ namespace PeerCastStation.PCP
 
     protected void ProcessAtom(Atom atom)
     {
-      if (atom.Name==Atom.PCP_HELO) {
-        var res = new Atom(Atom.PCP_OLEH, new AtomCollection());
-        if (connection.Client.RemoteEndPoint.AddressFamily==AddressFamily.InterNetwork) {
-          res.Children.SetHeloRemoteIP(((IPEndPoint)connection.Client.RemoteEndPoint).Address);
-        }
-        res.Children.SetHeloAgent("PeerCastStation/1.0");
-        res.Children.SetHeloSessionID(core.Host.SessionID);
-        res.Children.SetHeloPort((short)core.Host.Addresses[0].Port);
-        res.Children.SetHeloVersion(1218);
-        AtomWriter.Write(sendStream, res);
-      }
-      else if (atom.Name==Atom.PCP_OLEH) {
-        core.SynchronizationContext.Post(dummy => {
-          var rip = atom.Children.GetHeloRemoteIP();
-          if (!core.Host.Addresses.Any(x => x.Address == rip)) {
-            core.Host.Addresses.Add(new IPEndPoint(rip, core.Host.Addresses[0].Port));
-          }
-        }, null);
-      }
-      else if (atom.Name==Atom.PCP_OK) {
-      }
-      else if (atom.Name==Atom.PCP_CHAN) {
-        foreach (var c in atom.Children) ProcessAtom(c);
-      }
-      else if (atom.Name==Atom.PCP_CHAN_PKT) {
-        var pkt_type = atom.Children.GetChanPktType();
-        var pkt_data = atom.Children.GetChanPktData();
-        if (pkt_type!=null && pkt_data!=null) {
-          if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_HEAD) {
-            core.SynchronizationContext.Post(dummy => {
-              channel.ContentHeader = new Content(0, pkt_data);
-            }, null);
-          }
-          else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_DATA) {
-            var pkt_pos = atom.Children.GetChanPktPos();
-            if (pkt_pos != null) {
-              core.SynchronizationContext.Post(dummy => {
-                channel.Contents.Add(new Content((long)pkt_pos, pkt_data));
-              }, null);
-            }
-          }
-          else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_META) {
-          }
-        }
-      }
-      else if (atom.Name==Atom.PCP_CHAN_INFO) {
-        core.SynchronizationContext.Post(dummy => {
-          var name = atom.Children.GetChanInfoName();
-          if (name != null) channel.ChannelInfo.Name = name;
-          channel.ChannelInfo.Extra.SetChanInfo(atom.Children);
-        }, null);
-      }
-      else if (atom.Name==Atom.PCP_CHAN_TRACK) {
-        channel.ChannelInfo.Extra.SetChanTrack(atom.Children);
-      }
-      else if (atom.Name==Atom.PCP_BCST) {
-        var dest = atom.Children.GetBcstDest();
-        if (dest==null || dest==core.Host.SessionID) {
-          foreach (var c in atom.Children) ProcessAtom(c);
-        }
-        var ttl = atom.Children.GetBcstTTL();
-        var hops = atom.Children.GetBcstHops();
-        var from = atom.Children.GetBcstFrom();
-        var group = atom.Children.GetBcstGroup();
-        if (ttl != null && hops != null && group != null && from != null && ttl<hops) {
-          //TODO: HOPSを増やしてまわす
-        }
-      }
-      else if (atom.Name == Atom.PCP_HOST) {
-        var session_id = atom.Children.GetHostSessionID();
-        if (session_id!=null) {
-          core.SynchronizationContext.Post(dummy => {
-            var node = channel.Nodes.FirstOrDefault(x => x.Host.SessionID == session_id);
-            if (node == null) {
-              node = new Node(new Host());
-              node.Host.SessionID = (Guid)session_id;
-              channel.Nodes.Add(node);
-            }
-            node.Host.Extra.Update(atom.Children);
-            node.DirectCount = atom.Children.GetHostNumListeners() ?? 0;
-            node.RelayCount = atom.Children.GetHostNumRelays() ?? 0;
-            var flags1 = atom.Children.GetHostFlags1();
-            if (flags1 != null) {
-              node.Host.IsFirewalled = (flags1 & Atom.PCP_HOST_FLAGS1_PUSH) != 0;
-              node.IsRelayFull = (flags1 & Atom.PCP_HOST_FLAGS1_RELAY) == 0;
-              node.IsDirectFull = (flags1 & Atom.PCP_HOST_FLAGS1_DIRECT) == 0;
-              node.IsReceiving = (flags1 & Atom.PCP_HOST_FLAGS1_RECV) != 0;
-              node.IsControlFull = (flags1 & Atom.PCP_HOST_FLAGS1_CIN) == 0;
-            }
+           if (atom.Name==Atom.PCP_HELO)       OnPCPHelo(atom);
+      else if (atom.Name==Atom.PCP_OLEH)       OnPCPOleh(atom);
+      else if (atom.Name==Atom.PCP_OK)         OnPCPOk(atom);
+      else if (atom.Name==Atom.PCP_CHAN)       OnPCPChan(atom);
+      else if (atom.Name==Atom.PCP_CHAN_PKT)   OnPCPChanPkt(atom);
+      else if (atom.Name==Atom.PCP_CHAN_INFO)  OnPCPChanInfo(atom);
+      else if (atom.Name==Atom.PCP_CHAN_TRACK) OnPCPChanTrack(atom);
+      else if (atom.Name==Atom.PCP_BCST)       OnPCPBcst(atom);
+      else if (atom.Name==Atom.PCP_HOST)       OnPCPHost(atom);
+      else if (atom.Name==Atom.PCP_QUIT)       OnPCPQuit(atom);
+    }
 
-            var ip = new IPEndPoint(IPAddress.Any, 0);
-            foreach (var c in atom.Children) {
-              if (c.Name == Atom.PCP_HOST_IP) {
-                IPAddress addr;
-                if (c.TryGetIPv4Address(out addr)) {
-                  ip.Address = addr;
-                  if (ip.Port != 0) {
-                    if (!node.Host.Addresses.Any(x => x == ip)) {
-                      node.Host.Addresses.Add(ip);
-                    }
-                    ip = new IPEndPoint(IPAddress.Any, 0);
-                  }
-                }
-              }
-              else if (c.Name == Atom.PCP_HOST_PORT) {
-                short port;
-                if (c.TryGetInt16(out port)) {
-                  ip.Port = port;
-                  if (ip.Address != IPAddress.Any) {
-                    if (node.Host.Addresses.Any(x => x == ip)) {
-                      node.Host.Addresses.Add(ip);
-                    }
-                    ip = new IPEndPoint(IPAddress.Any, 0);
-                  }
-                }
-              }
-            }
+    private void OnPCPHelo(Atom atom)
+    {
+      var res = new Atom(Atom.PCP_OLEH, new AtomCollection());
+      if (connection.Client.RemoteEndPoint.AddressFamily==AddressFamily.InterNetwork) {
+        res.Children.SetHeloRemoteIP(((IPEndPoint)connection.Client.RemoteEndPoint).Address);
+      }
+      res.Children.SetHeloAgent("PeerCastStation/1.0");
+      res.Children.SetHeloSessionID(core.Host.SessionID);
+      res.Children.SetHeloPort((short)core.Host.Addresses[0].Port);
+      res.Children.SetHeloVersion(1218);
+      AtomWriter.Write(sendStream, res);
+    }
+
+    private void OnPCPOleh(Atom atom)
+    {
+      core.SynchronizationContext.Post(dummy => {
+        var rip = atom.Children.GetHeloRemoteIP();
+        if (!core.Host.Addresses.Any(x => x.Address == rip)) {
+          core.Host.Addresses.Add(new IPEndPoint(rip, core.Host.Addresses[0].Port));
+        }
+      }, null);
+    }
+
+    private void OnPCPOk(Atom atom)
+    {
+    }
+
+    private void OnPCPChan(Atom atom)
+    {
+      foreach (var c in atom.Children) {
+        ProcessAtom(c);
+      }
+    }
+
+    private void OnPCPChanPkt(Atom atom)
+    {
+      var pkt_type = atom.Children.GetChanPktType();
+      var pkt_data = atom.Children.GetChanPktData();
+      if (pkt_type!=null && pkt_data!=null) {
+        if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_HEAD) {
+          core.SynchronizationContext.Post(dummy => {
+            channel.ContentHeader = new Content(0, pkt_data);
           }, null);
         }
+        else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_DATA) {
+          var pkt_pos = atom.Children.GetChanPktPos();
+          if (pkt_pos != null) {
+            core.SynchronizationContext.Post(dummy => {
+              channel.Contents.Add(new Content((long)pkt_pos, pkt_data));
+            }, null);
+          }
+        }
+        else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_META) {
+        }
       }
-      else if (atom.Name==Atom.PCP_QUIT) {
-        if (atom.GetInt32() == Atom.PCP_ERROR_QUIT + Atom.PCP_ERROR_UNAVAILABLE) {
-          Close(CloseReason.Unavailable);
-        }
-        else {
-          Close(CloseReason.ChannelExit);
-        }
+    }
+
+    private void OnPCPChanInfo(Atom atom)
+    {
+      core.SynchronizationContext.Post(dummy => {
+        var name = atom.Children.GetChanInfoName();
+        if (name != null) channel.ChannelInfo.Name = name;
+        channel.ChannelInfo.Extra.SetChanInfo(atom.Children);
+      }, null);
+    }
+
+    private void OnPCPChanTrack(Atom atom)
+    {
+      channel.ChannelInfo.Extra.SetChanTrack(atom.Children);
+    }
+
+    private void OnPCPBcst(Atom atom)
+    {
+      var dest = atom.Children.GetBcstDest();
+      if (dest==null || dest==core.Host.SessionID) {
+        foreach (var c in atom.Children) ProcessAtom(c);
+      }
+      var ttl = atom.Children.GetBcstTTL();
+      var hops = atom.Children.GetBcstHops();
+      var from = atom.Children.GetBcstFrom();
+      var group = atom.Children.GetBcstGroup();
+      if (ttl != null && hops != null && group != null && from != null && ttl<hops) {
+        //TODO: HOPSを増やしてまわす
+      }
+    }
+
+    private void OnPCPHost(Atom atom)
+    {
+      var session_id = atom.Children.GetHostSessionID();
+      if (session_id!=null) {
+        core.SynchronizationContext.Post(dummy => {
+          var node = channel.Nodes.FirstOrDefault(x => x.Host.SessionID == session_id);
+          if (node == null) {
+            node = new Node(new Host());
+            node.Host.SessionID = (Guid)session_id;
+            channel.Nodes.Add(node);
+          }
+          node.Host.Extra.Update(atom.Children);
+          node.DirectCount = atom.Children.GetHostNumListeners() ?? 0;
+          node.RelayCount = atom.Children.GetHostNumRelays() ?? 0;
+          var flags1 = atom.Children.GetHostFlags1();
+          if (flags1 != null) {
+            node.Host.IsFirewalled = (flags1 & Atom.PCP_HOST_FLAGS1_PUSH) != 0;
+            node.IsRelayFull = (flags1 & Atom.PCP_HOST_FLAGS1_RELAY) == 0;
+            node.IsDirectFull = (flags1 & Atom.PCP_HOST_FLAGS1_DIRECT) == 0;
+            node.IsReceiving = (flags1 & Atom.PCP_HOST_FLAGS1_RECV) != 0;
+            node.IsControlFull = (flags1 & Atom.PCP_HOST_FLAGS1_CIN) == 0;
+          }
+
+          var ip = new IPEndPoint(IPAddress.Any, 0);
+          foreach (var c in atom.Children) {
+            if (c.Name == Atom.PCP_HOST_IP) {
+              IPAddress addr;
+              if (c.TryGetIPv4Address(out addr)) {
+                ip.Address = addr;
+                if (ip.Port != 0) {
+                  if (!node.Host.Addresses.Any(x => x == ip)) {
+                    node.Host.Addresses.Add(ip);
+                  }
+                  ip = new IPEndPoint(IPAddress.Any, 0);
+                }
+              }
+            }
+            else if (c.Name == Atom.PCP_HOST_PORT) {
+              short port;
+              if (c.TryGetInt16(out port)) {
+                ip.Port = port;
+                if (ip.Address != IPAddress.Any) {
+                  if (node.Host.Addresses.Any(x => x == ip)) {
+                    node.Host.Addresses.Add(ip);
+                  }
+                  ip = new IPEndPoint(IPAddress.Any, 0);
+                }
+              }
+            }
+          }
+        }, null);
+      }
+    }
+
+    private void OnPCPQuit(Atom atom)
+    {
+      if (atom.GetInt32() == Atom.PCP_ERROR_QUIT + Atom.PCP_ERROR_UNAVAILABLE) {
+        Close(CloseReason.Unavailable);
+      }
+      else {
+        Close(CloseReason.ChannelExit);
       }
     }
 
