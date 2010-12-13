@@ -32,9 +32,9 @@ namespace PeerCastStation.PCP
     private TcpClient connection;
     private NetworkStream stream;
     private Host uphost = null;
-    private bool closed = true;
+    private int connectWait = Environment.TickCount;
     public enum SourceStreamState {
-      Idle,
+      ConnectWait,
       Connect,
       RelayRequest,
       Receiving,
@@ -50,7 +50,7 @@ namespace PeerCastStation.PCP
       NodeNotFound,
       UserShutdown,
     }
-    private SourceStreamState state = SourceStreamState.Idle;
+    private SourceStreamState state = SourceStreamState.Connect;
     private PeerCastStation.Core.QueuedSynchronizationContext syncContext;
 
     MemoryStream recvStream = new MemoryStream();
@@ -59,8 +59,9 @@ namespace PeerCastStation.PCP
     {
       if (stream != null) {
         stream.BeginRead(recvBuffer, 0, recvBuffer.Length, (ar) => {
-          if (stream != null) {
-            int bytes = stream.EndRead(ar);
+          NetworkStream s = (NetworkStream)ar.AsyncState;
+          try {
+            int bytes = s.EndRead(ar);
             if (bytes > 0) {
               recvStream.Seek(0, SeekOrigin.End);
               recvStream.Write(recvBuffer, 0, bytes);
@@ -68,7 +69,11 @@ namespace PeerCastStation.PCP
               StartReceive();
             }
           }
-        }, null);
+          catch (ObjectDisposedException) {
+          }
+          catch (IOException) {
+          }
+        }, stream);
       }
     }
 
@@ -81,12 +86,16 @@ namespace PeerCastStation.PCP
         sendStream.SetLength(0);
         sendStream.Position = 0;
         stream.BeginWrite(writeBuffer, 0, writeBuffer.Length, (ar) => {
-          if (stream!=null) {
-            stream.EndWrite(ar);
+          NetworkStream s = (NetworkStream)ar.AsyncState;
+          try {
+            s.EndWrite(ar);
+          }
+          catch (ObjectDisposedException) {
+          }
+          catch (IOException) {
           }
           writeBuffer = null;
-          CheckSend();
-        }, null);
+        }, stream);
       }
     }
 
@@ -140,46 +149,58 @@ namespace PeerCastStation.PCP
       case CloseReason.UserShutdown:
       case CloseReason.NodeNotFound:
         state = SourceStreamState.Closed;
-        closed = true;
         break;
       case CloseReason.ChannelExit:
         if (uphost == channel.SourceHost) {
           state = SourceStreamState.Closed;
-          closed = true;
         }
         else {
           IgnoreHost(uphost);
-          state = SourceStreamState.Connect;
+          StartConnect();
         }
         break;
       case CloseReason.ConnectionError:
         if (uphost == channel.SourceHost) {
-          //TODO: 時間をおいてリトライ
-          state = SourceStreamState.Connect;
+          //30秒おいてリトライ
+          connectWait = Environment.TickCount + 30 * 1000;
+          state = SourceStreamState.ConnectWait;
         }
         else {
           IgnoreHost(uphost);
-          state = SourceStreamState.Connect;
+          StartConnect();
         }
         break;
       case CloseReason.AccessDenied:
       case CloseReason.ChannelNotFound:
         if (uphost == channel.SourceHost) {
           state = SourceStreamState.Closed;
-          closed = true;
         }
         else {
           IgnoreHost(uphost);
-          state = SourceStreamState.Connect;
+          StartConnect();
         }
         break;
       }
       if (connection != null) {
-        connection.Close();
         stream.Close();
-        connection = null;
+        connection.Close();
         stream = null;
+        sendStream.SetLength(0);
+        sendStream.Position = 0;
+        recvStream.SetLength(0);
+        recvStream.Position = 0;
       }
+    }
+
+    private void StartConnect()
+    {
+      uphost = SelectSourceHost();
+      state = SourceStreamState.Connect;
+    }
+
+    private void RetryConnect()
+    {
+      state = SourceStreamState.Connect;
     }
 
     private void StartRelayRequest()
@@ -255,15 +276,19 @@ namespace PeerCastStation.PCP
         this.syncContext = new QueuedSynchronizationContext();
         SynchronizationContext.SetSynchronizationContext(this.syncContext);
       }
-      this.closed = false;
       this.channel = channel;
-      state = SourceStreamState.Connect;
-      while (!closed) {
+      StartConnect();
+      while (state!=SourceStreamState.Closed) {
         switch (state) {
-        case SourceStreamState.Idle:
+        case SourceStreamState.ConnectWait:
+          if (Environment.TickCount - connectWait > 0) {
+            RetryConnect();
+          }
+          else {
+            Thread.Sleep(1);
+          }
           break;
         case SourceStreamState.Connect:
-          uphost = SelectSourceHost();
           if (uphost != null) {
             Connect(uphost);
             StartReceive();
@@ -420,7 +445,7 @@ namespace PeerCastStation.PCP
 
     public void Close()
     {
-      if (!closed) {
+      if (state!=SourceStreamState.Closed) {
         syncContext.Post((x) => { Close(CloseReason.UserShutdown); }, null);
       }
     }
