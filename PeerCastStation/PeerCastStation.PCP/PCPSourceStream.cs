@@ -131,14 +131,23 @@ namespace PeerCastStation.PCP
     {
       connection = new TcpClient();
       IPEndPoint point = host.Addresses.First(x => x.AddressFamily == AddressFamily.InterNetwork);
-      connection.Connect(point);
-      stream = connection.GetStream();
-      StartRelayRequest();
+      try {
+        connection.Connect(point);
+        stream = connection.GetStream();
+        StartRelayRequest();
+      }
+      catch (SocketException) {
+        connection.Close();
+        connection = null;
+        if (stream!=null) stream.Close();
+        stream = null;
+        Close(CloseReason.ConnectionError);
+      }
     }
 
     private void IgnoreHost(Host host)
     {
-      core.SynchronizationContext.Post(dummy => {
+      core.SynchronizationContext.Send(dummy => {
         channel.IgnoreHost(host);
       }, null);
     }
@@ -150,26 +159,12 @@ namespace PeerCastStation.PCP
       case CloseReason.NodeNotFound:
         state = SourceStreamState.Closed;
         break;
+      case CloseReason.Unavailable:
+        IgnoreHost(uphost);
+        StartConnect();
+        break;
       case CloseReason.ChannelExit:
-        if (uphost == channel.SourceHost) {
-          state = SourceStreamState.Closed;
-        }
-        else {
-          IgnoreHost(uphost);
-          StartConnect();
-        }
-        break;
       case CloseReason.ConnectionError:
-        if (uphost == channel.SourceHost) {
-          //30秒おいてリトライ
-          connectWait = Environment.TickCount + 30 * 1000;
-          state = SourceStreamState.ConnectWait;
-        }
-        else {
-          IgnoreHost(uphost);
-          StartConnect();
-        }
-        break;
       case CloseReason.AccessDenied:
       case CloseReason.ChannelNotFound:
         if (uphost == channel.SourceHost) {
@@ -185,6 +180,7 @@ namespace PeerCastStation.PCP
         stream.Close();
         connection.Close();
         stream = null;
+        connection = null;
         sendStream.SetLength(0);
         sendStream.Position = 0;
         recvStream.SetLength(0);

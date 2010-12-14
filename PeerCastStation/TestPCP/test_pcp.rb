@@ -205,4 +205,142 @@ class TestPCPSourceStream < Test::Unit::TestCase
       pos += channel.contents[i].data.length
     end
   end
+
+  def test_connection_tracker_error
+    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    source     = PeerCastStation::PCP::PCPSourceStream.new(@core)
+    channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
+    channel    = PeerCastStation::Core::Channel.new(channel_id, source, System::Uri.new('http://localhost:7146'))
+    channel.start
+    120.times do 
+      break if channel.status==PeerCastStation::Core::ChannelStatus.closed 
+      sleep(1)
+    end
+    assert_equal(PeerCastStation::Core::ChannelStatus.closed, channel.status)
+  end
+
+  def test_connection_tracker_channel_not_found
+    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    source     = PeerCastStation::PCP::PCPSourceStream.new(@core)
+    channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
+    channel    = PeerCastStation::Core::Channel.new(channel_id, source, System::Uri.new('http://localhost:7146'))
+    @server = MockPCPServer.new('localhost', 7146)
+    @server.client_proc = proc {|sock|
+      headers = []
+      begin
+        res = sock.gets("\r\n")
+        headers.push(res)
+      end while res!="\r\n"
+      sock.write("HTTP/1.0 404 OK\r\n")
+      sock.write("\r\n")
+    }
+    channel.start
+    @server.thread.join
+    @server.close
+    120.times do 
+      break if channel.status==PeerCastStation::Core::ChannelStatus.closed 
+      sleep(1)
+    end
+    assert_equal(PeerCastStation::Core::ChannelStatus.closed, channel.status)
+  end
+  
+  def test_connection_tracker_quit
+    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    source     = PeerCastStation::PCP::PCPSourceStream.new(@core)
+    channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
+    channel    = PeerCastStation::Core::Channel.new(channel_id, source, System::Uri.new('http://localhost:7146'))
+    @server = MockPCPServer.new('localhost', 7146)
+    @server.client_proc = proc {|sock|
+      res = nil
+      headers = []
+      begin
+        res = sock.gets("\r\n")
+        headers.push(res)
+      end while res!="\r\n"
+      sock.write("HTTP/1.0 200 OK\r\n")
+      sock.write("\r\n")
+      pcps = AtomStream.new(sock)
+      packet = pcps.read
+      pcps.write_parent(PCP_OLEH) do |s|
+        s.write_bytes(PCP_HELO_SESSIONID, @session_id.to_byte_array.to_a.pack('C*'))
+        s.write_short(PCP_HELO_PORT, 7146)
+        a = sock.peeraddr[3].scan(/(\d+)\.(\d+).(\d+).(\d+)/)[0].collect {|d| d.to_i }.reverse.pack('C*')
+        s.write_bytes(PCP_HELO_REMOTEIP, a)
+        s.write_int(PCP_HELO_VERSION, 1218)
+        s.write_string(PCP_HELO_AGENT, 'MockPCPServer')
+      end
+      pcps.write_int(PCP_OK, 0)
+      pcps.write_int(PCP_QUIT, PCP_ERROR_QUIT+PCP_ERROR_OFFAIR)
+      finished = true
+    }
+    channel.start
+    @server.thread.join
+    @server.close
+    120.times do 
+      break if channel.status==PeerCastStation::Core::ChannelStatus.closed 
+      sleep(1)
+    end
+    assert_equal(PeerCastStation::Core::ChannelStatus.closed, channel.status)
+  end
+  
+  class TestChannel < PeerCastStation::Core::Channel
+    def self.new(*args)
+      inst = super
+      inst.instance_eval do 
+        @log = []
+      end
+      inst
+    end
+    attr_accessor :log
+    
+    def select_source_host
+      res = super
+      @log << [:select_source_host, res]
+      res
+    end
+  end
+  
+  def test_connection_tracker_unavailable
+    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    source     = PeerCastStation::PCP::PCPSourceStream.new(@core)
+    channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
+    channel    = TestChannel.new(channel_id, source, System::Uri.new('http://localhost:7146'))
+    @server = MockPCPServer.new('localhost', 7146)
+    @server.client_proc = proc {|sock|
+      res = nil
+      headers = []
+      begin
+        res = sock.gets("\r\n")
+        headers.push(res)
+      end while res!="\r\n"
+      sock.write("HTTP/1.0 503 Unavailable\r\n")
+      sock.write("\r\n")
+      pcps = AtomStream.new(sock)
+      packet = pcps.read
+      pcps.write_parent(PCP_OLEH) do |s|
+        s.write_bytes(PCP_HELO_SESSIONID, @session_id.to_byte_array.to_a.pack('C*'))
+        s.write_short(PCP_HELO_PORT, 7146)
+        a = sock.peeraddr[3].scan(/(\d+)\.(\d+).(\d+).(\d+)/)[0].collect {|d| d.to_i }.reverse.pack('C*')
+        s.write_bytes(PCP_HELO_REMOTEIP, a)
+        s.write_int(PCP_HELO_VERSION, 1218)
+        s.write_string(PCP_HELO_AGENT, 'MockPCPServer')
+      end
+      pcps.write_int(PCP_OK, 0)
+      pcps.write_int(PCP_QUIT, PCP_ERROR_QUIT+PCP_ERROR_UNAVAILABLE)
+      finished = true
+    }
+    channel.start
+    @server.thread.join
+    @server.close
+    120.times do 
+      break if channel.status==PeerCastStation::Core::ChannelStatus.closed 
+      sleep(1)
+    end
+    assert_equal(PeerCastStation::Core::ChannelStatus.closed, channel.status)
+    assert_equal(2, channel.log.size)
+    assert_equal(:select_source_host, channel.log[0][0])
+    assert_not_nil(channel.log[0][1])
+    assert_equal(:select_source_host, channel.log[1][0])
+    assert_nil(channel.log[1][1])
+  end
 end

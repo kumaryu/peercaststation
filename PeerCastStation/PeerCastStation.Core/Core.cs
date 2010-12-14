@@ -1351,7 +1351,7 @@ namespace PeerCastStation.Core
       {
         if (ignoredHosts.ContainsKey(host)) {
           int tick = Environment.TickCount;
-          return threshold < tick - ignoredHosts[host];
+          return tick - ignoredHosts[host] <= threshold;
         }
         else {
           return false;
@@ -1380,7 +1380,7 @@ namespace PeerCastStation.Core
     /// IgnoreHostで無視されているホストは一定時間選択されません
     /// </summary>
     /// <returns>次に接続すべきホスト。無い場合はnull</returns>
-    public Host SelectSourceHost()
+    public virtual Host SelectSourceHost()
     {
       var hosts = new List<Host>();
       foreach (var node in nodes) {
