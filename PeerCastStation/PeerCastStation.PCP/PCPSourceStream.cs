@@ -25,6 +25,29 @@ namespace PeerCastStation.PCP
     }
   }
 
+  public enum CloseReason {
+    ConnectionError,
+    Unavailable,
+    AccessDenied,
+    ChannelExit,
+    ChannelNotFound,
+    RetryLimit,
+    NodeNotFound,
+    UserShutdown,
+  }
+
+  public class SourceClosedEventArgs : EventArgs
+  {
+    public Host Host { get; set; }
+    public CloseReason CloseReason { get; set; }
+    public SourceClosedEventArgs(Host host, CloseReason reason)
+    {
+      Host = host;
+      CloseReason = reason;
+    }
+  }
+  public delegate void SourceClosedEventHandler(object sender, SourceClosedEventArgs e);
+
   public class PCPSourceStream : ISourceStream
   {
     private PeerCastStation.Core.Core core;
@@ -40,18 +63,9 @@ namespace PeerCastStation.PCP
       Receiving,
       Closed,
     }
-    private enum CloseReason {
-      ConnectionError,
-      Unavailable,
-      AccessDenied,
-      ChannelExit,
-      ChannelNotFound,
-      RetryLimit,
-      NodeNotFound,
-      UserShutdown,
-    }
     private SourceStreamState state = SourceStreamState.Connect;
     private PeerCastStation.Core.QueuedSynchronizationContext syncContext;
+    public event SourceClosedEventHandler SourceClosed;
 
     MemoryStream recvStream = new MemoryStream();
     byte[] recvBuffer = new byte[8192];
@@ -141,7 +155,7 @@ namespace PeerCastStation.PCP
         connection = null;
         if (stream!=null) stream.Close();
         stream = null;
-        Close(CloseReason.ConnectionError);
+        OnClose(CloseReason.ConnectionError);
       }
     }
 
@@ -152,8 +166,11 @@ namespace PeerCastStation.PCP
       }, null);
     }
 
-    private void Close(CloseReason reason)
+    private void OnClose(CloseReason reason)
     {
+      if (SourceClosed != null) {
+        SourceClosed(this, new SourceClosedEventArgs(uphost, reason));
+      }
       switch (reason) {
       case CloseReason.UserShutdown:
       case CloseReason.NodeNotFound:
@@ -233,10 +250,10 @@ namespace PeerCastStation.PCP
           StartHandshake();
         }
         else if (response_code == 404) {
-          Close(CloseReason.ChannelNotFound);
+          OnClose(CloseReason.ChannelNotFound);
         }
         else {
-          Close(CloseReason.AccessDenied);
+          OnClose(CloseReason.AccessDenied);
         }
       }
     }
@@ -290,7 +307,7 @@ namespace PeerCastStation.PCP
             StartReceive();
           }
           else {
-            Close(CloseReason.NodeNotFound);
+            OnClose(CloseReason.NodeNotFound);
           }
           break;
         case SourceStreamState.RelayRequest:
@@ -464,17 +481,17 @@ namespace PeerCastStation.PCP
     private void OnPCPQuit(Atom atom)
     {
       if (atom.GetInt32() == Atom.PCP_ERROR_QUIT + Atom.PCP_ERROR_UNAVAILABLE) {
-        Close(CloseReason.Unavailable);
+        OnClose(CloseReason.Unavailable);
       }
       else {
-        Close(CloseReason.ChannelExit);
+        OnClose(CloseReason.ChannelExit);
       }
     }
 
     public void Close()
     {
       if (state!=SourceStreamState.Closed) {
-        syncContext.Post((x) => { Close(CloseReason.UserShutdown); }, null);
+        syncContext.Post((x) => { OnClose(CloseReason.UserShutdown); }, null);
       }
     }
 

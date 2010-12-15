@@ -27,6 +27,7 @@ class MockPCPServer
   attr_reader :thread
   
   def close
+    @thread.join
     @server.close
   end
 end
@@ -175,7 +176,6 @@ class TestPCPSourceStream < Test::Unit::TestCase
     }
     channel.start
     sleep(0.1) until finished
-    @server.thread.join
     @server.close
     sleep(0.1) until channel.status==PeerCastStation::Core::ChannelStatus.closed
     assert_equal('arekuma', channel.channel_info.name)
@@ -224,19 +224,9 @@ class TestPCPSourceStream < Test::Unit::TestCase
     source     = PeerCastStation::PCP::PCPSourceStream.new(@core)
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel    = PeerCastStation::Core::Channel.new(channel_id, source, System::Uri.new('http://localhost:7146'))
-    @server = MockPCPServer.new('localhost', 7146)
-    @server.client_proc = proc {|sock|
-      headers = []
-      begin
-        res = sock.gets("\r\n")
-        headers.push(res)
-      end while res!="\r\n"
-      sock.write("HTTP/1.0 404 OK\r\n")
-      sock.write("\r\n")
-    }
+    server = notfound_server(7146)
     channel.start
-    @server.thread.join
-    @server.close
+    server.close
     120.times do 
       break if channel.status==PeerCastStation::Core::ChannelStatus.closed 
       sleep(1)
@@ -249,33 +239,9 @@ class TestPCPSourceStream < Test::Unit::TestCase
     source     = PeerCastStation::PCP::PCPSourceStream.new(@core)
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel    = PeerCastStation::Core::Channel.new(channel_id, source, System::Uri.new('http://localhost:7146'))
-    @server = MockPCPServer.new('localhost', 7146)
-    @server.client_proc = proc {|sock|
-      res = nil
-      headers = []
-      begin
-        res = sock.gets("\r\n")
-        headers.push(res)
-      end while res!="\r\n"
-      sock.write("HTTP/1.0 200 OK\r\n")
-      sock.write("\r\n")
-      pcps = AtomStream.new(sock)
-      packet = pcps.read
-      pcps.write_parent(PCP_OLEH) do |s|
-        s.write_bytes(PCP_HELO_SESSIONID, @session_id.to_byte_array.to_a.pack('C*'))
-        s.write_short(PCP_HELO_PORT, 7146)
-        a = sock.peeraddr[3].scan(/(\d+)\.(\d+).(\d+).(\d+)/)[0].collect {|d| d.to_i }.reverse.pack('C*')
-        s.write_bytes(PCP_HELO_REMOTEIP, a)
-        s.write_int(PCP_HELO_VERSION, 1218)
-        s.write_string(PCP_HELO_AGENT, 'MockPCPServer')
-      end
-      pcps.write_int(PCP_OK, 0)
-      pcps.write_int(PCP_QUIT, PCP_ERROR_QUIT+PCP_ERROR_OFFAIR)
-      finished = true
-    }
+    server = offair_server(7146)
     channel.start
-    @server.thread.join
-    @server.close
+    server.close
     120.times do 
       break if channel.status==PeerCastStation::Core::ChannelStatus.closed 
       sleep(1)
@@ -305,33 +271,9 @@ class TestPCPSourceStream < Test::Unit::TestCase
     source     = PeerCastStation::PCP::PCPSourceStream.new(@core)
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel    = TestChannel.new(channel_id, source, System::Uri.new('http://localhost:7146'))
-    @server = MockPCPServer.new('localhost', 7146)
-    @server.client_proc = proc {|sock|
-      res = nil
-      headers = []
-      begin
-        res = sock.gets("\r\n")
-        headers.push(res)
-      end while res!="\r\n"
-      sock.write("HTTP/1.0 503 Unavailable\r\n")
-      sock.write("\r\n")
-      pcps = AtomStream.new(sock)
-      packet = pcps.read
-      pcps.write_parent(PCP_OLEH) do |s|
-        s.write_bytes(PCP_HELO_SESSIONID, @session_id.to_byte_array.to_a.pack('C*'))
-        s.write_short(PCP_HELO_PORT, 7146)
-        a = sock.peeraddr[3].scan(/(\d+)\.(\d+).(\d+).(\d+)/)[0].collect {|d| d.to_i }.reverse.pack('C*')
-        s.write_bytes(PCP_HELO_REMOTEIP, a)
-        s.write_int(PCP_HELO_VERSION, 1218)
-        s.write_string(PCP_HELO_AGENT, 'MockPCPServer')
-      end
-      pcps.write_int(PCP_OK, 0)
-      pcps.write_int(PCP_QUIT, PCP_ERROR_QUIT+PCP_ERROR_UNAVAILABLE)
-      finished = true
-    }
+    server = unavailable_server(7146)
     channel.start
-    @server.thread.join
-    @server.close
+    server.close
     120.times do 
       break if channel.status==PeerCastStation::Core::ChannelStatus.closed 
       sleep(1)
@@ -343,4 +285,114 @@ class TestPCPSourceStream < Test::Unit::TestCase
     assert_equal(:select_source_host, channel.log[1][0])
     assert_nil(channel.log[1][1])
   end
+  
+  def offair_server(port)
+    server = MockPCPServer.new('localhost', port)
+    server.client_proc = proc {|sock|
+      res = nil
+      headers = []
+      begin
+        res = sock.gets("\r\n")
+        headers.push(res)
+      end while res!="\r\n"
+      sock.write("HTTP/1.0 200 Unavailable\r\n")
+      sock.write("\r\n")
+      pcps = AtomStream.new(sock)
+      packet = pcps.read
+      write_oleh(pcps, @session_id, 7146, sock)
+      pcps.write_int(PCP_OK, 0)
+      pcps.write_int(PCP_QUIT, PCP_ERROR_QUIT+PCP_ERROR_OFFAIR)
+    }
+    server
+  end
+
+  def notfound_server(port)
+    server = MockPCPServer.new('localhost', port)
+    server.client_proc = proc {|sock|
+      res = nil
+      headers = []
+      begin
+        res = sock.gets("\r\n")
+        headers.push(res)
+      end while res!="\r\n"
+      sock.write("HTTP/1.0 404 Not Found\r\n")
+      sock.write("\r\n")
+    }
+    server
+  end
+  
+  def write_oleh(stream, session_id, port, sock)
+    stream.write_parent(PCP_OLEH) do |s|
+      s.write_bytes(PCP_HELO_SESSIONID, session_id.to_byte_array.to_a.pack('C*'))
+      s.write_short(PCP_HELO_PORT, port)
+      a = sock.peeraddr[3].scan(/(\d+)\.(\d+).(\d+).(\d+)/)[0].collect {|d| d.to_i }.reverse.pack('C*')
+      s.write_bytes(PCP_HELO_REMOTEIP, a)
+      s.write_int(PCP_HELO_VERSION, 1218)
+      s.write_string(PCP_HELO_AGENT, 'MockPCPServer')
+    end
+  end
+
+  def unavailable_server(port)
+    server = MockPCPServer.new('localhost', port)
+    server.client_proc = proc {|sock|
+      res = nil
+      headers = []
+      begin
+        res = sock.gets("\r\n")
+        headers.push(res)
+      end while res!="\r\n"
+      sock.write("HTTP/1.0 503 Unavailable\r\n")
+      sock.write("\r\n")
+      pcps = AtomStream.new(sock)
+      packet = pcps.read
+      write_oleh(pcps, @session_id, 7146, sock)
+      pcps.write_int(PCP_OK, 0)
+      pcps.write_int(PCP_QUIT, PCP_ERROR_QUIT+PCP_ERROR_UNAVAILABLE)
+    }
+    server
+  end
+  
+  def node_from_addr(addr, port)
+    node = PeerCastStation::Core::Node.new(PeerCastStation::Core::Host.new)
+    node.host.addresses.add(System::Net::IPEndPoint.new(System::Net::IPAddress.parse(addr), port))
+    node
+  end
+
+  def test_connection_otherhost
+    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    source     = PeerCastStation::PCP::PCPSourceStream.new(@core)
+    channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
+    channel    = TestChannel.new(channel_id, source, System::Uri.new('http://localhost:7146'))
+    other_node = node_from_addr('127.0.0.1', 7148)
+    channel.nodes.add(other_node)
+    other   = unavailable_server(7148)
+    tracker = unavailable_server(7146)
+
+    closed_log = []
+    source.source_closed do |sender, e|
+      closed_log << [e.host, e.close_reason]
+    end
+
+    channel.start
+    other.close
+    tracker.close
+    120.times do 
+      break if channel.status==PeerCastStation::Core::ChannelStatus.closed 
+      sleep(1)
+    end
+    assert_equal(PeerCastStation::Core::ChannelStatus.closed, channel.status)
+    channel_log = channel.log
+    assert_equal(3, channel_log.size)
+    assert_equal(:select_source_host, channel_log[0][0])
+    assert_not_nil(channel_log[0][1])
+    assert_equal(:select_source_host, channel_log[1][0])
+    assert_not_nil(channel_log[1][1])
+    assert_equal(:select_source_host, channel_log[2][0])
+    assert_nil(channel_log[2][1])
+    assert_equal(3, closed_log.size)
+    assert_equal(PeerCastStation::PCP::CloseReason.unavailable, closed_log[0][1])
+    assert_equal(PeerCastStation::PCP::CloseReason.unavailable, closed_log[1][1])
+    assert_equal(PeerCastStation::PCP::CloseReason.node_not_found, closed_log[2][1])
+  end
 end
+
