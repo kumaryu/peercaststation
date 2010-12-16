@@ -358,7 +358,42 @@ class TestPCPSourceStream < Test::Unit::TestCase
     node
   end
 
-  def test_connection_otherhost
+  def test_connection_otherhost_error
+    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    source     = PeerCastStation::PCP::PCPSourceStream.new(@core)
+    channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
+    channel    = TestChannel.new(channel_id, source, System::Uri.new('http://localhost:7146'))
+    other_node = node_from_addr('127.0.0.1', 7148)
+    channel.nodes.add(other_node)
+    tracker = unavailable_server(7146)
+
+    closed_log = []
+    source.source_closed do |sender, e|
+      closed_log << [e.host, e.close_reason]
+    end
+
+    channel.start
+    tracker.close
+    120.times do 
+      break if channel.status==PeerCastStation::Core::ChannelStatus.closed 
+      sleep(1)
+    end
+    assert_equal(PeerCastStation::Core::ChannelStatus.closed, channel.status)
+    channel_log = channel.log
+    assert_equal(3, channel_log.size)
+    assert_equal(:select_source_host, channel_log[0][0])
+    assert_not_nil(channel_log[0][1])
+    assert_equal(:select_source_host, channel_log[1][0])
+    assert_not_nil(channel_log[1][1])
+    assert_equal(:select_source_host, channel_log[2][0])
+    assert_nil(channel_log[2][1])
+    assert_equal(3, closed_log.size)
+    assert_equal(PeerCastStation::PCP::CloseReason.connection_error, closed_log[0][1])
+    assert_equal(PeerCastStation::PCP::CloseReason.unavailable,      closed_log[1][1])
+    assert_equal(PeerCastStation::PCP::CloseReason.node_not_found,   closed_log[2][1])
+  end
+
+  def test_connection_otherhost_unavailable
     @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
     source     = PeerCastStation::PCP::PCPSourceStream.new(@core)
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
@@ -394,5 +429,44 @@ class TestPCPSourceStream < Test::Unit::TestCase
     assert_equal(PeerCastStation::PCP::CloseReason.unavailable, closed_log[1][1])
     assert_equal(PeerCastStation::PCP::CloseReason.node_not_found, closed_log[2][1])
   end
+
+  def test_connection_otherhost_not_found
+    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    source     = PeerCastStation::PCP::PCPSourceStream.new(@core)
+    channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
+    channel    = TestChannel.new(channel_id, source, System::Uri.new('http://localhost:7146'))
+    other_node = node_from_addr('127.0.0.1', 7148)
+    channel.nodes.add(other_node)
+    other   = notfound_server(7148)
+    tracker = unavailable_server(7146)
+
+    closed_log = []
+    source.source_closed do |sender, e|
+      closed_log << [e.host, e.close_reason]
+    end
+
+    channel.start
+    other.close
+    tracker.close
+    120.times do 
+      break if channel.status==PeerCastStation::Core::ChannelStatus.closed 
+      sleep(1)
+    end
+    assert_equal(PeerCastStation::Core::ChannelStatus.closed, channel.status)
+    channel_log = channel.log
+    assert_equal(3, channel_log.size)
+    assert_equal(:select_source_host, channel_log[0][0])
+    assert_not_nil(channel_log[0][1])
+    assert_equal(:select_source_host, channel_log[1][0])
+    assert_not_nil(channel_log[1][1])
+    assert_equal(:select_source_host, channel_log[2][0])
+    assert_nil(channel_log[2][1])
+    assert_equal(3, closed_log.size)
+    assert_equal(PeerCastStation::PCP::CloseReason.channel_not_found, closed_log[0][1])
+    assert_equal(PeerCastStation::PCP::CloseReason.unavailable,       closed_log[1][1])
+    assert_equal(PeerCastStation::PCP::CloseReason.node_not_found,    closed_log[2][1])
+  end
+
+
 end
 
