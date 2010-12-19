@@ -324,7 +324,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    protected void ProcessAtom(Atom atom)
+    protected virtual void ProcessAtom(Atom atom)
     {
            if (atom.Name==Atom.PCP_HELO)       OnPCPHelo(atom);
       else if (atom.Name==Atom.PCP_OLEH)       OnPCPOleh(atom);
@@ -338,7 +338,7 @@ namespace PeerCastStation.PCP
       else if (atom.Name==Atom.PCP_QUIT)       OnPCPQuit(atom);
     }
 
-    private void OnPCPHelo(Atom atom)
+    protected virtual void OnPCPHelo(Atom atom)
     {
       var res = new Atom(Atom.PCP_OLEH, new AtomCollection());
       if (connection.Client.RemoteEndPoint.AddressFamily==AddressFamily.InterNetwork) {
@@ -351,7 +351,7 @@ namespace PeerCastStation.PCP
       AtomWriter.Write(sendStream, res);
     }
 
-    private void OnPCPOleh(Atom atom)
+    protected virtual void OnPCPOleh(Atom atom)
     {
       core.SynchronizationContext.Post(dummy => {
         var rip = atom.Children.GetHeloRemoteIP();
@@ -361,18 +361,18 @@ namespace PeerCastStation.PCP
       }, null);
     }
 
-    private void OnPCPOk(Atom atom)
+    protected virtual void OnPCPOk(Atom atom)
     {
     }
 
-    private void OnPCPChan(Atom atom)
+    protected virtual void OnPCPChan(Atom atom)
     {
       foreach (var c in atom.Children) {
         ProcessAtom(c);
       }
     }
 
-    private void OnPCPChanPkt(Atom atom)
+    protected virtual void OnPCPChanPkt(Atom atom)
     {
       var pkt_type = atom.Children.GetChanPktType();
       var pkt_data = atom.Children.GetChanPktData();
@@ -395,7 +395,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    private void OnPCPChanInfo(Atom atom)
+    protected virtual void OnPCPChanInfo(Atom atom)
     {
       core.SynchronizationContext.Post(dummy => {
         var name = atom.Children.GetChanInfoName();
@@ -404,12 +404,12 @@ namespace PeerCastStation.PCP
       }, null);
     }
 
-    private void OnPCPChanTrack(Atom atom)
+    protected virtual void OnPCPChanTrack(Atom atom)
     {
       channel.ChannelInfo.Extra.SetChanTrack(atom.Children);
     }
 
-    private void OnPCPBcst(Atom atom)
+    protected virtual void OnPCPBcst(Atom atom)
     {
       var dest = atom.Children.GetBcstDest();
       if (dest==null || dest==core.Host.SessionID) {
@@ -424,7 +424,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    private void OnPCPHost(Atom atom)
+    protected virtual void OnPCPHost(Atom atom)
     {
       var session_id = atom.Children.GetHostSessionID();
       if (session_id!=null) {
@@ -478,7 +478,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    private void OnPCPQuit(Atom atom)
+    protected virtual void OnPCPQuit(Atom atom)
     {
       if (atom.GetInt32() == Atom.PCP_ERROR_QUIT + Atom.PCP_ERROR_UNAVAILABLE) {
         OnClose(CloseReason.Unavailable);
@@ -492,6 +492,18 @@ namespace PeerCastStation.PCP
     {
       if (state!=SourceStreamState.Closed) {
         syncContext.Post((x) => { OnClose(CloseReason.UserShutdown); }, null);
+      }
+    }
+
+    public void Post(Host from, Atom packet)
+    {
+      if (state!=SourceStreamState.Closed) {
+        syncContext.Post(x => {
+          if (uphost != from) {
+            AtomWriter.Write(sendStream, packet);
+          }
+        }
+        , null);
       }
     }
 

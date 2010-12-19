@@ -119,6 +119,12 @@ namespace PeerCastStation.Core
     /// <param name="channel">取得ストリームの追加先チャンネル</param>
     void Start(Uri tracker, Channel channel);
     /// <summary>
+    /// ストリームへパケットを送信します
+    /// </summary>
+    /// <param name="from">ブロードキャストパケットの送信元。無い場合はnull</param>
+    /// <param name="packet">送信するデータ</param>
+    void Post(Host from, Atom packet);
+    /// <summary>
     /// ストリームの取得を終了します
     /// </summary>
     void Close();
@@ -152,6 +158,12 @@ namespace PeerCastStation.Core
     /// <param name="stream">書き込み先のストリーム</param>
     /// <param name="channel">情報を流す元のチャンネル</param>
     void Start(Stream stream, Channel channel);
+    /// <summary>
+    /// ストリームへパケットを送信します
+    /// </summary>
+    /// <param name="from">ブロードキャストパケットの送信元。無い場合はnull</param>
+    /// <param name="packet">送信するデータ</param>
+    void Post(Host from, Atom packet);
     /// <summary>
     /// ストリームへの書き込みを終了します
     /// </summary>

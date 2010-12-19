@@ -467,6 +467,59 @@ class TestPCPSourceStream < Test::Unit::TestCase
     assert_equal(PeerCastStation::PCP::CloseReason.node_not_found,    closed_log[2][1])
   end
 
+  class TestPCPSourceStream < PeerCastStation::PCP::PCPSourceStream
+    def self.new(core)
+      inst = super
+      inst.instance_eval do
+        @on_pcp_ok = nil
+      end
+      inst
+    end
+    attr_accessor :on_pcp_ok
+
+    def OnPCPOk(atom)
+      @on_pcp_ok.call(atom) if @on_pcp_ok
+    end
+  end
+
+  def test_post
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
+    @core = PeerCastStation::Core::Core.new(endpoint)
+    source = TestPCPSourceStream.new(@core)
+    source.on_pcp_ok = proc {
+      source.post(
+        PeerCastStation::Core::Host.new,
+        PeerCastStation::Core::Atom.new(id4('test'), 'hogehoge'.to_clr_string))
+    }
+    channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
+    channel = PeerCastStation::Core::Channel.new(channel_id, source, System::Uri.new('http://localhost:7146'))
+    
+    server = MockPCPServer.new('localhost', 7146)
+    server.client_proc = proc {|sock|
+      res = nil
+      res = sock.gets("\r\n") while res!="\r\n"
+      sock.write("HTTP/1.0 200 OK\r\n\r\n")
+      pcps = AtomStream.new(sock)
+      packet = pcps.read
+      pcps.write_parent(PCP_OLEH) do |s|
+        s.write_bytes(PCP_HELO_SESSIONID, @session_id.to_byte_array.to_a.pack('C*'))
+        s.write_short(PCP_HELO_PORT, 7146)
+        a = sock.peeraddr[3].scan(/(\d+)\.(\d+).(\d+).(\d+)/)[0].collect {|d| d.to_i }.reverse.pack('C*')
+        s.write_bytes(PCP_HELO_REMOTEIP, a)
+        s.write_int(PCP_HELO_VERSION, 1218)
+        s.write_string(PCP_HELO_AGENT, 'MockPCPServer')
+      end
+      pcps.write_int(PCP_OK, 0)
+      packet = pcps.read
+      assert_equal(packet.command, 'test')
+      assert_equal(packet.content, "hogehoge\0")
+      pcps.write_int(PCP_QUIT, PCP_ERROR_QUIT+PCP_ERROR_OFFAIR)
+    }
+    channel.start
+    server.close
+    sleep(0.1) until channel.status==PeerCastStation::Core::ChannelStatus.closed
+  end
+
 
 end
 

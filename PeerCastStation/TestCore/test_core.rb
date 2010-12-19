@@ -64,6 +64,10 @@ class MockSourceStream
     @log = []
   end
   attr_reader :log
+
+  def post(from, packet)
+    @log << [:post, from, packet]
+  end
   
   def start(tracker, channel)
     @log << [:start, tracker, channel]
@@ -81,6 +85,10 @@ class MockOutputStream
     @log = []
   end
   attr_reader :log
+  
+  def post(from, packet)
+    @log << [:post, from, packet]
+  end
   
   def start(stream, channel)
     @log << [:start, stream, channel]
@@ -901,6 +909,10 @@ class TestCore < Test::Unit::TestCase
 end
 
 class TestCoreChannel < Test::Unit::TestCase
+  def id4(s)
+    PeerCastStation::Core::ID4.new(s.to_clr_string)
+  end
+
   def test_construct
     channel = PeerCastStation::Core::Channel.new(System::Guid.empty, MockSourceStream.new, System::Uri.new('mock://localhost'))
     assert_kind_of(MockSourceStream, channel.source_stream)
@@ -953,4 +965,31 @@ class TestCoreChannel < Test::Unit::TestCase
     assert_equal(:close, channel.output_streams[0].log[0][0])
     assert_equal('Closed', log[0])
   end
+
+  def test_broadcast
+    source = MockSourceStream.new
+    output = MockOutputStream.new
+    channel = PeerCastStation::Core::Channel.new(System::Guid.empty, source, System::Uri.new('mock://localhost'))
+    channel.output_streams.add(output)
+    channel.start
+    sleep(1)
+    from = PeerCastStation::Core::Host.new
+    packet_trackers = PeerCastStation::Core::Atom.new(id4('test'), 'trackers'.to_clr_string)
+    packet_relays   = PeerCastStation::Core::Atom.new(id4('test'), 'relays'.to_clr_string)
+    channel.broadcast(from, packet_trackers, PeerCastStation::Core::BroadcastGroup.trackers)
+    channel.broadcast(from, packet_relays,   PeerCastStation::Core::BroadcastGroup.relays)
+    sleep(1)
+    channel.close
+    source_log = source.log.select {|log| log[0]==:post }
+    output_log = output.log.select {|log| log[0]==:post }
+    assert_equal(1, source_log.size)
+    assert_equal(from,            source_log[0][1])
+    assert_equal(packet_trackers, source_log[0][2])
+    assert_equal(2, output_log.size)
+    assert_equal(from,            output_log[0][1])
+    assert_equal(packet_trackers, output_log[0][2])
+    assert_equal(from,            output_log[1][1])
+    assert_equal(packet_relays,   output_log[1][2])
+  end
 end
+

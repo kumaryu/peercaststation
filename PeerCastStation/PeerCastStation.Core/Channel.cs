@@ -100,6 +100,20 @@ namespace PeerCastStation.Core
   }
 
   /// <summary>
+  /// Broadcastの送信先を指定します
+  /// </summary>
+  public enum BroadcastGroup {
+    /// <summary>
+    /// SourceStreamを含むストリーム
+    /// </summary>
+    Trackers,
+    /// <summary>
+    /// SourceStreamを含まないストリーム
+    /// </summary>
+    Relays,
+  }
+
+  /// <summary>
   /// チャンネル接続を管理するクラスです
   /// </summary>
   public class Channel
@@ -307,6 +321,22 @@ namespace PeerCastStation.Core
           Status = ChannelStatus.Closed;
           OnClosed();
         }, Thread.CurrentThread);
+      }
+    }
+
+    /// <summary>
+    /// 接続されている各ストリームへパケットを送信します
+    /// </summary>
+    /// <param name="from">送信元のホスト</param>
+    /// <param name="packet">送信するデータ</param>
+    /// <param name="group">送信先グループ</param>
+    public void Broadcast(Host from, Atom packet, BroadcastGroup group)
+    {
+      if (group == BroadcastGroup.Trackers) {
+        sourceStream.Post(from, packet);
+      }
+      foreach (var outputStream in outputStreams) {
+        outputStream.Post(from, packet);
       }
     }
 
