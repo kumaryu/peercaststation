@@ -106,11 +106,11 @@ namespace PeerCastStation.Core
     /// <summary>
     /// SourceStreamを含むストリーム
     /// </summary>
-    Trackers,
+    Trackers = 2,
     /// <summary>
     /// SourceStreamを含まないストリーム
     /// </summary>
-    Relays,
+    Relays = 4,
   }
 
   /// <summary>

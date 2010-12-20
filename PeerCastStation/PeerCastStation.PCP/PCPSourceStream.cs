@@ -419,8 +419,20 @@ namespace PeerCastStation.PCP
       var hops = atom.Children.GetBcstHops();
       var from = atom.Children.GetBcstFrom();
       var group = atom.Children.GetBcstGroup();
-      if (ttl != null && hops != null && group != null && from != null && ttl<hops) {
-        //TODO: HOPSを増やしてまわす
+      if (ttl != null &&
+          hops != null &&
+          group != null &&
+          from != null &&
+          dest != core.Host.SessionID &&
+          ttl>1) {
+        atom.Children.SetBcstTTL((byte)(ttl - 1));
+        atom.Children.SetBcstHops((byte)(hops + 1));
+        if ((group & (byte)BroadcastGroup.Trackers)!=0) {
+          channel.Broadcast(uphost, atom, BroadcastGroup.Trackers);
+        }
+        else {
+          channel.Broadcast(uphost, atom, BroadcastGroup.Relays);
+        }
       }
     }
 
