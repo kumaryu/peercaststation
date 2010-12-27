@@ -106,6 +106,39 @@ namespace PeerCastStation.Core
   }
 
   /// <summary>
+  /// PCP_HOST_FLAGS1に設定する値です
+  /// </summary>
+  [Flags]
+  public enum PCPHostFlags1 : byte
+  {
+    None          = 0x00,
+    /// <summary>
+    /// 自分がトラッカーである
+    /// </summary>
+    Tracker       = 0x01,
+    /// <summary>
+    /// リレー接続が可能である
+    /// </summary>
+    Relay         = 0x02,
+    /// <summary>
+    /// 視聴接続が可能である
+    /// </summary>
+    Direct        = 0x04,
+    /// <summary>
+    /// ポートが開いていない
+    /// </summary>
+    Firewalled    = 0x08,
+    /// <summary>
+    /// データ受信中である
+    /// </summary>
+    Receiving     = 0x10,
+    /// <summary>
+    /// Control接続が可能である(Rootのみ)
+    /// </summary>
+    ControlIn     = 0x20,
+  }
+
+  /// <summary>
   /// PCPプロトコルの基本通信単位を表すクラスです。
   /// 4文字以下の名前と対応する値を保持します
   /// </summary>

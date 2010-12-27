@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Threading;
 using System.Net;
+using System.Collections.Specialized;
 
 namespace PeerCastStation.Core
 {
@@ -113,6 +114,132 @@ namespace PeerCastStation.Core
     Relays = 4,
   }
 
+  public class ContentCollection
+    : System.Collections.Specialized.INotifyCollectionChanged,
+      ICollection<Content>
+  {
+    private SortedList<long, Content> list = new SortedList<long,Content>();
+    public ContentCollection()
+    {
+    }
+
+    public event NotifyCollectionChangedEventHandler CollectionChanged;
+
+    public int Count { get { return list.Count; } }
+    public bool IsReadOnly { get { return false; } }
+
+    public void Add(Content item)
+    {
+      list.Add(item.Position, item);
+      if (CollectionChanged!=null) {
+        CollectionChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item));
+      }
+    }
+
+    public void Clear()
+    {
+      list.Clear();
+      if (CollectionChanged!=null) {
+        CollectionChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+      }
+    }
+
+    public bool Contains(Content item)
+    {
+      return list.ContainsValue(item);
+    }
+
+    public void CopyTo(Content[] array, int arrayIndex)
+    {
+      list.Values.CopyTo(array, arrayIndex);
+    }
+
+    public bool Remove(Content item)
+    {
+      if (list.Remove(item.Position)) {
+        if (CollectionChanged!=null) {
+          CollectionChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item));
+        }
+        return true;
+      }
+      else {
+        return false;
+      }
+    }
+
+    public IEnumerator<Content> GetEnumerator()
+    {
+      return list.Values.GetEnumerator();
+    }
+
+    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+    {
+      return list.Values.GetEnumerator();
+    }
+
+    public Content Oldest {
+      get {
+        if (list.Count>0) {
+          return list.Values[0];
+        }
+        else {
+          return null;
+        }
+      }
+    }
+
+    public Content Newest {
+      get {
+        if (list.Count>0) {
+          return list.Values[list.Count-1];
+        }
+        else {
+          return null;
+        }
+      }
+    }
+
+    public Content NextOf(long position)
+    {
+      if (list.Count<1) {
+        return null;
+      }
+      if (list.Keys[0]>position) {
+        return list.Values[0];
+      }
+      if (list.Keys[list.Count-1]<=position) {
+        return null;
+      }
+      var min = 0;
+      var max = list.Count-1;
+      var idx = (max+min)/2;
+      while (true) {
+        if (list.Keys[idx]==position) {
+          return list.Values[idx];
+        }
+        else if (list.Keys[idx]>position) {
+          max = idx-1;
+          if (max<=min) {
+            return list.Values[idx];
+          }
+          idx = (max+min)/2;
+        }
+        else if (list.Keys[idx]<position) {
+          min = idx+1;
+          if (max<=min) {
+            return null;
+          }
+          idx = (max+min)/2;
+        }
+      }
+    }
+
+    public Content NextOf(Content item)
+    {
+      return NextOf(item.Position);
+    }
+  }
+
   /// <summary>
   /// チャンネル接続を管理するクラスです
   /// </summary>
@@ -127,7 +254,7 @@ namespace PeerCastStation.Core
     private ObservableCollection<Node> nodes = new ObservableCollection<Node>();
     private ChannelInfo channelInfo;
     private Content contentHeader = null;
-    private ObservableCollection<Content> contents = new ObservableCollection<Content>();
+    private ContentCollection contents = new ContentCollection();
     private Thread sourceThread = null;
     /// <summary>
     /// チャンネルの状態を取得および設定します
@@ -197,10 +324,47 @@ namespace PeerCastStation.Core
         }
       }
     }
+
+    /// <summary>
+    /// リレー接続がいっぱいかどうかを取得します
+    /// </summary>
+    public bool IsRelayFull
+    {
+      get
+      {
+        //TODO:ちゃんと判別する
+        return true;
+      }
+    }
+
+    /// <summary>
+    /// 視聴接続がいっぱいかどうかを取得します
+    /// </summary>
+    public bool IsDirectFull
+    {
+      get
+      {
+        //TODO:ちゃんと判別する
+        return true;
+      }
+    }
+
+    /// <summary>
+    /// チャンネルの連続接続時間を取得します
+    /// </summary>
+    public TimeSpan Uptime
+    {
+      get
+      {
+        //TODO:ちゃんと計算する
+        return TimeSpan.Zero;
+      }
+    }
+
     /// <summary>
     /// ヘッダを除く保持しているコンテントのリストを取得します
     /// </summary>
-    public IList<Content> Contents { get { return contents; } }
+    public ContentCollection Contents { get { return contents; } }
     public event PropertyChangedEventHandler PropertyChanged;
     private void OnPropertyChanged(string name)
     {

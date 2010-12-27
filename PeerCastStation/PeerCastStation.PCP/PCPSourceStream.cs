@@ -56,6 +56,7 @@ namespace PeerCastStation.PCP
     private NetworkStream stream;
     private Host uphost = null;
     private int connectWait = Environment.TickCount;
+    private int lastHostInfoUpdated = 0;
     public enum SourceStreamState {
       ConnectWait,
       Connect,
@@ -315,12 +316,47 @@ namespace PeerCastStation.PCP
           break;
         case SourceStreamState.Receiving:
           ProcessPacket();
+          CheckHostInfo();
           break;
         case SourceStreamState.Closed:
           break;
         }
         CheckSend();
         ProcessEvents();
+      }
+    }
+
+    private void CheckHostInfo()
+    {
+      if (Environment.TickCount - lastHostInfoUpdated > 10000) {
+        lastHostInfoUpdated = Environment.TickCount;
+        var host = new AtomCollection();
+        host.SetHostChannelID(channel.ChannelInfo.ChannelID);
+        host.SetHostSessionID(core.Host.SessionID);
+        foreach (var endpoint in core.Host.Addresses) {
+          if (endpoint.AddressFamily == AddressFamily.InterNetwork) {
+            host.AddHostIP(endpoint.Address);
+            host.AddHostPort((short)endpoint.Port);
+          }
+        }
+        host.SetHostNumListeners(channel.OutputStreams.Count); //TODO: coutn listenrs
+        host.SetHostNumRelays(channel.OutputStreams.Count); //TODO: count relays
+        host.SetHostUptime(channel.Uptime);
+        if (channel.Contents.Count > 0) {
+          host.SetHostOldPos((int)channel.Contents.Oldest.Position);
+          host.SetHostNewPos((int)channel.Contents.Newest.Position);
+        }
+        host.SetHostVersion(1218);
+        host.SetHostVersionVP(27);
+        host.SetHostVersionEXPrefix(new byte[] { (byte)'P', (byte)'P' });
+        host.SetHostVersionEXNumber(23);
+        host.SetHostFlags1(
+          (channel.IsRelayFull ? 0 : PCPHostFlags1.Relay) |
+          (channel.IsDirectFull ? 0 : PCPHostFlags1.Direct) |
+          (core.Host.IsFirewalled ? PCPHostFlags1.Firewalled : 0) |
+          PCPHostFlags1.Receiving); //TODO:受信中かどうかちゃんと判別する
+        host.SetHostUphostIP(uphost.Addresses[0].Address);
+        host.SetHostUphostPort(uphost.Addresses[0].Port);
       }
     }
 
@@ -452,11 +488,11 @@ namespace PeerCastStation.PCP
           node.RelayCount = atom.Children.GetHostNumRelays() ?? 0;
           var flags1 = atom.Children.GetHostFlags1();
           if (flags1 != null) {
-            node.Host.IsFirewalled = (flags1 & Atom.PCP_HOST_FLAGS1_PUSH) != 0;
-            node.IsRelayFull = (flags1 & Atom.PCP_HOST_FLAGS1_RELAY) == 0;
-            node.IsDirectFull = (flags1 & Atom.PCP_HOST_FLAGS1_DIRECT) == 0;
-            node.IsReceiving = (flags1 & Atom.PCP_HOST_FLAGS1_RECV) != 0;
-            node.IsControlFull = (flags1 & Atom.PCP_HOST_FLAGS1_CIN) == 0;
+            node.Host.IsFirewalled = (flags1.Value & PCPHostFlags1.Firewalled) != 0;
+            node.IsRelayFull       = (flags1.Value & PCPHostFlags1.Relay) == 0;
+            node.IsDirectFull      = (flags1.Value & PCPHostFlags1.Direct) == 0;
+            node.IsReceiving       = (flags1.Value & PCPHostFlags1.Receiving) != 0;
+            node.IsControlFull     = (flags1.Value & PCPHostFlags1.ControlIn) == 0;
           }
 
           var ip = new IPEndPoint(IPAddress.Any, 0);

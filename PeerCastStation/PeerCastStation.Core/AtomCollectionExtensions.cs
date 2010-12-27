@@ -379,9 +379,15 @@ namespace PeerCastStation.Core
       return GetIntFrom(collection, Atom.PCP_HOST_NUMR);
     }
 
-    public static int? GetHostUptime(this AtomCollection collection)
+    public static TimeSpan? GetHostUptime(this AtomCollection collection)
     {
-      return GetIntFrom(collection, Atom.PCP_HOST_UPTIME);
+      int? res = GetIntFrom(collection, Atom.PCP_HOST_UPTIME);
+      if (res.HasValue) {
+        return TimeSpan.FromSeconds(res.Value);
+      }
+      else {
+        return null;
+      }
     }
 
     public static int? GetHostVersion(this AtomCollection collection)
@@ -419,9 +425,9 @@ namespace PeerCastStation.Core
       return GetIntFrom(collection, Atom.PCP_HOST_NEWPOS);
     }
 
-    public static byte? GetHostFlags1(this AtomCollection collection)
+    public static PCPHostFlags1? GetHostFlags1(this AtomCollection collection)
     {
-      return GetByteFrom(collection, Atom.PCP_HOST_FLAGS1);
+      return (PCPHostFlags1?)GetByteFrom(collection, Atom.PCP_HOST_FLAGS1);
     }
 
     public static IPAddress GetHostUphostIP(this AtomCollection collection)
@@ -664,14 +670,19 @@ namespace PeerCastStation.Core
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_CLAP_PP, value));
     }
 
-    public static void SetHostFlags1(this AtomCollection collection, byte value)
+    public static void SetHostFlags1(this AtomCollection collection, PCPHostFlags1 value)
     {
-      SetAtomTo(collection, new Atom(Atom.PCP_HOST_FLAGS1, value));
+      SetAtomTo(collection, new Atom(Atom.PCP_HOST_FLAGS1, (byte)value));
     }
 
     public static void SetHostIP(this AtomCollection collection, IPAddress value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_IP, value));
+    }
+
+    public static void AddHostIP(this AtomCollection collection, IPAddress value)
+    {
+      collection.Add(new Atom(Atom.PCP_HOST_IP, value));
     }
 
     public static void SetHostNewPos(this AtomCollection collection, int value)
@@ -699,6 +710,11 @@ namespace PeerCastStation.Core
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_PORT, value));
     }
 
+    public static void AddHostPort(this AtomCollection collection, short value)
+    {
+      collection.Add(new Atom(Atom.PCP_HOST_PORT, value));
+    }
+
     public static void SetHostSessionID(this AtomCollection collection, Guid value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_ID, value.ToByteArray()));
@@ -719,9 +735,9 @@ namespace PeerCastStation.Core
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_UPHOST_PORT, value));
     }
 
-    public static void SetHostUptime(this AtomCollection collection, int value)
+    public static void SetHostUptime(this AtomCollection collection, TimeSpan value)
     {
-      SetAtomTo(collection, new Atom(Atom.PCP_HOST_UPTIME, value));
+      SetAtomTo(collection, new Atom(Atom.PCP_HOST_UPTIME, (int)value.TotalSeconds));
     }
 
     public static void SetHostVersion(this AtomCollection collection, int value)

@@ -221,10 +221,10 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal('---header---', channel.content_header.data.to_a.pack('C*'))
     assert_equal(100, channel.contents.count)
     pos = channel.content_header.data.length
-    channel.contents.count.times do |i|
-      assert_equal(pos, channel.contents[i].position)
-      assert_equal("data: #{i}", channel.contents[i].data.to_a.pack('C*'))
-      pos += channel.contents[i].data.length
+    channel.contents.to_a.each_with_index do |content, i|
+      assert_equal(pos, content.position)
+      assert_equal("data: #{i}", content.data.to_a.pack('C*'))
+      pos += content.data.length
     end
   end
 

@@ -23,10 +23,13 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="C:\Users\Administrator\Documents\working\peercaststation\PeerCastStation\TestCore\test_core.rb~" />
     <None Include="Program.rb" />
+    <None Include="startup.rb" />
     <None Include="startup.rb" />
     <None Include="test_core.rb" />
     <None Include="test_core.rb" />
+    <None Include="test_queuedsynchronizationcontext.rb" />
     <None Include="test_queuedsynchronizationcontext.rb" />
   </ItemGroup>
 </Project>

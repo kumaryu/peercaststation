@@ -412,6 +412,33 @@ EOS
 EOS
   end
   
+  def self.define_test_timespan(name, method_name=nil)
+    getter = getter_method_name(name, method_name)
+    setter = setter_method_name(name, method_name)
+    module_eval(<<EOS)
+    def test_#{getter}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_nil(collection.#{getter})
+      atom = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Int32).call(
+        PeerCastStation::Core::Atom.PCP_#{name},
+        714400)
+      collection.add(atom)
+      assert_equal(714400, collection.#{getter}.total_seconds)
+    end
+    
+    def test_#{setter}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_equal(0, collection.count)
+      value = System::TimeSpan.from_seconds(714400)
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      assert_equal(714400, collection.#{getter}.total_seconds)
+    end
+EOS
+  end
+  
   def self.define_test_bytes(name, method_name=nil)
     getter = getter_method_name(name, method_name)
     setter = setter_method_name(name, method_name)
@@ -581,7 +608,7 @@ EOS
   define_test_byte('HOST_UPHOST_HOPS')
   define_test_ip_address('HOST_UPHOST_IP', 'HostUphostIP')
   define_test_int('HOST_UPHOST_PORT')
-  define_test_int('HOST_UPTIME')
+  define_test_timespan('HOST_UPTIME')
   define_test_int('HOST_VERSION')
   define_test_int('HOST_VERSION_VP', 'HostVersionVP')
   define_test_short('HOST_VERSION_EX_NUMBER', 'HostVersionEXNumber')
