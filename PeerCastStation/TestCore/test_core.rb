@@ -996,8 +996,8 @@ class TestCoreChannel < Test::Unit::TestCase
   end
 
   def test_construct
-    channel = PeerCastStation::Core::Channel.new(System::Guid.empty, MockSourceStream.new, System::Uri.new('mock://localhost'))
-    assert_kind_of(MockSourceStream, channel.source_stream)
+    channel = PeerCastStation::Core::Channel.new(System::Guid.empty, System::Uri.new('mock://localhost'))
+    assert_nil(channel.source_stream)
     assert_equal('mock://localhost/', channel.source_uri.to_s)
     assert_equal(System::Guid.empty, channel.channel_info.ChannelID)
     assert_equal(PeerCastStation::Core::ChannelStatus.Idle, channel.status)
@@ -1010,11 +1010,11 @@ class TestCoreChannel < Test::Unit::TestCase
   def test_changed
     property_log = []
     content_log = []
-    channel = PeerCastStation::Core::Channel.new(System::Guid.empty, MockSourceStream.new, System::Uri.new('mock://localhost'))
+    channel = PeerCastStation::Core::Channel.new(System::Guid.empty, System::Uri.new('mock://localhost'))
     channel.property_changed {|sender, e| property_log << e.property_name }
     channel.content_changed {|sender, e| content_log << 'content' }
     channel.status = PeerCastStation::Core::ChannelStatus.Connecting
-    channel.source_stream = nil
+    channel.source_stream = MockSourceStream.new
     channel.channel_info.name = 'bar'
     channel.output_streams.add(MockOutputStream.new)
     channel.nodes.add(PeerCastStation::Core::Node.new(PeerCastStation::Core::Host.new))
@@ -1035,10 +1035,10 @@ class TestCoreChannel < Test::Unit::TestCase
   
   def test_close
     log = []
-    channel = PeerCastStation::Core::Channel.new(System::Guid.empty, MockSourceStream.new, System::Uri.new('mock://localhost'))
+    channel = PeerCastStation::Core::Channel.new(System::Guid.empty, System::Uri.new('mock://localhost'))
     channel.closed { log << 'Closed' }
     channel.output_streams.add(MockOutputStream.new)
-    channel.start
+    channel.start(MockSourceStream.new)
     sleep(1)
     channel.close
     assert_equal(PeerCastStation::Core::ChannelStatus.Closed, channel.status)
@@ -1051,9 +1051,9 @@ class TestCoreChannel < Test::Unit::TestCase
   def test_broadcast
     source = MockSourceStream.new
     output = MockOutputStream.new
-    channel = PeerCastStation::Core::Channel.new(System::Guid.empty, source, System::Uri.new('mock://localhost'))
+    channel = PeerCastStation::Core::Channel.new(System::Guid.empty, System::Uri.new('mock://localhost'))
     channel.output_streams.add(output)
-    channel.start
+    channel.start(source)
     sleep(1)
     from = PeerCastStation::Core::Host.new
     packet_trackers = PeerCastStation::Core::Atom.new(id4('test'), 'trackers'.to_clr_string)

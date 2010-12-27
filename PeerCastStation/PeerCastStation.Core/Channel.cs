@@ -490,8 +490,9 @@ namespace PeerCastStation.Core
       }
     }
 
-    public void Start()
+    public void Start(ISourceStream source_stream)
     {
+      sourceStream = source_stream;
       var sync = SynchronizationContext.Current ?? new SynchronizationContext();
       sourceThread = new Thread(SourceThreadFunc);
       sourceThread.Start(sync);
@@ -527,7 +528,9 @@ namespace PeerCastStation.Core
     public void Broadcast(Host from, Atom packet, BroadcastGroup group)
     {
       if (group == BroadcastGroup.Trackers) {
-        sourceStream.Post(from, packet);
+        if (sourceStream!=null) {
+          sourceStream.Post(from, packet);
+        }
       }
       foreach (var outputStream in outputStreams) {
         outputStream.Post(from, packet);
@@ -539,8 +542,10 @@ namespace PeerCastStation.Core
     /// </summary>
     public void Close()
     {
-      if (Status != ChannelStatus.Closed) {
-        sourceStream.Close();
+      if (Status!=ChannelStatus.Closed) {
+        if (sourceStream!=null) {
+          sourceStream.Close();
+        }
       }
     }
 
@@ -548,12 +553,10 @@ namespace PeerCastStation.Core
     /// チャンネルIDとソースストリームを指定してチャンネルを初期化します
     /// </summary>
     /// <param name="channel_id">チャンネルID</param>
-    /// <param name="source">ソースストリーム</param>
     /// <param name="source_uri">ソースURI</param>
-    public Channel(Guid channel_id, ISourceStream source, Uri source_uri)
+    public Channel(Guid channel_id, Uri source_uri)
     {
       sourceUri = source_uri;
-      sourceStream = source;
       sourceHost = new Host();
       var port = sourceUri.Port < 0 ? 7144 : sourceUri.Port;
       foreach (var addr in Dns.GetHostAddresses(sourceUri.DnsSafeHost)) {
