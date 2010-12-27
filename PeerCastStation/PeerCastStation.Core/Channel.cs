@@ -502,7 +502,7 @@ namespace PeerCastStation.Core
     {
       var sync = (SynchronizationContext)arg;
       try {
-        sourceStream.Start(sourceUri, this);
+        sourceStream.Start();
       }
       finally {
         sourceStream.Close();

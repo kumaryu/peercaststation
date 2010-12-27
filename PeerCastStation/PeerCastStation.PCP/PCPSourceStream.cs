@@ -19,9 +19,9 @@ namespace PeerCastStation.PCP
     }
 
     public string Name { get { return "pcp"; } }
-    public ISourceStream Create(Uri tracker)
+    public ISourceStream Create(Channel channel, Uri tracker)
     {
-      return new PCPSourceStream(core);
+      return new PCPSourceStream(core, channel, tracker);
     }
   }
 
@@ -52,8 +52,10 @@ namespace PeerCastStation.PCP
   {
     private PeerCastStation.Core.Core core;
     private Channel channel;
-    private TcpClient connection;
-    private NetworkStream stream;
+    private Uri sourceUri;
+
+    private TcpClient connection = null;
+    private NetworkStream stream = null;
     private Host uphost = null;
     private int connectWait = Environment.TickCount;
     private int lastHostInfoUpdated = 0;
@@ -287,13 +289,12 @@ namespace PeerCastStation.PCP
       }
     }
 
-    public void Start(Uri tracker_uri, Channel channel)
+    public void Start()
     {
       if (this.syncContext == null) {
         this.syncContext = new QueuedSynchronizationContext();
         SynchronizationContext.SetSynchronizationContext(this.syncContext);
       }
-      this.channel = channel;
       StartConnect();
       while (state!=SourceStreamState.Closed) {
         switch (state) {
@@ -592,9 +593,11 @@ namespace PeerCastStation.PCP
       }
     }
 
-    public PCPSourceStream(PeerCastStation.Core.Core core)
+    public PCPSourceStream(PeerCastStation.Core.Core core, Channel channel, Uri source_uri)
     {
       this.core = core;
+      this.channel = channel;
+      this.sourceUri = source_uri;
     }
   }
 }

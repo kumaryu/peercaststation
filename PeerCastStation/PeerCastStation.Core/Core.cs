@@ -113,11 +113,10 @@ namespace PeerCastStation.Core
   public interface ISourceStream
   {
     /// <summary>
-    /// 指定したホストを起点にストリームの取得を開始します
+    /// ストリームの取得を開始します。
+    /// チャンネルと取得元URIはISourceStreamFactory.Createに渡された物を使います
     /// </summary>
-    /// <param name="tracker">ストリーム取得の起点</param>
-    /// <param name="channel">取得ストリームの追加先チャンネル</param>
-    void Start(Uri tracker, Channel channel);
+    void Start();
     /// <summary>
     /// ストリームへパケットを送信します
     /// </summary>
@@ -142,9 +141,10 @@ namespace PeerCastStation.Core
     /// <summary>
     /// URIからプロトコルを判別しSourceStreamのインスタンスを作成します。
     /// </summary>
-    /// <param name="tracker">プロトコル判別用のURI</param>
+    /// <param name="channel">所属するチャンネル</param>
+    /// <param name="tracker">ストリーム取得起点のURI</param>
     /// <returns>プロトコルが適合していればSourceStreamのインスタンス、それ以外はnull</returns>
-    ISourceStream Create(Uri tracker);
+    ISourceStream Create(Channel channel, Uri tracker);
   }
 
   /// <summary>
@@ -499,9 +499,9 @@ namespace PeerCastStation.Core
       if (!SourceStreamFactories.TryGetValue(tracker.Scheme, out source_factory)) {
         throw new ArgumentException(String.Format("Protocol `{0}' is not found", tracker.Scheme));
       }
-      var source_stream = source_factory.Create(tracker);
       var channel = new Channel(channel_id, tracker);
       channels.Add(channel);
+      var source_stream = source_factory.Create(channel, tracker);
       channel.Start(source_stream);
       return channel;
     }
