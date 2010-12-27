@@ -10,10 +10,15 @@ using_clr_extensions PeerCastStation::Core
 class MockOutputStream
   include PeerCastStation::Core::IOutputStream
   
-  def initialize
+  def initialize(type=0)
+    @type = type
     @log = []
   end
   attr_reader :log
+
+  def output_stream_type
+    @type
+  end
   
   def post(from, packet)
     @log << [:post, from, packet]
@@ -60,6 +65,27 @@ class System::Guid
   end
 end
 
+class TestPCPSourceStream < PeerCastStation::PCP::PCPSourceStream
+  def self.new(core)
+    inst = super
+    inst.instance_eval do
+      @log = []
+      @on_pcp_ok = nil
+    end
+    inst
+  end
+  attr_accessor :on_pcp_ok, :log
+
+  def Post(from, atom)
+    super
+    @log << [:post, from, atom]
+  end
+
+  def OnPCPOk(atom)
+    @on_pcp_ok.call(atom) if @on_pcp_ok
+  end
+end
+
 class TC_PCPSourceStream < Test::Unit::TestCase
   def id4(s)
     PeerCastStation::Core::ID4.new(s.to_clr_string)
@@ -83,7 +109,63 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   def teardown
     @core.close if @core and not @core.is_closed
   end
-  
+
+  def test_create_broadcast_packet
+    @core = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
+    source = PeerCastStation::PCP::PCPSourceStream.new(@core)
+    source.channel = PeerCastStation::Core::Channel.new(channel_id, source, System::Uri.new('http://localhost:7146'))
+    bcst = source.create_broadcast_packet(
+      PeerCastStation::Core::BroadcastGroup.relays | PeerCastStation::Core::BroadcastGroup.trackers,
+      PeerCastStation::Core::Atom.new(id4('test'), 42)
+    )
+    assert(bcst)
+    assert_equal(PCP_BCST, bcst.name.to_s)
+    assert(bcst.has_children)
+    assert_equal(channel_id, bcst.children.GetBcstChannelID)
+    assert_equal(11, bcst.children.GetBcstTTL)
+    assert_equal(0, bcst.children.GetBcstHops)
+    assert_equal(@core.host.SessionID, bcst.children.GetBcstFrom)
+    assert_equal(
+      PeerCastStation::Core::BroadcastGroup.relays | PeerCastStation::Core::BroadcastGroup.trackers,
+      bcst.children.GetBcstGroup)
+    assert_equal(1218, bcst.children.GetBcstVersion)
+    assert_equal(27, bcst.children.GetBcstVersionVP)
+    assert_equal('PP'.unpack('CC'), bcst.children.GetBcstVersionEXPrefix)
+    assert_equal(23, bcst.children.GetBcstVersionEXNumber)
+    assert(bcst.children.to_a.any? {|atom| atom.name.to_s=='test' && atom.GetInt32==42 })
+  end
+
+  def test_create_host_packet
+    @core = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
+    source = PeerCastStation::PCP::PCPSourceStream.new(@core)
+    source.channel = PeerCastStation::Core::Channel.new(channel_id, source, System::Uri.new('http://localhost:7146'))
+    source.channel.output_streams.add(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.play))
+    source.channel.contents.add(PeerCastStation::Core::Content.new(7144, 'foobar'))
+    source.uphost = source.channel.source_host
+    host = source.create_host_packet
+    assert(host)
+    assert_equal(PCP_HOST, host.name.to_s)
+    assert(host.has_children)
+    assert_equal(channel_id, host.children.GetHostChannelID)
+    assert_equal(@core.host.SessionID, host.children.GetHostSessionID)
+    assert(host.children.to_a.any? {|atom| atom.name.to_s==PCP_HOST_IP })
+    assert(host.children.to_a.any? {|atom| atom.name.to_s==PCP_HOST_PORT })
+    assert_equal(1, host.children.GetHostNumListeners)
+    assert_equal(0, host.children.GetHostNumRelays)
+    assert(host.children.GetHostUptime)
+    assert_equal(7144, host.children.GetHostOldPos)
+    assert_equal(7144, host.children.GetHostNewPos)
+    assert_equal(1218, host.children.GetHostVersion)
+    assert_equal(27, host.children.GetHostVersionVP)
+    assert_equal('PP'.unpack('CC'), host.children.GetHostVersionEXPrefix)
+    assert_equal(23, host.children.GetHostVersionEXNumber)
+    assert(source.uphost.Addresses.to_a.any? {|addr| addr.Address==host.children.GetHostUphostIP })
+    assert(source.uphost.Addresses.to_a.any? {|addr| addr.Port==host.children.GetHostUphostPort })
+    assert(host.children.GetHostFlags1)
+  end
+
   def test_start
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
     @core = PeerCastStation::Core::Core.new(endpoint)
@@ -120,36 +202,6 @@ class TC_PCPSourceStream < Test::Unit::TestCase
         s.write_string(PCP_HELO_AGENT, 'MockPCPServer')
       end
       pcps.write_int(PCP_OK, 0)
-=begin
-      pcps.write_parent(PCP_BCST) do |s|
-        s.write_byte(PCP_BCST_TTL, 11)
-        s.write_byte(PCP_BCST_HOPS, 0)
-        s.write_bytes(PCP_BCST_FROM, @session_id.to_byte_array.to_a.pack('C*'))
-        s.write_byte(PCP_BCST_GROUP, 6)
-        s.write_bytes(PCP_BCST_CHANID, channel_id.to_byte_array.to_a.pack('C*'))
-        s.write_int(PCP_BCST_VERSION, 1218)
-        s.write_int(PCP_BCST_VERSION_VP, 27)
-        s.write_parent(PCP_HOST) do |ss|
-          ss.write_bytes(PCP_HOST_ID, @session_id.to_byte_array.to_a.pack('C*'))
-          ss.write_bytes(PCP_HOST_IP, [1, 0, 0, 127].pack('C*'))
-          ss.write_short(PCP_HOST_PORT, 7146)
-          ss.write_bytes(PCP_HOST_IP, [1, 0, 0, 127].pack('C*'))
-          ss.write_short(PCP_HOST_PORT, 7146)
-          ss.write_int(PCP_HOST_NUML, 100)
-          ss.write_int(PCP_HOST_NUMR, 200)
-          ss.write_int(PCP_HOST_UPTIME, 10)
-          ss.write_int(PCP_HOST_VERSION, 1218)
-          ss.write_int(PCP_HOST_VERSION_VP, 28)
-          ss.write_int(PCP_HOST_OLDPOS, 0)
-          ss.write_int(PCP_HOST_NEWPOS, 100)
-          ss.write_byte(PCP_HOST_FLAGS1,
-            PCP_HOST_FLAGS1_TRACKER |
-            PCP_HOST_FLAGS1_RELAY |
-            PCP_HOST_FLAGS1_DIRECT |
-            PCP_HOST_FLAGS1_RECV)
-        end
-      end
-=end
       pcps.write_parent(PCP_CHAN) do |s|
         s.write_bytes(PCP_CHAN_ID, channel_id.to_byte_array.to_a.pack('C*'))
         2.times do |i|
@@ -510,27 +562,6 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal(PeerCastStation::PCP::CloseReason.channel_not_found, closed_log[0][1])
     assert_equal(PeerCastStation::PCP::CloseReason.unavailable,       closed_log[1][1])
     assert_equal(PeerCastStation::PCP::CloseReason.node_not_found,    closed_log[2][1])
-  end
-
-  class TestPCPSourceStream < PeerCastStation::PCP::PCPSourceStream
-    def self.new(core)
-      inst = super
-      inst.instance_eval do
-        @log = []
-        @on_pcp_ok = nil
-      end
-      inst
-    end
-    attr_accessor :on_pcp_ok, :log
-
-    def Post(from, atom)
-      super
-      @log << [:post, from, atom]
-    end
-
-    def OnPCPOk(atom)
-      @on_pcp_ok.call(atom) if @on_pcp_ok
-    end
   end
 
   def test_post

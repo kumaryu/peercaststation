@@ -314,9 +314,15 @@ namespace PeerCastStation.Core
       return GetIDFrom(collection, Atom.PCP_BCST_DEST);
     }
 
-    public static byte? GetBcstGroup(this AtomCollection collection)
+    public static BroadcastGroup? GetBcstGroup(this AtomCollection collection)
     {
-      return GetByteFrom(collection, Atom.PCP_BCST_GROUP);
+      var res = GetByteFrom(collection, Atom.PCP_BCST_GROUP);
+      if (res.HasValue) {
+        return (BroadcastGroup)res.Value;
+      }
+      else {
+        return null;
+      }
     }
 
     public static Guid? GetBcstChannelID(this AtomCollection collection)
@@ -515,9 +521,9 @@ namespace PeerCastStation.Core
       SetAtomTo(collection, new Atom(Atom.PCP_BCST_FROM, value.ToByteArray()));
     }
 
-    public static void SetBcstGroup(this AtomCollection collection, byte value)
+    public static void SetBcstGroup(this AtomCollection collection, BroadcastGroup value)
     {
-      SetAtomTo(collection, new Atom(Atom.PCP_BCST_GROUP, value));
+      SetAtomTo(collection, new Atom(Atom.PCP_BCST_GROUP, (byte)value));
     }
 
     public static void SetBcstHops(this AtomCollection collection, byte value)

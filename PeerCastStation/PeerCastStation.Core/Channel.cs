@@ -104,7 +104,8 @@ namespace PeerCastStation.Core
   /// <summary>
   /// Broadcastの送信先を指定します
   /// </summary>
-  public enum BroadcastGroup {
+  [Flags]
+  public enum BroadcastGroup : byte {
     /// <summary>
     /// SourceStreamを含むストリーム
     /// </summary>
