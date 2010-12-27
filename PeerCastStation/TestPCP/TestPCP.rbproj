@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{ad0e6e1a-2a22-4cdc-8de9-7f9e8f4dfe3c}</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>C:\Users\Administrator\Documents\working\peercaststation\PeerCastStation\TestPCP\test_pcp.rb</StartupFile>
+    <StartupFile>test_pcp.rb</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -25,19 +25,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <None Include=".peca.rb.swp" />
     <None Include="peca.rb" />
-    <None Include="peca.rb" />
-    <None Include="peca.rb" />
-    <None Include="peca.rb" />
-    <None Include="peca.rb~" />
-    <None Include="Program.rb" />
     <None Include="test_pcp.rb" />
-    <None Include="test_pcp.rb" />
-    <None Include="test_pcp.rb" />
-    <None Include="test_pcp.rb" />
-    <None Include="test_pcp.rb~" />
-    <None Include="test_pcp.ry~" />
-    <None Include="test_pcp.rz~" />
   </ItemGroup>
 </Project>
