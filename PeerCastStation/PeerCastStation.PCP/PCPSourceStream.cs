@@ -339,8 +339,8 @@ namespace PeerCastStation.PCP
             host.AddHostPort((short)endpoint.Port);
           }
         }
-        host.SetHostNumListeners(channel.OutputStreams.Count); //TODO: coutn listenrs
-        host.SetHostNumRelays(channel.OutputStreams.Count); //TODO: count relays
+        host.SetHostNumListeners(channel.OutputStreams.CountPlaying);
+        host.SetHostNumRelays(channel.OutputStreams.CountRelaying);
         host.SetHostUptime(channel.Uptime);
         if (channel.Contents.Count > 0) {
           host.SetHostOldPos((int)channel.Contents.Oldest.Position);

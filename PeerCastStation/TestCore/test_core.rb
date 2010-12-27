@@ -81,11 +81,16 @@ end
 class MockOutputStream
   include PeerCastStation::Core::IOutputStream
   
-  def initialize
+  def initialize(type=0)
+    @type = type
     @log = []
   end
   attr_reader :log
-  
+
+  def output_stream_type
+    @type
+  end
+
   def post(from, packet)
     @log << [:post, from, packet]
   end
@@ -932,6 +937,56 @@ class TestCore < Test::Unit::TestCase
     assert_equal(38, output_stream_factory.log.size)
     assert_equal(:parse_channel_id, output_stream_factory.log[36][0])
     assert_equal(:create,           output_stream_factory.log[37][0])
+  end
+end
+
+class TC_OutputStreamCollection < Test::Unit::TestCase
+  def test_count_relaying
+    collection = PeerCastStation::Core::OutputStreamCollection.new
+    assert_equal(0, collection.count)
+    assert_equal(0, collection.count_relaying)
+    collection.add(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.play))
+    collection.add(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.relay))
+    collection.add(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.metadata))
+    collection.add(MockOutputStream.new(
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay))
+    collection.add(MockOutputStream.new(
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.metadata))
+    collection.add(MockOutputStream.new(
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.metadata))
+    collection.add(MockOutputStream.new(
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.metadata))
+    assert_equal(7, collection.count)
+    assert_equal(4, collection.count_relaying)
+  end
+
+  def test_count_playing
+    collection = PeerCastStation::Core::OutputStreamCollection.new
+    assert_equal(0, collection.count)
+    assert_equal(0, collection.count_playing)
+    collection.add(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.play))
+    collection.add(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.relay))
+    collection.add(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.metadata))
+    collection.add(MockOutputStream.new(
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay))
+    collection.add(MockOutputStream.new(
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.metadata))
+    collection.add(MockOutputStream.new(
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.metadata))
+    collection.add(MockOutputStream.new(
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.metadata))
+    assert_equal(7, collection.count)
+    assert_equal(4, collection.count_playing)
   end
 end
 

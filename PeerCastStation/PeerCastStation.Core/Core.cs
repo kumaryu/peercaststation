@@ -148,6 +148,26 @@ namespace PeerCastStation.Core
   }
 
   /// <summary>
+  /// OutputStreamの種類を表します
+  /// </summary>
+  [Flags]
+  public enum OutputStreamType
+  {
+    /// <summary>
+    /// 視聴用出力ストリーム
+    /// </summary>
+    Play = 1,
+    /// <summary>
+    /// リレー用出力ストリーム
+    /// </summary>
+    Relay = 2,
+    /// <summary>
+    /// メタデータ用出力ストリーム
+    /// </summary>
+    Metadata = 4,
+  }
+
+  /// <summary>
   /// 下流にチャンネルのContentを流すストリームを表わすインターフェースです
   /// </summary>
   public interface IOutputStream
@@ -168,6 +188,10 @@ namespace PeerCastStation.Core
     /// ストリームへの書き込みを終了します
     /// </summary>
     void Close();
+    /// <summary>
+    /// 出力ストリームの種類を取得します
+    /// </summary>
+    OutputStreamType OutputStreamType { get; }
   }
 
   /// <summary>

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Net;
 using System.Collections.Specialized;
+using System.Linq;
 
 namespace PeerCastStation.Core
 {
@@ -241,6 +242,34 @@ namespace PeerCastStation.Core
   }
 
   /// <summary>
+  /// 出力ストリームを保持するコレクションクラスです
+  /// </summary>
+  public class OutputStreamCollection : ObservableCollection<IOutputStream>
+  {
+    /// <summary>
+    /// 視聴再生中の出力ストリーム数の数を取得します
+    /// </summary>
+    public int CountPlaying
+    {
+      get
+      {
+        return this.Count(x => (x.OutputStreamType & OutputStreamType.Play) != 0);
+      }
+    }
+
+    /// <summary>
+    /// リレー中の出力ストリーム数の数を取得します
+    /// </summary>
+    public int CountRelaying
+    {
+      get
+      {
+        return this.Count(x => (x.OutputStreamType & OutputStreamType.Relay) != 0);
+      }
+    }
+  }
+
+  /// <summary>
   /// チャンネル接続を管理するクラスです
   /// </summary>
   public class Channel
@@ -250,7 +279,7 @@ namespace PeerCastStation.Core
     private Host sourceHost = null;
     private ChannelStatus status = ChannelStatus.Idle;
     private ISourceStream sourceStream = null;
-    private ObservableCollection<IOutputStream> outputStreams = new ObservableCollection<IOutputStream>();
+    private OutputStreamCollection outputStreams = new OutputStreamCollection();
     private ObservableCollection<Node> nodes = new ObservableCollection<Node>();
     private ChannelInfo channelInfo;
     private Content contentHeader = null;
@@ -300,7 +329,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 出力ストリームのリストを取得します
     /// </summary>
-    public IList<IOutputStream> OutputStreams { get { return outputStreams; } }
+    public OutputStreamCollection OutputStreams { get { return outputStreams; } }
     /// <summary>
     /// このチャンネルに関連付けられたノードリストを取得します
     /// </summary>
