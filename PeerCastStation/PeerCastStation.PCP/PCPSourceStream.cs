@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using PeerCastStation.Core;
+using System.Text.RegularExpressions;
 
 namespace PeerCastStation.PCP
 {
@@ -47,6 +48,58 @@ namespace PeerCastStation.PCP
     }
   }
   public delegate void SourceClosedEventHandler(object sender, SourceClosedEventArgs e);
+
+  public class RelayRequestResponse
+  {
+    public int StatusCode     { get; set; }
+    public int? PCPVersion    { get; set; }
+    public string ContentType { get; set; }
+    public long? StreamPos    { get; set; }
+    public RelayRequestResponse(IEnumerable<string> responses)
+    {
+      this.PCPVersion = null;
+      this.ContentType = null;
+      this.StreamPos = null;
+      foreach (var res in responses) {
+        Match match = null;
+        if ((match = Regex.Match(res, @"^HTTP/1.\d (\d+) .*$")).Success) {
+          this.StatusCode = Convert.ToInt32(match.Groups[1].Value);
+        }
+        if ((match = Regex.Match(res, @"Content-Type:\s*(\S+)\s*$")).Success) {
+          this.ContentType = match.Groups[1].Value;
+        }
+        if ((match = Regex.Match(res, @"x-peercast-pcp:\s*(\d+)\s*$")).Success) {
+          this.PCPVersion = Convert.ToInt32(match.Groups[1].Value);
+        }
+        if ((match = Regex.Match(res, @"x-peercast-pos:\s*(\d+)\s*$")).Success) {
+          this.StreamPos = Convert.ToInt64(match.Groups[1].Value);
+        }
+      }
+    }
+  }
+
+  public static class RelayRequestResponseReader
+  {
+    public static RelayRequestResponse Read(Stream stream)
+    {
+      string line = null;
+      var responses = new List<string>();
+      var buf = new List<byte>();
+      while (line!="") {
+        var value = stream.ReadByte();
+        if (value<0) {
+          throw new EndOfStreamException();
+        }
+        buf.Add((byte)value);
+        if (buf.Count >= 2 && buf[buf.Count - 2] == '\r' && buf[buf.Count - 1] == '\n') {
+          line = System.Text.Encoding.UTF8.GetString(buf.ToArray(), 0, buf.Count - 2);
+          if (line!="") responses.Add(line);
+          buf.Clear();
+        }
+      }
+      return new RelayRequestResponse(responses);
+    }
+  }
 
   public class PCPSourceStream : ISourceStream
   {
@@ -117,6 +170,16 @@ namespace PeerCastStation.PCP
           writeBuffer = null;
         }, stream);
       }
+    }
+
+    protected virtual void Send(byte[] bytes)
+    {
+      sendStream.Write(bytes, 0, bytes.Length);
+    }
+
+    protected virtual void Send(Atom atom)
+    {
+      AtomWriter.Write(sendStream, atom);
     }
 
     static private MemoryStream dropStream(MemoryStream s)
@@ -222,40 +285,35 @@ namespace PeerCastStation.PCP
       state = SourceStreamState.Connect;
     }
 
-    private void StartRelayRequest()
+    private byte[] CreateRelayRequest()
     {
-      state = SourceStreamState.RelayRequest;
       var req = String.Format(
         "GET /channel/{0} HTTP/1.0\r\n" +
         "x-peercast-pcp:1\r\n" +
         "\r\n", channel.ChannelInfo.ChannelID.ToString("N"));
-      var reqb = System.Text.Encoding.UTF8.GetBytes(req);
-      sendStream.Write(reqb, 0, reqb.Length);
+      return System.Text.Encoding.UTF8.GetBytes(req);
+    }
+
+    private void StartRelayRequest()
+    {
+      state = SourceStreamState.RelayRequest;
+      Send(CreateRelayRequest());
     }
 
     private void WaitRelayResponse()
     {
-      var response = new List<string>();
-      var buf = new List<byte>();
+      RelayRequestResponse response = null;
       recvStream.Seek(0, SeekOrigin.Begin);
-      while (recvStream.Position<recvStream.Length && (response.Count < 1 || response[response.Count - 1] != "")) {
-        buf.Add((byte)recvStream.ReadByte());
-        if (buf.Count >= 2 && buf[buf.Count - 2] == '\r' && buf[buf.Count - 1] == '\n') {
-          response.Add(System.Text.Encoding.UTF8.GetString(buf.ToArray(), 0, buf.Count - 2));
-          buf.Clear();
-        }
+      try {
+        response = RelayRequestResponseReader.Read(recvStream);
       }
-      if (response.Count > 0 && response[response.Count - 1] == "") {
-        recvStream = dropStream(recvStream);
-        int response_code = 0;
-        var match = System.Text.RegularExpressions.Regex.Match(response[0], @"^HTTP/1.\d (\d+) .*$");
-        if (match.Success) {
-          response_code = Convert.ToInt32(match.Groups[1].Value);
-        }
-        if (response_code == 200 || response_code == 503) {
+      catch (EndOfStreamException) {
+      }
+      if (response!=null) {
+        if (response.StatusCode == 200 || response.StatusCode == 503) {
           StartHandshake();
         }
-        else if (response_code == 404) {
+        else if (response.StatusCode == 404) {
           OnClose(CloseReason.ChannelNotFound);
         }
         else {
@@ -272,7 +330,7 @@ namespace PeerCastStation.PCP
       helo.Children.Add(new Atom(Atom.PCP_HELO_SESSIONID, core.Host.SessionID.ToByteArray()));
       helo.Children.Add(new Atom(Atom.PCP_HELO_PORT,      core.Host.Addresses[0].Port));
       helo.Children.Add(new Atom(Atom.PCP_HELO_VERSION,   1218));
-      AtomWriter.Write(sendStream, helo);
+      Send(helo);
     }
 
     private void ProcessPacket()
@@ -427,7 +485,7 @@ namespace PeerCastStation.PCP
       res.Children.SetHeloSessionID(core.Host.SessionID);
       res.Children.SetHeloPort((short)core.Host.Addresses[0].Port);
       res.Children.SetHeloVersion(1218);
-      AtomWriter.Write(sendStream, res);
+      Send(res);
     }
 
     protected virtual void OnPCPOleh(Atom atom)
@@ -586,7 +644,7 @@ namespace PeerCastStation.PCP
       if (state!=SourceStreamState.Closed) {
         syncContext.Post(x => {
           if (uphost != from) {
-            AtomWriter.Write(sendStream, packet);
+            Send(packet);
           }
         }
         , null);

@@ -86,6 +86,56 @@ class TestPCPSourceStream < PeerCastStation::PCP::PCPSourceStream
   end
 end
 
+class TC_RelayRequestResponse < Test::Unit::TestCase
+  def test_construct
+    data = System::Array[System::String].new([
+      'HTTP/1.1 200 OK',
+      'x-peercast-pcp:1',
+      'x-peercast-pos: 200000000',
+      'Content-Type: application/x-peercast-pcp',
+      'foo:bar',
+    ])
+    res = PeerCastStation::PCP::RelayRequestResponse.new(data)
+    assert_equal(200,       res.status_code)
+    assert_equal(1,         res.PCPVersion)
+    assert_equal(200000000, res.stream_pos)
+    assert_equal('application/x-peercast-pcp', res.content_type)
+  end
+end
+
+class TC_RelayRequestResponseReader < Test::Unit::TestCase
+  def test_read
+    data = System::IO::MemoryStream.new(<<EOS)
+HTTP/1.1 200 OK\r
+x-peercast-pcp:1\r
+x-peercast-pos: 200000000\r
+Content-Type: application/x-peercast-pcp\r
+foo:bar\r
+\r
+EOS
+    res = nil
+    assert_nothing_raised {
+      res = PeerCastStation::PCP::RelayRequestResponseReader.read(data)
+    }
+    assert_equal(200,       res.status_code)
+    assert_equal(1,         res.PCPVersion)
+    assert_equal(200000000, res.stream_pos)
+    assert_equal('application/x-peercast-pcp', res.content_type)
+  end
+
+  def test_read_failed
+    assert_raise(System::IO::EndOfStreamException) {
+      data = System::IO::MemoryStream.new(<<EOS)
+HTTP/1.1 200 OK\r
+x-peercast-pcp:1\r
+x-peercast-pos: 200000000\r
+Content-Type: application/x-peercast-pcp\r
+EOS
+      res = PeerCastStation::PCP::RelayRequestResponseReader.read(data)
+    }
+  end
+end
+
 class TC_PCPSourceStream < Test::Unit::TestCase
   def id4(s)
     PeerCastStation::Core::ID4.new(s.to_clr_string)
@@ -600,22 +650,19 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     }
     output = MockOutputStream.new
     channel.output_streams.add(output)
-    
-    server = ok_server(7146) {|pcps|
-      pcps.write_parent(PCP_BCST) do |sub|
-        sub.write_byte(PCP_BCST_TTL, 11)
-        sub.write_byte(PCP_BCST_HOPS, 0)
-        sub.write_bytes(PCP_BCST_FROM, @session_id.to_byte_array.to_a.pack('C*'))
-        sub.write_byte(PCP_BCST_GROUP, PCP_BCST_GROUP_RELAYS)
-        sub.write_bytes(PCP_BCST_CHANID, channel_id.to_byte_array.to_a.pack('C*'))
-        sub.write_int(PCP_BCST_VERSION, 1218)
-        sub.write_int(PCP_BCST_VERSION_VP, 27)
-        sub.write_int(PCP_OK, 42)
-      end
-    }
-    channel.start(source)
-    server.close
-    sleep(0.1) until channel.status==PeerCastStation::Core::ChannelStatus.closed
+    bcst = PeerCastStation::Core::Atom.new(
+      id4(PCP_BCST),
+      PeerCastStation::Core::AtomCollection.new)
+    bcst.children.SetBcstTTL(11)
+    bcst.children.SetBcstHops(0)
+    bcst.children.SetBcstFrom(@session_id)
+    bcst.children.SetBcstGroup(PeerCastStation::Core::BroadcastGroup.relays)
+    bcst.children.SetBcstChannelID(channel_id)
+    bcst.children.SetBcstVersion(1218)
+    bcst.children.SetBcstVersionVP(27)
+    bcst.children.SetOk(42)
+    source.OnPCPBcst(bcst)
+
     post_log = output.log.select {|log| log[0]==:post }
     assert_equal(1, post_log.size)
     assert_equal(id4(PCP_BCST),         post_log[0][2].name)
@@ -626,7 +673,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal(1218,                  post_log[0][2].children.GetBcstVersion)
     assert_equal(27,                    post_log[0][2].children.GetBcstVersionVP)
     assert_equal(42,                    post_log[0][2].children.GetOk)
-    assert_equal(2, ok)
+    assert_equal(1, ok)
     post_log = source.log.select {|log| log[0]==:post }
     assert_equal(0, post_log.size)
   end
