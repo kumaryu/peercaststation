@@ -306,6 +306,7 @@ namespace PeerCastStation.PCP
       recvStream.Seek(0, SeekOrigin.Begin);
       try {
         response = RelayRequestResponseReader.Read(recvStream);
+        recvStream = dropStream(recvStream);
       }
       catch (EndOfStreamException) {
       }

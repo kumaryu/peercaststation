@@ -691,25 +691,23 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     output = MockOutputStream.new
     channel.output_streams.add(output)
     
-    server = ok_server(7146) {|pcps|
-      pcps.write_parent(PCP_BCST) do |sub|
-        sub.write_byte(PCP_BCST_TTL, 11)
-        sub.write_byte(PCP_BCST_HOPS, 0)
-        sub.write_bytes(PCP_BCST_FROM, @session_id.to_byte_array.to_a.pack('C*'))
-        sub.write_bytes(PCP_BCST_DEST, @core.host.SessionID.to_byte_array.to_a.pack('C*'))
-        sub.write_byte(PCP_BCST_GROUP, PCP_BCST_GROUP_RELAYS)
-        sub.write_bytes(PCP_BCST_CHANID, channel_id.to_byte_array.to_a.pack('C*'))
-        sub.write_int(PCP_BCST_VERSION, 1218)
-        sub.write_int(PCP_BCST_VERSION_VP, 27)
-        sub.write_int(PCP_OK, 42)
-      end
-    }
-    channel.start(source)
-    server.close
-    sleep(0.1) until channel.status==PeerCastStation::Core::ChannelStatus.closed
+    bcst = PeerCastStation::Core::Atom.new(
+      id4(PCP_BCST),
+      PeerCastStation::Core::AtomCollection.new)
+    bcst.children.SetBcstTTL(11)
+    bcst.children.SetBcstHops(0)
+    bcst.children.SetBcstFrom(@session_id)
+    bcst.children.SetBcstDest(@core.host.SessionID)
+    bcst.children.SetBcstGroup(PeerCastStation::Core::BroadcastGroup.relays)
+    bcst.children.SetBcstChannelID(channel_id)
+    bcst.children.SetBcstVersion(1218)
+    bcst.children.SetBcstVersionVP(27)
+    bcst.children.SetOk(42)
+    source.OnPCPBcst(bcst)
+
     post_log = output.log.select {|log| log[0]==:post }
     assert_equal(0, post_log.size)
-    assert_equal(2, ok)
+    assert_equal(1, ok)
     post_log = source.log.select {|log| log[0]==:post }
     assert_equal(0, post_log.size)
   end
@@ -727,24 +725,22 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     output = MockOutputStream.new
     channel.output_streams.add(output)
     
-    server = ok_server(7146) {|pcps|
-      pcps.write_parent(PCP_BCST) do |sub|
-        sub.write_byte(PCP_BCST_TTL, 1)
-        sub.write_byte(PCP_BCST_HOPS, 0)
-        sub.write_bytes(PCP_BCST_FROM, @session_id.to_byte_array.to_a.pack('C*'))
-        sub.write_byte(PCP_BCST_GROUP, PCP_BCST_GROUP_RELAYS)
-        sub.write_bytes(PCP_BCST_CHANID, channel_id.to_byte_array.to_a.pack('C*'))
-        sub.write_int(PCP_BCST_VERSION, 1218)
-        sub.write_int(PCP_BCST_VERSION_VP, 27)
-        sub.write_int(PCP_OK, 42)
-      end
-    }
-    channel.start(source)
-    server.close
-    sleep(0.1) until channel.status==PeerCastStation::Core::ChannelStatus.closed
+    bcst = PeerCastStation::Core::Atom.new(
+      id4(PCP_BCST),
+      PeerCastStation::Core::AtomCollection.new)
+    bcst.children.SetBcstTTL(1)
+    bcst.children.SetBcstHops(0)
+    bcst.children.SetBcstFrom(@session_id)
+    bcst.children.SetBcstGroup(PeerCastStation::Core::BroadcastGroup.relays)
+    bcst.children.SetBcstChannelID(channel_id)
+    bcst.children.SetBcstVersion(1218)
+    bcst.children.SetBcstVersionVP(27)
+    bcst.children.SetOk(42)
+    source.OnPCPBcst(bcst)
+
     post_log = output.log.select {|log| log[0]==:post }
     assert_equal(0, post_log.size)
-    assert_equal(2, ok)
+    assert_equal(1, ok)
     post_log = source.log.select {|log| log[0]==:post }
     assert_equal(0, post_log.size)
   end
