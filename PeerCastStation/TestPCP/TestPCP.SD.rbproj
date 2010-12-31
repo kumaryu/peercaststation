@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <ProjectGuid>{F4FAD8F2-3906-4714-861F-354712970D05}</ProjectGuid>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>TestPCP.SD</RootNamespace>
+    <AssemblyName>TestPCP.SD</AssemblyName>
+    <MainFile>Program.rb</MainFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <DebugSymbols>True</DebugSymbols>
+    <DebugType>Full</DebugType>
+    <Optimize>False</Optimize>
+    <DebugInfo>True</DebugInfo>
+    <StartArguments>--disable-gems -D start.rb</StartArguments>
+    <StartWorkingDirectory>.\</StartWorkingDirectory>
+    <StartAction>Program</StartAction>
+    <StartProgram>C:\Program Files (x86)\SharpDevelop\4.0\bin\..\AddIns\BackendBindings\RubyBinding\ir.exe</StartProgram>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <DebugSymbols>False</DebugSymbols>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+    <DebugInfo>True</DebugInfo>
+    <StartArguments>--disable-gems start.rb</StartArguments>
+    <StartWorkingDirectory>.\</StartWorkingDirectory>
+    <StartAction>Program</StartAction>
+    <StartProgram>C:\Program Files (x86)\SharpDevelop\4.0\bin\..\AddIns\BackendBindings\RubyBinding\ir.exe</StartProgram>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="peca.rb" />
+    <Compile Include="start.rb" />
+    <Compile Include="test_pcp.rb" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PeerCastStation.PCP\PeerCastStation.PCP.csproj">
+      <Project>{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}</Project>
+      <Name>PeerCastStation.PCP</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Target Name="Build" />
+</Project>

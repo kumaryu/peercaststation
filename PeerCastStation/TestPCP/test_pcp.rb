@@ -151,7 +151,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
   
   def test_construct
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
     @core = PeerCastStation::Core::Core.new(endpoint)
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel = PeerCastStation::Core::Channel.new(channel_id, System::Uri.new('http://localhost:7146'))
@@ -163,7 +163,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_create_broadcast_packet
-    @core = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    @core = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147))
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel = PeerCastStation::Core::Channel.new(channel_id, System::Uri.new('http://localhost:7146'))
     source = PeerCastStation::PCP::PCPSourceStream.new(@core, channel, channel.source_uri)
@@ -189,7 +189,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_create_host_packet
-    @core = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    @core = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147))
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel = PeerCastStation::Core::Channel.new(channel_id, System::Uri.new('http://localhost:7146'))
     source = PeerCastStation::PCP::PCPSourceStream.new(@core, channel, channel.source_uri)
@@ -219,7 +219,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_start
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
     @core = PeerCastStation::Core::Core.new(endpoint)
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel = PeerCastStation::Core::Channel.new(channel_id, System::Uri.new('http://localhost:7146'))
@@ -333,7 +333,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_connection_tracker_error
-    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147))
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel    = PeerCastStation::Core::Channel.new(channel_id, System::Uri.new('http://localhost:7146'))
     source     = PeerCastStation::PCP::PCPSourceStream.new(@core, channel, channel.source_uri)
@@ -346,7 +346,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_connection_tracker_channel_not_found
-    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147))
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel    = PeerCastStation::Core::Channel.new(channel_id, System::Uri.new('http://localhost:7146'))
     source     = PeerCastStation::PCP::PCPSourceStream.new(@core, channel, channel.source_uri)
@@ -361,7 +361,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
   
   def test_connection_tracker_quit
-    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147))
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel    = PeerCastStation::Core::Channel.new(channel_id, System::Uri.new('http://localhost:7146'))
     source     = PeerCastStation::PCP::PCPSourceStream.new(@core, channel, channel.source_uri)
@@ -393,7 +393,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
   
   def test_connection_tracker_unavailable
-    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147))
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel    = TestChannel.new(channel_id, System::Uri.new('http://localhost:7146'))
     source     = PeerCastStation::PCP::PCPSourceStream.new(@core, channel, channel.source_uri)
@@ -508,7 +508,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_connection_otherhost_error
-    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147))
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel    = TestChannel.new(channel_id, System::Uri.new('http://localhost:7146'))
     source     = PeerCastStation::PCP::PCPSourceStream.new(@core, channel, channel.source_uri)
@@ -543,7 +543,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_connection_otherhost_unavailable
-    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147))
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel    = TestChannel.new(channel_id, System::Uri.new('http://localhost:7146'))
     source     = PeerCastStation::PCP::PCPSourceStream.new(@core, channel, channel.source_uri)
@@ -580,7 +580,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_connection_otherhost_not_found
-    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144))
+    @core      = PeerCastStation::Core::Core.new(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147))
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel    = TestChannel.new(channel_id, System::Uri.new('http://localhost:7146'))
     source     = PeerCastStation::PCP::PCPSourceStream.new(@core, channel, channel.source_uri)
@@ -617,7 +617,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_post
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
     @core = PeerCastStation::Core::Core.new(endpoint)
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel = PeerCastStation::Core::Channel.new(channel_id, System::Uri.new('http://localhost:7146'))
@@ -639,7 +639,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_bcst
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
     @core = PeerCastStation::Core::Core.new(endpoint)
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel = PeerCastStation::Core::Channel.new(channel_id, System::Uri.new('http://localhost:7146'))
@@ -679,7 +679,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_bcst_dest
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
     @core = PeerCastStation::Core::Core.new(endpoint)
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel = PeerCastStation::Core::Channel.new(channel_id, System::Uri.new('http://localhost:7146'))
@@ -713,7 +713,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_bcst_no_ttl
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
     @core = PeerCastStation::Core::Core.new(endpoint)
     channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     channel = PeerCastStation::Core::Channel.new(channel_id, System::Uri.new('http://localhost:7146'))
