@@ -853,3 +853,115 @@ class TC_PCPSourceRelayRequestState < Test::Unit::TestCase
   end
 end
 
+class TC_PCPSourceRecvRelayResponseState < Test::Unit::TestCase
+  class TestPCPSourceStreamNoRecv < PeerCastStation::PCP::PCPSourceStream
+    def self.new(core, channel, tracker)
+      inst = super
+      inst.instance_eval do
+        @log = []
+        @relay_request_response = nil
+      end
+      inst
+    end
+    attr_accessor :log, :relay_request_response
+
+    def RecvRelayRequestResponse
+      @log << [:recv_relay_request_response]
+      @relay_request_response
+    end
+  end
+
+  def setup
+    @session_id = System::Guid.new_guid
+    @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
+    @core       = PeerCastStation::Core::Core.new(@endpoint)
+    @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
+    @channel    = PeerCastStation::Core::Channel.new(@channel_id, System::Uri.new('http://localhost:7146'))
+    @source     = TestPCPSourceStreamNoRecv.new(@core, @channel, @channel.source_uri)
+  end
+  
+  def teardown
+    @core.close if @core and not @core.is_closed
+  end
+  
+  def test_construct
+    state = PCSPCP::PCPSourceRecvRelayResponseState.new(@source)
+    assert_equal(@source, state.owner)
+  end
+
+  def test_process
+    assert_equal(0, @source.log.size)
+
+    @source.relay_request_response = nil
+    state = PCSPCP::PCPSourceRecvRelayResponseState.new(@source)
+    next_state = state.process
+    assert(next_state)
+    assert_equal(state, next_state)
+    assert_equal(1, @source.log.size)
+    assert_equal(:recv_relay_request_response, @source.log[0][0])
+    @source.log.clear
+
+    @source.relay_request_response = PCSPCP::RelayRequestResponse.new(
+      System::Array[System::String].new([
+        'HTTP/1.1 200 OK',
+        'x-peercast-pcp:1',
+        'x-peercast-pos: 200000000',
+        'Content-Type: application/x-peercast-pcp',
+      ])
+    )
+    next_state = state.process
+    assert(next_state)
+    assert_kind_of(PCSPCP::PCPSourcePCPHandshakeState, next_state)
+    assert_equal(1, @source.log.size)
+    assert_equal(:recv_relay_request_response, @source.log[0][0])
+    @source.log.clear
+
+    @source.relay_request_response = PCSPCP::RelayRequestResponse.new(
+      System::Array[System::String].new([
+        'HTTP/1.1 503 Unavailable',
+        'x-peercast-pcp:1',
+        'x-peercast-pos: 200000000',
+        'Content-Type: application/x-peercast-pcp',
+      ])
+    )
+    next_state = state.process
+    assert(next_state)
+    assert_kind_of(PCSPCP::PCPSourcePCPHandshakeState, next_state)
+    assert_equal(1, @source.log.size)
+    assert_equal(:recv_relay_request_response, @source.log[0][0])
+    @source.log.clear
+
+    @source.relay_request_response = PCSPCP::RelayRequestResponse.new(
+      System::Array[System::String].new([
+        'HTTP/1.1 404 Not found',
+        'x-peercast-pcp:1',
+        'x-peercast-pos: 200000000',
+        'Content-Type: application/x-peercast-pcp',
+      ])
+    )
+    next_state = state.process
+    assert(next_state)
+    assert_kind_of(PCSPCP::PCPSourceClosedState, next_state)
+    assert_equal(PCSPCP::CloseReason.channel_not_found, next_state.close_reason)
+    assert_equal(1, @source.log.size)
+    assert_equal(:recv_relay_request_response, @source.log[0][0])
+    @source.log.clear
+
+    @source.relay_request_response = PCSPCP::RelayRequestResponse.new(
+      System::Array[System::String].new([
+        'HTTP/1.1 400 Bad Request',
+        'x-peercast-pcp:1',
+        'x-peercast-pos: 200000000',
+        'Content-Type: application/x-peercast-pcp',
+      ])
+    )
+    next_state = state.process
+    assert(next_state)
+    assert_kind_of(PCSPCP::PCPSourceClosedState, next_state)
+    assert_equal(PCSPCP::CloseReason.access_denied, next_state.close_reason)
+    assert_equal(1, @source.log.size)
+    assert_equal(:recv_relay_request_response, @source.log[0][0])
+    @source.log.clear
+  end
+end
+
