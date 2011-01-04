@@ -806,3 +806,50 @@ class TC_PCPSourceConnectState < Test::Unit::TestCase
   end
 end
 
+class TC_PCPSourceRelayRequestState < Test::Unit::TestCase
+  class TestPCPSourceStreamNoSendRequest < PeerCastStation::PCP::PCPSourceStream
+    def self.new(core, channel, tracker)
+      inst = super
+      inst.instance_eval do
+        @log = []
+      end
+      inst
+    end
+    attr_accessor :log
+
+    def SendRelayRequest
+      @log << [:send_relay_request]
+    end
+  end
+
+  def setup
+    @session_id = System::Guid.new_guid
+    @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
+    @core       = PeerCastStation::Core::Core.new(@endpoint)
+    @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
+    @channel    = PeerCastStation::Core::Channel.new(@channel_id, System::Uri.new('http://localhost:7146'))
+    @source     = TestPCPSourceStreamNoSendRequest.new(@core, @channel, @channel.source_uri)
+  end
+  
+  def teardown
+    @core.close if @core and not @core.is_closed
+  end
+  
+  def test_construct
+    state = PCSPCP::PCPSourceRelayRequestState.new(@source)
+    assert_equal(@source, state.owner)
+  end
+
+  def test_process
+    assert_equal(0, @source.log.size)
+
+    state = PCSPCP::PCPSourceRelayRequestState.new(@source)
+    next_state = state.process
+    assert(next_state)
+    assert_kind_of(PCSPCP::PCPSourceRecvRelayResponseState, next_state)
+    assert_equal(1, @source.log.count)
+    assert_equal(:send_relay_request, @source.log[0][0])
+    @source.log.clear
+  end
+end
+
