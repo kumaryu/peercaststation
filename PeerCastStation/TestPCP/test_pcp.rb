@@ -631,7 +631,7 @@ end
 PCSCore = PeerCastStation::Core
 PCSPCP  = PeerCastStation::PCP
 
-class TC_PCPSourceClosedState
+class TC_PCPSourceClosedState < Test::Unit::TestCase
   class TestPCPSourceStreamNoIgnore < PeerCastStation::PCP::PCPSourceStream
     def self.new(core, channel, tracker)
       inst = super
@@ -709,10 +709,10 @@ class TC_PCPSourceClosedState
     @source.log.clear
 
     [
-      CloseReason.ChannelExit,
-      CloseReason.ConnectionError,
-      CloseReason.AccessDenied,
-      CloseReason.ChannelNotFound,
+      PCSPCP::CloseReason.ChannelExit,
+      PCSPCP::CloseReason.ConnectionError,
+      PCSPCP::CloseReason.AccessDenied,
+      PCSPCP::CloseReason.ChannelNotFound,
     ].each do |reason|
       state = PCSPCP::PCPSourceClosedState.new(@source, reason)
       @source.uphost = @channel.source_host
@@ -734,4 +734,5 @@ class TC_PCPSourceClosedState
     end
   end
 end
+
 

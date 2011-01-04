@@ -434,7 +434,9 @@ namespace PeerCastStation.Core
 
       public void Add(Host host)
       {
-        ignoredHosts[host] = Environment.TickCount;
+        if (host!=null) {
+          ignoredHosts[host] = Environment.TickCount;
+        }
       }
 
       public bool Contains(Host host)
