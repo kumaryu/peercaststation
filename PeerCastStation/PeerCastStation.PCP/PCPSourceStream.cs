@@ -101,30 +101,197 @@ namespace PeerCastStation.PCP
     }
   }
 
+  public interface IStreamState
+  {
+    IStreamState Process();
+  }
+
+  public class PCPSourceConnectState : IStreamState
+  {
+    public PCPSourceStream Owner { get; private set; }
+    public Host Host { get; private set; }
+    public int  StartTicks { get; private set; }
+
+    public PCPSourceConnectState(PCPSourceStream owner, Host host)
+    {
+      Owner = owner;
+      Host = host;
+      StartTicks = Environment.TickCount;
+    }
+
+    public PCPSourceConnectState(PCPSourceStream owner, Host host, int start)
+    {
+      Owner = owner;
+      Host = host;
+      StartTicks = start;
+    }
+
+    public IStreamState Process()
+    {
+      if (Host!=null) {
+        if (Environment.TickCount-StartTicks>0) {
+          if (Owner.Connect(Host)) {
+            return new PCPSourceRelayRequestState(Owner);
+          }
+          else {
+            return new PCPSourceClosedState(Owner, CloseReason.ConnectionError);
+          }
+        }
+        else {
+          return this;
+        }
+      }
+      else {
+        return new PCPSourceClosedState(Owner, CloseReason.NodeNotFound);
+      }
+    }
+  }
+
+  public class PCPSourceRelayRequestState : IStreamState
+  {
+    public PCPSourceStream Owner { get; private set; }
+    public PCPSourceRelayRequestState(PCPSourceStream owner)
+    {
+      Owner = owner;
+    }
+
+    public IStreamState Process()
+    {
+      Owner.SendRelayRequest();
+      return new PCPSourceRecvRelayResponseState(Owner);
+    }
+  }
+
+  public class PCPSourceRecvRelayResponseState : IStreamState
+  {
+    public PCPSourceStream Owner { get; private set; }
+    public PCPSourceRecvRelayResponseState(PCPSourceStream owner)
+    {
+      Owner = owner;
+    }
+
+    public IStreamState Process()
+    {
+      RelayRequestResponse res = Owner.RecvRelayRequestResponse();
+      if (res!=null) {
+        if (res.StatusCode==200 || res.StatusCode==503) {
+          return new PCPSourcePCPHandshakeState(Owner);
+        }
+        else if (res.StatusCode==404) {
+          return new PCPSourceClosedState(Owner, CloseReason.ChannelNotFound);
+        }
+        else {
+          return new PCPSourceClosedState(Owner, CloseReason.AccessDenied);
+        }
+      }
+      else {
+        return this;
+      }
+    }
+  }
+
+  public class PCPSourcePCPHandshakeState : IStreamState
+  {
+    public PCPSourceStream Owner { get; private set; }
+    public PCPSourcePCPHandshakeState(PCPSourceStream owner)
+    {
+      Owner = owner;
+    }
+
+    public IStreamState Process()
+    {
+      Owner.SendPCPHelo();
+      return new PCPSourceReceivingState(Owner);
+    }
+  }
+
+  public class PCPSourceReceivingState : IStreamState
+  {
+    public PCPSourceStream Owner { get; private set; }
+    private int lastHostInfoUpdated = 0;
+    public PCPSourceReceivingState(PCPSourceStream owner)
+    {
+      Owner = owner;
+    }
+
+    public IStreamState Process()
+    {
+      Atom atom = Owner.RecvAtom();
+      if (atom!=null) {
+        if (Environment.TickCount - lastHostInfoUpdated > 10000) {
+          Owner.BroadcastHostInfo();
+        }
+        var state = Owner.ProcessAtom(atom);
+        if (state!=null) {
+          return state;
+        }
+        else {
+          return this;
+        }
+      }
+      else {
+        return this;
+      }
+    }
+  }
+
+  public class PCPSourceClosedState : IStreamState
+  {
+    public PCPSourceStream Owner { get; private set; }
+    public CloseReason CloseReason { get; private set; }
+    public PCPSourceClosedState(PCPSourceStream owner, CloseReason reason)
+    {
+      Owner = owner;
+      CloseReason = reason;
+    }
+
+    public IStreamState Process()
+    {
+      IStreamState res = null;
+      switch (CloseReason) {
+      case CloseReason.UserShutdown:
+      case CloseReason.NodeNotFound:
+        res = null;
+        break;
+      case CloseReason.Unavailable:
+        Owner.IgnoreHost(Owner.Uphost);
+        res = new PCPSourceConnectState(Owner, Owner.SelectSourceHost());
+        break;
+      case CloseReason.ChannelExit:
+      case CloseReason.ConnectionError:
+      case CloseReason.AccessDenied:
+      case CloseReason.ChannelNotFound:
+        if (Owner.Uphost == Owner.Channel.SourceHost) {
+          res = null;
+        }
+        else {
+          Owner.IgnoreHost(Owner.Uphost);
+          res = new PCPSourceConnectState(Owner, Owner.SelectSourceHost());
+        }
+        break;
+      }
+      Owner.Close(CloseReason);
+      return res;
+    }
+  }
+
   public class PCPSourceStream : ISourceStream
   {
     private PeerCastStation.Core.Core core;
     private Channel channel;
     private Uri sourceUri;
+    private IStreamState state = null;
 
     private TcpClient connection = null;
     private NetworkStream stream = null;
     private Host uphost = null;
-    private int connectWait = Environment.TickCount;
-    private int lastHostInfoUpdated = 0;
-    public enum SourceStreamState {
-      ConnectWait,
-      Connect,
-      RelayRequest,
-      Receiving,
-      Closed,
-    }
-    private SourceStreamState state = SourceStreamState.Connect;
     private PeerCastStation.Core.QueuedSynchronizationContext syncContext;
-    public event SourceClosedEventHandler SourceClosed;
 
+    public IStreamState State { get { return state; } set { state = value; } }
+    public PeerCastStation.Core.Core Core { get { return core; } }
     public Channel Channel { get { return channel; } set { channel = value; } }
     public Host Uphost { get { return uphost; } set { uphost = value; } }
+    public bool IsConnected { get { return connection!=null; } }
 
     MemoryStream recvStream = new MemoryStream();
     byte[] recvBuffer = new byte[8192];
@@ -152,7 +319,7 @@ namespace PeerCastStation.PCP
 
     MemoryStream sendStream = new MemoryStream(8192);
     byte[] writeBuffer = null;
-    private void CheckSend()
+    private void ProcessSend()
     {
       if (stream!=null && writeBuffer == null && sendStream.Length > 0) {
         writeBuffer = sendStream.ToArray();
@@ -172,12 +339,12 @@ namespace PeerCastStation.PCP
       }
     }
 
-    protected virtual void Send(byte[] bytes)
+    public virtual void Send(byte[] bytes)
     {
       sendStream.Write(bytes, 0, bytes.Length);
     }
 
-    protected virtual void Send(Atom atom)
+    public virtual void Send(Atom atom)
     {
       AtomWriter.Write(sendStream, atom);
     }
@@ -190,12 +357,14 @@ namespace PeerCastStation.PCP
       return res;
     }
 
-    private void ProcessEvents()
+    public void ProcessEvents()
     {
-      syncContext.ProcessAll();
+      if (syncContext!=null) {
+        syncContext.ProcessAll();
+      }
     }
 
-    private Host SelectSourceHost()
+    public virtual Host SelectSourceHost()
     {
       var res = new Host[1];
       core.SynchronizationContext.Send(r => {
@@ -210,58 +379,47 @@ namespace PeerCastStation.PCP
       }
     }
 
-    private void Connect(Host host)
+    public bool Connect(Host host)
     {
-      connection = new TcpClient();
-      IPEndPoint point = host.Addresses.First(x => x.AddressFamily == AddressFamily.InterNetwork);
-      try {
-        connection.Connect(point);
-        stream = connection.GetStream();
-        StartRelayRequest();
+      if (host!=null) {
+        connection = new TcpClient();
+        IPEndPoint point = host.Addresses.First(x => x.AddressFamily == AddressFamily.InterNetwork);
+        try {
+          connection.Connect(point);
+          stream = connection.GetStream();
+          sendStream.SetLength(0);
+          sendStream.Position = 0;
+          recvStream.SetLength(0);
+          recvStream.Position = 0;
+          StartReceive();
+          return true;
+        }
+        catch (SocketException) {
+          connection.Close();
+          connection = null;
+          if (stream!=null) stream.Close();
+          stream = null;
+          sendStream.SetLength(0);
+          sendStream.Position = 0;
+          recvStream.SetLength(0);
+          recvStream.Position = 0;
+          return false;
+        }
       }
-      catch (SocketException) {
-        connection.Close();
-        connection = null;
-        if (stream!=null) stream.Close();
-        stream = null;
-        OnClose(CloseReason.ConnectionError);
+      else {
+        return false;
       }
     }
 
-    private void IgnoreHost(Host host)
+    public virtual void IgnoreHost(Host host)
     {
       core.SynchronizationContext.Send(dummy => {
         channel.IgnoreHost(host);
       }, null);
     }
 
-    private void OnClose(CloseReason reason)
+    public virtual void Close(CloseReason reason)
     {
-      if (SourceClosed != null) {
-        SourceClosed(this, new SourceClosedEventArgs(uphost, reason));
-      }
-      switch (reason) {
-      case CloseReason.UserShutdown:
-      case CloseReason.NodeNotFound:
-        state = SourceStreamState.Closed;
-        break;
-      case CloseReason.Unavailable:
-        IgnoreHost(uphost);
-        StartConnect();
-        break;
-      case CloseReason.ChannelExit:
-      case CloseReason.ConnectionError:
-      case CloseReason.AccessDenied:
-      case CloseReason.ChannelNotFound:
-        if (uphost == channel.SourceHost) {
-          state = SourceStreamState.Closed;
-        }
-        else {
-          IgnoreHost(uphost);
-          StartConnect();
-        }
-        break;
-      }
       if (connection != null) {
         stream.Close();
         connection.Close();
@@ -274,126 +432,87 @@ namespace PeerCastStation.PCP
       }
     }
 
-    private void StartConnect()
-    {
-      uphost = SelectSourceHost();
-      state = SourceStreamState.Connect;
-    }
-
-    private void RetryConnect()
-    {
-      state = SourceStreamState.Connect;
-    }
-
-    private byte[] CreateRelayRequest()
+    public virtual void SendRelayRequest()
     {
       var req = String.Format(
         "GET /channel/{0} HTTP/1.0\r\n" +
         "x-peercast-pcp:1\r\n" +
         "\r\n", channel.ChannelInfo.ChannelID.ToString("N"));
-      return System.Text.Encoding.UTF8.GetBytes(req);
+      Send(System.Text.Encoding.UTF8.GetBytes(req));
     }
 
-    private void StartRelayRequest()
+    public bool Recv(Action<Stream> proc)
     {
-      state = SourceStreamState.RelayRequest;
-      Send(CreateRelayRequest());
-    }
-
-    private void WaitRelayResponse()
-    {
-      RelayRequestResponse response = null;
+      bool res = false;
       recvStream.Seek(0, SeekOrigin.Begin);
       try {
-        response = RelayRequestResponseReader.Read(recvStream);
+        proc(recvStream);
         recvStream = dropStream(recvStream);
+        res = true;
       }
       catch (EndOfStreamException) {
       }
-      if (response!=null) {
-        if (response.StatusCode == 200 || response.StatusCode == 503) {
-          StartHandshake();
-        }
-        else if (response.StatusCode == 404) {
-          OnClose(CloseReason.ChannelNotFound);
-        }
-        else {
-          OnClose(CloseReason.AccessDenied);
-        }
+      return res;
+    }
+
+    public virtual RelayRequestResponse RecvRelayRequestResponse()
+    {
+      RelayRequestResponse response = null;
+      if (Recv(s => { response = RelayRequestResponseReader.Read(s); })) {
+        return response;
+      }
+      else {
+        return null;
       }
     }
 
-    private void StartHandshake()
+    public virtual void SendPCPHelo()
     {
-      state = SourceStreamState.Receiving;
       var helo = new Atom(Atom.PCP_HELO, new AtomCollection());
-      helo.Children.Add(new Atom(Atom.PCP_HELO_AGENT,     "PeerCastStation/1.0"));
+      helo.Children.Add(new Atom(Atom.PCP_HELO_AGENT, "PeerCastStation/1.0"));
       helo.Children.Add(new Atom(Atom.PCP_HELO_SESSIONID, core.Host.SessionID.ToByteArray()));
-      helo.Children.Add(new Atom(Atom.PCP_HELO_PORT,      core.Host.Addresses[0].Port));
-      helo.Children.Add(new Atom(Atom.PCP_HELO_VERSION,   1218));
+      helo.Children.Add(new Atom(Atom.PCP_HELO_PORT, core.Host.Addresses[0].Port));
+      helo.Children.Add(new Atom(Atom.PCP_HELO_VERSION, 1218));
       Send(helo);
     }
 
-    private void ProcessPacket()
+    public virtual Atom RecvAtom()
     {
-      if (recvStream.Length >= 8) {
-        try {
-          recvStream.Seek(0, SeekOrigin.Begin);
-          var atom = AtomReader.Read(recvStream);
-          recvStream = dropStream(recvStream);
-          ProcessAtom(atom);
-        }
-        catch (EndOfStreamException) {
-        }
+      Atom res = null;
+      if (recvStream.Length>=8 && Recv(s => { res = AtomReader.Read(s); })) {
+        return res;
+      }
+      else {
+        return null;
       }
     }
 
-    public void Start()
+    public virtual void Start()
     {
       if (this.syncContext == null) {
         this.syncContext = new QueuedSynchronizationContext();
         SynchronizationContext.SetSynchronizationContext(this.syncContext);
       }
-      StartConnect();
-      while (state!=SourceStreamState.Closed) {
-        switch (state) {
-        case SourceStreamState.ConnectWait:
-          if (Environment.TickCount - connectWait > 0) {
-            RetryConnect();
-          }
-          else {
-            Thread.Sleep(1);
-          }
-          break;
-        case SourceStreamState.Connect:
-          if (uphost != null) {
-            Connect(uphost);
-            StartReceive();
-          }
-          else {
-            OnClose(CloseReason.NodeNotFound);
-          }
-          break;
-        case SourceStreamState.RelayRequest:
-          WaitRelayResponse();
-          break;
-        case SourceStreamState.Receiving:
-          ProcessPacket();
-          CheckHostInfo();
-          break;
-        case SourceStreamState.Closed:
-          break;
-        }
-        CheckSend();
-        ProcessEvents();
+      state = new PCPSourceConnectState(this, SelectSourceHost());
+      while (state!=null) {
+        ProcessState();
       }
+    }
+
+    public virtual void ProcessState()
+    {
+      if (state!=null) {
+        state = state.Process();
+      }
+      ProcessSend();
+      ProcessEvents();
     }
 
     /// <summary>
     /// 現在のチャンネルとCoreの状態からHostパケットを作ります
     /// </summary>
     /// <returns>作ったPCP_HOSTパケット</returns>
-    public Atom CreateHostPacket()
+    public virtual Atom CreateHostPacket()
     {
       var host = new AtomCollection();
       host.SetHostChannelID(channel.ChannelInfo.ChannelID);
@@ -436,7 +555,7 @@ namespace PeerCastStation.PCP
     /// <param name="group">配送先グループ</param>
     /// <param name="packet">配送するパケット</param>
     /// <returns>作成したPCP_BCSTパケット</returns>
-    public Atom CreateBroadcastPacket(BroadcastGroup group, Atom packet)
+    public virtual Atom CreateBroadcastPacket(BroadcastGroup group, Atom packet)
     {
       var bcst = new AtomCollection();
       bcst.SetBcstFrom(core.Host.SessionID);
@@ -452,34 +571,32 @@ namespace PeerCastStation.PCP
       return new Atom(Atom.PCP_BCST, bcst);
     }
 
-    private void CheckHostInfo()
+    public virtual void BroadcastHostInfo()
     {
-      if (Environment.TickCount - lastHostInfoUpdated > 10000) {
-        lastHostInfoUpdated = Environment.TickCount;
-        channel.Broadcast(core.Host,
-          CreateBroadcastPacket(BroadcastGroup.Relays | BroadcastGroup.Trackers, CreateHostPacket()),
-          BroadcastGroup.Relays | BroadcastGroup.Trackers);
-      }
+      channel.Broadcast(core.Host,
+        CreateBroadcastPacket(BroadcastGroup.Relays | BroadcastGroup.Trackers, CreateHostPacket()),
+        BroadcastGroup.Relays | BroadcastGroup.Trackers);
     }
 
-    protected virtual void ProcessAtom(Atom atom)
+    public virtual IStreamState ProcessAtom(Atom atom)
     {
-           if (atom.Name==Atom.PCP_HELO)       OnPCPHelo(atom);
-      else if (atom.Name==Atom.PCP_OLEH)       OnPCPOleh(atom);
-      else if (atom.Name==Atom.PCP_OK)         OnPCPOk(atom);
-      else if (atom.Name==Atom.PCP_CHAN)       OnPCPChan(atom);
-      else if (atom.Name==Atom.PCP_CHAN_PKT)   OnPCPChanPkt(atom);
-      else if (atom.Name==Atom.PCP_CHAN_INFO)  OnPCPChanInfo(atom);
-      else if (atom.Name==Atom.PCP_CHAN_TRACK) OnPCPChanTrack(atom);
-      else if (atom.Name==Atom.PCP_BCST)       OnPCPBcst(atom);
-      else if (atom.Name==Atom.PCP_HOST)       OnPCPHost(atom);
-      else if (atom.Name==Atom.PCP_QUIT)       OnPCPQuit(atom);
+           if (atom.Name==Atom.PCP_HELO)       return OnPCPHelo(atom);
+      else if (atom.Name==Atom.PCP_OLEH)       return OnPCPOleh(atom);
+      else if (atom.Name==Atom.PCP_OK)         return OnPCPOk(atom);
+      else if (atom.Name==Atom.PCP_CHAN)       return OnPCPChan(atom);
+      else if (atom.Name==Atom.PCP_CHAN_PKT)   return OnPCPChanPkt(atom);
+      else if (atom.Name==Atom.PCP_CHAN_INFO)  return OnPCPChanInfo(atom);
+      else if (atom.Name==Atom.PCP_CHAN_TRACK) return OnPCPChanTrack(atom);
+      else if (atom.Name==Atom.PCP_BCST)       return OnPCPBcst(atom);
+      else if (atom.Name==Atom.PCP_HOST)       return OnPCPHost(atom);
+      else if (atom.Name==Atom.PCP_QUIT)       return OnPCPQuit(atom);
+      else                                     return null;
     }
 
-    protected virtual void OnPCPHelo(Atom atom)
+    protected virtual IStreamState OnPCPHelo(Atom atom)
     {
       var res = new Atom(Atom.PCP_OLEH, new AtomCollection());
-      if (connection.Client.RemoteEndPoint.AddressFamily==AddressFamily.InterNetwork) {
+      if (connection!=null && connection.Client.RemoteEndPoint.AddressFamily==AddressFamily.InterNetwork) {
         res.Children.SetHeloRemoteIP(((IPEndPoint)connection.Client.RemoteEndPoint).Address);
       }
       res.Children.SetHeloAgent("PeerCastStation/1.0");
@@ -487,30 +604,35 @@ namespace PeerCastStation.PCP
       res.Children.SetHeloPort((short)core.Host.Addresses[0].Port);
       res.Children.SetHeloVersion(1218);
       Send(res);
+      return null;
     }
 
-    protected virtual void OnPCPOleh(Atom atom)
+    protected virtual IStreamState OnPCPOleh(Atom atom)
     {
       core.SynchronizationContext.Post(dummy => {
         var rip = atom.Children.GetHeloRemoteIP();
-        if (!core.Host.Addresses.Any(x => x.Address == rip)) {
+        if (!core.Host.Addresses.Any(x => x.Address.Equals(rip))) {
           core.Host.Addresses.Add(new IPEndPoint(rip, core.Host.Addresses[0].Port));
         }
       }, null);
+      return null;
     }
 
-    protected virtual void OnPCPOk(Atom atom)
+    protected virtual IStreamState OnPCPOk(Atom atom)
     {
+      return null;
     }
 
-    protected virtual void OnPCPChan(Atom atom)
+    protected virtual IStreamState OnPCPChan(Atom atom)
     {
+      IStreamState state = null;
       foreach (var c in atom.Children) {
-        ProcessAtom(c);
+        state = ProcessAtom(c);
       }
+      return state;
     }
 
-    protected virtual void OnPCPChanPkt(Atom atom)
+    protected virtual IStreamState OnPCPChanPkt(Atom atom)
     {
       var pkt_type = atom.Children.GetChanPktType();
       var pkt_data = atom.Children.GetChanPktData();
@@ -531,23 +653,26 @@ namespace PeerCastStation.PCP
         else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_META) {
         }
       }
+      return null;
     }
 
-    protected virtual void OnPCPChanInfo(Atom atom)
+    protected virtual IStreamState OnPCPChanInfo(Atom atom)
     {
       core.SynchronizationContext.Post(dummy => {
         var name = atom.Children.GetChanInfoName();
         if (name != null) channel.ChannelInfo.Name = name;
         channel.ChannelInfo.Extra.SetChanInfo(atom.Children);
       }, null);
+      return null;
     }
 
-    protected virtual void OnPCPChanTrack(Atom atom)
+    protected virtual IStreamState OnPCPChanTrack(Atom atom)
     {
       channel.ChannelInfo.Extra.SetChanTrack(atom.Children);
+      return null;
     }
 
-    protected virtual void OnPCPBcst(Atom atom)
+    protected virtual IStreamState OnPCPBcst(Atom atom)
     {
       var dest = atom.Children.GetBcstDest();
       if (dest==null || dest==core.Host.SessionID) {
@@ -567,15 +692,16 @@ namespace PeerCastStation.PCP
         atom.Children.SetBcstHops((byte)(hops + 1));
         channel.Broadcast(uphost, atom, group.Value);
       }
+      return null;
     }
 
-    protected virtual void OnPCPHost(Atom atom)
+    protected virtual IStreamState OnPCPHost(Atom atom)
     {
       var session_id = atom.Children.GetHostSessionID();
       if (session_id!=null) {
-        core.SynchronizationContext.Post(dummy => {
-          var node = channel.Nodes.FirstOrDefault(x => x.Host.SessionID == session_id);
-          if (node == null) {
+        //core.SynchronizationContext.Post(dummy => {
+          var node = channel.Nodes.FirstOrDefault(x => x.Host.SessionID.Equals(session_id));
+          if (node==null) {
             node = new Node(new Host());
             node.Host.SessionID = (Guid)session_id;
             channel.Nodes.Add(node);
@@ -594,24 +720,24 @@ namespace PeerCastStation.PCP
 
           var ip = new IPEndPoint(IPAddress.Any, 0);
           foreach (var c in atom.Children) {
-            if (c.Name == Atom.PCP_HOST_IP) {
+            if (c.Name==Atom.PCP_HOST_IP) {
               IPAddress addr;
               if (c.TryGetIPv4Address(out addr)) {
                 ip.Address = addr;
                 if (ip.Port != 0) {
-                  if (!node.Host.Addresses.Any(x => x == ip)) {
+                  if (!node.Host.Addresses.Any(x => x.Equals(ip))) {
                     node.Host.Addresses.Add(ip);
                   }
                   ip = new IPEndPoint(IPAddress.Any, 0);
                 }
               }
             }
-            else if (c.Name == Atom.PCP_HOST_PORT) {
+            else if (c.Name==Atom.PCP_HOST_PORT) {
               short port;
               if (c.TryGetInt16(out port)) {
                 ip.Port = port;
                 if (ip.Address != IPAddress.Any) {
-                  if (node.Host.Addresses.Any(x => x == ip)) {
+                  if (!node.Host.Addresses.Any(x => x.Equals(ip))) {
                     node.Host.Addresses.Add(ip);
                   }
                   ip = new IPEndPoint(IPAddress.Any, 0);
@@ -619,36 +745,51 @@ namespace PeerCastStation.PCP
               }
             }
           }
-        }, null);
+        //}, null);
       }
+      return null;
     }
 
-    protected virtual void OnPCPQuit(Atom atom)
+    protected virtual IStreamState OnPCPQuit(Atom atom)
     {
       if (atom.GetInt32() == Atom.PCP_ERROR_QUIT + Atom.PCP_ERROR_UNAVAILABLE) {
-        OnClose(CloseReason.Unavailable);
+        return new PCPSourceClosedState(this, CloseReason.Unavailable);
       }
       else {
-        OnClose(CloseReason.ChannelExit);
+        return new PCPSourceClosedState(this, CloseReason.ChannelExit);
       }
     }
 
     public void Close()
     {
-      if (state!=SourceStreamState.Closed) {
-        syncContext.Post((x) => { OnClose(CloseReason.UserShutdown); }, null);
+      if (syncContext!=null) {
+        syncContext.Post((x) => {
+          if (IsConnected) {
+            state = new PCPSourceClosedState(this, CloseReason.UserShutdown);
+          }
+        }, null);
+      }
+      else {
+        if (IsConnected) {
+          state = new PCPSourceClosedState(this, CloseReason.UserShutdown);
+        }
       }
     }
 
     public void Post(Host from, Atom packet)
     {
-      if (state!=SourceStreamState.Closed) {
+      if (syncContext!=null) {
         syncContext.Post(x => {
           if (uphost != from) {
             Send(packet);
           }
         }
         , null);
+      }
+      else {
+        if (uphost != from) {
+          Send(packet);
+        }
       }
     }
 

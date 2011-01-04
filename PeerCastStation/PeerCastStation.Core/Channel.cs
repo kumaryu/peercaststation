@@ -423,11 +423,11 @@ namespace PeerCastStation.Core
       }
     }
 
-    private class IgnoredHosts
+    private class IgnoredHostCollection
     {
       private Dictionary<Host, int> ignoredHosts = new Dictionary<Host, int>();
       private int threshold;
-      public IgnoredHosts(int threshold)
+      public IgnoredHostCollection(int threshold)
       {
         this.threshold = threshold;
       }
@@ -452,8 +452,11 @@ namespace PeerCastStation.Core
       {
         ignoredHosts.Clear();
       }
+
+      public ICollection<Host> Hosts { get { return ignoredHosts.Keys; } }
     }
-    private IgnoredHosts ignoredHosts = new IgnoredHosts(30 * 1000); //30sec
+    private IgnoredHostCollection ignoredHosts = new IgnoredHostCollection(30 * 1000); //30sec
+    public ICollection<Host> IgnoredHosts { get { return ignoredHosts.Hosts; } }
 
     /// <summary>
     /// 指定したホストが接続先として選択されないように指定します。
