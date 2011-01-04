@@ -628,3 +628,110 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 end
 
+PCSCore = PeerCastStation::Core
+PCSPCP  = PeerCastStation::PCP
+
+class TC_PCPSourceClosedState
+  class TestPCPSourceStreamNoIgnore < PeerCastStation::PCP::PCPSourceStream
+    def self.new(core, channel, tracker)
+      inst = super
+      inst.instance_eval do
+        @log = []
+      end
+      inst
+    end
+    attr_accessor :on_pcp_ok, :log
+
+    def Close(reason)
+      @log << [:close, reason]
+      super
+    end
+
+    def IgnoreHost(host)
+      @log << [:ignore_host, host]
+      super
+    end
+
+    def SelectSourceHost
+      @log << [:select_source_host]
+      super
+    end
+  end
+
+  def id4(s)
+    PeerCastStation::Core::ID4.new(s.to_clr_string)
+  end
+  
+  def setup
+    @session_id = System::Guid.new_guid
+    @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
+    @core       = PeerCastStation::Core::Core.new(@endpoint)
+    @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
+    @channel    = PeerCastStation::Core::Channel.new(@channel_id, System::Uri.new('http://localhost:7146'))
+    @source     = TestPCPSourceStreamNoIgnore.new(@core, @channel, @channel.source_uri)
+  end
+  
+  def teardown
+    @core.close if @core and not @core.is_closed
+  end
+  
+  def test_construct
+    state = PCSPCP::PCPSourceClosedState.new(@source, PCSPCP::CloseReason.channel_exit)
+    assert_equal(@source, state.owner)
+    assert_equal(PCSPCP::CloseReason.channel_exit, state.close_reason)
+  end
+
+  def test_process
+    assert_equal(0, @source.log.size)
+
+    state = PCSPCP::PCPSourceClosedState.new(@source, PCSPCP::CloseReason.user_shutdown)
+    assert_nil(state.process)
+    assert_equal(1, @source.log.size)
+    assert_equal(:close, @source.log[0][0])
+    assert_equal(PCSPCP::CloseReason.user_shutdown, @source.log[0][1])
+    @source.log.clear
+
+    state = PCSPCP::PCPSourceClosedState.new(@source, PCSPCP::CloseReason.node_not_found)
+    assert_nil(state.process)
+    assert_equal(1, @source.log.size)
+    assert_equal(:close, @source.log[0][0])
+    assert_equal(PCSPCP::CloseReason.node_not_found, @source.log[0][1])
+    @source.log.clear
+
+    state = PCSPCP::PCPSourceClosedState.new(@source, PCSPCP::CloseReason.unavailable)
+    connect_state = state.process
+    assert_equal(3, @source.log.size)
+    assert_equal(:ignore_host,        @source.log[0][0])
+    assert_equal(:select_source_host, @source.log[1][0])
+    assert_equal(:close,              @source.log[2][0])
+    assert_equal(PCSPCP::CloseReason.unavailable, @source.log[2][1])
+    assert_kind_of(PCSPCP::PCPSourceConnectState, connect_state)
+    @source.log.clear
+
+    [
+      CloseReason.ChannelExit,
+      CloseReason.ConnectionError,
+      CloseReason.AccessDenied,
+      CloseReason.ChannelNotFound,
+    ].each do |reason|
+      state = PCSPCP::PCPSourceClosedState.new(@source, reason)
+      @source.uphost = @channel.source_host
+      assert_nil(state.process)
+      assert_equal(1, @source.log.size)
+      assert_equal(:close, @source.log[0][0])
+      assert_equal(reason, @source.log[0][1])
+      assert_kind_of(PCSPCP::PCPSourceConnectState, connect_state)
+      @source.log.clear
+      @source.uphost = PCSCore::Host.new
+      connect_state = state.process
+      assert_equal(3, @source.log.size)
+      assert_equal(:ignore_host,        @source.log[0][0])
+      assert_equal(:select_source_host, @source.log[1][0])
+      assert_equal(:close,              @source.log[2][0])
+      assert_equal(reason,              @source.log[2][1])
+      assert_kind_of(PCSPCP::PCPSourceConnectState, connect_state)
+      @source.log.clear
+    end
+  end
+end
+

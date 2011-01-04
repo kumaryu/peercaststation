@@ -249,7 +249,7 @@ namespace PeerCastStation.PCP
       case CloseReason.ConnectionError:
       case CloseReason.AccessDenied:
       case CloseReason.ChannelNotFound:
-        if (Owner.Uphost == Owner.Channel.SourceHost) {
+        if (Owner.Uphost.Equals(Owner.Channel.SourceHost)) {
           res = null;
         }
         else {
