@@ -98,35 +98,21 @@ namespace PeerCastStation.PCP
   {
     public PCPSourceStream Owner { get; private set; }
     public Host Host { get; private set; }
-    public int  StartTicks { get; private set; }
 
     public PCPSourceConnectState(PCPSourceStream owner, Host host)
     {
       Owner = owner;
       Host = host;
-      StartTicks = Environment.TickCount;
-    }
-
-    public PCPSourceConnectState(PCPSourceStream owner, Host host, int start)
-    {
-      Owner = owner;
-      Host = host;
-      StartTicks = start;
     }
 
     public IStreamState Process()
     {
       if (Host!=null) {
-        if (Environment.TickCount-StartTicks>0) {
-          if (Owner.Connect(Host)) {
-            return new PCPSourceRelayRequestState(Owner);
-          }
-          else {
-            return new PCPSourceClosedState(Owner, CloseReason.ConnectionError);
-          }
+        if (Owner.Connect(Host)) {
+          return new PCPSourceRelayRequestState(Owner);
         }
         else {
-          return this;
+          return new PCPSourceClosedState(Owner, CloseReason.ConnectionError);
         }
       }
       else {
@@ -367,7 +353,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    public bool Connect(Host host)
+    public virtual bool Connect(Host host)
     {
       if (host!=null) {
         connection = new TcpClient();

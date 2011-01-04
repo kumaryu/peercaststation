@@ -735,4 +735,74 @@ class TC_PCPSourceClosedState < Test::Unit::TestCase
   end
 end
 
+class TC_PCPSourceConnectState < Test::Unit::TestCase
+  class TestPCPSourceStreamNoConnect < PeerCastStation::PCP::PCPSourceStream
+    def self.new(core, channel, tracker)
+      inst = super
+      inst.instance_eval do
+        @log = []
+        @connection_result = true
+      end
+      inst
+    end
+    attr_accessor :log, :connection_result
+
+    def Connect(host)
+      @log << [:connect, host]
+      @connection_result
+    end
+  end
+
+  def setup
+    @session_id = System::Guid.new_guid
+    @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
+    @core       = PeerCastStation::Core::Core.new(@endpoint)
+    @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
+    @channel    = PeerCastStation::Core::Channel.new(@channel_id, System::Uri.new('http://localhost:7146'))
+    @source     = TestPCPSourceStreamNoConnect.new(@core, @channel, @channel.source_uri)
+  end
+  
+  def teardown
+    @core.close if @core and not @core.is_closed
+  end
+  
+  def test_construct
+    host = PCSCore::Host.new
+    state = PCSPCP::PCPSourceConnectState.new(@source, host)
+    assert_equal(@source, state.owner)
+    assert_equal(host,    state.host)
+  end
+
+  def test_process
+    assert_equal(0, @source.log.size)
+
+    state = PCSPCP::PCPSourceConnectState.new(@source, nil)
+    next_state = state.process
+    assert(next_state)
+    assert_kind_of(PCSPCP::PCPSourceClosedState, next_state)
+    assert_equal(PCSPCP::CloseReason.node_not_found, next_state.close_reason)
+    assert_equal(0, @source.log.count)
+    @source.log.clear
+
+    host = PCSCore::Host.new
+    state = PCSPCP::PCPSourceConnectState.new(@source, host)
+    @source.connection_result = true
+    next_state = state.process
+    assert(next_state)
+    assert_kind_of(PCSPCP::PCPSourceRelayRequestState, next_state)
+    assert_equal(1, @source.log.count)
+    assert_equal(:connect, @source.log[0][0])
+    @source.log.clear
+
+    host = PCSCore::Host.new
+    state = PCSPCP::PCPSourceConnectState.new(@source, host)
+    @source.connection_result = false
+    next_state = state.process
+    assert_kind_of(PCSPCP::PCPSourceClosedState, next_state)
+    assert_equal(PCSPCP::CloseReason.connection_error, next_state.close_reason)
+    assert_equal(1, @source.log.count)
+    assert_equal(:connect, @source.log[0][0])
+    @source.log.clear
+  end
+end
 
