@@ -60,6 +60,19 @@ class MockPCPServer
   end
 end
 
+class MockStreamState
+  include PeerCastStation::PCP::IStreamState
+
+  def initialize
+    @log = []
+  end
+  attr_reader :log
+  def process
+    @log << :process
+    nil
+  end
+end
+
 class System::Guid
   def to_s
     self.to_byte_array.to_a.collect {|v| v.to_s(16) }.join
@@ -296,21 +309,8 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert(source.log[0][1].has_children)
   end
 
-  class TestStreamState
-    include PeerCastStation::PCP::IStreamState
-
-    def initialize
-      @log = []
-    end
-    attr_reader :log
-    def process
-      @log << :process
-      nil
-    end
-  end
-
   def test_process_state
-    state = TestStreamState.new
+    state = MockStreamState.new
     source = TestPCPSourceStreamNoSend.new(@core, @channel, @channel.source_uri)
     source.state = state
     assert_equal(0, state.log.size)
@@ -1008,6 +1008,103 @@ class TC_PCPSourcePCPHandshakeState < Test::Unit::TestCase
     assert_kind_of(PCSPCP::PCPSourceReceivingState, next_state)
     assert_equal(1, @source.log.count)
     assert_equal(:send_pcp_helo, @source.log[0][0])
+    @source.log.clear
+  end
+end
+
+class TC_PCPSourceReceivingState < Test::Unit::TestCase
+  class TestPCPSourceStreamReceive < PeerCastStation::PCP::PCPSourceStream
+    def self.new(core, channel, tracker)
+      inst = super
+      inst.instance_eval do
+        @log = []
+        @recv_atom = nil
+        @next_state = nil
+      end
+      inst
+    end
+    attr_accessor :log, :recv_atom, :next_state
+
+    def RecvAtom
+      @log << [:recv_atom]
+      @recv_atom
+    end
+
+    def BroadcastHostInfo
+      @log << [:broadcast_host_info]
+    end
+
+    def ProcessAtom(atom)
+      @log << [:process_atom, atom]
+      @next_state
+    end
+  end
+
+  def setup
+    @session_id = System::Guid.new_guid
+    @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
+    @core       = PeerCastStation::Core::Core.new(@endpoint)
+    @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
+    @channel    = PeerCastStation::Core::Channel.new(@channel_id, System::Uri.new('http://localhost:7146'))
+    @source     = TestPCPSourceStreamReceive.new(@core, @channel, @channel.source_uri)
+  end
+  
+  def teardown
+    @core.close if @core and not @core.is_closed
+  end
+  
+  def test_construct
+    state = PCSPCP::PCPSourceReceivingState.new(@source)
+    assert_equal(@source, state.owner)
+    assert_equal(0,       state.LastHostInfoUpdated)
+  end
+
+  def test_process
+    assert_equal(0, @source.log.size)
+
+    @source.recv_atom = nil
+    state = PCSPCP::PCPSourceReceivingState.new(@source)
+    next_state = state.process
+    assert_equal(state, next_state)
+    assert_equal(1, @source.log.count)
+    assert_equal(:recv_atom, @source.log[0][0])
+    @source.log.clear
+
+    @source.recv_atom = PCSCore::Atom.new(PCSCore::ID4.new('test'.to_clr_string), PCSCore::AtomCollection.new)
+    @source.next_state = nil
+    state = PCSPCP::PCPSourceReceivingState.new(@source)
+    state.LastHostInfoUpdated = System::Environment.TickCount
+    next_state = state.process
+    assert_equal(state, next_state)
+    assert_equal(2, @source.log.count)
+    assert_equal(:recv_atom,        @source.log[0][0])
+    assert_equal(:process_atom,     @source.log[1][0])
+    assert_equal(@source.recv_atom, @source.log[1][1])
+    @source.log.clear
+
+    @source.recv_atom  = PCSCore::Atom.new(PCSCore::ID4.new('test'.to_clr_string), PCSCore::AtomCollection.new)
+    @source.next_state = MockStreamState.new
+    state = PCSPCP::PCPSourceReceivingState.new(@source)
+    state.LastHostInfoUpdated = System::Environment.TickCount
+    next_state = state.process
+    assert_equal(@source.next_state, next_state)
+    assert_equal(2, @source.log.count)
+    assert_equal(:recv_atom,        @source.log[0][0])
+    assert_equal(:process_atom,     @source.log[1][0])
+    assert_equal(@source.recv_atom, @source.log[1][1])
+    @source.log.clear
+
+    @source.recv_atom  = PCSCore::Atom.new(PCSCore::ID4.new('test'.to_clr_string), PCSCore::AtomCollection.new)
+    @source.next_state = MockStreamState.new
+    state = PCSPCP::PCPSourceReceivingState.new(@source)
+    state.LastHostInfoUpdated = 0
+    next_state = state.process
+    assert_equal(@source.next_state, next_state)
+    assert_equal(3, @source.log.count)
+    assert_equal(:recv_atom,           @source.log[0][0])
+    assert_equal(:broadcast_host_info, @source.log[1][0])
+    assert_equal(:process_atom,        @source.log[2][0])
+    assert_equal(@source.recv_atom,    @source.log[2][1])
     @source.log.clear
   end
 end

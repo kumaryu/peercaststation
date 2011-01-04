@@ -182,17 +182,18 @@ namespace PeerCastStation.PCP
   public class PCPSourceReceivingState : IStreamState
   {
     public PCPSourceStream Owner { get; private set; }
-    private int lastHostInfoUpdated = 0;
+    public int LastHostInfoUpdated { get; set; }
     public PCPSourceReceivingState(PCPSourceStream owner)
     {
       Owner = owner;
+      LastHostInfoUpdated = 0;
     }
 
     public IStreamState Process()
     {
       Atom atom = Owner.RecvAtom();
       if (atom!=null) {
-        if (Environment.TickCount - lastHostInfoUpdated > 10000) {
+        if (Environment.TickCount - LastHostInfoUpdated > 10000) {
           Owner.BroadcastHostInfo();
         }
         var state = Owner.ProcessAtom(atom);
