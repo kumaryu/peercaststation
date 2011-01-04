@@ -37,18 +37,6 @@ namespace PeerCastStation.PCP
     UserShutdown,
   }
 
-  public class SourceClosedEventArgs : EventArgs
-  {
-    public Host Host { get; set; }
-    public CloseReason CloseReason { get; set; }
-    public SourceClosedEventArgs(Host host, CloseReason reason)
-    {
-      Host = host;
-      CloseReason = reason;
-    }
-  }
-  public delegate void SourceClosedEventHandler(object sender, SourceClosedEventArgs e);
-
   public class RelayRequestResponse
   {
     public int StatusCode     { get; set; }
