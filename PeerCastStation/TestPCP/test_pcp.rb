@@ -1064,6 +1064,7 @@ class TC_PCPSourceReceivingState < Test::Unit::TestCase
 
     @source.recv_atom = nil
     state = PCSPCP::PCPSourceReceivingState.new(@source)
+    state.LastHostInfoUpdated = System::Environment.TickCount
     next_state = state.process
     assert_equal(state, next_state)
     assert_equal(1, @source.log.count)
@@ -1097,14 +1098,44 @@ class TC_PCPSourceReceivingState < Test::Unit::TestCase
     @source.recv_atom  = PCSCore::Atom.new(PCSCore::ID4.new('test'.to_clr_string), PCSCore::AtomCollection.new)
     @source.next_state = MockStreamState.new
     state = PCSPCP::PCPSourceReceivingState.new(@source)
-    state.LastHostInfoUpdated = 0
+    @source.IsHostInfoUpdated = false
+    t = System::Environment.tick_count - 120000
+    state.LastHostInfoUpdated = t
     next_state = state.process
     assert_equal(@source.next_state, next_state)
     assert_equal(3, @source.log.count)
-    assert_equal(:recv_atom,           @source.log[0][0])
-    assert_equal(:broadcast_host_info, @source.log[1][0])
+    assert_equal(:broadcast_host_info, @source.log[0][0])
+    assert_equal(:recv_atom,           @source.log[1][0])
     assert_equal(:process_atom,        @source.log[2][0])
     assert_equal(@source.recv_atom,    @source.log[2][1])
+    assert_not_equal(t, state.LastHostInfoUpdated)
+    @source.log.clear
+    next_state = state.process
+    assert_equal(@source.next_state, next_state)
+    assert_equal(2, @source.log.count)
+    assert_equal(:recv_atom,           @source.log[0][0])
+    assert_equal(:process_atom,        @source.log[1][0])
+    assert_equal(@source.recv_atom,    @source.log[1][1])
+    @source.log.clear
+
+    @source.recv_atom  = nil
+    @source.next_state = nil
+    state = PCSPCP::PCPSourceReceivingState.new(@source)
+    @source.IsHostInfoUpdated = true
+    state.LastHostInfoUpdated = System::Environment.tick_count - 10000
+    next_state = state.process
+    assert_equal(state, next_state)
+    assert_equal(2, @source.log.count)
+    assert_equal(:broadcast_host_info, @source.log[0][0])
+    assert_equal(:recv_atom,           @source.log[1][0])
+    @source.log.clear
+
+    @source.IsHostInfoUpdated = false
+    state.LastHostInfoUpdated = System::Environment.tick_count - 10000
+    next_state = state.process
+    assert_equal(state, next_state)
+    assert_equal(1, @source.log.count)
+    assert_equal(:recv_atom, @source.log[0][0])
     @source.log.clear
   end
 end

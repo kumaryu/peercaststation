@@ -191,11 +191,13 @@ namespace PeerCastStation.PCP
 
     public IStreamState Process()
     {
+      if ((Environment.TickCount-LastHostInfoUpdated>=10000 && Owner.IsHostInfoUpdated) ||
+           Environment.TickCount-LastHostInfoUpdated>=120000) {
+        Owner.BroadcastHostInfo();
+        LastHostInfoUpdated = Environment.TickCount;
+      }
       Atom atom = Owner.RecvAtom();
       if (atom!=null) {
-        if (Environment.TickCount - LastHostInfoUpdated > 10000) {
-          Owner.BroadcastHostInfo();
-        }
         var state = Owner.ProcessAtom(atom);
         if (state!=null) {
           return state;
@@ -261,12 +263,14 @@ namespace PeerCastStation.PCP
     private NetworkStream stream = null;
     private Host uphost = null;
     private PeerCastStation.Core.QueuedSynchronizationContext syncContext;
+    private bool hostInfoUpdated = true;
 
     public IStreamState State { get { return state; } set { state = value; } }
     public PeerCastStation.Core.Core Core { get { return core; } }
     public Channel Channel { get { return channel; } set { channel = value; } }
     public Host Uphost { get { return uphost; } set { uphost = value; } }
     public bool IsConnected { get { return connection!=null; } }
+    public bool IsHostInfoUpdated { get { return hostInfoUpdated; } set { hostInfoUpdated = value; } }
 
     MemoryStream recvStream = new MemoryStream();
     byte[] recvBuffer = new byte[8192];
@@ -551,6 +555,7 @@ namespace PeerCastStation.PCP
       channel.Broadcast(core.Host,
         CreateBroadcastPacket(BroadcastGroup.Relays | BroadcastGroup.Trackers, CreateHostPacket()),
         BroadcastGroup.Relays | BroadcastGroup.Trackers);
+      hostInfoUpdated = false;
     }
 
     public virtual IStreamState ProcessAtom(Atom atom)
@@ -674,7 +679,7 @@ namespace PeerCastStation.PCP
     {
       var session_id = atom.Children.GetHostSessionID();
       if (session_id!=null) {
-        //core.SynchronizationContext.Post(dummy => {
+        core.SynchronizationContext.Post(dummy => {
           var node = channel.Nodes.FirstOrDefault(x => x.Host.SessionID.Equals(session_id));
           if (node==null) {
             node = new Node(new Host());
@@ -720,7 +725,7 @@ namespace PeerCastStation.PCP
               }
             }
           }
-        //}, null);
+        }, null);
       }
       return null;
     }
@@ -773,6 +778,9 @@ namespace PeerCastStation.PCP
       this.core = core;
       this.channel = channel;
       this.sourceUri = source_uri;
+      channel.OutputStreams.CollectionChanged += (sender, e) => {
+        hostInfoUpdated = true;
+      };
     }
   }
 }
