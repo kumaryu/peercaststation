@@ -448,10 +448,10 @@ namespace PeerCastStation.PCP
     public virtual void SendPCPHelo()
     {
       var helo = new Atom(Atom.PCP_HELO, new AtomCollection());
-      helo.Children.Add(new Atom(Atom.PCP_HELO_AGENT, "PeerCastStation/1.0"));
-      helo.Children.Add(new Atom(Atom.PCP_HELO_SESSIONID, core.Host.SessionID.ToByteArray()));
-      helo.Children.Add(new Atom(Atom.PCP_HELO_PORT, core.Host.Addresses[0].Port));
-      helo.Children.Add(new Atom(Atom.PCP_HELO_VERSION, 1218));
+      helo.Children.SetHeloAgent("PeerCastStation/1.0");
+      helo.Children.SetHeloSessionID(core.Host.SessionID);
+      helo.Children.SetHeloPort((short)core.Host.Addresses[0].Port);
+      helo.Children.SetHeloVersion(1218);
       Send(helo);
     }
 
@@ -618,8 +618,9 @@ namespace PeerCastStation.PCP
       var pkt_data = atom.Children.GetChanPktData();
       if (pkt_type!=null && pkt_data!=null) {
         if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_HEAD) {
+          var pkt_pos = atom.Children.GetChanPktPos();
           core.SynchronizationContext.Post(dummy => {
-            channel.ContentHeader = new Content(0, pkt_data);
+            channel.ContentHeader = new Content((long)(pkt_pos ?? 0), pkt_data);
           }, null);
         }
         else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_DATA) {
