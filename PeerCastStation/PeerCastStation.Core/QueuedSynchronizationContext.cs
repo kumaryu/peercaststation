@@ -108,7 +108,7 @@ namespace PeerCastStation.Core
     /// キューにある非同期メッセージを一つ処理します。
     /// キューが空の場合は何もしません
     /// </summary>
-    /// <returns>メッセージがあり処理した場合はtrue、メッセージが鳴かった場合はfalse</returns>
+    /// <returns>メッセージがあり処理した場合はtrue、メッセージが無かった場合はfalse</returns>
     public bool Process()
     {
       Message msg = null;
