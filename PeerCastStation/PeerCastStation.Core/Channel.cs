@@ -217,20 +217,20 @@ namespace PeerCastStation.Core
       var idx = (max+min)/2;
       while (true) {
         if (list.Keys[idx]==position) {
-          return list.Values[idx];
+          return list.Values[idx+1];
         }
         else if (list.Keys[idx]>position) {
-          max = idx-1;
-          if (max<=min) {
-            return list.Values[idx];
+          if (min>=max) {
+            return list.Values[idx+1];
           }
+          max = idx-1;
           idx = (max+min)/2;
         }
         else if (list.Keys[idx]<position) {
-          min = idx+1;
-          if (max<=min) {
-            return null;
+          if (min>=max) {
+            return list.Values[idx];
           }
+          min = idx+1;
           idx = (max+min)/2;
         }
       }
