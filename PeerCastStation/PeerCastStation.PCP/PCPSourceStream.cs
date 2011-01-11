@@ -238,7 +238,7 @@ namespace PeerCastStation.PCP
       case CloseReason.ConnectionError:
       case CloseReason.AccessDenied:
       case CloseReason.ChannelNotFound:
-        if (Owner.Uphost.Equals(Owner.Channel.SourceHost)) {
+        if (Owner.Uphost==null || Owner.Uphost.Equals(Owner.Channel.SourceHost)) {
           res = null;
         }
         else {
@@ -370,6 +370,7 @@ namespace PeerCastStation.PCP
           sendStream.Position = 0;
           recvStream.SetLength(0);
           recvStream.Position = 0;
+          uphost = host;
           StartReceive();
           return true;
         }

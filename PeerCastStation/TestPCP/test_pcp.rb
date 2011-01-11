@@ -237,6 +237,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     sleep(0.1)
     assert(source.connect(host))
     assert(source.is_connected)
+    assert_not_nil(source.uphost)
     server.close
     assert_equal(1, connected)
 	end
