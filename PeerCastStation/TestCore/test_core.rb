@@ -483,7 +483,7 @@ EOS
       value = System::Guid.new_guid
       atom = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Array[System::Byte]).call(
         PeerCastStation::Core::Atom.PCP_#{name},
-        value.to_byte_array)
+        PeerCastStation::Core::AtomCollectionExtensions.IDToByteArray(value))
       collection.add(atom)
       assert_equal(value, collection.#{getter})
     end

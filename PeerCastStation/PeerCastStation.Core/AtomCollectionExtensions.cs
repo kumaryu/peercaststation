@@ -47,7 +47,20 @@ namespace PeerCastStation.Core
       var atom = collection.FindByName(name);
       byte[] value = null;
       if (atom != null && atom.TryGetBytes(out value) && value.Length==16) {
-        return new Guid(value);
+        var value_le = new byte[16] {
+          value[3], value[2], value[1], value[0],
+          value[5], value[4],
+          value[7], value[6],
+          value[8],
+          value[9],
+          value[10],
+          value[11],
+          value[12],
+          value[13],
+          value[14],
+          value[15],
+        };
+        return new Guid(value_le);
       }
       else {
         return null;
@@ -127,6 +140,25 @@ namespace PeerCastStation.Core
         }
       }
       collection.Add(value);
+    }
+
+    public static byte[] IDToByteArray(Guid value)
+    {
+      var value_le = value.ToByteArray();
+      var value_be = new byte[16] {
+        value_le[3], value_le[2], value_le[1], value_le[0],
+        value_le[5], value_le[4],
+        value_le[7], value_le[6],
+        value_le[8],
+        value_le[9],
+        value_le[10],
+        value_le[11],
+        value_le[12],
+        value_le[13],
+        value_le[14],
+        value_le[15],
+      };
+      return value_be;
     }
 
     public static AtomCollection GetHelo(this AtomCollection collection)
@@ -468,7 +500,7 @@ namespace PeerCastStation.Core
 
     public static void SetHeloBCID(this AtomCollection collection, Guid value)
     {
-      SetAtomTo(collection, new Atom(Atom.PCP_HELO_BCID, value.ToByteArray()));
+      SetAtomTo(collection, new Atom(Atom.PCP_HELO_BCID, IDToByteArray(value)));
     }
 
     public static void SetHeloDisable(this AtomCollection collection, int value)
@@ -493,7 +525,7 @@ namespace PeerCastStation.Core
 
     public static void SetHeloSessionID(this AtomCollection collection, Guid value)
     {
-      SetAtomTo(collection, new Atom(Atom.PCP_HELO_SESSIONID, value.ToByteArray()));
+      SetAtomTo(collection, new Atom(Atom.PCP_HELO_SESSIONID, IDToByteArray(value)));
     }
 
     public static void SetHeloVersion(this AtomCollection collection, int value)
@@ -508,17 +540,17 @@ namespace PeerCastStation.Core
 
     public static void SetBcstChannelID(this AtomCollection collection, Guid value)
     {
-      SetAtomTo(collection, new Atom(Atom.PCP_BCST_CHANID, value.ToByteArray()));
+      SetAtomTo(collection, new Atom(Atom.PCP_BCST_CHANID, IDToByteArray(value)));
     }
 
     public static void SetBcstDest(this AtomCollection collection, Guid value)
     {
-      SetAtomTo(collection, new Atom(Atom.PCP_BCST_DEST, value.ToByteArray()));
+      SetAtomTo(collection, new Atom(Atom.PCP_BCST_DEST, IDToByteArray(value)));
     }
 
     public static void SetBcstFrom(this AtomCollection collection, Guid value)
     {
-      SetAtomTo(collection, new Atom(Atom.PCP_BCST_FROM, value.ToByteArray()));
+      SetAtomTo(collection, new Atom(Atom.PCP_BCST_FROM, IDToByteArray(value)));
     }
 
     public static void SetBcstGroup(this AtomCollection collection, BroadcastGroup value)
@@ -563,12 +595,12 @@ namespace PeerCastStation.Core
 
     public static void SetChanBCID(this AtomCollection collection, Guid value)
     {
-      SetAtomTo(collection, new Atom(Atom.PCP_CHAN_BCID, value.ToByteArray()));
+      SetAtomTo(collection, new Atom(Atom.PCP_CHAN_BCID, IDToByteArray(value)));
     }
 
     public static void SetChanID(this AtomCollection collection, Guid value)
     {
-      SetAtomTo(collection, new Atom(Atom.PCP_CHAN_ID, value.ToByteArray()));
+      SetAtomTo(collection, new Atom(Atom.PCP_CHAN_ID, IDToByteArray(value)));
     }
 
     public static void SetChanInfo(this AtomCollection collection, AtomCollection value)
@@ -668,7 +700,7 @@ namespace PeerCastStation.Core
 
     public static void SetHostChannelID(this AtomCollection collection, Guid value)
     {
-      SetAtomTo(collection, new Atom(Atom.PCP_HOST_CHANID, value.ToByteArray()));
+      SetAtomTo(collection, new Atom(Atom.PCP_HOST_CHANID, IDToByteArray(value)));
     }
 
     public static void SetHostClapPP(this AtomCollection collection, int value)
@@ -723,7 +755,7 @@ namespace PeerCastStation.Core
 
     public static void SetHostSessionID(this AtomCollection collection, Guid value)
     {
-      SetAtomTo(collection, new Atom(Atom.PCP_HOST_ID, value.ToByteArray()));
+      SetAtomTo(collection, new Atom(Atom.PCP_HOST_ID, IDToByteArray(value)));
     }
 
     public static void SetHostUphostHops(this AtomCollection collection, byte value)
