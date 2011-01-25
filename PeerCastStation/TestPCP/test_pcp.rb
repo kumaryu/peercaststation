@@ -164,21 +164,21 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   def setup
     @session_id = System::Guid.new_guid
     @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
-    @core       = PeerCastStation::Core::Core.new(@endpoint)
+    @peercast       = PeerCastStation::Core::PeerCast.new(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     @channel    = PeerCastStation::Core::Channel.new(@channel_id, System::Uri.new('http://localhost:7146'))
   end
   
   def teardown
-    @core.close if @core and not @core.is_closed
+    @peercast.close if @peercast and not @peercast.is_closed
   end
   
   def test_construct
-    source = PeerCastStation::PCP::PCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
   end
   
   def test_create_broadcast_packet
-    source = PeerCastStation::PCP::PCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     bcst = source.create_broadcast_packet(
       PeerCastStation::Core::BroadcastGroup.relays | PeerCastStation::Core::BroadcastGroup.trackers,
       PeerCastStation::Core::Atom.new(id4('test'), 42)
@@ -189,7 +189,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal(@channel_id, bcst.children.GetBcstChannelID)
     assert_equal(11, bcst.children.GetBcstTTL)
     assert_equal(0, bcst.children.GetBcstHops)
-    assert_equal(@core.host.SessionID, bcst.children.GetBcstFrom)
+    assert_equal(@peercast.host.SessionID, bcst.children.GetBcstFrom)
     assert_equal(
       PeerCastStation::Core::BroadcastGroup.relays | PeerCastStation::Core::BroadcastGroup.trackers,
       bcst.children.GetBcstGroup)
@@ -201,7 +201,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_create_host_packet
-    source = PeerCastStation::PCP::PCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     source.uphost = @channel.source_host
     @channel.output_streams.add(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.play))
     @channel.contents.add(PeerCastStation::Core::Content.new(7144, 'foobar'))
@@ -210,7 +210,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal(PCP_HOST, host.name.to_s)
     assert(host.has_children)
     assert_equal(@channel_id, host.children.GetHostChannelID)
-    assert_equal(@core.host.SessionID, host.children.GetHostSessionID)
+    assert_equal(@peercast.host.SessionID, host.children.GetHostSessionID)
     assert(host.children.to_a.any? {|atom| atom.name.to_s==PCP_HOST_IP })
     assert(host.children.to_a.any? {|atom| atom.name.to_s==PCP_HOST_PORT })
     assert_equal(1, host.children.GetHostNumListeners)
@@ -228,7 +228,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
 	def test_connect
-    source = PeerCastStation::PCP::PCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     assert(!source.is_connected)
     connected = 0
     server = MockPCPServer.new('localhost', 7146) {|sock| connected += 1 }
@@ -243,7 +243,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
 	end
 
   def test_connect_failed
-    source = PeerCastStation::PCP::PCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     host = PeerCastStation::Core::Host.new
     host.addresses.add(System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146))
     assert(!source.connect(host))
@@ -251,7 +251,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_close
-    source = PeerCastStation::PCP::PCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     assert(!source.is_connected)
     server = MockPCPServer.new('localhost', 7146)
     host = PeerCastStation::Core::Host.new
@@ -265,7 +265,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_set_close
-    source = PeerCastStation::PCP::PCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     assert(!source.is_connected)
     assert_nil(source.state)
     source.close
@@ -281,7 +281,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_ignore_host
-    source = PeerCastStation::PCP::PCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     host = PeerCastStation::Core::Host.new
     assert_equal(0, @channel.ignored_hosts.count)
     source.ignore_host(host)
@@ -290,7 +290,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_send_relay_request
-    source = TestPCPSourceStreamNoSend.new(@core, @channel, @channel.source_uri)
+    source = TestPCPSourceStreamNoSend.new(@peercast, @channel, @channel.source_uri)
     source.send_relay_request
     assert(source.log)
     assert_equal(1, source.log.size)
@@ -301,7 +301,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_send_pcp_helo
-    source = TestPCPSourceStreamNoSend.new(@core, @channel, @channel.source_uri)
+    source = TestPCPSourceStreamNoSend.new(@peercast, @channel, @channel.source_uri)
     source.SendPCPHelo
     assert(source.log)
     assert_equal(1, source.log.size)
@@ -312,7 +312,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
 
   def test_process_state
     state = MockStreamState.new
-    source = TestPCPSourceStreamNoSend.new(@core, @channel, @channel.source_uri)
+    source = TestPCPSourceStreamNoSend.new(@peercast, @channel, @channel.source_uri)
     source.state = state
     assert_equal(0, state.log.size)
     source.process_state
@@ -329,7 +329,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_post
-    source = TestPCPSourceStreamNoSend.new(@core, @channel, @channel.source_uri)
+    source = TestPCPSourceStreamNoSend.new(@peercast, @channel, @channel.source_uri)
     source.post(
       PeerCastStation::Core::Host.new,
       PeerCastStation::Core::Atom.new(id4('test'), 'hogehoge'.to_clr_string))
@@ -342,7 +342,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_pcp_bcst
-    source = TestPCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     ok = 0
     source.on_pcp_ok = proc {
       ok += 1
@@ -378,7 +378,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_pcp_bcst_dest
-    source = TestPCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     ok = 0
     source.on_pcp_ok = proc {
       ok += 1
@@ -392,7 +392,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     bcst.children.SetBcstTTL(11)
     bcst.children.SetBcstHops(0)
     bcst.children.SetBcstFrom(@session_id)
-    bcst.children.SetBcstDest(@core.host.SessionID)
+    bcst.children.SetBcstDest(@peercast.host.SessionID)
     bcst.children.SetBcstGroup(PeerCastStation::Core::BroadcastGroup.relays)
     bcst.children.SetBcstChannelID(@channel_id)
     bcst.children.SetBcstVersion(1218)
@@ -408,7 +408,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_pcp_bcst_no_ttl
-    source = TestPCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     ok = 0
     source.on_pcp_ok = proc {
       ok += 1
@@ -437,7 +437,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_pcp_chan
-    source = TestPCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     ok = 0
     source.on_pcp_ok = proc { ok += 1 }
     chan = PeerCastStation::Core::Atom.new(id4(PCP_CHAN), PeerCastStation::Core::AtomCollection.new)
@@ -447,7 +447,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_pcp_chan_pkt
-    source = TestPCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     assert_nil(@channel.content_header)
     assert_equal(0, @channel.contents.count)
     chan_pkt = PeerCastStation::Core::Atom.new(id4(PCP_CHAN_PKT), PeerCastStation::Core::AtomCollection.new)
@@ -481,7 +481,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_pcp_chan_info
-    source = TestPCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     assert_equal('', @channel.channel_info.name)
     assert_equal(0, @channel.channel_info.extra.count)
 
@@ -519,7 +519,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_pcp_chan_track
-    source = TestPCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     assert_equal('', @channel.channel_info.name)
     assert_equal(0, @channel.channel_info.extra.count)
 
@@ -553,7 +553,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_pcp_helo
-    source = TestPCPSourceStreamNoSend.new(@core, @channel, @channel.source_uri)
+    source = TestPCPSourceStreamNoSend.new(@peercast, @channel, @channel.source_uri)
     helo = PeerCastStation::Core::Atom.new(id4(PCP_HELO), PeerCastStation::Core::AtomCollection.new)
     helo.children.SetHeloSessionID(@session_id)
     helo.children.SetHeloAgent('IronRuby')
@@ -565,32 +565,32 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal(:send, source.log[0][0])
     assert_equal(id4(PCP_OLEH), source.log[0][1].name)
     assert(source.log[0][1].children.GetHeloAgent)
-    assert_equal(@core.host.SessionID,         source.log[0][1].children.GetHeloSessionID)
-    assert_equal(@core.host.addresses[0].port, source.log[0][1].children.GetHeloPort)
+    assert_equal(@peercast.host.SessionID,         source.log[0][1].children.GetHeloSessionID)
+    assert_equal(@peercast.host.addresses[0].port, source.log[0][1].children.GetHeloPort)
     assert_equal(1218,                         source.log[0][1].children.GetHeloVersion)
   end
 
   def test_pcp_oleh
-    source = TestPCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     oleh = PeerCastStation::Core::Atom.new(id4(PCP_OLEH), PeerCastStation::Core::AtomCollection.new)
     oleh.children.SetHeloRemoteIP(System::Net::IPAddress.parse('0.0.0.0'))
     oleh.children.SetHeloSessionID(@session_id)
     oleh.children.SetHeloAgent('IronRuby')
     oleh.children.SetHeloVersion(1218)
-    assert_equal(1, @core.host.addresses.count)
+    assert_equal(1, @peercast.host.addresses.count)
     assert_nil(source.OnPCPOleh(oleh))
     sleep(0.1)
-    assert_equal(2, @core.host.addresses.count)
+    assert_equal(2, @peercast.host.addresses.count)
 
     assert_nil(source.OnPCPOleh(oleh))
     sleep(0.1)
-    assert_equal(2, @core.host.addresses.count)
+    assert_equal(2, @peercast.host.addresses.count)
   end
 
   def test_pcp_host
-    source = TestPCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     assert_equal(0, @channel.nodes.count)
-    node = @channel.nodes.find {|n| n.host.SessionID.eql?(@core.host.SessionID) }
+    node = @channel.nodes.find {|n| n.host.SessionID.eql?(@peercast.host.SessionID) }
     assert_nil(node)
 
     host = source.create_host_packet
@@ -598,7 +598,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     sleep(0.1)
 
     assert_equal(1, @channel.nodes.count)
-    node = @channel.nodes.find {|n| n.host.SessionID.eql?(@core.host.SessionID) }
+    node = @channel.nodes.find {|n| n.host.SessionID.eql?(@peercast.host.SessionID) }
     assert(node)
     assert_equal(host.children.GetHostNumListeners, node.direct_count)
     assert_equal(host.children.GetHostNumRelays,    node.relay_count)
@@ -612,7 +612,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
 
   def test_pcp_quit
-    source = TestPCPSourceStream.new(@core, @channel, @channel.source_uri)
+    source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     quit = PeerCastStation::Core::Atom.new(id4(PCP_QUIT), PCP_ERROR_QUIT+PCP_ERROR_UNAVAILABLE)
     res = source.OnPCPQuit(quit)
     assert(res)
@@ -666,14 +666,14 @@ class TC_PCPSourceClosedState < Test::Unit::TestCase
   def setup
     @session_id = System::Guid.new_guid
     @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
-    @core       = PeerCastStation::Core::Core.new(@endpoint)
+    @peercast   = PeerCastStation::Core::PeerCast.new(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     @channel    = PeerCastStation::Core::Channel.new(@channel_id, System::Uri.new('http://localhost:7146'))
-    @source     = TestPCPSourceStreamNoIgnore.new(@core, @channel, @channel.source_uri)
+    @source     = TestPCPSourceStreamNoIgnore.new(@peercast, @channel, @channel.source_uri)
   end
   
   def teardown
-    @core.close if @core and not @core.is_closed
+    @peercast.close if @peercast and not @peercast.is_closed
   end
   
   def test_construct
@@ -757,14 +757,14 @@ class TC_PCPSourceConnectState < Test::Unit::TestCase
   def setup
     @session_id = System::Guid.new_guid
     @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
-    @core       = PeerCastStation::Core::Core.new(@endpoint)
+    @peercast   = PeerCastStation::Core::PeerCast.new(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     @channel    = PeerCastStation::Core::Channel.new(@channel_id, System::Uri.new('http://localhost:7146'))
-    @source     = TestPCPSourceStreamNoConnect.new(@core, @channel, @channel.source_uri)
+    @source     = TestPCPSourceStreamNoConnect.new(@peercast, @channel, @channel.source_uri)
   end
   
   def teardown
-    @core.close if @core and not @core.is_closed
+    @peercast.close if @peercast and not @peercast.is_closed
   end
   
   def test_construct
@@ -826,14 +826,14 @@ class TC_PCPSourceRelayRequestState < Test::Unit::TestCase
   def setup
     @session_id = System::Guid.new_guid
     @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
-    @core       = PeerCastStation::Core::Core.new(@endpoint)
+    @peercast   = PeerCastStation::Core::PeerCast.new(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     @channel    = PeerCastStation::Core::Channel.new(@channel_id, System::Uri.new('http://localhost:7146'))
-    @source     = TestPCPSourceStreamNoSendRequest.new(@core, @channel, @channel.source_uri)
+    @source     = TestPCPSourceStreamNoSendRequest.new(@peercast, @channel, @channel.source_uri)
   end
   
   def teardown
-    @core.close if @core and not @core.is_closed
+    @peercast.close if @peercast and not @peercast.is_closed
   end
   
   def test_construct
@@ -875,14 +875,14 @@ class TC_PCPSourceRecvRelayResponseState < Test::Unit::TestCase
   def setup
     @session_id = System::Guid.new_guid
     @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
-    @core       = PeerCastStation::Core::Core.new(@endpoint)
+    @peercast   = PeerCastStation::Core::PeerCast.new(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     @channel    = PeerCastStation::Core::Channel.new(@channel_id, System::Uri.new('http://localhost:7146'))
-    @source     = TestPCPSourceStreamNoRecv.new(@core, @channel, @channel.source_uri)
+    @source     = TestPCPSourceStreamNoRecv.new(@peercast, @channel, @channel.source_uri)
   end
   
   def teardown
-    @core.close if @core and not @core.is_closed
+    @peercast.close if @peercast and not @peercast.is_closed
   end
   
   def test_construct
@@ -985,14 +985,14 @@ class TC_PCPSourcePCPHandshakeState < Test::Unit::TestCase
   def setup
     @session_id = System::Guid.new_guid
     @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
-    @core       = PeerCastStation::Core::Core.new(@endpoint)
+    @peercast   = PeerCastStation::Core::PeerCast.new(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     @channel    = PeerCastStation::Core::Channel.new(@channel_id, System::Uri.new('http://localhost:7146'))
-    @source     = TestPCPSourceStreamNoSendPCPHelo.new(@core, @channel, @channel.source_uri)
+    @source     = TestPCPSourceStreamNoSendPCPHelo.new(@peercast, @channel, @channel.source_uri)
   end
   
   def teardown
-    @core.close if @core and not @core.is_closed
+    @peercast.close if @peercast and not @peercast.is_closed
   end
   
   def test_construct
@@ -1044,14 +1044,14 @@ class TC_PCPSourceReceivingState < Test::Unit::TestCase
   def setup
     @session_id = System::Guid.new_guid
     @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
-    @core       = PeerCastStation::Core::Core.new(@endpoint)
+    @peercast   = PeerCastStation::Core::PeerCast.new(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     @channel    = PeerCastStation::Core::Channel.new(@channel_id, System::Uri.new('http://localhost:7146'))
-    @source     = TestPCPSourceStreamReceive.new(@core, @channel, @channel.source_uri)
+    @source     = TestPCPSourceStreamReceive.new(@peercast, @channel, @channel.source_uri)
   end
   
   def teardown
-    @core.close if @core and not @core.is_closed
+    @peercast.close if @peercast and not @peercast.is_closed
   end
   
   def test_construct

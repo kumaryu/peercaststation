@@ -49,13 +49,13 @@ namespace PeerCastStation.Core
     /// <summary>
     /// Coreインスタンスへのプラグインの登録を行ないます
     /// </summary>
-    /// <param name="core">登録先のCoreインスタンス</param>
-    void Register(Core core);
+    /// <param name="peercast">登録先のPeerCastインスタンス</param>
+    void Register(PeerCast peercast);
     /// <summary>
     /// Coreインスタンスへのプラグイン登録を解除します
     /// </summary>
-    /// <param name="core">登録解除するCoreインスタンス</param>
-    void Unregister(Core core);
+    /// <param name="peercast">登録解除するPeerCastインスタンス</param>
+    void Unregister(PeerCast peercast);
   }
 
   /// <summary>
@@ -410,7 +410,7 @@ namespace PeerCastStation.Core
   /// <summary>
   /// PeerCastStationの主要な動作を行ない、管理するクラスです
   /// </summary>
-  public class Core
+  public class PeerCast
   {
     public Host Host { get; set; }
     /// <summary>
@@ -531,7 +531,7 @@ namespace PeerCastStation.Core
     /// 接続待ち受けアドレスを指定してCoreを初期化します
     /// </summary>
     /// <param name="ip">接続を待ち受けるアドレス</param>
-    public Core(IPEndPoint ip)
+    public PeerCast(IPEndPoint ip)
     {
       if (SynchronizationContext.Current == null) {
         SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());

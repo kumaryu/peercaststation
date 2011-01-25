@@ -814,47 +814,47 @@ class TestCore < Test::Unit::TestCase
   end
   
   def teardown
-    @core.close if @core and not @core.is_closed
+    @peercast.close if @peercast and not @peercast.is_closed
   end
   
   def test_construct
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
-    @core = PeerCastStation::Core::Core.new(endpoint)
+    @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
     #assert_not_equal(0, obj.plug_in_loaders.count)
-    assert_equal(0, @core.plug_ins.count)
-    assert_equal(0, @core.yellow_pages.count)
-    assert_equal(0, @core.yellow_page_factories.count)
-    assert_equal(0, @core.source_stream_factories.count)
-    assert_equal(0, @core.output_stream_factories.count)
-    assert_equal(0, @core.channels.count)
-    assert(!@core.is_closed)
+    assert_equal(0, @peercast.plug_ins.count)
+    assert_equal(0, @peercast.yellow_pages.count)
+    assert_equal(0, @peercast.yellow_page_factories.count)
+    assert_equal(0, @peercast.source_stream_factories.count)
+    assert_equal(0, @peercast.output_stream_factories.count)
+    assert_equal(0, @peercast.channels.count)
+    assert(!@peercast.is_closed)
     
     sleep(1)
-    assert_equal(1, @core.host.addresses.count)
-    assert_equal(endpoint, @core.host.addresses[0])
-    assert_not_equal(System::Guid.empty, @core.host.SessionID)
-    assert_equal(System::Guid.empty, @core.host.BroadcastID)
-    assert(!@core.host.is_firewalled)
-    assert_equal(0, @core.host.extensions.count)
-    assert_equal(0, @core.host.extra.count)
+    assert_equal(1, @peercast.host.addresses.count)
+    assert_equal(endpoint, @peercast.host.addresses[0])
+    assert_not_equal(System::Guid.empty, @peercast.host.SessionID)
+    assert_equal(System::Guid.empty, @peercast.host.BroadcastID)
+    assert(!@peercast.host.is_firewalled)
+    assert_equal(0, @peercast.host.extensions.count)
+    assert_equal(0, @peercast.host.extra.count)
     
-    @core.close
-    assert(@core.is_closed)
+    @peercast.close
+    assert(@peercast.is_closed)
   end
   
   def test_relay_from_tracker
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
-    @core = PeerCastStation::Core::Core.new(endpoint)
-    @core.source_stream_factories['mock'] = MockSourceStreamFactory.new
+    @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
+    @peercast.source_stream_factories['mock'] = MockSourceStreamFactory.new
     
     tracker = System::Uri.new('pcp://127.0.0.1:7147')
     channel_id = System::Guid.empty
     assert_raise(System::ArgumentException) {
-      @core.relay_channel(channel_id, tracker);
+      @peercast.relay_channel(channel_id, tracker);
     }
     
     tracker = System::Uri.new('mock://127.0.0.1:7147')
-    channel = @core.relay_channel(channel_id, tracker);
+    channel = @peercast.relay_channel(channel_id, tracker);
     assert_not_nil(channel)
     assert_kind_of(MockSourceStream, channel.source_stream)
     source = channel.source_stream
@@ -864,19 +864,19 @@ class TestCore < Test::Unit::TestCase
     assert_equal(:start,  source.log[0][0])
     assert_equal(:close,  source.log[1][0])
     
-    assert_equal(1, @core.channels.count)
-    assert_equal(channel, @core.channels[0])
+    assert_equal(1, @peercast.channels.count)
+    assert_equal(channel, @peercast.channels[0])
   end
   
   def test_relay_from_yp
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
-    @core = PeerCastStation::Core::Core.new(endpoint)
-    @core.yellow_page_factories['mock_yp'] = MockYellowPageFactory.new
-    @core.source_stream_factories['mock'] = MockSourceStreamFactory.new
-    @core.yellow_pages.add(@core.yellow_page_factories['mock_yp'].create('mock_yp', System::Uri.new('pcp:example.com:7147')))
+    @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
+    @peercast.yellow_page_factories['mock_yp'] = MockYellowPageFactory.new
+    @peercast.source_stream_factories['mock'] = MockSourceStreamFactory.new
+    @peercast.yellow_pages.add(@peercast.yellow_page_factories['mock_yp'].create('mock_yp', System::Uri.new('pcp:example.com:7147')))
     
     channel_id = System::Guid.empty
-    channel = @core.relay_channel(channel_id)
+    channel = @peercast.relay_channel(channel_id)
     assert_not_nil(channel)
     assert_kind_of(MockSourceStream, channel.source_stream)
     source = channel.source_stream
@@ -888,48 +888,48 @@ class TestCore < Test::Unit::TestCase
     assert_equal(:start,   source.log[0][0])
     assert_equal(:close,   source.log[1][0])
     
-    assert_equal(1, @core.channels.count)
-    assert_equal(channel, @core.channels[0])
+    assert_equal(1, @peercast.channels.count)
+    assert_equal(channel, @peercast.channels[0])
   end
   
   def test_close_channel
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
     tracker = System::Uri.new('mock://127.0.0.1:7147')
-    @core = PeerCastStation::Core::Core.new(endpoint)
-    @core.source_stream_factories['mock'] = MockSourceStreamFactory.new
+    @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
+    @peercast.source_stream_factories['mock'] = MockSourceStreamFactory.new
     channel_id = System::Guid.empty
-    channel = @core.relay_channel(channel_id, tracker);
-    assert_equal(1, @core.channels.count)
-    @core.close_channel(channel)
-    assert_equal(0, @core.channels.count)
+    channel = @peercast.relay_channel(channel_id, tracker);
+    assert_equal(1, @peercast.channels.count)
+    @peercast.close_channel(channel)
+    assert_equal(0, @peercast.channels.count)
   end
   
   def test_plugin
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
-    @core = PeerCastStation::Core::Core.new(endpoint)
-    assert_nil(@core.load_plug_in(System::Uri.new('file://mock')))
+    @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
+    assert_nil(@peercast.load_plug_in(System::Uri.new('file://mock')))
     
     loader = MockPlugInLoader.new
-    @core.plug_in_loaders.add(loader)
-    plug_in = @core.load_plug_in(System::Uri.new('file://mock'))
+    @peercast.plug_in_loaders.add(loader)
+    plug_in = @peercast.load_plug_in(System::Uri.new('file://mock'))
     assert_equal([:load, System::Uri.new('file://mock')], loader.log[0])
     assert_not_nil(plug_in)
     assert_kind_of(MockPlugIn, plug_in)
     
     assert_equal(1, plug_in.log.size)
-    assert_equal([:register, @core], plug_in.log[0])
+    assert_equal([:register, @peercast], plug_in.log[0])
   end
   
   def test_output_connection
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
-    @core = PeerCastStation::Core::Core.new(endpoint)
+    @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
     sleep(1)
-    assert_equal(1, @core.host.addresses.count)
-    assert_equal(System::Net::IPAddress.any, @core.host.addresses[0].address)
-    assert_equal(7147, @core.host.addresses[0].port)
+    assert_equal(1, @peercast.host.addresses.count)
+    assert_equal(System::Net::IPAddress.any, @peercast.host.addresses[0].address)
+    assert_equal(7147, @peercast.host.addresses[0].port)
     
     output_stream_factory = MockOutputStreamFactory.new
-    @core.output_stream_factories.add(output_stream_factory)
+    @peercast.output_stream_factories.add(output_stream_factory)
     
     sock = TCPSocket.new('localhost', 7147)
     sock.write('mock 9778E62BDC59DF56F9216D0387F80BF2')
