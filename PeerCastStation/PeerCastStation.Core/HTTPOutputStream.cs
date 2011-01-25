@@ -2,6 +2,7 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using PeerCastStation.Core;
 
 namespace PeerCastStation.Core
 {
@@ -104,7 +105,7 @@ namespace PeerCastStation.Core
     {
       var request = ParseRequest(header);
       if (request!=null) {
-        return new HTTPOutputStream(core, stream, channel, request);
+        return new HTTPOutputStream(peercast, stream, channel, request);
       }
       else {
         return null;
@@ -139,14 +140,14 @@ namespace PeerCastStation.Core
       return null;
     }
 
-    private Core core;
+    private PeerCast peercast;
     /// <summary>
     /// ファクトリオブジェクトを初期化します
     /// </summary>
-    /// <param name="core">所属するCoreオブジェクト</param>
-    public HTTPOutputStreamFactory(Core core)
+    /// <param name="peercast">所属するPeerCastオブジェクト</param>
+    public HTTPOutputStreamFactory(PeerCast peercast)
     {
-      this.core = core;
+      this.peercast = peercast;
     }
 
     /// <summary>
@@ -176,7 +177,7 @@ namespace PeerCastStation.Core
   public class HTTPOutputStream
     : IOutputStream
   {
-    private Core core;
+    private PeerCast peercast;
     private Stream stream;
     private Channel channel;
     private HTTPRequest request;
@@ -184,9 +185,9 @@ namespace PeerCastStation.Core
     private System.Threading.AutoResetEvent changedEvent = new System.Threading.AutoResetEvent(true);
 
     /// <summary>
-    /// 所属するCoreを取得します
+    /// 所属するPeerCastを取得します
     /// </summary>
-    public Core Core { get { return core; } }
+    public PeerCast PeerCast { get { return peercast; } }
     /// <summary>
     /// 元になるストリームを取得します
     /// </summary>
@@ -203,13 +204,13 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 元になるストリーム、チャンネル、リクエストからHTTPOutputStreamを初期化します
     /// </summary>
-    /// <param name="core">所属するCore</param>
+    /// <param name="peercast">所属するPeerCast</param>
     /// <param name="stream">元になるストリーム</param>
     /// <param name="channel">所属するチャンネル。無い場合はnull</param>
     /// <param name="request">クライアントからのリクエスト</param>
-    public HTTPOutputStream(Core core, Stream stream, Channel channel, HTTPRequest request)
+    public HTTPOutputStream(PeerCast peercast, Stream stream, Channel channel, HTTPRequest request)
     {
-      this.core = core;
+      this.peercast = peercast;
       this.stream = stream;
       this.channel = channel;
       this.request = request;

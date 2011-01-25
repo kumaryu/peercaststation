@@ -13,16 +13,16 @@ namespace PeerCastStation.PCP
   public class PCPSourceStreamFactory
     : ISourceStreamFactory
   {
-    private PeerCastStation.Core.Core core;
-    public PCPSourceStreamFactory(PeerCastStation.Core.Core core)
+    private PeerCast peercast;
+    public PCPSourceStreamFactory(PeerCast peercast)
     {
-      this.core = core;
+      this.peercast = peercast;
     }
 
     public string Name { get { return "pcp"; } }
     public ISourceStream Create(Channel channel, Uri tracker)
     {
-      return new PCPSourceStream(core, channel, tracker);
+      return new PCPSourceStream(peercast, channel, tracker);
     }
   }
 
@@ -254,7 +254,7 @@ namespace PeerCastStation.PCP
 
   public class PCPSourceStream : ISourceStream
   {
-    private PeerCastStation.Core.Core core;
+    private PeerCast peercast;
     private Channel channel;
     private Uri sourceUri;
     private IStreamState state = null;
@@ -262,11 +262,11 @@ namespace PeerCastStation.PCP
     private TcpClient connection = null;
     private NetworkStream stream = null;
     private Host uphost = null;
-    private PeerCastStation.Core.QueuedSynchronizationContext syncContext;
+    private QueuedSynchronizationContext syncContext;
     private bool hostInfoUpdated = true;
 
     public IStreamState State { get { return state; } set { state = value; } }
-    public PeerCastStation.Core.Core Core { get { return core; } }
+    public PeerCast PeerCast { get { return peercast; } }
     public Channel Channel { get { return channel; } set { channel = value; } }
     public Host Uphost { get { return uphost; } set { uphost = value; } }
     public bool IsConnected { get { return connection!=null; } }
@@ -346,7 +346,7 @@ namespace PeerCastStation.PCP
     public virtual Host SelectSourceHost()
     {
       var res = new Host[1];
-      core.SynchronizationContext.Send(r => {
+      peercast.SynchronizationContext.Send(r => {
         ((Host[])r)[0] = channel.SelectSourceHost();
       }, res);
       if (res[0] != null &&
@@ -393,7 +393,7 @@ namespace PeerCastStation.PCP
 
     public virtual void IgnoreHost(Host host)
     {
-      core.SynchronizationContext.Send(dummy => {
+      peercast.SynchronizationContext.Send(dummy => {
         channel.IgnoreHost(host);
       }, null);
     }
@@ -450,8 +450,8 @@ namespace PeerCastStation.PCP
     {
       var helo = new Atom(Atom.PCP_HELO, new AtomCollection());
       helo.Children.SetHeloAgent("PeerCastStation/1.0");
-      helo.Children.SetHeloSessionID(core.Host.SessionID);
-      helo.Children.SetHeloPort((short)core.Host.Addresses[0].Port);
+      helo.Children.SetHeloSessionID(peercast.Host.SessionID);
+      helo.Children.SetHeloPort((short)peercast.Host.Addresses[0].Port);
       helo.Children.SetHeloVersion(1218);
       Send(helo);
     }
@@ -489,15 +489,15 @@ namespace PeerCastStation.PCP
     }
 
     /// <summary>
-    /// 現在のチャンネルとCoreの状態からHostパケットを作ります
+    /// 現在のチャンネルとPeerCastの状態からHostパケットを作ります
     /// </summary>
     /// <returns>作ったPCP_HOSTパケット</returns>
     public virtual Atom CreateHostPacket()
     {
       var host = new AtomCollection();
       host.SetHostChannelID(channel.ChannelInfo.ChannelID);
-      host.SetHostSessionID(core.Host.SessionID);
-      foreach (var endpoint in core.Host.Addresses) {
+      host.SetHostSessionID(peercast.Host.SessionID);
+      foreach (var endpoint in peercast.Host.Addresses) {
         if (endpoint.AddressFamily == AddressFamily.InterNetwork) {
           host.AddHostIP(endpoint.Address);
           host.AddHostPort((short)endpoint.Port);
@@ -517,7 +517,7 @@ namespace PeerCastStation.PCP
       host.SetHostFlags1(
         (channel.IsRelayFull ? 0 : PCPHostFlags1.Relay) |
         (channel.IsDirectFull ? 0 : PCPHostFlags1.Direct) |
-        (core.Host.IsFirewalled ? PCPHostFlags1.Firewalled : 0) |
+        (peercast.Host.IsFirewalled ? PCPHostFlags1.Firewalled : 0) |
         PCPHostFlags1.Receiving); //TODO:受信中かどうかちゃんと判別する
       if (uphost != null) {
         var endpoint = uphost.Addresses.FirstOrDefault(x => x.AddressFamily == AddressFamily.InterNetwork);
@@ -538,7 +538,7 @@ namespace PeerCastStation.PCP
     public virtual Atom CreateBroadcastPacket(BroadcastGroup group, Atom packet)
     {
       var bcst = new AtomCollection();
-      bcst.SetBcstFrom(core.Host.SessionID);
+      bcst.SetBcstFrom(peercast.Host.SessionID);
       bcst.SetBcstGroup(BroadcastGroup.Relays | BroadcastGroup.Trackers);
       bcst.SetBcstHops(0);
       bcst.SetBcstTTL(11);
@@ -553,7 +553,7 @@ namespace PeerCastStation.PCP
 
     public virtual void BroadcastHostInfo()
     {
-      channel.Broadcast(core.Host,
+      channel.Broadcast(peercast.Host,
         CreateBroadcastPacket(BroadcastGroup.Relays | BroadcastGroup.Trackers, CreateHostPacket()),
         BroadcastGroup.Relays | BroadcastGroup.Trackers);
       hostInfoUpdated = false;
@@ -581,8 +581,8 @@ namespace PeerCastStation.PCP
         res.Children.SetHeloRemoteIP(((IPEndPoint)connection.Client.RemoteEndPoint).Address);
       }
       res.Children.SetHeloAgent("PeerCastStation/1.0");
-      res.Children.SetHeloSessionID(core.Host.SessionID);
-      res.Children.SetHeloPort((short)core.Host.Addresses[0].Port);
+      res.Children.SetHeloSessionID(peercast.Host.SessionID);
+      res.Children.SetHeloPort((short)peercast.Host.Addresses[0].Port);
       res.Children.SetHeloVersion(1218);
       Send(res);
       return null;
@@ -590,10 +590,10 @@ namespace PeerCastStation.PCP
 
     protected virtual IStreamState OnPCPOleh(Atom atom)
     {
-      core.SynchronizationContext.Post(dummy => {
+      peercast.SynchronizationContext.Post(dummy => {
         var rip = atom.Children.GetHeloRemoteIP();
-        if (!core.Host.Addresses.Any(x => x.Address.Equals(rip))) {
-          core.Host.Addresses.Add(new IPEndPoint(rip, core.Host.Addresses[0].Port));
+        if (!peercast.Host.Addresses.Any(x => x.Address.Equals(rip))) {
+          peercast.Host.Addresses.Add(new IPEndPoint(rip, peercast.Host.Addresses[0].Port));
         }
       }, null);
       return null;
@@ -620,14 +620,14 @@ namespace PeerCastStation.PCP
       if (pkt_type!=null && pkt_data!=null) {
         if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_HEAD) {
           var pkt_pos = atom.Children.GetChanPktPos();
-          core.SynchronizationContext.Post(dummy => {
+          peercast.SynchronizationContext.Post(dummy => {
             channel.ContentHeader = new Content((long)(pkt_pos ?? 0), pkt_data);
           }, null);
         }
         else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_DATA) {
           var pkt_pos = atom.Children.GetChanPktPos();
           if (pkt_pos != null) {
-            core.SynchronizationContext.Post(dummy => {
+            peercast.SynchronizationContext.Post(dummy => {
               channel.Contents.Add(new Content((long)pkt_pos, pkt_data));
             }, null);
           }
@@ -640,7 +640,7 @@ namespace PeerCastStation.PCP
 
     protected virtual IStreamState OnPCPChanInfo(Atom atom)
     {
-      core.SynchronizationContext.Post(dummy => {
+      peercast.SynchronizationContext.Post(dummy => {
         var name = atom.Children.GetChanInfoName();
         if (name != null) channel.ChannelInfo.Name = name;
         var content_type = atom.Children.GetChanInfoType();
@@ -659,7 +659,7 @@ namespace PeerCastStation.PCP
     protected virtual IStreamState OnPCPBcst(Atom atom)
     {
       var dest = atom.Children.GetBcstDest();
-      if (dest==null || dest==core.Host.SessionID) {
+      if (dest==null || dest==peercast.Host.SessionID) {
         foreach (var c in atom.Children) ProcessAtom(c);
       }
       var ttl = atom.Children.GetBcstTTL();
@@ -670,7 +670,7 @@ namespace PeerCastStation.PCP
           hops != null &&
           group != null &&
           from != null &&
-          dest != core.Host.SessionID &&
+          dest != peercast.Host.SessionID &&
           ttl>1) {
         atom.Children.SetBcstTTL((byte)(ttl - 1));
         atom.Children.SetBcstHops((byte)(hops + 1));
@@ -683,7 +683,7 @@ namespace PeerCastStation.PCP
     {
       var session_id = atom.Children.GetHostSessionID();
       if (session_id!=null) {
-        core.SynchronizationContext.Post(dummy => {
+        peercast.SynchronizationContext.Post(dummy => {
           var node = channel.Nodes.FirstOrDefault(x => x.Host.SessionID.Equals(session_id));
           if (node==null) {
             node = new Node(new Host());
@@ -777,9 +777,9 @@ namespace PeerCastStation.PCP
       }
     }
 
-    public PCPSourceStream(PeerCastStation.Core.Core core, Channel channel, Uri source_uri)
+    public PCPSourceStream(PeerCast peercast, Channel channel, Uri source_uri)
     {
-      this.core = core;
+      this.peercast = peercast;
       this.channel = channel;
       this.sourceUri = source_uri;
       channel.OutputStreams.CollectionChanged += (sender, e) => {
