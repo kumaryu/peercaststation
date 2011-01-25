@@ -5,16 +5,29 @@ using System.Text.RegularExpressions;
 
 namespace PeerCastStation.Core
 {
+  /// <summary>
+  ///クライアントからのHTTPリクエスト内容を保持するクラスです
+  /// </summary>
   public class HTTPRequest
   {
+    /// <summary>
+    /// HTTPメソッドを取得および設定します
+    /// </summary>
     public string Method { get; set; }
+    /// <summary>
+    /// リクエストされたUriを取得および設定します
+    /// </summary>
     public Uri Uri     { get; set; }
 
-    public HTTPRequest(IEnumerable<string> responses)
+    /// <summary>
+    /// HTTPリクエスト文字列からHTTPRequestオブジェクトを構築します
+    /// </summary>
+    /// <param name="requests">行毎に区切られたHTTPリクエストの文字列表現</param>
+    public HTTPRequest(IEnumerable<string> requests)
     {
-      foreach (var res in responses) {
+      foreach (var req in requests) {
         Match match = null;
-        if ((match = Regex.Match(res, @"^(\w+) (\S+) HTTP/1.\d$")).Success) {
+        if ((match = Regex.Match(req, @"^(\w+) (\S+) HTTP/1.\d$")).Success) {
           this.Method = match.Groups[1].Value;
           Uri uri;
           if (Uri.TryCreate(match.Groups[2].Value, UriKind.Absolute, out uri) ||
@@ -29,8 +42,19 @@ namespace PeerCastStation.Core
     }
   }
 
+  /// <summary>
+  /// ストリームからHTTPリクエストを読み取るクラスです
+  /// </summary>
   public static class HTTPRequestReader
   {
+    /// <summary>
+    /// ストリームからHTTPリクエストを読み取り解析します
+    /// </summary>
+    /// <param name="stream">読み取り元のストリーム</param>
+    /// <returns>解析済みHTTPRequest</returns>
+    /// <exception cref="EndOfStreamException">
+    /// HTTPリクエストの終端より前に解析ストリームの末尾に到達した
+    /// </exception>
     public static HTTPRequest Read(Stream stream)
     {
       string line = null;
@@ -52,14 +76,30 @@ namespace PeerCastStation.Core
     }
   }
 
+  /// <summary>
+  /// HTTPで視聴出力をするHTTPOutputStreamを作成するクラスです
+  /// </summary>
   public class HTTPOutputStreamFactory
     : IOutputStreamFactory
   {
+    /// <summary>
+    /// プロトコル名を取得します。常に"HTTP"を返します
+    /// </summary>
     public string Name
     {
       get { return "HTTP"; }
     }
 
+    /// <summary>
+    /// 出力ストリームを作成します
+    /// </summary>
+    /// <param name="stream">元になるストリーム</param>
+    /// <param name="channel">所属するチャンネル。無ければnull</param>
+    /// <param name="header">クライアントからのリクエスト</param>
+    /// <returns>
+    /// 作成できた場合はHTTPOutputStreamのインスタンス。
+    /// headerが正しく解析できなかった場合はnull
+    /// </returns>
     public IOutputStream Create(Stream stream, Channel channel, byte[] header)
     {
       var request = ParseRequest(header);
@@ -71,6 +111,20 @@ namespace PeerCastStation.Core
       }
     }
 
+    /// <summary>
+    /// クライアントからのリクエストを解析しチャンネルIDを取得します
+    /// </summary>
+    /// <param name="header">クライアントからのリクエスト</param>
+    /// <returns>
+    /// リクエストが解析できてチャンネルIDを取り出せた場合はチャンネルID。
+    /// それ以外の場合はnull
+    /// </returns>
+    /// <remarks>
+    /// HTTPのGETまたはHEADリクエストでパスが
+    /// /stream/チャンネルID
+    /// /pls/チャンネルID
+    /// のいずれかで始まる場合のみチャンネルIDを抽出します
+    /// </remarks>
     public Guid? ParseChannelID(byte[] header)
     {
       var request = ParseRequest(header);
@@ -86,11 +140,22 @@ namespace PeerCastStation.Core
     }
 
     private Core core;
+    /// <summary>
+    /// ファクトリオブジェクトを初期化します
+    /// </summary>
+    /// <param name="core">所属するCoreオブジェクト</param>
     public HTTPOutputStreamFactory(Core core)
     {
       this.core = core;
     }
 
+    /// <summary>
+    /// HTTPリクエストを解析します
+    /// </summary>
+    /// <param name="header">リクエスト</param>
+    /// <returns>
+    /// 解析できた場合はHTTPRequest、それ以外はnull
+    /// </returns>
     private HTTPRequest ParseRequest(byte[] header)
     {
       HTTPRequest res = null;
@@ -103,9 +168,11 @@ namespace PeerCastStation.Core
       stream.Close();
       return res;
     }
-
   }
 
+  /// <summary>
+  /// HTTPで視聴出力をするクラスです
+  /// </summary>
   public class HTTPOutputStream
     : IOutputStream
   {
@@ -116,11 +183,30 @@ namespace PeerCastStation.Core
     private volatile bool closed = false;
     private System.Threading.AutoResetEvent changedEvent = new System.Threading.AutoResetEvent(true);
 
+    /// <summary>
+    /// 所属するCoreを取得します
+    /// </summary>
     public Core Core { get { return core; } }
+    /// <summary>
+    /// 元になるストリームを取得します
+    /// </summary>
     public Stream Stream { get { return stream; } }
+    /// <summary>
+    /// 所属するチャンネルを取得します
+    /// </summary>
     public Channel Channel { get { return channel; } }
+    /// <summary>
+    /// ストリームが閉じられたかどうかを取得します
+    /// </summary>
     public bool IsClosed { get { return closed; } }
 
+    /// <summary>
+    /// 元になるストリーム、チャンネル、リクエストからHTTPOutputStreamを初期化します
+    /// </summary>
+    /// <param name="core">所属するCore</param>
+    /// <param name="stream">元になるストリーム</param>
+    /// <param name="channel">所属するチャンネル。無い場合はnull</param>
+    /// <param name="request">クライアントからのリクエスト</param>
     public HTTPOutputStream(Core core, Stream stream, Channel channel, HTTPRequest request)
     {
       this.core = core;
@@ -138,12 +224,32 @@ namespace PeerCastStation.Core
       }
     }
 
+    /// <summary>
+    /// 出力する内容を表します
+    /// </summary>
     public enum BodyType {
+      /// <summary>
+      /// 内容無し
+      /// </summary>
       None,
+      /// <summary>
+      /// ストリームコンテント
+      /// </summary>
       Content,
+      /// <summary>
+      /// プレイリスト
+      /// </summary>
       Playlist,
     }
 
+    /// <summary>
+    /// リクエストと所属するチャンネルの有無から出力すべき内容を取得します
+    /// </summary>
+    /// <returns>
+    /// 所属するチャンネルが無い場合およびリクエストパスがstreamでもplsでも無い場合はBodyType.None、
+    /// パスが/stream/で始まる場合はBodyType.Content、
+    /// パスが/pls/で始まる場合はBodyType.Playlist
+    /// </returns>
     protected virtual BodyType GetBodyType()
     {
       if (channel==null) {
@@ -160,6 +266,12 @@ namespace PeerCastStation.Core
       }
     }
 
+    /// <summary>
+    /// HTTPのレスポンスヘッダを作成して取得します
+    /// </summary>
+    /// <returns>
+    /// コンテント毎のHTTPレスポンスヘッダ
+    /// </returns>
     protected string CreateResponseHeader()
     {
       switch (GetBodyType()) {
@@ -187,12 +299,16 @@ namespace PeerCastStation.Core
           }
         }
       case BodyType.Playlist:
+        // TODO: プレイリストの処理
         return "HTTP/1.0 404 NotFound\r\n";
       default:
         return "HTTP/1.0 404 NotFound\r\n";
       }
     }
 
+    /// <summary>
+    /// ストリームにHTTPレスポンスヘッダを出力します
+    /// </summary>
     protected void WriteResponseHeader()
     {
       var response_header = CreateResponseHeader();
@@ -200,11 +316,17 @@ namespace PeerCastStation.Core
       stream.Write(bytes, 0, bytes.Length);
     }
 
+    /// <summary>
+    /// チャンネルのコンテントが変化するかチャンネルが閉じられるまで待ちます
+    /// </summary>
     protected virtual void WaitContentChanged()
     {
       changedEvent.WaitOne();
     }
 
+    /// <summary>
+    /// ストリームにHTTPレスポンスのボディ部分を出力します
+    /// </summary>
     protected virtual void WriteResponseBody()
     {
       switch (GetBodyType()) {
@@ -230,10 +352,14 @@ namespace PeerCastStation.Core
         }
         break;
       case BodyType.Playlist:
+        // TODO: プレイリストの処理
         break;
       }
     }
 
+    /// <summary>
+    /// ストリームにレスポンスを出力します
+    /// </summary>
     public void Start()
     {
       if (!closed) {
@@ -245,6 +371,12 @@ namespace PeerCastStation.Core
       }
     }
 
+    /// <summary>
+    /// チャンネルコンテントのヘッダをストリームに出力します
+    /// </summary>
+    /// <returns>
+    /// ヘッダが出力できた場合はtrue、それ以外はfalse
+    /// </returns>
     protected virtual bool WriteContentHeader()
     {
       if (channel.ContentHeader!=null) {
@@ -261,6 +393,11 @@ namespace PeerCastStation.Core
       }
     }
 
+    /// <summary>
+    /// チャンネルコンテントのボディをストリームに出力します
+    /// </summary>
+    /// <param name="last_pos">前回まで出力したposition</param>
+    /// <returns>今回出力したposition、出力してない場合はlast_pos</returns>
     protected long WriteContent(long last_pos)
     {
       var content = channel.Contents.NextOf(last_pos);
@@ -278,6 +415,13 @@ namespace PeerCastStation.Core
       }
     }
 
+    /// <summary>
+    /// ストリームにバイト列を出力します
+    /// </summary>
+    /// <param name="bytes">出力するバイト列</param>
+    /// <returns>
+    /// 出力できた場合はtrue、それ以外はfalse
+    /// </returns>
     protected virtual bool WriteBytes(byte[] bytes)
     {
       try {
@@ -295,10 +439,19 @@ namespace PeerCastStation.Core
       return true;
     }
 
+    /// <summary>
+    /// ブロードキャストパケットをストリームに出力します。
+    /// HTTPOutputStreamではブロードキャストパケットは無視します
+    /// </summary>
+    /// <param name="from">送信元ホスト</param>
+    /// <param name="packet">出力するパケット</param>
     public void Post(Host from, Atom packet)
     {
     }
 
+    /// <summary>
+    /// ストリームを閉じます
+    /// </summary>
     public void Close()
     {
       if (!closed) {
@@ -308,6 +461,9 @@ namespace PeerCastStation.Core
       }
     }
 
+    /// <summary>
+    /// OutputStreamの種別を取得します。常にOutputStreamType.Playを返します
+    /// </summary>
     public OutputStreamType OutputStreamType
     {
       get { return OutputStreamType.Play; }

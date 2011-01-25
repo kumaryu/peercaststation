@@ -173,7 +173,7 @@ namespace PeerCastStation.Core
   public interface IOutputStream
   {
     /// <summary>
-    /// 指定されたStreamへChannelのContentを流しはじめます
+    /// 元になるストリームへチャンネルのContentを流しはじめます
     /// </summary>
     void Start();
     /// <summary>
