@@ -643,6 +643,8 @@ namespace PeerCastStation.PCP
       core.SynchronizationContext.Post(dummy => {
         var name = atom.Children.GetChanInfoName();
         if (name != null) channel.ChannelInfo.Name = name;
+        var content_type = atom.Children.GetChanInfoType();
+        if (content_type!=null) channel.ChannelInfo.ContentType = content_type;
         channel.ChannelInfo.Extra.SetChanInfo(atom.Children);
       }, null);
       return null;

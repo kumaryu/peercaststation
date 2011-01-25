@@ -18,6 +18,8 @@ namespace PeerCastStation.Core
     private Guid channelID;
     private Uri tracker = null;
     private string name = "";
+    private string contentType = "";
+
     /// <summary>
     /// 接続起点のURIを取得および設定します
     /// </summary>
@@ -44,6 +46,37 @@ namespace PeerCastStation.Core
         OnPropertyChanged("Name");
       }
     }
+    /// <summary>
+    /// チャンネルストリームの内容種類を取得および設定します
+    /// </summary>
+    public string ContentType {
+      get {
+        return contentType;
+      }
+      set {
+        contentType = value;
+        OnPropertyChanged("ContentType");
+      }
+    }
+
+    public string MIMEType {
+      get {
+        switch (contentType) {
+        case "MP3": return "audio/mpeg";
+        case "OGG": return "audio/ogg";
+        case "OGM": return "video/ogg";
+        case "RAW": return "application/octet-stream";
+        case "NSV": return "video/nsv";
+        case "WMA": return "audio/x-ms-wma";
+        case "WMV": return "video/x-ms-wmv";
+        case "PLS": return "audio/mpegurl";
+        case "M3U": return "audio/m3u";
+        case "ASX": return "video/x-ms-asf";
+        default: return "application/octet-stream";
+        }
+      }
+    }
+
     private AtomCollection extra = new AtomCollection();
     /// <summary>
     /// その他のチャンネル情報を保持するリストを取得します
