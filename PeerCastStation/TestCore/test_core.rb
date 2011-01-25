@@ -97,8 +97,8 @@ class MockOutputStream
     @log << [:post, from, packet]
   end
   
-  def start(stream, channel)
-    @log << [:start, stream, channel]
+  def start
+    @log << [:start]
   end
   
   def close
@@ -128,8 +128,8 @@ class MockOutputStreamFactory
     end
   end
   
-  def create
-    @log << [:create]
+  def create(stream, channel, header)
+    @log << [:create, stream, channel, header]
     MockOutputStream.new
   end
 end
@@ -936,9 +936,9 @@ class TestCore < Test::Unit::TestCase
     sock.close
     
     sleep(1)
-    assert_equal(38, output_stream_factory.log.size)
-    assert_equal(:parse_channel_id, output_stream_factory.log[36][0])
-    assert_equal(:create,           output_stream_factory.log[37][0])
+    assert_equal(2, output_stream_factory.log.size)
+    assert_equal(:parse_channel_id, output_stream_factory.log[0][0])
+    assert_equal(:create,           output_stream_factory.log[1][0])
   end
 end
 

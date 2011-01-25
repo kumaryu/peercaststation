@@ -175,9 +175,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 指定されたStreamへChannelのContentを流しはじめます
     /// </summary>
-    /// <param name="stream">書き込み先のストリーム</param>
-    /// <param name="channel">情報を流す元のチャンネル</param>
-    void Start(Stream stream, Channel channel);
+    void Start();
     /// <summary>
     /// ストリームへパケットを送信します
     /// </summary>
@@ -206,8 +204,11 @@ namespace PeerCastStation.Core
     /// <summary>
     /// OutpuStreamのインスタンスを作成します
     /// </summary>
+    /// <param name="stream">接続先のストリーム</param>
+    /// <param name="channel">所属するチャンネル。チャンネルIDに対応するチャンネルが無い場合はnull</param>
+    /// <param name="header">クライアントから受け取ったリクエスト</param>
     /// <returns>OutputStream</returns>
-    IOutputStream Create();
+    IOutputStream Create(Stream stream, Channel channel, byte[] header);
     /// <summary>
     /// クライアントのリクエストからチャンネルIDを取得し返します
     /// </summary>
@@ -594,26 +595,28 @@ namespace PeerCastStation.Core
       try {
         var header = new List<byte>();
         Guid? channel_id = null;
-        while (output_stream == null && header.Count <= 1024) {
-          var val = stream.ReadByte();
-          if (val < 0) {
-            break;
-          }
-          else {
-            header.Add((byte)val);
-          }
+        while (output_stream == null && header.Count <= 4096) {
+          do {
+            var val = stream.ReadByte();
+            if (val < 0) {
+              break;
+            }
+            else {
+              header.Add((byte)val);
+            }
+          } while (stream.DataAvailable);
           var header_ary = header.ToArray();
           foreach (var factory in OutputStreamFactories) {
             channel_id = factory.ParseChannelID(header_ary);
             if (channel_id != null) {
-              output_stream = factory.Create();
+              var channel = channels.Find(c => c.ChannelInfo.ChannelID==channel_id);
+              output_stream = factory.Create(stream, channel, header_ary);
               break;
             }
           }
         }
         if (output_stream != null) {
-          var channel = channels.Find((c) => { return c.ChannelInfo.ChannelID == channel_id; });
-          output_stream.Start(stream, channel);
+          output_stream.Start();
         }
       }
       finally {
