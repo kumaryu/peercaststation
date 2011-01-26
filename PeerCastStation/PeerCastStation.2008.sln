@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.PCP", "Peer
 		{387996F5-E31D-4D92-BD86-8983C599F748} = {387996F5-E31D-4D92-BD86-8983C599F748}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.HTTP", "PeerCastStation.HTTP\PeerCastStation.HTTP.csproj", "{DB3BBED9-6F4B-456C-910D-E1801C94A110}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -22,6 +24,10 @@ Global
 		{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DB3BBED9-6F4B-456C-910D-E1801C94A110}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB3BBED9-6F4B-456C-910D-E1801C94A110}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB3BBED9-6F4B-456C-910D-E1801C94A110}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB3BBED9-6F4B-456C-910D-E1801C94A110}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
