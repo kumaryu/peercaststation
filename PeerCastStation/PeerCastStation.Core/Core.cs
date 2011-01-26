@@ -9,56 +9,6 @@ using System.Net.Sockets;
 namespace PeerCastStation.Core
 {
   /// <summary>
-  /// 指定されたプラグインを読み込むためのインターフェース
-  /// </summary>
-  public interface IPlugInLoader
-  {
-    /// <summary>
-    /// プラグインローダの名前を取得します
-    /// </summary>
-    string Name { get; }
-    /// <summary>
-    /// ファイルからプラグインを読み込みます
-    /// </summary>
-    /// <param name="uri">読み込むファイルのURI</param>
-    /// <returns>読み込めた場合はプラグインのインスタンス、読み込めなかった場合はnull</returns>
-    IPlugIn Load(Uri uri);
-  }
-
-  /// <summary>
-  /// プラグインのインスタンスを表すインターフェースです
-  /// </summary>
-  public interface IPlugIn
-  {
-    /// <summary>
-    /// プラグインの名前を取得します
-    /// </summary>
-    string Name { get; }
-    /// <summary>
-    /// プラグインが提供する拡張名のリストを取得します
-    /// </summary>
-    ICollection<string> Extensions { get; }
-    /// <summary>
-    /// プラグインの説明を取得します
-    /// </summary>
-    string Description { get; }
-    /// <summary>
-    /// プラグインの取得元URIを取得します
-    /// </summary>
-    Uri Contact { get; }
-    /// <summary>
-    /// Coreインスタンスへのプラグインの登録を行ないます
-    /// </summary>
-    /// <param name="peercast">登録先のPeerCastインスタンス</param>
-    void Register(PeerCast peercast);
-    /// <summary>
-    /// Coreインスタンスへのプラグイン登録を解除します
-    /// </summary>
-    /// <param name="peercast">登録解除するPeerCastインスタンス</param>
-    void Unregister(PeerCast peercast);
-  }
-
-  /// <summary>
   /// YellowPageのインターフェースです
   /// </summary>
   public interface IYellowPage
@@ -414,14 +364,6 @@ namespace PeerCastStation.Core
   {
     public Host Host { get; set; }
     /// <summary>
-    /// 登録されているプラグインローダのリストを取得します
-    /// </summary>
-    public IList<IPlugInLoader> PlugInLoaders { get; private set; }
-    /// <summary>
-    /// 読み込まれたプラグインのリストを取得します
-    /// </summary>
-    public ICollection<IPlugIn> PlugIns       { get; private set; }
-    /// <summary>
     /// 登録されているYellowPageのリストを取得します
     /// </summary>
     public IList<IYellowPage>   YellowPages   { get; private set; }
@@ -452,23 +394,6 @@ namespace PeerCastStation.Core
     /// 待ち受けが閉じられたかどうかを取得します
     /// </summary>
     public bool IsClosed { get; private set; }
-
-    /// <summary>
-    /// 指定したファイルをプラグインとして読み込みます
-    /// </summary>
-    /// <param name="uri">読み込むファイル</param>
-    /// <returns>読み込めた場合はPlugInのインスタンス、それ以外はnull</returns>
-    public IPlugIn LoadPlugIn(Uri uri)
-    {
-      foreach (var loader in PlugInLoaders) {
-        var plugin = loader.Load(uri);
-        if (plugin!=null) {
-          plugin.Register(this);
-          return plugin;
-        }
-      }
-      return null;
-    }
 
     /// <summary>
     /// チャンネルIDを指定してチャンネルのリレーを開始します。
@@ -541,8 +466,6 @@ namespace PeerCastStation.Core
       Host = new Host();
       Host.SessionID = Guid.NewGuid();
 
-      PlugInLoaders = new List<IPlugInLoader>();
-      PlugIns       = new List<IPlugIn>();
       YellowPages   = new List<IYellowPage>();
       YellowPageFactories = new Dictionary<string, IYellowPageFactory>();
       SourceStreamFactories = new Dictionary<string, ISourceStreamFactory>();

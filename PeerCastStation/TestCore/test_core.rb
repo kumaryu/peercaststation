@@ -764,51 +764,6 @@ class TestCoreNode < Test::Unit::TestCase
   end
 end
 
-class MockPlugIn
-  include PeerCastStation::Core::IPlugIn
-  def initialize
-    @log = []
-  end
-  attr_reader :log
-  
-  def name
-    'MockPlugIn'
-  end
-  
-  def description
-    'Dummy plugin for test.'
-  end
-  
-  def register(core)
-    @log << [:register, core]
-  end
-  
-  def unregister(core)
-    @log << [:unregister, core]
-  end
-end
-
-class MockPlugInLoader
-  include PeerCastStation::Core::IPlugInLoader
-  def initialize
-    @log = []
-  end
-  attr_reader :log
-  
-  def name
-    'MockPlugInLoader'
-  end 
-  
-  def load(uri)
-    @log << [:load, uri]
-    if /mock/=~uri.to_s then
-      MockPlugIn.new
-    else
-      nil
-    end
-  end
-end 
-
 class TestCore < Test::Unit::TestCase
   def setup
   end
@@ -820,8 +775,6 @@ class TestCore < Test::Unit::TestCase
   def test_construct
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
     @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
-    #assert_not_equal(0, obj.plug_in_loaders.count)
-    assert_equal(0, @peercast.plug_ins.count)
     assert_equal(0, @peercast.yellow_pages.count)
     assert_equal(0, @peercast.yellow_page_factories.count)
     assert_equal(0, @peercast.source_stream_factories.count)
@@ -902,22 +855,6 @@ class TestCore < Test::Unit::TestCase
     assert_equal(1, @peercast.channels.count)
     @peercast.close_channel(channel)
     assert_equal(0, @peercast.channels.count)
-  end
-  
-  def test_plugin
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
-    @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
-    assert_nil(@peercast.load_plug_in(System::Uri.new('file://mock')))
-    
-    loader = MockPlugInLoader.new
-    @peercast.plug_in_loaders.add(loader)
-    plug_in = @peercast.load_plug_in(System::Uri.new('file://mock'))
-    assert_equal([:load, System::Uri.new('file://mock')], loader.log[0])
-    assert_not_nil(plug_in)
-    assert_kind_of(MockPlugIn, plug_in)
-    
-    assert_equal(1, plug_in.log.size)
-    assert_equal([:register, @peercast], plug_in.log[0])
   end
   
   def test_output_connection
