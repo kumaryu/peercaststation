@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using PeerCastStation.Core;
 
-namespace PeerCastStation.Core
+namespace PeerCastStation.HTTP
 {
   /// <summary>
   ///クライアントからのHTTPリクエスト内容を保持するクラスです

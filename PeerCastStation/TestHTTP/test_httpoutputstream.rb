@@ -1,8 +1,10 @@
-$: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.Core', 'bin', 'Debug')
+$: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.HTTP', 'bin', 'Debug')
 require 'PeerCastStation.Core.dll'
+require 'PeerCastStation.HTTP.dll'
 require 'test/unit'
 
 PCSCore = PeerCastStation::Core
+PCSHTTP = PeerCastStation::HTTP
 
 class TC_HTTPRequest < Test::Unit::TestCase
   def test_construct
@@ -11,7 +13,7 @@ class TC_HTTPRequest < Test::Unit::TestCase
       'Connection:close',
       'User-Agent:hoge hoge',
     ])
-    req = PCSCore::HTTPRequest.new(value)
+    req = PCSHTTP::HTTPRequest.new(value)
     assert_equal('GET', req.Method)
     assert_kind_of(System::Uri, req.uri)
     assert(req.uri.is_absolute_uri)
@@ -31,9 +33,9 @@ class TC_HTTPRequestReader < Test::Unit::TestCase
     ].join)
     req = nil
     assert_nothing_raised {
-      req = PCSCore::HTTPRequestReader.read(stream)
+      req = PCSHTTP::HTTPRequestReader.read(stream)
     }
-    assert_kind_of(PCSCore::HTTPRequest, req)
+    assert_kind_of(PCSHTTP::HTTPRequest, req)
     assert_equal('GET', req.Method)
     assert_kind_of(System::Uri, req.uri)
     assert(req.uri.is_absolute_uri)
@@ -47,7 +49,7 @@ class TC_HTTPRequestReader < Test::Unit::TestCase
       "GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1\r\n",
     ].join)
     assert_raise(System::IO::EndOfStreamException) {
-      PCSCore::HTTPRequestReader.read(stream)
+      PCSHTTP::HTTPRequestReader.read(stream)
     }
   end
 end
@@ -63,12 +65,12 @@ class TC_HTTPOutputStreamFactory < Test::Unit::TestCase
   end
 
   def test_construct
-    factory = PCSCore::HTTPOutputStreamFactory.new(@peercast)
+    factory = PCSHTTP::HTTPOutputStreamFactory.new(@peercast)
     assert_equal('HTTP', factory.Name)
   end
 
   def test_parse_channel_id
-    factory = PCSCore::HTTPOutputStreamFactory.new(@peercast)
+    factory = PCSHTTP::HTTPOutputStreamFactory.new(@peercast)
     channel_id = factory.ParseChannelID([
       "GET /html/ja/index.html HTTP/1.1\r\n",
       "Connection:close\r\n",
@@ -102,7 +104,7 @@ class TC_HTTPOutputStreamFactory < Test::Unit::TestCase
     channel = PCSCore::Channel.new(
       System::Guid.new('9778E62BDC59DF56F9216D0387F80BF2'.to_clr_string), 
       System::Uri.new('http://localhost:7147/'))
-    factory = PCSCore::HTTPOutputStreamFactory.new(@peercast)
+    factory = PCSHTTP::HTTPOutputStreamFactory.new(@peercast)
     stream = System::IO::MemoryStream.new('hogehoge')
     header = [
       "GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1\r\n",
@@ -125,14 +127,14 @@ class TC_HTTPOutputStreamFactory < Test::Unit::TestCase
 end
 
 class TC_HTTPOutputStream < Test::Unit::TestCase
-  class HTTPOutputStream < PCSCore::HTTPOutputStream 
+  class HTTPOutputStream < PCSHTTP::HTTPOutputStream 
   end
 
-  class TestHTTPOutputStream < PCSCore::HTTPOutputStream 
+  class TestHTTPOutputStream < PCSHTTP::HTTPOutputStream 
     def self.new(*args)
       inst = super
       inst.instance_eval do
-        @body_type = PCSCore::HTTPOutputStream::BodyType.none 
+        @body_type = PCSHTTP::HTTPOutputStream::BodyType.none 
         @write_enabled = true
       end
       inst
@@ -165,13 +167,13 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
   end
 
   def test_construct
-    req = PCSCore::HTTPRequest.new(System::Array[System::String].new([
+    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
       'Connection:close',
       'User-Agent:hoge hoge',
     ]))
     s = System::IO::MemoryStream.new
-    stream = PCSCore::HTTPOutputStream.new(@peercast, s, @channel, req)
+    stream = PCSHTTP::HTTPOutputStream.new(@peercast, s, @channel, req)
     assert_equal(@peercast,stream.PeerCast)
     assert_equal(@channel, stream.channel)
     assert_equal(s,        stream.stream)
@@ -182,53 +184,53 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
   def test_get_body_type
     s = System::IO::MemoryStream.new
 
-    req = PCSCore::HTTPRequest.new(System::Array[System::String].new([
+    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
     ]))
     stream = HTTPOutputStream.new(@peercast, s, @channel, req)
-    assert_equal(PCSCore::HTTPOutputStream::BodyType.content, stream.get_body_type)
+    assert_equal(PCSHTTP::HTTPOutputStream::BodyType.content, stream.get_body_type)
 
-    req = PCSCore::HTTPRequest.new(System::Array[System::String].new([
+    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /pls/9778E62BDC59DF56F9216D0387F80BF2.pls HTTP/1.1',
     ]))
     stream = HTTPOutputStream.new(@peercast, s, @channel, req)
-    assert_equal(PCSCore::HTTPOutputStream::BodyType.playlist, stream.get_body_type)
+    assert_equal(PCSHTTP::HTTPOutputStream::BodyType.playlist, stream.get_body_type)
 
-    req = PCSCore::HTTPRequest.new(System::Array[System::String].new([
+    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /index.html HTTP/1.1',
     ]))
     stream = HTTPOutputStream.new(@peercast, s, @channel, req)
-    assert_equal(PCSCore::HTTPOutputStream::BodyType.none, stream.get_body_type)
+    assert_equal(PCSHTTP::HTTPOutputStream::BodyType.none, stream.get_body_type)
 
-    req = PCSCore::HTTPRequest.new(System::Array[System::String].new([
+    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
     ]))
     stream = HTTPOutputStream.new(@peercast, s, nil, req)
-    assert_equal(PCSCore::HTTPOutputStream::BodyType.none, stream.get_body_type)
+    assert_equal(PCSHTTP::HTTPOutputStream::BodyType.none, stream.get_body_type)
   end
 
   def test_create_response_header
     s = System::IO::MemoryStream.new
 
-    req = PCSCore::HTTPRequest.new(System::Array[System::String].new([
+    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
     ]))
     stream = TestHTTPOutputStream.new(@peercast, s, @channel, req)
-    stream.body_type = PCSCore::HTTPOutputStream::BodyType.none
+    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.none
     head = stream.create_response_header.split(/\r\n/)
     assert_match(%r;^HTTP/1.0 404 ;, head[0])
 
-    stream.body_type = PCSCore::HTTPOutputStream::BodyType.playlist
+    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.playlist
     head = stream.create_response_header.split(/\r\n/)
     assert_match(%r;^HTTP/1.0 404 ;, head[0])
 
-    stream.body_type = PCSCore::HTTPOutputStream::BodyType.content
+    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.content
     @channel.channel_info.content_type = 'OGG'
     head = stream.create_response_header.split(/\r\n/)
     assert_match(%r;^HTTP/1.0 200 ;, head[0])
     assert(head.any? {|line| /^Content-Type:\s*#{@channel.channel_info.MIMEType}/=~line})
 
-    stream.body_type = PCSCore::HTTPOutputStream::BodyType.content
+    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.content
     ['WMV', 'WMA', 'ASX'].each do |mms_type|
       @channel.channel_info.content_type = mms_type
       head = stream.create_response_header.split(/\r\n/)
@@ -240,11 +242,11 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
 
   def test_write_response_header
     s = System::IO::MemoryStream.new
-    req = PCSCore::HTTPRequest.new(System::Array[System::String].new([
+    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
     ]))
     stream = TestHTTPOutputStream.new(@peercast, s, @channel, req)
-    stream.body_type = PCSCore::HTTPOutputStream::BodyType.content
+    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.content
     @channel.channel_info.content_type = 'OGG'
     stream.write_response_header
     assert_equal(stream.create_response_header+"\r\n", s.to_array.to_a.pack('C*'))
@@ -252,7 +254,7 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
 
   def test_write_content_header
     s = System::IO::MemoryStream.new
-    req = PCSCore::HTTPRequest.new(System::Array[System::String].new([
+    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
     ]))
     stream = TestHTTPOutputStream.new(@peercast, s, @channel, req)
@@ -278,7 +280,7 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
 
   def test_write_content
     s = System::IO::MemoryStream.new
-    req = PCSCore::HTTPRequest.new(System::Array[System::String].new([
+    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
     ]))
     stream = TestHTTPOutputStream.new(@peercast, s, @channel, req)
@@ -333,7 +335,7 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
 
   def test_post
     s = System::IO::MemoryStream.new
-    req = PCSCore::HTTPRequest.new(System::Array[System::String].new([
+    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
     ]))
     stream = TestHTTPOutputStream.new(@peercast, s, @channel, req)
@@ -343,7 +345,7 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
 
   def test_close
     s = System::IO::MemoryStream.new
-    req = PCSCore::HTTPRequest.new(System::Array[System::String].new([
+    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
     ]))
     stream = TestHTTPOutputStream.new(@peercast, s, @channel, req)
@@ -354,7 +356,7 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
 
   def test_write_bytes
     s = System::IO::MemoryStream.new
-    req = PCSCore::HTTPRequest.new(System::Array[System::String].new([
+    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
     ]))
     stream = HTTPOutputStream.new(@peercast, s, @channel, req)
@@ -367,19 +369,19 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
 
   def test_write_response_body
     s = System::IO::MemoryStream.new
-    req = PCSCore::HTTPRequest.new(System::Array[System::String].new([
+    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
     ]))
     stream = TestHTTPOutputStream.new(@peercast, s, @channel, req)
-    stream.body_type = PCSCore::HTTPOutputStream::BodyType.none 
+    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.none 
     stream.write_response_body
     assert_equal(0, s.position)
 
-    stream.body_type = PCSCore::HTTPOutputStream::BodyType.playlist 
+    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.playlist 
     stream.write_response_body
     assert_equal(0, s.position)
 
-    stream.body_type = PCSCore::HTTPOutputStream::BodyType.content 
+    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.content 
     @channel.content_header = PCSCore::Content.new(0, 'header')
     @channel.contents.add(PCSCore::Content.new( 6, 'content0'))
     write_thread = Thread.new {

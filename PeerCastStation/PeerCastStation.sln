@@ -12,6 +12,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.PCP", "Peer
 EndProject
 Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestPCP", "TestPCP\TestPCP.rbproj", "{AD0E6E1A-2A22-4CDC-8DE9-7F9E8F4DFE3C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.HTTP", "PeerCastStation.HTTP\PeerCastStation.HTTP.csproj", "{DB3BBED9-6F4B-456C-910D-E1801C94A110}"
+EndProject
+Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestHTTP", "TestHTTP\TestHTTP.rbproj", "{5FD6FD1D-1911-467A-95E2-1CEDD8C49B26}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,6 +38,14 @@ Global
 		{AD0E6E1A-2A22-4CDC-8DE9-7F9E8F4DFE3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AD0E6E1A-2A22-4CDC-8DE9-7F9E8F4DFE3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AD0E6E1A-2A22-4CDC-8DE9-7F9E8F4DFE3C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DB3BBED9-6F4B-456C-910D-E1801C94A110}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB3BBED9-6F4B-456C-910D-E1801C94A110}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB3BBED9-6F4B-456C-910D-E1801C94A110}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB3BBED9-6F4B-456C-910D-E1801C94A110}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FD6FD1D-1911-467A-95E2-1CEDD8C49B26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FD6FD1D-1911-467A-95E2-1CEDD8C49B26}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FD6FD1D-1911-467A-95E2-1CEDD8C49B26}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FD6FD1D-1911-467A-95E2-1CEDD8C49B26}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -3,16 +3,15 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{03c928c9-7aa8-4995-9d44-3f373bcf3cb3}</ProjectGuid>
+    <ProjectGuid>{5fd6fd1d-1911-467a-95e2-1cedd8c49b26}</ProjectGuid>
     <ProjectHome>.</ProjectHome>
     <StartupFile>startup.rb</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
-    <AssemblyName>TestCore</AssemblyName>
-    <Name>TestCore</Name>
-    <RootNamespace>TestCore</RootNamespace>
-    <IsWindowsApplication>False</IsWindowsApplication>
+    <AssemblyName>TestHTTP</AssemblyName>
+    <Name>TestHTTP</Name>
+    <RootNamespace>TestHTTP</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -24,7 +23,6 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="startup.rb" />
-    <None Include="test_core.rb" />
-    <None Include="test_queuedsynchronizationcontext.rb" />
+    <None Include="test_httpoutputstream.rb" />
   </ItemGroup>
 </Project>
