@@ -123,6 +123,15 @@ namespace PeerCastStation.Core
   public interface IOutputStream
   {
     /// <summary>
+    /// 送信先がローカルネットワークかどうかを取得します
+    /// </summary>
+    bool IsLocal { get; }
+    /// <summary>
+    /// 送信に必要な上り帯域を取得します。
+    /// IsLocalがtrueの場合は0を返します。
+    /// </summary>
+    int UpstreamRate { get; }
+    /// <summary>
     /// 元になるストリームへチャンネルのContentを流しはじめます
     /// </summary>
     void Start();
@@ -155,10 +164,11 @@ namespace PeerCastStation.Core
     /// OutpuStreamのインスタンスを作成します
     /// </summary>
     /// <param name="stream">接続先のストリーム</param>
+    /// <param name="is_local">接続先がローカルネットワーク内かどうか</param>
     /// <param name="channel">所属するチャンネル。チャンネルIDに対応するチャンネルが無い場合はnull</param>
     /// <param name="header">クライアントから受け取ったリクエスト</param>
     /// <returns>OutputStream</returns>
-    IOutputStream Create(Stream stream, Channel channel, byte[] header);
+    IOutputStream Create(Stream stream, bool is_local, Channel channel, byte[] header);
     /// <summary>
     /// クライアントのリクエストからチャンネルIDを取得し返します
     /// </summary>
@@ -536,7 +546,8 @@ namespace PeerCastStation.Core
             channel_id = factory.ParseChannelID(header_ary);
             if (channel_id != null) {
               channel = channels.Find(c => c.ChannelInfo.ChannelID==channel_id);
-              output_stream = factory.Create(stream, channel, header_ary);
+              bool is_local = Utils.IsSiteLocal(((IPEndPoint)client.Client.RemoteEndPoint).Address);
+              output_stream = factory.Create(stream, is_local, channel, header_ary);
               break;
             }
           }

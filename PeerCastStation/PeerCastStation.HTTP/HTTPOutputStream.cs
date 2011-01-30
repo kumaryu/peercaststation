@@ -95,17 +95,18 @@ namespace PeerCastStation.HTTP
     /// 出力ストリームを作成します
     /// </summary>
     /// <param name="stream">元になるストリーム</param>
+    /// <param name="is_local">接続先がローカルネットワーク内かどうか</param>
     /// <param name="channel">所属するチャンネル。無ければnull</param>
     /// <param name="header">クライアントからのリクエスト</param>
     /// <returns>
     /// 作成できた場合はHTTPOutputStreamのインスタンス。
     /// headerが正しく解析できなかった場合はnull
     /// </returns>
-    public IOutputStream Create(Stream stream, Channel channel, byte[] header)
+    public IOutputStream Create(Stream stream, bool is_local, Channel channel, byte[] header)
     {
       var request = ParseRequest(header);
       if (request!=null) {
-        return new HTTPOutputStream(peercast, stream, channel, request);
+        return new HTTPOutputStream(peercast, stream, is_local, channel, request);
       }
       else {
         return null;
@@ -200,18 +201,40 @@ namespace PeerCastStation.HTTP
     /// ストリームが閉じられたかどうかを取得します
     /// </summary>
     public bool IsClosed { get { return closed; } }
+    /// <summary>
+    /// 送信先がローカルネットワークかどうかを取得します
+    /// </summary>
+    public bool IsLocal { get; private set; }
+    /// <summary>
+    /// 送信に必要な上り帯域を取得します。
+    /// IsLocalがtrueの場合は0を返します。
+    /// </summary>
+    public int UpstreamRate {
+      get
+      {
+        if (IsLocal) {
+          return 0;
+        }
+        else {
+          var rate = channel.ChannelInfo.Extra.GetChanInfoBitrate();
+          return rate ?? 0;
+        }
+      }
+    }
 
     /// <summary>
     /// 元になるストリーム、チャンネル、リクエストからHTTPOutputStreamを初期化します
     /// </summary>
     /// <param name="peercast">所属するPeerCast</param>
     /// <param name="stream">元になるストリーム</param>
+    /// <param name="is_local">接続先がローカルネットワーク内かどうか</param>
     /// <param name="channel">所属するチャンネル。無い場合はnull</param>
     /// <param name="request">クライアントからのリクエスト</param>
-    public HTTPOutputStream(PeerCast peercast, Stream stream, Channel channel, HTTPRequest request)
+    public HTTPOutputStream(PeerCast peercast, Stream stream, bool is_local, Channel channel, HTTPRequest request)
     {
       this.peercast = peercast;
       this.stream = stream;
+      this.IsLocal = is_local;
       this.channel = channel;
       this.request = request;
       if (this.channel!=null) {
