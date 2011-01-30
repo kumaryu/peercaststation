@@ -584,6 +584,9 @@ namespace PeerCastStation.Core
         if (sourceStream!=null) {
           sourceStream.Close();
         }
+        foreach (var outputStream in outputStreams) {
+          outputStream.Close();
+        }
       }
     }
 

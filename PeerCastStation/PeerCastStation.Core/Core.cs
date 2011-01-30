@@ -502,7 +502,9 @@ namespace PeerCastStation.Core
           var client = server.AcceptTcpClient();
           var output_thread = new Thread(OutputThreadFunc);
           output_thread.Start(client);
-          outputThreads.Add(output_thread);
+          this.SynchronizationContext.Post(dummy => {
+            outputThreads.Add(output_thread);
+          }, null);
         }
         Thread.Sleep(1);
       }
@@ -515,6 +517,7 @@ namespace PeerCastStation.Core
       var client = (TcpClient)arg;
       var stream = client.GetStream();
       IOutputStream output_stream = null;
+      Channel channel = null;
       try {
         var header = new List<byte>();
         Guid? channel_id = null;
@@ -532,23 +535,35 @@ namespace PeerCastStation.Core
           foreach (var factory in OutputStreamFactories) {
             channel_id = factory.ParseChannelID(header_ary);
             if (channel_id != null) {
-              var channel = channels.Find(c => c.ChannelInfo.ChannelID==channel_id);
+              channel = channels.Find(c => c.ChannelInfo.ChannelID==channel_id);
               output_stream = factory.Create(stream, channel, header_ary);
               break;
             }
           }
         }
         if (output_stream != null) {
+          if (channel!=null) {
+            this.SynchronizationContext.Post(dummy => {
+              channel.OutputStreams.Add(output_stream);
+            }, null);
+          }
           output_stream.Start();
         }
       }
       finally {
         if (output_stream != null) {
+          if (channel!=null) {
+            this.SynchronizationContext.Post(dummy => {
+              channel.OutputStreams.Remove(output_stream);
+            }, null);
+          }
           output_stream.Close();
         }
         stream.Close();
         client.Close();
-        outputThreads.Remove(Thread.CurrentThread);
+        this.SynchronizationContext.Post(thread => {
+          outputThreads.Remove((Thread)thread);
+        }, Thread.CurrentThread);
       }
     }
   }
