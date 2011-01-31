@@ -533,6 +533,7 @@ namespace PeerCastStation.Core
       sourceStream = source_stream;
       var sync = SynchronizationContext.Current ?? new SynchronizationContext();
       sourceThread = new Thread(SourceThreadFunc);
+      sourceThread.Name = "SourceThread";
       sourceThread.Start(sync);
     }
 

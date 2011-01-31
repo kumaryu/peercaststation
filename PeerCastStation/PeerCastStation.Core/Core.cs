@@ -600,6 +600,7 @@ namespace PeerCastStation.Core
       server.Start();
       Host.Addresses.Add((IPEndPoint)server.LocalEndpoint);
       listenThread = new Thread(ListenThreadFunc);
+      listenThread.Name = "ListenThread";
       listenThread.Start(server);
     }
 
@@ -626,6 +627,7 @@ namespace PeerCastStation.Core
         while (server.Pending()) {
           var client = server.AcceptTcpClient();
           var output_thread = new Thread(OutputThreadFunc);
+          output_thread.Name = "OutputThread";
           output_thread.Start(client);
           this.SynchronizationContext.Post(dummy => {
             outputThreads.Add(output_thread);
