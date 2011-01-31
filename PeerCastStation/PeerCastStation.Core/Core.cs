@@ -5,6 +5,7 @@ using System.Net;
 using System.ComponentModel;
 using System.Threading;
 using System.Net.Sockets;
+using System.Linq;
 
 namespace PeerCastStation.Core
 {
@@ -368,6 +369,114 @@ namespace PeerCastStation.Core
   }
 
   /// <summary>
+  /// チャンネルへの接続制御を行なうクラスです
+  /// </summary>
+  public class AccessController
+  {
+    /// <summary>
+    /// 所属するPeerCastオブジェクトを取得します
+    /// </summary>
+    public PeerCast PeerCast { get; private set; }
+    /// <summary>
+    /// PeerCast全体での最大リレー数を取得および設定します。
+    /// </summary>
+    /// <value>0は無制限です。</value>
+    public int MaxRelays { get; set; }
+    /// <summary>
+    /// チャンネル毎の最大リレー数を取得および設定します。
+    /// </summary>
+    /// <value>0は無制限です。</value>
+    public int MaxRelaysPerChannel { get; set; }
+    /// <summary>
+    /// PeerCast全体での最大視聴数を取得および設定します。
+    /// </summary>
+    /// <value>0は無制限です。</value>
+    public int MaxPlays { get; set; }
+    /// <summary>
+    /// チャンネル毎の最大視聴数を取得および設定します。
+    /// </summary>
+    /// <value>0は無制限です。</value>
+    public int MaxPlaysPerChannel { get; set; }
+    /// <summary>
+    /// PeerCast全体での最大上り帯域を取得および設定します。
+    /// </summary>
+    /// <value>0は無制限です。</value>
+    public int MaxUpstreamRate { get; set; }
+
+    /// <summary>
+    /// 指定したチャンネルに新しいリレー接続ができるかどうかを取得します
+    /// </summary>
+    /// <param name="channel">リレー接続先のチャンネル</param>
+    /// <returns>リレー可能な場合はtrue、それ以外はfalse</returns>
+    public virtual bool IsChannelRelayable(Channel channel)
+    {
+      var upstream_rate = PeerCast.Channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
+      return
+        (this.MaxRelays<=0 || this.MaxRelays>PeerCast.Channels.Sum(c => c.OutputStreams.CountRelaying)) &&
+        (this.MaxRelaysPerChannel<=0 || this.MaxRelaysPerChannel>channel.OutputStreams.CountRelaying) &&
+        (this.MaxUpstreamRate<=0 || this.MaxUpstreamRate>=upstream_rate+(channel.ChannelInfo.Extra.GetChanInfoBitrate() ?? 0));
+    }
+
+    /// <summary>
+    /// 指定したチャンネルに新しいリレー接続ができるかどうかを取得します
+    /// </summary>
+    /// <param name="channel">リレー接続先のチャンネル</param>
+    /// <param name="output_stream">接続しようとするOutputStream</param>
+    /// <returns>リレー可能な場合はtrue、それ以外はfalse</returns>
+    public virtual bool IsChannelRelayable(Channel channel, IOutputStream output_stream)
+    {
+      var upstream_rate = PeerCast.Channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
+      return
+        (this.MaxRelays<=0 || this.MaxRelays>PeerCast.Channels.Sum(c => c.OutputStreams.CountRelaying)) &&
+        (this.MaxRelaysPerChannel<=0 || this.MaxRelaysPerChannel>channel.OutputStreams.CountRelaying) &&
+        (this.MaxUpstreamRate<=0 || this.MaxUpstreamRate>=upstream_rate+(output_stream.IsLocal ? 0 : output_stream.UpstreamRate));
+    }
+
+    /// <summary>
+    /// 指定したチャンネルに新しい視聴接続ができるかどうかを取得します
+    /// </summary>
+    /// <param name="channel">視聴接続先のチャンネル</param>
+    /// <returns>視聴可能な場合はtrue、それ以外はfalse</returns>
+    public virtual bool IsChannelPlayable(Channel channel)
+    {
+      var upstream_rate = PeerCast.Channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
+      return
+        (this.MaxPlays<=0 || this.MaxPlays>PeerCast.Channels.Sum(c => c.OutputStreams.CountPlaying)) &&
+        (this.MaxPlaysPerChannel<=0 || this.MaxPlaysPerChannel>channel.OutputStreams.CountPlaying) &&
+        (this.MaxUpstreamRate<=0 || this.MaxUpstreamRate>=upstream_rate+(channel.ChannelInfo.Extra.GetChanInfoBitrate() ?? 0));
+    }
+
+    /// <summary>
+    /// 指定したチャンネルに新しい視聴接続ができるかどうかを取得します
+    /// </summary>
+    /// <param name="channel">視聴接続先のチャンネル</param>
+    /// <param name="output_stream">接続しようとするOutputStream</param>
+    /// <returns>視聴可能な場合はtrue、それ以外はfalse</returns>
+    public virtual bool IsChannelPlayable(Channel channel, IOutputStream output_stream)
+    {
+      var upstream_rate = PeerCast.Channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
+      return
+        (this.MaxPlays<=0 || this.MaxPlays>PeerCast.Channels.Sum(c => c.OutputStreams.CountPlaying)) &&
+        (this.MaxPlaysPerChannel<=0 || this.MaxPlaysPerChannel>channel.OutputStreams.CountPlaying) &&
+        (this.MaxUpstreamRate<=0 || this.MaxUpstreamRate>=upstream_rate+(output_stream.IsLocal ? 0 : output_stream.UpstreamRate));
+    }
+
+    /// <summary>
+    /// AccessControllerオブジェクトを初期化します
+    /// </summary>
+    /// <param name="peercast">所属するPeerCastオブジェクト</param>
+    public AccessController(PeerCast peercast)
+    {
+      this.PeerCast = peercast;
+      this.MaxRelays = 0;
+      this.MaxRelaysPerChannel = 0;
+      this.MaxPlays = 0;
+      this.MaxPlaysPerChannel = 0;
+      this.MaxUpstreamRate = 0;
+    }
+  }
+
+  /// <summary>
   /// PeerCastStationの主要な動作を行ない、管理するクラスです
   /// </summary>
   public class PeerCast
@@ -404,6 +513,11 @@ namespace PeerCastStation.Core
     /// 待ち受けが閉じられたかどうかを取得します
     /// </summary>
     public bool IsClosed { get; private set; }
+
+    /// <summary>
+    /// チャンネルへのアクセス制御を行なうクラスの取得および設定をします
+    /// </summary>
+    public AccessController AccessController { get; set; }
 
     /// <summary>
     /// チャンネルIDを指定してチャンネルのリレーを開始します。
@@ -472,6 +586,7 @@ namespace PeerCastStation.Core
         SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
       }
       this.SynchronizationContext = SynchronizationContext.Current;
+      this.AccessController = new AccessController(this);
       IsClosed = false;
       Host = new Host();
       Host.SessionID = Guid.NewGuid();

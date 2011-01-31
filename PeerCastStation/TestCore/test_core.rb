@@ -85,17 +85,12 @@ class MockOutputStream
   
   def initialize(type=0)
     @type = type
+    @is_local = true
+    @upstream_rate = 0
     @log = []
   end
   attr_reader :log
-
-  def is_local
-    true
-  end
-
-  def upstream_rate
-    0
-  end
+  attr_accessor :is_local, :upstream_rate
 
   def output_stream_type
     @type
@@ -772,7 +767,7 @@ class TestCoreNode < Test::Unit::TestCase
   end
 end
 
-class TestCore < Test::Unit::TestCase
+class TestCorePeerCast < Test::Unit::TestCase
   def setup
   end
   
@@ -783,6 +778,7 @@ class TestCore < Test::Unit::TestCase
   def test_construct
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
     @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
+    assert_not_nil(@peercast.access_controller)
     assert_equal(0, @peercast.yellow_pages.count)
     assert_equal(0, @peercast.yellow_page_factories.count)
     assert_equal(0, @peercast.source_stream_factories.count)

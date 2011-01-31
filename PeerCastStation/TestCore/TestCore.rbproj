@@ -25,6 +25,7 @@
   <ItemGroup>
     <None Include="startup.rb" />
     <None Include="test_core.rb" />
+    <None Include="test_core_accesscontroller.rb" />
     <None Include="test_queuedsynchronizationcontext.rb" />
   </ItemGroup>
 </Project>
