@@ -133,5 +133,47 @@ class TC_CoreChannel < Test::Unit::TestCase
     @peercast.access_controller = TestAccessController.new(@peercast, true, false)
     assert(channel.is_direct_full)
   end
+
+  class TestSourceStream
+    include PeerCastStation::Core::ISourceStream
+    
+    def initialize(channel, tracker)
+      @channel = channel
+      @tracker = tracker
+      @paused = true
+    end
+    attr_reader :tracker, :channel
+    attr_accessor :paused
+
+    def post(from, packet)
+    end
+    
+    def start
+      while @paused do
+        sleep(0.1)
+      end
+    end
+    
+    def close
+    end
+  end
+  
+  def test_uptime
+    channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    closed = false
+    channel.closed { closed = true }
+    assert_equal(System::TimeSpan.zero, channel.uptime)
+    channel.output_streams.add(MockOutputStream.new)
+    source = TestSourceStream.new(channel, channel.source_uri)
+    source.paused = true
+    channel.start(source)
+    sleep(1)
+    assert(0<channel.uptime.total_milliseconds)
+    source.paused = false
+    channel.close
+    sleep(0.1) until closed
+    assert_equal(System::TimeSpan.zero, channel.uptime)
+  end
+
 end
 

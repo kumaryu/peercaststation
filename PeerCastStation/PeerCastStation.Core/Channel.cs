@@ -319,6 +319,7 @@ namespace PeerCastStation.Core
     private Content contentHeader = null;
     private ContentCollection contents = new ContentCollection();
     private Thread sourceThread = null;
+    private int? startTickCount = null;
     /// <summary>
     /// 所属するPeerCastオブジェクトを取得します
     /// </summary>
@@ -421,8 +422,12 @@ namespace PeerCastStation.Core
     {
       get
       {
-        //TODO:ちゃんと計算する
-        return TimeSpan.Zero;
+        if (startTickCount!=null) {
+          return new TimeSpan((Environment.TickCount-startTickCount.Value)*10000L);
+        }
+        else {
+          return TimeSpan.Zero;
+        }
       }
     }
 
@@ -537,6 +542,7 @@ namespace PeerCastStation.Core
       sourceThread = new Thread(SourceThreadFunc);
       sourceThread.Name = "SourceThread";
       sourceThread.Start(sync);
+      startTickCount = Environment.TickCount;
     }
 
     private void SourceThreadFunc(object arg)
@@ -555,6 +561,7 @@ namespace PeerCastStation.Core
             os.Close();
           }
           Status = ChannelStatus.Closed;
+          startTickCount = null;
           OnClosed();
         }, Thread.CurrentThread);
       }
