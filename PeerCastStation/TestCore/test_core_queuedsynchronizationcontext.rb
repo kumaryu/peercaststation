@@ -4,7 +4,7 @@ require 'test/unit'
 $: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.Core', 'bin', 'Debug')
 require 'PeerCastStation.Core.dll'
 
-class TestQueuedSynchronizationContext < Test::Unit::TestCase
+class TC_QueuedSynchronizationContext < Test::Unit::TestCase
   QSyncContext = PeerCastStation::Core::QueuedSynchronizationContext
   
   def test_construct
