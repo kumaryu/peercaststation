@@ -549,7 +549,7 @@ namespace PeerCastStation.Core
       if (!SourceStreamFactories.TryGetValue(tracker.Scheme, out source_factory)) {
         throw new ArgumentException(String.Format("Protocol `{0}' is not found", tracker.Scheme));
       }
-      var channel = new Channel(channel_id, tracker);
+      var channel = new Channel(this, channel_id, tracker);
       channels.Add(channel);
       var source_stream = source_factory.Create(channel, tracker);
       channel.Start(source_stream);

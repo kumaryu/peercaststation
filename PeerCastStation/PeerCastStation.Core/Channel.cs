@@ -320,6 +320,10 @@ namespace PeerCastStation.Core
     private ContentCollection contents = new ContentCollection();
     private Thread sourceThread = null;
     /// <summary>
+    /// 所属するPeerCastオブジェクトを取得します
+    /// </summary>
+    public PeerCast PeerCast { get; private set; }
+    /// <summary>
     /// チャンネルの状態を取得および設定します
     /// </summary>
     public ChannelStatus Status
@@ -594,10 +598,12 @@ namespace PeerCastStation.Core
     /// <summary>
     /// チャンネルIDとソースストリームを指定してチャンネルを初期化します
     /// </summary>
+    /// <param name="peercast">所属するPeerCastオブジェクト</param>
     /// <param name="channel_id">チャンネルID</param>
     /// <param name="source_uri">ソースURI</param>
-    public Channel(Guid channel_id, Uri source_uri)
+    public Channel(PeerCast peercast, Guid channel_id, Uri source_uri)
     {
+      this.PeerCast = peercast;
       sourceUri = source_uri;
       sourceHost = new Host();
       var port = sourceUri.Port < 0 ? 7144 : sourceUri.Port;

@@ -103,6 +103,7 @@ class TC_HTTPOutputStreamFactory < Test::Unit::TestCase
 
   def test_create
     channel = PCSCore::Channel.new(
+      @peercast,
       System::Guid.new('9778E62BDC59DF56F9216D0387F80BF2'.to_clr_string), 
       System::Uri.new('http://localhost:7147/'))
     factory = PCSHTTP::HTTPOutputStreamFactory.new(@peercast)
@@ -162,6 +163,7 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
     @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
     @channel = PCSCore::Channel.new(
+      @peercast,
       System::Guid.new('9778E62BDC59DF56F9216D0387F80BF2'.to_clr_string), 
       System::Uri.new('http://localhost:7147/'))
   end
