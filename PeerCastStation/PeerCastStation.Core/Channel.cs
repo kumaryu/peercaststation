@@ -399,8 +399,7 @@ namespace PeerCastStation.Core
     {
       get
       {
-        //TODO:ちゃんと判別する
-        return true;
+        return !this.PeerCast.AccessController.IsChannelRelayable(this);
       }
     }
 
@@ -411,8 +410,7 @@ namespace PeerCastStation.Core
     {
       get
       {
-        //TODO:ちゃんと判別する
-        return true;
+        return !this.PeerCast.AccessController.IsChannelPlayable(this);
       }
     }
 

@@ -96,5 +96,42 @@ class TC_CoreChannel < Test::Unit::TestCase
     assert_equal(from,            output_log[1][1])
     assert_equal(packet_relays,   output_log[1][2])
   end
+
+  class TestAccessController < PeerCastStation::Core::AccessController
+    def self.new(peercast, relayable, playable)
+      instance = super(peercast)
+      instance.instance_eval do 
+        @relayable = relayable
+        @playable = playable
+      end
+      instance
+    end
+
+    def is_channel_playable(channel, output_stream=nil)
+      @playable
+    end
+
+    def is_channel_relayable(channel, output_stream=nil)
+      @relayable
+    end
+  end
+
+  def test_is_relay_full
+    channel = PeerCastStation::Core::Channel.new(
+      @peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    @peercast.access_controller = TestAccessController.new(@peercast, true, true)
+    assert(!channel.is_relay_full)
+    @peercast.access_controller = TestAccessController.new(@peercast, false, true)
+    assert(channel.is_relay_full)
+  end
+
+  def test_is_direct_full
+    channel = PeerCastStation::Core::Channel.new(
+      @peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    @peercast.access_controller = TestAccessController.new(@peercast, true, true)
+    assert(!channel.is_direct_full)
+    @peercast.access_controller = TestAccessController.new(@peercast, true, false)
+    assert(channel.is_direct_full)
+  end
 end
 
