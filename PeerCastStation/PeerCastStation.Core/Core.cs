@@ -165,11 +165,11 @@ namespace PeerCastStation.Core
     /// OutpuStreamのインスタンスを作成します
     /// </summary>
     /// <param name="stream">接続先のストリーム</param>
-    /// <param name="is_local">接続先がローカルネットワーク内かどうか</param>
+    /// <param name="remote_endpoint">接続先。無ければnull</param>
     /// <param name="channel">所属するチャンネル。チャンネルIDに対応するチャンネルが無い場合はnull</param>
     /// <param name="header">クライアントから受け取ったリクエスト</param>
     /// <returns>OutputStream</returns>
-    IOutputStream Create(Stream stream, bool is_local, Channel channel, byte[] header);
+    IOutputStream Create(Stream stream, EndPoint remote_endpoint, Channel channel, byte[] header);
     /// <summary>
     /// クライアントのリクエストからチャンネルIDを取得し返します
     /// </summary>
@@ -481,6 +481,10 @@ namespace PeerCastStation.Core
   /// </summary>
   public class PeerCast
   {
+    /// <summary>
+    /// UserAgentやServerとして名乗る名前を取得および設定します。
+    /// </summary>
+    public string AgentName { get; set; }
     public Host Host { get; set; }
     /// <summary>
     /// 登録されているYellowPageのリストを取得します
@@ -587,6 +591,8 @@ namespace PeerCastStation.Core
       }
       this.SynchronizationContext = SynchronizationContext.Current;
       this.AccessController = new AccessController(this);
+      var filever = System.Diagnostics.FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetCallingAssembly().Location);
+      this.AgentName = String.Format("{0}/{1}", filever.ProductName, filever.ProductVersion);
       IsClosed = false;
       Host = new Host();
       Host.SessionID = Guid.NewGuid();
@@ -663,8 +669,7 @@ namespace PeerCastStation.Core
             channel_id = factory.ParseChannelID(header_ary);
             if (channel_id != null) {
               channel = channels.Find(c => c.ChannelInfo.ChannelID==channel_id);
-              bool is_local = Utils.IsSiteLocal(((IPEndPoint)client.Client.RemoteEndPoint).Address);
-              output_stream = factory.Create(stream, is_local, channel, header_ary);
+              output_stream = factory.Create(stream, client.Client.RemoteEndPoint, channel, header_ary);
               break;
             }
           }

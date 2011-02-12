@@ -84,12 +84,12 @@ class MockOutputStream
   
   def initialize(type=0)
     @type = type
-    @is_local = true
+    @remote_endpoint = nil
     @upstream_rate = 0
     @log = []
   end
   attr_reader :log
-  attr_accessor :is_local, :upstream_rate
+  attr_accessor :remote_endpoint, :upstream_rate
 
   def output_stream_type
     @type
@@ -130,8 +130,8 @@ class MockOutputStreamFactory
     end
   end
   
-  def create(stream, is_local, channel, header)
-    @log << [:create, stream, is_local, channel, header]
+  def create(stream, remote_endpoint, channel, header)
+    @log << [:create, stream, remote_endpoint, channel, header]
     MockOutputStream.new
   end
 end

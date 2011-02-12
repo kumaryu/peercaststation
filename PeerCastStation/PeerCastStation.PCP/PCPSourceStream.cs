@@ -288,33 +288,29 @@ namespace PeerCastStation.PCP
               StartReceive();
             }
           }
-          catch (ObjectDisposedException) {
-          }
-          catch (IOException) {
-          }
+          catch (ObjectDisposedException) {}
+          catch (IOException) {}
         }, stream);
       }
     }
 
     MemoryStream sendStream = new MemoryStream(8192);
-    byte[] writeBuffer = null;
+    IAsyncResult sendResult = null;
     private void ProcessSend()
     {
-      if (stream!=null && writeBuffer == null && sendStream.Length > 0) {
-        writeBuffer = sendStream.ToArray();
+      if (sendResult!=null && sendResult.IsCompleted) {
+        try {
+          stream.EndWrite(sendResult);
+        }
+        catch (ObjectDisposedException) {}
+        catch (IOException) {}
+        sendResult = null;
+      }
+      if (stream!=null && sendResult==null && sendStream.Length>0) {
+        var buf = sendStream.ToArray();
         sendStream.SetLength(0);
         sendStream.Position = 0;
-        stream.BeginWrite(writeBuffer, 0, writeBuffer.Length, (ar) => {
-          NetworkStream s = (NetworkStream)ar.AsyncState;
-          try {
-            s.EndWrite(ar);
-          }
-          catch (ObjectDisposedException) {
-          }
-          catch (IOException) {
-          }
-          writeBuffer = null;
-        }, stream);
+        sendResult = stream.BeginWrite(buf, 0, buf.Length, null, null);
       }
     }
 
@@ -377,7 +373,17 @@ namespace PeerCastStation.PCP
         catch (SocketException) {
           connection.Close();
           connection = null;
-          if (stream!=null) stream.Close();
+          if (stream!=null) {
+            if (sendResult!=null) {
+              try {
+                stream.EndWrite(sendResult);
+              }
+              catch (ObjectDisposedException) {}
+              catch (IOException) {}
+              sendResult = null;
+            }
+            stream.Close();
+          }
           stream = null;
           sendStream.SetLength(0);
           sendStream.Position = 0;
@@ -449,7 +455,7 @@ namespace PeerCastStation.PCP
     public virtual void SendPCPHelo()
     {
       var helo = new Atom(Atom.PCP_HELO, new AtomCollection());
-      helo.Children.SetHeloAgent("PeerCastStation/1.0");
+      helo.Children.SetHeloAgent(peercast.AgentName);
       helo.Children.SetHeloSessionID(peercast.Host.SessionID);
       helo.Children.SetHeloPort((short)peercast.Host.Addresses[0].Port);
       helo.Children.SetHeloVersion(1218);
@@ -580,7 +586,7 @@ namespace PeerCastStation.PCP
       if (connection!=null && connection.Client.RemoteEndPoint.AddressFamily==AddressFamily.InterNetwork) {
         res.Children.SetHeloRemoteIP(((IPEndPoint)connection.Client.RemoteEndPoint).Address);
       }
-      res.Children.SetHeloAgent("PeerCastStation/1.0");
+      res.Children.SetHeloAgent(peercast.AgentName);
       res.Children.SetHeloSessionID(peercast.Host.SessionID);
       res.Children.SetHeloPort((short)peercast.Host.Addresses[0].Port);
       res.Children.SetHeloVersion(1218);

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using PeerCastStation.Core;
@@ -95,18 +96,18 @@ namespace PeerCastStation.HTTP
     /// 出力ストリームを作成します
     /// </summary>
     /// <param name="stream">元になるストリーム</param>
-    /// <param name="is_local">接続先がローカルネットワーク内かどうか</param>
+    /// <param name="remote_endpoint">接続先。無ければnull</param>
     /// <param name="channel">所属するチャンネル。無ければnull</param>
     /// <param name="header">クライアントからのリクエスト</param>
     /// <returns>
     /// 作成できた場合はHTTPOutputStreamのインスタンス。
     /// headerが正しく解析できなかった場合はnull
     /// </returns>
-    public IOutputStream Create(Stream stream, bool is_local, Channel channel, byte[] header)
+    public IOutputStream Create(Stream stream, EndPoint remote_endpoint, Channel channel, byte[] header)
     {
       var request = ParseRequest(header);
       if (request!=null) {
-        return new HTTPOutputStream(peercast, stream, is_local, channel, request);
+        return new HTTPOutputStream(peercast, stream, remote_endpoint, channel, request);
       }
       else {
         return null;
@@ -230,11 +231,12 @@ namespace PeerCastStation.HTTP
     /// <param name="is_local">接続先がローカルネットワーク内かどうか</param>
     /// <param name="channel">所属するチャンネル。無い場合はnull</param>
     /// <param name="request">クライアントからのリクエスト</param>
-    public HTTPOutputStream(PeerCast peercast, Stream stream, bool is_local, Channel channel, HTTPRequest request)
+    public HTTPOutputStream(PeerCast peercast, Stream stream, EndPoint remote_endpoint, Channel channel, HTTPRequest request)
     {
       this.peercast = peercast;
       this.stream = stream;
-      this.IsLocal = is_local;
+      var ip = remote_endpoint as IPEndPoint;
+      this.IsLocal = ip!=null ? Utils.IsSiteLocal(ip.Address) : true;
       this.channel = channel;
       this.request = request;
       if (this.channel!=null) {
