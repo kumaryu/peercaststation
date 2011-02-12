@@ -3,7 +3,7 @@ using System.Net;
 
 namespace PeerCastStation.Core
 {
-  static class Utils
+  static public class Utils
   {
     static public bool IsSiteLocal(IPAddress addr)
     {
