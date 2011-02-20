@@ -56,6 +56,7 @@ class MockPCPServer
   
   def close
     @thread.join
+    @client_threads.each {|thread| thread.join }
     @server.close
   end
 end

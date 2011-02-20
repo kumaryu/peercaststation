@@ -511,28 +511,59 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
+    /// 指定した中から次に接続するノードを選択します
+    /// </summary>
+    /// <param name="node_list">接続先のリスト</param>
+    /// <returns>node_listから選んだ接続先。node_listが空の場合はnull</returns>
+    private Node SelectSourceNode(List<Node> node_list)
+    {
+      if (node_list.Count > 0) {
+        //TODO: 接続先をちゃんと選ぶ
+        int idx = new Random().Next(node_list.Count);
+        return node_list[idx];
+      }
+      else {
+        return null;
+      }
+    }
+
+    /// <summary>
     /// SourceStreamが次に接続しにいくべき場所を選択して返します。
     /// IgnoreHostで無視されているホストは一定時間選択されません
     /// </summary>
     /// <returns>次に接続すべきホスト。無い場合はnull</returns>
     public virtual Host SelectSourceHost()
     {
-      var hosts = new List<Host>();
-      foreach (var node in nodes) {
-        if (!ignoredHosts.Contains(node.Host)) {
-          hosts.Add(node.Host);
-        }
-      }
-      if (hosts.Count > 0) {
-        int idx = new Random().Next(hosts.Count);
-        return hosts[idx];
-      }
-      else if (!ignoredHosts.Contains(sourceHost)) {
+      var node_list = nodes.Where(node => !ignoredHosts.Contains(node.Host)).ToList<Node>();
+      var res = SelectSourceNode(node_list);
+      if (res==null && !ignoredHosts.Contains(sourceHost)) {
         return sourceHost;
       }
       else {
-        return null;
+        return res.Host;
       }
+    }
+
+    /// <summary>
+    /// SourceStreamが次に接続しにいくべき場所を複数選択して返します。
+    /// IgnoreHostで無視されているホストは一定時間選択されません
+    /// </summary>
+    /// <returns>次に接続すべきホスト。最大8箇所。無い場合は空の配列</returns>
+    public virtual Node[] SelectSourceNodes()
+    {
+      var node_list = nodes.Where(node => !ignoredHosts.Contains(node.Host)).ToList<Node>();
+      var res = new List<Node>();
+      for (var i=0; i<8; i++) {
+        var node = SelectSourceNode(node_list);
+        if (node!=null) {
+          res.Add(node);
+          node_list.Remove(node);
+        }
+        else {
+          break;
+        }
+      }
+      return res.ToArray();
     }
 
     public void Start(ISourceStream source_stream)
