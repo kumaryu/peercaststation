@@ -277,20 +277,30 @@ namespace PeerCastStation.PCP
     private void StartReceive()
     {
       if (stream != null) {
-        stream.BeginRead(recvBuffer, 0, recvBuffer.Length, (ar) => {
-          NetworkStream s = (NetworkStream)ar.AsyncState;
-          try {
-            int bytes = s.EndRead(ar);
-            if (bytes > 0) {
-              recvStream.Seek(0, SeekOrigin.End);
-              recvStream.Write(recvBuffer, 0, bytes);
-              recvStream.Seek(0, SeekOrigin.Begin);
-              StartReceive();
+        try {
+          stream.BeginRead(recvBuffer, 0, recvBuffer.Length, (ar) => {
+            NetworkStream s = (NetworkStream)ar.AsyncState;
+            try {
+              int bytes = s.EndRead(ar);
+              if (bytes > 0) {
+                syncContext.Post(x => {
+                  recvStream.Seek(0, SeekOrigin.End);
+                  recvStream.Write(recvBuffer, 0, bytes);
+                  recvStream.Seek(0, SeekOrigin.Begin);
+                  StartReceive();
+                }, null);
+              }
             }
-          }
-          catch (ObjectDisposedException) {}
-          catch (IOException) {}
-        }, stream);
+            catch (ObjectDisposedException) { }
+            catch (IOException) {
+              Close(CloseReason.ConnectionError);
+            }
+          }, stream);
+        }
+        catch (ObjectDisposedException) { }
+        catch (IOException) {
+          Close(CloseReason.ConnectionError);
+        }
       }
     }
 
@@ -303,14 +313,22 @@ namespace PeerCastStation.PCP
           stream.EndWrite(sendResult);
         }
         catch (ObjectDisposedException) {}
-        catch (IOException) {}
+        catch (IOException) {
+          Close(CloseReason.ConnectionError);
+        }
         sendResult = null;
       }
       if (stream!=null && sendResult==null && sendStream.Length>0) {
         var buf = sendStream.ToArray();
         sendStream.SetLength(0);
         sendStream.Position = 0;
-        sendResult = stream.BeginWrite(buf, 0, buf.Length, null, null);
+        try {
+          sendResult = stream.BeginWrite(buf, 0, buf.Length, null, null);
+        }
+        catch (ObjectDisposedException) {}
+        catch (IOException) {
+          Close(CloseReason.ConnectionError);
+        }
       }
     }
 
@@ -598,7 +616,7 @@ namespace PeerCastStation.PCP
     {
       peercast.SynchronizationContext.Post(dummy => {
         var rip = atom.Children.GetHeloRemoteIP();
-        if (!peercast.Host.Addresses.Any(x => x.Address.Equals(rip))) {
+        if (rip!=null && !peercast.Host.Addresses.Any(x => x.Address.Equals(rip))) {
           peercast.Host.Addresses.Add(new IPEndPoint(rip, peercast.Host.Addresses[0].Port));
         }
       }, null);
@@ -658,7 +676,9 @@ namespace PeerCastStation.PCP
 
     protected virtual IStreamState OnPCPChanTrack(Atom atom)
     {
-      channel.ChannelInfo.Extra.SetChanTrack(atom.Children);
+      peercast.SynchronizationContext.Post(dummy => {
+        channel.ChannelInfo.Extra.SetChanTrack(atom.Children);
+      }, null);
       return null;
     }
 
