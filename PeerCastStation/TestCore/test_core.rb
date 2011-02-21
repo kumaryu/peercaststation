@@ -86,10 +86,11 @@ class MockOutputStream
     @type = type
     @remote_endpoint = nil
     @upstream_rate = 0
+    @is_local = false
     @log = []
   end
   attr_reader :log
-  attr_accessor :remote_endpoint, :upstream_rate
+  attr_accessor :remote_endpoint, :upstream_rate, :is_local
 
   def output_stream_type
     @type
