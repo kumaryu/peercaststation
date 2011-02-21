@@ -154,8 +154,10 @@ namespace PeerCastStation.Core
       ICollection<Content>
   {
     private SortedList<long, Content> list = new SortedList<long,Content>();
+    public long LimitPackets { get; set; }
     public ContentCollection()
     {
+      LimitPackets = 160;
     }
 
     public event NotifyCollectionChangedEventHandler CollectionChanged;
@@ -166,6 +168,9 @@ namespace PeerCastStation.Core
     public void Add(Content item)
     {
       list.Add(item.Position, item);
+      while (list.Count>LimitPackets && list.Count>1) {
+        list.RemoveAt(0);
+      }
       if (CollectionChanged!=null) {
         CollectionChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item));
       }

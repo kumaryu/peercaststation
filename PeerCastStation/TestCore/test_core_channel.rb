@@ -177,3 +177,45 @@ class TC_CoreChannel < Test::Unit::TestCase
 
 end
 
+class TC_CoreContentCollection < Test::Unit::TestCase
+  def test_construct
+    contents = PeerCastStation::Core::ContentCollection.new
+    assert_equal(0, contents.count)
+    assert_equal(160, contents.limit_packets)
+  end
+
+  def test_newest
+    contents = PeerCastStation::Core::ContentCollection.new
+    assert_nil(contents.newest)
+
+    content0 = PeerCastStation::Core::Content.new(10, 'content')
+    content1 = PeerCastStation::Core::Content.new(0, 'content')
+    contents.add(content0)
+    contents.add(content1)
+    assert_equal(content0, contents.newest)
+  end
+
+  def test_oldest
+    contents = PeerCastStation::Core::ContentCollection.new
+    assert_nil(contents.newest)
+
+    content0 = PeerCastStation::Core::Content.new(10, 'content')
+    content1 = PeerCastStation::Core::Content.new(0, 'content')
+    contents.add(content0)
+    contents.add(content1)
+    assert_equal(content1, contents.oldest)
+  end
+
+  def test_add
+    contents = PeerCastStation::Core::ContentCollection.new
+    contents.limit_packets = 10
+    30.times do |i|
+      content = PeerCastStation::Core::Content.new(i, 'content')
+      contents.add(content)
+    end
+    assert_equal(10, contents.count)
+    assert_equal(20, contents.oldest.position)
+    assert_equal(29, contents.newest.position)
+  end
+end
+
