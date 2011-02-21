@@ -264,6 +264,7 @@ namespace PeerCastStation.PCP
     private Host uphost = null;
     private QueuedSynchronizationContext syncContext;
     private bool hostInfoUpdated = true;
+    private System.Threading.AutoResetEvent changedEvent = new System.Threading.AutoResetEvent(true);
 
     public IStreamState State { get { return state; } set { state = value; } }
     public PeerCast PeerCast { get { return peercast; } }
@@ -283,6 +284,7 @@ namespace PeerCastStation.PCP
             try {
               int bytes = s.EndRead(ar);
               if (bytes > 0) {
+                changedEvent.Set();
                 syncContext.Post(x => {
                   recvStream.Seek(0, SeekOrigin.End);
                   recvStream.Write(recvBuffer, 0, bytes);
@@ -323,7 +325,9 @@ namespace PeerCastStation.PCP
         sendStream.SetLength(0);
         sendStream.Position = 0;
         try {
-          sendResult = stream.BeginWrite(buf, 0, buf.Length, null, null);
+          sendResult = stream.BeginWrite(buf, 0, buf.Length, (ar) => {
+            changedEvent.Set();
+          }, null);
         }
         catch (ObjectDisposedException) {}
         catch (IOException) {
@@ -355,6 +359,7 @@ namespace PeerCastStation.PCP
       if (syncContext!=null) {
         syncContext.ProcessAll();
       }
+      changedEvent.WaitOne(1);
     }
 
     public virtual Host SelectSourceHost()
@@ -491,16 +496,32 @@ namespace PeerCastStation.PCP
       }
     }
 
+    private void Channel_HostInfoUpdated(object sender, EventArgs e)
+    {
+      if (syncContext!=null) {
+        syncContext.Post(dummy => {
+          hostInfoUpdated = true;
+          changedEvent.Set();
+        }, null);
+      }
+      else {
+        hostInfoUpdated = true;
+        changedEvent.Set();
+      }
+    }
+
     public virtual void Start()
     {
       if (this.syncContext == null) {
         this.syncContext = new QueuedSynchronizationContext();
         SynchronizationContext.SetSynchronizationContext(this.syncContext);
       }
+      channel.OutputStreams.CollectionChanged += Channel_HostInfoUpdated;
       state = new PCPSourceConnectState(this, SelectSourceHost());
       while (state!=null) {
         ProcessState();
       }
+      channel.OutputStreams.CollectionChanged -= Channel_HostInfoUpdated;
     }
 
     public virtual void ProcessState()
@@ -808,9 +829,6 @@ namespace PeerCastStation.PCP
       this.peercast = peercast;
       this.channel = channel;
       this.sourceUri = source_uri;
-      channel.OutputStreams.CollectionChanged += (sender, e) => {
-        hostInfoUpdated = true;
-      };
     }
   }
 }
