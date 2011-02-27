@@ -166,10 +166,10 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="stream">接続先のストリーム</param>
     /// <param name="remote_endpoint">接続先。無ければnull</param>
-    /// <param name="channel">所属するチャンネル。チャンネルIDに対応するチャンネルが無い場合はnull</param>
+    /// <param name="channel_id">所属するチャンネルのチャンネルID</param>
     /// <param name="header">クライアントから受け取ったリクエスト</param>
     /// <returns>OutputStream</returns>
-    IOutputStream Create(Stream stream, EndPoint remote_endpoint, Channel channel, byte[] header);
+    IOutputStream Create(Stream stream, EndPoint remote_endpoint, Guid channel_id, byte[] header);
     /// <summary>
     /// クライアントのリクエストからチャンネルIDを取得し返します
     /// </summary>
@@ -561,6 +561,36 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
+    /// リレーしているチャンネルを取得します。
+    /// </summary>
+    /// <param name="channel_id">リレーするチャンネルID</param>
+    /// <param name="request_uri">接続起点およびプロトコル</param>
+    /// <param name="request_relay">チャンネルが無かった場合にRelayChannelを呼び出すかどうか。trueの場合呼び出す</param>
+    /// <returns>
+    /// channel_idに等しいチャンネルIDを持つChannelのインスタンス。
+    /// チャンネルが無かった場合はrequest_relayがtrueならReleyChannelを呼び出した結果、
+    /// request_relayがfalseならnull。
+    /// </returns>
+    public virtual Channel RequestChannel(Guid channel_id, Uri tracker, bool request_relay)
+    {
+      var res = channels.FirstOrDefault(c => c.ChannelInfo.ChannelID==channel_id);
+      if (res!=null) {
+        return res;
+      }
+      else if (request_relay) {
+        if (tracker!=null) {
+          return RelayChannel(channel_id, tracker);
+        }
+        else {
+          return RelayChannel(channel_id);
+        }
+      }
+      else {
+        return null;
+      }
+    }
+
+    /// <summary>
     /// 配信を開始します。
     /// </summary>
     /// <param name="yp">チャンネル情報を載せるYellowPage</param>
@@ -668,8 +698,7 @@ namespace PeerCastStation.Core
           foreach (var factory in OutputStreamFactories) {
             channel_id = factory.ParseChannelID(header_ary);
             if (channel_id != null) {
-              channel = channels.Find(c => c.ChannelInfo.ChannelID==channel_id);
-              output_stream = factory.Create(stream, client.Client.RemoteEndPoint, channel, header_ary);
+              output_stream = factory.Create(stream, client.Client.RemoteEndPoint, channel_id.Value, header_ary);
               break;
             }
           }

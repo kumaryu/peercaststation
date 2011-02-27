@@ -102,9 +102,10 @@ class TC_HTTPOutputStreamFactory < Test::Unit::TestCase
   end
 
   def test_create
+    channel_id = System::Guid.new('9778E62BDC59DF56F9216D0387F80BF2'.to_clr_string)
     channel = PCSCore::Channel.new(
       @peercast,
-      System::Guid.new('9778E62BDC59DF56F9216D0387F80BF2'.to_clr_string), 
+      channel_id,
       System::Uri.new('http://localhost:7147/'))
     factory = PCSHTTP::HTTPOutputStreamFactory.new(@peercast)
     stream = System::IO::MemoryStream.new('hogehoge')
@@ -114,8 +115,9 @@ class TC_HTTPOutputStreamFactory < Test::Unit::TestCase
       "User-Agent:hoge hoge\r\n",
       "\r\n"
     ].join
+    @peercast.channels.add(channel)
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('192.168.1.2'), 7144)
-    output_stream = factory.create(stream, endpoint, channel, header)
+    output_stream = factory.create(stream, endpoint, channel_id, header)
     assert_not_nil(output_stream)
     assert_equal(@peercast, output_stream.PeerCast)
     assert_equal(stream, output_stream.stream)
@@ -126,7 +128,7 @@ class TC_HTTPOutputStreamFactory < Test::Unit::TestCase
     header = [
       "GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1\r\n",
     ].join
-    output_stream = factory.create(stream, endpoint, channel, header)
+    output_stream = factory.create(stream, endpoint, channel_id, header)
     assert_nil(output_stream)
   end
 end

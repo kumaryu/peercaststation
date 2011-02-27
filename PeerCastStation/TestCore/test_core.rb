@@ -131,8 +131,8 @@ class MockOutputStreamFactory
     end
   end
   
-  def create(stream, remote_endpoint, channel, header)
-    @log << [:create, stream, remote_endpoint, channel, header]
+  def create(stream, remote_endpoint, channel_id, header)
+    @log << [:create, stream, remote_endpoint, channel_id, header]
     MockOutputStream.new
   end
 end

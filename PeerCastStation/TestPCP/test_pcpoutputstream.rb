@@ -84,13 +84,13 @@ class TC_PCPOutputStreamFactory < Test::Unit::TestCase
     factory = PCSPCP::PCPOutputStreamFactory.new(@peercast)
     s = System::IO::MemoryStream.new
     header = <<EOS
-GET /channel/9778E62BDC59DF56F9216D0387F80BF2 HTTP/1.1\r
+GET /channel/531DC8DFC7FB42928AC2C0A626517A87 HTTP/1.1\r
 x-peercast-pcp:1\r
 x-peercast-pos: 200000000\r
 User-Agent: PeerCastStation/1.0\r
 \r
 EOS
-    output_stream = factory.create(s, @endpoint, @channel, header)
+    output_stream = factory.create(s, @endpoint, @channel_id, header)
     assert_kind_of(PCSPCP::PCPOutputStream, output_stream)
   end
 end

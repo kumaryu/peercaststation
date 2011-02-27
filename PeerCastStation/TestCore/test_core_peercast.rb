@@ -85,6 +85,31 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert_equal(1, @peercast.channels.count)
     assert_equal(channel, @peercast.channels[0])
   end
+
+  def test_request_channel
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
+    @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
+    @peercast.yellow_page_factories['mock_yp'] = MockYellowPageFactory.new
+    @peercast.source_stream_factories['mock'] = MockSourceStreamFactory.new
+    @peercast.yellow_pages.add(@peercast.yellow_page_factories['mock_yp'].create('mock_yp', System::Uri.new('pcp:example.com:7147')))
+    
+    channel_id = System::Guid.new_guid
+    assert_nil(@peercast.request_channel(channel_id, nil, false))
+
+    channel = PeerCastStation::Core::Channel.new(@peercast, channel_id, System::Uri.new('mock://localhost'))
+    @peercast.channels.add(channel)
+    assert_equal(channel, @peercast.request_channel(channel_id, nil, false))
+
+    channel_id = System::Guid.new_guid
+    channel = @peercast.request_channel(channel_id, System::Uri.new('mock://localhost'), true)
+    assert_not_nil(channel)
+    assert_kind_of(MockSourceStream, channel.source_stream)
+
+    channel_id = System::Guid.new_guid
+    channel = @peercast.request_channel(channel_id, nil, true)
+    assert_not_nil(channel)
+    assert_kind_of(MockSourceStream, channel.source_stream)
+  end
   
   def test_close_channel
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)

@@ -118,16 +118,20 @@ namespace PeerCastStation.PCP
     /// </summary>
     /// <param name="stream">元になるストリーム</param>
     /// <param name="remote_endpoint">接続先。無ければnull</param>
-    /// <param name="channel">所属するチャンネル。無ければnull</param>
+    /// <param name="channel_id">所属するチャンネルID。</param>
     /// <param name="header">クライアントからのリクエスト</param>
     /// <returns>
     /// 作成できた場合はPCPOutputStreamのインスタンス。
     /// headerが正しく解析できなかった場合はnull
     /// </returns>
-    public IOutputStream Create(Stream stream, EndPoint remote_endpoint, Channel channel, byte[] header)
+    public IOutputStream Create(Stream stream, EndPoint remote_endpoint, Guid channel_id, byte[] header)
     {
       var request = ParseRequest(header);
       if (request!=null) {
+        Channel channel = null;
+        peercast.SynchronizationContext.Send(dummy => {
+          channel = peercast.RequestChannel(channel_id, null, false);
+        }, null);
         return new PCPOutputStream(peercast, stream, remote_endpoint, channel, request);
       }
       else {

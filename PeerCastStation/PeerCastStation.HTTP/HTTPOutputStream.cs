@@ -92,21 +92,45 @@ namespace PeerCastStation.HTTP
       get { return "HTTP"; }
     }
 
+    private Uri CreateTrackerUri(Guid channel_id, Uri request_uri)
+    {
+      string tip = null;
+      foreach (Match param in Regex.Matches(request_uri.Query, @"(&|\?)([^&=]+)=([^&=]+)")) {
+        if (param.Groups[2].Value=="tip") {
+          tip = param.Groups[3].Value;
+          break;
+        }
+      }
+      if (tip!=null) {
+        return new Uri(String.Format("pcp://{0}/{1}", tip, channel_id));
+      }
+      else {
+        return null;
+      }
+    }
+
     /// <summary>
     /// 出力ストリームを作成します
     /// </summary>
     /// <param name="stream">元になるストリーム</param>
     /// <param name="remote_endpoint">接続先。無ければnull</param>
-    /// <param name="channel">所属するチャンネル。無ければnull</param>
+    /// <param name="channel_id">所属するチャンネルのチャンネルID</param>
     /// <param name="header">クライアントからのリクエスト</param>
     /// <returns>
     /// 作成できた場合はHTTPOutputStreamのインスタンス。
     /// headerが正しく解析できなかった場合はnull
     /// </returns>
-    public IOutputStream Create(Stream stream, EndPoint remote_endpoint, Channel channel, byte[] header)
+    public IOutputStream Create(Stream stream, EndPoint remote_endpoint, Guid channel_id, byte[] header)
     {
       var request = ParseRequest(header);
       if (request!=null) {
+        Channel channel = null;
+        Uri tracker = CreateTrackerUri(channel_id, request.Uri);
+        peercast.SynchronizationContext.Send(
+          dummy => {
+            channel = peercast.RequestChannel(channel_id, tracker, true);
+          }, null
+        );
         return new HTTPOutputStream(peercast, stream, remote_endpoint, channel, request);
       }
       else {
