@@ -743,6 +743,7 @@ namespace PeerCastStation.Core
           }
         }
         if (output_stream != null) {
+          channel = channels.FirstOrDefault(c => c.ChannelInfo.ChannelID==channel_id);
           if (channel!=null) {
             this.SynchronizationContext.Post(dummy => {
               channel.OutputStreams.Add(output_stream);
