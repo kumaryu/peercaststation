@@ -477,6 +477,32 @@ namespace PeerCastStation.Core
   }
 
   /// <summary>
+  /// ChannelChangedEventHandlerに渡される引数クラスです
+  /// </summary>
+  public class ChannelChangedEventArgs
+    : EventArgs
+  {
+    /// <summary>
+    /// 変更があったチャンネルを取得します
+    /// </summary>
+    public Channel Channel { get; private set; }
+    /// <summary>
+    /// 変更があったチャンネルを指定してChannelChangedEventArgsを初期化します
+    /// </summary>
+    /// <param name="channel">変更があったチャンネル</param>
+    public ChannelChangedEventArgs(Channel channel)
+    {
+      this.Channel = channel;
+    }
+  }
+  /// <summary>
+  /// チャンネルの追加や削除があった時に呼ばれるイベントのデリゲートです
+  /// </summary>
+  /// <param name="sender">イベント送出元のオブジェクト</param>
+  /// <param name="e">イベント引数</param>
+  public delegate void ChannelChangedEventHandler(object sender, ChannelChangedEventArgs e);
+
+  /// <summary>
   /// PeerCastStationの主要な動作を行ない、管理するクラスです
   /// </summary>
   public class PeerCast
@@ -507,6 +533,15 @@ namespace PeerCastStation.Core
     /// </summary>
     public ICollection<Channel> Channels { get { return channels; } }
     private List<Channel> channels = new List<Channel>();
+
+    /// <summary>
+    /// チャンネルが追加された時に呼び出されます。
+    /// </summary>
+    public event ChannelChangedEventHandler ChannelAdded;
+    /// <summary>
+    /// チャンネルが削除された時に呼び出されます。
+    /// </summary>
+    public event ChannelChangedEventHandler ChannelRemoved;
 
     /// <summary>
     /// 所属するスレッドのSynchronizationContextを取得および設定します
@@ -557,6 +592,7 @@ namespace PeerCastStation.Core
       channels.Add(channel);
       var source_stream = source_factory.Create(channel, tracker);
       channel.Start(source_stream);
+      if (ChannelAdded!=null) ChannelAdded(this, new ChannelChangedEventArgs(channel));
       return channel;
     }
 
@@ -608,6 +644,7 @@ namespace PeerCastStation.Core
     {
       channel.Close();
       channels.Remove(channel);
+      if (ChannelRemoved!=null) ChannelRemoved(this, new ChannelChangedEventArgs(channel));
     }
 
     /// <summary>
@@ -651,7 +688,7 @@ namespace PeerCastStation.Core
         listenThread = null;
       }
       foreach (var channel in channels) {
-        channel.Close();
+        CloseChannel(channel);
       }
     }
 
