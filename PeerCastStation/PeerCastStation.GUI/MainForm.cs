@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Text.RegularExpressions;
+using PeerCastStation.Core;
 
 namespace PeerCastStation.GUI
 {
@@ -29,7 +30,39 @@ namespace PeerCastStation.GUI
       peerCast.AccessController.MaxPlays = currentMaxDirects;
       peerCast.AccessController.MaxRelays = currentMaxRelays;
       peerCast.AccessController.MaxUpstreamRate = currentMaxUpstreamRate;
-      channelGrid.SelectedObject = peerCast.Channels;
+      peerCast.ChannelAdded += ChannelAdded;
+      peerCast.ChannelRemoved += ChannelRemoved;
+    }
+
+    private void ChannelAdded(object sender, PeerCastStation.Core.ChannelChangedEventArgs e)
+    {
+      channelList.Items.Add(CreateChannelListItem(e.Channel));
+      e.Channel.PropertyChanged += ChannelInfoChanged;
+    }
+
+    private void ChannelRemoved(object sender, PeerCastStation.Core.ChannelChangedEventArgs e)
+    {
+      e.Channel.PropertyChanged -= ChannelInfoChanged;
+    }
+
+    private void ChannelInfoChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+      channelList.Items.Clear();
+      foreach (var c in peerCast.Channels) {
+        channelList.Items.Add(CreateChannelListItem(c));
+      }
+    }
+
+    private string CreateChannelListItem(PeerCastStation.Core.Channel c)
+    {
+      var chaninfo = c.ChannelInfo.Extra.GetChanInfo();
+      var bitrate = chaninfo!=null ? (chaninfo.GetChanInfoBitrate() ?? 0) : 0; 
+      return String.Format(
+        "{0} {1}kbps [{2}/{3}]",
+        c.ChannelInfo.Name,
+        bitrate,
+        c.OutputStreams.CountPlaying,
+        c.OutputStreams.CountRelaying);
     }
 
     private void applySettings_Click(object sender, EventArgs e)
@@ -53,25 +86,19 @@ namespace PeerCastStation.GUI
       peerCast.AccessController.MaxUpstreamRate = currentMaxUpstreamRate;
     }
 
-    private void startRelay_Click(object sender, EventArgs e)
-    {
-      var relay_url = new Uri(relayURL.Text);
-      var match = Regex.Match(relay_url.PathAndQuery, @"/[^/]+/([A-Za-z0-9]+)(\.[^?]*)?(\?tip=(.*))?");
-      if (match.Success) {
-        var channel_id = Guid.Parse(match.Groups[1].Value);
-        if (match.Groups[4].Success) {
-          var tracker = new Uri(String.Format("pcp://{0}/", match.Groups[4].Value));
-          peerCast.RelayChannel(channel_id, tracker);
-        }
-        else {
-          peerCast.RelayChannel(channel_id);
-        }
-      }
-    }
-
     private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
     {
       peerCast.Close();
+    }
+
+    private void channelList_SelectedIndexChanged(object sender, EventArgs e)
+    {
+      if (channelList.SelectedIndex>=0) {
+        channelGrid.SelectedObject = peerCast.Channels[channelList.SelectedIndex].ChannelInfo;
+      }
+      else {
+        channelGrid.SelectedObject = null;
+      }
     }
   }
 }

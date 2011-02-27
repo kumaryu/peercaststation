@@ -31,11 +31,8 @@
       System.Windows.Forms.Label label3;
       System.Windows.Forms.Label label2;
       System.Windows.Forms.Label label1;
-      System.Windows.Forms.Label label5;
       this.tabControl1 = new System.Windows.Forms.TabControl();
       this.tabInfo = new System.Windows.Forms.TabPage();
-      this.relayURL = new System.Windows.Forms.TextBox();
-      this.startRelay = new System.Windows.Forms.Button();
       this.tabChannels = new System.Windows.Forms.TabPage();
       this.channelGrid = new System.Windows.Forms.PropertyGrid();
       this.tabSettings = new System.Windows.Forms.TabPage();
@@ -45,13 +42,12 @@
       this.maxRelays = new System.Windows.Forms.NumericUpDown();
       this.port = new System.Windows.Forms.NumericUpDown();
       this.tabLog = new System.Windows.Forms.TabPage();
+      this.channelList = new System.Windows.Forms.ListBox();
       label4 = new System.Windows.Forms.Label();
       label3 = new System.Windows.Forms.Label();
       label2 = new System.Windows.Forms.Label();
       label1 = new System.Windows.Forms.Label();
-      label5 = new System.Windows.Forms.Label();
       this.tabControl1.SuspendLayout();
-      this.tabInfo.SuspendLayout();
       this.tabChannels.SuspendLayout();
       this.tabSettings.SuspendLayout();
       ((System.ComponentModel.ISupportInitialize)(this.maxUpstreamRate)).BeginInit();
@@ -96,15 +92,6 @@
       label1.TabIndex = 5;
       label1.Text = "ポート番号";
       // 
-      // label5
-      // 
-      label5.AutoSize = true;
-      label5.Location = new System.Drawing.Point(8, 25);
-      label5.Name = "label5";
-      label5.Size = new System.Drawing.Size(27, 12);
-      label5.TabIndex = 0;
-      label5.Text = "URL";
-      // 
       // tabControl1
       // 
       this.tabControl1.Controls.Add(this.tabInfo);
@@ -120,9 +107,6 @@
       // 
       // tabInfo
       // 
-      this.tabInfo.Controls.Add(this.relayURL);
-      this.tabInfo.Controls.Add(this.startRelay);
-      this.tabInfo.Controls.Add(label5);
       this.tabInfo.Location = new System.Drawing.Point(4, 22);
       this.tabInfo.Name = "tabInfo";
       this.tabInfo.Padding = new System.Windows.Forms.Padding(3);
@@ -131,28 +115,9 @@
       this.tabInfo.Text = "情報";
       this.tabInfo.UseVisualStyleBackColor = true;
       // 
-      // relayURL
-      // 
-      this.relayURL.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.relayURL.Location = new System.Drawing.Point(49, 22);
-      this.relayURL.Name = "relayURL";
-      this.relayURL.Size = new System.Drawing.Size(256, 19);
-      this.relayURL.TabIndex = 2;
-      // 
-      // startRelay
-      // 
-      this.startRelay.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-      this.startRelay.Location = new System.Drawing.Point(311, 17);
-      this.startRelay.Name = "startRelay";
-      this.startRelay.Size = new System.Drawing.Size(85, 28);
-      this.startRelay.TabIndex = 1;
-      this.startRelay.Text = "リレー";
-      this.startRelay.UseVisualStyleBackColor = true;
-      this.startRelay.Click += new System.EventHandler(this.startRelay_Click);
-      // 
       // tabChannels
       // 
+      this.tabChannels.Controls.Add(this.channelList);
       this.tabChannels.Controls.Add(this.channelGrid);
       this.tabChannels.Location = new System.Drawing.Point(4, 22);
       this.tabChannels.Name = "tabChannels";
@@ -164,11 +129,13 @@
       // 
       // channelGrid
       // 
-      this.channelGrid.Dock = System.Windows.Forms.DockStyle.Fill;
+      this.channelGrid.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
       this.channelGrid.HelpVisible = false;
-      this.channelGrid.Location = new System.Drawing.Point(3, 3);
+      this.channelGrid.Location = new System.Drawing.Point(6, 187);
       this.channelGrid.Name = "channelGrid";
-      this.channelGrid.Size = new System.Drawing.Size(398, 323);
+      this.channelGrid.PropertySort = System.Windows.Forms.PropertySort.Alphabetical;
+      this.channelGrid.Size = new System.Drawing.Size(390, 134);
       this.channelGrid.TabIndex = 0;
       this.channelGrid.ToolbarVisible = false;
       // 
@@ -258,6 +225,18 @@
       this.tabLog.Text = "ログ";
       this.tabLog.UseVisualStyleBackColor = true;
       // 
+      // channelList
+      // 
+      this.channelList.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      this.channelList.FormattingEnabled = true;
+      this.channelList.ItemHeight = 12;
+      this.channelList.Location = new System.Drawing.Point(6, 6);
+      this.channelList.Name = "channelList";
+      this.channelList.Size = new System.Drawing.Size(390, 172);
+      this.channelList.TabIndex = 1;
+      this.channelList.SelectedIndexChanged += new System.EventHandler(this.channelList_SelectedIndexChanged);
+      // 
       // MainForm
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -268,8 +247,6 @@
       this.Text = "PeerCastStation.GUI";
       this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
       this.tabControl1.ResumeLayout(false);
-      this.tabInfo.ResumeLayout(false);
-      this.tabInfo.PerformLayout();
       this.tabChannels.ResumeLayout(false);
       this.tabSettings.ResumeLayout(false);
       this.tabSettings.PerformLayout();
@@ -294,8 +271,7 @@
     private System.Windows.Forms.TabPage tabLog;
     private System.Windows.Forms.PropertyGrid channelGrid;
     private System.Windows.Forms.Button applySettings;
-    private System.Windows.Forms.Button startRelay;
-    private System.Windows.Forms.TextBox relayURL;
+    private System.Windows.Forms.ListBox channelList;
 
   }
 }
