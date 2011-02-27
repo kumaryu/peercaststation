@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Text.RegularExpressions;
 using PeerCastStation.Core;
+using System.Linq;
 
 namespace PeerCastStation.GUI
 {
@@ -55,12 +56,16 @@ namespace PeerCastStation.GUI
 
     private string CreateChannelListItem(PeerCastStation.Core.Channel c)
     {
+      var total_plays  = c.Nodes.Sum(n => n.DirectCount) + c.OutputStreams.CountPlaying;
+      var total_relays = c.Nodes.Sum(n => n.RelayCount)  + c.OutputStreams.CountRelaying;
       var chaninfo = c.ChannelInfo.Extra.GetChanInfo();
       var bitrate = chaninfo!=null ? (chaninfo.GetChanInfoBitrate() ?? 0) : 0; 
       return String.Format(
-        "{0} {1}kbps [{2}/{3}]",
+        "{0} {1}kbps ({2}/{3}) [{4}/{5}]",
         c.ChannelInfo.Name,
         bitrate,
+        total_plays,
+        total_relays,
         c.OutputStreams.CountPlaying,
         c.OutputStreams.CountRelaying);
     }
