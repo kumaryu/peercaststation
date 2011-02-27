@@ -656,7 +656,6 @@ namespace PeerCastStation.Core
         OnPropertyChanged("ChannelInfo");
       };
       contents.CollectionChanged += (sender, e) => {
-        OnPropertyChanged("Contents");
         OnContentChanged();
       };
       outputStreams.CollectionChanged += (sender, e) => {
