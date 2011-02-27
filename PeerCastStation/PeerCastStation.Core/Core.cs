@@ -531,7 +531,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 接続しているチャンネルのリストを取得します
     /// </summary>
-    public ICollection<Channel> Channels { get { return channels; } }
+    public IList<Channel> Channels { get { return channels; } }
     private List<Channel> channels = new List<Channel>();
 
     /// <summary>
@@ -688,8 +688,10 @@ namespace PeerCastStation.Core
         listenThread = null;
       }
       foreach (var channel in channels) {
-        CloseChannel(channel);
+        channel.Close();
+        if (ChannelRemoved!=null) ChannelRemoved(this, new ChannelChangedEventArgs(channel));
       }
+      channels.Clear();
     }
 
     private Thread listenThread = null;
