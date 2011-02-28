@@ -196,8 +196,8 @@ class TC_PCPSourceStream < Test::Unit::TestCase
       bcst.children.GetBcstGroup)
     assert_equal(1218, bcst.children.GetBcstVersion)
     assert_equal(27, bcst.children.GetBcstVersionVP)
-    assert_equal('PP'.unpack('CC'), bcst.children.GetBcstVersionEXPrefix)
-    assert_equal(23, bcst.children.GetBcstVersionEXNumber)
+    assert_nil(bcst.children.GetBcstVersionEXPrefix)
+    assert_nil(bcst.children.GetBcstVersionEXNumber)
     assert(bcst.children.to_a.any? {|atom| atom.name.to_s=='test' && atom.GetInt32==42 })
   end
 
@@ -221,8 +221,8 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal(7144, host.children.GetHostNewPos)
     assert_equal(1218, host.children.GetHostVersion)
     assert_equal(27, host.children.GetHostVersionVP)
-    assert_equal('PP'.unpack('CC'), host.children.GetHostVersionEXPrefix)
-    assert_equal(23, host.children.GetHostVersionEXNumber)
+    assert_nil(host.children.GetHostVersionEXPrefix)
+    assert_nil(host.children.GetHostVersionEXNumber)
     assert(source.uphost.Addresses.to_a.any? {|addr| addr.Address==host.children.GetHostUphostIP })
     assert(source.uphost.Addresses.to_a.any? {|addr| addr.Port==host.children.GetHostUphostPort })
     assert(host.children.GetHostFlags1)
