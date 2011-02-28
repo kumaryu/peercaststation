@@ -723,11 +723,12 @@ namespace PeerCastStation.Core
       try {
         var header = new List<byte>();
         Guid? channel_id = null;
-        while (output_stream == null && header.Count <= 4096) {
+        bool eos = false;
+        while (!eos && output_stream==null && header.Count<=4096) {
           do {
             var val = stream.ReadByte();
             if (val < 0) {
-              break;
+              eos = true;
             }
             else {
               header.Add((byte)val);
