@@ -266,6 +266,9 @@ namespace PeerCastStation.PCP
     private bool hostInfoUpdated = true;
     private System.Threading.AutoResetEvent changedEvent = new System.Threading.AutoResetEvent(true);
 
+    public const int PCP_VERSION    = 1218;
+    public const int PCP_VERSION_VP = 27;
+
     public IStreamState State { get { return state; } set { state = value; } }
     public PeerCast PeerCast { get { return peercast; } }
     public Channel Channel { get { return channel; } set { channel = value; } }
@@ -481,7 +484,7 @@ namespace PeerCastStation.PCP
       helo.Children.SetHeloAgent(peercast.AgentName);
       helo.Children.SetHeloSessionID(peercast.Host.SessionID);
       helo.Children.SetHeloPort((short)peercast.Host.Addresses[0].Port);
-      helo.Children.SetHeloVersion(1218);
+      helo.Children.SetHeloVersion(PCP_VERSION);
       Send(helo);
     }
 
@@ -557,10 +560,8 @@ namespace PeerCastStation.PCP
           host.SetHostOldPos((int)channel.Contents.Oldest.Position);
           host.SetHostNewPos((int)channel.Contents.Newest.Position);
         }
-        host.SetHostVersion(1218);
-        host.SetHostVersionVP(27);
-        host.SetHostVersionEXPrefix(new byte[] { (byte)'P', (byte)'P' });
-        host.SetHostVersionEXNumber(23);
+        host.SetHostVersion(PCP_VERSION);
+        host.SetHostVersionVP(PCP_VERSION_VP);
         host.SetHostFlags1(
           (channel.IsRelayFull ? 0 : PCPHostFlags1.Relay) |
           (channel.IsDirectFull ? 0 : PCPHostFlags1.Direct) |
@@ -590,10 +591,8 @@ namespace PeerCastStation.PCP
       bcst.SetBcstGroup(BroadcastGroup.Relays | BroadcastGroup.Trackers);
       bcst.SetBcstHops(0);
       bcst.SetBcstTTL(11);
-      bcst.SetBcstVersion(1218);
-      bcst.SetBcstVersionVP(27);
-      bcst.SetBcstVersionEXPrefix(new byte[] { (byte)'P', (byte)'P' });
-      bcst.SetBcstVersionEXNumber(23);
+      bcst.SetBcstVersion(PCP_VERSION);
+      bcst.SetBcstVersionVP(PCP_VERSION_VP);
       bcst.SetBcstChannelID(channel.ChannelInfo.ChannelID);
       bcst.Add(packet);
       return new Atom(Atom.PCP_BCST, bcst);
@@ -631,7 +630,7 @@ namespace PeerCastStation.PCP
       res.Children.SetHeloAgent(peercast.AgentName);
       res.Children.SetHeloSessionID(peercast.Host.SessionID);
       res.Children.SetHeloPort((short)peercast.Host.Addresses[0].Port);
-      res.Children.SetHeloVersion(1218);
+      res.Children.SetHeloVersion(PCP_VERSION);
       Send(res);
       return null;
     }

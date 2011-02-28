@@ -204,6 +204,8 @@ namespace PeerCastStation.PCP
       get { return OutputStreamType.Relay; }
     }
 
+    public const int PCP_VERSION = 1218;
+
     public PeerCast PeerCast   { get; private set; }
     public Stream Stream       { get; private set; }
     public Channel Channel     { get; private set; }
@@ -610,7 +612,7 @@ namespace PeerCastStation.PCP
       res.Children.SetHeloAgent(PeerCast.AgentName);
       res.Children.SetHeloSessionID(PeerCast.Host.SessionID);
       res.Children.SetHeloPort((short)PeerCast.Host.Addresses[0].Port);
-      res.Children.SetHeloVersion(1218);
+      res.Children.SetHeloVersion(PCP_VERSION);
       Send(res);
       if (Downhost==null) {
         //セッションIDが無かった
