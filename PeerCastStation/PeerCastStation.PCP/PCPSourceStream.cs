@@ -540,37 +540,40 @@ namespace PeerCastStation.PCP
     public virtual Atom CreateHostPacket()
     {
       var host = new AtomCollection();
-      host.SetHostChannelID(channel.ChannelInfo.ChannelID);
-      host.SetHostSessionID(peercast.Host.SessionID);
-      foreach (var endpoint in peercast.Host.Addresses) {
-        if (endpoint.AddressFamily == AddressFamily.InterNetwork) {
-          host.AddHostIP(endpoint.Address);
-          host.AddHostPort((short)endpoint.Port);
+      peercast.SynchronizationContext.Send(dummy => {
+        host.SetHostChannelID(channel.ChannelInfo.ChannelID);
+        host.SetHostSessionID(peercast.Host.SessionID);
+        foreach (var endpoint in peercast.Host.Addresses) {
+          if (endpoint.AddressFamily==AddressFamily.InterNetwork &&
+              !endpoint.Address.Equals(IPAddress.Any)) {
+            host.AddHostIP(endpoint.Address);
+            host.AddHostPort((short)endpoint.Port);
+          }
         }
-      }
-      host.SetHostNumListeners(channel.OutputStreams.CountPlaying);
-      host.SetHostNumRelays(channel.OutputStreams.CountRelaying);
-      host.SetHostUptime(channel.Uptime);
-      if (channel.Contents.Count > 0) {
-        host.SetHostOldPos((int)channel.Contents.Oldest.Position);
-        host.SetHostNewPos((int)channel.Contents.Newest.Position);
-      }
-      host.SetHostVersion(1218);
-      host.SetHostVersionVP(27);
-      host.SetHostVersionEXPrefix(new byte[] { (byte)'P', (byte)'P' });
-      host.SetHostVersionEXNumber(23);
-      host.SetHostFlags1(
-        (channel.IsRelayFull ? 0 : PCPHostFlags1.Relay) |
-        (channel.IsDirectFull ? 0 : PCPHostFlags1.Direct) |
-        (peercast.Host.IsFirewalled ? PCPHostFlags1.Firewalled : 0) |
-        PCPHostFlags1.Receiving); //TODO:受信中かどうかちゃんと判別する
-      if (uphost != null) {
-        var endpoint = uphost.Addresses.FirstOrDefault(x => x.AddressFamily == AddressFamily.InterNetwork);
-        if (endpoint != null) {
-          host.SetHostUphostIP(endpoint.Address);
-          host.SetHostUphostPort(endpoint.Port);
+        host.SetHostNumListeners(channel.OutputStreams.CountPlaying);
+        host.SetHostNumRelays(channel.OutputStreams.CountRelaying);
+        host.SetHostUptime(channel.Uptime);
+        if (channel.Contents.Count > 0) {
+          host.SetHostOldPos((int)channel.Contents.Oldest.Position);
+          host.SetHostNewPos((int)channel.Contents.Newest.Position);
         }
-      }
+        host.SetHostVersion(1218);
+        host.SetHostVersionVP(27);
+        host.SetHostVersionEXPrefix(new byte[] { (byte)'P', (byte)'P' });
+        host.SetHostVersionEXNumber(23);
+        host.SetHostFlags1(
+          (channel.IsRelayFull ? 0 : PCPHostFlags1.Relay) |
+          (channel.IsDirectFull ? 0 : PCPHostFlags1.Direct) |
+          (peercast.Host.IsFirewalled ? PCPHostFlags1.Firewalled : 0) |
+          PCPHostFlags1.Receiving); //TODO:受信中かどうかちゃんと判別する
+        if (uphost != null) {
+          var endpoint = uphost.Addresses.FirstOrDefault(x => x.AddressFamily == AddressFamily.InterNetwork);
+          if (endpoint != null) {
+            host.SetHostUphostIP(endpoint.Address);
+            host.SetHostUphostPort(endpoint.Port);
+          }
+        }
+      }, null);
       return new Atom(Atom.PCP_HOST, host);
     }
 
