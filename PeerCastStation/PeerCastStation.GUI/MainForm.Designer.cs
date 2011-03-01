@@ -34,6 +34,7 @@
       this.tabControl1 = new System.Windows.Forms.TabControl();
       this.tabInfo = new System.Windows.Forms.TabPage();
       this.tabChannels = new System.Windows.Forms.TabPage();
+      this.channelList = new System.Windows.Forms.ListBox();
       this.channelGrid = new System.Windows.Forms.PropertyGrid();
       this.tabSettings = new System.Windows.Forms.TabPage();
       this.applySettings = new System.Windows.Forms.Button();
@@ -42,7 +43,8 @@
       this.maxRelays = new System.Windows.Forms.NumericUpDown();
       this.port = new System.Windows.Forms.NumericUpDown();
       this.tabLog = new System.Windows.Forms.TabPage();
-      this.channelList = new System.Windows.Forms.ListBox();
+      this.channelPlay = new System.Windows.Forms.Button();
+      this.channelClose = new System.Windows.Forms.Button();
       label4 = new System.Windows.Forms.Label();
       label3 = new System.Windows.Forms.Label();
       label2 = new System.Windows.Forms.Label();
@@ -117,6 +119,8 @@
       // 
       // tabChannels
       // 
+      this.tabChannels.Controls.Add(this.channelClose);
+      this.tabChannels.Controls.Add(this.channelPlay);
       this.tabChannels.Controls.Add(this.channelList);
       this.tabChannels.Controls.Add(this.channelGrid);
       this.tabChannels.Location = new System.Drawing.Point(4, 22);
@@ -126,6 +130,18 @@
       this.tabChannels.TabIndex = 1;
       this.tabChannels.Text = "チャンネル一覧";
       this.tabChannels.UseVisualStyleBackColor = true;
+      // 
+      // channelList
+      // 
+      this.channelList.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      this.channelList.FormattingEnabled = true;
+      this.channelList.ItemHeight = 12;
+      this.channelList.Location = new System.Drawing.Point(6, 6);
+      this.channelList.Name = "channelList";
+      this.channelList.Size = new System.Drawing.Size(322, 172);
+      this.channelList.TabIndex = 1;
+      this.channelList.SelectedIndexChanged += new System.EventHandler(this.channelList_SelectedIndexChanged);
       // 
       // channelGrid
       // 
@@ -225,17 +241,24 @@
       this.tabLog.Text = "ログ";
       this.tabLog.UseVisualStyleBackColor = true;
       // 
-      // channelList
+      // channelPlay
       // 
-      this.channelList.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.channelList.FormattingEnabled = true;
-      this.channelList.ItemHeight = 12;
-      this.channelList.Location = new System.Drawing.Point(6, 6);
-      this.channelList.Name = "channelList";
-      this.channelList.Size = new System.Drawing.Size(390, 172);
-      this.channelList.TabIndex = 1;
-      this.channelList.SelectedIndexChanged += new System.EventHandler(this.channelList_SelectedIndexChanged);
+      this.channelPlay.Location = new System.Drawing.Point(335, 6);
+      this.channelPlay.Name = "channelPlay";
+      this.channelPlay.Size = new System.Drawing.Size(61, 30);
+      this.channelPlay.TabIndex = 2;
+      this.channelPlay.Text = "再生";
+      this.channelPlay.UseVisualStyleBackColor = true;
+      // 
+      // channelClose
+      // 
+      this.channelClose.Location = new System.Drawing.Point(335, 42);
+      this.channelClose.Name = "channelClose";
+      this.channelClose.Size = new System.Drawing.Size(61, 30);
+      this.channelClose.TabIndex = 3;
+      this.channelClose.Text = "切断";
+      this.channelClose.UseVisualStyleBackColor = true;
+      this.channelClose.Click += new System.EventHandler(this.channelClose_Click);
       // 
       // MainForm
       // 
@@ -272,6 +295,8 @@
     private System.Windows.Forms.PropertyGrid channelGrid;
     private System.Windows.Forms.Button applySettings;
     private System.Windows.Forms.ListBox channelList;
+    private System.Windows.Forms.Button channelClose;
+    private System.Windows.Forms.Button channelPlay;
 
   }
 }

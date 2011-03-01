@@ -44,6 +44,10 @@ namespace PeerCastStation.GUI
     private void ChannelRemoved(object sender, PeerCastStation.Core.ChannelChangedEventArgs e)
     {
       e.Channel.PropertyChanged -= ChannelInfoChanged;
+      channelList.Items.Clear();
+      foreach (var c in peerCast.Channels) {
+        channelList.Items.Add(CreateChannelListItem(c));
+      }
     }
 
     private void ChannelInfoChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -102,6 +106,14 @@ namespace PeerCastStation.GUI
         channelGrid.SelectedObject = peerCast.Channels[channelList.SelectedIndex].ChannelInfo;
       }
       else {
+        channelGrid.SelectedObject = null;
+      }
+    }
+
+    private void channelClose_Click(object sender, EventArgs e)
+    {
+      if (channelList.SelectedIndex>=0) {
+        peerCast.CloseChannel(peerCast.Channels[channelList.SelectedIndex]);
         channelGrid.SelectedObject = null;
       }
     }
