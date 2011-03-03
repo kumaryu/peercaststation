@@ -22,9 +22,8 @@ namespace PeerCastStation.GUI
       maxRelays.Value = currentMaxRelays;
       maxDirects.Value = currentMaxDirects;
       maxUpstreamRate.Value = currentMaxUpstreamRate;
-      peerCast = new PeerCastStation.Core.PeerCast(
-        new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort)
-      );
+      peerCast = new PeerCastStation.Core.PeerCast();
+      peerCast.StartListen(new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort));
       peerCast.SourceStreamFactories["pcp"] = new PeerCastStation.PCP.PCPSourceStreamFactory(peerCast);
       peerCast.OutputStreamFactories.Add(new PeerCastStation.PCP.PCPOutputStreamFactory(peerCast));
       peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPOutputStreamFactory(peerCast));
@@ -77,15 +76,10 @@ namespace PeerCastStation.GUI
     private void applySettings_Click(object sender, EventArgs e)
     {
       if (port.Value!=currentPort) {
-        peerCast.Close();
+        var listener = peerCast.OutputListeners.FirstOrDefault(x => x.LocalEndPoint.Port==currentPort);
+        if (listener!=null) peerCast.StopListen(listener);
         currentPort = (int)port.Value;
-        peerCast = new PeerCastStation.Core.PeerCast(
-          new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort)
-        );
-        peerCast.SourceStreamFactories["pcp"] = new PeerCastStation.PCP.PCPSourceStreamFactory(peerCast);
-        peerCast.OutputStreamFactories.Add(new PeerCastStation.PCP.PCPOutputStreamFactory(peerCast));
-        peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPOutputStreamFactory(peerCast));
-        channelGrid.SelectedObject = peerCast.Channels;
+        peerCast.StartListen(new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort));
       }
       currentMaxRelays      =  (int)maxRelays.Value;
       currentMaxDirects     =  (int)maxDirects.Value;

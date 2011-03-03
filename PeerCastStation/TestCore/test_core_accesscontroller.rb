@@ -5,8 +5,7 @@ using_clr_extensions PeerCastStation::Core
 
 class TC_CoreAccessController < Test::Unit::TestCase
   def setup
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
-    @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
+    @peercast = PeerCastStation::Core::PeerCast.new
   end
   
   def teardown

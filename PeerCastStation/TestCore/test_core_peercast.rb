@@ -13,8 +13,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
   end
   
   def test_construct
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
-    @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
+    @peercast = PeerCastStation::Core::PeerCast.new
     assert_not_nil(@peercast.access_controller)
     assert_equal(0, @peercast.yellow_pages.count)
     assert_equal(0, @peercast.yellow_page_factories.count)
@@ -24,8 +23,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert(!@peercast.is_closed)
     
     sleep(1)
-    assert_equal(1, @peercast.host.addresses.count)
-    assert_equal(endpoint, @peercast.host.addresses[0])
+    assert_equal(0, @peercast.host.addresses.count)
     assert_not_equal(System::Guid.empty, @peercast.host.SessionID)
     assert_equal(System::Guid.empty, @peercast.host.BroadcastID)
     assert(!@peercast.host.is_firewalled)
@@ -37,8 +35,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
   end
   
   def test_relay_from_tracker
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
-    @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
+    @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.source_stream_factories['mock'] = MockSourceStreamFactory.new
     
     tracker = System::Uri.new('pcp://127.0.0.1:7147')
@@ -63,8 +60,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
   end
   
   def test_relay_from_yp
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
-    @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
+    @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.yellow_page_factories['mock_yp'] = MockYellowPageFactory.new
     @peercast.source_stream_factories['mock'] = MockSourceStreamFactory.new
     @peercast.yellow_pages.add(@peercast.yellow_page_factories['mock_yp'].create('mock_yp', System::Uri.new('pcp:example.com:7147')))
@@ -75,9 +71,9 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert_kind_of(MockSourceStream, channel.source_stream)
     source = channel.source_stream
     sleep(0.1) while channel.status!=PeerCastStation::Core::ChannelStatus.closed
-    assert_equal('127.0.0.1',   source.tracker.host.to_s)
-    assert_equal(endpoint.port, source.tracker.port)
-    assert_equal(channel,       source.channel)
+    assert_equal('127.0.0.1', source.tracker.host.to_s)
+    assert_equal(7147,        source.tracker.port)
+    assert_equal(channel,     source.channel)
     assert_equal(2, source.log.size)
     assert_equal(:start,   source.log[0][0])
     assert_equal(:close,   source.log[1][0])
@@ -87,8 +83,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
   end
 
   def test_request_channel
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
-    @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
+    @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.yellow_page_factories['mock_yp'] = MockYellowPageFactory.new
     @peercast.source_stream_factories['mock'] = MockSourceStreamFactory.new
     @peercast.yellow_pages.add(@peercast.yellow_page_factories['mock_yp'].create('mock_yp', System::Uri.new('pcp:example.com:7147')))
@@ -112,9 +107,8 @@ class TC_CorePeerCast < Test::Unit::TestCase
   end
   
   def test_close_channel
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
     tracker = System::Uri.new('mock://127.0.0.1:7147')
-    @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
+    @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.source_stream_factories['mock'] = MockSourceStreamFactory.new
     channel_id = System::Guid.empty
     channel = @peercast.relay_channel(channel_id, tracker);
@@ -124,9 +118,8 @@ class TC_CorePeerCast < Test::Unit::TestCase
   end
   
   def test_output_connection
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
-    @peercast = PeerCastStation::Core::PeerCast.new(endpoint)
-    sleep(1)
+    @peercast = PeerCastStation::Core::PeerCast.new
+    @peercast.StartListen(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147))
     assert_equal(1, @peercast.host.addresses.count)
     assert_equal(System::Net::IPAddress.any, @peercast.host.addresses[0].address)
     assert_equal(7147, @peercast.host.addresses[0].port)
@@ -143,5 +136,18 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert_equal(:parse_channel_id, output_stream_factory.log[0][0])
     assert_equal(:create,           output_stream_factory.log[1][0])
   end
+  
+  def test_listen
+    @peercast = PeerCastStation::Core::PeerCast.new
+    listener = @peercast.StartListen(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147))
+    assert(!listener.is_closed)
+    assert_equal(System::Net::IPAddress.any, listener.local_end_point.address)
+    assert_equal(7147,                       listener.local_end_point.port)
+    assert_equal(1,                          @peercast.host.addresses.count)
+    assert_equal(System::Net::IPAddress.any, @peercast.host.addresses[0].address)
+    assert_equal(7147,                       @peercast.host.addresses[0].port)
+    @peercast.StopListen(listener)
+    assert(listener.is_closed)
+    assert_equal(0,                          @peercast.host.addresses.count)
+  end
 end
-

@@ -503,6 +503,130 @@ namespace PeerCastStation.Core
   public delegate void ChannelChangedEventHandler(object sender, ChannelChangedEventArgs e);
 
   /// <summary>
+  /// 接続待ち受け処理を扱うクラスです
+  /// </summary>
+  public class OutputListener
+  {
+    /// <summary>
+    /// 所属しているPeerCastオブジェクトを取得します
+    /// </summary>
+    public PeerCast PeerCast { get; private set; }
+    /// <summary>
+    /// 待ち受けが閉じられたかどうかを取得します
+    /// </summary>
+    public bool IsClosed { get; private set; }
+    /// <summary>
+    /// 接続待ち受けをしているエンドポイントを取得します
+    /// </summary>
+    public IPEndPoint LocalEndPoint { get { return (IPEndPoint)server.LocalEndpoint; } }
+
+    private TcpListener server;
+    /// <summary>
+    /// 指定したエンドポイントで接続待ち受けをするOutputListnerを初期化します
+    /// </summary>
+    /// <param name="peercast">所属するPeerCastオブジェクト</param>
+    /// <param name="ip">待ち受けをするエンドポイント</param>
+    internal OutputListener(PeerCast peercast, IPEndPoint ip)
+    {
+      this.PeerCast = peercast;
+      server = new TcpListener(ip);
+      server.Start();
+      listenerThread = new Thread(ListenerThreadFunc);
+      listenerThread.Name = "OutputListenerThread";
+      listenerThread.Start(server);
+    }
+
+    private Thread listenerThread = null;
+    private void ListenerThreadFunc(object arg)
+    {
+      var server = (TcpListener)arg;
+      while (!IsClosed) {
+        while (server.Pending()) {
+          var client = server.AcceptTcpClient();
+          var output_thread = new Thread(OutputThreadFunc);
+          output_thread.Name = "OutputThread";
+          output_thread.Start(client);
+          PeerCast.SynchronizationContext.Post(dummy => {
+            outputThreads.Add(output_thread);
+          }, null);
+        }
+        Thread.Sleep(1);
+      }
+      server.Stop();
+    }
+
+    /// <summary>
+    /// 接続を待ち受けを終了します
+    /// </summary>
+    internal void Close()
+    {
+      IsClosed = true;
+      listenerThread.Join();
+    }
+
+    private static List<Thread> outputThreads = new List<Thread>();
+    private void OutputThreadFunc(object arg)
+    {
+      var client = (TcpClient)arg;
+      var stream = client.GetStream();
+      IOutputStream output_stream = null;
+      Channel channel = null;
+      IOutputStreamFactory[] output_factories = null;
+      PeerCast.SynchronizationContext.Send(dummy => {
+        output_factories = PeerCast.OutputStreamFactories.ToArray();
+      }, null);
+      try {
+        var header = new List<byte>();
+        Guid? channel_id = null;
+        bool eos = false;
+        while (!eos && output_stream==null && header.Count<=4096) {
+          do {
+            var val = stream.ReadByte();
+            if (val < 0) {
+              eos = true;
+            }
+            else {
+              header.Add((byte)val);
+            }
+          } while (stream.DataAvailable);
+          var header_ary = header.ToArray();
+          foreach (var factory in output_factories) {
+            channel_id = factory.ParseChannelID(header_ary);
+            if (channel_id != null) {
+              output_stream = factory.Create(stream, client.Client.RemoteEndPoint, channel_id.Value, header_ary);
+              break;
+            }
+          }
+        }
+        if (output_stream != null) {
+          PeerCast.SynchronizationContext.Send(dummy => {
+            channel = PeerCast.Channels.FirstOrDefault(c => c.ChannelInfo.ChannelID==channel_id);
+            if (channel!=null) {
+              channel.OutputStreams.Add(output_stream);
+            }
+          }, null);
+          output_stream.Start();
+        }
+      }
+      finally {
+        if (output_stream != null) {
+          if (channel!=null) {
+            PeerCast.SynchronizationContext.Post(dummy => {
+              channel.OutputStreams.Remove(output_stream);
+            }, null);
+          }
+          output_stream.Close();
+        }
+        stream.Close();
+        client.Close();
+        PeerCast.SynchronizationContext.Post(thread => {
+          outputThreads.Remove((Thread)thread);
+        }, Thread.CurrentThread);
+      }
+    }
+  }
+
+  /// <summary>
   /// PeerCastStationの主要な動作を行ない、管理するクラスです
   /// </summary>
   public class PeerCast
@@ -648,17 +772,17 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
-    /// 接続待ち受けアドレスを指定してCoreを初期化します
+    /// PeerCastを初期化します
     /// </summary>
-    /// <param name="ip">接続を待ち受けるアドレス</param>
-    public PeerCast(IPEndPoint ip)
+    public PeerCast()
     {
       if (SynchronizationContext.Current == null) {
         SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
       }
       this.SynchronizationContext = SynchronizationContext.Current;
       this.AccessController = new AccessController(this);
-      var filever = System.Diagnostics.FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetCallingAssembly().Location);
+      var filever = System.Diagnostics.FileVersionInfo.GetVersionInfo(
+        System.Reflection.Assembly.GetExecutingAssembly().Location);
       this.AgentName = String.Format("{0}/{1}", filever.ProductName, filever.ProductVersion);
       IsClosed = false;
       Host = new Host();
@@ -668,13 +792,38 @@ namespace PeerCastStation.Core
       YellowPageFactories = new Dictionary<string, IYellowPageFactory>();
       SourceStreamFactories = new Dictionary<string, ISourceStreamFactory>();
       OutputStreamFactories = new List<IOutputStreamFactory>();
+    }
 
-      var server = new TcpListener(ip);
-      server.Start();
-      Host.Addresses.Add((IPEndPoint)server.LocalEndpoint);
-      listenThread = new Thread(ListenThreadFunc);
-      listenThread.Name = "ListenThread";
-      listenThread.Start(server);
+    private List<OutputListener> outputListeners = new List<OutputListener>();
+    /// <summary>
+    /// 接続待ち受けスレッドのコレクションを取得します
+    /// </summary>
+    public IList<OutputListener> OutputListeners { get { return outputListeners.AsReadOnly(); } }
+    /// <summary>
+    /// 指定したエンドポイントで接続待ち受けを開始します
+    /// </summary>
+    /// <param name="ip">待ち受けを開始するエンドポイント</param>
+    /// <returns>接続待ち受け</returns>
+    /// <exception cref="System.Net.Sockets.SocketException">待ち受けが開始できませんでした</exception>
+    public OutputListener StartListen(IPEndPoint ip)
+    {
+      var res = new OutputListener(this, ip);
+      outputListeners.Add(res);
+      Host.Addresses.Add(res.LocalEndPoint);
+      return res;
+    }
+
+    /// <summary>
+    /// 指定した接続待ち受けを終了します。
+    /// 既に接続されているクライアント接続には影響ありません
+    /// </summary>
+    /// <param name="listener">待ち受けを終了するリスナ</param>
+    public void StopListen(OutputListener listener)
+    {
+      if (outputListeners.Remove(listener)) {
+        Host.Addresses.Remove(listener.LocalEndPoint);
+        listener.Close();
+      }
     }
 
     /// <summary>
@@ -683,91 +832,14 @@ namespace PeerCastStation.Core
     public void Close()
     {
       IsClosed = true;
-      if (listenThread != null) {
-        listenThread.Join();
-        listenThread = null;
+      foreach (var listener in outputListeners) {
+        listener.Close();
       }
       foreach (var channel in channels) {
         channel.Close();
         if (ChannelRemoved!=null) ChannelRemoved(this, new ChannelChangedEventArgs(channel));
       }
       channels.Clear();
-    }
-
-    private Thread listenThread = null;
-    private void ListenThreadFunc(object arg)
-    {
-      var server = (TcpListener)arg;
-      while (!IsClosed) {
-        while (server.Pending()) {
-          var client = server.AcceptTcpClient();
-          var output_thread = new Thread(OutputThreadFunc);
-          output_thread.Name = "OutputThread";
-          output_thread.Start(client);
-          this.SynchronizationContext.Post(dummy => {
-            outputThreads.Add(output_thread);
-          }, null);
-        }
-        Thread.Sleep(1);
-      }
-      server.Stop();
-    }
-
-    private List<Thread> outputThreads = new List<Thread>();
-    private void OutputThreadFunc(object arg)
-    {
-      var client = (TcpClient)arg;
-      var stream = client.GetStream();
-      IOutputStream output_stream = null;
-      Channel channel = null;
-      try {
-        var header = new List<byte>();
-        Guid? channel_id = null;
-        bool eos = false;
-        while (!eos && output_stream==null && header.Count<=4096) {
-          do {
-            var val = stream.ReadByte();
-            if (val < 0) {
-              eos = true;
-            }
-            else {
-              header.Add((byte)val);
-            }
-          } while (stream.DataAvailable);
-          var header_ary = header.ToArray();
-          foreach (var factory in OutputStreamFactories) {
-            channel_id = factory.ParseChannelID(header_ary);
-            if (channel_id != null) {
-              output_stream = factory.Create(stream, client.Client.RemoteEndPoint, channel_id.Value, header_ary);
-              break;
-            }
-          }
-        }
-        if (output_stream != null) {
-          channel = channels.FirstOrDefault(c => c.ChannelInfo.ChannelID==channel_id);
-          if (channel!=null) {
-            this.SynchronizationContext.Post(dummy => {
-              channel.OutputStreams.Add(output_stream);
-            }, null);
-          }
-          output_stream.Start();
-        }
-      }
-      finally {
-        if (output_stream != null) {
-          if (channel!=null) {
-            this.SynchronizationContext.Post(dummy => {
-              channel.OutputStreams.Remove(output_stream);
-            }, null);
-          }
-          output_stream.Close();
-        }
-        stream.Close();
-        client.Close();
-        this.SynchronizationContext.Post(thread => {
-          outputThreads.Remove((Thread)thread);
-        }, Thread.CurrentThread);
-      }
     }
   }
 }

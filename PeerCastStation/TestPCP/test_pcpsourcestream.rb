@@ -165,7 +165,8 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   def setup
     @session_id = System::Guid.new_guid
     @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
-    @peercast   = PeerCastStation::Core::PeerCast.new(@endpoint)
+    @peercast   = PeerCastStation::Core::PeerCast.new
+    @peercast.start_listen(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://localhost:7146'))
   end
@@ -667,7 +668,8 @@ class TC_PCPSourceClosedState < Test::Unit::TestCase
   def setup
     @session_id = System::Guid.new_guid
     @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
-    @peercast   = PeerCastStation::Core::PeerCast.new(@endpoint)
+    @peercast   = PeerCastStation::Core::PeerCast.new
+    @peercast.start_listen(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://localhost:7146'))
     @source     = TestPCPSourceStreamNoIgnore.new(@peercast, @channel, @channel.source_uri)
@@ -758,7 +760,8 @@ class TC_PCPSourceConnectState < Test::Unit::TestCase
   def setup
     @session_id = System::Guid.new_guid
     @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
-    @peercast   = PeerCastStation::Core::PeerCast.new(@endpoint)
+    @peercast   = PeerCastStation::Core::PeerCast.new
+    @peercast.start_listen(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://localhost:7146'))
     @source     = TestPCPSourceStreamNoConnect.new(@peercast, @channel, @channel.source_uri)
@@ -827,7 +830,8 @@ class TC_PCPSourceRelayRequestState < Test::Unit::TestCase
   def setup
     @session_id = System::Guid.new_guid
     @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
-    @peercast   = PeerCastStation::Core::PeerCast.new(@endpoint)
+    @peercast   = PeerCastStation::Core::PeerCast.new
+    @peercast.start_listen(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://localhost:7146'))
     @source     = TestPCPSourceStreamNoSendRequest.new(@peercast, @channel, @channel.source_uri)
@@ -876,7 +880,8 @@ class TC_PCPSourceRecvRelayResponseState < Test::Unit::TestCase
   def setup
     @session_id = System::Guid.new_guid
     @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
-    @peercast   = PeerCastStation::Core::PeerCast.new(@endpoint)
+    @peercast   = PeerCastStation::Core::PeerCast.new
+    @peercast.start_listen(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://localhost:7146'))
     @source     = TestPCPSourceStreamNoRecv.new(@peercast, @channel, @channel.source_uri)
@@ -986,7 +991,8 @@ class TC_PCPSourcePCPHandshakeState < Test::Unit::TestCase
   def setup
     @session_id = System::Guid.new_guid
     @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
-    @peercast   = PeerCastStation::Core::PeerCast.new(@endpoint)
+    @peercast   = PeerCastStation::Core::PeerCast.new
+    @peercast.start_listen(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://localhost:7146'))
     @source     = TestPCPSourceStreamNoSendPCPHelo.new(@peercast, @channel, @channel.source_uri)
@@ -1045,7 +1051,8 @@ class TC_PCPSourceReceivingState < Test::Unit::TestCase
   def setup
     @session_id = System::Guid.new_guid
     @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
-    @peercast   = PeerCastStation::Core::PeerCast.new(@endpoint)
+    @peercast   = PeerCastStation::Core::PeerCast.new
+    @peercast.start_listen(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://localhost:7146'))
     @source     = TestPCPSourceStreamReceive.new(@peercast, @channel, @channel.source_uri)
