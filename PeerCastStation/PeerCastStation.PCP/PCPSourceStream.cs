@@ -26,17 +26,6 @@ namespace PeerCastStation.PCP
     }
   }
 
-  public enum CloseReason {
-    ConnectionError,
-    Unavailable,
-    AccessDenied,
-    ChannelExit,
-    ChannelNotFound,
-    RetryLimit,
-    NodeNotFound,
-    UserShutdown,
-  }
-
   public class RelayRequestResponse
   {
     public int StatusCode     { get; set; }
@@ -108,6 +97,7 @@ namespace PeerCastStation.PCP
     public IStreamState Process()
     {
       if (Host!=null) {
+        Owner.Status = SourceStreamStatus.Connecting;
         if (Owner.Connect(Host)) {
           return new PCPSourceRelayRequestState(Owner);
         }
@@ -191,6 +181,7 @@ namespace PeerCastStation.PCP
 
     public IStreamState Process()
     {
+      Owner.Status = SourceStreamStatus.Recieving;
       if ((Environment.TickCount-LastHostInfoUpdated>=10000 && Owner.IsHostInfoUpdated) ||
            Environment.TickCount-LastHostInfoUpdated>=120000) {
         Owner.BroadcastHostInfo();
@@ -212,6 +203,16 @@ namespace PeerCastStation.PCP
     }
   }
 
+  public enum CloseReason {
+    ConnectionError,
+    Unavailable,
+    AccessDenied,
+    ChannelExit,
+    ChannelNotFound,
+    RetryLimit,
+    NodeNotFound,
+    UserShutdown,
+  }
   public class PCPSourceClosedState : IStreamState
   {
     public PCPSourceStream Owner { get; private set; }
@@ -227,11 +228,16 @@ namespace PeerCastStation.PCP
       IStreamState res = null;
       switch (CloseReason) {
       case CloseReason.UserShutdown:
+        Owner.Status = SourceStreamStatus.Idle;
+        res = null;
+        break;
       case CloseReason.NodeNotFound:
+        Owner.Status = SourceStreamStatus.Error;
         res = null;
         break;
       case CloseReason.Unavailable:
         Owner.IgnoreHost(Owner.Uphost);
+        Owner.Status = SourceStreamStatus.Searching;
         res = new PCPSourceConnectState(Owner, Owner.SelectSourceHost());
         break;
       case CloseReason.ChannelExit:
@@ -239,9 +245,11 @@ namespace PeerCastStation.PCP
       case CloseReason.AccessDenied:
       case CloseReason.ChannelNotFound:
         if (Owner.Uphost==null || Owner.Uphost.Equals(Owner.Channel.SourceHost)) {
+          Owner.Status = SourceStreamStatus.Error;
           res = null;
         }
         else {
+          Owner.Status = SourceStreamStatus.Searching;
           Owner.IgnoreHost(Owner.Uphost);
           res = new PCPSourceConnectState(Owner, Owner.SelectSourceHost());
         }
@@ -275,6 +283,21 @@ namespace PeerCastStation.PCP
     public Host Uphost { get { return uphost; } set { uphost = value; } }
     public bool IsConnected { get { return connection!=null; } }
     public bool IsHostInfoUpdated { get { return hostInfoUpdated; } set { hostInfoUpdated = value; } }
+    public event EventHandler<SourceStreamStatusChangedEventArgs> StatusChanged;
+    private SourceStreamStatus status;
+    public SourceStreamStatus Status {
+      get {
+        return status;
+      }
+      set {
+        status = value;
+        PeerCast.SynchronizationContext.Post(dummy => {
+          if (StatusChanged!=null) {
+            StatusChanged(this, new SourceStreamStatusChangedEventArgs(value));
+          }
+        } , null);
+      }
+    } 
 
     MemoryStream recvStream = new MemoryStream();
     byte[] recvBuffer = new byte[8192];
@@ -520,6 +543,7 @@ namespace PeerCastStation.PCP
         SynchronizationContext.SetSynchronizationContext(this.syncContext);
       }
       channel.OutputStreams.CollectionChanged += Channel_HostInfoUpdated;
+      Status = SourceStreamStatus.Searching;
       state = new PCPSourceConnectState(this, SelectSourceHost());
       while (state!=null) {
         ProcessState();

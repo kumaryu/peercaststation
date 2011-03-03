@@ -258,7 +258,7 @@ namespace PeerCastStation.PCP
 
     protected virtual string CreateRelayResponse(Channel channel, bool is_relay_full)
     {
-      if (channel==null || channel.Status==ChannelStatus.Closed) {
+      if (channel==null || channel.Status!=SourceStreamStatus.Recieving) {
         return String.Format(
           "HTTP/1.0 404 Not Found.\r\n" +
           "\r\n");

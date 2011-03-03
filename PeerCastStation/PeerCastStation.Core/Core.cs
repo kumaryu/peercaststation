@@ -59,6 +59,52 @@ namespace PeerCastStation.Core
   }
 
   /// <summary>
+  /// SourceStreamの現在の状況を表します
+  /// </summary>
+  public enum SourceStreamStatus
+  {
+    /// <summary>
+    /// 接続されていません
+    /// </summary>
+    Idle,
+    /// <summary>
+    /// 接続先を探しています
+    /// </summary>
+    Searching,
+    /// <summary>
+    /// 接続しています
+    /// </summary>
+    Connecting,
+    /// <summary>
+    /// 受信中です
+    /// </summary>
+    Recieving,
+    /// <summary>
+    /// エラー発生のため切断しました
+    /// </summary>
+    Error,
+  }
+
+  /// <summary>
+  /// ISourceStream.StatusChangedイベントに渡される引数のクラスです
+  /// </summary>
+  public class SourceStreamStatusChangedEventArgs
+    : EventArgs
+  {
+    /// <summary>
+    /// 変更された状態を取得します
+    /// </summary>
+    public SourceStreamStatus Status { get; private set; }
+    /// <summary>
+    /// 変更された状態を指定してSourceStreamStatusChangedEventArgsオブジェクトを初期化します
+    /// </summary>
+    /// <param name="status">変更された状態</param>
+    public SourceStreamStatusChangedEventArgs(SourceStreamStatus status)
+    {
+      Status = status;
+    }
+  }
+  /// <summary>
   /// 上流からチャンネルにContentを追加するストリームを表すインターフェースです
   /// </summary>
   public interface ISourceStream
@@ -78,6 +124,14 @@ namespace PeerCastStation.Core
     /// ストリームの取得を終了します
     /// </summary>
     void Close();
+    /// <summary>
+    /// ストリームの現在の状態を取得します
+    /// </summary>
+    SourceStreamStatus Status { get; }
+    /// <summary>
+    /// ストリームの状態が変更された時に呼ばれるイベントです
+    /// </summary>
+    event EventHandler<SourceStreamStatusChangedEventArgs> StatusChanged;
   }
 
   /// <summary>

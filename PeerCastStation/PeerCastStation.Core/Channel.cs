@@ -104,37 +104,6 @@ namespace PeerCastStation.Core
   }
 
   /// <summary>
-  /// チャンネルの状態を表します
-  /// </summary>
-  public enum ChannelStatus
-  {
-    /// <summary>
-    /// 接続が開始されていません
-    /// </summary>
-    Idle,
-    /// <summary>
-    /// 接続先を検索中です
-    /// </summary>
-    Searching,
-    /// <summary>
-    /// 接続しています
-    /// </summary>
-    Connecting,
-    /// <summary>
-    /// ストリームを受け取っています
-    /// </summary>
-    Receiving,
-    /// <summary>
-    /// 接続エラーが起きました
-    /// </summary>
-    Error,
-    /// <summary>
-    /// チャンネルが閉じられました
-    /// </summary>
-    Closed
-  }
-
-  /// <summary>
   /// Broadcastの送信先を指定します
   /// </summary>
   [Flags]
@@ -316,7 +285,6 @@ namespace PeerCastStation.Core
   {
     private Uri sourceUri = null;
     private Host sourceHost = null;
-    private ChannelStatus status = ChannelStatus.Idle;
     private ISourceStream sourceStream = null;
     private OutputStreamCollection outputStreams = new OutputStreamCollection();
     private ObservableCollection<Node> nodes = new ObservableCollection<Node>();
@@ -330,19 +298,23 @@ namespace PeerCastStation.Core
     /// </summary>
     public PeerCast PeerCast { get; private set; }
     /// <summary>
-    /// チャンネルの状態を取得および設定します
+    /// チャンネルの状態を取得します
     /// </summary>
-    public ChannelStatus Status
+    public virtual SourceStreamStatus Status
     {
-      get { return status; }
-      set
-      {
-        if (status != value) {
-          status = value;
-          OnPropertyChanged("Status");
+      get {
+        if (sourceStream!=null) {
+          return sourceStream.Status;
+        }
+        else {
+          return SourceStreamStatus.Idle;
         }
       }
     }
+    /// <summary>
+    /// チャンネルが閉じられたかどうかを取得します
+    /// </summary>
+    public bool IsClosed { get; private set; }
     /// <summary>
     /// コンテント取得元のUriを取得します
     /// </summary>
@@ -571,9 +543,17 @@ namespace PeerCastStation.Core
       return res.ToArray();
     }
 
+    private void SourceStream_StatusChanged(object sender, SourceStreamStatusChangedEventArgs args)
+    {
+      OnPropertyChanged("Status");
+    }
+
     public void Start(ISourceStream source_stream)
     {
+      IsClosed = false;
+      if (sourceStream!=null) sourceStream.StatusChanged -= SourceStream_StatusChanged;
       sourceStream = source_stream;
+      sourceStream.StatusChanged += SourceStream_StatusChanged;
       var sync = SynchronizationContext.Current ?? new SynchronizationContext();
       sourceThread = new Thread(SourceThreadFunc);
       sourceThread.Name = "SourceThread";
@@ -596,8 +576,8 @@ namespace PeerCastStation.Core
           foreach (var os in outputStreams) {
             os.Close();
           }
-          Status = ChannelStatus.Closed;
           startTickCount = null;
+          IsClosed = true;
           OnClosed();
         }, Thread.CurrentThread);
       }
@@ -626,7 +606,7 @@ namespace PeerCastStation.Core
     /// </summary>
     public void Close()
     {
-      if (Status!=ChannelStatus.Closed) {
+      if (!IsClosed) {
         if (sourceStream!=null) {
           sourceStream.Close();
         }
@@ -644,6 +624,7 @@ namespace PeerCastStation.Core
     /// <param name="source_uri">ソースURI</param>
     public Channel(PeerCast peercast, Guid channel_id, Uri source_uri)
     {
+      this.IsClosed = true;
       this.PeerCast = peercast;
       sourceUri = source_uri;
       sourceHost = new Host();

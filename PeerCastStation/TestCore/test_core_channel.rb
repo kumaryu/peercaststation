@@ -22,7 +22,7 @@ class TC_CoreChannel < Test::Unit::TestCase
     assert_equal(@peercast, channel.PeerCast)
     assert_equal('mock://localhost/', channel.source_uri.to_s)
     assert_equal(System::Guid.empty, channel.channel_info.ChannelID)
-    assert_equal(PeerCastStation::Core::ChannelStatus.Idle, channel.status)
+    assert_equal(PeerCastStation::Core::SourceStreamStatus.Idle, channel.status)
     assert_equal(0, channel.output_streams.count)
     assert_equal(0, channel.nodes.count)
     assert_nil(channel.content_header)
@@ -35,20 +35,18 @@ class TC_CoreChannel < Test::Unit::TestCase
     channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
     channel.property_changed {|sender, e| property_log << e.property_name }
     channel.content_changed {|sender, e| content_log << 'content' }
-    channel.status = PeerCastStation::Core::ChannelStatus.Connecting
     channel.source_stream = MockSourceStream.new(channel, channel.source_uri)
     channel.channel_info.name = 'bar'
     channel.output_streams.add(MockOutputStream.new)
     channel.nodes.add(PeerCastStation::Core::Node.new(PeerCastStation::Core::Host.new))
     channel.content_header = PeerCastStation::Core::Content.new(0, 'header')
     channel.contents.add(PeerCastStation::Core::Content.new(1, 'body'))
-    assert_equal(6, property_log.size)
-    assert_equal('Status',        property_log[0])
-    assert_equal('SourceStream',  property_log[1])
-    assert_equal('ChannelInfo',   property_log[2])
-    assert_equal('OutputStreams', property_log[3])
-    assert_equal('Nodes',         property_log[4])
-    assert_equal('ContentHeader', property_log[5])
+    assert_equal(5, property_log.size)
+    assert_equal('SourceStream',  property_log[0])
+    assert_equal('ChannelInfo',   property_log[1])
+    assert_equal('OutputStreams', property_log[2])
+    assert_equal('Nodes',         property_log[3])
+    assert_equal('ContentHeader', property_log[4])
     assert_equal(2, content_log.size)
     assert_equal('content', content_log[0])
     assert_equal('content', content_log[1])
@@ -58,15 +56,18 @@ class TC_CoreChannel < Test::Unit::TestCase
     log = []
     channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
     channel.closed { log << 'Closed' }
+    assert(channel.is_closed)
     channel.output_streams.add(MockOutputStream.new)
     channel.start(MockSourceStream.new(channel, channel.source_uri))
+    assert(!channel.is_closed)
     sleep(1)
     channel.close
-    assert_equal(PeerCastStation::Core::ChannelStatus.Closed, channel.status)
+    assert_equal(PeerCastStation::Core::SourceStreamStatus.idle, channel.status)
     assert_equal(:start, channel.source_stream.log[0][0])
     assert_equal(:close, channel.source_stream.log[1][0])
     assert_equal(:close, channel.output_streams[0].log[0][0])
     assert_equal('Closed', log[0])
+    assert(channel.is_closed)
   end
 
   def test_broadcast
@@ -138,10 +139,20 @@ class TC_CoreChannel < Test::Unit::TestCase
     def initialize(channel, tracker)
       @channel = channel
       @tracker = tracker
+      @status = PeerCastStation::Core::SourceStreamStatus.idle
+      @status_changed = []
       @paused = true
     end
-    attr_reader :tracker, :channel
+    attr_reader :tracker, :channel, :status
     attr_accessor :paused
+    
+    def add_StatusChanged(handler)
+      @status_changed << handler
+    end
+    
+    def remove_StatusChanged(handler)
+      @status_changed.delete(handler)
+    end
 
     def post(from, packet)
     end

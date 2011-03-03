@@ -183,7 +183,17 @@ class TC_PCPOutputStream < Test::Unit::TestCase
     assert_equal(7144, stream.upstream_rate)
   end
 
+  class TestChannel < PeerCastStation::Core::Channel
+    def Status
+      @status ||= PeerCastStation::Core::SourceStreamStatus.idle
+    end
+    
+    def Status=(value)
+      @status = value
+    end
+  end
   def test_create_relay_response
+    channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('http://localhost:7146'))
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
     res = stream.create_relay_response(nil, true)
     assert_equal(<<EOS, res.to_s)
@@ -191,7 +201,14 @@ HTTP/1.0 404 Not Found.\r
 \r
 EOS
     
-    res = stream.create_relay_response(@channel, false)
+    channel.Status = PeerCastStation::Core::SourceStreamStatus.idle
+    assert_equal(<<EOS, res.to_s)
+HTTP/1.0 404 Not Found.\r
+\r
+EOS
+
+    channel.Status = PeerCastStation::Core::SourceStreamStatus.recieving
+    res = stream.create_relay_response(channel, false)
     assert_equal(<<EOS, res.to_s)
 HTTP/1.0 200 OK\r
 Server: #{@peercast.agent_name}\r
@@ -206,7 +223,7 @@ Content-Type:application/x-peercast-pcp\r
 \r
 EOS
 
-    res = stream.create_relay_response(@channel, true)
+    res = stream.create_relay_response(channel, true)
     assert_equal(<<EOS, res.to_s)
 HTTP/1.0 503 Temporary Unavailable.\r
 Server: #{@peercast.agent_name}\r

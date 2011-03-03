@@ -70,7 +70,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert_not_nil(channel)
     assert_kind_of(MockSourceStream, channel.source_stream)
     source = channel.source_stream
-    sleep(0.1) while channel.status!=PeerCastStation::Core::ChannelStatus.closed
+    sleep(0.1) until channel.is_closed
     assert_equal('127.0.0.1', source.tracker.host.to_s)
     assert_equal(7147,        source.tracker.port)
     assert_equal(channel,     source.channel)

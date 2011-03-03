@@ -62,10 +62,20 @@ class MockSourceStream
   def initialize(channel, tracker)
     @channel = channel
     @tracker = tracker
+    @status_changed = []
+    @status = PeerCastStation::Core::SourceStreamStatus.idle
     @log = []
   end
-  attr_reader :log, :tracker, :channel
+  attr_reader :log, :tracker, :channel, :status
 
+  def add_StatusChanged(handler)
+    @status_changed << handler
+  end
+  
+  def remove_StatusChanged(handler)
+    @status_changed.delete(handler)
+  end
+  
   def post(from, packet)
     @log << [:post, from, packet]
   end
