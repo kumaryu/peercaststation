@@ -184,6 +184,21 @@ class TC_CoreChannel < Test::Unit::TestCase
     assert_equal(System::TimeSpan.zero, channel.uptime)
   end
 
+  def test_select_source_host
+    channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    host = channel.select_source_host
+    assert_equal(channel.source_host, host)
+
+    channel.ignore_host(channel.source_host)
+    host = channel.select_source_host
+    assert_nil(host)
+
+    channel.clear_ignored
+    node = PeerCastStation::Core::Node.new(PeerCastStation::Core::Host.new)
+    channel.nodes.add(node)
+    host = channel.select_source_host
+    assert_equal(node.host, host)
+  end
 end
 
 class TC_CoreContentCollection < Test::Unit::TestCase

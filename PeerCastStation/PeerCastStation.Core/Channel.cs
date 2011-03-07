@@ -507,6 +507,14 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
+    /// 全てのホストを接続先として選択可能にします
+    /// </summary>
+    public void ClearIgnored()
+    {
+      ignoredHosts.Clear();
+    }
+
+    /// <summary>
     /// 指定した中から次に接続するノードを選択します
     /// </summary>
     /// <param name="node_list">接続先のリスト</param>
@@ -532,11 +540,14 @@ namespace PeerCastStation.Core
     {
       var node_list = nodes.Where(node => !ignoredHosts.Contains(node.Host)).ToList<Node>();
       var res = SelectSourceNode(node_list);
-      if (res==null && !ignoredHosts.Contains(sourceHost)) {
+      if (res!=null) {
+        return res.Host;
+      }
+      else if (!ignoredHosts.Contains(sourceHost)) {
         return sourceHost;
       }
       else {
-        return res.Host;
+        return null;
       }
     }
 
