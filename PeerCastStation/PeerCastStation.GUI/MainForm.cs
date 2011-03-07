@@ -62,15 +62,24 @@ namespace PeerCastStation.GUI
       var total_plays  = c.Nodes.Sum(n => n.DirectCount) + c.OutputStreams.CountPlaying;
       var total_relays = c.Nodes.Sum(n => n.RelayCount)  + c.OutputStreams.CountRelaying;
       var chaninfo = c.ChannelInfo.Extra.GetChanInfo();
-      var bitrate = chaninfo!=null ? (chaninfo.GetChanInfoBitrate() ?? 0) : 0; 
+      var bitrate = chaninfo!=null ? (chaninfo.GetChanInfoBitrate() ?? 0) : 0;
+      var status = "UNKNOWN";
+      switch (c.Status) {
+      case SourceStreamStatus.Idle:       status = "IDLE";    break;
+      case SourceStreamStatus.Connecting: status = "CONNECT"; break;
+      case SourceStreamStatus.Searching:  status = "SEARCH";  break;
+      case SourceStreamStatus.Recieving:  status = "RECIEVE"; break;
+      case SourceStreamStatus.Error:      status = "ERROR";   break;
+      }
       return String.Format(
-        "{0} {1}kbps ({2}/{3}) [{4}/{5}]",
+        "{0} {1}kbps ({2}/{3}) [{4}/{5}] {6}",
         c.ChannelInfo.Name,
         bitrate,
         total_plays,
         total_relays,
         c.OutputStreams.CountPlaying,
-        c.OutputStreams.CountRelaying);
+        c.OutputStreams.CountRelaying,
+        status);
     }
 
     private void applySettings_Click(object sender, EventArgs e)
