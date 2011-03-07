@@ -290,12 +290,14 @@ namespace PeerCastStation.PCP
         return status;
       }
       set {
-        status = value;
-        PeerCast.SynchronizationContext.Post(dummy => {
-          if (StatusChanged!=null) {
-            StatusChanged(this, new SourceStreamStatusChangedEventArgs(value));
-          }
-        } , null);
+        if (status!=value) {
+          status = value;
+          PeerCast.SynchronizationContext.Post(dummy => {
+            if (StatusChanged!=null) {
+              StatusChanged(this, new SourceStreamStatusChangedEventArgs(value));
+            }
+          }, null);
+        }
       }
     } 
 
