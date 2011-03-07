@@ -27,19 +27,24 @@ namespace PeerCastStation.HTTP
     /// <param name="requests">行毎に区切られたHTTPリクエストの文字列表現</param>
     public HTTPRequest(IEnumerable<string> requests)
     {
+      string host = "localhost";
+      string path = "/";
       foreach (var req in requests) {
         Match match = null;
         if ((match = Regex.Match(req, @"^(\w+) (\S+) HTTP/1.\d$")).Success) {
           this.Method = match.Groups[1].Value;
-          Uri uri;
-          if (Uri.TryCreate(match.Groups[2].Value, UriKind.Absolute, out uri) ||
-              Uri.TryCreate(new Uri("http://localhost/"), match.Groups[2].Value, out uri)) {
-            this.Uri = uri;
-          }
-          else {
-            this.Uri = null;
-          }
+          path = match.Groups[2].Value;
         }
+        else if ((match = Regex.Match(req, @"^Host:\s*(\S*)\s*$", RegexOptions.IgnoreCase)).Success) {
+          host = match.Groups[1].Value;
+        }
+      }
+      Uri uri;
+      if (Uri.TryCreate("http://" + host + path, UriKind.Absolute, out uri)) {
+        this.Uri = uri;
+      }
+      else {
+        this.Uri = null;
       }
     }
   }
@@ -349,8 +354,29 @@ namespace PeerCastStation.HTTP
           }
         }
       case BodyType.Playlist:
-        // TODO: プレイリストの処理
-        return "HTTP/1.0 404 NotFound\r\n";
+        {
+          bool mms = 
+            channel.ChannelInfo.ContentType=="WMV" ||
+            channel.ChannelInfo.ContentType=="WMA" ||
+            channel.ChannelInfo.ContentType=="ASX";
+          IPlayList pls;
+          if (mms) {
+            pls = new ASXPlayList();
+          }
+          else {
+            pls = new PLSPlayList();
+          }
+          pls.Channels.Add(channel.ChannelInfo);
+          return String.Format(
+            "HTTP/1.0 200 OK\r\n" +
+            "Server: {0}\r\n" +
+            "Cache-Control: private\r\n" +
+            "Content-Disposition: inline\r\n" +
+            "Connection: close\r\n" +
+            "Content-Type: {1}\r\n",
+            PeerCast.AgentName,
+            pls.MIMEType);
+        }
       default:
         return "HTTP/1.0 404 NotFound\r\n";
       }
@@ -372,6 +398,30 @@ namespace PeerCastStation.HTTP
     protected virtual void WaitContentChanged()
     {
       changedEvent.WaitOne();
+    }
+
+    /// <summary>
+    /// ストリームにプレイリストを出力します
+    /// </summary>
+    protected void WritePlayList()
+    {
+      bool mms = 
+        channel.ChannelInfo.ContentType=="WMV" ||
+        channel.ChannelInfo.ContentType=="WMA" ||
+        channel.ChannelInfo.ContentType=="ASX";
+      IPlayList pls;
+      if (mms) {
+        pls = new ASXPlayList();
+      }
+      else {
+        pls = new PLSPlayList();
+      }
+      pls.Channels.Add(channel.ChannelInfo);
+      var baseuri = new Uri(
+        new Uri(request.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped)),
+        "stream/");
+      var bytes = System.Text.Encoding.UTF8.GetBytes(pls.CreatePlayList(baseuri));
+      stream.Write(bytes, 0, bytes.Length);
     }
 
     /// <summary>
@@ -402,7 +452,7 @@ namespace PeerCastStation.HTTP
         }
         break;
       case BodyType.Playlist:
-        // TODO: プレイリストの処理
+        WritePlayList();
         break;
       }
     }

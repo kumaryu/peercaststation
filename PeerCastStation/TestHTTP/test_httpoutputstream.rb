@@ -1,3 +1,4 @@
+$: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.Core', 'bin', 'Debug')
 $: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.HTTP', 'bin', 'Debug')
 require 'PeerCastStation.Core.dll'
 require 'PeerCastStation.HTTP.dll'
@@ -273,7 +274,7 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
 
     stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.playlist
     head = stream.create_response_header.split(/\r\n/)
-    assert_match(%r;^HTTP/1.0 404 ;, head[0])
+    assert_match(%r;^HTTP/1.0 200 ;, head[0])
 
     stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.content
     @channel.channel_info.content_type = 'OGG'
@@ -437,7 +438,9 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
 
     stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.playlist 
     stream.write_response_body
-    assert_equal(0, s.position)
+    assert_equal('http://localhost/stream/9778E62BDC59DF56F9216D0387F80BF2', s.to_array.to_a.pack('C*').chomp)
+    s.position = 0
+    s.set_length(0)
 
     stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.content 
     @channel.content_header = PCSCore::Content.new(0, 'header')

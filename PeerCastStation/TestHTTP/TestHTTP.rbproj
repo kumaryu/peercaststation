@@ -24,5 +24,6 @@
   <ItemGroup>
     <None Include="startup.rb" />
     <None Include="test_httpoutputstream.rb" />
+    <None Include="test_playlist.rb" />
   </ItemGroup>
 </Project>

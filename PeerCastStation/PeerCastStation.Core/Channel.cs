@@ -77,6 +77,25 @@ namespace PeerCastStation.Core
       }
     }
 
+    public string ContentExtension
+    {
+      get {
+        switch (contentType) {
+        case "MP3": return ".mp3";
+        case "OGG": return ".ogg";
+        case "OGM": return ".ogv";
+        case "RAW": return "";
+        case "NSV": return ".nsv";
+        case "WMA": return ".wma";
+        case "WMV": return ".wmv";
+        case "PLS": return ".pls";
+        case "M3U": return ".m3u";
+        case "ASX": return ".asx";
+        default: return "";
+        }
+      }
+    }
+
     private AtomCollection extra = new AtomCollection();
     /// <summary>
     /// その他のチャンネル情報を保持するリストを取得します
