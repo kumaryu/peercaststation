@@ -131,19 +131,28 @@ namespace PeerCastStation.GUI
 
     private void channelList_SelectedIndexChanged(object sender, EventArgs e)
     {
-      if (channelList.SelectedIndex>=0) {
-        channelGrid.SelectedObject = peerCast.Channels[channelList.SelectedIndex].ChannelInfo;
-      }
-      else {
-        channelGrid.SelectedObject = null;
-      }
     }
 
     private void channelClose_Click(object sender, EventArgs e)
     {
       if (channelList.SelectedIndex>=0) {
         peerCast.CloseChannel(peerCast.Channels[channelList.SelectedIndex]);
-        channelGrid.SelectedObject = null;
+      }
+    }
+
+    private void channelPlay_Click(object sender, EventArgs e)
+    {
+      if (channelList.SelectedIndex>=0) {
+        var channel_id = peerCast.Channels[channelList.SelectedIndex].ChannelInfo.ChannelID;
+        var endpoint = peerCast.OutputListeners[0].LocalEndPoint;
+        string pls;
+        if (endpoint.Address.Equals(System.Net.IPAddress.Any)) {
+          pls = String.Format("http://localhost:{0}/pls/{1}", endpoint.Port, channel_id.ToString("N"));
+        }
+        else {
+          pls = String.Format("http://{0}/pls/{1}", endpoint.ToString(), channel_id.ToString("N"));
+        }
+        System.Diagnostics.Process.Start(pls);
       }
     }
   }

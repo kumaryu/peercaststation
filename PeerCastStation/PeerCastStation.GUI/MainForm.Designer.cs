@@ -32,19 +32,16 @@
       System.Windows.Forms.Label label2;
       System.Windows.Forms.Label label1;
       this.tabControl1 = new System.Windows.Forms.TabControl();
-      this.tabInfo = new System.Windows.Forms.TabPage();
       this.tabChannels = new System.Windows.Forms.TabPage();
+      this.channelClose = new System.Windows.Forms.Button();
+      this.channelPlay = new System.Windows.Forms.Button();
       this.channelList = new System.Windows.Forms.ListBox();
-      this.channelGrid = new System.Windows.Forms.PropertyGrid();
       this.tabSettings = new System.Windows.Forms.TabPage();
       this.applySettings = new System.Windows.Forms.Button();
       this.maxUpstreamRate = new System.Windows.Forms.NumericUpDown();
       this.maxDirects = new System.Windows.Forms.NumericUpDown();
       this.maxRelays = new System.Windows.Forms.NumericUpDown();
       this.port = new System.Windows.Forms.NumericUpDown();
-      this.tabLog = new System.Windows.Forms.TabPage();
-      this.channelPlay = new System.Windows.Forms.Button();
-      this.channelClose = new System.Windows.Forms.Button();
       label4 = new System.Windows.Forms.Label();
       label3 = new System.Windows.Forms.Label();
       label2 = new System.Windows.Forms.Label();
@@ -96,10 +93,8 @@
       // 
       // tabControl1
       // 
-      this.tabControl1.Controls.Add(this.tabInfo);
       this.tabControl1.Controls.Add(this.tabChannels);
       this.tabControl1.Controls.Add(this.tabSettings);
-      this.tabControl1.Controls.Add(this.tabLog);
       this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
       this.tabControl1.Location = new System.Drawing.Point(0, 0);
       this.tabControl1.Name = "tabControl1";
@@ -107,22 +102,11 @@
       this.tabControl1.Size = new System.Drawing.Size(412, 355);
       this.tabControl1.TabIndex = 0;
       // 
-      // tabInfo
-      // 
-      this.tabInfo.Location = new System.Drawing.Point(4, 22);
-      this.tabInfo.Name = "tabInfo";
-      this.tabInfo.Padding = new System.Windows.Forms.Padding(3);
-      this.tabInfo.Size = new System.Drawing.Size(404, 329);
-      this.tabInfo.TabIndex = 0;
-      this.tabInfo.Text = "情報";
-      this.tabInfo.UseVisualStyleBackColor = true;
-      // 
       // tabChannels
       // 
       this.tabChannels.Controls.Add(this.channelClose);
       this.tabChannels.Controls.Add(this.channelPlay);
       this.tabChannels.Controls.Add(this.channelList);
-      this.tabChannels.Controls.Add(this.channelGrid);
       this.tabChannels.Location = new System.Drawing.Point(4, 22);
       this.tabChannels.Name = "tabChannels";
       this.tabChannels.Padding = new System.Windows.Forms.Padding(3);
@@ -130,6 +114,28 @@
       this.tabChannels.TabIndex = 1;
       this.tabChannels.Text = "チャンネル一覧";
       this.tabChannels.UseVisualStyleBackColor = true;
+      // 
+      // channelClose
+      // 
+      this.channelClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.channelClose.Location = new System.Drawing.Point(335, 42);
+      this.channelClose.Name = "channelClose";
+      this.channelClose.Size = new System.Drawing.Size(61, 30);
+      this.channelClose.TabIndex = 3;
+      this.channelClose.Text = "切断";
+      this.channelClose.UseVisualStyleBackColor = true;
+      this.channelClose.Click += new System.EventHandler(this.channelClose_Click);
+      // 
+      // channelPlay
+      // 
+      this.channelPlay.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.channelPlay.Location = new System.Drawing.Point(335, 6);
+      this.channelPlay.Name = "channelPlay";
+      this.channelPlay.Size = new System.Drawing.Size(61, 30);
+      this.channelPlay.TabIndex = 2;
+      this.channelPlay.Text = "再生";
+      this.channelPlay.UseVisualStyleBackColor = true;
+      this.channelPlay.Click += new System.EventHandler(this.channelPlay_Click);
       // 
       // channelList
       // 
@@ -142,18 +148,6 @@
       this.channelList.Size = new System.Drawing.Size(322, 172);
       this.channelList.TabIndex = 1;
       this.channelList.SelectedIndexChanged += new System.EventHandler(this.channelList_SelectedIndexChanged);
-      // 
-      // channelGrid
-      // 
-      this.channelGrid.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.channelGrid.HelpVisible = false;
-      this.channelGrid.Location = new System.Drawing.Point(6, 187);
-      this.channelGrid.Name = "channelGrid";
-      this.channelGrid.PropertySort = System.Windows.Forms.PropertySort.Alphabetical;
-      this.channelGrid.Size = new System.Drawing.Size(390, 134);
-      this.channelGrid.TabIndex = 0;
-      this.channelGrid.ToolbarVisible = false;
       // 
       // tabSettings
       // 
@@ -232,34 +226,6 @@
             0,
             0});
       // 
-      // tabLog
-      // 
-      this.tabLog.Location = new System.Drawing.Point(4, 22);
-      this.tabLog.Name = "tabLog";
-      this.tabLog.Size = new System.Drawing.Size(404, 329);
-      this.tabLog.TabIndex = 3;
-      this.tabLog.Text = "ログ";
-      this.tabLog.UseVisualStyleBackColor = true;
-      // 
-      // channelPlay
-      // 
-      this.channelPlay.Location = new System.Drawing.Point(335, 6);
-      this.channelPlay.Name = "channelPlay";
-      this.channelPlay.Size = new System.Drawing.Size(61, 30);
-      this.channelPlay.TabIndex = 2;
-      this.channelPlay.Text = "再生";
-      this.channelPlay.UseVisualStyleBackColor = true;
-      // 
-      // channelClose
-      // 
-      this.channelClose.Location = new System.Drawing.Point(335, 42);
-      this.channelClose.Name = "channelClose";
-      this.channelClose.Size = new System.Drawing.Size(61, 30);
-      this.channelClose.TabIndex = 3;
-      this.channelClose.Text = "切断";
-      this.channelClose.UseVisualStyleBackColor = true;
-      this.channelClose.Click += new System.EventHandler(this.channelClose_Click);
-      // 
       // MainForm
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -284,15 +250,12 @@
     #endregion
 
     private System.Windows.Forms.TabControl tabControl1;
-    private System.Windows.Forms.TabPage tabInfo;
     private System.Windows.Forms.TabPage tabChannels;
     private System.Windows.Forms.TabPage tabSettings;
     private System.Windows.Forms.NumericUpDown maxUpstreamRate;
     private System.Windows.Forms.NumericUpDown maxDirects;
     private System.Windows.Forms.NumericUpDown maxRelays;
     private System.Windows.Forms.NumericUpDown port;
-    private System.Windows.Forms.TabPage tabLog;
-    private System.Windows.Forms.PropertyGrid channelGrid;
     private System.Windows.Forms.Button applySettings;
     private System.Windows.Forms.ListBox channelList;
     private System.Windows.Forms.Button channelClose;
