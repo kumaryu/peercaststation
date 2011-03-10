@@ -15,9 +15,35 @@ namespace PeerCastStation.GUI
     private int currentMaxDirects = 0;
     private int currentMaxUpstreamRate = 0;
     private PeerCastStation.Core.PeerCast peerCast;
+
+    private bool IsOSX()
+    {
+      if (PlatformID.Unix  ==Environment.OSVersion.Platform ||
+          PlatformID.MacOSX==Environment.OSVersion.Platform) {
+        var start_info = new System.Diagnostics.ProcessStartInfo("uname");
+        start_info.RedirectStandardOutput = true;
+        start_info.UseShellExecute = false;
+        start_info.ErrorDialog = false;
+        var process = System.Diagnostics.Process.Start(start_info);
+        if (process!=null) {
+          return System.Text.RegularExpressions.Regex.IsMatch(
+              process.StandardOutput.ReadToEnd(), @"Darwin");
+        }
+        else {
+          return false;
+        }
+      }
+      else {
+        return false;
+      }
+    }
+
     public MainForm()
     {
       InitializeComponent();
+      if (IsOSX()) {
+        this.Font = new System.Drawing.Font("Osaka", this.Font.SizeInPoints);
+      }
       port.Value = currentPort;
       maxRelays.Value = currentMaxRelays;
       maxDirects.Value = currentMaxDirects;
