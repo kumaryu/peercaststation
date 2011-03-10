@@ -301,13 +301,13 @@ namespace PeerCastStation.HTTP
     /// リクエストと所属するチャンネルの有無から出力すべき内容を取得します
     /// </summary>
     /// <returns>
-    /// 所属するチャンネルが無い場合およびリクエストパスがstreamでもplsでも無い場合はBodyType.None、
+    /// 所属するチャンネルが無いかエラー状態の場合およびリクエストパスがstreamでもplsでも無い場合はBodyType.None、
     /// パスが/stream/で始まる場合はBodyType.Content、
     /// パスが/pls/で始まる場合はBodyType.Playlist
     /// </returns>
     protected virtual BodyType GetBodyType()
     {
-      if (channel==null) {
+      if (channel==null || channel.Status==SourceStreamStatus.Error) {
         return BodyType.None;
       }
       else if (Regex.IsMatch(request.Uri.AbsolutePath, @"^/stream/[0-9A-Fa-f]{32}.*$")) {
@@ -340,17 +340,19 @@ namespace PeerCastStation.HTTP
             channel.ChannelInfo.ContentType=="ASX";
           if (mms) {
             return
-              "HTTP/1.0 200 OK\r\n" +
-              "Server: Rex/9.0.2980\r\n" +
-              "Cache-Control: no-cache\r\n" +
-              "Pragme: no-cache\r\n" +
+              "HTTP/1.0 200 OK\r\n"                         +
+              "Server: Rex/9.0.2980\r\n"                    +
+              "Cache-Control: no-cache\r\n"                 +
+              "Pragme: no-cache\r\n"                        +
               "Pragme: features=\"broadcast,playlist\"\r\n" +
               "Content-Type: application/x-mms-framed\r\n";
           }
           else {
             return
-              "HTTP/1.0 200 OK\r\n" +
-              "Content-Type: " + channel.ChannelInfo.MIMEType + "\r\n";
+              "HTTP/1.0 200 OK\r\n"        +
+              "Content-Type: "             +
+              channel.ChannelInfo.MIMEType +
+              "\r\n";
           }
         }
       case BodyType.Playlist:
@@ -368,11 +370,11 @@ namespace PeerCastStation.HTTP
           }
           pls.Channels.Add(channel.ChannelInfo);
           return String.Format(
-            "HTTP/1.0 200 OK\r\n" +
-            "Server: {0}\r\n" +
-            "Cache-Control: private\r\n" +
+            "HTTP/1.0 200 OK\r\n"             +
+            "Server: {0}\r\n"                 +
+            "Cache-Control: private\r\n"      +
             "Content-Disposition: inline\r\n" +
-            "Connection: close\r\n" +
+            "Connection: close\r\n"           +
             "Content-Type: {1}\r\n",
             PeerCast.AgentName,
             pls.MIMEType);
@@ -458,10 +460,29 @@ namespace PeerCastStation.HTTP
     }
 
     /// <summary>
+    /// チャンネルのContentTypeが取得できるか10秒たつまで待ちます。
+    /// </summary>
+    protected void WaitChannel()
+    {
+      var timeout_count = 1000;
+      while (!closed &&
+             channel!=null &&
+             timeout_count-->0 &&
+             (channel.Status==SourceStreamStatus.Connecting ||
+              channel.Status==SourceStreamStatus.Searching ||
+              channel.Status==SourceStreamStatus.Idle ||
+              channel.ChannelInfo.ContentType==null ||
+              channel.ChannelInfo.ContentType=="")) {
+        System.Threading.Thread.Sleep(10);
+      }
+    }
+
+    /// <summary>
     /// ストリームにレスポンスを出力します
     /// </summary>
     public void Start()
     {
+      WaitChannel();
       if (!closed) {
         WriteResponseHeader();
         if (request.Method=="GET") {

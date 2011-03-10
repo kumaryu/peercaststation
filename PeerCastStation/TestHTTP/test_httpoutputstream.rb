@@ -267,6 +267,13 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
       'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
     ]))
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
+
+    stream = TestHTTPOutputStream.new(@peercast, s, endpoint, nil, req)
+    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.playlist
+    head = stream.create_response_header.split(/\r\n/)
+    assert_match(%r;^HTTP/1.0 404 ;, head[0])
+
+    @channel.channel_info.content_type = 'OGG'
     stream = TestHTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
     stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.none
     head = stream.create_response_header.split(/\r\n/)
@@ -277,7 +284,6 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
     assert_match(%r;^HTTP/1.0 200 ;, head[0])
 
     stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.content
-    @channel.channel_info.content_type = 'OGG'
     head = stream.create_response_header.split(/\r\n/)
     assert_match(%r;^HTTP/1.0 200 ;, head[0])
     assert(head.any? {|line| /^Content-Type:\s*#{@channel.channel_info.MIMEType}/=~line})
