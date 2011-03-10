@@ -978,10 +978,16 @@ class TC_PCPSourcePCPHandshakeState < Test::Unit::TestCase
       inst = super
       inst.instance_eval do
         @log = []
+        @recv_atom = nil
       end
       inst
     end
-    attr_accessor :log
+    attr_accessor :log, :recv_atom
+
+    def RecvAtom
+      @log << [:recv_atom]
+      @recv_atom
+    end
 
     def SendPCPHelo
       @log << [:send_pcp_helo]
@@ -1012,10 +1018,36 @@ class TC_PCPSourcePCPHandshakeState < Test::Unit::TestCase
 
     state = PCSPCP::PCPSourcePCPHandshakeState.new(@source)
     next_state = state.process
-    assert(next_state)
+    assert_same(state, next_state)
+    assert_equal(2, @source.log.count)
+    assert_equal(:send_pcp_helo, @source.log[0][0])
+    assert_equal(:recv_atom,     @source.log[1][0])
+    @source.log.clear
+
+    next_state = state.process
+    assert_same(state, next_state)
+    assert_equal(1, @source.log.count)
+    assert_equal(:recv_atom,     @source.log[0][0])
+    @source.log.clear
+
+    oleh = PCSCore::Atom.new(PCSCore::Atom.PCP_OLEH, PCSCore::AtomCollection.new)
+    oleh.children.SetHeloRemoteIP(System::Net::IPAddress.any)
+    oleh.children.SetHeloSessionID(@session_id)
+    oleh.children.SetHeloAgent('IronRuby')
+    oleh.children.SetHeloVersion(1218)
+    @source.recv_atom = oleh
+    next_state = state.process
     assert_kind_of(PCSPCP::PCPSourceReceivingState, next_state)
     assert_equal(1, @source.log.count)
-    assert_equal(:send_pcp_helo, @source.log[0][0])
+    assert_equal(:recv_atom, @source.log[0][0])
+    @source.log.clear
+
+    quit = PCSCore::Atom.new(PCSCore::Atom.PCP_QUIT, PCSCore::Atom.PCP_ERROR_QUIT)
+    @source.recv_atom = quit
+    next_state = state.process
+    assert_kind_of(PCSPCP::PCPSourceClosedState, next_state)
+    assert_equal(1, @source.log.count)
+    assert_equal(:recv_atom, @source.log[0][0])
     @source.log.clear
   end
 end

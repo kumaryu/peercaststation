@@ -157,6 +157,7 @@ namespace PeerCastStation.PCP
   public class PCPSourcePCPHandshakeState : IStreamState
   {
     public PCPSourceStream Owner { get; private set; }
+    private bool sentHelo = false;
     public PCPSourcePCPHandshakeState(PCPSourceStream owner)
     {
       Owner = owner;
@@ -164,8 +165,26 @@ namespace PeerCastStation.PCP
 
     public IStreamState Process()
     {
-      Owner.SendPCPHelo();
-      return new PCPSourceReceivingState(Owner);
+      if (!sentHelo) {
+        Owner.SendPCPHelo();
+        sentHelo = true;
+      }
+      Atom atom = Owner.RecvAtom();
+      if (atom!=null && (atom.Name==Atom.PCP_OLEH || atom.Name==Atom.PCP_QUIT)) {
+        var state = Owner.ProcessAtom(atom);
+        if (state!=null) {
+          return state;
+        }
+        else if (atom.Name==Atom.PCP_OLEH) {
+          return new PCPSourceReceivingState(Owner);
+        }
+        else {
+          return this;
+        }
+      }
+      else {
+        return this;
+      }
     }
   }
 
