@@ -329,6 +329,9 @@ namespace PeerCastStation.HTTP
     /// </returns>
     protected string CreateResponseHeader()
     {
+      if (channel==null) {
+        return "HTTP/1.0 404 NotFound\r\n";
+      }
       switch (GetBodyType()) {
       case BodyType.None:
         return "HTTP/1.0 404 NotFound\r\n";
