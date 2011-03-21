@@ -26,6 +26,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert_nil(@peercast.global_address)
     assert_not_equal(System::Guid.empty, @peercast.SessionID)
     assert_not_equal(System::Guid.empty, @peercast.BroadcastID)
+    assert_nil(0, @peercast.is_firewalled)
     
     @peercast.close
     assert(@peercast.is_closed)
@@ -116,10 +117,15 @@ class TC_CorePeerCast < Test::Unit::TestCase
   
   def test_output_connection
     @peercast = PeerCastStation::Core::PeerCast.new
+    assert_nil(@peercast.local_end_point)
+    assert_nil(@peercast.global_end_point)
     @peercast.StartListen(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147))
     assert_not_nil(@peercast.local_end_point)
     assert_equal(@peercast.local_address, @peercast.local_end_point.address)
     assert_equal(7147, @peercast.local_end_point.port)
+    assert_nil(@peercast.global_end_point)
+    @peercast.global_address = @peercast.local_address
+    assert_not_nil(@peercast.global_end_point)
     
     output_stream_factory = MockOutputStreamFactory.new
     @peercast.output_stream_factories.add(output_stream_factory)

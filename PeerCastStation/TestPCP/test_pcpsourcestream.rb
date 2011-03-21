@@ -308,12 +308,34 @@ class TC_PCPSourceStream < Test::Unit::TestCase
 
   def test_send_pcp_helo
     source = TestPCPSourceStreamNoSend.new(@peercast, @channel, @channel.source_uri)
+    @peercast.is_firewalled = nil
     source.SendPCPHelo
     assert(source.log)
     assert_equal(1, source.log.size)
     assert_equal(:send, source.log[0][0])
-    assert_equal(id4(PCP_HELO), source.log[0][1].name)
-    assert(source.log[0][1].has_children)
+    helo = source.log[0][1]
+    assert_equal(id4(PCP_HELO), helo.name)
+    assert(helo.has_children)
+    assert_not_nil(helo.children.GetHeloSessionID)
+    assert_not_nil(helo.children.GetHeloAgent)
+    assert_not_nil(helo.children.GetHeloVersion)
+    assert_equal(@peercast.local_end_point.port, helo.children.GetHeloPing)
+    assert_nil(helo.children.GetHeloPort)
+    source.log.clear
+
+    @peercast.is_firewalled = true
+    source.SendPCPHelo
+    helo = source.log[0][1]
+    assert_nil(helo.children.GetHeloPing)
+    assert_nil(helo.children.GetHeloPort)
+    source.log.clear
+
+    @peercast.is_firewalled = false
+    source.SendPCPHelo
+    helo = source.log[0][1]
+    assert_nil(helo.children.GetHeloPing)
+    assert_equal(@peercast.local_end_point.port, helo.children.GetHeloPort)
+    source.log.clear
   end
 
   def test_process_state
@@ -584,20 +606,23 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     oleh.children.SetHeloSessionID(@session_id)
     oleh.children.SetHeloAgent('IronRuby')
     oleh.children.SetHeloVersion(1218)
+    assert_nil(@peercast.is_firewalled)
     assert_nil(@peercast.global_address)
     assert_nil(source.OnPCPOleh(oleh))
     sleep(0.1)
-    assert_nil(@peercast.global_address)
+    assert_nil(@peercast.is_firewalled)
+    assert_equal(addr, @peercast.global_address)
+    assert_not_nil(@peercast.global_end_point)
     
     oleh.children.SetHeloPort(0)
     assert_nil(source.OnPCPOleh(oleh))
     sleep(0.1)
-    assert_nil(@peercast.global_address)
+    assert(@peercast.is_firewalled)
 
     oleh.children.SetHeloPort(@peercast.local_end_point.port)
     assert_nil(source.OnPCPOleh(oleh))
     sleep(0.1)
-    assert_equal(addr, @peercast.global_address)
+    assert(!@peercast.is_firewalled)
   end
 
   def test_pcp_host

@@ -870,6 +870,7 @@ namespace PeerCastStation.Core
       }
       this.GlobalAddress = null;
       this.GlobalAddress6 = null;
+      this.IsFirewalled = null;
 
       YellowPages   = new List<IYellowPage>();
       YellowPageFactories = new Dictionary<string, IYellowPageFactory>();
@@ -877,6 +878,7 @@ namespace PeerCastStation.Core
       OutputStreamFactories = new List<IOutputStreamFactory>();
     }
 
+    public bool? IsFirewalled { get; set; }
     public Guid SessionID { get; private set; }
     public Guid BroadcastID { get; set; }
     public IPAddress LocalAddress { get; private set; }

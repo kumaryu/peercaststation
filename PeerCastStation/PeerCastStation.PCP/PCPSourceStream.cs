@@ -534,7 +534,17 @@ namespace PeerCastStation.PCP
       var helo = new Atom(Atom.PCP_HELO, new AtomCollection());
       helo.Children.SetHeloAgent(peercast.AgentName);
       helo.Children.SetHeloSessionID(peercast.SessionID);
-      helo.Children.SetHeloPort((short)peercast.LocalEndPoint.Port);
+      if (peercast.IsFirewalled.HasValue) {
+        if (peercast.IsFirewalled.Value) {
+          //Do nothing
+        }
+        else {
+          helo.Children.SetHeloPort((short)peercast.LocalEndPoint.Port);
+        }
+      }
+      else {
+        helo.Children.SetHeloPing((short)peercast.LocalEndPoint.Port);
+      }
       helo.Children.SetHeloVersion(PCP_VERSION);
       Send(helo);
     }
@@ -616,7 +626,7 @@ namespace PeerCastStation.PCP
         host.SetHostFlags1(
           (channel.IsRelayFull ? 0 : PCPHostFlags1.Relay) |
           (channel.IsDirectFull ? 0 : PCPHostFlags1.Direct) |
-          (peercast.GlobalEndPoint==null ? PCPHostFlags1.Firewalled : 0) |
+          ((!peercast.IsFirewalled.HasValue || peercast.IsFirewalled.Value) ? PCPHostFlags1.Firewalled : 0) |
           PCPHostFlags1.Receiving); //TODO:受信中かどうかちゃんと判別する
         if (uphost != null) {
           var endpoint = uphost.GlobalEndPoint;
@@ -690,8 +700,7 @@ namespace PeerCastStation.PCP
     {
       peercast.SynchronizationContext.Post(dummy => {
         var rip  = atom.Children.GetHeloRemoteIP();
-        var port = atom.Children.GetHeloPort();
-        if (rip!=null && port.HasValue && port.Value!=0) {
+        if (rip!=null) {
           switch (rip.AddressFamily) {
           case AddressFamily.InterNetwork:
             if (peercast.GlobalAddress==null || !peercast.GlobalAddress.Equals(rip)) {
@@ -704,6 +713,10 @@ namespace PeerCastStation.PCP
             }
             break;
           }
+        }
+        var port = atom.Children.GetHeloPort();
+        if (port.HasValue) {
+          peercast.IsFirewalled = port.Value==0;
         }
       }, null);
       return null;
