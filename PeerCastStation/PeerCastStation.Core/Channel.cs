@@ -659,8 +659,9 @@ namespace PeerCastStation.Core
       sourceUri = source_uri;
       sourceHost = new Host();
       var port = sourceUri.Port < 0 ? 7144 : sourceUri.Port;
-      foreach (var addr in Dns.GetHostAddresses(sourceUri.DnsSafeHost)) {
-        sourceHost.Addresses.Add(new IPEndPoint(addr, port));
+      var addresses = Dns.GetHostAddresses(sourceUri.DnsSafeHost);
+      if (addresses.Length!=0) {
+        sourceHost.GlobalEndPoint = new IPEndPoint(addresses[0], port);
       }
       channelInfo = new ChannelInfo(channel_id);
       channelInfo.PropertyChanged += (sender, e) => {

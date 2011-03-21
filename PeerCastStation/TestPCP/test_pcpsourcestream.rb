@@ -168,7 +168,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     @peercast   = PeerCastStation::Core::PeerCast.new
     @peercast.start_listen(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
-    @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://localhost:7146'))
+    @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://127.0.0.1:7146'))
   end
   
   def teardown
@@ -191,7 +191,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal(@channel_id, bcst.children.GetBcstChannelID)
     assert_equal(11, bcst.children.GetBcstTTL)
     assert_equal(0, bcst.children.GetBcstHops)
-    assert_equal(@peercast.host.SessionID, bcst.children.GetBcstFrom)
+    assert_equal(@peercast.SessionID, bcst.children.GetBcstFrom)
     assert_equal(
       PeerCastStation::Core::BroadcastGroup.relays | PeerCastStation::Core::BroadcastGroup.trackers,
       bcst.children.GetBcstGroup)
@@ -212,7 +212,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal(PCP_HOST, host.name.to_s)
     assert(host.has_children)
     assert_equal(@channel_id, host.children.GetHostChannelID)
-    assert_equal(@peercast.host.SessionID, host.children.GetHostSessionID)
+    assert_equal(@peercast.SessionID, host.children.GetHostSessionID)
     assert(host.children.to_a.any? {|atom| atom.name.to_s==PCP_HOST_IP })
     assert(host.children.to_a.any? {|atom| atom.name.to_s==PCP_HOST_PORT })
     assert_equal(1, host.children.GetHostNumListeners)
@@ -224,8 +224,12 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal(27, host.children.GetHostVersionVP)
     assert_nil(host.children.GetHostVersionEXPrefix)
     assert_nil(host.children.GetHostVersionEXNumber)
-    assert(source.uphost.Addresses.to_a.any? {|addr| addr.Address==host.children.GetHostUphostIP })
-    assert(source.uphost.Addresses.to_a.any? {|addr| addr.Port==host.children.GetHostUphostPort })
+    addresses = [
+      source.uphost.global_end_point,
+      source.uphost.local_end_point
+    ].compact
+    assert(addresses.to_a.any? {|addr| addr.Address.Equals(host.children.GetHostUphostIP) })
+    assert(addresses.to_a.any? {|addr| addr.Port==host.children.GetHostUphostPort })
     assert(host.children.GetHostFlags1)
   end
 
@@ -235,7 +239,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     connected = 0
     server = MockPCPServer.new('localhost', 7146) {|sock| connected += 1 }
     host = PeerCastStation::Core::Host.new
-    host.addresses.add(System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146))
+    host.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146)
     sleep(0.1)
     assert(source.connect(host))
     assert(source.is_connected)
@@ -247,7 +251,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   def test_connect_failed
     source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     host = PeerCastStation::Core::Host.new
-    host.addresses.add(System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146))
+    host.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146)
     assert(!source.connect(host))
     assert(!source.is_connected)
   end
@@ -257,7 +261,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert(!source.is_connected)
     server = MockPCPServer.new('localhost', 7146)
     host = PeerCastStation::Core::Host.new
-    host.addresses.add(System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146))
+    host.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146)
     sleep(0.1)
     assert(source.connect(host))
     assert(source.is_connected)
@@ -275,7 +279,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
 
     server = MockPCPServer.new('localhost', 7146)
     host = PeerCastStation::Core::Host.new
-    host.addresses.add(System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146))
+    host.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146)
     source.connect(host)
     assert_nil(source.state)
     source.close
@@ -394,7 +398,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     bcst.children.SetBcstTTL(11)
     bcst.children.SetBcstHops(0)
     bcst.children.SetBcstFrom(@session_id)
-    bcst.children.SetBcstDest(@peercast.host.SessionID)
+    bcst.children.SetBcstDest(@peercast.SessionID)
     bcst.children.SetBcstGroup(PeerCastStation::Core::BroadcastGroup.relays)
     bcst.children.SetBcstChannelID(@channel_id)
     bcst.children.SetBcstVersion(1218)
@@ -567,26 +571,33 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal(:send, source.log[0][0])
     assert_equal(id4(PCP_OLEH), source.log[0][1].name)
     assert(source.log[0][1].children.GetHeloAgent)
-    assert_equal(@peercast.host.SessionID,         source.log[0][1].children.GetHeloSessionID)
-    assert_equal(@peercast.host.addresses[0].port, source.log[0][1].children.GetHeloPort)
-    assert_equal(1218,                         source.log[0][1].children.GetHeloVersion)
+    assert_equal(@peercast.SessionID,            source.log[0][1].children.GetHeloSessionID)
+    assert_equal(@peercast.local_end_point.port, source.log[0][1].children.GetHeloPort)
+    assert_equal(1218,                           source.log[0][1].children.GetHeloVersion)
   end
 
   def test_pcp_oleh
     source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
+    addr = System::Net::IPAddress.parse('192.168.12.34')
     oleh = PeerCastStation::Core::Atom.new(id4(PCP_OLEH), PeerCastStation::Core::AtomCollection.new)
-    oleh.children.SetHeloRemoteIP(System::Net::IPAddress.parse('0.0.0.0'))
+    oleh.children.SetHeloRemoteIP(addr)
     oleh.children.SetHeloSessionID(@session_id)
     oleh.children.SetHeloAgent('IronRuby')
     oleh.children.SetHeloVersion(1218)
-    assert_equal(1, @peercast.host.addresses.count)
+    assert_nil(@peercast.global_address)
     assert_nil(source.OnPCPOleh(oleh))
     sleep(0.1)
-    assert_equal(2, @peercast.host.addresses.count)
+    assert_nil(@peercast.global_address)
+    
+    oleh.children.SetHeloPort(0)
+    assert_nil(source.OnPCPOleh(oleh))
+    sleep(0.1)
+    assert_nil(@peercast.global_address)
 
+    oleh.children.SetHeloPort(@peercast.local_end_point.port)
     assert_nil(source.OnPCPOleh(oleh))
     sleep(0.1)
-    assert_equal(2, @peercast.host.addresses.count)
+    assert_equal(addr, @peercast.global_address)
   end
 
   def test_pcp_host
@@ -600,7 +611,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     sleep(0.1)
 
     assert_equal(1, @channel.nodes.count)
-    node = @channel.nodes.find {|n| n.host.SessionID.eql?(@peercast.host.SessionID) }
+    node = @channel.nodes.find {|n| n.host.SessionID.eql?(@peercast.SessionID) }
     assert(node)
     assert_equal(host.children.GetHostNumListeners, node.direct_count)
     assert_equal(host.children.GetHostNumRelays,    node.relay_count)
@@ -610,7 +621,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal((flags1 & PeerCastStation::Core::PCPHostFlags1.direct)    ==PeerCastStation::Core::PCPHostFlags1.none, node.is_direct_full)
     assert_equal((flags1 & PeerCastStation::Core::PCPHostFlags1.receiving) !=PeerCastStation::Core::PCPHostFlags1.none, node.is_receiving) 
     assert_equal((flags1 & PeerCastStation::Core::PCPHostFlags1.control_in)==PeerCastStation::Core::PCPHostFlags1.none, node.is_control_full)
-    assert_equal(1, node.host.addresses.count)
+    assert_not_nil(node.host.global_end_point)
   end
 
   def test_pcp_quit
@@ -671,7 +682,7 @@ class TC_PCPSourceClosedState < Test::Unit::TestCase
     @peercast   = PeerCastStation::Core::PeerCast.new
     @peercast.start_listen(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
-    @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://localhost:7146'))
+    @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://127.0.0.1:7146'))
     @source     = TestPCPSourceStreamNoIgnore.new(@peercast, @channel, @channel.source_uri)
   end
   
@@ -763,7 +774,7 @@ class TC_PCPSourceConnectState < Test::Unit::TestCase
     @peercast   = PeerCastStation::Core::PeerCast.new
     @peercast.start_listen(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
-    @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://localhost:7146'))
+    @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://127.0.0.1:7146'))
     @source     = TestPCPSourceStreamNoConnect.new(@peercast, @channel, @channel.source_uri)
   end
   
@@ -833,7 +844,7 @@ class TC_PCPSourceRelayRequestState < Test::Unit::TestCase
     @peercast   = PeerCastStation::Core::PeerCast.new
     @peercast.start_listen(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
-    @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://localhost:7146'))
+    @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://127.0.0.1:7146'))
     @source     = TestPCPSourceStreamNoSendRequest.new(@peercast, @channel, @channel.source_uri)
   end
   
@@ -883,7 +894,7 @@ class TC_PCPSourceRecvRelayResponseState < Test::Unit::TestCase
     @peercast   = PeerCastStation::Core::PeerCast.new
     @peercast.start_listen(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
-    @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://localhost:7146'))
+    @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://127.0.0.1:7146'))
     @source     = TestPCPSourceStreamNoRecv.new(@peercast, @channel, @channel.source_uri)
   end
   
@@ -1000,7 +1011,7 @@ class TC_PCPSourcePCPHandshakeState < Test::Unit::TestCase
     @peercast   = PeerCastStation::Core::PeerCast.new
     @peercast.start_listen(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
-    @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://localhost:7146'))
+    @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://127.0.0.1:7146'))
     @source     = TestPCPSourceStreamNoSendPCPHelo.new(@peercast, @channel, @channel.source_uri)
   end
   
@@ -1086,7 +1097,7 @@ class TC_PCPSourceReceivingState < Test::Unit::TestCase
     @peercast   = PeerCastStation::Core::PeerCast.new
     @peercast.start_listen(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
-    @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://localhost:7146'))
+    @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://127.0.0.1:7146'))
     @source     = TestPCPSourceStreamReceive.new(@peercast, @channel, @channel.source_uri)
   end
   

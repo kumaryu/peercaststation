@@ -595,8 +595,8 @@ namespace PeerCastStation.PCP
         var port = atom.Children.GetHostPort();
         if (port!=null) {
           var ip = new IPEndPoint(((IPEndPoint)remoteEndPoint).Address, (int)port);
-          if (!Downhost.Addresses.Contains(ip)) {
-            Downhost.Addresses.Add(ip);
+          if (Downhost.GlobalEndPoint==null || !Downhost.GlobalEndPoint.Equals(ip)) {
+            Downhost.GlobalEndPoint = ip;
           }
           Downhost.IsFirewalled = false;
         }
@@ -610,8 +610,8 @@ namespace PeerCastStation.PCP
         res.Children.SetHeloRemoteIP(((IPEndPoint)remoteEndPoint).Address);
       }
       res.Children.SetHeloAgent(PeerCast.AgentName);
-      res.Children.SetHeloSessionID(PeerCast.Host.SessionID);
-      res.Children.SetHeloPort((short)PeerCast.Host.Addresses[0].Port);
+      res.Children.SetHeloSessionID(PeerCast.SessionID);
+      res.Children.SetHeloPort((short)PeerCast.LocalEndPoint.Port);
       res.Children.SetHeloVersion(PCP_VERSION);
       Send(res);
       if (Downhost==null) {
@@ -631,12 +631,12 @@ namespace PeerCastStation.PCP
         foreach (var node in Channel.SelectSourceNodes()) {
           var host_atom = new Atom(Atom.PCP_HOST, new AtomCollection());
           host_atom.Children.SetHostSessionID(node.Host.SessionID);
-          foreach (var endpoint in node.Host.Addresses) {
-            if (endpoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork) {
-              host_atom.Children.AddHostIP(endpoint.Address);
-              host_atom.Children.AddHostPort((short)endpoint.Port);
-            }
-          }
+          var globalendpoint = node.Host.GlobalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
+          host_atom.Children.AddHostIP(globalendpoint.Address);
+          host_atom.Children.AddHostPort((short)globalendpoint.Port);
+          var localendpoint  = node.Host.LocalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
+          host_atom.Children.AddHostIP(localendpoint.Address);
+          host_atom.Children.AddHostPort((short)localendpoint.Port);
           host_atom.Children.SetHostChannelID(Channel.ChannelInfo.ChannelID);
           host_atom.Children.SetHostFlags1(
             (node.Host.IsFirewalled ? PCPHostFlags1.Firewalled : PCPHostFlags1.None) |
@@ -691,13 +691,13 @@ namespace PeerCastStation.PCP
           hops != null &&
           group != null &&
           from != null &&
-          dest != PeerCast.Host.SessionID &&
+          dest != PeerCast.SessionID &&
           ttl>1) {
         atom.Children.SetBcstTTL((byte)(ttl - 1));
         atom.Children.SetBcstHops((byte)(hops + 1));
         Channel.Broadcast(Downhost, atom, group.Value);
       }
-      if (dest==null || dest==PeerCast.Host.SessionID) {
+      if (dest==null || dest==PeerCast.SessionID) {
         foreach (var c in atom.Children) ProcessAtom(c);
       }
     }
@@ -725,17 +725,22 @@ namespace PeerCastStation.PCP
             node.IsControlFull     = (flags1.Value & PCPHostFlags1.ControlIn) == 0;
           }
 
+          int addr_count = 0;
           var ip = new IPEndPoint(IPAddress.Any, 0);
           foreach (var c in atom.Children) {
             if (c.Name==Atom.PCP_HOST_IP) {
               IPAddress addr;
               if (c.TryGetIPv4Address(out addr)) {
                 ip.Address = addr;
-                if (ip.Port != 0) {
-                  if (!node.Host.Addresses.Any(x => x.Equals(ip))) {
-                    node.Host.Addresses.Add(ip);
+                if (ip.Port!=0) {
+                  if (addr_count==0 && (node.Host.GlobalEndPoint==null || !node.Host.GlobalEndPoint.Equals(ip))) {
+                    node.Host.GlobalEndPoint = ip;
+                  }
+                  if (addr_count==1 && (node.Host.LocalEndPoint==null || !node.Host.LocalEndPoint.Equals(ip))) {
+                    node.Host.LocalEndPoint = ip;
                   }
                   ip = new IPEndPoint(IPAddress.Any, 0);
+                  addr_count++;
                 }
               }
             }
@@ -743,11 +748,15 @@ namespace PeerCastStation.PCP
               short port;
               if (c.TryGetInt16(out port)) {
                 ip.Port = port;
-                if (ip.Address != IPAddress.Any) {
-                  if (!node.Host.Addresses.Any(x => x.Equals(ip))) {
-                    node.Host.Addresses.Add(ip);
+                if (ip.Address!=IPAddress.Any) {
+                  if (addr_count==0 && (node.Host.GlobalEndPoint==null || !node.Host.GlobalEndPoint.Equals(ip))) {
+                    node.Host.GlobalEndPoint = ip;
+                  }
+                  if (addr_count==1 && (node.Host.LocalEndPoint==null || !node.Host.LocalEndPoint.Equals(ip))) {
+                    node.Host.LocalEndPoint = ip;
                   }
                   ip = new IPEndPoint(IPAddress.Any, 0);
+                  addr_count++;
                 }
               }
             }

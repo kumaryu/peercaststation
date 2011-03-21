@@ -411,13 +411,12 @@ namespace PeerCastStation.PCP
 
     public virtual Host SelectSourceHost()
     {
-      var res = new Host[1];
-      peercast.SynchronizationContext.Send(r => {
-        ((Host[])r)[0] = channel.SelectSourceHost();
-      }, res);
-      if (res[0] != null &&
-          res[0].Addresses.Any(x => x.AddressFamily == AddressFamily.InterNetwork)) {
-        return res[0];
+      Host res = null;
+      peercast.SynchronizationContext.Send(dummy => {
+        res = channel.SelectSourceHost();
+      }, null);
+      if (res!=null) {
+        return res;
       }
       else {
         return null;
@@ -426,9 +425,17 @@ namespace PeerCastStation.PCP
 
     public virtual bool Connect(Host host)
     {
-      if (host!=null) {
+      if (host!=null && host.GlobalEndPoint!=null) {
         connection = new TcpClient();
-        IPEndPoint point = host.Addresses.First(x => x.AddressFamily == AddressFamily.InterNetwork);
+        IPEndPoint point;
+        if (peercast.GlobalAddress!=null &&
+            peercast.GlobalAddress.Equals(host.GlobalEndPoint.Address) &&
+            host.LocalEndPoint!=null) {
+          point = host.LocalEndPoint;
+        }
+        else {
+          point = host.GlobalEndPoint;
+        }
         try {
           connection.Connect(point);
           stream = connection.GetStream();
@@ -526,8 +533,8 @@ namespace PeerCastStation.PCP
     {
       var helo = new Atom(Atom.PCP_HELO, new AtomCollection());
       helo.Children.SetHeloAgent(peercast.AgentName);
-      helo.Children.SetHeloSessionID(peercast.Host.SessionID);
-      helo.Children.SetHeloPort((short)peercast.Host.Addresses[0].Port);
+      helo.Children.SetHeloSessionID(peercast.SessionID);
+      helo.Children.SetHeloPort((short)peercast.LocalEndPoint.Port);
       helo.Children.SetHeloVersion(PCP_VERSION);
       Send(helo);
     }
@@ -590,14 +597,13 @@ namespace PeerCastStation.PCP
       var host = new AtomCollection();
       peercast.SynchronizationContext.Send(dummy => {
         host.SetHostChannelID(channel.ChannelInfo.ChannelID);
-        host.SetHostSessionID(peercast.Host.SessionID);
-        foreach (var endpoint in peercast.Host.Addresses) {
-          if (endpoint.AddressFamily==AddressFamily.InterNetwork &&
-              !endpoint.Address.Equals(IPAddress.Any)) {
-            host.AddHostIP(endpoint.Address);
-            host.AddHostPort((short)endpoint.Port);
-          }
-        }
+        host.SetHostSessionID(peercast.SessionID);
+        var globalendpoint = peercast.GlobalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
+        host.AddHostIP(globalendpoint.Address);
+        host.AddHostPort((short)globalendpoint.Port);
+        var localendpoint = peercast.LocalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
+        host.AddHostIP(localendpoint.Address);
+        host.AddHostPort((short)localendpoint.Port);
         host.SetHostNumListeners(channel.OutputStreams.CountPlaying);
         host.SetHostNumRelays(channel.OutputStreams.CountRelaying);
         host.SetHostUptime(channel.Uptime);
@@ -610,10 +616,10 @@ namespace PeerCastStation.PCP
         host.SetHostFlags1(
           (channel.IsRelayFull ? 0 : PCPHostFlags1.Relay) |
           (channel.IsDirectFull ? 0 : PCPHostFlags1.Direct) |
-          (peercast.Host.IsFirewalled ? PCPHostFlags1.Firewalled : 0) |
+          (peercast.GlobalEndPoint==null ? PCPHostFlags1.Firewalled : 0) |
           PCPHostFlags1.Receiving); //TODO:受信中かどうかちゃんと判別する
         if (uphost != null) {
-          var endpoint = uphost.Addresses.FirstOrDefault(x => x.AddressFamily == AddressFamily.InterNetwork);
+          var endpoint = uphost.GlobalEndPoint;
           if (endpoint != null) {
             host.SetHostUphostIP(endpoint.Address);
             host.SetHostUphostPort(endpoint.Port);
@@ -632,7 +638,7 @@ namespace PeerCastStation.PCP
     public virtual Atom CreateBroadcastPacket(BroadcastGroup group, Atom packet)
     {
       var bcst = new AtomCollection();
-      bcst.SetBcstFrom(peercast.Host.SessionID);
+      bcst.SetBcstFrom(peercast.SessionID);
       bcst.SetBcstGroup(BroadcastGroup.Relays | BroadcastGroup.Trackers);
       bcst.SetBcstHops(0);
       bcst.SetBcstTTL(11);
@@ -645,7 +651,7 @@ namespace PeerCastStation.PCP
 
     public virtual void BroadcastHostInfo()
     {
-      channel.Broadcast(peercast.Host,
+      channel.Broadcast(null,
         CreateBroadcastPacket(BroadcastGroup.Relays | BroadcastGroup.Trackers, CreateHostPacket()),
         BroadcastGroup.Relays | BroadcastGroup.Trackers);
       hostInfoUpdated = false;
@@ -673,8 +679,8 @@ namespace PeerCastStation.PCP
         res.Children.SetHeloRemoteIP(((IPEndPoint)connection.Client.RemoteEndPoint).Address);
       }
       res.Children.SetHeloAgent(peercast.AgentName);
-      res.Children.SetHeloSessionID(peercast.Host.SessionID);
-      res.Children.SetHeloPort((short)peercast.Host.Addresses[0].Port);
+      res.Children.SetHeloSessionID(peercast.SessionID);
+      res.Children.SetHeloPort((short)peercast.LocalEndPoint.Port);
       res.Children.SetHeloVersion(PCP_VERSION);
       Send(res);
       return null;
@@ -683,9 +689,21 @@ namespace PeerCastStation.PCP
     protected virtual IStreamState OnPCPOleh(Atom atom)
     {
       peercast.SynchronizationContext.Post(dummy => {
-        var rip = atom.Children.GetHeloRemoteIP();
-        if (rip!=null && !peercast.Host.Addresses.Any(x => x.Address.Equals(rip))) {
-          peercast.Host.Addresses.Add(new IPEndPoint(rip, peercast.Host.Addresses[0].Port));
+        var rip  = atom.Children.GetHeloRemoteIP();
+        var port = atom.Children.GetHeloPort();
+        if (rip!=null && port.HasValue && port.Value!=0) {
+          switch (rip.AddressFamily) {
+          case AddressFamily.InterNetwork:
+            if (peercast.GlobalAddress==null || !peercast.GlobalAddress.Equals(rip)) {
+              peercast.GlobalAddress = rip;
+            }
+            break;
+          case AddressFamily.InterNetworkV6:
+            if (peercast.GlobalAddress6==null || !peercast.GlobalAddress6.Equals(rip)) {
+              peercast.GlobalAddress6 = rip;
+            }
+            break;
+          }
         }
       }, null);
       return null;
@@ -753,7 +771,7 @@ namespace PeerCastStation.PCP
     protected virtual IStreamState OnPCPBcst(Atom atom)
     {
       var dest = atom.Children.GetBcstDest();
-      if (dest==null || dest==peercast.Host.SessionID) {
+      if (dest==null || dest==peercast.SessionID) {
         foreach (var c in atom.Children) ProcessAtom(c);
       }
       var ttl = atom.Children.GetBcstTTL();
@@ -764,7 +782,7 @@ namespace PeerCastStation.PCP
           hops != null &&
           group != null &&
           from != null &&
-          dest != peercast.Host.SessionID &&
+          dest != peercast.SessionID &&
           ttl>1) {
         atom.Children.SetBcstTTL((byte)(ttl - 1));
         atom.Children.SetBcstHops((byte)(hops + 1));
@@ -796,17 +814,22 @@ namespace PeerCastStation.PCP
             node.IsControlFull     = (flags1.Value & PCPHostFlags1.ControlIn) == 0;
           }
 
+          int addr_count = 0;
           var ip = new IPEndPoint(IPAddress.Any, 0);
           foreach (var c in atom.Children) {
             if (c.Name==Atom.PCP_HOST_IP) {
               IPAddress addr;
               if (c.TryGetIPv4Address(out addr)) {
                 ip.Address = addr;
-                if (ip.Port != 0) {
-                  if (!node.Host.Addresses.Any(x => x.Equals(ip))) {
-                    node.Host.Addresses.Add(ip);
+                if (ip.Port!=0) {
+                  if (addr_count==0 && (node.Host.GlobalEndPoint==null || node.Host.GlobalEndPoint.Equals(ip))) {
+                    node.Host.GlobalEndPoint = ip;
+                  }
+                  if (addr_count==1 && (node.Host.LocalEndPoint==null || node.Host.LocalEndPoint.Equals(ip))) {
+                    node.Host.LocalEndPoint = ip;
                   }
                   ip = new IPEndPoint(IPAddress.Any, 0);
+                  addr_count++;
                 }
               }
             }
@@ -815,10 +838,14 @@ namespace PeerCastStation.PCP
               if (c.TryGetInt16(out port)) {
                 ip.Port = port;
                 if (ip.Address != IPAddress.Any) {
-                  if (!node.Host.Addresses.Any(x => x.Equals(ip))) {
-                    node.Host.Addresses.Add(ip);
+                  if (addr_count==0 && (node.Host.GlobalEndPoint==null || node.Host.GlobalEndPoint.Equals(ip))) {
+                    node.Host.GlobalEndPoint = ip;
+                  }
+                  if (addr_count==1 && (node.Host.LocalEndPoint==null || node.Host.LocalEndPoint.Equals(ip))) {
+                    node.Host.LocalEndPoint = ip;
                   }
                   ip = new IPEndPoint(IPAddress.Any, 0);
+                  addr_count++;
                 }
               }
             }

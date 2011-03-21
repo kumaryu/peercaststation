@@ -158,8 +158,8 @@ end
 class TC_CoreHost < Test::Unit::TestCase
   def test_construct
     obj = PeerCastStation::Core::Host.new
-    assert(obj.addresses)
-    assert_equal(0, obj.addresses.count)
+    assert_nil(obj.local_end_point)
+    assert_nil(obj.global_end_point)
     assert_equal(System::Guid.empty, obj.SessionID)
     assert_equal(System::Guid.empty, obj.BroadcastID)
     assert(!obj.is_firewalled)

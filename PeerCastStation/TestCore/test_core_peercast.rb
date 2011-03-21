@@ -22,13 +22,10 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert_equal(0, @peercast.channels.count)
     assert(!@peercast.is_closed)
     
-    sleep(1)
-    assert_equal(0, @peercast.host.addresses.count)
-    assert_not_equal(System::Guid.empty, @peercast.host.SessionID)
-    assert_equal(System::Guid.empty, @peercast.host.BroadcastID)
-    assert(!@peercast.host.is_firewalled)
-    assert_equal(0, @peercast.host.extensions.count)
-    assert_equal(0, @peercast.host.extra.count)
+    assert_not_nil(@peercast.local_address)
+    assert_nil(@peercast.global_address)
+    assert_not_equal(System::Guid.empty, @peercast.SessionID)
+    assert_not_equal(System::Guid.empty, @peercast.BroadcastID)
     
     @peercast.close
     assert(@peercast.is_closed)
@@ -120,9 +117,9 @@ class TC_CorePeerCast < Test::Unit::TestCase
   def test_output_connection
     @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.StartListen(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147))
-    assert_equal(1, @peercast.host.addresses.count)
-    assert_equal(System::Net::IPAddress.any, @peercast.host.addresses[0].address)
-    assert_equal(7147, @peercast.host.addresses[0].port)
+    assert_not_nil(@peercast.local_end_point)
+    assert_equal(@peercast.local_address, @peercast.local_end_point.address)
+    assert_equal(7147, @peercast.local_end_point.port)
     
     output_stream_factory = MockOutputStreamFactory.new
     @peercast.output_stream_factories.add(output_stream_factory)
@@ -143,11 +140,9 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert(!listener.is_closed)
     assert_equal(System::Net::IPAddress.any, listener.local_end_point.address)
     assert_equal(7147,                       listener.local_end_point.port)
-    assert_equal(1,                          @peercast.host.addresses.count)
-    assert_equal(System::Net::IPAddress.any, @peercast.host.addresses[0].address)
-    assert_equal(7147,                       @peercast.host.addresses[0].port)
+    assert_not_nil(@peercast.local_end_point)
     @peercast.StopListen(listener)
     assert(listener.is_closed)
-    assert_equal(0,                          @peercast.host.addresses.count)
+    assert_nil(@peercast.local_end_point)
   end
 end

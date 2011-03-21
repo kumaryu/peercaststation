@@ -238,9 +238,13 @@ namespace PeerCastStation.Core
   public class Host
   {
     /// <summary>
-    /// ホストが持つアドレス情報のリストを返します
+    /// ホストが持つローカルなアドレス情報を取得および設定します
     /// </summary>
-    public IList<IPEndPoint> Addresses { get; private set; }
+    public IPEndPoint LocalEndPoint { get; set; }
+    /// <summary>
+    /// ホストが持つグローバルなアドレス情報を取得および設定します
+    /// </summary>
+    public IPEndPoint GlobalEndPoint { get; set; }
     /// <summary>
     /// ホストのセッションIDを取得および設定します
     /// </summary>
@@ -267,7 +271,8 @@ namespace PeerCastStation.Core
     /// </summary>
     public Host()
     {
-      Addresses    = new List<IPEndPoint>();
+      LocalEndPoint   = null;
+      GlobalEndPoint  = null;
       SessionID    = Guid.Empty;
       BroadcastID  = Guid.Empty;
       IsFirewalled = false;
@@ -689,7 +694,6 @@ namespace PeerCastStation.Core
     /// UserAgentやServerとして名乗る名前を取得および設定します。
     /// </summary>
     public string AgentName { get; set; }
-    public Host Host { get; set; }
     /// <summary>
     /// 登録されているYellowPageのリストを取得します
     /// </summary>
@@ -839,14 +843,46 @@ namespace PeerCastStation.Core
         System.Reflection.Assembly.GetExecutingAssembly().Location);
       this.AgentName = String.Format("{0}/{1}", filever.ProductName, filever.ProductVersion);
       IsClosed = false;
-      Host = new Host();
-      Host.SessionID = Guid.NewGuid();
+      this.SessionID   = Guid.NewGuid();
+      this.BroadcastID = Guid.NewGuid();
+      foreach (var addr in Dns.GetHostAddresses(Dns.GetHostName())) {
+        switch (addr.AddressFamily) {
+        case AddressFamily.InterNetwork:
+          if (this.LocalAddress==null && 
+              !addr.Equals(IPAddress.None) &&
+              !addr.Equals(IPAddress.Any) &&
+              !addr.Equals(IPAddress.Broadcast) &&
+              !IPAddress.IsLoopback(addr)) {
+            this.LocalAddress = addr;
+          }
+          break;
+        case AddressFamily.InterNetworkV6:
+          if (LocalAddress6==null && 
+              !addr.Equals(IPAddress.IPv6Any) &&
+              !addr.Equals(IPAddress.IPv6Loopback) &&
+              !addr.Equals(IPAddress.IPv6None)) {
+            this.LocalAddress6 = addr;
+          }
+          break;
+        default:
+          break;
+        }
+      }
+      this.GlobalAddress = null;
+      this.GlobalAddress6 = null;
 
       YellowPages   = new List<IYellowPage>();
       YellowPageFactories = new Dictionary<string, IYellowPageFactory>();
       SourceStreamFactories = new Dictionary<string, ISourceStreamFactory>();
       OutputStreamFactories = new List<IOutputStreamFactory>();
     }
+
+    public Guid SessionID { get; private set; }
+    public Guid BroadcastID { get; set; }
+    public IPAddress LocalAddress { get; private set; }
+    public IPAddress GlobalAddress { get; set; }
+    public IPAddress LocalAddress6 { get; private set; }
+    public IPAddress GlobalAddress6 { get; set; }
 
     private List<OutputListener> outputListeners = new List<OutputListener>();
     /// <summary>
@@ -863,7 +899,6 @@ namespace PeerCastStation.Core
     {
       var res = new OutputListener(this, ip);
       outputListeners.Add(res);
-      Host.Addresses.Add(res.LocalEndPoint);
       return res;
     }
 
@@ -875,8 +910,67 @@ namespace PeerCastStation.Core
     public void StopListen(OutputListener listener)
     {
       if (outputListeners.Remove(listener)) {
-        Host.Addresses.Remove(listener.LocalEndPoint);
         listener.Close();
+      }
+    }
+
+    public IPEndPoint LocalEndPoint
+    {
+      get
+      {
+        var listener = outputListeners.FirstOrDefault(
+          x => x.LocalEndPoint.AddressFamily==AddressFamily.InterNetwork);
+        if (listener!=null) {
+          return new IPEndPoint(LocalAddress, listener.LocalEndPoint.Port);
+        }
+        else {
+          return null;
+        }
+      }
+    }
+
+    public IPEndPoint LocalEndPoint6
+    {
+      get
+      {
+        var listener = outputListeners.FirstOrDefault(
+          x => x.LocalEndPoint.AddressFamily==AddressFamily.InterNetworkV6);
+        if (listener!=null) {
+          return new IPEndPoint(LocalAddress6, listener.LocalEndPoint.Port);
+        }
+        else {
+          return null;
+        }
+      }
+    }
+
+    public IPEndPoint GlobalEndPoint
+    {
+      get
+      {
+        var listener = outputListeners.FirstOrDefault(
+          x => x.LocalEndPoint.AddressFamily==AddressFamily.InterNetwork);
+        if (listener!=null && GlobalAddress!=null) {
+          return new IPEndPoint(GlobalAddress, listener.LocalEndPoint.Port);
+        }
+        else {
+          return null;
+        }
+      }
+    }
+
+    public IPEndPoint GlobalEndPoint6
+    {
+      get
+      {
+        var listener = outputListeners.FirstOrDefault(
+          x => x.LocalEndPoint.AddressFamily==AddressFamily.InterNetworkV6);
+        if (listener!=null && GlobalAddress6!=null) {
+          return new IPEndPoint(GlobalAddress6, listener.LocalEndPoint.Port);
+        }
+        else {
+          return null;
+        }
       }
     }
 

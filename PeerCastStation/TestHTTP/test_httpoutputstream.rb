@@ -401,7 +401,7 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
     ]))
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
     stream = TestHTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
-    stream.post(@peercast.host, PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, 1))
+    stream.post(nil, PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, 1))
     assert_equal(0, s.position)
   end
 
