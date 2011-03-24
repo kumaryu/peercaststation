@@ -44,8 +44,7 @@ namespace PeerCastStation.PCP
         Match match = null;
         if ((match = Regex.Match(req, @"^GET (\S+) HTTP/1.\d$")).Success) {
           Uri uri;
-          if (Uri.TryCreate(match.Groups[1].Value, UriKind.Absolute, out uri) ||
-              Uri.TryCreate(new Uri("http://localhost/"), match.Groups[1].Value, out uri)) {
+          if (Uri.TryCreate(new Uri("http://localhost/"), match.Groups[1].Value, out uri)) {
             this.Uri = uri;
           }
           else {
