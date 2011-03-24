@@ -26,7 +26,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert_nil(@peercast.global_address)
     assert_not_equal(System::Guid.empty, @peercast.SessionID)
     assert_not_equal(System::Guid.empty, @peercast.BroadcastID)
-    assert_nil(0, @peercast.is_firewalled)
+    assert_nil(@peercast.is_firewalled)
     
     @peercast.close
     assert(@peercast.is_closed)
