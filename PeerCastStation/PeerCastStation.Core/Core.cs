@@ -600,18 +600,18 @@ namespace PeerCastStation.Core
     {
       var server = (TcpListener)arg;
       while (!IsClosed) {
-        while (server.Pending()) {
+        try {
           var client = server.AcceptTcpClient();
           var output_thread = new Thread(OutputThreadFunc);
-          output_thread.Name = "OutputThread";
-          output_thread.Start(client);
           PeerCast.SynchronizationContext.Post(dummy => {
             outputThreads.Add(output_thread);
           }, null);
+          output_thread.Name = "OutputThread";
+          output_thread.Start(client);
         }
-        Thread.Sleep(1);
+        catch (SocketException) {
+        }
       }
-      server.Stop();
     }
 
     /// <summary>
@@ -620,6 +620,7 @@ namespace PeerCastStation.Core
     internal void Close()
     {
       IsClosed = true;
+      server.Stop();
       listenerThread.Join();
     }
 
