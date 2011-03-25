@@ -283,7 +283,6 @@ namespace PeerCastStation.PCP
   {
     private PeerCast peercast;
     private Channel channel;
-    private Uri sourceUri;
     private IStreamState state = null;
 
     private TcpClient connection = null;
@@ -915,7 +914,6 @@ namespace PeerCastStation.PCP
     {
       this.peercast = peercast;
       this.channel = channel;
-      this.sourceUri = source_uri;
     }
   }
 }
