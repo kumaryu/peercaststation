@@ -51,6 +51,7 @@ namespace PeerCastStation.GUI
       peerCast = new PeerCastStation.Core.PeerCast();
       peerCast.StartListen(new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort));
       peerCast.SourceStreamFactories["pcp"] = new PeerCastStation.PCP.PCPSourceStreamFactory(peerCast);
+      peerCast.OutputStreamFactories.Add(new PeerCastStation.PCP.PCPPongOutputStreamFactory(peerCast));
       peerCast.OutputStreamFactories.Add(new PeerCastStation.PCP.PCPOutputStreamFactory(peerCast));
       peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPOutputStreamFactory(peerCast));
       peerCast.AccessController.MaxPlays = currentMaxDirects;

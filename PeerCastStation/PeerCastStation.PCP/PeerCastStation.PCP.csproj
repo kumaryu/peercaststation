@@ -37,6 +37,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PCPOutputStream.cs" />
+    <Compile Include="PCPPongOutputStream.cs" />
     <Compile Include="PCPSourceStream.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
