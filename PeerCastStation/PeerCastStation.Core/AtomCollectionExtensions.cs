@@ -191,6 +191,11 @@ namespace PeerCastStation.Core
       return GetIPAddressFrom(collection, Atom.PCP_HELO_REMOTEIP);
     }
 
+    public static short? GetHeloRemotePort(this AtomCollection collection)
+    {
+      return GetShortFrom(collection, Atom.PCP_HELO_REMOTEPORT);
+    }
+
     public static int? GetHeloVersion(this AtomCollection collection)
     {
       return GetIntFrom(collection, Atom.PCP_HELO_VERSION);
@@ -516,6 +521,11 @@ namespace PeerCastStation.Core
     public static void SetHeloPort(this AtomCollection collection, short value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HELO_PORT, value));
+    }
+
+    public static void SetHeloRemotePort(this AtomCollection collection, short value)
+    {
+      SetAtomTo(collection, new Atom(Atom.PCP_HELO_REMOTEPORT, value));
     }
 
     public static void SetHeloRemoteIP(this AtomCollection collection, IPAddress value)

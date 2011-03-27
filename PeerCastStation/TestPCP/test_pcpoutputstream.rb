@@ -352,6 +352,135 @@ EOS
     assert(!stream.is_content_changed)
   end
 
+  def test_ping_host
+    session_id = System::Guid.new_guid
+    target = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146)
+    stream = TestPingHostPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
+    assert(!stream.ping_host(target, session_id))
+
+    conn = nil
+    helo = nil
+    server = TCPServer.open('localhost', 7146)
+    thread = Thread.new {
+      s = AtomStream.new(server.accept)
+      conn = s.read
+      helo = s.read
+      s.write_parent(PCP_OLEH) do |ss|
+        ss.write_bytes(PCP_HELO_SESSIONID, PCSCore::AtomCollectionExtensions.IDToByteArray(session_id).to_a.pack('C*'))
+      end
+      s.write_int(PCP_QUIT, PCP_ERROR_QUIT)
+      s.close
+    }
+    assert(stream.ping_host(target, session_id))
+    thread.join
+    assert_equal("pcp\n", conn.command)
+    assert_equal(1,       conn.content.unpack('V')[0])
+    assert_equal(PCP_HELO, helo.command)
+    assert_equal(1, helo.children.size)
+    assert_equal(PCP_HELO_SESSIONID, helo.children[0].command)
+    assert_equal(PCSCore::AtomCollectionExtensions.IDToByteArray(@peercast.SessionID).to_a, helo.children[0].content.unpack('C*'))
+  ensure
+    server.close if server and not server.closed?
+  end
+
+  def test_ping_host_wrong_session_id
+    session_id = System::Guid.new_guid
+    target = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146)
+    stream = TestPingHostPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
+    server = TCPServer.open('localhost', 7146)
+    thread = Thread.new {
+      s = AtomStream.new(server.accept)
+      conn = s.read
+      helo = s.read
+      s.write_parent(PCP_OLEH) do |ss|
+        ss.write_bytes(PCP_HELO_SESSIONID, PCSCore::AtomCollectionExtensions.IDToByteArray(System::Guid.new_guid).to_a.pack('C*'))
+      end
+      s.write_int(PCP_QUIT, PCP_ERROR_QUIT)
+      s.close
+    }
+    assert(!stream.ping_host(target, session_id))
+    thread.join
+    server.close
+  ensure
+    server.close if server and not server.closed?
+  end
+
+  class TestPingHostPCPOutputStream < PCSPCP::PCPOutputStream
+    def self.new(*args)
+      super.instance_eval {
+        @log = []
+        @sent_data = []
+        @ping_result = true
+        self
+      }
+    end
+    attr_reader :log, :sent_data
+    attr_accessor :ping_result
+
+    def Send(data)
+      @sent_data << data
+    end
+
+    def PingHost(target, remote_session_id)
+      @log << [:ping_host, target, remote_session_id]
+      @ping_result
+    end
+  end
+
+  def test_on_pcp_helo_ping
+    session_id = System::Guid.new_guid
+    stream = TestPingHostPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
+    stream.ping_result   = true
+    stream.is_relay_full = false
+    assert_nil(stream.downhost)
+    helo = PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, PCSCore::AtomCollection.new)
+    helo.children.SetHeloSessionID(session_id)
+    helo.children.SetHeloVersion(1218)
+    helo.children.SetHeloPing(7145)
+    stream.OnPCPHelo(helo)
+    assert_equal(:ping_host,        stream.log[0][0])
+    assert_equal(@endpoint.address, stream.log[0][1].address)
+    assert_equal(7145,              stream.log[0][1].port)
+    assert_equal(session_id,        stream.log[0][2])
+    assert(!stream.downhost.is_firewalled)
+    assert_nil(stream.downhost.global_end_point)
+    assert_equal(PCSCore::Atom.PCP_OLEH, stream.sent_data[0].name)
+    oleh = stream.sent_data[0]
+    assert_equal(@endpoint.address,   oleh.children.GetHeloRemoteIP)
+    assert_equal(@peercast.AgentName, oleh.children.GetHeloAgent)
+    assert_equal(1218,                oleh.children.GetHeloVersion)
+    assert_equal(7145,                oleh.children.GetHeloRemotePort)
+    assert_equal(PCSCore::Atom.PCP_OK, stream.sent_data[1].name)
+    assert(!stream.is_closed)
+    stream.close
+
+    session_id = System::Guid.new_guid
+    stream = TestPingHostPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
+    stream.ping_result   = false
+    stream.is_relay_full = false
+    assert_nil(stream.downhost)
+    helo = PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, PCSCore::AtomCollection.new)
+    helo.children.SetHeloSessionID(session_id)
+    helo.children.SetHeloVersion(1218)
+    helo.children.SetHeloPing(7145)
+    stream.OnPCPHelo(helo)
+    assert_equal(:ping_host,        stream.log[0][0])
+    assert_equal(@endpoint.address, stream.log[0][1].address)
+    assert_equal(7145,              stream.log[0][1].port)
+    assert_equal(session_id,        stream.log[0][2])
+    assert(!stream.downhost.is_firewalled)
+    assert_nil(stream.downhost.global_end_point)
+    assert_equal(PCSCore::Atom.PCP_OLEH, stream.sent_data[0].name)
+    oleh = stream.sent_data[0]
+    assert_equal(@endpoint.address,   oleh.children.GetHeloRemoteIP)
+    assert_equal(@peercast.AgentName, oleh.children.GetHeloAgent)
+    assert_equal(1218,                oleh.children.GetHeloVersion)
+    assert_equal(0,                   oleh.children.GetHeloRemotePort)
+    assert_equal(PCSCore::Atom.PCP_OK, stream.sent_data[1].name)
+    assert(!stream.is_closed)
+    stream.close
+  end
+
   def test_on_pcp_helo
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
     assert_nil(stream.downhost)
@@ -392,10 +521,10 @@ EOS
     assert_equal(7145,              stream.downhost.global_end_point.port)
     assert_equal(PCSCore::Atom.PCP_OLEH, stream.sent_data[0].name)
     oleh = stream.sent_data[0]
-    assert_equal(@endpoint.address,              oleh.children.GetHeloRemoteIP)
-    assert_equal(@peercast.AgentName,            oleh.children.GetHeloAgent)
-    assert_equal(1218,                           oleh.children.GetHeloVersion)
-    assert_equal(@peercast.local_end_point.port, oleh.children.GetHeloPort)
+    assert_equal(@endpoint.address,   oleh.children.GetHeloRemoteIP)
+    assert_equal(@peercast.AgentName, oleh.children.GetHeloAgent)
+    assert_equal(1218,                oleh.children.GetHeloVersion)
+    assert_equal(7145,                oleh.children.GetHeloRemotePort)
     assert_equal(PCSCore::Atom.PCP_OK, stream.sent_data[1].name)
     assert(!stream.is_closed)
     stream.close

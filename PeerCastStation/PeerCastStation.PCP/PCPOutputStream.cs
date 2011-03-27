@@ -584,22 +584,75 @@ namespace PeerCastStation.PCP
       }
     }
 
+    protected virtual bool PingHost(IPEndPoint target, Guid remote_session_id)
+    {
+      try {
+        var client = new System.Net.Sockets.TcpClient();
+        client.Connect(target);
+        client.ReceiveTimeout = 3000;
+        client.SendTimeout    = 3000;
+        var stream = client.GetStream();
+        var conn = new Atom(Atom.PCP_CONNECT, 1);
+        AtomWriter.Write(stream, conn);
+        var helo = new Atom(Atom.PCP_HELO, new AtomCollection());
+        helo.Children.SetHeloSessionID(PeerCast.SessionID);
+        AtomWriter.Write(stream, helo);
+        var res = AtomReader.Read(stream);
+        AtomWriter.Write(stream, new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT));
+        stream.Close();
+        client.Close();
+        if (res.Name==Atom.PCP_OLEH) {
+          var session_id = res.Children.GetHeloSessionID();
+          if (session_id.HasValue && session_id.Value==remote_session_id) {
+            return true;
+          }
+        }
+        return false;
+      }
+      catch (System.Net.Sockets.SocketException) {
+        return false;
+      }
+      catch (EndOfStreamException) {
+        return false;
+      }
+      catch (System.IO.IOException io_error) {
+        if (io_error.InnerException is System.Net.Sockets.SocketException) {
+          return false;
+        }
+        else {
+          throw;
+        }
+      }
+    }
+
     protected virtual void OnPCPHelo(Atom atom)
     {
       if (Downhost!=null) return;
       var session_id = atom.Children.GetHeloSessionID();
+      short remote_port = 0;
       if (session_id!=null) {
         Downhost = new Host();
         Downhost.SessionID = session_id.Value;
-        var port = atom.Children.GetHostPort();
+        var port = atom.Children.GetHeloPort();
+        var ping = atom.Children.GetHeloPing();
         if (port!=null) {
-          var ip = new IPEndPoint(((IPEndPoint)remoteEndPoint).Address, (int)port);
+          var ip = new IPEndPoint(((IPEndPoint)remoteEndPoint).Address, port.Value);
           if (Downhost.GlobalEndPoint==null || !Downhost.GlobalEndPoint.Equals(ip)) {
             Downhost.GlobalEndPoint = ip;
           }
           Downhost.IsFirewalled = false;
+          remote_port = port.Value;
+        }
+        else if (ping!=null) {
+          if (PingHost(new IPEndPoint(((IPEndPoint)remoteEndPoint).Address, ping.Value), session_id.Value)) {
+            remote_port = ping.Value;
+          }
+          else {
+            remote_port = 0;
+          }
         }
         else {
+          remote_port = 0;
           Downhost.IsFirewalled = true;
         }
         Downhost.Extra.Update(atom.Children);
@@ -610,7 +663,7 @@ namespace PeerCastStation.PCP
       }
       res.Children.SetHeloAgent(PeerCast.AgentName);
       res.Children.SetHeloSessionID(PeerCast.SessionID);
-      res.Children.SetHeloPort((short)PeerCast.LocalEndPoint.Port);
+      res.Children.SetHeloRemotePort(remote_port);
       res.Children.SetHeloVersion(PCP_VERSION);
       Send(res);
       if (Downhost==null) {

@@ -152,6 +152,7 @@ namespace PeerCastStation.Core
     public static readonly ID4 PCP_HELO_PING              = new ID4("ping");
     public static readonly ID4 PCP_HELO_PONG              = new ID4("pong");
     public static readonly ID4 PCP_HELO_REMOTEIP          = new ID4("rip");
+    public static readonly ID4 PCP_HELO_REMOTEPORT        = new ID4("port");
     public static readonly ID4 PCP_HELO_VERSION           = new ID4("ver");
     public static readonly ID4 PCP_HELO_BCID              = new ID4("bcid");
     public static readonly ID4 PCP_HELO_DISABLE           = new ID4("dis");
@@ -215,6 +216,7 @@ namespace PeerCastStation.Core
     public static readonly ID4 PCP_HOST_UPHOST_PORT       = new ID4("uppt");
     public static readonly ID4 PCP_HOST_UPHOST_HOPS       = new ID4("uphp");
     public static readonly ID4 PCP_QUIT                   = new ID4("quit");
+    public static readonly ID4 PCP_CONNECT                = new ID4("pcp\n");
     public const byte PCP_HOST_FLAGS1_TRACKER = 0x01;
     public const byte PCP_HOST_FLAGS1_RELAY   = 0x02;
     public const byte PCP_HOST_FLAGS1_DIRECT  = 0x04;
@@ -733,8 +735,13 @@ namespace PeerCastStation.Core
     public Atom Read()
     {
       var header = new byte[8];
-      if (stream.Read(header, 0, 8) < 8) {
-        throw new EndOfStreamException();
+      int pos = 0;
+      while (pos<8) {
+        var r = stream.Read(header, pos, 8-pos);
+        if (r<=0) {
+          throw new EndOfStreamException();
+        }
+        pos += r;
       }
       var name = new ID4(header, 0);
       if (!BitConverter.IsLittleEndian) Array.Reverse(header, 4, 4);
@@ -748,8 +755,13 @@ namespace PeerCastStation.Core
       }
       else {
         var value = new byte[len];
-        if (stream.Read(value, 0, (int)len) < (int)len) {
-          throw new EndOfStreamException();
+        pos = 0;
+        while (pos<len) {
+          var r = stream.Read(value, pos, (int)len-pos);
+          if (r<=0) {
+            throw new EndOfStreamException();
+          }
+          pos += r;
         }
         return new Atom(name, value);
       }
@@ -764,8 +776,13 @@ namespace PeerCastStation.Core
     static public Atom Read(Stream stream)
     {
       var header = new byte[8];
-      if (stream.Read(header, 0, 8) < 8) {
-        throw new EndOfStreamException();
+      int pos = 0;
+      while (pos<8) {
+        var r = stream.Read(header, pos, 8-pos);
+        if (r<=0) {
+          throw new EndOfStreamException();
+        }
+        pos += r;
       }
       var name = new ID4(header, 0);
       if (!BitConverter.IsLittleEndian) Array.Reverse(header, 4, 4);
@@ -779,8 +796,13 @@ namespace PeerCastStation.Core
       }
       else {
         var value = new byte[len];
-        if (stream.Read(value, 0, (int)len) < (int)len) {
-          throw new EndOfStreamException();
+        pos = 0;
+        while (pos<len) {
+          var r = stream.Read(value, pos, (int)len-pos);
+          if (r<=0) {
+            throw new EndOfStreamException();
+          }
+          pos += r;
         }
         return new Atom(name, value);
       }
