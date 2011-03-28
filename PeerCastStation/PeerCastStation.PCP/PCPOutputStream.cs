@@ -640,11 +640,11 @@ namespace PeerCastStation.PCP
           if (Downhost.GlobalEndPoint==null || !Downhost.GlobalEndPoint.Equals(ip)) {
             Downhost.GlobalEndPoint = ip;
           }
-          Downhost.IsFirewalled = false;
           remote_port = port.Value;
         }
         else if (ping!=null) {
-          if (PingHost(new IPEndPoint(((IPEndPoint)remoteEndPoint).Address, ping.Value), session_id.Value)) {
+          if (!Utils.IsSiteLocal(((IPEndPoint)remoteEndPoint).Address) &&
+              PingHost(new IPEndPoint(((IPEndPoint)remoteEndPoint).Address, ping.Value), session_id.Value)) {
             remote_port = ping.Value;
           }
           else {
@@ -653,8 +653,8 @@ namespace PeerCastStation.PCP
         }
         else {
           remote_port = 0;
-          Downhost.IsFirewalled = true;
         }
+        Downhost.IsFirewalled = remote_port==0;
         Downhost.Extra.Update(atom.Children);
       }
       var res = new Atom(Atom.PCP_OLEH, new AtomCollection());
