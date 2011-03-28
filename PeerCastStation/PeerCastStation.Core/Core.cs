@@ -431,6 +431,7 @@ namespace PeerCastStation.Core
   /// チャンネルへの接続制御を行なうクラスです
   /// </summary>
   public class AccessController
+    : INotifyPropertyChanged
   {
     /// <summary>
     /// 所属するPeerCastオブジェクトを取得します
@@ -440,27 +441,48 @@ namespace PeerCastStation.Core
     /// PeerCast全体での最大リレー数を取得および設定します。
     /// </summary>
     /// <value>0は無制限です。</value>
-    public int MaxRelays { get; set; }
+    public int MaxRelays {
+      get { return maxRelays; }
+      set { if (maxRelays!=value) { maxRelays = value; DoPropertyChanged("MaxRelays"); } }
+    }
     /// <summary>
     /// チャンネル毎の最大リレー数を取得および設定します。
     /// </summary>
     /// <value>0は無制限です。</value>
-    public int MaxRelaysPerChannel { get; set; }
+    public int MaxRelaysPerChannel {
+      get { return maxRelaysPerChannel; }
+      set { if (maxRelaysPerChannel!=value) { maxRelaysPerChannel = value; DoPropertyChanged("MaxRelaysPerChannel"); } }
+    }
     /// <summary>
     /// PeerCast全体での最大視聴数を取得および設定します。
     /// </summary>
     /// <value>0は無制限です。</value>
-    public int MaxPlays { get; set; }
+    public int MaxPlays {
+      get { return maxPlays; }
+      set { if (maxPlays!=value) { maxPlays = value; DoPropertyChanged("MaxPlays"); }  }
+    }
     /// <summary>
     /// チャンネル毎の最大視聴数を取得および設定します。
     /// </summary>
     /// <value>0は無制限です。</value>
-    public int MaxPlaysPerChannel { get; set; }
+    public int MaxPlaysPerChannel {
+      get { return maxPlaysPerChannel; }
+      set { if (maxPlaysPerChannel!=value) { maxPlaysPerChannel = value; DoPropertyChanged("MaxPlaysPerChannel"); }  }
+    }
     /// <summary>
     /// PeerCast全体での最大上り帯域を取得および設定します。
     /// </summary>
     /// <value>0は無制限です。</value>
-    public int MaxUpstreamRate { get; set; }
+    public int MaxUpstreamRate {
+      get { return maxUpstreamRate; }
+      set { if (maxUpstreamRate!=value) { maxUpstreamRate = value; DoPropertyChanged("MaxUpstreamRate"); }  }
+    }
+
+    private int maxRelays = 0;
+    private int maxRelaysPerChannel = 0;
+    private int maxPlays = 0;
+    private int maxPlaysPerChannel = 0;
+    private int maxUpstreamRate = 0;
 
     /// <summary>
     /// 指定したチャンネルに新しいリレー接続ができるかどうかを取得します
@@ -527,12 +549,16 @@ namespace PeerCastStation.Core
     public AccessController(PeerCast peercast)
     {
       this.PeerCast = peercast;
-      this.MaxRelays = 0;
-      this.MaxRelaysPerChannel = 0;
-      this.MaxPlays = 0;
-      this.MaxPlaysPerChannel = 0;
-      this.MaxUpstreamRate = 0;
     }
+
+    private void DoPropertyChanged(string property_name)
+    {
+      if (PropertyChanged!=null) {
+        PropertyChanged(this, new PropertyChangedEventArgs(property_name));
+      }
+    }
+
+    public event PropertyChangedEventHandler PropertyChanged;
   }
 
   /// <summary>
