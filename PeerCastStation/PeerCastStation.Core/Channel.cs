@@ -6,6 +6,7 @@ using System.Threading;
 using System.Net;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Net.Sockets;
 
 namespace PeerCastStation.Core
 {
@@ -660,8 +661,9 @@ namespace PeerCastStation.Core
       sourceHost = new Host();
       var port = sourceUri.Port < 0 ? 7144 : sourceUri.Port;
       var addresses = Dns.GetHostAddresses(sourceUri.DnsSafeHost);
-      if (addresses.Length!=0) {
-        sourceHost.GlobalEndPoint = new IPEndPoint(addresses[0], port);
+      var addr = addresses.FirstOrDefault(x => x.AddressFamily==AddressFamily.InterNetwork);
+      if (addr!=null) {
+        sourceHost.GlobalEndPoint = new IPEndPoint(addr, port);
       }
       channelInfo = new ChannelInfo(channel_id);
       channelInfo.PropertyChanged += (sender, e) => {
