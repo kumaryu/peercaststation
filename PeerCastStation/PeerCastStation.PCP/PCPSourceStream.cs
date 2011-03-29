@@ -580,12 +580,14 @@ namespace PeerCastStation.PCP
         SynchronizationContext.SetSynchronizationContext(this.syncContext);
       }
       channel.OutputStreams.CollectionChanged += Channel_HostInfoUpdated;
+      peercast.AccessController.PropertyChanged += Channel_HostInfoUpdated;
       Status = SourceStreamStatus.Searching;
       state = new PCPSourceConnectState(this, SelectSourceHost());
       while (state!=null) {
         ProcessState();
       }
       channel.OutputStreams.CollectionChanged -= Channel_HostInfoUpdated;
+      peercast.AccessController.PropertyChanged -= Channel_HostInfoUpdated;
     }
 
     public virtual void ProcessState()
@@ -769,6 +771,8 @@ namespace PeerCastStation.PCP
         if (content_type!=null) channel.ChannelInfo.ContentType = content_type;
         channel.ChannelInfo.Extra.SetChanInfo(atom.Children);
       }, null);
+      hostInfoUpdated = true;
+      changedEvent.Set();
       return null;
     }
 
