@@ -234,7 +234,13 @@ namespace PeerCastStation.PCP
           return 0;
         }
         else {
-          return Channel.ChannelInfo.Extra.GetChanInfoBitrate() ?? 0;
+          var chaninfo = Channel.ChannelInfo.Extra.GetChanInfo();
+          if (chaninfo!=null) {
+            return chaninfo.GetChanInfoBitrate() ?? 0;
+          }
+          else {
+            return 0;
+          }
         }
       }
     }
@@ -264,6 +270,7 @@ namespace PeerCastStation.PCP
       }
       else {
         var status = is_relay_full ? "503 Temporary Unavailable." : "200 OK";
+        var chaninfo = Channel.ChannelInfo.Extra.GetChanInfo() ?? new AtomCollection();
         return String.Format(
           "HTTP/1.0 {0}\r\n" +
           "Server: {1}\r\n" +
@@ -279,10 +286,10 @@ namespace PeerCastStation.PCP
           status,
           PeerCast.AgentName,
           Channel.ChannelInfo.Name,
-          Channel.ChannelInfo.Extra.GetChanInfoBitrate() ?? 0,
-          Channel.ChannelInfo.Extra.GetChanInfoGenre() ?? "",
-          Channel.ChannelInfo.Extra.GetChanInfoDesc() ?? "",
-          Channel.ChannelInfo.Extra.GetChanInfoURL() ?? "",
+          chaninfo.GetChanInfoBitrate() ?? 0,
+          chaninfo.GetChanInfoGenre() ?? "",
+          chaninfo.GetChanInfoDesc() ?? "",
+          chaninfo.GetChanInfoURL() ?? "",
           Channel.ChannelInfo.ChannelID.ToString("N").ToUpper());
       }
     }

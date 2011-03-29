@@ -219,7 +219,9 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
     assert(!stream.is_local)
     assert_equal(0, stream.upstream_rate)
 
-    @channel.channel_info.extra.set_chan_info_bitrate(7144)
+    chaninfo = PCSCore::AtomCollection.new
+    chaninfo.set_chan_info_bitrate(7144)
+    @channel.channel_info.extra.set_chan_info(chaninfo)
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7144)
     stream = PCSHTTP::HTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
     assert(stream.is_local)

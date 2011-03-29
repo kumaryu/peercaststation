@@ -246,8 +246,13 @@ namespace PeerCastStation.HTTP
           return 0;
         }
         else {
-          var rate = channel.ChannelInfo.Extra.GetChanInfoBitrate();
-          return rate ?? 0;
+          var chaninfo = channel.ChannelInfo.Extra.GetChanInfo();
+          if (chaninfo!=null) {
+            return chaninfo.GetChanInfoBitrate() ?? 0;
+          }
+          else {
+            return 0;
+          }
         }
       }
     }

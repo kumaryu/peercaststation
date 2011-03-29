@@ -125,10 +125,12 @@ class TC_PCPOutputStream < Test::Unit::TestCase
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://localhost:7146'))
     @channel.channel_info.name = 'Test Channel' 
-    @channel.channel_info.extra.set_chan_info_bitrate(7144)
-    @channel.channel_info.extra.set_chan_info_genre('Test')
-    @channel.channel_info.extra.set_chan_info_desc('this is a test channel')
-    @channel.channel_info.extra.SetChanInfoURL('http://www.example.com/')
+    chaninfo = PCSCore::AtomCollection.new
+    chaninfo.set_chan_info_bitrate(7144)
+    chaninfo.set_chan_info_genre('Test')
+    chaninfo.set_chan_info_desc('this is a test channel')
+    chaninfo.SetChanInfoURL('http://www.example.com/')
+    @channel.channel_info.extra.set_chan_info(chaninfo)
     @request    = PeerCastStation::PCP::RelayRequest.new(
       System::Array[System::String].new([
         'GET /channel/9778E62BDC59DF56F9216D0387F80BF2 HTTP/1.1',
