@@ -623,8 +623,8 @@ namespace PeerCastStation.PCP
         host.SetHostVersion(PCP_VERSION);
         host.SetHostVersionVP(PCP_VERSION_VP);
         host.SetHostFlags1(
-          (channel.IsRelayFull ? 0 : PCPHostFlags1.Relay) |
-          (channel.IsDirectFull ? 0 : PCPHostFlags1.Direct) |
+          (peercast.AccessController.IsChannelRelayable(channel) ? PCPHostFlags1.Relay : 0) |
+          (peercast.AccessController.IsChannelPlayable(channel) ? PCPHostFlags1.Direct : 0) |
           ((!peercast.IsFirewalled.HasValue || peercast.IsFirewalled.Value) ? PCPHostFlags1.Firewalled : 0) |
           PCPHostFlags1.Receiving); //TODO:受信中かどうかちゃんと判別する
         if (uphost != null) {
