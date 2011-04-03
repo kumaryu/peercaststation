@@ -662,7 +662,7 @@ namespace PeerCastStation.PCP
     {
       var bcst = new AtomCollection();
       bcst.SetBcstFrom(peercast.SessionID);
-      bcst.SetBcstGroup(BroadcastGroup.Relays | BroadcastGroup.Trackers);
+      bcst.SetBcstGroup(group);
       bcst.SetBcstHops(0);
       bcst.SetBcstTTL(11);
       bcst.SetBcstVersion(PCP_VERSION);

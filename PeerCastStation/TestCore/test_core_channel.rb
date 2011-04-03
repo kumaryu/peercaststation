@@ -86,14 +86,14 @@ class TC_CoreChannel < Test::Unit::TestCase
     channel.close
     source_log = source.log.select {|log| log[0]==:post }
     output_log = output.log.select {|log| log[0]==:post }
-    assert_equal(1, source_log.size)
+    assert_equal(2, source_log.size)
     assert_equal(from,            source_log[0][1])
     assert_equal(packet_trackers, source_log[0][2])
-    assert_equal(2, output_log.size)
+    assert_equal(from,            source_log[1][1])
+    assert_equal(packet_relays,   source_log[1][2])
+    assert_equal(1, output_log.size)
     assert_equal(from,            output_log[0][1])
-    assert_equal(packet_trackers, output_log[0][2])
-    assert_equal(from,            output_log[1][1])
-    assert_equal(packet_relays,   output_log[1][2])
+    assert_equal(packet_relays,   output_log[0][2])
   end
 
   class TestAccessController < PeerCastStation::Core::AccessController

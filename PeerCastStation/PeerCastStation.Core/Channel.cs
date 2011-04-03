@@ -622,13 +622,15 @@ namespace PeerCastStation.Core
     /// <param name="group">送信先グループ</param>
     public void Broadcast(Host from, Atom packet, BroadcastGroup group)
     {
-      if ((group & BroadcastGroup.Trackers)!=0) {
+      if ((group & (BroadcastGroup.Trackers | BroadcastGroup.Relays))!=0) {
         if (sourceStream!=null) {
           sourceStream.Post(from, packet);
         }
       }
-      foreach (var outputStream in outputStreams) {
-        outputStream.Post(from, packet);
+      if ((group & (BroadcastGroup.Relays))!=0) {
+        foreach (var outputStream in outputStreams) {
+          outputStream.Post(from, packet);
+        }
       }
     }
 
