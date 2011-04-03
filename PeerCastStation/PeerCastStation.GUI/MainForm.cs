@@ -54,11 +54,18 @@ namespace PeerCastStation.GUI
       peerCast.OutputStreamFactories.Add(new PeerCastStation.PCP.PCPPongOutputStreamFactory(peerCast));
       peerCast.OutputStreamFactories.Add(new PeerCastStation.PCP.PCPOutputStreamFactory(peerCast));
       peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPOutputStreamFactory(peerCast));
+      peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPDummyOutputStreamFactory(peerCast));
       peerCast.AccessController.MaxPlays = currentMaxDirects;
       peerCast.AccessController.MaxRelays = currentMaxRelays;
       peerCast.AccessController.MaxUpstreamRate = currentMaxUpstreamRate;
       peerCast.ChannelAdded += ChannelAdded;
       peerCast.ChannelRemoved += ChannelRemoved;
+      if (peerCast.IsFirewalled.HasValue) {
+        portOpenedLabel.Text = peerCast.IsFirewalled.Value ? "未開放" : "開放";
+      }
+      else {
+        portOpenedLabel.Text = "開放状態不明";
+      }
     }
 
     private void ChannelAdded(object sender, PeerCastStation.Core.ChannelChangedEventArgs e)
@@ -123,6 +130,12 @@ namespace PeerCastStation.GUI
       peerCast.AccessController.MaxPlays = currentMaxDirects;
       peerCast.AccessController.MaxRelays = currentMaxRelays;
       peerCast.AccessController.MaxUpstreamRate = currentMaxUpstreamRate;
+      if (peerCast.IsFirewalled.HasValue) {
+        portOpenedLabel.Text = peerCast.IsFirewalled.Value ? "未開放" : "開放";
+      }
+      else {
+        portOpenedLabel.Text = "開放状態不明";
+      }
     }
 
     private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
@@ -132,6 +145,8 @@ namespace PeerCastStation.GUI
 
     private void channelList_SelectedIndexChanged(object sender, EventArgs e)
     {
+      if (channelList.SelectedIndex<0) return;
+      refreshTree(peerCast.Channels[channelList.SelectedIndex]);
     }
 
     private void channelClose_Click(object sender, EventArgs e)
@@ -155,6 +170,61 @@ namespace PeerCastStation.GUI
         }
         System.Diagnostics.Process.Start(pls);
       }
+    }
+
+    private Node createSelfNodeInfo(Channel channel)
+    {
+      var node = new Node(new Host());
+      node.Host.SessionID      = peerCast.SessionID;
+      node.Host.LocalEndPoint  = peerCast.LocalEndPoint;
+      node.Host.GlobalEndPoint = peerCast.GlobalEndPoint ?? peerCast.LocalEndPoint;
+      node.Host.IsFirewalled   = peerCast.IsFirewalled ?? true;
+      node.DirectCount = channel.OutputStreams.CountPlaying;
+      node.RelayCount  = channel.OutputStreams.CountRelaying;
+      node.IsDirectFull = !peerCast.AccessController.IsChannelPlayable(channel);
+      node.IsRelayFull  = !peerCast.AccessController.IsChannelRelayable(channel);
+      node.IsReceiving  = true;
+      return node;
+    }
+
+    private void addRelayTreeNode(TreeNodeCollection tree_nodes, Node node, IList<Node> node_list)
+    {
+      var endpoint = node.Host.GlobalEndPoint.Port==0 ? node.Host.LocalEndPoint : node.Host.GlobalEndPoint;
+      var nodeinfo = String.Format(
+        "({0}/{1}) {2}{3}{4}{5}",
+        node.DirectCount,
+        node.RelayCount,
+        node.Host.IsFirewalled ? "F" : " ",
+        node.IsDirectFull ? "D" : " ",
+        node.IsRelayFull ? "R" : " ",
+        node.IsReceiving ? " " : "B");
+      var tree_node = tree_nodes.Add(String.Format("{0} {1}", endpoint, nodeinfo));
+      foreach (var child in node_list.Where(x => {
+        return 
+          x.Host.Extra.GetHostUphostIP()!=null &&
+          x.Host.Extra.GetHostUphostPort()!=null &&
+          (
+            (
+              node.Host.GlobalEndPoint.Address.Equals(x.Host.Extra.GetHostUphostIP()) &&
+              node.Host.GlobalEndPoint.Port==x.Host.Extra.GetHostUphostPort()
+            ) ||
+            (
+              node.Host.LocalEndPoint.Address.Equals(x.Host.Extra.GetHostUphostIP()) &&
+              node.Host.LocalEndPoint.Port==x.Host.Extra.GetHostUphostPort()
+            )
+          );
+      })) {
+        addRelayTreeNode(tree_node.Nodes, child, node_list);
+      }
+    }
+
+    private void refreshTree(Channel channel)
+    {
+      relayTree.BeginUpdate();
+      relayTree.Nodes.Clear();
+      var root = createSelfNodeInfo(channel);
+      addRelayTreeNode(relayTree.Nodes, root, channel.Nodes);
+      relayTree.EndUpdate();
     }
   }
 }

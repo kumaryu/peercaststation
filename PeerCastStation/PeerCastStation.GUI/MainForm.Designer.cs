@@ -33,6 +33,7 @@
       System.Windows.Forms.Label label1;
       this.tabControl1 = new System.Windows.Forms.TabControl();
       this.tabChannels = new System.Windows.Forms.TabPage();
+      this.relayTree = new System.Windows.Forms.TreeView();
       this.channelClose = new System.Windows.Forms.Button();
       this.channelPlay = new System.Windows.Forms.Button();
       this.channelList = new System.Windows.Forms.ListBox();
@@ -42,6 +43,7 @@
       this.maxDirects = new System.Windows.Forms.NumericUpDown();
       this.maxRelays = new System.Windows.Forms.NumericUpDown();
       this.port = new System.Windows.Forms.NumericUpDown();
+      this.portOpenedLabel = new System.Windows.Forms.Label();
       label4 = new System.Windows.Forms.Label();
       label3 = new System.Windows.Forms.Label();
       label2 = new System.Windows.Forms.Label();
@@ -104,6 +106,7 @@
       // 
       // tabChannels
       // 
+      this.tabChannels.Controls.Add(this.relayTree);
       this.tabChannels.Controls.Add(this.channelClose);
       this.tabChannels.Controls.Add(this.channelPlay);
       this.tabChannels.Controls.Add(this.channelList);
@@ -114,6 +117,16 @@
       this.tabChannels.TabIndex = 1;
       this.tabChannels.Text = "チャンネル一覧";
       this.tabChannels.UseVisualStyleBackColor = true;
+      // 
+      // relayTree
+      // 
+      this.relayTree.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      this.relayTree.Location = new System.Drawing.Point(6, 100);
+      this.relayTree.Name = "relayTree";
+      this.relayTree.Size = new System.Drawing.Size(390, 220);
+      this.relayTree.TabIndex = 4;
       // 
       // channelClose
       // 
@@ -145,12 +158,13 @@
       this.channelList.ItemHeight = 12;
       this.channelList.Location = new System.Drawing.Point(6, 6);
       this.channelList.Name = "channelList";
-      this.channelList.Size = new System.Drawing.Size(322, 172);
+      this.channelList.Size = new System.Drawing.Size(322, 88);
       this.channelList.TabIndex = 1;
       this.channelList.SelectedIndexChanged += new System.EventHandler(this.channelList_SelectedIndexChanged);
       // 
       // tabSettings
       // 
+      this.tabSettings.Controls.Add(this.portOpenedLabel);
       this.tabSettings.Controls.Add(this.applySettings);
       this.tabSettings.Controls.Add(label4);
       this.tabSettings.Controls.Add(label3);
@@ -226,6 +240,15 @@
             0,
             0});
       // 
+      // portOpenedLabel
+      // 
+      this.portOpenedLabel.AutoSize = true;
+      this.portOpenedLabel.Location = new System.Drawing.Point(205, 15);
+      this.portOpenedLabel.Name = "portOpenedLabel";
+      this.portOpenedLabel.Size = new System.Drawing.Size(35, 12);
+      this.portOpenedLabel.TabIndex = 10;
+      this.portOpenedLabel.Text = "label5";
+      // 
       // MainForm
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -260,6 +283,8 @@
     private System.Windows.Forms.ListBox channelList;
     private System.Windows.Forms.Button channelClose;
     private System.Windows.Forms.Button channelPlay;
+    private System.Windows.Forms.TreeView relayTree;
+    private System.Windows.Forms.Label portOpenedLabel;
 
   }
 }
