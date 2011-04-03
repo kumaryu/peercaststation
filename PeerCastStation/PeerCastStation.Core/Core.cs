@@ -655,6 +655,8 @@ namespace PeerCastStation.Core
     {
       var client = (TcpClient)arg;
       var stream = client.GetStream();
+      stream.WriteTimeout = 3000;
+      stream.ReadTimeout = 3000;
       IOutputStream output_stream = null;
       Channel channel = null;
       IOutputStreamFactory[] output_factories = null;
@@ -666,15 +668,19 @@ namespace PeerCastStation.Core
         Guid? channel_id = null;
         bool eos = false;
         while (!eos && output_stream==null && header.Count<=4096) {
-          do {
-            var val = stream.ReadByte();
-            if (val < 0) {
-              eos = true;
-            }
-            else {
-              header.Add((byte)val);
-            }
-          } while (stream.DataAvailable);
+          try {
+            do {
+              var val = stream.ReadByte();
+              if (val < 0) {
+                eos = true;
+              }
+              else {
+                header.Add((byte)val);
+              }
+            } while (stream.DataAvailable);
+          }
+          catch (IOException) {
+          }
           var header_ary = header.ToArray();
           foreach (var factory in output_factories) {
             channel_id = factory.ParseChannelID(header_ary);
