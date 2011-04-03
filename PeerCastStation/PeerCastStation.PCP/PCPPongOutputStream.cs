@@ -26,7 +26,7 @@ namespace PeerCastStation.PCP
       Guid channel_id,
       byte[] header)
     {
-      return new PCPPongOutputStream(PeerCast, stream, (IPEndPoint)remote_endpoint);
+      return new PCPPongOutputStream(PeerCast, stream, (IPEndPoint)remote_endpoint, header);
     }
 
     public Guid? ParseChannelID(byte[] header)
@@ -60,11 +60,12 @@ namespace PeerCastStation.PCP
     private EndPoint remoteEndPoint = null;
     private QueuedSynchronizationContext syncContext = null;
 
-    public PCPPongOutputStream(PeerCast peercast, Stream stream, IPEndPoint endpoint)
+    public PCPPongOutputStream(PeerCast peercast, Stream stream, IPEndPoint endpoint, byte[] header)
     {
       PeerCast = peercast;
       Stream = stream;
       remoteEndPoint = endpoint;
+      recvStream.Write(header, 0, header.Length);
     }
 
     public bool IsLocal
@@ -151,6 +152,9 @@ namespace PeerCastStation.PCP
                   StartReceive();
                 }, null);
               }
+              else {
+                Close();
+              }
             }
             catch (ObjectDisposedException) {}
             catch (IOException) {
@@ -205,7 +209,7 @@ namespace PeerCastStation.PCP
       AtomWriter.Write(sendStream, atom);
     }
 
-    private Atom RecvAtom()
+    protected Atom RecvAtom()
     {
       Atom res = null;
       if (recvStream.Length>=8 && Recv(s => { res = AtomReader.Read(s); })) {
@@ -216,7 +220,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    private bool Recv(Action<Stream> proc)
+    protected bool Recv(Action<Stream> proc)
     {
       bool res = false;
       recvStream.Seek(0, SeekOrigin.Begin);

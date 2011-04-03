@@ -11,6 +11,15 @@ PCSPCP = PeerCastStation::PCP
 PCSCore = PeerCastStation::Core
 
 class TC_PCPPongOutputStreamFactory < Test::Unit::TestCase
+  def to_byte_array(array)
+    array = array.to_a
+    res = System::Array[System::Byte].new(array.size)
+    array.each_with_index do |v, i|
+      res[i] = v
+    end
+    res
+  end
+
   def setup
     @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
     @peercast   = PeerCastStation::Core::PeerCast.new
@@ -44,12 +53,21 @@ EOS
   def test_create
     factory = PCSPCP::PCPPongOutputStreamFactory.new(@peercast)
     s = System::IO::MemoryStream.new
-    output_stream = factory.create(s, @endpoint, @channel_id, nil)
+    output_stream = factory.create(s, @endpoint, @channel_id, to_byte_array([]))
     assert_kind_of(PCSPCP::PCPPongOutputStream, output_stream)
   end
 end
 
 class TC_PCPPongOutputStream < Test::Unit::TestCase
+  def to_byte_array(array)
+    array = array.to_a
+    res = System::Array[System::Byte].new(array.size)
+    array.each_with_index do |v, i|
+      res[i] = v
+    end
+    res
+  end
+
   class TestPCPPongOutputStream < PCSPCP::PCPPongOutputStream
     def self.new(*args)
       super.instance_eval {
@@ -76,39 +94,47 @@ class TC_PCPPongOutputStream < Test::Unit::TestCase
   end
   
   def test_construct
-    stream = PCSPCP::PCPPongOutputStream.new(@peercast, @base_stream, @endpoint)
+    stream = PCSPCP::PCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array([]))
     assert_equal(@peercast,    stream.PeerCast)
     assert_equal(@base_stream, stream.Stream)
     assert(!stream.IsClosed)
     assert_equal(PCSCore::OutputStreamType.metadata, stream.output_stream_type)
+
+    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array(["pcp\n", 4, 1].pack('Z4VV').unpack('C*')))
+    atom = nil
+    assert_nothing_raised do 
+      atom = stream.recv_atom
+    end
+    assert_equal("pcp\n", atom.name.to_string.to_s)
+    assert_equal(1,       atom.get_int32)
   end
 
   def test_is_local
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('192.168.1.2'), 7144)
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, endpoint)
+    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, endpoint, to_byte_array([]))
     assert(stream.is_local)
 
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, endpoint)
+    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, endpoint, to_byte_array([]))
     assert(!stream.is_local)
   end
   
   def test_upstream_rate
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('192.168.1.2'), 7144)
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, endpoint)
+    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, endpoint, to_byte_array([]))
     assert_equal(0, stream.upstream_rate)
 
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, endpoint)
+    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, endpoint, to_byte_array([]))
     assert_equal(0, stream.upstream_rate)
 
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, endpoint)
+    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, endpoint, to_byte_array([]))
     assert_equal(0, stream.upstream_rate)
   end
 
   def test_on_pcp_helo
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint)
+    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array([]))
     helo = PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, PCSCore::AtomCollection.new)
     stream.OnPCPHelo(helo)
     assert_equal(PCSCore::Atom.PCP_OLEH, stream.sent_data[0].name)
@@ -117,7 +143,7 @@ class TC_PCPPongOutputStream < Test::Unit::TestCase
     assert(stream.is_closed)
 
     session_id = System::Guid.new_guid
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint)
+    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array([]))
     helo = PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, PCSCore::AtomCollection.new)
     helo.children.SetHeloSessionID(session_id)
     stream.OnPCPHelo(helo)
@@ -128,7 +154,7 @@ class TC_PCPPongOutputStream < Test::Unit::TestCase
     stream.close
 
     session_id = System::Guid.new_guid
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint)
+    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array([]))
     helo = PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, PCSCore::AtomCollection.new)
     helo.children.SetHeloSessionID(session_id)
     helo.children.SetHeloVersion(1218)
@@ -142,7 +168,7 @@ class TC_PCPPongOutputStream < Test::Unit::TestCase
   end
 
   def test_on_pcp_quit
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint)
+    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array([]))
     assert(!stream.is_closed)
     quit = PCSCore::Atom.new(PCSCore::Atom.PCP_QUIT, PCSCore::Atom.PCP_ERROR_QUIT)
     stream.OnPCPQuit(quit)
@@ -175,7 +201,7 @@ class TC_PCPPongOutputStream < Test::Unit::TestCase
       PCSCore::Atom.new(PCSCore::Atom.PCP_HOST, 0),
       PCSCore::Atom.new(PCSCore::Atom.PCP_QUIT, 0),
     ]
-    stream = TestProcessAtomPCPPongOutputStream.new(@peercast, @base_stream, @endpoint)
+    stream = TestProcessAtomPCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array([]))
     atoms.each do |atom|
       stream.process_atom(atom)
     end
