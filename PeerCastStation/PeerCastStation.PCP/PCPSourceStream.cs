@@ -341,7 +341,9 @@ namespace PeerCastStation.PCP
             }
             catch (ObjectDisposedException) { }
             catch (IOException) {
-              Close(CloseReason.ConnectionError);
+              syncContext.Post(dummy => {
+                Close(CloseReason.ConnectionError);
+              }, null);
             }
           }, stream);
         }
@@ -483,7 +485,17 @@ namespace PeerCastStation.PCP
     public virtual void Close(CloseReason reason)
     {
       if (connection != null) {
-        stream.Close();
+        if (stream!=null) {
+          if (sendResult!=null) {
+            try {
+              stream.EndWrite(sendResult);
+            }
+            catch (ObjectDisposedException) {}
+            catch (IOException) {}
+            sendResult = null;
+          }
+          stream.Close();
+        }
         connection.Close();
         stream = null;
         connection = null;
