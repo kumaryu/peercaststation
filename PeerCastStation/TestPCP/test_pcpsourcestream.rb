@@ -233,6 +233,20 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert(host.children.GetHostFlags1)
   end
 
+  def test_broadcast_host_info
+    source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
+    @channel.source_stream = source
+    source.broadcast_host_info
+    assert_equal(:post, source.log[0][0])
+    broadcast = source.log[0][2]
+    assert_equal(PCP_BCST, broadcast.name.to_s)
+    assert_equal(
+      PCSCore::BroadcastGroup.relays |
+      PCSCore::BroadcastGroup.trackers,
+      broadcast.children.GetBcstGroup)
+    assert_not_nil(broadcast.children.GetHost)
+  end
+
 	def test_connect
     source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     assert(!source.is_connected)

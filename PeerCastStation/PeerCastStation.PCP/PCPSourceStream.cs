@@ -674,9 +674,7 @@ namespace PeerCastStation.PCP
 
     public virtual void BroadcastHostInfo()
     {
-      channel.Broadcast(null,
-        CreateBroadcastPacket(BroadcastGroup.Relays | BroadcastGroup.Trackers, CreateHostPacket()),
-        BroadcastGroup.Relays | BroadcastGroup.Trackers);
+      channel.Broadcast(null, CreateBroadcastPacket(BroadcastGroup.Trackers, CreateHostPacket()), BroadcastGroup.Trackers);
       hostInfoUpdated = false;
     }
 
@@ -909,7 +907,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    public void Post(Host from, Atom packet)
+    public virtual void Post(Host from, Atom packet)
     {
       if (syncContext!=null) {
         syncContext.Post(x => {
