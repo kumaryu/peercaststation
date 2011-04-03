@@ -501,11 +501,16 @@ namespace PeerCastStation.Core
     /// <returns>リレー可能な場合はtrue、それ以外はfalse</returns>
     public virtual bool IsChannelRelayable(Channel channel)
     {
+      int channel_bitrate = 0;
+      var chaninfo = channel.ChannelInfo.Extra.GetChanInfo();
+      if (chaninfo!=null) {
+        channel_bitrate = chaninfo.GetChanInfoBitrate() ?? 0;
+      }
       var upstream_rate = PeerCast.Channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
       return
         (this.MaxRelays<=0 || this.MaxRelays>PeerCast.Channels.Sum(c => c.OutputStreams.CountRelaying)) &&
         (this.MaxRelaysPerChannel<=0 || this.MaxRelaysPerChannel>channel.OutputStreams.CountRelaying) &&
-        (this.MaxUpstreamRate<=0 || this.MaxUpstreamRate>=upstream_rate+(channel.ChannelInfo.Extra.GetChanInfoBitrate() ?? 0));
+        (this.MaxUpstreamRate<=0 || this.MaxUpstreamRate>=upstream_rate+channel_bitrate);
     }
 
     /// <summary>
@@ -530,11 +535,16 @@ namespace PeerCastStation.Core
     /// <returns>視聴可能な場合はtrue、それ以外はfalse</returns>
     public virtual bool IsChannelPlayable(Channel channel)
     {
+      int channel_bitrate = 0;
+      var chaninfo = channel.ChannelInfo.Extra.GetChanInfo();
+      if (chaninfo!=null) {
+        channel_bitrate = chaninfo.GetChanInfoBitrate() ?? 0;
+      }
       var upstream_rate = PeerCast.Channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
       return
         (this.MaxPlays<=0 || this.MaxPlays>PeerCast.Channels.Sum(c => c.OutputStreams.CountPlaying)) &&
         (this.MaxPlaysPerChannel<=0 || this.MaxPlaysPerChannel>channel.OutputStreams.CountPlaying) &&
-        (this.MaxUpstreamRate<=0 || this.MaxUpstreamRate>=upstream_rate+(channel.ChannelInfo.Extra.GetChanInfoBitrate() ?? 0));
+        (this.MaxUpstreamRate<=0 || this.MaxUpstreamRate>=upstream_rate+channel_bitrate);
     }
 
     /// <summary>
