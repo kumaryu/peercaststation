@@ -36,6 +36,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="HTTPDummyOutputStream.cs" />
     <Compile Include="HTTPOutputStream.cs" />
     <Compile Include="PlayList.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
