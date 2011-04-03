@@ -369,7 +369,15 @@ namespace PeerCastStation.Core
     /// <summary>
     /// このチャンネルに関連付けられたノードリストを取得します
     /// </summary>
-    public IList<Node> Nodes { get { return nodes; } }
+    public IList<Node> Nodes {
+      get {
+        var limit_time = new TimeSpan((Environment.TickCount+180000)*10000L);
+        foreach (var node in nodes.Where(n => n.LastUpdated>limit_time)) {
+          nodes.Remove(node);
+        }
+        return nodes;
+      }
+    }
     /// <summary>
     /// チャンネル情報を取得および設定します
     /// </summary>

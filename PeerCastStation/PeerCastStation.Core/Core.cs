@@ -294,6 +294,7 @@ namespace PeerCastStation.Core
     private bool isDirectFull = false;
     private bool isReceiving = false;
     private bool isControlFull = false;
+    private TimeSpan lastUpdated = TimeSpan.Zero;
     private AtomCollection extra = new AtomCollection();
     /// <summary>
     /// 接続情報を取得および設定します
@@ -376,12 +377,20 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
+    /// ノードの最終更新時間を取得します
+    /// </summary>
+    public TimeSpan LastUpdated {
+      get { return lastUpdated; }
+    }
+
+    /// <summary>
     /// その他の情報のリストを取得します
     /// </summary>
     public AtomCollection Extra { get { return extra; } }
     public event PropertyChangedEventHandler PropertyChanged;
     private void OnPropertyChanged(string name)
     {
+      lastUpdated = new TimeSpan(Environment.TickCount*10000L);
       if (PropertyChanged != null) {
         PropertyChanged(this, new PropertyChangedEventArgs(name));
       }
@@ -394,6 +403,7 @@ namespace PeerCastStation.Core
     public Node(Host host)
     {
       Host = host;
+      lastUpdated = new TimeSpan(Environment.TickCount*10000L);
       extra.CollectionChanged += (sender, e) => {
         OnPropertyChanged("Extra");
       };
