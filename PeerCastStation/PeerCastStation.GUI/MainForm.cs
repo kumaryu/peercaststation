@@ -38,9 +38,87 @@ namespace PeerCastStation.GUI
       }
     }
 
+    private class DebugWriter : System.IO.TextWriter
+    {
+      public DebugWriter()
+      {
+      }
+
+      public override System.Text.Encoding Encoding
+      {
+        get { return System.Text.Encoding.Unicode; }
+      }
+
+      public override void Write(char[] buffer)
+      {
+        Write(new String(buffer));
+      }
+
+      public override void Write(char[] buffer, int index, int count)
+      {
+        Write(new String(buffer, index, count));
+      }
+
+      public override void Write(char buffer)
+      {
+        System.Diagnostics.Debug.Write(buffer);
+      }
+
+      public override void Write(string buffer)
+      {
+        System.Diagnostics.Debug.Write(buffer);
+      }
+    }
+
+    private class TextBoxWriter : System.IO.TextWriter
+    {
+      private TextBox textBox;
+      public TextBoxWriter(TextBox textbox)
+      {
+        this.textBox = textbox;
+      }
+
+      public override System.Text.Encoding Encoding
+      {
+        get { return System.Text.Encoding.Unicode; }
+      }
+
+      public override void Write(char[] buffer)
+      {
+        Write(new String(buffer));
+      }
+
+      public override void Write(char[] buffer, int index, int count)
+      {
+        Write(new String(buffer, index, count));
+      }
+
+      public override void Write(char buffer)
+      {
+        Write(buffer.ToString());
+      }
+
+      public override void Write(string buffer)
+      {
+        if (textBox.InvokeRequired) {
+          textBox.Invoke(new Action(() => {
+            textBox.AppendText(buffer);
+          }));
+        }
+        else {
+          textBox.AppendText(buffer);
+        }
+      }
+    }
+
     public MainForm()
     {
       InitializeComponent();
+      logLevelList.SelectedIndex = 3;
+      Logger.Level = LogLevel.Warn;
+      Logger.AddWriter(System.Console.Error);
+      Logger.AddWriter(new DebugWriter());
+      Logger.AddWriter(new TextBoxWriter(logText));
       if (IsOSX()) {
         this.Font = new System.Drawing.Font("Osaka", this.Font.SizeInPoints);
       }
@@ -225,6 +303,74 @@ namespace PeerCastStation.GUI
       var root = createSelfNodeInfo(channel);
       addRelayTreeNode(relayTree.Nodes, root, channel.Nodes);
       relayTree.EndUpdate();
+    }
+
+    private System.IO.TextWriter logFileWriter = null;
+    private void logToFileCheck_CheckedChanged(object sender, EventArgs e)
+    {
+      if (logFileWriter!=null) {
+        Logger.RemoveWriter(logFileWriter);
+        if (logToFileCheck.Checked) {
+          Logger.AddWriter(logFileWriter);
+        }
+      }
+    }
+
+    private void logFileNameText_Validated(object sender, EventArgs e)
+    {
+      if (logFileWriter!=null) {
+        Logger.RemoveWriter(logFileWriter);
+        logFileWriter.Close();
+        logFileWriter = null;
+      }
+      if (logFileNameText.Text.Length>0) {
+        try {
+          logFileWriter = System.IO.File.AppendText(logFileNameText.Text);
+        }
+        catch (UnauthorizedAccessException) {
+          logFileWriter = null;
+        }
+        catch (ArgumentException) {
+          logFileWriter = null;
+        }
+        catch (System.IO.PathTooLongException) {
+          logFileWriter = null;
+        }
+        catch (System.IO.DirectoryNotFoundException) {
+          logFileWriter = null;
+        }
+        catch (NotSupportedException) {
+          logFileWriter = null;
+        }
+      }
+      if (logFileWriter!=null && logToFileCheck.Checked) {
+        Logger.AddWriter(logFileWriter);
+      }
+    }
+
+    private void selectLogFileName_Click(object sender, EventArgs e)
+    {
+      if (logSaveFileDialog.ShowDialog(this)==DialogResult.OK) {
+        logFileNameText.Text = logSaveFileDialog.FileName;
+        logFileNameText_Validated(sender, e);
+      }
+    }
+
+    private void logClearButton_Click(object sender, EventArgs e)
+    {
+      logText.ResetText();
+    }
+
+    private void logLevelList_SelectedIndexChanged(object sender, EventArgs e)
+    {
+      switch (logLevelList.SelectedIndex) {
+      case 0: Logger.Level = LogLevel.None; break;
+      case 1: Logger.Level = LogLevel.Fatal; break;
+      case 2: Logger.Level = LogLevel.Error; break;
+      case 3: Logger.Level = LogLevel.Warn; break;
+      case 4: Logger.Level = LogLevel.Info; break;
+      case 5: Logger.Level = LogLevel.Debug; break;
+      }
     }
   }
 }

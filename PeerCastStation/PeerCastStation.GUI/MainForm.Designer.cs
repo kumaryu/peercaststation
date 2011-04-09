@@ -16,6 +16,9 @@
       if (disposing && (components != null)) {
         components.Dispose();
       }
+      if (disposing && (logFileWriter != null)) {
+        logFileWriter.Close();
+      }
       base.Dispose(disposing);
     }
 
@@ -38,12 +41,21 @@
       this.channelPlay = new System.Windows.Forms.Button();
       this.channelList = new System.Windows.Forms.ListBox();
       this.tabSettings = new System.Windows.Forms.TabPage();
+      this.portOpenedLabel = new System.Windows.Forms.Label();
       this.applySettings = new System.Windows.Forms.Button();
       this.maxUpstreamRate = new System.Windows.Forms.NumericUpDown();
       this.maxDirects = new System.Windows.Forms.NumericUpDown();
       this.maxRelays = new System.Windows.Forms.NumericUpDown();
       this.port = new System.Windows.Forms.NumericUpDown();
-      this.portOpenedLabel = new System.Windows.Forms.Label();
+      this.tabLog = new System.Windows.Forms.TabPage();
+      this.logClearButton = new System.Windows.Forms.Button();
+      this.selectLogFileName = new System.Windows.Forms.Button();
+      this.logToFileCheck = new System.Windows.Forms.CheckBox();
+      this.logText = new System.Windows.Forms.TextBox();
+      this.logFileNameText = new System.Windows.Forms.TextBox();
+      this.logLevelList = new System.Windows.Forms.ComboBox();
+      this.label5 = new System.Windows.Forms.Label();
+      this.logSaveFileDialog = new System.Windows.Forms.SaveFileDialog();
       label4 = new System.Windows.Forms.Label();
       label3 = new System.Windows.Forms.Label();
       label2 = new System.Windows.Forms.Label();
@@ -55,6 +67,7 @@
       ((System.ComponentModel.ISupportInitialize)(this.maxDirects)).BeginInit();
       ((System.ComponentModel.ISupportInitialize)(this.maxRelays)).BeginInit();
       ((System.ComponentModel.ISupportInitialize)(this.port)).BeginInit();
+      this.tabLog.SuspendLayout();
       this.SuspendLayout();
       // 
       // label4
@@ -97,6 +110,7 @@
       // 
       this.tabControl1.Controls.Add(this.tabChannels);
       this.tabControl1.Controls.Add(this.tabSettings);
+      this.tabControl1.Controls.Add(this.tabLog);
       this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
       this.tabControl1.Location = new System.Drawing.Point(0, 0);
       this.tabControl1.Name = "tabControl1";
@@ -181,6 +195,15 @@
       this.tabSettings.Text = "設定";
       this.tabSettings.UseVisualStyleBackColor = true;
       // 
+      // portOpenedLabel
+      // 
+      this.portOpenedLabel.AutoSize = true;
+      this.portOpenedLabel.Location = new System.Drawing.Point(205, 15);
+      this.portOpenedLabel.Name = "portOpenedLabel";
+      this.portOpenedLabel.Size = new System.Drawing.Size(35, 12);
+      this.portOpenedLabel.TabIndex = 10;
+      this.portOpenedLabel.Text = "label5";
+      // 
       // applySettings
       // 
       this.applySettings.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
@@ -240,14 +263,112 @@
             0,
             0});
       // 
-      // portOpenedLabel
+      // tabLog
       // 
-      this.portOpenedLabel.AutoSize = true;
-      this.portOpenedLabel.Location = new System.Drawing.Point(205, 15);
-      this.portOpenedLabel.Name = "portOpenedLabel";
-      this.portOpenedLabel.Size = new System.Drawing.Size(35, 12);
-      this.portOpenedLabel.TabIndex = 10;
-      this.portOpenedLabel.Text = "label5";
+      this.tabLog.Controls.Add(this.logClearButton);
+      this.tabLog.Controls.Add(this.selectLogFileName);
+      this.tabLog.Controls.Add(this.logToFileCheck);
+      this.tabLog.Controls.Add(this.logText);
+      this.tabLog.Controls.Add(this.logFileNameText);
+      this.tabLog.Controls.Add(this.logLevelList);
+      this.tabLog.Controls.Add(this.label5);
+      this.tabLog.Location = new System.Drawing.Point(4, 22);
+      this.tabLog.Name = "tabLog";
+      this.tabLog.Padding = new System.Windows.Forms.Padding(3);
+      this.tabLog.Size = new System.Drawing.Size(404, 329);
+      this.tabLog.TabIndex = 3;
+      this.tabLog.Text = "ログ";
+      this.tabLog.UseVisualStyleBackColor = true;
+      // 
+      // logClearButton
+      // 
+      this.logClearButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+      this.logClearButton.Location = new System.Drawing.Point(306, 297);
+      this.logClearButton.Name = "logClearButton";
+      this.logClearButton.Size = new System.Drawing.Size(90, 26);
+      this.logClearButton.TabIndex = 8;
+      this.logClearButton.Text = "クリア";
+      this.logClearButton.UseVisualStyleBackColor = true;
+      this.logClearButton.Click += new System.EventHandler(this.logClearButton_Click);
+      // 
+      // selectLogFileName
+      // 
+      this.selectLogFileName.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.selectLogFileName.Location = new System.Drawing.Point(375, 43);
+      this.selectLogFileName.Name = "selectLogFileName";
+      this.selectLogFileName.Size = new System.Drawing.Size(21, 18);
+      this.selectLogFileName.TabIndex = 7;
+      this.selectLogFileName.Text = "...";
+      this.selectLogFileName.UseVisualStyleBackColor = true;
+      this.selectLogFileName.Click += new System.EventHandler(this.selectLogFileName_Click);
+      // 
+      // logToFileCheck
+      // 
+      this.logToFileCheck.AutoSize = true;
+      this.logToFileCheck.Location = new System.Drawing.Point(8, 45);
+      this.logToFileCheck.Name = "logToFileCheck";
+      this.logToFileCheck.Size = new System.Drawing.Size(91, 16);
+      this.logToFileCheck.TabIndex = 6;
+      this.logToFileCheck.Text = "ファイルに記録";
+      this.logToFileCheck.UseVisualStyleBackColor = true;
+      this.logToFileCheck.CheckedChanged += new System.EventHandler(this.logToFileCheck_CheckedChanged);
+      // 
+      // logText
+      // 
+      this.logText.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      this.logText.Location = new System.Drawing.Point(8, 71);
+      this.logText.Multiline = true;
+      this.logText.Name = "logText";
+      this.logText.ReadOnly = true;
+      this.logText.ScrollBars = System.Windows.Forms.ScrollBars.Both;
+      this.logText.Size = new System.Drawing.Size(388, 221);
+      this.logText.TabIndex = 5;
+      // 
+      // logFileNameText
+      // 
+      this.logFileNameText.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      this.logFileNameText.Location = new System.Drawing.Point(105, 43);
+      this.logFileNameText.Name = "logFileNameText";
+      this.logFileNameText.Size = new System.Drawing.Size(264, 19);
+      this.logFileNameText.TabIndex = 4;
+      this.logFileNameText.Validated += new System.EventHandler(this.logFileNameText_Validated);
+      // 
+      // logLevelList
+      // 
+      this.logLevelList.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      this.logLevelList.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+      this.logLevelList.FormattingEnabled = true;
+      this.logLevelList.Items.AddRange(new object[] {
+            "なし",
+            "致命的エラーのみ",
+            "エラー全般",
+            "エラーと警告",
+            "通知メッセージも含む",
+            "デバッグメッセージも含む"});
+      this.logLevelList.Location = new System.Drawing.Point(105, 9);
+      this.logLevelList.Name = "logLevelList";
+      this.logLevelList.Size = new System.Drawing.Size(264, 20);
+      this.logLevelList.TabIndex = 2;
+      this.logLevelList.SelectedIndexChanged += new System.EventHandler(this.logLevelList_SelectedIndexChanged);
+      // 
+      // label5
+      // 
+      this.label5.AutoSize = true;
+      this.label5.Location = new System.Drawing.Point(8, 12);
+      this.label5.Name = "label5";
+      this.label5.Size = new System.Drawing.Size(76, 12);
+      this.label5.TabIndex = 1;
+      this.label5.Text = "ログ出力レベル";
+      // 
+      // logSaveFileDialog
+      // 
+      this.logSaveFileDialog.DefaultExt = "txt";
+      this.logSaveFileDialog.Filter = "ログファイル(*.txt;*.log)|*.txt;*.log|全てのファイル(*.*)|*.*";
+      this.logSaveFileDialog.Title = "ログ記録ファイルの選択";
       // 
       // MainForm
       // 
@@ -266,6 +387,8 @@
       ((System.ComponentModel.ISupportInitialize)(this.maxDirects)).EndInit();
       ((System.ComponentModel.ISupportInitialize)(this.maxRelays)).EndInit();
       ((System.ComponentModel.ISupportInitialize)(this.port)).EndInit();
+      this.tabLog.ResumeLayout(false);
+      this.tabLog.PerformLayout();
       this.ResumeLayout(false);
 
     }
@@ -285,6 +408,15 @@
     private System.Windows.Forms.Button channelPlay;
     private System.Windows.Forms.TreeView relayTree;
     private System.Windows.Forms.Label portOpenedLabel;
+    private System.Windows.Forms.TabPage tabLog;
+    private System.Windows.Forms.ComboBox logLevelList;
+    private System.Windows.Forms.Label label5;
+    private System.Windows.Forms.Button selectLogFileName;
+    private System.Windows.Forms.CheckBox logToFileCheck;
+    private System.Windows.Forms.TextBox logText;
+    private System.Windows.Forms.TextBox logFileNameText;
+    private System.Windows.Forms.SaveFileDialog logSaveFileDialog;
+    private System.Windows.Forms.Button logClearButton;
 
   }
 }
