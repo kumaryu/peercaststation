@@ -12,7 +12,6 @@ namespace PeerCastStation.GUI
 {
   public partial class MainForm : Form
   {
-    private int currentPort = 7148;
     private PeerCastStation.Core.PeerCast peerCast;
 
     private bool IsOSX()
@@ -110,6 +109,7 @@ namespace PeerCastStation.GUI
       }
     }
 
+    private int currentPort;
     public MainForm()
     {
       InitializeComponent();
