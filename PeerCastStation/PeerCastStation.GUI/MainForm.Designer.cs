@@ -41,7 +41,6 @@
       this.channelPlay = new System.Windows.Forms.Button();
       this.channelList = new System.Windows.Forms.ListBox();
       this.tabSettings = new System.Windows.Forms.TabPage();
-      this.portOpenedLabel = new System.Windows.Forms.Label();
       this.applySettings = new System.Windows.Forms.Button();
       this.maxUpstreamRate = new System.Windows.Forms.NumericUpDown();
       this.maxDirects = new System.Windows.Forms.NumericUpDown();
@@ -56,6 +55,9 @@
       this.logLevelList = new System.Windows.Forms.ComboBox();
       this.label5 = new System.Windows.Forms.Label();
       this.logSaveFileDialog = new System.Windows.Forms.SaveFileDialog();
+      this.statusBar = new System.Windows.Forms.StatusStrip();
+      this.portLabel = new System.Windows.Forms.ToolStripStatusLabel();
+      this.portOpenedLabel = new System.Windows.Forms.ToolStripStatusLabel();
       label4 = new System.Windows.Forms.Label();
       label3 = new System.Windows.Forms.Label();
       label2 = new System.Windows.Forms.Label();
@@ -68,6 +70,7 @@
       ((System.ComponentModel.ISupportInitialize)(this.maxRelays)).BeginInit();
       ((System.ComponentModel.ISupportInitialize)(this.port)).BeginInit();
       this.tabLog.SuspendLayout();
+      this.statusBar.SuspendLayout();
       this.SuspendLayout();
       // 
       // label4
@@ -108,14 +111,16 @@
       // 
       // tabControl1
       // 
+      this.tabControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
       this.tabControl1.Controls.Add(this.tabChannels);
       this.tabControl1.Controls.Add(this.tabSettings);
       this.tabControl1.Controls.Add(this.tabLog);
-      this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
       this.tabControl1.Location = new System.Drawing.Point(0, 0);
       this.tabControl1.Name = "tabControl1";
       this.tabControl1.SelectedIndex = 0;
-      this.tabControl1.Size = new System.Drawing.Size(412, 355);
+      this.tabControl1.Size = new System.Drawing.Size(414, 314);
       this.tabControl1.TabIndex = 0;
       // 
       // tabChannels
@@ -127,7 +132,7 @@
       this.tabChannels.Location = new System.Drawing.Point(4, 22);
       this.tabChannels.Name = "tabChannels";
       this.tabChannels.Padding = new System.Windows.Forms.Padding(3);
-      this.tabChannels.Size = new System.Drawing.Size(404, 329);
+      this.tabChannels.Size = new System.Drawing.Size(406, 288);
       this.tabChannels.TabIndex = 1;
       this.tabChannels.Text = "チャンネル一覧";
       this.tabChannels.UseVisualStyleBackColor = true;
@@ -139,13 +144,13 @@
             | System.Windows.Forms.AnchorStyles.Right)));
       this.relayTree.Location = new System.Drawing.Point(6, 100);
       this.relayTree.Name = "relayTree";
-      this.relayTree.Size = new System.Drawing.Size(390, 220);
+      this.relayTree.Size = new System.Drawing.Size(392, 179);
       this.relayTree.TabIndex = 4;
       // 
       // channelClose
       // 
       this.channelClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-      this.channelClose.Location = new System.Drawing.Point(335, 42);
+      this.channelClose.Location = new System.Drawing.Point(337, 42);
       this.channelClose.Name = "channelClose";
       this.channelClose.Size = new System.Drawing.Size(61, 30);
       this.channelClose.TabIndex = 3;
@@ -156,7 +161,7 @@
       // channelPlay
       // 
       this.channelPlay.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-      this.channelPlay.Location = new System.Drawing.Point(335, 6);
+      this.channelPlay.Location = new System.Drawing.Point(337, 6);
       this.channelPlay.Name = "channelPlay";
       this.channelPlay.Size = new System.Drawing.Size(61, 30);
       this.channelPlay.TabIndex = 2;
@@ -172,13 +177,12 @@
       this.channelList.ItemHeight = 12;
       this.channelList.Location = new System.Drawing.Point(6, 6);
       this.channelList.Name = "channelList";
-      this.channelList.Size = new System.Drawing.Size(322, 88);
+      this.channelList.Size = new System.Drawing.Size(324, 88);
       this.channelList.TabIndex = 1;
       this.channelList.SelectedIndexChanged += new System.EventHandler(this.channelList_SelectedIndexChanged);
       // 
       // tabSettings
       // 
-      this.tabSettings.Controls.Add(this.portOpenedLabel);
       this.tabSettings.Controls.Add(this.applySettings);
       this.tabSettings.Controls.Add(label4);
       this.tabSettings.Controls.Add(label3);
@@ -190,24 +194,15 @@
       this.tabSettings.Controls.Add(this.port);
       this.tabSettings.Location = new System.Drawing.Point(4, 22);
       this.tabSettings.Name = "tabSettings";
-      this.tabSettings.Size = new System.Drawing.Size(404, 329);
+      this.tabSettings.Size = new System.Drawing.Size(406, 288);
       this.tabSettings.TabIndex = 2;
       this.tabSettings.Text = "設定";
       this.tabSettings.UseVisualStyleBackColor = true;
       // 
-      // portOpenedLabel
-      // 
-      this.portOpenedLabel.AutoSize = true;
-      this.portOpenedLabel.Location = new System.Drawing.Point(205, 15);
-      this.portOpenedLabel.Name = "portOpenedLabel";
-      this.portOpenedLabel.Size = new System.Drawing.Size(35, 12);
-      this.portOpenedLabel.TabIndex = 10;
-      this.portOpenedLabel.Text = "label5";
-      // 
       // applySettings
       // 
       this.applySettings.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-      this.applySettings.Location = new System.Drawing.Point(321, 298);
+      this.applySettings.Location = new System.Drawing.Point(323, 257);
       this.applySettings.Name = "applySettings";
       this.applySettings.Size = new System.Drawing.Size(75, 23);
       this.applySettings.TabIndex = 9;
@@ -370,11 +365,34 @@
       this.logSaveFileDialog.Filter = "ログファイル(*.txt;*.log)|*.txt;*.log|全てのファイル(*.*)|*.*";
       this.logSaveFileDialog.Title = "ログ記録ファイルの選択";
       // 
+      // statusBar
+      // 
+      this.statusBar.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.portLabel,
+            this.portOpenedLabel});
+      this.statusBar.Location = new System.Drawing.Point(0, 311);
+      this.statusBar.Name = "statusBar";
+      this.statusBar.Size = new System.Drawing.Size(412, 23);
+      this.statusBar.TabIndex = 1;
+      // 
+      // portLabel
+      // 
+      this.portLabel.Name = "portLabel";
+      this.portLabel.Size = new System.Drawing.Size(49, 18);
+      this.portLabel.Text = "ポート:";
+      // 
+      // portOpenedLabel
+      // 
+      this.portOpenedLabel.Name = "portOpenedLabel";
+      this.portOpenedLabel.Size = new System.Drawing.Size(134, 18);
+      this.portOpenedLabel.Text = "toolStripStatusLabel1";
+      // 
       // MainForm
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-      this.ClientSize = new System.Drawing.Size(412, 355);
+      this.ClientSize = new System.Drawing.Size(412, 334);
+      this.Controls.Add(this.statusBar);
       this.Controls.Add(this.tabControl1);
       this.Name = "MainForm";
       this.Text = "PeerCastStation.GUI";
@@ -389,7 +407,10 @@
       ((System.ComponentModel.ISupportInitialize)(this.port)).EndInit();
       this.tabLog.ResumeLayout(false);
       this.tabLog.PerformLayout();
+      this.statusBar.ResumeLayout(false);
+      this.statusBar.PerformLayout();
       this.ResumeLayout(false);
+      this.PerformLayout();
 
     }
 
@@ -407,7 +428,6 @@
     private System.Windows.Forms.Button channelClose;
     private System.Windows.Forms.Button channelPlay;
     private System.Windows.Forms.TreeView relayTree;
-    private System.Windows.Forms.Label portOpenedLabel;
     private System.Windows.Forms.TabPage tabLog;
     private System.Windows.Forms.ComboBox logLevelList;
     private System.Windows.Forms.Label label5;
@@ -417,6 +437,9 @@
     private System.Windows.Forms.TextBox logFileNameText;
     private System.Windows.Forms.SaveFileDialog logSaveFileDialog;
     private System.Windows.Forms.Button logClearButton;
+    private System.Windows.Forms.StatusStrip statusBar;
+    private System.Windows.Forms.ToolStripStatusLabel portLabel;
+    private System.Windows.Forms.ToolStripStatusLabel portOpenedLabel;
 
   }
 }

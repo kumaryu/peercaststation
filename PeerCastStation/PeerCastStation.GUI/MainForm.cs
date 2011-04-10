@@ -132,7 +132,13 @@ namespace PeerCastStation.GUI
       peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPOutputStreamFactory(peerCast));
       peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPDummyOutputStreamFactory(peerCast));
       currentPort = Settings.Default.Port;
-      peerCast.StartListen(new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort));
+      try {
+        peerCast.StartListen(new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort));
+        portLabel.Text = String.Format("ポート:{0}", currentPort);
+      }
+      catch (System.Net.Sockets.SocketException) {
+        portLabel.Text = String.Format("ポート{0}を開けません", currentPort);
+      }
       peerCast.AccessController.MaxPlays        = Settings.Default.MaxPlays;
       peerCast.AccessController.MaxRelays       = Settings.Default.MaxRelays;
       peerCast.AccessController.MaxUpstreamRate = Settings.Default.MaxUpstreamRate;
@@ -155,8 +161,14 @@ namespace PeerCastStation.GUI
       case "Port":
         var listener = peerCast.OutputListeners.FirstOrDefault(x => x.LocalEndPoint.Port==currentPort);
         if (listener!=null) peerCast.StopListen(listener);
-        peerCast.StartListen(new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort));
         currentPort = Settings.Default.Port;
+        try {
+          peerCast.StartListen(new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort));
+          portLabel.Text = String.Format("ポート:{0}", currentPort);
+        }
+        catch (System.Net.Sockets.SocketException) {
+          portLabel.Text = String.Format("ポート{0}を開けません", currentPort);
+        }
         break;
       case "MaxPlays":
         peerCast.AccessController.MaxPlays        = Settings.Default.MaxPlays;
