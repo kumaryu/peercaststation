@@ -4,16 +4,15 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Text.RegularExpressions;
 using PeerCastStation.Core;
+using PeerCastStation.GUI.Properties;
 using System.Linq;
+using System.ComponentModel;
 
 namespace PeerCastStation.GUI
 {
   public partial class MainForm : Form
   {
     private int currentPort = 7148;
-    private int currentMaxRelays = 0;
-    private int currentMaxDirects = 0;
-    private int currentMaxUpstreamRate = 0;
     private PeerCastStation.Core.PeerCast peerCast;
 
     private bool IsOSX()
@@ -114,7 +113,7 @@ namespace PeerCastStation.GUI
     public MainForm()
     {
       InitializeComponent();
-      logLevelList.SelectedIndex = 3;
+      Settings.Default.PropertyChanged += SettingsPropertyChanged;
       Logger.Level = LogLevel.Warn;
       Logger.AddWriter(System.Console.Error);
       Logger.AddWriter(new DebugWriter());
@@ -122,27 +121,90 @@ namespace PeerCastStation.GUI
       if (IsOSX()) {
         this.Font = new System.Drawing.Font("Osaka", this.Font.SizeInPoints);
       }
-      port.Value = currentPort;
-      maxRelays.Value = currentMaxRelays;
-      maxDirects.Value = currentMaxDirects;
-      maxUpstreamRate.Value = currentMaxUpstreamRate;
+      port.Value                 = Settings.Default.Port;
+      maxRelays.Value            = Settings.Default.MaxRelays;
+      maxDirects.Value           = Settings.Default.MaxPlays;
+      maxUpstreamRate.Value      = Settings.Default.MaxUpstreamRate;
       peerCast = new PeerCastStation.Core.PeerCast();
-      peerCast.StartListen(new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort));
       peerCast.SourceStreamFactories["pcp"] = new PeerCastStation.PCP.PCPSourceStreamFactory(peerCast);
       peerCast.OutputStreamFactories.Add(new PeerCastStation.PCP.PCPPongOutputStreamFactory(peerCast));
       peerCast.OutputStreamFactories.Add(new PeerCastStation.PCP.PCPOutputStreamFactory(peerCast));
       peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPOutputStreamFactory(peerCast));
       peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPDummyOutputStreamFactory(peerCast));
-      peerCast.AccessController.MaxPlays = currentMaxDirects;
-      peerCast.AccessController.MaxRelays = currentMaxRelays;
-      peerCast.AccessController.MaxUpstreamRate = currentMaxUpstreamRate;
-      peerCast.ChannelAdded += ChannelAdded;
+      currentPort = Settings.Default.Port;
+      peerCast.StartListen(new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort));
+      peerCast.AccessController.MaxPlays        = Settings.Default.MaxPlays;
+      peerCast.AccessController.MaxRelays       = Settings.Default.MaxRelays;
+      peerCast.AccessController.MaxUpstreamRate = Settings.Default.MaxUpstreamRate;
+      peerCast.ChannelAdded   += ChannelAdded;
       peerCast.ChannelRemoved += ChannelRemoved;
+      logLevelList.SelectedIndex = Settings.Default.LogLevel;
+      logToFileCheck.Checked = Settings.Default.LogToFile;
+      logFileNameText.Text = Settings.Default.LogFileName;
       if (peerCast.IsFirewalled.HasValue) {
         portOpenedLabel.Text = peerCast.IsFirewalled.Value ? "未開放" : "開放";
       }
       else {
         portOpenedLabel.Text = "開放状態不明";
+      }
+    }
+
+    private void SettingsPropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+      switch (e.PropertyName) {
+      case "Port":
+        var listener = peerCast.OutputListeners.FirstOrDefault(x => x.LocalEndPoint.Port==currentPort);
+        if (listener!=null) peerCast.StopListen(listener);
+        peerCast.StartListen(new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort));
+        currentPort = Settings.Default.Port;
+        break;
+      case "MaxPlays":
+        peerCast.AccessController.MaxPlays        = Settings.Default.MaxPlays;
+        break;
+      case "MaxRelays":
+        peerCast.AccessController.MaxRelays       = Settings.Default.MaxRelays;
+        break;
+      case "MaxUpStreamRate":
+        peerCast.AccessController.MaxUpstreamRate = Settings.Default.MaxUpstreamRate;
+        break;
+      case "LogLevel":
+        switch (Settings.Default.LogLevel) {
+        case 0: Logger.Level = LogLevel.None;  break;
+        case 1: Logger.Level = LogLevel.Fatal; break;
+        case 2: Logger.Level = LogLevel.Error; break;
+        case 3: Logger.Level = LogLevel.Warn;  break;
+        case 4: Logger.Level = LogLevel.Info;  break;
+        case 5: Logger.Level = LogLevel.Debug; break;
+        }
+        break;
+      case "LogToFile":
+        if (logFileWriter!=null) {
+          Logger.RemoveWriter(logFileWriter);
+          if (Settings.Default.LogToFile) {
+            Logger.AddWriter(logFileWriter);
+          }
+        }
+        break;
+      case "LogFile":
+        if (logFileWriter!=null) {
+          Logger.RemoveWriter(logFileWriter);
+          logFileWriter.Close();
+          logFileWriter = null;
+        }
+        if (Settings.Default.LogFileName!=null && Settings.Default.LogFileName!="") {
+          try {
+            logFileWriter = System.IO.File.AppendText(Settings.Default.LogFileName);
+          }
+          catch (UnauthorizedAccessException)          { logFileWriter = null; }
+          catch (ArgumentException)                    { logFileWriter = null; }
+          catch (System.IO.PathTooLongException)       { logFileWriter = null; }
+          catch (System.IO.DirectoryNotFoundException) { logFileWriter = null; }
+          catch (NotSupportedException)                { logFileWriter = null; }
+        }
+        if (logFileWriter!=null && Settings.Default.LogToFile) {
+          Logger.AddWriter(logFileWriter);
+        }
+        break;
       }
     }
 
@@ -196,18 +258,10 @@ namespace PeerCastStation.GUI
 
     private void applySettings_Click(object sender, EventArgs e)
     {
-      if (port.Value!=currentPort) {
-        var listener = peerCast.OutputListeners.FirstOrDefault(x => x.LocalEndPoint.Port==currentPort);
-        if (listener!=null) peerCast.StopListen(listener);
-        currentPort = (int)port.Value;
-        peerCast.StartListen(new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort));
-      }
-      currentMaxRelays      =  (int)maxRelays.Value;
-      currentMaxDirects     =  (int)maxDirects.Value;
-      currentMaxUpstreamRate = (int)maxUpstreamRate.Value;
-      peerCast.AccessController.MaxPlays = currentMaxDirects;
-      peerCast.AccessController.MaxRelays = currentMaxRelays;
-      peerCast.AccessController.MaxUpstreamRate = currentMaxUpstreamRate;
+      Settings.Default.Port            = (int)port.Value;
+      Settings.Default.MaxRelays       = (int)maxRelays.Value;
+      Settings.Default.MaxPlays        = (int)maxDirects.Value;
+      Settings.Default.MaxUpstreamRate = (int)maxUpstreamRate.Value;
       if (peerCast.IsFirewalled.HasValue) {
         portOpenedLabel.Text = peerCast.IsFirewalled.Value ? "未開放" : "開放";
       }
@@ -219,6 +273,7 @@ namespace PeerCastStation.GUI
     private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
     {
       peerCast.Close();
+      Settings.Default.Save();
     }
 
     private void channelList_SelectedIndexChanged(object sender, EventArgs e)
@@ -273,9 +328,9 @@ namespace PeerCastStation.GUI
         node.DirectCount,
         node.RelayCount,
         node.Host.IsFirewalled ? "F" : " ",
-        node.IsDirectFull ? "D" : " ",
-        node.IsRelayFull ? "R" : " ",
-        node.IsReceiving ? " " : "B");
+        node.IsDirectFull      ? "D" : " ",
+        node.IsRelayFull       ? "R" : " ",
+        node.IsReceiving       ? " " : "B");
       var tree_node = tree_nodes.Add(String.Format("{0} {1}", endpoint, nodeinfo));
       foreach (var child in node_list.Where(x => {
         return 
@@ -308,51 +363,19 @@ namespace PeerCastStation.GUI
     private System.IO.TextWriter logFileWriter = null;
     private void logToFileCheck_CheckedChanged(object sender, EventArgs e)
     {
-      if (logFileWriter!=null) {
-        Logger.RemoveWriter(logFileWriter);
-        if (logToFileCheck.Checked) {
-          Logger.AddWriter(logFileWriter);
-        }
-      }
+      Settings.Default.LogToFile = logToFileCheck.Checked;
     }
 
     private void logFileNameText_Validated(object sender, EventArgs e)
     {
-      if (logFileWriter!=null) {
-        Logger.RemoveWriter(logFileWriter);
-        logFileWriter.Close();
-        logFileWriter = null;
-      }
-      if (logFileNameText.Text.Length>0) {
-        try {
-          logFileWriter = System.IO.File.AppendText(logFileNameText.Text);
-        }
-        catch (UnauthorizedAccessException) {
-          logFileWriter = null;
-        }
-        catch (ArgumentException) {
-          logFileWriter = null;
-        }
-        catch (System.IO.PathTooLongException) {
-          logFileWriter = null;
-        }
-        catch (System.IO.DirectoryNotFoundException) {
-          logFileWriter = null;
-        }
-        catch (NotSupportedException) {
-          logFileWriter = null;
-        }
-      }
-      if (logFileWriter!=null && logToFileCheck.Checked) {
-        Logger.AddWriter(logFileWriter);
-      }
+      Settings.Default.LogFileName = logFileNameText.Text;
     }
 
     private void selectLogFileName_Click(object sender, EventArgs e)
     {
       if (logSaveFileDialog.ShowDialog(this)==DialogResult.OK) {
         logFileNameText.Text = logSaveFileDialog.FileName;
-        logFileNameText_Validated(sender, e);
+        Settings.Default.LogFileName = logSaveFileDialog.FileName;
       }
     }
 
@@ -363,14 +386,7 @@ namespace PeerCastStation.GUI
 
     private void logLevelList_SelectedIndexChanged(object sender, EventArgs e)
     {
-      switch (logLevelList.SelectedIndex) {
-      case 0: Logger.Level = LogLevel.None; break;
-      case 1: Logger.Level = LogLevel.Fatal; break;
-      case 2: Logger.Level = LogLevel.Error; break;
-      case 3: Logger.Level = LogLevel.Warn; break;
-      case 4: Logger.Level = LogLevel.Info; break;
-      case 5: Logger.Level = LogLevel.Debug; break;
-      }
+      Settings.Default.LogLevel = logLevelList.SelectedIndex;
     }
   }
 }
