@@ -28,7 +28,8 @@ class TC_CoreAccessController < Test::Unit::TestCase
 
   def new_channel(bitrate)
     channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
-    channel.channel_info.extra.set_chan_info_bitrate(bitrate)
+    channel.channel_info.extra.set_chan_info(PeerCastStation::Core::AtomCollection.new)
+    channel.channel_info.extra.get_chan_info.set_chan_info_bitrate(bitrate)
     @peercast.channels.add(channel)
     channel
   end
@@ -72,7 +73,8 @@ class TC_CoreAccessController < Test::Unit::TestCase
 
   def test_is_channel_relayable_empty
     ac = PeerCastStation::Core::AccessController.new(@peercast)
-    assert(ac.is_channel_relayable(@channel))
+    channel = new_channel(7144)
+    assert(ac.is_channel_relayable(channel))
   end
 
   def test_is_channel_relayable_all_reset
@@ -216,7 +218,8 @@ class TC_CoreAccessController < Test::Unit::TestCase
 
   def test_is_channel_playable
     ac = PeerCastStation::Core::AccessController.new(@peercast)
-    assert(ac.is_channel_playable(@channel))
+    channel = new_channel(7144)
+    assert(ac.is_channel_playable(channel))
   end
 
   def test_is_channel_playable_all_reset
