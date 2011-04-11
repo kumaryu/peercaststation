@@ -99,7 +99,7 @@ namespace PeerCastStation.GUI
       public override void Write(string buffer)
       {
         if (textBox.InvokeRequired) {
-          textBox.Invoke(new Action(() => {
+          textBox.BeginInvoke(new Action(() => {
             textBox.AppendText(buffer);
           }));
         }
