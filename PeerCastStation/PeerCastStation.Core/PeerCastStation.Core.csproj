@@ -44,6 +44,12 @@
     <Compile Include="QueuedSynchronizationContext.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PeerCastStation.Logger\PeerCastStation.Logger.csproj">
+      <Project>{EB11900C-4868-45A4-A046-11D17A3F4220}</Project>
+      <Name>PeerCastStation.Logger</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -303,6 +303,7 @@ namespace PeerCastStation.Core
   public class Channel
     : INotifyPropertyChanged
   {
+    private static Logger logger = new Logger(typeof(Channel));
     private Uri sourceUri = null;
     private Host sourceHost = null;
     private ISourceStream sourceStream = null;
@@ -595,13 +596,14 @@ namespace PeerCastStation.Core
       sourceStream.StatusChanged += SourceStream_StatusChanged;
       var sync = SynchronizationContext.Current ?? new SynchronizationContext();
       sourceThread = new Thread(SourceThreadFunc);
-      sourceThread.Name = "SourceThread";
+      sourceThread.Name = String.Format("SourceThread:{0}", channelInfo.ChannelID.ToString("N"));
       sourceThread.Start(sync);
       startTickCount = Environment.TickCount;
     }
 
     private void SourceThreadFunc(object arg)
     {
+      logger.Debug("Source thread started");
       var sync = (SynchronizationContext)arg;
       try {
         sourceStream.Start();
@@ -620,6 +622,7 @@ namespace PeerCastStation.Core
           OnClosed();
         }, Thread.CurrentThread);
       }
+      logger.Debug("Source thread finished");
     }
 
     /// <summary>

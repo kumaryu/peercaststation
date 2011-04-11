@@ -612,6 +612,7 @@ namespace PeerCastStation.Core
   /// </summary>
   public class OutputListener
   {
+    private static Logger logger = new Logger(typeof(OutputListener));
     /// <summary>
     /// 所属しているPeerCastオブジェクトを取得します
     /// </summary>
@@ -637,27 +638,31 @@ namespace PeerCastStation.Core
       server = new TcpListener(ip);
       server.Start();
       listenerThread = new Thread(ListenerThreadFunc);
-      listenerThread.Name = "OutputListenerThread";
+      listenerThread.Name = String.Format("OutputListenerThread:{0}", ip);
       listenerThread.Start(server);
     }
 
     private Thread listenerThread = null;
     private void ListenerThreadFunc(object arg)
     {
+      logger.Debug("Listner thread started");
       var server = (TcpListener)arg;
       while (!IsClosed) {
         try {
           var client = server.AcceptTcpClient();
+          logger.Info("Client connected {0}", client.Client.RemoteEndPoint);
           var output_thread = new Thread(OutputThreadFunc);
           PeerCast.SynchronizationContext.Post(dummy => {
             outputThreads.Add(output_thread);
           }, null);
-          output_thread.Name = "OutputThread";
+          output_thread.Name = String.Format("OutputThread:{0}", client.Client.RemoteEndPoint);
           output_thread.Start(client);
         }
-        catch (SocketException) {
+        catch (SocketException e) {
+          if (!IsClosed) logger.Error(e);
         }
       }
+      logger.Debug("Listner thread finished");
     }
 
     /// <summary>
@@ -665,6 +670,7 @@ namespace PeerCastStation.Core
     /// </summary>
     internal void Close()
     {
+      logger.Debug("Stopping listener");
       IsClosed = true;
       server.Stop();
       listenerThread.Join();
@@ -673,6 +679,7 @@ namespace PeerCastStation.Core
     private static List<Thread> outputThreads = new List<Thread>();
     private void OutputThreadFunc(object arg)
     {
+      logger.Debug("Output thread started");
       var client = (TcpClient)arg;
       var stream = client.GetStream();
       stream.WriteTimeout = 3000;
@@ -705,6 +712,7 @@ namespace PeerCastStation.Core
           foreach (var factory in output_factories) {
             channel_id = factory.ParseChannelID(header_ary);
             if (channel_id != null) {
+              logger.Debug("Output Procotol matched: {0}", factory.Name);
               output_stream = factory.Create(stream, client.Client.RemoteEndPoint, channel_id.Value, header_ary);
               break;
             }
@@ -717,10 +725,15 @@ namespace PeerCastStation.Core
               channel.OutputStreams.Add(output_stream);
             }
           }, null);
+          logger.Debug("Output stream started");
           output_stream.Start();
+        }
+        else {
+          logger.Debug("No protocol matched");
         }
       }
       finally {
+        logger.Debug("Closing client connection");
         if (output_stream != null) {
           if (channel!=null) {
             PeerCast.SynchronizationContext.Post(dummy => {
@@ -735,6 +748,7 @@ namespace PeerCastStation.Core
           outputThreads.Remove((Thread)thread);
         }, Thread.CurrentThread);
       }
+      logger.Debug("Output thread finished");
     }
   }
 
@@ -801,6 +815,7 @@ namespace PeerCastStation.Core
     /// <returns>接続先が見付かった場合はChannelのインスタンス、それ以外はnull</returns>
     public Channel RelayChannel(Guid channel_id)
     {
+      logger.Debug("Finding channel {0} from YP", channel_id.ToString("N"));
       foreach (var yp in YellowPages) {
         var tracker = yp.FindTracker(channel_id);
         if (tracker!=null) {
@@ -819,8 +834,10 @@ namespace PeerCastStation.Core
     /// <returns>Channelのインスタンス</returns>
     public Channel RelayChannel(Guid channel_id, Uri tracker)
     {
+      logger.Debug("Requesting channel {0} from {1}", channel_id.ToString("N"), tracker);
       ISourceStreamFactory source_factory = null;
       if (!SourceStreamFactories.TryGetValue(tracker.Scheme, out source_factory)) {
+        logger.Error("Protocol `{0}' is not found", tracker.Scheme);
         throw new ArgumentException(String.Format("Protocol `{0}' is not found", tracker.Scheme));
       }
       var channel = new Channel(this, channel_id, tracker);
@@ -879,6 +896,7 @@ namespace PeerCastStation.Core
     {
       channel.Close();
       channels.Remove(channel);
+      logger.Debug("Channel Removed: {0}", channel.ChannelInfo.ChannelID.ToString("N"));
       if (ChannelRemoved!=null) ChannelRemoved(this, new ChannelChangedEventArgs(channel));
     }
 
@@ -887,6 +905,7 @@ namespace PeerCastStation.Core
     /// </summary>
     public PeerCast()
     {
+      logger.Info("Starting PeerCast");
       if (SynchronizationContext.Current == null) {
         SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
       }
@@ -898,6 +917,8 @@ namespace PeerCastStation.Core
       IsClosed = false;
       this.SessionID   = Guid.NewGuid();
       this.BroadcastID = Guid.NewGuid();
+      logger.Debug("SessionID: {0}",   this.SessionID.ToString("N"));
+      logger.Debug("BroadcastID: {0}", this.BroadcastID.ToString("N"));
       foreach (var addr in Dns.GetHostAddresses(Dns.GetHostName())) {
         switch (addr.AddressFamily) {
         case AddressFamily.InterNetwork:
@@ -907,6 +928,7 @@ namespace PeerCastStation.Core
               !addr.Equals(IPAddress.Broadcast) &&
               !IPAddress.IsLoopback(addr)) {
             this.LocalAddress = addr;
+            logger.Info("IPv4 LocalAddress: {0}", this.LocalAddress);
           }
           break;
         case AddressFamily.InterNetworkV6:
@@ -915,6 +937,7 @@ namespace PeerCastStation.Core
               !addr.Equals(IPAddress.IPv6Loopback) &&
               !addr.Equals(IPAddress.IPv6None)) {
             this.LocalAddress6 = addr;
+            logger.Info("IPv6 LocalAddress: {0}", this.LocalAddress6);
           }
           break;
         default:
@@ -952,9 +975,17 @@ namespace PeerCastStation.Core
     /// <exception cref="System.Net.Sockets.SocketException">待ち受けが開始できませんでした</exception>
     public OutputListener StartListen(IPEndPoint ip)
     {
-      var res = new OutputListener(this, ip);
-      outputListeners.Add(res);
-      return res;
+      logger.Info("starting listen at {0}", ip);
+      try {
+        var res = new OutputListener(this, ip);
+        outputListeners.Add(res);
+        return res;
+      }
+      catch (System.Net.Sockets.SocketException e) {
+        logger.Error("Listen failed: {0}", ip);
+        logger.Error(e);
+        throw;
+      }
     }
 
     /// <summary>
@@ -1034,6 +1065,7 @@ namespace PeerCastStation.Core
     /// </summary>
     public void Close()
     {
+      logger.Info("Closing PeerCast");
       IsClosed = true;
       foreach (var listener in outputListeners) {
         listener.Close();
@@ -1043,7 +1075,10 @@ namespace PeerCastStation.Core
         if (ChannelRemoved!=null) ChannelRemoved(this, new ChannelChangedEventArgs(channel));
       }
       channels.Clear();
+      logger.Info("PeerCast Closed");
     }
+
+    private static Logger logger = new Logger(typeof(PeerCast));
   }
 }
 
