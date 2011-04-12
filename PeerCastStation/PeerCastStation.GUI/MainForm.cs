@@ -120,6 +120,7 @@ namespace PeerCastStation.GUI
       Logger.AddWriter(new TextBoxWriter(logText));
       if (IsOSX()) {
         this.Font = new System.Drawing.Font("Osaka", this.Font.SizeInPoints);
+        statusBar.Font = new System.Drawing.Font("Osaka", statusBar.Font.SizeInPoints);
       }
       port.Value                 = Settings.Default.Port;
       maxRelays.Value            = Settings.Default.MaxRelays;
