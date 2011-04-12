@@ -43,6 +43,7 @@ namespace PeerCastStation.HTTP
   public class HTTPDummyOutputStream
     : IOutputStream
   {
+    static Logger logger = new Logger(typeof(HTTPDummyOutputStream));
     private PeerCast peercast;
     private Stream stream;
 
@@ -53,6 +54,7 @@ namespace PeerCastStation.HTTP
 
     public HTTPDummyOutputStream(PeerCast peercast, Stream stream, EndPoint remote_endpoint)
     {
+      logger.Debug("Initialized: Remote {1}", remote_endpoint);
       this.peercast = peercast;
       this.stream = stream;
       var ip = remote_endpoint as IPEndPoint;

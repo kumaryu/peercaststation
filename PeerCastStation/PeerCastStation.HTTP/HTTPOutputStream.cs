@@ -208,6 +208,7 @@ namespace PeerCastStation.HTTP
   public class HTTPOutputStream
     : IOutputStream
   {
+    static Logger logger = new Logger(typeof(HTTPOutputStream));
     private PeerCast peercast;
     private Stream stream;
     private Channel channel;
@@ -267,6 +268,11 @@ namespace PeerCastStation.HTTP
     /// <param name="request">クライアントからのリクエスト</param>
     public HTTPOutputStream(PeerCast peercast, Stream stream, EndPoint remote_endpoint, Channel channel, HTTPRequest request)
     {
+      logger.Debug("Initialized: Channel {0}, Remote {1}, Request {2} {3}",
+        channel!=null ? channel.ChannelInfo.ChannelID.ToString("N") : "(null)",
+        remote_endpoint,
+        request.Method,
+        request.Uri);
       this.peercast = peercast;
       this.stream = stream;
       var ip = remote_endpoint as IPEndPoint;
@@ -400,6 +406,7 @@ namespace PeerCastStation.HTTP
       var response_header = CreateResponseHeader();
       var bytes = System.Text.Encoding.UTF8.GetBytes(response_header + "\r\n");
       stream.Write(bytes, 0, bytes.Length);
+      logger.Debug("Header: {0}", response_header);
     }
 
     /// <summary>
@@ -443,6 +450,7 @@ namespace PeerCastStation.HTTP
       case BodyType.None:
         break;
       case BodyType.Content:
+        logger.Debug("Sending Contents");
         bool header_sent = false;
         long last_pos = -1;
         while (!closed) {
@@ -452,6 +460,7 @@ namespace PeerCastStation.HTTP
             if (!header_sent) {
               header_sent = WriteContentHeader();
               sent = header_sent;
+              logger.Debug("ContentHeader sent");
             }
             else {
               long new_pos = WriteContent(last_pos);
@@ -462,6 +471,7 @@ namespace PeerCastStation.HTTP
         }
         break;
       case BodyType.Playlist:
+        logger.Debug("Sending Playlist");
         WritePlayList();
         break;
       }
@@ -483,6 +493,9 @@ namespace PeerCastStation.HTTP
               channel.ChannelInfo.ContentType=="")) {
         System.Threading.Thread.Sleep(10);
       }
+      if (channel!=null) {
+        logger.Debug("ContentType: {0}", channel.ChannelInfo.ContentType);
+      }
     }
 
     /// <summary>
@@ -490,6 +503,7 @@ namespace PeerCastStation.HTTP
     /// </summary>
     public void Start()
     {
+      logger.Debug("Starting");
       WaitChannel();
       if (!closed) {
         WriteResponseHeader();
@@ -498,6 +512,7 @@ namespace PeerCastStation.HTTP
         }
         this.stream.Close();
       }
+      logger.Debug("Finished");
     }
 
     /// <summary>
