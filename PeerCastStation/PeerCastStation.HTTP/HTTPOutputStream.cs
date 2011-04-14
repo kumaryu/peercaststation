@@ -451,21 +451,25 @@ namespace PeerCastStation.HTTP
         break;
       case BodyType.Content:
         logger.Debug("Sending Contents");
-        bool header_sent = false;
-        long last_pos = -1;
+        long? header_pos = null;
+        long content_pos = -1;
         while (!closed) {
           WaitContentChanged();
           bool sent = true;
           while (sent) {
-            if (!header_sent) {
-              header_sent = WriteContentHeader();
-              sent = header_sent;
-              logger.Debug("ContentHeader sent");
+            if (header_pos==null) {
+              var new_pos = WriteContentHeader(header_pos);
+              sent = header_pos!=new_pos;
+              if (header_pos!=new_pos) {
+                header_pos = new_pos;
+                content_pos = header_pos.Value;
+                logger.Debug("Sent ContentHeader pos {0}", header_pos.Value);
+              }
             }
-            else {
-              long new_pos = WriteContent(last_pos);
-              sent = last_pos!=new_pos;
-              last_pos = new_pos;
+            if (header_pos.HasValue) {
+              var new_pos = WriteContent(content_pos);
+              sent = content_pos!=new_pos;
+              content_pos = new_pos;
             }
           }
         }
@@ -518,22 +522,24 @@ namespace PeerCastStation.HTTP
     /// <summary>
     /// チャンネルコンテントのヘッダをストリームに出力します
     /// </summary>
+    /// <param name="pos">以前出力したヘッダの位置</param>
     /// <returns>
     /// ヘッダが出力できた場合はtrue、それ以外はfalse
     /// </returns>
-    protected virtual bool WriteContentHeader()
+    protected virtual long? WriteContentHeader(long? pos)
     {
-      if (channel.ContentHeader!=null) {
+      if (channel.ContentHeader!=null &&
+          (!pos.HasValue || channel.ContentHeader.Position!=pos.Value)) {
         if (WriteBytes(channel.ContentHeader.Data)) {
-          return true;
+          return channel.ContentHeader.Position;
         }
         else {
           closed = true;
-          return false;
+          return pos;
         }
       }
       else {
-        return false;
+        return pos;
       }
     }
 

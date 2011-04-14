@@ -323,19 +323,26 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
 
     @channel.content_header = nil
     s.position = 0
-    assert(!stream.write_content_header)
+    assert_nil(stream.write_content_header(nil))
     assert_equal(0, s.position)
     assert(!stream.is_closed)
 
     @channel.content_header = PCSCore::Content.new(0, 'header')
     s.position = 0
-    assert(stream.write_content_header)
+    assert_equal(0, stream.write_content_header(nil))
     assert_equal('header'.size, s.position)
+    assert(!stream.is_closed)
+    assert_equal(0, stream.write_content_header(System::Nullable[System::Int64].new(0)))
+    assert_equal('header'.size, s.position)
+    assert(!stream.is_closed)
+    @channel.content_header = PCSCore::Content.new(16, 'header')
+    assert_equal(16, stream.write_content_header(System::Nullable[System::Int64].new(0)))
+    assert_equal(('header'+'header').size, s.position)
     assert(!stream.is_closed)
 
     stream.write_enabled = false
     s.position = 0
-    assert(!stream.write_content_header)
+    assert_nil(stream.write_content_header(nil))
     assert_equal(0, s.position)
     assert(stream.is_closed)
   end
