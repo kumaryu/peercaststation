@@ -320,7 +320,7 @@ EOS
     @channel.contents.add(PCSCore::Content.new(27,     'data3'))
     atom, header_pos, content_pos = TestPCPOutputStream.create_content_packet(@channel, int64?(6), int64?(16))
     assert_equal(21, header_pos)
-    assert_equal(16, content_pos)
+    assert_equal(21, content_pos)
     assert_not_nil(atom)
     assert_equal(PCSCore::Atom.PCP_CHAN, atom.name)
     assert_equal(PCSCore::Atom.PCP_CHAN_PKT_HEAD, atom.children.get_chan_pkt.get_chan_pkt_type)

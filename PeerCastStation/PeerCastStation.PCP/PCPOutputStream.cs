@@ -343,7 +343,10 @@ namespace PeerCastStation.PCP
     {
       if (channel.ContentHeader!=null &&
           (!header_pos.HasValue || channel.ContentHeader.Position!=header_pos.Value)) {
-        header_pos = channel.ContentHeader.Position;
+        header_pos  = channel.ContentHeader.Position;
+        if (content_pos.HasValue && content_pos.Value<header_pos.Value) {
+          content_pos = header_pos;
+        }
         return CreateContentHeaderPacket(channel, channel.ContentHeader);
       }
       else if (header_pos.HasValue) {
