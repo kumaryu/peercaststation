@@ -18,6 +18,18 @@ namespace PeerCastStation.Core
       }
     }
 
+    public static uint? GetUIntFrom(AtomCollection collection, ID4 name)
+    {
+      var atom = collection.FindByName(name);
+      uint value = 0;
+      if (atom != null && atom.TryGetUInt32(out value)) {
+        return value;
+      }
+      else {
+        return null;
+      }
+    }
+
     public static short? GetShortFrom(AtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
@@ -246,9 +258,9 @@ namespace PeerCastStation.Core
       return GetID4From(collection, Atom.PCP_CHAN_PKT_TYPE);
     }
 
-    public static int? GetChanPktPos(this AtomCollection collection)
+    public static uint? GetChanPktPos(this AtomCollection collection)
     {
-      return GetIntFrom(collection, Atom.PCP_CHAN_PKT_POS);
+      return GetUIntFrom(collection, Atom.PCP_CHAN_PKT_POS);
     }
 
     public static byte[] GetChanPktData(this AtomCollection collection)
@@ -458,14 +470,14 @@ namespace PeerCastStation.Core
       return GetIntFrom(collection, Atom.PCP_HOST_CLAP_PP);
     }
 
-    public static int? GetHostOldPos(this AtomCollection collection)
+    public static uint? GetHostOldPos(this AtomCollection collection)
     {
-      return GetIntFrom(collection, Atom.PCP_HOST_OLDPOS);
+      return GetUIntFrom(collection, Atom.PCP_HOST_OLDPOS);
     }
 
-    public static int? GetHostNewPos(this AtomCollection collection)
+    public static uint? GetHostNewPos(this AtomCollection collection)
     {
-      return GetIntFrom(collection, Atom.PCP_HOST_NEWPOS);
+      return GetUIntFrom(collection, Atom.PCP_HOST_NEWPOS);
     }
 
     public static PCPHostFlags1? GetHostFlags1(this AtomCollection collection)
@@ -668,7 +680,7 @@ namespace PeerCastStation.Core
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_PKT_DATA, value));
     }
 
-    public static void SetChanPktPos(this AtomCollection collection, int value)
+    public static void SetChanPktPos(this AtomCollection collection, uint value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_PKT_POS, value));
     }
@@ -733,12 +745,12 @@ namespace PeerCastStation.Core
       collection.Add(new Atom(Atom.PCP_HOST_IP, value));
     }
 
-    public static void SetHostNewPos(this AtomCollection collection, int value)
+    public static void SetHostNewPos(this AtomCollection collection, uint value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_NEWPOS, value));
     }
 
-    public static void SetHostOldPos(this AtomCollection collection, int value)
+    public static void SetHostOldPos(this AtomCollection collection, uint value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_OLDPOS, value));
     }

@@ -651,8 +651,8 @@ namespace PeerCastStation.PCP
         host.SetHostNumRelays(channel.OutputStreams.CountRelaying);
         host.SetHostUptime(channel.Uptime);
         if (channel.Contents.Count > 0) {
-          host.SetHostOldPos((int)channel.Contents.Oldest.Position);
-          host.SetHostNewPos((int)channel.Contents.Newest.Position);
+          host.SetHostOldPos((uint)(channel.Contents.Oldest.Position & 0xFFFFFFFFU));
+          host.SetHostNewPos((uint)(channel.Contents.Newest.Position & 0xFFFFFFFFU));
         }
         host.SetHostVersion(PCP_VERSION);
         host.SetHostVersionVP(PCP_VERSION_VP);
@@ -776,16 +776,42 @@ namespace PeerCastStation.PCP
       var pkt_data = atom.Children.GetChanPktData();
       if (pkt_type!=null && pkt_data!=null) {
         if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_HEAD) {
-          var pkt_pos = atom.Children.GetChanPktPos();
+          long pkt_pos = atom.Children.GetChanPktPos() ?? 0;
           peercast.SynchronizationContext.Post(dummy => {
-            channel.ContentHeader = new Content((long)(pkt_pos ?? 0), pkt_data);
+            long last_pos = 0;
+            if (channel.Contents.Newest!=null) {
+              last_pos = channel.Contents.Newest.Position;
+            }
+            else if (channel.ContentHeader!=null) {
+              last_pos = channel.ContentHeader.Position;
+            }
+            if (pkt_pos<=(last_pos&0xFFFFFFFFU)-0x80000000) {
+              pkt_pos += (last_pos&0x7FFFFFFF00000000) + 0x100000000;
+            }
+            else {
+              pkt_pos += (last_pos&0x7FFFFFFF00000000);
+            }
+            channel.ContentHeader = new Content(pkt_pos, pkt_data);
           }, null);
         }
         else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_DATA) {
-          var pkt_pos = atom.Children.GetChanPktPos();
-          if (pkt_pos != null) {
+          if (atom.Children.GetChanPktPos()!=null) {
             peercast.SynchronizationContext.Post(dummy => {
-              channel.Contents.Add(new Content((long)pkt_pos, pkt_data));
+              long pkt_pos = atom.Children.GetChanPktPos().Value;
+              long last_pos = 0;
+              if (channel.Contents.Newest!=null) {
+                last_pos = channel.Contents.Newest.Position;
+              }
+              else if (channel.ContentHeader!=null) {
+                last_pos = channel.ContentHeader.Position;
+              }
+              if (pkt_pos<=(last_pos&0xFFFFFFFFU)-0x80000000) {
+                pkt_pos += (last_pos&0x7FFFFFFF00000000) + 0x100000000;
+              }
+              else {
+                pkt_pos += (last_pos&0x7FFFFFFF00000000);
+              }
+              channel.Contents.Add(new Content(pkt_pos, pkt_data));
             }, null);
           }
         }

@@ -157,7 +157,6 @@ class TC_PCPOutputStream < Test::Unit::TestCase
     assert_equal(@peercast,    stream.PeerCast)
     assert_equal(@base_stream, stream.stream)
     assert_equal(@channel,     stream.Channel)
-    assert_equal(200000000,    stream.StreamPosition)
     assert_equal(PCSCore::OutputStreamType.relay, stream.output_stream_type)
   end
 
@@ -253,6 +252,18 @@ EOS
     assert_equal(0, chan_pkt.get_chan_pkt_pos)
     assert_equal('foobar', chan_pkt.get_chan_pkt_data.to_a.pack('C*'))
     assert_equal(chan_info, atom.children.get_chan_info)
+
+    content = PCSCore::Content.new(5000000000, 'foobar')
+    chan_info = PCSCore::AtomCollection.new
+    @channel.channel_info.extra.set_chan_info(chan_info)
+    atom = TestPCPOutputStream.create_content_header_packet(@channel, content)
+    assert_equal(PCSCore::Atom.PCP_CHAN, atom.name)
+    assert(atom.has_children)
+    chan_pkt = atom.children.get_chan_pkt
+    assert_equal(PCSCore::Atom.PCP_CHAN_PKT_HEAD, chan_pkt.get_chan_pkt_type)
+    assert_equal(5000000000 & 0xFFFFFFFF, chan_pkt.get_chan_pkt_pos)
+    assert_equal('foobar', chan_pkt.get_chan_pkt_data.to_a.pack('C*'))
+    assert_equal(chan_info, atom.children.get_chan_info)
   end
 
   def test_create_content_body_packet
@@ -265,6 +276,18 @@ EOS
     chan_pkt = atom.children.get_chan_pkt
     assert_equal(PCSCore::Atom.PCP_CHAN_PKT_DATA, chan_pkt.get_chan_pkt_type)
     assert_equal(10000000, chan_pkt.get_chan_pkt_pos)
+    assert_equal('foobar', chan_pkt.get_chan_pkt_data.to_a.pack('C*'))
+    assert_equal(nil, atom.children.get_chan_info)
+
+    content = PCSCore::Content.new(5000000000, 'foobar')
+    chan_info = PCSCore::AtomCollection.new
+    @channel.channel_info.extra.set_chan_info(chan_info)
+    atom = TestPCPOutputStream.create_content_body_packet(@channel, content)
+    assert_equal(PCSCore::Atom.PCP_CHAN, atom.name)
+    assert(atom.has_children)
+    chan_pkt = atom.children.get_chan_pkt
+    assert_equal(PCSCore::Atom.PCP_CHAN_PKT_DATA, chan_pkt.get_chan_pkt_type)
+    assert_equal(5000000000 & 0xFFFFFFFF, chan_pkt.get_chan_pkt_pos)
     assert_equal('foobar', chan_pkt.get_chan_pkt_data.to_a.pack('C*'))
     assert_equal(nil, atom.children.get_chan_info)
   end

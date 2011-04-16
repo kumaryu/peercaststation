@@ -209,7 +209,6 @@ namespace PeerCastStation.PCP
     public PeerCast PeerCast   { get; private set; }
     public Stream Stream       { get; private set; }
     public Channel Channel     { get; private set; }
-    public long StreamPosition { get; private set; }
     public bool IsClosed       { get; private set; }
     public Host Downhost       { get; protected set; }
     public bool IsRelayFull    { get; protected set; }
@@ -263,7 +262,6 @@ namespace PeerCastStation.PCP
       this.PeerCast = peercast;
       this.Stream = stream;
       this.Channel = channel;
-      this.StreamPosition = request.StreamPos ?? 0;
       this.remoteEndPoint = remote_endpoint;
       this.Downhost = null;
       this.IsRelayFull = false;
@@ -330,7 +328,7 @@ namespace PeerCastStation.PCP
       chan.Children.SetChanID(channel.ChannelInfo.ChannelID);
       var chan_pkt = new AtomCollection();
       chan_pkt.SetChanPktType(Atom.PCP_CHAN_PKT_HEAD);
-      chan_pkt.SetChanPktPos((int)content.Position);
+      chan_pkt.SetChanPktPos((uint)(content.Position & 0xFFFFFFFFU));
       chan_pkt.SetChanPktData(content.Data);
       chan.Children.SetChanPkt(chan_pkt);
       chan.Children.Update(channel.ChannelInfo.Extra);
@@ -344,7 +342,7 @@ namespace PeerCastStation.PCP
       chan.Children.SetChanID(channel.ChannelInfo.ChannelID);
       var chan_pkt = new AtomCollection();
       chan_pkt.SetChanPktType(Atom.PCP_CHAN_PKT_DATA);
-      chan_pkt.SetChanPktPos((int)content.Position);
+      chan_pkt.SetChanPktPos((uint)(content.Position & 0xFFFFFFFFU));
       chan_pkt.SetChanPktData(content.Data);
       chan.Children.SetChanPkt(chan_pkt);
       return chan;

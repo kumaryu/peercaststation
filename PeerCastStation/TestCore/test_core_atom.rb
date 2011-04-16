@@ -288,6 +288,33 @@ EOS
 EOS
   end
   
+  def self.define_test_uint(name, method_name=nil)
+    getter = getter_method_name(name, method_name)
+    setter = setter_method_name(name, method_name)
+    module_eval(<<EOS)
+    def test_#{getter}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_nil(collection.#{getter})
+      atom = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::UInt32).call(
+        PeerCastStation::Core::Atom.PCP_#{name},
+        4000000000)
+      collection.add(atom)
+      assert_equal(4000000000, collection.#{getter})
+    end
+    
+    def test_#{setter}
+      collection = PeerCastStation::Core::AtomCollection.new
+      assert_equal(0, collection.count)
+      value = 4000000000
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      collection.#{setter}(value)
+      assert_equal(1, collection.count)
+      assert_equal(4000000000, collection.#{getter})
+    end
+EOS
+  end
+  
   def self.define_test_timespan(name, method_name=nil)
     getter = getter_method_name(name, method_name)
     setter = setter_method_name(name, method_name)
@@ -462,7 +489,7 @@ EOS
   define_test_string('CHAN_INFO_URL', 'ChanInfoURL')
   define_test_atom('CHAN_PKT')
   define_test_bytes('CHAN_PKT_DATA')
-  define_test_int('CHAN_PKT_POS')
+  define_test_uint('CHAN_PKT_POS')
   define_test_id4('CHAN_PKT_TYPE')
   define_test_atom('CHAN_TRACK')
   define_test_string('CHAN_TRACK_ALBUM')
@@ -475,8 +502,8 @@ EOS
   define_test_int('HOST_CLAP_PP', 'HostClapPP')
   define_test_byte('HOST_FLAGS1')
   define_test_ip_address('HOST_IP', 'HostIP')
-  define_test_int('HOST_NEWPOS', 'HostNewPos')
-  define_test_int('HOST_OLDPOS', 'HostOldPos')
+  define_test_uint('HOST_NEWPOS', 'HostNewPos')
+  define_test_uint('HOST_OLDPOS', 'HostOldPos')
   define_test_int('HOST_NUML', 'HostNumListeners')
   define_test_int('HOST_NUMR', 'HostNumRelays')
   define_test_short('HOST_PORT')
