@@ -646,10 +646,6 @@ namespace PeerCastStation.PCP
         var port = atom.Children.GetHeloPort();
         var ping = atom.Children.GetHeloPing();
         if (port!=null) {
-          var ip = new IPEndPoint(((IPEndPoint)remoteEndPoint).Address, port.Value);
-          if (Downhost.GlobalEndPoint==null || !Downhost.GlobalEndPoint.Equals(ip)) {
-            Downhost.GlobalEndPoint = ip;
-          }
           remote_port = port.Value;
         }
         else if (ping!=null) {
@@ -663,6 +659,12 @@ namespace PeerCastStation.PCP
         }
         else {
           remote_port = 0;
+        }
+        if (remote_port!=0)  {
+          var ip = new IPEndPoint(((IPEndPoint)remoteEndPoint).Address, remote_port);
+          if (Downhost.GlobalEndPoint==null || !Downhost.GlobalEndPoint.Equals(ip)) {
+            Downhost.GlobalEndPoint = ip;
+          }
         }
         Downhost.IsFirewalled = remote_port==0;
         Downhost.Extra.Update(atom.Children);
