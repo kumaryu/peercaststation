@@ -475,7 +475,8 @@ EOS
     assert_equal(7145,             stream.log[0][1].port)
     assert_equal(session_id,       stream.log[0][2])
     assert(!stream.downhost.is_firewalled)
-    assert_nil(stream.downhost.global_end_point)
+    assert_equal(endpoint.address, stream.downhost.global_end_point.address)
+    assert_equal(7145,             stream.downhost.global_end_point.port)
     assert_equal(PCSCore::Atom.PCP_OLEH, stream.sent_data[0].name)
     oleh = stream.sent_data[0]
     assert_equal(endpoint.address,    oleh.children.GetHeloRemoteIP)
