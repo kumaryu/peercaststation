@@ -281,6 +281,7 @@ namespace PeerCastStation.PCP
 
   public class PCPSourceStream : ISourceStream
   {
+    static private Logger logger = new Logger(typeof(PCPSourceStream));
     private PeerCast peercast;
     private Channel channel;
     private IStreamState state = null;
@@ -309,6 +310,7 @@ namespace PeerCastStation.PCP
       }
       set {
         if (status!=value) {
+          logger.Debug("ChannelStatus Changed: {0}", value);
           status = value;
           PeerCast.SynchronizationContext.Post(dummy => {
             if (StatusChanged!=null) {
@@ -340,7 +342,8 @@ namespace PeerCastStation.PCP
               }
             }
             catch (ObjectDisposedException) { }
-            catch (IOException) {
+            catch (IOException e) {
+              logger.Error(e);
               syncContext.Post(dummy => {
                 Close(CloseReason.ConnectionError);
               }, null);
@@ -348,7 +351,8 @@ namespace PeerCastStation.PCP
           }, stream);
         }
         catch (ObjectDisposedException) { }
-        catch (IOException) {
+        catch (IOException e) {
+          logger.Error(e);
           Close(CloseReason.ConnectionError);
         }
       }
@@ -363,7 +367,8 @@ namespace PeerCastStation.PCP
           stream.EndWrite(sendResult);
         }
         catch (ObjectDisposedException) {}
-        catch (IOException) {
+        catch (IOException e) {
+          logger.Error(e);
           Close(CloseReason.ConnectionError);
         }
         sendResult = null;
@@ -378,7 +383,8 @@ namespace PeerCastStation.PCP
           }, null);
         }
         catch (ObjectDisposedException) {}
-        catch (IOException) {
+        catch (IOException e) {
+          logger.Error(e);
           Close(CloseReason.ConnectionError);
         }
       }
@@ -417,9 +423,11 @@ namespace PeerCastStation.PCP
         res = channel.SelectSourceHost();
       }, null);
       if (res!=null) {
+        logger.Debug("{0} is selected as source", res.GlobalEndPoint);
         return res;
       }
       else {
+        logger.Debug("No selectable host");
         return null;
       }
     }
@@ -446,9 +454,12 @@ namespace PeerCastStation.PCP
           recvStream.Position = 0;
           uphost = host;
           StartReceive();
+          logger.Debug("Connected: {0}", point);
           return true;
         }
-        catch (SocketException) {
+        catch (SocketException e) {
+          logger.Debug("Connection Failed: {0}", point);
+          logger.Debug(e);
           connection.Close();
           connection = null;
           if (stream!=null) {
@@ -478,6 +489,9 @@ namespace PeerCastStation.PCP
     public virtual void IgnoreHost(Host host)
     {
       peercast.SynchronizationContext.Send(dummy => {
+        if (host!=null) {
+          logger.Debug("Host {0}({1}) is ignored", host.GlobalEndPoint, host.SessionID.ToString("N"));
+        }
         channel.IgnoreHost(host);
       }, null);
     }
@@ -485,6 +499,7 @@ namespace PeerCastStation.PCP
     public virtual void Close(CloseReason reason)
     {
       if (connection != null) {
+        logger.Debug("Closed by {0}", reason);
         if (stream!=null) {
           if (sendResult!=null) {
             try {
@@ -508,6 +523,7 @@ namespace PeerCastStation.PCP
 
     public virtual void SendRelayRequest()
     {
+      logger.Debug("Sending Relay request: /channel/{0}", channel.ChannelInfo.ChannelID.ToString("N"));
       var req = String.Format(
         "GET /channel/{0} HTTP/1.0\r\n" +
         "x-peercast-pcp:1\r\n" +
@@ -533,6 +549,7 @@ namespace PeerCastStation.PCP
     {
       RelayRequestResponse response = null;
       if (Recv(s => { response = RelayRequestResponseReader.Read(s); })) {
+        logger.Debug("Relay response: {0}", response.StatusCode);
         return response;
       }
       else {
@@ -542,6 +559,7 @@ namespace PeerCastStation.PCP
 
     public virtual void SendPCPHelo()
     {
+      logger.Debug("Handshake Started");
       var helo = new Atom(Atom.PCP_HELO, new AtomCollection());
       helo.Children.SetHeloAgent(peercast.AgentName);
       helo.Children.SetHeloSessionID(peercast.SessionID);
@@ -587,6 +605,7 @@ namespace PeerCastStation.PCP
 
     public virtual void Start()
     {
+      logger.Debug("Started");
       if (this.syncContext == null) {
         this.syncContext = new QueuedSynchronizationContext();
         SynchronizationContext.SetSynchronizationContext(this.syncContext);
@@ -600,6 +619,7 @@ namespace PeerCastStation.PCP
       }
       channel.OutputStreams.CollectionChanged -= Channel_HostInfoUpdated;
       peercast.AccessController.PropertyChanged -= Channel_HostInfoUpdated;
+      logger.Debug("Finished");
     }
 
     public virtual void ProcessState()
@@ -674,6 +694,7 @@ namespace PeerCastStation.PCP
 
     public virtual void BroadcastHostInfo()
     {
+      logger.Debug("Broadcasting host info");
       channel.Broadcast(null, CreateBroadcastPacket(BroadcastGroup.Trackers, CreateHostPacket()), BroadcastGroup.Trackers);
       hostInfoUpdated = false;
     }
@@ -695,6 +716,7 @@ namespace PeerCastStation.PCP
 
     protected virtual IStreamState OnPCPHelo(Atom atom)
     {
+      logger.Debug("Helo Received");
       var res = new Atom(Atom.PCP_OLEH, new AtomCollection());
       if (connection!=null && connection.Client.RemoteEndPoint.AddressFamily==AddressFamily.InterNetwork) {
         res.Children.SetHeloRemoteIP(((IPEndPoint)connection.Client.RemoteEndPoint).Address);
@@ -729,6 +751,7 @@ namespace PeerCastStation.PCP
         if (port.HasValue) {
           peercast.IsFirewalled = port.Value==0;
         }
+        logger.Debug("Handshake Finished: {0}", peercast.GlobalAddress);
       }, null);
       return null;
     }
@@ -926,6 +949,9 @@ namespace PeerCastStation.PCP
 
     public PCPSourceStream(PeerCast peercast, Channel channel, Uri source_uri)
     {
+      logger.Debug("Initialized: Channel {0}, Source {1}",
+        channel!=null ? channel.ChannelInfo.ChannelID.ToString("N") : "(null)",
+        source_uri);
       this.peercast = peercast;
       this.channel = channel;
     }

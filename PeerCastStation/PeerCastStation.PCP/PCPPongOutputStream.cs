@@ -54,6 +54,7 @@ namespace PeerCastStation.PCP
 
   public class PCPPongOutputStream : IOutputStream
   {
+    static private Logger logger = new Logger(typeof(PCPPongOutputStream));
     public PeerCast PeerCast { get; private set; }
     public Stream Stream { get; private set; }
     public bool IsClosed { get; private set; }
@@ -62,6 +63,7 @@ namespace PeerCastStation.PCP
 
     public PCPPongOutputStream(PeerCast peercast, Stream stream, IPEndPoint endpoint, byte[] header)
     {
+      logger.Debug("Initialized: Remote {0}", endpoint);
       PeerCast = peercast;
       Stream = stream;
       remoteEndPoint = endpoint;
@@ -88,6 +90,7 @@ namespace PeerCastStation.PCP
 
     public void Start()
     {
+      logger.Debug("Starting");
       if (this.syncContext == null) {
         this.syncContext = new QueuedSynchronizationContext();
         System.Threading.SynchronizationContext.SetSynchronizationContext(this.syncContext);
@@ -102,6 +105,7 @@ namespace PeerCastStation.PCP
         if (syncContext!=null) syncContext.ProcessAll();
       }
       Close();
+      logger.Debug("Finished");
     }
 
     protected virtual void ProcessAtom(Atom atom)
@@ -117,10 +121,14 @@ namespace PeerCastStation.PCP
       res.Children.SetHeloSessionID(PeerCast.SessionID);
       Send(res);
       if (session_id==null) {
+        logger.Info("Helo has no SessionID");
         //相手のセッションIDが無かったらエラー終了
         var quit = new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT+Atom.PCP_ERROR_NOTIDENTIFIED);
         Send(quit);
         Close();
+      }
+      else {
+        logger.Debug("Helo from {0}", PeerCast.SessionID.ToString("N"));
       }
     }
 
