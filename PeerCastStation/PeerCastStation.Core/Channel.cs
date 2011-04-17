@@ -601,6 +601,13 @@ namespace PeerCastStation.Core
       startTickCount = Environment.TickCount;
     }
 
+    public void Reconnect()
+    {
+      if (sourceStream!=null) {
+        sourceStream.Reconnect();
+      }
+    }
+
     private void SourceThreadFunc(object arg)
     {
       logger.Debug("Source thread started");

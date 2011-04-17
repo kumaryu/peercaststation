@@ -75,13 +75,17 @@ class MockSourceStream
   def remove_StatusChanged(handler)
     @status_changed.delete(handler)
   end
-  
+
   def post(from, packet)
     @log << [:post, from, packet]
   end
   
   def start
     @log << [:start]
+  end
+  
+  def reconnect
+    @log << [:reconnect]
   end
   
   def close

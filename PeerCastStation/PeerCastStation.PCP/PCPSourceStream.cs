@@ -231,6 +231,7 @@ namespace PeerCastStation.PCP
     RetryLimit,
     NodeNotFound,
     UserShutdown,
+    UserReconnect,
   }
   public class PCPSourceClosedState : IStreamState
   {
@@ -254,6 +255,7 @@ namespace PeerCastStation.PCP
         Owner.Status = SourceStreamStatus.Error;
         res = null;
         break;
+      case CloseReason.UserReconnect:
       case CloseReason.Unavailable:
         Owner.IgnoreHost(Owner.Uphost);
         Owner.Status = SourceStreamStatus.Searching;
@@ -952,6 +954,22 @@ namespace PeerCastStation.PCP
       else {
         if (IsConnected) {
           state = new PCPSourceClosedState(this, CloseReason.UserShutdown);
+        }
+      }
+    }
+
+    public virtual void Reconnect()
+    {
+      if (syncContext!=null) {
+        syncContext.Post((x) => {
+          if (IsConnected) {
+            state = new PCPSourceClosedState(this, CloseReason.UserReconnect);
+          }
+        }, null);
+      }
+      else {
+        if (IsConnected) {
+          state = new PCPSourceClosedState(this, CloseReason.UserReconnect);
         }
       }
     }

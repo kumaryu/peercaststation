@@ -52,6 +52,27 @@ class TC_CoreChannel < Test::Unit::TestCase
     assert_equal('content', content_log[1])
   end
   
+  def test_reconnect
+    log = []
+    channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    channel.closed { log << 'Closed' }
+    assert(channel.is_closed)
+    channel.output_streams.add(MockOutputStream.new)
+    channel.start(MockSourceStream.new(channel, channel.source_uri))
+    assert(!channel.is_closed)
+    sleep(1)
+    channel.reconnect
+    sleep(1)
+    channel.close
+    assert_equal(PeerCastStation::Core::SourceStreamStatus.idle, channel.status)
+    assert_equal(:start,     channel.source_stream.log[0][0])
+    assert_equal(:close,     channel.source_stream.log[1][0])
+    assert_equal(:reconnect, channel.source_stream.log[2][0])
+    assert_equal(:close, channel.output_streams[0].log[0][0])
+    assert_equal('Closed', log[0])
+    assert(channel.is_closed)
+  end
+
   def test_close
     log = []
     channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
@@ -163,6 +184,9 @@ class TC_CoreChannel < Test::Unit::TestCase
       end
     end
     
+    def reconnect
+    end
+
     def close
     end
   end
