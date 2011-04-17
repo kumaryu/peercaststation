@@ -54,7 +54,7 @@ namespace PeerCastStation.HTTP
 
     public HTTPDummyOutputStream(PeerCast peercast, Stream stream, EndPoint remote_endpoint)
     {
-      logger.Debug("Initialized: Remote {1}", remote_endpoint);
+      logger.Debug("Initialized: Remote {0}", remote_endpoint);
       this.peercast = peercast;
       this.stream = stream;
       var ip = remote_endpoint as IPEndPoint;
@@ -67,10 +67,12 @@ namespace PeerCastStation.HTTP
 
     public void Start()
     {
+      logger.Debug("Started");
       var response = "HTTP/1.0 404 NotFound\r\n\r\n";
       var bytes = System.Text.Encoding.UTF8.GetBytes(response);
       stream.Write(bytes, 0, bytes.Length);
       stream.Close();
+      logger.Debug("Finished");
     }
 
     public void Post(Host from, Atom packet)
