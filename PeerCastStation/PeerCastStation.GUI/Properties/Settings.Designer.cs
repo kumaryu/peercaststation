@@ -106,5 +106,29 @@ namespace PeerCastStation.GUI.Properties {
                 this["LogFileName"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool LogToConsole {
+            get {
+                return ((bool)(this["LogToConsole"]));
+            }
+            set {
+                this["LogToConsole"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool LogToGUI {
+            get {
+                return ((bool)(this["LogToGUI"]));
+            }
+            set {
+                this["LogToGUI"] = value;
+            }
+        }
     }
 }

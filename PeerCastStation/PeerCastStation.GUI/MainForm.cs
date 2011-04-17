@@ -110,14 +110,14 @@ namespace PeerCastStation.GUI
     }
 
     private int currentPort;
+    private TextBoxWriter guiWriter = null;
     public MainForm()
     {
       InitializeComponent();
       Settings.Default.PropertyChanged += SettingsPropertyChanged;
       Logger.Level = LogLevel.Warn;
-      Logger.AddWriter(System.Console.Error);
       Logger.AddWriter(new DebugWriter());
-      Logger.AddWriter(new TextBoxWriter(logText));
+      guiWriter = new TextBoxWriter(logText);
       if (IsOSX()) {
         this.Font = new System.Drawing.Font("Osaka", this.Font.SizeInPoints);
         statusBar.Font = new System.Drawing.Font("Osaka", statusBar.Font.SizeInPoints);
@@ -149,6 +149,8 @@ namespace PeerCastStation.GUI
       logLevelList.SelectedIndex = Settings.Default.LogLevel;
       logToFileCheck.Checked = Settings.Default.LogToFile;
       logFileNameText.Text = Settings.Default.LogFileName;
+      logToConsoleCheck.Checked = Settings.Default.LogToConsole;
+      logToGUICheck.Checked = Settings.Default.LogToGUI;
       if (peerCast.IsFirewalled.HasValue) {
         portOpenedLabel.Text = peerCast.IsFirewalled.Value ? "未開放" : "開放";
       }
@@ -217,6 +219,18 @@ namespace PeerCastStation.GUI
         }
         if (logFileWriter!=null && Settings.Default.LogToFile) {
           Logger.AddWriter(logFileWriter);
+        }
+        break;
+      case "LogToConsole":
+        Logger.RemoveWriter(System.Console.Error);
+        if (Settings.Default.LogToConsole) {
+          Logger.AddWriter(System.Console.Error);
+        }
+        break;
+      case "LogToGUI":
+        Logger.RemoveWriter(guiWriter);
+        if (Settings.Default.LogToGUI) {
+          Logger.AddWriter(guiWriter);
         }
         break;
       }
@@ -378,6 +392,16 @@ namespace PeerCastStation.GUI
     private void logToFileCheck_CheckedChanged(object sender, EventArgs e)
     {
       Settings.Default.LogToFile = logToFileCheck.Checked;
+    }
+
+    private void logToConsoleCheck_CheckedChanged(object sender, EventArgs e)
+    {
+      Settings.Default.LogToConsole = logToConsoleCheck.Checked;
+    }
+
+    private void logToGUICheck_CheckedChanged(object sender, EventArgs e)
+    {
+      Settings.Default.LogToGUI = logToGUICheck.Checked;
     }
 
     private void logFileNameText_Validated(object sender, EventArgs e)

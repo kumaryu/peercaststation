@@ -47,6 +47,8 @@
       this.maxRelays = new System.Windows.Forms.NumericUpDown();
       this.port = new System.Windows.Forms.NumericUpDown();
       this.tabLog = new System.Windows.Forms.TabPage();
+      this.logToGUICheck = new System.Windows.Forms.CheckBox();
+      this.logToConsoleCheck = new System.Windows.Forms.CheckBox();
       this.logClearButton = new System.Windows.Forms.Button();
       this.selectLogFileName = new System.Windows.Forms.Button();
       this.logToFileCheck = new System.Windows.Forms.CheckBox();
@@ -260,6 +262,8 @@
       // 
       // tabLog
       // 
+      this.tabLog.Controls.Add(this.logToGUICheck);
+      this.tabLog.Controls.Add(this.logToConsoleCheck);
       this.tabLog.Controls.Add(this.logClearButton);
       this.tabLog.Controls.Add(this.selectLogFileName);
       this.tabLog.Controls.Add(this.logToFileCheck);
@@ -270,10 +274,32 @@
       this.tabLog.Location = new System.Drawing.Point(4, 22);
       this.tabLog.Name = "tabLog";
       this.tabLog.Padding = new System.Windows.Forms.Padding(3);
-      this.tabLog.Size = new System.Drawing.Size(404, 329);
+      this.tabLog.Size = new System.Drawing.Size(406, 288);
       this.tabLog.TabIndex = 3;
       this.tabLog.Text = "ログ";
       this.tabLog.UseVisualStyleBackColor = true;
+      // 
+      // logToGUICheck
+      // 
+      this.logToGUICheck.AutoSize = true;
+      this.logToGUICheck.Location = new System.Drawing.Point(8, 38);
+      this.logToGUICheck.Name = "logToGUICheck";
+      this.logToGUICheck.Size = new System.Drawing.Size(76, 16);
+      this.logToGUICheck.TabIndex = 10;
+      this.logToGUICheck.Text = "GUIに出力";
+      this.logToGUICheck.UseVisualStyleBackColor = true;
+      this.logToGUICheck.CheckedChanged += new System.EventHandler(this.logToGUICheck_CheckedChanged);
+      // 
+      // logToConsoleCheck
+      // 
+      this.logToConsoleCheck.AutoSize = true;
+      this.logToConsoleCheck.Location = new System.Drawing.Point(90, 38);
+      this.logToConsoleCheck.Name = "logToConsoleCheck";
+      this.logToConsoleCheck.Size = new System.Drawing.Size(103, 16);
+      this.logToConsoleCheck.TabIndex = 9;
+      this.logToConsoleCheck.Text = "コンソールに出力";
+      this.logToConsoleCheck.UseVisualStyleBackColor = true;
+      this.logToConsoleCheck.CheckedChanged += new System.EventHandler(this.logToConsoleCheck_CheckedChanged);
       // 
       // logClearButton
       // 
@@ -289,7 +315,7 @@
       // selectLogFileName
       // 
       this.selectLogFileName.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-      this.selectLogFileName.Location = new System.Drawing.Point(375, 43);
+      this.selectLogFileName.Location = new System.Drawing.Point(375, 35);
       this.selectLogFileName.Name = "selectLogFileName";
       this.selectLogFileName.Size = new System.Drawing.Size(21, 18);
       this.selectLogFileName.TabIndex = 7;
@@ -300,11 +326,11 @@
       // logToFileCheck
       // 
       this.logToFileCheck.AutoSize = true;
-      this.logToFileCheck.Location = new System.Drawing.Point(8, 45);
+      this.logToFileCheck.Location = new System.Drawing.Point(199, 37);
       this.logToFileCheck.Name = "logToFileCheck";
       this.logToFileCheck.Size = new System.Drawing.Size(91, 16);
       this.logToFileCheck.TabIndex = 6;
-      this.logToFileCheck.Text = "ファイルに記録";
+      this.logToFileCheck.Text = "ファイルに出力";
       this.logToFileCheck.UseVisualStyleBackColor = true;
       this.logToFileCheck.CheckedChanged += new System.EventHandler(this.logToFileCheck_CheckedChanged);
       // 
@@ -313,21 +339,21 @@
       this.logText.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-      this.logText.Location = new System.Drawing.Point(8, 71);
+      this.logText.Location = new System.Drawing.Point(8, 60);
       this.logText.Multiline = true;
       this.logText.Name = "logText";
       this.logText.ReadOnly = true;
       this.logText.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-      this.logText.Size = new System.Drawing.Size(388, 221);
+      this.logText.Size = new System.Drawing.Size(388, 232);
       this.logText.TabIndex = 5;
       // 
       // logFileNameText
       // 
       this.logFileNameText.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-      this.logFileNameText.Location = new System.Drawing.Point(105, 43);
+      this.logFileNameText.Location = new System.Drawing.Point(296, 35);
       this.logFileNameText.Name = "logFileNameText";
-      this.logFileNameText.Size = new System.Drawing.Size(264, 19);
+      this.logFileNameText.Size = new System.Drawing.Size(73, 19);
       this.logFileNameText.TabIndex = 4;
       this.logFileNameText.Validated += new System.EventHandler(this.logFileNameText_Validated);
       // 
@@ -440,6 +466,8 @@
     private System.Windows.Forms.StatusStrip statusBar;
     private System.Windows.Forms.ToolStripStatusLabel portLabel;
     private System.Windows.Forms.ToolStripStatusLabel portOpenedLabel;
+    private System.Windows.Forms.CheckBox logToGUICheck;
+    private System.Windows.Forms.CheckBox logToConsoleCheck;
 
   }
 }
