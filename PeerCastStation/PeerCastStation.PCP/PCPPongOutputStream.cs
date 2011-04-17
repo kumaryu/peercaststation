@@ -105,6 +105,7 @@ namespace PeerCastStation.PCP
         if (syncContext!=null) syncContext.ProcessAll();
       }
       Close();
+      if (syncContext!=null) syncContext.ProcessAll();
       logger.Debug("Finished");
     }
 

@@ -425,6 +425,7 @@ namespace PeerCastStation.PCP
         }
       }
       Close();
+      if (syncContext!=null) syncContext.ProcessAll();
       logger.Debug("Finished");
     }
 
