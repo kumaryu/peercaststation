@@ -123,16 +123,21 @@ namespace PeerCastStation.Core
             "INFO",
             "DEBUG",
           };
-          var message =  
-            String.Format("{0:s} [{1}] {2} {3} {4} - {5}",
-              DateTime.Now,
-              System.Threading.Thread.CurrentThread.Name,
-              level_name[(int)level],
-              source,
-              "",
-              String.Format(format, args));
-          foreach (var writer in writers) {
-            writer.WriteLine(message);
+          try {
+            var message =  
+              String.Format("{0:s} [{1}] {2} {3} {4} - {5}",
+                DateTime.Now,
+                System.Threading.Thread.CurrentThread.Name,
+                level_name[(int)level],
+                source,
+                "",
+                String.Format(format, args));
+            foreach (var writer in writers) {
+              writer.WriteLine(message);
+            }
+          }
+          catch (FormatException e) {
+            Output(level, source, e);
           }
         }
       }

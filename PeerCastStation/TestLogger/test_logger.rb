@@ -56,6 +56,16 @@ class TC_Logger < Test::Unit::TestCase
     end
   end
 
+  def test_output_format_string_error
+    writer = System::IO::StringWriter.new
+    PCSCore::Logger.add_writer(writer)
+    PCSCore::Logger.level = PCSCore::LogLevel.debug
+    logger = PCSCore::Logger.new('TC_Logger')
+    assert_nothing_raised do
+      logger.debug('foo {1}', 'bar')
+    end
+  end
+
   def test_output_format_exception
     writer = System::IO::StringWriter.new
     PCSCore::Logger.add_writer(writer)
