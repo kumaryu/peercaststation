@@ -31,6 +31,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Logger", "P
 EndProject
 Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestLogger", "TestLogger\TestLogger.rbproj", "{74826FAF-D2BD-4E2A-9EFD-0C2DF6C1D680}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Ohaoha", "PeerCastStation.Ohaoha\PeerCastStation.Ohaoha.csproj", "{6E45FCD8-3569-48E9-A704-083A7BBD6743}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -73,6 +75,10 @@ Global
 		{74826FAF-D2BD-4E2A-9EFD-0C2DF6C1D680}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{74826FAF-D2BD-4E2A-9EFD-0C2DF6C1D680}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{74826FAF-D2BD-4E2A-9EFD-0C2DF6C1D680}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E45FCD8-3569-48E9-A704-083A7BBD6743}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E45FCD8-3569-48E9-A704-083A7BBD6743}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E45FCD8-3569-48E9-A704-083A7BBD6743}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E45FCD8-3569-48E9-A704-083A7BBD6743}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
