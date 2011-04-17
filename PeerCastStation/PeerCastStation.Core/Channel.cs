@@ -156,7 +156,12 @@ namespace PeerCastStation.Core
 
     public void Add(Content item)
     {
-      list.Add(item.Position, item);
+      if (list.ContainsKey(item.Position)) {
+        list[item.Position] = item;
+      }
+      else {
+        list.Add(item.Position, item);
+      }
       while (list.Count>LimitPackets && list.Count>1) {
         list.RemoveAt(0);
       }

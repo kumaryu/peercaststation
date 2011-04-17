@@ -258,12 +258,25 @@ class TC_CoreContentCollection < Test::Unit::TestCase
     contents = PeerCastStation::Core::ContentCollection.new
     contents.limit_packets = 10
     30.times do |i|
-      content = PeerCastStation::Core::Content.new(i, 'content')
+      content = PeerCastStation::Core::Content.new(i, "content#{i}")
       contents.add(content)
     end
-    assert_equal(10, contents.count)
-    assert_equal(20, contents.oldest.position)
-    assert_equal(29, contents.newest.position)
+    assert_equal(10,          contents.count)
+    assert_equal(20,          contents.oldest.position)
+    assert_equal('content20', contents.oldest.data.to_a.pack('C*'))
+    assert_equal(29,          contents.newest.position)
+    assert_equal('content29', contents.newest.data.to_a.pack('C*'))
+    assert_nothing_raised do
+      30.times do |i|
+        content = PeerCastStation::Core::Content.new(i, "content#{i+30}")
+        contents.add(content)
+      end
+    end
+    assert_equal(10,          contents.count)
+    assert_equal(20,          contents.oldest.position)
+    assert_equal('content50', contents.oldest.data.to_a.pack('C*'))
+    assert_equal(29,          contents.newest.position)
+    assert_equal('content59', contents.newest.data.to_a.pack('C*'))
   end
 end
 
