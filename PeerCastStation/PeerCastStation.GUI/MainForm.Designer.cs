@@ -36,6 +36,8 @@
       System.Windows.Forms.Label label1;
       this.tabControl1 = new System.Windows.Forms.TabControl();
       this.tabChannels = new System.Windows.Forms.TabPage();
+      this.downStreamClose = new System.Windows.Forms.Button();
+      this.channelBump = new System.Windows.Forms.Button();
       this.relayTree = new System.Windows.Forms.TreeView();
       this.channelClose = new System.Windows.Forms.Button();
       this.channelPlay = new System.Windows.Forms.Button();
@@ -127,6 +129,8 @@
       // 
       // tabChannels
       // 
+      this.tabChannels.Controls.Add(this.downStreamClose);
+      this.tabChannels.Controls.Add(this.channelBump);
       this.tabChannels.Controls.Add(this.relayTree);
       this.tabChannels.Controls.Add(this.channelClose);
       this.tabChannels.Controls.Add(this.channelPlay);
@@ -139,14 +143,36 @@
       this.tabChannels.Text = "チャンネル一覧";
       this.tabChannels.UseVisualStyleBackColor = true;
       // 
+      // downStreamClose
+      // 
+      this.downStreamClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.downStreamClose.Location = new System.Drawing.Point(337, 114);
+      this.downStreamClose.Name = "downStreamClose";
+      this.downStreamClose.Size = new System.Drawing.Size(61, 30);
+      this.downStreamClose.TabIndex = 6;
+      this.downStreamClose.Text = "下流切断";
+      this.downStreamClose.UseVisualStyleBackColor = true;
+      this.downStreamClose.Click += new System.EventHandler(this.downStreamClose_Click);
+      // 
+      // channelBump
+      // 
+      this.channelBump.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.channelBump.Location = new System.Drawing.Point(337, 78);
+      this.channelBump.Name = "channelBump";
+      this.channelBump.Size = new System.Drawing.Size(61, 30);
+      this.channelBump.TabIndex = 5;
+      this.channelBump.Text = "再接続";
+      this.channelBump.UseVisualStyleBackColor = true;
+      this.channelBump.Click += new System.EventHandler(this.channelBump_Click);
+      // 
       // relayTree
       // 
       this.relayTree.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-      this.relayTree.Location = new System.Drawing.Point(6, 100);
+      this.relayTree.Location = new System.Drawing.Point(6, 114);
       this.relayTree.Name = "relayTree";
-      this.relayTree.Size = new System.Drawing.Size(392, 179);
+      this.relayTree.Size = new System.Drawing.Size(324, 165);
       this.relayTree.TabIndex = 4;
       // 
       // channelClose
@@ -175,11 +201,12 @@
       // 
       this.channelList.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+      this.channelList.DisplayMember = "Name";
       this.channelList.FormattingEnabled = true;
       this.channelList.ItemHeight = 12;
       this.channelList.Location = new System.Drawing.Point(6, 6);
       this.channelList.Name = "channelList";
-      this.channelList.Size = new System.Drawing.Size(324, 88);
+      this.channelList.Size = new System.Drawing.Size(324, 100);
       this.channelList.TabIndex = 1;
       this.channelList.SelectedIndexChanged += new System.EventHandler(this.channelList_SelectedIndexChanged);
       // 
@@ -468,6 +495,8 @@
     private System.Windows.Forms.ToolStripStatusLabel portOpenedLabel;
     private System.Windows.Forms.CheckBox logToGUICheck;
     private System.Windows.Forms.CheckBox logToConsoleCheck;
+    private System.Windows.Forms.Button downStreamClose;
+    private System.Windows.Forms.Button channelBump;
 
   }
 }
