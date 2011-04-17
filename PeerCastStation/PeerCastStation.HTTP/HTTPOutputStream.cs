@@ -528,10 +528,11 @@ namespace PeerCastStation.HTTP
     /// </returns>
     protected virtual long? WriteContentHeader(long? pos)
     {
-      if (channel.ContentHeader!=null &&
-          (!pos.HasValue || channel.ContentHeader.Position!=pos.Value)) {
-        if (WriteBytes(channel.ContentHeader.Data)) {
-          return channel.ContentHeader.Position;
+      var header = channel.ContentHeader;
+      if (header!=null &&
+          (!pos.HasValue || header.Position!=pos.Value)) {
+        if (WriteBytes(header.Data)) {
+          return header.Position;
         }
         else {
           closed = true;
@@ -550,7 +551,10 @@ namespace PeerCastStation.HTTP
     /// <returns>今回出力したposition、出力してない場合はlast_pos</returns>
     protected long WriteContent(long last_pos)
     {
-      var content = channel.Contents.NextOf(last_pos);
+      Content content = null;
+      PeerCast.SynchronizationContext.Send(dummy => {
+        content = channel.Contents.NextOf(last_pos);
+      }, null);
       if (content!=null) {
         if (WriteBytes(content.Data)) {
           return content.Position;
