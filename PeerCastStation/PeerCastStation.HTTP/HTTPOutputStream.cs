@@ -15,11 +15,15 @@ namespace PeerCastStation.HTTP
     /// <summary>
     /// HTTPメソッドを取得および設定します
     /// </summary>
-    public string Method { get; set; }
+    public string Method { get; private set; }
     /// <summary>
     /// リクエストされたUriを取得および設定します
     /// </summary>
-    public Uri Uri     { get; set; }
+    public Uri Uri     { get; private set; }
+    /// <summary>
+    /// リクエストヘッダの値のコレクション取得します
+    /// </summary>
+    public Dictionary<string, string> Headers { get; private set; }
 
     /// <summary>
     /// HTTPリクエスト文字列からHTTPRequestオブジェクトを構築します
@@ -27,6 +31,7 @@ namespace PeerCastStation.HTTP
     /// <param name="requests">行毎に区切られたHTTPリクエストの文字列表現</param>
     public HTTPRequest(IEnumerable<string> requests)
     {
+      Headers = new Dictionary<string, string>();
       string host = "localhost";
       string path = "/";
       foreach (var req in requests) {
@@ -37,6 +42,10 @@ namespace PeerCastStation.HTTP
         }
         else if ((match = Regex.Match(req, @"^Host:\s*(\S*)\s*$", RegexOptions.IgnoreCase)).Success) {
           host = match.Groups[1].Value;
+          Headers["Host"] = host;
+        }
+        else if ((match = Regex.Match(req, @"^(\S*):\s*(\S*)\s*$", RegexOptions.IgnoreCase)).Success) {
+          Headers[match.Groups[1].Value] = match.Groups[2].Value;
         }
       }
       Uri uri;
