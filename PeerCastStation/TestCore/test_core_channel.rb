@@ -278,5 +278,38 @@ class TC_CoreContentCollection < Test::Unit::TestCase
     assert_equal(29,          contents.newest.position)
     assert_equal('content59', contents.newest.data.to_a.pack('C*'))
   end
+
+  def test_get_newer_contents
+    contents = PeerCastStation::Core::ContentCollection.new
+    30.times do |i|
+      content = PeerCastStation::Core::Content.new(i*10, "content#{i}")
+      contents.add(content)
+    end
+    newer = contents.get_newer_contents(-1)
+    assert_equal(30,  newer.count)
+    assert_equal(0,   newer[0].position)
+    assert_equal(290, newer[newer.count-1].position)
+
+    newer = contents.get_newer_contents(0)
+    assert_equal(29,  newer.count)
+    assert_equal(10,  newer[0].position)
+    assert_equal(290, newer[newer.count-1].position)
+
+    newer = contents.get_newer_contents(15)
+    assert_equal(28,  newer.count)
+    assert_equal(20,  newer[0].position)
+    assert_equal(290, newer[newer.count-1].position)
+
+    newer = contents.get_newer_contents(285)
+    assert_equal(1,   newer.count)
+    assert_equal(290, newer[0].position)
+    assert_equal(290, newer[newer.count-1].position)
+
+    newer = contents.get_newer_contents(290)
+    assert_equal(0, newer.count)
+
+    newer = contents.get_newer_contents(300)
+    assert_equal(0, newer.count)
+  end
 end
 

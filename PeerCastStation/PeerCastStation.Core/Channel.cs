@@ -233,39 +233,56 @@ namespace PeerCastStation.Core
       }
     }
 
-    public Content NextOf(long position)
+    private int GetNewerPacketIndex(long position)
     {
       if (list.Count<1) {
-        return null;
+        return 0;
       }
       if (list.Keys[0]>position) {
-        return list.Values[0];
+        return 0;
       }
       if (list.Keys[list.Count-1]<=position) {
-        return null;
+        return list.Count;
       }
       var min = 0;
       var max = list.Count-1;
       var idx = (max+min)/2;
       while (true) {
         if (list.Keys[idx]==position) {
-          return list.Values[idx+1];
+          return idx+1;
         }
         else if (list.Keys[idx]>position) {
           if (min>=max) {
-            return list.Values[idx+1];
+            return idx;
           }
           max = idx-1;
           idx = (max+min)/2;
         }
         else if (list.Keys[idx]<position) {
           if (min>=max) {
-            return list.Values[idx];
+            return idx+1;
           }
           min = idx+1;
           idx = (max+min)/2;
         }
       }
+    }
+
+    public IList<Content> GetNewerContents(long position)
+    {
+      int idx = GetNewerPacketIndex(position);
+      var res = new List<Content>(Math.Max(list.Count-idx, 0));
+      for (var i=idx; i<list.Count; i++) {
+        res.Add(list.Values[i]);
+      }
+      return res;
+    }
+
+    public Content NextOf(long position)
+    {
+      int idx = GetNewerPacketIndex(position);
+      if (idx>=list.Count) return null;
+      else return list.Values[idx];
     }
 
     public Content NextOf(Content item)
