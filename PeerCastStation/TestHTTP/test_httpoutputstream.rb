@@ -321,28 +321,16 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
     stream = TestHTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
 
-    @channel.content_header = nil
-    s.position = 0
-    assert_nil(stream.write_content_header(nil))
-    assert_equal(0, s.position)
-    assert(!stream.is_closed)
-
-    @channel.content_header = PCSCore::Content.new(0, 'header')
-    s.position = 0
-    assert_equal(0, stream.write_content_header(nil))
+    content = PCSCore::Content.new(0, 'header')
+    s.position = 0; s.set_length(0)
+    assert(stream.write_content_header(content))
     assert_equal('header'.size, s.position)
-    assert(!stream.is_closed)
-    assert_equal(0, stream.write_content_header(System::Nullable[System::Int64].new(0)))
-    assert_equal('header'.size, s.position)
-    assert(!stream.is_closed)
-    @channel.content_header = PCSCore::Content.new(16, 'header')
-    assert_equal(16, stream.write_content_header(System::Nullable[System::Int64].new(0)))
-    assert_equal(('header'+'header').size, s.position)
+    assert_equal('header', s.to_array.to_a.pack('C*'))
     assert(!stream.is_closed)
 
     stream.write_enabled = false
-    s.position = 0
-    assert_nil(stream.write_content_header(nil))
+    s.position = 0; s.set_length(0)
+    assert(!stream.write_content_header(content))
     assert_equal(0, s.position)
     assert(stream.is_closed)
   end
@@ -355,50 +343,16 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
     stream = TestHTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
 
-    @channel.contents.clear
-    s.position = 0
-    assert_equal(-1, stream.write_content(-1))
-    assert_equal(0, s.position)
-    assert(!stream.is_closed)
-
-    @channel.contents.add(PCSCore::Content.new(0, 'content0'))
-    s.position = 0
-    assert_equal(0, stream.write_content(-1))
+    content = PCSCore::Content.new(0, 'content0')
+    s.position = 0; s.set_length(0)
+    assert(stream.write_content(content))
     assert_equal('content0'.size, s.position)
-    assert(!stream.is_closed)
-
-    @channel.contents.add(PCSCore::Content.new( 7, 'content1'))
-    @channel.contents.add(PCSCore::Content.new(14, 'content2'))
-    @channel.contents.add(PCSCore::Content.new(21, 'content3'))
-    @channel.contents.add(PCSCore::Content.new(28, 'content4'))
-    s.position = 0; s.set_length(0)
-    assert_equal(7, stream.write_content(0))
-    assert_equal('content1', s.to_array.to_a.pack('C*'))
-    assert(!stream.is_closed)
-
-    s.position = 0; s.set_length(0)
-    assert_equal(14, stream.write_content(7))
-    assert_equal('content2', s.to_array.to_a.pack('C*'))
-    assert(!stream.is_closed)
-
-    s.position = 0; s.set_length(0)
-    assert_equal(21, stream.write_content(14))
-    assert_equal('content3', s.to_array.to_a.pack('C*'))
-    assert(!stream.is_closed)
-
-    s.position = 0; s.set_length(0)
-    assert_equal(28, stream.write_content(21))
-    assert_equal('content4', s.to_array.to_a.pack('C*'))
-    assert(!stream.is_closed)
-
-    s.position = 0; s.set_length(0)
-    assert_equal(28, stream.write_content(28))
-    assert_equal(0, s.position)
+    assert_equal('content0', s.to_array.to_a.pack('C*'))
     assert(!stream.is_closed)
 
     stream.write_enabled = false
     s.position = 0; s.set_length(0)
-    assert_equal(-1, stream.write_content(-1))
+    assert(!stream.write_content(content))
     assert_equal(0, s.position)
     assert(stream.is_closed)
   end

@@ -224,6 +224,9 @@ namespace PeerCastStation.HTTP
     private HTTPRequest request;
     private volatile bool closed = false;
     private System.Threading.AutoResetEvent changedEvent = new System.Threading.AutoResetEvent(true);
+    private Content headerPacket = null;
+    private List<Content> contentPacketQueue = new List<Content>();
+    private long sentPosition = -1;
 
     /// <summary>
     /// 所属するPeerCastを取得します
@@ -290,6 +293,15 @@ namespace PeerCastStation.HTTP
       this.request = request;
       if (this.channel!=null) {
         this.channel.ContentChanged += (sender, e) => {
+          lock (contentPacketQueue) {
+            headerPacket = channel.ContentHeader;
+            if (contentPacketQueue.Count>0) {
+              contentPacketQueue.AddRange(channel.Contents.GetNewerContents(contentPacketQueue[contentPacketQueue.Count-1].Position));
+            }
+            else {
+              contentPacketQueue.AddRange(channel.Contents.GetNewerContents(sentPosition));
+            }
+          }
           this.changedEvent.Set();
         };
         this.channel.Closed += (sender, e) => {
@@ -460,25 +472,31 @@ namespace PeerCastStation.HTTP
         break;
       case BodyType.Content:
         logger.Debug("Sending Contents");
-        long? header_pos = null;
-        long content_pos = -1;
+        Content sentHeader = null;
+        headerPacket = null;
+        sentPosition = -1;
         while (!closed) {
           WaitContentChanged();
-          bool sent = true;
-          while (sent) {
-            if (header_pos==null) {
-              var new_pos = WriteContentHeader(header_pos);
-              sent = header_pos!=new_pos;
-              if (header_pos!=new_pos) {
-                header_pos = new_pos;
-                content_pos = header_pos.Value;
-                logger.Debug("Sent ContentHeader pos {0}", header_pos.Value);
-              }
+          if (sentHeader!=headerPacket) {
+            if (WriteContentHeader(headerPacket)) {
+              sentHeader = headerPacket;
+              sentPosition = sentHeader.Position;
+              logger.Debug("Sent ContentHeader pos {0}", sentHeader.Position);
             }
-            if (header_pos.HasValue) {
-              var new_pos = WriteContent(content_pos);
-              sent = content_pos!=new_pos;
-              content_pos = new_pos;
+          }
+          if (sentHeader!=null) {
+            lock (contentPacketQueue) {
+              foreach (var c in contentPacketQueue) {
+                if (c.Position>sentPosition) {
+                  if (WriteContent(c)) {
+                    sentPosition = c.Position;
+                  }
+                  else {
+                    break;
+                  }
+                }
+              }
+              contentPacketQueue.Clear();
             }
           }
         }
@@ -531,50 +549,43 @@ namespace PeerCastStation.HTTP
     /// <summary>
     /// チャンネルコンテントのヘッダをストリームに出力します
     /// </summary>
-    /// <param name="pos">以前出力したヘッダの位置</param>
+    /// <param name="header">出力するヘッダ</param>
     /// <returns>
     /// ヘッダが出力できた場合はtrue、それ以外はfalse
     /// </returns>
-    protected virtual long? WriteContentHeader(long? pos)
+    protected virtual bool WriteContentHeader(Content header)
     {
-      var header = channel.ContentHeader;
-      if (header!=null &&
-          (!pos.HasValue || header.Position!=pos.Value)) {
+      if (header!=null) {
         if (WriteBytes(header.Data)) {
-          return header.Position;
+          return true;
         }
         else {
           closed = true;
-          return pos;
+          return false;
         }
       }
       else {
-        return pos;
+        return false;
       }
     }
 
     /// <summary>
     /// チャンネルコンテントのボディをストリームに出力します
     /// </summary>
-    /// <param name="last_pos">前回まで出力したposition</param>
-    /// <returns>今回出力したposition、出力してない場合はlast_pos</returns>
-    protected long WriteContent(long last_pos)
+    /// <returns>出力した場合はtrue、失敗した場合はfalse</returns>
+    protected bool WriteContent(Content content)
     {
-      Content content = null;
-      PeerCast.SynchronizationContext.Send(dummy => {
-        content = channel.Contents.NextOf(last_pos);
-      }, null);
       if (content!=null) {
         if (WriteBytes(content.Data)) {
-          return content.Position;
+          return true;
         }
         else {
           closed = true;
-          return last_pos;
+          return false;
         }
       }
       else {
-        return last_pos;
+        return false;
       }
     }
 
