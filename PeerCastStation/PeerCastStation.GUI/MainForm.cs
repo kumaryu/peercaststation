@@ -109,6 +109,7 @@ namespace PeerCastStation.GUI
       }
     }
 
+    private Timer timer = new Timer();
     private int currentPort;
     private TextBoxWriter guiWriter = null;
     private BindingList<ChannelListItem> channelListItems = new BindingList<ChannelListItem>();
@@ -159,6 +160,8 @@ namespace PeerCastStation.GUI
       else {
         portOpenedLabel.Text = "開放状態不明";
       }
+      timer.Interval = 1;
+      timer.Enabled = true;
     }
 
     private void SettingsPropertyChanged(object sender, PropertyChangedEventArgs e)
