@@ -270,7 +270,7 @@ namespace PeerCastStation.PCP
       this.Channel = channel;
       this.remoteEndPoint = remote_endpoint;
       this.Downhost = null;
-      this.IsRelayFull = false;
+      this.IsRelayFull = channel!=null ? !peercast.AccessController.IsChannelRelayable(channel, this) : false;
       this.relayRequest = request;
     }
 
@@ -411,7 +411,6 @@ namespace PeerCastStation.PCP
         System.Threading.SynchronizationContext.SetSynchronizationContext(this.syncContext);
       }
       if (Channel!=null) {
-        IsRelayFull = !PeerCast.AccessController.IsChannelRelayable(Channel, this);
         Channel.ContentChanged += new EventHandler(Channel_ContentChanged);
       }
       StartReceive();

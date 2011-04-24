@@ -158,6 +158,8 @@ class TC_PCPOutputStream < Test::Unit::TestCase
     assert_equal(@base_stream, stream.stream)
     assert_equal(@channel,     stream.Channel)
     assert_equal(PCSCore::OutputStreamType.relay, stream.output_stream_type)
+    assert(!stream.is_closed)
+    assert(!stream.is_relay_full)
   end
 
   def test_is_local
@@ -182,6 +184,42 @@ class TC_PCPOutputStream < Test::Unit::TestCase
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
     stream = TestPCPOutputStream.new(@peercast, @base_stream, endpoint, @channel, @request)
     assert_equal(7144, stream.upstream_rate)
+  end
+
+  def new_channel(bitrate)
+    channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    channel.channel_info.extra.set_chan_info(PeerCastStation::Core::AtomCollection.new)
+    channel.channel_info.extra.get_chan_info.set_chan_info_bitrate(bitrate)
+    @peercast.channels.add(channel)
+    channel
+  end
+
+  def new_output(type, is_local, bitrate)
+    output_stream_type = PeerCastStation::Core::OutputStreamType.play
+    case type
+    when :play
+      output_stream_type = PeerCastStation::Core::OutputStreamType.play
+    when :relay
+      output_stream_type = PeerCastStation::Core::OutputStreamType.relay
+    end
+    output = MockOutputStream.new(output_stream_type)
+    output.is_local = is_local
+    output.upstream_rate = bitrate
+    output
+  end
+
+  def test_relay_full
+    channel = new_channel(7144)
+    channel.output_streams.add(new_output(:relay, false, 7144))
+
+    @peercast.access_controller.max_upstream_rate = 7144*2
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
+    stream = TestPCPOutputStream.new(@peercast, @base_stream, endpoint, channel, @request)
+    assert(!stream.is_relay_full)
+
+    @peercast.access_controller.max_upstream_rate = 7144
+    stream = TestPCPOutputStream.new(@peercast, @base_stream, endpoint, channel, @request)
+    assert(stream.is_relay_full)
   end
 
   class TestChannel < PeerCastStation::Core::Channel
