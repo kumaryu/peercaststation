@@ -12,20 +12,24 @@ class MockOutputStream
   
   def initialize(type=0)
     @type = type
+    @remote_endpoint = nil
+    @upstream_rate = 0
+    @is_local = false
     @log = []
   end
   attr_reader :log
+  attr_accessor :remote_endpoint, :upstream_rate, :is_local
 
   def output_stream_type
     @type
   end
-  
+
   def post(from, packet)
     @log << [:post, from, packet]
   end
   
-  def start(stream, channel)
-    @log << [:start, stream, channel]
+  def start
+    @log << [:start]
   end
   
   def close
@@ -177,6 +181,11 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   
   def test_construct
     source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
+    assert_equal(@peercast, source.PeerCast)
+    assert_equal(@channel, source.Channel)
+    assert(!source.is_connected)
+    assert_nil(source.state)
+    assert_nil(source.uphost)
   end
   
   def test_create_broadcast_packet
@@ -966,11 +975,16 @@ class TC_PCPSourceRecvRelayResponseState < Test::Unit::TestCase
       inst = super
       inst.instance_eval do
         @log = []
+        @is_connected = false
         @relay_request_response = nil
       end
       inst
     end
-    attr_accessor :log, :relay_request_response
+    attr_accessor :log, :relay_request_response, :is_connected
+
+    def IsConnected
+      @is_connected
+    end
 
     def RecvRelayRequestResponse
       @log << [:recv_relay_request_response]
@@ -1001,6 +1015,16 @@ class TC_PCPSourceRecvRelayResponseState < Test::Unit::TestCase
     assert_equal(0, @source.log.size)
 
     @source.relay_request_response = nil
+    @source.is_connected = false
+    state = PCSPCP::PCPSourceRecvRelayResponseState.new(@source)
+    next_state = state.process
+    assert(next_state)
+    assert_kind_of(PCSPCP::PCPSourceClosedState, next_state)
+    assert_equal(1, @source.log.size)
+    assert_equal(:recv_relay_request_response, @source.log[0][0])
+    @source.log.clear
+
+    @source.is_connected = true
     state = PCSPCP::PCPSourceRecvRelayResponseState.new(@source)
     next_state = state.process
     assert(next_state)

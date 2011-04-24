@@ -148,6 +148,9 @@ namespace PeerCastStation.PCP
           return new PCPSourceClosedState(Owner, CloseReason.AccessDenied);
         }
       }
+      else if (!Owner.IsConnected) {
+        return new PCPSourceClosedState(Owner, CloseReason.ConnectionError);
+      }
       else {
         return this;
       }
@@ -302,7 +305,7 @@ namespace PeerCastStation.PCP
     public PeerCast PeerCast { get { return peercast; } }
     public Channel Channel { get { return channel; } set { channel = value; } }
     public Host Uphost { get { return uphost; } set { uphost = value; } }
-    public bool IsConnected { get { return connection!=null; } }
+    public virtual bool IsConnected { get { return connection!=null; } }
     public bool IsHostInfoUpdated { get { return hostInfoUpdated; } set { hostInfoUpdated = value; } }
     public event EventHandler<SourceStreamStatusChangedEventArgs> StatusChanged;
     private SourceStreamStatus status;
