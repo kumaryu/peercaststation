@@ -365,6 +365,7 @@ namespace PeerCastStation.GUI
       var item = channelList.SelectedItem as ChannelListItem;
       if (item!=null) {
         refreshTree(item.Channel);
+        refreshOutputList(item.Channel);
       }
       else {
         relayTree.Nodes.Clear();
@@ -452,6 +453,14 @@ namespace PeerCastStation.GUI
       relayTree.EndUpdate();
     }
 
+    private void refreshOutputList(Channel channel)
+    {
+      outputList.Items.Clear();
+      foreach (var os in channel.OutputStreams) {
+        outputList.Items.Add(os);
+      }
+    }
+
     private System.IO.TextWriter logFileWriter = null;
     private void logToFileCheck_CheckedChanged(object sender, EventArgs e)
     {
@@ -501,6 +510,10 @@ namespace PeerCastStation.GUI
 
     private void downStreamClose_Click(object sender, EventArgs e)
     {
+      var connection = outputList.SelectedItem as IOutputStream;
+      if (connection!=null) {
+        connection.Close();
+      }
     }
   }
 }
