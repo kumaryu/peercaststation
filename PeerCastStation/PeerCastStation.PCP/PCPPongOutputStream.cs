@@ -61,6 +61,11 @@ namespace PeerCastStation.PCP
     private EndPoint remoteEndPoint = null;
     private QueuedSynchronizationContext syncContext = null;
 
+    public override string ToString()
+    {
+      return String.Format("PCP(PONG) {0} ({1})", remoteEndPoint);
+    }
+
     public PCPPongOutputStream(PeerCast peercast, Stream stream, IPEndPoint endpoint, byte[] header)
     {
       logger.Debug("Initialized: Remote {0}", endpoint);

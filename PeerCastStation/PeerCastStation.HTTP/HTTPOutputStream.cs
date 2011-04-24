@@ -222,6 +222,7 @@ namespace PeerCastStation.HTTP
     private Stream stream;
     private Channel channel;
     private HTTPRequest request;
+    private IPEndPoint remoteEndPoint;
     private volatile bool closed = false;
     private System.Threading.AutoResetEvent changedEvent = new System.Threading.AutoResetEvent(true);
     private Content headerPacket = null;
@@ -270,6 +271,15 @@ namespace PeerCastStation.HTTP
       }
     }
 
+    public override string ToString()
+    {
+      string user_agent = "";
+      if (request.Headers.ContainsKey("User-Agent")) {
+        user_agent = request.Headers["User-Agent"];
+      }
+      return String.Format("HTTP Direct {0} ({1})", remoteEndPoint, user_agent);
+    }
+
     /// <summary>
     /// 元になるストリーム、チャンネル、リクエストからHTTPOutputStreamを初期化します
     /// </summary>
@@ -287,8 +297,8 @@ namespace PeerCastStation.HTTP
         request.Uri);
       this.peercast = peercast;
       this.stream = stream;
-      var ip = remote_endpoint as IPEndPoint;
-      this.IsLocal = ip!=null ? Utils.IsSiteLocal(ip.Address) : true;
+      this.remoteEndPoint = remote_endpoint as IPEndPoint;
+      this.IsLocal = this.remoteEndPoint!=null ? Utils.IsSiteLocal(this.remoteEndPoint.Address) : true;
       this.channel = channel;
       this.request = request;
       if (this.channel!=null) {

@@ -245,6 +245,12 @@ namespace PeerCastStation.PCP
       }
     }
 
+    public override string ToString()
+    {
+      return String.Format("PCP Relay {0} ({1})", remoteEndPoint, relayRequest.UserAgent);
+    }
+    private RelayRequest relayRequest;
+
     public PCPOutputStream(
       PeerCast peercast,
       Stream stream,
@@ -265,6 +271,7 @@ namespace PeerCastStation.PCP
       this.remoteEndPoint = remote_endpoint;
       this.Downhost = null;
       this.IsRelayFull = false;
+      this.relayRequest = request;
     }
 
     protected virtual string CreateRelayResponse(Channel channel, bool is_relay_full)
