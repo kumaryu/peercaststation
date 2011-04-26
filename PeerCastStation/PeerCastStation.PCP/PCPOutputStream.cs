@@ -427,11 +427,14 @@ namespace PeerCastStation.PCP
             SendRelayBody(ref header_pos, ref content_pos);
           }
           ProcessSend();
-          if (syncContext!=null) syncContext.ProcessAll();
+          syncContext.ProcessAll();
         }
       }
+      while (ProcessSend()) {
+        syncContext.ProcessAll();
+      }
       Close();
-      if (syncContext!=null) syncContext.ProcessAll();
+      syncContext.ProcessAll();
       logger.Debug("Finished");
     }
 
@@ -489,6 +492,12 @@ namespace PeerCastStation.PCP
         sendResult = null;
       }
       Stream.Close();
+      if (sendStream.Length>0) {
+        logger.Debug("Discarded send stream length: {0}", sendStream.Length);
+      }
+      if (recvStream.Length>0) {
+        logger.Debug("Discarded recv stream length: {0}", recvStream.Length);
+      }
       sendStream.SetLength(0);
       sendStream.Position = 0;
       recvStream.SetLength(0);
@@ -500,15 +509,13 @@ namespace PeerCastStation.PCP
 
     public virtual void Close()
     {
-      if (!IsClosed) {
-        if (syncContext!=null) {
-          syncContext.Post(x => {
-            DoClose();
-          }, null);
-        }
-        else {
+      if (syncContext!=null) {
+        syncContext.Post(x => {
           DoClose();
-        }
+        }, null);
+      }
+      else {
+        DoClose();
       }
     }
 
@@ -534,35 +541,40 @@ namespace PeerCastStation.PCP
             catch (ObjectDisposedException) {}
             catch (IOException e) {
               logger.Error(e);
-              Close();
+              DoClose();
             }
           }, Stream);
         }
         catch (ObjectDisposedException) {}
         catch (IOException e) {
           logger.Error(e);
-          Close();
+          DoClose();
         }
       }
     }
 
     MemoryStream sendStream = new MemoryStream(8192);
     IAsyncResult sendResult = null;
-    private void ProcessSend()
+    private bool ProcessSend()
     {
-      if (sendResult!=null && sendResult.IsCompleted) {
-        try {
-          Stream.EndWrite(sendResult);
+      bool res = false;
+      if (sendResult!=null) {
+        res = true;
+        if (sendResult.IsCompleted) {
+          try {
+            Stream.EndWrite(sendResult);
+          }
+          catch (ObjectDisposedException) {
+          }
+          catch (IOException e) {
+            logger.Error(e);
+            DoClose();
+          }
+          sendResult = null;
         }
-        catch (ObjectDisposedException) {
-        }
-        catch (IOException e) {
-          logger.Error(e);
-          Close();
-        }
-        sendResult = null;
       }
       if (!IsClosed && sendResult==null && sendStream.Length>0) {
+        res = true;
         var buf = sendStream.ToArray();
         sendStream.SetLength(0);
         sendStream.Position = 0;
@@ -573,9 +585,10 @@ namespace PeerCastStation.PCP
         }
         catch (IOException e) {
           logger.Error(e);
-          Close();
+          DoClose();
         }
       }
+      return res;
     }
 
     protected virtual void Send(byte[] bytes)
