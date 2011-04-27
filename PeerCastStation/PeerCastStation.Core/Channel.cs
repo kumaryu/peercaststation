@@ -325,6 +325,7 @@ namespace PeerCastStation.Core
   public class Channel
     : INotifyPropertyChanged
   {
+    private const int NodeLimit = 180000; //ms
     private static Logger logger = new Logger(typeof(Channel));
     private Uri sourceUri = null;
     private Host sourceHost = null;
@@ -394,8 +395,8 @@ namespace PeerCastStation.Core
     /// </summary>
     public IList<Node> Nodes {
       get {
-        var limit_time = new TimeSpan((Environment.TickCount+180000)*10000L);
-        foreach (var node in nodes.Where(n => n.LastUpdated>limit_time)) {
+        var limit_time = TimeSpan.FromMilliseconds(Environment.TickCount-NodeLimit);
+        foreach (var node in nodes.Where(n => n.LastUpdated<limit_time).ToArray()) {
           nodes.Remove(node);
         }
         return nodes;
@@ -511,7 +512,13 @@ namespace PeerCastStation.Core
       {
         if (ignoredHosts.ContainsKey(host)) {
           int tick = Environment.TickCount;
-          return tick - ignoredHosts[host] <= threshold;
+          if (tick - ignoredHosts[host] <= threshold) {
+            return true;
+          }
+          else {
+            ignoredHosts.Remove(host);
+            return false;
+          }
         }
         else {
           return false;
@@ -525,7 +532,7 @@ namespace PeerCastStation.Core
 
       public ICollection<Host> Hosts { get { return ignoredHosts.Keys; } }
     }
-    private IgnoredHostCollection ignoredHosts = new IgnoredHostCollection(30 * 1000); //30sec
+    private IgnoredHostCollection ignoredHosts = new IgnoredHostCollection(NodeLimit);
     public ICollection<Host> IgnoredHosts { get { return ignoredHosts.Hosts; } }
 
     /// <summary>
@@ -570,7 +577,7 @@ namespace PeerCastStation.Core
     /// <returns>次に接続すべきホスト。無い場合はnull</returns>
     public virtual Host SelectSourceHost()
     {
-      var node_list = nodes.Where(node => !ignoredHosts.Contains(node.Host)).ToList<Node>();
+      var node_list = Nodes.Where(node => !ignoredHosts.Contains(node.Host)).ToList<Node>();
       var res = SelectSourceNode(node_list);
       if (res!=null) {
         return res.Host;
@@ -590,7 +597,7 @@ namespace PeerCastStation.Core
     /// <returns>次に接続すべきホスト。最大8箇所。無い場合は空の配列</returns>
     public virtual Node[] SelectSourceNodes()
     {
-      var node_list = nodes.Where(node => !ignoredHosts.Contains(node.Host)).ToList<Node>();
+      var node_list = Nodes.Where(node => !ignoredHosts.Contains(node.Host)).ToList<Node>();
       var res = new List<Node>();
       for (var i=0; i<8; i++) {
         var node = SelectSourceNode(node_list);
