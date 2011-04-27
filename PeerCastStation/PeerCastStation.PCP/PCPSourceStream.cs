@@ -953,13 +953,13 @@ namespace PeerCastStation.PCP
     {
       if (syncContext!=null) {
         syncContext.Post((x) => {
-          if (IsConnected) {
+          if (state!=null) {
             state = new PCPSourceClosedState(this, CloseReason.UserShutdown);
           }
         }, null);
       }
       else {
-        if (IsConnected) {
+        if (state!=null) {
           state = new PCPSourceClosedState(this, CloseReason.UserShutdown);
         }
       }
@@ -969,13 +969,13 @@ namespace PeerCastStation.PCP
     {
       if (syncContext!=null) {
         syncContext.Post((x) => {
-          if (IsConnected) {
+          if (state!=null) {
             state = new PCPSourceClosedState(this, CloseReason.UserReconnect);
           }
         }, null);
       }
       else {
-        if (IsConnected) {
+        if (state!=null) {
           state = new PCPSourceClosedState(this, CloseReason.UserReconnect);
         }
       }

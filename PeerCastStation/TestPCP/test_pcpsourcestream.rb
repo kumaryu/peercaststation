@@ -294,40 +294,32 @@ class TC_PCPSourceStream < Test::Unit::TestCase
 
   def test_set_close
     source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
-    assert(!source.is_connected)
     assert_nil(source.state)
     source.close
     assert_nil(source.state)
 
-    server = MockPCPServer.new('localhost', 7146)
     host = PeerCastStation::Core::Host.new
     host.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146)
-    source.connect(host)
-    assert_nil(source.state)
+    source.state = MockStreamState.new
     source.close
     assert_kind_of(PeerCastStation::PCP::PCPSourceClosedState, source.state)
     assert_equal(PeerCastStation::PCP::CloseReason.user_shutdown, source.state.close_reason)
-    server.close
   end
 
   def test_reconnect
     source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
-    assert(!source.is_connected)
     assert_nil(source.state)
     source.reconnect
     assert_nil(source.state)
 
-    server = MockPCPServer.new('localhost', 7146)
     host = PeerCastStation::Core::Host.new
     host.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146)
-    source.connect(host)
-    assert_nil(source.state)
+    source.state = MockStreamState.new
     source.reconnect
     assert_kind_of(PeerCastStation::PCP::PCPSourceClosedState, source.state)
     assert_equal(PeerCastStation::PCP::CloseReason.user_reconnect, source.state.close_reason)
 
     source.close
-    server.close
   end
 
   def test_ignore_host
