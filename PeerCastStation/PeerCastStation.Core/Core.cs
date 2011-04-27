@@ -298,7 +298,7 @@ namespace PeerCastStation.Core
     private bool isDirectFull = false;
     private bool isReceiving = false;
     private bool isControlFull = false;
-    private TimeSpan lastUpdated = TimeSpan.Zero;
+    private TimeSpan lastUpdated = TimeSpan.FromMilliseconds(Environment.TickCount);
     private AtomCollection extra = new AtomCollection();
     /// <summary>
     /// 接続情報を取得および設定します
