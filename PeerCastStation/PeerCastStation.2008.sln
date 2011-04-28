@@ -12,6 +12,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.HTTP", "Pee
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.GUI", "PeerCastStation.GUI\PeerCastStation.GUI.csproj", "{C48B0B43-0061-4049-8EBF-5F3757009F13}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Logger", "PeerCastStation.Logger\PeerCastStation.Logger.csproj", "{EB11900C-4868-45A4-A046-11D17A3F4220}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Ohaoha", "PeerCastStation.Ohaoha\PeerCastStation.Ohaoha.csproj", "{6E45FCD8-3569-48E9-A704-083A7BBD6743}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,6 +38,14 @@ Global
 		{C48B0B43-0061-4049-8EBF-5F3757009F13}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C48B0B43-0061-4049-8EBF-5F3757009F13}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C48B0B43-0061-4049-8EBF-5F3757009F13}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB11900C-4868-45A4-A046-11D17A3F4220}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB11900C-4868-45A4-A046-11D17A3F4220}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB11900C-4868-45A4-A046-11D17A3F4220}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB11900C-4868-45A4-A046-11D17A3F4220}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E45FCD8-3569-48E9-A704-083A7BBD6743}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E45FCD8-3569-48E9-A704-083A7BBD6743}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E45FCD8-3569-48E9-A704-083A7BBD6743}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E45FCD8-3569-48E9-A704-083A7BBD6743}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
