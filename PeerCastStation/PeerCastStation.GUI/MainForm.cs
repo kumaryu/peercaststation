@@ -140,10 +140,6 @@ namespace PeerCastStation.GUI
         this.Font = new System.Drawing.Font("Osaka", this.Font.SizeInPoints);
         statusBar.Font = new System.Drawing.Font("Osaka", statusBar.Font.SizeInPoints);
       }
-      port.Value                 = Settings.Default.Port;
-      maxRelays.Value            = Settings.Default.MaxRelays;
-      maxDirects.Value           = Settings.Default.MaxPlays;
-      maxUpstreamRate.Value      = Settings.Default.MaxUpstreamRate;
       peerCast = new PeerCastStation.Core.PeerCast();
       peerCast.SourceStreamFactories["pcp"] = new PeerCastStation.PCP.PCPSourceStreamFactory(peerCast);
       peerCast.OutputStreamFactories.Add(new PeerCastStation.PCP.PCPPongOutputStreamFactory(peerCast));
@@ -151,24 +147,18 @@ namespace PeerCastStation.GUI
       peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPOutputStreamFactory(peerCast));
       peerCast.OutputStreamFactories.Add(new PeerCastStation.Ohaoha.OhaohaCheckOutputStreamFactory(peerCast));
       peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPDummyOutputStreamFactory(peerCast));
-      currentPort = Settings.Default.Port;
-      try {
-        peerCast.StartListen(new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort));
-        portLabel.Text = String.Format("ポート:{0}", currentPort);
-      }
-      catch (System.Net.Sockets.SocketException) {
-        portLabel.Text = String.Format("ポート{0}を開けません", currentPort);
-      }
-      peerCast.AccessController.MaxPlays        = Settings.Default.MaxPlays;
-      peerCast.AccessController.MaxRelays       = Settings.Default.MaxRelays;
-      peerCast.AccessController.MaxUpstreamRate = Settings.Default.MaxUpstreamRate;
       peerCast.ChannelAdded   += ChannelAdded;
       peerCast.ChannelRemoved += ChannelRemoved;
+      OnUpdateSettings(null);
+      port.Value                 = Settings.Default.Port;
+      maxRelays.Value            = Settings.Default.MaxRelays;
+      maxDirects.Value           = Settings.Default.MaxPlays;
+      maxUpstreamRate.Value      = Settings.Default.MaxUpstreamRate;
       logLevelList.SelectedIndex = Settings.Default.LogLevel;
-      logToFileCheck.Checked = Settings.Default.LogToFile;
-      logFileNameText.Text = Settings.Default.LogFileName;
-      logToConsoleCheck.Checked = Settings.Default.LogToConsole;
-      logToGUICheck.Checked = Settings.Default.LogToGUI;
+      logToFileCheck.Checked     = Settings.Default.LogToFile;
+      logFileNameText.Text       = Settings.Default.LogFileName;
+      logToConsoleCheck.Checked  = Settings.Default.LogToConsole;
+      logToGUICheck.Checked      = Settings.Default.LogToGUI;
       if (peerCast.IsFirewalled.HasValue) {
         portOpenedLabel.Text = peerCast.IsFirewalled.Value ? "未開放" : "開放";
       }
@@ -179,10 +169,9 @@ namespace PeerCastStation.GUI
       timer.Enabled = true;
     }
 
-    private void SettingsPropertyChanged(object sender, PropertyChangedEventArgs e)
+    private void OnUpdateSettings(string property_name)
     {
-      switch (e.PropertyName) {
-      case "Port":
+      if (property_name==null || property_name=="Port") {
         var listener = peerCast.OutputListeners.FirstOrDefault(x => x.LocalEndPoint.Port==currentPort);
         if (listener!=null) peerCast.StopListen(listener);
         currentPort = Settings.Default.Port;
@@ -193,17 +182,17 @@ namespace PeerCastStation.GUI
         catch (System.Net.Sockets.SocketException) {
           portLabel.Text = String.Format("ポート{0}を開けません", currentPort);
         }
-        break;
-      case "MaxPlays":
-        peerCast.AccessController.MaxPlays        = Settings.Default.MaxPlays;
-        break;
-      case "MaxRelays":
-        peerCast.AccessController.MaxRelays       = Settings.Default.MaxRelays;
-        break;
-      case "MaxUpStreamRate":
+      }
+      if (property_name==null || property_name=="MaxPlays") {
+        peerCast.AccessController.MaxPlays = Settings.Default.MaxPlays;
+      }
+      if (property_name==null || property_name=="MaxRelays") {
+        peerCast.AccessController.MaxRelays = Settings.Default.MaxRelays;
+      }
+      if (property_name==null || property_name=="MaxUpStreamRate") {
         peerCast.AccessController.MaxUpstreamRate = Settings.Default.MaxUpstreamRate;
-        break;
-      case "LogLevel":
+      }
+      if (property_name==null || property_name=="LogLevel") {
         switch (Settings.Default.LogLevel) {
         case 0: Logger.Level = LogLevel.None;  break;
         case 1: Logger.Level = LogLevel.Fatal; break;
@@ -212,16 +201,16 @@ namespace PeerCastStation.GUI
         case 4: Logger.Level = LogLevel.Info;  break;
         case 5: Logger.Level = LogLevel.Debug; break;
         }
-        break;
-      case "LogToFile":
+      }
+      if (property_name==null || property_name=="LogToFile") {
         if (logFileWriter!=null) {
           Logger.RemoveWriter(logFileWriter);
           if (Settings.Default.LogToFile) {
             Logger.AddWriter(logFileWriter);
           }
         }
-        break;
-      case "LogFile":
+      }
+      if (property_name==null || property_name=="LogFileName") {
         if (logFileWriter!=null) {
           Logger.RemoveWriter(logFileWriter);
           logFileWriter.Close();
@@ -240,20 +229,24 @@ namespace PeerCastStation.GUI
         if (logFileWriter!=null && Settings.Default.LogToFile) {
           Logger.AddWriter(logFileWriter);
         }
-        break;
-      case "LogToConsole":
+      }
+      if (property_name==null || property_name=="LogToConsole") {
         Logger.RemoveWriter(System.Console.Error);
         if (Settings.Default.LogToConsole) {
           Logger.AddWriter(System.Console.Error);
         }
-        break;
-      case "LogToGUI":
+      }
+      if (property_name==null || property_name=="LogToGUI") {
         Logger.RemoveWriter(guiWriter);
         if (Settings.Default.LogToGUI) {
           Logger.AddWriter(guiWriter);
         }
-        break;
       }
+    }
+
+    private void SettingsPropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+      OnUpdateSettings(e.PropertyName);
     }
 
     private class ChannelListItem
@@ -299,33 +292,6 @@ namespace PeerCastStation.GUI
             status);
         }
       }
-
-      /*
-      public override string ToString()
-      {
-        var total_plays  = Channel.Nodes.Sum(n => n.DirectCount) + Channel.OutputStreams.CountPlaying;
-        var total_relays = Channel.Nodes.Sum(n => n.RelayCount)  + Channel.OutputStreams.CountRelaying;
-        var chaninfo = Channel.ChannelInfo.Extra.GetChanInfo();
-        var bitrate = chaninfo!=null ? (chaninfo.GetChanInfoBitrate() ?? 0) : 0;
-        var status = "UNKNOWN";
-        switch (Channel.Status) {
-        case SourceStreamStatus.Idle:       status = "IDLE";    break;
-        case SourceStreamStatus.Connecting: status = "CONNECT"; break;
-        case SourceStreamStatus.Searching:  status = "SEARCH";  break;
-        case SourceStreamStatus.Recieving:  status = "RECIEVE"; break;
-        case SourceStreamStatus.Error:      status = "ERROR";   break;
-        }
-        return String.Format(
-          "{0} {1}kbps ({2}/{3}) [{4}/{5}] {6}",
-          Channel.ChannelInfo.Name,
-          bitrate,
-          total_plays,
-          total_relays,
-          Channel.OutputStreams.CountPlaying,
-          Channel.OutputStreams.CountRelaying,
-          status);
-      }
-       */
 
       public event PropertyChangedEventHandler PropertyChanged;
     }
