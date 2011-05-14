@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 require 'test_core'
+require 'test_core_host'
 require 'test_core_peercast'
 require 'test_core_atom'
 require 'test_core_channel'
