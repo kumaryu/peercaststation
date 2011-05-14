@@ -255,77 +255,97 @@ namespace PeerCastStation.Core
   /// 接続情報を保持するクラスです
   /// </summary>
   public class Host
-  {
-    /// <summary>
-    /// ホストが持つローカルなアドレス情報を取得および設定します
-    /// </summary>
-    public IPEndPoint LocalEndPoint { get; set; }
-    /// <summary>
-    /// ホストが持つグローバルなアドレス情報を取得および設定します
-    /// </summary>
-    public IPEndPoint GlobalEndPoint { get; set; }
-    /// <summary>
-    /// ホストのセッションIDを取得および設定します
-    /// </summary>
-    public Guid SessionID { get; set; }
-    /// <summary>
-    /// ホストのブロードキャストIDを取得および設定します
-    /// </summary>
-    public Guid BroadcastID { get; set; }
-    /// <summary>
-    /// ホストへの接続が可能かどうかを取得および設定します
-    /// </summary>
-    public bool IsFirewalled { get; set; }
-    /// <summary>
-    /// ホストの拡張リストを取得します
-    /// </summary>
-    public IList<string> Extensions { get; private set; }
-    /// <summary>
-    /// その他のホスト情報リストを取得します
-    /// </summary>
-    public AtomCollection Extra { get; private set; }
-
-    /// <summary>
-    /// ホスト情報を初期化します
-    /// </summary>
-    public Host()
-    {
-      LocalEndPoint   = null;
-      GlobalEndPoint  = null;
-      SessionID    = Guid.Empty;
-      BroadcastID  = Guid.Empty;
-      IsFirewalled = false;
-      Extensions   = new List<string>();
-      Extra        = new AtomCollection();
-    }
-  }
-
-  /// <summary>
-  /// チャンネルリレー中のノードを表わすクラスです
-  /// </summary>
-  public class Node
     : INotifyPropertyChanged
   {
-    private Host host = null;
+    private IPEndPoint localEndPoint = null;
+    private IPEndPoint globalEndPoint = null;
+    private Guid sessionID = Guid.Empty;
+    private Guid broadcastID = Guid.Empty;
     private int relayCount = 0;
     private int directCount = 0;
+    private bool isFirewalled = true;
     private bool isRelayFull = false;
     private bool isDirectFull = false;
     private bool isReceiving = false;
     private bool isControlFull = false;
     private TimeSpan lastUpdated = TimeSpan.FromMilliseconds(Environment.TickCount);
+    private System.Collections.ObjectModel.ObservableCollection<string> extensions = new System.Collections.ObjectModel.ObservableCollection<string>();
     private AtomCollection extra = new AtomCollection();
     /// <summary>
-    /// 接続情報を取得および設定します
+    /// ホストが持つローカルなアドレス情報を取得および設定します
     /// </summary>
-    public Host Host {
-      get { return host; }
+    public IPEndPoint LocalEndPoint {
+      get { return localEndPoint; }
       set
       {
-        host = value;
-        OnPropertyChanged("Host");
+        if (localEndPoint!=value) {
+          localEndPoint = value;
+          OnPropertyChanged("LocalEndPoint");
+        }
       }
     }
+    /// <summary>
+    /// ホストが持つグローバルなアドレス情報を取得および設定します
+    /// </summary>
+    public IPEndPoint GlobalEndPoint {
+      get { return globalEndPoint; }
+      set
+      {
+        if (globalEndPoint!=value) {
+          globalEndPoint = value;
+          OnPropertyChanged("GlobalEndPoint");
+        }
+      }
+    }
+    /// <summary>
+    /// ホストのセッションIDを取得および設定します
+    /// </summary>
+    public Guid SessionID {
+      get { return sessionID; }
+      set
+      {
+        if (sessionID!=value) {
+          sessionID = value;
+          OnPropertyChanged("SessionID");
+        }
+      }
+    }
+    /// <summary>
+    /// ホストのブロードキャストIDを取得および設定します
+    /// </summary>
+    public Guid BroadcastID {
+      get { return broadcastID; }
+      set
+      {
+        if (broadcastID!=value) {
+          broadcastID = value;
+          OnPropertyChanged("BroadcastID");
+        }
+      }
+    }
+    /// <summary>
+    /// ホストの拡張リストを取得します
+    /// </summary>
+    public IList<string> Extensions { get { return extensions; } }
+    /// <summary>
+    /// その他のホスト情報リストを取得します
+    /// </summary>
+    public AtomCollection Extra { get { return extra; } }
+
+    /// <summary>
+    /// ホストへの接続が可能かどうかを取得および設定します
+    /// </summary>
+    public bool IsFirewalled {
+      get { return isFirewalled; }
+      set
+      {
+        if (isFirewalled!=value) {
+          isFirewalled = value;
+          OnPropertyChanged("IsFirewalled");
+        }
+      }
+    }
+
     /// <summary>
     /// リレーしている数を取得および設定します
     /// </summary>
@@ -333,8 +353,10 @@ namespace PeerCastStation.Core
       get { return relayCount; }
       set
       {
-        relayCount = value;
-        OnPropertyChanged("RelayCount");
+        if (relayCount!=value) {
+          relayCount = value;
+          OnPropertyChanged("RelayCount");
+        }
       }
     }
     /// <summary>
@@ -344,8 +366,10 @@ namespace PeerCastStation.Core
       get { return directCount; }
       set
       {
-        directCount = value;
-        OnPropertyChanged("DirectCount");
+        if (directCount!=value) {
+          directCount = value;
+          OnPropertyChanged("DirectCount");
+        }
       }
     }
     /// <summary>
@@ -355,8 +379,10 @@ namespace PeerCastStation.Core
       get { return isRelayFull; }
       set
       {
-        isRelayFull = value;
-        OnPropertyChanged("IsRelayFull");
+        if (isRelayFull!=value) {
+          isRelayFull = value;
+          OnPropertyChanged("IsRelayFull");
+        }
       }
     }
     /// <summary>
@@ -366,8 +392,10 @@ namespace PeerCastStation.Core
       get { return isDirectFull; }
       set
       {
-        isDirectFull = value;
-        OnPropertyChanged("IsDirectFull");
+        if (isDirectFull!=value) {
+          isDirectFull = value;
+          OnPropertyChanged("IsDirectFull");
+        }
       }
     }
 
@@ -378,8 +406,10 @@ namespace PeerCastStation.Core
       get { return isReceiving; }
       set
       {
-        isReceiving = value;
-        OnPropertyChanged("IsReceiving");
+        if (isReceiving!=value) {
+          isReceiving = value;
+          OnPropertyChanged("IsReceiving");
+        }
       }
     }
 
@@ -390,8 +420,10 @@ namespace PeerCastStation.Core
       get { return isControlFull; }
       set
       {
-        isControlFull = value;
-        OnPropertyChanged("IsControlFull");
+        if (isControlFull!=value) {
+          isControlFull = value;
+          OnPropertyChanged("IsControlFull");
+        }
       }
     }
 
@@ -402,30 +434,22 @@ namespace PeerCastStation.Core
       get { return lastUpdated; }
     }
 
-    /// <summary>
-    /// その他の情報のリストを取得します
-    /// </summary>
-    public AtomCollection Extra { get { return extra; } }
     public event PropertyChangedEventHandler PropertyChanged;
     private void OnPropertyChanged(string name)
     {
-      lastUpdated = new TimeSpan(Environment.TickCount*10000L);
+      lastUpdated = TimeSpan.FromMilliseconds(Environment.TickCount);
       if (PropertyChanged != null) {
         PropertyChanged(this, new PropertyChangedEventArgs(name));
       }
     }
 
     /// <summary>
-    /// 接続情報からノード情報を初期化します
+    /// ホスト情報を初期化します
     /// </summary>
-    /// <param name="host">ノードの接続情報</param>
-    public Node(Host host)
+    public Host()
     {
-      Host = host;
-      lastUpdated = new TimeSpan(Environment.TickCount*10000L);
-      extra.CollectionChanged += (sender, e) => {
-        OnPropertyChanged("Extra");
-      };
+      extensions.CollectionChanged += (sender, e) => { OnPropertyChanged("Extensions"); };
+      extra.CollectionChanged += (sender, e) => { OnPropertyChanged("Extra"); };
     }
   }
 

@@ -346,7 +346,7 @@ namespace PeerCastStation.Core
     private Host sourceHost = null;
     private ISourceStream sourceStream = null;
     private OutputStreamCollection outputStreams = new OutputStreamCollection();
-    private ObservableCollection<Node> nodes = new ObservableCollection<Node>();
+    private ObservableCollection<Host> nodes = new ObservableCollection<Host>();
     private ChannelInfo channelInfo;
     private Content contentHeader = null;
     private ContentCollection contents = new ContentCollection();
@@ -408,7 +408,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// このチャンネルに関連付けられたノードリストを取得します
     /// </summary>
-    public IList<Node> Nodes {
+    public IList<Host> Nodes {
       get {
         var limit_time = TimeSpan.FromMilliseconds(Environment.TickCount-NodeLimit);
         foreach (var node in nodes.Where(n => n.LastUpdated<limit_time).ToArray()) {
@@ -573,7 +573,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="node_list">接続先のリスト</param>
     /// <returns>node_listから選んだ接続先。node_listが空の場合はnull</returns>
-    private Node SelectSourceNode(List<Node> node_list)
+    private Host SelectSourceNode(List<Host> node_list)
     {
       if (node_list.Count > 0) {
         //TODO: 接続先をちゃんと選ぶ
@@ -592,10 +592,10 @@ namespace PeerCastStation.Core
     /// <returns>次に接続すべきホスト。無い場合はnull</returns>
     public virtual Host SelectSourceHost()
     {
-      var node_list = Nodes.Where(node => !ignoredHosts.Contains(node.Host)).ToList<Node>();
+      var node_list = Nodes.Where(node => !ignoredHosts.Contains(node)).ToList<Host>();
       var res = SelectSourceNode(node_list);
       if (res!=null) {
-        return res.Host;
+        return res;
       }
       else if (!ignoredHosts.Contains(sourceHost)) {
         return sourceHost;
@@ -610,10 +610,10 @@ namespace PeerCastStation.Core
     /// IgnoreHostで無視されているホストは一定時間選択されません
     /// </summary>
     /// <returns>次に接続すべきホスト。最大8箇所。無い場合は空の配列</returns>
-    public virtual Node[] SelectSourceNodes()
+    public virtual Host[] SelectSourceNodes()
     {
-      var node_list = Nodes.Where(node => !ignoredHosts.Contains(node.Host)).ToList<Node>();
-      var res = new List<Node>();
+      var node_list = Nodes.Where(node => !ignoredHosts.Contains(node)).ToList<Host>();
+      var res = new List<Host>();
       for (var i=0; i<8; i++) {
         var node = SelectSourceNode(node_list);
         if (node!=null) {

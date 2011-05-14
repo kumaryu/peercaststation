@@ -895,22 +895,22 @@ namespace PeerCastStation.PCP
       var session_id = atom.Children.GetHostSessionID();
       if (session_id!=null) {
         peercast.SynchronizationContext.Post(dummy => {
-          var node = channel.Nodes.FirstOrDefault(x => x.Host.SessionID.Equals(session_id));
+          var node = channel.Nodes.FirstOrDefault(x => x.SessionID.Equals(session_id));
           if (node==null) {
-            node = new Node(new Host());
-            node.Host.SessionID = (Guid)session_id;
+            node = new Host();
+            node.SessionID = (Guid)session_id;
             channel.Nodes.Add(node);
           }
-          node.Host.Extra.Update(atom.Children);
+          node.Extra.Update(atom.Children);
           node.DirectCount = atom.Children.GetHostNumListeners() ?? 0;
           node.RelayCount = atom.Children.GetHostNumRelays() ?? 0;
           var flags1 = atom.Children.GetHostFlags1();
           if (flags1 != null) {
-            node.Host.IsFirewalled = (flags1.Value & PCPHostFlags1.Firewalled) != 0;
-            node.IsRelayFull       = (flags1.Value & PCPHostFlags1.Relay) == 0;
-            node.IsDirectFull      = (flags1.Value & PCPHostFlags1.Direct) == 0;
-            node.IsReceiving       = (flags1.Value & PCPHostFlags1.Receiving) != 0;
-            node.IsControlFull     = (flags1.Value & PCPHostFlags1.ControlIn) == 0;
+            node.IsFirewalled  = (flags1.Value & PCPHostFlags1.Firewalled) != 0;
+            node.IsRelayFull   = (flags1.Value & PCPHostFlags1.Relay) == 0;
+            node.IsDirectFull  = (flags1.Value & PCPHostFlags1.Direct) == 0;
+            node.IsReceiving   = (flags1.Value & PCPHostFlags1.Receiving) != 0;
+            node.IsControlFull = (flags1.Value & PCPHostFlags1.ControlIn) == 0;
           }
 
           int addr_count = 0;
@@ -921,11 +921,11 @@ namespace PeerCastStation.PCP
               if (c.TryGetIPv4Address(out addr)) {
                 ip.Address = addr;
                 if (ip.Port!=0) {
-                  if (addr_count==0 && (node.Host.GlobalEndPoint==null || node.Host.GlobalEndPoint.Equals(ip))) {
-                    node.Host.GlobalEndPoint = ip;
+                  if (addr_count==0 && (node.GlobalEndPoint==null || node.GlobalEndPoint.Equals(ip))) {
+                    node.GlobalEndPoint = ip;
                   }
-                  if (addr_count==1 && (node.Host.LocalEndPoint==null || node.Host.LocalEndPoint.Equals(ip))) {
-                    node.Host.LocalEndPoint = ip;
+                  if (addr_count==1 && (node.LocalEndPoint==null || node.LocalEndPoint.Equals(ip))) {
+                    node.LocalEndPoint = ip;
                   }
                   ip = new IPEndPoint(IPAddress.Any, 0);
                   addr_count++;
@@ -937,11 +937,11 @@ namespace PeerCastStation.PCP
               if (c.TryGetInt16(out port)) {
                 ip.Port = port;
                 if (ip.Address != IPAddress.Any) {
-                  if (addr_count==0 && (node.Host.GlobalEndPoint==null || node.Host.GlobalEndPoint.Equals(ip))) {
-                    node.Host.GlobalEndPoint = ip;
+                  if (addr_count==0 && (node.GlobalEndPoint==null || node.GlobalEndPoint.Equals(ip))) {
+                    node.GlobalEndPoint = ip;
                   }
-                  if (addr_count==1 && (node.Host.LocalEndPoint==null || node.Host.LocalEndPoint.Equals(ip))) {
-                    node.Host.LocalEndPoint = ip;
+                  if (addr_count==1 && (node.LocalEndPoint==null || node.LocalEndPoint.Equals(ip))) {
+                    node.LocalEndPoint = ip;
                   }
                   ip = new IPEndPoint(IPAddress.Any, 0);
                   addr_count++;

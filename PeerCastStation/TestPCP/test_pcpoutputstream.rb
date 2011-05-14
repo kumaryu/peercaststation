@@ -641,10 +641,10 @@ EOS
     session_id = System::Guid.new_guid
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
     stream.is_relay_full = true
-    node = PCSCore::Node.new(PCSCore::Host.new)
-    node.host.SessionID = session_id
-    node.host.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7149)
-    node.host.is_firewalled = false
+    node = PCSCore::Host.new
+    node.SessionID = session_id
+    node.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7149)
+    node.is_firewalled = false
     node.is_relay_full      = false
     node.is_direct_full     = false
     node.is_receiving       = true
@@ -662,9 +662,9 @@ EOS
     assert_equal(PCSCore::Atom.PCP_OLEH, stream.sent_data[0].name)
     assert_equal(PCSCore::Atom.PCP_HOST, stream.sent_data[1].name)
     host = stream.sent_data[1]
-    assert_equal(node.host.SessionID,                host.children.GetHostSessionID)
-    assert_equal(node.host.global_end_point.address, host.children.GetHostIP)
-    assert_equal(node.host.global_end_point.port,    host.children.GetHostPort)
+    assert_equal(node.SessionID,                host.children.GetHostSessionID)
+    assert_equal(node.global_end_point.address, host.children.GetHostIP)
+    assert_equal(node.global_end_point.port,    host.children.GetHostPort)
     assert_equal(@channel.channel_info.ChannelID,host.children.GetHostChannelID)
     assert_equal(
       PCSCore::PCPHostFlags1.relay |
@@ -679,7 +679,7 @@ EOS
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
     stream.is_relay_full = true
     16.times do
-      @channel.nodes.add(PCSCore::Node.new(PCSCore::Host.new))
+      @channel.nodes.add(PCSCore::Host.new)
     end
     assert_nil(stream.downhost)
     helo = PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, PCSCore::AtomCollection.new)
@@ -857,42 +857,42 @@ EOS
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
     assert_equal(0, @channel.nodes.count)
 
-    node = PCSCore::Node.new(PCSCore::Host.new)
-    node.host.SessionID = System::Guid.new_guid
-    node.host.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7149)
-    node.host.is_firewalled = false
+    node = PCSCore::Host.new
+    node.SessionID = System::Guid.new_guid
+    node.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7149)
+    node.is_firewalled = false
     node.is_relay_full      = false
     node.is_direct_full     = false
     node.is_receiving       = true
     node.direct_count = 10
     node.relay_count = 38
     host = PCSCore::Atom.new(PCSCore::Atom.PCP_HOST, PCSCore::AtomCollection.new)
-    host.children.SetHostSessionID(node.host.SessionID)
-    host.children.AddHostIP(node.host.global_end_point.address)
-    host.children.AddHostPort(node.host.global_end_point.port)
+    host.children.SetHostSessionID(node.SessionID)
+    host.children.AddHostIP(node.global_end_point.address)
+    host.children.AddHostPort(node.global_end_point.port)
     host.children.SetHostNumRelays(node.relay_count)
     host.children.SetHostNumListeners(node.direct_count)
     host.children.SetHostFlags1(
-      (node.host.is_firewalled ? PCSCore::PCPHostFlags1.firewalled : PCSCore::PCPHostFlags1.none) |
-      (node.is_relay_full      ? PCSCore::PCPHostFlags1.none       : PCSCore::PCPHostFlags1.relay) |
-      (node.is_direct_full     ? PCSCore::PCPHostFlags1.none       : PCSCore::PCPHostFlags1.direct) |
-      (node.is_receiving       ? PCSCore::PCPHostFlags1.receiving  : PCSCore::PCPHostFlags1.none) |
-      (node.is_control_full    ? PCSCore::PCPHostFlags1.none       : PCSCore::PCPHostFlags1.control_in))
+      (node.is_firewalled   ? PCSCore::PCPHostFlags1.firewalled : PCSCore::PCPHostFlags1.none) |
+      (node.is_relay_full   ? PCSCore::PCPHostFlags1.none       : PCSCore::PCPHostFlags1.relay) |
+      (node.is_direct_full  ? PCSCore::PCPHostFlags1.none       : PCSCore::PCPHostFlags1.direct) |
+      (node.is_receiving    ? PCSCore::PCPHostFlags1.receiving  : PCSCore::PCPHostFlags1.none) |
+      (node.is_control_full ? PCSCore::PCPHostFlags1.none       : PCSCore::PCPHostFlags1.control_in))
     stream.OnPCPHost(host)
     sleep(0.1)
 
     assert_equal(1, @channel.nodes.count)
-    node = @channel.nodes.find {|n| n.host.SessionID.eql?(host.children.GetHostSessionID) }
+    node = @channel.nodes.find {|n| n.SessionID.eql?(host.children.GetHostSessionID) }
     assert(node)
     assert_equal(host.children.GetHostNumListeners, node.direct_count)
     assert_equal(host.children.GetHostNumRelays,    node.relay_count)
     flags1 = host.children.GetHostFlags1
-    assert_equal((flags1 & PCSCore::PCPHostFlags1.firewalled)!=PCSCore::PCPHostFlags1.none, node.host.is_firewalled)
+    assert_equal((flags1 & PCSCore::PCPHostFlags1.firewalled)!=PCSCore::PCPHostFlags1.none, node.is_firewalled)
     assert_equal((flags1 & PCSCore::PCPHostFlags1.relay)     ==PCSCore::PCPHostFlags1.none, node.is_relay_full)
     assert_equal((flags1 & PCSCore::PCPHostFlags1.direct)    ==PCSCore::PCPHostFlags1.none, node.is_direct_full)
     assert_equal((flags1 & PCSCore::PCPHostFlags1.receiving) !=PCSCore::PCPHostFlags1.none, node.is_receiving) 
     assert_equal((flags1 & PCSCore::PCPHostFlags1.control_in)==PCSCore::PCPHostFlags1.none, node.is_control_full)
-    assert_not_nil(node.host.global_end_point)
+    assert_not_nil(node.global_end_point)
   end
 
 end

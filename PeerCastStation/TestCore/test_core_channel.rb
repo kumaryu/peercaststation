@@ -53,7 +53,7 @@ class TC_CoreChannel < Test::Unit::TestCase
     channel.source_stream = MockSourceStream.new(channel, channel.source_uri)
     channel.channel_info.name = 'bar'
     channel.output_streams.add(MockOutputStream.new)
-    channel.nodes.add(PeerCastStation::Core::Node.new(PeerCastStation::Core::Host.new))
+    channel.nodes.add(PeerCastStation::Core::Host.new)
     channel.content_header = PeerCastStation::Core::Content.new(0, 'header')
     channel.contents.add(PeerCastStation::Core::Content.new(1, 'body'))
     assert_equal(5, property_log.size)
@@ -225,18 +225,18 @@ class TC_CoreChannel < Test::Unit::TestCase
 
   def test_select_source_host
     channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
-    host = channel.select_source_host
-    assert_equal(channel.source_host, host)
+    selected = channel.select_source_host
+    assert_equal(channel.source_host, selected)
 
     channel.ignore_host(channel.source_host)
-    host = channel.select_source_host
-    assert_nil(host)
+    selected = channel.select_source_host
+    assert_nil(selected)
 
     channel.clear_ignored
-    node = PeerCastStation::Core::Node.new(PeerCastStation::Core::Host.new)
+    node = PeerCastStation::Core::Host.new
     channel.nodes.add(node)
-    host = channel.select_source_host
-    assert_equal(node.host, host)
+    selected = channel.select_source_host
+    assert_equal(node, selected)
   end
 end
 

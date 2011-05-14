@@ -378,13 +378,13 @@ namespace PeerCastStation.GUI
       }
     }
 
-    private Node createSelfNodeInfo(Channel channel)
+    private Host createSelfNodeInfo(Channel channel)
     {
-      var node = new Node(new Host());
-      node.Host.SessionID      = peerCast.SessionID;
-      node.Host.LocalEndPoint  = peerCast.LocalEndPoint;
-      node.Host.GlobalEndPoint = peerCast.GlobalEndPoint ?? peerCast.LocalEndPoint;
-      node.Host.IsFirewalled   = peerCast.IsFirewalled ?? true;
+      var node = new Host();
+      node.SessionID      = peerCast.SessionID;
+      node.LocalEndPoint  = peerCast.LocalEndPoint;
+      node.GlobalEndPoint = peerCast.GlobalEndPoint ?? peerCast.LocalEndPoint;
+      node.IsFirewalled   = peerCast.IsFirewalled ?? true;
       node.DirectCount = channel.OutputStreams.CountPlaying;
       node.RelayCount  = channel.OutputStreams.CountRelaying;
       node.IsDirectFull = !peerCast.AccessController.IsChannelPlayable(channel);
@@ -393,31 +393,31 @@ namespace PeerCastStation.GUI
       return node;
     }
 
-    private void addRelayTreeNode(TreeNodeCollection tree_nodes, Node node, IList<Node> node_list)
+    private void addRelayTreeNode(TreeNodeCollection tree_nodes, Host node, IList<Host> node_list)
     {
-      var endpoint = node.Host.GlobalEndPoint.Port==0 ? node.Host.LocalEndPoint : node.Host.GlobalEndPoint;
+      var endpoint = node.GlobalEndPoint.Port==0 ? node.LocalEndPoint : node.GlobalEndPoint;
       var nodeinfo = String.Format(
         "({0}/{1}) {2}{3}{4}{5}",
         node.DirectCount,
         node.RelayCount,
-        node.Host.IsFirewalled ? "F" : " ",
-        node.IsDirectFull      ? "D" : " ",
-        node.IsRelayFull       ? "R" : " ",
-        node.IsReceiving       ? " " : "B");
+        node.IsFirewalled ? "F" : " ",
+        node.IsDirectFull ? "D" : " ",
+        node.IsRelayFull  ? "R" : " ",
+        node.IsReceiving  ? " " : "B");
       var tree_node = tree_nodes.Add(String.Format("{0} {1}", endpoint, nodeinfo));
       tree_node.Tag = node;
       foreach (var child in node_list.Where(x => {
         return 
-          x.Host.Extra.GetHostUphostIP()!=null &&
-          x.Host.Extra.GetHostUphostPort()!=null &&
+          x.Extra.GetHostUphostIP()!=null &&
+          x.Extra.GetHostUphostPort()!=null &&
           (
             (
-              node.Host.GlobalEndPoint.Address.Equals(x.Host.Extra.GetHostUphostIP()) &&
-              node.Host.GlobalEndPoint.Port==x.Host.Extra.GetHostUphostPort()
+              node.GlobalEndPoint.Address.Equals(x.Extra.GetHostUphostIP()) &&
+              node.GlobalEndPoint.Port==x.Extra.GetHostUphostPort()
             ) ||
             (
-              node.Host.LocalEndPoint.Address.Equals(x.Host.Extra.GetHostUphostIP()) &&
-              node.Host.LocalEndPoint.Port==x.Host.Extra.GetHostUphostPort()
+              node.LocalEndPoint.Address.Equals(x.Extra.GetHostUphostIP()) &&
+              node.LocalEndPoint.Port==x.Extra.GetHostUphostPort()
             )
           );
       })) {

@@ -709,7 +709,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   def test_pcp_host
     source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     assert_equal(0, @channel.nodes.count)
-    node = @channel.nodes.find {|n| n.host.SessionID.eql?(@peercast.host.SessionID) }
+    node = @channel.nodes.find {|n| n.SessionID.eql?(@peercast.SessionID) }
     assert_nil(node)
 
     host = source.create_host_packet
@@ -717,17 +717,17 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     sleep(0.1)
 
     assert_equal(1, @channel.nodes.count)
-    node = @channel.nodes.find {|n| n.host.SessionID.eql?(@peercast.SessionID) }
+    node = @channel.nodes.find {|n| n.SessionID.eql?(@peercast.SessionID) }
     assert(node)
     assert_equal(host.children.GetHostNumListeners, node.direct_count)
     assert_equal(host.children.GetHostNumRelays,    node.relay_count)
     flags1 = host.children.GetHostFlags1
-    assert_equal((flags1 & PeerCastStation::Core::PCPHostFlags1.firewalled)!=PeerCastStation::Core::PCPHostFlags1.none, node.host.is_firewalled)
+    assert_equal((flags1 & PeerCastStation::Core::PCPHostFlags1.firewalled)!=PeerCastStation::Core::PCPHostFlags1.none, node.is_firewalled)
     assert_equal((flags1 & PeerCastStation::Core::PCPHostFlags1.relay)     ==PeerCastStation::Core::PCPHostFlags1.none, node.is_relay_full)
     assert_equal((flags1 & PeerCastStation::Core::PCPHostFlags1.direct)    ==PeerCastStation::Core::PCPHostFlags1.none, node.is_direct_full)
     assert_equal((flags1 & PeerCastStation::Core::PCPHostFlags1.receiving) !=PeerCastStation::Core::PCPHostFlags1.none, node.is_receiving) 
     assert_equal((flags1 & PeerCastStation::Core::PCPHostFlags1.control_in)==PeerCastStation::Core::PCPHostFlags1.none, node.is_control_full)
-    assert_not_nil(node.host.global_end_point)
+    assert_not_nil(node.global_end_point)
   end
 
   def test_pcp_quit
