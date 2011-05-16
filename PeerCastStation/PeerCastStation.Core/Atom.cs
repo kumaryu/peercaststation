@@ -896,6 +896,22 @@ namespace PeerCastStation.Core
       IAtomCollection
   {
     /// <summary>
+    /// 空のAtomCollectionを初期化します
+    /// </summary>
+    public AtomCollection()
+    {
+    }
+
+    /// <summary>
+    /// 指定したリストから内容をコピーしたAtomCollectionを初期化します
+    /// </summary>
+    /// <param name="other">コピー元のリスト</param>
+    public AtomCollection(System.Collections.Generic.IList<Atom> other)
+      : base(other)
+    {
+    }
+
+    /// <summary>
     /// コレクションから指定した名前を持つAtomを探して取得します
     /// </summary>
     /// <param name="name">検索する名前</param>

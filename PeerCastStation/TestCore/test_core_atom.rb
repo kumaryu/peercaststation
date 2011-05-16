@@ -115,6 +115,21 @@ class TC_CoreAtomCollection < Test::Unit::TestCase
     assert_equal(0, obj.count)
   end
 
+  def test_copy_construct
+    collection1 = PeerCastStation::Core::AtomCollection.new
+    collection1.Add(PeerCastStation::Core::Atom.new(id4('c1'), 0))
+    collection1.Add(PeerCastStation::Core::Atom.new(id4('c2'), 1))
+    collection1.Add(PeerCastStation::Core::Atom.new(id4('c3'), 2))
+    collection1.Add(PeerCastStation::Core::Atom.new(id4('c4'), 3))
+    collection2 = PeerCastStation::Core::AtomCollection.new(collection1)
+    assert_equal(4, collection1.count)
+    assert_equal(4, collection2.count)
+    collection2.clear
+    collection1.Add(PeerCastStation::Core::Atom.new(id4('c5'), 4))
+    assert_equal(5, collection1.count)
+    assert_equal(0, collection2.count)
+  end
+
   def test_update
     collection1 = PeerCastStation::Core::AtomCollection.new
     collection1.Add(PeerCastStation::Core::Atom.new(id4('c1'), 0))
