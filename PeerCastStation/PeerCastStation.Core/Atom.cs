@@ -871,7 +871,29 @@ namespace PeerCastStation.Core
     }
   }
 
-  public class AtomCollection : ObservableCollection<Atom>
+  public interface IAtomCollection : System.Collections.Generic.IList<Atom>
+  {
+    /// <summary>
+    /// コレクションから指定した名前を持つAtomを探して取得します
+    /// </summary>
+    /// <param name="name">検索する名前</param>
+    /// <returns>指定した名前を持つ最初のAtom、無かった場合はnull</returns>
+    Atom FindByName(ID4 name);
+
+    /// <summary>
+    /// 他のAtomCollectionの内容をこのインスタンスに上書きします。
+    /// 同じ名前の要素は上書きされ、異なる名前の要素は追加または残されます
+    /// </summary>
+    /// <param name="other">上書きするコレクション</param>
+    void Update(IAtomCollection other);
+  }
+
+  /// <summary>
+  /// Atomを保持するコレクションクラスです
+  /// </summary>
+  public class AtomCollection
+    : ObservableCollection<Atom>,
+      IAtomCollection
   {
     /// <summary>
     /// コレクションから指定した名前を持つAtomを探して取得します
@@ -888,7 +910,7 @@ namespace PeerCastStation.Core
     /// 同じ名前の要素は上書きされ、異なる名前の要素は追加または残されます
     /// </summary>
     /// <param name="other">上書きするコレクション</param>
-    public void Update(AtomCollection other)
+    public void Update(IAtomCollection other)
     {
       foreach (var atom in other) {
         var updated = false;
@@ -903,6 +925,55 @@ namespace PeerCastStation.Core
           this.Add(atom);
         }
       }
+    }
+
+    /// <summary>
+    /// 読み取り専用のラッパオブジェクトを取得します
+    /// </summary>
+    /// <returns>このコレクションの読み取り専用のラッパ</returns>
+    public ReadOnlyAtomCollection AsReadOnly()
+    {
+      return new ReadOnlyAtomCollection(this);
+    }
+  }
+
+  /// <summary>
+  /// AtomCollectionの読み取り専用コレクションを表すラッパクラスです
+  /// </summary>
+  public class ReadOnlyAtomCollection
+    : ReadOnlyObservableCollection<Atom>,
+      IAtomCollection
+  {
+    private AtomCollection baseCollection;
+
+    /// <summary>
+    /// 指定された元のコレクションから読み取り専用のラッパオブジェクトを初期化します
+    /// </summary>
+    /// <param name="base_collection">元になるコレクション</param>
+    public ReadOnlyAtomCollection(AtomCollection base_collection)
+      : base(base_collection)
+    {
+      baseCollection = base_collection;
+    }
+
+    /// <summary>
+    /// 元のコレクションから指定した名前を持つAtomを探して取得します
+    /// </summary>
+    /// <param name="name">検索する名前</param>
+    /// <returns>指定した名前を持つ最初のAtom、無かった場合はnull</returns>
+    public Atom FindByName(ID4 name)
+    {
+      return baseCollection.FindByName(name);
+    }
+
+    /// <summary>
+    /// 他のAtomCollectionの内容をこのインスタンスに上書きします。
+    /// 常にNotSupporetedExceptionを投げます。
+    /// </summary>
+    /// <param name="other">上書きするコレクション</param>
+    public void Update(IAtomCollection other)
+    {
+      throw new NotSupportedException();
     }
   }
 

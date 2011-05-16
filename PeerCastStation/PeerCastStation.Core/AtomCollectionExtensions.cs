@@ -21,7 +21,7 @@ namespace PeerCastStation.Core
 {
   public static class AtomCollectionExtensions
   {
-    public static int? GetIntFrom(AtomCollection collection, ID4 name)
+    public static int? GetIntFrom(IAtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
       int value = 0;
@@ -33,7 +33,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static uint? GetUIntFrom(AtomCollection collection, ID4 name)
+    public static uint? GetUIntFrom(IAtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
       uint value = 0;
@@ -45,7 +45,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static short? GetShortFrom(AtomCollection collection, ID4 name)
+    public static short? GetShortFrom(IAtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
       short value = 0;
@@ -57,7 +57,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static byte? GetByteFrom(AtomCollection collection, ID4 name)
+    public static byte? GetByteFrom(IAtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
       byte value = 0;
@@ -69,7 +69,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static Guid? GetIDFrom(AtomCollection collection, ID4 name)
+    public static Guid? GetIDFrom(IAtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
       byte[] value = null;
@@ -94,7 +94,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static ID4? GetID4From(AtomCollection collection, ID4 name)
+    public static ID4? GetID4From(IAtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
       byte[] value = null;
@@ -106,7 +106,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static byte[] GetBytesFrom(AtomCollection collection, ID4 name)
+    public static byte[] GetBytesFrom(IAtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
       byte[] value = null;
@@ -118,7 +118,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static IPAddress GetIPAddressFrom(AtomCollection collection, ID4 name)
+    public static IPAddress GetIPAddressFrom(IAtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
       IPAddress value = null;
@@ -130,7 +130,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static string GetStringFrom(AtomCollection collection, ID4 name)
+    public static string GetStringFrom(IAtomCollection collection, ID4 name)
     {
       string res = null;
       var atom = collection.FindByName(name);
@@ -142,12 +142,12 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static Atom GetAtomFrom(AtomCollection collection, ID4 name)
+    public static Atom GetAtomFrom(IAtomCollection collection, ID4 name)
     {
       return collection.FindByName(name);
     }
 
-    public static AtomCollection GetCollectionFrom(AtomCollection collection, ID4 name)
+    public static AtomCollection GetCollectionFrom(IAtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
       if (atom != null && atom.HasChildren) {
@@ -158,7 +158,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static void SetAtomTo(AtomCollection collection, Atom value)
+    public static void SetAtomTo(IAtomCollection collection, Atom value)
     {
       for (var i = 0; i < collection.Count; i++) {
         if (value.Name == collection[i].Name) {
@@ -188,197 +188,197 @@ namespace PeerCastStation.Core
       return value_be;
     }
 
-    public static AtomCollection GetHelo(this AtomCollection collection)
+    public static AtomCollection GetHelo(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_HELO);
     }
 
-    public static string GetHeloAgent(this AtomCollection collection)
+    public static string GetHeloAgent(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_HELO_AGENT);
     }
 
-    public static Guid? GetHeloSessionID(this AtomCollection collection)
+    public static Guid? GetHeloSessionID(this IAtomCollection collection)
     {
       return GetIDFrom(collection, Atom.PCP_HELO_SESSIONID);
     }
 
-    public static short? GetHeloPort(this AtomCollection collection)
+    public static short? GetHeloPort(this IAtomCollection collection)
     {
       return GetShortFrom(collection, Atom.PCP_HELO_PORT);
     }
 
-    public static short? GetHeloPing(this AtomCollection collection)
+    public static short? GetHeloPing(this IAtomCollection collection)
     {
       return GetShortFrom(collection, Atom.PCP_HELO_PING);
     }
 
-    public static IPAddress GetHeloRemoteIP(this AtomCollection collection)
+    public static IPAddress GetHeloRemoteIP(this IAtomCollection collection)
     {
       return GetIPAddressFrom(collection, Atom.PCP_HELO_REMOTEIP);
     }
 
-    public static short? GetHeloRemotePort(this AtomCollection collection)
+    public static short? GetHeloRemotePort(this IAtomCollection collection)
     {
       return GetShortFrom(collection, Atom.PCP_HELO_REMOTEPORT);
     }
 
-    public static int? GetHeloVersion(this AtomCollection collection)
+    public static int? GetHeloVersion(this IAtomCollection collection)
     {
       return GetIntFrom(collection, Atom.PCP_HELO_VERSION);
     }
 
-    public static Guid? GetHeloBCID(this AtomCollection collection)
+    public static Guid? GetHeloBCID(this IAtomCollection collection)
     {
       return GetIDFrom(collection, Atom.PCP_HELO_BCID);
     }
 
-    public static int? GetHeloDisable(this AtomCollection collection)
+    public static int? GetHeloDisable(this IAtomCollection collection)
     {
       return GetIntFrom(collection, Atom.PCP_HELO_DISABLE);
     }
 
-    public static AtomCollection GetOleh(this AtomCollection collection)
+    public static AtomCollection GetOleh(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_OLEH);
     }
 
-    public static int? GetOk(this AtomCollection collection)
+    public static int? GetOk(this IAtomCollection collection)
     {
       return GetIntFrom(collection, Atom.PCP_OK);
     }
 
-    public static AtomCollection GetChan(this AtomCollection collection)
+    public static AtomCollection GetChan(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_CHAN);
     }
 
-    public static Guid? GetChanID(this AtomCollection collection)
+    public static Guid? GetChanID(this IAtomCollection collection)
     {
       return GetIDFrom(collection, Atom.PCP_CHAN_ID);
     }
 
-    public static Guid? GetChanBCID(this AtomCollection collection)
+    public static Guid? GetChanBCID(this IAtomCollection collection)
     {
       return GetIDFrom(collection, Atom.PCP_CHAN_BCID);
     }
 
-    public static AtomCollection GetChanPkt(this AtomCollection collection)
+    public static AtomCollection GetChanPkt(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_CHAN_PKT);
     }
 
-    public static ID4? GetChanPktType(this AtomCollection collection)
+    public static ID4? GetChanPktType(this IAtomCollection collection)
     {
       return GetID4From(collection, Atom.PCP_CHAN_PKT_TYPE);
     }
 
-    public static uint? GetChanPktPos(this AtomCollection collection)
+    public static uint? GetChanPktPos(this IAtomCollection collection)
     {
       return GetUIntFrom(collection, Atom.PCP_CHAN_PKT_POS);
     }
 
-    public static byte[] GetChanPktData(this AtomCollection collection)
+    public static byte[] GetChanPktData(this IAtomCollection collection)
     {
       return GetBytesFrom(collection, Atom.PCP_CHAN_PKT_DATA);
     }
 
-    public static AtomCollection GetChanInfo(this AtomCollection collection)
+    public static AtomCollection GetChanInfo(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_CHAN_INFO);
     }
 
-    public static string GetChanInfoType(this AtomCollection collection)
+    public static string GetChanInfoType(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_INFO_TYPE);
     }
 
-    public static int? GetChanInfoBitrate(this AtomCollection collection)
+    public static int? GetChanInfoBitrate(this IAtomCollection collection)
     {
       return GetIntFrom(collection, Atom.PCP_CHAN_INFO_BITRATE);
     }
 
-    public static string GetChanInfoGenre(this AtomCollection collection)
+    public static string GetChanInfoGenre(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_INFO_GENRE);
     }
 
-    public static string GetChanInfoName(this AtomCollection collection)
+    public static string GetChanInfoName(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_INFO_NAME);
     }
 
-    public static string GetChanInfoURL(this AtomCollection collection)
+    public static string GetChanInfoURL(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_INFO_URL);
     }
 
-    public static string GetChanInfoDesc(this AtomCollection collection)
+    public static string GetChanInfoDesc(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_INFO_DESC);
     }
 
-    public static string GetChanInfoComment(this AtomCollection collection)
+    public static string GetChanInfoComment(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_INFO_COMMENT);
     }
 
-    public static int? GetChanInfoPPFlags(this AtomCollection collection)
+    public static int? GetChanInfoPPFlags(this IAtomCollection collection)
     {
       return GetIntFrom(collection, Atom.PCP_CHAN_INFO_PPFLAGS);
     }
 
-    public static AtomCollection GetChanTrack(this AtomCollection collection)
+    public static AtomCollection GetChanTrack(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_CHAN_TRACK);
     }
 
-    public static string GetChanTrackTitle(this AtomCollection collection)
+    public static string GetChanTrackTitle(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_TRACK_TITLE);
     }
 
-    public static string GetChanTrackCreator(this AtomCollection collection)
+    public static string GetChanTrackCreator(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_TRACK_CREATOR);
     }
 
-    public static string GetChanTrackURL(this AtomCollection collection)
+    public static string GetChanTrackURL(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_TRACK_URL);
     }
 
-    public static string GetChanTrackAlbum(this AtomCollection collection)
+    public static string GetChanTrackAlbum(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_TRACK_ALBUM);
     }
 
-    public static AtomCollection GetBcst(this AtomCollection collection)
+    public static AtomCollection GetBcst(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_BCST);
     }
 
-    public static byte? GetBcstTTL(this AtomCollection collection)
+    public static byte? GetBcstTTL(this IAtomCollection collection)
     {
       return GetByteFrom(collection, Atom.PCP_BCST_TTL);
     }
 
-    public static byte? GetBcstHops(this AtomCollection collection)
+    public static byte? GetBcstHops(this IAtomCollection collection)
     {
       return GetByteFrom(collection, Atom.PCP_BCST_HOPS);
     }
 
-    public static Guid? GetBcstFrom(this AtomCollection collection)
+    public static Guid? GetBcstFrom(this IAtomCollection collection)
     {
       return GetIDFrom(collection, Atom.PCP_BCST_FROM);
     }
 
-    public static Guid? GetBcstDest(this AtomCollection collection)
+    public static Guid? GetBcstDest(this IAtomCollection collection)
     {
       return GetIDFrom(collection, Atom.PCP_BCST_DEST);
     }
 
-    public static BroadcastGroup? GetBcstGroup(this AtomCollection collection)
+    public static BroadcastGroup? GetBcstGroup(this IAtomCollection collection)
     {
       var res = GetByteFrom(collection, Atom.PCP_BCST_GROUP);
       if (res.HasValue) {
@@ -389,67 +389,67 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static Guid? GetBcstChannelID(this AtomCollection collection)
+    public static Guid? GetBcstChannelID(this IAtomCollection collection)
     {
       return GetIDFrom(collection, Atom.PCP_BCST_CHANID);
     }
 
-    public static int? GetBcstVersion(this AtomCollection collection)
+    public static int? GetBcstVersion(this IAtomCollection collection)
     {
       return GetIntFrom(collection, Atom.PCP_BCST_VERSION);
     }
 
-    public static int? GetBcstVersionVP(this AtomCollection collection)
+    public static int? GetBcstVersionVP(this IAtomCollection collection)
     {
       return GetIntFrom(collection, Atom.PCP_BCST_VERSION_VP);
     }
 
-    public static byte[] GetBcstVersionEXPrefix(this AtomCollection collection)
+    public static byte[] GetBcstVersionEXPrefix(this IAtomCollection collection)
     {
       return GetBytesFrom(collection, Atom.PCP_BCST_VERSION_EX_PREFIX);
     }
 
-    public static short? GetBcstVersionEXNumber(this AtomCollection collection)
+    public static short? GetBcstVersionEXNumber(this IAtomCollection collection)
     {
       return GetShortFrom(collection, Atom.PCP_BCST_VERSION_EX_NUMBER);
     }
 
-    public static AtomCollection GetHost(this AtomCollection collection)
+    public static AtomCollection GetHost(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_HOST);
     }
 
-    public static Guid? GetHostSessionID(this AtomCollection collection)
+    public static Guid? GetHostSessionID(this IAtomCollection collection)
     {
       return GetIDFrom(collection, Atom.PCP_HOST_ID);
     }
 
-    public static IPAddress GetHostIP(this AtomCollection collection)
+    public static IPAddress GetHostIP(this IAtomCollection collection)
     {
       return GetIPAddressFrom(collection, Atom.PCP_HOST_IP);
     }
 
-    public static short? GetHostPort(this AtomCollection collection)
+    public static short? GetHostPort(this IAtomCollection collection)
     {
       return GetShortFrom(collection, Atom.PCP_HOST_PORT);
     }
 
-    public static Guid? GetHostChannelID(this AtomCollection collection)
+    public static Guid? GetHostChannelID(this IAtomCollection collection)
     {
       return GetIDFrom(collection, Atom.PCP_HOST_CHANID);
     }
 
-    public static int? GetHostNumListeners(this AtomCollection collection)
+    public static int? GetHostNumListeners(this IAtomCollection collection)
     {
       return GetIntFrom(collection, Atom.PCP_HOST_NUML);
     }
 
-    public static int? GetHostNumRelays(this AtomCollection collection)
+    public static int? GetHostNumRelays(this IAtomCollection collection)
     {
       return GetIntFrom(collection, Atom.PCP_HOST_NUMR);
     }
 
-    public static TimeSpan? GetHostUptime(this AtomCollection collection)
+    public static TimeSpan? GetHostUptime(this IAtomCollection collection)
     {
       int? res = GetIntFrom(collection, Atom.PCP_HOST_UPTIME);
       if (res.HasValue) {
@@ -460,392 +460,392 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static int? GetHostVersion(this AtomCollection collection)
+    public static int? GetHostVersion(this IAtomCollection collection)
     {
       return GetIntFrom(collection, Atom.PCP_HOST_VERSION);
     }
 
-    public static int? GetHostVersionVP(this AtomCollection collection)
+    public static int? GetHostVersionVP(this IAtomCollection collection)
     {
       return GetIntFrom(collection, Atom.PCP_HOST_VERSION_VP);
     }
 
-    public static byte[] GetHostVersionEXPrefix(this AtomCollection collection)
+    public static byte[] GetHostVersionEXPrefix(this IAtomCollection collection)
     {
       return GetBytesFrom(collection, Atom.PCP_HOST_VERSION_EX_PREFIX);
     }
 
-    public static short? GetHostVersionEXNumber(this AtomCollection collection)
+    public static short? GetHostVersionEXNumber(this IAtomCollection collection)
     {
       return GetShortFrom(collection, Atom.PCP_HOST_VERSION_EX_NUMBER);
     }
 
-    public static int? GetHostClapPP(this AtomCollection collection)
+    public static int? GetHostClapPP(this IAtomCollection collection)
     {
       return GetIntFrom(collection, Atom.PCP_HOST_CLAP_PP);
     }
 
-    public static uint? GetHostOldPos(this AtomCollection collection)
+    public static uint? GetHostOldPos(this IAtomCollection collection)
     {
       return GetUIntFrom(collection, Atom.PCP_HOST_OLDPOS);
     }
 
-    public static uint? GetHostNewPos(this AtomCollection collection)
+    public static uint? GetHostNewPos(this IAtomCollection collection)
     {
       return GetUIntFrom(collection, Atom.PCP_HOST_NEWPOS);
     }
 
-    public static PCPHostFlags1? GetHostFlags1(this AtomCollection collection)
+    public static PCPHostFlags1? GetHostFlags1(this IAtomCollection collection)
     {
       return (PCPHostFlags1?)GetByteFrom(collection, Atom.PCP_HOST_FLAGS1);
     }
 
-    public static IPAddress GetHostUphostIP(this AtomCollection collection)
+    public static IPAddress GetHostUphostIP(this IAtomCollection collection)
     {
       return GetIPAddressFrom(collection, Atom.PCP_HOST_UPHOST_IP);
     }
 
-    public static int? GetHostUphostPort(this AtomCollection collection)
+    public static int? GetHostUphostPort(this IAtomCollection collection)
     {
       return GetIntFrom(collection, Atom.PCP_HOST_UPHOST_PORT);
     }
 
-    public static byte? GetHostUphostHops(this AtomCollection collection)
+    public static byte? GetHostUphostHops(this IAtomCollection collection)
     {
       return GetByteFrom(collection, Atom.PCP_HOST_UPHOST_HOPS);
     }
 
-    public static int? GetQuit(this AtomCollection collection)
+    public static int? GetQuit(this IAtomCollection collection)
     {
       return GetIntFrom(collection, Atom.PCP_QUIT);
     }
 
-    public static void SetHelo(this AtomCollection collection, AtomCollection value)
+    public static void SetHelo(this IAtomCollection collection, AtomCollection value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HELO, value));
     }
 
-    public static void SetHeloAgent(this AtomCollection collection, string value)
+    public static void SetHeloAgent(this IAtomCollection collection, string value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HELO_AGENT, value));
     }
 
-    public static void SetHeloBCID(this AtomCollection collection, Guid value)
+    public static void SetHeloBCID(this IAtomCollection collection, Guid value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HELO_BCID, IDToByteArray(value)));
     }
 
-    public static void SetHeloDisable(this AtomCollection collection, int value)
+    public static void SetHeloDisable(this IAtomCollection collection, int value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HELO_DISABLE, value));
     }
 
-    public static void SetHeloPing(this AtomCollection collection, short value)
+    public static void SetHeloPing(this IAtomCollection collection, short value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HELO_PING, value));
     }
 
-    public static void SetHeloPort(this AtomCollection collection, short value)
+    public static void SetHeloPort(this IAtomCollection collection, short value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HELO_PORT, value));
     }
 
-    public static void SetHeloRemotePort(this AtomCollection collection, short value)
+    public static void SetHeloRemotePort(this IAtomCollection collection, short value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HELO_REMOTEPORT, value));
     }
 
-    public static void SetHeloRemoteIP(this AtomCollection collection, IPAddress value)
+    public static void SetHeloRemoteIP(this IAtomCollection collection, IPAddress value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HELO_REMOTEIP, value));
     }
 
-    public static void SetHeloSessionID(this AtomCollection collection, Guid value)
+    public static void SetHeloSessionID(this IAtomCollection collection, Guid value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HELO_SESSIONID, IDToByteArray(value)));
     }
 
-    public static void SetHeloVersion(this AtomCollection collection, int value)
+    public static void SetHeloVersion(this IAtomCollection collection, int value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HELO_VERSION, value));
     }
 
-    public static void SetBcst(this AtomCollection collection, AtomCollection value)
+    public static void SetBcst(this IAtomCollection collection, AtomCollection value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_BCST, value));
     }
 
-    public static void SetBcstChannelID(this AtomCollection collection, Guid value)
+    public static void SetBcstChannelID(this IAtomCollection collection, Guid value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_BCST_CHANID, IDToByteArray(value)));
     }
 
-    public static void SetBcstDest(this AtomCollection collection, Guid value)
+    public static void SetBcstDest(this IAtomCollection collection, Guid value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_BCST_DEST, IDToByteArray(value)));
     }
 
-    public static void SetBcstFrom(this AtomCollection collection, Guid value)
+    public static void SetBcstFrom(this IAtomCollection collection, Guid value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_BCST_FROM, IDToByteArray(value)));
     }
 
-    public static void SetBcstGroup(this AtomCollection collection, BroadcastGroup value)
+    public static void SetBcstGroup(this IAtomCollection collection, BroadcastGroup value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_BCST_GROUP, (byte)value));
     }
 
-    public static void SetBcstHops(this AtomCollection collection, byte value)
+    public static void SetBcstHops(this IAtomCollection collection, byte value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_BCST_HOPS, value));
     }
 
-    public static void SetBcstTTL(this AtomCollection collection, byte value)
+    public static void SetBcstTTL(this IAtomCollection collection, byte value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_BCST_TTL, value));
     }
 
-    public static void SetBcstVersion(this AtomCollection collection, int value)
+    public static void SetBcstVersion(this IAtomCollection collection, int value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_BCST_VERSION, value));
     }
 
-    public static void SetBcstVersionVP(this AtomCollection collection, int value)
+    public static void SetBcstVersionVP(this IAtomCollection collection, int value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_BCST_VERSION_VP, value));
     }
 
-    public static void SetBcstVersionEXNumber(this AtomCollection collection, short value)
+    public static void SetBcstVersionEXNumber(this IAtomCollection collection, short value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_BCST_VERSION_EX_NUMBER, value));
     }
 
-    public static void SetBcstVersionEXPrefix(this AtomCollection collection, byte[] value)
+    public static void SetBcstVersionEXPrefix(this IAtomCollection collection, byte[] value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_BCST_VERSION_EX_PREFIX, value));
     }
 
-    public static void SetChan(this AtomCollection collection, AtomCollection value)
+    public static void SetChan(this IAtomCollection collection, AtomCollection value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN, value));
     }
 
-    public static void SetChanBCID(this AtomCollection collection, Guid value)
+    public static void SetChanBCID(this IAtomCollection collection, Guid value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_BCID, IDToByteArray(value)));
     }
 
-    public static void SetChanID(this AtomCollection collection, Guid value)
+    public static void SetChanID(this IAtomCollection collection, Guid value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_ID, IDToByteArray(value)));
     }
 
-    public static void SetChanInfo(this AtomCollection collection, AtomCollection value)
+    public static void SetChanInfo(this IAtomCollection collection, AtomCollection value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_INFO, value));
     }
 
-    public static void SetChanInfoBitrate(this AtomCollection collection, int value)
+    public static void SetChanInfoBitrate(this IAtomCollection collection, int value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_INFO_BITRATE, value));
     }
 
-    public static void SetChanInfoPPFlags(this AtomCollection collection, int value)
+    public static void SetChanInfoPPFlags(this IAtomCollection collection, int value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_INFO_PPFLAGS, value));
     }
 
-    public static void SetChanInfoComment(this AtomCollection collection, string value)
+    public static void SetChanInfoComment(this IAtomCollection collection, string value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_INFO_COMMENT, value));
     }
 
-    public static void SetChanInfoDesc(this AtomCollection collection, string value)
+    public static void SetChanInfoDesc(this IAtomCollection collection, string value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_INFO_DESC, value));
     }
 
-    public static void SetChanInfoGenre(this AtomCollection collection, string value)
+    public static void SetChanInfoGenre(this IAtomCollection collection, string value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_INFO_GENRE, value));
     }
 
-    public static void SetChanInfoName(this AtomCollection collection, string value)
+    public static void SetChanInfoName(this IAtomCollection collection, string value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_INFO_NAME, value));
     }
 
-    public static void SetChanInfoType(this AtomCollection collection, string value)
+    public static void SetChanInfoType(this IAtomCollection collection, string value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_INFO_TYPE, value));
     }
 
-    public static void SetChanInfoURL(this AtomCollection collection, string value)
+    public static void SetChanInfoURL(this IAtomCollection collection, string value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_INFO_URL, value));
     }
 
-    public static void SetChanPkt(this AtomCollection collection, AtomCollection value)
+    public static void SetChanPkt(this IAtomCollection collection, AtomCollection value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_PKT, value));
     }
 
-    public static void SetChanPktData(this AtomCollection collection, byte[] value)
+    public static void SetChanPktData(this IAtomCollection collection, byte[] value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_PKT_DATA, value));
     }
 
-    public static void SetChanPktPos(this AtomCollection collection, uint value)
+    public static void SetChanPktPos(this IAtomCollection collection, uint value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_PKT_POS, value));
     }
 
-    public static void SetChanPktType(this AtomCollection collection, ID4 value)
+    public static void SetChanPktType(this IAtomCollection collection, ID4 value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_PKT_TYPE, value.GetBytes()));
     }
 
-    public static void SetChanTrack(this AtomCollection collection, AtomCollection value)
+    public static void SetChanTrack(this IAtomCollection collection, AtomCollection value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_TRACK, value));
     }
 
-    public static void SetChanTrackAlbum(this AtomCollection collection, string value)
+    public static void SetChanTrackAlbum(this IAtomCollection collection, string value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_TRACK_ALBUM, value));
     }
 
-    public static void SetChanTrackCreator(this AtomCollection collection, string value)
+    public static void SetChanTrackCreator(this IAtomCollection collection, string value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_TRACK_CREATOR, value));
     }
 
-    public static void SetChanTrackTitle(this AtomCollection collection, string value)
+    public static void SetChanTrackTitle(this IAtomCollection collection, string value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_TRACK_TITLE, value));
     }
 
-    public static void SetChanTrackURL(this AtomCollection collection, string value)
+    public static void SetChanTrackURL(this IAtomCollection collection, string value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_TRACK_URL, value));
     }
 
-    public static void SetHost(this AtomCollection collection, AtomCollection value)
+    public static void SetHost(this IAtomCollection collection, AtomCollection value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST, value));
     }
 
-    public static void SetHostChannelID(this AtomCollection collection, Guid value)
+    public static void SetHostChannelID(this IAtomCollection collection, Guid value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_CHANID, IDToByteArray(value)));
     }
 
-    public static void SetHostClapPP(this AtomCollection collection, int value)
+    public static void SetHostClapPP(this IAtomCollection collection, int value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_CLAP_PP, value));
     }
 
-    public static void SetHostFlags1(this AtomCollection collection, PCPHostFlags1 value)
+    public static void SetHostFlags1(this IAtomCollection collection, PCPHostFlags1 value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_FLAGS1, (byte)value));
     }
 
-    public static void SetHostIP(this AtomCollection collection, IPAddress value)
+    public static void SetHostIP(this IAtomCollection collection, IPAddress value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_IP, value));
     }
 
-    public static void AddHostIP(this AtomCollection collection, IPAddress value)
+    public static void AddHostIP(this IAtomCollection collection, IPAddress value)
     {
       collection.Add(new Atom(Atom.PCP_HOST_IP, value));
     }
 
-    public static void SetHostNewPos(this AtomCollection collection, uint value)
+    public static void SetHostNewPos(this IAtomCollection collection, uint value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_NEWPOS, value));
     }
 
-    public static void SetHostOldPos(this AtomCollection collection, uint value)
+    public static void SetHostOldPos(this IAtomCollection collection, uint value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_OLDPOS, value));
     }
 
-    public static void SetHostNumListeners(this AtomCollection collection, int value)
+    public static void SetHostNumListeners(this IAtomCollection collection, int value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_NUML, value));
     }
 
-    public static void SetHostNumRelays(this AtomCollection collection, int value)
+    public static void SetHostNumRelays(this IAtomCollection collection, int value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_NUMR, value));
     }
 
-    public static void SetHostPort(this AtomCollection collection, short value)
+    public static void SetHostPort(this IAtomCollection collection, short value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_PORT, value));
     }
 
-    public static void AddHostPort(this AtomCollection collection, short value)
+    public static void AddHostPort(this IAtomCollection collection, short value)
     {
       collection.Add(new Atom(Atom.PCP_HOST_PORT, value));
     }
 
-    public static void SetHostSessionID(this AtomCollection collection, Guid value)
+    public static void SetHostSessionID(this IAtomCollection collection, Guid value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_ID, IDToByteArray(value)));
     }
 
-    public static void SetHostUphostHops(this AtomCollection collection, byte value)
+    public static void SetHostUphostHops(this IAtomCollection collection, byte value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_UPHOST_HOPS, value));
     }
 
-    public static void SetHostUphostIP(this AtomCollection collection, IPAddress value)
+    public static void SetHostUphostIP(this IAtomCollection collection, IPAddress value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_UPHOST_IP, value));
     }
 
-    public static void SetHostUphostPort(this AtomCollection collection, int value)
+    public static void SetHostUphostPort(this IAtomCollection collection, int value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_UPHOST_PORT, value));
     }
 
-    public static void SetHostUptime(this AtomCollection collection, TimeSpan value)
+    public static void SetHostUptime(this IAtomCollection collection, TimeSpan value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_UPTIME, (int)value.TotalSeconds));
     }
 
-    public static void SetHostVersion(this AtomCollection collection, int value)
+    public static void SetHostVersion(this IAtomCollection collection, int value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_VERSION, value));
     }
 
-    public static void SetHostVersionVP(this AtomCollection collection, int value)
+    public static void SetHostVersionVP(this IAtomCollection collection, int value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_VERSION_VP, value));
     }
 
-    public static void SetHostVersionEXNumber(this AtomCollection collection, short value)
+    public static void SetHostVersionEXNumber(this IAtomCollection collection, short value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_VERSION_EX_NUMBER, value));
     }
 
-    public static void SetHostVersionEXPrefix(this AtomCollection collection, byte[] value)
+    public static void SetHostVersionEXPrefix(this IAtomCollection collection, byte[] value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_VERSION_EX_PREFIX, value));
     }
 
-    public static void SetOk(this AtomCollection collection, int value)
+    public static void SetOk(this IAtomCollection collection, int value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_OK, value));
     }
 
-    public static void SetOleh(this AtomCollection collection, AtomCollection value)
+    public static void SetOleh(this IAtomCollection collection, AtomCollection value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_OLEH, value));
     }
 
-    public static void SetQuit(this AtomCollection collection, int value)
+    public static void SetQuit(this IAtomCollection collection, int value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_QUIT, value));
     }

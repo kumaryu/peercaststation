@@ -105,6 +105,81 @@ class TC_CoreAtom < Test::Unit::TestCase
   end
 end
 
+class TC_CoreAtomCollection < Test::Unit::TestCase
+  def id4(s)
+    PeerCastStation::Core::ID4.new(s.to_clr_string)
+  end
+  
+  def test_construct
+    obj = PeerCastStation::Core::AtomCollection.new
+    assert_equal(0, obj.count)
+  end
+
+  def test_update
+    collection1 = PeerCastStation::Core::AtomCollection.new
+    collection1.Add(PeerCastStation::Core::Atom.new(id4('c1'), 0))
+    collection1.Add(PeerCastStation::Core::Atom.new(id4('c2'), 1))
+    collection1.Add(PeerCastStation::Core::Atom.new(id4('c3'), 2))
+    collection1.Add(PeerCastStation::Core::Atom.new(id4('c4'), 3))
+    collection2 = PeerCastStation::Core::AtomCollection.new
+    collection2.update(collection1)
+    assert_equal(collection1.count, collection2.count)
+    collection2.count.times do |i|
+      assert_equal(collection1[i], collection2[i])
+    end
+  end
+
+  def test_find_by_name
+    collection = PeerCastStation::Core::AtomCollection.new
+    collection.Add(PeerCastStation::Core::Atom.new(id4('c1'), 0))
+    collection.Add(PeerCastStation::Core::Atom.new(id4('c2'), 1))
+    collection.Add(PeerCastStation::Core::Atom.new(id4('c3'), 2))
+    collection.Add(PeerCastStation::Core::Atom.new(id4('c4'), 3))
+    assert_not_nil(collection.find_by_name(id4('c1')))
+    assert_not_nil(collection.find_by_name(id4('c4')))
+    assert_nil(collection.find_by_name(id4('c5')))
+  end
+end
+
+class TC_CoreReadOnlyAtomCollection < Test::Unit::TestCase
+  def id4(s)
+    PeerCastStation::Core::ID4.new(s.to_clr_string)
+  end
+  
+  def test_construct
+    base = PeerCastStation::Core::AtomCollection.new
+    obj  = PeerCastStation::Core::ReadOnlyAtomCollection.new(base)
+    assert_equal(0, obj.count)
+    assert(!base.clr_member(System::Collections::IList, :IsReadOnly).call)
+    assert(obj.clr_member(System::Collections::IList, :IsReadOnly).call)
+  end
+
+  def test_update
+    collection1 = PeerCastStation::Core::AtomCollection.new
+    collection1.Add(PeerCastStation::Core::Atom.new(id4('c1'), 0))
+    collection1.Add(PeerCastStation::Core::Atom.new(id4('c2'), 1))
+    collection1.Add(PeerCastStation::Core::Atom.new(id4('c3'), 2))
+    collection1.Add(PeerCastStation::Core::Atom.new(id4('c4'), 3))
+    collection2 = PeerCastStation::Core::AtomCollection.new
+    readonly_collection = PeerCastStation::Core::ReadOnlyAtomCollection.new(collection2)
+    assert_raise(System::NotSupportedException) {
+      readonly_collection.update(collection1)
+    }
+  end
+
+  def test_find_by_name
+    base = PeerCastStation::Core::AtomCollection.new
+    base.Add(PeerCastStation::Core::Atom.new(id4('c1'), 0))
+    base.Add(PeerCastStation::Core::Atom.new(id4('c2'), 1))
+    base.Add(PeerCastStation::Core::Atom.new(id4('c3'), 2))
+    base.Add(PeerCastStation::Core::Atom.new(id4('c4'), 3))
+    obj = PeerCastStation::Core::ReadOnlyAtomCollection.new(base)
+    assert_not_nil(obj.find_by_name(id4('c1')))
+    assert_not_nil(obj.find_by_name(id4('c4')))
+    assert_nil(obj.find_by_name(id4('c5')))
+  end
+end
+
 class TC_CoreAtomWriter < Test::Unit::TestCase
   def id4(s)
     PeerCastStation::Core::ID4.new(s.to_clr_string)
