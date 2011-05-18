@@ -159,8 +159,9 @@ class TC_PCPPongOutputStream < Test::Unit::TestCase
 
     session_id = System::Guid.new_guid
     stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array([]))
-    helo = PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, PCSCore::AtomCollection.new)
-    helo.children.SetHeloSessionID(session_id)
+    helo = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HELO) {|children|
+      children.SetHeloSessionID(session_id)
+    }
     stream.OnPCPHelo(helo)
     assert_equal(PCSCore::Atom.PCP_OLEH, stream.sent_data[0].name)
     assert_equal(1, stream.sent_data[0].children.count)
@@ -170,10 +171,11 @@ class TC_PCPPongOutputStream < Test::Unit::TestCase
 
     session_id = System::Guid.new_guid
     stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array([]))
-    helo = PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, PCSCore::AtomCollection.new)
-    helo.children.SetHeloSessionID(session_id)
-    helo.children.SetHeloVersion(1218)
-    helo.children.SetHeloPort(7145)
+    helo = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HELO) {|children|
+      children.SetHeloSessionID(session_id)
+      children.SetHeloVersion(1218)
+      children.SetHeloPort(7145)
+    }
     stream.OnPCPHelo(helo)
     assert_equal(PCSCore::Atom.PCP_OLEH, stream.sent_data[0].name)
     assert_equal(1, stream.sent_data[0].children.count)

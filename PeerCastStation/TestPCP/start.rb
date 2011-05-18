@@ -48,6 +48,14 @@ def explicit_extensions(klass)
 end
 explicit_extensions PeerCastStation::Core::AtomCollectionExtensions
 
+class PeerCastStation::Core::Atom
+  def self.with_children(name, &block)
+    children = PeerCastStation::Core::AtomCollection.new
+    block.call(children)
+    self.new(name, children)
+  end
+end
+
 require 'test_pcpsourcestream'
 require 'test_pcpoutputstream'
 require 'test_pcppongoutputstream'

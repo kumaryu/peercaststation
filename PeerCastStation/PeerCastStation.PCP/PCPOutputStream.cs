@@ -346,28 +346,28 @@ namespace PeerCastStation.PCP
 
     protected static Atom CreateContentHeaderPacket(Channel channel, Content content)
     {
-      Atom chan = new Atom(Atom.PCP_CHAN, new AtomCollection());
-      chan.Children.SetChanID(channel.ChannelInfo.ChannelID);
+      var chan = new AtomCollection();
+      chan.SetChanID(channel.ChannelInfo.ChannelID);
       var chan_pkt = new AtomCollection();
       chan_pkt.SetChanPktType(Atom.PCP_CHAN_PKT_HEAD);
       chan_pkt.SetChanPktPos((uint)(content.Position & 0xFFFFFFFFU));
       chan_pkt.SetChanPktData(content.Data);
-      chan.Children.SetChanPkt(chan_pkt);
-      chan.Children.Update(channel.ChannelInfo.Extra);
+      chan.SetChanPkt(chan_pkt);
+      chan.Update(channel.ChannelInfo.Extra);
       logger.Debug("Sending Header: {0}", content.Position);
-      return chan;
+      return new Atom(Atom.PCP_CHAN, chan);
     }
 
     protected static Atom CreateContentBodyPacket(Channel channel, Content content)
     {
-      Atom chan = new Atom(Atom.PCP_CHAN, new AtomCollection());
-      chan.Children.SetChanID(channel.ChannelInfo.ChannelID);
+      var chan = new AtomCollection();
+      chan.SetChanID(channel.ChannelInfo.ChannelID);
       var chan_pkt = new AtomCollection();
       chan_pkt.SetChanPktType(Atom.PCP_CHAN_PKT_DATA);
       chan_pkt.SetChanPktPos((uint)(content.Position & 0xFFFFFFFFU));
       chan_pkt.SetChanPktData(content.Data);
-      chan.Children.SetChanPkt(chan_pkt);
-      return chan;
+      chan.SetChanPkt(chan_pkt);
+      return new Atom(Atom.PCP_CHAN, chan);
     }
 
     protected static Atom CreateContentPacket(Channel channel, ref long? header_pos, ref long? content_pos)
@@ -655,9 +655,9 @@ namespace PeerCastStation.PCP
         var stream = client.GetStream();
         var conn = new Atom(Atom.PCP_CONNECT, 1);
         AtomWriter.Write(stream, conn);
-        var helo = new Atom(Atom.PCP_HELO, new AtomCollection());
-        helo.Children.SetHeloSessionID(PeerCast.SessionID);
-        AtomWriter.Write(stream, helo);
+        var helo = new AtomCollection();
+        helo.SetHeloSessionID(PeerCast.SessionID);
+        AtomWriter.Write(stream, new Atom(Atom.PCP_HELO, helo));
         var res = AtomReader.Read(stream);
         AtomWriter.Write(stream, new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT));
         stream.Close();
@@ -731,15 +731,15 @@ namespace PeerCastStation.PCP
         Downhost.IsFirewalled = remote_port==0;
         Downhost.Extra.Update(atom.Children);
       }
-      var res = new Atom(Atom.PCP_OLEH, new AtomCollection());
+      var oleh = new AtomCollection();
       if (remoteEndPoint!=null && remoteEndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork) {
-        res.Children.SetHeloRemoteIP(((IPEndPoint)remoteEndPoint).Address);
+        oleh.SetHeloRemoteIP(((IPEndPoint)remoteEndPoint).Address);
       }
-      res.Children.SetHeloAgent(PeerCast.AgentName);
-      res.Children.SetHeloSessionID(PeerCast.SessionID);
-      res.Children.SetHeloRemotePort(remote_port);
-      res.Children.SetHeloVersion(PCP_VERSION);
-      Send(res);
+      oleh.SetHeloAgent(PeerCast.AgentName);
+      oleh.SetHeloSessionID(PeerCast.SessionID);
+      oleh.SetHeloRemotePort(remote_port);
+      oleh.SetHeloVersion(PCP_VERSION);
+      Send(new Atom(Atom.PCP_OLEH, oleh));
       if (Downhost==null) {
         logger.Info("Helo has no SessionID");
         //セッションIDが無かった
@@ -758,22 +758,22 @@ namespace PeerCastStation.PCP
         logger.Debug("Handshake succeeded {0}({1}) but relay is full", Downhost.GlobalEndPoint, Downhost.SessionID.ToString("N"));
         //次に接続するホストを送ってQUIT
         foreach (var node in Channel.SelectSourceNodes()) {
-          var host_atom = new Atom(Atom.PCP_HOST, new AtomCollection());
-          host_atom.Children.SetHostSessionID(node.SessionID);
+          var host_atom = new AtomCollection();
+          host_atom.SetHostSessionID(node.SessionID);
           var globalendpoint = node.GlobalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
-          host_atom.Children.AddHostIP(globalendpoint.Address);
-          host_atom.Children.AddHostPort((short)globalendpoint.Port);
+          host_atom.AddHostIP(globalendpoint.Address);
+          host_atom.AddHostPort((short)globalendpoint.Port);
           var localendpoint  = node.LocalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
-          host_atom.Children.AddHostIP(localendpoint.Address);
-          host_atom.Children.AddHostPort((short)localendpoint.Port);
-          host_atom.Children.SetHostChannelID(Channel.ChannelInfo.ChannelID);
-          host_atom.Children.SetHostFlags1(
+          host_atom.AddHostIP(localendpoint.Address);
+          host_atom.AddHostPort((short)localendpoint.Port);
+          host_atom.SetHostChannelID(Channel.ChannelInfo.ChannelID);
+          host_atom.SetHostFlags1(
             (node.IsFirewalled ? PCPHostFlags1.Firewalled : PCPHostFlags1.None) |
             (node.IsRelayFull ? PCPHostFlags1.None : PCPHostFlags1.Relay) |
             (node.IsDirectFull ? PCPHostFlags1.None : PCPHostFlags1.Direct) |
             (node.IsReceiving ? PCPHostFlags1.Receiving : PCPHostFlags1.None));
-          host_atom.Children.Update(node.Extra);
-          Send(host_atom);
+          host_atom.Update(node.Extra);
+          Send(new Atom(Atom.PCP_HOST, host_atom));
           logger.Debug("Sending Node: {0}({1})", globalendpoint, node.SessionID.ToString("N"));
         }
         var quit = new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT+Atom.PCP_ERROR_UNAVAILABLE);
@@ -824,9 +824,10 @@ namespace PeerCastStation.PCP
           dest != PeerCast.SessionID &&
           ttl>1) {
         logger.Debug("Relaying BCST TTL: {0}, Hops: {1}", ttl, hops);
-        atom.Children.SetBcstTTL((byte)(ttl - 1));
-        atom.Children.SetBcstHops((byte)(hops + 1));
-        Channel.Broadcast(Downhost, atom, group.Value);
+        var bcst = new AtomCollection(atom.Children);
+        bcst.SetBcstTTL((byte)(ttl - 1));
+        bcst.SetBcstHops((byte)(hops + 1));
+        Channel.Broadcast(Downhost, new Atom(atom.Name, bcst), group.Value);
       }
       if (dest==null || dest==PeerCast.SessionID) {
         logger.Debug("Processing BCST({0})", dest==null ? "(null)" : dest.Value.ToString("N"));

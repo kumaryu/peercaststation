@@ -147,7 +147,7 @@ namespace PeerCastStation.Core
       return collection.FindByName(name);
     }
 
-    public static AtomCollection GetCollectionFrom(IAtomCollection collection, ID4 name)
+    public static IAtomCollection GetCollectionFrom(IAtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
       if (atom != null && atom.HasChildren) {
@@ -188,7 +188,7 @@ namespace PeerCastStation.Core
       return value_be;
     }
 
-    public static AtomCollection GetHelo(this IAtomCollection collection)
+    public static IAtomCollection GetHelo(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_HELO);
     }
@@ -238,7 +238,7 @@ namespace PeerCastStation.Core
       return GetIntFrom(collection, Atom.PCP_HELO_DISABLE);
     }
 
-    public static AtomCollection GetOleh(this IAtomCollection collection)
+    public static IAtomCollection GetOleh(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_OLEH);
     }
@@ -248,7 +248,7 @@ namespace PeerCastStation.Core
       return GetIntFrom(collection, Atom.PCP_OK);
     }
 
-    public static AtomCollection GetChan(this IAtomCollection collection)
+    public static IAtomCollection GetChan(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_CHAN);
     }
@@ -263,7 +263,7 @@ namespace PeerCastStation.Core
       return GetIDFrom(collection, Atom.PCP_CHAN_BCID);
     }
 
-    public static AtomCollection GetChanPkt(this IAtomCollection collection)
+    public static IAtomCollection GetChanPkt(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_CHAN_PKT);
     }
@@ -283,7 +283,7 @@ namespace PeerCastStation.Core
       return GetBytesFrom(collection, Atom.PCP_CHAN_PKT_DATA);
     }
 
-    public static AtomCollection GetChanInfo(this IAtomCollection collection)
+    public static IAtomCollection GetChanInfo(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_CHAN_INFO);
     }
@@ -328,7 +328,7 @@ namespace PeerCastStation.Core
       return GetIntFrom(collection, Atom.PCP_CHAN_INFO_PPFLAGS);
     }
 
-    public static AtomCollection GetChanTrack(this IAtomCollection collection)
+    public static IAtomCollection GetChanTrack(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_CHAN_TRACK);
     }
@@ -353,7 +353,7 @@ namespace PeerCastStation.Core
       return GetStringFrom(collection, Atom.PCP_CHAN_TRACK_ALBUM);
     }
 
-    public static AtomCollection GetBcst(this IAtomCollection collection)
+    public static IAtomCollection GetBcst(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_BCST);
     }
@@ -414,7 +414,7 @@ namespace PeerCastStation.Core
       return GetShortFrom(collection, Atom.PCP_BCST_VERSION_EX_NUMBER);
     }
 
-    public static AtomCollection GetHost(this IAtomCollection collection)
+    public static IAtomCollection GetHost(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_HOST);
     }
@@ -520,7 +520,7 @@ namespace PeerCastStation.Core
       return GetIntFrom(collection, Atom.PCP_QUIT);
     }
 
-    public static void SetHelo(this IAtomCollection collection, AtomCollection value)
+    public static void SetHelo(this IAtomCollection collection, IList<Atom> value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HELO, value));
     }
@@ -570,7 +570,7 @@ namespace PeerCastStation.Core
       SetAtomTo(collection, new Atom(Atom.PCP_HELO_VERSION, value));
     }
 
-    public static void SetBcst(this IAtomCollection collection, AtomCollection value)
+    public static void SetBcst(this IAtomCollection collection, IList<Atom> value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_BCST, value));
     }
@@ -625,7 +625,7 @@ namespace PeerCastStation.Core
       SetAtomTo(collection, new Atom(Atom.PCP_BCST_VERSION_EX_PREFIX, value));
     }
 
-    public static void SetChan(this IAtomCollection collection, AtomCollection value)
+    public static void SetChan(this IAtomCollection collection, IList<Atom> value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN, value));
     }
@@ -640,7 +640,7 @@ namespace PeerCastStation.Core
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_ID, IDToByteArray(value)));
     }
 
-    public static void SetChanInfo(this IAtomCollection collection, AtomCollection value)
+    public static void SetChanInfo(this IAtomCollection collection, IList<Atom> value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_INFO, value));
     }
@@ -685,7 +685,7 @@ namespace PeerCastStation.Core
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_INFO_URL, value));
     }
 
-    public static void SetChanPkt(this IAtomCollection collection, AtomCollection value)
+    public static void SetChanPkt(this IAtomCollection collection, IList<Atom> value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_PKT, value));
     }
@@ -705,7 +705,7 @@ namespace PeerCastStation.Core
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_PKT_TYPE, value.GetBytes()));
     }
 
-    public static void SetChanTrack(this IAtomCollection collection, AtomCollection value)
+    public static void SetChanTrack(this IAtomCollection collection, IList<Atom> value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_TRACK, value));
     }
@@ -730,7 +730,7 @@ namespace PeerCastStation.Core
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_TRACK_URL, value));
     }
 
-    public static void SetHost(this IAtomCollection collection, AtomCollection value)
+    public static void SetHost(this IAtomCollection collection, IList<Atom> value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST, value));
     }
@@ -840,7 +840,7 @@ namespace PeerCastStation.Core
       SetAtomTo(collection, new Atom(Atom.PCP_OK, value));
     }
 
-    public static void SetOleh(this IAtomCollection collection, AtomCollection value)
+    public static void SetOleh(this IAtomCollection collection, IList<Atom> value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_OLEH, value));
     }

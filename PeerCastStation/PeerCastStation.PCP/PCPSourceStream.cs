@@ -584,22 +584,22 @@ namespace PeerCastStation.PCP
     public virtual void SendPCPHelo()
     {
       logger.Debug("Handshake Started");
-      var helo = new Atom(Atom.PCP_HELO, new AtomCollection());
-      helo.Children.SetHeloAgent(peercast.AgentName);
-      helo.Children.SetHeloSessionID(peercast.SessionID);
+      var helo = new AtomCollection();
+      helo.SetHeloAgent(peercast.AgentName);
+      helo.SetHeloSessionID(peercast.SessionID);
       if (peercast.IsFirewalled.HasValue) {
         if (peercast.IsFirewalled.Value) {
           //Do nothing
         }
         else {
-          helo.Children.SetHeloPort((short)peercast.LocalEndPoint.Port);
+          helo.SetHeloPort((short)peercast.LocalEndPoint.Port);
         }
       }
       else {
-        helo.Children.SetHeloPing((short)peercast.LocalEndPoint.Port);
+        helo.SetHeloPing((short)peercast.LocalEndPoint.Port);
       }
-      helo.Children.SetHeloVersion(PCP_VERSION);
-      Send(helo);
+      helo.SetHeloVersion(PCP_VERSION);
+      Send(new Atom(Atom.PCP_HELO, helo));
     }
 
     public virtual Atom RecvAtom()
@@ -741,15 +741,15 @@ namespace PeerCastStation.PCP
     protected virtual IStreamState OnPCPHelo(Atom atom)
     {
       logger.Debug("Helo Received");
-      var res = new Atom(Atom.PCP_OLEH, new AtomCollection());
+      var oleh = new AtomCollection();
       if (connection!=null && connection.Client.RemoteEndPoint.AddressFamily==AddressFamily.InterNetwork) {
-        res.Children.SetHeloRemoteIP(((IPEndPoint)connection.Client.RemoteEndPoint).Address);
+        oleh.SetHeloRemoteIP(((IPEndPoint)connection.Client.RemoteEndPoint).Address);
       }
-      res.Children.SetHeloAgent(peercast.AgentName);
-      res.Children.SetHeloSessionID(peercast.SessionID);
-      res.Children.SetHeloPort((short)peercast.LocalEndPoint.Port);
-      res.Children.SetHeloVersion(PCP_VERSION);
-      Send(res);
+      oleh.SetHeloAgent(peercast.AgentName);
+      oleh.SetHeloSessionID(peercast.SessionID);
+      oleh.SetHeloPort((short)peercast.LocalEndPoint.Port);
+      oleh.SetHeloVersion(PCP_VERSION);
+      Send(new Atom(Atom.PCP_OLEH, oleh));
       return null;
     }
 
@@ -883,9 +883,10 @@ namespace PeerCastStation.PCP
           from != null &&
           dest != peercast.SessionID &&
           ttl>1) {
-        atom.Children.SetBcstTTL((byte)(ttl - 1));
-        atom.Children.SetBcstHops((byte)(hops + 1));
-        channel.Broadcast(uphost, atom, group.Value);
+        var bcst = new AtomCollection(atom.Children);
+        bcst.SetBcstTTL((byte)(ttl - 1));
+        bcst.SetBcstHops((byte)(hops + 1));
+        Channel.Broadcast(uphost, new Atom(atom.Name, bcst), group.Value);
       }
       return null;
     }

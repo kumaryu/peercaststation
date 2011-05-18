@@ -428,17 +428,16 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     }
     output = MockOutputStream.new
     @channel.output_streams.add(output)
-    bcst = PeerCastStation::Core::Atom.new(
-      id4(PCP_BCST),
-      PeerCastStation::Core::AtomCollection.new)
-    bcst.children.SetBcstTTL(11)
-    bcst.children.SetBcstHops(0)
-    bcst.children.SetBcstFrom(@session_id)
-    bcst.children.SetBcstGroup(PeerCastStation::Core::BroadcastGroup.relays)
-    bcst.children.SetBcstChannelID(@channel_id)
-    bcst.children.SetBcstVersion(1218)
-    bcst.children.SetBcstVersionVP(27)
-    bcst.children.SetOk(42)
+    bcst = PeerCastStation::Core::Atom.with_children(PeerCastStation::Core::Atom.PCP_BCST) {|children|
+      children.SetBcstTTL(11)
+      children.SetBcstHops(0)
+      children.SetBcstFrom(@session_id)
+      children.SetBcstGroup(PeerCastStation::Core::BroadcastGroup.relays)
+      children.SetBcstChannelID(@channel_id)
+      children.SetBcstVersion(1218)
+      children.SetBcstVersionVP(27)
+      children.SetOk(42)
+    }
     source.OnPCPBcst(bcst)
 
     post_log = output.log.select {|log| log[0]==:post }
@@ -465,18 +464,17 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     output = MockOutputStream.new
     @channel.output_streams.add(output)
     
-    bcst = PeerCastStation::Core::Atom.new(
-      id4(PCP_BCST),
-      PeerCastStation::Core::AtomCollection.new)
-    bcst.children.SetBcstTTL(11)
-    bcst.children.SetBcstHops(0)
-    bcst.children.SetBcstFrom(@session_id)
-    bcst.children.SetBcstDest(@peercast.SessionID)
-    bcst.children.SetBcstGroup(PeerCastStation::Core::BroadcastGroup.relays)
-    bcst.children.SetBcstChannelID(@channel_id)
-    bcst.children.SetBcstVersion(1218)
-    bcst.children.SetBcstVersionVP(27)
-    bcst.children.SetOk(42)
+    bcst = PeerCastStation::Core::Atom.with_children(PeerCastStation::Core::Atom.PCP_BCST) {|children|
+      children.SetBcstTTL(11)
+      children.SetBcstHops(0)
+      children.SetBcstFrom(@session_id)
+      children.SetBcstDest(@peercast.SessionID)
+      children.SetBcstGroup(PeerCastStation::Core::BroadcastGroup.relays)
+      children.SetBcstChannelID(@channel_id)
+      children.SetBcstVersion(1218)
+      children.SetBcstVersionVP(27)
+      children.SetOk(42)
+    }
     source.OnPCPBcst(bcst)
 
     post_log = output.log.select {|log| log[0]==:post }
@@ -495,17 +493,16 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     output = MockOutputStream.new
     @channel.output_streams.add(output)
     
-    bcst = PeerCastStation::Core::Atom.new(
-      id4(PCP_BCST),
-      PeerCastStation::Core::AtomCollection.new)
-    bcst.children.SetBcstTTL(1)
-    bcst.children.SetBcstHops(0)
-    bcst.children.SetBcstFrom(@session_id)
-    bcst.children.SetBcstGroup(PeerCastStation::Core::BroadcastGroup.relays)
-    bcst.children.SetBcstChannelID(@channel_id)
-    bcst.children.SetBcstVersion(1218)
-    bcst.children.SetBcstVersionVP(27)
-    bcst.children.SetOk(42)
+    bcst = PeerCastStation::Core::Atom.with_children(PeerCastStation::Core::Atom.PCP_BCST) {|children|
+      children.SetBcstTTL(1)
+      children.SetBcstHops(0)
+      children.SetBcstFrom(@session_id)
+      children.SetBcstGroup(PeerCastStation::Core::BroadcastGroup.relays)
+      children.SetBcstChannelID(@channel_id)
+      children.SetBcstVersion(1218)
+      children.SetBcstVersionVP(27)
+      children.SetOk(42)
+    }
     source.OnPCPBcst(bcst)
 
     post_log = output.log.select {|log| log[0]==:post }
@@ -519,8 +516,9 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     ok = 0
     source.on_pcp_ok = proc { ok += 1 }
-    chan = PeerCastStation::Core::Atom.new(id4(PCP_CHAN), PeerCastStation::Core::AtomCollection.new)
-    chan.children.SetOk(42)
+    chan = PeerCastStation::Core::Atom.with_children(id4(PCP_CHAN)) {|children|
+      children.SetOk(42)
+    }
     assert_nil(source.OnPCPChan(chan))
     assert_equal(1, ok)
   end
@@ -529,9 +527,10 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     assert_nil(@channel.content_header)
     assert_equal(0, @channel.contents.count)
-    chan_pkt = PeerCastStation::Core::Atom.new(id4(PCP_CHAN_PKT), PeerCastStation::Core::AtomCollection.new)
-    chan_pkt.children.SetChanPktType(PeerCastStation::Core::Atom.PCP_CHAN_PKT_TYPE_HEAD)
-    chan_pkt.children.SetChanPktData('foobar')
+    chan_pkt = PeerCastStation::Core::Atom.with_children(id4(PCP_CHAN_PKT)) {|children|
+      children.SetChanPktType(PeerCastStation::Core::Atom.PCP_CHAN_PKT_TYPE_HEAD)
+      children.SetChanPktData('foobar')
+    }
     assert_nil(source.OnPCPChanPkt(chan_pkt))
     sleep(0.1)
     assert(@channel.content_header)
@@ -539,49 +538,54 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal('foobar', @channel.content_header.data.to_a.pack('C*'))
     assert_equal(0, @channel.contents.count)
 
-    chan_pkt = PeerCastStation::Core::Atom.new(id4(PCP_CHAN_PKT), PeerCastStation::Core::AtomCollection.new)
-    chan_pkt.children.SetChanPktType(PeerCastStation::Core::Atom.PCP_CHAN_PKT_TYPE_DATA)
-    chan_pkt.children.SetChanPktPos(6)
-    chan_pkt.children.SetChanPktData('hogefuga')
+    chan_pkt = PeerCastStation::Core::Atom.with_children(id4(PCP_CHAN_PKT)) {|children|
+      children.SetChanPktType(PeerCastStation::Core::Atom.PCP_CHAN_PKT_TYPE_DATA)
+      children.SetChanPktPos(6)
+      children.SetChanPktData('hogefuga')
+    }
     assert_nil(source.OnPCPChanPkt(chan_pkt))
     sleep(0.1)
     assert_equal(1,          @channel.contents.count)
     assert_equal('hogefuga', @channel.contents.newest.data.to_a.pack('C*'))
     assert_equal(6,          @channel.contents.newest.position)
 
-    chan_pkt = PeerCastStation::Core::Atom.new(id4(PCP_CHAN_PKT), PeerCastStation::Core::AtomCollection.new)
-    chan_pkt.children.SetChanPktType(PeerCastStation::Core::Atom.PCP_CHAN_PKT_TYPE_DATA)
-    chan_pkt.children.SetChanPktPos(0xFFFFFFFF)
-    chan_pkt.children.SetChanPktData('hogefuga')
+    chan_pkt = PeerCastStation::Core::Atom.with_children(id4(PCP_CHAN_PKT)) {|children|
+      children.SetChanPktType(PeerCastStation::Core::Atom.PCP_CHAN_PKT_TYPE_DATA)
+      children.SetChanPktPos(0xFFFFFFFF)
+      children.SetChanPktData('hogefuga')
+    }
     assert_nil(source.OnPCPChanPkt(chan_pkt))
     sleep(0.1)
     assert_equal(2,          @channel.contents.count)
     assert_equal('hogefuga', @channel.contents.newest.data.to_a.pack('C*'))
     assert_equal(0xFFFFFFFF, @channel.contents.newest.position)
 
-    chan_pkt = PeerCastStation::Core::Atom.new(id4(PCP_CHAN_PKT), PeerCastStation::Core::AtomCollection.new)
-    chan_pkt.children.SetChanPktType(PeerCastStation::Core::Atom.PCP_CHAN_PKT_TYPE_DATA)
-    chan_pkt.children.SetChanPktPos(10)
-    chan_pkt.children.SetChanPktData('hogefuga')
+    chan_pkt = PeerCastStation::Core::Atom.with_children(id4(PCP_CHAN_PKT)) {|children|
+      children.SetChanPktType(PeerCastStation::Core::Atom.PCP_CHAN_PKT_TYPE_DATA)
+      children.SetChanPktPos(10)
+      children.SetChanPktData('hogefuga')
+    }
     assert_nil(source.OnPCPChanPkt(chan_pkt))
     sleep(0.1)
     assert_equal(3,              @channel.contents.count)
     assert_equal('hogefuga',     @channel.contents.newest.data.to_a.pack('C*'))
     assert_equal(0x100000000+10, @channel.contents.newest.position)
 
-    chan_pkt = PeerCastStation::Core::Atom.new(id4(PCP_CHAN_PKT), PeerCastStation::Core::AtomCollection.new)
-    chan_pkt.children.SetChanPktType(PeerCastStation::Core::Atom.PCP_CHAN_PKT_TYPE_META)
-    chan_pkt.children.SetChanPktPos(10000)
-    chan_pkt.children.SetChanPktData('meta')
+    chan_pkt = PeerCastStation::Core::Atom.with_children(id4(PCP_CHAN_PKT)) {|children|
+      children.SetChanPktType(PeerCastStation::Core::Atom.PCP_CHAN_PKT_TYPE_META)
+      children.SetChanPktPos(10000)
+      children.SetChanPktData('meta')
+    }
     assert_nil(source.OnPCPChanPkt(chan_pkt))
     sleep(0.1)
     assert_equal(0,              @channel.content_header.position)
     assert_equal(0x100000000+10, @channel.contents.newest.position)
 
-    chan_pkt = PeerCastStation::Core::Atom.new(id4(PCP_CHAN_PKT), PeerCastStation::Core::AtomCollection.new)
-    chan_pkt.children.SetChanPktType(PeerCastStation::Core::Atom.PCP_CHAN_PKT_TYPE_HEAD)
-    chan_pkt.children.SetChanPktPos(20)
-    chan_pkt.children.SetChanPktData('foobar')
+    chan_pkt = PeerCastStation::Core::Atom.with_children(id4(PCP_CHAN_PKT)) {|children|
+      children.SetChanPktType(PeerCastStation::Core::Atom.PCP_CHAN_PKT_TYPE_HEAD)
+      children.SetChanPktPos(20)
+      children.SetChanPktData('foobar')
+    }
     assert_nil(source.OnPCPChanPkt(chan_pkt))
     sleep(0.1)
     assert(@channel.content_header)
@@ -594,13 +598,14 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal('', @channel.channel_info.name)
     assert_equal(0, @channel.channel_info.extra.count)
 
-    chan_info = PeerCastStation::Core::Atom.new(id4(PCP_CHAN_INFO), PeerCastStation::Core::AtomCollection.new)
-    chan_info.children.SetChanInfoBitrate(7144)
-    chan_info.children.SetChanInfoURL('http://example.com')
-    chan_info.children.SetChanInfoType('WMV')
-    chan_info.children.SetChanInfoGenre('Genre')
-    chan_info.children.SetChanInfoDesc('Desc')
-    chan_info.children.SetChanInfoComment('Comment')
+    chan_info = PeerCastStation::Core::Atom.with_children(id4(PCP_CHAN_INFO)) {|children|
+      children.SetChanInfoBitrate(7144)
+      children.SetChanInfoURL('http://example.com')
+      children.SetChanInfoType('WMV')
+      children.SetChanInfoGenre('Genre')
+      children.SetChanInfoDesc('Desc')
+      children.SetChanInfoComment('Comment')
+    }
     assert_nil(source.OnPCPChanInfo(chan_info))
     sleep(0.1)
     assert_equal('', @channel.channel_info.name)
@@ -614,9 +619,10 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal('Desc',               info.GetChanInfoDesc)
     assert_equal('Comment',            info.GetChanInfoComment)
 
-    chan_info = PeerCastStation::Core::Atom.new(id4(PCP_CHAN_INFO), PeerCastStation::Core::AtomCollection.new)
-    chan_info.children.SetChanInfoName('foobar')
-    chan_info.children.SetChanInfoType('OGM')
+    chan_info = PeerCastStation::Core::Atom.with_children(id4(PCP_CHAN_INFO)) {|children|
+      children.SetChanInfoName('foobar')
+      children.SetChanInfoType('OGM')
+    }
     assert_nil(source.OnPCPChanInfo(chan_info))
     sleep(0.1)
     assert_equal('foobar',  @channel.channel_info.name)
@@ -632,11 +638,12 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal('', @channel.channel_info.name)
     assert_equal(0, @channel.channel_info.extra.count)
 
-    chan_track = PeerCastStation::Core::Atom.new(id4(PCP_CHAN_TRACK), PeerCastStation::Core::AtomCollection.new)
-    chan_track.children.SetChanTrackURL('http://example.com')
-    chan_track.children.SetChanTrackTitle('Title')
-    chan_track.children.SetChanTrackAlbum('Album')
-    chan_track.children.SetChanTrackCreator('Creator')
+    chan_track = PeerCastStation::Core::Atom.with_children(id4(PCP_CHAN_TRACK)) {|children|
+      children.SetChanTrackURL('http://example.com')
+      children.SetChanTrackTitle('Title')
+      children.SetChanTrackAlbum('Album')
+      children.SetChanTrackCreator('Creator')
+    }
     assert_nil(source.OnPCPChanTrack(chan_track))
     sleep(0.1)
     assert_equal('', @channel.channel_info.name)
@@ -648,9 +655,10 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal('Album',              track.GetChanTrackAlbum)
     assert_equal('Creator',            track.GetChanTrackCreator)
 
-    chan_track = PeerCastStation::Core::Atom.new(id4(PCP_CHAN_TRACK), PeerCastStation::Core::AtomCollection.new)
-    chan_track.children.SetChanTrackURL('http://example.com')
-    chan_track.children.SetChanTrackTitle('Title')
+    chan_track = PeerCastStation::Core::Atom.with_children(id4(PCP_CHAN_TRACK)) {|children|
+      children.SetChanTrackURL('http://example.com')
+      children.SetChanTrackTitle('Title')
+    }
     assert_nil(source.OnPCPChanTrack(chan_track))
     sleep(0.1)
     assert_equal('', @channel.channel_info.name)
@@ -663,10 +671,11 @@ class TC_PCPSourceStream < Test::Unit::TestCase
 
   def test_pcp_helo
     source = TestPCPSourceStreamNoSend.new(@peercast, @channel, @channel.source_uri)
-    helo = PeerCastStation::Core::Atom.new(id4(PCP_HELO), PeerCastStation::Core::AtomCollection.new)
-    helo.children.SetHeloSessionID(@session_id)
-    helo.children.SetHeloAgent('IronRuby')
-    helo.children.SetHeloVersion(1218)
+    helo = PeerCastStation::Core::Atom.with_children(id4(PCP_HELO)) {|children|
+      children.SetHeloSessionID(@session_id)
+      children.SetHeloAgent('IronRuby')
+      children.SetHeloVersion(1218)
+    }
     assert_nil(source.OnPCPHelo(helo))
 
     assert(source.log)
@@ -682,11 +691,12 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   def test_pcp_oleh
     source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     addr = System::Net::IPAddress.parse('192.168.12.34')
-    oleh = PeerCastStation::Core::Atom.new(id4(PCP_OLEH), PeerCastStation::Core::AtomCollection.new)
-    oleh.children.SetHeloRemoteIP(addr)
-    oleh.children.SetHeloSessionID(@session_id)
-    oleh.children.SetHeloAgent('IronRuby')
-    oleh.children.SetHeloVersion(1218)
+    oleh = PeerCastStation::Core::Atom.with_children(id4(PCP_OLEH)) {|children|
+      children.SetHeloRemoteIP(addr)
+      children.SetHeloSessionID(@session_id)
+      children.SetHeloAgent('IronRuby')
+      children.SetHeloVersion(1218)
+    }
     assert_nil(@peercast.is_firewalled)
     assert_nil(@peercast.global_address)
     assert_nil(source.OnPCPOleh(oleh))
@@ -695,12 +705,24 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal(addr, @peercast.global_address)
     assert_not_nil(@peercast.global_end_point)
     
-    oleh.children.SetHeloPort(0)
+    oleh = PeerCastStation::Core::Atom.with_children(id4(PCP_OLEH)) {|children|
+      children.SetHeloRemoteIP(addr)
+      children.SetHeloSessionID(@session_id)
+      children.SetHeloAgent('IronRuby')
+      children.SetHeloVersion(1218)
+      children.SetHeloPort(0)
+    }
     assert_nil(source.OnPCPOleh(oleh))
     sleep(0.1)
     assert(@peercast.is_firewalled)
 
-    oleh.children.SetHeloPort(@peercast.local_end_point.port)
+    oleh = PeerCastStation::Core::Atom.with_children(id4(PCP_OLEH)) {|children|
+      children.SetHeloRemoteIP(addr)
+      children.SetHeloSessionID(@session_id)
+      children.SetHeloAgent('IronRuby')
+      children.SetHeloVersion(1218)
+      children.SetHeloPort(@peercast.local_end_point.port)
+    }
     assert_nil(source.OnPCPOleh(oleh))
     sleep(0.1)
     assert(!@peercast.is_firewalled)
@@ -1162,11 +1184,12 @@ class TC_PCPSourcePCPHandshakeState < Test::Unit::TestCase
     assert_equal(:recv_atom,     @source.log[0][0])
     @source.log.clear
 
-    oleh = PCSCore::Atom.new(PCSCore::Atom.PCP_OLEH, PCSCore::AtomCollection.new)
-    oleh.children.SetHeloRemoteIP(System::Net::IPAddress.any)
-    oleh.children.SetHeloSessionID(@session_id)
-    oleh.children.SetHeloAgent('IronRuby')
-    oleh.children.SetHeloVersion(1218)
+    oleh = PCSCore::Atom.with_children(PCSCore::Atom.PCP_OLEH) {|children|
+      children.SetHeloRemoteIP(System::Net::IPAddress.any)
+      children.SetHeloSessionID(@session_id)
+      children.SetHeloAgent('IronRuby')
+      children.SetHeloVersion(1218)
+    }
     @source.recv_atom = oleh
     next_state = state.process
     assert_kind_of(PCSPCP::PCPSourceReceivingState, next_state)

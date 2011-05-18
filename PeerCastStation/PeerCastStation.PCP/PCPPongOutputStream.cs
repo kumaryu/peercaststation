@@ -138,9 +138,9 @@ namespace PeerCastStation.PCP
     protected virtual void OnPCPHelo(Atom atom)
     {
       var session_id = atom.Children.GetHeloSessionID();
-      var res = new Atom(Atom.PCP_OLEH, new AtomCollection());
-      res.Children.SetHeloSessionID(PeerCast.SessionID);
-      Send(res);
+      var oleh = new AtomCollection();
+      oleh.SetHeloSessionID(PeerCast.SessionID);
+      Send(new Atom(Atom.PCP_OLEH, oleh));
       if (session_id==null) {
         logger.Info("Helo has no SessionID");
         //相手のセッションIDが無かったらエラー終了

@@ -203,8 +203,9 @@ class TC_PCPOutputStream < Test::Unit::TestCase
 
   def new_channel(bitrate)
     channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
-    channel.channel_info.extra.set_chan_info(PeerCastStation::Core::AtomCollection.new)
-    channel.channel_info.extra.get_chan_info.set_chan_info_bitrate(bitrate)
+    chan_info = PeerCastStation::Core::AtomCollection.new
+    chan_info.set_chan_info_bitrate(bitrate)
+    channel.channel_info.extra.set_chan_info(chan_info)
     @peercast.channels.add(channel)
     channel
   end
@@ -510,10 +511,11 @@ EOS
     session_id = System::Guid.new_guid
     stream = TestPingHostPCPOutputStream.new(@peercast, @base_stream, endpoint, @channel, @request)
     stream.is_relay_full = false
-    helo = PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, PCSCore::AtomCollection.new)
-    helo.children.SetHeloSessionID(session_id)
-    helo.children.SetHeloVersion(1218)
-    helo.children.SetHeloPing(7145)
+    helo = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HELO) {|children|
+      children.SetHeloSessionID(session_id)
+      children.SetHeloVersion(1218)
+      children.SetHeloPing(7145)
+    }
     stream.OnPCPHelo(helo)
     assert_equal(0, stream.log.size)
     assert(stream.downhost.is_firewalled)
@@ -523,10 +525,11 @@ EOS
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('192.168.12.34'), 7147)
     stream = TestPingHostPCPOutputStream.new(@peercast, @base_stream, endpoint, @channel, @request)
     stream.is_relay_full = false
-    helo = PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, PCSCore::AtomCollection.new)
-    helo.children.SetHeloSessionID(session_id)
-    helo.children.SetHeloVersion(1218)
-    helo.children.SetHeloPing(7145)
+    helo = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HELO) {|children|
+      children.SetHeloSessionID(session_id)
+      children.SetHeloVersion(1218)
+      children.SetHeloPing(7145)
+    }
     stream.OnPCPHelo(helo)
     assert_equal(0, stream.log.size)
     assert(stream.downhost.is_firewalled)
@@ -541,10 +544,11 @@ EOS
     stream.ping_result   = true
     stream.is_relay_full = false
     assert_nil(stream.downhost)
-    helo = PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, PCSCore::AtomCollection.new)
-    helo.children.SetHeloSessionID(session_id)
-    helo.children.SetHeloVersion(1218)
-    helo.children.SetHeloPing(7145)
+    helo = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HELO) {|children|
+      children.SetHeloSessionID(session_id)
+      children.SetHeloVersion(1218)
+      children.SetHeloPing(7145)
+    }
     stream.OnPCPHelo(helo)
     assert_equal(:ping_host,       stream.log[0][0])
     assert_equal(endpoint.address, stream.log[0][1].address)
@@ -568,10 +572,11 @@ EOS
     stream.ping_result   = false
     stream.is_relay_full = false
     assert_nil(stream.downhost)
-    helo = PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, PCSCore::AtomCollection.new)
-    helo.children.SetHeloSessionID(session_id)
-    helo.children.SetHeloVersion(1218)
-    helo.children.SetHeloPing(7145)
+    helo = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HELO) {|children|
+      children.SetHeloSessionID(session_id)
+      children.SetHeloVersion(1218)
+      children.SetHeloPing(7145)
+    }
     stream.OnPCPHelo(helo)
     assert_equal(:ping_host,       stream.log[0][0])
     assert_equal(endpoint.address, stream.log[0][1].address)
@@ -604,8 +609,9 @@ EOS
     session_id = System::Guid.new_guid
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
     assert_nil(stream.downhost)
-    helo = PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, PCSCore::AtomCollection.new)
-    helo.children.SetHeloSessionID(session_id)
+    helo = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HELO) {|children|
+      children.SetHeloSessionID(session_id)
+    }
     stream.OnPCPHelo(helo)
     assert(stream.downhost.is_firewalled)
     assert_nil(stream.downhost.local_end_point)
@@ -619,10 +625,11 @@ EOS
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
     stream.is_relay_full = false
     assert_nil(stream.downhost)
-    helo = PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, PCSCore::AtomCollection.new)
-    helo.children.SetHeloSessionID(session_id)
-    helo.children.SetHeloVersion(1218)
-    helo.children.SetHeloPort(7145)
+    helo = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HELO) {|children|
+      children.SetHeloSessionID(session_id)
+      children.SetHeloVersion(1218)
+      children.SetHeloPort(7145)
+    }
     stream.OnPCPHelo(helo)
     assert(!stream.downhost.is_firewalled)
     assert_not_nil(stream.downhost.global_end_point)
@@ -650,10 +657,11 @@ EOS
     node.is_receiving       = true
     @channel.nodes.add(node)
     assert_nil(stream.downhost)
-    helo = PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, PCSCore::AtomCollection.new)
-    helo.children.SetHeloSessionID(session_id)
-    helo.children.SetHeloVersion(1218)
-    helo.children.SetHeloPort(7145)
+    helo = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HELO) {|children|
+      children.SetHeloSessionID(session_id)
+      children.SetHeloVersion(1218)
+      children.SetHeloPort(7145)
+    }
     stream.OnPCPHelo(helo)
     assert(!stream.downhost.is_firewalled)
     assert_not_nil(stream.downhost.global_end_point)
@@ -682,10 +690,11 @@ EOS
       @channel.nodes.add(PCSCore::Host.new)
     end
     assert_nil(stream.downhost)
-    helo = PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, PCSCore::AtomCollection.new)
-    helo.children.SetHeloSessionID(session_id)
-    helo.children.SetHeloVersion(1218)
-    helo.children.SetHeloPort(7145)
+    helo = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HELO) {|children|
+      children.SetHeloSessionID(session_id)
+      children.SetHeloVersion(1218)
+      children.SetHeloPort(7145)
+    }
     stream.OnPCPHelo(helo)
     assert(!stream.downhost.is_firewalled)
     assert_not_nil(stream.downhost.global_end_point)
@@ -708,15 +717,16 @@ EOS
     stream.downhost.is_firewalled = false
     output = MockOutputStream.new
     @channel.output_streams.add(output)
-    bcst = PCSCore::Atom.new(PCSCore::Atom.PCP_BCST, PCSCore::AtomCollection.new)
-    bcst.children.SetBcstTTL(11)
-    bcst.children.SetBcstHops(0)
-    bcst.children.SetBcstFrom(@session_id)
-    bcst.children.SetBcstGroup(PCSCore::BroadcastGroup.relays)
-    bcst.children.SetBcstChannelID(@channel_id)
-    bcst.children.SetBcstVersion(1218)
-    bcst.children.SetBcstVersionVP(27)
-    bcst.children.SetOk(42)
+    bcst = PCSCore::Atom.with_children(PCSCore::Atom.PCP_BCST) {|children|
+      children.SetBcstTTL(11)
+      children.SetBcstHops(0)
+      children.SetBcstFrom(@session_id)
+      children.SetBcstGroup(PCSCore::BroadcastGroup.relays)
+      children.SetBcstChannelID(@channel_id)
+      children.SetBcstVersion(1218)
+      children.SetBcstVersionVP(27)
+      children.SetOk(42)
+    }
     stream.OnPCPBcst(bcst)
 
     post_log = output.log.select {|log| log[0]==:post }
@@ -741,16 +751,17 @@ EOS
     output = MockOutputStream.new
     @channel.output_streams.add(output)
     
-    bcst = PCSCore::Atom.new(PCSCore::Atom.PCP_BCST, PCSCore::AtomCollection.new)
-    bcst.children.SetBcstTTL(11)
-    bcst.children.SetBcstHops(0)
-    bcst.children.SetBcstFrom(@session_id)
-    bcst.children.SetBcstDest(@peercast.SessionID)
-    bcst.children.SetBcstGroup(PCSCore::BroadcastGroup.relays)
-    bcst.children.SetBcstChannelID(@channel_id)
-    bcst.children.SetBcstVersion(1218)
-    bcst.children.SetBcstVersionVP(27)
-    bcst.children.SetOk(42)
+    bcst = PCSCore::Atom.with_children(PCSCore::Atom.PCP_BCST) {|children|
+      children.SetBcstTTL(11)
+      children.SetBcstHops(0)
+      children.SetBcstFrom(@session_id)
+      children.SetBcstDest(@peercast.SessionID)
+      children.SetBcstGroup(PCSCore::BroadcastGroup.relays)
+      children.SetBcstChannelID(@channel_id)
+      children.SetBcstVersion(1218)
+      children.SetBcstVersionVP(27)
+      children.SetOk(42)
+    }
     stream.OnPCPBcst(bcst)
 
     post_log = output.log.select {|log| log[0]==:post }
@@ -767,15 +778,16 @@ EOS
     output = MockOutputStream.new
     @channel.output_streams.add(output)
     
-    bcst = PCSCore::Atom.new(PCSCore::Atom.PCP_BCST, PCSCore::AtomCollection.new)
-    bcst.children.SetBcstTTL(1)
-    bcst.children.SetBcstHops(0)
-    bcst.children.SetBcstFrom(@session_id)
-    bcst.children.SetBcstGroup(PCSCore::BroadcastGroup.relays)
-    bcst.children.SetBcstChannelID(@channel_id)
-    bcst.children.SetBcstVersion(1218)
-    bcst.children.SetBcstVersionVP(27)
-    bcst.children.SetOk(42)
+    bcst = PCSCore::Atom.with_children(PCSCore::Atom.PCP_BCST) {|children|
+      children.SetBcstTTL(1)
+      children.SetBcstHops(0)
+      children.SetBcstFrom(@session_id)
+      children.SetBcstGroup(PCSCore::BroadcastGroup.relays)
+      children.SetBcstChannelID(@channel_id)
+      children.SetBcstVersion(1218)
+      children.SetBcstVersionVP(27)
+      children.SetOk(42)
+    }
     stream.OnPCPBcst(bcst)
 
     post_log = output.log.select {|log| log[0]==:post }
@@ -866,18 +878,19 @@ EOS
     node.is_receiving       = true
     node.direct_count = 10
     node.relay_count = 38
-    host = PCSCore::Atom.new(PCSCore::Atom.PCP_HOST, PCSCore::AtomCollection.new)
-    host.children.SetHostSessionID(node.SessionID)
-    host.children.AddHostIP(node.global_end_point.address)
-    host.children.AddHostPort(node.global_end_point.port)
-    host.children.SetHostNumRelays(node.relay_count)
-    host.children.SetHostNumListeners(node.direct_count)
-    host.children.SetHostFlags1(
-      (node.is_firewalled   ? PCSCore::PCPHostFlags1.firewalled : PCSCore::PCPHostFlags1.none) |
-      (node.is_relay_full   ? PCSCore::PCPHostFlags1.none       : PCSCore::PCPHostFlags1.relay) |
-      (node.is_direct_full  ? PCSCore::PCPHostFlags1.none       : PCSCore::PCPHostFlags1.direct) |
-      (node.is_receiving    ? PCSCore::PCPHostFlags1.receiving  : PCSCore::PCPHostFlags1.none) |
-      (node.is_control_full ? PCSCore::PCPHostFlags1.none       : PCSCore::PCPHostFlags1.control_in))
+    host = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HOST) {|children|
+      children.SetHostSessionID(node.SessionID)
+      children.AddHostIP(node.global_end_point.address)
+      children.AddHostPort(node.global_end_point.port)
+      children.SetHostNumRelays(node.relay_count)
+      children.SetHostNumListeners(node.direct_count)
+      children.SetHostFlags1(
+        (node.is_firewalled   ? PCSCore::PCPHostFlags1.firewalled : PCSCore::PCPHostFlags1.none) |
+        (node.is_relay_full   ? PCSCore::PCPHostFlags1.none       : PCSCore::PCPHostFlags1.relay) |
+        (node.is_direct_full  ? PCSCore::PCPHostFlags1.none       : PCSCore::PCPHostFlags1.direct) |
+        (node.is_receiving    ? PCSCore::PCPHostFlags1.receiving  : PCSCore::PCPHostFlags1.none) |
+        (node.is_control_full ? PCSCore::PCPHostFlags1.none       : PCSCore::PCPHostFlags1.control_in))
+    }
     stream.OnPCPHost(host)
     sleep(0.1)
 

@@ -17,6 +17,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace PeerCastStation.Core
@@ -258,7 +259,7 @@ namespace PeerCastStation.Core
     public const int PCP_ERROR_BANNED           = 11;
 
     private byte[] value = null;
-    private AtomCollection children = null;
+    private IAtomCollection children = null;
 
     /// <summary>
     /// 名前を取得します
@@ -278,7 +279,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 子Atomのコレクションを取得します。値を保持している場合はnullを返します
     /// </summary>
-    public AtomCollection Children { get { return children; } }
+    public IAtomCollection Children { get { return children; } }
 
     /// <summary>
     /// 保持している値をbyteとして取得します。
@@ -618,10 +619,10 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="name">4文字以下の名前</param>
     /// <param name="children">保持する子のコレクション</param>
-    public Atom(ID4 name, AtomCollection children)
+    public Atom(ID4 name, IList<Atom> children)
     {
       Name = name;
-      this.children = children;
+      this.children = new ReadOnlyAtomCollection(new AtomCollection(children));
     }
   }
 
@@ -871,7 +872,7 @@ namespace PeerCastStation.Core
     }
   }
 
-  public interface IAtomCollection : System.Collections.Generic.IList<Atom>
+  public interface IAtomCollection : IList<Atom>
   {
     /// <summary>
     /// コレクションから指定した名前を持つAtomを探して取得します
@@ -906,7 +907,7 @@ namespace PeerCastStation.Core
     /// 指定したリストから内容をコピーしたAtomCollectionを初期化します
     /// </summary>
     /// <param name="other">コピー元のリスト</param>
-    public AtomCollection(System.Collections.Generic.IList<Atom> other)
+    public AtomCollection(IList<Atom> other)
       : base(other)
     {
     }

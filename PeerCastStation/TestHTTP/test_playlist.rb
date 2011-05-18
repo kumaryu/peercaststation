@@ -48,8 +48,9 @@ EOS
     info2 = PCSCore::ChannelInfo.new(System::Guid.parse('61077675C74AAB30529B5294BB76F656'))
     info2.name = 'bar'
     info2.content_type = 'OGM'
-    info2.extra.SetChanInfo(PCSCore::AtomCollection.new)
-    info2.extra.GetChanInfo.SetChanInfoURL('http://example.com/')
+    chan_info = PCSCore::AtomCollection.new
+    chan_info.SetChanInfoURL('http://example.com/')
+    info2.extra.set_chan_info(chan_info)
     pls.channels.add(info2)
     res = pls.create_play_list(baseuri)
     assert_equal(<<EOS, res.gsub(/\r\n/, "\n"))
@@ -92,8 +93,9 @@ EOS
     info2 = PCSCore::ChannelInfo.new(System::Guid.parse('61077675C74AAB30529B5294BB76F656'))
     info2.name = 'bar'
     info2.content_type = 'OGM'
-    info2.extra.SetChanInfo(PCSCore::AtomCollection.new)
-    info2.extra.GetChanInfo.SetChanInfoURL('http://example.com/')
+    chan_info = PCSCore::AtomCollection.new
+    chan_info.SetChanInfoURL('http://example.com/')
+    info2.extra.set_chan_info(chan_info)
     pls.channels.add(info2)
     res = pls.create_play_list(baseuri)
     assert_equal(<<EOS.chomp, res.gsub(/\r\n/, "\n"))
