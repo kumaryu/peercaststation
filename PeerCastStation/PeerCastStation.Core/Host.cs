@@ -24,201 +24,273 @@ namespace PeerCastStation.Core
   /// 接続情報を保持するクラスです
   /// </summary>
   public class Host
-    : INotifyPropertyChanged
   {
-    private IPEndPoint localEndPoint = null;
-    private IPEndPoint globalEndPoint = null;
-    private Guid sessionID = Guid.Empty;
-    private Guid broadcastID = Guid.Empty;
-    private int relayCount = 0;
-    private int directCount = 0;
-    private bool isFirewalled = true;
-    private bool isRelayFull = false;
-    private bool isDirectFull = false;
-    private bool isReceiving = false;
-    private bool isControlFull = false;
-    private TimeSpan lastUpdated = TimeSpan.FromMilliseconds(Environment.TickCount);
-    private System.Collections.ObjectModel.ObservableCollection<string> extensions = new System.Collections.ObjectModel.ObservableCollection<string>();
-    private AtomCollection extra = new AtomCollection();
-    /// <summary>
-    /// ホストが持つローカルなアドレス情報を取得および設定します
-    /// </summary>
-    public IPEndPoint LocalEndPoint {
-      get { return localEndPoint; }
-      set
-      {
-        if (localEndPoint!=value) {
-          localEndPoint = value;
-          OnPropertyChanged("LocalEndPoint");
-        }
-      }
-    }
-    /// <summary>
-    /// ホストが持つグローバルなアドレス情報を取得および設定します
-    /// </summary>
-    public IPEndPoint GlobalEndPoint {
-      get { return globalEndPoint; }
-      set
-      {
-        if (globalEndPoint!=value) {
-          globalEndPoint = value;
-          OnPropertyChanged("GlobalEndPoint");
-        }
-      }
-    }
     /// <summary>
     /// ホストのセッションIDを取得および設定します
     /// </summary>
-    public Guid SessionID {
-      get { return sessionID; }
-      set
-      {
-        if (sessionID!=value) {
-          sessionID = value;
-          OnPropertyChanged("SessionID");
-        }
-      }
-    }
+    public Guid SessionID { get; set; }
     /// <summary>
     /// ホストのブロードキャストIDを取得および設定します
     /// </summary>
-    public Guid BroadcastID {
-      get { return broadcastID; }
-      set
-      {
-        if (broadcastID!=value) {
-          broadcastID = value;
-          OnPropertyChanged("BroadcastID");
-        }
-      }
-    }
+    public Guid BroadcastID { get; set; }
     /// <summary>
-    /// ホストの拡張リストを取得します
+    /// ホストが持つローカルなアドレス情報を取得します
     /// </summary>
-    public IList<string> Extensions { get { return extensions; } }
+    public IPEndPoint LocalEndPoint { get; set; }
     /// <summary>
-    /// その他のホスト情報リストを取得します
+    /// ホストが持つグローバルなアドレス情報を取得および設定します
     /// </summary>
-    public AtomCollection Extra { get { return extra; } }
-
+    public IPEndPoint GlobalEndPoint { get; set; }
     /// <summary>
     /// ホストへの接続が可能かどうかを取得および設定します
     /// </summary>
-    public bool IsFirewalled {
-      get { return isFirewalled; }
-      set
-      {
-        if (isFirewalled!=value) {
-          isFirewalled = value;
-          OnPropertyChanged("IsFirewalled");
-        }
-      }
-    }
-
+    public bool IsFirewalled { get; set; }
     /// <summary>
     /// リレーしている数を取得および設定します
     /// </summary>
-    public int RelayCount {
-      get { return relayCount; }
-      set
-      {
-        if (relayCount!=value) {
-          relayCount = value;
-          OnPropertyChanged("RelayCount");
-        }
-      }
-    }
+    public int RelayCount { get; set; }
     /// <summary>
     /// 直接視聴している数を取得および設定します
     /// </summary>
-    public int DirectCount {
-      get { return directCount; }
-      set
-      {
-        if (directCount!=value) {
-          directCount = value;
-          OnPropertyChanged("DirectCount");
-        }
-      }
-    }
+    public int DirectCount { get; set; }
     /// <summary>
     /// リレー数が一杯かどうかを取得および設定します
     /// </summary>
-    public bool IsRelayFull {
-      get { return isRelayFull; }
-      set
-      {
-        if (isRelayFull!=value) {
-          isRelayFull = value;
-          OnPropertyChanged("IsRelayFull");
-        }
-      }
-    }
+    public bool IsRelayFull { get; set; }
     /// <summary>
     /// 直接視聴数が一杯かどうかを取得および設定します
     /// </summary>
-    public bool IsDirectFull {
-      get { return isDirectFull; }
-      set
-      {
-        if (isDirectFull!=value) {
-          isDirectFull = value;
-          OnPropertyChanged("IsDirectFull");
-        }
-      }
-    }
-
+    public bool IsDirectFull { get; set; }
     /// <summary>
     /// コンテントの受信中かどうかを取得および設定します
     /// </summary>
-    public bool IsReceiving {
-      get { return isReceiving; }
-      set
-      {
-        if (isReceiving!=value) {
-          isReceiving = value;
-          OnPropertyChanged("IsReceiving");
-        }
-      }
-    }
-
+    public bool IsReceiving { get; set; }
     /// <summary>
     /// Control接続数が一杯かどうかを取得および設定します
     /// </summary>
-    public bool IsControlFull {
-      get { return isControlFull; }
-      set
-      {
-        if (isControlFull!=value) {
-          isControlFull = value;
-          OnPropertyChanged("IsControlFull");
-        }
-      }
-    }
-
+    public bool IsControlFull { get; set; }
+    /// <summary>
+    /// ホストの拡張リストを取得します
+    /// </summary>
+    public IList<string> Extensions { get; set; }
+    /// <summary>
+    /// その他のホスト情報リストを取得します
+    /// </summary>
+    public IAtomCollection Extra { get; set; }
     /// <summary>
     /// ノードの最終更新時間を取得します
     /// </summary>
-    public TimeSpan LastUpdated {
-      get { return lastUpdated; }
-    }
-
-    public event PropertyChangedEventHandler PropertyChanged;
-    private void OnPropertyChanged(string name)
-    {
-      lastUpdated = TimeSpan.FromMilliseconds(Environment.TickCount);
-      if (PropertyChanged != null) {
-        PropertyChanged(this, new PropertyChangedEventArgs(name));
-      }
-    }
+    public TimeSpan LastUpdated { get; set; }
 
     /// <summary>
     /// ホスト情報を初期化します
     /// </summary>
-    public Host()
+    public Host(
+      Guid sessionID,
+      Guid broadcastID,
+      IPEndPoint localEndPoint,
+      IPEndPoint globalEndPoint,
+      int relayCount,
+      int directCount,
+      bool isFirewalled,
+      bool isRelayFull,
+      bool isDirectFull,
+      bool isReceiving,
+      bool isControlFull,
+      IEnumerable<string> extensions,
+      IAtomCollection extra)
     {
-      extensions.CollectionChanged += (sender, e) => { OnPropertyChanged("Extensions"); };
-      extra.CollectionChanged += (sender, e) => { OnPropertyChanged("Extra"); };
+      this.SessionID      = sessionID;
+      this.BroadcastID    = broadcastID;
+      this.LocalEndPoint  = localEndPoint;
+      this.GlobalEndPoint = globalEndPoint;
+      this.RelayCount     = relayCount;
+      this.DirectCount    = directCount;
+      this.IsFirewalled   = isFirewalled;
+      this.IsRelayFull    = isRelayFull;
+      this.IsDirectFull   = isDirectFull;
+      this.IsReceiving    = isReceiving;
+      this.IsControlFull  = isControlFull;
+      this.Extensions     = new List<string>(extensions).AsReadOnly();
+      this.Extra          = (new AtomCollection(extra)).AsReadOnly();
+      this.LastUpdated    = TimeSpan.FromMilliseconds(Environment.TickCount);
+    }
+  }
+
+  /// <summary>
+  /// Hostを構築するためのヘルパークラスです
+  /// </summary>
+  public class HostBuilder
+  {
+    /// <summary>
+    /// ホストのセッションIDを取得および設定します
+    /// </summary>
+    public Guid SessionID { get; set; }
+    /// <summary>
+    /// ホストのブロードキャストIDを取得および設定します
+    /// </summary>
+    public Guid BroadcastID { get; set; }
+    /// <summary>
+    /// ホストが持つローカルなアドレス情報を取得および設定します
+    /// </summary>
+    public IPEndPoint LocalEndPoint { get; set; }
+    /// <summary>
+    /// ホストが持つグローバルなアドレス情報を取得および設定します
+    /// </summary>
+    public IPEndPoint GlobalEndPoint { get; set; }
+    /// <summary>
+    /// ホストへの接続が可能かどうかを取得および設定します
+    /// </summary>
+    public bool IsFirewalled { get; set; }
+    /// <summary>
+    /// リレーしている数を取得および設定します
+    /// </summary>
+    public int RelayCount { get; set; }
+    /// <summary>
+    /// 直接視聴している数を取得および設定します
+    /// </summary>
+    public int DirectCount { get; set; }
+    /// <summary>
+    /// リレー数が一杯かどうかを取得および設定します
+    /// </summary>
+    public bool IsRelayFull { get; set; }
+    /// <summary>
+    /// 直接視聴数が一杯かどうかを取得および設定します
+    /// </summary>
+    public bool IsDirectFull { get; set; }
+    /// <summary>
+    /// コンテントの受信中かどうかを取得および設定します
+    /// </summary>
+    public bool IsReceiving { get; set; }
+    /// <summary>
+    /// Control接続数が一杯かどうかを取得および設定します
+    /// </summary>
+    public bool IsControlFull { get; set; }
+    /// <summary>
+    /// ホストの拡張リストを取得します
+    /// </summary>
+    public IList<string> Extensions { get; private set; }
+    /// <summary>
+    /// その他のホスト情報リストを取得します
+    /// </summary>
+    public AtomCollection Extra { get; private set; }
+
+    /// <summary>
+    /// 今の設定からHostを構築します
+    /// </summary>
+    /// <returns>構築されたHost</returns>
+    public Host ToHost()
+    {
+      return new Host(
+        SessionID,
+        BroadcastID,
+        LocalEndPoint,
+        GlobalEndPoint,
+        RelayCount,
+        DirectCount,
+        IsFirewalled,
+        IsRelayFull,
+        IsDirectFull,
+        IsReceiving,
+        IsControlFull,
+        Extensions,
+        Extra);
+    }
+
+    /// <summary>
+    /// HostBuilderを初期化します
+    /// </summary>
+    public HostBuilder()
+    {
+      SessionID = Guid.Empty;
+      BroadcastID = Guid.Empty;
+      LocalEndPoint = null;
+      GlobalEndPoint = null;
+      RelayCount = 0;
+      DirectCount = 0;
+      IsFirewalled = false;
+      IsRelayFull = false;
+      IsDirectFull = false;
+      IsReceiving = false;
+      IsControlFull = false;
+      Extensions = new List<string>();
+      Extra = new AtomCollection();
+    }
+
+    /// <summary>
+    /// 指定されたHostの値でHostBuilderを初期化します
+    /// </summary>
+    /// <param name="host">初期化元のHost</param>
+    public HostBuilder(Host host)
+    {
+      if (host!=null) {
+        SessionID = host.SessionID;
+        BroadcastID = host.BroadcastID;
+        LocalEndPoint = host.LocalEndPoint;
+        GlobalEndPoint = host.GlobalEndPoint;
+        RelayCount = host.RelayCount;
+        DirectCount = host.DirectCount;
+        IsFirewalled = host.IsFirewalled;
+        IsRelayFull = host.IsRelayFull;
+        IsDirectFull = host.IsDirectFull;
+        IsReceiving = host.IsReceiving;
+        IsControlFull = host.IsControlFull;
+        Extensions = new List<string>(host.Extensions);
+        Extra = new AtomCollection(host.Extra);
+      }
+      else {
+        SessionID = Guid.Empty;
+        BroadcastID = Guid.Empty;
+        LocalEndPoint = null;
+        GlobalEndPoint = null;
+        RelayCount = 0;
+        DirectCount = 0;
+        IsFirewalled = false;
+        IsRelayFull = false;
+        IsDirectFull = false;
+        IsReceiving = false;
+        IsControlFull = false;
+        Extensions = new List<string>();
+        Extra = new AtomCollection();
+      }
+    }
+
+    /// <summary>
+    /// 指定されたHostBuilderの値でHostBuilderを初期化します
+    /// </summary>
+    /// <param name="host">初期化元のHostBuilder</param>
+    public HostBuilder(HostBuilder host)
+    {
+      if (host!=null) {
+        SessionID = host.SessionID;
+        BroadcastID = host.BroadcastID;
+        LocalEndPoint = host.LocalEndPoint;
+        GlobalEndPoint = host.GlobalEndPoint;
+        RelayCount = host.RelayCount;
+        DirectCount = host.DirectCount;
+        IsFirewalled = host.IsFirewalled;
+        IsRelayFull = host.IsRelayFull;
+        IsDirectFull = host.IsDirectFull;
+        IsReceiving = host.IsReceiving;
+        IsControlFull = host.IsControlFull;
+        Extensions = new List<string>(host.Extensions);
+        Extra = new AtomCollection(host.Extra);
+      }
+      else {
+        SessionID = Guid.Empty;
+        BroadcastID = Guid.Empty;
+        LocalEndPoint = null;
+        GlobalEndPoint = null;
+        RelayCount = 0;
+        DirectCount = 0;
+        IsFirewalled = false;
+        IsRelayFull = false;
+        IsDirectFull = false;
+        IsReceiving = false;
+        IsControlFull = false;
+        Extensions = new List<string>();
+        Extra = new AtomCollection();
+      }
     }
   }
 

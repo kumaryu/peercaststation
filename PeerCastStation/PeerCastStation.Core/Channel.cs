@@ -550,6 +550,11 @@ namespace PeerCastStation.Core
     private IgnoredHostCollection ignoredHosts = new IgnoredHostCollection(NodeLimit);
     public ICollection<Host> IgnoredHosts { get { return ignoredHosts.Hosts; } }
 
+    public void AddNode(Host host)
+    {
+      nodes.Add(host);
+    }
+
     /// <summary>
     /// 指定したホストが接続先として選択されないように指定します。
     /// 一度無視されたホストは一定時間経過した後、再度選択されるようになります
@@ -722,13 +727,14 @@ namespace PeerCastStation.Core
       this.IsClosed = true;
       this.PeerCast = peercast;
       sourceUri = source_uri;
-      sourceHost = new Host();
+      var host = new HostBuilder();
       var port = sourceUri.Port < 0 ? 7144 : sourceUri.Port;
       var addresses = Dns.GetHostAddresses(sourceUri.DnsSafeHost);
       var addr = addresses.FirstOrDefault(x => x.AddressFamily==AddressFamily.InterNetwork);
       if (addr!=null) {
-        sourceHost.GlobalEndPoint = new IPEndPoint(addr, port);
+        host.GlobalEndPoint = new IPEndPoint(addr, port);
       }
+      sourceHost = host.ToHost();
       channelInfo = new ChannelInfo(channel_id);
       channelInfo.PropertyChanged += (sender, e) => {
         OnPropertyChanged("ChannelInfo");

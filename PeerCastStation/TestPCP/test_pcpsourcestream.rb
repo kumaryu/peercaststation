@@ -275,10 +275,10 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert(!source.is_connected)
     connected = 0
     server = MockPCPServer.new('localhost', 7146) {|sock| connected += 1 }
-    host = PeerCastStation::Core::Host.new
+    host = PeerCastStation::Core::HostBuilder.new
     host.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146)
     sleep(0.1)
-    assert(source.connect(host))
+    assert(source.connect(host.to_host))
     assert(source.is_connected)
     assert_not_nil(source.uphost)
     server.close
@@ -287,9 +287,9 @@ class TC_PCPSourceStream < Test::Unit::TestCase
 
   def test_connect_failed
     source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
-    host = PeerCastStation::Core::Host.new
+    host = PeerCastStation::Core::HostBuilder.new
     host.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146)
-    assert(!source.connect(host))
+    assert(!source.connect(host.to_host))
     assert(!source.is_connected)
   end
 
@@ -297,10 +297,10 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     assert(!source.is_connected)
     server = MockPCPServer.new('localhost', 7146)
-    host = PeerCastStation::Core::Host.new
+    host = PeerCastStation::Core::HostBuilder.new
     host.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146)
     sleep(0.1)
-    assert(source.connect(host))
+    assert(source.connect(host.to_host))
     assert(source.is_connected)
     source.close(PeerCastStation::PCP::CloseReason.user_shutdown)
     assert(!source.is_connected)
@@ -313,8 +313,6 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     source.close
     assert_nil(source.state)
 
-    host = PeerCastStation::Core::Host.new
-    host.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146)
     source.state = MockStreamState.new
     source.close
     assert_kind_of(PeerCastStation::PCP::PCPSourceClosedState, source.state)
@@ -327,8 +325,6 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     source.reconnect
     assert_nil(source.state)
 
-    host = PeerCastStation::Core::Host.new
-    host.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7146)
     source.state = MockStreamState.new
     source.reconnect
     assert_kind_of(PeerCastStation::PCP::PCPSourceClosedState, source.state)
@@ -339,7 +335,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
 
   def test_ignore_host
     source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
-    host = PeerCastStation::Core::Host.new
+    host = PeerCastStation::Core::HostBuilder.new.to_host
     assert_equal(0, @channel.ignored_hosts.count)
     source.ignore_host(host)
     assert_equal(1, @channel.ignored_hosts.count)
@@ -410,7 +406,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   def test_post
     source = TestPCPSourceStreamNoSend.new(@peercast, @channel, @channel.source_uri)
     source.post(
-      PeerCastStation::Core::Host.new,
+      PeerCastStation::Core::HostBuilder.new.to_host,
       PeerCastStation::Core::Atom.new(id4('test'), 'hogehoge'.to_clr_string))
     source.process_events
     assert(source.log)
@@ -865,7 +861,7 @@ class TC_PCPSourceClosedState < Test::Unit::TestCase
       assert_equal(reason, @source.log[0][1])
       assert_kind_of(PCSPCP::PCPSourceConnectState, connect_state)
       @source.log.clear
-      @source.uphost = PCSCore::Host.new
+      @source.uphost = PCSCore::HostBuilder.new.to_host
       connect_state = state.process
       assert_equal(3, @source.log.size)
       assert_equal(:ignore_host,        @source.log[0][0])
@@ -911,7 +907,7 @@ class TC_PCPSourceConnectState < Test::Unit::TestCase
   end
   
   def test_construct
-    host = PCSCore::Host.new
+    host = PCSCore::HostBuilder.new.to_host
     state = PCSPCP::PCPSourceConnectState.new(@source, host)
     assert_equal(@source, state.owner)
     assert_equal(host,    state.host)
@@ -928,7 +924,7 @@ class TC_PCPSourceConnectState < Test::Unit::TestCase
     assert_equal(0, @source.log.count)
     @source.log.clear
 
-    host = PCSCore::Host.new
+    host = PCSCore::HostBuilder.new.to_host
     state = PCSPCP::PCPSourceConnectState.new(@source, host)
     @source.connection_result = true
     next_state = state.process
@@ -938,7 +934,7 @@ class TC_PCPSourceConnectState < Test::Unit::TestCase
     assert_equal(:connect, @source.log[0][0])
     @source.log.clear
 
-    host = PCSCore::Host.new
+    host = PCSCore::HostBuilder.new.to_host
     state = PCSPCP::PCPSourceConnectState.new(@source, host)
     @source.connection_result = false
     next_state = state.process

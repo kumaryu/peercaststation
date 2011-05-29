@@ -648,14 +648,14 @@ EOS
     session_id = System::Guid.new_guid
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
     stream.is_relay_full = true
-    node = PCSCore::Host.new
+    node = PCSCore::HostBuilder.new
     node.SessionID = session_id
     node.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7149)
     node.is_firewalled = false
     node.is_relay_full      = false
     node.is_direct_full     = false
     node.is_receiving       = true
-    @channel.nodes.add(node)
+    @channel.nodes.add(node.to_host)
     assert_nil(stream.downhost)
     helo = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HELO) {|children|
       children.SetHeloSessionID(session_id)
@@ -687,7 +687,7 @@ EOS
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
     stream.is_relay_full = true
     16.times do
-      @channel.nodes.add(PCSCore::Host.new)
+      @channel.nodes.add(PCSCore::HostBuilder.new.to_host)
     end
     assert_nil(stream.downhost)
     helo = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HELO) {|children|
@@ -711,10 +711,11 @@ EOS
 
   def test_pcp_bcst
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
-    stream.downhost = PCSCore::Host.new
-    stream.downhost.SessionID = System::Guid.new_guid
-    stream.downhost.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7149)
-    stream.downhost.is_firewalled = false
+    downhost = PCSCore::HostBuilder.new
+    downhost.SessionID = System::Guid.new_guid
+    downhost.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7149)
+    downhost.is_firewalled = false
+    stream.downhost = downhost.to_host
     output = MockOutputStream.new
     @channel.output_streams.add(output)
     bcst = PCSCore::Atom.with_children(PCSCore::Atom.PCP_BCST) {|children|
@@ -744,10 +745,11 @@ EOS
 
   def test_pcp_bcst_dest
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
-    stream.downhost = PCSCore::Host.new
-    stream.downhost.SessionID = System::Guid.new_guid
-    stream.downhost.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7149)
-    stream.downhost.is_firewalled = false
+    downhost = PCSCore::HostBuilder.new
+    downhost.SessionID = System::Guid.new_guid
+    downhost.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7149)
+    downhost.is_firewalled = false
+    stream.downhost = downhost.to_host
     output = MockOutputStream.new
     @channel.output_streams.add(output)
     
@@ -771,10 +773,11 @@ EOS
 
   def test_pcp_bcst_no_ttl
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
-    stream.downhost = PCSCore::Host.new
-    stream.downhost.SessionID = System::Guid.new_guid
-    stream.downhost.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7149)
-    stream.downhost.is_firewalled = false
+    downhost = PCSCore::HostBuilder.new
+    downhost.SessionID = System::Guid.new_guid
+    downhost.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7149)
+    downhost.is_firewalled = false
+    stream.downhost = downhost.to_host
     output = MockOutputStream.new
     @channel.output_streams.add(output)
     
@@ -845,10 +848,11 @@ EOS
     assert_equal([:helo], stream.log[0])
 
     stream = TestProcessAtomPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
-    stream.downhost = PCSCore::Host.new
-    stream.downhost.SessionID = System::Guid.new_guid
-    stream.downhost.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7149)
-    stream.downhost.is_firewalled = false
+    downhost = PCSCore::HostBuilder.new
+    downhost.SessionID = System::Guid.new_guid
+    downhost.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7149)
+    downhost.is_firewalled = false
+    stream.downhost = downhost.to_host
     atoms.each do |atom|
       stream.process_atom(atom)
     end
@@ -869,15 +873,15 @@ EOS
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
     assert_equal(0, @channel.nodes.count)
 
-    node = PCSCore::Host.new
+    node = PCSCore::HostBuilder.new
     node.SessionID = System::Guid.new_guid
     node.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7149)
-    node.is_firewalled = false
-    node.is_relay_full      = false
-    node.is_direct_full     = false
-    node.is_receiving       = true
-    node.direct_count = 10
-    node.relay_count = 38
+    node.is_firewalled  = false
+    node.is_relay_full  = false
+    node.is_direct_full = false
+    node.is_receiving   = true
+    node.direct_count   = 10
+    node.relay_count    = 38
     host = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HOST) {|children|
       children.SetHostSessionID(node.SessionID)
       children.AddHostIP(node.global_end_point.address)

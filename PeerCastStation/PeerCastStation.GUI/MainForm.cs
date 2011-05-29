@@ -380,17 +380,17 @@ namespace PeerCastStation.GUI
 
     private Host createSelfNodeInfo(Channel channel)
     {
-      var node = new Host();
-      node.SessionID      = peerCast.SessionID;
-      node.LocalEndPoint  = peerCast.LocalEndPoint;
-      node.GlobalEndPoint = peerCast.GlobalEndPoint ?? peerCast.LocalEndPoint;
-      node.IsFirewalled   = peerCast.IsFirewalled ?? true;
-      node.DirectCount = channel.OutputStreams.CountPlaying;
-      node.RelayCount  = channel.OutputStreams.CountRelaying;
-      node.IsDirectFull = !peerCast.AccessController.IsChannelPlayable(channel);
-      node.IsRelayFull  = !peerCast.AccessController.IsChannelRelayable(channel);
-      node.IsReceiving  = true;
-      return node;
+      var host = new HostBuilder();
+      host.SessionID      = peerCast.SessionID;
+      host.LocalEndPoint  = peerCast.LocalEndPoint;
+      host.GlobalEndPoint = peerCast.GlobalEndPoint ?? peerCast.LocalEndPoint;
+      host.IsFirewalled   = peerCast.IsFirewalled ?? true;
+      host.DirectCount    = channel.OutputStreams.CountPlaying;
+      host.RelayCount     = channel.OutputStreams.CountRelaying;
+      host.IsDirectFull   = !peerCast.AccessController.IsChannelPlayable(channel);
+      host.IsRelayFull    = !peerCast.AccessController.IsChannelRelayable(channel);
+      host.IsReceiving    = true;
+      return host.ToHost();
     }
 
     private void addRelayTreeNode(TreeNodeCollection tree_nodes, Host node, IList<Host> node_list)

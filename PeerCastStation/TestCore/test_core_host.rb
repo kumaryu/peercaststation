@@ -18,15 +18,14 @@ require 'PeerCastStation.Core.dll'
 require 'test/unit'
 using_clr_extensions PeerCastStation::Core
 
-class TC_CoreHost < Test::Unit::TestCase
+class TC_CoreHostBuilder < Test::Unit::TestCase
   def test_construct
-    obj = PeerCastStation::Core::Host.new
+    obj = PeerCastStation::Core::HostBuilder.new
     assert_nil(obj.local_end_point)
     assert_nil(obj.global_end_point)
     assert_equal(System::Guid.empty, obj.SessionID)
     assert_equal(System::Guid.empty, obj.BroadcastID)
-    assert(obj.is_firewalled)
-    assert(obj.extensions)
+    assert(!obj.is_firewalled)
     assert_equal(0, obj.extensions.count)
     assert_equal(0, obj.relay_count)
     assert_equal(0, obj.direct_count)
@@ -38,13 +37,90 @@ class TC_CoreHost < Test::Unit::TestCase
     assert_equal(0, obj.extensions.count)
     assert_not_nil(obj.extra)
     assert_equal(0, obj.extra.count)
-    assert_not_equal(0, obj.last_updated.ticks)
   end
   
-  def test_changed
-    log = []
-    obj = PeerCastStation::Core::Host.new
-    obj.property_changed {|sender, e| log << e.property_name }
+  def test_construct_from_host
+    extra = PeerCastStation::Core::AtomCollection.new
+    extra.add(PeerCastStation::Core::Atom.new(
+      PeerCastStation::Core::ID4.new('test'.to_clr_string), 'foo'.to_clr_string))
+    extensions = System::Array[System::String].new(['test'])
+    host = PeerCastStation::Core::Host.new(
+      System::Guid.new_guid,
+      System::Guid.new_guid,
+      System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144),
+      System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144),
+      1,
+      1,
+      false,
+      true,
+      true,
+      true,
+      true,
+      extensions,
+      extra)
+    obj = PeerCastStation::Core::HostBuilder.new(host)
+    assert_equal(host.LocalEndPoint , obj.LocalEndPoint )
+    assert_equal(host.GlobalEndPoint, obj.GlobalEndPoint)
+    assert_equal(host.SessionID     , obj.SessionID     )
+    assert_equal(host.BroadcastID   , obj.BroadcastID   )
+    assert_equal(host.IsFirewalled  , obj.IsFirewalled  )
+    assert_equal(host.RelayCount    , obj.RelayCount    )
+    assert_equal(host.DirectCount   , obj.DirectCount   )
+    assert_equal(host.IsRelayFull   , obj.IsRelayFull   )
+    assert_equal(host.IsDirectFull  , obj.IsDirectFull  )
+    assert_equal(host.IsControlFull , obj.IsControlFull )
+    assert_equal(host.IsReceiving   , obj.IsReceiving   )
+    assert_equal(host.Extra.count   , obj.Extra.count   )
+    obj.Extra.count.times do |i|
+      assert_equal(host.Extra[i], obj.Extra[i])
+    end
+    assert_equal(host.Extensions.count, obj.Extensions.count)
+    obj.Extensions.count.times do |i|
+      assert_equal(host.Extensions[i], obj.Extensions[i])
+    end
+  end
+  
+  def test_construct_from_host_builder
+    src = PeerCastStation::Core::HostBuilder.new
+    src.local_end_point  = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
+    src.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
+    src.SessionID        = System::Guid.new_guid
+    src.BroadcastID      = System::Guid.new_guid
+    src.is_firewalled    = false
+    src.relay_count      = 1
+    src.direct_count     = 1
+    src.is_relay_full    = true
+    src.is_direct_full   = true
+    src.is_control_full  = true
+    src.is_receiving     = true
+    src.extra.add(
+      PeerCastStation::Core::Atom.new(
+        PeerCastStation::Core::ID4.new('test'.to_clr_string), 'foo'.to_clr_string))
+    src.extensions.add('test')
+    obj = PeerCastStation::Core::HostBuilder.new(src)
+    assert_equal(src.LocalEndPoint , obj.LocalEndPoint )
+    assert_equal(src.GlobalEndPoint, obj.GlobalEndPoint)
+    assert_equal(src.SessionID     , obj.SessionID     )
+    assert_equal(src.BroadcastID   , obj.BroadcastID   )
+    assert_equal(src.IsFirewalled  , obj.IsFirewalled  )
+    assert_equal(src.RelayCount    , obj.RelayCount    )
+    assert_equal(src.DirectCount   , obj.DirectCount   )
+    assert_equal(src.IsRelayFull   , obj.IsRelayFull   )
+    assert_equal(src.IsDirectFull  , obj.IsDirectFull  )
+    assert_equal(src.IsControlFull , obj.IsControlFull )
+    assert_equal(src.IsReceiving   , obj.IsReceiving   )
+    assert_equal(src.Extra.count   , obj.Extra.count   )
+    obj.Extra.count.times do |i|
+      assert_equal(src.Extra[i], obj.Extra[i])
+    end
+    assert_equal(src.Extensions.count, obj.Extensions.count)
+    obj.Extensions.count.times do |i|
+      assert_equal(src.Extensions[i], obj.Extensions[i])
+    end
+  end
+  
+  def test_to_host
+    obj = PeerCastStation::Core::HostBuilder.new
     obj.local_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
     obj.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
     obj.SessionID = System::Guid.new_guid
@@ -60,21 +136,65 @@ class TC_CoreHost < Test::Unit::TestCase
       PeerCastStation::Core::Atom.new(
         PeerCastStation::Core::ID4.new('test'.to_clr_string), 'foo'.to_clr_string))
     obj.extensions.add('test')
-    assert_in_delta(System::Environment.tick_count, obj.last_updated.total_milliseconds, 100)
-    assert_equal(13, log.size)
-    assert_equal('LocalEndPoint',  log[0])
-    assert_equal('GlobalEndPoint', log[1])
-    assert_equal('SessionID',      log[2])
-    assert_equal('BroadcastID',    log[3])
-    assert_equal('IsFirewalled',   log[4])
-    assert_equal('RelayCount',     log[5])
-    assert_equal('DirectCount',    log[6])
-    assert_equal('IsRelayFull',    log[7])
-    assert_equal('IsDirectFull',   log[8])
-    assert_equal('IsControlFull',  log[9])
-    assert_equal('IsReceiving',    log[10])
-    assert_equal('Extra',          log[11])
-    assert_equal('Extensions',     log[12])
+    host = obj.to_host
+    assert_equal(obj.LocalEndPoint,  host.LocalEndPoint)
+    assert_equal(obj.GlobalEndPoint, host.GlobalEndPoint)
+    assert_equal(obj.SessionID,      host.SessionID)
+    assert_equal(obj.BroadcastID,    host.BroadcastID)
+    assert_equal(obj.IsFirewalled,   host.IsFirewalled)
+    assert_equal(obj.RelayCount,     host.RelayCount)
+    assert_equal(obj.DirectCount,    host.DirectCount)
+    assert_equal(obj.IsRelayFull,    host.IsRelayFull)
+    assert_equal(obj.IsDirectFull,   host.IsDirectFull)
+    assert_equal(obj.IsControlFull,  host.IsControlFull)
+    assert_equal(obj.IsReceiving,    host.IsReceiving)
+    assert_equal(obj.Extra.count,    host.Extra.count)
+    host.Extra.count.times do |i|
+      assert_equal(obj.Extra[i], host.Extra[i])
+    end
+    assert_equal(obj.Extensions.count, host.Extensions.count)
+    host.Extensions.count.times do |i|
+      assert_equal(obj.Extensions[i], host.Extensions[i])
+    end
+  end
+end
+
+class TC_CoreHost < Test::Unit::TestCase
+  def test_construct
+    extra = PeerCastStation::Core::AtomCollection.new
+    extra.add(PeerCastStation::Core::Atom.new(
+      PeerCastStation::Core::ID4.new('test'.to_clr_string), 'foo'.to_clr_string))
+    extensions = System::Array[System::String].new(['test'])
+    host = PeerCastStation::Core::Host.new(
+      System::Guid.new_guid,
+      System::Guid.new_guid,
+      System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144),
+      System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144),
+      1,
+      1,
+      false,
+      true,
+      true,
+      true,
+      true,
+      extensions,
+      extra)
+    assert_not_equal(System::Guid.empty, host.SessionID)
+    assert_not_equal(System::Guid.empty, host.BroadcastID)
+    assert_equal(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144), host.LocalEndPoint)
+    assert_equal(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144), host.GlobalEndPoint)
+    assert_equal(1, host.RelayCount)
+    assert_equal(1, host.DirectCount)
+    assert(!host.IsFirewalled)
+    assert(host.IsRelayFull)
+    assert(host.IsDirectFull)
+    assert(host.IsControlFull)
+    assert(host.IsReceiving)
+    assert_equal(1,      host.Extra.count)
+    assert_equal('test', host.Extra[0].name.to_s)
+    assert_equal(1,      host.Extensions.count)
+    assert_equal('test', host.Extensions[0])
+    assert_not_equal(0, host.LastUpdated.ticks)
   end
 end
 
