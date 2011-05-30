@@ -105,7 +105,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert_nil(@peercast.request_channel(channel_id, nil, false))
 
     channel = PeerCastStation::Core::Channel.new(@peercast, channel_id, System::Uri.new('mock://localhost'))
-    @peercast.channels.add(channel)
+    @peercast.add_channel(channel)
     assert_equal(channel, @peercast.request_channel(channel_id, nil, false))
 
     channel_id = System::Guid.new_guid
@@ -117,6 +117,18 @@ class TC_CorePeerCast < Test::Unit::TestCase
     channel = @peercast.request_channel(channel_id, nil, true)
     assert_not_nil(channel)
     assert_kind_of(MockSourceStream, channel.source_stream)
+  end
+
+  def test_add_channel
+    @peercast = PeerCastStation::Core::PeerCast.new
+    channels = @peercast.channels
+    assert_equal(0, channels.count)
+    assert_equal(0, @peercast.channels.count)
+    channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.new_guid, System::Uri.new('mock://localhost'))
+    @peercast.add_channel(channel)
+    assert_equal(0, channels.count)
+    assert_equal(1, @peercast.channels.count)
+    assert_equal(channel, @peercast.channels[0])
   end
   
   def test_close_channel

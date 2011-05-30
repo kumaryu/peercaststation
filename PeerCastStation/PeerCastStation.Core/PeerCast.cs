@@ -33,9 +33,9 @@ namespace PeerCastStation.Core
     /// </summary>
     public IList<IOutputStreamFactory> OutputStreamFactories { get; private set; }
     /// <summary>
-    /// 接続しているチャンネルのリストを取得します
+    /// 接続しているチャンネルの読み取り専用リストを取得します
     /// </summary>
-    public IList<Channel> Channels { get { return channels; } }
+    public IList<Channel> Channels { get { return channels.AsReadOnly(); } }
     private List<Channel> channels = new List<Channel>();
 
     /// <summary>
@@ -96,6 +96,7 @@ namespace PeerCastStation.Core
         throw new ArgumentException(String.Format("Protocol `{0}' is not found", tracker.Scheme));
       }
       var channel = new Channel(this, channel_id, tracker);
+      channels = new List<Channel>(channels);
       channels.Add(channel);
       var source_stream = source_factory.Create(channel, tracker);
       channel.Start(source_stream);
@@ -144,12 +145,23 @@ namespace PeerCastStation.Core
     public Channel BroadcastChannel(IYellowPage yp, Guid channel_id, string protocol, Uri source) { return null; }
 
     /// <summary>
+    /// 指定されたチャンネルをチャンネル一覧に追加します
+    /// </summary>
+    /// <param name="channel">追加するチャンネル</param>
+    public void AddChannel(Channel channel)
+    {
+      channels = new List<Channel>(channels);
+      channels.Add(channel);
+    }
+
+    /// <summary>
     /// 指定したチャンネルをチャンネルリストから取り除きます
     /// </summary>
     /// <param name="channel"></param>
     public void CloseChannel(Channel channel)
     {
       channel.Close();
+      channels = new List<Channel>(channels);
       channels.Remove(channel);
       logger.Debug("Channel Removed: {0}", channel.ChannelID.ToString("N"));
       if (ChannelRemoved!=null) ChannelRemoved(this, new ChannelChangedEventArgs(channel));
@@ -233,6 +245,7 @@ namespace PeerCastStation.Core
       logger.Info("starting listen at {0}", ip);
       try {
         var res = new OutputListener(this, ip);
+        outputListeners = new List<OutputListener>(outputListeners);
         outputListeners.Add(res);
         return res;
       }
@@ -250,9 +263,9 @@ namespace PeerCastStation.Core
     /// <param name="listener">待ち受けを終了するリスナ</param>
     public void StopListen(OutputListener listener)
     {
-      if (outputListeners.Remove(listener)) {
-        listener.Close();
-      }
+      listener.Close();
+      outputListeners = new List<OutputListener>(outputListeners);
+      outputListeners.Remove(listener);
     }
 
     public IPEndPoint LocalEndPoint
@@ -329,7 +342,8 @@ namespace PeerCastStation.Core
         channel.Close();
         if (ChannelRemoved!=null) ChannelRemoved(this, new ChannelChangedEventArgs(channel));
       }
-      channels.Clear();
+      outputListeners = new List<OutputListener>();
+      channels = new List<Channel>();
       logger.Info("PeerCast Closed");
     }
 

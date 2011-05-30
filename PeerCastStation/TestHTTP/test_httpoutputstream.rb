@@ -132,7 +132,7 @@ class TC_HTTPOutputStreamFactory < Test::Unit::TestCase
       "User-Agent:hoge hoge\r\n",
       "\r\n"
     ].join
-    @peercast.channels.add(channel)
+    @peercast.add_channel(channel)
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('192.168.1.2'), 7144)
     output_stream = factory.create(stream, endpoint, channel_id, header)
     assert_not_nil(output_stream)

@@ -46,7 +46,7 @@ class TC_CoreAccessController < Test::Unit::TestCase
     chan_info = PeerCastStation::Core::AtomCollection.new
     chan_info.set_chan_info_bitrate(bitrate)
     channel.channel_info = PeerCastStation::Core::ChannelInfo.new(chan_info)
-    @peercast.channels.add(channel)
+    @peercast.add_channel(channel)
     channel
   end
 
