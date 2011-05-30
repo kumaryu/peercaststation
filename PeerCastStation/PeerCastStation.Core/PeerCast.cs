@@ -116,7 +116,7 @@ namespace PeerCastStation.Core
     /// </returns>
     public virtual Channel RequestChannel(Guid channel_id, Uri tracker, bool request_relay)
     {
-      var res = channels.FirstOrDefault(c => c.ChannelInfo.ChannelID==channel_id);
+      var res = channels.FirstOrDefault(c => c.ChannelID==channel_id);
       if (res!=null) {
         return res;
       }
@@ -151,7 +151,7 @@ namespace PeerCastStation.Core
     {
       channel.Close();
       channels.Remove(channel);
-      logger.Debug("Channel Removed: {0}", channel.ChannelInfo.ChannelID.ToString("N"));
+      logger.Debug("Channel Removed: {0}", channel.ChannelID.ToString("N"));
       if (ChannelRemoved!=null) ChannelRemoved(this, new ChannelChangedEventArgs(channel));
     }
 

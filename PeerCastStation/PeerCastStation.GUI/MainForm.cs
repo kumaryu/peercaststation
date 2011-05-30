@@ -271,8 +271,6 @@ namespace PeerCastStation.GUI
         {
           var total_plays  = Channel.Nodes.Sum(n => n.DirectCount) + Channel.OutputStreams.CountPlaying;
           var total_relays = Channel.Nodes.Sum(n => n.RelayCount)  + Channel.OutputStreams.CountRelaying;
-          var chaninfo = Channel.ChannelInfo.Extra.GetChanInfo();
-          var bitrate = chaninfo!=null ? (chaninfo.GetChanInfoBitrate() ?? 0) : 0;
           var status = "UNKNOWN";
           switch (Channel.Status) {
           case SourceStreamStatus.Idle:       status = "IDLE";    break;
@@ -284,7 +282,7 @@ namespace PeerCastStation.GUI
           return String.Format(
             "{0} {1}kbps ({2}/{3}) [{4}/{5}] {6}",
             Channel.ChannelInfo.Name,
-            bitrate,
+            Channel.ChannelInfo.Bitrate,
             total_plays,
             total_relays,
             Channel.OutputStreams.CountPlaying,
@@ -365,7 +363,7 @@ namespace PeerCastStation.GUI
     {
       var item = channelList.SelectedItem as ChannelListItem;
       if (item!=null) {
-        var channel_id = item.Channel.ChannelInfo.ChannelID;
+        var channel_id = item.Channel.ChannelID;
         var endpoint = peerCast.OutputListeners[0].LocalEndPoint;
         string pls;
         if (endpoint.Address.Equals(System.Net.IPAddress.Any)) {

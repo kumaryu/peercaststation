@@ -32,7 +32,7 @@ namespace PeerCastStation.HTTP
     /// <summary>
     /// プレイリストに含まれるチャンネルのコレクションを取得します
     /// </summary>
-    IList<ChannelInfo> Channels { get; }
+    IList<Channel> Channels { get; }
 
     /// <summary>
     /// Channelsを参照してプレイリストを作成し文字列で返します
@@ -49,18 +49,18 @@ namespace PeerCastStation.HTTP
     : IPlayList
   {
     public string MIMEType { get { return "audio/x-mpegurl"; } }
-    public IList<ChannelInfo> Channels { get; private set; }
+    public IList<Channel> Channels { get; private set; }
 
     public PLSPlayList()
     {
-      Channels = new List<ChannelInfo>();
+      Channels = new List<Channel>();
     }
 
     public string CreatePlayList(Uri baseuri)
     {
       var res = new System.Text.StringBuilder();
-      foreach (var info in Channels) {
-        var url = new Uri(baseuri, info.ChannelID.ToString("N").ToUpper() + info.ContentExtension);
+      foreach (var c in Channels) {
+        var url = new Uri(baseuri, c.ChannelID.ToString("N").ToUpper() + c.ChannelInfo.ContentExtension);
         res.AppendLine(url.ToString());
       }
       return res.ToString();
@@ -74,11 +74,11 @@ namespace PeerCastStation.HTTP
     : IPlayList
   {
     public string MIMEType { get { return "video/x-ms-asf"; } }
-    public IList<ChannelInfo> Channels { get; private set; }
+    public IList<Channel> Channels { get; private set; }
 
     public ASXPlayList()
     {
-      Channels = new List<ChannelInfo>();
+      Channels = new List<Channel>();
     }
 
     public string CreatePlayList(Uri baseuri)
@@ -89,15 +89,15 @@ namespace PeerCastStation.HTTP
       xml.WriteStartElement("ASX");
       xml.WriteAttributeString("version", "3.0");
       if (Channels.Count>0) {
-        xml.WriteElementString("Title", Channels[0].Name);
+        xml.WriteElementString("Title", Channels[0].ChannelInfo.Name);
       }
-      foreach (var info in Channels) {
-        string name = info.Name;
+      foreach (var c in Channels) {
+        string name = c.ChannelInfo.Name;
         string contact_url = null;
-        if (info.Extra.GetChanInfo()!=null) {
-          contact_url = info.Extra.GetChanInfo().GetChanInfoURL();
+        if (c.ChannelInfo.URL!=null) {
+          contact_url = c.ChannelInfo.URL;
         }
-        var stream_url = new Uri(baseuri, info.ChannelID.ToString("N").ToUpper() + info.ContentExtension);
+        var stream_url = new Uri(baseuri, c.ChannelID.ToString("N").ToUpper() + c.ChannelInfo.ContentExtension);
         xml.WriteStartElement("Entry");
         xml.WriteElementString("Title", name);
         if (contact_url!=null && contact_url!="") {

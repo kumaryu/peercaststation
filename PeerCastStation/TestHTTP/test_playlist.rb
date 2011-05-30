@@ -24,6 +24,14 @@ PCSCore = PeerCastStation::Core
 PCSHTTP = PeerCastStation::HTTP
 
 class TC_PLSPlayList < Test::Unit::TestCase
+  def setup
+    @peercast = PeerCastStation::Core::PeerCast.new
+  end
+  
+  def teardown
+    @peercast.close if @peercast and not @peercast.is_closed
+  end
+
   def test_construct
     pls = PCSHTTP::PLSPlayList.new
     assert_equal('audio/x-mpegurl', pls.MIMEType)
@@ -36,22 +44,30 @@ class TC_PLSPlayList < Test::Unit::TestCase
     res = pls.create_play_list(baseuri)
     assert_equal('', res)
 
-    info = PCSCore::ChannelInfo.new(System::Guid.parse('9778E62BDC59DF56F9216D0387F80BF2'))
-    info.name = 'foo'
-    info.content_type = 'WMV'
-    pls.channels.add(info)
+    channel = PCSCore::Channel.new(
+      @peercast,
+      System::Guid.parse('9778E62BDC59DF56F9216D0387F80BF2'),
+      System::Uri.new('mock://localhost'))
+    info = PCSCore::AtomCollection.new
+    info.set_chan_info_name('foo')
+    info.set_chan_info_type('WMV')
+    channel.channel_info = PCSCore::ChannelInfo.new(info)
+    pls.channels.add(channel)
     res = pls.create_play_list(baseuri)
     assert_equal(<<EOS, res.gsub(/\r\n/, "\n"))
 http://localhost/stream/9778E62BDC59DF56F9216D0387F80BF2.wmv
 EOS
 
-    info2 = PCSCore::ChannelInfo.new(System::Guid.parse('61077675C74AAB30529B5294BB76F656'))
-    info2.name = 'bar'
-    info2.content_type = 'OGM'
-    chan_info = PCSCore::AtomCollection.new
-    chan_info.SetChanInfoURL('http://example.com/')
-    info2.extra.set_chan_info(chan_info)
-    pls.channels.add(info2)
+    channel2 = PCSCore::Channel.new(
+      @peercast,
+      System::Guid.parse('61077675C74AAB30529B5294BB76F656'),
+      System::Uri.new('mock://localhost'))
+    info2 = PCSCore::AtomCollection.new
+    info2.SetChanInfoURL('http://example.com/')
+    info2.set_chan_info_name('bar')
+    info2.set_chan_info_type('OGM')
+    channel2.channel_info = PCSCore::ChannelInfo.new(info2)
+    pls.channels.add(channel2)
     res = pls.create_play_list(baseuri)
     assert_equal(<<EOS, res.gsub(/\r\n/, "\n"))
 http://localhost/stream/9778E62BDC59DF56F9216D0387F80BF2.wmv
@@ -61,6 +77,14 @@ EOS
 end
 
 class TC_ASXPlayList < Test::Unit::TestCase
+  def setup
+    @peercast = PeerCastStation::Core::PeerCast.new
+  end
+  
+  def teardown
+    @peercast.close if @peercast and not @peercast.is_closed
+  end
+
   def test_construct
     pls = PCSHTTP::ASXPlayList.new
     assert_equal('video/x-ms-asf', pls.MIMEType)
@@ -75,10 +99,15 @@ class TC_ASXPlayList < Test::Unit::TestCase
 <ASX version="3.0" />
 EOS
 
-    info = PCSCore::ChannelInfo.new(System::Guid.parse('9778E62BDC59DF56F9216D0387F80BF2'))
-    info.name = 'foo'
-    info.content_type = 'WMV'
-    pls.channels.add(info)
+    channel = PCSCore::Channel.new(
+      @peercast,
+      System::Guid.parse('9778E62BDC59DF56F9216D0387F80BF2'),
+      System::Uri.new('mock://localhost'))
+    info = PCSCore::AtomCollection.new
+    info.set_chan_info_name('foo')
+    info.set_chan_info_type('WMV')
+    channel.channel_info = PCSCore::ChannelInfo.new(info)
+    pls.channels.add(channel)
     res = pls.create_play_list(baseuri)
     assert_equal(<<EOS.chomp, res.gsub(/\r\n/, "\n"))
 <ASX version="3.0">
@@ -90,13 +119,16 @@ EOS
 </ASX>
 EOS
 
-    info2 = PCSCore::ChannelInfo.new(System::Guid.parse('61077675C74AAB30529B5294BB76F656'))
-    info2.name = 'bar'
-    info2.content_type = 'OGM'
-    chan_info = PCSCore::AtomCollection.new
-    chan_info.SetChanInfoURL('http://example.com/')
-    info2.extra.set_chan_info(chan_info)
-    pls.channels.add(info2)
+    channel2 = PCSCore::Channel.new(
+      @peercast,
+      System::Guid.parse('61077675C74AAB30529B5294BB76F656'),
+      System::Uri.new('mock://localhost'))
+    info2 = PCSCore::AtomCollection.new
+    info2.SetChanInfoURL('http://example.com/')
+    info2.set_chan_info_name('bar')
+    info2.set_chan_info_type('OGM')
+    channel2.channel_info = PCSCore::ChannelInfo.new(info2)
+    pls.channels.add(channel2)
     res = pls.create_play_list(baseuri)
     assert_equal(<<EOS.chomp, res.gsub(/\r\n/, "\n"))
 <ASX version="3.0">

@@ -175,26 +175,129 @@ class TC_CoreContent < Test::Unit::TestCase
 end
 
 class TC_CoreChannelInfo < Test::Unit::TestCase
-  def test_construct
-    obj = PeerCastStation::Core::ChannelInfo.new(System::Guid.empty)
-    assert_equal(System::Guid.empty, obj.ChannelID)
-    assert_nil(obj.tracker)
-    assert_equal('', obj.name)
-    assert_not_nil(obj.extra)
+  def test_empty
+    info = PeerCastStation::Core::AtomCollection.new
+    obj = PeerCastStation::Core::ChannelInfo.new(info)
+    assert_nil(obj.name)
+    assert_nil(obj.content_type)
+    assert_nil(obj.comment)
+    assert_nil(obj.desc)
+    assert_nil(obj.genre)
+    assert_nil(obj.URL)
+    assert_equal(0, obj.bitrate)
     assert_equal(0, obj.extra.count)
   end
-  
-  def test_changed
-    log = []
-    obj = PeerCastStation::Core::ChannelInfo.new(System::Guid.empty)
-    obj.property_changed {|sender, e| log << e.property_name }
-    obj.name = 'test'
-    obj.tracker = System::Uri.new('mock://127.0.0.1:7147')
-    obj.extra.add(PeerCastStation::Core::Atom.new(PeerCastStation::Core::ID4.new('test'.to_clr_string), 'foo'.to_clr_string))
-    assert_equal(3, log.size)
-    assert_equal('Name',    log[0])
-    assert_equal('Tracker', log[1])
-    assert_equal('Extra',   log[2])
+
+  def test_name
+    info = PeerCastStation::Core::AtomCollection.new
+    info.set_chan_info_name('name')
+    obj = PeerCastStation::Core::ChannelInfo.new(info)
+    assert_equal('name', obj.name)
+  end
+
+  def test_content_type
+    info = PeerCastStation::Core::AtomCollection.new
+    info.set_chan_info_type('WMV')
+    obj = PeerCastStation::Core::ChannelInfo.new(info)
+    assert_equal('WMV', obj.content_type)
+  end
+
+  def test_comment
+    info = PeerCastStation::Core::AtomCollection.new
+    info.set_chan_info_comment('comment')
+    obj = PeerCastStation::Core::ChannelInfo.new(info)
+    assert_equal('comment', obj.comment)
+  end
+
+  def test_desc
+    info = PeerCastStation::Core::AtomCollection.new
+    info.set_chan_info_desc('desc')
+    obj = PeerCastStation::Core::ChannelInfo.new(info)
+    assert_equal('desc', obj.desc)
+  end
+
+  def test_genre
+    info = PeerCastStation::Core::AtomCollection.new
+    info.set_chan_info_genre('genre')
+    obj = PeerCastStation::Core::ChannelInfo.new(info)
+    assert_equal('genre', obj.genre)
+  end
+
+  def test_url
+    info = PeerCastStation::Core::AtomCollection.new
+    info.SetChanInfoURL('http://example.com')
+    obj = PeerCastStation::Core::ChannelInfo.new(info)
+    assert_equal('http://example.com', obj.URL)
+  end
+
+  def test_bitrate
+    info = PeerCastStation::Core::AtomCollection.new
+    info.set_chan_info_bitrate(7144)
+    obj = PeerCastStation::Core::ChannelInfo.new(info)
+    assert_equal(7144, obj.bitrate)
+  end
+
+  def test_extra
+    info = PeerCastStation::Core::AtomCollection.new
+    info.set_chan_info_bitrate(7144)
+    info.SetChanInfoURL('http://example.com')
+    info.set_chan_info_genre('genre')
+    info.set_chan_info_desc('desc')
+    info.set_chan_info_comment('comment')
+    info.set_chan_info_name('name')
+    info.set_chan_info_type('WMV')
+    obj = PeerCastStation::Core::ChannelInfo.new(info)
+    assert_equal(7, obj.extra.count)
+  end
+end
+
+class TC_CoreChannelTrack < Test::Unit::TestCase
+  def test_empty
+    info = PeerCastStation::Core::AtomCollection.new
+    obj = PeerCastStation::Core::ChannelTrack.new(info)
+    assert_nil(obj.name)
+    assert_nil(obj.album)
+    assert_nil(obj.creator)
+    assert_nil(obj.URL)
+    assert_equal(0, obj.extra.count)
+  end
+
+  def test_name
+    info = PeerCastStation::Core::AtomCollection.new
+    info.set_chan_track_title('name')
+    obj = PeerCastStation::Core::ChannelTrack.new(info)
+    assert_equal('name', obj.name)
+  end
+
+  def test_album
+    info = PeerCastStation::Core::AtomCollection.new
+    info.set_chan_track_album('album')
+    obj = PeerCastStation::Core::ChannelTrack.new(info)
+    assert_equal('album', obj.album)
+  end
+
+  def test_creator
+    info = PeerCastStation::Core::AtomCollection.new
+    info.set_chan_track_creator('creator')
+    obj = PeerCastStation::Core::ChannelTrack.new(info)
+    assert_equal('creator', obj.creator)
+  end
+
+  def test_url
+    info = PeerCastStation::Core::AtomCollection.new
+    info.SetChanTrackURL('http://example.com')
+    obj = PeerCastStation::Core::ChannelTrack.new(info)
+    assert_equal('http://example.com', obj.URL)
+  end
+
+  def test_extra
+    info = PeerCastStation::Core::AtomCollection.new
+    info.set_chan_track_title('name')
+    info.set_chan_track_album('album')
+    info.set_chan_track_creator('creator')
+    info.SetChanTrackURL('http://example.com')
+    obj = PeerCastStation::Core::ChannelTrack.new(info)
+    assert_equal(4, obj.extra.count)
   end
 end
 

@@ -139,13 +139,13 @@ class TC_PCPOutputStream < Test::Unit::TestCase
     @peercast.start_listen(@endpoint)
     @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
     @channel    = PeerCastStation::Core::Channel.new(@peercast, @channel_id, System::Uri.new('http://localhost:7146'))
-    @channel.channel_info.name = 'Test Channel' 
     chaninfo = PCSCore::AtomCollection.new
+    chaninfo.set_chan_info_name('Test Channel' )
     chaninfo.set_chan_info_bitrate(7144)
     chaninfo.set_chan_info_genre('Test')
     chaninfo.set_chan_info_desc('this is a test channel')
     chaninfo.SetChanInfoURL('http://www.example.com/')
-    @channel.channel_info.extra.set_chan_info(chaninfo)
+    @channel.channel_info = PCSCore::ChannelInfo.new(chaninfo)
     @request    = PeerCastStation::PCP::RelayRequest.new(
       System::Array[System::String].new([
         'GET /channel/9778E62BDC59DF56F9216D0387F80BF2 HTTP/1.1',
@@ -205,7 +205,7 @@ class TC_PCPOutputStream < Test::Unit::TestCase
     channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
     chan_info = PeerCastStation::Core::AtomCollection.new
     chan_info.set_chan_info_bitrate(bitrate)
-    channel.channel_info.extra.set_chan_info(chan_info)
+    channel.channel_info = PeerCastStation::Core::ChannelInfo.new(chan_info)
     @peercast.channels.add(channel)
     channel
   end
@@ -296,8 +296,6 @@ EOS
 
   def test_create_content_header_packet
     content = PCSCore::Content.new(0, 'foobar')
-    chan_info = PCSCore::AtomCollection.new
-    @channel.channel_info.extra.set_chan_info(chan_info)
     atom = TestPCPOutputStream.create_content_header_packet(@channel, content)
     assert_equal(PCSCore::Atom.PCP_CHAN, atom.name)
     assert(atom.has_children)
@@ -305,11 +303,9 @@ EOS
     assert_equal(PCSCore::Atom.PCP_CHAN_PKT_HEAD, chan_pkt.get_chan_pkt_type)
     assert_equal(0, chan_pkt.get_chan_pkt_pos)
     assert_equal('foobar', chan_pkt.get_chan_pkt_data.to_a.pack('C*'))
-    assert_equal(chan_info, atom.children.get_chan_info)
+    assert_not_nil(atom.children.get_chan_info)
 
     content = PCSCore::Content.new(5000000000, 'foobar')
-    chan_info = PCSCore::AtomCollection.new
-    @channel.channel_info.extra.set_chan_info(chan_info)
     atom = TestPCPOutputStream.create_content_header_packet(@channel, content)
     assert_equal(PCSCore::Atom.PCP_CHAN, atom.name)
     assert(atom.has_children)
@@ -317,13 +313,11 @@ EOS
     assert_equal(PCSCore::Atom.PCP_CHAN_PKT_HEAD, chan_pkt.get_chan_pkt_type)
     assert_equal(5000000000 & 0xFFFFFFFF, chan_pkt.get_chan_pkt_pos)
     assert_equal('foobar', chan_pkt.get_chan_pkt_data.to_a.pack('C*'))
-    assert_equal(chan_info, atom.children.get_chan_info)
+    assert_not_nil(atom.children.get_chan_info)
   end
 
   def test_create_content_body_packet
     content = PCSCore::Content.new(10000000, 'foobar')
-    chan_info = PCSCore::AtomCollection.new
-    @channel.channel_info.extra.set_chan_info(chan_info)
     atom = TestPCPOutputStream.create_content_body_packet(@channel, content)
     assert_equal(PCSCore::Atom.PCP_CHAN, atom.name)
     assert(atom.has_children)
@@ -334,8 +328,6 @@ EOS
     assert_equal(nil, atom.children.get_chan_info)
 
     content = PCSCore::Content.new(5000000000, 'foobar')
-    chan_info = PCSCore::AtomCollection.new
-    @channel.channel_info.extra.set_chan_info(chan_info)
     atom = TestPCPOutputStream.create_content_body_packet(@channel, content)
     assert_equal(PCSCore::Atom.PCP_CHAN, atom.name)
     assert(atom.has_children)
@@ -673,7 +665,7 @@ EOS
     assert_equal(node.SessionID,                host.children.GetHostSessionID)
     assert_equal(node.global_end_point.address, host.children.GetHostIP)
     assert_equal(node.global_end_point.port,    host.children.GetHostPort)
-    assert_equal(@channel.channel_info.ChannelID,host.children.GetHostChannelID)
+    assert_equal(@channel.ChannelID,            host.children.GetHostChannelID)
     assert_equal(
       PCSCore::PCPHostFlags1.relay |
       PCSCore::PCPHostFlags1.direct |

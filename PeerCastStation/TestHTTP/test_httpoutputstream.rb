@@ -236,7 +236,7 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
 
     chaninfo = PCSCore::AtomCollection.new
     chaninfo.set_chan_info_bitrate(7144)
-    @channel.channel_info.extra.set_chan_info(chaninfo)
+    @channel.channel_info = PCSCore::ChannelInfo.new(chaninfo)
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7144)
     stream = PCSHTTP::HTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
     assert(stream.is_local)
@@ -290,7 +290,9 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
     head = stream.create_response_header.split(/\r\n/)
     assert_match(%r;^HTTP/1.0 404 ;, head[0])
 
-    @channel.channel_info.content_type = 'OGG'
+    info = PCSCore::AtomCollection.new(@channel.channel_info.extra)
+    info.set_chan_info_type('OGG')
+    @channel.channel_info = PCSCore::ChannelInfo.new(info)
     stream = TestHTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
     stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.none
     head = stream.create_response_header.split(/\r\n/)
@@ -306,8 +308,10 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
     assert(head.any? {|line| /^Content-Type:\s*#{@channel.channel_info.MIMEType}/=~line})
 
     stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.content
+    info = PCSCore::AtomCollection.new(@channel.channel_info.extra)
     ['WMV', 'WMA', 'ASX'].each do |mms_type|
-      @channel.channel_info.content_type = mms_type
+      info.set_chan_info_type(mms_type)
+      @channel.channel_info = PCSCore::ChannelInfo.new(info)
       head = stream.create_response_header.split(/\r\n/)
       assert_match(%r;^HTTP/1.0 200 ;, head[0])
       assert(head.any? {|line| /^Content-Type:\s*application\/x-mms-framed/=~line})
@@ -323,7 +327,9 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
     stream = TestHTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
     stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.content
-    @channel.channel_info.content_type = 'OGG'
+    info = PCSCore::AtomCollection.new(@channel.channel_info.extra)
+    info.set_chan_info_type('OGG')
+    @channel.channel_info = PCSCore::ChannelInfo.new(info)
     stream.write_response_header
     assert_equal(stream.create_response_header+"\r\n", s.to_array.to_a.pack('C*'))
   end

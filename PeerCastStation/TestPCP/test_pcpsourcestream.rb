@@ -348,7 +348,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert(source.log)
     assert_equal(1, source.log.size)
     assert_equal(:send, source.log[0][0])
-    assert_equal("GET /channel/#{@channel.channel_info.ChannelID.ToString('N')} HTTP/1.0",
+    assert_equal("GET /channel/#{@channel.ChannelID.ToString('N')} HTTP/1.0",
                  source.log[0][1].to_a.pack('C*').split(/\r\n/)[0])
     assert(source.log[0][1].to_a.pack('C*').split(/\r\n/).include?("x-peercast-pcp:1"))
   end
@@ -591,7 +591,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
 
   def test_pcp_chan_info
     source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
-    assert_equal('', @channel.channel_info.name)
+    assert_nil(@channel.channel_info.name)
     assert_equal(0, @channel.channel_info.extra.count)
 
     chan_info = PeerCastStation::Core::Atom.with_children(id4(PCP_CHAN_INFO)) {|children|
@@ -604,16 +604,14 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     }
     assert_nil(source.OnPCPChanInfo(chan_info))
     sleep(0.1)
-    assert_equal('', @channel.channel_info.name)
-    assert_equal(1,         @channel.channel_info.extra.count)
-    info = @channel.channel_info.extra.GetChanInfo
-    assert_equal(6,                    info.count)
-    assert_equal(7144,                 info.GetChanInfoBitrate)
-    assert_equal('http://example.com', info.GetChanInfoURL)
-    assert_equal('WMV',                info.GetChanInfoType)
-    assert_equal('Genre',              info.GetChanInfoGenre)
-    assert_equal('Desc',               info.GetChanInfoDesc)
-    assert_equal('Comment',            info.GetChanInfoComment)
+    assert_nil(@channel.channel_info.name)
+    assert_equal(6, @channel.channel_info.extra.count)
+    assert_equal(7144,                 @channel.channel_info.Bitrate)
+    assert_equal('http://example.com', @channel.channel_info.URL)
+    assert_equal('WMV',                @channel.channel_info.ContentType)
+    assert_equal('Genre',              @channel.channel_info.Genre)
+    assert_equal('Desc',               @channel.channel_info.Desc)
+    assert_equal('Comment',            @channel.channel_info.Comment)
 
     chan_info = PeerCastStation::Core::Atom.with_children(id4(PCP_CHAN_INFO)) {|children|
       children.SetChanInfoName('foobar')
@@ -621,18 +619,15 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     }
     assert_nil(source.OnPCPChanInfo(chan_info))
     sleep(0.1)
-    assert_equal('foobar',  @channel.channel_info.name)
-    assert_equal(1, @channel.channel_info.extra.count)
-    info = @channel.channel_info.extra.GetChanInfo
-    assert_equal(2,        info.count)
-    assert_equal('foobar', info.GetChanInfoName)
-    assert_equal('OGM',    info.GetChanInfoType)
+    assert_equal('foobar', @channel.channel_info.name)
+    assert_equal('OGM',    @channel.channel_info.content_type)
+    assert_equal(2, @channel.channel_info.extra.count)
   end
 
   def test_pcp_chan_track
     source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
-    assert_equal('', @channel.channel_info.name)
-    assert_equal(0, @channel.channel_info.extra.count)
+    assert_nil(@channel.channel_track.name)
+    assert_equal(0, @channel.channel_track.extra.count)
 
     chan_track = PeerCastStation::Core::Atom.with_children(id4(PCP_CHAN_TRACK)) {|children|
       children.SetChanTrackURL('http://example.com')
@@ -642,14 +637,11 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     }
     assert_nil(source.OnPCPChanTrack(chan_track))
     sleep(0.1)
-    assert_equal('', @channel.channel_info.name)
-    assert_equal(1, @channel.channel_info.extra.count)
-    track = @channel.channel_info.extra.GetChanTrack
-    assert_equal(4,                    track.count)
-    assert_equal('http://example.com', track.GetChanTrackURL)
-    assert_equal('Title',              track.GetChanTrackTitle)
-    assert_equal('Album',              track.GetChanTrackAlbum)
-    assert_equal('Creator',            track.GetChanTrackCreator)
+    assert_equal(4, @channel.channel_track.extra.count)
+    assert_equal('http://example.com', @channel.channel_track.URL)
+    assert_equal('Title',              @channel.channel_track.Name)
+    assert_equal('Album',              @channel.channel_track.Album)
+    assert_equal('Creator',            @channel.channel_track.Creator)
 
     chan_track = PeerCastStation::Core::Atom.with_children(id4(PCP_CHAN_TRACK)) {|children|
       children.SetChanTrackURL('http://example.com')
@@ -657,12 +649,9 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     }
     assert_nil(source.OnPCPChanTrack(chan_track))
     sleep(0.1)
-    assert_equal('', @channel.channel_info.name)
-    assert_equal(1, @channel.channel_info.extra.count)
-    track = @channel.channel_info.extra.GetChanTrack
-    assert_equal(2,                    track.count)
-    assert_equal('http://example.com', track.GetChanTrackURL)
-    assert_equal('Title',              track.GetChanTrackTitle)
+    assert_equal(2, @channel.channel_track.extra.count)
+    assert_equal('http://example.com', @channel.channel_track.URL)
+    assert_equal('Title',              @channel.channel_track.Name)
   end
 
   def test_pcp_helo

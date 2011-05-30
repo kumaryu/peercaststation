@@ -249,13 +249,7 @@ namespace PeerCastStation.PCP
           return 0;
         }
         else {
-          var chaninfo = Channel.ChannelInfo.Extra.GetChanInfo();
-          if (chaninfo!=null) {
-            return chaninfo.GetChanInfoBitrate() ?? 0;
-          }
-          else {
-            return 0;
-          }
+          return Channel.ChannelInfo.Bitrate;
         }
       }
     }
@@ -274,7 +268,7 @@ namespace PeerCastStation.PCP
       RelayRequest request)
     {
       logger.Debug("Initialized: Channel {0}, Remote {1}, Request {2} {3} ({4} {5})",
-        channel!=null ? channel.ChannelInfo.ChannelID.ToString("N") : "(null)",
+        channel!=null ? channel.ChannelID.ToString("N") : "(null)",
         remote_endpoint,
         request.Uri,
         request.StreamPos,
@@ -298,7 +292,6 @@ namespace PeerCastStation.PCP
       }
       else {
         var status = is_relay_full ? "503 Temporary Unavailable." : "200 OK";
-        var chaninfo = Channel.ChannelInfo.Extra.GetChanInfo() ?? new AtomCollection();
         return String.Format(
           "HTTP/1.0 {0}\r\n" +
           "Server: {1}\r\n" +
@@ -314,11 +307,11 @@ namespace PeerCastStation.PCP
           status,
           PeerCast.AgentName,
           Channel.ChannelInfo.Name,
-          chaninfo.GetChanInfoBitrate() ?? 0,
-          chaninfo.GetChanInfoGenre() ?? "",
-          chaninfo.GetChanInfoDesc() ?? "",
-          chaninfo.GetChanInfoURL() ?? "",
-          Channel.ChannelInfo.ChannelID.ToString("N").ToUpper());
+          Channel.ChannelInfo.Bitrate,
+          Channel.ChannelInfo.Genre ?? "",
+          Channel.ChannelInfo.Desc ?? "",
+          Channel.ChannelInfo.URL ?? "",
+          Channel.ChannelID.ToString("N").ToUpper());
       }
     }
 
@@ -347,13 +340,14 @@ namespace PeerCastStation.PCP
     protected static Atom CreateContentHeaderPacket(Channel channel, Content content)
     {
       var chan = new AtomCollection();
-      chan.SetChanID(channel.ChannelInfo.ChannelID);
+      chan.SetChanID(channel.ChannelID);
       var chan_pkt = new AtomCollection();
       chan_pkt.SetChanPktType(Atom.PCP_CHAN_PKT_HEAD);
       chan_pkt.SetChanPktPos((uint)(content.Position & 0xFFFFFFFFU));
       chan_pkt.SetChanPktData(content.Data);
       chan.SetChanPkt(chan_pkt);
-      chan.Update(channel.ChannelInfo.Extra);
+      chan.SetChanInfo(channel.ChannelInfo.Extra);
+      chan.SetChanTrack(channel.ChannelTrack.Extra);
       logger.Debug("Sending Header: {0}", content.Position);
       return new Atom(Atom.PCP_CHAN, chan);
     }
@@ -361,7 +355,7 @@ namespace PeerCastStation.PCP
     protected static Atom CreateContentBodyPacket(Channel channel, Content content)
     {
       var chan = new AtomCollection();
-      chan.SetChanID(channel.ChannelInfo.ChannelID);
+      chan.SetChanID(channel.ChannelID);
       var chan_pkt = new AtomCollection();
       chan_pkt.SetChanPktType(Atom.PCP_CHAN_PKT_DATA);
       chan_pkt.SetChanPktPos((uint)(content.Position & 0xFFFFFFFFU));
@@ -767,7 +761,7 @@ namespace PeerCastStation.PCP
           var localendpoint  = node.LocalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
           host_atom.AddHostIP(localendpoint.Address);
           host_atom.AddHostPort((short)localendpoint.Port);
-          host_atom.SetHostChannelID(Channel.ChannelInfo.ChannelID);
+          host_atom.SetHostChannelID(Channel.ChannelID);
           host_atom.SetHostFlags1(
             (node.IsFirewalled ? PCPHostFlags1.Firewalled : PCPHostFlags1.None) |
             (node.IsRelayFull ? PCPHostFlags1.None : PCPHostFlags1.Relay) |

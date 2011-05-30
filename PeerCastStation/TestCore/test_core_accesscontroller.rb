@@ -45,7 +45,7 @@ class TC_CoreAccessController < Test::Unit::TestCase
     channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
     chan_info = PeerCastStation::Core::AtomCollection.new
     chan_info.set_chan_info_bitrate(bitrate)
-    channel.channel_info.extra.set_chan_info(chan_info)
+    channel.channel_info = PeerCastStation::Core::ChannelInfo.new(chan_info)
     @peercast.channels.add(channel)
     channel
   end

@@ -275,13 +275,7 @@ namespace PeerCastStation.HTTP
           return 0;
         }
         else {
-          var chaninfo = channel.ChannelInfo.Extra.GetChanInfo();
-          if (chaninfo!=null) {
-            return chaninfo.GetChanInfoBitrate() ?? 0;
-          }
-          else {
-            return 0;
-          }
+          return channel.ChannelInfo.Bitrate;
         }
       }
     }
@@ -306,7 +300,7 @@ namespace PeerCastStation.HTTP
     public HTTPOutputStream(PeerCast peercast, Stream stream, EndPoint remote_endpoint, Channel channel, HTTPRequest request)
     {
       logger.Debug("Initialized: Channel {0}, Remote {1}, Request {2} {3}",
-        channel!=null ? channel.ChannelInfo.ChannelID.ToString("N") : "(null)",
+        channel!=null ? channel.ChannelID.ToString("N") : "(null)",
         remote_endpoint,
         request.Method,
         request.Uri);
@@ -428,7 +422,7 @@ namespace PeerCastStation.HTTP
           else {
             pls = new PLSPlayList();
           }
-          pls.Channels.Add(channel.ChannelInfo);
+          pls.Channels.Add(channel);
           return String.Format(
             "HTTP/1.0 200 OK\r\n"             +
             "Server: {0}\r\n"                 +
@@ -479,7 +473,7 @@ namespace PeerCastStation.HTTP
       else {
         pls = new PLSPlayList();
       }
-      pls.Channels.Add(channel.ChannelInfo);
+      pls.Channels.Add(channel);
       var baseuri = new Uri(
         new Uri(request.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped)),
         "stream/");

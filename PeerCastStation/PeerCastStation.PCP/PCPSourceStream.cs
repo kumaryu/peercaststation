@@ -547,11 +547,11 @@ namespace PeerCastStation.PCP
 
     public virtual void SendRelayRequest()
     {
-      logger.Debug("Sending Relay request: /channel/{0}", channel.ChannelInfo.ChannelID.ToString("N"));
+      logger.Debug("Sending Relay request: /channel/{0}", channel.ChannelID.ToString("N"));
       var req = String.Format(
         "GET /channel/{0} HTTP/1.0\r\n" +
         "x-peercast-pcp:1\r\n" +
-        "\r\n", channel.ChannelInfo.ChannelID.ToString("N"));
+        "\r\n", channel.ChannelID.ToString("N"));
       Send(System.Text.Encoding.UTF8.GetBytes(req));
     }
 
@@ -663,7 +663,7 @@ namespace PeerCastStation.PCP
     {
       var host = new AtomCollection();
       peercast.SynchronizationContext.Send(dummy => {
-        host.SetHostChannelID(channel.ChannelInfo.ChannelID);
+        host.SetHostChannelID(channel.ChannelID);
         host.SetHostSessionID(peercast.SessionID);
         var globalendpoint = peercast.GlobalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
         host.AddHostIP(globalendpoint.Address);
@@ -711,7 +711,7 @@ namespace PeerCastStation.PCP
       bcst.SetBcstTTL(11);
       bcst.SetBcstVersion(PCP_VERSION);
       bcst.SetBcstVersionVP(PCP_VERSION_VP);
-      bcst.SetBcstChannelID(channel.ChannelInfo.ChannelID);
+      bcst.SetBcstChannelID(channel.ChannelID);
       bcst.Add(packet);
       return new Atom(Atom.PCP_BCST, bcst);
     }
@@ -848,11 +848,7 @@ namespace PeerCastStation.PCP
     protected virtual IStreamState OnPCPChanInfo(Atom atom)
     {
       peercast.SynchronizationContext.Post(dummy => {
-        var name = atom.Children.GetChanInfoName();
-        if (name != null) channel.ChannelInfo.Name = name;
-        var content_type = atom.Children.GetChanInfoType();
-        if (content_type!=null) channel.ChannelInfo.ContentType = content_type;
-        channel.ChannelInfo.Extra.SetChanInfo(atom.Children);
+        channel.ChannelInfo = new ChannelInfo(atom.Children);
       }, null);
       hostInfoUpdated = true;
       changedEvent.Set();
@@ -862,7 +858,7 @@ namespace PeerCastStation.PCP
     protected virtual IStreamState OnPCPChanTrack(Atom atom)
     {
       peercast.SynchronizationContext.Post(dummy => {
-        channel.ChannelInfo.Extra.SetChanTrack(atom.Children);
+        channel.ChannelTrack = new ChannelTrack(atom.Children);
       }, null);
       return null;
     }
@@ -1017,7 +1013,7 @@ namespace PeerCastStation.PCP
     public PCPSourceStream(PeerCast peercast, Channel channel, Uri source_uri)
     {
       logger.Debug("Initialized: Channel {0}, Source {1}",
-        channel!=null ? channel.ChannelInfo.ChannelID.ToString("N") : "(null)",
+        channel!=null ? channel.ChannelID.ToString("N") : "(null)",
         source_uri);
       this.peercast = peercast;
       this.channel = channel;

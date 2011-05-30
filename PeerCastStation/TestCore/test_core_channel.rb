@@ -36,7 +36,7 @@ class TC_CoreChannel < Test::Unit::TestCase
     assert_nil(channel.source_stream)
     assert_equal(@peercast, channel.PeerCast)
     assert_equal('mock://localhost/', channel.source_uri.to_s)
-    assert_equal(System::Guid.empty, channel.channel_info.ChannelID)
+    assert_equal(System::Guid.empty, channel.ChannelID)
     assert_equal(PeerCastStation::Core::SourceStreamStatus.Idle, channel.status)
     assert_equal(0, channel.output_streams.count)
     assert_equal(0, channel.nodes.count)
@@ -51,17 +51,23 @@ class TC_CoreChannel < Test::Unit::TestCase
     channel.property_changed {|sender, e| property_log << e.property_name }
     channel.content_changed {|sender, e| content_log << 'content' }
     channel.source_stream = MockSourceStream.new(channel, channel.source_uri)
-    channel.channel_info.name = 'bar'
+    chaninfo = PeerCastStation::Core::AtomCollection.new
+    chaninfo.set_chan_info_name('bar')
+    channel.channel_info = PeerCastStation::Core::ChannelInfo.new(chaninfo)
+    chantrack = PeerCastStation::Core::AtomCollection.new
+    chantrack.set_chan_track_title('foo')
+    channel.channel_track = PeerCastStation::Core::ChannelTrack.new(chantrack)
     channel.output_streams.add(MockOutputStream.new)
     channel.nodes.add(PeerCastStation::Core::HostBuilder.new.to_host)
     channel.content_header = PeerCastStation::Core::Content.new(0, 'header')
     channel.contents.add(PeerCastStation::Core::Content.new(1, 'body'))
-    assert_equal(5, property_log.size)
+    assert_equal(6, property_log.size)
     assert_equal('SourceStream',  property_log[0])
     assert_equal('ChannelInfo',   property_log[1])
-    assert_equal('OutputStreams', property_log[2])
-    assert_equal('Nodes',         property_log[3])
-    assert_equal('ContentHeader', property_log[4])
+    assert_equal('ChannelTrack',  property_log[2])
+    assert_equal('OutputStreams', property_log[3])
+    assert_equal('Nodes',         property_log[4])
+    assert_equal('ContentHeader', property_log[5])
     assert_equal(2, content_log.size)
     assert_equal('content', content_log[0])
     assert_equal('content', content_log[1])

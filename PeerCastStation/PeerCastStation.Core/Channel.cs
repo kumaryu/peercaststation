@@ -29,55 +29,75 @@ namespace PeerCastStation.Core
   /// チャンネルのメタデータを保持するクラスです
   /// </summary>
   public class ChannelInfo
-    : INotifyPropertyChanged
   {
-    private Guid channelID;
-    private Uri tracker = null;
-    private string name = "";
-    private string contentType = "";
-
     /// <summary>
-    /// 接続起点のURIを取得および設定します
-    /// </summary>
-    public Uri Tracker {
-      get { return tracker; }
-      set {
-        tracker = value;
-        OnPropertyChanged("Tracker");
-      }
-    }
-    /// <summary>
-    /// チャンネルIDを取得します
-    /// </summary>
-    public Guid ChannelID {
-      get { return channelID; }
-    }
-    /// <summary>
-    /// チャンネル名を取得および設定します
+    /// チャンネル名を取得します
     /// </summary>
     public string Name {
-      get { return name; }
-      set {
-        name = value;
-        OnPropertyChanged("Name");
+      get {
+        return extra.GetChanInfoName();
       }
     }
+
     /// <summary>
-    /// チャンネルストリームの内容種類を取得および設定します
+    /// チャンネルストリームの内容種類を取得します
     /// </summary>
     public string ContentType {
       get {
-        return contentType;
+        return extra.GetChanInfoType();
       }
-      set {
-        contentType = value;
-        OnPropertyChanged("ContentType");
+    }
+
+    /// <summary>
+    /// ジャンルを取得します
+    /// </summary>
+    public string Genre {
+      get {
+        return extra.GetChanInfoGenre();
+      }
+    }
+
+    /// <summary>
+    /// チャンネル詳細を取得します
+    /// </summary>
+    public string Desc {
+      get {
+        return extra.GetChanInfoDesc();
+      }
+    }
+
+    /// <summary>
+    /// 配信コメントを取得します
+    /// </summary>
+    public string Comment {
+      get {
+        return extra.GetChanInfoComment();
+      }
+    }
+
+    /// <summary>
+    /// コンタクトURLを取得します
+    /// </summary>
+    public string URL {
+      get {
+        return extra.GetChanInfoURL();
+      }
+    }
+
+    /// <summary>
+    /// 配信ビットレート情報を取得します
+    /// </summary>
+    public int Bitrate
+    {
+      get
+      {
+        return extra.GetChanInfoBitrate() ?? 0;
       }
     }
 
     public string MIMEType {
       get {
-        switch (contentType) {
+        switch (ContentType) {
         case "MP3": return "audio/mpeg";
         case "OGG": return "audio/ogg";
         case "OGM": return "video/ogg";
@@ -96,7 +116,7 @@ namespace PeerCastStation.Core
     public string ContentExtension
     {
       get {
-        switch (contentType) {
+        switch (ContentType) {
         case "MP3": return ".mp3";
         case "OGG": return ".ogg";
         case "OGM": return ".ogv";
@@ -112,29 +132,75 @@ namespace PeerCastStation.Core
       }
     }
 
-    private AtomCollection extra = new AtomCollection();
+    private ReadOnlyAtomCollection extra;
     /// <summary>
     /// その他のチャンネル情報を保持するリストを取得します
     /// </summary>
-    public AtomCollection Extra { get { return extra; } }
-    public event PropertyChangedEventHandler PropertyChanged;
-    private void OnPropertyChanged(string name)
+    public IAtomCollection Extra { get { return extra; } }
+
+    /// <summary>
+    /// チャンネル情報を保持するAtomCollectionから新しいチャンネル情報を初期化します
+    /// </summary>
+    /// <param name="chaninfo">チャンネル情報を保持するAtomCollection</param>
+    public ChannelInfo(IAtomCollection chaninfo)
     {
-      if (PropertyChanged != null) {
-        PropertyChanged(this, new PropertyChangedEventArgs(name));
+      extra = new ReadOnlyAtomCollection(new AtomCollection(chaninfo));
+    }
+  }
+
+  /// <summary>
+  /// チャンネルのトラック情報を保持するクラスです
+  /// </summary>
+  public class ChannelTrack
+  {
+    /// <summary>
+    /// タイトルを取得します
+    /// </summary>
+    public string Name {
+      get {
+        return extra.GetChanTrackTitle();
+      }
+    }
+    /// <summary>
+    /// アルバム名を取得します
+    /// </summary>
+    public string Album {
+      get {
+        return extra.GetChanTrackAlbum();
       }
     }
 
     /// <summary>
-    /// チャンネルIDを指定して新しいチャンネル情報を初期化します
+    /// 作者名を取得します
     /// </summary>
-    /// <param name="channel_id">チャンネルID</param>
-    public ChannelInfo(Guid channel_id)
+    public string Creator {
+      get {
+        return extra.GetChanTrackCreator();
+      }
+    }
+
+    /// <summary>
+    /// トラック情報に関するURLを取得します
+    /// </summary>
+    public string URL {
+      get {
+        return extra.GetChanTrackURL();
+      }
+    }
+
+    private ReadOnlyAtomCollection extra;
+    /// <summary>
+    /// その他のトラック情報を保持するリストを取得します
+    /// </summary>
+    public IAtomCollection Extra { get { return extra; } }
+
+    /// <summary>
+    /// トラック情報を保持するAtomCollectionから新しいトラック情報を初期化します
+    /// </summary>
+    /// <param name="chantrack">トラック情報を保持するAtomCollection</param>
+    public ChannelTrack(IAtomCollection chantrack)
     {
-      channelID = channel_id;
-      extra.CollectionChanged += (sender, e) => {
-        OnPropertyChanged("Extra");
-      };
+      extra = new ReadOnlyAtomCollection(new AtomCollection(chantrack));
     }
   }
 
@@ -342,12 +408,10 @@ namespace PeerCastStation.Core
   {
     private const int NodeLimit = 180000; //ms
     private static Logger logger = new Logger(typeof(Channel));
-    private Uri sourceUri = null;
-    private Host sourceHost = null;
+    private Guid channelID = Guid.Empty;
     private ISourceStream sourceStream = null;
     private OutputStreamCollection outputStreams = new OutputStreamCollection();
     private ObservableCollection<Host> nodes = new ObservableCollection<Host>();
-    private ChannelInfo channelInfo;
     private Content contentHeader = null;
     private ContentCollection contents = new ContentCollection();
     private Thread sourceThread = null;
@@ -374,18 +438,13 @@ namespace PeerCastStation.Core
     /// チャンネルが閉じられたかどうかを取得します
     /// </summary>
     public bool IsClosed { get; private set; }
+    public Guid ChannelID { get; private set; }
+
     /// <summary>
     /// コンテント取得元のUriを取得します
     /// </summary>
-    public Uri SourceUri
-    {
-      get { return sourceUri; }
-    }
-
-    public Host SourceHost
-    {
-      get { return sourceHost; }
-    }
+    public Uri SourceUri { get; private set; }
+    public Host SourceHost { get; private set; }
 
     /// <summary>
     /// ソースストリームを取得および設定します
@@ -417,10 +476,39 @@ namespace PeerCastStation.Core
         return nodes;
       }
     }
+
+    private ChannelInfo channelInfo = new ChannelInfo(new AtomCollection());
     /// <summary>
     /// チャンネル情報を取得および設定します
     /// </summary>
-    public ChannelInfo ChannelInfo { get { return channelInfo; } }
+    public ChannelInfo ChannelInfo {
+      get {
+        return channelInfo;
+      }
+      set {
+        if (channelInfo!=value) {
+          channelInfo = value;
+          OnPropertyChanged("ChannelInfo");
+        }
+      }
+    }
+
+    private ChannelTrack channelTrack = new ChannelTrack(new AtomCollection());
+    /// <summary>
+    /// トラック情報を取得および設定します
+    /// </summary>
+    public ChannelTrack ChannelTrack {
+      get {
+        return channelTrack;
+      }
+      set {
+        if (channelTrack!=value) {
+          channelTrack = value;
+          OnPropertyChanged("ChannelTrack");
+        }
+      }
+    }
+
     /// <summary>
     /// ヘッダコンテントを取得および設定します
     /// </summary>
@@ -602,8 +690,8 @@ namespace PeerCastStation.Core
       if (res!=null) {
         return res;
       }
-      else if (!ignoredHosts.Contains(sourceHost)) {
-        return sourceHost;
+      else if (!ignoredHosts.Contains(SourceHost)) {
+        return SourceHost;
       }
       else {
         return null;
@@ -645,7 +733,7 @@ namespace PeerCastStation.Core
       sourceStream.StatusChanged += SourceStream_StatusChanged;
       var sync = SynchronizationContext.Current ?? new SynchronizationContext();
       sourceThread = new Thread(SourceThreadFunc);
-      sourceThread.Name = String.Format("SourceThread:{0}", channelInfo.ChannelID.ToString("N"));
+      sourceThread.Name = String.Format("SourceThread:{0}", ChannelID.ToString("N"));
       sourceThread.Start(sync);
       startTickCount = Environment.TickCount;
     }
@@ -726,19 +814,16 @@ namespace PeerCastStation.Core
     {
       this.IsClosed = true;
       this.PeerCast = peercast;
-      sourceUri = source_uri;
+      this.SourceUri = source_uri;
+      this.ChannelID = channel_id;
       var host = new HostBuilder();
-      var port = sourceUri.Port < 0 ? 7144 : sourceUri.Port;
-      var addresses = Dns.GetHostAddresses(sourceUri.DnsSafeHost);
+      var port = SourceUri.Port < 0 ? 7144 : SourceUri.Port;
+      var addresses = Dns.GetHostAddresses(SourceUri.DnsSafeHost);
       var addr = addresses.FirstOrDefault(x => x.AddressFamily==AddressFamily.InterNetwork);
       if (addr!=null) {
         host.GlobalEndPoint = new IPEndPoint(addr, port);
       }
-      sourceHost = host.ToHost();
-      channelInfo = new ChannelInfo(channel_id);
-      channelInfo.PropertyChanged += (sender, e) => {
-        OnPropertyChanged("ChannelInfo");
-      };
+      SourceHost = host.ToHost();
       contents.CollectionChanged += (sender, e) => {
         OnContentChanged();
       };
