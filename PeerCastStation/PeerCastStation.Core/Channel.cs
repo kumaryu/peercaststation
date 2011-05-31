@@ -375,8 +375,62 @@ namespace PeerCastStation.Core
   /// <summary>
   /// 出力ストリームを保持するコレクションクラスです
   /// </summary>
-  public class OutputStreamCollection : ObservableCollection<IOutputStream>
+  public class OutputStreamCollection : Collection<IOutputStream>
   {
+    /// <summary>
+    /// 空のOutputStreamCollectionを初期化します
+    /// </summary>
+    public OutputStreamCollection()
+      : base()
+    {
+    }
+
+    /// <summary>
+    /// 指定したリストから要素をコピーしてOutputStreamCollectionを初期化します
+    /// </summary>
+    /// <param name="list">コピー元のリスト</param>
+    public OutputStreamCollection(IEnumerable<IOutputStream> list)
+      : base(new List<IOutputStream>(list))
+    {
+    }
+
+    /// <summary>
+    /// 視聴再生中の出力ストリーム数の数を取得します
+    /// </summary>
+    public int CountPlaying
+    {
+      get
+      {
+        return this.Count(x => (x.OutputStreamType & OutputStreamType.Play) != 0);
+      }
+    }
+
+    /// <summary>
+    /// リレー中の出力ストリーム数の数を取得します
+    /// </summary>
+    public int CountRelaying
+    {
+      get
+      {
+        return this.Count(x => (x.OutputStreamType & OutputStreamType.Relay) != 0);
+      }
+    }
+  }
+
+  /// <summary>
+  /// 出力ストリームを保持するコレクションの読み取り専用ラッパクラスです
+  /// </summary>
+  public class ReadOnlyOutputStreamCollection : ReadOnlyCollection<IOutputStream>
+  {
+    /// <summary>
+    /// 元になるコレクションを指定してReadOnlyOutputStreamCollectionを初期化します
+    /// </summary>
+    /// <param name="collection">元になるコレクション</param>
+    public ReadOnlyOutputStreamCollection(OutputStreamCollection collection)
+      : base(collection)
+    {
+    }
+
     /// <summary>
     /// 視聴再生中の出力ストリーム数の数を取得します
     /// </summary>
@@ -460,10 +514,38 @@ namespace PeerCastStation.Core
         }
       }
     }
+
     /// <summary>
-    /// 出力ストリームのリストを取得します
+    /// 出力ストリームの読み取り専用リストを取得します
     /// </summary>
-    public OutputStreamCollection OutputStreams { get { return outputStreams; } }
+    public ReadOnlyOutputStreamCollection OutputStreams {
+      get { return new ReadOnlyOutputStreamCollection(outputStreams); }
+    }
+
+    /// <summary>
+    /// 指定した出力ストリームを出力ストリームリストに追加します
+    /// </summary>
+    /// <param name="stream">追加する出力ストリーム</param>
+    public void AddOutputStream(IOutputStream stream)
+    {
+      outputStreams = new OutputStreamCollection(outputStreams);
+      outputStreams.Add(stream);
+      OnPropertyChanged("OutputStreams");
+    }
+
+    /// <summary>
+    /// 指定した出力ストリームを出力ストリームリストから削除します
+    /// </summary>
+    /// <param name="stream">削除する出力ストリーム</param>
+    public void RemoveOutputStream(IOutputStream stream)
+    {
+      var new_collection = new OutputStreamCollection(outputStreams);
+      if (new_collection.Remove(stream)) {
+        outputStreams = new_collection;
+        OnPropertyChanged("OutputStreams");
+      }
+    }
+
     /// <summary>
     /// このチャンネルに関連付けられたノードリストを取得します
     /// </summary>
@@ -761,6 +843,7 @@ namespace PeerCastStation.Core
           foreach (var os in outputStreams) {
             os.Close();
           }
+          outputStreams = new OutputStreamCollection();
           startTickCount = null;
           IsClosed = true;
           OnClosed();
@@ -801,6 +884,7 @@ namespace PeerCastStation.Core
         foreach (var outputStream in outputStreams) {
           outputStream.Close();
         }
+        outputStreams = new OutputStreamCollection();
       }
     }
 
@@ -826,9 +910,6 @@ namespace PeerCastStation.Core
       SourceHost = host.ToHost();
       contents.CollectionChanged += (sender, e) => {
         OnContentChanged();
-      };
-      outputStreams.CollectionChanged += (sender, e) => {
-        OnPropertyChanged("OutputStreams");
       };
       nodes.CollectionChanged += (sender, e) => {
         OnPropertyChanged("Nodes");

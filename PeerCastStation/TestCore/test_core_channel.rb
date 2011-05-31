@@ -57,7 +57,7 @@ class TC_CoreChannel < Test::Unit::TestCase
     chantrack = PeerCastStation::Core::AtomCollection.new
     chantrack.set_chan_track_title('foo')
     channel.channel_track = PeerCastStation::Core::ChannelTrack.new(chantrack)
-    channel.output_streams.add(MockOutputStream.new)
+    channel.add_output_stream(MockOutputStream.new)
     channel.nodes.add(PeerCastStation::Core::HostBuilder.new.to_host)
     channel.content_header = PeerCastStation::Core::Content.new(0, 'header')
     channel.contents.add(PeerCastStation::Core::Content.new(1, 'body'))
@@ -78,17 +78,18 @@ class TC_CoreChannel < Test::Unit::TestCase
     channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
     channel.closed { log << 'Closed' }
     assert(channel.is_closed)
-    channel.output_streams.add(MockOutputStream.new)
+    output_stream = MockOutputStream.new
+    channel.add_output_stream(output_stream)
     channel.start(MockSourceStream.new(channel, channel.source_uri))
-    sleep(1)
+    sleep(0.1)
     channel.reconnect
-    sleep(1)
+    sleep(0.1)
     channel.close
     assert_equal(PeerCastStation::Core::SourceStreamStatus.idle, channel.status)
     assert_equal(:start,     channel.source_stream.log[0][0])
     assert_equal(:close,     channel.source_stream.log[1][0])
     assert_equal(:reconnect, channel.source_stream.log[2][0])
-    assert_equal(:close, channel.output_streams[0].log[0][0])
+    assert_equal(:close,     output_stream.log[0][0])
     assert_equal('Closed', log[0])
     assert(channel.is_closed)
   end
@@ -98,15 +99,16 @@ class TC_CoreChannel < Test::Unit::TestCase
     channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
     channel.closed { log << 'Closed' }
     assert(channel.is_closed)
-    channel.output_streams.add(MockOutputStream.new)
+    output_stream = MockOutputStream.new
+    channel.add_output_stream(output_stream)
     channel.start(MockSourceStream.new(channel, channel.source_uri))
     assert(!channel.is_closed)
-    sleep(1)
+    sleep(0.1)
     channel.close
     assert_equal(PeerCastStation::Core::SourceStreamStatus.idle, channel.status)
     assert_equal(:start, channel.source_stream.log[0][0])
     assert_equal(:close, channel.source_stream.log[1][0])
-    assert_equal(:close, channel.output_streams[0].log[0][0])
+    assert_equal(:close, output_stream.log[0][0])
     assert_equal('Closed', log[0])
     assert(channel.is_closed)
   end
@@ -114,16 +116,17 @@ class TC_CoreChannel < Test::Unit::TestCase
   def test_broadcast
     output = MockOutputStream.new
     channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
-    channel.output_streams.add(output)
+    channel.add_output_stream(output)
     source = MockSourceStream.new(channel, channel.source_uri)
-    channel.start(source)
-    sleep(1)
     from = PeerCastStation::Core::HostBuilder.new.to_host
     packet_trackers = PeerCastStation::Core::Atom.new(id4('test'), 'trackers'.to_clr_string)
     packet_relays   = PeerCastStation::Core::Atom.new(id4('test'), 'relays'.to_clr_string)
-    channel.broadcast(from, packet_trackers, PeerCastStation::Core::BroadcastGroup.trackers)
-    channel.broadcast(from, packet_relays,   PeerCastStation::Core::BroadcastGroup.relays)
-    sleep(1)
+    source.start_proc = proc {
+      channel.broadcast(from, packet_trackers, PeerCastStation::Core::BroadcastGroup.trackers)
+      channel.broadcast(from, packet_relays,   PeerCastStation::Core::BroadcastGroup.relays)
+    }
+    channel.start(source)
+    sleep(0.1)
     channel.close
     source_log = source.log.select {|log| log[0]==:post }
     output_log = output.log.select {|log| log[0]==:post }
@@ -216,11 +219,11 @@ class TC_CoreChannel < Test::Unit::TestCase
     closed = false
     channel.closed { closed = true }
     assert_equal(System::TimeSpan.zero, channel.uptime)
-    channel.output_streams.add(MockOutputStream.new)
+    channel.add_output_stream(MockOutputStream.new)
     source = TestSourceStream.new(channel, channel.source_uri)
     source.paused = true
     channel.start(source)
-    sleep(1)
+    sleep(0.1)
     assert(0<channel.uptime.total_milliseconds)
     source.paused = false
     channel.close

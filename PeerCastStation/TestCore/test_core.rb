@@ -79,9 +79,11 @@ class MockSourceStream
     @tracker = tracker
     @status_changed = []
     @status = PeerCastStation::Core::SourceStreamStatus.idle
+    @start_proc = nil
     @log = []
   end
   attr_reader :log, :tracker, :channel, :status
+  attr_accessor :start_proc
 
   def add_StatusChanged(handler)
     @status_changed << handler
@@ -97,6 +99,7 @@ class MockSourceStream
   
   def start
     @log << [:start]
+    @start_proc.call if @start_proc
   end
   
   def reconnect

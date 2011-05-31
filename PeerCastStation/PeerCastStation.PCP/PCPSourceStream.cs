@@ -634,14 +634,14 @@ namespace PeerCastStation.PCP
         this.syncContext = new QueuedSynchronizationContext();
         SynchronizationContext.SetSynchronizationContext(this.syncContext);
       }
-      channel.OutputStreams.CollectionChanged += Channel_HostInfoUpdated;
+      channel.PropertyChanged += Channel_HostInfoUpdated;
       peercast.AccessController.PropertyChanged += Channel_HostInfoUpdated;
       Status = SourceStreamStatus.Searching;
       state = new PCPSourceConnectState(this, SelectSourceHost());
       while (state!=null) {
         ProcessState();
       }
-      channel.OutputStreams.CollectionChanged -= Channel_HostInfoUpdated;
+      channel.PropertyChanged -= Channel_HostInfoUpdated;
       peercast.AccessController.PropertyChanged -= Channel_HostInfoUpdated;
       logger.Debug("Finished");
     }

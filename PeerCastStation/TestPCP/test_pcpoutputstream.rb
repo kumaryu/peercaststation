@@ -226,7 +226,7 @@ class TC_PCPOutputStream < Test::Unit::TestCase
 
   def test_relay_full
     channel = new_channel(7144)
-    channel.output_streams.add(new_output(:relay, false, 7144))
+    channel.add_output_stream(new_output(:relay, false, 7144))
 
     @peercast.access_controller.max_upstream_rate = 7144*2
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
@@ -709,7 +709,7 @@ EOS
     downhost.is_firewalled = false
     stream.downhost = downhost.to_host
     output = MockOutputStream.new
-    @channel.output_streams.add(output)
+    @channel.add_output_stream(output)
     bcst = PCSCore::Atom.with_children(PCSCore::Atom.PCP_BCST) {|children|
       children.SetBcstTTL(11)
       children.SetBcstHops(0)
@@ -743,7 +743,7 @@ EOS
     downhost.is_firewalled = false
     stream.downhost = downhost.to_host
     output = MockOutputStream.new
-    @channel.output_streams.add(output)
+    @channel.add_output_stream(output)
     
     bcst = PCSCore::Atom.with_children(PCSCore::Atom.PCP_BCST) {|children|
       children.SetBcstTTL(11)
@@ -771,7 +771,7 @@ EOS
     downhost.is_firewalled = false
     stream.downhost = downhost.to_host
     output = MockOutputStream.new
-    @channel.output_streams.add(output)
+    @channel.add_output_stream(output)
     
     bcst = PCSCore::Atom.with_children(PCSCore::Atom.PCP_BCST) {|children|
       children.SetBcstTTL(1)

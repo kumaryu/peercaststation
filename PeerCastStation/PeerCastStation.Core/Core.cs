@@ -555,7 +555,7 @@ namespace PeerCastStation.Core
           PeerCast.SynchronizationContext.Send(dummy => {
             channel = PeerCast.Channels.FirstOrDefault(c => c.ChannelID==channel_id);
             if (channel!=null) {
-              channel.OutputStreams.Add(output_stream);
+              channel.AddOutputStream(output_stream);
             }
           }, null);
           logger.Debug("Output stream started");
@@ -570,7 +570,7 @@ namespace PeerCastStation.Core
         if (output_stream != null) {
           if (channel!=null) {
             PeerCast.SynchronizationContext.Post(dummy => {
-              channel.OutputStreams.Remove(output_stream);
+              channel.RemoveOutputStream(output_stream);
             }, null);
           }
           output_stream.Close();

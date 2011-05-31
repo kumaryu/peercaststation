@@ -229,7 +229,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   def test_create_host_packet
     source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     source.uphost = @channel.source_host
-    @channel.output_streams.add(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.play))
+    @channel.add_output_stream(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.play))
     @channel.contents.add(PeerCastStation::Core::Content.new(71440000000000, 'foobar'))
     host = source.create_host_packet
     assert(host)
@@ -260,7 +260,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   def test_broadcast_host_info
     source = TestPCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     @channel.source_stream = source
-    @channel.output_streams.add(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.play))
+    @channel.add_output_stream(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.play))
     source.broadcast_host_info
     assert_equal(:post, source.log[0][0])
     broadcast = source.log[0][2]
@@ -423,7 +423,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
       ok += 1
     }
     output = MockOutputStream.new
-    @channel.output_streams.add(output)
+    @channel.add_output_stream(output)
     bcst = PeerCastStation::Core::Atom.with_children(PeerCastStation::Core::Atom.PCP_BCST) {|children|
       children.SetBcstTTL(11)
       children.SetBcstHops(0)
@@ -458,7 +458,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
       ok += 1
     }
     output = MockOutputStream.new
-    @channel.output_streams.add(output)
+    @channel.add_output_stream(output)
     
     bcst = PeerCastStation::Core::Atom.with_children(PeerCastStation::Core::Atom.PCP_BCST) {|children|
       children.SetBcstTTL(11)
@@ -487,7 +487,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
       ok += 1
     }
     output = MockOutputStream.new
-    @channel.output_streams.add(output)
+    @channel.add_output_stream(output)
     
     bcst = PeerCastStation::Core::Atom.with_children(PeerCastStation::Core::Atom.PCP_BCST) {|children|
       children.SetBcstTTL(1)
