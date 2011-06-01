@@ -465,7 +465,7 @@ namespace PeerCastStation.Core
     private Guid channelID = Guid.Empty;
     private ISourceStream sourceStream = null;
     private OutputStreamCollection outputStreams = new OutputStreamCollection();
-    private ObservableCollection<Host> nodes = new ObservableCollection<Host>();
+    private List<Host> nodes = new List<Host>();
     private Content contentHeader = null;
     private ContentCollection contents = new ContentCollection();
     private Thread sourceThread = null;
@@ -543,19 +543,6 @@ namespace PeerCastStation.Core
       if (new_collection.Remove(stream)) {
         outputStreams = new_collection;
         OnPropertyChanged("OutputStreams");
-      }
-    }
-
-    /// <summary>
-    /// このチャンネルに関連付けられたノードリストを取得します
-    /// </summary>
-    public IList<Host> Nodes {
-      get {
-        var limit_time = TimeSpan.FromMilliseconds(Environment.TickCount-NodeLimit);
-        foreach (var node in nodes.Where(n => n.LastUpdated<limit_time).ToArray()) {
-          nodes.Remove(node);
-        }
-        return nodes;
       }
     }
 
@@ -720,9 +707,35 @@ namespace PeerCastStation.Core
     private IgnoredHostCollection ignoredHosts = new IgnoredHostCollection(NodeLimit);
     public ICollection<Host> IgnoredHosts { get { return ignoredHosts.Hosts; } }
 
+    /// <summary>
+    /// このチャンネルに関連付けられたノードの読み取り専用リストを取得します
+    /// </summary>
+    public ReadOnlyCollection<Host> Nodes
+    {
+      get {
+        var limit_time = TimeSpan.FromMilliseconds(Environment.TickCount-NodeLimit);
+        var new_nodes = new List<Host>(nodes.Where(n => n.LastUpdated>limit_time));
+        if (nodes.Count!=new_nodes.Count) {
+          nodes = new_nodes;
+        }
+        return new ReadOnlyCollection<Host>(nodes);
+      }
+    }
+
     public void AddNode(Host host)
     {
+      nodes = new List<Host>(nodes);
       nodes.Add(host);
+      OnPropertyChanged("Nodes");
+    }
+
+    public void RemoveNode(Host host)
+    {
+      var new_nodes = new List<Host>(nodes);
+      if (new_nodes.Remove(host)) {
+        nodes = new_nodes;
+        OnPropertyChanged("Nodes");
+      }
     }
 
     /// <summary>
@@ -910,9 +923,6 @@ namespace PeerCastStation.Core
       SourceHost = host.ToHost();
       contents.CollectionChanged += (sender, e) => {
         OnContentChanged();
-      };
-      nodes.CollectionChanged += (sender, e) => {
-        OnPropertyChanged("Nodes");
       };
     }
   }

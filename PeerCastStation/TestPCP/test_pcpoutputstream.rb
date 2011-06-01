@@ -643,11 +643,11 @@ EOS
     node = PCSCore::HostBuilder.new
     node.SessionID = session_id
     node.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7149)
-    node.is_firewalled = false
-    node.is_relay_full      = false
-    node.is_direct_full     = false
-    node.is_receiving       = true
-    @channel.nodes.add(node.to_host)
+    node.is_firewalled    = false
+    node.is_relay_full    = false
+    node.is_direct_full   = false
+    node.is_receiving     = true
+    @channel.add_node(node.to_host)
     assert_nil(stream.downhost)
     helo = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HELO) {|children|
       children.SetHeloSessionID(session_id)
@@ -679,7 +679,7 @@ EOS
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
     stream.is_relay_full = true
     16.times do
-      @channel.nodes.add(PCSCore::HostBuilder.new.to_host)
+      @channel.add_node(PCSCore::HostBuilder.new.to_host)
     end
     assert_nil(stream.downhost)
     helo = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HELO) {|children|

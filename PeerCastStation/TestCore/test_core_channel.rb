@@ -58,7 +58,7 @@ class TC_CoreChannel < Test::Unit::TestCase
     chantrack.set_chan_track_title('foo')
     channel.channel_track = PeerCastStation::Core::ChannelTrack.new(chantrack)
     channel.add_output_stream(MockOutputStream.new)
-    channel.nodes.add(PeerCastStation::Core::HostBuilder.new.to_host)
+    channel.add_node(PeerCastStation::Core::HostBuilder.new.to_host)
     channel.content_header = PeerCastStation::Core::Content.new(0, 'header')
     channel.contents.add(PeerCastStation::Core::Content.new(1, 'body'))
     assert_equal(6, property_log.size)
@@ -242,7 +242,7 @@ class TC_CoreChannel < Test::Unit::TestCase
 
     channel.clear_ignored
     node = PeerCastStation::Core::HostBuilder.new.to_host
-    channel.nodes.add(node)
+    channel.add_node(node)
     selected = channel.select_source_host
     assert_equal(node, selected)
   end
