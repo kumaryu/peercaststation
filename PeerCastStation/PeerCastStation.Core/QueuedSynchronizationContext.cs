@@ -66,7 +66,13 @@ namespace PeerCastStation.Core
     /// </summary>
     public QueuedSynchronizationContext()
     {
+      this.EventHandle = new AutoResetEvent(false);
     }
+
+    /// <summary>
+    /// キューにメッセージが入った時にセットされるイベントハンドルを取得します
+    /// </summary>
+    public AutoResetEvent EventHandle { get; private set; }
 
     /// <summary>
     /// キューが空かどうかを取得します
@@ -86,7 +92,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 同期コンテキストのコピーを作成します
     /// </summary>
-    /// <returns><空のキューを持つ新しいQueuedSynchronizationContextインスタンス</returns>
+    /// <returns>空のキューを持つ新しいQueuedSynchronizationContextインスタンス</returns>
     public override SynchronizationContext CreateCopy()
     {
       return new QueuedSynchronizationContext();
@@ -102,6 +108,7 @@ namespace PeerCastStation.Core
       var msg = new Message(this, d, state, false);
       lock (((ICollection)queue).SyncRoot) {
         queue.Enqueue(msg);
+        EventHandle.Set();
       }
     }
 
@@ -115,6 +122,7 @@ namespace PeerCastStation.Core
       var msg = new Message(this, d, state, true);
       lock (((ICollection)queue).SyncRoot) {
         queue.Enqueue(msg);
+        EventHandle.Set();
       }
       msg.Wait();
     }

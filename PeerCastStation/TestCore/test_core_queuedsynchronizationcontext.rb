@@ -28,12 +28,14 @@ class TC_QueuedSynchronizationContext < Test::Unit::TestCase
       ctx = QSyncContext.new
     end
     assert(ctx.is_empty)
+    assert(!ctx.event_handle.wait_one(0))
   end
   
   def test_post
     ctx = QSyncContext.new
     ctx.post(proc {|s| puts s }, 'foo')
     assert(!ctx.is_empty)
+    assert(ctx.event_handle.wait_one(0))
   end
   
   def test_process
@@ -46,6 +48,7 @@ class TC_QueuedSynchronizationContext < Test::Unit::TestCase
     assert(ctx.process)
     assert_equal('foo', value)
     assert(ctx.is_empty)
+    assert(ctx.event_handle.wait_one(0))
     assert(!ctx.process)
   end
   
@@ -60,6 +63,7 @@ class TC_QueuedSynchronizationContext < Test::Unit::TestCase
     ctx.process_all
     assert(ctx.is_empty)
     assert_equal(['foo', 'bar', 'baz'], value)
+    assert(ctx.event_handle.wait_one(0))
   end
   
   def test_send
@@ -75,6 +79,7 @@ class TC_QueuedSynchronizationContext < Test::Unit::TestCase
     }
     sleep(1)
     assert(ctx.process)
+    assert(ctx.event_handle.wait_one(0))
   end
 end
 
