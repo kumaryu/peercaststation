@@ -528,8 +528,11 @@ namespace PeerCastStation.Core
     /// <param name="stream">追加する出力ストリーム</param>
     public void AddOutputStream(IOutputStream stream)
     {
-      outputStreams = new OutputStreamCollection(outputStreams);
-      outputStreams.Add(stream);
+      Utils.ReplaceCollection(ref outputStreams, orig => {
+        var new_collection = new OutputStreamCollection(outputStreams);
+        new_collection.Add(stream);
+        return new_collection;
+      });
       OnPropertyChanged("OutputStreams");
     }
 
@@ -539,9 +542,13 @@ namespace PeerCastStation.Core
     /// <param name="stream">削除する出力ストリーム</param>
     public void RemoveOutputStream(IOutputStream stream)
     {
-      var new_collection = new OutputStreamCollection(outputStreams);
-      if (new_collection.Remove(stream)) {
-        outputStreams = new_collection;
+      bool removed = false;
+      Utils.ReplaceCollection(ref outputStreams, orig => {
+        var new_collection = new OutputStreamCollection(outputStreams);
+        removed = new_collection.Remove(stream);
+        return new_collection;
+      });
+      if (removed) {
         OnPropertyChanged("OutputStreams");
       }
     }
@@ -714,26 +721,32 @@ namespace PeerCastStation.Core
     {
       get {
         var limit_time = TimeSpan.FromMilliseconds(Environment.TickCount-NodeLimit);
-        var new_nodes = new List<Host>(nodes.Where(n => n.LastUpdated>limit_time));
-        if (nodes.Count!=new_nodes.Count) {
-          nodes = new_nodes;
-        }
+        Utils.ReplaceCollection(ref nodes, orig => {
+          return new List<Host>(orig.Where(n => n.LastUpdated>limit_time));
+        });
         return new ReadOnlyCollection<Host>(nodes);
       }
     }
 
     public void AddNode(Host host)
     {
-      nodes = new List<Host>(nodes);
-      nodes.Add(host);
+      Utils.ReplaceCollection(ref nodes, orig => {
+        var new_collection = new List<Host>(orig);
+        new_collection.Add(host);
+        return new_collection;
+      });
       OnPropertyChanged("Nodes");
     }
 
     public void RemoveNode(Host host)
     {
-      var new_nodes = new List<Host>(nodes);
-      if (new_nodes.Remove(host)) {
-        nodes = new_nodes;
+      bool removed = false;
+      Utils.ReplaceCollection(ref nodes, orig => {
+        var new_collection = new List<Host>(orig);
+        removed = new_collection.Remove(host);
+        return new_collection;
+      });
+      if (removed) {
         OnPropertyChanged("Nodes");
       }
     }
@@ -745,7 +758,9 @@ namespace PeerCastStation.Core
     /// <param name="host">接続先として選択されないようにするホスト</param>
     public void IgnoreHost(Host host)
     {
-      ignoredHosts.Add(host);
+      lock (ignoredHosts) {
+        ignoredHosts.Add(host);
+      }
     }
 
     /// <summary>
@@ -753,7 +768,9 @@ namespace PeerCastStation.Core
     /// </summary>
     public void ClearIgnored()
     {
-      ignoredHosts.Clear();
+      lock (ignoredHosts) {
+        ignoredHosts.Clear();
+      }
     }
 
     /// <summary>
@@ -780,16 +797,18 @@ namespace PeerCastStation.Core
     /// <returns>次に接続すべきホスト。無い場合はnull</returns>
     public virtual Host SelectSourceHost()
     {
-      var node_list = Nodes.Where(node => !ignoredHosts.Contains(node)).ToList<Host>();
-      var res = SelectSourceNode(node_list);
-      if (res!=null) {
-        return res;
-      }
-      else if (!ignoredHosts.Contains(SourceHost)) {
-        return SourceHost;
-      }
-      else {
-        return null;
+      lock (ignoredHosts) {
+        var node_list = Nodes.Where(node => !ignoredHosts.Contains(node)).ToList<Host>();
+        var res = SelectSourceNode(node_list);
+        if (res!=null) {
+          return res;
+        }
+        else if (!ignoredHosts.Contains(SourceHost)) {
+          return SourceHost;
+        }
+        else {
+          return null;
+        }
       }
     }
 
@@ -800,7 +819,10 @@ namespace PeerCastStation.Core
     /// <returns>次に接続すべきホスト。最大8箇所。無い場合は空の配列</returns>
     public virtual Host[] SelectSourceNodes()
     {
-      var node_list = Nodes.Where(node => !ignoredHosts.Contains(node)).ToList<Host>();
+      List<Host> node_list = null;
+      lock (ignoredHosts) {
+        node_list = Nodes.Where(node => !ignoredHosts.Contains(node)).ToList<Host>();
+      }
       var res = new List<Host>();
       for (var i=0; i<8; i++) {
         var node = SelectSourceNode(node_list);

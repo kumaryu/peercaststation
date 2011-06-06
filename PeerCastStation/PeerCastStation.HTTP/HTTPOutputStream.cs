@@ -155,11 +155,7 @@ namespace PeerCastStation.HTTP
       if (request!=null) {
         Channel channel = null;
         Uri tracker = CreateTrackerUri(channel_id, request.Uri);
-        peercast.SynchronizationContext.Send(
-          dummy => {
-            channel = peercast.RequestChannel(channel_id, tracker, true);
-          }, null
-        );
+        channel = peercast.RequestChannel(channel_id, tracker, true);
         return new HTTPOutputStream(peercast, stream, remote_endpoint, channel, request);
       }
       else {

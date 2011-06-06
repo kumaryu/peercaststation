@@ -27,20 +27,20 @@ namespace PeerCastStation.Core
     : SynchronizationContext
   {
     private class Message
+      : IAsyncResult
     {
       private QueuedSynchronizationContext owner;
-      private AutoResetEvent completedEvent;
+      private EventWaitHandle completedEvent;
       private SendOrPostCallback callback;
       private object state;
 
       public Message(
         QueuedSynchronizationContext owner,
         SendOrPostCallback callback,
-        object state,
-        bool waitable)
+        object state)
       {
         this.owner = owner;
-        this.completedEvent = waitable ? new AutoResetEvent(false) : null;
+        this.completedEvent = new EventWaitHandle(false, EventResetMode.ManualReset);
         this.callback = callback;
         this.state = state;
       }
@@ -50,13 +50,13 @@ namespace PeerCastStation.Core
         owner.OperationStarted();
         this.callback.Invoke(this.state);
         owner.OperationCompleted();
-        if (completedEvent!=null) completedEvent.Set();
+        completedEvent.Set();
       }
 
-      public void Wait()
-      {
-        completedEvent.WaitOne();
-      }
+      public Object AsyncState { get { return state; } }
+      public WaitHandle AsyncWaitHandle { get { return completedEvent; } }
+      public bool CompletedSynchronously { get { return false; } }
+      public bool IsCompleted { get { return completedEvent.WaitOne(0); } } 
     }
 
     private Queue<Message> queue = new Queue<Message>();
@@ -105,7 +105,7 @@ namespace PeerCastStation.Core
     /// <param name="state">デリゲートに渡されるオブジェクト</param>
     public override void Post(SendOrPostCallback d, object state)
     {
-      var msg = new Message(this, d, state, false);
+      var msg = new Message(this, d, state);
       lock (((ICollection)queue).SyncRoot) {
         queue.Enqueue(msg);
         EventHandle.Set();
@@ -119,12 +119,15 @@ namespace PeerCastStation.Core
     /// <param name="state">デリゲートに渡されるオブジェクト</param>
     public override void Send(SendOrPostCallback d, object state)
     {
-      var msg = new Message(this, d, state, true);
+      var msg = new Message(this, d, state);
       lock (((ICollection)queue).SyncRoot) {
         queue.Enqueue(msg);
         EventHandle.Set();
       }
-      msg.Wait();
+      if (SynchronizationContext.Current==this) {
+        ProcessAll();
+      }
+      msg.AsyncWaitHandle.WaitOne();
     }
 
     /// <summary>

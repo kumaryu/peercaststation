@@ -485,9 +485,9 @@ namespace PeerCastStation.Core
           var client = server.AcceptTcpClient();
           logger.Info("Client connected {0}", client.Client.RemoteEndPoint);
           var output_thread = new Thread(OutputThreadFunc);
-          PeerCast.SynchronizationContext.Post(dummy => {
+          lock (outputThreads) {
             outputThreads.Add(output_thread);
-          }, null);
+          }
           output_thread.Name = String.Format("OutputThread:{0}", client.Client.RemoteEndPoint);
           output_thread.Start(client);
         }
@@ -519,10 +519,7 @@ namespace PeerCastStation.Core
       stream.ReadTimeout = 3000;
       IOutputStream output_stream = null;
       Channel channel = null;
-      IOutputStreamFactory[] output_factories = null;
-      PeerCast.SynchronizationContext.Send(dummy => {
-        output_factories = PeerCast.OutputStreamFactories.ToArray();
-      }, null);
+      var output_factories = PeerCast.OutputStreamFactories;
       try {
         var header = new List<byte>();
         Guid? channel_id = null;
@@ -552,12 +549,10 @@ namespace PeerCastStation.Core
           }
         }
         if (output_stream != null) {
-          PeerCast.SynchronizationContext.Send(dummy => {
-            channel = PeerCast.Channels.FirstOrDefault(c => c.ChannelID==channel_id);
-            if (channel!=null) {
-              channel.AddOutputStream(output_stream);
-            }
-          }, null);
+          channel = PeerCast.Channels.FirstOrDefault(c => c.ChannelID==channel_id);
+          if (channel!=null) {
+            channel.AddOutputStream(output_stream);
+          }
           logger.Debug("Output stream started");
           output_stream.Start();
         }
@@ -569,17 +564,15 @@ namespace PeerCastStation.Core
         logger.Debug("Closing client connection");
         if (output_stream != null) {
           if (channel!=null) {
-            PeerCast.SynchronizationContext.Post(dummy => {
-              channel.RemoveOutputStream(output_stream);
-            }, null);
+            channel.RemoveOutputStream(output_stream);
           }
           output_stream.Close();
         }
         stream.Close();
         client.Close();
-        PeerCast.SynchronizationContext.Post(thread => {
-          outputThreads.Remove((Thread)thread);
-        }, Thread.CurrentThread);
+        lock (outputThreads) {
+          outputThreads.Remove(Thread.CurrentThread);
+        }
       }
       logger.Debug("Output thread finished");
     }

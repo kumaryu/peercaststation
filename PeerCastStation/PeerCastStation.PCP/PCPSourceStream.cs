@@ -332,11 +332,9 @@ namespace PeerCastStation.PCP
         if (status!=value) {
           logger.Debug("ChannelStatus Changed: {0}", value);
           status = value;
-          PeerCast.SynchronizationContext.Post(dummy => {
-            if (StatusChanged!=null) {
-              StatusChanged(this, new SourceStreamStatusChangedEventArgs(value));
-            }
-          }, null);
+          if (StatusChanged!=null) {
+            StatusChanged(this, new SourceStreamStatusChangedEventArgs(value));
+          }
         }
       }
     } 
@@ -444,10 +442,7 @@ namespace PeerCastStation.PCP
 
     public virtual Host SelectSourceHost()
     {
-      Host res = null;
-      peercast.SynchronizationContext.Send(dummy => {
-        res = channel.SelectSourceHost();
-      }, null);
+      var res = channel.SelectSourceHost();
       if (res!=null) {
         logger.Debug("{0} is selected as source", res.GlobalEndPoint);
         return res;
@@ -514,12 +509,10 @@ namespace PeerCastStation.PCP
 
     public virtual void IgnoreHost(Host host)
     {
-      peercast.SynchronizationContext.Send(dummy => {
-        if (host!=null) {
-          logger.Debug("Host {0}({1}) is ignored", host.GlobalEndPoint, host.SessionID.ToString("N"));
-        }
-        channel.IgnoreHost(host);
-      }, null);
+      if (host!=null) {
+        logger.Debug("Host {0}({1}) is ignored", host.GlobalEndPoint, host.SessionID.ToString("N"));
+      }
+      channel.IgnoreHost(host);
     }
 
     public virtual void Close(CloseReason reason)
@@ -662,37 +655,35 @@ namespace PeerCastStation.PCP
     public virtual Atom CreateHostPacket()
     {
       var host = new AtomCollection();
-      peercast.SynchronizationContext.Send(dummy => {
-        host.SetHostChannelID(channel.ChannelID);
-        host.SetHostSessionID(peercast.SessionID);
-        var globalendpoint = peercast.GlobalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
-        host.AddHostIP(globalendpoint.Address);
-        host.AddHostPort((short)globalendpoint.Port);
-        var localendpoint = peercast.LocalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
-        host.AddHostIP(localendpoint.Address);
-        host.AddHostPort((short)localendpoint.Port);
-        host.SetHostNumListeners(channel.OutputStreams.CountPlaying);
-        host.SetHostNumRelays(channel.OutputStreams.CountRelaying);
-        host.SetHostUptime(channel.Uptime);
-        if (channel.Contents.Count > 0) {
-          host.SetHostOldPos((uint)(channel.Contents.Oldest.Position & 0xFFFFFFFFU));
-          host.SetHostNewPos((uint)(channel.Contents.Newest.Position & 0xFFFFFFFFU));
+      host.SetHostChannelID(channel.ChannelID);
+      host.SetHostSessionID(peercast.SessionID);
+      var globalendpoint = peercast.GlobalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
+      host.AddHostIP(globalendpoint.Address);
+      host.AddHostPort((short)globalendpoint.Port);
+      var localendpoint = peercast.LocalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
+      host.AddHostIP(localendpoint.Address);
+      host.AddHostPort((short)localendpoint.Port);
+      host.SetHostNumListeners(channel.OutputStreams.CountPlaying);
+      host.SetHostNumRelays(channel.OutputStreams.CountRelaying);
+      host.SetHostUptime(channel.Uptime);
+      if (channel.Contents.Count > 0) {
+        host.SetHostOldPos((uint)(channel.Contents.Oldest.Position & 0xFFFFFFFFU));
+        host.SetHostNewPos((uint)(channel.Contents.Newest.Position & 0xFFFFFFFFU));
+      }
+      host.SetHostVersion(PCP_VERSION);
+      host.SetHostVersionVP(PCP_VERSION_VP);
+      host.SetHostFlags1(
+        (peercast.AccessController.IsChannelRelayable(channel) ? PCPHostFlags1.Relay : 0) |
+        (peercast.AccessController.IsChannelPlayable(channel) ? PCPHostFlags1.Direct : 0) |
+        ((!peercast.IsFirewalled.HasValue || peercast.IsFirewalled.Value) ? PCPHostFlags1.Firewalled : 0) |
+        PCPHostFlags1.Receiving); //TODO:受信中かどうかちゃんと判別する
+      if (uphost != null) {
+        var endpoint = uphost.GlobalEndPoint;
+        if (endpoint != null) {
+          host.SetHostUphostIP(endpoint.Address);
+          host.SetHostUphostPort(endpoint.Port);
         }
-        host.SetHostVersion(PCP_VERSION);
-        host.SetHostVersionVP(PCP_VERSION_VP);
-        host.SetHostFlags1(
-          (peercast.AccessController.IsChannelRelayable(channel) ? PCPHostFlags1.Relay : 0) |
-          (peercast.AccessController.IsChannelPlayable(channel) ? PCPHostFlags1.Direct : 0) |
-          ((!peercast.IsFirewalled.HasValue || peercast.IsFirewalled.Value) ? PCPHostFlags1.Firewalled : 0) |
-          PCPHostFlags1.Receiving); //TODO:受信中かどうかちゃんと判別する
-        if (uphost != null) {
-          var endpoint = uphost.GlobalEndPoint;
-          if (endpoint != null) {
-            host.SetHostUphostIP(endpoint.Address);
-            host.SetHostUphostPort(endpoint.Port);
-          }
-        }
-      }, null);
+      }
       return new Atom(Atom.PCP_HOST, host);
     }
 
@@ -755,28 +746,26 @@ namespace PeerCastStation.PCP
 
     protected virtual IStreamState OnPCPOleh(Atom atom)
     {
-      peercast.SynchronizationContext.Post(dummy => {
-        var rip  = atom.Children.GetHeloRemoteIP();
-        if (rip!=null) {
-          switch (rip.AddressFamily) {
-          case AddressFamily.InterNetwork:
-            if (peercast.GlobalAddress==null || !peercast.GlobalAddress.Equals(rip)) {
-              peercast.GlobalAddress = rip;
-            }
-            break;
-          case AddressFamily.InterNetworkV6:
-            if (peercast.GlobalAddress6==null || !peercast.GlobalAddress6.Equals(rip)) {
-              peercast.GlobalAddress6 = rip;
-            }
-            break;
+      var rip  = atom.Children.GetHeloRemoteIP();
+      if (rip!=null) {
+        switch (rip.AddressFamily) {
+        case AddressFamily.InterNetwork:
+          if (peercast.GlobalAddress==null || !peercast.GlobalAddress.Equals(rip)) {
+            peercast.GlobalAddress = rip;
           }
+          break;
+        case AddressFamily.InterNetworkV6:
+          if (peercast.GlobalAddress6==null || !peercast.GlobalAddress6.Equals(rip)) {
+            peercast.GlobalAddress6 = rip;
+          }
+          break;
         }
-        var port = atom.Children.GetHeloPort();
-        if (port.HasValue) {
-          peercast.IsFirewalled = port.Value==0;
-        }
-        logger.Debug("Handshake Finished: {0}", peercast.GlobalAddress);
-      }, null);
+      }
+      var port = atom.Children.GetHeloPort();
+      if (port.HasValue) {
+        peercast.IsFirewalled = port.Value==0;
+      }
+      logger.Debug("Handshake Finished: {0}", peercast.GlobalAddress);
       return null;
     }
 
@@ -801,7 +790,24 @@ namespace PeerCastStation.PCP
       if (pkt_type!=null && pkt_data!=null) {
         if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_HEAD) {
           long pkt_pos = atom.Children.GetChanPktPos() ?? 0;
-          peercast.SynchronizationContext.Post(dummy => {
+          long last_pos = 0;
+          if (channel.Contents.Newest!=null) {
+            last_pos = channel.Contents.Newest.Position;
+          }
+          else if (channel.ContentHeader!=null) {
+            last_pos = channel.ContentHeader.Position;
+          }
+          if (pkt_pos<=(last_pos&0xFFFFFFFFU)-0x80000000) {
+            pkt_pos += (last_pos&0x7FFFFFFF00000000) + 0x100000000;
+          }
+          else {
+            pkt_pos += (last_pos&0x7FFFFFFF00000000);
+          }
+          channel.ContentHeader = new Content(pkt_pos, pkt_data);
+        }
+        else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_DATA) {
+          if (atom.Children.GetChanPktPos()!=null) {
+            long pkt_pos = atom.Children.GetChanPktPos().Value;
             long last_pos = 0;
             if (channel.Contents.Newest!=null) {
               last_pos = channel.Contents.Newest.Position;
@@ -815,28 +821,7 @@ namespace PeerCastStation.PCP
             else {
               pkt_pos += (last_pos&0x7FFFFFFF00000000);
             }
-            channel.ContentHeader = new Content(pkt_pos, pkt_data);
-          }, null);
-        }
-        else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_DATA) {
-          if (atom.Children.GetChanPktPos()!=null) {
-            peercast.SynchronizationContext.Post(dummy => {
-              long pkt_pos = atom.Children.GetChanPktPos().Value;
-              long last_pos = 0;
-              if (channel.Contents.Newest!=null) {
-                last_pos = channel.Contents.Newest.Position;
-              }
-              else if (channel.ContentHeader!=null) {
-                last_pos = channel.ContentHeader.Position;
-              }
-              if (pkt_pos<=(last_pos&0xFFFFFFFFU)-0x80000000) {
-                pkt_pos += (last_pos&0x7FFFFFFF00000000) + 0x100000000;
-              }
-              else {
-                pkt_pos += (last_pos&0x7FFFFFFF00000000);
-              }
-              channel.Contents.Add(new Content(pkt_pos, pkt_data));
-            }, null);
+            channel.Contents.Add(new Content(pkt_pos, pkt_data));
           }
         }
         else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_META) {
@@ -847,9 +832,7 @@ namespace PeerCastStation.PCP
 
     protected virtual IStreamState OnPCPChanInfo(Atom atom)
     {
-      peercast.SynchronizationContext.Post(dummy => {
-        channel.ChannelInfo = new ChannelInfo(atom.Children);
-      }, null);
+      channel.ChannelInfo = new ChannelInfo(atom.Children);
       hostInfoUpdated = true;
       changedEvent.Set();
       return null;
@@ -857,9 +840,7 @@ namespace PeerCastStation.PCP
 
     protected virtual IStreamState OnPCPChanTrack(Atom atom)
     {
-      peercast.SynchronizationContext.Post(dummy => {
         channel.ChannelTrack = new ChannelTrack(atom.Children);
-      }, null);
       return null;
     }
 
@@ -891,62 +872,60 @@ namespace PeerCastStation.PCP
     {
       var session_id = atom.Children.GetHostSessionID();
       if (session_id!=null) {
-        peercast.SynchronizationContext.Post(dummy => {
-          var node = channel.Nodes.FirstOrDefault(x => x.SessionID.Equals(session_id));
-          var host = new HostBuilder(node);
-          if (node==null) {
-            host.SessionID = (Guid)session_id;
-          }
-          host.Extra.Update(atom.Children);
-          host.DirectCount = atom.Children.GetHostNumListeners() ?? 0;
-          host.RelayCount = atom.Children.GetHostNumRelays() ?? 0;
-          var flags1 = atom.Children.GetHostFlags1();
-          if (flags1 != null) {
-            host.IsFirewalled  = (flags1.Value & PCPHostFlags1.Firewalled) != 0;
-            host.IsRelayFull   = (flags1.Value & PCPHostFlags1.Relay) == 0;
-            host.IsDirectFull  = (flags1.Value & PCPHostFlags1.Direct) == 0;
-            host.IsReceiving   = (flags1.Value & PCPHostFlags1.Receiving) != 0;
-            host.IsControlFull = (flags1.Value & PCPHostFlags1.ControlIn) == 0;
-          }
+        var node = channel.Nodes.FirstOrDefault(x => x.SessionID.Equals(session_id));
+        var host = new HostBuilder(node);
+        if (node==null) {
+          host.SessionID = (Guid)session_id;
+        }
+        host.Extra.Update(atom.Children);
+        host.DirectCount = atom.Children.GetHostNumListeners() ?? 0;
+        host.RelayCount = atom.Children.GetHostNumRelays() ?? 0;
+        var flags1 = atom.Children.GetHostFlags1();
+        if (flags1 != null) {
+          host.IsFirewalled  = (flags1.Value & PCPHostFlags1.Firewalled) != 0;
+          host.IsRelayFull   = (flags1.Value & PCPHostFlags1.Relay) == 0;
+          host.IsDirectFull  = (flags1.Value & PCPHostFlags1.Direct) == 0;
+          host.IsReceiving   = (flags1.Value & PCPHostFlags1.Receiving) != 0;
+          host.IsControlFull = (flags1.Value & PCPHostFlags1.ControlIn) == 0;
+        }
 
-          int addr_count = 0;
-          var ip = new IPEndPoint(IPAddress.Any, 0);
-          foreach (var c in atom.Children) {
-            if (c.Name==Atom.PCP_HOST_IP) {
-              IPAddress addr;
-              if (c.TryGetIPv4Address(out addr)) {
-                ip.Address = addr;
-                if (ip.Port!=0) {
-                  if (addr_count==0 && (host.GlobalEndPoint==null || host.GlobalEndPoint.Equals(ip))) {
-                    host.GlobalEndPoint = ip;
-                  }
-                  if (addr_count==1 && (host.LocalEndPoint==null || host.LocalEndPoint.Equals(ip))) {
-                    host.LocalEndPoint = ip;
-                  }
-                  ip = new IPEndPoint(IPAddress.Any, 0);
-                  addr_count++;
+        int addr_count = 0;
+        var ip = new IPEndPoint(IPAddress.Any, 0);
+        foreach (var c in atom.Children) {
+          if (c.Name==Atom.PCP_HOST_IP) {
+            IPAddress addr;
+            if (c.TryGetIPv4Address(out addr)) {
+              ip.Address = addr;
+              if (ip.Port!=0) {
+                if (addr_count==0 && (host.GlobalEndPoint==null || host.GlobalEndPoint.Equals(ip))) {
+                  host.GlobalEndPoint = ip;
                 }
-              }
-            }
-            else if (c.Name==Atom.PCP_HOST_PORT) {
-              short port;
-              if (c.TryGetInt16(out port)) {
-                ip.Port = port;
-                if (ip.Address != IPAddress.Any) {
-                  if (addr_count==0 && (host.GlobalEndPoint==null || host.GlobalEndPoint.Equals(ip))) {
-                    host.GlobalEndPoint = ip;
-                  }
-                  if (addr_count==1 && (host.LocalEndPoint==null || host.LocalEndPoint.Equals(ip))) {
-                    host.LocalEndPoint = ip;
-                  }
-                  ip = new IPEndPoint(IPAddress.Any, 0);
-                  addr_count++;
+                if (addr_count==1 && (host.LocalEndPoint==null || host.LocalEndPoint.Equals(ip))) {
+                  host.LocalEndPoint = ip;
                 }
+                ip = new IPEndPoint(IPAddress.Any, 0);
+                addr_count++;
               }
             }
           }
-          Channel.AddNode(host.ToHost());
-        }, null);
+          else if (c.Name==Atom.PCP_HOST_PORT) {
+            short port;
+            if (c.TryGetInt16(out port)) {
+              ip.Port = port;
+              if (ip.Address != IPAddress.Any) {
+                if (addr_count==0 && (host.GlobalEndPoint==null || host.GlobalEndPoint.Equals(ip))) {
+                  host.GlobalEndPoint = ip;
+                }
+                if (addr_count==1 && (host.LocalEndPoint==null || host.LocalEndPoint.Equals(ip))) {
+                  host.LocalEndPoint = ip;
+                }
+                ip = new IPEndPoint(IPAddress.Any, 0);
+                addr_count++;
+              }
+            }
+          }
+        }
+        Channel.AddNode(host.ToHost());
       }
       return null;
     }

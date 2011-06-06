@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Linq;
+using System.Collections.ObjectModel;
 
 namespace PeerCastStation.Core
 {
@@ -35,7 +36,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 接続しているチャンネルの読み取り専用リストを取得します
     /// </summary>
-    public IList<Channel> Channels { get { return channels.AsReadOnly(); } }
+    public ReadOnlyCollection<Channel> Channels { get { return channels.AsReadOnly(); } }
     private List<Channel> channels = new List<Channel>();
 
     /// <summary>
@@ -46,11 +47,6 @@ namespace PeerCastStation.Core
     /// チャンネルが削除された時に呼び出されます。
     /// </summary>
     public event ChannelChangedEventHandler ChannelRemoved;
-
-    /// <summary>
-    /// 所属するスレッドのSynchronizationContextを取得および設定します
-    /// </summary>
-    public SynchronizationContext SynchronizationContext { get; set; }
 
     /// <summary>
     /// 待ち受けが閉じられたかどうかを取得します
@@ -70,14 +66,16 @@ namespace PeerCastStation.Core
     /// <returns>接続先が見付かった場合はChannelのインスタンス、それ以外はnull</returns>
     public Channel RelayChannel(Guid channel_id)
     {
+      Channel result = null;
       logger.Debug("Finding channel {0} from YP", channel_id.ToString("N"));
       foreach (var yp in YellowPages) {
         var tracker = yp.FindTracker(channel_id);
         if (tracker!=null) {
-          return RelayChannel(channel_id, tracker);
+          result = RelayChannel(channel_id, tracker);
+          break;
         }
       }
-      return null;
+      return result;
     }
 
     /// <summary>
@@ -89,15 +87,19 @@ namespace PeerCastStation.Core
     /// <returns>Channelのインスタンス</returns>
     public Channel RelayChannel(Guid channel_id, Uri tracker)
     {
+      Channel channel = null;
       logger.Debug("Requesting channel {0} from {1}", channel_id.ToString("N"), tracker);
       ISourceStreamFactory source_factory = null;
       if (!SourceStreamFactories.TryGetValue(tracker.Scheme, out source_factory)) {
         logger.Error("Protocol `{0}' is not found", tracker.Scheme);
         throw new ArgumentException(String.Format("Protocol `{0}' is not found", tracker.Scheme));
       }
-      var channel = new Channel(this, channel_id, tracker);
-      channels = new List<Channel>(channels);
-      channels.Add(channel);
+      channel = new Channel(this, channel_id, tracker);
+      Utils.ReplaceCollection(ref channels, orig => {
+        var new_collection = new List<Channel>(orig);
+        new_collection.Add(channel);
+        return new_collection;
+      });
       var source_stream = source_factory.Create(channel, tracker);
       channel.Start(source_stream);
       if (ChannelAdded!=null) ChannelAdded(this, new ChannelChangedEventArgs(channel));
@@ -117,21 +119,16 @@ namespace PeerCastStation.Core
     /// </returns>
     public virtual Channel RequestChannel(Guid channel_id, Uri tracker, bool request_relay)
     {
-      var res = channels.FirstOrDefault(c => c.ChannelID==channel_id);
-      if (res!=null) {
-        return res;
-      }
-      else if (request_relay) {
+      Channel res = channels.FirstOrDefault(c => c.ChannelID==channel_id);
+      if (res==null && request_relay) {
         if (tracker!=null) {
-          return RelayChannel(channel_id, tracker);
+          res = RelayChannel(channel_id, tracker);
         }
         else {
-          return RelayChannel(channel_id);
+          res = RelayChannel(channel_id);
         }
       }
-      else {
-        return null;
-      }
+      return res;
     }
 
     /// <summary>
@@ -150,8 +147,11 @@ namespace PeerCastStation.Core
     /// <param name="channel">追加するチャンネル</param>
     public void AddChannel(Channel channel)
     {
-      channels = new List<Channel>(channels);
-      channels.Add(channel);
+      Utils.ReplaceCollection(ref channels, orig => {
+        var new_channels = new List<Channel>(orig);
+        new_channels.Add(channel);
+        return new_channels;
+      });
     }
 
     /// <summary>
@@ -161,8 +161,11 @@ namespace PeerCastStation.Core
     public void CloseChannel(Channel channel)
     {
       channel.Close();
-      channels = new List<Channel>(channels);
-      channels.Remove(channel);
+      Utils.ReplaceCollection(ref channels, orig => {
+        var new_channels = new List<Channel>(orig);
+        new_channels.Remove(channel);
+        return new_channels;
+      });
       logger.Debug("Channel Removed: {0}", channel.ChannelID.ToString("N"));
       if (ChannelRemoved!=null) ChannelRemoved(this, new ChannelChangedEventArgs(channel));
     }
@@ -173,19 +176,22 @@ namespace PeerCastStation.Core
     public PeerCast()
     {
       logger.Info("Starting PeerCast");
-      if (SynchronizationContext.Current == null) {
-        SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
-      }
-      this.SynchronizationContext = SynchronizationContext.Current;
       this.AccessController = new AccessController(this);
       var filever = System.Diagnostics.FileVersionInfo.GetVersionInfo(
         System.Reflection.Assembly.GetExecutingAssembly().Location);
       this.AgentName = String.Format("{0}/{1}", filever.ProductName, filever.ProductVersion);
-      IsClosed = false;
+      this.IsClosed = false;
       this.SessionID   = Guid.NewGuid();
       this.BroadcastID = Guid.NewGuid();
       logger.Debug("SessionID: {0}",   this.SessionID.ToString("N"));
       logger.Debug("BroadcastID: {0}", this.BroadcastID.ToString("N"));
+      this.GlobalAddress = null;
+      this.GlobalAddress6 = null;
+      this.IsFirewalled = null;
+      this.YellowPages   = new List<IYellowPage>();
+      this.YellowPageFactories = new Dictionary<string, IYellowPageFactory>();
+      this.SourceStreamFactories = new Dictionary<string, ISourceStreamFactory>();
+      this.OutputStreamFactories = new List<IOutputStreamFactory>();
       foreach (var addr in Dns.GetHostAddresses(Dns.GetHostName())) {
         switch (addr.AddressFamily) {
         case AddressFamily.InterNetwork:
@@ -211,14 +217,6 @@ namespace PeerCastStation.Core
           break;
         }
       }
-      this.GlobalAddress = null;
-      this.GlobalAddress6 = null;
-      this.IsFirewalled = null;
-
-      YellowPages   = new List<IYellowPage>();
-      YellowPageFactories = new Dictionary<string, IYellowPageFactory>();
-      SourceStreamFactories = new Dictionary<string, ISourceStreamFactory>();
-      OutputStreamFactories = new List<IOutputStreamFactory>();
     }
 
     public bool? IsFirewalled { get; set; }
@@ -234,6 +232,7 @@ namespace PeerCastStation.Core
     /// 接続待ち受けスレッドのコレクションを取得します
     /// </summary>
     public IList<OutputListener> OutputListeners { get { return outputListeners.AsReadOnly(); } }
+
     /// <summary>
     /// 指定したエンドポイントで接続待ち受けを開始します
     /// </summary>
@@ -242,18 +241,22 @@ namespace PeerCastStation.Core
     /// <exception cref="System.Net.Sockets.SocketException">待ち受けが開始できませんでした</exception>
     public OutputListener StartListen(IPEndPoint ip)
     {
+      OutputListener res = null;
       logger.Info("starting listen at {0}", ip);
       try {
-        var res = new OutputListener(this, ip);
-        outputListeners = new List<OutputListener>(outputListeners);
-        outputListeners.Add(res);
-        return res;
+        res = new OutputListener(this, ip);
+        Utils.ReplaceCollection(ref outputListeners, orig => {
+          var new_collection = new List<OutputListener>(orig);
+          new_collection.Add(res);
+          return new_collection;
+        });
       }
       catch (System.Net.Sockets.SocketException e) {
         logger.Error("Listen failed: {0}", ip);
         logger.Error(e);
         throw;
       }
+      return res;
     }
 
     /// <summary>
@@ -264,8 +267,11 @@ namespace PeerCastStation.Core
     public void StopListen(OutputListener listener)
     {
       listener.Close();
-      outputListeners = new List<OutputListener>(outputListeners);
-      outputListeners.Remove(listener);
+      Utils.ReplaceCollection(ref outputListeners, orig => {
+        var new_collection = new List<OutputListener>(orig);
+        new_collection.Remove(listener);
+        return new_collection;
+      });
     }
 
     public IPEndPoint LocalEndPoint

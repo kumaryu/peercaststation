@@ -40,5 +40,17 @@ namespace PeerCastStation.Core
         return false;
       }
     }
+
+    static public void ReplaceCollection<T>(ref T collection, Func<T,T> newcollection_func) where T : class
+    {
+      bool replaced = false;
+      while (!replaced) {
+        var prev = collection;
+        var new_collection = newcollection_func(collection);
+        System.Threading.Interlocked.CompareExchange(ref collection, new_collection, prev);
+        replaced = Object.ReferenceEquals(collection, new_collection);
+      }
+    }
+
   }
 }
