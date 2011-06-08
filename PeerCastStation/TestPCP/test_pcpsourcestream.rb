@@ -47,8 +47,8 @@ class MockOutputStream
     @log << [:start]
   end
   
-  def close
-    @log << [:close]
+  def stop
+    @log << [:stop]
   end
 end
 
@@ -191,7 +191,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   end
   
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop
   end
   
   def test_construct
@@ -310,11 +310,11 @@ class TC_PCPSourceStream < Test::Unit::TestCase
   def test_set_close
     source = PeerCastStation::PCP::PCPSourceStream.new(@peercast, @channel, @channel.source_uri)
     assert_nil(source.state)
-    source.close
+    source.stop
     assert_nil(source.state)
 
     source.state = MockStreamState.new
-    source.close
+    source.stop
     assert_kind_of(PeerCastStation::PCP::PCPSourceClosedState, source.state)
     assert_equal(PeerCastStation::PCP::CloseReason.user_shutdown, source.state.close_reason)
   end
@@ -330,7 +330,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_kind_of(PeerCastStation::PCP::PCPSourceClosedState, source.state)
     assert_equal(PeerCastStation::PCP::CloseReason.user_reconnect, source.state.close_reason)
 
-    source.close
+    source.stop
   end
 
   def test_ignore_host
@@ -800,7 +800,7 @@ class TC_PCPSourceClosedState < Test::Unit::TestCase
   end
   
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop if @peercast
   end
   
   def test_construct
@@ -892,7 +892,7 @@ class TC_PCPSourceConnectState < Test::Unit::TestCase
   end
   
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop if @peercast
   end
   
   def test_construct
@@ -962,7 +962,7 @@ class TC_PCPSourceRelayRequestState < Test::Unit::TestCase
   end
   
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop if @peercast
   end
   
   def test_construct
@@ -1017,7 +1017,7 @@ class TC_PCPSourceRecvRelayResponseState < Test::Unit::TestCase
   end
   
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop if @peercast
   end
   
   def test_construct
@@ -1144,7 +1144,7 @@ class TC_PCPSourcePCPHandshakeState < Test::Unit::TestCase
   end
   
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop if @peercast
   end
   
   def test_construct
@@ -1231,7 +1231,7 @@ class TC_PCPSourceReceivingState < Test::Unit::TestCase
   end
   
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop if @peercast
   end
   
   def test_construct

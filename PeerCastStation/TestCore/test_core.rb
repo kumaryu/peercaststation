@@ -106,8 +106,8 @@ class MockSourceStream
     @log << [:reconnect]
   end
   
-  def close
-    @log << [:close]
+  def stop
+    @log << [:stop]
   end
 end
 
@@ -136,8 +136,8 @@ class MockOutputStream
     @log << [:start]
   end
   
-  def close
-    @log << [:close]
+  def stop
+    @log << [:stop]
   end
 end
 

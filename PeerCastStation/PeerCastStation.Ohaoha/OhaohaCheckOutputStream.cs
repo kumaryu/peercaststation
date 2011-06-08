@@ -98,7 +98,7 @@ namespace PeerCastStation.Ohaoha
     {
     }
 
-    public void Close()
+    public void Stop()
     {
       stream.Close();
     }

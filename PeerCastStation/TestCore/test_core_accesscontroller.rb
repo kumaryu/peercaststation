@@ -24,7 +24,7 @@ class TC_CoreAccessController < Test::Unit::TestCase
   end
   
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop if @peercast
   end
 
   def new_output(type, is_local, bitrate)

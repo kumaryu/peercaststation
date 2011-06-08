@@ -641,7 +641,7 @@ namespace PeerCastStation.HTTP
     /// <summary>
     /// ストリームを閉じます
     /// </summary>
-    public void Close()
+    public void Stop()
     {
       if (!closed) {
         closed = true;

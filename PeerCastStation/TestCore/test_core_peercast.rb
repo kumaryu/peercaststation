@@ -24,7 +24,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
   end
   
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop if @peercast
   end
   
   def test_construct
@@ -35,16 +35,12 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert_equal(0, @peercast.source_stream_factories.count)
     assert_equal(0, @peercast.output_stream_factories.count)
     assert_equal(0, @peercast.channels.count)
-    assert(!@peercast.is_closed)
     
     assert_not_nil(@peercast.local_address)
     assert_nil(@peercast.global_address)
     assert_not_equal(System::Guid.empty, @peercast.SessionID)
     assert_not_equal(System::Guid.empty, @peercast.BroadcastID)
     assert_nil(@peercast.is_firewalled)
-    
-    @peercast.close
-    assert(@peercast.is_closed)
   end
   
   def test_relay_from_tracker
@@ -66,7 +62,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert_equal(channel, source.channel)
     assert_equal(2, source.log.size)
     assert_equal(:start,  source.log[0][0])
-    assert_equal(:close,  source.log[1][0])
+    assert_equal(:stop,  source.log[1][0])
     
     assert_equal(1, @peercast.channels.count)
     assert_equal(channel, @peercast.channels[0])
@@ -88,8 +84,8 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert_equal(7147,        source.tracker.port)
     assert_equal(channel,     source.channel)
     assert_equal(2, source.log.size)
-    assert_equal(:start,   source.log[0][0])
-    assert_equal(:close,   source.log[1][0])
+    assert_equal(:start, source.log[0][0])
+    assert_equal(:stop,  source.log[1][0])
     
     assert_equal(1, @peercast.channels.count)
     assert_equal(channel, @peercast.channels[0])

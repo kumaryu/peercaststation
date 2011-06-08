@@ -142,7 +142,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// ストリームの取得を終了します
     /// </summary>
-    void Close();
+    void Stop();
     /// <summary>
     /// ストリームの現在の状態を取得します
     /// </summary>
@@ -218,7 +218,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// ストリームへの書き込みを終了します
     /// </summary>
-    void Close();
+    void Stop();
     /// <summary>
     /// 出力ストリームの種類を取得します
     /// </summary>
@@ -501,7 +501,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 接続を待ち受けを終了します
     /// </summary>
-    internal void Close()
+    internal void Stop()
     {
       logger.Debug("Stopping listener");
       IsClosed = true;
@@ -566,7 +566,7 @@ namespace PeerCastStation.Core
           if (channel!=null) {
             channel.RemoveOutputStream(output_stream);
           }
-          output_stream.Close();
+          output_stream.Stop();
         }
         stream.Close();
         client.Close();

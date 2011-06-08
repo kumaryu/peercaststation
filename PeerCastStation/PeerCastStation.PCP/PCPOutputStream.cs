@@ -439,7 +439,7 @@ namespace PeerCastStation.PCP
       while (ProcessSend()) {
         syncContext.ProcessAll();
       }
-      Close();
+      Stop();
       syncContext.ProcessAll();
       logger.Debug("Finished");
     }
@@ -486,7 +486,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    private void DoClose()
+    private void DoStop()
     {
       IsClosed = true;
       if (sendResult!=null) {
@@ -513,15 +513,15 @@ namespace PeerCastStation.PCP
       }
     }
 
-    public virtual void Close()
+    public virtual void Stop()
     {
       if (syncContext!=null) {
         syncContext.Post(x => {
-          DoClose();
+          DoStop();
         }, null);
       }
       else {
-        DoClose();
+        DoStop();
       }
     }
 
@@ -547,14 +547,14 @@ namespace PeerCastStation.PCP
             catch (ObjectDisposedException) {}
             catch (IOException e) {
               logger.Error(e);
-              DoClose();
+              DoStop();
             }
           }, Stream);
         }
         catch (ObjectDisposedException) {}
         catch (IOException e) {
           logger.Error(e);
-          DoClose();
+          DoStop();
         }
       }
     }
@@ -574,7 +574,7 @@ namespace PeerCastStation.PCP
           }
           catch (IOException e) {
             logger.Error(e);
-            DoClose();
+            DoStop();
           }
           sendResult = null;
         }
@@ -591,7 +591,7 @@ namespace PeerCastStation.PCP
         }
         catch (IOException e) {
           logger.Error(e);
-          DoClose();
+          DoStop();
         }
       }
       return res;
@@ -737,14 +737,14 @@ namespace PeerCastStation.PCP
         //セッションIDが無かった
         var quit = new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT+Atom.PCP_ERROR_NOTIDENTIFIED);
         Send(quit);
-        Close();
+        Stop();
       }
       else if ((Downhost.Extra.GetHeloVersion() ?? 0)<1200) {
         logger.Info("Helo version {0} is too old", Downhost.Extra.GetHeloVersion() ?? 0);
         //クライアントバージョンが無かった、もしくは古すぎ
         var quit = new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT+Atom.PCP_ERROR_BADAGENT);
         Send(quit);
-        Close();
+        Stop();
       }
       else if (IsRelayFull) {
         logger.Debug("Handshake succeeded {0}({1}) but relay is full", Downhost.GlobalEndPoint, Downhost.SessionID.ToString("N"));
@@ -770,7 +770,7 @@ namespace PeerCastStation.PCP
         }
         var quit = new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT+Atom.PCP_ERROR_UNAVAILABLE);
         Send(quit);
-        Close();
+        Stop();
       }
       else {
         logger.Debug("Handshake succeeded {0}({1})", Downhost.GlobalEndPoint, Downhost.SessionID.ToString("N"));
@@ -892,7 +892,7 @@ namespace PeerCastStation.PCP
     protected virtual void OnPCPQuit(Atom atom)
     {
       logger.Debug("Quit Received: {0}", atom.GetInt32());
-      Close();
+      Stop();
     }
 
 

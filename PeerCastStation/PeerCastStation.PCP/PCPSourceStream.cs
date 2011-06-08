@@ -940,7 +940,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    public void Close()
+    public void Stop()
     {
       if (syncContext!=null) {
         syncContext.Post((x) => {

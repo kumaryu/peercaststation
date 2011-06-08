@@ -79,7 +79,7 @@ class TC_HTTPOutputStreamFactory < Test::Unit::TestCase
   end
 
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop if @peercast
   end
 
   def test_construct
@@ -189,7 +189,7 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
   end
 
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop if @peercast
   end
 
   def test_construct
@@ -389,14 +389,14 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
     assert_equal(0, s.position)
   end
 
-  def test_close
+  def test_stop
     s = System::IO::MemoryStream.new
     req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
     ]))
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
     stream = TestHTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
-    stream.close
+    stream.stop
     assert(stream.is_closed)
     assert(!s.can_read)
   end
@@ -447,7 +447,7 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
     sleep(0.1)
     @channel.contents.add(PCSCore::Content.new(34, 'content4'))
     sleep(0.1)
-    stream.close
+    stream.stop
     write_thread.join
     assert_equal('headercontent0content1content2content3content4', s.to_array.to_a.pack('C*'))
   end

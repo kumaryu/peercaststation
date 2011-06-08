@@ -94,7 +94,7 @@ namespace PeerCastStation.HTTP
     {
     }
 
-    public void Close()
+    public void Stop()
     {
       stream.Close();
     }

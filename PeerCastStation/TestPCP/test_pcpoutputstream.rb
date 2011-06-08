@@ -88,7 +88,7 @@ class TC_PCPOutputStreamFactory < Test::Unit::TestCase
   end
   
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop if @peercast
   end
   
   def test_construct
@@ -159,7 +159,7 @@ class TC_PCPOutputStream < Test::Unit::TestCase
   end
   
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop if @peercast
   end
   
   def test_construct
@@ -512,7 +512,7 @@ EOS
     assert_equal(0, stream.log.size)
     assert(stream.downhost.is_firewalled)
     assert(!stream.is_closed)
-    stream.close
+    stream.stop
 
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('192.168.12.34'), 7147)
     stream = TestPingHostPCPOutputStream.new(@peercast, @base_stream, endpoint, @channel, @request)
@@ -526,7 +526,7 @@ EOS
     assert_equal(0, stream.log.size)
     assert(stream.downhost.is_firewalled)
     assert(!stream.is_closed)
-    stream.close
+    stream.stop
   end
 
   def test_on_pcp_helo_ping
@@ -557,7 +557,7 @@ EOS
     assert_equal(7145,                oleh.children.GetHeloRemotePort)
     assert_equal(PCSCore::Atom.PCP_OK, stream.sent_data[1].name)
     assert(!stream.is_closed)
-    stream.close
+    stream.stop
 
     session_id = System::Guid.new_guid
     stream = TestPingHostPCPOutputStream.new(@peercast, @base_stream, endpoint, @channel, @request)
@@ -584,7 +584,7 @@ EOS
     assert_equal(0,                   oleh.children.GetHeloRemotePort)
     assert_equal(PCSCore::Atom.PCP_OK, stream.sent_data[1].name)
     assert(!stream.is_closed)
-    stream.close
+    stream.stop
   end
 
   def test_on_pcp_helo
@@ -635,7 +635,7 @@ EOS
     assert_equal(7145,                oleh.children.GetHeloRemotePort)
     assert_equal(PCSCore::Atom.PCP_OK, stream.sent_data[1].name)
     assert(!stream.is_closed)
-    stream.close
+    stream.stop
 
     session_id = System::Guid.new_guid
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)

@@ -29,7 +29,7 @@ class TC_PLSPlayList < Test::Unit::TestCase
   end
   
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop if @peercast
   end
 
   def test_construct
@@ -82,7 +82,7 @@ class TC_ASXPlayList < Test::Unit::TestCase
   end
   
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop if @peercast
   end
 
   def test_construct

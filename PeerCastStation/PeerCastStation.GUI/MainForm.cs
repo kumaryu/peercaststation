@@ -335,7 +335,7 @@ namespace PeerCastStation.GUI
 
     private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
     {
-      peerCast.Close();
+      peerCast.Stop();
       Settings.Default.Save();
     }
 
@@ -491,7 +491,7 @@ namespace PeerCastStation.GUI
     {
       var connection = outputList.SelectedItem as IOutputStream;
       if (connection!=null) {
-        connection.Close();
+        connection.Stop();
       }
     }
   }

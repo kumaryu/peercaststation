@@ -28,7 +28,7 @@ class TC_CoreChannel < Test::Unit::TestCase
   end
   
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop if @peercast
   end
 
   def test_construct
@@ -87,9 +87,9 @@ class TC_CoreChannel < Test::Unit::TestCase
     channel.close
     assert_equal(PeerCastStation::Core::SourceStreamStatus.idle, channel.status)
     assert_equal(:start,     channel.source_stream.log[0][0])
-    assert_equal(:close,     channel.source_stream.log[1][0])
+    assert_equal(:stop,      channel.source_stream.log[1][0])
     assert_equal(:reconnect, channel.source_stream.log[2][0])
-    assert_equal(:close,     output_stream.log[0][0])
+    assert_equal(:stop,      output_stream.log[0][0])
     assert_equal('Closed', log[0])
     assert(channel.is_closed)
   end
@@ -107,8 +107,8 @@ class TC_CoreChannel < Test::Unit::TestCase
     channel.close
     assert_equal(PeerCastStation::Core::SourceStreamStatus.idle, channel.status)
     assert_equal(:start, channel.source_stream.log[0][0])
-    assert_equal(:close, channel.source_stream.log[1][0])
-    assert_equal(:close, output_stream.log[0][0])
+    assert_equal(:stop,  channel.source_stream.log[1][0])
+    assert_equal(:stop,  output_stream.log[0][0])
     assert_equal('Closed', log[0])
     assert(channel.is_closed)
   end
@@ -210,7 +210,7 @@ class TC_CoreChannel < Test::Unit::TestCase
     def reconnect
     end
 
-    def close
+    def stop
     end
   end
   

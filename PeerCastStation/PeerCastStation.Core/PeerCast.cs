@@ -49,11 +49,6 @@ namespace PeerCastStation.Core
     public event ChannelChangedEventHandler ChannelRemoved;
 
     /// <summary>
-    /// 待ち受けが閉じられたかどうかを取得します
-    /// </summary>
-    public bool IsClosed { get; private set; }
-
-    /// <summary>
     /// チャンネルへのアクセス制御を行なうクラスの取得および設定をします
     /// </summary>
     public AccessController AccessController { get; set; }
@@ -180,7 +175,6 @@ namespace PeerCastStation.Core
       var filever = System.Diagnostics.FileVersionInfo.GetVersionInfo(
         System.Reflection.Assembly.GetExecutingAssembly().Location);
       this.AgentName = String.Format("{0}/{1}", filever.ProductName, filever.ProductVersion);
-      this.IsClosed = false;
       this.SessionID   = Guid.NewGuid();
       this.BroadcastID = Guid.NewGuid();
       logger.Debug("SessionID: {0}",   this.SessionID.ToString("N"));
@@ -266,7 +260,7 @@ namespace PeerCastStation.Core
     /// <param name="listener">待ち受けを終了するリスナ</param>
     public void StopListen(OutputListener listener)
     {
-      listener.Close();
+      listener.Stop();
       Utils.ReplaceCollection(ref outputListeners, orig => {
         var new_collection = new List<OutputListener>(orig);
         new_collection.Remove(listener);
@@ -337,12 +331,11 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 待ち受けと全てのチャンネルを終了します
     /// </summary>
-    public void Close()
+    public void Stop()
     {
-      logger.Info("Closing PeerCast");
-      IsClosed = true;
+      logger.Info("Stopping PeerCast");
       foreach (var listener in outputListeners) {
-        listener.Close();
+        listener.Stop();
       }
       foreach (var channel in channels) {
         channel.Close();
@@ -350,7 +343,7 @@ namespace PeerCastStation.Core
       }
       outputListeners = new List<OutputListener>();
       channels = new List<Channel>();
-      logger.Info("PeerCast Closed");
+      logger.Info("PeerCast Stopped");
     }
 
     private static Logger logger = new Logger(typeof(PeerCast));

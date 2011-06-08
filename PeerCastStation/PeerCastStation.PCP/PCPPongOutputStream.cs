@@ -124,7 +124,7 @@ namespace PeerCastStation.PCP
         ProcessSend();
         if (syncContext!=null) syncContext.ProcessAll();
       }
-      Close();
+      Stop();
       if (syncContext!=null) syncContext.ProcessAll();
       logger.Debug("Finished");
     }
@@ -146,7 +146,7 @@ namespace PeerCastStation.PCP
         //相手のセッションIDが無かったらエラー終了
         var quit = new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT+Atom.PCP_ERROR_NOTIDENTIFIED);
         Send(quit);
-        Close();
+        Stop();
       }
       else {
         logger.Debug("Helo from {0}", PeerCast.SessionID.ToString("N"));
@@ -155,7 +155,7 @@ namespace PeerCastStation.PCP
 
     protected virtual void OnPCPQuit(Atom atom)
     {
-      Close();
+      Stop();
     }
 
     public void Post(Host from, Atom packet)
@@ -182,18 +182,18 @@ namespace PeerCastStation.PCP
                 }, null);
               }
               else {
-                Close();
+                Stop();
               }
             }
             catch (ObjectDisposedException) {}
             catch (IOException) {
-              Close();
+              Stop();
             }
           }, Stream);
         }
         catch (ObjectDisposedException) {}
         catch (IOException) {
-          Close();
+          Stop();
         }
       }
     }
@@ -209,7 +209,7 @@ namespace PeerCastStation.PCP
         catch (ObjectDisposedException) {
         }
         catch (IOException) {
-          Close();
+          Stop();
         }
         sendResult = null;
       }
@@ -223,7 +223,7 @@ namespace PeerCastStation.PCP
         catch (ObjectDisposedException) {
         }
         catch (IOException) {
-          Close();
+          Stop();
         }
       }
     }
@@ -271,7 +271,7 @@ namespace PeerCastStation.PCP
       return res;
     }
 
-    private void DoClose()
+    private void DoStop()
     {
       IsClosed = true;
       if (sendResult!=null) {
@@ -289,16 +289,16 @@ namespace PeerCastStation.PCP
       recvStream.Position = 0;
     }
 
-    public void Close()
+    public void Stop()
     {
       if (!IsClosed) {
         if (syncContext!=null) {
           syncContext.Post(x => {
-            DoClose();
+            DoStop();
           }, null);
         }
         else {
-          DoClose();
+          DoStop();
         }
       }
     }

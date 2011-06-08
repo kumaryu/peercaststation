@@ -870,13 +870,13 @@ namespace PeerCastStation.Core
         sourceStream.Start();
       }
       finally {
-        sourceStream.Close();
+        sourceStream.Stop();
         sync.Post(thread => {
           if (sourceThread == thread) {
             sourceThread = null;
           }
           foreach (var os in outputStreams) {
-            os.Close();
+            os.Stop();
           }
           outputStreams = new OutputStreamCollection();
           startTickCount = null;
@@ -914,10 +914,10 @@ namespace PeerCastStation.Core
     {
       if (!IsClosed) {
         if (sourceStream!=null) {
-          sourceStream.Close();
+          sourceStream.Stop();
         }
         foreach (var outputStream in outputStreams) {
-          outputStream.Close();
+          outputStream.Stop();
         }
         outputStreams = new OutputStreamCollection();
       }

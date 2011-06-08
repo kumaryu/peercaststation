@@ -44,7 +44,7 @@ class TC_PCPPongOutputStreamFactory < Test::Unit::TestCase
   end
   
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop if @peercast
   end
   
   def test_construct
@@ -105,7 +105,7 @@ class TC_PCPPongOutputStream < Test::Unit::TestCase
   end
   
   def teardown
-    @peercast.close if @peercast and not @peercast.is_closed
+    @peercast.stop if @peercast
   end
   
   def test_construct
@@ -167,7 +167,7 @@ class TC_PCPPongOutputStream < Test::Unit::TestCase
     assert_equal(1, stream.sent_data[0].children.count)
     assert_equal(@peercast.SessionID, stream.sent_data[0].children.GetHeloSessionID)
     assert(!stream.is_closed)
-    stream.close
+    stream.stop
 
     session_id = System::Guid.new_guid
     stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array([]))
@@ -181,7 +181,7 @@ class TC_PCPPongOutputStream < Test::Unit::TestCase
     assert_equal(1, stream.sent_data[0].children.count)
     assert_equal(@peercast.SessionID, stream.sent_data[0].children.GetHeloSessionID)
     assert(!stream.is_closed)
-    stream.close
+    stream.stop
   end
 
   def test_on_pcp_quit
