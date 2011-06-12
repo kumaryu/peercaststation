@@ -238,7 +238,7 @@ namespace PeerCastStation.PCP
       EndPoint remote_endpoint,
       Channel channel,
       RelayRequest request)
-      : base(peercast, stream, remote_endpoint, channel)
+      : base(peercast, stream, remote_endpoint, channel, null)
     {
       Logger.Debug("Initialized: Channel {0}, Remote {1}, Request {2} {3} ({4} {5})",
         channel!=null ? channel.ChannelID.ToString("N") : "(null)",
@@ -388,7 +388,6 @@ namespace PeerCastStation.PCP
       if (Channel!=null) {
         Channel.ContentChanged += new EventHandler(Channel_ContentChanged);
       }
-      StartReceive();
       SendRelayResponse();
     }
 
@@ -405,64 +404,16 @@ namespace PeerCastStation.PCP
         if (Downhost!=null) {
           SendRelayBody(ref headerPos, ref contentPos);
         }
-        ProcessSend();
       }
     }
 
     protected override void OnStopped()
     {
-      while (ProcessSend()) {
-        SyncContext.ProcessAll();
-      }
-      if (sendResult!=null) {
-        try {
-          Stream.EndWrite(sendResult);
-        }
-        catch (ObjectDisposedException) {}
-        catch (IOException) {}
-        sendResult = null;
-      }
-      Stream.Close();
-      if (sendStream.Length>0) {
-        Logger.Debug("Discarded send stream length: {0}", sendStream.Length);
-      }
-      if (recvStream.Length>0) {
-        Logger.Debug("Discarded recv stream length: {0}", recvStream.Length);
-      }
-      sendStream.SetLength(0);
-      sendStream.Position = 0;
-      recvStream.SetLength(0);
-      recvStream.Position = 0;
       if (Channel!=null) {
         Channel.ContentChanged -= Channel_ContentChanged;
       }
       base.OnStopped();
       Logger.Debug("Finished");
-    }
-
-    private bool Recv(Action<Stream> proc)
-    {
-      bool res = false;
-      recvStream.Seek(0, SeekOrigin.Begin);
-      try {
-        proc(recvStream);
-        recvStream = dropStream(recvStream);
-        res = true;
-      }
-      catch (EndOfStreamException) {
-      }
-      return res;
-    }
-
-    private Atom RecvAtom()
-    {
-      Atom res = null;
-      if (recvStream.Length>=8 && Recv(s => { res = AtomReader.Read(s); })) {
-        return res;
-      }
-      else {
-        return null;
-      }
     }
 
     protected override void DoPost(Host from, Atom packet)
@@ -471,97 +422,6 @@ namespace PeerCastStation.PCP
         Send(packet);
       }
     }
-
-    MemoryStream recvStream = new MemoryStream();
-    byte[] recvBuffer = new byte[8192];
-    private void StartReceive()
-    {
-      if (!IsStopped) {
-        try {
-          Stream.BeginRead(recvBuffer, 0, recvBuffer.Length, (ar) => {
-            Stream s = (Stream)ar.AsyncState;
-            try {
-              int bytes = s.EndRead(ar);
-              if (bytes > 0) {
-                SyncContext.Post(x => {
-                  recvStream.Seek(0, SeekOrigin.End);
-                  recvStream.Write(recvBuffer, 0, bytes);
-                  recvStream.Seek(0, SeekOrigin.Begin);
-                  StartReceive();
-                }, null);
-              }
-            }
-            catch (ObjectDisposedException) {}
-            catch (IOException e) {
-              Logger.Error(e);
-              DoStop();
-            }
-          }, Stream);
-        }
-        catch (ObjectDisposedException) {}
-        catch (IOException e) {
-          Logger.Error(e);
-          DoStop();
-        }
-      }
-    }
-
-    MemoryStream sendStream = new MemoryStream(8192);
-    IAsyncResult sendResult = null;
-    private bool ProcessSend()
-    {
-      bool res = false;
-      if (sendResult!=null) {
-        res = true;
-        if (sendResult.IsCompleted) {
-          try {
-            Stream.EndWrite(sendResult);
-          }
-          catch (ObjectDisposedException) {
-          }
-          catch (IOException e) {
-            Logger.Error(e);
-            DoStop();
-          }
-          sendResult = null;
-        }
-      }
-      if (!IsStopped && sendResult==null && sendStream.Length>0) {
-        res = true;
-        var buf = sendStream.ToArray();
-        sendStream.SetLength(0);
-        sendStream.Position = 0;
-        try {
-          sendResult = Stream.BeginWrite(buf, 0, buf.Length, null, null);
-        }
-        catch (ObjectDisposedException) {
-        }
-        catch (IOException e) {
-          Logger.Error(e);
-          DoStop();
-        }
-      }
-      return res;
-    }
-
-    protected virtual void Send(byte[] bytes)
-    {
-      sendStream.Write(bytes, 0, bytes.Length);
-    }
-
-    protected virtual void Send(Atom atom)
-    {
-      AtomWriter.Write(sendStream, atom);
-    }
-
-    static private MemoryStream dropStream(MemoryStream s)
-    {
-      var res = new MemoryStream((int)Math.Max(8192, s.Length - s.Position));
-      res.Write(s.GetBuffer(), (int)s.Position, (int)(s.Length - s.Position));
-      res.Position = 0;
-      return res;
-    }
-
     protected virtual void ProcessAtom(Atom atom)
     {
       if (Downhost==null) {

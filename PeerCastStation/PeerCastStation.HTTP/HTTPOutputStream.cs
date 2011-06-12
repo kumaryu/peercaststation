@@ -242,7 +242,7 @@ namespace PeerCastStation.HTTP
     /// <param name="channel">所属するチャンネル。無い場合はnull</param>
     /// <param name="request">クライアントからのリクエスト</param>
     public HTTPOutputStream(PeerCast peercast, Stream stream, EndPoint remote_endpoint, Channel channel, HTTPRequest request)
-      : base(peercast, stream, remote_endpoint, channel) 
+      : base(peercast, stream, remote_endpoint, channel, null)
     {
       Logger.Debug("Initialized: Channel {0}, Remote {1}, Request {2} {3}",
         channel!=null ? channel.ChannelID.ToString("N") : "(null)",
@@ -408,7 +408,7 @@ namespace PeerCastStation.HTTP
         new Uri(request.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped)),
         "stream/");
       var bytes = System.Text.Encoding.UTF8.GetBytes(pls.CreatePlayList(baseuri));
-      Stream.Write(bytes, 0, bytes.Length);
+      Send(bytes);
     }
 
     /// <summary>
@@ -427,22 +427,17 @@ namespace PeerCastStation.HTTP
           break;
         case BodyType.Content:
           if (sentHeader!=headerPacket) {
-            if (WriteContentHeader(headerPacket)) {
-              sentHeader = headerPacket;
-              sentPosition = sentHeader.Position;
-              Logger.Debug("Sent ContentHeader pos {0}", sentHeader.Position);
-            }
+            Send(headerPacket.Data);
+            sentHeader = headerPacket;
+            sentPosition = sentHeader.Position;
+            Logger.Debug("Sent ContentHeader pos {0}", sentHeader.Position);
           }
           if (sentHeader!=null) {
             lock (contentPacketQueue) {
               foreach (var c in contentPacketQueue) {
                 if (c.Position>sentPosition) {
-                  if (WriteContent(c)) {
-                    sentPosition = c.Position;
-                  }
-                  else {
-                    break;
-                  }
+                  Send(c.Data);
+                  sentPosition = c.Position;
                 }
               }
               contentPacketQueue.Clear();
@@ -542,78 +537,6 @@ namespace PeerCastStation.HTTP
     {
       base.OnStopped();
       Logger.Debug("Finished");
-    }
-
-    protected virtual void OnError()
-    {
-      Stop();
-    }
-
-    /// <summary>
-    /// チャンネルコンテントのヘッダをストリームに出力します
-    /// </summary>
-    /// <param name="header">出力するヘッダ</param>
-    /// <returns>
-    /// ヘッダが出力できた場合はtrue、それ以外はfalse
-    /// </returns>
-    protected virtual bool WriteContentHeader(Content header)
-    {
-      if (header!=null) {
-        if (WriteBytes(header.Data)) {
-          return true;
-        }
-        else {
-          OnError();
-          return false;
-        }
-      }
-      else {
-        return false;
-      }
-    }
-
-    /// <summary>
-    /// チャンネルコンテントのボディをストリームに出力します
-    /// </summary>
-    /// <returns>出力した場合はtrue、失敗した場合はfalse</returns>
-    protected bool WriteContent(Content content)
-    {
-      if (content!=null) {
-        if (WriteBytes(content.Data)) {
-          return true;
-        }
-        else {
-          OnError();
-          return false;
-        }
-      }
-      else {
-        return false;
-      }
-    }
-
-    /// <summary>
-    /// ストリームにバイト列を出力します
-    /// </summary>
-    /// <param name="bytes">出力するバイト列</param>
-    /// <returns>
-    /// 出力できた場合はtrue、それ以外はfalse
-    /// </returns>
-    protected virtual bool WriteBytes(byte[] bytes)
-    {
-      try {
-        Stream.Write(bytes, 0, bytes.Length);
-      }
-      catch (IOException) {
-        return false;
-      }
-      catch (NotSupportedException) {
-        return false;
-      }
-      catch (ObjectDisposedException) {
-        return false;
-      }
-      return true;
     }
 
     /// <summary>

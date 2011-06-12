@@ -62,7 +62,7 @@ namespace PeerCastStation.Ohaoha
     : OutputStreamBase
   {
     public OhaohaCheckOutputStream(PeerCast peercast, Stream stream, EndPoint remote_endpoint)
-      : base(peercast, stream, remote_endpoint, null)
+      : base(peercast, stream, remote_endpoint, null, null)
     {
       Logger.Debug("Initialized: Remote {0}", remote_endpoint);
     }
@@ -72,7 +72,7 @@ namespace PeerCastStation.Ohaoha
       Logger.Debug("Started");
       var response = "HTTP/1.0 302 Found\r\nLocation: /html/index.html\r\n\r\n";
       var bytes = System.Text.Encoding.UTF8.GetBytes(response);
-      Stream.Write(bytes, 0, bytes.Length);
+      Send(bytes);
       Stop();
     }
 

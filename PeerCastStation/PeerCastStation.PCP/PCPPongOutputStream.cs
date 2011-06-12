@@ -72,21 +72,19 @@ namespace PeerCastStation.PCP
   {
     public override string ToString()
     {
-      return String.Format("PCP(PONG) {0} ({1})", RemoteEndPoint);
+      return String.Format("PCP(PONG) {0}", RemoteEndPoint);
     }
 
     public PCPPongOutputStream(PeerCast peercast, Stream stream, IPEndPoint endpoint, byte[] header)
-      : base(peercast, stream, endpoint, null)
+      : base(peercast, stream, endpoint, null, header)
     {
       Logger.Debug("Initialized: Remote {0}", endpoint);
-      recvStream.Write(header, 0, header.Length);
     }
 
     protected override void OnStarted()
     {
-     	base.OnStarted();
       Logger.Debug("Starting");
-      StartReceive();
+     	base.OnStarted();
     }
 
     protected override void OnIdle()
@@ -96,24 +94,10 @@ namespace PeerCastStation.PCP
       while ((atom = RecvAtom())!=null) {
         ProcessAtom(atom);
       }
-      ProcessSend();
     }
 
     protected override void OnStopped()
     {
-      if (sendResult!=null) {
-        try {
-          Stream.EndWrite(sendResult);
-        }
-        catch (ObjectDisposedException) {}
-        catch (IOException) {}
-        sendResult = null;
-      }
-      Stream.Close();
-      sendStream.SetLength(0);
-      sendStream.Position = 0;
-      recvStream.SetLength(0);
-      recvStream.Position = 0;
       base.OnStopped();
       Logger.Debug("Finished");
     }
@@ -145,114 +129,6 @@ namespace PeerCastStation.PCP
     protected virtual void OnPCPQuit(Atom atom)
     {
       Stop();
-    }
-
-    MemoryStream recvStream = new MemoryStream();
-    byte[] recvBuffer = new byte[8192];
-    private void StartReceive()
-    {
-      if (!IsStopped) {
-        try {
-          Stream.BeginRead(recvBuffer, 0, recvBuffer.Length, (ar) => {
-            Stream s = (Stream)ar.AsyncState;
-            try {
-              int bytes = s.EndRead(ar);
-              if (bytes > 0) {
-                PostAction(() => {
-                  recvStream.Seek(0, SeekOrigin.End);
-                  recvStream.Write(recvBuffer, 0, bytes);
-                  recvStream.Seek(0, SeekOrigin.Begin);
-                  StartReceive();
-                });
-              }
-              else {
-                Stop();
-              }
-            }
-            catch (ObjectDisposedException) {}
-            catch (IOException) {
-              Stop();
-            }
-          }, Stream);
-        }
-        catch (ObjectDisposedException) {}
-        catch (IOException) {
-          Stop();
-        }
-      }
-    }
-
-    MemoryStream sendStream = new MemoryStream(8192);
-    IAsyncResult sendResult = null;
-    private void ProcessSend()
-    {
-      if (sendResult!=null && sendResult.IsCompleted) {
-        try {
-          Stream.EndWrite(sendResult);
-        }
-        catch (ObjectDisposedException) {
-        }
-        catch (IOException) {
-          Stop();
-        }
-        sendResult = null;
-      }
-      if (!IsStopped && sendResult==null && sendStream.Length>0) {
-        var buf = sendStream.ToArray();
-        sendStream.SetLength(0);
-        sendStream.Position = 0;
-        try {
-          sendResult = Stream.BeginWrite(buf, 0, buf.Length, null, null);
-        }
-        catch (ObjectDisposedException) {
-        }
-        catch (IOException) {
-          Stop();
-        }
-      }
-    }
-
-    protected virtual void Send(byte[] bytes)
-    {
-      sendStream.Write(bytes, 0, bytes.Length);
-    }
-
-    protected virtual void Send(Atom atom)
-    {
-      AtomWriter.Write(sendStream, atom);
-    }
-
-    protected Atom RecvAtom()
-    {
-      Atom res = null;
-      if (recvStream.Length>=8 && Recv(s => { res = AtomReader.Read(s); })) {
-        return res;
-      }
-      else {
-        return null;
-      }
-    }
-
-    protected bool Recv(Action<Stream> proc)
-    {
-      bool res = false;
-      recvStream.Seek(0, SeekOrigin.Begin);
-      try {
-        proc(recvStream);
-        recvStream = dropStream(recvStream);
-        res = true;
-      }
-      catch (EndOfStreamException) {
-      }
-      return res;
-    }
-
-    static private MemoryStream dropStream(MemoryStream s)
-    {
-      var res = new MemoryStream((int)Math.Max(8192, s.Length - s.Position));
-      res.Write(s.GetBuffer(), (int)s.Position, (int)(s.Length - s.Position));
-      res.Position = 0;
-      return res;
     }
 
     public override OutputStreamType OutputStreamType
