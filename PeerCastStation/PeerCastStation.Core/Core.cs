@@ -223,6 +223,10 @@ namespace PeerCastStation.Core
     /// 出力ストリームの種類を取得します
     /// </summary>
     OutputStreamType OutputStreamType { get; }
+    /// <summary>
+    /// 出力ストリームの動作が終了した際に呼ばれるイベントです
+    /// </summary>
+    event EventHandler Stopped;
   }
 
   /// <summary>
@@ -509,6 +513,39 @@ namespace PeerCastStation.Core
       listenerThread.Join();
     }
 
+    private IOutputStreamFactory FindMatchedFactory(NetworkStream stream, out List<byte> header, out Guid channel_id)
+    {
+      var output_factories = PeerCast.OutputStreamFactories;
+      header = new List<byte>();
+      channel_id = Guid.Empty;
+      bool eos = false;
+      while (!eos && header.Count<=4096) {
+        try {
+          do {
+            var val = stream.ReadByte();
+            if (val < 0) {
+              eos = true;
+            }
+            else {
+              header.Add((byte)val);
+            }
+          } while (stream.DataAvailable);
+        }
+        catch (IOException) {
+          eos = true;
+        }
+        var header_ary = header.ToArray();
+        foreach (var factory in output_factories) {
+          var cid = factory.ParseChannelID(header_ary);
+          if (cid.HasValue) {
+            channel_id = cid.Value;
+            return factory;
+          }
+        }
+      }
+      return null;
+    }
+
     private static List<Thread> outputThreads = new List<Thread>();
     private void OutputThreadFunc(object arg)
     {
@@ -519,42 +556,21 @@ namespace PeerCastStation.Core
       stream.ReadTimeout = 3000;
       IOutputStream output_stream = null;
       Channel channel = null;
-      var output_factories = PeerCast.OutputStreamFactories;
       try {
-        var header = new List<byte>();
-        Guid? channel_id = null;
-        bool eos = false;
-        while (!eos && output_stream==null && header.Count<=4096) {
-          try {
-            do {
-              var val = stream.ReadByte();
-              if (val < 0) {
-                eos = true;
-              }
-              else {
-                header.Add((byte)val);
-              }
-            } while (stream.DataAvailable);
-          }
-          catch (IOException) {
-          }
-          var header_ary = header.ToArray();
-          foreach (var factory in output_factories) {
-            channel_id = factory.ParseChannelID(header_ary);
-            if (channel_id != null) {
-              logger.Debug("Output Procotol matched: {0}", factory.Name);
-              output_stream = factory.Create(stream, client.Client.RemoteEndPoint, channel_id.Value, header_ary);
-              break;
-            }
-          }
-        }
-        if (output_stream != null) {
+        List<byte> header;
+        Guid channel_id;
+        var factory = FindMatchedFactory(stream, out header, out channel_id);
+        if (factory!=null) {
+          output_stream = factory.Create(stream, client.Client.RemoteEndPoint, channel_id, header.ToArray());
           channel = PeerCast.Channels.FirstOrDefault(c => c.ChannelID==channel_id);
           if (channel!=null) {
             channel.AddOutputStream(output_stream);
           }
           logger.Debug("Output stream started");
+          var wait_stopped = new EventWaitHandle(false, EventResetMode.ManualReset);
+          output_stream.Stopped += (sender, args) => { wait_stopped.Set(); };
           output_stream.Start();
+          wait_stopped.WaitOne();
         }
         else {
           logger.Debug("No protocol matched");
@@ -562,19 +578,16 @@ namespace PeerCastStation.Core
       }
       finally {
         logger.Debug("Closing client connection");
-        if (output_stream != null) {
-          if (channel!=null) {
-            channel.RemoveOutputStream(output_stream);
-          }
-          output_stream.Stop();
+        if (output_stream!=null && channel!=null) {
+          channel.RemoveOutputStream(output_stream);
         }
         stream.Close();
         client.Close();
         lock (outputThreads) {
           outputThreads.Remove(Thread.CurrentThread);
         }
+        logger.Debug("Output thread finished");
       }
-      logger.Debug("Output thread finished");
     }
   }
 }

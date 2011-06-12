@@ -173,7 +173,7 @@ class TC_PCPOutputStream < Test::Unit::TestCase
     assert_equal(@base_stream, stream.stream)
     assert_equal(@channel,     stream.Channel)
     assert_equal(PCSCore::OutputStreamType.relay, stream.output_stream_type)
-    assert(!stream.is_closed)
+    assert(!stream.is_stopped)
     assert(!stream.is_relay_full)
   end
 
@@ -511,7 +511,7 @@ EOS
     stream.OnPCPHelo(helo)
     assert_equal(0, stream.log.size)
     assert(stream.downhost.is_firewalled)
-    assert(!stream.is_closed)
+    assert(!stream.is_stopped)
     stream.stop
 
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('192.168.12.34'), 7147)
@@ -525,7 +525,7 @@ EOS
     stream.OnPCPHelo(helo)
     assert_equal(0, stream.log.size)
     assert(stream.downhost.is_firewalled)
-    assert(!stream.is_closed)
+    assert(!stream.is_stopped)
     stream.stop
   end
 
@@ -556,7 +556,7 @@ EOS
     assert_equal(1218,                oleh.children.GetHeloVersion)
     assert_equal(7145,                oleh.children.GetHeloRemotePort)
     assert_equal(PCSCore::Atom.PCP_OK, stream.sent_data[1].name)
-    assert(!stream.is_closed)
+    assert(!stream.is_stopped)
     stream.stop
 
     session_id = System::Guid.new_guid
@@ -583,7 +583,7 @@ EOS
     assert_equal(1218,                oleh.children.GetHeloVersion)
     assert_equal(0,                   oleh.children.GetHeloRemotePort)
     assert_equal(PCSCore::Atom.PCP_OK, stream.sent_data[1].name)
-    assert(!stream.is_closed)
+    assert(!stream.is_stopped)
     stream.stop
   end
 
@@ -596,7 +596,7 @@ EOS
     assert_equal(PCSCore::Atom.PCP_OLEH, stream.sent_data[0].name)
     assert_equal(PCSCore::Atom.PCP_QUIT, stream.sent_data[1].name)
     assert_equal(PCSCore::Atom.PCP_ERROR_QUIT+PCSCore::Atom.PCP_ERROR_NOTIDENTIFIED, stream.sent_data[1].get_int32)
-    assert(stream.is_closed)
+    assert(stream.is_stopped)
 
     session_id = System::Guid.new_guid
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
@@ -611,7 +611,7 @@ EOS
     assert_equal(PCSCore::Atom.PCP_OLEH, stream.sent_data[0].name)
     assert_equal(PCSCore::Atom.PCP_QUIT, stream.sent_data[1].name)
     assert_equal(PCSCore::Atom.PCP_ERROR_QUIT+PCSCore::Atom.PCP_ERROR_BADAGENT, stream.sent_data[1].get_int32)
-    assert(stream.is_closed)
+    assert(stream.is_stopped)
 
     session_id = System::Guid.new_guid
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
@@ -634,7 +634,7 @@ EOS
     assert_equal(1218,                oleh.children.GetHeloVersion)
     assert_equal(7145,                oleh.children.GetHeloRemotePort)
     assert_equal(PCSCore::Atom.PCP_OK, stream.sent_data[1].name)
-    assert(!stream.is_closed)
+    assert(!stream.is_stopped)
     stream.stop
 
     session_id = System::Guid.new_guid
@@ -673,7 +673,7 @@ EOS
       host.children.GetHostFlags1)
     assert_equal(PCSCore::Atom.PCP_QUIT, stream.sent_data[2].name)
     assert_equal(PCSCore::Atom.PCP_ERROR_QUIT+PCSCore::Atom.PCP_ERROR_UNAVAILABLE, stream.sent_data[2].get_int32)
-    assert(stream.is_closed)
+    assert(stream.is_stopped)
 
     session_id = System::Guid.new_guid
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
@@ -698,7 +698,7 @@ EOS
     end
     assert_equal(PCSCore::Atom.PCP_QUIT, stream.sent_data[9].name)
     assert_equal(PCSCore::Atom.PCP_ERROR_QUIT+PCSCore::Atom.PCP_ERROR_UNAVAILABLE, stream.sent_data[9].get_int32)
-    assert(stream.is_closed)
+    assert(stream.is_stopped)
   end
 
   def test_pcp_bcst
@@ -792,10 +792,10 @@ EOS
 
   def test_on_pcp_quit
     stream = TestPCPOutputStream.new(@peercast, @base_stream, @endpoint, @channel, @request)
-    assert(!stream.is_closed)
+    assert(!stream.is_stopped)
     quit = PCSCore::Atom.new(PCSCore::Atom.PCP_QUIT, PCSCore::Atom.PCP_ERROR_QUIT)
     stream.OnPCPQuit(quit)
-    assert(stream.is_closed)
+    assert(stream.is_stopped)
   end
 
   class TestProcessAtomPCPOutputStream < PCSPCP::PCPOutputStream

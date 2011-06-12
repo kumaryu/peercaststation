@@ -42,6 +42,7 @@
     <Compile Include="Channel.cs" />
     <Compile Include="Core.cs" />
     <Compile Include="Host.cs" />
+    <Compile Include="OutputStreamBase.cs" />
     <Compile Include="PeerCast.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueuedSynchronizationContext.cs" />

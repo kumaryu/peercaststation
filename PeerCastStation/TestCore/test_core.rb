@@ -120,9 +120,18 @@ class MockOutputStream
     @upstream_rate = 0
     @is_local = false
     @log = []
+    @stopped = []
   end
   attr_reader :log
   attr_accessor :remote_endpoint, :upstream_rate, :is_local
+
+  def add_Stopped(event)
+    @stopped << event
+  end
+
+  def remove_Stopped(event)
+    @stopped.delete(event)
+  end
 
   def output_stream_type
     @type
@@ -134,10 +143,14 @@ class MockOutputStream
   
   def start
     @log << [:start]
+    stop
   end
   
   def stop
     @log << [:stop]
+    @stopped.each do |event|
+      event.invoke(self, System::EventArgs.new)
+    end
   end
 end
 

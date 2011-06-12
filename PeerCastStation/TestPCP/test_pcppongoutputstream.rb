@@ -155,7 +155,7 @@ class TC_PCPPongOutputStream < Test::Unit::TestCase
     assert_equal(PCSCore::Atom.PCP_OLEH, stream.sent_data[0].name)
     assert_equal(PCSCore::Atom.PCP_QUIT, stream.sent_data[1].name)
     assert_equal(PCSCore::Atom.PCP_ERROR_QUIT+PCSCore::Atom.PCP_ERROR_NOTIDENTIFIED, stream.sent_data[1].get_int32)
-    assert(stream.is_closed)
+    assert(stream.is_stopped)
 
     session_id = System::Guid.new_guid
     stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array([]))
@@ -166,7 +166,7 @@ class TC_PCPPongOutputStream < Test::Unit::TestCase
     assert_equal(PCSCore::Atom.PCP_OLEH, stream.sent_data[0].name)
     assert_equal(1, stream.sent_data[0].children.count)
     assert_equal(@peercast.SessionID, stream.sent_data[0].children.GetHeloSessionID)
-    assert(!stream.is_closed)
+    assert(!stream.is_stopped)
     stream.stop
 
     session_id = System::Guid.new_guid
@@ -180,16 +180,16 @@ class TC_PCPPongOutputStream < Test::Unit::TestCase
     assert_equal(PCSCore::Atom.PCP_OLEH, stream.sent_data[0].name)
     assert_equal(1, stream.sent_data[0].children.count)
     assert_equal(@peercast.SessionID, stream.sent_data[0].children.GetHeloSessionID)
-    assert(!stream.is_closed)
+    assert(!stream.is_stopped)
     stream.stop
   end
 
   def test_on_pcp_quit
     stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array([]))
-    assert(!stream.is_closed)
+    assert(!stream.is_stopped)
     quit = PCSCore::Atom.new(PCSCore::Atom.PCP_QUIT, PCSCore::Atom.PCP_ERROR_QUIT)
     stream.OnPCPQuit(quit)
-    assert(stream.is_closed)
+    assert(stream.is_stopped)
   end
 
   class TestProcessAtomPCPPongOutputStream < PCSPCP::PCPPongOutputStream

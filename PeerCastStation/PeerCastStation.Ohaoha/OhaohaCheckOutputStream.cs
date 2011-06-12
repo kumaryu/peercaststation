@@ -22,19 +22,19 @@ using PeerCastStation.HTTP;
 namespace PeerCastStation.Ohaoha
 {
   public class OhaohaCheckOutputStreamFactory
-    : IOutputStreamFactory
+    : OutputStreamFactoryBase
   {
-    public string Name
+    public override string Name
     {
       get { return "OhaohaCheck"; }
     }
 
-    public IOutputStream Create(Stream stream, EndPoint remote_endpoint, Guid channel_id, byte[] header)
+    public override IOutputStream Create(Stream stream, EndPoint remote_endpoint, Guid channel_id, byte[] header)
     {
-      return new OhaohaCheckOutputStream(peercast, stream, remote_endpoint);
+      return new OhaohaCheckOutputStream(PeerCast, stream, remote_endpoint);
     }
 
-    public Guid? ParseChannelID(byte[] header)
+    public override Guid? ParseChannelID(byte[] header)
     {
       HTTPRequest res = null;
       var stream = new MemoryStream(header);
@@ -52,58 +52,37 @@ namespace PeerCastStation.Ohaoha
       }
     }
 
-    private PeerCast peercast;
     public OhaohaCheckOutputStreamFactory(PeerCast peercast)
+      : base(peercast)
     {
-      this.peercast = peercast;
     }
   }
 
   public class OhaohaCheckOutputStream
-    : IOutputStream
+    : OutputStreamBase
   {
-    static Logger logger = new Logger(typeof(OhaohaCheckOutputStream));
-    private PeerCast peercast;
-    private Stream stream;
-
-    public PeerCast PeerCast { get { return peercast; } }
-    public Stream Stream { get { return stream; } }
-    public bool IsLocal { get; private set; }
-    public int UpstreamRate { get { return 0; } }
-
     public OhaohaCheckOutputStream(PeerCast peercast, Stream stream, EndPoint remote_endpoint)
+      : base(peercast, stream, remote_endpoint, null)
     {
-      logger.Debug("Initialized: Remote {0}", remote_endpoint);
-      this.peercast = peercast;
-      this.stream = stream;
-      var ip = remote_endpoint as IPEndPoint;
-      this.IsLocal = ip!=null ? Utils.IsSiteLocal(ip.Address) : true;
+      Logger.Debug("Initialized: Remote {0}", remote_endpoint);
     }
 
-    protected void WriteResponseHeader()
+    protected override void OnStarted()
     {
-    }
-
-    public void Start()
-    {
-      logger.Debug("Started");
+      Logger.Debug("Started");
       var response = "HTTP/1.0 302 Found\r\nLocation: /html/index.html\r\n\r\n";
       var bytes = System.Text.Encoding.UTF8.GetBytes(response);
-      stream.Write(bytes, 0, bytes.Length);
-      stream.Close();
-      logger.Debug("Finished");
+      Stream.Write(bytes, 0, bytes.Length);
+      Stop();
     }
 
-    public void Post(Host from, Atom packet)
+    protected override void OnStopped()
     {
+      Logger.Debug("Finished");
+   	  base.OnStopped();
     }
 
-    public void Stop()
-    {
-      stream.Close();
-    }
-
-    public OutputStreamType OutputStreamType
+    public override OutputStreamType OutputStreamType
     {
       get { return OutputStreamType.Metadata; }
     }

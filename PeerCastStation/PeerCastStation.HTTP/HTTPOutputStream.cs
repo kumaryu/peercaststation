@@ -17,6 +17,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Collections.Generic;
+using System.Threading;
 using System.Text.RegularExpressions;
 using PeerCastStation.Core;
 
@@ -111,12 +112,12 @@ namespace PeerCastStation.HTTP
   /// HTTPで視聴出力をするHTTPOutputStreamを作成するクラスです
   /// </summary>
   public class HTTPOutputStreamFactory
-    : IOutputStreamFactory
+    : OutputStreamFactoryBase
   {
     /// <summary>
     /// プロトコル名を取得します。常に"HTTP"を返します
     /// </summary>
-    public string Name
+    public override string Name
     {
       get { return "HTTP"; }
     }
@@ -149,14 +150,14 @@ namespace PeerCastStation.HTTP
     /// 作成できた場合はHTTPOutputStreamのインスタンス。
     /// headerが正しく解析できなかった場合はnull
     /// </returns>
-    public IOutputStream Create(Stream stream, EndPoint remote_endpoint, Guid channel_id, byte[] header)
+    public override IOutputStream Create(Stream stream, EndPoint remote_endpoint, Guid channel_id, byte[] header)
     {
       var request = ParseRequest(header);
       if (request!=null) {
         Channel channel = null;
         Uri tracker = CreateTrackerUri(channel_id, request.Uri);
-        channel = peercast.RequestChannel(channel_id, tracker, true);
-        return new HTTPOutputStream(peercast, stream, remote_endpoint, channel, request);
+        channel = PeerCast.RequestChannel(channel_id, tracker, true);
+        return new HTTPOutputStream(PeerCast, stream, remote_endpoint, channel, request);
       }
       else {
         return null;
@@ -177,7 +178,7 @@ namespace PeerCastStation.HTTP
     /// /pls/チャンネルID
     /// のいずれかで始まる場合のみチャンネルIDを抽出します
     /// </remarks>
-    public Guid? ParseChannelID(byte[] header)
+    public override Guid? ParseChannelID(byte[] header)
     {
       var request = ParseRequest(header);
       if (request!=null &&
@@ -191,14 +192,13 @@ namespace PeerCastStation.HTTP
       return null;
     }
 
-    private PeerCast peercast;
     /// <summary>
     /// ファクトリオブジェクトを初期化します
     /// </summary>
     /// <param name="peercast">所属するPeerCastオブジェクト</param>
     public HTTPOutputStreamFactory(PeerCast peercast)
+      : base(peercast)
     {
-      this.peercast = peercast;
     }
 
     /// <summary>
@@ -226,64 +226,12 @@ namespace PeerCastStation.HTTP
   /// HTTPで視聴出力をするクラスです
   /// </summary>
   public class HTTPOutputStream
-    : IOutputStream
+    : OutputStreamBase
   {
-    static Logger logger = new Logger(typeof(HTTPOutputStream));
-    private PeerCast peercast;
-    private Stream stream;
-    private Channel channel;
     private HTTPRequest request;
-    private IPEndPoint remoteEndPoint;
-    private volatile bool closed = false;
-    private System.Threading.AutoResetEvent changedEvent = new System.Threading.AutoResetEvent(true);
     private Content headerPacket = null;
     private List<Content> contentPacketQueue = new List<Content>();
     private long sentPosition = -1;
-
-    /// <summary>
-    /// 所属するPeerCastを取得します
-    /// </summary>
-    public PeerCast PeerCast { get { return peercast; } }
-    /// <summary>
-    /// 元になるストリームを取得します
-    /// </summary>
-    public Stream Stream { get { return stream; } }
-    /// <summary>
-    /// 所属するチャンネルを取得します
-    /// </summary>
-    public Channel Channel { get { return channel; } }
-    /// <summary>
-    /// ストリームが閉じられたかどうかを取得します
-    /// </summary>
-    public bool IsClosed { get { return closed; } }
-    /// <summary>
-    /// 送信先がローカルネットワークかどうかを取得します
-    /// </summary>
-    public bool IsLocal { get; private set; }
-    /// <summary>
-    /// 送信に必要な上り帯域を取得します。
-    /// IsLocalがtrueの場合は0を返します。
-    /// </summary>
-    public int UpstreamRate {
-      get
-      {
-        if (IsLocal) {
-          return 0;
-        }
-        else {
-          return channel.ChannelInfo.Bitrate;
-        }
-      }
-    }
-
-    public override string ToString()
-    {
-      string user_agent = "";
-      if (request.Headers.ContainsKey("User-Agent")) {
-        user_agent = request.Headers["User-Agent"];
-      }
-      return String.Format("HTTP Direct {0} ({1})", remoteEndPoint, user_agent);
-    }
 
     /// <summary>
     /// 元になるストリーム、チャンネル、リクエストからHTTPOutputStreamを初期化します
@@ -294,20 +242,16 @@ namespace PeerCastStation.HTTP
     /// <param name="channel">所属するチャンネル。無い場合はnull</param>
     /// <param name="request">クライアントからのリクエスト</param>
     public HTTPOutputStream(PeerCast peercast, Stream stream, EndPoint remote_endpoint, Channel channel, HTTPRequest request)
+      : base(peercast, stream, remote_endpoint, channel) 
     {
-      logger.Debug("Initialized: Channel {0}, Remote {1}, Request {2} {3}",
+      Logger.Debug("Initialized: Channel {0}, Remote {1}, Request {2} {3}",
         channel!=null ? channel.ChannelID.ToString("N") : "(null)",
         remote_endpoint,
         request.Method,
         request.Uri);
-      this.peercast = peercast;
-      this.stream = stream;
-      this.remoteEndPoint = remote_endpoint as IPEndPoint;
-      this.IsLocal = this.remoteEndPoint!=null ? Utils.IsSiteLocal(this.remoteEndPoint.Address) : true;
-      this.channel = channel;
       this.request = request;
-      if (this.channel!=null) {
-        this.channel.ContentChanged += (sender, e) => {
+      if (this.Channel!=null) {
+        this.Channel.ContentChanged += (sender, e) => {
           lock (contentPacketQueue) {
             headerPacket = channel.ContentHeader;
             if (contentPacketQueue.Count>0) {
@@ -317,13 +261,22 @@ namespace PeerCastStation.HTTP
               contentPacketQueue.AddRange(channel.Contents.GetNewerContents(sentPosition));
             }
           }
-          this.changedEvent.Set();
-        };
-        this.channel.Closed += (sender, e) => {
-          this.closed = true;
-          this.changedEvent.Set();
         };
       }
+    }
+
+    protected override int GetUpstreamRate()
+    {
+      return Channel.ChannelInfo.Bitrate;
+    }
+
+    public override string ToString()
+    {
+      string user_agent = "";
+      if (request.Headers.ContainsKey("User-Agent")) {
+        user_agent = request.Headers["User-Agent"];
+      }
+      return String.Format("HTTP Direct {0} ({1})", RemoteEndPoint, user_agent);
     }
 
     /// <summary>
@@ -354,7 +307,7 @@ namespace PeerCastStation.HTTP
     /// </returns>
     protected virtual BodyType GetBodyType()
     {
-      if (channel==null || channel.Status==SourceStreamStatus.Error) {
+      if (Channel==null || Channel.Status==SourceStreamStatus.Error) {
         return BodyType.None;
       }
       else if (Regex.IsMatch(request.Uri.AbsolutePath, @"^/stream/[0-9A-Fa-f]{32}.*$")) {
@@ -376,7 +329,7 @@ namespace PeerCastStation.HTTP
     /// </returns>
     protected string CreateResponseHeader()
     {
-      if (channel==null) {
+      if (Channel==null) {
         return "HTTP/1.0 404 NotFound\r\n";
       }
       switch (GetBodyType()) {
@@ -385,9 +338,9 @@ namespace PeerCastStation.HTTP
       case BodyType.Content:
         {
           bool mms = 
-            channel.ChannelInfo.ContentType=="WMV" ||
-            channel.ChannelInfo.ContentType=="WMA" ||
-            channel.ChannelInfo.ContentType=="ASX";
+            Channel.ChannelInfo.ContentType=="WMV" ||
+            Channel.ChannelInfo.ContentType=="WMA" ||
+            Channel.ChannelInfo.ContentType=="ASX";
           if (mms) {
             return
               "HTTP/1.0 200 OK\r\n"                         +
@@ -401,16 +354,16 @@ namespace PeerCastStation.HTTP
             return
               "HTTP/1.0 200 OK\r\n"        +
               "Content-Type: "             +
-              channel.ChannelInfo.MIMEType +
+              Channel.ChannelInfo.MIMEType +
               "\r\n";
           }
         }
       case BodyType.Playlist:
         {
           bool mms = 
-            channel.ChannelInfo.ContentType=="WMV" ||
-            channel.ChannelInfo.ContentType=="WMA" ||
-            channel.ChannelInfo.ContentType=="ASX";
+            Channel.ChannelInfo.ContentType=="WMV" ||
+            Channel.ChannelInfo.ContentType=="WMA" ||
+            Channel.ChannelInfo.ContentType=="ASX";
           IPlayList pls;
           if (mms) {
             pls = new ASXPlayList();
@@ -418,7 +371,7 @@ namespace PeerCastStation.HTTP
           else {
             pls = new PLSPlayList();
           }
-          pls.Channels.Add(channel);
+          pls.Channels.Add(Channel);
           return String.Format(
             "HTTP/1.0 200 OK\r\n"             +
             "Server: {0}\r\n"                 +
@@ -435,33 +388,14 @@ namespace PeerCastStation.HTTP
     }
 
     /// <summary>
-    /// ストリームにHTTPレスポンスヘッダを出力します
-    /// </summary>
-    protected void WriteResponseHeader()
-    {
-      var response_header = CreateResponseHeader();
-      var bytes = System.Text.Encoding.UTF8.GetBytes(response_header + "\r\n");
-      stream.Write(bytes, 0, bytes.Length);
-      logger.Debug("Header: {0}", response_header);
-    }
-
-    /// <summary>
-    /// チャンネルのコンテントが変化するかチャンネルが閉じられるまで待ちます
-    /// </summary>
-    protected virtual void WaitContentChanged()
-    {
-      changedEvent.WaitOne();
-    }
-
-    /// <summary>
     /// ストリームにプレイリストを出力します
     /// </summary>
     protected void WritePlayList()
     {
       bool mms = 
-        channel.ChannelInfo.ContentType=="WMV" ||
-        channel.ChannelInfo.ContentType=="WMA" ||
-        channel.ChannelInfo.ContentType=="ASX";
+        Channel.ChannelInfo.ContentType=="WMV" ||
+        Channel.ChannelInfo.ContentType=="WMA" ||
+        Channel.ChannelInfo.ContentType=="ASX";
       IPlayList pls;
       if (mms) {
         pls = new ASXPlayList();
@@ -469,12 +403,12 @@ namespace PeerCastStation.HTTP
       else {
         pls = new PLSPlayList();
       }
-      pls.Channels.Add(channel);
+      pls.Channels.Add(Channel);
       var baseuri = new Uri(
         new Uri(request.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped)),
         "stream/");
       var bytes = System.Text.Encoding.UTF8.GetBytes(pls.CreatePlayList(baseuri));
-      stream.Write(bytes, 0, bytes.Length);
+      Stream.Write(bytes, 0, bytes.Length);
     }
 
     /// <summary>
@@ -482,21 +416,21 @@ namespace PeerCastStation.HTTP
     /// </summary>
     protected virtual void WriteResponseBody()
     {
-      switch (GetBodyType()) {
-      case BodyType.None:
-        break;
-      case BodyType.Content:
-        logger.Debug("Sending Contents");
-        Content sentHeader = null;
-        headerPacket = null;
-        sentPosition = -1;
-        while (!closed) {
-          WaitContentChanged();
+      Logger.Debug("Sending Contents");
+      Content sentHeader = null;
+      headerPacket = null;
+      sentPosition = -1;
+      SetState(() => {
+        switch (GetBodyType()) {
+        case BodyType.None:
+          OnWriteResponseBodyCompleted();
+          break;
+        case BodyType.Content:
           if (sentHeader!=headerPacket) {
             if (WriteContentHeader(headerPacket)) {
               sentHeader = headerPacket;
               sentPosition = sentHeader.Position;
-              logger.Debug("Sent ContentHeader pos {0}", sentHeader.Position);
+              Logger.Debug("Sent ContentHeader pos {0}", sentHeader.Position);
             }
           }
           if (sentHeader!=null) {
@@ -514,13 +448,19 @@ namespace PeerCastStation.HTTP
               contentPacketQueue.Clear();
             }
           }
+          break;
+        case BodyType.Playlist:
+          Logger.Debug("Sending Playlist");
+          WritePlayList();
+          OnWriteResponseBodyCompleted();
+          break;
         }
-        break;
-      case BodyType.Playlist:
-        logger.Debug("Sending Playlist");
-        WritePlayList();
-        break;
-      }
+      });
+    }
+
+    protected virtual void OnWriteResponseBodyCompleted()
+    {
+      Stop();
     }
 
     /// <summary>
@@ -528,37 +468,85 @@ namespace PeerCastStation.HTTP
     /// </summary>
     protected void WaitChannel()
     {
-      var timeout_count = 1000;
-      while (!closed &&
-             channel!=null &&
-             timeout_count-->0 &&
-             (channel.Status==SourceStreamStatus.Connecting ||
-              channel.Status==SourceStreamStatus.Searching ||
-              channel.Status==SourceStreamStatus.Idle ||
-              channel.ChannelInfo.ContentType==null ||
-              channel.ChannelInfo.ContentType=="")) {
-        System.Threading.Thread.Sleep(10);
+      var started = Environment.TickCount;
+      SetState(() => {
+        if (!IsStopped &&
+            Channel!=null &&
+            Environment.TickCount-started<10000 &&
+            (Channel.Status==SourceStreamStatus.Connecting ||
+             Channel.Status==SourceStreamStatus.Searching ||
+             Channel.Status==SourceStreamStatus.Idle ||
+             Channel.ChannelInfo.ContentType==null ||
+             Channel.ChannelInfo.ContentType=="")) {
+          //Do nothing
+        }
+        else {
+          if (Channel!=null) {
+            Logger.Debug("ContentType: {0}", Channel.ChannelInfo.ContentType);
+          }
+          OnWaitChannelCompleted();
+        }
+      });
+    }
+
+    protected virtual void OnWaitChannelCompleted()
+    {
+      if (!IsStopped) {
+        WriteResponseHeader();
       }
-      if (channel!=null) {
-        logger.Debug("ContentType: {0}", channel.ChannelInfo.ContentType);
+    }
+
+    /// <summary>
+    /// ストリームにHTTPレスポンスヘッダを出力します
+    /// </summary>
+    protected void WriteResponseHeader()
+    {
+      SetState(() => {
+        var response_header = CreateResponseHeader();
+        var bytes = System.Text.Encoding.UTF8.GetBytes(response_header + "\r\n");
+        Stream.Write(bytes, 0, bytes.Length);
+        Logger.Debug("Header: {0}", response_header);
+        OnWriteResponseHeaderCompleted();
+      });
+    }
+
+    protected virtual void OnWriteResponseHeaderCompleted()
+    {
+      if (request.Method=="GET") {
+        WriteResponseBody();
       }
+    }
+
+    Action state = null;
+    private void SetState(Action state)
+    {
+      this.state = state;
+    }
+
+    protected override void OnIdle()
+    {
+      if (this.state!=null) this.state();
+      base.OnIdle();
     }
 
     /// <summary>
     /// ストリームにレスポンスを出力します
     /// </summary>
-    public void Start()
+    protected override void OnStarted()
     {
-      logger.Debug("Starting");
+      Logger.Debug("Starting");
       WaitChannel();
-      if (!closed) {
-        WriteResponseHeader();
-        if (request.Method=="GET") {
-          WriteResponseBody();
-        }
-        this.stream.Close();
-      }
-      logger.Debug("Finished");
+    }
+
+    protected override void OnStopped()
+    {
+      base.OnStopped();
+      Logger.Debug("Finished");
+    }
+
+    protected virtual void OnError()
+    {
+      Stop();
     }
 
     /// <summary>
@@ -575,7 +563,7 @@ namespace PeerCastStation.HTTP
           return true;
         }
         else {
-          closed = true;
+          OnError();
           return false;
         }
       }
@@ -595,7 +583,7 @@ namespace PeerCastStation.HTTP
           return true;
         }
         else {
-          closed = true;
+          OnError();
           return false;
         }
       }
@@ -614,7 +602,7 @@ namespace PeerCastStation.HTTP
     protected virtual bool WriteBytes(byte[] bytes)
     {
       try {
-        stream.Write(bytes, 0, bytes.Length);
+        Stream.Write(bytes, 0, bytes.Length);
       }
       catch (IOException) {
         return false;
@@ -629,31 +617,9 @@ namespace PeerCastStation.HTTP
     }
 
     /// <summary>
-    /// ブロードキャストパケットをストリームに出力します。
-    /// HTTPOutputStreamではブロードキャストパケットは無視します
-    /// </summary>
-    /// <param name="from">送信元ホスト</param>
-    /// <param name="packet">出力するパケット</param>
-    public void Post(Host from, Atom packet)
-    {
-    }
-
-    /// <summary>
-    /// ストリームを閉じます
-    /// </summary>
-    public void Stop()
-    {
-      if (!closed) {
-        closed = true;
-        changedEvent.Set();
-        this.stream.Close();
-      }
-    }
-
-    /// <summary>
     /// OutputStreamの種別を取得します。常にOutputStreamType.Playを返します
     /// </summary>
-    public OutputStreamType OutputStreamType
+    public override OutputStreamType OutputStreamType
     {
       get { return OutputStreamType.Play; }
     }

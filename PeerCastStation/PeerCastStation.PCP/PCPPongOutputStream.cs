@@ -22,20 +22,20 @@ using PeerCastStation.Core;
 
 namespace PeerCastStation.PCP
 {
-  public class PCPPongOutputStreamFactory : IOutputStreamFactory
+  public class PCPPongOutputStreamFactory
+    : OutputStreamFactoryBase
   {
-    public string Name
+    public override string Name
     {
       get { return "PCPPong"; }
     }
 
-    public PeerCast PeerCast { get; private set; }
     public PCPPongOutputStreamFactory(PeerCast peercast)
+      : base(peercast)
     {
-      PeerCast = peercast;
     }
 
-    public IOutputStream Create(
+    public override IOutputStream Create(
       Stream stream,
       EndPoint remote_endpoint,
       Guid channel_id,
@@ -44,7 +44,7 @@ namespace PeerCastStation.PCP
       return new PCPPongOutputStream(PeerCast, stream, (IPEndPoint)remote_endpoint, header);
     }
 
-    public Guid? ParseChannelID(byte[] header)
+    public override Guid? ParseChannelID(byte[] header)
     {
       if (header.Length>=12 && 
           header[0]=='p' && 
@@ -67,66 +67,55 @@ namespace PeerCastStation.PCP
     }
   }
 
-  public class PCPPongOutputStream : IOutputStream
+  public class PCPPongOutputStream
+    : OutputStreamBase
   {
-    static private Logger logger = new Logger(typeof(PCPPongOutputStream));
-    public PeerCast PeerCast { get; private set; }
-    public Stream Stream { get; private set; }
-    public bool IsClosed { get; private set; }
-    private EndPoint remoteEndPoint = null;
-    private QueuedSynchronizationContext syncContext = null;
-
     public override string ToString()
     {
-      return String.Format("PCP(PONG) {0} ({1})", remoteEndPoint);
+      return String.Format("PCP(PONG) {0} ({1})", RemoteEndPoint);
     }
 
     public PCPPongOutputStream(PeerCast peercast, Stream stream, IPEndPoint endpoint, byte[] header)
+      : base(peercast, stream, endpoint, null)
     {
-      logger.Debug("Initialized: Remote {0}", endpoint);
-      PeerCast = peercast;
-      Stream = stream;
-      remoteEndPoint = endpoint;
+      Logger.Debug("Initialized: Remote {0}", endpoint);
       recvStream.Write(header, 0, header.Length);
     }
 
-    public bool IsLocal
+    protected override void OnStarted()
     {
-      get {
-        var ip = remoteEndPoint as IPEndPoint;
-        if (ip!=null) {
-          return PeerCastStation.Core.Utils.IsSiteLocal(ip.Address);
-        }
-        else {
-          return true;
-        }
-      }
-    }
-
-    public int UpstreamRate
-    {
-      get { return 0; }
-    }
-
-    public void Start()
-    {
-      logger.Debug("Starting");
-      if (this.syncContext == null) {
-        this.syncContext = new QueuedSynchronizationContext();
-        System.Threading.SynchronizationContext.SetSynchronizationContext(this.syncContext);
-      }
+     	base.OnStarted();
+      Logger.Debug("Starting");
       StartReceive();
-      while (!IsClosed) {
-        Atom atom = null;
-        while ((atom = RecvAtom())!=null) {
-          ProcessAtom(atom);
-        }
-        ProcessSend();
-        if (syncContext!=null) syncContext.ProcessAll();
+    }
+
+    protected override void OnIdle()
+    {
+      base.OnIdle();
+      Atom atom = null;
+      while ((atom = RecvAtom())!=null) {
+        ProcessAtom(atom);
       }
-      Stop();
-      if (syncContext!=null) syncContext.ProcessAll();
-      logger.Debug("Finished");
+      ProcessSend();
+    }
+
+    protected override void OnStopped()
+    {
+      if (sendResult!=null) {
+        try {
+          Stream.EndWrite(sendResult);
+        }
+        catch (ObjectDisposedException) {}
+        catch (IOException) {}
+        sendResult = null;
+      }
+      Stream.Close();
+      sendStream.SetLength(0);
+      sendStream.Position = 0;
+      recvStream.SetLength(0);
+      recvStream.Position = 0;
+      base.OnStopped();
+      Logger.Debug("Finished");
     }
 
     protected virtual void ProcessAtom(Atom atom)
@@ -142,14 +131,14 @@ namespace PeerCastStation.PCP
       oleh.SetHeloSessionID(PeerCast.SessionID);
       Send(new Atom(Atom.PCP_OLEH, oleh));
       if (session_id==null) {
-        logger.Info("Helo has no SessionID");
+        Logger.Info("Helo has no SessionID");
         //相手のセッションIDが無かったらエラー終了
         var quit = new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT+Atom.PCP_ERROR_NOTIDENTIFIED);
         Send(quit);
         Stop();
       }
       else {
-        logger.Debug("Helo from {0}", PeerCast.SessionID.ToString("N"));
+        Logger.Debug("Helo from {0}", PeerCast.SessionID.ToString("N"));
       }
     }
 
@@ -158,28 +147,23 @@ namespace PeerCastStation.PCP
       Stop();
     }
 
-    public void Post(Host from, Atom packet)
-    {
-      //Do nothing
-    }
-
     MemoryStream recvStream = new MemoryStream();
     byte[] recvBuffer = new byte[8192];
     private void StartReceive()
     {
-      if (!IsClosed) {
+      if (!IsStopped) {
         try {
           Stream.BeginRead(recvBuffer, 0, recvBuffer.Length, (ar) => {
             Stream s = (Stream)ar.AsyncState;
             try {
               int bytes = s.EndRead(ar);
               if (bytes > 0) {
-                syncContext.Post(x => {
+                PostAction(() => {
                   recvStream.Seek(0, SeekOrigin.End);
                   recvStream.Write(recvBuffer, 0, bytes);
                   recvStream.Seek(0, SeekOrigin.Begin);
                   StartReceive();
-                }, null);
+                });
               }
               else {
                 Stop();
@@ -213,7 +197,7 @@ namespace PeerCastStation.PCP
         }
         sendResult = null;
       }
-      if (!IsClosed && sendResult==null && sendStream.Length>0) {
+      if (!IsStopped && sendResult==null && sendStream.Length>0) {
         var buf = sendStream.ToArray();
         sendStream.SetLength(0);
         sendStream.Position = 0;
@@ -271,39 +255,7 @@ namespace PeerCastStation.PCP
       return res;
     }
 
-    private void DoStop()
-    {
-      IsClosed = true;
-      if (sendResult!=null) {
-        try {
-          Stream.EndWrite(sendResult);
-        }
-        catch (ObjectDisposedException) {}
-        catch (IOException) {}
-        sendResult = null;
-      }
-      Stream.Close();
-      sendStream.SetLength(0);
-      sendStream.Position = 0;
-      recvStream.SetLength(0);
-      recvStream.Position = 0;
-    }
-
-    public void Stop()
-    {
-      if (!IsClosed) {
-        if (syncContext!=null) {
-          syncContext.Post(x => {
-            DoStop();
-          }, null);
-        }
-        else {
-          DoStop();
-        }
-      }
-    }
-
-    public OutputStreamType OutputStreamType
+    public override OutputStreamType OutputStreamType
     {
       get { return OutputStreamType.Metadata;  }
     }

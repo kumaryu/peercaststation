@@ -208,52 +208,27 @@ namespace PeerCastStation.PCP
   }
 
   public class PCPOutputStream
-    : IOutputStream
+    : OutputStreamBase
   {
-    static private Logger logger = new Logger(typeof(PCPOutputStream));
-    public OutputStreamType OutputStreamType
+    public override OutputStreamType OutputStreamType
     {
       get { return OutputStreamType.Relay; }
     }
 
     public const int PCP_VERSION = 1218;
 
-    public PeerCast PeerCast   { get; private set; }
-    public Stream Stream       { get; private set; }
-    public Channel Channel     { get; private set; }
-    public bool IsClosed       { get; private set; }
     public Host Downhost       { get; protected set; }
     public bool IsRelayFull    { get; protected set; }
-    public bool IsLocal {
-      get {
-        var ip = remoteEndPoint as IPEndPoint;
-        if (ip!=null) {
-          return PeerCastStation.Core.Utils.IsSiteLocal(ip.Address);
-        }
-        else {
-          return true;
-        }
-      }
-    }
-    private QueuedSynchronizationContext syncContext = null;
     private System.Threading.AutoResetEvent changedEvent = new System.Threading.AutoResetEvent(true);
-    private EndPoint remoteEndPoint = null;
 
-    public int UpstreamRate
+    protected override int GetUpstreamRate()
     {
-      get { 
-        if (IsLocal || Channel==null) {
-          return 0;
-        }
-        else {
-          return Channel.ChannelInfo.Bitrate;
-        }
-      }
+      return Channel.ChannelInfo.Bitrate;
     }
 
     public override string ToString()
     {
-      return String.Format("PCP Relay {0} ({1})", remoteEndPoint, relayRequest.UserAgent);
+      return String.Format("PCP Relay {0} ({1})", RemoteEndPoint, relayRequest.UserAgent);
     }
     private RelayRequest relayRequest;
 
@@ -263,18 +238,15 @@ namespace PeerCastStation.PCP
       EndPoint remote_endpoint,
       Channel channel,
       RelayRequest request)
+      : base(peercast, stream, remote_endpoint, channel)
     {
-      logger.Debug("Initialized: Channel {0}, Remote {1}, Request {2} {3} ({4} {5})",
+      Logger.Debug("Initialized: Channel {0}, Remote {1}, Request {2} {3} ({4} {5})",
         channel!=null ? channel.ChannelID.ToString("N") : "(null)",
         remote_endpoint,
         request.Uri,
         request.StreamPos,
         request.PCPVersion,
         request.UserAgent);
-      this.PeerCast = peercast;
-      this.Stream = stream;
-      this.Channel = channel;
-      this.remoteEndPoint = remote_endpoint;
       this.Downhost = null;
       this.IsRelayFull = channel!=null ? !peercast.AccessController.IsChannelRelayable(channel, this) : false;
       this.relayRequest = request;
@@ -316,7 +288,7 @@ namespace PeerCastStation.PCP
     {
       var response = CreateRelayResponse(Channel, IsRelayFull);
       Send(System.Text.Encoding.UTF8.GetBytes(response));
-      logger.Debug("SendingRelayResponse: {0}", response);
+      Logger.Debug("SendingRelayResponse: {0}", response);
     }
 
     private void Channel_ContentChanged(object sender, EventArgs args)
@@ -334,7 +306,7 @@ namespace PeerCastStation.PCP
       return changedEvent.WaitOne(1);
     }
 
-    protected static Atom CreateContentHeaderPacket(Channel channel, Content content)
+    protected Atom CreateContentHeaderPacket(Channel channel, Content content)
     {
       var chan = new AtomCollection();
       chan.SetChanID(channel.ChannelID);
@@ -345,11 +317,11 @@ namespace PeerCastStation.PCP
       chan.SetChanPkt(chan_pkt);
       chan.SetChanInfo(channel.ChannelInfo.Extra);
       chan.SetChanTrack(channel.ChannelTrack.Extra);
-      logger.Debug("Sending Header: {0}", content.Position);
+      Logger.Debug("Sending Header: {0}", content.Position);
       return new Atom(Atom.PCP_CHAN, chan);
     }
 
-    protected static Atom CreateContentBodyPacket(Channel channel, Content content)
+    protected Atom CreateContentBodyPacket(Channel channel, Content content)
     {
       var chan = new AtomCollection();
       chan.SetChanID(channel.ChannelID);
@@ -361,7 +333,7 @@ namespace PeerCastStation.PCP
       return new Atom(Atom.PCP_CHAN, chan);
     }
 
-    protected static Atom CreateContentPacket(Channel channel, ref long? header_pos, ref long? content_pos)
+    protected Atom CreateContentPacket(Channel channel, ref long? header_pos, ref long? content_pos)
     {
       if (channel.ContentHeader!=null &&
           (!header_pos.HasValue || channel.ContentHeader.Position!=header_pos.Value)) {
@@ -409,39 +381,63 @@ namespace PeerCastStation.PCP
       }
     }
 
-    public void Start()
+    protected override void OnStarted()
     {
-      logger.Debug("Starting");
-      if (this.syncContext == null) {
-        this.syncContext = new QueuedSynchronizationContext();
-        System.Threading.SynchronizationContext.SetSynchronizationContext(this.syncContext);
-      }
+      base.OnStarted();
+      Logger.Debug("Starting");
       if (Channel!=null) {
         Channel.ContentChanged += new EventHandler(Channel_ContentChanged);
       }
       StartReceive();
       SendRelayResponse();
+    }
+
+    private long? headerPos = null;
+    private long? contentPos = null;
+    protected override void OnIdle()
+    {
+      base.OnIdle();
       if (Channel!=null) {
-        long? header_pos  = null;
-        long? content_pos = null;
-        while (!IsClosed) {
-          Atom atom = null;
-          while ((atom = RecvAtom())!=null) {
-            ProcessAtom(atom);
-          }
-          if (Downhost!=null) {
-            SendRelayBody(ref header_pos, ref content_pos);
-          }
-          ProcessSend();
-          syncContext.ProcessAll();
+        Atom atom = null;
+        while ((atom = RecvAtom())!=null) {
+          ProcessAtom(atom);
         }
+        if (Downhost!=null) {
+          SendRelayBody(ref headerPos, ref contentPos);
+        }
+        ProcessSend();
       }
+    }
+
+    protected override void OnStopped()
+    {
       while (ProcessSend()) {
-        syncContext.ProcessAll();
+        SyncContext.ProcessAll();
       }
-      Stop();
-      syncContext.ProcessAll();
-      logger.Debug("Finished");
+      if (sendResult!=null) {
+        try {
+          Stream.EndWrite(sendResult);
+        }
+        catch (ObjectDisposedException) {}
+        catch (IOException) {}
+        sendResult = null;
+      }
+      Stream.Close();
+      if (sendStream.Length>0) {
+        Logger.Debug("Discarded send stream length: {0}", sendStream.Length);
+      }
+      if (recvStream.Length>0) {
+        Logger.Debug("Discarded recv stream length: {0}", recvStream.Length);
+      }
+      sendStream.SetLength(0);
+      sendStream.Position = 0;
+      recvStream.SetLength(0);
+      recvStream.Position = 0;
+      if (Channel!=null) {
+        Channel.ContentChanged -= Channel_ContentChanged;
+      }
+      base.OnStopped();
+      Logger.Debug("Finished");
     }
 
     private bool Recv(Action<Stream> proc)
@@ -469,59 +465,10 @@ namespace PeerCastStation.PCP
       }
     }
 
-    public void Post(Host from, Atom packet)
+    protected override void DoPost(Host from, Atom packet)
     {
-      if (syncContext!=null) {
-        syncContext.Post(x => {
-          if (Downhost!=null && Downhost!=from) {
-            Send(packet);
-          }
-        }
-        , null);
-      }
-      else {
-        if (Downhost!=null && Downhost!=from) {
-          Send(packet);
-        }
-      }
-    }
-
-    private void DoStop()
-    {
-      IsClosed = true;
-      if (sendResult!=null) {
-        try {
-          Stream.EndWrite(sendResult);
-        }
-        catch (ObjectDisposedException) {}
-        catch (IOException) {}
-        sendResult = null;
-      }
-      Stream.Close();
-      if (sendStream.Length>0) {
-        logger.Debug("Discarded send stream length: {0}", sendStream.Length);
-      }
-      if (recvStream.Length>0) {
-        logger.Debug("Discarded recv stream length: {0}", recvStream.Length);
-      }
-      sendStream.SetLength(0);
-      sendStream.Position = 0;
-      recvStream.SetLength(0);
-      recvStream.Position = 0;
-      if (Channel!=null) {
-        Channel.ContentChanged -= Channel_ContentChanged;
-      }
-    }
-
-    public virtual void Stop()
-    {
-      if (syncContext!=null) {
-        syncContext.Post(x => {
-          DoStop();
-        }, null);
-      }
-      else {
-        DoStop();
+      if (Downhost!=null && Downhost!=from) {
+        Send(packet);
       }
     }
 
@@ -529,14 +476,14 @@ namespace PeerCastStation.PCP
     byte[] recvBuffer = new byte[8192];
     private void StartReceive()
     {
-      if (!IsClosed) {
+      if (!IsStopped) {
         try {
           Stream.BeginRead(recvBuffer, 0, recvBuffer.Length, (ar) => {
             Stream s = (Stream)ar.AsyncState;
             try {
               int bytes = s.EndRead(ar);
               if (bytes > 0) {
-                syncContext.Post(x => {
+                SyncContext.Post(x => {
                   recvStream.Seek(0, SeekOrigin.End);
                   recvStream.Write(recvBuffer, 0, bytes);
                   recvStream.Seek(0, SeekOrigin.Begin);
@@ -546,14 +493,14 @@ namespace PeerCastStation.PCP
             }
             catch (ObjectDisposedException) {}
             catch (IOException e) {
-              logger.Error(e);
+              Logger.Error(e);
               DoStop();
             }
           }, Stream);
         }
         catch (ObjectDisposedException) {}
         catch (IOException e) {
-          logger.Error(e);
+          Logger.Error(e);
           DoStop();
         }
       }
@@ -573,13 +520,13 @@ namespace PeerCastStation.PCP
           catch (ObjectDisposedException) {
           }
           catch (IOException e) {
-            logger.Error(e);
+            Logger.Error(e);
             DoStop();
           }
           sendResult = null;
         }
       }
-      if (!IsClosed && sendResult==null && sendStream.Length>0) {
+      if (!IsStopped && sendResult==null && sendStream.Length>0) {
         res = true;
         var buf = sendStream.ToArray();
         sendStream.SetLength(0);
@@ -590,7 +537,7 @@ namespace PeerCastStation.PCP
         catch (ObjectDisposedException) {
         }
         catch (IOException e) {
-          logger.Error(e);
+          Logger.Error(e);
           DoStop();
         }
       }
@@ -637,7 +584,7 @@ namespace PeerCastStation.PCP
 
     protected virtual bool PingHost(IPEndPoint target, Guid remote_session_id)
     {
-      logger.Debug("Ping requested. Try to ping: {0}({1})", target, remote_session_id);
+      Logger.Debug("Ping requested. Try to ping: {0}({1})", target, remote_session_id);
       try {
         var client = new System.Net.Sockets.TcpClient();
         client.Connect(target);
@@ -656,28 +603,28 @@ namespace PeerCastStation.PCP
         if (res.Name==Atom.PCP_OLEH) {
           var session_id = res.Children.GetHeloSessionID();
           if (session_id.HasValue && session_id.Value==remote_session_id) {
-            logger.Debug("Ping succeeded");
+            Logger.Debug("Ping succeeded");
             return true;
           }
           else {
-            logger.Debug("Ping failed. Remote SessionID mismatched");
+            Logger.Debug("Ping failed. Remote SessionID mismatched");
           }
         }
         return false;
       }
       catch (System.Net.Sockets.SocketException e) {
-        logger.Debug("Ping failed");
-        logger.Debug(e);
+        Logger.Debug("Ping failed");
+        Logger.Debug(e);
         return false;
       }
       catch (EndOfStreamException e) {
-        logger.Debug("Ping failed");
-        logger.Debug(e);
+        Logger.Debug("Ping failed");
+        Logger.Debug(e);
         return false;
       }
       catch (System.IO.IOException io_error) {
-        logger.Debug("Ping failed");
-        logger.Debug(io_error);
+        Logger.Debug("Ping failed");
+        Logger.Debug(io_error);
         if (io_error.InnerException is System.Net.Sockets.SocketException) {
           return false;
         }
@@ -690,7 +637,7 @@ namespace PeerCastStation.PCP
     protected virtual void OnPCPHelo(Atom atom)
     {
       if (Downhost!=null) return;
-      logger.Debug("Helo received");
+      Logger.Debug("Helo received");
       var session_id = atom.Children.GetHeloSessionID();
       short remote_port = 0;
       if (session_id!=null) {
@@ -702,8 +649,8 @@ namespace PeerCastStation.PCP
           remote_port = port.Value;
         }
         else if (ping!=null) {
-          if (!Utils.IsSiteLocal(((IPEndPoint)remoteEndPoint).Address) &&
-              PingHost(new IPEndPoint(((IPEndPoint)remoteEndPoint).Address, ping.Value), session_id.Value)) {
+          if (!Utils.IsSiteLocal(((IPEndPoint)RemoteEndPoint).Address) &&
+              PingHost(new IPEndPoint(((IPEndPoint)RemoteEndPoint).Address, ping.Value), session_id.Value)) {
             remote_port = ping.Value;
           }
           else {
@@ -714,7 +661,7 @@ namespace PeerCastStation.PCP
           remote_port = 0;
         }
         if (remote_port!=0)  {
-          var ip = new IPEndPoint(((IPEndPoint)remoteEndPoint).Address, remote_port);
+          var ip = new IPEndPoint(((IPEndPoint)RemoteEndPoint).Address, remote_port);
           if (host.GlobalEndPoint==null || !host.GlobalEndPoint.Equals(ip)) {
             host.GlobalEndPoint = ip;
           }
@@ -724,8 +671,8 @@ namespace PeerCastStation.PCP
         Downhost = host.ToHost();
       }
       var oleh = new AtomCollection();
-      if (remoteEndPoint!=null && remoteEndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork) {
-        oleh.SetHeloRemoteIP(((IPEndPoint)remoteEndPoint).Address);
+      if (RemoteEndPoint!=null && RemoteEndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork) {
+        oleh.SetHeloRemoteIP(((IPEndPoint)RemoteEndPoint).Address);
       }
       oleh.SetHeloAgent(PeerCast.AgentName);
       oleh.SetHeloSessionID(PeerCast.SessionID);
@@ -733,21 +680,21 @@ namespace PeerCastStation.PCP
       oleh.SetHeloVersion(PCP_VERSION);
       Send(new Atom(Atom.PCP_OLEH, oleh));
       if (Downhost==null) {
-        logger.Info("Helo has no SessionID");
+        Logger.Info("Helo has no SessionID");
         //セッションIDが無かった
         var quit = new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT+Atom.PCP_ERROR_NOTIDENTIFIED);
         Send(quit);
         Stop();
       }
       else if ((Downhost.Extra.GetHeloVersion() ?? 0)<1200) {
-        logger.Info("Helo version {0} is too old", Downhost.Extra.GetHeloVersion() ?? 0);
+        Logger.Info("Helo version {0} is too old", Downhost.Extra.GetHeloVersion() ?? 0);
         //クライアントバージョンが無かった、もしくは古すぎ
         var quit = new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT+Atom.PCP_ERROR_BADAGENT);
         Send(quit);
         Stop();
       }
       else if (IsRelayFull) {
-        logger.Debug("Handshake succeeded {0}({1}) but relay is full", Downhost.GlobalEndPoint, Downhost.SessionID.ToString("N"));
+        Logger.Debug("Handshake succeeded {0}({1}) but relay is full", Downhost.GlobalEndPoint, Downhost.SessionID.ToString("N"));
         //次に接続するホストを送ってQUIT
         foreach (var node in Channel.SelectSourceNodes()) {
           var host_atom = new AtomCollection();
@@ -766,14 +713,14 @@ namespace PeerCastStation.PCP
             (node.IsReceiving ? PCPHostFlags1.Receiving : PCPHostFlags1.None));
           host_atom.Update(node.Extra);
           Send(new Atom(Atom.PCP_HOST, host_atom));
-          logger.Debug("Sending Node: {0}({1})", globalendpoint, node.SessionID.ToString("N"));
+          Logger.Debug("Sending Node: {0}({1})", globalendpoint, node.SessionID.ToString("N"));
         }
         var quit = new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT+Atom.PCP_ERROR_UNAVAILABLE);
         Send(quit);
         Stop();
       }
       else {
-        logger.Debug("Handshake succeeded {0}({1})", Downhost.GlobalEndPoint, Downhost.SessionID.ToString("N"));
+        Logger.Debug("Handshake succeeded {0}({1})", Downhost.GlobalEndPoint, Downhost.SessionID.ToString("N"));
         Send(new Atom(Atom.PCP_OK, (int)1));
       }
     }
@@ -815,14 +762,14 @@ namespace PeerCastStation.PCP
           from != null &&
           dest != PeerCast.SessionID &&
           ttl>1) {
-        logger.Debug("Relaying BCST TTL: {0}, Hops: {1}", ttl, hops);
+        Logger.Debug("Relaying BCST TTL: {0}, Hops: {1}", ttl, hops);
         var bcst = new AtomCollection(atom.Children);
         bcst.SetBcstTTL((byte)(ttl - 1));
         bcst.SetBcstHops((byte)(hops + 1));
         Channel.Broadcast(Downhost, new Atom(atom.Name, bcst), group.Value);
       }
       if (dest==null || dest==PeerCast.SessionID) {
-        logger.Debug("Processing BCST({0})", dest==null ? "(null)" : dest.Value.ToString("N"));
+        Logger.Debug("Processing BCST({0})", dest==null ? "(null)" : dest.Value.ToString("N"));
         foreach (var c in atom.Children) ProcessAtom(c);
       }
     }
@@ -884,14 +831,14 @@ namespace PeerCastStation.PCP
             }
           }
         }
-        logger.Debug("Updating Node: {0}/{1}({2})", host.GlobalEndPoint, host.LocalEndPoint, host.SessionID.ToString("N"));
+        Logger.Debug("Updating Node: {0}/{1}({2})", host.GlobalEndPoint, host.LocalEndPoint, host.SessionID.ToString("N"));
         Channel.AddNode(host.ToHost());
       }
     }
 
     protected virtual void OnPCPQuit(Atom atom)
     {
-      logger.Debug("Quit Received: {0}", atom.GetInt32());
+      Logger.Debug("Quit Received: {0}", atom.GetInt32());
       Stop();
     }
 
