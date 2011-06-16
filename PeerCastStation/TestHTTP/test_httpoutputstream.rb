@@ -125,7 +125,8 @@ class TC_HTTPOutputStreamFactory < Test::Unit::TestCase
       channel_id,
       System::Uri.new('http://localhost:7147/'))
     factory = PCSHTTP::HTTPOutputStreamFactory.new(@peercast)
-    stream = System::IO::MemoryStream.new('hogehoge')
+    input  = System::IO::MemoryStream.new('hogehoge')
+    output = System::IO::MemoryStream.new
     header = [
       "GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1\r\n",
       "Connection:close\r\n",
@@ -134,10 +135,11 @@ class TC_HTTPOutputStreamFactory < Test::Unit::TestCase
     ].join
     @peercast.add_channel(channel)
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('192.168.1.2'), 7144)
-    output_stream = factory.create(stream, endpoint, channel_id, header)
+    output_stream = factory.create(input, output, endpoint, channel_id, header)
     assert_not_nil(output_stream)
     assert_equal(@peercast, output_stream.PeerCast)
-    assert_equal(stream, output_stream.stream)
+    assert_equal(input, output_stream.input_stream)
+    assert_equal(output, output_stream.output_stream)
     assert_equal(channel, output_stream.channel)
     assert(output_stream.is_local)
     assert_equal(0, output_stream.upstream_rate)
@@ -145,44 +147,12 @@ class TC_HTTPOutputStreamFactory < Test::Unit::TestCase
     header = [
       "GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1\r\n",
     ].join
-    output_stream = factory.create(stream, endpoint, channel_id, header)
+    output_stream = factory.create(input, output, endpoint, channel_id, header)
     assert_nil(output_stream)
   end
 end
 
 class TC_HTTPOutputStream < Test::Unit::TestCase
-  class HTTPOutputStream < PCSHTTP::HTTPOutputStream 
-  end
-
-  class TestHTTPOutputStream < PCSHTTP::HTTPOutputStream 
-    def self.new(*args)
-      inst = super
-      inst.instance_eval do
-        @body_type = PCSHTTP::HTTPOutputStream::BodyType.none 
-        @write_enabled = true
-        @error = false
-      end
-      inst
-    end
-    attr_accessor :body_type, :write_enabled, :error
-
-    def get_body_type
-      @body_type
-    end
-
-    def on_error
-      @error = true
-    end
-
-    def write_bytes(bytes)
-      if @write_enabled then
-        super
-      else
-        false
-      end
-    end
-  end
-
   def setup
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
     @peercast = PeerCastStation::Core::PeerCast.new
@@ -197,27 +167,62 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
     @peercast.stop if @peercast
   end
 
+  def set_chan_info(name, type, bitrate)
+    chaninfo = PCSCore::AtomCollection.new
+    chaninfo.set_chan_info_name(name)
+    chaninfo.set_chan_info_type(type)
+    chaninfo.set_chan_info_bitrate(bitrate)
+    @channel.channel_info = PCSCore::ChannelInfo.new(chaninfo)
+  end
+
+  def get_header(value)
+    value.sub(/\r\n\r\n.*$/m, "\r\n\r\n")
+  end
+
+  def get_body(value)
+    value.sub(/^.*?\r\n\r\n/m, '')
+  end
+
+  def assert_http_header(status, headers, value)
+    header = get_header(value)
+    values = header.split("\r\n")
+    assert_match(%r;^HTTP/1.\d #{status} .*$;, values.shift)
+    assert_match(%r;\r\n\r\n$$;, header)
+    header_values = {}
+    values.each do |v|
+      md = /^(\S+):(.*)$/.match(v)
+      assert_not_nil(md)
+      header_values[md[1]] = md[2].strip
+    end
+    headers.each do |k, v|
+      assert_match(v, header_values[k])
+    end
+  end
+
   def test_construct
     req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
       'Connection:close',
       'User-Agent:hoge hoge',
     ]))
-    s = System::IO::MemoryStream.new
+    input  = System::IO::MemoryStream.new
+    output = System::IO::MemoryStream.new
 
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('192.168.1.2'), 7144)
-    stream = PCSHTTP::HTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
+    stream = PCSHTTP::HTTPOutputStream.new(@peercast, input, output, endpoint, @channel, req)
     assert_equal(@peercast,stream.PeerCast)
     assert_equal(@channel, stream.channel)
-    assert_equal(s,        stream.stream)
+    assert_equal(input,    stream.input_stream)
+    assert_equal(output,   stream.output_stream)
     assert_equal(PCSCore::OutputStreamType.play, stream.output_stream_type)
     assert(!stream.is_stopped)
     assert(stream.is_local)
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = PCSHTTP::HTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
+    stream = PCSHTTP::HTTPOutputStream.new(@peercast, input, output, endpoint, @channel, req)
     assert_equal(@peercast,stream.PeerCast)
     assert_equal(@channel, stream.channel)
-    assert_equal(s,        stream.stream)
+    assert_equal(input,    stream.input_stream)
+    assert_equal(output,   stream.output_stream)
     assert_equal(PCSCore::OutputStreamType.play, stream.output_stream_type)
     assert(!stream.is_stopped)
     assert(!stream.is_local)
@@ -229,255 +234,207 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
       'Connection:close',
       'User-Agent:hoge hoge',
     ]))
-    s = System::IO::MemoryStream.new
+    input  = System::IO::MemoryStream.new
+    output = System::IO::MemoryStream.new
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = PCSHTTP::HTTPOutputStream.new(@peercast, s, nil, @channel, req)
+    stream = PCSHTTP::HTTPOutputStream.new(@peercast, input, output, nil, @channel, req)
     assert(stream.is_local)
     assert_equal(0, stream.upstream_rate)
 
-    stream = PCSHTTP::HTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
+    stream = PCSHTTP::HTTPOutputStream.new(@peercast, input, output, endpoint, @channel, req)
     assert(!stream.is_local)
     assert_equal(0, stream.upstream_rate)
 
-    chaninfo = PCSCore::AtomCollection.new
-    chaninfo.set_chan_info_bitrate(7144)
-    @channel.channel_info = PCSCore::ChannelInfo.new(chaninfo)
+    set_chan_info('Test Channel', 'WMV', 7144)
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7144)
-    stream = PCSHTTP::HTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
+    stream = PCSHTTP::HTTPOutputStream.new(@peercast, input, output, endpoint, @channel, req)
     assert(stream.is_local)
     assert_equal(0, stream.upstream_rate)
 
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = PCSHTTP::HTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
+    stream = PCSHTTP::HTTPOutputStream.new(@peercast, input, output, endpoint, @channel, req)
     assert(!stream.is_local)
     assert_equal(7144, stream.upstream_rate)
   end
 
-  def test_get_body_type
-    s = System::IO::MemoryStream.new
+  def test_head_stream_wmv
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-
     req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
-      'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
+      'HEAD /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
     ]))
-    stream = HTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
-    assert_equal(PCSHTTP::HTTPOutputStream::BodyType.content, stream.get_body_type)
+    input  = System::IO::MemoryStream.new
+    output = System::IO::MemoryStream.new
+    set_chan_info('Test Channel', 'WMV', 7144)
+    stream = PCSHTTP::HTTPOutputStream.new(@peercast, input, output, endpoint, @channel, req)
 
-    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
-      'GET /pls/9778E62BDC59DF56F9216D0387F80BF2.pls HTTP/1.1',
-    ]))
-    stream = HTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
-    assert_equal(PCSHTTP::HTTPOutputStream::BodyType.playlist, stream.get_body_type)
-
-    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
-      'GET /index.html HTTP/1.1',
-    ]))
-    stream = HTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
-    assert_equal(PCSHTTP::HTTPOutputStream::BodyType.none, stream.get_body_type)
-
-    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
-      'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
-    ]))
-    stream = HTTPOutputStream.new(@peercast, s, endpoint, nil, req)
-    assert_equal(PCSHTTP::HTTPOutputStream::BodyType.none, stream.get_body_type)
+    stopped = false
+    stream.stopped.add(proc { stopped = true })
+    stream.start
+    sleep(0.1) until stopped
+    res = output.to_array.to_a.pack('C*')
+    assert_http_header(
+      200,
+      {
+        'Server' => 'Rex/9.0.2980',
+        'Content-Type' => 'application/x-mms-framed',
+      },
+      res
+    )
   end
 
-  def test_create_response_header
-    s = System::IO::MemoryStream.new
-
-    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
-      'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
-    ]))
+  def test_head_stream_other
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
+    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
+      'HEAD /stream/9778E62BDC59DF56F9216D0387F80BF2.ogm HTTP/1.1',
+    ]))
+    set_chan_info('Test Channel', 'OGM', 7144)
+    input  = System::IO::MemoryStream.new
+    output = System::IO::MemoryStream.new
+    stream = PCSHTTP::HTTPOutputStream.new(@peercast, input, output, endpoint, @channel, req)
 
-    stream = TestHTTPOutputStream.new(@peercast, s, endpoint, nil, req)
-    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.playlist
-    head = stream.create_response_header.split(/\r\n/)
-    assert_match(%r;^HTTP/1.0 404 ;, head[0])
-
-    info = PCSCore::AtomCollection.new(@channel.channel_info.extra)
-    info.set_chan_info_type('OGG')
-    @channel.channel_info = PCSCore::ChannelInfo.new(info)
-    stream = TestHTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
-    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.none
-    head = stream.create_response_header.split(/\r\n/)
-    assert_match(%r;^HTTP/1.0 404 ;, head[0])
-
-    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.playlist
-    head = stream.create_response_header.split(/\r\n/)
-    assert_match(%r;^HTTP/1.0 200 ;, head[0])
-
-    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.content
-    head = stream.create_response_header.split(/\r\n/)
-    assert_match(%r;^HTTP/1.0 200 ;, head[0])
-    assert(head.any? {|line| /^Content-Type:\s*#{@channel.channel_info.MIMEType}/=~line})
-
-    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.content
-    info = PCSCore::AtomCollection.new(@channel.channel_info.extra)
-    ['WMV', 'WMA', 'ASX'].each do |mms_type|
-      info.set_chan_info_type(mms_type)
-      @channel.channel_info = PCSCore::ChannelInfo.new(info)
-      head = stream.create_response_header.split(/\r\n/)
-      assert_match(%r;^HTTP/1.0 200 ;, head[0])
-      assert(head.any? {|line| /^Content-Type:\s*application\/x-mms-framed/=~line})
-      assert(head.any? {|line| /^Server:\s*Rex\/9\.0\.\d+/=~line})
-    end
+    stopped = false
+    stream.stopped.add(proc { stopped = true })
+    stream.start
+    sleep(0.1) until stopped
+    res = output.to_array.to_a.pack('C*')
+    assert_http_header(
+      200,
+      {
+        'Content-Type' => 'video/ogg',
+      },
+      res
+    )
   end
 
-  def test_write_response_header
-    s = System::IO::MemoryStream.new
-    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
-      'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
-    ]))
+  def test_head_stream_not_found
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = TestHTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
-    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.content
-    info = PCSCore::AtomCollection.new(@channel.channel_info.extra)
-    info.set_chan_info_type('OGG')
-    @channel.channel_info = PCSCore::ChannelInfo.new(info)
-    stream.write_response_header
-    stream.on_idle
-    assert_equal(stream.create_response_header+"\r\n", s.to_array.to_a.pack('C*'))
+    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
+      'HEAD /stream/4868E62BDC73DF56F9322D0387F80BF9.ogm HTTP/1.1',
+    ]))
+    input  = System::IO::MemoryStream.new
+    output = System::IO::MemoryStream.new
+    stream = PCSHTTP::HTTPOutputStream.new(@peercast, input, output, endpoint, nil, req)
+
+    stopped = false
+    stream.stopped.add(proc { stopped = true })
+    stream.start
+    sleep(0.1) until stopped
+    res = output.to_array.to_a.pack('C*')
+    assert_http_header(
+      404,
+      {},
+      res
+    )
   end
 
-  def test_write_content_header
-    s = System::IO::MemoryStream.new
-    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
-      'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
-    ]))
+  def test_head_playlist
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = TestHTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
+    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
+      'HEAD /pls/9778E62BDC59DF56F9216D0387F80BF2.asx HTTP/1.1',
+    ]))
+    set_chan_info('Test Channel', 'WMV', 7144)
+    input  = System::IO::MemoryStream.new
+    output = System::IO::MemoryStream.new
+    stream = PCSHTTP::HTTPOutputStream.new(@peercast, input, output, endpoint, @channel, req)
 
-    content = PCSCore::Content.new(0, 'header')
-    s.position = 0; s.set_length(0)
-    assert(stream.write_content_header(content))
-    stream.on_idle
-    assert_equal('header'.size, s.position)
-    assert_equal('header', s.to_array.to_a.pack('C*'))
-    assert(!stream.error)
-
-    stream.write_enabled = false
-    s.position = 0; s.set_length(0)
-    assert(!stream.write_content_header(content))
-    stream.on_idle
-    assert_equal(0, s.position)
-    assert(stream.error)
+    stopped = false
+    stream.stopped.add(proc { stopped = true })
+    stream.start
+    sleep(0.1) until stopped
+    res = output.to_array.to_a.pack('C*')
+    assert_http_header(
+      200,
+      {
+        'Content-Type' => 'video/x-ms-asf',
+      },
+      res
+    )
   end
 
-  def test_write_content
-    s = System::IO::MemoryStream.new
+  def test_head_playlist_not_found
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
+    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
+      'HEAD /stream/4868E62BDC73DF56F9322D0387F80BF9.ogm HTTP/1.1',
+    ]))
+    input  = System::IO::MemoryStream.new
+    output = System::IO::MemoryStream.new
+    stream = PCSHTTP::HTTPOutputStream.new(@peercast, input, output, endpoint, nil, req)
+
+    stopped = false
+    stream.stopped.add(proc { stopped = true })
+    stream.start
+    sleep(0.1) until stopped
+    res = output.to_array.to_a.pack('C*')
+    assert_http_header(404, {}, res)
+  end
+
+  def test_get_stream_wmv
+    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
     req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
     ]))
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = TestHTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
+    set_chan_info('Test Channel', 'WMV', 7144)
+    input  = System::IO::MemoryStream.new
+    output = System::IO::MemoryStream.new
+    stream = PCSHTTP::HTTPOutputStream.new(@peercast, input, output, endpoint, @channel, req)
+    stopped = false
+    stream.stopped.add(proc { stopped = true })
 
-    content = PCSCore::Content.new(0, 'content0')
-    s.position = 0; s.set_length(0)
-    assert(stream.write_content(content))
-    stream.on_idle
-    assert_equal('content0'.size, s.position)
-    assert_equal('content0', s.to_array.to_a.pack('C*'))
-    assert(!stream.error)
-
-    stream.write_enabled = false
-    s.position = 0; s.set_length(0)
-    assert(!stream.write_content(content))
-    stream.on_idle
-    assert_equal(0, s.position)
-    assert(stream.error)
+    stream.start
+    @channel.content_header = PCSCore::Content.new(0, 'header')
+    @channel.contents.add(PCSCore::Content.new( 6, 'content1'))
+    @channel.contents.add(PCSCore::Content.new(14, 'content2'))
+    @channel.contents.add(PCSCore::Content.new(22, 'content3'))
+    @channel.contents.add(PCSCore::Content.new(30, 'content4'))
+    sleep(1)
+    res = output.to_array.to_a.pack('C*')
+    assert_http_header(
+      200,
+      {
+        'Server' => 'Rex/9.0.2980',
+        'Content-Type' => 'application/x-mms-framed',
+      },
+      res
+    )
+    assert_equal('headercontent1content2content3content4', get_body(res))
+    stream.stop
+    sleep(0.1) until stopped
   end
 
   def test_post
-    s = System::IO::MemoryStream.new
     req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
     ]))
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = TestHTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
+    input  = System::IO::MemoryStream.new
+    output = System::IO::MemoryStream.new
+    stream = PCSHTTP::HTTPOutputStream.new(@peercast, input, output, endpoint, @channel, req)
+    stream.start
+    stopped = false
+    stream.stopped.add(proc { stopped = true })
     stream.post(nil, PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, 1))
-    assert_equal(0, s.position)
+    sleep(1)
+    stream.stop
+    sleep(0.1) until stopped
+    assert(output.to_array.to_a.empty?)
   end
 
   def test_stop
-    s = System::IO::MemoryStream.new
     req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
       'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
     ]))
+    input  = System::IO::MemoryStream.new
+    output = System::IO::MemoryStream.new
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = TestHTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
+    stream = PCSHTTP::HTTPOutputStream.new(@peercast, input, output, endpoint, @channel, req)
     stopped = false
-    stream.start
     stream.stopped.add(proc { stopped = true })
+    stream.start
     stream.stop
-    sleep(1) unless stopped
+    sleep(0.1) unless stopped
     assert(stream.is_stopped)
-    assert(!s.can_read)
-  end
-
-  def test_write_bytes
-    s = System::IO::MemoryStream.new
-    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
-      'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
-    ]))
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = HTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
-    assert(stream.write_bytes('hogehoge'))
-    assert_equal('hogehoge', s.to_array.to_a.pack('C*'))
-
-    s.close
-    assert(!stream.write_bytes('hogehoge'))
-  end
-
-  def test_write_response_body_none
-    s = System::IO::MemoryStream.new
-    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
-      'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
-    ]))
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = TestHTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
-    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.none 
-    stream.write_response_body
-    stream.on_idle
-    assert_equal(0, s.position)
-  end
-
-  def test_write_response_body_none
-    s = System::IO::MemoryStream.new
-    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
-      'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
-    ]))
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = TestHTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
-    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.playlist 
-    stream.write_response_body
-    stream.on_idle
-    assert_equal('http://localhost/stream/9778E62BDC59DF56F9216D0387F80BF2', s.to_array.to_a.pack('C*').chomp)
-    s.position = 0
-    s.set_length(0)
-  end
-
-  def test_write_response_body_content
-    s = System::IO::MemoryStream.new
-    req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
-      'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
-    ]))
-    endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = TestHTTPOutputStream.new(@peercast, s, endpoint, @channel, req)
-    stream.body_type = PCSHTTP::HTTPOutputStream::BodyType.content 
-    stream.write_response_body
-    @channel.content_header = PCSCore::Content.new(0, 'header')
-    @channel.contents.add(PCSCore::Content.new( 6, 'content0'))
-    stream.on_idle
-    @channel.contents.add(PCSCore::Content.new(13, 'content1'))
-    stream.on_idle
-    @channel.contents.add(PCSCore::Content.new(20, 'content2'))
-    stream.on_idle
-    @channel.contents.add(PCSCore::Content.new(27, 'content3'))
-    stream.on_idle
-    @channel.contents.add(PCSCore::Content.new(34, 'content4'))
-    stream.on_idle
-    assert_equal('headercontent0content1content2content3content4', s.to_array.to_a.pack('C*'))
+    assert(!input.can_read)
+    assert(!output.can_write)
   end
 end
 
