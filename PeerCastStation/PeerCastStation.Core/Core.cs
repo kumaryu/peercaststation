@@ -241,12 +241,18 @@ namespace PeerCastStation.Core
     /// <summary>
     /// OutpuStreamのインスタンスを作成します
     /// </summary>
-    /// <param name="stream">接続先のストリーム</param>
+    /// <param name="input_stream">接続先の受信ストリーム</param>
+    /// <param name="output_stream">接続先の送信ストリーム</param>
     /// <param name="remote_endpoint">接続先。無ければnull</param>
     /// <param name="channel_id">所属するチャンネルのチャンネルID</param>
     /// <param name="header">クライアントから受け取ったリクエスト</param>
     /// <returns>OutputStream</returns>
-    IOutputStream Create(Stream stream, EndPoint remote_endpoint, Guid channel_id, byte[] header);
+    IOutputStream Create(
+      Stream input_stream,
+      Stream output_stream,
+      EndPoint remote_endpoint,
+      Guid channel_id,
+      byte[] header);
     /// <summary>
     /// クライアントのリクエストからチャンネルIDを取得し返します
     /// </summary>
@@ -561,7 +567,7 @@ namespace PeerCastStation.Core
         Guid channel_id;
         var factory = FindMatchedFactory(stream, out header, out channel_id);
         if (factory!=null) {
-          output_stream = factory.Create(stream, client.Client.RemoteEndPoint, channel_id, header.ToArray());
+          output_stream = factory.Create(stream, stream, client.Client.RemoteEndPoint, channel_id, header.ToArray());
           channel = PeerCast.Channels.FirstOrDefault(c => c.ChannelID==channel_id);
           if (channel!=null) {
             channel.AddOutputStream(output_stream);

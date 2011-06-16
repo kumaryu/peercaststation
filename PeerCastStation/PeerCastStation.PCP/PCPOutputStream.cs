@@ -130,7 +130,8 @@ namespace PeerCastStation.PCP
     /// <summary>
     /// 出力ストリームを作成します
     /// </summary>
-    /// <param name="stream">元になるストリーム</param>
+    /// <param name="input_stream">元になる受信ストリーム</param>
+    /// <param name="output_stream">元になる送信ストリーム</param>
     /// <param name="remote_endpoint">接続先。無ければnull</param>
     /// <param name="channel_id">所属するチャンネルID。</param>
     /// <param name="header">クライアントからのリクエスト</param>
@@ -138,12 +139,17 @@ namespace PeerCastStation.PCP
     /// 作成できた場合はPCPOutputStreamのインスタンス。
     /// headerが正しく解析できなかった場合はnull
     /// </returns>
-    public IOutputStream Create(Stream stream, EndPoint remote_endpoint, Guid channel_id, byte[] header)
+    public IOutputStream Create(
+      Stream input_stream,
+      Stream output_stream,
+      EndPoint remote_endpoint,
+      Guid channel_id,
+      byte[] header)
     {
       var request = ParseRequest(header);
       if (request!=null) {
         var channel = peercast.RequestChannel(channel_id, null, false);
-        return new PCPOutputStream(peercast, stream, remote_endpoint, channel, request);
+        return new PCPOutputStream(peercast, input_stream, output_stream, remote_endpoint, channel, request);
       }
       else {
         return null;
@@ -234,11 +240,12 @@ namespace PeerCastStation.PCP
 
     public PCPOutputStream(
       PeerCast peercast,
-      Stream stream,
+      Stream input_stream,
+      Stream output_stream,
       EndPoint remote_endpoint,
       Channel channel,
       RelayRequest request)
-      : base(peercast, stream, remote_endpoint, channel, null)
+      : base(peercast, input_stream, output_stream, remote_endpoint, channel, null)
     {
       Logger.Debug("Initialized: Channel {0}, Remote {1}, Request {2} {3} ({4} {5})",
         channel!=null ? channel.ChannelID.ToString("N") : "(null)",

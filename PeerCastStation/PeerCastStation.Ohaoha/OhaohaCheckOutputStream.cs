@@ -29,9 +29,14 @@ namespace PeerCastStation.Ohaoha
       get { return "OhaohaCheck"; }
     }
 
-    public override IOutputStream Create(Stream stream, EndPoint remote_endpoint, Guid channel_id, byte[] header)
+    public override IOutputStream Create(
+      Stream input_stream,
+      Stream output_stream,
+      EndPoint remote_endpoint,
+      Guid channel_id,
+      byte[] header)
     {
-      return new OhaohaCheckOutputStream(PeerCast, stream, remote_endpoint);
+      return new OhaohaCheckOutputStream(PeerCast, input_stream, output_stream, remote_endpoint);
     }
 
     public override Guid? ParseChannelID(byte[] header)
@@ -61,8 +66,12 @@ namespace PeerCastStation.Ohaoha
   public class OhaohaCheckOutputStream
     : OutputStreamBase
   {
-    public OhaohaCheckOutputStream(PeerCast peercast, Stream stream, EndPoint remote_endpoint)
-      : base(peercast, stream, remote_endpoint, null, null)
+    public OhaohaCheckOutputStream(
+      PeerCast peercast,
+      Stream input_stream,
+      Stream output_stream,
+      EndPoint remote_endpoint)
+      : base(peercast, input_stream, output_stream, remote_endpoint, null, null)
     {
       Logger.Debug("Initialized: Remote {0}", remote_endpoint);
     }

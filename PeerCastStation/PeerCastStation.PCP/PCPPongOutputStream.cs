@@ -36,12 +36,13 @@ namespace PeerCastStation.PCP
     }
 
     public override IOutputStream Create(
-      Stream stream,
+      Stream input_stream,
+      Stream output_stream,
       EndPoint remote_endpoint,
       Guid channel_id,
       byte[] header)
     {
-      return new PCPPongOutputStream(PeerCast, stream, (IPEndPoint)remote_endpoint, header);
+      return new PCPPongOutputStream(PeerCast, input_stream, output_stream, (IPEndPoint)remote_endpoint, header);
     }
 
     public override Guid? ParseChannelID(byte[] header)
@@ -75,8 +76,13 @@ namespace PeerCastStation.PCP
       return String.Format("PCP(PONG) {0}", RemoteEndPoint);
     }
 
-    public PCPPongOutputStream(PeerCast peercast, Stream stream, IPEndPoint endpoint, byte[] header)
-      : base(peercast, stream, endpoint, null, header)
+    public PCPPongOutputStream(
+      PeerCast peercast,
+      Stream input_stream,
+      Stream output_stream,
+      IPEndPoint endpoint,
+      byte[] header)
+      : base(peercast, input_stream, output_stream, endpoint, null, header)
     {
       Logger.Debug("Initialized: Remote {0}", endpoint);
     }

@@ -142,7 +142,8 @@ namespace PeerCastStation.HTTP
     /// <summary>
     /// 出力ストリームを作成します
     /// </summary>
-    /// <param name="stream">元になるストリーム</param>
+    /// <param name="input_stream">元になる受信ストリーム</param>
+    /// <param name="output_stream">元になる送信ストリーム</param>
     /// <param name="remote_endpoint">接続先。無ければnull</param>
     /// <param name="channel_id">所属するチャンネルのチャンネルID</param>
     /// <param name="header">クライアントからのリクエスト</param>
@@ -150,14 +151,19 @@ namespace PeerCastStation.HTTP
     /// 作成できた場合はHTTPOutputStreamのインスタンス。
     /// headerが正しく解析できなかった場合はnull
     /// </returns>
-    public override IOutputStream Create(Stream stream, EndPoint remote_endpoint, Guid channel_id, byte[] header)
+    public override IOutputStream Create(
+      Stream input_stream,
+      Stream output_stream,
+      EndPoint remote_endpoint,
+      Guid channel_id,
+      byte[] header)
     {
       var request = ParseRequest(header);
       if (request!=null) {
         Channel channel = null;
         Uri tracker = CreateTrackerUri(channel_id, request.Uri);
         channel = PeerCast.RequestChannel(channel_id, tracker, true);
-        return new HTTPOutputStream(PeerCast, stream, remote_endpoint, channel, request);
+        return new HTTPOutputStream(PeerCast, input_stream, output_stream, remote_endpoint, channel, request);
       }
       else {
         return null;
@@ -237,12 +243,19 @@ namespace PeerCastStation.HTTP
     /// 元になるストリーム、チャンネル、リクエストからHTTPOutputStreamを初期化します
     /// </summary>
     /// <param name="peercast">所属するPeerCast</param>
-    /// <param name="stream">元になるストリーム</param>
+    /// <param name="input_stream">元になる受信ストリーム</param>
+    /// <param name="output_stream">元になる送信ストリーム</param>
     /// <param name="is_local">接続先がローカルネットワーク内かどうか</param>
     /// <param name="channel">所属するチャンネル。無い場合はnull</param>
     /// <param name="request">クライアントからのリクエスト</param>
-    public HTTPOutputStream(PeerCast peercast, Stream stream, EndPoint remote_endpoint, Channel channel, HTTPRequest request)
-      : base(peercast, stream, remote_endpoint, channel, null)
+    public HTTPOutputStream(
+      PeerCast peercast,
+      Stream input_stream,
+      Stream output_stream,
+      EndPoint remote_endpoint,
+      Channel channel,
+      HTTPRequest request)
+      : base(peercast, input_stream, output_stream, remote_endpoint, channel, null)
     {
       Logger.Debug("Initialized: Channel {0}, Remote {1}, Request {2} {3}",
         channel!=null ? channel.ChannelID.ToString("N") : "(null)",
@@ -346,8 +359,8 @@ namespace PeerCastStation.HTTP
               "HTTP/1.0 200 OK\r\n"                         +
               "Server: Rex/9.0.2980\r\n"                    +
               "Cache-Control: no-cache\r\n"                 +
-              "Pragme: no-cache\r\n"                        +
-              "Pragme: features=\"broadcast,playlist\"\r\n" +
+              "Pragma: no-cache\r\n"                        +
+              "Pragma: features=\"broadcast,playlist\"\r\n" +
               "Content-Type: application/x-mms-framed\r\n";
           }
           else {
@@ -418,7 +431,6 @@ namespace PeerCastStation.HTTP
     {
       Logger.Debug("Sending Contents");
       Content sentHeader = null;
-      headerPacket = null;
       sentPosition = -1;
       SetState(() => {
         switch (GetBodyType()) {
@@ -468,10 +480,7 @@ namespace PeerCastStation.HTTP
         if (!IsStopped &&
             Channel!=null &&
             Environment.TickCount-started<10000 &&
-            (Channel.Status==SourceStreamStatus.Connecting ||
-             Channel.Status==SourceStreamStatus.Searching ||
-             Channel.Status==SourceStreamStatus.Idle ||
-             Channel.ChannelInfo.ContentType==null ||
+            (Channel.ChannelInfo.ContentType==null ||
              Channel.ChannelInfo.ContentType=="")) {
           //Do nothing
         }
@@ -499,7 +508,7 @@ namespace PeerCastStation.HTTP
       SetState(() => {
         var response_header = CreateResponseHeader();
         var bytes = System.Text.Encoding.UTF8.GetBytes(response_header + "\r\n");
-        Stream.Write(bytes, 0, bytes.Length);
+        Send(bytes);
         Logger.Debug("Header: {0}", response_header);
         OnWriteResponseHeaderCompleted();
       });
@@ -509,6 +518,9 @@ namespace PeerCastStation.HTTP
     {
       if (request.Method=="GET") {
         WriteResponseBody();
+      }
+      else {
+        Stop();
       }
     }
 

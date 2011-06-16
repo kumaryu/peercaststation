@@ -29,9 +29,14 @@ namespace PeerCastStation.HTTP
       get { return "HTTPDummy"; }
     }
 
-    public override IOutputStream Create(Stream stream, EndPoint remote_endpoint, Guid channel_id, byte[] header)
+    public override IOutputStream Create(
+      Stream input_stream,
+      Stream output_stream,
+      EndPoint remote_endpoint,
+      Guid channel_id,
+      byte[] header)
     {
-      return new HTTPDummyOutputStream(PeerCast, stream, remote_endpoint);
+      return new HTTPDummyOutputStream(PeerCast, input_stream, output_stream, remote_endpoint);
     }
 
     public override Guid? ParseChannelID(byte[] header)
@@ -57,8 +62,12 @@ namespace PeerCastStation.HTTP
   public class HTTPDummyOutputStream
     : OutputStreamBase
   {
-    public HTTPDummyOutputStream(PeerCast peercast, Stream stream, EndPoint remote_endpoint)
-      : base(peercast, stream, remote_endpoint, null, null)
+    public HTTPDummyOutputStream(
+      PeerCast peercast,
+      Stream input_stream,
+      Stream output_stream,
+      EndPoint remote_endpoint)
+      : base(peercast, input_stream, output_stream, remote_endpoint, null, null)
     {
       Logger.Debug("Initialized: Remote {0}", remote_endpoint);
     }

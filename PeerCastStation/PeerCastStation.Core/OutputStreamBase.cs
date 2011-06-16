@@ -30,7 +30,7 @@ namespace PeerCastStation.Core
     }
 
     public abstract string Name { get; }
-    public abstract IOutputStream Create(Stream stream, EndPoint remote_endpoint, Guid channel_id, byte[] header);
+    public abstract IOutputStream Create(Stream input_stream, Stream output_stream, EndPoint remote_endpoint, Guid channel_id, byte[] header);
     public abstract Guid? ParseChannelID(byte[] header);
   }
 
@@ -38,7 +38,8 @@ namespace PeerCastStation.Core
     : IOutputStream
   {
     public PeerCast PeerCast { get; private set; }
-    public Stream Stream { get; private set; }
+    public Stream InputStream { get; private set; }
+    public Stream OutputStream { get; private set; }
     public EndPoint RemoteEndPoint { get; private set; }
     public Channel Channel { get; private set; }
     public bool IsLocal { get; private set; }
@@ -61,10 +62,17 @@ namespace PeerCastStation.Core
     protected Logger Logger { get; private set; }
 
     private Thread mainThread;
-    public OutputStreamBase(PeerCast peercast, Stream stream, EndPoint remote_endpoint, Channel channel, byte[] header)
+    public OutputStreamBase(
+      PeerCast peercast,
+      Stream input_stream,
+      Stream output_stream,
+      EndPoint remote_endpoint,
+      Channel channel,
+      byte[] header)
     {
       this.PeerCast = peercast;
-      this.Stream = stream;
+      this.InputStream = input_stream;
+      this.OutputStream = output_stream;
       this.RemoteEndPoint = remote_endpoint;
       this.Channel = channel;
       var ip = remote_endpoint as IPEndPoint;
@@ -99,7 +107,7 @@ namespace PeerCastStation.Core
     {
       if (recvResult!=null) {
         try {
-          int bytes = Stream.EndRead(recvResult);
+          int bytes = InputStream.EndRead(recvResult);
           if (bytes < 0) {
             OnError();
           }
@@ -112,7 +120,7 @@ namespace PeerCastStation.Core
       }
       if (sendResult!=null) {
         try {
-          Stream.EndWrite(sendResult);
+          OutputStream.EndWrite(sendResult);
         }
         catch (ObjectDisposedException) {}
         catch (IOException) {
@@ -123,7 +131,7 @@ namespace PeerCastStation.Core
       if (!HasError && sendStream.Length>0) {
         var buf = sendStream.ToArray();
         try {
-          Stream.Write(buf, 0, buf.Length);
+          OutputStream.Write(buf, 0, buf.Length);
         }
         catch (ObjectDisposedException) {}
         catch (IOException) {
@@ -134,7 +142,8 @@ namespace PeerCastStation.Core
       sendStream.Position = 0;
       recvStream.SetLength(0);
       recvStream.Position = 0;
-      this.Stream.Close();
+      this.InputStream.Close();
+      this.OutputStream.Close();
     }
 
     protected virtual void WaitEventAny()
@@ -200,7 +209,7 @@ namespace PeerCastStation.Core
 
     protected virtual void DoStop()
     {
-      PostAction(() => { IsStopped = true; });
+      IsStopped = true;
     }
 
     protected virtual void DoPost(Host from, Atom packet)
@@ -252,13 +261,13 @@ namespace PeerCastStation.Core
     {
       if (recvResult!=null && recvResult.IsCompleted) {
         try {
-          int bytes = Stream.EndRead(recvResult);
-          if (bytes > 0) {
+          int bytes = InputStream.EndRead(recvResult);
+          if (bytes>0) {
             recvStream.Seek(0, SeekOrigin.End);
             recvStream.Write(recvBuffer, 0, bytes);
             recvStream.Seek(0, SeekOrigin.Begin);
           }
-          else {
+          else if (bytes<0) {
             OnError();
           }
         }
@@ -270,7 +279,7 @@ namespace PeerCastStation.Core
       }
       if (!HasError && recvResult==null) {
         try {
-          recvResult = Stream.BeginRead(recvBuffer, 0, recvBuffer.Length, null, null);
+          recvResult = InputStream.BeginRead(recvBuffer, 0, recvBuffer.Length, null, null);
         }
         catch (ObjectDisposedException) {
         }
@@ -286,7 +295,7 @@ namespace PeerCastStation.Core
     {
       if (sendResult!=null && sendResult.IsCompleted) {
         try {
-          Stream.EndWrite(sendResult);
+          OutputStream.EndWrite(sendResult);
         }
         catch (ObjectDisposedException) {
         }
@@ -300,7 +309,7 @@ namespace PeerCastStation.Core
         sendStream.SetLength(0);
         sendStream.Position = 0;
         try {
-          sendResult = Stream.BeginWrite(buf, 0, buf.Length, null, null);
+          sendResult = OutputStream.BeginWrite(buf, 0, buf.Length, null, null);
         }
         catch (ObjectDisposedException) {
         }
