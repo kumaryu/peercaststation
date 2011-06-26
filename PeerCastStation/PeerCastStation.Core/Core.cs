@@ -93,7 +93,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 受信中です
     /// </summary>
-    Recieving,
+    Receiving,
     /// <summary>
     /// エラー発生のため切断しました
     /// </summary>

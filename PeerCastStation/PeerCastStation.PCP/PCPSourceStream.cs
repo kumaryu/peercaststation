@@ -218,7 +218,7 @@ namespace PeerCastStation.PCP
 
     public IStreamState Process()
     {
-      Owner.Status = SourceStreamStatus.Recieving;
+      Owner.Status = SourceStreamStatus.Receiving;
       if ((Environment.TickCount-LastHostInfoUpdated>=10000 && Owner.IsHostInfoUpdated) ||
            Environment.TickCount-LastHostInfoUpdated>=120000) {
         Owner.BroadcastHostInfo();

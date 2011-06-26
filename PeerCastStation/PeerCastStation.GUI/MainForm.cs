@@ -276,7 +276,7 @@ namespace PeerCastStation.GUI
           case SourceStreamStatus.Idle:       status = "IDLE";    break;
           case SourceStreamStatus.Connecting: status = "CONNECT"; break;
           case SourceStreamStatus.Searching:  status = "SEARCH";  break;
-          case SourceStreamStatus.Recieving:  status = "RECIEVE"; break;
+          case SourceStreamStatus.Receiving:  status = "RECEIVE"; break;
           case SourceStreamStatus.Error:      status = "ERROR";   break;
           }
           return String.Format(

@@ -79,6 +79,7 @@ namespace PeerCastStation.Core
       this.IsLocal = ip!=null ? Utils.IsSiteLocal(ip.Address) : true;
       this.IsStopped = false;
       this.mainThread = new Thread(MainProc);
+      this.mainThread.Name = this.GetType().Name;
       this.SyncContext = new QueuedSynchronizationContext();
       this.Logger = new Logger(this.GetType());
       if (header!=null) {
@@ -105,7 +106,7 @@ namespace PeerCastStation.Core
 
     protected virtual void Cleanup()
     {
-      if (recvResult!=null) {
+      if (recvResult!=null && recvResult.IsCompleted) {
         try {
           int bytes = InputStream.EndRead(recvResult);
           if (bytes < 0) {
@@ -116,7 +117,6 @@ namespace PeerCastStation.Core
         catch (IOException) {
           OnError();
         }
-        recvResult = null;
       }
       if (sendResult!=null) {
         try {
@@ -126,7 +126,6 @@ namespace PeerCastStation.Core
         catch (IOException) {
           OnError();
         }
-        sendResult = null;
       }
       if (!HasError && sendStream.Length>0) {
         var buf = sendStream.ToArray();
@@ -138,6 +137,8 @@ namespace PeerCastStation.Core
           OnError();
         }
       }
+      recvResult = null;
+      sendResult = null;
       sendStream.SetLength(0);
       sendStream.Position = 0;
       recvStream.SetLength(0);
@@ -207,7 +208,19 @@ namespace PeerCastStation.Core
       }
     }
 
-    protected virtual void DoStop()
+    protected enum StopReason
+    {
+      None,
+      Any,
+      UserShutdown,
+      OffAir,
+      ConnectionError,
+      NotIdentifiedError,
+      BadAgentError,
+      UnavailableError,
+    }
+
+    protected virtual void DoStop(StopReason reason)
     {
       IsStopped = true;
     }
@@ -228,7 +241,7 @@ namespace PeerCastStation.Core
     protected virtual void OnError()
     {
       HasError = true;
-      Stop();
+      Stop(StopReason.ConnectionError);
     }
 
     public void Start()
@@ -249,7 +262,16 @@ namespace PeerCastStation.Core
     {
       if (!IsStopped) {
         PostAction(() => {
-          DoStop();
+          DoStop(StopReason.UserShutdown);
+        });
+      }
+    }
+
+    protected void Stop(StopReason reason)
+    {
+      if (!IsStopped) {
+        PostAction(() => {
+          DoStop(reason);
         });
       }
     }
@@ -351,6 +373,10 @@ namespace PeerCastStation.Core
           new_stream.Write(recvStream.GetBuffer(), (int)recvStream.Position, (int)(recvStream.Length - recvStream.Position));
           new_stream.Position = 0;
           recvStream = new_stream;
+        }
+        else {
+          recvStream.Position = 0;
+          recvStream.SetLength(0);
         }
         res = true;
       }

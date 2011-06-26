@@ -604,7 +604,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// リレー接続がいっぱいかどうかを取得します
     /// </summary>
-    public bool IsRelayFull
+    public virtual bool IsRelayFull
     {
       get
       {
@@ -612,10 +612,15 @@ namespace PeerCastStation.Core
       }
     }
 
+    public virtual bool IsRelayable(IOutputStream sink)
+    {
+      return !this.PeerCast.AccessController.IsChannelRelayable(this, sink);
+    }
+
     /// <summary>
     /// 視聴接続がいっぱいかどうかを取得します
     /// </summary>
-    public bool IsDirectFull
+    public virtual bool IsDirectFull
     {
       get
       {
@@ -893,7 +898,7 @@ namespace PeerCastStation.Core
     /// <param name="from">送信元のホスト</param>
     /// <param name="packet">送信するデータ</param>
     /// <param name="group">送信先グループ</param>
-    public void Broadcast(Host from, Atom packet, BroadcastGroup group)
+    public virtual void Broadcast(Host from, Atom packet, BroadcastGroup group)
     {
       if ((group & (BroadcastGroup.Trackers | BroadcastGroup.Relays))!=0) {
         if (sourceStream!=null) {
