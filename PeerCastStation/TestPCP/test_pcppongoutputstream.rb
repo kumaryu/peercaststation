@@ -18,12 +18,14 @@ $: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.PCP', 'bin', 'Deb
 require 'PeerCastStation.Core.dll'
 require 'PeerCastStation.PCP.dll'
 require 'socket'
-require 'peca'
 require 'test/unit'
+require 'peca'
+require 'utils'
 using_clr_extensions PeerCastStation::Core
+explicit_extensions PeerCastStation::Core::AtomCollectionExtensions
 
-PCSPCP = PeerCastStation::PCP
-PCSCore = PeerCastStation::Core
+PCSCore = PeerCastStation::Core unless defined?(PCSCore)
+PCSPCP  = PeerCastStation::PCP  unless defined?(PCSPCP)
 
 class TC_PCPPongOutputStreamFactory < Test::Unit::TestCase
   def to_byte_array(array)

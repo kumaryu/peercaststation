@@ -18,9 +18,14 @@ $: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.PCP', 'bin', 'Deb
 require 'PeerCastStation.Core.dll'
 require 'PeerCastStation.PCP.dll'
 require 'socket'
-require 'peca'
 require 'test/unit'
+require 'peca'
+require 'utils'
 using_clr_extensions PeerCastStation::Core
+explicit_extensions PeerCastStation::Core::AtomCollectionExtensions
+
+PCSCore = PeerCastStation::Core unless defined?(PCSCore)
+PCSPCP  = PeerCastStation::PCP  unless defined?(PCSPCP)
 
 class MockOutputStream
   include PeerCastStation::Core::IOutputStream
@@ -90,12 +95,6 @@ class MockStreamState
   def process
     @log << :process
     nil
-  end
-end
-
-class System::Guid
-  def to_s
-    self.to_byte_array.to_a.collect {|v| v.to_s(16) }.join
   end
 end
 
