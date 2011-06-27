@@ -9,6 +9,32 @@ using System.Collections.ObjectModel;
 namespace PeerCastStation.Core
 {
   /// <summary>
+  /// ChannelChangedEventHandlerに渡される引数クラスです
+  /// </summary>
+  public class ChannelChangedEventArgs
+    : EventArgs
+  {
+    /// <summary>
+    /// 変更があったチャンネルを取得します
+    /// </summary>
+    public Channel Channel { get; private set; }
+    /// <summary>
+    /// 変更があったチャンネルを指定してChannelChangedEventArgsを初期化します
+    /// </summary>
+    /// <param name="channel">変更があったチャンネル</param>
+    public ChannelChangedEventArgs(Channel channel)
+    {
+      this.Channel = channel;
+    }
+  }
+  /// <summary>
+  /// チャンネルの追加や削除があった時に呼ばれるイベントのデリゲートです
+  /// </summary>
+  /// <param name="sender">イベント送出元のオブジェクト</param>
+  /// <param name="e">イベント引数</param>
+  public delegate void ChannelChangedEventHandler(object sender, ChannelChangedEventArgs e);
+
+  /// <summary>
   /// PeerCastStationの主要な動作を行ない、管理するクラスです
   /// </summary>
   public class PeerCast

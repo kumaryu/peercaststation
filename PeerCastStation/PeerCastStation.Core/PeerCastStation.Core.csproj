@@ -37,11 +37,14 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AccessController.cs" />
     <Compile Include="Atom.cs" />
     <Compile Include="AtomCollectionExtensions.cs" />
     <Compile Include="Channel.cs" />
+    <Compile Include="Content.cs" />
     <Compile Include="Core.cs" />
     <Compile Include="Host.cs" />
+    <Compile Include="OutputListener.cs" />
     <Compile Include="OutputStreamBase.cs" />
     <Compile Include="PeerCast.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
