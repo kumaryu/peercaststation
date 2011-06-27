@@ -1,4 +1,8 @@
 
+require 'System.Core'
+require 'thread'
+require 'socket'
+
 def rubyize_name(name)
   unless /[A-Z]{2,}/=~name then
     name.gsub(/(?!^)[A-Z]/, '_\&').downcase

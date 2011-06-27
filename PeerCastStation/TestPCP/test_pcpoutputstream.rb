@@ -15,12 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 $: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.Core', 'bin', 'Debug')
 $: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.PCP', 'bin', 'Debug')
-require 'System.Core'
 require 'PeerCastStation.Core.dll'
 require 'PeerCastStation.PCP.dll'
-require 'socket'
 require 'test/unit'
-require 'thread'
 require 'peca'
 require 'utils'
 using_clr_extensions PeerCastStation::Core

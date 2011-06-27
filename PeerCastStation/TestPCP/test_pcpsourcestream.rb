@@ -17,7 +17,6 @@ $: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.Core', 'bin', 'De
 $: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.PCP', 'bin', 'Debug')
 require 'PeerCastStation.Core.dll'
 require 'PeerCastStation.PCP.dll'
-require 'socket'
 require 'test/unit'
 require 'peca'
 require 'utils'
