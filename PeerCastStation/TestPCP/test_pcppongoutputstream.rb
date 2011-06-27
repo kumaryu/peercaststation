@@ -17,7 +17,6 @@ $: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.Core', 'bin', 'De
 $: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.PCP', 'bin', 'Debug')
 require 'PeerCastStation.Core.dll'
 require 'PeerCastStation.PCP.dll'
-require 'socket'
 require 'test/unit'
 require 'peca'
 require 'utils'
@@ -38,11 +37,11 @@ class TC_PCPPongOutputStreamFactory < Test::Unit::TestCase
   end
 
   def setup
-    @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
-    @peercast   = PeerCastStation::Core::PeerCast.new
+    @endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
+    @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.start_listen(@endpoint)
     @channel_id = System::Guid.empty
-    @channel    = nil
+    @channel  = nil
   end
   
   def teardown
@@ -70,7 +69,7 @@ EOS
   def test_create
     factory = PCSPCP::PCPPongOutputStreamFactory.new(@peercast)
     s = System::IO::MemoryStream.new
-    output_stream = factory.create(s, @endpoint, @channel_id, to_byte_array([]))
+    output_stream = factory.create(s, s, @endpoint, @channel_id, to_byte_array([]))
     assert_kind_of(PCSPCP::PCPPongOutputStream, output_stream)
   end
 end
@@ -85,25 +84,14 @@ class TC_PCPPongOutputStream < Test::Unit::TestCase
     res
   end
 
-  class TestPCPPongOutputStream < PCSPCP::PCPPongOutputStream
-    def self.new(*args)
-      super.instance_eval {
-        @sent_data = []
-        self
-      }
-    end
-    attr_reader :sent_data
-
-    def Send(data)
-      @sent_data << data
-    end
-  end
-
   def setup
-    @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
-    @peercast   = PeerCastStation::Core::PeerCast.new
+    @endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
+    @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.start_listen(@endpoint)
-    @base_stream = System::IO::MemoryStream.new
+    @pipe = PipeStream.new
+    @input  = @pipe.input
+    @output = @pipe.output
+    @header = ["pcp\n", 4, 1].pack('Z4VV')
   end
   
   def teardown
@@ -111,121 +99,70 @@ class TC_PCPPongOutputStream < Test::Unit::TestCase
   end
   
   def test_construct
-    stream = PCSPCP::PCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array([]))
-    assert_equal(@peercast,    stream.PeerCast)
-    assert_equal(@base_stream, stream.Stream)
-    assert(!stream.IsClosed)
+    stream = PCSPCP::PCPPongOutputStream.new(@peercast, @input, @output, @endpoint, @header)
+    assert_equal(@peercast,stream.PeerCast)
+    assert_equal(@input,   stream.InputStream)
+    assert_equal(@output,  stream.OutputStream)
+    assert(!stream.is_stopped)
     assert_equal(PCSCore::OutputStreamType.metadata, stream.output_stream_type)
-
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array(["pcp\n", 4, 1].pack('Z4VV').unpack('C*')))
-    atom = nil
-    assert_nothing_raised do 
-      atom = stream.recv_atom
-    end
-    assert_equal("pcp\n", atom.name.to_string.to_s)
-    assert_equal(1,       atom.get_int32)
   end
 
   def test_is_local
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('192.168.1.2'), 7144)
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, endpoint, to_byte_array([]))
+    stream = PCSPCP::PCPPongOutputStream.new(@peercast, @input, @output, endpoint, @header)
     assert(stream.is_local)
 
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, endpoint, to_byte_array([]))
+    stream = PCSPCP::PCPPongOutputStream.new(@peercast, @input, @output, endpoint, @header)
     assert(!stream.is_local)
   end
   
   def test_upstream_rate
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('192.168.1.2'), 7144)
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, endpoint, to_byte_array([]))
+    stream = PCSPCP::PCPPongOutputStream.new(@peercast, @input, @output, endpoint, @header)
     assert_equal(0, stream.upstream_rate)
 
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, endpoint, to_byte_array([]))
+    stream = PCSPCP::PCPPongOutputStream.new(@peercast, @input, @output, endpoint, @header)
     assert_equal(0, stream.upstream_rate)
 
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, endpoint, to_byte_array([]))
+    stream = PCSPCP::PCPPongOutputStream.new(@peercast, @input, @output, endpoint, @header)
     assert_equal(0, stream.upstream_rate)
   end
 
-  def test_on_pcp_helo
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array([]))
-    helo = PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, PCSCore::AtomCollection.new)
-    stream.OnPCPHelo(helo)
-    assert_equal(PCSCore::Atom.PCP_OLEH, stream.sent_data[0].name)
-    assert_equal(PCSCore::Atom.PCP_QUIT, stream.sent_data[1].name)
-    assert_equal(PCSCore::Atom.PCP_ERROR_QUIT+PCSCore::Atom.PCP_ERROR_NOTIDENTIFIED, stream.sent_data[1].get_int32)
-    assert(stream.is_stopped)
-
-    session_id = System::Guid.new_guid
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array([]))
-    helo = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HELO) {|children|
-      children.SetHeloSessionID(session_id)
-    }
-    stream.OnPCPHelo(helo)
-    assert_equal(PCSCore::Atom.PCP_OLEH, stream.sent_data[0].name)
-    assert_equal(1, stream.sent_data[0].children.count)
-    assert_equal(@peercast.SessionID, stream.sent_data[0].children.GetHeloSessionID)
-    assert(!stream.is_stopped)
-    stream.stop
-
-    session_id = System::Guid.new_guid
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array([]))
-    helo = PCSCore::Atom.with_children(PCSCore::Atom.PCP_HELO) {|children|
-      children.SetHeloSessionID(session_id)
-      children.SetHeloVersion(1218)
-      children.SetHeloPort(7145)
-    }
-    stream.OnPCPHelo(helo)
-    assert_equal(PCSCore::Atom.PCP_OLEH, stream.sent_data[0].name)
-    assert_equal(1, stream.sent_data[0].children.count)
-    assert_equal(@peercast.SessionID, stream.sent_data[0].children.GetHeloSessionID)
-    assert(!stream.is_stopped)
-    stream.stop
-  end
-
-  def test_on_pcp_quit
-    stream = TestPCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array([]))
-    assert(!stream.is_stopped)
-    quit = PCSCore::Atom.new(PCSCore::Atom.PCP_QUIT, PCSCore::Atom.PCP_ERROR_QUIT)
-    stream.OnPCPQuit(quit)
+  def test_helo_no_session_id
+    stream = PCSPCP::PCPPongOutputStream.new(@peercast, @input, @output, @endpoint, @header)
+    stream.start
+    helo = PCPAtom.new(PCP_HELO, [], nil)
+    helo[PCP_HELO_VERSION] = 1218
+    helo.write(@pipe)
+    oleh = PCPAtom.read(@pipe)
+    assert_equal(PCP_OLEH, oleh.name)
+    assert_equal(oleh[PCP_HELO_SESSIONID].to_s, @peercast.SessionID.to_s)
     assert(stream.is_stopped)
   end
 
-  class TestProcessAtomPCPPongOutputStream < PCSPCP::PCPPongOutputStream
-    def self.new(*args)
-      super.instance_eval {
-        @log = []
-        self
-      }
-    end
-    attr_reader :log
-
-    def OnPCPHelo(atom); @log << [:helo]; end
-    def OnPCPQuit(atom); @log << [:quit]; end
+  def test_helo
+    stream = PCSPCP::PCPPongOutputStream.new(@peercast, @input, @output, @endpoint, @header)
+    stream.start
+    helo = PCPAtom.new(PCP_HELO, [], nil)
+    helo[PCP_HELO_SESSIONID] = GID.generate
+    helo.write(@pipe)
+    oleh = PCPAtom.read(@pipe)
+    assert_equal(PCP_OLEH, oleh.name)
+    assert_equal(oleh[PCP_HELO_SESSIONID].to_s, @peercast.SessionID.to_s)
+    assert(stream.is_stopped)
   end
 
-  def test_process_atom
-    atoms = [
-      PCSCore::Atom.new(PCSCore::Atom.PCP_HELO, 0),
-      PCSCore::Atom.new(PCSCore::Atom.PCP_OLEH, 0),
-      PCSCore::Atom.new(PCSCore::Atom.PCP_OK, 0),
-      PCSCore::Atom.new(PCSCore::Atom.PCP_CHAN, 0),
-      PCSCore::Atom.new(PCSCore::Atom.PCP_CHAN_PKT, 0),
-      PCSCore::Atom.new(PCSCore::Atom.PCP_CHAN_INFO, 0),
-      PCSCore::Atom.new(PCSCore::Atom.PCP_CHAN_TRACK, 0),
-      PCSCore::Atom.new(PCSCore::Atom.PCP_BCST, 0),
-      PCSCore::Atom.new(PCSCore::Atom.PCP_HOST, 0),
-      PCSCore::Atom.new(PCSCore::Atom.PCP_QUIT, 0),
-    ]
-    stream = TestProcessAtomPCPPongOutputStream.new(@peercast, @base_stream, @endpoint, to_byte_array([]))
-    atoms.each do |atom|
-      stream.process_atom(atom)
-    end
-    assert_equal(2, stream.log.count)
-    assert_equal([:helo], stream.log[0])
+  def test_quit
+    stream = PCSPCP::PCPPongOutputStream.new(@peercast, @input, @output, @endpoint, @header)
+    stream.start
+    quit = PCPAtom.new(PCP_QUIT, nil, nil)
+    quit.value = PCP_ERROR_QUIT
+    quit.write(@pipe)
+    sleep(0.1)
+    assert(stream.is_stopped)
   end
 end
 

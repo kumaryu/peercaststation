@@ -122,19 +122,17 @@ namespace PeerCastStation.PCP
       Send(new Atom(Atom.PCP_OLEH, oleh));
       if (session_id==null) {
         Logger.Info("Helo has no SessionID");
-        //相手のセッションIDが無かったらエラー終了
-        var quit = new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT+Atom.PCP_ERROR_NOTIDENTIFIED);
-        Send(quit);
-        Stop();
+        Stop(StopReason.NotIdentifiedError);
       }
       else {
         Logger.Debug("Helo from {0}", PeerCast.SessionID.ToString("N"));
+        Stop(StopReason.None);
       }
     }
 
     protected virtual void OnPCPQuit(Atom atom)
     {
-      Stop();
+      Stop(StopReason.None);
     }
 
     public override OutputStreamType OutputStreamType
