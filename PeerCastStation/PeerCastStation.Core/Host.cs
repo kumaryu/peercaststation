@@ -28,63 +28,63 @@ namespace PeerCastStation.Core
     /// <summary>
     /// ホストのセッションIDを取得および設定します
     /// </summary>
-    public Guid SessionID { get; set; }
+    public Guid SessionID { get; private set; }
     /// <summary>
     /// ホストのブロードキャストIDを取得および設定します
     /// </summary>
-    public Guid BroadcastID { get; set; }
+    public Guid BroadcastID { get; private set; }
     /// <summary>
     /// ホストが持つローカルなアドレス情報を取得します
     /// </summary>
-    public IPEndPoint LocalEndPoint { get; set; }
+    public IPEndPoint LocalEndPoint { get; private set; }
     /// <summary>
     /// ホストが持つグローバルなアドレス情報を取得および設定します
     /// </summary>
-    public IPEndPoint GlobalEndPoint { get; set; }
+    public IPEndPoint GlobalEndPoint { get; private set; }
     /// <summary>
     /// ホストへの接続が可能かどうかを取得および設定します
     /// </summary>
-    public bool IsFirewalled { get; set; }
+    public bool IsFirewalled { get; private set; }
     /// <summary>
     /// リレーしている数を取得および設定します
     /// </summary>
-    public int RelayCount { get; set; }
+    public int RelayCount { get; private set; }
     /// <summary>
     /// 直接視聴している数を取得および設定します
     /// </summary>
-    public int DirectCount { get; set; }
+    public int DirectCount { get; private set; }
     /// <summary>
     /// このホストがトラッカーかどうかを取得および設定します
     /// </summary>
-    public bool IsTracker { get; set; }
+    public bool IsTracker { get; private set; }
     /// <summary>
     /// リレー数が一杯かどうかを取得および設定します
     /// </summary>
-    public bool IsRelayFull { get; set; }
+    public bool IsRelayFull { get; private set; }
     /// <summary>
     /// 直接視聴数が一杯かどうかを取得および設定します
     /// </summary>
-    public bool IsDirectFull { get; set; }
+    public bool IsDirectFull { get; private set; }
     /// <summary>
     /// コンテントの受信中かどうかを取得および設定します
     /// </summary>
-    public bool IsReceiving { get; set; }
+    public bool IsReceiving { get; private set; }
     /// <summary>
     /// Control接続数が一杯かどうかを取得および設定します
     /// </summary>
-    public bool IsControlFull { get; set; }
+    public bool IsControlFull { get; private set; }
     /// <summary>
     /// ホストの拡張リストを取得します
     /// </summary>
-    public IList<string> Extensions { get; set; }
+    public IList<string> Extensions { get; private set; }
     /// <summary>
     /// その他のホスト情報リストを取得します
     /// </summary>
-    public IAtomCollection Extra { get; set; }
+    public IAtomCollection Extra { get; private set; }
     /// <summary>
     /// ノードの最終更新時間を取得します
     /// </summary>
-    public TimeSpan LastUpdated { get; set; }
+    public TimeSpan LastUpdated { get; private set; }
 
     /// <summary>
     /// ホスト情報を初期化します
