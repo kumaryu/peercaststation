@@ -54,6 +54,10 @@ namespace PeerCastStation.Core
     /// </summary>
     public int DirectCount { get; set; }
     /// <summary>
+    /// このホストがトラッカーかどうかを取得および設定します
+    /// </summary>
+    public bool IsTracker { get; set; }
+    /// <summary>
     /// リレー数が一杯かどうかを取得および設定します
     /// </summary>
     public bool IsRelayFull { get; set; }
@@ -93,6 +97,7 @@ namespace PeerCastStation.Core
       int relayCount,
       int directCount,
       bool isFirewalled,
+      bool isTracker,
       bool isRelayFull,
       bool isDirectFull,
       bool isReceiving,
@@ -107,6 +112,7 @@ namespace PeerCastStation.Core
       this.RelayCount     = relayCount;
       this.DirectCount    = directCount;
       this.IsFirewalled   = isFirewalled;
+      this.IsTracker      = isTracker;
       this.IsRelayFull    = isRelayFull;
       this.IsDirectFull   = isDirectFull;
       this.IsReceiving    = isReceiving;
@@ -151,6 +157,10 @@ namespace PeerCastStation.Core
     /// </summary>
     public int DirectCount { get; set; }
     /// <summary>
+    /// このホストがトラッカーかどうかを取得および設定します
+    /// </summary>
+    public bool IsTracker { get; set; }
+    /// <summary>
     /// リレー数が一杯かどうかを取得および設定します
     /// </summary>
     public bool IsRelayFull { get; set; }
@@ -189,6 +199,7 @@ namespace PeerCastStation.Core
         RelayCount,
         DirectCount,
         IsFirewalled,
+        IsTracker,
         IsRelayFull,
         IsDirectFull,
         IsReceiving,
@@ -209,6 +220,7 @@ namespace PeerCastStation.Core
       RelayCount = 0;
       DirectCount = 0;
       IsFirewalled = false;
+      IsTracker = false;
       IsRelayFull = false;
       IsDirectFull = false;
       IsReceiving = false;
@@ -231,6 +243,7 @@ namespace PeerCastStation.Core
         RelayCount = host.RelayCount;
         DirectCount = host.DirectCount;
         IsFirewalled = host.IsFirewalled;
+        IsTracker = host.IsTracker;
         IsRelayFull = host.IsRelayFull;
         IsDirectFull = host.IsDirectFull;
         IsReceiving = host.IsReceiving;
@@ -246,6 +259,7 @@ namespace PeerCastStation.Core
         RelayCount = 0;
         DirectCount = 0;
         IsFirewalled = false;
+        IsTracker = false;
         IsRelayFull = false;
         IsDirectFull = false;
         IsReceiving = false;
@@ -269,6 +283,7 @@ namespace PeerCastStation.Core
         RelayCount = host.RelayCount;
         DirectCount = host.DirectCount;
         IsFirewalled = host.IsFirewalled;
+        IsTracker = host.IsTracker;
         IsRelayFull = host.IsRelayFull;
         IsDirectFull = host.IsDirectFull;
         IsReceiving = host.IsReceiving;
@@ -284,6 +299,7 @@ namespace PeerCastStation.Core
         RelayCount = 0;
         DirectCount = 0;
         IsFirewalled = false;
+        IsTracker = false;
         IsRelayFull = false;
         IsDirectFull = false;
         IsReceiving = false;
