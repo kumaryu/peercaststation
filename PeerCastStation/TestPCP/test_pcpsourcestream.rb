@@ -728,6 +728,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal(host.children.GetHostNumRelays,    node.relay_count)
     flags1 = host.children.GetHostFlags1
     assert_equal((flags1 & PeerCastStation::Core::PCPHostFlags1.firewalled)!=PeerCastStation::Core::PCPHostFlags1.none, node.is_firewalled)
+    assert_equal((flags1 & PeerCastStation::Core::PCPHostFlags1.tracker)   !=PeerCastStation::Core::PCPHostFlags1.none, node.is_tracker)
     assert_equal((flags1 & PeerCastStation::Core::PCPHostFlags1.relay)     ==PeerCastStation::Core::PCPHostFlags1.none, node.is_relay_full)
     assert_equal((flags1 & PeerCastStation::Core::PCPHostFlags1.direct)    ==PeerCastStation::Core::PCPHostFlags1.none, node.is_direct_full)
     assert_equal((flags1 & PeerCastStation::Core::PCPHostFlags1.receiving) !=PeerCastStation::Core::PCPHostFlags1.none, node.is_receiving) 

@@ -352,11 +352,12 @@ class TC_PCPOutputStream < Test::Unit::TestCase
       host.extra.set_host_new_pos(i*5+3)
       host.extra.set_host_version(1218+i)
       host.extra.SetHostVersionVP(27+i)
-      host.is_firewalled   = (rand % 2)==1
-      host.is_relay_full   = (rand % 2)==1
-      host.is_direct_full  = (rand % 2)==1
-      host.is_receiving    = (rand % 2)==1
-      host.is_control_full = (rand % 2)==1
+      host.is_firewalled   = ((i+0) % 2)==1
+      host.is_tracker      = ((i+1) % 2)==1
+      host.is_relay_full   = ((i+2) % 2)==1
+      host.is_direct_full  = ((i+3) % 2)==1
+      host.is_receiving    = ((i+4) % 2)==1
+      host.is_control_full = ((i+5) % 2)==1
       host.to_host
     }
     stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
@@ -385,6 +386,7 @@ class TC_PCPOutputStream < Test::Unit::TestCase
       assert_nil(host[PCP_HOST_CLAP_PP])
       assert_equal(node.extra.get_host_old_pos, host[PCP_HOST_OLDPOS])
       assert_equal(node.extra.get_host_new_pos, host[PCP_HOST_NEWPOS])
+      assert_equal(node.is_tracker,      (host[PCP_HOST_FLAGS1] & PCP_HOST_FLAGS1_TRACKER)!=0)
       assert_equal(node.is_relay_full,   (host[PCP_HOST_FLAGS1] & PCP_HOST_FLAGS1_RELAY)==0)
       assert_equal(node.is_direct_full,  (host[PCP_HOST_FLAGS1] & PCP_HOST_FLAGS1_DIRECT)==0)
       assert_equal(node.is_receiving,    (host[PCP_HOST_FLAGS1] & PCP_HOST_FLAGS1_RECV)!=0)
@@ -766,6 +768,7 @@ class TC_PCPOutputStream < Test::Unit::TestCase
     node.SessionID = System::Guid.new_guid
     node.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7149)
     node.is_firewalled  = false
+    node.is_tracker     = true
     node.is_relay_full  = false
     node.is_direct_full = false
     node.is_receiving   = true
@@ -779,6 +782,7 @@ class TC_PCPOutputStream < Test::Unit::TestCase
     host[PCP_HOST_NUML] = node.direct_count
     host[PCP_HOST_FLAGS1] = 
         (node.is_firewalled   ? PCP_HOST_FLAGS1_PUSH : 0) |
+        (node.is_tracker      ? PCP_HOST_FLAGS1_TRACKER : 0) |
         (node.is_relay_full   ? 0 : PCP_HOST_FLAGS1_RELAY) |
         (node.is_direct_full  ? 0 : PCP_HOST_FLAGS1_DIRECT) |
         (node.is_receiving    ? PCP_HOST_FLAGS1_RECV : 0) |
@@ -795,6 +799,7 @@ class TC_PCPOutputStream < Test::Unit::TestCase
     assert_equal(node.relay_count,  channel_node.relay_count)
     flags1 = host[PCP_HOST_FLAGS1]
     assert_equal(node.is_firewalled,   channel_node.is_firewalled)
+    assert_equal(node.is_tracker,      channel_node.is_tracker)
     assert_equal(node.is_relay_full,   channel_node.is_relay_full)
     assert_equal(node.is_direct_full,  channel_node.is_direct_full)
     assert_equal(node.is_receiving,    channel_node.is_receiving) 

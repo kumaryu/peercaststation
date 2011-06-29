@@ -883,6 +883,7 @@ namespace PeerCastStation.PCP
         var flags1 = atom.Children.GetHostFlags1();
         if (flags1 != null) {
           host.IsFirewalled  = (flags1.Value & PCPHostFlags1.Firewalled) != 0;
+          host.IsTracker     = (flags1.Value & PCPHostFlags1.Tracker) != 0;
           host.IsRelayFull   = (flags1.Value & PCPHostFlags1.Relay) == 0;
           host.IsDirectFull  = (flags1.Value & PCPHostFlags1.Direct) == 0;
           host.IsReceiving   = (flags1.Value & PCPHostFlags1.Receiving) != 0;
