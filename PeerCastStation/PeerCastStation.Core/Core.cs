@@ -40,11 +40,6 @@ namespace PeerCastStation.Core
     /// <returns>見付かった場合は接続先URI、見付からなかった場合はnull</returns>
     Uri FindTracker(Guid channel_id);
     /// <summary>
-    /// YellowPageの持っているチャンネル一覧を取得します
-    /// </summary>
-    /// <returns>取得したチャンネル一覧。取得できなければ空のリスト</returns>
-    ICollection<ChannelInfo> ListChannels();
-    /// <summary>
     /// YellowPageにチャンネルを載せます
     /// </summary>
     /// <param name="channel">載せるチャンネル</param>
