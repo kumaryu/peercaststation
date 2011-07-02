@@ -424,6 +424,32 @@ namespace PeerCastStation.Core
       return GetIDFrom(collection, Atom.PCP_HOST_ID);
     }
 
+    public static IPEndPoint[] GetHostEndPoints(this IAtomCollection collection)
+    {
+      var addresses = new List<IPAddress>();
+      var ports = new List<short>();
+      foreach (var atom in collection) {
+        if (atom.Name==Atom.PCP_HOST_IP) {
+          IPAddress value;
+          if (atom.TryGetIPv4Address(out value)) {
+            addresses.Add(value);
+          }
+        }
+        else if (atom.Name==Atom.PCP_HOST_PORT) {
+          short value;
+          if (atom.TryGetInt16(out value)) {
+            ports.Add(value);
+          }
+        }
+      }
+      var cnt = Math.Min(addresses.Count, ports.Count);
+      var res = new IPEndPoint[cnt];
+      for (var i=0; i<cnt; i++) {
+        res[i] = new IPEndPoint(addresses[i], ports[i]);
+      }
+      return res;
+    }
+
     public static IPAddress GetHostIP(this IAtomCollection collection)
     {
       return GetIPAddressFrom(collection, Atom.PCP_HOST_IP);
