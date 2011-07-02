@@ -40,6 +40,7 @@
     <Compile Include="PCPOutputStream.cs" />
     <Compile Include="PCPPongOutputStream.cs" />
     <Compile Include="PCPSourceStream.cs" />
+    <Compile Include="PCPYellowPage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

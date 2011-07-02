@@ -98,6 +98,13 @@ PCP_HOST_UPHOST_IP   = "upip"
 PCP_HOST_UPHOST_PORT = "uppt"
 PCP_HOST_UPHOST_HOPS = "uphp"
 
+PCP_ROOT          = "root"
+PCP_ROOT_UPDINT   = "uint"
+PCP_ROOT_CHECKVER	= "chkv"
+PCP_ROOT_URL      = "url"
+PCP_ROOT_UPDATE   = "upd"
+PCP_ROOT_NEXT     = "next"
+
 PCP_QUIT = "quit"
 PCP_ERROR_QUIT    = 1000
 PCP_ERROR_BCST    = 2000
@@ -205,6 +212,11 @@ PCPAtom = Struct.new(:name, :children, :content) do
     PCP_HOST_UPHOST_PORT   => :int,
     PCP_HOST_UPHOST_HOPS   => :int,
     PCP_QUIT               => :int,
+    PCP_ROOT               => :parent,
+    PCP_ROOT_UPDINT        => :int,
+    PCP_ROOT_NEXT          => :int,
+    PCP_ROOT_CHECKVER      => :int,
+    PCP_ROOT_URL           => :string,
     PCP_BCST_VERSION_EX_PREFIX => :bytes,
     PCP_BCST_VERSION_EX_NUMBER => :short,
     PCP_HOST_VERSION_EX_PREFIX => :bytes,
@@ -297,6 +309,16 @@ PCPAtom = Struct.new(:name, :children, :content) do
     end
   end
 
+  def inspect
+    value = self.value
+    if value.equal?(self) then
+      value = children.collect {|c| c.inspect.lines.collect {|line| '  '+line }.join("\n") }.join("\n")
+      "atom #{self.name}: [\n#{value}\n]"
+    else
+      "atom #{self.name}: #{value.inspect}"
+    end
+  end
+
   def [](name)
     childen = self.children.select {|c| c.name==name }
     case childen.size
@@ -337,15 +359,27 @@ PCPAtom = Struct.new(:name, :children, :content) do
     end
   end
 
+  def self.read_blocking(stream, sz)
+    buf = stream.read(sz)
+    if buf then
+      while buf.bytesize<sz do
+        res = stream.read(sz-buf.bytesize)
+        break unless res
+        buf << res
+      end
+    end
+    buf
+  end
+
   def self.read(stream)
-    buf = stream.read(8)
+    buf = self.read_blocking(stream, 8)
     if buf then
       cmd, len = buf.unpack('Z4V')
       if (len & 0x80000000)!=0 then
         children = len & 0x7FFFFFFF
         self.new(cmd, Array.new(children) { read(stream) }, nil)
       else
-        self.new(cmd, nil, stream.read(len))
+        self.new(cmd, nil, self.read_blocking(stream, len))
       end
     else
       nil
