@@ -18,20 +18,20 @@ require 'PeerCastStation.Core.dll'
 require 'test/unit'
 using_clr_extensions PeerCastStation::Core
 
-class MockYellowPageFactory
-  include PeerCastStation::Core::IYellowPageFactory
+class MockYellowPageClientFactory
+  include PeerCastStation::Core::IYellowPageClientFactory
   
   def name
     'MockYellowPage'
   end
   
   def create(name, uri)
-    MockYellowPage.new(name, uri)
+    MockYellowPageClient.new(name, uri)
   end
 end
 
-class MockYellowPage
-  include PeerCastStation::Core::IYellowPage
+class MockYellowPageClient
+  include PeerCastStation::Core::IYellowPageClient
   def initialize(name, uri)
     @name = name
     @uri = uri

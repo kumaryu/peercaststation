@@ -7,25 +7,25 @@ using PeerCastStation.Core;
 
 namespace PeerCastStation.PCP
 {
-  public class PCPYellowPageFactory
-    : IYellowPageFactory
+  public class PCPYellowPageClientFactory
+    : IYellowPageClientFactory
   {
     public PeerCast PeerCast { get; private set; }
     public string Name { get { return "PCP"; } }
 
-    public IYellowPage Create(string name, Uri uri)
+    public IYellowPageClient Create(string name, Uri uri)
     {
-      return new PCPYellowPage(PeerCast, name, uri);
+      return new PCPYellowPageClient(PeerCast, name, uri);
     }
 
-    public PCPYellowPageFactory(PeerCast peercast)
+    public PCPYellowPageClientFactory(PeerCast peercast)
     {
       this.PeerCast = peercast;
     }
   }
 
-  public class PCPYellowPage
-    : IYellowPage
+  public class PCPYellowPageClient
+    : IYellowPageClient
   {
     public const int DefaultPort = 7144;
     public PeerCast PeerCast { get; private set; }
@@ -160,7 +160,7 @@ namespace PeerCastStation.PCP
       throw new System.NotImplementedException();
     }
 
-    public PCPYellowPage(PeerCast peercast, string name, Uri uri)
+    public PCPYellowPageClient(PeerCast peercast, string name, Uri uri)
     {
       this.PeerCast = peercast;
       this.Name = name;

@@ -21,9 +21,9 @@ using System.Net;
 namespace PeerCastStation.Core
 {
   /// <summary>
-  /// YellowPageのインターフェースです
+  /// YellowPageとやりとりするクライアントのインターフェースです
   /// </summary>
-  public interface IYellowPage
+  public interface IYellowPageClient
   {
     /// <summary>
     /// YwlloePageに関連付けられた名前を取得します
@@ -47,21 +47,21 @@ namespace PeerCastStation.Core
   }
 
   /// <summary>
-  /// YellowPageのインスタンスを作成するためのファクトリインターフェースです
+  /// YellowPageクライアントのインスタンスを作成するためのファクトリインターフェースです
   /// </summary>
-  public interface IYellowPageFactory
+  public interface IYellowPageClientFactory
   {
     /// <summary>
     /// このYellowPageFactoryが扱うプロトコルの名前を取得します
     /// </summary>
     string Name { get; }
     /// <summary>
-    /// YellowPageインスタンスを作成し返します
+    /// YellowPageクライアントインスタンスを作成し返します
     /// </summary>
     /// <param name="name">YellowPageに関連付けられる名前</param>
     /// <param name="uri">YellowPageのURI</param>
-    /// <returns>IYellowPageのインスタンス</returns>
-    IYellowPage Create(string name, Uri uri);
+    /// <returns>IYellowPageClientを実装するオブジェクトのインスタンス</returns>
+    IYellowPageClient Create(string name, Uri uri);
   }
 
   /// <summary>

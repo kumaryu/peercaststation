@@ -26,7 +26,7 @@ explicit_extensions PeerCastStation::Core::AtomCollectionExtensions
 PCSCore = PeerCastStation::Core unless defined?(PCSCore)
 PCSPCP  = PeerCastStation::PCP  unless defined?(PCSPCP)
 
-class TC_PCPYellowPageFactory < Test::Unit::TestCase
+class TC_PCPYellowPageClientFactory < Test::Unit::TestCase
   def setup
     @endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
     @peercast = PCSCore::PeerCast.new
@@ -38,18 +38,18 @@ class TC_PCPYellowPageFactory < Test::Unit::TestCase
   end
   
   def test_construct
-    factory = PCSPCP::PCPYellowPageFactory.new(@peercast)
+    factory = PCSPCP::PCPYellowPageClientFactory.new(@peercast)
     assert_equal(factory.Name, 'PCP')
   end
 
   def test_create
-    factory = PCSPCP::PCPYellowPageFactory.new(@peercast)
+    factory = PCSPCP::PCPYellowPageClientFactory.new(@peercast)
     yp = factory.Create('Test YP', System::Uri.new('http://yp.example.com/'))
-    assert_kind_of(PCSPCP::PCPYellowPage, yp)
+    assert_kind_of(PCSPCP::PCPYellowPageClient, yp)
   end
 end
 
-class TC_PCPYellowPage < Test::Unit::TestCase
+class TC_PCPYellowPageClient < Test::Unit::TestCase
   class FindTrackerTestYP
     AccessLog = Struct.new(:session_id, :channel_id)
     def initialize(port, channel_id)
@@ -174,7 +174,7 @@ class TC_PCPYellowPage < Test::Unit::TestCase
   end
   
   def test_construct
-    yp = PCSPCP::PCPYellowPage.new(
+    yp = PCSPCP::PCPYellowPageClient.new(
       @peercast,
       'TestYP',
       System::Uri.new('http://yp.example.com/'))
@@ -187,14 +187,14 @@ class TC_PCPYellowPage < Test::Unit::TestCase
   end
 
   def test_find_tracker_connection_failed
-    pcpyp = PCSPCP::PCPYellowPage.new(@peercast, 'TestYP', System::Uri.new('http://localhost:14288/'))
+    pcpyp = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://localhost:14288/'))
     channel_id = System::Guid.parse('4361BFA4F8E84328B9E975AAA7FA9E5E')
     uri = pcpyp.find_tracker(channel_id)
     assert_nil(uri)
   end
 
   def test_find_tracker_not_found
-    pcpyp = PCSPCP::PCPYellowPage.new(@peercast, 'TestYP', System::Uri.new('http://localhost:14288/'))
+    pcpyp = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://localhost:14288/'))
     channel_id = System::Guid.parse('4361BFA4F8E84328B9E975AAA7FA9E5E')
     yp = FindTrackerTestYP.new(14288, '75C49DCA166F455A9C9DC3C64A738CD7')
     uri = pcpyp.find_tracker(channel_id)
@@ -212,7 +212,7 @@ class TC_PCPYellowPage < Test::Unit::TestCase
   end
 
   def test_find_tracker_found
-    pcpyp = PCSPCP::PCPYellowPage.new(@peercast, 'TestYP', System::Uri.new('http://localhost:14288/'))
+    pcpyp = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://localhost:14288/'))
     channel_id = System::Guid.parse('4361BFA4F8E84328B9E975AAA7FA9E5E')
     yp = FindTrackerTestYP.new(14288, channel_id)
     yp.hosts << create_host(false)
@@ -227,7 +227,7 @@ class TC_PCPYellowPage < Test::Unit::TestCase
   end
 
   def test_find_tracker_found_with_root
-    pcpyp = PCSPCP::PCPYellowPage.new(@peercast, 'TestYP', System::Uri.new('http://localhost:14288/'))
+    pcpyp = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://localhost:14288/'))
     channel_id = System::Guid.parse('4361BFA4F8E84328B9E975AAA7FA9E5E')
     yp = FindTrackerTestYP.new(14288, channel_id)
     yp.root = PCPAtom.new(PCP_ROOT, [], nil)
@@ -244,7 +244,7 @@ class TC_PCPYellowPage < Test::Unit::TestCase
   end
 
   def test_find_tracker_not_tracker
-    pcpyp = PCSPCP::PCPYellowPage.new(@peercast, 'TestYP', System::Uri.new('http://localhost:14288/'))
+    pcpyp = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://localhost:14288/'))
     channel_id = System::Guid.parse('4361BFA4F8E84328B9E975AAA7FA9E5E')
     yp = FindTrackerTestYP.new(14288, channel_id)
     yp.hosts << create_host(false)

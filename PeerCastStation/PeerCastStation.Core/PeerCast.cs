@@ -61,11 +61,11 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 登録されているYellowPageのリストを取得します
     /// </summary>
-    public IList<IYellowPage>   YellowPages   { get; private set; }
+    public IList<IYellowPageClient> YellowPages   { get; private set; }
     /// <summary>
     /// 登録されているYellowPageのプロトコルとファクトリの辞書を取得します
     /// </summary>
-    public IDictionary<string, IYellowPageFactory>   YellowPageFactories   { get; private set; }
+    public IDictionary<string, IYellowPageClientFactory> YellowPageFactories { get; private set; }
     /// <summary>
     /// 登録されているSourceStreamのプロトコルとファクトリの辞書を取得します
     /// </summary>
@@ -175,7 +175,7 @@ namespace PeerCastStation.Core
     /// <param name="protocol">出力プロトコル</param>
     /// <param name="source">配信ソース</param>
     /// <returns>Channelのインスタンス</returns>
-    public Channel BroadcastChannel(IYellowPage yp, Guid channel_id, string protocol, Uri source) { return null; }
+    public Channel BroadcastChannel(IYellowPageClient yp, Guid channel_id, string protocol, Uri source) { return null; }
 
     /// <summary>
     /// 指定されたチャンネルをチャンネル一覧に追加します
@@ -223,8 +223,8 @@ namespace PeerCastStation.Core
       this.GlobalAddress = null;
       this.GlobalAddress6 = null;
       this.IsFirewalled = null;
-      this.YellowPages   = new List<IYellowPage>();
-      this.YellowPageFactories = new Dictionary<string, IYellowPageFactory>();
+      this.YellowPages   = new List<IYellowPageClient>();
+      this.YellowPageFactories = new Dictionary<string, IYellowPageClientFactory>();
       this.SourceStreamFactories = new Dictionary<string, ISourceStreamFactory>();
       this.OutputStreamFactories = new List<IOutputStreamFactory>();
       foreach (var addr in Dns.GetHostAddresses(Dns.GetHostName())) {
