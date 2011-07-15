@@ -172,10 +172,13 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="yp">チャンネル情報を載せるYellowPage</param>
     /// <param name="channel_id">チャンネルID</param>
-    /// <param name="protocol">出力プロトコル</param>
+    /// <param name="channel_info">チャンネル情報</param>
     /// <param name="source">配信ソース</param>
     /// <returns>Channelのインスタンス</returns>
-    public Channel BroadcastChannel(IYellowPageClient yp, Guid channel_id, string protocol, Uri source) { return null; }
+    public Channel BroadcastChannel(IYellowPageClient yp, Guid channel_id, ChannelInfo channel_info, Uri source)
+    {
+      throw new NotImplementedException();
+    }
 
     /// <summary>
     /// 指定されたチャンネルをチャンネル一覧に追加します

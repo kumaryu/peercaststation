@@ -5,13 +5,16 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{5fd6fd1d-1911-467a-95e2-1cedd8c49b26}</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>startup.rb</StartupFile>
+    <StartupFile>test_httpsourcestream.rb</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <AssemblyName>TestHTTP</AssemblyName>
     <Name>TestHTTP</Name>
     <RootNamespace>TestHTTP</RootNamespace>
+    <CommandLineArguments>
+    </CommandLineArguments>
+    <IsWindowsApplication>False</IsWindowsApplication>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -24,6 +27,7 @@
   <ItemGroup>
     <None Include="startup.rb" />
     <None Include="test_httpoutputstream.rb" />
+    <None Include="test_httpsourcestream.rb" />
     <None Include="test_playlist.rb" />
   </ItemGroup>
 </Project>

@@ -432,22 +432,6 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
-    /// ヘッダコンテントを取得および設定します
-    /// </summary>
-    public Content ContentHeader
-    {
-      get { return contentHeader; }
-      set
-      {
-        if (contentHeader != value) {
-          contentHeader = value;
-          OnPropertyChanged("ContentHeader");
-          OnContentChanged();
-        }
-      }
-    }
-
-    /// <summary>
     /// リレー接続がいっぱいかどうかを取得します
     /// </summary>
     public virtual bool IsRelayFull
@@ -491,6 +475,22 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
+    /// ヘッダコンテントを取得および設定します
+    /// </summary>
+    public Content ContentHeader
+    {
+      get { return contentHeader; }
+      set
+      {
+        if (contentHeader != value) {
+          contentHeader = value;
+          OnPropertyChanged("ContentHeader");
+          OnContentChanged();
+        }
+      }
+    }
+
+    /// <summary>
     /// ヘッダを除く保持しているコンテントのリストを取得します
     /// </summary>
     public ContentCollection Contents { get { return contents; } }
@@ -507,10 +507,31 @@ namespace PeerCastStation.Core
         ContentChanged(this, new EventArgs());
       }
     }
+
     /// <summary>
     /// コンテントが追加および削除された時に発生するイベントです
     /// </summary>
     public event EventHandler ContentChanged;
+
+    /// <summary>
+    /// 保持している最後のコンテントの次のバイト位置を取得します
+    /// </summary>
+    /// TODO:スレッドセーフじゃないのであとで直す
+    public long ContentPosition {
+      get {
+        var content = contents.Newest;
+        if (contentHeader==null) {
+          return 0;
+        }
+        else if (content==null || contentHeader.Position>content.Position) {
+          return contentHeader.Position + contentHeader.Data.Length;
+        }
+        else {
+          return content.Position + content.Data.Length;
+        }
+      }
+    }
+
     /// <summary>
     /// チャンネル接続が終了する時に発生するイベントです
     /// </summary>

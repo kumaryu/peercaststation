@@ -49,6 +49,7 @@
     <Compile Include="PeerCast.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueuedSynchronizationContext.cs" />
+    <Compile Include="SourceStreamBase.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup>
