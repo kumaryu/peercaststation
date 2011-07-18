@@ -49,5 +49,6 @@ explicit_extensions PeerCastStation::Core::AtomCollectionExtensions
 
 
 require 'test_httpoutputstream'
+require 'test_httpsourcestream'
 require 'test_playlist'
 

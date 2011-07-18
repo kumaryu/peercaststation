@@ -54,3 +54,5 @@ require 'test_core_atom'
 require 'test_core_channel'
 require 'test_core_accesscontroller'
 require 'test_core_queuedsynchronizationcontext'
+require 'test_core_rawcontentreader'
+

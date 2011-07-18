@@ -26,18 +26,17 @@ using System.Text.RegularExpressions;
 namespace PeerCastStation.PCP
 {
   public class PCPSourceStreamFactory
-    : ISourceStreamFactory
+    : SourceStreamFactoryBase
   {
-    private PeerCast peercast;
     public PCPSourceStreamFactory(PeerCast peercast)
+      : base(peercast)
     {
-      this.peercast = peercast;
     }
 
-    public string Name { get { return "pcp"; } }
-    public ISourceStream Create(Channel channel, Uri tracker)
+    public override string Name { get { return "pcp"; } }
+    public override ISourceStream Create(Channel channel, Uri tracker)
     {
-      return new PCPSourceStream(peercast, channel, tracker);
+      return new PCPSourceStream(PeerCast, channel, tracker);
     }
   }
 

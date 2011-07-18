@@ -85,9 +85,9 @@ namespace PeerCastStation.HTTP
     : SourceStreamFactoryBase
   {
     public override string Name { get { return "HTTP"; } }
-    public override ISourceStream Create(Channel channel, Uri tracker)
+    public override ISourceStream Create(Channel channel, Uri source, IContentReader reader)
     {
-      return new HTTPSourceStream(this.PeerCast, channel, tracker);
+      return new HTTPSourceStream(this.PeerCast, channel, source, reader);
     }
 
     public HTTPSourceStreamFactory(PeerCast peercast)
@@ -108,9 +108,12 @@ namespace PeerCastStation.HTTP
     };
     State state = State.Connecting;
 
-    public HTTPSourceStream(PeerCast peercast, Channel channel, Uri source_uri)
+    public IContentReader ContentReader { get; private set; }
+
+    public HTTPSourceStream(PeerCast peercast, Channel channel, Uri source_uri, IContentReader reader)
       : base(peercast, channel, source_uri)
     {
+      this.ContentReader = reader;
     }
 
     protected override void OnStarted()
@@ -205,21 +208,23 @@ namespace PeerCastStation.HTTP
     private void OnStateReceiving()
     {
       Status = SourceStreamStatus.Receiving;
-      //TODO:コンテントの受信
-      //コンテント解析器に受信を任せる
-      // 結果が
-      //   メタデータ → チャンネル情報設定
-      //   コンテントヘッダ → ヘッダ設定
-      //   コンテントボディ → ボディ追加
-      // 今のところはRAWのみ
-      if (Channel.ContentHeader==null) {
-        Channel.ContentHeader = new Content(0, new byte[] {});
-      }
       Recv(stream => {
         if (stream.Length>0) {
-          var data = new byte[stream.Length];
-          stream.Read(data, 0, data.Length);
-          Channel.Contents.Add(new Content(Channel.ContentPosition, data));
+          var data = ContentReader.Read(Channel, stream);
+          if (data.ContentHeader!=null) {
+            Channel.ContentHeader = data.ContentHeader;
+          }
+          if (data.Contents!=null) {
+            foreach (var content in data.Contents) {
+              Channel.Contents.Add(content);
+            }
+          }
+          if (data.ChannelInfo!=null) {
+            Channel.ChannelInfo = data.ChannelInfo;
+          }
+          if (data.ChannelTrack!=null) {
+            Channel.ChannelTrack = data.ChannelTrack;
+          }
           lastReceived = Environment.TickCount;
         }
       });

@@ -30,7 +30,15 @@ namespace PeerCastStation.Core
     }
 
     public abstract string Name { get; }
-    public abstract ISourceStream Create(Channel channel, Uri tracker);
+    public virtual ISourceStream Create(Channel channel, Uri tracker)
+    {
+      throw new NotImplementedException();
+    }
+
+    public virtual ISourceStream Create(Channel channel, Uri source, IContentReader reader)
+    {
+      throw new NotImplementedException();
+    }
   }
 
   public abstract class SourceStreamBase

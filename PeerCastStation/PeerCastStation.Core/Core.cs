@@ -159,7 +159,17 @@ namespace PeerCastStation.Core
     /// <param name="channel">所属するチャンネル</param>
     /// <param name="tracker">ストリーム取得起点のURI</param>
     /// <returns>プロトコルが適合していればSourceStreamのインスタンス、それ以外はnull</returns>
+    /// <exception cref="NotImplentedException">このプロトコルではContentReaderを指定する必要がある</exception> 
     ISourceStream Create(Channel channel, Uri tracker);
+    /// <summary>
+    /// URIからプロトコルを判別し指定したIContentReaderでコンテンツを読み取るSourceStreamのインスタンスを作成します
+    /// </summary>
+    /// <param name="channel">所属するチャンネル</param>
+    /// <param name="source">ストリーム取得起点のURI</param>
+    /// <param name="reader">ストリームからコンテンツを読み取るためのIContentReaderインスタンス</param>
+    /// <returns>プロトコルが適合していればSourceStreamのインスタンス、それ以外はnull</returns>
+    /// <exception cref="NotImplentedException">このプロトコルではContentReaderを指定した読み取りができない</exception> 
+    ISourceStream Create(Channel channel, Uri source, IContentReader reader);
   }
 
   /// <summary>
@@ -250,6 +260,59 @@ namespace PeerCastStation.Core
     /// <param name="header">クライアントから受け取ったリクエスト</param>
     /// <returns>headerからチャンネルIDを取得できた場合はチャンネルID、できなかった場合はnull</returns>
     Guid? ParseChannelID(byte[] header);
+  }
+
+  /// <summary>
+  /// IContentReaderで読み取られた結果を格納する構造体です
+  /// </summary>
+  public struct ParsedContent
+  {
+    /// <summary>
+    /// チャンネル情報として設定するChannelInfoのインスタンスを格納します。設定する値が無い場合はnull
+    /// </summary>
+    public ChannelInfo ChannelInfo;
+    /// <summary>
+    /// トラック情報として設定するChannelTrackのインスタンスを格納します。設定する値が無い場合はnull
+    /// </summary>
+    public ChannelTrack ChannelTrack;
+    /// <summary>
+    /// コンテントヘッダとして設定するContentを格納します。設定する値が無い場合はnull
+    /// </summary>
+    public Content ContentHeader;
+    /// <summary>
+    /// コンテントボディとして追加するContentのリストを格納します。Contentが無い場合はnullまたは空のリスト
+    /// </summary>
+    public IList<Content> Contents;
+  }
+
+  /// <summary>
+  /// ストリームからのコンテントデータの読み取りを行なうインターフェースです
+  /// </summary>
+  public interface IContentReader
+  {
+    /// <summary>
+    /// 指定したストリームからデータを読み取ります
+    /// </summary>
+    /// <param name="channel">チャンネル情報設定先のチャンネル</param>
+    /// <param name="stream">読み取り元のストリーム</param>
+    /// <returns>読み取ったデータを保持するParsedContent</returns>
+    /// <exception cref="EndOfStreamException">
+    /// 必要なデータを読み取る前にストリームが終端に到達した
+    /// </exception>
+    ParsedContent Read(Channel channel, Stream stream);
+
+    /// <summary>
+    /// コンテントのPCP上での名称を取得します
+    /// </summary>
+    string ContentType { get; } 
+    /// <summary>
+    /// コンテントのファイルにした場合の一般的な拡張子を取得します
+    /// </summary>
+    string ContentExtension { get; } 
+    /// <summary>
+    /// コンテントのMIME Typeを取得します
+    /// </summary>
+    string MIMEType { get; } 
   }
 }
 

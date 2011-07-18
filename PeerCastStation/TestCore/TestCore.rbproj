@@ -25,11 +25,13 @@
   <ItemGroup>
     <None Include="startup.rb" />
     <None Include="test_core.rb" />
-    <None Include="test_core_host.rb" />
     <None Include="test_core_accesscontroller.rb" />
     <None Include="test_core_atom.rb" />
     <None Include="test_core_channel.rb" />
+    <None Include="test_core_host.rb" />
+    <None Include="test_core_accesscontroller.rb" />
     <None Include="test_core_peercast.rb" />
     <None Include="test_core_queuedsynchronizationcontext.rb" />
+    <None Include="test_core_rawcontentreader.rb" />
   </ItemGroup>
 </Project>
