@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{a5c59da0-3105-48fc-9c46-b988a6f1541a}</ProjectGuid>
+    <ProjectHome>.</ProjectHome>
+    <StartupFile>startup.rb</StartupFile>
+    <SearchPath>
+    </SearchPath>
+    <WorkingDirectory>.</WorkingDirectory>
+    <AssemblyName>TestASF</AssemblyName>
+    <Name>TestASF</Name>
+    <RootNamespace>TestASF</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="asfparser.rb" />
+    <None Include="fixtures" />
+    <None Include="fixtures\test.asf" />
+    <None Include="startup.rb" />
+    <None Include="test_asfcontentreader.rb" />
+  </ItemGroup>
+</Project>
