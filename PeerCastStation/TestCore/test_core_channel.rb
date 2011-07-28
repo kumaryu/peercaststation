@@ -87,8 +87,7 @@ class TC_CoreChannel < Test::Unit::TestCase
     channel.close
     assert_equal(PeerCastStation::Core::SourceStreamStatus.idle, channel.status)
     assert_equal(:start,     channel.source_stream.log[0][0])
-    assert_equal(:stop,      channel.source_stream.log[1][0])
-    assert_equal(:reconnect, channel.source_stream.log[2][0])
+    assert_equal(:reconnect, channel.source_stream.log[1][0])
     assert_equal(:stop,      output_stream.log[0][0])
     assert_equal('Closed', log[0])
     assert(channel.is_closed)
@@ -107,7 +106,6 @@ class TC_CoreChannel < Test::Unit::TestCase
     channel.close
     assert_equal(PeerCastStation::Core::SourceStreamStatus.idle, channel.status)
     assert_equal(:start, channel.source_stream.log[0][0])
-    assert_equal(:stop,  channel.source_stream.log[1][0])
     assert_equal(:stop,  output_stream.log[0][0])
     assert_equal('Closed', log[0])
     assert(channel.is_closed)
@@ -185,7 +183,9 @@ class TC_CoreChannel < Test::Unit::TestCase
       @tracker = tracker
       @status = PeerCastStation::Core::SourceStreamStatus.idle
       @status_changed = []
+      @stopped = []
       @paused = true
+      @thread = nil
     end
     attr_reader :tracker, :channel, :status
     attr_accessor :paused
@@ -198,13 +198,27 @@ class TC_CoreChannel < Test::Unit::TestCase
       @status_changed.delete(handler)
     end
 
+    def add_Stopped(handler)
+      @stopped << handler
+    end
+    
+    def remove_Stopped(handler)
+      @stopped.delete(handler)
+    end
+
     def post(from, packet)
     end
     
     def start
-      while @paused do
-        sleep(0.1)
-      end
+      @thread = Thread.new {
+        while @paused do
+          sleep(0.1)
+        end
+        args = System::EventArgs.new
+        @stopped.each do |handler|
+          handler.invoke(self, args)
+        end
+      }
     end
     
     def reconnect

@@ -81,7 +81,7 @@ class TC_HTTPSourceStreamFactory < Test::Unit::TestCase
 
   def test_construct
     factory = PCSHTTP::HTTPSourceStreamFactory.new(@peercast)
-    assert_equal('HTTP', factory.Name)
+    assert_equal('http', factory.Name)
   end
 
   def test_create_relay
@@ -223,12 +223,15 @@ class TC_HTTPSourceStream < Test::Unit::TestCase
     @server.on('/') do |req, sock|
       assert_equal('1.1', req.version)
       assert_equal('127.0.0.1:8888', req.headers['HOST'])
-      assert_equal(@peercast.agent_name, req.headers['USER-AGENT'])
+      assert_match(@peercast.agent_name.to_s, req.headers['USER-AGENT'])
       write_response(sock, req, 404)
       requested += 1
     end
     source.start
-    sleep(0.1) until requested>=1
+    50.times do
+      break if requested>=1
+      sleep(0.1)
+    end
     assert_nil(@channel.content_header)
     assert_equal(0, @channel.contents.count)
     assert(!source.is_stopped)
@@ -243,7 +246,7 @@ class TC_HTTPSourceStream < Test::Unit::TestCase
     @server.on('/') do |req, sock|
       assert_equal('1.1', req.version)
       assert_equal('127.0.0.1:8888', req.headers['HOST'])
-      assert_equal(@peercast.agent_name, req.headers['USER-AGENT'])
+      assert_match(@peercast.agent_name.to_s, req.headers['USER-AGENT'])
       write_response(sock, req, 200, 'Content-Type' => 'application/octet-stream')
       sock.write('header')
       sock.write('content0')
@@ -255,7 +258,10 @@ class TC_HTTPSourceStream < Test::Unit::TestCase
       requested += 1
     end
     source.start
-    sleep(0.1) until requested>=1
+    50.times do
+      break if requested>=1
+      sleep(0.1)
+    end
     assert_not_nil(@channel.content_header)
     assert(@channel.contents.count>=requested)
     newest = @channel.contents.newest
@@ -272,12 +278,15 @@ class TC_HTTPSourceStream < Test::Unit::TestCase
     @server.on('/') do |req, sock|
       assert_equal('1.1', req.version)
       assert_equal('127.0.0.1:8888', req.headers['HOST'])
-      assert_equal(@peercast.agent_name, req.headers['USER-AGENT'])
+      assert_match(@peercast.agent_name.to_s, req.headers['USER-AGENT'])
       write_response(sock, req, 404)
       requested << Time.now
     end
     source.start
-    sleep(0.1) until requested.size>=3
+   600.times do
+      break if requested.size>=3
+      sleep(0.1)
+    end
     assert(requested[1]-requested[0]>=10)
     assert(requested[2]-requested[1]>=10)
   ensure

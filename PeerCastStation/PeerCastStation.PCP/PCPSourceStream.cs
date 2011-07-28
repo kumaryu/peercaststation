@@ -321,6 +321,7 @@ namespace PeerCastStation.PCP
     public Host Uphost { get { return uphost; } set { uphost = value; } }
     public virtual bool IsConnected { get { return connection!=null; } }
     public bool IsHostInfoUpdated { get { return hostInfoUpdated; } set { hostInfoUpdated = value; } }
+    public event EventHandler Stopped;
     public event EventHandler<SourceStreamStatusChangedEventArgs> StatusChanged;
     private SourceStreamStatus status;
     public SourceStreamStatus Status {

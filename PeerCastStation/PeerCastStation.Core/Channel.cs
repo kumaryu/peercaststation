@@ -314,7 +314,7 @@ namespace PeerCastStation.Core
     private List<Host> nodes = new List<Host>();
     private Content contentHeader = null;
     private ContentCollection contents = new ContentCollection();
-    private Thread sourceThread = null;
+    private SynchronizationContext syncContext = SynchronizationContext.Current ?? new SynchronizationContext();
     private int? startTickCount = null;
     /// <summary>
     /// 所属するPeerCastオブジェクトを取得します
@@ -444,7 +444,7 @@ namespace PeerCastStation.Core
 
     public virtual bool IsRelayable(IOutputStream sink)
     {
-      return !this.PeerCast.AccessController.IsChannelRelayable(this, sink);
+      return this.PeerCast.AccessController.IsChannelRelayable(this, sink);
     }
 
     /// <summary>
@@ -714,17 +714,31 @@ namespace PeerCastStation.Core
       OnPropertyChanged("Status");
     }
 
+    private void SourceStream_Stopped(object sender, EventArgs args)
+    {
+      syncContext.Post(dummy => {
+        foreach (var os in outputStreams) {
+          os.Stop();
+        }
+        outputStreams = new OutputStreamCollection();
+        startTickCount = null;
+        IsClosed = true;
+        OnClosed();
+      }, null);
+    }
+
     public void Start(ISourceStream source_stream)
     {
       IsClosed = false;
-      if (sourceStream!=null) sourceStream.StatusChanged -= SourceStream_StatusChanged;
+      if (sourceStream!=null) {
+        sourceStream.StatusChanged -= SourceStream_StatusChanged;
+        sourceStream.Stopped -= SourceStream_Stopped;
+      }
       sourceStream = source_stream;
       sourceStream.StatusChanged += SourceStream_StatusChanged;
-      var sync = SynchronizationContext.Current ?? new SynchronizationContext();
-      sourceThread = new Thread(SourceThreadFunc);
-      sourceThread.Name = String.Format("SourceThread:{0}", ChannelID.ToString("N"));
-      sourceThread.Start(sync);
+      sourceStream.Stopped += SourceStream_Stopped;
       startTickCount = Environment.TickCount;
+      sourceStream.Start();
     }
 
     public void Reconnect()
@@ -732,31 +746,6 @@ namespace PeerCastStation.Core
       if (sourceStream!=null) {
         sourceStream.Reconnect();
       }
-    }
-
-    private void SourceThreadFunc(object arg)
-    {
-      logger.Debug("Source thread started");
-      var sync = (SynchronizationContext)arg;
-      try {
-        sourceStream.Start();
-      }
-      finally {
-        sourceStream.Stop();
-        sync.Post(thread => {
-          if (sourceThread == thread) {
-            sourceThread = null;
-          }
-          foreach (var os in outputStreams) {
-            os.Stop();
-          }
-          outputStreams = new OutputStreamCollection();
-          startTickCount = null;
-          IsClosed = true;
-          OnClosed();
-        }, Thread.CurrentThread);
-      }
-      logger.Debug("Source thread finished");
     }
 
     /// <summary>

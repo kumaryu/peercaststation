@@ -142,6 +142,10 @@ namespace PeerCastStation.Core
     /// ストリームの状態が変更された時に呼ばれるイベントです
     /// </summary>
     event EventHandler<SourceStreamStatusChangedEventArgs> StatusChanged;
+    /// <summary>
+    /// ストリームの動作が終了した際に呼ばれるイベントです
+    /// </summary>
+    event EventHandler Stopped;
   }
 
   /// <summary>

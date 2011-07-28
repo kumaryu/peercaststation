@@ -60,9 +60,8 @@ class TC_CorePeerCast < Test::Unit::TestCase
     source = channel.source_stream
     assert_equal(tracker, source.tracker)
     assert_equal(channel, source.channel)
-    assert_equal(2, source.log.size)
-    assert_equal(:start,  source.log[0][0])
-    assert_equal(:stop,  source.log[1][0])
+    assert_equal(1, source.log.size)
+    assert_equal(:start, source.log[0][0])
     
     assert_equal(1, @peercast.channels.count)
     assert_equal(channel, @peercast.channels[0])
@@ -83,9 +82,8 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert_equal('127.0.0.1', source.tracker.host.to_s)
     assert_equal(7147,        source.tracker.port)
     assert_equal(channel,     source.channel)
-    assert_equal(2, source.log.size)
+    assert_equal(1, source.log.size)
     assert_equal(:start, source.log[0][0])
-    assert_equal(:stop,  source.log[1][0])
     
     assert_equal(1, @peercast.channels.count)
     assert_equal(channel, @peercast.channels[0])

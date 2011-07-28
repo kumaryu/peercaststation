@@ -80,6 +80,7 @@ class MockSourceStream
     @status_changed = []
     @status = PeerCastStation::Core::SourceStreamStatus.idle
     @start_proc = nil
+    @stopped = []
     @log = []
   end
   attr_reader :log, :tracker, :channel, :status
@@ -93,6 +94,14 @@ class MockSourceStream
     @status_changed.delete(handler)
   end
 
+  def add_Stopped(handler)
+    @stopped << handler
+  end
+  
+  def remove_Stopped(handler)
+    @stopped.delete(handler)
+  end
+
   def post(from, packet)
     @log << [:post, from, packet]
   end
@@ -100,6 +109,10 @@ class MockSourceStream
   def start
     @log << [:start]
     @start_proc.call if @start_proc
+    args = System::EventArgs.new
+    @stopped.each do |handler|
+      handler.invoke(self, args)
+    end
   end
   
   def reconnect

@@ -84,7 +84,7 @@ namespace PeerCastStation.HTTP
   public class HTTPSourceStreamFactory
     : SourceStreamFactoryBase
   {
-    public override string Name { get { return "HTTP"; } }
+    public override string Name { get { return "http"; } }
     public override ISourceStream Create(Channel channel, Uri source, IContentReader reader)
     {
       return new HTTPSourceStream(this.PeerCast, channel, source, reader);
@@ -169,7 +169,7 @@ namespace PeerCastStation.HTTP
         var request = String.Format(
             "GET {0} HTTP/1.1\r\n" +
             "Host:{1}\r\n" +
-            "User-Agent:{2}\r\n" +
+            "User-Agent:WMPlayer ({2})\r\n" +
             "connection:close\r\n" +
             "\r\n",
             SourceUri.PathAndQuery,
@@ -211,6 +211,12 @@ namespace PeerCastStation.HTTP
       Recv(stream => {
         if (stream.Length>0) {
           var data = ContentReader.Read(Channel, stream);
+          if (data.ChannelInfo!=null) {
+            Channel.ChannelInfo = data.ChannelInfo;
+          }
+          if (data.ChannelTrack!=null) {
+            Channel.ChannelTrack = data.ChannelTrack;
+          }
           if (data.ContentHeader!=null) {
             Channel.ContentHeader = data.ContentHeader;
           }
@@ -218,12 +224,6 @@ namespace PeerCastStation.HTTP
             foreach (var content in data.Contents) {
               Channel.Contents.Add(content);
             }
-          }
-          if (data.ChannelInfo!=null) {
-            Channel.ChannelInfo = data.ChannelInfo;
-          }
-          if (data.ChannelTrack!=null) {
-            Channel.ChannelTrack = data.ChannelTrack;
           }
           lastReceived = Environment.TickCount;
         }
