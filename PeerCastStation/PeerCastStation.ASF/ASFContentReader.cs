@@ -301,6 +301,7 @@ namespace PeerCastStation.ASF
               var header = ASFHeader.Read(chunk);
               var info = new AtomCollection(channel.ChannelInfo.Extra);
               info.SetChanInfoBitrate(header.Bitrate);
+              info.SetChanInfoType(this.ContentType);
               res.ChannelInfo = new ChannelInfo(info);
               res.ContentHeader = new Content(pos, chunk.ToByteArray());
               pos += chunk.TotalLength;
