@@ -65,25 +65,26 @@ class MockSourceStreamFactory
     'MockSourceStream'
   end
   
-  def create(channel, uri)
-    @log << [:create, channel, uri]
-    MockSourceStream.new(channel, uri)
+  def create(channel, uri, reader=nil)
+    @log << [:create, channel, uri, reader]
+    MockSourceStream.new(channel, uri, reader)
   end
 end
 
 class MockSourceStream
   include PeerCastStation::Core::ISourceStream
   
-  def initialize(channel, tracker)
+  def initialize(channel, tracker, reader=nil)
     @channel = channel
     @tracker = tracker
+    @reader  = reader
     @status_changed = []
     @status = PeerCastStation::Core::SourceStreamStatus.idle
     @start_proc = nil
     @stopped = []
     @log = []
   end
-  attr_reader :log, :tracker, :channel, :status
+  attr_reader :log, :reader, :tracker, :channel, :status
   attr_accessor :start_proc
 
   def add_StatusChanged(handler)

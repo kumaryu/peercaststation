@@ -113,6 +113,24 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert_kind_of(MockSourceStream, channel.source_stream)
   end
 
+  def test_broadcast_channel
+    @peercast = PeerCastStation::Core::PeerCast.new
+    yp = MockYellowPageClient.new(@peercast, System::Uri.new('pcp:example.com:7147'))
+    @peercast.source_stream_factories['mock'] = MockSourceStreamFactory.new
+    
+    channel_id = System::Guid.new_guid
+    source = System::Uri.new('mock://localhost/')
+    reader = PCSCore::RawContentReader.new
+    channel_info = PCSCore::AtomCollection.new
+    channel_info.set_chan_info_name('foobar')
+    channel_info = PCSCore::ChannelInfo.new(channel_info)
+    channel = @peercast.broadcast_channel(yp, channel_id, channel_info, source, reader)
+
+    assert_not_nil(channel)
+    assert_kind_of(MockSourceStream, channel.source_stream)
+    assert_kind_of(PCSCore::RawContentReader, channel.source_stream.reader)
+  end
+
   def test_add_channel
     @peercast = PeerCastStation::Core::PeerCast.new
     channels = @peercast.channels
