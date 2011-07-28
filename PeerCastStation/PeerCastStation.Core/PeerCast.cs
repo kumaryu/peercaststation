@@ -174,10 +174,29 @@ namespace PeerCastStation.Core
     /// <param name="channel_id">チャンネルID</param>
     /// <param name="channel_info">チャンネル情報</param>
     /// <param name="source">配信ソース</param>
+    /// <param name="content_reader">配信ソースのコンテンツを解析するContentReader</param>
     /// <returns>Channelのインスタンス</returns>
-    public Channel BroadcastChannel(IYellowPageClient yp, Guid channel_id, ChannelInfo channel_info, Uri source)
+    public Channel BroadcastChannel(IYellowPageClient yp, Guid channel_id, ChannelInfo channel_info, Uri source, IContentReader content_reader)
     {
-      throw new NotImplementedException();
+      Channel channel = null;
+      logger.Debug("Broadcasting channel {0} from {1}", channel_id.ToString("N"), source);
+      ISourceStreamFactory source_factory = null;
+      if (!SourceStreamFactories.TryGetValue(source.Scheme, out source_factory)) {
+        logger.Error("Protocol `{0}' is not found", source.Scheme);
+        throw new ArgumentException(String.Format("Protocol `{0}' is not found", source.Scheme));
+      }
+      channel = new Channel(this, channel_id, source);
+      Utils.ReplaceCollection(ref channels, orig => {
+        var new_collection = new List<Channel>(orig);
+        new_collection.Add(channel);
+        return new_collection;
+      });
+      channel.ChannelInfo = channel_info;
+      var source_stream = source_factory.Create(channel, source, content_reader);
+      channel.Start(source_stream);
+      if (ChannelAdded!=null) ChannelAdded(this, new ChannelChangedEventArgs(channel));
+      //TODO: ypにアナウンス開始
+      return channel;
     }
 
     /// <summary>
