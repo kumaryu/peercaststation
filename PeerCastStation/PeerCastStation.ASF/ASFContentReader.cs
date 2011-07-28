@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Linq;
 using System.IO;
 using PeerCastStation.Core;
+using System.Collections.Generic;
 
 namespace PeerCastStation.ASF
 {
@@ -188,15 +190,23 @@ namespace PeerCastStation.ASF
 
   internal class ASFHeader
   {
+    public enum StreamType {
+      Unknown,
+      Audio,
+      Video,
+    };
     public int Bitrate { get; private set; }
+    public StreamType[] Streams { get; private set; }
 
-    public ASFHeader(int bitrate)
+    public ASFHeader(int bitrate, StreamType[] streams)
     {
       this.Bitrate = bitrate;
+      this.Streams = streams;
     }
 
     public static ASFHeader Read(ASFChunk chunk)
     {
+      var streams = new List<StreamType>();
       int bitrate = 0;
       var s = new MemoryStream(chunk.Data, false);
       var root_obj = ASFObject.ReadHeader(s);
@@ -215,11 +225,25 @@ namespace PeerCastStation.ASF
           bitrate = (BinaryReader.ReadInt32LE(objdata)+999) / 1000;
           }
           break;
+        case ASFObject.KnownType.StreamProperty: {
+          var objdata = new MemoryStream(obj.Data, false);
+          var stream_type = new Guid(BinaryReader.ReadBytes(objdata, 16));
+          if (stream_type==ASFObject.StreamIDAudio) {
+            streams.Add(StreamType.Audio);
+          }
+          else if (stream_type==ASFObject.StreamIDVideo) {
+            streams.Add(StreamType.Video);
+          }
+          else {
+            streams.Add(StreamType.Unknown);
+          }
+          }
+          break;
         default:
           break;
         }
       }
-      return new ASFHeader(bitrate);
+      return new ASFHeader(bitrate, streams.ToArray());
     }
   }
 
@@ -301,7 +325,15 @@ namespace PeerCastStation.ASF
               var header = ASFHeader.Read(chunk);
               var info = new AtomCollection(channel.ChannelInfo.Extra);
               info.SetChanInfoBitrate(header.Bitrate);
-              info.SetChanInfoType(this.ContentType);
+              if (header.Streams.Any(type => type==ASFHeader.StreamType.Video)) {
+                info.SetChanInfoType("WMV");
+              }
+              else if (header.Streams.Any(type => type==ASFHeader.StreamType.Audio)) {
+                info.SetChanInfoType("WMA");
+              }
+              else {
+                info.SetChanInfoType("ASF");
+              }
               res.ChannelInfo = new ChannelInfo(info);
               res.ContentHeader = new Content(pos, chunk.ToByteArray());
               pos += chunk.TotalLength;
@@ -323,19 +355,9 @@ namespace PeerCastStation.ASF
       return res;
     }
 
-    public string ContentType
+    public string Name
     {
-      get { return "WMV"; }
-    }
-
-    public string ContentExtension
-    {
-      get { return ".wmv"; }
-    }
-
-    public string MIMEType
-    {
-      get { return "application/x-mms-framed"; }
+      get { return "ASF(WMV or WMA)"; }
     }
   }
 }

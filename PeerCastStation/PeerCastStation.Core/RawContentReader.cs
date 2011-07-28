@@ -18,7 +18,7 @@ namespace PeerCastStation.Core
       if (channel.ContentHeader==null) {
         res.ContentHeader = new Content(pos, new byte[] { });
         var channel_info = new AtomCollection(channel.ChannelInfo.Extra);
-        channel_info.SetChanInfoType(ContentType);
+        channel_info.SetChanInfoType("RAW");
         res.ChannelInfo = new ChannelInfo(channel_info);
       }
       res.Contents = new List<Content>();
@@ -34,19 +34,9 @@ namespace PeerCastStation.Core
       return res;
     }
 
-    public string ContentType
+    public string Name
     {
       get { return "RAW"; }
-    }
-
-    public string ContentExtension
-    {
-      get { return ""; }
-    }
-
-    public string MIMEType
-    {
-      get { return "application/octet-stream"; }
     }
   }
 }

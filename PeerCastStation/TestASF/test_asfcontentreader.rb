@@ -43,9 +43,7 @@ class TC_ASFContentReader < Test::Unit::TestCase
     assert_nothing_raised do
       reader = PCSASF::ASFContentReader.new
     end
-    assert_equal("WMV",  reader.content_type)
-    assert_equal(".wmv", reader.content_extension)
-    assert_equal("application/x-mms-framed", reader.MIMEType)
+    assert_equal("ASF(WMV or WMA)", reader.name)
   end
 
   def test_read_empty
@@ -62,7 +60,7 @@ class TC_ASFContentReader < Test::Unit::TestCase
     content = reader.read(@channel, stream)
     assert_not_nil(content.content_header)
     assert_not_nil(content.channel_info)
-    assert_equal(reader.content_type, content.channel_info.content_type)
+    assert_equal("WMV", content.channel_info.content_type)
     assert_equal(439, content.channel_info.bitrate)
     assert_equal(0, content.content_header.position)
     assert_equal(5271, content.content_header.data.length)

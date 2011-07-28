@@ -306,17 +306,9 @@ namespace PeerCastStation.Core
     ParsedContent Read(Channel channel, Stream stream);
 
     /// <summary>
-    /// コンテントのPCP上での名称を取得します
+    /// コンテント解析器の名称を取得します
     /// </summary>
-    string ContentType { get; } 
-    /// <summary>
-    /// コンテントのファイルにした場合の一般的な拡張子を取得します
-    /// </summary>
-    string ContentExtension { get; } 
-    /// <summary>
-    /// コンテントのMIME Typeを取得します
-    /// </summary>
-    string MIMEType { get; } 
+    string Name { get; } 
   }
 }
 

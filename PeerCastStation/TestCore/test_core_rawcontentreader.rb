@@ -37,9 +37,7 @@ class TC_CoreRawContentReader < Test::Unit::TestCase
     assert_nothing_raised do
       reader = PCSCore::RawContentReader.new
     end
-    assert_equal("RAW", reader.content_type)
-    assert_equal("",    reader.content_extension)
-    assert_equal("application/octet-stream", reader.MIMEType)
+    assert_equal("RAW", reader.name)
   end
 
   def test_read_empty
@@ -58,8 +56,8 @@ class TC_CoreRawContentReader < Test::Unit::TestCase
     @channel.channel_info = PCSCore::ChannelInfo.new(chan_info)
     content = reader.read(@channel, stream)
     assert_nil(content.channel_track)
-    assert_equal(reader.content_type, content.channel_info.content_type)
-    assert_equal('foobar',            content.channel_info.name)
+    assert_equal('RAW',    content.channel_info.content_type)
+    assert_equal('foobar', content.channel_info.name)
     assert_equal(0, content.content_header.position)
     assert_equal(0, content.content_header.data.length)
     assert_equal(1, content.contents.count)
@@ -74,7 +72,7 @@ class TC_CoreRawContentReader < Test::Unit::TestCase
     reader = PCSCore::RawContentReader.new
     content = reader.read(@channel, stream)
     assert_nil(content.channel_track)
-    assert_equal(reader.content_type, content.channel_info.content_type)
+    assert_equal('RAW', content.channel_info.content_type)
     assert_equal(0,          content.content_header.position)
     assert_equal(0,          content.content_header.data.length)
     assert_equal(2,          content.contents.count)
