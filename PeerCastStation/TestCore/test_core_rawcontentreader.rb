@@ -17,6 +17,7 @@ $: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.Core', 'bin', 'De
 require 'PeerCastStation.Core.dll'
 require 'test/unit'
 PCSCore = PeerCastStation::Core unless defined?(PCSCore)
+using_clr_extensions PeerCastStation::Core
 
 class TC_CoreRawContentReader < Test::Unit::TestCase
   def setup
@@ -52,9 +53,13 @@ class TC_CoreRawContentReader < Test::Unit::TestCase
   def test_read
     stream = System::IO::MemoryStream.new("header\ncontent1\ncontent2\n")
     reader = PCSCore::RawContentReader.new
+    chan_info = PCSCore::AtomCollection.new
+    chan_info.set_chan_info_name('foobar')
+    @channel.channel_info = PCSCore::ChannelInfo.new(chan_info)
     content = reader.read(@channel, stream)
-    assert_nil(content.channel_info)
     assert_nil(content.channel_track)
+    assert_equal(reader.content_type, content.channel_info.content_type)
+    assert_equal('foobar',            content.channel_info.name)
     assert_equal(0, content.content_header.position)
     assert_equal(0, content.content_header.data.length)
     assert_equal(1, content.contents.count)
@@ -68,8 +73,8 @@ class TC_CoreRawContentReader < Test::Unit::TestCase
     stream.position = 0
     reader = PCSCore::RawContentReader.new
     content = reader.read(@channel, stream)
-    assert_nil(content.channel_info)
     assert_nil(content.channel_track)
+    assert_equal(reader.content_type, content.channel_info.content_type)
     assert_equal(0,          content.content_header.position)
     assert_equal(0,          content.content_header.data.length)
     assert_equal(2,          content.contents.count)

@@ -17,6 +17,9 @@ namespace PeerCastStation.Core
       var pos = channel.ContentPosition;
       if (channel.ContentHeader==null) {
         res.ContentHeader = new Content(pos, new byte[] { });
+        var channel_info = new AtomCollection(channel.ChannelInfo.Extra);
+        channel_info.SetChanInfoType(ContentType);
+        res.ChannelInfo = new ChannelInfo(channel_info);
       }
       res.Contents = new List<Content>();
       while (stream.Length-stream.Position>0) {
