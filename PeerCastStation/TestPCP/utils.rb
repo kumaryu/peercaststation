@@ -164,7 +164,7 @@ end
 
 class System::Guid
   def to_s
-    self.ToString('N')
+    self.ToString('N').to_s
   end
 end
 

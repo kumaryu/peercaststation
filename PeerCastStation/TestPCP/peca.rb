@@ -131,7 +131,7 @@ class GID
   attr_reader :id
 
   def to_s
-    @id.unpack('C*').collect {|v| '%02x' % v }.join
+    @id.unpack('C*').collect {|v| '%02x' % v }.join.downcase
   end
 
   def self.from_string(str)
@@ -208,7 +208,7 @@ PCPAtom = Struct.new(:name, :children, :content) do
     PCP_HOST_OLDPOS        => :int,
     PCP_HOST_NEWPOS        => :int,
     PCP_HOST_FLAGS1        => :byte,
-    PCP_HOST_UPHOST_IP     => :int,
+    PCP_HOST_UPHOST_IP     => :ip,
     PCP_HOST_UPHOST_PORT   => :int,
     PCP_HOST_UPHOST_HOPS   => :int,
     PCP_QUIT               => :int,
@@ -295,6 +295,8 @@ PCPAtom = Struct.new(:name, :children, :content) do
     when :ip
       if v.kind_of?(Array) then
         self.content = v.reverse.pack('C*')
+      elsif v.kind_of?(String) then
+        self.content = v.split('.').collect(&:to_i).reverse.pack('C*')
       elsif v.kind_of?(System::Net::IPAddress) then
         self.content = v.get_address_bytes.to_a.reverse.pack('C*')
       end
@@ -333,17 +335,9 @@ PCPAtom = Struct.new(:name, :children, :content) do
 
   def []=(name, value)
     self.children.delete_if {|c| c.name==name }
-    if value.kind_of?(Array) then
-      value.each do |v|
-        atom = PCPAtom.new(name)
-        atom.value = v
-        self.children.push(atom)
-      end
-    else
-      atom = PCPAtom.new(name)
-      atom.value = value
-      self.children.push(atom)
-    end
+    atom = PCPAtom.new(name)
+    atom.value = value
+    self.children.push(atom)
     value
   end
 

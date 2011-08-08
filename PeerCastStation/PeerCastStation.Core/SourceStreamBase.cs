@@ -23,7 +23,7 @@ namespace PeerCastStation.Core
   public abstract class SourceStreamFactoryBase
     : ISourceStreamFactory
   {
-    protected PeerCast PeerCast { get; private set; }
+    public PeerCast PeerCast { get; private set; }
     public SourceStreamFactoryBase(PeerCast peercast)
     {
       this.PeerCast = peercast;
@@ -53,6 +53,7 @@ namespace PeerCastStation.Core
     public bool HasError { get; protected set; }
     protected QueuedSynchronizationContext SyncContext { get; private set; }
     protected Logger Logger { get; private set; }
+    protected AutoResetEvent RecvEvent { get; private set; }
 
     private Thread mainThread;
     public SourceStreamBase(
@@ -64,6 +65,7 @@ namespace PeerCastStation.Core
       this.Channel = channel;
       this.SourceUri = source_uri;
       this.IsStopped = false;
+      this.RecvEvent = new AutoResetEvent(false);
       this.mainThread = new Thread(MainProc);
       this.mainThread.Name = this.GetType().Name;
       this.SyncContext = new QueuedSynchronizationContext();
@@ -136,6 +138,8 @@ namespace PeerCastStation.Core
       None,
       Any,
       UserShutdown,
+      UserReconnect,
+      NoHost,
       OffAir,
       ConnectionError,
       NotIdentifiedError,
@@ -295,6 +299,7 @@ namespace PeerCastStation.Core
             recvStream.Seek(0, SeekOrigin.End);
             recvStream.Write(recvBuffer, 0, bytes);
             recvStream.Seek(0, SeekOrigin.Begin);
+            RecvEvent.Set();
           }
           else if (bytes<0) {
             recvError = true;
