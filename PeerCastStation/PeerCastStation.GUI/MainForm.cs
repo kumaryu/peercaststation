@@ -128,6 +128,7 @@ namespace PeerCastStation.GUI
     private int currentPort;
     private TextBoxWriter guiWriter = null;
     private BindingList<ChannelListItem> channelListItems = new BindingList<ChannelListItem>();
+    private List<IContentReader> contentReaders = new List<IContentReader>();
     public MainForm()
     {
       InitializeComponent();
@@ -141,7 +142,8 @@ namespace PeerCastStation.GUI
         statusBar.Font = new System.Drawing.Font("Osaka", statusBar.Font.SizeInPoints);
       }
       peerCast = new PeerCastStation.Core.PeerCast();
-      peerCast.SourceStreamFactories["pcp"] = new PeerCastStation.PCP.PCPSourceStreamFactory(peerCast);
+      peerCast.SourceStreamFactories["pcp"]  = new PeerCastStation.PCP.PCPSourceStreamFactory(peerCast);
+      peerCast.SourceStreamFactories["http"] = new PeerCastStation.HTTP.HTTPSourceStreamFactory(peerCast);
       peerCast.OutputStreamFactories.Add(new PeerCastStation.PCP.PCPPongOutputStreamFactory(peerCast));
       peerCast.OutputStreamFactories.Add(new PeerCastStation.PCP.PCPOutputStreamFactory(peerCast));
       peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPOutputStreamFactory(peerCast));
@@ -149,6 +151,11 @@ namespace PeerCastStation.GUI
       peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPDummyOutputStreamFactory(peerCast));
       peerCast.ChannelAdded   += ChannelAdded;
       peerCast.ChannelRemoved += ChannelRemoved;
+      contentReaders.Add(new PeerCastStation.Core.RawContentReader());
+      contentReaders.Add(new PeerCastStation.ASF.ASFContentReader());
+      foreach (var reader in contentReaders) {
+        bcContentType.Items.Add(reader.Name);
+      }
       OnUpdateSettings(null);
       port.Value                 = Settings.Default.Port;
       maxRelays.Value            = Settings.Default.MaxRelays;
@@ -492,6 +499,49 @@ namespace PeerCastStation.GUI
       var connection = outputList.SelectedItem as IOutputStream;
       if (connection!=null) {
         connection.Stop();
+      }
+    }
+
+    private Guid CreateChannelID(Guid bcid, string channel_name, string genre, string source)
+    {
+      var stream = new System.IO.MemoryStream();
+      using (var writer = new System.IO.BinaryWriter(stream)) {
+        var bcid_hash = System.Security.Cryptography.SHA512.Create().ComputeHash(bcid.ToByteArray());
+        writer.Write(bcid_hash);
+        writer.Write(channel_name);
+        writer.Write(genre);
+        writer.Write(source);
+      }
+      var channel_hash = System.Security.Cryptography.MD5.Create().ComputeHash(stream.ToArray());
+      return new Guid(channel_hash);
+    }
+
+    private void bcStart_Click(object sender, EventArgs e)
+    {
+      var channel_name = bcChannelName.Text;
+      if (channel_name!="" && bcContentType.SelectedIndex>0) {
+        var source_uri = bcStreamUrl.Text;
+        var genre = bcGenre.Text;
+        int bitrate;
+        if (!Int32.TryParse(bcBitrate.Text, out bitrate)) bitrate = -1;
+        var channel_id = CreateChannelID(peerCast.BroadcastID, channel_name, genre, source_uri);
+        var channel_info = new AtomCollection();
+        channel_info.SetChanInfoName(channel_name);
+        if (genre!="") channel_info.SetChanInfoGenre(genre);
+        if (bitrate>0) channel_info.SetChanInfoBitrate(bitrate);
+        if (bcDescription.Text!="") channel_info.SetChanInfoDesc(bcDescription.Text);
+        if (bcContactUrl.Text!="") channel_info.SetChanInfoURL(bcContactUrl.Text);
+        var reader = contentReaders[bcContentType.SelectedIndex];
+        var yp = bcYP.SelectedIndex>0 ? (IYellowPageClient)null : null; //TODO:YP選択
+        if (peerCast.BroadcastChannel(yp, channel_id, new ChannelInfo(channel_info), new Uri(source_uri), reader)!=null) {
+          mainTab.SelectTab(0);
+          bcStreamUrl.Text   = "";
+          bcChannelName.Text = "";
+          bcGenre.Text       = "";
+          bcDescription.Text = "";
+          bcContactUrl.Text  = "";
+          bcBitrate.Text     = "";
+        }
       }
     }
   }

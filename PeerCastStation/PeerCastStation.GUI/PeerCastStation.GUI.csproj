@@ -77,6 +77,10 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\PeerCastStation.ASF\PeerCastStation.ASF.csproj">
+      <Project>{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}</Project>
+      <Name>PeerCastStation.ASF</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj">
       <Project>{387996F5-E31D-4D92-BD86-8983C599F748}</Project>
       <Name>PeerCastStation.Core</Name>
