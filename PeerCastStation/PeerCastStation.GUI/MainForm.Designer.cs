@@ -45,6 +45,7 @@ namespace PeerCastStation.GUI
     /// </summary>
     private void InitializeComponent()
     {
+      this.components = new System.ComponentModel.Container();
       System.Windows.Forms.Label label4;
       System.Windows.Forms.Label label3;
       System.Windows.Forms.Label label2;
@@ -57,6 +58,11 @@ namespace PeerCastStation.GUI
       System.Windows.Forms.Label label11;
       System.Windows.Forms.Label label12;
       System.Windows.Forms.Label label13;
+      System.Windows.Forms.ToolStripMenuItem showGUIMenuItem;
+      System.Windows.Forms.ToolStripMenuItem quitMenuItem;
+      System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
+      this.notifyIconMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+      this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
       this.mainTab = new System.Windows.Forms.TabControl();
       this.tabChannels = new System.Windows.Forms.TabPage();
       this.splitContainer1 = new System.Windows.Forms.SplitContainer();
@@ -113,6 +119,9 @@ namespace PeerCastStation.GUI
       label11 = new System.Windows.Forms.Label();
       label12 = new System.Windows.Forms.Label();
       label13 = new System.Windows.Forms.Label();
+      showGUIMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      quitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      this.notifyIconMenu.SuspendLayout();
       this.mainTab.SuspendLayout();
       this.tabChannels.SuspendLayout();
       this.splitContainer1.Panel1.SuspendLayout();
@@ -238,6 +247,39 @@ namespace PeerCastStation.GUI
       label13.Size = new System.Drawing.Size(55, 12);
       label13.TabIndex = 10;
       label13.Text = "ビットレート";
+      // 
+      // notifyIconMenu
+      // 
+      this.notifyIconMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            showGUIMenuItem,
+            this.toolStripMenuItem1,
+            quitMenuItem});
+      this.notifyIconMenu.Name = "notifyIconMenu";
+      this.notifyIconMenu.ShowImageMargin = false;
+      this.notifyIconMenu.Size = new System.Drawing.Size(130, 54);
+      // 
+      // showGUIMenuItem
+      // 
+      showGUIMenuItem.AutoToolTip = true;
+      showGUIMenuItem.Name = "showGUIMenuItem";
+      showGUIMenuItem.Size = new System.Drawing.Size(129, 22);
+      showGUIMenuItem.Text = "GUIを表示(&G)";
+      showGUIMenuItem.ToolTipText = "PeerCastStationのGUIを表示します";
+      showGUIMenuItem.Click += new System.EventHandler(this.showGUIMenuItem_Click);
+      // 
+      // toolStripMenuItem1
+      // 
+      this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+      this.toolStripMenuItem1.Size = new System.Drawing.Size(126, 6);
+      // 
+      // quitMenuItem
+      // 
+      quitMenuItem.AutoToolTip = true;
+      quitMenuItem.Name = "quitMenuItem";
+      quitMenuItem.Size = new System.Drawing.Size(129, 22);
+      quitMenuItem.Text = "終了(&Q)";
+      quitMenuItem.ToolTipText = "PeerCastStationを終了します";
+      quitMenuItem.Click += new System.EventHandler(this.quitMenuItem_Click);
       // 
       // mainTab
       // 
@@ -762,9 +804,12 @@ namespace PeerCastStation.GUI
       this.ClientSize = new System.Drawing.Size(412, 334);
       this.Controls.Add(this.statusBar);
       this.Controls.Add(this.mainTab);
+      this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
       this.Name = "MainForm";
       this.Text = "PeerCastStation.GUI";
+      this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
       this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
+      this.notifyIconMenu.ResumeLayout(false);
       this.mainTab.ResumeLayout(false);
       this.tabChannels.ResumeLayout(false);
       this.splitContainer1.Panel1.ResumeLayout(false);
@@ -836,6 +881,8 @@ namespace PeerCastStation.GUI
     private System.Windows.Forms.ComboBox bcYP;
     private System.Windows.Forms.TextBox bcStreamUrl;
     private System.Windows.Forms.ComboBox bcContentType;
+    private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
+    private System.Windows.Forms.ContextMenuStrip notifyIconMenu;
 
   }
 }

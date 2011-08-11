@@ -129,6 +129,7 @@ namespace PeerCastStation.GUI
     private TextBoxWriter guiWriter = null;
     private BindingList<ChannelListItem> channelListItems = new BindingList<ChannelListItem>();
     private List<IContentReader> contentReaders = new List<IContentReader>();
+    private NotifyIcon notifyIcon;
     public MainForm()
     {
       InitializeComponent();
@@ -140,6 +141,12 @@ namespace PeerCastStation.GUI
       if (IsOSX()) {
         this.Font = new System.Drawing.Font("Osaka", this.Font.SizeInPoints);
         statusBar.Font = new System.Drawing.Font("Osaka", statusBar.Font.SizeInPoints);
+      }
+      if (PlatformID.Win32NT==Environment.OSVersion.Platform) {
+        notifyIcon = new NotifyIcon(this.components);
+        notifyIcon.Icon = this.Icon;
+        notifyIcon.ContextMenuStrip = notifyIconMenu;
+        notifyIcon.Visible = true;
       }
       peerCast = new PeerCastStation.Core.PeerCast();
       peerCast.SourceStreamFactories["pcp"]  = new PeerCastStation.PCP.PCPSourceStreamFactory(peerCast);
@@ -340,10 +347,20 @@ namespace PeerCastStation.GUI
       }
     }
 
+    private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+    {
+      if (e.CloseReason==CloseReason.UserClosing &&
+          PlatformID.Win32NT==Environment.OSVersion.Platform) {
+        e.Cancel = true;
+        this.Hide();
+      }
+    }
+
     private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
     {
       peerCast.Stop();
       Settings.Default.Save();
+      Logger.RemoveWriter(guiWriter);
     }
 
     private void channelList_SelectedIndexChanged(object sender, EventArgs e)
@@ -543,6 +560,16 @@ namespace PeerCastStation.GUI
           bcBitrate.Text     = "";
         }
       }
+    }
+
+    private void showGUIMenuItem_Click(object sender, EventArgs e)
+    {
+      this.Show();
+    }
+
+    private void quitMenuItem_Click(object sender, EventArgs e)
+    {
+      Application.Exit();
     }
   }
 }
