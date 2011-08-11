@@ -893,7 +893,7 @@ namespace PeerCastStation.Core
   /// Atomを保持するコレクションクラスです
   /// </summary>
   public class AtomCollection
-    : ObservableCollection<Atom>,
+    : Collection<Atom>,
       IAtomCollection
   {
     /// <summary>
@@ -908,7 +908,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="other">コピー元のリスト</param>
     public AtomCollection(IList<Atom> other)
-      : base(other)
+      : base(other.ToList())
     {
     }
 
@@ -958,7 +958,7 @@ namespace PeerCastStation.Core
   /// AtomCollectionの読み取り専用コレクションを表すラッパクラスです
   /// </summary>
   public class ReadOnlyAtomCollection
-    : ReadOnlyObservableCollection<Atom>,
+    : ReadOnlyCollection<Atom>,
       IAtomCollection
   {
     private AtomCollection baseCollection;
