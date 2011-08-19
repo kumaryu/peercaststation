@@ -214,6 +214,7 @@ class TestPCPServer
       PCPAtom.new("pcp\n", nil, [1].pack('V')).write(ping_sock)
       helo = PCPAtom.new(PCP_HELO, [], nil)
       helo[PCP_HELO_SESSIONID] = @session_id
+      helo.write(ping_sock)
       oleh = PCPAtom.read(ping_sock)
       port = 0 unless oleh[PCP_HELO_SESSIONID]==session_id
       ping_sock.close
