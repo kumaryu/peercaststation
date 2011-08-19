@@ -19,6 +19,7 @@ require 'PeerCastStation.Core.dll'
 require 'PeerCastStation.PCP.dll'
 require 'test/unit'
 require 'peca'
+require 'yp'
 require 'utils'
 using_clr_extensions PeerCastStation::Core
 explicit_extensions PeerCastStation::Core::AtomCollectionExtensions
@@ -183,9 +184,6 @@ class TC_PCPYellowPageClient < Test::Unit::TestCase
     assert_equal('http://yp.example.com/', yp.Uri.ToString.to_s)
   end
 
-  def test_announce
-  end
-
   def test_find_tracker_connection_failed
     pcpyp = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://localhost:14288/'))
     channel_id = System::Guid.parse('4361BFA4F8E84328B9E975AAA7FA9E5E')
@@ -253,5 +251,123 @@ class TC_PCPYellowPageClient < Test::Unit::TestCase
   ensure
     yp.stop
   end
+
+  def create_channel(channel_id, name)
+    channel = PCSCore::Channel.new(@peercast, channel_id, System::Uri.new('http://127.0.0.1:8080/'))
+    info = PCSCore::AtomCollection.new
+    info.SetChanInfoName(name)
+    info.SetChanInfoBitrate(7144)
+    info.SetChanInfoGenre('test')
+    info.SetChanInfoDesc('test channel')
+    info.SetChanInfoURL('http://example.com/')
+    channel.channel_info = PCSCore::ChannelInfo.new(info)
+    track = PCSCore::AtomCollection.new
+    track.SetChanTrackTitle('title')
+    track.SetChanTrackAlbum('album')
+    track.SetChanTrackCreator('creator')
+    track.SetChanTrackURL('url')
+    channel.channel_track = PCSCore::ChannelTrack.new(track)
+    channel
+  end
+
+  def test_announce
+    client  = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://127.0.0.1:14288/'))
+    server  = PCPRootServer.new('127.0.0.1', 14288)
+    channel = create_channel(@channel_id, 'Test Channel')
+    client.announce(channel)
+    sleep(0.1) while server.channels.empty?
+    assert_equal(1, server.channels.size)
+    c = server.channels.values.first
+    assert_equal(@channel_id.to_s, c.channel_id.to_s)
+    assert_equal(@peercast.BroadcastID.to_s, c.broadcast_id.to_s)
+    assert_equal('Test Channel',        c.info[PCP_CHAN_INFO_NAME])
+    assert_equal(7144,                  c.info[PCP_CHAN_INFO_BITRATE])
+    assert_equal('test',                c.info[PCP_CHAN_INFO_GENRE])
+    assert_equal('test channel',        c.info[PCP_CHAN_INFO_DESC])
+    assert_equal('http://example.com/', c.info[PCP_CHAN_INFO_URL])
+    assert_equal('title',               c.track[PCP_CHAN_TRACK_TITLE])
+    assert_equal('album',               c.track[PCP_CHAN_TRACK_ALBUM])
+    assert_equal('creator',             c.track[PCP_CHAN_TRACK_CREATOR])
+    assert_equal('url',                 c.track[PCP_CHAN_TRACK_URL])
+    assert_equal(1, c.hosts.size)
+    host = c.hosts.values.first
+    assert_equal(@peercast.SessionID.to_s,   host.session_id.to_s)
+    assert_equal(@peercast.BroadcastID.to_s, host.broadcast_id.to_s)
+    assert_equal(@peercast.agent_name,       host.agent)
+    assert_equal(@endpoint.address.to_s,     host.ip.to_s)
+    assert_equal(0,                          host.port)
+    assert_equal(1218,                       host.version)
+    assert_equal(27,                         host.vp_version)
+    assert_equal(0,                          host.info[PCP_HOST_NUML])
+    assert_equal(0,                          host.info[PCP_HOST_NUMR])
+    assert((host.info[PCP_HOST_FLAGS1] & PCP_HOST_FLAGS1_DIRECT)!=0)
+    assert((host.info[PCP_HOST_FLAGS1] & PCP_HOST_FLAGS1_RELAY)!=0)
+    assert((host.info[PCP_HOST_FLAGS1] & PCP_HOST_FLAGS1_PUSH)!=0)
+    assert((host.info[PCP_HOST_FLAGS1] & PCP_HOST_FLAGS1_TRACKER)!=0)
+    assert_equal(1, server.client_threads.size)
+  ensure
+    client.stop_announce
+    server.close
+  end
+
+  def test_restart_announce
+    client  = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://127.0.0.1:14288/'))
+    server  = PCPRootServer.new('127.0.0.1', 14288)
+    channel = create_channel(@channel_id)
+    client.announce(channel)
+    sleep(0.1) while server.channels.empty?
+    client.restart_announce
+    sleep(11)
+    assert_equal(2, server.client_threads.size)
+  ensure
+    client.stop_announce
+    server.close
+  end
+
+  def test_announce_channels
+    client  = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://127.0.0.1:14288/'))
+    server  = PCPRootServer.new('127.0.0.1', 14288)
+    channel1 = create_channel(System::Guid.new_guid, 'Test1')
+    channel2 = create_channel(System::Guid.new_guid, 'Test2')
+    client.announce(channel1)
+    client.announce(channel2)
+    sleep(0.1) while server.channels.size<2
+    assert_equal(2, server.channels.size)
+    c = server.channels[GID.from_string(channel1.ChannelID.to_s)]
+    assert_equal(channel1.ChannelID.to_s,    c.channel_id.to_s)
+    assert_equal(@peercast.BroadcastID.to_s, c.broadcast_id.to_s)
+    assert_equal('Test1',                    c.info[PCP_CHAN_INFO_NAME])
+    c = server.channels[GID.from_string(channel2.ChannelID.to_s)]
+    assert_equal(channel2.ChannelID.to_s,    c.channel_id.to_s)
+    assert_equal(@peercast.BroadcastID.to_s, c.broadcast_id.to_s)
+    assert_equal('Test2',                    c.info[PCP_CHAN_INFO_NAME])
+  ensure
+    client.stop_announce
+    server.close
+  end
+
+  def test_stop_announce
+    client  = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://127.0.0.1:14288/'))
+    server  = PCPRootServer.new('127.0.0.1', 14288)
+    channel1 = create_channel(System::Guid.new_guid, 'Test1')
+    channel2 = create_channel(System::Guid.new_guid, 'Test2')
+    client.announce(channel1)
+    client.stop_announce
+    client.announce(channel2)
+    sleep(0.1) while server.channels.size<2
+    assert_equal(2, server.channels.size)
+    c = server.channels[GID.from_string(channel1.ChannelID.to_s)]
+    assert_equal(channel1.ChannelID.to_s,    c.channel_id.to_s)
+    assert_equal(@peercast.BroadcastID.to_s, c.broadcast_id.to_s)
+    assert_equal('Test1',                    c.info[PCP_CHAN_INFO_NAME])
+    c = server.channels[GID.from_string(channel2.ChannelID.to_s)]
+    assert_equal(channel2.ChannelID.to_s,    c.channel_id.to_s)
+    assert_equal(@peercast.BroadcastID.to_s, c.broadcast_id.to_s)
+    assert_equal('Test2',                    c.info[PCP_CHAN_INFO_NAME])
+  ensure
+    client.stop_announce
+    server.close
+  end
+
 end
 

@@ -142,6 +142,10 @@ class GID
     self.new((Array.new(16) { rand(256) }).pack('C*'))
   end
 
+  def ==(x)
+    @id.eql?(x.id)
+  end
+
   def hash
     @id.hash
   end

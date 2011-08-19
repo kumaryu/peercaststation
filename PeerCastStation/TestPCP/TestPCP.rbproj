@@ -32,5 +32,6 @@
     <None Include="test_pcpsourcestream.rb" />
     <None Include="test_pcpyellowpageclient.rb" />
     <None Include="utils.rb" />
+    <None Include="yp.rb" />
   </ItemGroup>
 </Project>

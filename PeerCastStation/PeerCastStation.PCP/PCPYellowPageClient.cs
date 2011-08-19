@@ -4,6 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using PeerCastStation.Core;
+using System.Threading;
+using System.ComponentModel;
+using System.Net;
 
 namespace PeerCastStation.PCP
 {
@@ -27,6 +30,8 @@ namespace PeerCastStation.PCP
   public class PCPYellowPageClient
     : IYellowPageClient
   {
+    private const int PCP_VERSION    = 1218;
+    private const int PCP_VERSION_VP = 27;
     public const int DefaultPort = 7144;
     public PeerCast PeerCast { get; private set; }
     public string Name { get; private set; }
@@ -155,9 +160,209 @@ namespace PeerCastStation.PCP
       return res;
     }
 
+    private Thread announceThread;
+    private List<Channel> channels = new List<Channel>();
     public void Announce(Channel channel)
     {
-      throw new System.NotImplementedException();
+      if (channels.Contains(channel)) return;
+      channel.PropertyChanged += OnChannelPropertyChanged;
+      channel.Closed += OnChannelClosed;
+      lock (channels) {
+        channels.Add(channel);
+      }
+      if (announceThread==null || !announceThread.IsAlive) {
+        isStopped = false;
+        restartEvent.Reset();
+        announceThread = new Thread(AnnounceThreadProc);
+        announceThread.Start();
+      }
+    }
+
+    private void OnPCPBcst(Atom atom)
+    {
+      var channel_id = atom.Children.GetBcstChannelID();
+      if (channel_id!=null) {
+        Channel channel;
+        lock (channels) {
+          channel = channels.Find(c => c.ChannelID==channel_id);
+        }
+        var group = atom.Children.GetBcstGroup();
+        var from  = atom.Children.GetBcstFrom();
+        var ttl   = atom.Children.GetBcstTTL();
+        var hops  = atom.Children.GetBcstHops();
+        if (channel!=null && group!=null && from!=null && ttl!=null && ttl.Value>0) {
+          var bcst = new AtomCollection(atom.Children);
+          bcst.SetBcstTTL((byte)(ttl.Value-1));
+          bcst.SetBcstHops((byte)((hops ?? 0)+1));
+          channel.Broadcast(null, new Atom(Atom.PCP_BCST, bcst), group.Value);
+        }
+      }
+    }
+
+    private void OnPCPQuit(Atom atom)
+    {
+      isStopped = true;
+    }
+
+    private void ProcessAtom(Atom atom)
+    {
+           if (atom.Name==Atom.PCP_BCST) OnPCPBcst(atom);
+      else if (atom.Name==Atom.PCP_QUIT) OnPCPQuit(atom);
+    }
+
+    private bool isStopped;
+    private List<Atom> posts = new List<Atom>();
+    private AutoResetEvent restartEvent = new AutoResetEvent(false);
+    private class RestartException : Exception {}
+    private void AnnounceThreadProc()
+    {
+      var host = Uri.DnsSafeHost;
+      var port = Uri.Port;
+      if (port<0) port = DefaultPort;
+      while (!isStopped) {
+        int last_updated = 0;
+        try {
+          using (var client = new TcpClient(host, port)) {
+            using (var stream = client.GetStream()) {
+              AtomWriter.Write(stream, new Atom(new ID4("pcp\n"), (int)1));
+              var helo = new AtomCollection();
+              helo.SetHeloAgent(PeerCast.AgentName);
+              helo.SetHeloVersion(1218);
+              helo.SetHeloSessionID(PeerCast.SessionID);
+              helo.SetHeloBCID(PeerCast.BroadcastID);
+              if (PeerCast.IsFirewalled.HasValue) {
+                if (PeerCast.IsFirewalled.Value) {
+                  //Do nothing
+                }
+                else {
+                  helo.SetHeloPort((short)PeerCast.LocalEndPoint.Port);
+                }
+              }
+              else {
+                helo.SetHeloPing((short)PeerCast.LocalEndPoint.Port);
+              }
+              AtomWriter.Write(stream, new Atom(Atom.PCP_HELO, helo));
+              while (!isStopped) {
+                var atom = AtomReader.Read(stream);
+                if (atom.Name==Atom.PCP_OLEH) break;
+                if (restartEvent.WaitOne(1)) throw new RestartException();
+              }
+              while (!isStopped) {
+                if (Environment.TickCount-last_updated>30000) {
+                  lock (channels) {
+                    foreach (var channel in channels) {
+                      PostChannelBcst(channel);
+                    }
+                  }
+                  last_updated = Environment.TickCount;
+                }
+                if (stream.DataAvailable) {
+                  Atom atom = AtomReader.Read(stream);
+                  ProcessAtom(atom);
+                }
+                lock (posts) {
+                  foreach (var atom in posts) {
+                    AtomWriter.Write(stream, atom);
+                  }
+                  posts.Clear();
+                }
+                if (restartEvent.WaitOne(1)) throw new RestartException();
+              }
+            }
+          }
+        }
+        catch (RestartException) {
+        }
+        catch (SocketException) {
+        }
+        if (!isStopped) Thread.Sleep(10000);
+      }
+    }
+
+    private void PostHostInfo(AtomCollection parent, Channel channel)
+    {
+      var host = new AtomCollection();
+      host.SetHostChannelID(channel.ChannelID);
+      host.SetHostSessionID(PeerCast.SessionID);
+      var globalendpoint = PeerCast.GlobalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
+      host.AddHostIP(globalendpoint.Address);
+      host.AddHostPort((short)globalendpoint.Port);
+      var localendpoint = PeerCast.LocalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
+      host.AddHostIP(localendpoint.Address);
+      host.AddHostPort((short)localendpoint.Port);
+      host.SetHostNumListeners(channel.OutputStreams.CountPlaying);
+      host.SetHostNumRelays(channel.OutputStreams.CountRelaying);
+      host.SetHostUptime(channel.Uptime);
+      if (channel.Contents.Count > 0) {
+        host.SetHostOldPos((uint)(channel.Contents.Oldest.Position & 0xFFFFFFFFU));
+        host.SetHostNewPos((uint)(channel.Contents.Newest.Position & 0xFFFFFFFFU));
+      }
+      host.SetHostVersion(PCP_VERSION);
+      host.SetHostVersionVP(PCP_VERSION_VP);
+      host.SetHostFlags1(
+        (PeerCast.AccessController.IsChannelRelayable(channel) ? PCPHostFlags1.Relay : 0) |
+        (PeerCast.AccessController.IsChannelPlayable(channel) ? PCPHostFlags1.Direct : 0) |
+        ((!PeerCast.IsFirewalled.HasValue || PeerCast.IsFirewalled.Value) ? PCPHostFlags1.Firewalled : 0) |
+        PCPHostFlags1.Tracker | PCPHostFlags1.Receiving);
+      parent.SetHost(host);
+    }
+
+    private void PostChannelInfo(AtomCollection parent, Channel channel)
+    {
+      var atom = new AtomCollection();
+      atom.SetChanID(channel.ChannelID);
+      atom.SetChanBCID(PeerCast.BroadcastID);
+      if (channel.ChannelInfo!=null)  atom.SetChanInfo(channel.ChannelInfo.Extra);
+      if (channel.ChannelTrack!=null) atom.SetChanTrack(channel.ChannelTrack.Extra);
+      parent.SetChan(atom);
+    }
+
+    private void PostChannelBcst(Channel channel)
+    {
+      var bcst = new AtomCollection();
+      bcst.SetBcstTTL(1);
+      bcst.SetBcstHops(0);
+      bcst.SetBcstFrom(PeerCast.SessionID);
+      bcst.SetBcstVersion(PCP_VERSION);
+      bcst.SetBcstVersionVP(PCP_VERSION_VP);
+      bcst.SetBcstChannelID(channel.ChannelID);
+      bcst.SetBcstGroup(BroadcastGroup.Root);
+      PostChannelInfo(bcst, channel);
+      PostHostInfo(bcst, channel);
+      lock (posts) posts.Add(new Atom(Atom.PCP_BCST, bcst));
+    }
+
+    private void OnChannelPropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+      var channel = sender as Channel;
+      if (channel!=null && e.PropertyName=="ChannelInfo" || e.PropertyName=="ChannelTrack") {
+        PostChannelBcst(channel);
+      }
+    }
+
+    private void OnChannelClosed(object sender, EventArgs e)
+    {
+      var channel = sender as Channel;
+      if (channel!=null) {
+        channel.Closed -= OnChannelClosed;
+        channel.PropertyChanged -= OnChannelPropertyChanged;
+        lock (channels) {
+          channels.Remove(channel);
+        }
+      }
+    }
+
+    public void StopAnnounce()
+    {
+      isStopped = true;
+      if (announceThread!=null) {
+        announceThread.Join();
+      }
+    }
+
+    public void RestartAnnounce()
+    {
+      restartEvent.Set();
     }
 
     public PCPYellowPageClient(PeerCast peercast, string name, Uri uri)

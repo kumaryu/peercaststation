@@ -209,6 +209,10 @@ namespace PeerCastStation.Core
   [Flags]
   public enum BroadcastGroup : byte {
     /// <summary>
+    /// YellowPage
+    /// </summary>
+    Root = 1,
+    /// <summary>
     /// SourceStreamを含むストリーム
     /// </summary>
     Trackers = 2,

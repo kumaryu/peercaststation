@@ -17,45 +17,9 @@ Thread.abort_on_exception = true
 $: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.Core', 'bin', 'Debug')
 require 'System.Core'
 require 'PeerCastStation.Core.dll'
-
-def rubyize_name(name)
-  unless /[A-Z]{2,}/=~name then
-    name.gsub(/(?!^)[A-Z]/, '_\&').downcase
-  else
-    nil
-  end
-end
-
-def explicit_extensions(klass)
-  methods = klass.to_clr_type.get_methods(System::Reflection::BindingFlags.public | System::Reflection::BindingFlags.static)
-  methods.each do |method|
-    if not method.get_custom_attributes(System::Runtime::CompilerServices::ExtensionAttribute.to_clr_type, true).empty? then
-      target_type = method.get_parameters[0].parameter_type
-      if target_type.is_interface then
-        type = target_type.to_module
-      else
-        type = target_type.to_class
-      end
-      type.module_eval do
-        [method.name, rubyize_name(method.name)].compact.each do |name|
-          define_method(name) do |*args|
-            klass.__send__(method.name, self, *args)
-          end
-        end
-      end
-    end
-  end
-end
-explicit_extensions PeerCastStation::Core::AtomCollectionExtensions
-
-class PeerCastStation::Core::Atom
-  def self.with_children(name, &block)
-    children = PeerCastStation::Core::AtomCollection.new
-    block.call(children)
-    self.new(name, children)
-  end
-end
+require 'utils'
 
 require 'test_pcpsourcestream'
 require 'test_pcpoutputstream'
 require 'test_pcppongoutputstream'
+require 'test_pcpyellowpageclient'

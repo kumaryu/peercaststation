@@ -44,6 +44,14 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="channel">載せるチャンネル</param>
     void Announce(Channel channel);
+    /// <summary>
+    /// YellowPageとの接続を終了し、載せているチャンネルを全て削除します
+    /// </summary>
+    void StopAnnounce();
+    /// <summary>
+    /// YellowPageへ強制的に再接続を試みます
+    /// </summary>
+    void RestartAnnounce();
   }
 
   /// <summary>
