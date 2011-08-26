@@ -50,7 +50,6 @@ namespace PeerCastStation.GUI
         return false;
       }
     }
-
     private class DebugWriter : System.IO.TextWriter
     {
       public DebugWriter()
@@ -82,7 +81,6 @@ namespace PeerCastStation.GUI
         System.Diagnostics.Debug.Write(buffer);
       }
     }
-
     private class TextBoxWriter : System.IO.TextWriter
     {
       private TextBox textBox;
@@ -128,6 +126,7 @@ namespace PeerCastStation.GUI
     private int currentPort;
     private TextBoxWriter guiWriter = null;
     private BindingList<ChannelListItem> channelListItems = new BindingList<ChannelListItem>();
+    private List<YPSettings> yellowPages = new List<YPSettings>();
     private List<IContentReader> contentReaders = new List<IContentReader>();
     private NotifyIcon notifyIcon;
     public MainForm()
@@ -149,6 +148,7 @@ namespace PeerCastStation.GUI
         notifyIcon.Visible = true;
       }
       peerCast = new PeerCastStation.Core.PeerCast();
+      peerCast.YellowPageFactories.Add(new PeerCastStation.PCP.PCPYellowPageClientFactory(peerCast));
       peerCast.SourceStreamFactories["pcp"]  = new PeerCastStation.PCP.PCPSourceStreamFactory(peerCast);
       peerCast.SourceStreamFactories["http"] = new PeerCastStation.HTTP.HTTPSourceStreamFactory(peerCast);
       peerCast.OutputStreamFactories.Add(new PeerCastStation.PCP.PCPPongOutputStreamFactory(peerCast));
@@ -158,11 +158,10 @@ namespace PeerCastStation.GUI
       peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPDummyOutputStreamFactory(peerCast));
       peerCast.ChannelAdded   += ChannelAdded;
       peerCast.ChannelRemoved += ChannelRemoved;
+      peerCast.YellowPagesChanged += YellowPagesChanged;
       contentReaders.Add(new PeerCastStation.Core.RawContentReader());
       contentReaders.Add(new PeerCastStation.ASF.ASFContentReader());
-      foreach (var reader in contentReaders) {
-        bcContentType.Items.Add(reader.Name);
-      }
+      bcContentType.DataSource = contentReaders;
       OnUpdateSettings(null);
       port.Value                 = Settings.Default.Port;
       maxRelays.Value            = Settings.Default.MaxRelays;
@@ -173,6 +172,10 @@ namespace PeerCastStation.GUI
       logFileNameText.Text       = Settings.Default.LogFileName;
       logToConsoleCheck.Checked  = Settings.Default.LogToConsole;
       logToGUICheck.Checked      = Settings.Default.LogToGUI;
+      if (Settings.Default.YellowPages!=null) {
+        yellowPages = new List<YPSettings>(Settings.Default.YellowPages);
+        peerCast.YellowPages = ToYPClients(yellowPages);
+      }
       if (peerCast.IsFirewalled.HasValue) {
         portOpenedLabel.Text = peerCast.IsFirewalled.Value ? "未開放" : "開放";
       }
@@ -329,6 +332,11 @@ namespace PeerCastStation.GUI
       }
     }
 
+    private void YellowPagesChanged(object sender, EventArgs e)
+    {
+      bcYP.DataSource = peerCast.YellowPages;
+    }
+
     private void ChannelInfoChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
     }
@@ -359,6 +367,7 @@ namespace PeerCastStation.GUI
     private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
     {
       peerCast.Stop();
+      Settings.Default.YellowPages = new YPSettingsCollection(yellowPages);
       Settings.Default.Save();
       Logger.RemoveWriter(guiWriter);
     }
@@ -536,7 +545,7 @@ namespace PeerCastStation.GUI
     private void bcStart_Click(object sender, EventArgs e)
     {
       var channel_name = bcChannelName.Text;
-      if (channel_name!="" && bcContentType.SelectedIndex>0) {
+      if (channel_name!="" && bcContentType.SelectedItem!=null) {
         var source_uri = bcStreamUrl.Text;
         var genre = bcGenre.Text;
         int bitrate;
@@ -548,8 +557,8 @@ namespace PeerCastStation.GUI
         if (bitrate>0) channel_info.SetChanInfoBitrate(bitrate);
         if (bcDescription.Text!="") channel_info.SetChanInfoDesc(bcDescription.Text);
         if (bcContactUrl.Text!="") channel_info.SetChanInfoURL(bcContactUrl.Text);
-        var reader = contentReaders[bcContentType.SelectedIndex];
-        var yp = bcYP.SelectedIndex>0 ? (IYellowPageClient)null : null; //TODO:YP選択
+        var reader = bcContentType.SelectedItem as IContentReader;
+        var yp = bcYP.SelectedItem as IYellowPageClient;
         if (peerCast.BroadcastChannel(yp, channel_id, new ChannelInfo(channel_info), new Uri(source_uri), reader)!=null) {
           mainTab.SelectTab(0);
           bcStreamUrl.Text   = "";
@@ -570,6 +579,30 @@ namespace PeerCastStation.GUI
     private void quitMenuItem_Click(object sender, EventArgs e)
     {
       Application.Exit();
+    }
+
+    private void ypListEditButton_Click(object sender, EventArgs e)
+    {
+      var dlg = new YellowPagesEditDialog(peerCast);
+      dlg.YPSettingsList = yellowPages;
+      if (dlg.ShowDialog()==DialogResult.OK) {
+        yellowPages = new List<YPSettings>(dlg.YPSettingsList);
+        peerCast.YellowPages = ToYPClients(yellowPages);
+      }
+    }
+
+    private IList<IYellowPageClient> ToYPClients(IList<YPSettings> ypsettings)
+    {
+      List<IYellowPageClient> res = new List<IYellowPageClient>();
+      foreach (var setting in ypsettings) {
+        if (!setting.Enabled) continue;
+        var factory = peerCast.YellowPageFactories.FirstOrDefault(f => f.Name==setting.Protocol);
+        if (factory!=null) {
+          var uri = new Uri(String.Format("{0}://{1}", setting.Protocol, setting.Address));
+          res.Add(factory.Create(setting.Name, uri));
+        }
+      }
+      return res;
     }
   }
 }

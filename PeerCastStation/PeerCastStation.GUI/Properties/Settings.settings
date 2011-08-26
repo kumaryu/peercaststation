@@ -29,5 +29,8 @@
     <Setting Name="LogToGUI" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <Setting Name="YellowPages" Type="PeerCastStation.GUI.YPSettingsCollection" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
   </Settings>
 </SettingsFile>

@@ -60,6 +60,7 @@ namespace PeerCastStation.GUI
       System.Windows.Forms.Label label13;
       System.Windows.Forms.ToolStripMenuItem showGUIMenuItem;
       System.Windows.Forms.ToolStripMenuItem quitMenuItem;
+      System.Windows.Forms.Label label14;
       System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
       this.notifyIconMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
       this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
@@ -88,6 +89,7 @@ namespace PeerCastStation.GUI
       this.bcStreamUrl = new System.Windows.Forms.TextBox();
       this.bcContentType = new System.Windows.Forms.ComboBox();
       this.tabSettings = new System.Windows.Forms.TabPage();
+      this.ypListEditButton = new System.Windows.Forms.Button();
       this.applySettings = new System.Windows.Forms.Button();
       this.maxUpstreamRate = new System.Windows.Forms.NumericUpDown();
       this.maxDirects = new System.Windows.Forms.NumericUpDown();
@@ -121,6 +123,7 @@ namespace PeerCastStation.GUI
       label13 = new System.Windows.Forms.Label();
       showGUIMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       quitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      label14 = new System.Windows.Forms.Label();
       this.notifyIconMenu.SuspendLayout();
       this.mainTab.SuspendLayout();
       this.tabChannels.SuspendLayout();
@@ -248,6 +251,33 @@ namespace PeerCastStation.GUI
       label13.TabIndex = 10;
       label13.Text = "ビットレート";
       // 
+      // showGUIMenuItem
+      // 
+      showGUIMenuItem.AutoToolTip = true;
+      showGUIMenuItem.Name = "showGUIMenuItem";
+      showGUIMenuItem.Size = new System.Drawing.Size(129, 22);
+      showGUIMenuItem.Text = "GUIを表示(&G)";
+      showGUIMenuItem.ToolTipText = "PeerCastStationのGUIを表示します";
+      showGUIMenuItem.Click += new System.EventHandler(this.showGUIMenuItem_Click);
+      // 
+      // quitMenuItem
+      // 
+      quitMenuItem.AutoToolTip = true;
+      quitMenuItem.Name = "quitMenuItem";
+      quitMenuItem.Size = new System.Drawing.Size(129, 22);
+      quitMenuItem.Text = "終了(&Q)";
+      quitMenuItem.ToolTipText = "PeerCastStationを終了します";
+      quitMenuItem.Click += new System.EventHandler(this.quitMenuItem_Click);
+      // 
+      // label14
+      // 
+      label14.AutoSize = true;
+      label14.Location = new System.Drawing.Point(8, 118);
+      label14.Name = "label14";
+      label14.Size = new System.Drawing.Size(43, 12);
+      label14.TabIndex = 11;
+      label14.Text = "YP一覧";
+      // 
       // notifyIconMenu
       // 
       this.notifyIconMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -258,28 +288,10 @@ namespace PeerCastStation.GUI
       this.notifyIconMenu.ShowImageMargin = false;
       this.notifyIconMenu.Size = new System.Drawing.Size(130, 54);
       // 
-      // showGUIMenuItem
-      // 
-      showGUIMenuItem.AutoToolTip = true;
-      showGUIMenuItem.Name = "showGUIMenuItem";
-      showGUIMenuItem.Size = new System.Drawing.Size(129, 22);
-      showGUIMenuItem.Text = "GUIを表示(&G)";
-      showGUIMenuItem.ToolTipText = "PeerCastStationのGUIを表示します";
-      showGUIMenuItem.Click += new System.EventHandler(this.showGUIMenuItem_Click);
-      // 
       // toolStripMenuItem1
       // 
       this.toolStripMenuItem1.Name = "toolStripMenuItem1";
       this.toolStripMenuItem1.Size = new System.Drawing.Size(126, 6);
-      // 
-      // quitMenuItem
-      // 
-      quitMenuItem.AutoToolTip = true;
-      quitMenuItem.Name = "quitMenuItem";
-      quitMenuItem.Size = new System.Drawing.Size(129, 22);
-      quitMenuItem.Text = "終了(&Q)";
-      quitMenuItem.ToolTipText = "PeerCastStationを終了します";
-      quitMenuItem.Click += new System.EventHandler(this.quitMenuItem_Click);
       // 
       // mainTab
       // 
@@ -540,6 +552,7 @@ namespace PeerCastStation.GUI
       // 
       this.bcYP.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+      this.bcYP.DisplayMember = "Name";
       this.bcYP.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
       this.bcYP.FormattingEnabled = true;
       this.bcYP.Location = new System.Drawing.Point(87, 192);
@@ -560,6 +573,7 @@ namespace PeerCastStation.GUI
       // 
       this.bcContentType.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+      this.bcContentType.DisplayMember = "Name";
       this.bcContentType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
       this.bcContentType.FormattingEnabled = true;
       this.bcContentType.Location = new System.Drawing.Point(87, 166);
@@ -569,6 +583,8 @@ namespace PeerCastStation.GUI
       // 
       // tabSettings
       // 
+      this.tabSettings.Controls.Add(label14);
+      this.tabSettings.Controls.Add(this.ypListEditButton);
       this.tabSettings.Controls.Add(this.applySettings);
       this.tabSettings.Controls.Add(label4);
       this.tabSettings.Controls.Add(label3);
@@ -584,6 +600,16 @@ namespace PeerCastStation.GUI
       this.tabSettings.TabIndex = 2;
       this.tabSettings.Text = "設定";
       this.tabSettings.UseVisualStyleBackColor = true;
+      // 
+      // ypListEditButton
+      // 
+      this.ypListEditButton.Location = new System.Drawing.Point(117, 113);
+      this.ypListEditButton.Name = "ypListEditButton";
+      this.ypListEditButton.Size = new System.Drawing.Size(75, 23);
+      this.ypListEditButton.TabIndex = 10;
+      this.ypListEditButton.Text = "編集...";
+      this.ypListEditButton.UseVisualStyleBackColor = true;
+      this.ypListEditButton.Click += new System.EventHandler(this.ypListEditButton_Click);
       // 
       // applySettings
       // 
@@ -883,6 +909,7 @@ namespace PeerCastStation.GUI
     private System.Windows.Forms.ComboBox bcContentType;
     private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
     private System.Windows.Forms.ContextMenuStrip notifyIconMenu;
+    private System.Windows.Forms.Button ypListEditButton;
 
   }
 }
