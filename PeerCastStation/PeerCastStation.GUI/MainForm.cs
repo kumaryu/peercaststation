@@ -127,7 +127,21 @@ namespace PeerCastStation.GUI
     private TextBoxWriter guiWriter = null;
     private BindingList<ChannelListItem> channelListItems = new BindingList<ChannelListItem>();
     private List<YPSettings> yellowPages = new List<YPSettings>();
-    private List<IContentReader> contentReaders = new List<IContentReader>();
+    public class ContentReaderWrapper
+    {
+      public IContentReader Reader { get; private set; }
+      public ContentReaderWrapper(IContentReader reader)
+      {
+        this.Reader = reader;
+      }
+
+      public override string ToString()
+      {
+        return this.Reader.Name;
+      }
+    }
+    private List<ContentReaderWrapper> contentReaders = new List<ContentReaderWrapper>();
+
     private NotifyIcon notifyIcon;
     public MainForm()
     {
@@ -159,8 +173,8 @@ namespace PeerCastStation.GUI
       peerCast.ChannelAdded   += ChannelAdded;
       peerCast.ChannelRemoved += ChannelRemoved;
       peerCast.YellowPagesChanged += YellowPagesChanged;
-      contentReaders.Add(new PeerCastStation.Core.RawContentReader());
-      contentReaders.Add(new PeerCastStation.ASF.ASFContentReader());
+      contentReaders.Add(new ContentReaderWrapper(new PeerCastStation.ASF.ASFContentReader()));
+      contentReaders.Add(new ContentReaderWrapper(new PeerCastStation.Core.RawContentReader()));
       bcContentType.DataSource = contentReaders;
       OnUpdateSettings(null);
       port.Value                 = Settings.Default.Port;
@@ -557,9 +571,9 @@ namespace PeerCastStation.GUI
         if (bitrate>0) channel_info.SetChanInfoBitrate(bitrate);
         if (bcDescription.Text!="") channel_info.SetChanInfoDesc(bcDescription.Text);
         if (bcContactUrl.Text!="") channel_info.SetChanInfoURL(bcContactUrl.Text);
-        var reader = bcContentType.SelectedItem as IContentReader;
+        var reader = bcContentType.SelectedItem as ContentReaderWrapper;
         var yp = bcYP.SelectedItem as IYellowPageClient;
-        if (peerCast.BroadcastChannel(yp, channel_id, new ChannelInfo(channel_info), new Uri(source_uri), reader)!=null) {
+        if (peerCast.BroadcastChannel(yp, channel_id, new ChannelInfo(channel_info), new Uri(source_uri), reader.Reader)!=null) {
           mainTab.SelectTab(0);
           bcStreamUrl.Text   = "";
           bcChannelName.Text = "";

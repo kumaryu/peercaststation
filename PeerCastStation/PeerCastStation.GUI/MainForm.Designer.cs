@@ -573,7 +573,6 @@ namespace PeerCastStation.GUI
       // 
       this.bcContentType.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-      this.bcContentType.DisplayMember = "Name";
       this.bcContentType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
       this.bcContentType.FormattingEnabled = true;
       this.bcContentType.Location = new System.Drawing.Point(87, 166);
