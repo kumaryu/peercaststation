@@ -36,7 +36,7 @@
     <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>peercaststation.ico</ApplicationIcon>
+    <ApplicationIcon>peercaststation_small.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -120,6 +120,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="peercaststation.ico" />
+    <Content Include="peercaststation_small.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
