@@ -27,7 +27,9 @@ namespace PeerCastStation.GUI
 
     private void ypAddButton_Click(object sender, EventArgs e)
     {
-      ypSettingsBindingSource.Add(new YPSettings());
+      var new_item = new YPSettings() { Name = "新しいYP" };
+      ypSettingsBindingSource.Add(new_item);
+      ypSettingsBindingSource.Position = ypSettingsBindingSource.Count-1;
     }
 
     private void ypRemoveButton_Click(object sender, EventArgs e)
@@ -45,6 +47,7 @@ namespace PeerCastStation.GUI
         if (idx>0) {
           ypSettingsBindingSource.RemoveCurrent();
           ypSettingsBindingSource.Insert(idx-1, current);
+          ypSettingsBindingSource.Position = idx-1;
         }
       }
     }
@@ -57,6 +60,7 @@ namespace PeerCastStation.GUI
         if (idx<ypSettingsBindingSource.Count-1) {
           ypSettingsBindingSource.RemoveCurrent();
           ypSettingsBindingSource.Insert(idx+1, current);
+          ypSettingsBindingSource.Position = idx+1;
         }
       }
     }
