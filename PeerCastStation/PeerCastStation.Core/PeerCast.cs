@@ -59,13 +59,29 @@ namespace PeerCastStation.Core
     /// </summary>
     public string AgentName { get; set; }
     /// <summary>
-    /// 登録されているYellowPageのリストを取得します
+    /// 登録されているYellowPageリストを取得および設定します
+    /// 取得は読み取り専用のリストを、設定は指定したリストのコピーを設定します
     /// </summary>
-    public IList<IYellowPageClient> YellowPages   { get; private set; }
+    public IList<IYellowPageClient> YellowPages {
+      get { return yellowPages.AsReadOnly(); }
+      set {
+        Utils.ReplaceCollection(ref yellowPages, org => {
+          return new List<IYellowPageClient>(value);
+        });
+        YellowPagesChanged(this, new EventArgs());
+      }
+    }
+    private List<IYellowPageClient> yellowPages = new List<IYellowPageClient>();
+
     /// <summary>
-    /// 登録されているYellowPageのプロトコルとファクトリの辞書を取得します
+    /// YPリストが変更された時に呼び出されます。
     /// </summary>
-    public IDictionary<string, IYellowPageClientFactory> YellowPageFactories { get; private set; }
+    public event EventHandler YellowPagesChanged;
+
+    /// <summary>
+    /// 登録されているYellowPageファクトリのリストを取得します
+    /// </summary>
+    public IList<IYellowPageClientFactory> YellowPageFactories { get; private set; }
     /// <summary>
     /// 登録されているSourceStreamのプロトコルとファクトリの辞書を取得します
     /// </summary>
@@ -229,6 +245,50 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
+    /// 指定されたプロトコル、名前、URIを使って新しいYPを作成しYPリストに追加します
+    /// </summary>
+    /// <param name="protocol">YPクライアントのプロトコル名</param>
+    /// <param name="name">YPの名前</param>
+    /// <param name="uri">YPのURI</param>
+    public IYellowPageClient AddYellowPage(string protocol, string name, Uri uri)
+    {
+      IYellowPageClient yp = null;
+      foreach (var factory in YellowPageFactories) {
+        if (factory.Name==protocol) {
+          yp = factory.Create(name, uri);
+          break;
+        }
+      }
+      if (yp==null) {
+        throw new ArgumentException(String.Format("Protocol `{0}' is not found", protocol));
+      }
+      Utils.ReplaceCollection(ref yellowPages, orig => {
+        var new_yps = new List<IYellowPageClient>(orig);
+        new_yps.Add(yp);
+        return new_yps;
+      });
+      logger.Debug("YP Added: {0}", yp.Name);
+      if (YellowPagesChanged!=null) YellowPagesChanged(this, new EventArgs());
+      return yp;
+    }
+
+    /// <summary>
+    /// 指定したYPをYPリストから取り除きます
+    /// </summary>
+    /// <param name="yp">取り除くYP</param>
+    public void RemoveYellowPage(IYellowPageClient yp)
+    {
+      yp.StopAnnounce();
+      Utils.ReplaceCollection(ref yellowPages, orig => {
+        var new_yps = new List<IYellowPageClient>(orig);
+        new_yps.Remove(yp);
+        return new_yps;
+      });
+      logger.Debug("YP Removed: {0}", yp.Name);
+      if (YellowPagesChanged!=null) YellowPagesChanged(this, new EventArgs());
+    }
+
+    /// <summary>
     /// PeerCastを初期化します
     /// </summary>
     public PeerCast()
@@ -245,8 +305,7 @@ namespace PeerCastStation.Core
       this.GlobalAddress = null;
       this.GlobalAddress6 = null;
       this.IsFirewalled = null;
-      this.YellowPages   = new List<IYellowPageClient>();
-      this.YellowPageFactories = new Dictionary<string, IYellowPageClientFactory>();
+      this.YellowPageFactories = new List<IYellowPageClientFactory>();
       this.SourceStreamFactories = new Dictionary<string, ISourceStreamFactory>();
       this.OutputStreamFactories = new List<IOutputStreamFactory>();
       foreach (var addr in Dns.GetHostAddresses(Dns.GetHostName())) {
@@ -403,6 +462,9 @@ namespace PeerCastStation.Core
       foreach (var channel in channels) {
         channel.Close();
         if (ChannelRemoved!=null) ChannelRemoved(this, new ChannelChangedEventArgs(channel));
+      }
+      foreach (var ypclient in yellowPages) {
+        ypclient.StopAnnounce();
       }
       outputListeners = new List<OutputListener>();
       channels = new List<Channel>();
