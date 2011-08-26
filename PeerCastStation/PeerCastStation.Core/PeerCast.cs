@@ -211,7 +211,7 @@ namespace PeerCastStation.Core
       var source_stream = source_factory.Create(channel, source, content_reader);
       channel.Start(source_stream);
       if (ChannelAdded!=null) ChannelAdded(this, new ChannelChangedEventArgs(channel));
-      //TODO: ypにアナウンス開始
+      if (yp!=null) yp.Announce(channel);
       return channel;
     }
 
