@@ -349,6 +349,7 @@ namespace PeerCastStation.PCP
         lock (channels) {
           channels.Remove(channel);
         }
+        if (channels.Count==0) isStopped = true;
       }
     }
 
