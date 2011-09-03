@@ -288,13 +288,14 @@ namespace PeerCastStation.GUI
       public ChannelListItem(Channel channel)
       {
         this.Channel = channel;
-        this.Channel.PropertyChanged += ChannelInfoChanged;
       }
 
-      private void ChannelInfoChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
-      {
-        if (PropertyChanged!=null) PropertyChanged(this, new PropertyChangedEventArgs("Name"));
-      }
+			public void Update()
+			{
+				if (PropertyChanged!=null) {
+					PropertyChanged(this, new PropertyChangedEventArgs("Name"));
+				}
+			}
 
       public string Name
       {
@@ -327,23 +328,27 @@ namespace PeerCastStation.GUI
 
     private void ChannelAdded(object sender, PeerCastStation.Core.ChannelChangedEventArgs e)
     {
-      channelListItems.Add(new ChannelListItem(e.Channel));
-      e.Channel.PropertyChanged += ChannelInfoChanged;
+			this.BeginInvoke(new Action(() => {
+				channelListItems.Add(new ChannelListItem(e.Channel));
+				e.Channel.PropertyChanged += ChannelInfoChanged;
+			}));
     }
 
     private void ChannelRemoved(object sender, PeerCastStation.Core.ChannelChangedEventArgs e)
     {
-      e.Channel.PropertyChanged -= ChannelInfoChanged;
-      ChannelListItem item = null;  
-      foreach (var i in channelListItems) {
-        if (i.Channel==e.Channel) {
-          item = i;
-          break;
-        }
-      }
-      if (item!=null) {
-        channelListItems.Remove(item);
-      }
+			this.BeginInvoke(new Action(() => {
+				e.Channel.PropertyChanged -= ChannelInfoChanged;
+				ChannelListItem item = null;
+				foreach (var i in channelListItems) {
+					if (i.Channel==e.Channel) {
+						item = i;
+						break;
+					}
+				}
+				if (item!=null) {
+					channelListItems.Remove(item);
+				}
+			}));
     }
 
     private void YellowPagesChanged(object sender, EventArgs e)
@@ -353,6 +358,20 @@ namespace PeerCastStation.GUI
 
     private void ChannelInfoChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+			this.BeginInvoke(new Action(() => {
+				foreach (var i in channelListItems) {
+					if (i.Channel==sender) {
+						i.Update();
+						break;
+					}
+				}
+				var item = channelList.SelectedItem as ChannelListItem;
+				if (item!=null && item.Channel==sender) {
+					refreshTree(item.Channel);
+					refreshChannelInfo(item.Channel);
+					refreshOutputList(item.Channel);
+				}
+			}));
     }
 
     private void applySettings_Click(object sender, EventArgs e)
@@ -391,6 +410,7 @@ namespace PeerCastStation.GUI
       var item = channelList.SelectedItem as ChannelListItem;
       if (item!=null) {
         refreshTree(item.Channel);
+        refreshChannelInfo(item.Channel);
         refreshOutputList(item.Channel);
       }
       else {
@@ -478,6 +498,65 @@ namespace PeerCastStation.GUI
       addRelayTreeNode(relayTree.Nodes, root, channel.Nodes);
       relayTree.EndUpdate();
     }
+
+    private void refreshChannelInfo(Channel channel)
+    {
+			var is_tracker = peerCast.BroadcastID==channel.BroadcastID;
+			var info = channel.ChannelInfo;
+			if (info!=null) {
+				chanInfoChannelID.Text   = channel.ChannelID.ToString("N").ToUpper();
+				chanInfoChannelName.Text = info.Name;
+				chanInfoGenre.Text       = info.Genre;
+				chanInfoDesc.Text        = info.Desc;
+				chanInfoContactURL.Text  = info.URL;
+				chanInfoComment.Text     = info.Comment;
+				chanInfoContentType.Text = info.ContentType;
+				chanInfoBitrate.Text     = String.Format("{0} kbps", info.Bitrate);
+				chanInfoGenre.ReadOnly       = !is_tracker;
+				chanInfoDesc.ReadOnly        = !is_tracker;
+				chanInfoContactURL.ReadOnly  = !is_tracker;
+				chanInfoComment.ReadOnly     = !is_tracker;
+			}
+			var track = channel.ChannelTrack;
+			if (track!=null) {
+				chanTrackAlbum.Text      = track.Album;
+				chanTrackArtist.Text     = track.Creator;
+				chanTrackTitle.Text      = track.Name;
+				chanTrackContactURL.Text = track.URL;
+				chanTrackAlbum.ReadOnly      = !is_tracker;
+				chanTrackArtist.ReadOnly     = !is_tracker;
+				chanTrackTitle.ReadOnly      = !is_tracker;
+				chanTrackContactURL.ReadOnly = !is_tracker;
+			}
+			chanInfoUpdateButton.Enabled = is_tracker;
+    }
+
+		private void chanInfoUpdateButton_Click(object sender, EventArgs e)
+		{
+			var item = channelList.SelectedItem as ChannelListItem;
+			if (item!=null) {
+				var channel = item.Channel;
+				var is_tracker = peerCast.BroadcastID==channel.BroadcastID;
+				if (!is_tracker) return;
+				var info = new AtomCollection(channel.ChannelInfo.Extra);
+				if (info!=null) {
+					info.SetChanInfoComment(chanInfoComment.Text);
+					info.SetChanInfoGenre(chanInfoGenre.Text);
+					info.SetChanInfoDesc(chanInfoDesc.Text);
+					info.SetChanInfoURL(chanInfoContactURL.Text);
+					info.SetChanInfoComment(chanInfoComment.Text);
+					channel.ChannelInfo = new ChannelInfo(info);
+				}
+				var track = new AtomCollection(channel.ChannelTrack.Extra);
+				if (track!=null) {
+					track.SetChanTrackAlbum(chanTrackAlbum.Text);
+					track.SetChanTrackCreator(chanTrackArtist.Text);
+					track.SetChanTrackTitle(chanTrackTitle.Text);
+					track.SetChanTrackURL(chanTrackContactURL.Text);
+					channel.ChannelTrack = new ChannelTrack(track);
+				}
+			}
+		}
 
     private void refreshOutputList(Channel channel)
     {
