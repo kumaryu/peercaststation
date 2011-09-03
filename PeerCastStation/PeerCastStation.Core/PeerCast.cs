@@ -201,7 +201,7 @@ namespace PeerCastStation.Core
         logger.Error("Protocol `{0}' is not found", source.Scheme);
         throw new ArgumentException(String.Format("Protocol `{0}' is not found", source.Scheme));
       }
-      channel = new Channel(this, channel_id, source);
+      channel = new Channel(this, channel_id, this.BroadcastID, source);
       Utils.ReplaceCollection(ref channels, orig => {
         var new_collection = new List<Channel>(orig);
         new_collection.Add(channel);

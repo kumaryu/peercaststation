@@ -312,7 +312,6 @@ namespace PeerCastStation.Core
   {
     private const int NodeLimit = 180000; //ms
     private static Logger logger = new Logger(typeof(Channel));
-    private Guid channelID = Guid.Empty;
     private ISourceStream sourceStream = null;
     private OutputStreamCollection outputStreams = new OutputStreamCollection();
     private List<Host> nodes = new List<Host>();
@@ -343,6 +342,7 @@ namespace PeerCastStation.Core
     /// </summary>
     public bool IsClosed { get; private set; }
     public Guid ChannelID { get; private set; }
+    public Guid BroadcastID { get; private set; }
 
     /// <summary>
     /// コンテント取得元のUriを取得します
@@ -800,6 +800,34 @@ namespace PeerCastStation.Core
       this.PeerCast = peercast;
       this.SourceUri = source_uri;
       this.ChannelID = channel_id;
+			this.BroadcastID = Guid.Empty;
+      var host = new HostBuilder();
+      var port = SourceUri.Port < 0 ? 7144 : SourceUri.Port;
+      var addresses = Dns.GetHostAddresses(SourceUri.DnsSafeHost);
+      var addr = addresses.FirstOrDefault(x => x.AddressFamily==AddressFamily.InterNetwork);
+      if (addr!=null) {
+        host.GlobalEndPoint = new IPEndPoint(addr, port);
+      }
+      SourceHost = host.ToHost();
+      contents.CollectionChanged += (sender, e) => {
+        OnContentChanged();
+      };
+    }
+
+    /// <summary>
+    /// チャンネルIDとブロードキャストID、ソースストリームを指定してチャンネルを初期化します
+    /// </summary>
+    /// <param name="peercast">所属するPeerCastオブジェクト</param>
+    /// <param name="channel_id">チャンネルID</param>
+    /// <param name="broadcast_id">ブロードキャストID</param>
+    /// <param name="source_uri">ソースURI</param>
+    public Channel(PeerCast peercast, Guid channel_id, Guid broadcast_id, Uri source_uri)
+    {
+      this.IsClosed = true;
+      this.PeerCast = peercast;
+      this.SourceUri = source_uri;
+      this.ChannelID = channel_id;
+      this.BroadcastID = broadcast_id;
       var host = new HostBuilder();
       var port = SourceUri.Port < 0 ? 7144 : SourceUri.Port;
       var addresses = Dns.GetHostAddresses(SourceUri.DnsSafeHost);
