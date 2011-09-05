@@ -180,11 +180,17 @@ namespace PeerCastStation.ASF
     {
       var type    = BinaryReader.ReadUInt16LE(stream);
       var len     = BinaryReader.ReadUInt16LE(stream);
-      var seq_num = BinaryReader.ReadUInt32LE(stream);
-      var v1      = BinaryReader.ReadUInt16LE(stream);
-      var v2      = BinaryReader.ReadUInt16LE(stream);
-      var data    = BinaryReader.ReadBytes(stream, len-8);
-      return new ASFChunk(type, len, seq_num, v1, v2, data);
+			if (len<8) {
+	      var data  = BinaryReader.ReadBytes(stream, len);
+	      return new ASFChunk(type, len, 0, 0, 0, data);
+			}
+			else {
+	      var seq_num = BinaryReader.ReadUInt32LE(stream);
+	      var v1      = BinaryReader.ReadUInt16LE(stream);
+	      var v2      = BinaryReader.ReadUInt16LE(stream);
+	      var data    = BinaryReader.ReadBytes(stream, len-8);
+	      return new ASFChunk(type, len, seq_num, v1, v2, data);
+			}
     }
   }
 
