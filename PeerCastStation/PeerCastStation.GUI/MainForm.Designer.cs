@@ -96,6 +96,7 @@ namespace PeerCastStation.GUI
 			this.chanTrackTitle = new System.Windows.Forms.TextBox();
 			this.chanTrackArtist = new System.Windows.Forms.TextBox();
 			this.groupBox1 = new System.Windows.Forms.GroupBox();
+			this.chanInfoComment = new System.Windows.Forms.TextBox();
 			this.chanInfoBitrate = new System.Windows.Forms.TextBox();
 			this.chanInfoContentType = new System.Windows.Forms.TextBox();
 			this.chanInfoContactURL = new System.Windows.Forms.TextBox();
@@ -136,7 +137,6 @@ namespace PeerCastStation.GUI
 			this.statusBar = new System.Windows.Forms.StatusStrip();
 			this.portLabel = new System.Windows.Forms.ToolStripStatusLabel();
 			this.portOpenedLabel = new System.Windows.Forms.ToolStripStatusLabel();
-			this.chanInfoComment = new System.Windows.Forms.TextBox();
 			label4 = new System.Windows.Forms.Label();
 			label3 = new System.Windows.Forms.Label();
 			label2 = new System.Windows.Forms.Label();
@@ -193,36 +193,36 @@ namespace PeerCastStation.GUI
 			label4.AutoSize = true;
 			label4.Location = new System.Drawing.Point(8, 90);
 			label4.Name = "label4";
-			label4.Size = new System.Drawing.Size(105, 12);
+			label4.Size = new System.Drawing.Size(107, 12);
 			label4.TabIndex = 8;
-			label4.Text = "最大上り帯域(kbps)";
+			label4.Text = "最大上り帯域(kbps):";
 			// 
 			// label3
 			// 
 			label3.AutoSize = true;
 			label3.Location = new System.Drawing.Point(8, 65);
 			label3.Name = "label3";
-			label3.Size = new System.Drawing.Size(65, 12);
+			label3.Size = new System.Drawing.Size(67, 12);
 			label3.TabIndex = 7;
-			label3.Text = "最大視聴数";
+			label3.Text = "最大視聴数:";
 			// 
 			// label2
 			// 
 			label2.AutoSize = true;
 			label2.Location = new System.Drawing.Point(8, 40);
 			label2.Name = "label2";
-			label2.Size = new System.Drawing.Size(67, 12);
+			label2.Size = new System.Drawing.Size(69, 12);
 			label2.TabIndex = 6;
-			label2.Text = "最大リレー数";
+			label2.Text = "最大リレー数:";
 			// 
 			// label1
 			// 
 			label1.AutoSize = true;
 			label1.Location = new System.Drawing.Point(8, 15);
 			label1.Name = "label1";
-			label1.Size = new System.Drawing.Size(57, 12);
+			label1.Size = new System.Drawing.Size(59, 12);
 			label1.TabIndex = 5;
-			label1.Text = "ポート番号";
+			label1.Text = "ポート番号:";
 			// 
 			// label6
 			// 
@@ -319,9 +319,9 @@ namespace PeerCastStation.GUI
 			label14.AutoSize = true;
 			label14.Location = new System.Drawing.Point(8, 118);
 			label14.Name = "label14";
-			label14.Size = new System.Drawing.Size(43, 12);
+			label14.Size = new System.Drawing.Size(45, 12);
 			label14.TabIndex = 11;
-			label14.Text = "YP一覧";
+			label14.Text = "YP一覧:";
 			// 
 			// label21
 			// 
@@ -445,6 +445,16 @@ namespace PeerCastStation.GUI
 			this.chanInfoUpdateButton.Text = "更新";
 			this.chanInfoUpdateButton.UseVisualStyleBackColor = true;
 			this.chanInfoUpdateButton.Click += new System.EventHandler(this.chanInfoUpdateButton_Click);
+			// 
+			// label25
+			// 
+			label25.AutoSize = true;
+			label25.Location = new System.Drawing.Point(12, 121);
+			label25.Name = "label25";
+			label25.Size = new System.Drawing.Size(64, 12);
+			label25.TabIndex = 28;
+			label25.Text = "配信コメント:";
+			label25.TextAlign = System.Drawing.ContentAlignment.TopRight;
 			// 
 			// notifyIconMenu
 			// 
@@ -709,6 +719,17 @@ namespace PeerCastStation.GUI
 			this.groupBox1.TabStop = false;
 			this.groupBox1.Text = "チャンネル情報";
 			// 
+			// chanInfoComment
+			// 
+			this.chanInfoComment.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+			this.chanInfoComment.Location = new System.Drawing.Point(82, 118);
+			this.chanInfoComment.Name = "chanInfoComment";
+			this.chanInfoComment.ReadOnly = true;
+			this.chanInfoComment.Size = new System.Drawing.Size(321, 19);
+			this.chanInfoComment.TabIndex = 29;
+			this.chanInfoComment.Text = "配信コメント";
+			// 
 			// chanInfoBitrate
 			// 
 			this.chanInfoBitrate.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
@@ -839,7 +860,7 @@ namespace PeerCastStation.GUI
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.bcBitrate.Location = new System.Drawing.Point(87, 141);
 			this.bcBitrate.Name = "bcBitrate";
-			this.bcBitrate.Size = new System.Drawing.Size(309, 19);
+			this.bcBitrate.Size = new System.Drawing.Size(340, 19);
 			this.bcBitrate.TabIndex = 11;
 			// 
 			// bcContactUrl
@@ -848,7 +869,7 @@ namespace PeerCastStation.GUI
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.bcContactUrl.Location = new System.Drawing.Point(87, 116);
 			this.bcContactUrl.Name = "bcContactUrl";
-			this.bcContactUrl.Size = new System.Drawing.Size(309, 19);
+			this.bcContactUrl.Size = new System.Drawing.Size(340, 19);
 			this.bcContactUrl.TabIndex = 9;
 			// 
 			// bcGenre
@@ -857,7 +878,7 @@ namespace PeerCastStation.GUI
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.bcGenre.Location = new System.Drawing.Point(87, 91);
 			this.bcGenre.Name = "bcGenre";
-			this.bcGenre.Size = new System.Drawing.Size(309, 19);
+			this.bcGenre.Size = new System.Drawing.Size(340, 19);
 			this.bcGenre.TabIndex = 7;
 			// 
 			// bcDescription
@@ -866,7 +887,7 @@ namespace PeerCastStation.GUI
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.bcDescription.Location = new System.Drawing.Point(87, 66);
 			this.bcDescription.Name = "bcDescription";
-			this.bcDescription.Size = new System.Drawing.Size(309, 19);
+			this.bcDescription.Size = new System.Drawing.Size(340, 19);
 			this.bcDescription.TabIndex = 5;
 			// 
 			// bcChannelName
@@ -875,13 +896,13 @@ namespace PeerCastStation.GUI
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.bcChannelName.Location = new System.Drawing.Point(87, 41);
 			this.bcChannelName.Name = "bcChannelName";
-			this.bcChannelName.Size = new System.Drawing.Size(309, 19);
+			this.bcChannelName.Size = new System.Drawing.Size(340, 19);
 			this.bcChannelName.TabIndex = 3;
 			// 
 			// bcStart
 			// 
 			this.bcStart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.bcStart.Location = new System.Drawing.Point(306, 258);
+			this.bcStart.Location = new System.Drawing.Point(337, 380);
 			this.bcStart.Name = "bcStart";
 			this.bcStart.Size = new System.Drawing.Size(90, 26);
 			this.bcStart.TabIndex = 16;
@@ -898,7 +919,7 @@ namespace PeerCastStation.GUI
 			this.bcYP.FormattingEnabled = true;
 			this.bcYP.Location = new System.Drawing.Point(87, 192);
 			this.bcYP.Name = "bcYP";
-			this.bcYP.Size = new System.Drawing.Size(309, 20);
+			this.bcYP.Size = new System.Drawing.Size(340, 20);
 			this.bcYP.TabIndex = 15;
 			// 
 			// bcStreamUrl
@@ -907,7 +928,7 @@ namespace PeerCastStation.GUI
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.bcStreamUrl.Location = new System.Drawing.Point(87, 16);
 			this.bcStreamUrl.Name = "bcStreamUrl";
-			this.bcStreamUrl.Size = new System.Drawing.Size(309, 19);
+			this.bcStreamUrl.Size = new System.Drawing.Size(340, 19);
 			this.bcStreamUrl.TabIndex = 1;
 			// 
 			// bcContentType
@@ -918,7 +939,7 @@ namespace PeerCastStation.GUI
 			this.bcContentType.FormattingEnabled = true;
 			this.bcContentType.Location = new System.Drawing.Point(87, 166);
 			this.bcContentType.Name = "bcContentType";
-			this.bcContentType.Size = new System.Drawing.Size(309, 20);
+			this.bcContentType.Size = new System.Drawing.Size(340, 20);
 			this.bcContentType.TabIndex = 13;
 			// 
 			// tabSettings
@@ -954,9 +975,9 @@ namespace PeerCastStation.GUI
 			// applySettings
 			// 
 			this.applySettings.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.applySettings.Location = new System.Drawing.Point(321, 261);
+			this.applySettings.Location = new System.Drawing.Point(337, 380);
 			this.applySettings.Name = "applySettings";
-			this.applySettings.Size = new System.Drawing.Size(75, 23);
+			this.applySettings.Size = new System.Drawing.Size(90, 26);
 			this.applySettings.TabIndex = 9;
 			this.applySettings.Text = "適用";
 			this.applySettings.UseVisualStyleBackColor = true;
@@ -964,6 +985,8 @@ namespace PeerCastStation.GUI
 			// 
 			// maxUpstreamRate
 			// 
+			this.maxUpstreamRate.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.maxUpstreamRate.Location = new System.Drawing.Point(117, 88);
 			this.maxUpstreamRate.Maximum = new decimal(new int[] {
             1000000,
@@ -971,25 +994,31 @@ namespace PeerCastStation.GUI
             0,
             0});
 			this.maxUpstreamRate.Name = "maxUpstreamRate";
-			this.maxUpstreamRate.Size = new System.Drawing.Size(162, 19);
+			this.maxUpstreamRate.Size = new System.Drawing.Size(310, 19);
 			this.maxUpstreamRate.TabIndex = 4;
 			// 
 			// maxDirects
 			// 
+			this.maxDirects.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.maxDirects.Location = new System.Drawing.Point(117, 63);
 			this.maxDirects.Name = "maxDirects";
-			this.maxDirects.Size = new System.Drawing.Size(82, 19);
+			this.maxDirects.Size = new System.Drawing.Size(310, 19);
 			this.maxDirects.TabIndex = 3;
 			// 
 			// maxRelays
 			// 
+			this.maxRelays.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.maxRelays.Location = new System.Drawing.Point(117, 38);
 			this.maxRelays.Name = "maxRelays";
-			this.maxRelays.Size = new System.Drawing.Size(82, 19);
+			this.maxRelays.Size = new System.Drawing.Size(310, 19);
 			this.maxRelays.TabIndex = 2;
 			// 
 			// port
 			// 
+			this.port.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.port.Location = new System.Drawing.Point(117, 13);
 			this.port.Maximum = new decimal(new int[] {
             65535,
@@ -1002,7 +1031,7 @@ namespace PeerCastStation.GUI
             0,
             0});
 			this.port.Name = "port";
-			this.port.Size = new System.Drawing.Size(82, 19);
+			this.port.Size = new System.Drawing.Size(310, 19);
 			this.port.TabIndex = 1;
 			this.port.Value = new decimal(new int[] {
             7144,
@@ -1054,7 +1083,7 @@ namespace PeerCastStation.GUI
 			// logClearButton
 			// 
 			this.logClearButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.logClearButton.Location = new System.Drawing.Point(306, 255);
+			this.logClearButton.Location = new System.Drawing.Point(337, 380);
 			this.logClearButton.Name = "logClearButton";
 			this.logClearButton.Size = new System.Drawing.Size(90, 26);
 			this.logClearButton.TabIndex = 8;
@@ -1065,7 +1094,7 @@ namespace PeerCastStation.GUI
 			// selectLogFileName
 			// 
 			this.selectLogFileName.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-			this.selectLogFileName.Location = new System.Drawing.Point(375, 35);
+			this.selectLogFileName.Location = new System.Drawing.Point(406, 35);
 			this.selectLogFileName.Name = "selectLogFileName";
 			this.selectLogFileName.Size = new System.Drawing.Size(21, 18);
 			this.selectLogFileName.TabIndex = 7;
@@ -1094,7 +1123,7 @@ namespace PeerCastStation.GUI
 			this.logText.Name = "logText";
 			this.logText.ReadOnly = true;
 			this.logText.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-			this.logText.Size = new System.Drawing.Size(388, 189);
+			this.logText.Size = new System.Drawing.Size(419, 314);
 			this.logText.TabIndex = 5;
 			// 
 			// logFileNameText
@@ -1103,7 +1132,7 @@ namespace PeerCastStation.GUI
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.logFileNameText.Location = new System.Drawing.Point(296, 35);
 			this.logFileNameText.Name = "logFileNameText";
-			this.logFileNameText.Size = new System.Drawing.Size(73, 19);
+			this.logFileNameText.Size = new System.Drawing.Size(104, 19);
 			this.logFileNameText.TabIndex = 4;
 			this.logFileNameText.Validated += new System.EventHandler(this.logFileNameText_Validated);
 			// 
@@ -1122,7 +1151,7 @@ namespace PeerCastStation.GUI
             "デバッグメッセージも含む"});
 			this.logLevelList.Location = new System.Drawing.Point(105, 9);
 			this.logLevelList.Name = "logLevelList";
-			this.logLevelList.Size = new System.Drawing.Size(264, 20);
+			this.logLevelList.Size = new System.Drawing.Size(322, 20);
 			this.logLevelList.TabIndex = 2;
 			this.logLevelList.SelectedIndexChanged += new System.EventHandler(this.logLevelList_SelectedIndexChanged);
 			// 
@@ -1162,27 +1191,6 @@ namespace PeerCastStation.GUI
 			this.portOpenedLabel.Name = "portOpenedLabel";
 			this.portOpenedLabel.Size = new System.Drawing.Size(134, 18);
 			this.portOpenedLabel.Text = "toolStripStatusLabel1";
-			// 
-			// chanInfoComment
-			// 
-			this.chanInfoComment.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-			this.chanInfoComment.Location = new System.Drawing.Point(82, 118);
-			this.chanInfoComment.Name = "chanInfoComment";
-			this.chanInfoComment.ReadOnly = true;
-			this.chanInfoComment.Size = new System.Drawing.Size(321, 19);
-			this.chanInfoComment.TabIndex = 29;
-			this.chanInfoComment.Text = "配信コメント";
-			// 
-			// label25
-			// 
-			label25.AutoSize = true;
-			label25.Location = new System.Drawing.Point(12, 121);
-			label25.Name = "label25";
-			label25.Size = new System.Drawing.Size(64, 12);
-			label25.TabIndex = 28;
-			label25.Text = "配信コメント:";
-			label25.TextAlign = System.Drawing.ContentAlignment.TopRight;
 			// 
 			// MainForm
 			// 
