@@ -313,7 +313,7 @@ class TC_PCPYellowPageClient < Test::Unit::TestCase
   def test_restart_announce
     client  = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://127.0.0.1:14288/'))
     server  = PCPRootServer.new('127.0.0.1', 14288)
-    channel = create_channel(@channel_id)
+    channel = create_channel(@channel_id, 'Test Channel')
     client.announce(channel)
     sleep(0.1) while server.channels.empty?
     client.restart_announce
