@@ -22,7 +22,7 @@ class MockYellowPageClientFactory
   include PeerCastStation::Core::IYellowPageClientFactory
   
   def name
-    'MockYellowPage'
+    'mock_yp'
   end
   
   def create(name, uri)
@@ -36,8 +36,9 @@ class MockYellowPageClient
     @name = name
     @uri = uri
     @log = []
+    @channels = []
   end
-  attr_reader :name, :uri, :log
+  attr_reader :name, :uri, :log, :channels
   
   def find_tracker(channel_id)
     @log << [:find_tracker, channel_id]
@@ -45,12 +46,18 @@ class MockYellowPageClient
     System::Uri.new("mock://#{addr}")
   end
   
-  def list_channels
-    raise NotImplementError, 'Not implemented yet'
-  end
-  
   def announce(channel)
-    raise NotImplementError, 'Not implemented yet'
+    @log << [:announce, channel]
+    @channels << channel
+  end
+
+  def restart_announce
+    @log << [:restart_announce]
+  end
+
+  def stop_announce
+    @log << [:stop_announce]
+    @channels.clear
   end
 end
 

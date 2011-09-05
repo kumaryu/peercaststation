@@ -69,9 +69,9 @@ class TC_CorePeerCast < Test::Unit::TestCase
   
   def test_relay_from_yp
     @peercast = PeerCastStation::Core::PeerCast.new
-    @peercast.yellow_page_factories['mock_yp'] = MockYellowPageClientFactory.new
+    @peercast.yellow_page_factories.add(MockYellowPageClientFactory.new)
     @peercast.source_stream_factories['mock'] = MockSourceStreamFactory.new
-    @peercast.yellow_pages.add(@peercast.yellow_page_factories['mock_yp'].create('mock_yp', System::Uri.new('pcp:example.com:7147')))
+    @peercast.add_yellow_page('mock_yp', 'mock_yp', System::Uri.new('pcp:example.com:7147'))
     
     channel_id = System::Guid.empty
     channel = @peercast.relay_channel(channel_id)
@@ -91,9 +91,9 @@ class TC_CorePeerCast < Test::Unit::TestCase
 
   def test_request_channel
     @peercast = PeerCastStation::Core::PeerCast.new
-    @peercast.yellow_page_factories['mock_yp'] = MockYellowPageClientFactory.new
+    @peercast.yellow_page_factories.add(MockYellowPageClientFactory.new)
     @peercast.source_stream_factories['mock'] = MockSourceStreamFactory.new
-    @peercast.yellow_pages.add(@peercast.yellow_page_factories['mock_yp'].create('mock_yp', System::Uri.new('pcp:example.com:7147')))
+    @peercast.add_yellow_page('mock_yp', 'mock_yp', System::Uri.new('pcp:example.com:7147'))
     
     channel_id = System::Guid.new_guid
     assert_nil(@peercast.request_channel(channel_id, nil, false))
