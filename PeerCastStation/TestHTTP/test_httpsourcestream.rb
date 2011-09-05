@@ -312,20 +312,30 @@ class TC_HTTPSourceStream < Test::Unit::TestCase
     source = PCSHTTP::HTTPSourceStream.new(@peercast, @channel, source_uri, @reader)
     server = TCPServer.new('127.0.0.1', 8889)
     source.start
-    sock = server.accept 
-    req = read_header(sock)
-    sock.write("HTTP/1.1 200 OK\r\n")
-    sock.write("Content-Type:application/octet-stream\r\n")
-    sock.write("\r\n")
-    100.times do |i|
-      sock.write("content#{i}\n")
-      if i==10 then
-        source.reconnect
+    requested = 0
+    server_thread = Thread.new {
+      2.times do |i|
+        client = server.accept 
+        requested += 1
+        begin
+          req = read_header(client)
+          client.write("HTTP/1.1 200 OK\r\n")
+          client.write("Content-Type:application/octet-stream\r\n")
+          client.write("\r\n")
+          100.times do |j|
+            client.write("content#{i}#{j}\n")
+            if i==0 and j==10 then
+              source.reconnect
+            end
+          end
+          client.close
+        rescue
+        end
       end
-    end
-    sock.close
+    }
+    server_thread.join
     server.close
-    assert(!source.is_stopped)
+    assert_equal(2, requested)
   ensure
     source.stop
     source.join
