@@ -32,11 +32,29 @@ class TC_CoreChannel < Test::Unit::TestCase
   end
 
   def test_construct
-    channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    channel_id = System::Guid.new_guid
+    channel = PeerCastStation::Core::Channel.new(@peercast, channel_id, System::Uri.new('mock://localhost'))
     assert_nil(channel.source_stream)
     assert_equal(@peercast, channel.PeerCast)
     assert_equal('mock://localhost/', channel.source_uri.to_s)
-    assert_equal(System::Guid.empty, channel.ChannelID)
+    assert_equal(channel_id, channel.ChannelID)
+    assert_equal(System::Guid.empty, channel.BroadcastID)
+    assert_equal(PeerCastStation::Core::SourceStreamStatus.Idle, channel.status)
+    assert_equal(0, channel.output_streams.count)
+    assert_equal(0, channel.nodes.count)
+    assert_nil(channel.content_header)
+    assert_equal(0, channel.contents.count)
+  end
+
+  def test_construct_bcid
+    channel_id = System::Guid.new_guid
+    channel = PeerCastStation::Core::Channel.new(
+      @peercast, channel_id, @peercast.BroadcastID, System::Uri.new('mock://localhost'))
+    assert_nil(channel.source_stream)
+    assert_equal(@peercast, channel.PeerCast)
+    assert_equal('mock://localhost/', channel.source_uri.to_s)
+    assert_equal(channel_id, channel.ChannelID)
+    assert_equal(@peercast.BroadcastID, channel.BroadcastID)
     assert_equal(PeerCastStation::Core::SourceStreamStatus.Idle, channel.status)
     assert_equal(0, channel.output_streams.count)
     assert_equal(0, channel.nodes.count)
