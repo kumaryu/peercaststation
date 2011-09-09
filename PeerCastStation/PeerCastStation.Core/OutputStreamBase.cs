@@ -100,8 +100,8 @@ namespace PeerCastStation.Core
         WaitEventAny();
         DoProcess();
       }
-      OnStopped();
       Cleanup();
+      OnStopped();
     }
 
     protected virtual void Cleanup()
