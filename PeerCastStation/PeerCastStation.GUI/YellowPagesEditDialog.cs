@@ -16,10 +16,8 @@ namespace PeerCastStation.GUI
     }
     private IList<YPSettings> ypSettingsList = new List<YPSettings>();
 
-    private PeerCastStation.Core.PeerCast peerCast;
     public YellowPagesEditDialog(PeerCastStation.Core.PeerCast peerCast)
     {
-      this.peerCast = peerCast;
       InitializeComponent();
       ypProtocolList.Items.AddRange(peerCast.YellowPageFactories.Select(factory => factory.Name).ToArray());
       ypSettingsBindingSource.DataSource = ypSettingsList;

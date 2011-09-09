@@ -215,7 +215,7 @@ namespace PeerCastStation.ASF
       var streams = new List<StreamType>();
       int bitrate = 0;
       var s = new MemoryStream(chunk.Data, false);
-      var root_obj = ASFObject.ReadHeader(s);
+      ASFObject.ReadHeader(s); //root_obj
       var sub_headers = BinaryReader.ReadUInt32LE(s);
       s.Seek(2, SeekOrigin.Current); //2 bytes padding?
       for (var i=0; i<sub_headers; i++) {
@@ -224,10 +224,10 @@ namespace PeerCastStation.ASF
         case ASFObject.KnownType.FileProperty: {
           var objdata = new MemoryStream(obj.Data, false);
           objdata.Seek(32, SeekOrigin.Current);
-          var packets = BinaryReader.ReadInt64LE(objdata);
+          BinaryReader.ReadInt64LE(objdata); //packets
           objdata.Seek(28, SeekOrigin.Current);
-          var packetsize_min = BinaryReader.ReadInt32LE(objdata);
-          var packetsize_max = BinaryReader.ReadInt32LE(objdata);
+          BinaryReader.ReadInt32LE(objdata); //packetsize_min
+          BinaryReader.ReadInt32LE(objdata); //packetsize_max
           bitrate = (BinaryReader.ReadInt32LE(objdata)+999) / 1000;
           }
           break;

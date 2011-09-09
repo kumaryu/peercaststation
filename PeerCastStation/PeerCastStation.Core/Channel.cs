@@ -311,7 +311,6 @@ namespace PeerCastStation.Core
     : INotifyPropertyChanged
   {
     private const int NodeLimit = 180000; //ms
-    private static Logger logger = new Logger(typeof(Channel));
     private ISourceStream sourceStream = null;
     private OutputStreamCollection outputStreams = new OutputStreamCollection();
     private List<Host> nodes = new List<Host>();
