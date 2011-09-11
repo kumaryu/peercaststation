@@ -244,7 +244,10 @@ namespace PeerCastStation.PCP
               AtomWriter.Write(stream, new Atom(Atom.PCP_HELO, helo));
               while (!isStopped) {
                 var atom = AtomReader.Read(stream);
-                if (atom.Name==Atom.PCP_OLEH) break;
+								if (atom.Name==Atom.PCP_OLEH) {
+									OnPCPOleh(atom);
+									break;
+								}
                 if (restartEvent.WaitOne(1)) throw new RestartException();
               }
               while (!isStopped) {
@@ -276,6 +279,29 @@ namespace PeerCastStation.PCP
         catch (SocketException) {
         }
         if (!isStopped) Thread.Sleep(10000);
+      }
+    }
+
+    private void OnPCPOleh(Atom atom)
+    {
+      var rip = atom.Children.GetHeloRemoteIP();
+      if (rip!=null) {
+        switch (rip.AddressFamily) {
+        case AddressFamily.InterNetwork:
+          if (PeerCast.GlobalAddress==null || !PeerCast.GlobalAddress.Equals(rip)) {
+            PeerCast.GlobalAddress = rip;
+          }
+          break;
+        case AddressFamily.InterNetworkV6:
+          if (PeerCast.GlobalAddress6==null || !PeerCast.GlobalAddress6.Equals(rip)) {
+            PeerCast.GlobalAddress6 = rip;
+          }
+          break;
+        }
+      }
+      var port = atom.Children.GetHeloPort();
+      if (port.HasValue) {
+        PeerCast.IsFirewalled = port.Value==0;
       }
     }
 
