@@ -91,7 +91,30 @@ namespace PeerCastStation.Core
 
     protected virtual void WaitEventAny()
     {
-      SyncContext.EventHandle.WaitOne(10);
+			if (recvResult!=null) {
+				if (sendResult!=null) {
+					WaitHandle.WaitAny(new WaitHandle[] {
+			      SyncContext.EventHandle,
+						recvResult.AsyncWaitHandle,
+						sendResult.AsyncWaitHandle,
+					}, 10);
+				}
+				else {
+					WaitHandle.WaitAny(new WaitHandle[] {
+			      SyncContext.EventHandle,
+						recvResult.AsyncWaitHandle,
+					}, 10);
+				}
+			}
+			else if (sendResult!=null) {
+				WaitHandle.WaitAny(new WaitHandle[] {
+		      SyncContext.EventHandle,
+					sendResult.AsyncWaitHandle,
+				}, 10);
+			}
+			else {
+				SyncContext.EventHandle.WaitOne(10);
+			}
     }
 
     protected virtual void OnStarted()
