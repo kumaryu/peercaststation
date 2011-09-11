@@ -342,26 +342,31 @@ namespace PeerCastStation.PCP
       return new Atom(Atom.PCP_CHAN, chan);
     }
 
-    protected Atom CreateContentPacket(Channel channel, ref long? header_pos, ref long? content_pos)
+    protected Atom CreateContentPacket(Channel channel, ref Content lastHeader, ref Content lastContent)
     {
       if (channel.ContentHeader!=null &&
-          (!header_pos.HasValue || channel.ContentHeader.Position!=header_pos.Value)) {
-        header_pos = channel.ContentHeader.Position;
-        if (content_pos.HasValue && content_pos.Value<header_pos.Value) {
-          content_pos = header_pos;
+          (lastHeader==null || channel.ContentHeader.Position!=lastHeader.Position)) {
+        lastHeader = channel.ContentHeader;
+        if (lastContent!=null && lastContent.Position<lastHeader.Position) {
+          lastContent = lastHeader;
         }
-        return CreateContentHeaderPacket(channel, channel.ContentHeader);
+        return CreateContentHeaderPacket(channel, lastHeader);
       }
-      else if (header_pos.HasValue) {
+      else if (lastHeader!=null) {
         Content content;
-        if (content_pos.HasValue) {
-          content = channel.Contents.NextOf(content_pos.Value);
+        if (lastContent!=null) {
+          content = channel.Contents.NextOf(lastContent.Position);
+					if (content!=null && lastContent.Position+lastContent.Data.LongLength<content.Position) {
+						Logger.Info("Content Skipped {0} expected but was {1}",
+							lastContent.Position+lastContent.Data.LongLength,
+							content.Position);
+					}
         }
         else {
           content = channel.Contents.Oldest;
         }
         if (content!=null) {
-          content_pos = content.Position;
+          lastContent = content;
           return CreateContentBodyPacket(channel, content);
         }
         else {
@@ -373,12 +378,12 @@ namespace PeerCastStation.PCP
       }
     }
 
-    protected virtual void SendRelayBody(ref long? header_pos, ref long? content_pos)
+    protected virtual void SendRelayBody(ref Content lastHeader, ref Content lastContent)
     {
       if (IsContentChanged()) {
         bool sent = true;
         while (sent) {
-          var atom = CreateContentPacket(Channel, ref header_pos, ref content_pos);
+          var atom = CreateContentPacket(Channel, ref lastHeader, ref lastContent);
           if (atom!=null) {
             sent = true;
             Send(atom);
@@ -400,8 +405,8 @@ namespace PeerCastStation.PCP
       SendRelayResponse();
     }
 
-    private long? headerPos = null;
-    private long? contentPos = null;
+    private Content lastHeader = null;
+    private Content lastContent = null;
     protected override void OnIdle()
     {
       base.OnIdle();
@@ -411,7 +416,7 @@ namespace PeerCastStation.PCP
           ProcessAtom(atom);
         }
         if (Downhost!=null) {
-          SendRelayBody(ref headerPos, ref contentPos);
+          SendRelayBody(ref lastHeader, ref lastContent);
         }
       }
       else {
@@ -566,12 +571,22 @@ namespace PeerCastStation.PCP
         Logger.Debug("Handshake succeeded {0}({1}) but relay is full", Downhost.GlobalEndPoint, Downhost.SessionID.ToString("N"));
         //次に接続するホストを送ってQUIT
         foreach (var node in Channel.SelectSourceNodes()) {
-          var host_atom = new AtomCollection();
+          var host_atom = new AtomCollection(node.Extra);
+					Atom ip = host_atom.FindByName(Atom.PCP_HOST_IP);
+					while (ip!=null) {
+						host_atom.Remove(ip);
+						ip = host_atom.FindByName(Atom.PCP_HOST_IP);
+					}
+					Atom port = host_atom.FindByName(Atom.PCP_HOST_PORT);
+					while (port!=null) {
+						host_atom.Remove(port);
+						port = host_atom.FindByName(Atom.PCP_HOST_PORT);
+					}
           host_atom.SetHostSessionID(node.SessionID);
-          var globalendpoint = node.GlobalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
+          var globalendpoint = node.GlobalEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
           host_atom.AddHostIP(globalendpoint.Address);
           host_atom.AddHostPort((short)globalendpoint.Port);
-          var localendpoint  = node.LocalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
+          var localendpoint  = node.LocalEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
           host_atom.AddHostIP(localendpoint.Address);
           host_atom.AddHostPort((short)localendpoint.Port);
           host_atom.SetHostNumRelays(node.RelayCount);
@@ -584,7 +599,6 @@ namespace PeerCastStation.PCP
             (node.IsDirectFull ? PCPHostFlags1.None : PCPHostFlags1.Direct) |
             (node.IsReceiving ? PCPHostFlags1.Receiving : PCPHostFlags1.None) |
             (node.IsControlFull ? PCPHostFlags1.None : PCPHostFlags1.ControlIn));
-          host_atom.Update(node.Extra);
           Send(new Atom(Atom.PCP_HOST, host_atom));
           Logger.Debug("Sending Node: {0}({1})", globalendpoint, node.SessionID.ToString("N"));
         }
