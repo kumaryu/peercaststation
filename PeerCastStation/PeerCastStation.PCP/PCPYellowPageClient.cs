@@ -152,6 +152,7 @@ namespace PeerCastStation.PCP
             break;
           }
         }
+        AtomWriter.Write(stream, new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT));
         client.Close();
       }
       catch (SocketException)
@@ -221,6 +222,7 @@ namespace PeerCastStation.PCP
       if (port<0) port = DefaultPort;
       while (!isStopped) {
         int last_updated = 0;
+        posts.Clear();
         try {
           using (var client = new TcpClient(host, port)) {
             using (var stream = client.GetStream()) {
@@ -254,7 +256,7 @@ namespace PeerCastStation.PCP
                 if (Environment.TickCount-last_updated>30000) {
                   lock (channels) {
                     foreach (var channel in channels) {
-                      PostChannelBcst(channel);
+                      PostChannelBcst(channel, true);
                     }
                   }
                   last_updated = Environment.TickCount;
@@ -271,12 +273,21 @@ namespace PeerCastStation.PCP
                 }
                 if (restartEvent.WaitOne(1)) throw new RestartException();
               }
+              lock (posts) {
+                foreach (var atom in posts) {
+                  AtomWriter.Write(stream, atom);
+                }
+                posts.Clear();
+              }
+			        AtomWriter.Write(stream, new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT));
             }
           }
         }
         catch (RestartException) {
         }
         catch (SocketException) {
+        }
+        catch (IOException) {
         }
         if (!isStopped) Thread.Sleep(10000);
       }
@@ -305,7 +316,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    private void PostHostInfo(AtomCollection parent, Channel channel)
+    private void PostHostInfo(AtomCollection parent, Channel channel, bool playing)
     {
       var host = new AtomCollection();
       host.SetHostChannelID(channel.ChannelID);
@@ -329,7 +340,8 @@ namespace PeerCastStation.PCP
         (PeerCast.AccessController.IsChannelRelayable(channel) ? PCPHostFlags1.Relay : 0) |
         (PeerCast.AccessController.IsChannelPlayable(channel) ? PCPHostFlags1.Direct : 0) |
         ((!PeerCast.IsFirewalled.HasValue || PeerCast.IsFirewalled.Value) ? PCPHostFlags1.Firewalled : 0) |
-        PCPHostFlags1.Tracker | PCPHostFlags1.Receiving);
+        PCPHostFlags1.Tracker |
+				(playing ? PCPHostFlags1.Receiving : PCPHostFlags1.None));
       parent.SetHost(host);
     }
 
@@ -343,7 +355,7 @@ namespace PeerCastStation.PCP
       parent.SetChan(atom);
     }
 
-    private void PostChannelBcst(Channel channel)
+    private void PostChannelBcst(Channel channel, bool playing)
     {
       var bcst = new AtomCollection();
       bcst.SetBcstTTL(1);
@@ -354,7 +366,7 @@ namespace PeerCastStation.PCP
       bcst.SetBcstChannelID(channel.ChannelID);
       bcst.SetBcstGroup(BroadcastGroup.Root);
       PostChannelInfo(bcst, channel);
-      PostHostInfo(bcst, channel);
+      PostHostInfo(bcst, channel, playing);
       lock (posts) posts.Add(new Atom(Atom.PCP_BCST, bcst));
     }
 
@@ -362,7 +374,7 @@ namespace PeerCastStation.PCP
     {
       var channel = sender as Channel;
       if (channel!=null && e.PropertyName=="ChannelInfo" || e.PropertyName=="ChannelTrack") {
-        PostChannelBcst(channel);
+        PostChannelBcst(channel, true);
       }
     }
 
@@ -375,6 +387,7 @@ namespace PeerCastStation.PCP
         lock (channels) {
           channels.Remove(channel);
         }
+				PostChannelBcst(channel, true);
         if (channels.Count==0) isStopped = true;
       }
     }
