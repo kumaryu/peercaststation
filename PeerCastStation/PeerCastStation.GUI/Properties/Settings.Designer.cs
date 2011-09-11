@@ -141,5 +141,17 @@ namespace PeerCastStation.GUI.Properties {
                 this["YellowPages"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("00000000-0000-0000-0000-000000000000")]
+        public global::System.Guid BroadcastID {
+            get {
+                return ((global::System.Guid)(this["BroadcastID"]));
+            }
+            set {
+                this["BroadcastID"] = value;
+            }
+        }
     }
 }

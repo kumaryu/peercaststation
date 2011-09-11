@@ -175,6 +175,12 @@ namespace PeerCastStation.GUI
       peerCast.YellowPagesChanged += YellowPagesChanged;
       contentReaders.Add(new ContentReaderWrapper(new PeerCastStation.ASF.ASFContentReader()));
       contentReaders.Add(new ContentReaderWrapper(new PeerCastStation.Core.RawContentReader()));
+			if (Settings.Default.BroadcastID!=Guid.Empty) {
+				peerCast.BroadcastID = Settings.Default.BroadcastID;
+			}
+			else {
+				Settings.Default.BroadcastID = peerCast.BroadcastID;
+			}
       bcContentType.DataSource = contentReaders;
       OnUpdateSettings(null);
       port.Value                 = Settings.Default.Port;
