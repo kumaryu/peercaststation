@@ -607,7 +607,13 @@ namespace PeerCastStation.Core
     {
       Utils.ReplaceCollection(ref nodes, orig => {
         var new_collection = new List<Host>(orig);
-        new_collection.Add(host);
+        var idx = new_collection.FindIndex(h => h.SessionID==host.SessionID);
+        if (idx>=0) {
+          new_collection[idx] = host;
+        }
+        else {
+          new_collection.Add(host);
+        }
         return new_collection;
       });
       OnPropertyChanged("Nodes");
