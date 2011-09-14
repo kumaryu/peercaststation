@@ -59,19 +59,27 @@ namespace PeerCastStation.Core
 
     public event NotifyCollectionChangedEventHandler CollectionChanged;
 
-    public int Count { get { return list.Count; } }
+    public int Count {
+      get {
+        lock (list) {
+          return list.Count;
+        }
+      }
+    }
     public bool IsReadOnly { get { return false; } }
 
     public void Add(Content item)
     {
-      if (list.ContainsKey(item.Position)) {
-        list[item.Position] = item;
-      }
-      else {
-        list.Add(item.Position, item);
-      }
-      while (list.Count>LimitPackets && list.Count>1) {
-        list.RemoveAt(0);
+      lock (list) {
+        if (list.ContainsKey(item.Position)) {
+          list[item.Position] = item;
+        }
+        else {
+          list.Add(item.Position, item);
+        }
+        while (list.Count>LimitPackets && list.Count>1) {
+          list.RemoveAt(0);
+        }
       }
       if (CollectionChanged!=null) {
         CollectionChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item));
@@ -80,7 +88,9 @@ namespace PeerCastStation.Core
 
     public void Clear()
     {
-      list.Clear();
+      lock (list) {
+        list.Clear();
+      }
       if (CollectionChanged!=null) {
         CollectionChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
       }
@@ -88,17 +98,25 @@ namespace PeerCastStation.Core
 
     public bool Contains(Content item)
     {
-      return list.ContainsValue(item);
+      lock (list) {
+        return list.ContainsValue(item);
+      }
     }
 
     public void CopyTo(Content[] array, int arrayIndex)
     {
-      list.Values.CopyTo(array, arrayIndex);
+      lock (list) {
+        list.Values.CopyTo(array, arrayIndex);
+      }
     }
 
     public bool Remove(Content item)
     {
-      if (list.Remove(item.Position)) {
+      bool res;
+      lock (list) {
+        res = list.Remove(item.Position);
+      }
+      if (res) {
         if (CollectionChanged!=null) {
           CollectionChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item));
         }
@@ -109,7 +127,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    public IEnumerator<Content> GetEnumerator()
+    IEnumerator<Content> IEnumerable<Content>.GetEnumerator()
     {
       return list.Values.GetEnumerator();
     }
@@ -121,76 +139,86 @@ namespace PeerCastStation.Core
 
     public Content Oldest {
       get {
-        if (list.Count>0) {
-          return list.Values[0];
-        }
-        else {
-          return null;
+        lock (list) {
+          if (list.Count>0) {
+            return list.Values[0];
+          }
+          else {
+            return null;
+          }
         }
       }
     }
 
     public Content Newest {
       get {
-        if (list.Count>0) {
-          return list.Values[list.Count-1];
-        }
-        else {
-          return null;
+        lock (list) {
+          if (list.Count>0) {
+            return list.Values[list.Count-1];
+          }
+          else {
+            return null;
+          }
         }
       }
     }
 
     private int GetNewerPacketIndex(long position)
     {
-      if (list.Count<1) {
-        return 0;
-      }
-      if (list.Keys[0]>position) {
-        return 0;
-      }
-      if (list.Keys[list.Count-1]<=position) {
-        return list.Count;
-      }
-      var min = 0;
-      var max = list.Count-1;
-      var idx = (max+min)/2;
-      while (true) {
-        if (list.Keys[idx]==position) {
-          return idx+1;
+      lock (list) {
+        if (list.Count<1) {
+          return 0;
         }
-        else if (list.Keys[idx]>position) {
-          if (min>=max) {
-            return idx;
-          }
-          max = idx-1;
-          idx = (max+min)/2;
+        if (list.Keys[0]>position) {
+          return 0;
         }
-        else if (list.Keys[idx]<position) {
-          if (min>=max) {
+        if (list.Keys[list.Count-1]<=position) {
+          return list.Count;
+        }
+        var min = 0;
+        var max = list.Count-1;
+        var idx = (max+min)/2;
+        while (true) {
+          if (list.Keys[idx]==position) {
             return idx+1;
           }
-          min = idx+1;
-          idx = (max+min)/2;
+          else if (list.Keys[idx]>position) {
+            if (min>=max) {
+              return idx;
+            }
+            max = idx-1;
+            idx = (max+min)/2;
+          }
+          else if (list.Keys[idx]<position) {
+            if (min>=max) {
+              return idx+1;
+            }
+            min = idx+1;
+            idx = (max+min)/2;
+          }
         }
       }
     }
 
     public IList<Content> GetNewerContents(long position)
     {
-      int idx = GetNewerPacketIndex(position);
-      var res = new List<Content>(Math.Max(list.Count-idx, 0));
-      for (var i=idx; i<list.Count; i++) {
-        res.Add(list.Values[i]);
+      lock (list) {
+        int idx = GetNewerPacketIndex(position);
+        var res = new List<Content>(Math.Max(list.Count-idx, 0));
+        for (var i=idx; i<list.Count; i++) {
+          res.Add(list.Values[i]);
+        }
+        return res;
       }
-      return res;
     }
 
     public Content NextOf(long position)
     {
-      int idx = GetNewerPacketIndex(position);
-      if (idx>=list.Count) return null;
-      else return list.Values[idx];
+      lock (list) {
+        int idx = GetNewerPacketIndex(position);
+        if (idx>=list.Count) return null;
+        else return list.Values[idx];
+      }
     }
 
     public Content NextOf(Content item)

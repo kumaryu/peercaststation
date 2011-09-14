@@ -519,7 +519,6 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 保持している最後のコンテントの次のバイト位置を取得します
     /// </summary>
-    /// TODO:スレッドセーフじゃないのであとで直す
     public long ContentPosition {
       get {
         var content = contents.Newest;
