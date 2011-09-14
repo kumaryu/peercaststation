@@ -484,36 +484,82 @@ namespace PeerCastStation.GUI
       relayTree.EndUpdate();
     }
 
+    private class ChannelInfoContainer
+    {
+      public string InfoChannelName { get; private set; }
+      public string InfoGenre { get; private set; }
+      public string InfoDesc { get; private set; }
+      public string InfoContactURL { get; private set; }
+      public string InfoComment { get; private set; }
+      public string InfoContentType { get; private set; }
+      public string InfoBitrate { get; private set; }
+      public string TrackAlbum { get; private set; }
+      public string TrackArtist { get; private set; }
+      public string TrackTitle { get; private set; }
+      public string TrackContactURL { get; private set; }
+
+      public ChannelInfoContainer(ChannelInfo info=null, ChannelTrack track=null)
+      {
+        if (info!=null) {
+          InfoChannelName = info.Name;
+          InfoGenre       = info.Genre;
+          InfoDesc        = info.Desc;
+          InfoContactURL  = info.URL;
+          InfoComment     = info.Comment;
+          InfoContentType = info.ContentType;
+          InfoBitrate     = String.Format("{0} kbps", info.Bitrate);
+        }
+        else {
+          InfoChannelName = "";
+          InfoGenre       = "";
+          InfoDesc        = "";
+          InfoContactURL  = "";
+          InfoComment     = "";
+          InfoContentType = "";
+          InfoBitrate     = "";
+        }
+        if (track!=null) {
+          TrackAlbum      = track.Album;
+          TrackArtist     = track.Creator;
+          TrackTitle      = track.Name;
+          TrackContactURL = track.URL;
+        }
+        else {
+          TrackAlbum      = "";
+          TrackArtist     = "";
+          TrackTitle      = "";
+          TrackContactURL = "";
+        }
+      }
+    }
+
+    private ChannelInfoContainer channelInfo = new ChannelInfoContainer();
     private void refreshChannelInfo(Channel channel)
     {
-			var is_tracker = peerCast.BroadcastID==channel.BroadcastID;
-			var info = channel.ChannelInfo;
-			if (info!=null) {
-				chanInfoChannelID.Text   = channel.ChannelID.ToString("N").ToUpper();
-				chanInfoChannelName.Text = info.Name;
-				chanInfoGenre.Text       = info.Genre;
-				chanInfoDesc.Text        = info.Desc;
-				chanInfoContactURL.Text  = info.URL;
-				chanInfoComment.Text     = info.Comment;
-				chanInfoContentType.Text = info.ContentType;
-				chanInfoBitrate.Text     = String.Format("{0} kbps", info.Bitrate);
-				chanInfoGenre.ReadOnly       = !is_tracker;
-				chanInfoDesc.ReadOnly        = !is_tracker;
-				chanInfoContactURL.ReadOnly  = !is_tracker;
-				chanInfoComment.ReadOnly     = !is_tracker;
-			}
-			var track = channel.ChannelTrack;
-			if (track!=null) {
-				chanTrackAlbum.Text      = track.Album;
-				chanTrackArtist.Text     = track.Creator;
-				chanTrackTitle.Text      = track.Name;
-				chanTrackContactURL.Text = track.URL;
-				chanTrackAlbum.ReadOnly      = !is_tracker;
-				chanTrackArtist.ReadOnly     = !is_tracker;
-				chanTrackTitle.ReadOnly      = !is_tracker;
-				chanTrackContactURL.ReadOnly = !is_tracker;
-			}
-			chanInfoUpdateButton.Enabled = is_tracker;
+      var is_tracker = peerCast.BroadcastID==channel.BroadcastID;
+      var info = new ChannelInfoContainer(channel.ChannelInfo, channel.ChannelTrack);
+      chanInfoChannelID.Text = channel.ChannelID.ToString("N").ToUpper();
+      if (info.InfoChannelName!=channelInfo.InfoChannelName) chanInfoChannelName.Text = info.InfoChannelName;
+      if (info.InfoGenre      !=channelInfo.InfoGenre)       chanInfoGenre.Text       = info.InfoGenre;
+      if (info.InfoDesc       !=channelInfo.InfoDesc)        chanInfoDesc.Text        = info.InfoDesc;
+      if (info.InfoContactURL !=channelInfo.InfoContactURL)  chanInfoContactURL.Text  = info.InfoContactURL;
+      if (info.InfoComment    !=channelInfo.InfoComment)     chanInfoComment.Text     = info.InfoComment;
+      if (info.InfoContentType!=channelInfo.InfoContentType) chanInfoContentType.Text = info.InfoContentType;
+      if (info.InfoBitrate    !=channelInfo.InfoBitrate)     chanInfoBitrate.Text     = info.InfoBitrate;
+      if (info.TrackAlbum     !=channelInfo.TrackAlbum)      chanTrackAlbum.Text      = info.TrackAlbum;
+      if (info.TrackArtist    !=channelInfo.TrackArtist)     chanTrackArtist.Text     = info.TrackArtist;
+      if (info.TrackTitle     !=channelInfo.TrackTitle)      chanTrackTitle.Text      = info.TrackTitle;
+      if (info.TrackContactURL!=channelInfo.TrackContactURL) chanTrackContactURL.Text = info.TrackContactURL;
+      chanInfoGenre.ReadOnly       = !is_tracker;
+      chanInfoDesc.ReadOnly        = !is_tracker;
+      chanInfoContactURL.ReadOnly  = !is_tracker;
+      chanInfoComment.ReadOnly     = !is_tracker;
+      chanTrackAlbum.ReadOnly      = !is_tracker;
+      chanTrackArtist.ReadOnly     = !is_tracker;
+      chanTrackTitle.ReadOnly      = !is_tracker;
+      chanTrackContactURL.ReadOnly = !is_tracker;
+      chanInfoUpdateButton.Enabled = is_tracker;
+      channelInfo = info;
     }
 
 		private void chanInfoUpdateButton_Click(object sender, EventArgs e)
