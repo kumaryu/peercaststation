@@ -29,27 +29,6 @@ namespace PeerCastStation.GUI
   {
     private PeerCastStation.Core.PeerCast peerCast;
 
-    private bool IsOSX()
-    {
-      if (PlatformID.Unix  ==Environment.OSVersion.Platform ||
-          PlatformID.MacOSX==Environment.OSVersion.Platform) {
-        var start_info = new System.Diagnostics.ProcessStartInfo("uname");
-        start_info.RedirectStandardOutput = true;
-        start_info.UseShellExecute = false;
-        start_info.ErrorDialog = false;
-        var process = System.Diagnostics.Process.Start(start_info);
-        if (process!=null) {
-          return System.Text.RegularExpressions.Regex.IsMatch(
-              process.StandardOutput.ReadToEnd(), @"Darwin");
-        }
-        else {
-          return false;
-        }
-      }
-      else {
-        return false;
-      }
-    }
     private class DebugWriter : System.IO.TextWriter
     {
       public DebugWriter()
@@ -151,7 +130,7 @@ namespace PeerCastStation.GUI
       Logger.Level = LogLevel.Warn;
       Logger.AddWriter(new DebugWriter());
       guiWriter = new TextBoxWriter(logText);
-      if (IsOSX()) {
+      if (Program.IsOSX) {
         this.Font = new System.Drawing.Font("Osaka", this.Font.SizeInPoints);
         statusBar.Font = new System.Drawing.Font("Osaka", statusBar.Font.SizeInPoints);
       }

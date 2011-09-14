@@ -32,5 +32,29 @@ namespace PeerCastStation.GUI
       Application.SetCompatibleTextRenderingDefault(false);
       Application.Run(new MainForm());
     }
+
+    static bool isOSX;
+    static public bool IsOSX { get { return isOSX; } }
+    static Program()
+    {
+      if (PlatformID.Unix  ==Environment.OSVersion.Platform ||
+          PlatformID.MacOSX==Environment.OSVersion.Platform) {
+        var start_info = new System.Diagnostics.ProcessStartInfo("uname");
+        start_info.RedirectStandardOutput = true;
+        start_info.UseShellExecute = false;
+        start_info.ErrorDialog = false;
+        var process = System.Diagnostics.Process.Start(start_info);
+        if (process!=null) {
+          isOSX = System.Text.RegularExpressions.Regex.IsMatch(
+              process.StandardOutput.ReadToEnd(), @"Darwin");
+        }
+        else {
+          isOSX = false;
+        }
+      }
+      else {
+        isOSX = false;
+      }
+    }
   }
 }
