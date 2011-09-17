@@ -327,8 +327,8 @@ namespace PeerCastStation.PCP
       var localendpoint = PeerCast.LocalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
       host.AddHostIP(localendpoint.Address);
       host.AddHostPort((short)localendpoint.Port);
-      host.SetHostNumListeners(channel.OutputStreams.CountPlaying);
-      host.SetHostNumRelays(channel.OutputStreams.CountRelaying);
+      host.SetHostNumListeners(channel.TotalDirects);
+      host.SetHostNumRelays(channel.TotalRelays);
       host.SetHostUptime(channel.Uptime);
       if (channel.Contents.Count > 0) {
         host.SetHostOldPos((uint)(channel.Contents.Oldest.Position & 0xFFFFFFFFU));

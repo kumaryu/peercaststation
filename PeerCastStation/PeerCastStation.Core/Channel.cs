@@ -243,28 +243,6 @@ namespace PeerCastStation.Core
       : base(new List<IOutputStream>(list))
     {
     }
-
-    /// <summary>
-    /// 視聴再生中の出力ストリーム数の数を取得します
-    /// </summary>
-    public int CountPlaying
-    {
-      get
-      {
-        return this.Count(x => (x.OutputStreamType & OutputStreamType.Play) != 0);
-      }
-    }
-
-    /// <summary>
-    /// リレー中の出力ストリーム数の数を取得します
-    /// </summary>
-    public int CountRelaying
-    {
-      get
-      {
-        return this.Count(x => (x.OutputStreamType & OutputStreamType.Relay) != 0);
-      }
-    }
   }
 
   /// <summary>
@@ -279,28 +257,6 @@ namespace PeerCastStation.Core
     public ReadOnlyOutputStreamCollection(OutputStreamCollection collection)
       : base(collection)
     {
-    }
-
-    /// <summary>
-    /// 視聴再生中の出力ストリーム数の数を取得します
-    /// </summary>
-    public int CountPlaying
-    {
-      get
-      {
-        return this.Count(x => (x.OutputStreamType & OutputStreamType.Play) != 0);
-      }
-    }
-
-    /// <summary>
-    /// リレー中の出力ストリーム数の数を取得します
-    /// </summary>
-    public int CountRelaying
-    {
-      get
-      {
-        return this.Count(x => (x.OutputStreamType & OutputStreamType.Relay) != 0);
-      }
     }
   }
 
@@ -362,6 +318,34 @@ namespace PeerCastStation.Core
           OnPropertyChanged("SourceStream");
         }
       }
+    }
+
+    /// <summary>
+    /// 自分のノードに直接つながっているリレー接続数を取得します
+    /// </summary>
+    public int LocalRelays {
+      get { return outputStreams.Count(x => (x.OutputStreamType & OutputStreamType.Relay) != 0); }
+    }
+
+    /// <summary>
+    /// 自分のノードに直接つながっている視聴接続数を取得します
+    /// </summary>
+    public int LocalDirects {
+      get { return outputStreams.Count(x => (x.OutputStreamType & OutputStreamType.Play) != 0); }
+    }
+
+    /// <summary>
+    /// 保持している全てのノードと自分ノードのリレー合計を取得します
+    /// </summary>
+    public int TotalRelays {
+      get { return LocalRelays + Nodes.Sum(n => n.DirectCount); }
+    }
+
+    /// <summary>
+    /// 保持している全てのノードと自分ノードの視聴数合計を取得します
+    /// </summary>
+    public int TotalDirects {
+      get { return LocalDirects + Nodes.Sum(n => n.DirectCount); }
     }
 
     /// <summary>

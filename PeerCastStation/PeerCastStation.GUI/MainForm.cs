@@ -286,8 +286,6 @@ namespace PeerCastStation.GUI
       {
         get
         {
-          var total_plays  = Channel.Nodes.Sum(n => n.DirectCount) + Channel.OutputStreams.CountPlaying;
-          var total_relays = Channel.Nodes.Sum(n => n.RelayCount)  + Channel.OutputStreams.CountRelaying;
           var status = "UNKNOWN";
           switch (Channel.Status) {
           case SourceStreamStatus.Idle:       status = "IDLE";    break;
@@ -300,10 +298,10 @@ namespace PeerCastStation.GUI
             "{0} {1}kbps ({2}/{3}) [{4}/{5}] {6}",
             Channel.ChannelInfo.Name,
             Channel.ChannelInfo.Bitrate,
-            total_plays,
-            total_relays,
-            Channel.OutputStreams.CountPlaying,
-            Channel.OutputStreams.CountRelaying,
+            Channel.TotalDirects,
+            Channel.TotalRelays,
+            Channel.LocalDirects,
+            Channel.LocalRelays,
             status);
         }
       }
@@ -435,8 +433,8 @@ namespace PeerCastStation.GUI
       host.LocalEndPoint  = peerCast.LocalEndPoint;
       host.GlobalEndPoint = peerCast.GlobalEndPoint ?? peerCast.LocalEndPoint;
       host.IsFirewalled   = peerCast.IsFirewalled ?? true;
-      host.DirectCount    = channel.OutputStreams.CountPlaying;
-      host.RelayCount     = channel.OutputStreams.CountRelaying;
+      host.DirectCount    = channel.LocalDirects;
+      host.RelayCount     = channel.LocalRelays;
       host.IsDirectFull   = !peerCast.AccessController.IsChannelPlayable(channel);
       host.IsRelayFull    = !peerCast.AccessController.IsChannelRelayable(channel);
       host.IsReceiving    = true;
