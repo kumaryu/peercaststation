@@ -126,8 +126,8 @@ namespace PeerCastStation.HTTP
     {
       string tip = null;
       foreach (Match param in Regex.Matches(request_uri.Query, @"(&|\?)([^&=]+)=([^&=]+)")) {
-        if (param.Groups[2].Value=="tip") {
-          tip = param.Groups[3].Value;
+        if (Uri.UnescapeDataString(param.Groups[2].Value)=="tip") {
+          tip = Uri.UnescapeDataString(param.Groups[3].Value);
           break;
         }
       }
