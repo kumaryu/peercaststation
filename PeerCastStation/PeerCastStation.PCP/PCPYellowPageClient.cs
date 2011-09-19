@@ -246,10 +246,10 @@ namespace PeerCastStation.PCP
               AtomWriter.Write(stream, new Atom(Atom.PCP_HELO, helo));
               while (!isStopped) {
                 var atom = AtomReader.Read(stream);
-								if (atom.Name==Atom.PCP_OLEH) {
-									OnPCPOleh(atom);
-									break;
-								}
+                if (atom.Name==Atom.PCP_OLEH) {
+                  OnPCPOleh(atom);
+                  break;
+                }
                 if (restartEvent.WaitOne(1)) throw new RestartException();
               }
               while (!isStopped) {
@@ -279,7 +279,7 @@ namespace PeerCastStation.PCP
                 }
                 posts.Clear();
               }
-			        AtomWriter.Write(stream, new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT));
+              AtomWriter.Write(stream, new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT));
             }
           }
         }
@@ -299,12 +299,14 @@ namespace PeerCastStation.PCP
       if (rip!=null) {
         switch (rip.AddressFamily) {
         case AddressFamily.InterNetwork:
-          if (PeerCast.GlobalAddress==null || !PeerCast.GlobalAddress.Equals(rip)) {
+          if (PeerCast.GlobalAddress==null ||
+              Utils.GetAddressLocality(PeerCast.GlobalAddress)<=Utils.GetAddressLocality(rip)) {
             PeerCast.GlobalAddress = rip;
           }
           break;
         case AddressFamily.InterNetworkV6:
-          if (PeerCast.GlobalAddress6==null || !PeerCast.GlobalAddress6.Equals(rip)) {
+          if (PeerCast.GlobalAddress6==null ||
+              Utils.GetAddressLocality(PeerCast.GlobalAddress6)<=Utils.GetAddressLocality(rip)) {
             PeerCast.GlobalAddress6 = rip;
           }
           break;
@@ -341,7 +343,7 @@ namespace PeerCastStation.PCP
         (PeerCast.AccessController.IsChannelPlayable(channel) ? PCPHostFlags1.Direct : 0) |
         ((!PeerCast.IsFirewalled.HasValue || PeerCast.IsFirewalled.Value) ? PCPHostFlags1.Firewalled : 0) |
         PCPHostFlags1.Tracker |
-				(playing ? PCPHostFlags1.Receiving : PCPHostFlags1.None));
+        (playing ? PCPHostFlags1.Receiving : PCPHostFlags1.None));
       parent.SetHost(host);
     }
 
@@ -387,7 +389,7 @@ namespace PeerCastStation.PCP
         lock (channels) {
           channels.Remove(channel);
         }
-				PostChannelBcst(channel, true);
+        PostChannelBcst(channel, false);
         if (channels.Count==0) isStopped = true;
       }
     }

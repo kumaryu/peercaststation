@@ -41,6 +41,24 @@ namespace PeerCastStation.Core
       }
     }
 
+    static public int GetAddressLocality(IPAddress addr)
+    {
+      switch (addr.AddressFamily) {
+      case System.Net.Sockets.AddressFamily.InterNetwork:
+        if (addr==IPAddress.Any || addr==IPAddress.None || addr==IPAddress.Broadcast) return -1;
+        if (addr==IPAddress.Loopback) return 0;
+        if (IsSiteLocal(addr)) return 1;
+        return 2;
+      case System.Net.Sockets.AddressFamily.InterNetworkV6:
+        if (addr==IPAddress.IPv6Any || addr==IPAddress.IPv6None) return -1;
+        if (addr==IPAddress.IPv6Loopback) return 0;
+        if (IsSiteLocal(addr)) return 1;
+        return 2;
+      default:
+        return -1;
+      }
+    }
+
     static public void ReplaceCollection<T>(ref T collection, Func<T,T> newcollection_func) where T : class
     {
       bool replaced = false;
