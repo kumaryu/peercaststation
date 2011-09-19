@@ -66,13 +66,13 @@ namespace PeerCastStation.PCP
             this.Uri = null;
           }
         }
-        else if ((match = Regex.Match(req, @"^x-peercast-pcp:\s*(\d+)\s*$")).Success) {
+        else if ((match = Regex.Match(req, @"^x-peercast-pcp:\s*(\d+)\s*$", RegexOptions.IgnoreCase)).Success) {
           this.PCPVersion = Int32.Parse(match.Groups[1].Value);
         }
-        else if ((match = Regex.Match(req, @"^x-peercast-pos:\s*(\d+)\s*$")).Success) {
+        else if ((match = Regex.Match(req, @"^x-peercast-pos:\s*(\d+)\s*$", RegexOptions.IgnoreCase)).Success) {
           this.StreamPos = Int64.Parse(match.Groups[1].Value);
         }
-        else if ((match = Regex.Match(req, @"^User-Agent:\s*(.*)\s*$")).Success) {
+        else if ((match = Regex.Match(req, @"^User-Agent:\s*(.*)\s*$", RegexOptions.IgnoreCase)).Success) {
           this.UserAgent = match.Groups[1].Value;
         }
       }
@@ -235,7 +235,19 @@ namespace PeerCastStation.PCP
 
     public override string ToString()
     {
-      return String.Format("PCP Relay {0} ({1})", RemoteEndPoint, relayRequest.UserAgent);
+      if (Downhost!=null) {
+        var nodeinfo = String.Format(
+          "({0}/{1}) {2}{3}{4}",
+          Downhost.DirectCount,
+          Downhost.RelayCount,
+          Downhost.IsFirewalled ? "0" : "",
+          Downhost.IsRelayFull  ? "-" : "",
+          Downhost.IsReceiving  ? "" : "B");
+        return String.Format("PCP Relay {0} {1} {2}", RemoteEndPoint, relayRequest.UserAgent, nodeinfo);
+      }
+      else {
+        return String.Format("PCP Relay {0} {1}", RemoteEndPoint, relayRequest.UserAgent);
+      }
     }
     private RelayRequest relayRequest;
 
@@ -356,11 +368,11 @@ namespace PeerCastStation.PCP
         Content content;
         if (lastContent!=null) {
           content = channel.Contents.NextOf(lastContent.Position);
-					if (content!=null && lastContent.Position+lastContent.Data.LongLength<content.Position) {
-						Logger.Info("Content Skipped {0} expected but was {1}",
-							lastContent.Position+lastContent.Data.LongLength,
-							content.Position);
-					}
+          if (content!=null && lastContent.Position+lastContent.Data.LongLength<content.Position) {
+            Logger.Info("Content Skipped {0} expected but was {1}",
+              lastContent.Position+lastContent.Data.LongLength,
+              content.Position);
+          }
         }
         else {
           content = channel.Contents.Oldest;
@@ -572,16 +584,16 @@ namespace PeerCastStation.PCP
         //次に接続するホストを送ってQUIT
         foreach (var node in Channel.SelectSourceNodes()) {
           var host_atom = new AtomCollection(node.Extra);
-					Atom ip = host_atom.FindByName(Atom.PCP_HOST_IP);
-					while (ip!=null) {
-						host_atom.Remove(ip);
-						ip = host_atom.FindByName(Atom.PCP_HOST_IP);
-					}
-					Atom port = host_atom.FindByName(Atom.PCP_HOST_PORT);
-					while (port!=null) {
-						host_atom.Remove(port);
-						port = host_atom.FindByName(Atom.PCP_HOST_PORT);
-					}
+          Atom ip = host_atom.FindByName(Atom.PCP_HOST_IP);
+          while (ip!=null) {
+            host_atom.Remove(ip);
+            ip = host_atom.FindByName(Atom.PCP_HOST_IP);
+          }
+          Atom port = host_atom.FindByName(Atom.PCP_HOST_PORT);
+          while (port!=null) {
+            host_atom.Remove(port);
+            port = host_atom.FindByName(Atom.PCP_HOST_PORT);
+          }
           host_atom.SetHostSessionID(node.SessionID);
           var globalendpoint = node.GlobalEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
           host_atom.AddHostIP(globalendpoint.Address);
@@ -719,6 +731,7 @@ namespace PeerCastStation.PCP
         }
         Logger.Debug("Updating Node: {0}/{1}({2})", host.GlobalEndPoint, host.LocalEndPoint, host.SessionID.ToString("N"));
         Channel.AddNode(host.ToHost());
+        if (Downhost.SessionID==host.SessionID) Downhost = host.ToHost();
       }
     }
 
