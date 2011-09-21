@@ -733,5 +733,11 @@ namespace PeerCastStation.GUI
       }
       return res;
     }
+
+    private void versionInfoButton_Click(object sender, EventArgs e)
+    {
+      var dlg = new VersionInfoDialog(new string[] { "PeerCastStation" });
+      dlg.ShowDialog();
+    }
   }
 }

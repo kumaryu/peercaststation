@@ -23,7 +23,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("PeerCastStation.Core")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("PeerCastStation")]
+[assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("PeerCastStation.Core")]
 [assembly: AssemblyInformationalVersion("1.0.0.0")]
 [assembly: AssemblyCopyright("")]
@@ -49,4 +49,4 @@ using System.Runtime.InteropServices;
 // 既定値にすることができます:
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("0.6.0.0")]
