@@ -39,7 +39,7 @@ namespace PeerCastStation.HTTP
     /// </summary>
     /// <param name="baseuri">ベースとなるURI</param>
     /// <returns>作成したプレイリスト</returns>
-    string CreatePlayList(Uri baseuri);
+    byte[] CreatePlayList(Uri baseuri);
   }
 
   /// <summary>
@@ -56,14 +56,14 @@ namespace PeerCastStation.HTTP
       Channels = new List<Channel>();
     }
 
-    public string CreatePlayList(Uri baseuri)
+    public byte[] CreatePlayList(Uri baseuri)
     {
       var res = new System.Text.StringBuilder();
       foreach (var c in Channels) {
         var url = new Uri(baseuri, c.ChannelID.ToString("N").ToUpper() + c.ChannelInfo.ContentExtension);
         res.AppendLine(url.ToString());
       }
-      return res.ToString();
+      return System.Text.Encoding.UTF8.GetBytes(res.ToString());
     }
   }
 
@@ -81,7 +81,7 @@ namespace PeerCastStation.HTTP
       Channels = new List<Channel>();
     }
 
-    public string CreatePlayList(Uri baseuri)
+    public byte[] CreatePlayList(Uri baseuri)
     {
       var stream = new System.IO.StringWriter();
       var xml = new System.Xml.XmlTextWriter(stream);
@@ -112,7 +112,13 @@ namespace PeerCastStation.HTTP
       }
       xml.WriteEndElement();
       xml.Close();
-      return stream.ToString();
+      var res = stream.ToString();
+      try {
+        return System.Text.Encoding.Default.GetBytes(res);
+      }
+      catch (System.Text.EncoderFallbackException) {
+        return System.Text.Encoding.UTF8.GetBytes(res);
+      }
     }
   }
 }

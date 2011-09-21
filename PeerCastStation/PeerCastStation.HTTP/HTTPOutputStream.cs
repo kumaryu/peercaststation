@@ -420,8 +420,7 @@ namespace PeerCastStation.HTTP
       var baseuri = new Uri(
         new Uri(request.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped)),
         "stream/");
-      var bytes = System.Text.Encoding.UTF8.GetBytes(pls.CreatePlayList(baseuri));
-      Send(bytes);
+      Send(pls.CreatePlayList(baseuri));
     }
 
     /// <summary>
