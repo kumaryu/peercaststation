@@ -536,6 +536,18 @@ namespace PeerCastStation.Core
       return GetIntFrom(collection, Atom.PCP_HOST_UPHOST_PORT);
     }
 
+    public static IPEndPoint GetHostUphostEndPoint(this IAtomCollection collection)
+    {
+      var ip   = GetIPAddressFrom(collection, Atom.PCP_HOST_UPHOST_IP);
+      var port = GetIntFrom(collection, Atom.PCP_HOST_UPHOST_PORT);
+      if (ip!=null && port!=null) {
+        return new IPEndPoint(ip, port.Value);
+      }
+      else {
+        return null;
+      }
+    }
+
     public static byte? GetHostUphostHops(this IAtomCollection collection)
     {
       return GetByteFrom(collection, Atom.PCP_HOST_UPHOST_HOPS);

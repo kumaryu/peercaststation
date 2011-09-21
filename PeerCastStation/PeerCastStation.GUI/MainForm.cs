@@ -447,9 +447,14 @@ namespace PeerCastStation.GUI
       return host.ToHost();
     }
 
-    private void addRelayTreeNode(TreeNodeCollection tree_nodes, Host node, IList<Host> node_list)
+    private void addRelayTreeNode(
+      TreeNodeCollection tree_nodes,
+      Host node,
+      IList<Host> node_list,
+      IList<Guid> added_list)
     {
       var endpoint = node.GlobalEndPoint.Port==0 ? node.LocalEndPoint : node.GlobalEndPoint;
+      if (endpoint==null) return;
       var nodeinfo = String.Format(
         "({0}/{1}) {2}{3}{4}",
         node.DirectCount,
@@ -458,24 +463,20 @@ namespace PeerCastStation.GUI
         node.IsRelayFull  ? "-" : "",
         node.IsReceiving  ? "" : "B");
       var tree_node = tree_nodes.Add(String.Format("{0} {1}", endpoint, nodeinfo));
+      added_list.Add(node.SessionID);
       tree_node.Tag = node;
-      foreach (var child in node_list.Where(x => {
-        return 
-          x.Extra.GetHostUphostIP()!=null &&
-          x.Extra.GetHostUphostPort()!=null &&
-          (
-            (
-              node.GlobalEndPoint.Address.Equals(x.Extra.GetHostUphostIP()) &&
-              node.GlobalEndPoint.Port==x.Extra.GetHostUphostPort()
-            ) ||
-            (
-              node.LocalEndPoint.Address.Equals(x.Extra.GetHostUphostIP()) &&
-              node.LocalEndPoint.Port==x.Extra.GetHostUphostPort()
-            )
-          );
-      })) {
-        addRelayTreeNode(tree_node.Nodes, child, node_list);
+      foreach (var child in node_list) {
+        if (added_list.Contains(child.SessionID)) continue;
+        var uphost = child.Extra.GetHostUphostEndPoint();
+        if (uphost!=null && endpoint.Equals(uphost)) {
+          addRelayTreeNode(tree_node.Nodes, child, node_list, added_list);
+        }
       }
+    }
+
+    private void addRelayTreeNode(TreeNodeCollection tree_nodes, Host node, IList<Host> node_list)
+    {
+      addRelayTreeNode(tree_nodes, node, node_list, new List<Guid>());
     }
 
     private void refreshTree(Channel channel)
