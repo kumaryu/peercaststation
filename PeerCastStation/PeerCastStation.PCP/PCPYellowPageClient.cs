@@ -32,6 +32,7 @@ namespace PeerCastStation.PCP
   {
     private const int PCP_VERSION    = 1218;
     private const int PCP_VERSION_VP = 27;
+    protected Logger Logger { get; private set; }
     public const int DefaultPort = 7144;
     public PeerCast PeerCast { get; private set; }
     public string Name { get; private set; }
@@ -115,6 +116,7 @@ namespace PeerCastStation.PCP
 
     public Uri FindTracker(Guid channel_id)
     {
+      Logger.Debug("Finding tracker {0} from {1}", channel_id.ToString("N"), Uri);
       var host = Uri.DnsSafeHost;
       var port = Uri.Port;
       Uri res = null;
@@ -158,6 +160,12 @@ namespace PeerCastStation.PCP
       catch (SocketException)
       {
       }
+      if (res!=null) {
+        Logger.Debug("Tracker found: {0}", res);
+      }
+      else {
+        Logger.Debug("Tracker no found");
+      }
       return res;
     }
 
@@ -166,6 +174,7 @@ namespace PeerCastStation.PCP
     public void Announce(Channel channel)
     {
       if (channels.Contains(channel)) return;
+      Logger.Debug("Start announce channel {0} to {1}", channel.ChannelID.ToString("N"), Uri);
       channel.PropertyChanged += OnChannelPropertyChanged;
       channel.Closed += OnChannelClosed;
       lock (channels) {
@@ -175,6 +184,7 @@ namespace PeerCastStation.PCP
         isStopped = false;
         restartEvent.Reset();
         announceThread = new Thread(AnnounceThreadProc);
+        announceThread.Name = String.Format("PCPYP {0} Announce", Uri);
         announceThread.Start();
       }
     }
@@ -217,6 +227,7 @@ namespace PeerCastStation.PCP
     private class RestartException : Exception {}
     private void AnnounceThreadProc()
     {
+      Logger.Debug("Thread started");
       var host = Uri.DnsSafeHost;
       var port = Uri.Port;
       if (port<0) port = DefaultPort;
@@ -224,10 +235,12 @@ namespace PeerCastStation.PCP
         int last_updated = 0;
         posts.Clear();
         try {
+        Logger.Debug("Connecting to YP");
           using (var client = new TcpClient(host, port)) {
             using (var stream = client.GetStream()) {
               AtomWriter.Write(stream, new Atom(new ID4("pcp\n"), (int)1));
               var helo = new AtomCollection();
+              Logger.Debug("Sending Handshake");
               helo.SetHeloAgent(PeerCast.AgentName);
               helo.SetHeloVersion(1218);
               helo.SetHeloSessionID(PeerCast.SessionID);
@@ -250,8 +263,13 @@ namespace PeerCastStation.PCP
                   OnPCPOleh(atom);
                   break;
                 }
+                else if (atom.Name==Atom.PCP_QUIT) {
+                  Logger.Debug("Handshake aborted by PCP_QUIT ({0})", atom.GetInt32());
+                  throw new RestartException();
+                }
                 if (restartEvent.WaitOne(1)) throw new RestartException();
               }
+              Logger.Debug("Handshake succeeded");
               while (!isStopped) {
                 if (Environment.TickCount-last_updated>30000) {
                   lock (channels) {
@@ -285,12 +303,18 @@ namespace PeerCastStation.PCP
         }
         catch (RestartException) {
         }
-        catch (SocketException) {
+        catch (SocketException e) {
+          Logger.Info(e);
         }
-        catch (IOException) {
+        catch (IOException e) {
+          Logger.Info(e);
         }
-        if (!isStopped) Thread.Sleep(10000);
+        Logger.Debug("Connection closed");
+        if (!isStopped) {
+          Thread.Sleep(10000);
+        }
       }
+      Logger.Debug("Thread finished");
     }
 
     private void OnPCPOleh(Atom atom)
@@ -412,6 +436,7 @@ namespace PeerCastStation.PCP
       this.PeerCast = peercast;
       this.Name = name;
       this.Uri = uri;
+      this.Logger = new Logger(this.GetType());
     }
   }
 }
