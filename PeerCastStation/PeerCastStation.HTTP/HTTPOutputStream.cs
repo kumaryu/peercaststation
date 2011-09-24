@@ -263,18 +263,18 @@ namespace PeerCastStation.HTTP
         request.Method,
         request.Uri);
       this.request = request;
-      if (this.Channel!=null) {
-        this.Channel.ContentChanged += (sender, e) => {
-          lock (contentPacketQueue) {
-            headerPacket = channel.ContentHeader;
-            if (contentPacketQueue.Count>0) {
-              contentPacketQueue.AddRange(channel.Contents.GetNewerContents(contentPacketQueue[contentPacketQueue.Count-1].Position));
-            }
-            else {
-              contentPacketQueue.AddRange(channel.Contents.GetNewerContents(sentPosition));
-            }
-          }
-        };
+    }
+
+    private void OnContentChanged(object sender, EventArgs args)
+    {
+      lock (contentPacketQueue) {
+        headerPacket = Channel.ContentHeader;
+        if (contentPacketQueue.Count>0) {
+          contentPacketQueue.AddRange(Channel.Contents.GetNewerContents(contentPacketQueue[contentPacketQueue.Count-1].Position));
+        }
+        else {
+          contentPacketQueue.AddRange(Channel.Contents.GetNewerContents(sentPosition));
+        }
       }
     }
 
@@ -541,12 +541,18 @@ namespace PeerCastStation.HTTP
     protected override void OnStarted()
     {
       Logger.Debug("Starting");
+      if (this.Channel!=null) {
+        this.Channel.ContentChanged += OnContentChanged;
+      }
       WaitChannel();
     }
 
     protected override void OnStopped()
     {
       base.OnStopped();
+      if (this.Channel!=null) {
+        this.Channel.ContentChanged -= OnContentChanged;
+      }
       Logger.Debug("Finished");
     }
 
