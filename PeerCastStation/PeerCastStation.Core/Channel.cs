@@ -260,6 +260,23 @@ namespace PeerCastStation.Core
     }
   }
 
+  [Flags]
+  public enum SourceHostSelection
+  {
+    /// <summary>
+    /// 特に指定しない
+    /// </summary>
+    None  = 0,
+    /// <summary>
+    /// 直下のホストを選択する
+    /// </summary>
+    Lower = 1,
+    /// <summary>
+    /// 受信中のホストを選択する
+    /// </summary>
+    Receiving = 2,
+  }
+
   /// <summary>
   /// チャンネル接続を管理するクラスです
   /// </summary>
@@ -642,12 +659,19 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="node_list">接続先のリスト</param>
     /// <returns>node_listから選んだ接続先。node_listが空の場合はnull</returns>
-    private Host SelectSourceNode(List<Host> node_list)
+    private Host SelectSourceNode(SourceHostSelection selection, IEnumerable<Host> node_list)
     {
-      if (node_list.Count > 0) {
-        //TODO: 接続先をちゃんと選ぶ
-        int idx = new Random().Next(node_list.Count);
-        return node_list[idx];
+      var list = node_list;
+      if ((selection & SourceHostSelection.Lower)!=0) {
+        list = list.Where(host => PeerCast.GlobalEndPoint.Equals(host.Extra.GetHostUphostEndPoint()));
+      }
+      if ((selection & SourceHostSelection.Receiving)!=0) {
+        list = list.Where(host => host.IsReceiving);
+      }
+      var selected = list.ToArray();
+      if (selected.Length>0) {
+        int idx = new Random().Next(selected.Length);
+        return selected[idx];
       }
       else {
         return null;
@@ -659,11 +683,11 @@ namespace PeerCastStation.Core
     /// IgnoreHostで無視されているホストは一定時間選択されません
     /// </summary>
     /// <returns>次に接続すべきホスト。無い場合はnull</returns>
-    public virtual Host SelectSourceHost()
+    public virtual Host SelectSourceHost(SourceHostSelection selection)
     {
       lock (ignoredHosts) {
-        var node_list = Nodes.Where(node => !ignoredHosts.Contains(node)).ToList<Host>();
-        var res = SelectSourceNode(node_list);
+        var node_list = Nodes.Where(node => !ignoredHosts.Contains(node));
+        var res = SelectSourceNode(selection, node_list);
         if (res!=null) {
           return res;
         }
@@ -681,15 +705,15 @@ namespace PeerCastStation.Core
     /// IgnoreHostで無視されているホストは一定時間選択されません
     /// </summary>
     /// <returns>次に接続すべきホスト。最大8箇所。無い場合は空の配列</returns>
-    public virtual Host[] SelectSourceNodes()
+    public virtual Host[] SelectSourceNodes(SourceHostSelection selection)
     {
       List<Host> node_list = null;
       lock (ignoredHosts) {
-        node_list = Nodes.Where(node => !ignoredHosts.Contains(node)).ToList<Host>();
+        node_list = Nodes.Where(node => !ignoredHosts.Contains(node)).ToList();
       }
       var res = new List<Host>();
       for (var i=0; i<8; i++) {
-        var node = SelectSourceNode(node_list);
+        var node = SelectSourceNode(selection, node_list);
         if (node!=null) {
           res.Add(node);
           node_list.Remove(node);
