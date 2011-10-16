@@ -160,6 +160,9 @@ namespace PeerCastStation.PCP
       catch (SocketException)
       {
       }
+      catch (IOException)
+      {
+      }
       if (res!=null) {
         Logger.Debug("Tracker found: {0}", res);
       }
