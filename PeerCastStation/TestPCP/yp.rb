@@ -25,6 +25,7 @@ class PCPRootServer
             begin
               process_client(client)
             rescue System::Net::Sockets::SocketException
+            rescue System::IO::IOException
             ensure
               client.close unless client.closed?
             end

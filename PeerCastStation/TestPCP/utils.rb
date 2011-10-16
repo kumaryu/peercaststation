@@ -3,6 +3,8 @@ require 'System.Core'
 require 'thread'
 require 'socket'
 
+Thread.abort_on_exception = true
+
 def rubyize_name(name)
   unless /[A-Z]{2,}/=~name then
     name.gsub(/(?!^)[A-Z]/, '_\&').downcase
@@ -41,10 +43,15 @@ end
 class PipeStream
   def recv(readbuf, result)
     if result and result.is_completed then
-      sz = @reader.end_read(result)
-      @lock.synchronize do
-        @reads.concat(readbuf.to_a[0,sz])
-        @read_event.set
+      begin 
+        sz = @reader.end_read(result)
+        @lock.synchronize do
+          @reads.concat(readbuf.to_a[0,sz])
+          @read_event.set
+        end
+      rescue System::IO::IOException
+        result = nil
+        @closed = true
       end
       result = nil
     end

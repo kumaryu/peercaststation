@@ -25,6 +25,7 @@ class TC_CoreChannel < Test::Unit::TestCase
 
   def setup
     @peercast = PeerCastStation::Core::PeerCast.new
+    @peercast.start_listen(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147))
   end
   
   def teardown
@@ -193,6 +194,114 @@ class TC_CoreChannel < Test::Unit::TestCase
     assert(channel.is_direct_full)
   end
 
+  def test_local_directs
+    channel = PeerCastStation::Core::Channel.new(
+      @peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    assert_equal(0, channel.output_streams.count)
+    assert_equal(0, channel.local_directs)
+    channel.add_output_stream(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.play))
+    channel.add_output_stream(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.relay))
+    channel.add_output_stream(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.metadata))
+    channel.add_output_stream(MockOutputStream.new(
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay))
+    channel.add_output_stream(MockOutputStream.new(
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.metadata))
+    channel.add_output_stream(MockOutputStream.new(
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.metadata))
+    channel.add_output_stream(MockOutputStream.new(
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.metadata))
+    assert_equal(7, channel.output_streams.count)
+    assert_equal(4, channel.local_directs)
+  end
+
+  def test_local_relays
+    channel = PeerCastStation::Core::Channel.new(
+      @peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    assert_equal(0, channel.output_streams.count)
+    assert_equal(0, channel.local_directs)
+    channel.add_output_stream(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.play))
+    channel.add_output_stream(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.relay))
+    channel.add_output_stream(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.metadata))
+    channel.add_output_stream(MockOutputStream.new(
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay))
+    channel.add_output_stream(MockOutputStream.new(
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.metadata))
+    channel.add_output_stream(MockOutputStream.new(
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.metadata))
+    channel.add_output_stream(MockOutputStream.new(
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.metadata))
+    assert_equal(7, channel.output_streams.count)
+    assert_equal(4, channel.local_relays)
+  end
+
+  def test_total_directs
+    channel = PeerCastStation::Core::Channel.new(
+      @peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    assert_equal(0, channel.output_streams.count)
+    assert_equal(0, channel.local_directs)
+    assert_equal(0, channel.total_directs)
+    channel.add_output_stream(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.play))
+    channel.add_output_stream(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.play))
+    channel.add_output_stream(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.play))
+    assert_equal(3, channel.local_directs)
+    assert_equal(3, channel.total_directs)
+
+    relays  = 0
+    directs = 0
+    10.times do |i|
+      node   = PeerCastStation::Core::HostBuilder.new
+      node.SessionID = System::Guid.new_guid
+      relay  = rand(i)
+      direct = rand(i)
+      node.relay_count = relay
+      node.direct_count = direct
+      relays  += relay
+      directs += direct
+      channel.add_node(node.to_host)
+    end
+    assert_equal(3, channel.local_directs)
+    assert_equal(3+directs, channel.total_directs)
+  end
+
+  def test_total_relays
+    channel = PeerCastStation::Core::Channel.new(
+      @peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    assert_equal(0, channel.output_streams.count)
+    assert_equal(0, channel.local_relays)
+    assert_equal(0, channel.total_relays)
+    channel.add_output_stream(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.relay))
+    channel.add_output_stream(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.relay))
+    channel.add_output_stream(MockOutputStream.new(PeerCastStation::Core::OutputStreamType.relay))
+    assert_equal(3, channel.local_relays)
+    assert_equal(3, channel.total_relays)
+
+    relays  = 0
+    directs = 0
+    10.times do |i|
+      node   = PeerCastStation::Core::HostBuilder.new
+      node.SessionID = System::Guid.new_guid
+      relay  = rand(i)
+      direct = rand(i)
+      node.relay_count = relay
+      node.direct_count = direct
+      relays  += relay
+      directs += direct
+      channel.add_node(node.to_host)
+    end
+    assert_equal(3, channel.local_relays)
+    assert_equal(3+relays, channel.total_relays)
+  end
+
   class TestSourceStream
     include PeerCastStation::Core::ISourceStream
     
@@ -265,18 +374,80 @@ class TC_CoreChannel < Test::Unit::TestCase
 
   def test_select_source_host
     channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
-    selected = channel.select_source_host
+    selected = channel.select_source_host(PeerCastStation::Core::SourceHostSelection.none)
     assert_equal(channel.source_host, selected)
 
     channel.ignore_host(channel.source_host)
-    selected = channel.select_source_host
+    selected = channel.select_source_host(PeerCastStation::Core::SourceHostSelection.none)
     assert_nil(selected)
 
     channel.clear_ignored
     node = PeerCastStation::Core::HostBuilder.new.to_host
     channel.add_node(node)
-    selected = channel.select_source_host
+    selected = channel.select_source_host(PeerCastStation::Core::SourceHostSelection.none)
     assert_equal(node, selected)
+  end
+
+  def test_select_source_host_lower
+    channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    node = PeerCastStation::Core::HostBuilder.new
+    node.extra.SetHostUphostIP(@peercast.local_end_point.address)
+    node.extra.set_host_uphost_port(@peercast.local_end_point.port)
+    node = node.to_host
+    channel.add_node(node)
+    selected = channel.select_source_host(PeerCastStation::Core::SourceHostSelection.lower)
+    assert_equal(node, selected)
+  end
+
+  def test_select_source_host_lower_uphost_not_matched
+    channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    node = PeerCastStation::Core::HostBuilder.new
+    node.extra.SetHostUphostIP(System::Net::IPAddress.any)
+    node.extra.set_host_uphost_port(@peercast.local_end_point.port)
+    node = node.to_host
+    channel.add_node(node)
+    selected = channel.select_source_host(PeerCastStation::Core::SourceHostSelection.lower)
+    assert_equal(channel.source_host, selected)
+  end
+
+  def test_select_source_host_receiving
+    channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    node = PeerCastStation::Core::HostBuilder.new
+    node.is_receiving = true
+    node = node.to_host
+    channel.add_node(node)
+    selected = channel.select_source_host(PeerCastStation::Core::SourceHostSelection.receiving)
+    assert_equal(node, selected)
+  end
+
+  def test_select_source_host_receiving_not_receiving
+    channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    node = PeerCastStation::Core::HostBuilder.new
+    node.is_receiving = false
+    node = node.to_host
+    channel.add_node(node)
+    selected = channel.select_source_host(PeerCastStation::Core::SourceHostSelection.receiving)
+    assert_equal(channel.source_host, selected)
+  end
+
+  def test_select_source_host_relayable
+    channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    node = PeerCastStation::Core::HostBuilder.new
+    node.is_relay_full = false
+    node = node.to_host
+    channel.add_node(node)
+    selected = channel.select_source_host(PeerCastStation::Core::SourceHostSelection.relayable)
+    assert_equal(node, selected)
+  end
+
+  def test_select_source_host_relayable_not_relayable
+    channel = PeerCastStation::Core::Channel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    node = PeerCastStation::Core::HostBuilder.new
+    node.is_relay_full = true
+    node = node.to_host
+    channel.add_node(node)
+    selected = channel.select_source_host(PeerCastStation::Core::SourceHostSelection.relayable)
+    assert_equal(channel.source_host, selected)
   end
 end
 

@@ -42,7 +42,7 @@ class TC_PLSPlayList < Test::Unit::TestCase
     pls = PCSHTTP::PLSPlayList.new
     baseuri = System::Uri.new('http://localhost/stream/')
     res = pls.create_play_list(baseuri)
-    assert_equal('', res)
+    assert_equal([], res.to_a)
 
     channel = PCSCore::Channel.new(
       @peercast,
@@ -53,7 +53,7 @@ class TC_PLSPlayList < Test::Unit::TestCase
     info.set_chan_info_type('WMV')
     channel.channel_info = PCSCore::ChannelInfo.new(info)
     pls.channels.add(channel)
-    res = pls.create_play_list(baseuri)
+    res = pls.create_play_list(baseuri).to_a.pack('C*')
     assert_equal(<<EOS, res.gsub(/\r\n/, "\n"))
 http://localhost/stream/9778E62BDC59DF56F9216D0387F80BF2.wmv
 EOS
@@ -68,7 +68,7 @@ EOS
     info2.set_chan_info_type('OGM')
     channel2.channel_info = PCSCore::ChannelInfo.new(info2)
     pls.channels.add(channel2)
-    res = pls.create_play_list(baseuri)
+    res = pls.create_play_list(baseuri).to_a.pack('C*')
     assert_equal(<<EOS, res.gsub(/\r\n/, "\n"))
 http://localhost/stream/9778E62BDC59DF56F9216D0387F80BF2.wmv
 http://localhost/stream/61077675C74AAB30529B5294BB76F656.ogv
@@ -94,7 +94,7 @@ class TC_ASXPlayList < Test::Unit::TestCase
   def test_create_playlist
     pls = PCSHTTP::ASXPlayList.new
     baseuri = System::Uri.new('http://localhost/stream/')
-    res = pls.create_play_list(baseuri)
+    res = pls.create_play_list(baseuri).to_a.pack('C*')
     assert_equal(<<EOS.chomp, res.gsub(/\r\n/, "\n"))
 <ASX version="3.0" />
 EOS
@@ -108,7 +108,7 @@ EOS
     info.set_chan_info_type('WMV')
     channel.channel_info = PCSCore::ChannelInfo.new(info)
     pls.channels.add(channel)
-    res = pls.create_play_list(baseuri)
+    res = pls.create_play_list(baseuri).to_a.pack('C*')
     assert_equal(<<EOS.chomp, res.gsub(/\r\n/, "\n"))
 <ASX version="3.0">
   <Title>foo</Title>
@@ -129,7 +129,7 @@ EOS
     info2.set_chan_info_type('OGM')
     channel2.channel_info = PCSCore::ChannelInfo.new(info2)
     pls.channels.add(channel2)
-    res = pls.create_play_list(baseuri)
+    res = pls.create_play_list(baseuri).to_a.pack('C*')
     assert_equal(<<EOS.chomp, res.gsub(/\r\n/, "\n"))
 <ASX version="3.0">
   <Title>foo</Title>

@@ -289,6 +289,7 @@ class TC_PCPYellowPageClient < Test::Unit::TestCase
     assert_equal('album',               c.track[PCP_CHAN_TRACK_ALBUM])
     assert_equal('creator',             c.track[PCP_CHAN_TRACK_CREATOR])
     assert_equal('url',                 c.track[PCP_CHAN_TRACK_URL])
+    sleep(0.1) while c.hosts.empty?
     assert_equal(1, c.hosts.size)
     host = c.hosts.values.first
     assert_equal(@peercast.SessionID.to_s,   host.session_id.to_s)
@@ -302,7 +303,7 @@ class TC_PCPYellowPageClient < Test::Unit::TestCase
     assert_equal(0,                          host.info[PCP_HOST_NUMR])
     assert((host.info[PCP_HOST_FLAGS1] & PCP_HOST_FLAGS1_DIRECT)!=0)
     assert((host.info[PCP_HOST_FLAGS1] & PCP_HOST_FLAGS1_RELAY)!=0)
-    assert((host.info[PCP_HOST_FLAGS1] & PCP_HOST_FLAGS1_PUSH)!=0)
+    assert((host.info[PCP_HOST_FLAGS1] & PCP_HOST_FLAGS1_PUSH)==0)
     assert((host.info[PCP_HOST_FLAGS1] & PCP_HOST_FLAGS1_TRACKER)!=0)
     assert_equal(1, server.client_threads.size)
   ensure

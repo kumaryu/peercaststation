@@ -155,7 +155,7 @@ class TC_PCPOutputStream < Test::Unit::TestCase
       @is_relay_full = value
     end
 
-    def SelectSourceNodes
+    def SelectSourceNodes(selection)
       if @source_nodes then
         System::Array[PCSCore::Host].new(@source_nodes[0,8])
       else
@@ -219,7 +219,6 @@ class TC_PCPOutputStream < Test::Unit::TestCase
       System::Array[System::String].new([
         'GET /channel/531dc8dfc7fb42928ac2c0a626517a87 HTTP/1.1',
         'x-peercast-pcp:1',
-        'x-peercast-pos: 200000000',
         'User-Agent: PeerCastStation/1.0',
         'foo:bar',
       ])

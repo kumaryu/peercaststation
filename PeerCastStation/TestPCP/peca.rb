@@ -345,6 +345,12 @@ PCPAtom = Struct.new(:name, :children, :content) do
     value
   end
 
+  def update(atom)
+    atom.children.each do |c|
+      self[c.name] = c.value
+    end
+  end
+
   def write(stream)
     if self.children and not self.children.empty? then
       stream.write([self.name].pack('Z4') + [0x80000000 | self.children.count].pack('V'))
