@@ -340,7 +340,7 @@ namespace PeerCastStation.PCP
     private void OnConnecting()
     {
       state = State.Connecting;
-      var host = Channel.SelectSourceHost(SourceHostSelection.Receiving);
+      var host = Channel.SelectSourceHost(SourceHostSelection.Receiving | SourceHostSelection.Relayable);
       if (host!=null) {
         Logger.Debug("{0} is selected as source", host.GlobalEndPoint);
         if (StartConnection(host)) {
