@@ -275,6 +275,10 @@ namespace PeerCastStation.Core
     /// 受信中のホストを選択する
     /// </summary>
     Receiving = 2,
+    /// <summary>
+    /// リレー可能なホストを選択する
+    /// </summary>
+    Relayable = 4,
   }
 
   /// <summary>
@@ -355,7 +359,7 @@ namespace PeerCastStation.Core
     /// 保持している全てのノードと自分ノードのリレー合計を取得します
     /// </summary>
     public int TotalRelays {
-      get { return LocalRelays + Nodes.Sum(n => n.DirectCount); }
+      get { return LocalRelays + Nodes.Sum(n => n.RelayCount); }
     }
 
     /// <summary>
@@ -662,8 +666,17 @@ namespace PeerCastStation.Core
     private Host SelectSourceNode(SourceHostSelection selection, IEnumerable<Host> node_list)
     {
       var list = node_list;
+      if ((selection & SourceHostSelection.Relayable)!=0) {
+        list = list.Where(host => !host.IsRelayFull);
+      }
       if ((selection & SourceHostSelection.Lower)!=0) {
-        list = list.Where(host => PeerCast.GlobalEndPoint.Equals(host.Extra.GetHostUphostEndPoint()));
+        var endpoint = PeerCast.GlobalEndPoint ?? PeerCast.LocalEndPoint;
+        if (endpoint!=null) {
+          list = list.Where(host => endpoint.Equals(host.Extra.GetHostUphostEndPoint()));
+        }
+        else {
+          list = new Host[0];
+        }
       }
       if ((selection & SourceHostSelection.Receiving)!=0) {
         list = list.Where(host => host.IsReceiving);
