@@ -582,7 +582,19 @@ namespace PeerCastStation.PCP
       else if (IsRelayFull) {
         Logger.Debug("Handshake succeeded {0}({1}) but relay is full", Downhost.GlobalEndPoint, Downhost.SessionID.ToString("N"));
         //次に接続するホストを送ってQUIT
-        foreach (var node in Channel.SelectSourceNodes(SourceHostSelection.Lower | SourceHostSelection.Receiving)) {
+        var nodes = Channel.SelectSourceNodes(
+          SourceHostSelection.Lower |
+          SourceHostSelection.Receiving |
+          SourceHostSelection.Relayable);
+        if (nodes.Length==0) {
+          nodes = Channel.SelectSourceNodes(
+            SourceHostSelection.Lower |
+            SourceHostSelection.Relayable);
+          if (nodes.Length==0) {
+            nodes = Channel.SelectSourceNodes(SourceHostSelection.Lower);
+          }
+        }
+        foreach (var node in nodes) {
           var host_atom = new AtomCollection(node.Extra);
           Atom ip = host_atom.FindByName(Atom.PCP_HOST_IP);
           while (ip!=null) {
