@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{03c928c9-7aa8-4995-9d44-3f373bcf3cb3}</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>C:\Users\kumaryu\Documents\working\peercaststation\PeerCastStation\TestCore\startup.rb</StartupFile>
+    <StartupFile>startup.rb</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -26,40 +26,13 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="startup.rb" />
-    <None Include="startup.rb" />
-    <None Include="startup.rb" />
-    <None Include="startup.rb" />
-    <None Include="test_core.rb" />
-    <None Include="test_core.rb" />
-    <None Include="test_core.rb" />
     <None Include="test_core.rb" />
     <None Include="test_core_accesscontroller.rb" />
-    <None Include="test_core_accesscontroller.rb" />
-    <None Include="test_core_accesscontroller.rb" />
-    <None Include="test_core_accesscontroller.rb" />
-    <None Include="test_core_atom.rb" />
-    <None Include="test_core_atom.rb" />
-    <None Include="test_core_atom.rb" />
     <None Include="test_core_atom.rb" />
     <None Include="test_core_channel.rb" />
-    <None Include="test_core_channel.rb" />
-    <None Include="test_core_channel.rb" />
-    <None Include="test_core_host.rb" />
-    <None Include="test_core_accesscontroller.rb" />
-    <None Include="test_core_host.rb" />
-    <None Include="test_core_host.rb" />
     <None Include="test_core_host.rb" />
     <None Include="test_core_peercast.rb" />
-    <None Include="test_core_peercast.rb" />
-    <None Include="test_core_peercast.rb" />
-    <None Include="test_core_peercast.rb" />
     <None Include="test_core_queuedsynchronizationcontext.rb" />
-    <None Include="test_core_queuedsynchronizationcontext.rb" />
-    <None Include="test_core_queuedsynchronizationcontext.rb" />
-    <None Include="test_core_queuedsynchronizationcontext.rb" />
-    <None Include="test_core_rawcontentreader.rb" />
-    <None Include="test_core_rawcontentreader.rb" />
-    <None Include="test_core_rawcontentreader.rb" />
     <None Include="test_core_rawcontentreader.rb" />
   </ItemGroup>
 </Project>

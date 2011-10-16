@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{ad0e6e1a-2a22-4cdc-8de9-7f9e8f4dfe3c}</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>C:\Users\kumaryu\Documents\working\peercaststation\PeerCastStation\TestPCP\start.rb</StartupFile>
+    <StartupFile>start.rb</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -26,28 +26,12 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="peca.rb" />
-    <None Include="peca.rb" />
-    <None Include="peca.rb" />
-    <None Include="start.rb" />
-    <None Include="start.rb" />
     <None Include="start.rb" />
     <None Include="test_pcpoutputstream.rb" />
-    <None Include="test_pcpoutputstream.rb" />
-    <None Include="test_pcpoutputstream.rb" />
-    <None Include="test_pcppongoutputstream.rb" />
-    <None Include="test_pcppongoutputstream.rb" />
     <None Include="test_pcppongoutputstream.rb" />
     <None Include="test_pcpsourcestream.rb" />
-    <None Include="test_pcpsourcestream.rb" />
-    <None Include="test_pcpsourcestream.rb" />
-    <None Include="test_pcpyellowpageclient.rb" />
-    <None Include="test_pcpyellowpageclient.rb" />
     <None Include="test_pcpyellowpageclient.rb" />
     <None Include="utils.rb" />
-    <None Include="utils.rb" />
-    <None Include="utils.rb" />
-    <None Include="yp.rb" />
-    <None Include="yp.rb" />
     <None Include="yp.rb" />
   </ItemGroup>
 </Project>
