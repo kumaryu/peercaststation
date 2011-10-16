@@ -438,6 +438,56 @@ class TC_PCPOutputStream < Test::Unit::TestCase
     sleep(0.1) until stream.is_stopped
   end
 
+  def test_relay_with_stream_pos
+    channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
+    channel.status = PCSCore::SourceStreamStatus.receiving
+    channel.is_relay_full = false
+    request = PCSPCP::RelayRequest.new(
+      System::Array[System::String].new([
+        'GET /channel/531dc8dfc7fb42928ac2c0a626517a87 HTTP/1.1',
+        'x-peercast-pcp:1',
+        'x-peercast-pos:22',
+        'User-Agent: PeerCastStation/1.0',
+        'foo:bar',
+      ])
+    )
+    stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, request)
+    stream.start
+    header = read_http_header(@pipe)
+    assert_http_header(200, {}, header)
+    pcp_handshake(@pipe)
+    channel.content_header = PCSCore::Content.new(0, 'header')
+    channel.contents.add(PCSCore::Content.new( 6, 'content1'))
+    channel.contents.add(PCSCore::Content.new(14, 'content2'))
+    channel.contents.add(PCSCore::Content.new(22, 'content3'))
+    channel.contents.add(PCSCore::Content.new(30, 'content4'))
+    ok = PCPAtom.read(@pipe)
+    assert_equal(PCP_OK, ok.name)
+    chan = PCPAtom.read(@pipe)
+    assert_equal(PCP_CHAN, chan.name)
+    assert_not_nil(chan[PCP_CHAN_INFO])
+    assert_not_nil(chan[PCP_CHAN_TRACK])
+    assert_not_nil(chan[PCP_CHAN_PKT])
+    pkt = chan[PCP_CHAN_PKT]
+    assert_equal(PCP_CHAN_PKT_HEAD, pkt[PCP_CHAN_PKT_TYPE])
+    assert_equal(0,                 pkt[PCP_CHAN_PKT_POS])
+    assert_equal('header',          pkt[PCP_CHAN_PKT_DATA])
+    (2..3).each do |i|
+      chan = PCPAtom.read(@pipe)
+      assert_equal(PCP_CHAN, chan.name)
+      assert_nil(chan[PCP_CHAN_INFO])
+      assert_nil(chan[PCP_CHAN_TRACK])
+      assert_not_nil(chan[PCP_CHAN_PKT])
+      pkt = chan[PCP_CHAN_PKT]
+      assert_equal(PCP_CHAN_PKT_DATA, pkt[PCP_CHAN_PKT_TYPE])
+      assert_equal(6+i*8,             pkt[PCP_CHAN_PKT_POS])
+      assert_equal("content#{i+1}",   pkt[PCP_CHAN_PKT_DATA])
+    end
+    stream.stop
+    assert_pcp_quit(PCP_ERROR_QUIT, PCPAtom.read(@pipe))
+    sleep(0.1) until stream.is_stopped
+  end
+
   def test_bcst
     channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
     channel.status = PCSCore::SourceStreamStatus.receiving

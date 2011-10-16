@@ -374,6 +374,9 @@ namespace PeerCastStation.PCP
               content.Position);
           }
         }
+        else if (relayRequest.StreamPos.HasValue && relayRequest.StreamPos.Value>lastHeader.Position) {
+          content = channel.Contents.NextOf(relayRequest.StreamPos.Value-1);
+        }
         else {
           content = channel.Contents.Oldest;
         }
