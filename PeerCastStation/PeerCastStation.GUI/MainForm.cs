@@ -420,13 +420,16 @@ namespace PeerCastStation.GUI
       var item = channelList.SelectedItem as ChannelListItem;
       if (item!=null) {
         var channel_id = item.Channel.ChannelID;
+        var ext = (item.Channel.ChannelInfo.ContentType=="WMV" ||
+                   item.Channel.ChannelInfo.ContentType=="WMA" ||
+                   item.Channel.ChannelInfo.ContentType=="ASX") ? ".asx" : ".pls";
         var endpoint = peerCast.OutputListeners[0].LocalEndPoint;
         string pls;
         if (endpoint.Address.Equals(System.Net.IPAddress.Any)) {
-          pls = String.Format("http://localhost:{0}/pls/{1}", endpoint.Port, channel_id.ToString("N"));
+          pls = String.Format("http://localhost:{0}/pls/{1}{2}", endpoint.Port, channel_id.ToString("N"), ext);
         }
         else {
-          pls = String.Format("http://{0}/pls/{1}", endpoint.ToString(), channel_id.ToString("N"));
+          pls = String.Format("http://{0}/pls/{1}{2}", endpoint.ToString(), channel_id.ToString("N"), ext);
         }
         System.Diagnostics.Process.Start(pls);
       }
