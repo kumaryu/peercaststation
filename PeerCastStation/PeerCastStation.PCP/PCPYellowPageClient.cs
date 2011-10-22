@@ -253,11 +253,11 @@ namespace PeerCastStation.PCP
                   //Do nothing
                 }
                 else {
-                  helo.SetHeloPort((short)PeerCast.LocalEndPoint.Port);
+                  helo.SetHeloPort(PeerCast.LocalEndPoint.Port);
                 }
               }
               else {
-                helo.SetHeloPing((short)PeerCast.LocalEndPoint.Port);
+                helo.SetHeloPing(PeerCast.LocalEndPoint.Port);
               }
               AtomWriter.Write(stream, new Atom(Atom.PCP_HELO, helo));
               while (!isStopped) {
@@ -352,10 +352,10 @@ namespace PeerCastStation.PCP
       host.SetHostSessionID(PeerCast.SessionID);
       var globalendpoint = PeerCast.GlobalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
       host.AddHostIP(globalendpoint.Address);
-      host.AddHostPort((short)globalendpoint.Port);
+      host.AddHostPort(globalendpoint.Port);
       var localendpoint = PeerCast.LocalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
       host.AddHostIP(localendpoint.Address);
-      host.AddHostPort((short)localendpoint.Port);
+      host.AddHostPort(localendpoint.Port);
       host.SetHostNumListeners(channel.TotalDirects);
       host.SetHostNumRelays(channel.TotalRelays);
       host.SetHostUptime(channel.Uptime);

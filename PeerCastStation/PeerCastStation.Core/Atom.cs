@@ -352,6 +352,41 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
+    /// 保持している値をUInt16として取得します。
+    /// </summary>
+    /// <returns>保持している値</returns>
+    /// <exception cref="FormatException">
+    /// 値の長さが合わない、または値を保持していません
+    /// </exception>
+    public ushort GetUInt16()
+    {
+      ushort res;
+      if (TryGetUInt16(out res)) {
+        return res;
+      }
+      else {
+        throw new FormatException();
+      }
+    }
+
+    /// <summary>
+    /// 保持している値をUInt16として取得しようと試みます。
+    /// </summary>
+    /// <param name="res">保持している値の書き込み先</param>
+    /// <returns>値がInt16として解析できた場合はtrue、そうでない場合はfalse</returns>
+    public bool TryGetUInt16(out ushort res)
+    {
+      if (value != null && value.Length == 2) {
+        res = BitConverter.ToUInt16(value, 0);
+        return true;
+      }
+      else {
+        res = 0;
+        return false;
+      }
+    }
+
+    /// <summary>
     /// 保持している値をInt32として取得します。
     /// </summary>
     /// <returns>保持している値</returns>
@@ -545,6 +580,18 @@ namespace PeerCastStation.Core
     /// <param name="name">4文字以下の名前</param>
     /// <param name="value">Int16値</param>
     public Atom(ID4 name, short value)
+    {
+      Name = name;
+      this.value = BitConverter.GetBytes(value);
+      if (!BitConverter.IsLittleEndian) Array.Reverse(this.value);
+    }
+
+    /// <summary>
+    /// 名前と値を指定してAtomを初期化します。
+    /// </summary>
+    /// <param name="name">4文字以下の名前</param>
+    /// <param name="value">UInt16値</param>
+    public Atom(ID4 name, ushort value)
     {
       Name = name;
       this.value = BitConverter.GetBytes(value);

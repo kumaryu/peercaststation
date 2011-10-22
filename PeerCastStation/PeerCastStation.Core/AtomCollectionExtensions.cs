@@ -57,6 +57,18 @@ namespace PeerCastStation.Core
       }
     }
 
+    public static ushort? GetUShortFrom(IAtomCollection collection, ID4 name)
+    {
+      var atom = collection.FindByName(name);
+      ushort value = 0;
+      if (atom != null && atom.TryGetUInt16(out value)) {
+        return value;
+      }
+      else {
+        return null;
+      }
+    }
+
     public static byte? GetByteFrom(IAtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
@@ -203,14 +215,14 @@ namespace PeerCastStation.Core
       return GetIDFrom(collection, Atom.PCP_HELO_SESSIONID);
     }
 
-    public static short? GetHeloPort(this IAtomCollection collection)
+    public static int? GetHeloPort(this IAtomCollection collection)
     {
-      return GetShortFrom(collection, Atom.PCP_HELO_PORT);
+      return (int?)GetUShortFrom(collection, Atom.PCP_HELO_PORT);
     }
 
-    public static short? GetHeloPing(this IAtomCollection collection)
+    public static int? GetHeloPing(this IAtomCollection collection)
     {
-      return GetShortFrom(collection, Atom.PCP_HELO_PING);
+      return (int?)GetUShortFrom(collection, Atom.PCP_HELO_PING);
     }
 
     public static IPAddress GetHeloRemoteIP(this IAtomCollection collection)
@@ -218,9 +230,9 @@ namespace PeerCastStation.Core
       return GetIPAddressFrom(collection, Atom.PCP_HELO_REMOTEIP);
     }
 
-    public static short? GetHeloRemotePort(this IAtomCollection collection)
+    public static int? GetHeloRemotePort(this IAtomCollection collection)
     {
-      return GetShortFrom(collection, Atom.PCP_HELO_REMOTEPORT);
+      return (int?)GetUShortFrom(collection, Atom.PCP_HELO_REMOTEPORT);
     }
 
     public static int? GetHeloVersion(this IAtomCollection collection)
@@ -427,7 +439,7 @@ namespace PeerCastStation.Core
     public static IPEndPoint[] GetHostEndPoints(this IAtomCollection collection)
     {
       var addresses = new List<IPAddress>();
-      var ports = new List<short>();
+      var ports = new List<ushort>();
       foreach (var atom in collection) {
         if (atom.Name==Atom.PCP_HOST_IP) {
           IPAddress value;
@@ -436,8 +448,8 @@ namespace PeerCastStation.Core
           }
         }
         else if (atom.Name==Atom.PCP_HOST_PORT) {
-          short value;
-          if (atom.TryGetInt16(out value)) {
+          ushort value;
+          if (atom.TryGetUInt16(out value)) {
             ports.Add(value);
           }
         }
@@ -455,9 +467,9 @@ namespace PeerCastStation.Core
       return GetIPAddressFrom(collection, Atom.PCP_HOST_IP);
     }
 
-    public static short? GetHostPort(this IAtomCollection collection)
+    public static int? GetHostPort(this IAtomCollection collection)
     {
-      return GetShortFrom(collection, Atom.PCP_HOST_PORT);
+      return (int?)GetUShortFrom(collection, Atom.PCP_HOST_PORT);
     }
 
     public static Guid? GetHostChannelID(this IAtomCollection collection)
@@ -578,19 +590,19 @@ namespace PeerCastStation.Core
       SetAtomTo(collection, new Atom(Atom.PCP_HELO_DISABLE, value));
     }
 
-    public static void SetHeloPing(this IAtomCollection collection, short value)
+    public static void SetHeloPing(this IAtomCollection collection, int value)
     {
-      SetAtomTo(collection, new Atom(Atom.PCP_HELO_PING, value));
+      SetAtomTo(collection, new Atom(Atom.PCP_HELO_PING, (ushort)value));
     }
 
-    public static void SetHeloPort(this IAtomCollection collection, short value)
+    public static void SetHeloPort(this IAtomCollection collection, int value)
     {
-      SetAtomTo(collection, new Atom(Atom.PCP_HELO_PORT, value));
+      SetAtomTo(collection, new Atom(Atom.PCP_HELO_PORT, (ushort)value));
     }
 
-    public static void SetHeloRemotePort(this IAtomCollection collection, short value)
+    public static void SetHeloRemotePort(this IAtomCollection collection, int value)
     {
-      SetAtomTo(collection, new Atom(Atom.PCP_HELO_REMOTEPORT, value));
+      SetAtomTo(collection, new Atom(Atom.PCP_HELO_REMOTEPORT, (ushort)value));
     }
 
     public static void SetHeloRemoteIP(this IAtomCollection collection, IPAddress value)
@@ -818,14 +830,14 @@ namespace PeerCastStation.Core
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_NUMR, value));
     }
 
-    public static void SetHostPort(this IAtomCollection collection, short value)
+    public static void SetHostPort(this IAtomCollection collection, int value)
     {
-      SetAtomTo(collection, new Atom(Atom.PCP_HOST_PORT, value));
+      SetAtomTo(collection, new Atom(Atom.PCP_HOST_PORT, (ushort)value));
     }
 
-    public static void AddHostPort(this IAtomCollection collection, short value)
+    public static void AddHostPort(this IAtomCollection collection, int value)
     {
-      collection.Add(new Atom(Atom.PCP_HOST_PORT, value));
+      collection.Add(new Atom(Atom.PCP_HOST_PORT, (ushort)value));
     }
 
     public static void SetHostSessionID(this IAtomCollection collection, Guid value)
