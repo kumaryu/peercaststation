@@ -26,11 +26,31 @@ namespace PeerCastStation.GUI
     /// アプリケーションのメイン エントリ ポイントです。
     /// </summary>
     [STAThread]
-    static void Main()
+    static void Main(string[] args)
     {
-      Application.EnableVisualStyles();
-      Application.SetCompatibleTextRenderingDefault(false);
-      Application.Run(new MainForm());
+      if (ProcessControl.IsFirstInstance) {
+        Application.EnableVisualStyles();
+        Application.SetCompatibleTextRenderingDefault(false);
+        var main_form = new MainForm();
+        ProcessControl.OpenUriRequested += (sender, e) => {
+          main_form.OpenPeerCastUri(e.Uri);
+        };
+        ProcessControl.Start();
+        for (var i=0; i<args.Length; i++) {
+          if (args[i]=="-url" && i+1<args.Length) {
+            main_form.OpenPeerCastUri(args[++i]);
+          }
+        }
+        Application.Run(main_form);
+      }
+      else {
+        ProcessControl.Start();
+        for (var i=0; i<args.Length; i++) {
+          if (args[i]=="-url" && i+1<args.Length) {
+            ProcessControl.Instance.OpenUri(args[++i]);
+          }
+        }
+      }
     }
 
     static bool isOSX;

@@ -241,6 +241,7 @@ namespace PeerCastStation.GUI
           catch (System.IO.PathTooLongException)       { logFileWriter = null; }
           catch (System.IO.DirectoryNotFoundException) { logFileWriter = null; }
           catch (NotSupportedException)                { logFileWriter = null; }
+          catch (System.IO.IOException)                { logFileWriter = null; }
         }
         if (logFileWriter!=null && Settings.Default.LogToFile) {
           Logger.AddWriter(logFileWriter);
@@ -415,10 +416,27 @@ namespace PeerCastStation.GUI
       }
     }
 
+    public void OpenPeerCastUri(string peercast_uri)
+    {
+      var match = Regex.Match(peercast_uri, @"peercast://(pls/)?(.+)$");
+      if (match.Success && match.Groups[2].Success && peerCast.OutputListeners.Count>0) {
+        var channel = match.Groups[2].Value;
+        var endpoint = peerCast.OutputListeners[0].LocalEndPoint;
+        string pls;
+        if (endpoint.Address.Equals(System.Net.IPAddress.Any)) {
+          pls = String.Format("http://localhost:{0}/pls/{1}", endpoint.Port, channel);
+        }
+        else {
+          pls = String.Format("http://{0}/pls/{1}", endpoint.ToString(), channel);
+        }
+        System.Diagnostics.Process.Start(pls);
+      }
+    }
+
     private void channelPlay_Click(object sender, EventArgs e)
     {
       var item = channelList.SelectedItem as ChannelListItem;
-      if (item!=null) {
+      if (item!=null && peerCast.OutputListeners.Count>0) {
         var channel_id = item.Channel.ChannelID;
         var ext = (item.Channel.ChannelInfo.ContentType=="WMV" ||
                    item.Channel.ChannelInfo.ContentType=="WMA" ||
