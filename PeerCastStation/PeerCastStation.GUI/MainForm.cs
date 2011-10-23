@@ -139,6 +139,7 @@ namespace PeerCastStation.GUI
         notifyIcon.Icon = this.Icon;
         notifyIcon.ContextMenuStrip = notifyIconMenu;
         notifyIcon.Visible = true;
+        notifyIcon.DoubleClick += showGUIMenuItem_Click;
       }
       peerCast = new PeerCastStation.Core.PeerCast();
       peerCast.YellowPageFactories.Add(new PeerCastStation.PCP.PCPYellowPageClientFactory(peerCast));
