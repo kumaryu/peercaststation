@@ -38,6 +38,7 @@ class TC_CoreRawContentReader < Test::Unit::TestCase
       reader = PCSCore::RawContentReader.new
     end
     assert_equal("RAW", reader.name)
+    assert(reader.respond_to?(:create_obj_ref))
   end
 
   def test_read_empty

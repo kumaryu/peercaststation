@@ -28,6 +28,7 @@ namespace PeerCastStation.Core
   /// チャンネルのメタデータを保持するクラスです
   /// </summary>
   public class ChannelInfo
+    : MarshalByRefObject
   {
     /// <summary>
     /// チャンネル名を取得します
@@ -151,6 +152,7 @@ namespace PeerCastStation.Core
   /// チャンネルのトラック情報を保持するクラスです
   /// </summary>
   public class ChannelTrack
+    : MarshalByRefObject
   {
     /// <summary>
     /// タイトルを取得します
@@ -225,6 +227,7 @@ namespace PeerCastStation.Core
   /// <summary>
   /// 出力ストリームを保持するコレクションクラスです
   /// </summary>
+  [Serializable]
   public class OutputStreamCollection : Collection<IOutputStream>
   {
     /// <summary>
@@ -248,6 +251,7 @@ namespace PeerCastStation.Core
   /// <summary>
   /// 出力ストリームを保持するコレクションの読み取り専用ラッパクラスです
   /// </summary>
+  [Serializable]
   public class ReadOnlyOutputStreamCollection : ReadOnlyCollection<IOutputStream>
   {
     /// <summary>
@@ -285,7 +289,8 @@ namespace PeerCastStation.Core
   /// チャンネル接続を管理するクラスです
   /// </summary>
   public class Channel
-    : INotifyPropertyChanged
+    : MarshalByRefObject,
+      INotifyPropertyChanged
   {
     private const int NodeLimit = 180000; //ms
     private ISourceStream sourceStream = null;
@@ -825,7 +830,7 @@ namespace PeerCastStation.Core
       this.PeerCast = peercast;
       this.SourceUri = source_uri;
       this.ChannelID = channel_id;
-			this.BroadcastID = Guid.Empty;
+      this.BroadcastID = Guid.Empty;
       var host = new HostBuilder();
       var port = SourceUri.Port < 0 ? 7144 : SourceUri.Port;
       var addresses = Dns.GetHostAddresses(SourceUri.DnsSafeHost);

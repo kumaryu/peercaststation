@@ -96,6 +96,7 @@ class TC_PCPOutputStreamFactory < Test::Unit::TestCase
   def test_construct
     factory = PCSPCP::PCPOutputStreamFactory.new(@peercast)
     assert_equal(factory.Name, 'PCP')
+    assert(factory.respond_to?(:create_obj_ref))
   end
 
   def test_create
@@ -247,6 +248,7 @@ class TC_PCPOutputStream < Test::Unit::TestCase
     assert_equal(@channel,  stream.Channel)
     assert_equal(PCSCore::OutputStreamType.relay, stream.output_stream_type)
     assert(!stream.is_stopped)
+    assert(stream.respond_to?(:create_obj_ref))
   end
 
   def test_upstream_rate

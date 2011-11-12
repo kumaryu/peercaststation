@@ -31,6 +31,9 @@ class TC_CoreID4 < Test::Unit::TestCase
     id4 = PeerCastStation::Core::ID4.new('nagai_name', 0)
     assert_equal('naga', id4.to_string)
     assert_equal('naga'.unpack('C*'), id4.get_bytes)
+
+    assert(id4.GetType.get_custom_attributes(System::SerializableAttribute.to_clr_type, true).length>0)
+    assert(!id4.respond_to?(:create_obj_ref))
   end
   
   def test_name_length
@@ -57,6 +60,9 @@ class TC_CoreAtom < Test::Unit::TestCase
     assert(obj.has_value)
     assert(!obj.has_children)
     assert_equal('cast', obj.get_string)
+
+    assert(obj.GetType.get_custom_attributes(System::SerializableAttribute.to_clr_type, true).length>0)
+    assert(!obj.respond_to?(:create_obj_ref))
   end
   
   def test_construct_byte
@@ -113,6 +119,9 @@ class TC_CoreAtomCollection < Test::Unit::TestCase
   def test_construct
     obj = PeerCastStation::Core::AtomCollection.new
     assert_equal(0, obj.count)
+
+    assert(obj.GetType.get_custom_attributes(System::SerializableAttribute.to_clr_type, true).length>0)
+    assert(!obj.respond_to?(:create_obj_ref))
   end
 
   def test_copy_construct
@@ -167,6 +176,9 @@ class TC_CoreReadOnlyAtomCollection < Test::Unit::TestCase
     assert_equal(0, obj.count)
     assert(!base.clr_member(System::Collections::IList, :IsReadOnly).call)
     assert(obj.clr_member(System::Collections::IList, :IsReadOnly).call)
+
+    assert(obj.GetType.get_custom_attributes(System::SerializableAttribute.to_clr_type, true).length>0)
+    assert(!obj.respond_to?(:create_obj_ref))
   end
 
   def test_update
@@ -204,6 +216,7 @@ class TC_CoreAtomWriter < Test::Unit::TestCase
     stream = System::IO::MemoryStream.new
     writer = PeerCastStation::Core::AtomWriter.new(stream)
     assert_equal(stream, writer.base_stream)
+    assert(writer.respond_to?(:create_obj_ref))
     writer.close
   end
   
@@ -636,6 +649,7 @@ class TC_CoreAtomReader < Test::Unit::TestCase
     stream = System::IO::MemoryStream.new
     reader = PeerCastStation::Core::AtomReader.new(stream)
     assert_equal(stream, reader.base_stream)
+    assert(reader.respond_to?(:create_obj_ref))
     reader.close
   end
   

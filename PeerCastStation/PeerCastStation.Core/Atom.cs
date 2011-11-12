@@ -25,6 +25,7 @@ namespace PeerCastStation.Core
   /// <summary>
   /// 主にAtomの名前などに使われる4文字の識別子クラスです
   /// </summary>
+  [Serializable]
   public struct ID4
     : IEquatable<ID4>
   {
@@ -158,6 +159,7 @@ namespace PeerCastStation.Core
   /// PCPプロトコルの基本通信単位を表すクラスです。
   /// 4文字以下の名前と対応する値を保持します
   /// </summary>
+  [Serializable]
   public class Atom
   {
     public static readonly ID4 PCP_HELO                   = new ID4("helo");
@@ -677,7 +679,8 @@ namespace PeerCastStation.Core
   /// ストリームにAtomを書き込むためのアダプタクラスです
   /// </summary>
   public class AtomWriter
-    : IDisposable
+    : MarshalByRefObject,
+      IDisposable
   {
     private bool disposed = false;
     private Stream stream;
@@ -785,7 +788,8 @@ namespace PeerCastStation.Core
   /// ストリームからAtomを読み取るアダプタクラスです
   /// </summary>
   public class AtomReader
-    : IDisposable
+    : MarshalByRefObject,
+      IDisposable
   {
     private bool disposed = false;
     private Stream stream;
@@ -939,6 +943,7 @@ namespace PeerCastStation.Core
   /// <summary>
   /// Atomを保持するコレクションクラスです
   /// </summary>
+  [Serializable]
   public class AtomCollection
     : Collection<Atom>,
       IAtomCollection
@@ -1004,6 +1009,7 @@ namespace PeerCastStation.Core
   /// <summary>
   /// AtomCollectionの読み取り専用コレクションを表すラッパクラスです
   /// </summary>
+  [Serializable]
   public class ReadOnlyAtomCollection
     : ReadOnlyCollection<Atom>,
       IAtomCollection

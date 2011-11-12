@@ -208,6 +208,8 @@ class TC_CoreContent < Test::Unit::TestCase
     obj = PeerCastStation::Core::Content.new(10, 'content')
     assert_equal(10, obj.position)
     assert_equal('content'.unpack('C*'), obj.data)
+    assert(obj.GetType.get_custom_attributes(System::SerializableAttribute.to_clr_type, true).length>0)
+    assert(!obj.respond_to?(:create_obj_ref))
   end
 end
 
@@ -223,6 +225,7 @@ class TC_CoreChannelInfo < Test::Unit::TestCase
     assert_nil(obj.URL)
     assert_equal(0, obj.bitrate)
     assert_equal(0, obj.extra.count)
+    assert(obj.respond_to?(:create_obj_ref))
   end
 
   def test_name
@@ -297,6 +300,7 @@ class TC_CoreChannelTrack < Test::Unit::TestCase
     assert_nil(obj.creator)
     assert_nil(obj.URL)
     assert_equal(0, obj.extra.count)
+    assert(obj.respond_to?(:create_obj_ref))
   end
 
   def test_name

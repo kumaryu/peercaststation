@@ -22,6 +22,7 @@ namespace PeerCastStation.Core
   /// <summary>
   /// チャンネルのストリーム内容を表わすクラスです
   /// </summary>
+  [Serializable]
   public class Content
   {
     /// <summary>
@@ -47,7 +48,8 @@ namespace PeerCastStation.Core
   }
 
   public class ContentCollection
-    : System.Collections.Specialized.INotifyCollectionChanged,
+    : MarshalByRefObject,
+      System.Collections.Specialized.INotifyCollectionChanged,
       ICollection<Content>
   {
     private SortedList<long, Content> list = new SortedList<long,Content>();

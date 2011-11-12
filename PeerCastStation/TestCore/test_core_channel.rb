@@ -45,6 +45,7 @@ class TC_CoreChannel < Test::Unit::TestCase
     assert_equal(0, channel.nodes.count)
     assert_nil(channel.content_header)
     assert_equal(0, channel.contents.count)
+    assert(channel.respond_to?(:create_obj_ref))
   end
 
   def test_construct_bcid
@@ -455,7 +456,8 @@ class TC_CoreContentCollection < Test::Unit::TestCase
   def test_construct
     contents = PeerCastStation::Core::ContentCollection.new
     assert_equal(0, contents.count)
-    assert_equal(160, contents.limit_packets)
+    assert_equal(10, contents.limit_packets)
+    assert(contents.respond_to?(:create_obj_ref))
   end
 
   def test_newest
@@ -507,34 +509,34 @@ class TC_CoreContentCollection < Test::Unit::TestCase
 
   def test_get_newer_contents
     contents = PeerCastStation::Core::ContentCollection.new
-    30.times do |i|
+    10.times do |i|
       content = PeerCastStation::Core::Content.new(i*10, "content#{i}")
       contents.add(content)
     end
     newer = contents.get_newer_contents(-1)
-    assert_equal(30,  newer.count)
+    assert_equal(10,  newer.count)
     assert_equal(0,   newer[0].position)
-    assert_equal(290, newer[newer.count-1].position)
+    assert_equal(90, newer[newer.count-1].position)
 
     newer = contents.get_newer_contents(0)
-    assert_equal(29,  newer.count)
+    assert_equal(9,   newer.count)
     assert_equal(10,  newer[0].position)
-    assert_equal(290, newer[newer.count-1].position)
+    assert_equal(90, newer[newer.count-1].position)
 
     newer = contents.get_newer_contents(15)
-    assert_equal(28,  newer.count)
+    assert_equal(8,   newer.count)
     assert_equal(20,  newer[0].position)
-    assert_equal(290, newer[newer.count-1].position)
+    assert_equal(90, newer[newer.count-1].position)
 
-    newer = contents.get_newer_contents(285)
+    newer = contents.get_newer_contents(85)
     assert_equal(1,   newer.count)
-    assert_equal(290, newer[0].position)
-    assert_equal(290, newer[newer.count-1].position)
+    assert_equal(90, newer[0].position)
+    assert_equal(90, newer[newer.count-1].position)
 
-    newer = contents.get_newer_contents(290)
+    newer = contents.get_newer_contents(90)
     assert_equal(0, newer.count)
 
-    newer = contents.get_newer_contents(300)
+    newer = contents.get_newer_contents(100)
     assert_equal(0, newer.count)
   end
 end

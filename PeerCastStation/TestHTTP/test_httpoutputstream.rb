@@ -85,6 +85,7 @@ class TC_HTTPOutputStreamFactory < Test::Unit::TestCase
   def test_construct
     factory = PCSHTTP::HTTPOutputStreamFactory.new(@peercast)
     assert_equal('HTTP', factory.Name)
+    assert(factory.respond_to?(:create_obj_ref))
   end
 
   def test_parse_channel_id
@@ -226,6 +227,7 @@ class TC_HTTPOutputStream < Test::Unit::TestCase
     assert_equal(PCSCore::OutputStreamType.play, stream.output_stream_type)
     assert(!stream.is_stopped)
     assert(!stream.is_local)
+    assert(stream.respond_to?(:create_obj_ref))
   end
 
   def test_upstream_rate

@@ -51,6 +51,7 @@ class TC_PCPPongOutputStreamFactory < Test::Unit::TestCase
   def test_construct
     factory = PCSPCP::PCPPongOutputStreamFactory.new(@peercast)
     assert_equal(factory.Name, 'PCPPong')
+    assert(factory.respond_to?(:create_obj_ref))
   end
 
   def test_parse_channel_id
@@ -105,6 +106,7 @@ class TC_PCPPongOutputStream < Test::Unit::TestCase
     assert_equal(@output,  stream.OutputStream)
     assert(!stream.is_stopped)
     assert_equal(PCSCore::OutputStreamType.metadata, stream.output_stream_type)
+    assert(stream.respond_to?(:create_obj_ref))
   end
 
   def test_is_local

@@ -128,7 +128,7 @@ namespace PeerCastStation.ASF
       Header,
       Data,
     };
-  	public ChunkType KnownType {
+    public ChunkType KnownType {
       get {
         switch (Type) {
         case 0x4824: // asf header
@@ -141,26 +141,26 @@ namespace PeerCastStation.ASF
       }
     }
     public int TotalLength { get { return Length+4; } }
-  	public ushort Type   { get; private set; }
-  	public ushort Length { get; private set; }
-  	public uint   SequenceNumber { get; private set; }
-  	public ushort V1   { get; private set; }
-  	public ushort V2   { get; private set; }
-  	public byte[] Data { get; private set; }
+    public ushort Type   { get; private set; }
+    public ushort Length { get; private set; }
+    public uint   SequenceNumber { get; private set; }
+    public ushort V1   { get; private set; }
+    public ushort V2   { get; private set; }
+    public byte[] Data { get; private set; }
 
     public ASFChunk(
-    	ushort type,
-    	ushort length,
-    	uint   sequence_number,
-    	ushort v1,
-    	ushort v2,
-    	byte[] data)
+      ushort type,
+      ushort length,
+      uint   sequence_number,
+      ushort v1,
+      ushort v2,
+      byte[] data)
     {
-    	this.Type = type;
-    	this.Length = length;
-    	this.SequenceNumber = sequence_number;
-    	this.V1 = v1;
-    	this.V2 = v2;
+      this.Type = type;
+      this.Length = length;
+      this.SequenceNumber = sequence_number;
+      this.V1 = v1;
+      this.V2 = v2;
       this.Data = data;
     }
 
@@ -178,26 +178,26 @@ namespace PeerCastStation.ASF
 
     public static ASFChunk Read(Stream stream)
     {
-			var pos = stream.Position;
-			try {
-				var type    = BinaryReader.ReadUInt16LE(stream);
-				var len     = BinaryReader.ReadUInt16LE(stream);
-				if (len<8) {
-					var data  = BinaryReader.ReadBytes(stream, len);
-					return new ASFChunk(type, len, 0, 0, 0, data);
-				}
-				else {
-					var seq_num = BinaryReader.ReadUInt32LE(stream);
-					var v1      = BinaryReader.ReadUInt16LE(stream);
-					var v2      = BinaryReader.ReadUInt16LE(stream);
-					var data    = BinaryReader.ReadBytes(stream, len-8);
-					return new ASFChunk(type, len, seq_num, v1, v2, data);
-				}
-			}
-			catch (EndOfStreamException) {
-				stream.Position = pos;
-				throw;
-			}
+      var pos = stream.Position;
+      try {
+        var type    = BinaryReader.ReadUInt16LE(stream);
+        var len     = BinaryReader.ReadUInt16LE(stream);
+        if (len<8) {
+          var data  = BinaryReader.ReadBytes(stream, len);
+          return new ASFChunk(type, len, 0, 0, 0, data);
+        }
+        else {
+          var seq_num = BinaryReader.ReadUInt32LE(stream);
+          var v1      = BinaryReader.ReadUInt16LE(stream);
+          var v2      = BinaryReader.ReadUInt16LE(stream);
+          var data    = BinaryReader.ReadBytes(stream, len-8);
+          return new ASFChunk(type, len, seq_num, v1, v2, data);
+        }
+      }
+      catch (EndOfStreamException) {
+        stream.Position = pos;
+        throw;
+      }
     }
   }
 
@@ -279,9 +279,9 @@ namespace PeerCastStation.ASF
       StreamProperty,
       StreamBitrate,
     };
-  	public Guid   ID     { get; private set; }
-  	public ulong  Length { get; private set; }
-  	public byte[] Data   { get; private set; }
+    public Guid   ID     { get; private set; }
+    public ulong  Length { get; private set; }
+    public byte[] Data   { get; private set; }
     public KnownType Type
     {
       get
@@ -298,7 +298,7 @@ namespace PeerCastStation.ASF
     public ASFObject(
       Guid id,
       ulong length,
-    	byte[] data)
+      byte[] data)
     {
       this.ID = id;
       this.Length = length;
@@ -322,7 +322,8 @@ namespace PeerCastStation.ASF
   };
 
   public class ASFContentReader
-    : IContentReader
+    : MarshalByRefObject,
+      IContentReader
   {
     public ParsedContent Read(Channel channel, Stream stream)
     {

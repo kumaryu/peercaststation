@@ -125,6 +125,7 @@ class TC_PCPSourceStreamFactory < Test::Unit::TestCase
     factory = PCSPCP::PCPSourceStreamFactory.new(@peercast)
     assert_equal('pcp', factory.Name)
     assert_equal(@peercast, factory.PeerCast)
+    assert(factory.respond_to?(:create_obj_ref))
   end
 
   def test_create
@@ -481,6 +482,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     assert_equal(@channel,    stream.Channel)
     assert_equal(@source_uri, stream.SourceUri)
     assert(!stream.is_stopped)
+    assert(stream.respond_to?(:create_obj_ref))
   end
 
   def test_start_not_found_tracker

@@ -41,6 +41,7 @@ class TC_PCPYellowPageClientFactory < Test::Unit::TestCase
   def test_construct
     factory = PCSPCP::PCPYellowPageClientFactory.new(@peercast)
     assert_equal(factory.Name, 'PCP')
+    assert(factory.respond_to?(:create_obj_ref))
   end
 
   def test_create
@@ -182,6 +183,7 @@ class TC_PCPYellowPageClient < Test::Unit::TestCase
     assert_equal(@peercast, yp.PeerCast)
     assert_equal('TestYP',  yp.Name)
     assert_equal('http://yp.example.com/', yp.Uri.ToString.to_s)
+    assert(yp.respond_to?(:create_obj_ref))
   end
 
   def test_find_tracker_connection_failed

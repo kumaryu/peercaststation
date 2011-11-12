@@ -117,12 +117,12 @@ namespace PeerCastStation.PCP
   /// PCPでリレー出力をするPCPOutputStreamを作成するクラスです
   /// </summary>
   public class PCPOutputStreamFactory
-    : IOutputStreamFactory
+    : OutputStreamFactoryBase
   {
     /// <summary>
     /// プロトコル名を取得します。常に"PCP"を返します
     /// </summary>
-    public string Name
+    public override string Name
     {
       get { return "PCP"; }
     }
@@ -139,7 +139,7 @@ namespace PeerCastStation.PCP
     /// 作成できた場合はPCPOutputStreamのインスタンス。
     /// headerが正しく解析できなかった場合はnull
     /// </returns>
-    public IOutputStream Create(
+    public override IOutputStream Create(
       Stream input_stream,
       Stream output_stream,
       EndPoint remote_endpoint,
@@ -148,8 +148,8 @@ namespace PeerCastStation.PCP
     {
       var request = ParseRequest(header);
       if (request!=null) {
-        var channel = peercast.RequestChannel(channel_id, null, false);
-        return new PCPOutputStream(peercast, input_stream, output_stream, remote_endpoint, channel, request);
+        var channel = this.PeerCast.RequestChannel(channel_id, null, false);
+        return new PCPOutputStream(this.PeerCast, input_stream, output_stream, remote_endpoint, channel, request);
       }
       else {
         return null;
@@ -170,7 +170,7 @@ namespace PeerCastStation.PCP
     /// で始まる場合のみチャンネルIDを抽出します。
     /// またクライアントが要求してくるPCPのバージョンは1である必要があります
     /// </remarks>
-    public Guid? ParseChannelID(byte[] header)
+    public override Guid? ParseChannelID(byte[] header)
     {
       var request = ParseRequest(header);
       if (request!=null && request.Uri!=null && request.PCPVersion==1) {
@@ -182,14 +182,13 @@ namespace PeerCastStation.PCP
       return null;
     }
 
-    private PeerCast peercast;
     /// <summary>
     /// ファクトリオブジェクトを初期化します
     /// </summary>
     /// <param name="peercast">所属するPeerCastオブジェクト</param>
     public PCPOutputStreamFactory(PeerCast peercast)
+      : base(peercast)
     {
-      this.peercast = peercast;
     }
 
     /// <summary>

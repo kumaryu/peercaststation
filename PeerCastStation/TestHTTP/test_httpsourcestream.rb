@@ -82,6 +82,7 @@ class TC_HTTPSourceStreamFactory < Test::Unit::TestCase
   def test_construct
     factory = PCSHTTP::HTTPSourceStreamFactory.new(@peercast)
     assert_equal('http', factory.Name)
+    assert(factory.respond_to?(:create_obj_ref))
   end
 
   def test_create_relay
@@ -215,6 +216,7 @@ class TC_HTTPSourceStream < Test::Unit::TestCase
     assert_equal(@channel, source.channel)
     assert_equal(@source_uri, source.source_uri)
     assert_equal(@reader, source.content_reader)
+    assert(source.respond_to?(:create_obj_ref))
   end
 
   def test_start_not_found

@@ -38,6 +38,8 @@ class TC_CoreHostBuilder < Test::Unit::TestCase
     assert_equal(0, obj.extensions.count)
     assert_not_nil(obj.extra)
     assert_equal(0, obj.extra.count)
+    assert(obj.GetType.get_custom_attributes(System::SerializableAttribute.to_clr_type, true).length==0)
+    assert(!obj.respond_to?(:create_obj_ref))
   end
   
   def test_construct_from_host
@@ -204,6 +206,8 @@ class TC_CoreHost < Test::Unit::TestCase
     assert_equal(1,      host.Extensions.count)
     assert_equal('test', host.Extensions[0])
     assert_not_equal(0, host.LastUpdated.ticks)
+    assert(host.GetType.get_custom_attributes(System::SerializableAttribute.to_clr_type, true).length>0)
+    assert(!host.respond_to?(:create_obj_ref))
   end
 end
 

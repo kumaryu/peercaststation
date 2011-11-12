@@ -44,6 +44,7 @@ class TC_ASFContentReader < Test::Unit::TestCase
       reader = PCSASF::ASFContentReader.new
     end
     assert_equal("ASF(WMV or WMA)", reader.name)
+    assert(reader.respond_to?(:create_obj_ref))
   end
 
   def test_read_empty

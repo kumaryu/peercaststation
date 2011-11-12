@@ -11,7 +11,8 @@ using System.Net;
 namespace PeerCastStation.PCP
 {
   public class PCPYellowPageClientFactory
-    : IYellowPageClientFactory
+    : MarshalByRefObject,
+      IYellowPageClientFactory
   {
     public PeerCast PeerCast { get; private set; }
     public string Name { get { return "PCP"; } }
@@ -28,7 +29,8 @@ namespace PeerCastStation.PCP
   }
 
   public class PCPYellowPageClient
-    : IYellowPageClient
+    : MarshalByRefObject,
+      IYellowPageClient
   {
     private const int PCP_VERSION    = 1218;
     private const int PCP_VERSION_VP = 27;

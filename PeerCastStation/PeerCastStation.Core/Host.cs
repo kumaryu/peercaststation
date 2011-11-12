@@ -23,6 +23,7 @@ namespace PeerCastStation.Core
   /// <summary>
   /// 接続情報を保持するクラスです
   /// </summary>
+  [Serializable]
   public class Host
   {
     /// <summary>

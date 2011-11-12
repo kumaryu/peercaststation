@@ -8,7 +8,8 @@ namespace PeerCastStation.Core
   /// 読み取ったデータをそのままコンテントとして流すクラスです
   /// </summary>
   public class RawContentReader
-    : IContentReader
+    : MarshalByRefObject,
+      IContentReader
   {
     public ParsedContent Read(Channel channel, Stream stream)
     {
