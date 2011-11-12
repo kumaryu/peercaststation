@@ -121,7 +121,32 @@ namespace PeerCastStation.GUI
     }
     private List<ContentReaderWrapper> contentReaders = new List<ContentReaderWrapper>();
 
+    static bool isOSX;
+    static public bool IsOSX { get { return isOSX; } }
+    static MainForm()
+    {
+      if (PlatformID.Unix  ==Environment.OSVersion.Platform ||
+          PlatformID.MacOSX==Environment.OSVersion.Platform) {
+        var start_info = new System.Diagnostics.ProcessStartInfo("uname");
+        start_info.RedirectStandardOutput = true;
+        start_info.UseShellExecute = false;
+        start_info.ErrorDialog = false;
+        var process = System.Diagnostics.Process.Start(start_info);
+        if (process!=null) {
+          isOSX = System.Text.RegularExpressions.Regex.IsMatch(
+              process.StandardOutput.ReadToEnd(), @"Darwin");
+        }
+        else {
+          isOSX = false;
+        }
+      }
+      else {
+        isOSX = false;
+      }
+    }
+
     private NotifyIcon notifyIcon;
+
     public MainForm(PeerCast peercast)
     {
       InitializeComponent();
@@ -130,7 +155,7 @@ namespace PeerCastStation.GUI
       Logger.Level = LogLevel.Warn;
       Logger.AddWriter(new DebugWriter());
       guiWriter = new TextBoxWriter(logText);
-      if (Program.IsOSX) {
+      if (IsOSX) {
         this.Font = new System.Drawing.Font("Osaka", this.Font.SizeInPoints);
         statusBar.Font = new System.Drawing.Font("Osaka", statusBar.Font.SizeInPoints);
       }

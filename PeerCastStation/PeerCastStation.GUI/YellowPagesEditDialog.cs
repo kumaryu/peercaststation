@@ -19,7 +19,7 @@ namespace PeerCastStation.GUI
     public YellowPagesEditDialog(PeerCastStation.Core.PeerCast peerCast)
     {
       InitializeComponent();
-      if (Program.IsOSX) {
+      if (MainForm.IsOSX) {
         this.Font = new System.Drawing.Font("Osaka", this.Font.SizeInPoints);
       }
       ypProtocolList.Items.AddRange(peerCast.YellowPageFactories.Select(factory => factory.Name).ToArray());
