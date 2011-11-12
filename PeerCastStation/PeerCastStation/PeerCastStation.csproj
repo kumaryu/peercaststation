@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{3D030F73-33A1-4FEF-9A3F-D8CD34FC63A2}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>PeerCastStation</RootNamespace>
+    <AssemblyName>PeerCastStation</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="PeerCastStation.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PeerCastStation.ASF\PeerCastStation.ASF.csproj">
+      <Project>{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}</Project>
+      <Name>PeerCastStation.ASF</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj">
+      <Project>{387996F5-E31D-4D92-BD86-8983C599F748}</Project>
+      <Name>PeerCastStation.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.GUI\PeerCastStation.GUI.csproj">
+      <Project>{C48B0B43-0061-4049-8EBF-5F3757009F13}</Project>
+      <Name>PeerCastStation.GUI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.HTTP\PeerCastStation.HTTP.csproj">
+      <Project>{DB3BBED9-6F4B-456C-910D-E1801C94A110}</Project>
+      <Name>PeerCastStation.HTTP</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.Logger\PeerCastStation.Logger.csproj">
+      <Project>{EB11900C-4868-45A4-A046-11D17A3F4220}</Project>
+      <Name>PeerCastStation.Logger</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.Ohaoha\PeerCastStation.Ohaoha.csproj">
+      <Project>{6E45FCD8-3569-48E9-A704-083A7BBD6743}</Project>
+      <Name>PeerCastStation.Ohaoha</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.PCP\PeerCastStation.PCP.csproj">
+      <Project>{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}</Project>
+      <Name>PeerCastStation.PCP</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

@@ -38,6 +38,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AccessController.cs" />
+    <Compile Include="Application.cs" />
     <Compile Include="Atom.cs" />
     <Compile Include="AtomCollectionExtensions.cs" />
     <Compile Include="Channel.cs" />

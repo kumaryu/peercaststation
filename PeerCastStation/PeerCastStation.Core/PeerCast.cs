@@ -53,6 +53,7 @@ namespace PeerCastStation.Core
   /// PeerCastStationの主要な動作を行ない、管理するクラスです
   /// </summary>
   public class PeerCast
+    : MarshalByRefObject
   {
     /// <summary>
     /// UserAgentやServerとして名乗る名前を取得および設定します。

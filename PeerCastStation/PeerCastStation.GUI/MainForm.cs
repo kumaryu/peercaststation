@@ -122,7 +122,7 @@ namespace PeerCastStation.GUI
     private List<ContentReaderWrapper> contentReaders = new List<ContentReaderWrapper>();
 
     private NotifyIcon notifyIcon;
-    public MainForm()
+    public MainForm(PeerCast peercast)
     {
       InitializeComponent();
       channelList.DataSource = channelListItems; 
@@ -141,15 +141,7 @@ namespace PeerCastStation.GUI
         notifyIcon.Visible = true;
         notifyIcon.DoubleClick += showGUIMenuItem_Click;
       }
-      peerCast = new PeerCastStation.Core.PeerCast();
-      peerCast.YellowPageFactories.Add(new PeerCastStation.PCP.PCPYellowPageClientFactory(peerCast));
-      peerCast.SourceStreamFactories["pcp"]  = new PeerCastStation.PCP.PCPSourceStreamFactory(peerCast);
-      peerCast.SourceStreamFactories["http"] = new PeerCastStation.HTTP.HTTPSourceStreamFactory(peerCast);
-      peerCast.OutputStreamFactories.Add(new PeerCastStation.PCP.PCPPongOutputStreamFactory(peerCast));
-      peerCast.OutputStreamFactories.Add(new PeerCastStation.PCP.PCPOutputStreamFactory(peerCast));
-      peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPOutputStreamFactory(peerCast));
-      peerCast.OutputStreamFactories.Add(new PeerCastStation.Ohaoha.OhaohaCheckOutputStreamFactory(peerCast));
-      peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPDummyOutputStreamFactory(peerCast));
+      peerCast = peercast;
       peerCast.ChannelAdded   += ChannelAdded;
       peerCast.ChannelRemoved += ChannelRemoved;
       peerCast.YellowPagesChanged += YellowPagesChanged;

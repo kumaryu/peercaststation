@@ -28,6 +28,7 @@ namespace PeerCastStation.GUI
     [STAThread]
     static void Main(string[] args)
     {
+      /*
       if (ProcessControl.IsFirstInstance) {
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
@@ -51,6 +52,7 @@ namespace PeerCastStation.GUI
           }
         }
       }
+       */
     }
 
     static bool isOSX;
