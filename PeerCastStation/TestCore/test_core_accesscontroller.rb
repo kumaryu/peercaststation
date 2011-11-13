@@ -61,33 +61,6 @@ class TC_CoreAccessController < Test::Unit::TestCase
     assert(ac.respond_to?(:create_obj_ref))
   end
 
-  def test_property_changed
-    ac = PeerCastStation::Core::AccessController.new(@peercast)
-    log = []
-    ac.PropertyChanged do |sender, args|
-      assert_equal(ac, sender)
-      log << args.PropertyName
-    end
-    ac.max_relays             = 4
-    ac.max_relays_per_channel = 3
-    ac.max_plays              = 2
-    ac.max_plays_per_channel  = 1
-    ac.max_upstream_rate      = 10000
-    assert_equal('MaxRelays',           log[0])
-    assert_equal('MaxRelaysPerChannel', log[1])
-    assert_equal('MaxPlays',            log[2])
-    assert_equal('MaxPlaysPerChannel',  log[3])
-    assert_equal('MaxUpstreamRate',     log[4])
-
-    log.clear
-    ac.max_relays             = 4
-    ac.max_relays_per_channel = 3
-    ac.max_plays              = 2
-    ac.max_plays_per_channel  = 1
-    ac.max_upstream_rate      = 10000
-    assert_equal(0, log.size)
-  end
-
   def test_is_channel_relayable_empty
     ac = PeerCastStation::Core::AccessController.new(@peercast)
     channel = new_channel(7144)

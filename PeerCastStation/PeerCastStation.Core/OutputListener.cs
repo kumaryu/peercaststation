@@ -26,6 +26,7 @@ namespace PeerCastStation.Core
   /// 接続待ち受け処理を扱うクラスです
   /// </summary>
   public class OutputListener
+    : MarshalByRefObject
   {
     private static Logger logger = new Logger(typeof(OutputListener));
     /// <summary>

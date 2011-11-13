@@ -289,8 +289,7 @@ namespace PeerCastStation.Core
   /// チャンネル接続を管理するクラスです
   /// </summary>
   public class Channel
-    : MarshalByRefObject,
-      INotifyPropertyChanged
+    : MarshalByRefObject
   {
     private const int NodeLimit = 180000; //ms
     private ISourceStream sourceStream = null;
@@ -341,7 +340,6 @@ namespace PeerCastStation.Core
       {
         if (sourceStream != value) {
           sourceStream = value;
-          OnPropertyChanged("SourceStream");
         }
       }
     }
@@ -381,6 +379,7 @@ namespace PeerCastStation.Core
       get { return new ReadOnlyOutputStreamCollection(outputStreams); }
     }
 
+    public event EventHandler OutputStreamsChanged;
     /// <summary>
     /// 指定した出力ストリームを出力ストリームリストに追加します
     /// </summary>
@@ -392,7 +391,7 @@ namespace PeerCastStation.Core
         new_collection.Add(stream);
         return new_collection;
       });
-      OnPropertyChanged("OutputStreams");
+      if (OutputStreamsChanged!=null) OutputStreamsChanged(this, new EventArgs());
     }
 
     /// <summary>
@@ -408,10 +407,11 @@ namespace PeerCastStation.Core
         return new_collection;
       });
       if (removed) {
-        OnPropertyChanged("OutputStreams");
+        if (OutputStreamsChanged!=null) OutputStreamsChanged(this, new EventArgs());
       }
     }
 
+    public event EventHandler ChannelInfoChanged;
     private ChannelInfo channelInfo = new ChannelInfo(new AtomCollection());
     /// <summary>
     /// チャンネル情報を取得および設定します
@@ -423,11 +423,12 @@ namespace PeerCastStation.Core
       set {
         if (channelInfo!=value) {
           channelInfo = value;
-          OnPropertyChanged("ChannelInfo");
+          if (ChannelInfoChanged!=null) ChannelInfoChanged(this, new EventArgs());
         }
       }
     }
 
+    public event EventHandler ChannelTrackChanged;
     private ChannelTrack channelTrack = new ChannelTrack(new AtomCollection());
     /// <summary>
     /// トラック情報を取得および設定します
@@ -439,7 +440,7 @@ namespace PeerCastStation.Core
       set {
         if (channelTrack!=value) {
           channelTrack = value;
-          OnPropertyChanged("ChannelTrack");
+          if (ChannelTrackChanged!=null) ChannelTrackChanged(this, new EventArgs());
         }
       }
     }
@@ -497,7 +498,6 @@ namespace PeerCastStation.Core
       {
         if (contentHeader != value) {
           contentHeader = value;
-          OnPropertyChanged("ContentHeader");
           OnContentChanged();
         }
       }
@@ -507,13 +507,7 @@ namespace PeerCastStation.Core
     /// ヘッダを除く保持しているコンテントのリストを取得します
     /// </summary>
     public ContentCollection Contents { get { return contents; } }
-    public event PropertyChangedEventHandler PropertyChanged;
-    private void OnPropertyChanged(string name)
-    {
-      if (PropertyChanged != null) {
-        PropertyChanged(this, new PropertyChangedEventArgs(name));
-      }
-    }
+
     private void OnContentChanged()
     {
       if (ContentChanged != null) {
@@ -612,6 +606,7 @@ namespace PeerCastStation.Core
       }
     }
 
+    public event EventHandler NodesChanged;
     public void AddNode(Host host)
     {
       Utils.ReplaceCollection(ref nodes, orig => {
@@ -625,7 +620,7 @@ namespace PeerCastStation.Core
         }
         return new_collection;
       });
-      OnPropertyChanged("Nodes");
+      if (NodesChanged!=null) NodesChanged(this, new EventArgs());
     }
 
     public void RemoveNode(Host host)
@@ -637,7 +632,7 @@ namespace PeerCastStation.Core
         return new_collection;
       });
       if (removed) {
-        OnPropertyChanged("Nodes");
+        if (NodesChanged!=null) NodesChanged(this, new EventArgs());
       }
     }
 
@@ -743,9 +738,10 @@ namespace PeerCastStation.Core
       return res.ToArray();
     }
 
+    public event EventHandler StatusChanged;
     private void SourceStream_StatusChanged(object sender, SourceStreamStatusChangedEventArgs args)
     {
-      OnPropertyChanged("Status");
+      if (StatusChanged!=null) StatusChanged(this, new EventArgs());
     }
 
     private void SourceStream_Stopped(object sender, EventArgs args)
@@ -839,7 +835,7 @@ namespace PeerCastStation.Core
         host.GlobalEndPoint = new IPEndPoint(addr, port);
       }
       SourceHost = host.ToHost();
-      contents.CollectionChanged += (sender, e) => {
+      contents.ContentChanged += (sender, e) => {
         OnContentChanged();
       };
     }
@@ -866,7 +862,7 @@ namespace PeerCastStation.Core
         host.GlobalEndPoint = new IPEndPoint(addr, port);
       }
       SourceHost = host.ToHost();
-      contents.CollectionChanged += (sender, e) => {
+      contents.ContentChanged += (sender, e) => {
         OnContentChanged();
       };
     }

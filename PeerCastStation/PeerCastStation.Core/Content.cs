@@ -49,7 +49,6 @@ namespace PeerCastStation.Core
 
   public class ContentCollection
     : MarshalByRefObject,
-      System.Collections.Specialized.INotifyCollectionChanged,
       ICollection<Content>
   {
     private SortedList<long, Content> list = new SortedList<long,Content>();
@@ -59,7 +58,11 @@ namespace PeerCastStation.Core
       LimitPackets = 10;
     }
 
-    public event NotifyCollectionChangedEventHandler CollectionChanged;
+    public event EventHandler ContentChanged;
+    private void OnContentChanged()
+    {
+      if (ContentChanged!=null) ContentChanged(this, new EventArgs());
+    }
 
     public int Count {
       get {
@@ -83,9 +86,7 @@ namespace PeerCastStation.Core
           list.RemoveAt(0);
         }
       }
-      if (CollectionChanged!=null) {
-        CollectionChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item));
-      }
+      OnContentChanged();
     }
 
     public void Clear()
@@ -93,9 +94,7 @@ namespace PeerCastStation.Core
       lock (list) {
         list.Clear();
       }
-      if (CollectionChanged!=null) {
-        CollectionChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-      }
+      OnContentChanged();
     }
 
     public bool Contains(Content item)
@@ -119,9 +118,7 @@ namespace PeerCastStation.Core
         res = list.Remove(item.Position);
       }
       if (res) {
-        if (CollectionChanged!=null) {
-          CollectionChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item));
-        }
+        OnContentChanged();
         return true;
       }
       else {

@@ -257,16 +257,18 @@ namespace PeerCastStation.PCP
     {
       base.OnStarted();
       Logger.Debug("Started");
-      Channel.PropertyChanged += Channel_HostInfoUpdated;
-      PeerCast.AccessController.PropertyChanged += Channel_HostInfoUpdated;
+      Channel.ChannelInfoChanged += Channel_HostInfoUpdated;
+      Channel.ChannelTrackChanged += Channel_HostInfoUpdated;
+      Channel.StatusChanged += Channel_HostInfoUpdated;
       Status = SourceStreamStatus.Searching;
       state = State.Connecting;
     }
 
     protected override void OnStopped()
     {
-      Channel.PropertyChanged -= Channel_HostInfoUpdated;
-      PeerCast.AccessController.PropertyChanged -= Channel_HostInfoUpdated;
+      Channel.ChannelInfoChanged -= Channel_HostInfoUpdated;
+      Channel.ChannelTrackChanged -= Channel_HostInfoUpdated;
+      Channel.StatusChanged -= Channel_HostInfoUpdated;
       Logger.Debug("Finished");
       base.OnStopped();
     }

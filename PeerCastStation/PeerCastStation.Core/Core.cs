@@ -102,6 +102,7 @@ namespace PeerCastStation.Core
   /// <summary>
   /// ISourceStream.StatusChangedイベントに渡される引数のクラスです
   /// </summary>
+  [Serializable]
   public class SourceStreamStatusChangedEventArgs
     : EventArgs
   {

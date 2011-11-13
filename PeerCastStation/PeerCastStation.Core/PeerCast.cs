@@ -26,6 +26,7 @@ namespace PeerCastStation.Core
   /// <summary>
   /// ChannelChangedEventHandlerに渡される引数クラスです
   /// </summary>
+  [Serializable]
   public class ChannelChangedEventArgs
     : EventArgs
   {

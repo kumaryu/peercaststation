@@ -332,14 +332,14 @@ namespace PeerCastStation.GUI
     {
       this.BeginInvoke(new Action(() => {
         channelListItems.Add(new ChannelListItem(e.Channel));
-        e.Channel.PropertyChanged += ChannelInfoChanged;
+        e.Channel.ChannelInfoChanged += ChannelInfoChanged;
       }));
     }
 
     private void ChannelRemoved(object sender, PeerCastStation.Core.ChannelChangedEventArgs e)
     {
       this.BeginInvoke(new Action(() => {
-        e.Channel.PropertyChanged -= ChannelInfoChanged;
+        e.Channel.ChannelInfoChanged -= ChannelInfoChanged;
         ChannelListItem item = null;
         foreach (var i in channelListItems) {
           if (i.Channel==e.Channel) {
@@ -358,7 +358,7 @@ namespace PeerCastStation.GUI
       bcYP.DataSource = peerCast.YellowPages;
     }
 
-    private void ChannelInfoChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void ChannelInfoChanged(object sender, EventArgs e)
     {
       this.BeginInvoke(new Action(() => {
         foreach (var i in channelListItems) {

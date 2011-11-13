@@ -23,8 +23,7 @@ namespace PeerCastStation.Core
   /// チャンネルへの接続制御を行なうクラスです
   /// </summary>
   public class AccessController
-    : MarshalByRefObject,
-      INotifyPropertyChanged
+    : MarshalByRefObject
   {
     /// <summary>
     /// 所属するPeerCastオブジェクトを取得します
@@ -36,7 +35,7 @@ namespace PeerCastStation.Core
     /// <value>0は無制限です。</value>
     public int MaxRelays {
       get { return maxRelays; }
-      set { if (maxRelays!=value) { maxRelays = value; DoPropertyChanged("MaxRelays"); } }
+      set { if (maxRelays!=value) { maxRelays = value; } }
     }
     /// <summary>
     /// チャンネル毎の最大リレー数を取得および設定します。
@@ -44,7 +43,7 @@ namespace PeerCastStation.Core
     /// <value>0は無制限です。</value>
     public int MaxRelaysPerChannel {
       get { return maxRelaysPerChannel; }
-      set { if (maxRelaysPerChannel!=value) { maxRelaysPerChannel = value; DoPropertyChanged("MaxRelaysPerChannel"); } }
+      set { if (maxRelaysPerChannel!=value) { maxRelaysPerChannel = value; } }
     }
     /// <summary>
     /// PeerCast全体での最大視聴数を取得および設定します。
@@ -52,7 +51,7 @@ namespace PeerCastStation.Core
     /// <value>0は無制限です。</value>
     public int MaxPlays {
       get { return maxPlays; }
-      set { if (maxPlays!=value) { maxPlays = value; DoPropertyChanged("MaxPlays"); }  }
+      set { if (maxPlays!=value) { maxPlays = value; }  }
     }
     /// <summary>
     /// チャンネル毎の最大視聴数を取得および設定します。
@@ -60,7 +59,7 @@ namespace PeerCastStation.Core
     /// <value>0は無制限です。</value>
     public int MaxPlaysPerChannel {
       get { return maxPlaysPerChannel; }
-      set { if (maxPlaysPerChannel!=value) { maxPlaysPerChannel = value; DoPropertyChanged("MaxPlaysPerChannel"); }  }
+      set { if (maxPlaysPerChannel!=value) { maxPlaysPerChannel = value; }  }
     }
     /// <summary>
     /// PeerCast全体での最大上り帯域を取得および設定します。
@@ -68,7 +67,7 @@ namespace PeerCastStation.Core
     /// <value>0は無制限です。</value>
     public int MaxUpstreamRate {
       get { return maxUpstreamRate; }
-      set { if (maxUpstreamRate!=value) { maxUpstreamRate = value; DoPropertyChanged("MaxUpstreamRate"); }  }
+      set { if (maxUpstreamRate!=value) { maxUpstreamRate = value; }  }
     }
 
     private int maxRelays = 0;
@@ -145,15 +144,6 @@ namespace PeerCastStation.Core
     {
       this.PeerCast = peercast;
     }
-
-    private void DoPropertyChanged(string property_name)
-    {
-      if (PropertyChanged!=null) {
-        PropertyChanged(this, new PropertyChangedEventArgs(property_name));
-      }
-    }
-
-    public event PropertyChangedEventHandler PropertyChanged;
   }
 
 }

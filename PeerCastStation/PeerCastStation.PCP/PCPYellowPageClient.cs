@@ -180,7 +180,8 @@ namespace PeerCastStation.PCP
     {
       if (channels.Contains(channel)) return;
       Logger.Debug("Start announce channel {0} to {1}", channel.ChannelID.ToString("N"), Uri);
-      channel.PropertyChanged += OnChannelPropertyChanged;
+      channel.ChannelInfoChanged += OnChannelPropertyChanged;
+      channel.ChannelTrackChanged += OnChannelPropertyChanged;
       channel.Closed += OnChannelClosed;
       lock (channels) {
         channels.Add(channel);
@@ -401,10 +402,10 @@ namespace PeerCastStation.PCP
       lock (posts) posts.Add(new Atom(Atom.PCP_BCST, bcst));
     }
 
-    private void OnChannelPropertyChanged(object sender, PropertyChangedEventArgs e)
+    private void OnChannelPropertyChanged(object sender, EventArgs e)
     {
       var channel = sender as Channel;
-      if (channel!=null && e.PropertyName=="ChannelInfo" || e.PropertyName=="ChannelTrack") {
+      if (channel!=null) {
         PostChannelBcst(channel, true);
       }
     }
@@ -414,7 +415,8 @@ namespace PeerCastStation.PCP
       var channel = sender as Channel;
       if (channel!=null) {
         channel.Closed -= OnChannelClosed;
-        channel.PropertyChanged -= OnChannelPropertyChanged;
+        channel.ChannelInfoChanged -= OnChannelPropertyChanged;
+        channel.ChannelTrackChanged -= OnChannelPropertyChanged;
         lock (channels) {
           channels.Remove(channel);
         }
