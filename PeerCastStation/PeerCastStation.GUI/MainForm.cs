@@ -699,20 +699,6 @@ namespace PeerCastStation.GUI
       }
     }
 
-    private Guid CreateChannelID(Guid bcid, string channel_name, string genre, string source)
-    {
-      var stream = new System.IO.MemoryStream();
-      using (var writer = new System.IO.BinaryWriter(stream)) {
-        var bcid_hash = System.Security.Cryptography.SHA512.Create().ComputeHash(bcid.ToByteArray());
-        writer.Write(bcid_hash);
-        writer.Write(channel_name);
-        writer.Write(genre);
-        writer.Write(source);
-      }
-      var channel_hash = System.Security.Cryptography.MD5.Create().ComputeHash(stream.ToArray());
-      return new Guid(channel_hash);
-    }
-
     private void bcStart_Click(object sender, EventArgs e)
     {
       var channel_name = bcChannelName.Text;
@@ -721,7 +707,7 @@ namespace PeerCastStation.GUI
         var genre = bcGenre.Text;
         int bitrate;
         if (!Int32.TryParse(bcBitrate.Text, out bitrate)) bitrate = -1;
-        var channel_id = CreateChannelID(peerCast.BroadcastID, channel_name, genre, source_uri);
+        var channel_id = Utils.CreateChannelID(peerCast.BroadcastID, channel_name, genre, source_uri);
         var channel_info = new AtomCollection();
         channel_info.SetChanInfoName(channel_name);
         if (genre!="") channel_info.SetChanInfoGenre(genre);
