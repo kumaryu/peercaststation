@@ -60,6 +60,7 @@ namespace PeerCastStation.Core
     /// UserAgentやServerとして名乗る名前を取得および設定します。
     /// </summary>
     public string AgentName { get; set; }
+
     /// <summary>
     /// 登録されているYellowPageリストを取得および設定します
     /// 取得は読み取り専用のリストを、設定は指定したリストのコピーを設定します
@@ -79,6 +80,26 @@ namespace PeerCastStation.Core
     /// YPリストが変更された時に呼び出されます。
     /// </summary>
     public event EventHandler YellowPagesChanged;
+
+    /// <summary>
+    /// 登録されているContentReaderリストを取得および設定します
+    /// 取得は読み取り専用のリストを、設定は指定したリストのコピーを設定します
+    /// </summary>
+    public IList<IContentReader> ContentReaders {
+      get { return contentReaders.AsReadOnly(); }
+      set {
+        Utils.ReplaceCollection(ref contentReaders, org => {
+          return new List<IContentReader>(value);
+        });
+        ContentReadersChanged(this, new EventArgs());
+      }
+    }
+    private List<IContentReader> contentReaders = new List<IContentReader>();
+
+    /// <summary>
+    /// ContentReaderリストが変更された時に呼び出されます。
+    /// </summary>
+    public event EventHandler ContentReadersChanged;
 
     /// <summary>
     /// 登録されているYellowPageファクトリのリストを取得します
@@ -288,6 +309,36 @@ namespace PeerCastStation.Core
       });
       logger.Debug("YP Removed: {0}", yp.Name);
       if (YellowPagesChanged!=null) YellowPagesChanged(this, new EventArgs());
+    }
+
+    /// <summary>
+    /// 指定されたContentReaderをContentReaderリストに追加します
+    /// </summary>
+    /// <param name="reader">追加するContentReader</param>
+    public void AddYellowPage(IContentReader reader)
+    {
+      Utils.ReplaceCollection(ref contentReaders, orig => {
+        var new_readers = new List<IContentReader>(orig);
+        new_readers.Add(reader);
+        return new_readers;
+      });
+      logger.Debug("ContentReader Added: {0}", reader.Name);
+      if (ContentReadersChanged!=null) ContentReadersChanged(this, new EventArgs());
+    }
+
+    /// <summary>
+    /// 指定したContentReaderをContentReaderリストから取り除きます
+    /// </summary>
+    /// <param name="reader">取り除くContentReader</param>
+    public void RemoveContentReader(IContentReader reader)
+    {
+      Utils.ReplaceCollection(ref contentReaders, orig => {
+        var new_readers = new List<IContentReader>(orig);
+        new_readers.Remove(reader);
+        return new_readers;
+      });
+      logger.Debug("ContentReader Removed: {0}", reader.Name);
+      if (ContentReadersChanged!=null) ContentReadersChanged(this, new EventArgs());
     }
 
     /// <summary>

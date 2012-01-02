@@ -119,7 +119,6 @@ namespace PeerCastStation.GUI
         return this.Reader.Name;
       }
     }
-    private List<ContentReaderWrapper> contentReaders = new List<ContentReaderWrapper>();
 
     static bool isOSX;
     static public bool IsOSX { get { return isOSX; } }
@@ -170,15 +169,14 @@ namespace PeerCastStation.GUI
       peerCast.ChannelAdded   += ChannelAdded;
       peerCast.ChannelRemoved += ChannelRemoved;
       peerCast.YellowPagesChanged += YellowPagesChanged;
-      contentReaders.Add(new ContentReaderWrapper(new PeerCastStation.ASF.ASFContentReader()));
-      contentReaders.Add(new ContentReaderWrapper(new PeerCastStation.Core.RawContentReader()));
+      peerCast.ContentReadersChanged += ContentReadersChanged;
+      bcContentType.DataSource = peerCast.ContentReaders.Select(r => new ContentReaderWrapper(r)).ToList();
       if (Settings.Default.BroadcastID!=Guid.Empty) {
         peerCast.BroadcastID = Settings.Default.BroadcastID;
       }
       else {
         Settings.Default.BroadcastID = peerCast.BroadcastID;
       }
-      bcContentType.DataSource = contentReaders;
       OnUpdateSettings(null);
       port.Value                 = Settings.Default.Port;
       maxRelays.Value            = Settings.Default.MaxRelays;
@@ -356,6 +354,11 @@ namespace PeerCastStation.GUI
     private void YellowPagesChanged(object sender, EventArgs e)
     {
       bcYP.DataSource = peerCast.YellowPages;
+    }
+
+    private void ContentReadersChanged(object sender, EventArgs e)
+    {
+      bcContentType.DataSource = peerCast.ContentReaders.Select(r => new ContentReaderWrapper(r)).ToList();
     }
 
     private void ChannelInfoChanged(object sender, EventArgs e)
