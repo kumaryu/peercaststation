@@ -49,8 +49,7 @@ namespace PeerCastStation.GUI
 
     public IUserInterface CreateUserInterface()
     {
-      var domain = AppDomain.CreateDomain(this.Name);
-      return domain.CreateInstanceAndUnwrap(typeof(UserInterface).Assembly.FullName, typeof(UserInterface).FullName) as UserInterface;
+      return new UserInterface();
     }
   }
 }
