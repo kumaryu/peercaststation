@@ -17,7 +17,7 @@ namespace PeerCastStation.GUI
 
     MainForm mainForm;
     Thread mainThread;
-    public void Start(IApplication app)
+    public void Start(PeerCastApplication app)
     {
       System.Windows.Forms.Application.EnableVisualStyles();
       mainThread = new Thread(() => {

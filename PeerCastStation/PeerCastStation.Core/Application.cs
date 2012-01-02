@@ -5,7 +5,7 @@ namespace PeerCastStation.Core
   public interface IUserInterface
   {
     string Name { get; }
-    void Start(IApplication app);
+    void Start(PeerCastApplication app);
     void Stop();
   }
 
@@ -31,9 +31,15 @@ namespace PeerCastStation.Core
     }
   }
 
-  public interface IApplication
+  public abstract class PeerCastApplication
+    : MarshalByRefObject
   {
-    PeerCast PeerCast { get; }
-    void Stop();
+    private static PeerCastApplication current;
+    public static PeerCastApplication Current {
+      get { return current; }
+      set { current = value; }
+    }
+    public abstract PeerCast PeerCast { get; }
+    public abstract void Stop();
   }
 }

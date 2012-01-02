@@ -7,8 +7,7 @@ using System.Threading;
 namespace PeerCastStation.Main
 {
   public class Application
-    : MarshalByRefObject,
-      IApplication
+    : PeerCastApplication
   {
     private List<IUserInterfaceFactory> userInterfaceFactories = new List<IUserInterfaceFactory>();
     public IList<IUserInterfaceFactory> UserInterfaceFactories {
@@ -21,13 +20,13 @@ namespace PeerCastStation.Main
     }
 
     ManualResetEvent stoppedEvent = new ManualResetEvent(false);
-    public void Stop()
+    override public void Stop()
     {
       stoppedEvent.Set();
     }
 
     PeerCast peerCast = new PeerCast();
-    public PeerCast PeerCast { get { return peerCast; } }
+    override public PeerCast PeerCast { get { return peerCast; } }
     public void Run()
     {
       peerCast.YellowPageFactories.Add(new PeerCastStation.PCP.PCPYellowPageClientFactory(peerCast));
