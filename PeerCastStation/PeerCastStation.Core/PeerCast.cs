@@ -62,6 +62,12 @@ namespace PeerCastStation.Core
     public string AgentName { get; set; }
 
     /// <summary>
+    /// PeerCastインスタンスの稼動時間を取得します
+    /// </summary>
+    public TimeSpan Uptime { get { return uptime.Elapsed; } }
+    private System.Diagnostics.Stopwatch uptime = System.Diagnostics.Stopwatch.StartNew();
+
+    /// <summary>
     /// 登録されているYellowPageリストを取得および設定します
     /// 取得は読み取り専用のリストを、設定は指定したリストのコピーを設定します
     /// </summary>
@@ -521,6 +527,7 @@ namespace PeerCastStation.Core
       }
       outputListeners = new List<OutputListener>();
       channels = new List<Channel>();
+      uptime.Stop();
       logger.Info("PeerCast Stopped");
     }
 
