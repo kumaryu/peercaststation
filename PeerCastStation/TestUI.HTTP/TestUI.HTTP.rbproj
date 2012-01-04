@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{83c856d6-4500-4e07-b177-3854fc49cc5e}</ProjectGuid>
+    <ProjectHome>.</ProjectHome>
+    <StartupFile>Program.rb</StartupFile>
+    <SearchPath>
+    </SearchPath>
+    <WorkingDirectory>.</WorkingDirectory>
+    <AssemblyName>TestUI.HTTP</AssemblyName>
+    <Name>TestUI.HTTP</Name>
+    <RootNamespace>TestUI.HTTP</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\TestUI.HTTP\fixtures" />
+    <None Include="C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\TestUI.HTTP\fixtures\index.html" />
+    <None Include="C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\TestUI.HTTP\fixtures\foo" />
+    <None Include="C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\TestUI.HTTP\fixtures\foo\bar.html" />
+    <None Include="C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\TestUI.HTTP\fixtures\foo\baz.txt" />
+    <None Include="Program.rb" />
+    <None Include="Program.rb" />
+    <None Include="C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\TestUI.HTTP\test_htmlhost.rb" />
+    <None Include="Program.rb" />
+    <None Include="test_adminhost.rb" />
+  </ItemGroup>
+</Project>

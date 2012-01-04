@@ -1,0 +1,44 @@
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>PeCaSt</title>
+  </head>
+  <body>
+    <table>
+      <tr>
+        <td><a href="index.html">情報</a></td>
+        <td><a href="relayinfo.html">リレー</a></td>
+        <td><a href="broadcast.html">配信</a></td>
+        <td><a href="settings.html">設定</a></td>
+      </tr>
+    </table>
+
+    <h1>チャンネル情報</h1>
+    <table>
+      <tr><th colspan="2">チャンネル情報</th></tr>
+      <tr><th>チャネル名</th><td>{{ channel.info.name |h}}</td></tr>
+      <tr><th>ジャンル</th><td>{{ channel.info.genre |h}}</td></tr>
+      <tr><th>概要</th><td>{{ channel.info.description |h}}</td></tr>
+      <tr><th>URL</th><td><a href="{{ channel.info.url |u}}">{{ channel.info.url |h}}</a></td></tr>
+      <tr><th>コメント</th><td>{{ channel.info.comment |h}}</td></tr>
+      <tr><th>ID</th><td>{{ channel.info.id |h}}</td></tr>
+      <tr><th>タイプ</th><td>{{ channel.info.content_type |h}}</td></tr>
+      <tr><th>ビットレート</th><td>{{ channel.info.bitrate }}</td></tr>
+      <tr><th>ソース</th><td>{{ channel.source_uri |h}}</td></tr>
+      <tr><th>接続時間</th><td>{{ channel.uptime }}</td></tr>
+      <tr><th>ステータス</th><td>{{ channel.status |h}}</td></tr>
+      <tr><th>位置</th><td>{{ channel.content_position }}</td></tr>
+      <tr><th>ヘッダ</th><td>{{ channel.header_position }} ({{ channel.header_length }} bytes)</td></tr>
+      <tr><th colspan="2">トラック情報</th></tr>
+      <tr><th>アーティスト</th><td>{{ channel.track.creator |h}}</td></tr>
+      <tr><th>タイトル</th><td>{{ channel.track.name |h}}</td></tr>
+      <tr><th>アルバム</th><td>{{ channel.track.album |h}}</td></tr>
+      <tr><th>ジャンル</th><td>{{ channel.track.genre |h}}</td></tr>
+      <tr><th>URL</th><td><a href="{{ channel.track.url |u}}">{{ channel.track.url |h}}</a></td></tr>
+      <tr><th colspan="2">接続一覧</th></tr>
+      {% for stream in channel.output_streams %}
+      <tr><td colspan="2">{{ stream.description |h}}</td></tr>
+      {% endfor %}
+    </table>
+  </body>
+</html>
