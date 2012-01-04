@@ -203,6 +203,10 @@ namespace PeerCastStation.Core
     /// メタデータ用出力ストリーム
     /// </summary>
     Metadata = 4,
+    /// <summary>
+    /// ユーザインターフェース用出力ストリーム
+    /// </summary>
+    Interface = 8,
   }
 
   /// <summary>
