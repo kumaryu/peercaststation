@@ -269,6 +269,13 @@ namespace PeerCastStation.Core
       }
     }
 
+    public void Join()
+    {
+      if (mainThread!=null && mainThread.IsAlive) {
+        mainThread.Join();
+      }
+    }
+
     protected void Stop(StopReason reason)
     {
       if (!IsStopped) {
