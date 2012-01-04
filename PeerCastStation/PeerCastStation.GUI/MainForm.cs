@@ -545,7 +545,7 @@ namespace PeerCastStation.GUI
       public string TrackTitle { get; private set; }
       public string TrackContactURL { get; private set; }
 
-      public ChannelInfoContainer(ChannelInfo info=null, ChannelTrack track=null)
+      public ChannelInfoContainer(ChannelInfo info, ChannelTrack track)
       {
         if (info!=null) {
           InfoChannelName = info.Name;
@@ -580,7 +580,7 @@ namespace PeerCastStation.GUI
       }
     }
 
-    private ChannelInfoContainer channelInfo = new ChannelInfoContainer();
+    private ChannelInfoContainer channelInfo = new ChannelInfoContainer(null, null);
     private void refreshChannelInfo(Channel channel)
     {
       var is_tracker = peerCast.BroadcastID==channel.BroadcastID;
