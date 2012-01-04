@@ -365,6 +365,11 @@ namespace PeerCastStation.Core
       return GetStringFrom(collection, Atom.PCP_CHAN_TRACK_ALBUM);
     }
 
+    public static string GetChanTrackGenre(this IAtomCollection collection)
+    {
+      return GetStringFrom(collection, Atom.PCP_CHAN_TRACK_GENRE);
+    }
+
     public static IAtomCollection GetBcst(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_BCST);
@@ -763,6 +768,11 @@ namespace PeerCastStation.Core
     public static void SetChanTrackAlbum(this IAtomCollection collection, string value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_TRACK_ALBUM, value));
+    }
+
+    public static void SetChanTrackGenre(this IAtomCollection collection, string value)
+    {
+      SetAtomTo(collection, new Atom(Atom.PCP_CHAN_TRACK_GENRE, value));
     }
 
     public static void SetChanTrackCreator(this IAtomCollection collection, string value)

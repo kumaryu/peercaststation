@@ -202,6 +202,7 @@ namespace PeerCastStation.Core
     public static readonly ID4 PCP_CHAN_TRACK_CREATOR     = new ID4("crea");
     public static readonly ID4 PCP_CHAN_TRACK_URL         = new ID4("url");
     public static readonly ID4 PCP_CHAN_TRACK_ALBUM       = new ID4("albm");
+    public static readonly ID4 PCP_CHAN_TRACK_GENRE       = new ID4("gnre");
     public static readonly ID4 PCP_BCST                   = new ID4("bcst");
     public static readonly ID4 PCP_BCST_TTL               = new ID4("ttl");
     public static readonly ID4 PCP_BCST_HOPS              = new ID4("hops");

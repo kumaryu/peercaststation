@@ -162,12 +162,22 @@ namespace PeerCastStation.Core
         return extra.GetChanTrackTitle();
       }
     }
+
     /// <summary>
     /// アルバム名を取得します
     /// </summary>
     public string Album {
       get {
         return extra.GetChanTrackAlbum();
+      }
+    }
+
+    /// <summary>
+    /// ジャンルを取得します
+    /// </summary>
+    public string Genre {
+      get {
+        return extra.GetChanTrackGenre();
       }
     }
 
