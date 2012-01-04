@@ -87,6 +87,10 @@ namespace PeerCastStation.Core
     /// </summary>
     public TimeSpan LastUpdated { get; private set; }
 
+    public int Hops { get { return Extra.GetHostUphostHops() ?? 0; } }
+    public TimeSpan Uptime { get { return Extra.GetHostUptime() ?? TimeSpan.Zero; } }
+    public int Version { get { return Extra.GetHostVersion() ?? 0; } }
+
     /// <summary>
     /// ホスト情報を初期化します
     /// </summary>
