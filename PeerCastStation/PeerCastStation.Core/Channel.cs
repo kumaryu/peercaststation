@@ -831,23 +831,8 @@ namespace PeerCastStation.Core
     /// <param name="channel_id">チャンネルID</param>
     /// <param name="source_uri">ソースURI</param>
     public Channel(PeerCast peercast, Guid channel_id, Uri source_uri)
+      : this(peercast, channel_id, Guid.Empty, source_uri)
     {
-      this.IsClosed = true;
-      this.PeerCast = peercast;
-      this.SourceUri = source_uri;
-      this.ChannelID = channel_id;
-      this.BroadcastID = Guid.Empty;
-      var host = new HostBuilder();
-      var port = SourceUri.Port < 0 ? 7144 : SourceUri.Port;
-      var addresses = Dns.GetHostAddresses(SourceUri.DnsSafeHost);
-      var addr = addresses.FirstOrDefault(x => x.AddressFamily==AddressFamily.InterNetwork);
-      if (addr!=null) {
-        host.GlobalEndPoint = new IPEndPoint(addr, port);
-      }
-      SourceHost = host.ToHost();
-      contents.ContentChanged += (sender, e) => {
-        OnContentChanged();
-      };
     }
 
     /// <summary>
@@ -866,10 +851,15 @@ namespace PeerCastStation.Core
       this.BroadcastID = broadcast_id;
       var host = new HostBuilder();
       var port = SourceUri.Port < 0 ? 7144 : SourceUri.Port;
-      var addresses = Dns.GetHostAddresses(SourceUri.DnsSafeHost);
-      var addr = addresses.FirstOrDefault(x => x.AddressFamily==AddressFamily.InterNetwork);
-      if (addr!=null) {
-        host.GlobalEndPoint = new IPEndPoint(addr, port);
+      try {
+        var addresses = Dns.GetHostAddresses(SourceUri.DnsSafeHost);
+        var addr = addresses.FirstOrDefault(x => x.AddressFamily==AddressFamily.InterNetwork);
+        if (addr!=null) {
+          host.GlobalEndPoint = new IPEndPoint(addr, port);
+        }
+      }
+      catch (SocketException) {
+        host.GlobalEndPoint = null;
       }
       SourceHost = host.ToHost();
       contents.ContentChanged += (sender, e) => {
