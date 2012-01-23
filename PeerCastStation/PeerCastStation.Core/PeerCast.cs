@@ -321,7 +321,7 @@ namespace PeerCastStation.Core
     /// 指定されたContentReaderをContentReaderリストに追加します
     /// </summary>
     /// <param name="reader">追加するContentReader</param>
-    public void AddYellowPage(IContentReader reader)
+    public void AddContentReader(IContentReader reader)
     {
       Utils.ReplaceCollection(ref contentReaders, orig => {
         var new_readers = new List<IContentReader>(orig);
