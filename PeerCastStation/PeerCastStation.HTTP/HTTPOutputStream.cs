@@ -58,10 +58,10 @@ namespace PeerCastStation.HTTP
         }
         else if ((match = Regex.Match(req, @"^Host:\s*(\S*)\s*$", RegexOptions.IgnoreCase)).Success) {
           host = match.Groups[1].Value;
-          Headers["Host"] = host;
+          Headers["HOST"] = host;
         }
         else if ((match = Regex.Match(req, @"^(\S*):\s*(\S*)\s*$", RegexOptions.IgnoreCase)).Success) {
-          Headers[match.Groups[1].Value] = match.Groups[2].Value;
+          Headers[match.Groups[1].Value.ToUpper()] = match.Groups[2].Value;
         }
       }
       Uri uri;
