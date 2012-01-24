@@ -18,6 +18,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Ohaoha", "P
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.ASF", "PeerCastStation.ASF\PeerCastStation.ASF.csproj", "{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.UI.HTTP", "PeerCastStation.UI.HTTP\PeerCastStation.UI.HTTP.csproj", "{BF5E0B6D-961A-4216-BACF-01D80AB3D6BB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation", "PeerCastStation\PeerCastStation.csproj", "{3D030F73-33A1-4FEF-9A3F-D8CD34FC63A2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,6 +56,14 @@ Global
 		{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BF5E0B6D-961A-4216-BACF-01D80AB3D6BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF5E0B6D-961A-4216-BACF-01D80AB3D6BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF5E0B6D-961A-4216-BACF-01D80AB3D6BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BF5E0B6D-961A-4216-BACF-01D80AB3D6BB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D030F73-33A1-4FEF-9A3F-D8CD34FC63A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D030F73-33A1-4FEF-9A3F-D8CD34FC63A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D030F73-33A1-4FEF-9A3F-D8CD34FC63A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D030F73-33A1-4FEF-9A3F-D8CD34FC63A2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
