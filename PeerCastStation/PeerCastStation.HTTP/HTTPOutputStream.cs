@@ -122,6 +122,11 @@ namespace PeerCastStation.HTTP
       get { return "HTTP"; }
     }
 
+    public override OutputStreamType OutputStreamType
+    {
+      get { return OutputStreamType.Play; }
+    }
+
     private Uri CreateTrackerUri(Guid channel_id, Uri request_uri)
     {
       string tip = null;

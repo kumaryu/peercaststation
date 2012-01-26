@@ -41,16 +41,32 @@ namespace PeerCastStation.Core
     /// 接続待ち受けをしているエンドポイントを取得します
     /// </summary>
     public IPEndPoint LocalEndPoint { get { return (IPEndPoint)server.LocalEndpoint; } }
+    /// <summary>
+    /// リンクローカルな接続先に許可する出力ストリームタイプを取得および設定します。
+    /// </summary>
+    public OutputStreamType LocalOutputAccepts  { get; set; }
+    /// <summary>
+    /// リンクグローバルな接続先に許可する出力ストリームタイプを取得および設定します。
+    /// </summary>
+    public OutputStreamType GlobalOutputAccepts { get; set; }
 
     private TcpListener server;
     /// <summary>
-    /// 指定したエンドポイントで接続待ち受けをするOutputListnerを初期化します
+    /// 指定したエンドポイントで接続待ち受けをするOutputListenerを初期化します
     /// </summary>
     /// <param name="peercast">所属するPeerCastオブジェクト</param>
     /// <param name="ip">待ち受けをするエンドポイント</param>
-    internal OutputListener(PeerCast peercast, IPEndPoint ip)
+    /// <param name="local_accepts">リンクローカルな接続先に許可する出力ストリームタイプ</param>
+    /// <param name="global_accepts">リンクグローバルな接続先に許可する出力ストリームタイプ</param>
+    internal OutputListener(
+      PeerCast peercast,
+      IPEndPoint ip,
+      OutputStreamType local_accepts,
+      OutputStreamType global_accepts)
     {
       this.PeerCast = peercast;
+      this.LocalOutputAccepts  = local_accepts;
+      this.GlobalOutputAccepts = global_accepts;
       server = new TcpListener(ip);
       server.Start();
       listenerThread = new Thread(ListenerThreadFunc);
@@ -61,7 +77,7 @@ namespace PeerCastStation.Core
     private Thread listenerThread = null;
     private void ListenerThreadFunc(object arg)
     {
-      logger.Debug("Listner thread started");
+      logger.Debug("Listener thread started");
       var server = (TcpListener)arg;
       while (!IsClosed) {
         try {
@@ -78,7 +94,7 @@ namespace PeerCastStation.Core
           if (!IsClosed) logger.Error(e);
         }
       }
-      logger.Debug("Listner thread finished");
+      logger.Debug("Listener thread finished");
     }
 
     /// <summary>
@@ -92,7 +108,7 @@ namespace PeerCastStation.Core
       listenerThread.Join();
     }
 
-    private IOutputStreamFactory FindMatchedFactory(NetworkStream stream, out List<byte> header, out Guid channel_id)
+    private IOutputStreamFactory FindMatchedFactory(bool is_local, NetworkStream stream, out List<byte> header, out Guid channel_id)
     {
       var output_factories = PeerCast.OutputStreamFactories;
       header = new List<byte>();
@@ -115,6 +131,12 @@ namespace PeerCastStation.Core
         }
         var header_ary = header.ToArray();
         foreach (var factory in output_factories) {
+          if (is_local) {
+            if ((factory.OutputStreamType & this.LocalOutputAccepts)==0) continue;
+          }
+          else {
+            if ((factory.OutputStreamType & this.GlobalOutputAccepts)==0) continue;
+          }
           var cid = factory.ParseChannelID(header_ary);
           if (cid.HasValue) {
             channel_id = cid.Value;
@@ -138,7 +160,8 @@ namespace PeerCastStation.Core
       try {
         List<byte> header;
         Guid channel_id;
-        var factory = FindMatchedFactory(stream, out header, out channel_id);
+        bool is_local = Utils.IsSiteLocal(((IPEndPoint)client.Client.RemoteEndPoint).Address);
+        var factory = FindMatchedFactory(is_local, stream, out header, out channel_id);
         if (factory!=null) {
           output_stream = factory.Create(stream, stream, client.Client.RemoteEndPoint, channel_id, header.ToArray());
           channel = PeerCast.Channels.FirstOrDefault(c => c.ChannelID==channel_id);

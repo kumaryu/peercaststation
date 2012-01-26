@@ -208,7 +208,14 @@ namespace PeerCastStation.GUI
         if (listener!=null) peerCast.StopListen(listener);
         currentPort = Settings.Default.Port;
         try {
-          peerCast.StartListen(new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort));
+          peerCast.StartListen(
+            new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort),
+            OutputStreamType.Interface |
+            OutputStreamType.Metadata |
+            OutputStreamType.Play |
+            OutputStreamType.Relay,
+            OutputStreamType.Metadata |
+            OutputStreamType.Relay);
           portLabel.Text = String.Format("ポート:{0}", currentPort);
         }
         catch (System.Net.Sockets.SocketException) {

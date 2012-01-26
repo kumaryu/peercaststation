@@ -178,7 +178,8 @@ end
 class MockOutputStreamFactory
   include PeerCastStation::Core::IOutputStreamFactory
   
-  def initialize
+  def initialize(type=0)
+    @type = type
     @log = []
   end
   attr_reader :log
@@ -187,6 +188,10 @@ class MockOutputStreamFactory
     'MockOutputStream'
   end
   
+  def output_stream_type
+    @type
+  end
+
   def ParseChannelID(header)
     @log << [:parse_channel_id, header]
     header = header.to_a.pack('C*')
@@ -199,7 +204,7 @@ class MockOutputStreamFactory
   
   def create(input_stream, output_stream, remote_endpoint, channel_id, header)
     @log << [:create, input_stream, output_stream, remote_endpoint, channel_id, header]
-    MockOutputStream.new
+    MockOutputStream.new(@type)
   end
 end
   

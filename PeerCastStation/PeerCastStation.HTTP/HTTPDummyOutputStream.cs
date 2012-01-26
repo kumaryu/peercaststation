@@ -29,6 +29,18 @@ namespace PeerCastStation.HTTP
       get { return "HTTPDummy"; }
     }
 
+    public override OutputStreamType OutputStreamType
+    {
+      get
+      {
+        return
+          OutputStreamType.Interface |
+          OutputStreamType.Metadata |
+          OutputStreamType.Relay |
+          OutputStreamType.Play;
+      }
+    }
+
     public override IOutputStream Create(
       Stream input_stream,
       Stream output_stream,

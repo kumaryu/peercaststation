@@ -127,6 +127,11 @@ namespace PeerCastStation.PCP
       get { return "PCP"; }
     }
 
+    public override OutputStreamType OutputStreamType
+    {
+      get { return OutputStreamType.Relay; }
+    }
+
     /// <summary>
     /// 出力ストリームを作成します
     /// </summary>

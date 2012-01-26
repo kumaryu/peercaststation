@@ -74,8 +74,13 @@ end
 class TC_HTTPOutputStreamFactory < Test::Unit::TestCase
   def setup
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
+    accepts =
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.interface
     @peercast = PeerCastStation::Core::PeerCast.new
-    @peercast.start_listen(endpoint)
+    @peercast.start_listen(endpoint, accepts, accepts)
   end
 
   def teardown
@@ -156,8 +161,13 @@ end
 class TC_HTTPOutputStream < Test::Unit::TestCase
   def setup
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
+    accepts =
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.interface
     @peercast = PeerCastStation::Core::PeerCast.new
-    @peercast.start_listen(endpoint)
+    @peercast.start_listen(endpoint, accepts, accepts)
     @channel = PCSCore::Channel.new(
       @peercast,
       System::Guid.new('9778E62BDC59DF56F9216D0387F80BF2'.to_clr_string), 

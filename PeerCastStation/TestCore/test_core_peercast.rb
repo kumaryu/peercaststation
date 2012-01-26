@@ -158,7 +158,14 @@ class TC_CorePeerCast < Test::Unit::TestCase
     @peercast = PeerCastStation::Core::PeerCast.new
     assert_nil(@peercast.local_end_point)
     assert_nil(@peercast.global_end_point)
-    @peercast.StartListen(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147))
+    @peercast.start_listen(
+      System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
+      PeerCastStation::Core::OutputStreamType.interface |
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.play,
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.relay)
     assert_not_nil(@peercast.local_end_point)
     assert_equal(@peercast.local_address, @peercast.local_end_point.address)
     assert_equal(7147, @peercast.local_end_point.port)
@@ -166,7 +173,8 @@ class TC_CorePeerCast < Test::Unit::TestCase
     @peercast.global_address = @peercast.local_address
     assert_not_nil(@peercast.global_end_point)
     
-    output_stream_factory = MockOutputStreamFactory.new
+    output_stream_factory = MockOutputStreamFactory.new(
+      PeerCastStation::Core::OutputStreamType.metadata)
     @peercast.output_stream_factories.add(output_stream_factory)
     
     sock = TCPSocket.new('localhost', 7147)
@@ -179,15 +187,62 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert_equal(:create,           output_stream_factory.log[1][0])
   end
   
+  def test_output_connection_not_acceptable
+    @peercast = PeerCastStation::Core::PeerCast.new
+    assert_nil(@peercast.local_end_point)
+    assert_nil(@peercast.global_end_point)
+    @peercast.start_listen(
+      System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
+      PeerCastStation::Core::OutputStreamType.interface |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.play,
+      PeerCastStation::Core::OutputStreamType.relay)
+    assert_not_nil(@peercast.local_end_point)
+    assert_equal(@peercast.local_address, @peercast.local_end_point.address)
+    assert_equal(7147, @peercast.local_end_point.port)
+    assert_nil(@peercast.global_end_point)
+    @peercast.global_address = @peercast.local_address
+    assert_not_nil(@peercast.global_end_point)
+    
+    output_stream_factory = MockOutputStreamFactory.new(
+      PeerCastStation::Core::OutputStreamType.metadata)
+    @peercast.output_stream_factories.add(output_stream_factory)
+    
+    sock = TCPSocket.new('localhost', 7147)
+    sock.write('mock 9778E62BDC59DF56F9216D0387F80BF2')
+    sock.close
+    
+    sleep(1)
+    assert_equal(0, output_stream_factory.log.size)
+  end
+  
   def test_listen
     @peercast = PeerCastStation::Core::PeerCast.new
-    listener = @peercast.StartListen(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147))
+    listener = @peercast.StartListen(
+      System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
+      PeerCastStation::Core::OutputStreamType.interface |
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.play,
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.relay)
     assert(!listener.is_closed)
     assert_equal(System::Net::IPAddress.any, listener.local_end_point.address)
     assert_equal(7147,                       listener.local_end_point.port)
+    assert_equal(
+      PeerCastStation::Core::OutputStreamType.interface |
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.play,
+      listener.local_output_accepts)
+    assert_equal(
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.relay,
+      listener.global_output_accepts)
     assert_not_nil(@peercast.local_end_point)
     @peercast.StopListen(listener)
     assert(listener.is_closed)
     assert_nil(@peercast.local_end_point)
   end
 end
+

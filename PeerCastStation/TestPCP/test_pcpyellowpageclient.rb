@@ -30,8 +30,13 @@ PCSPCP  = PeerCastStation::PCP  unless defined?(PCSPCP)
 class TC_PCPYellowPageClientFactory < Test::Unit::TestCase
   def setup
     @endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
+    accepts =
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.interface
     @peercast = PCSCore::PeerCast.new
-    @peercast.start_listen(@endpoint)
+    @peercast.start_listen(@endpoint, accepts, accepts)
   end
   
   def teardown
@@ -166,8 +171,13 @@ class TC_PCPYellowPageClient < Test::Unit::TestCase
   def setup
     @session_id = System::Guid.new_guid
     @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
+    accepts =
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.interface
     @peercast   = PCSCore::PeerCast.new
-    @peercast.start_listen(@endpoint)
+    @peercast.start_listen(@endpoint, accepts, accepts)
     @channel_id = System::Guid.parse('531DC8DFC7FB42928AC2C0A626517A87')
   end
   

@@ -71,8 +71,13 @@ end
 class TC_HTTPSourceStreamFactory < Test::Unit::TestCase
   def setup
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
+    accepts =
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.interface
     @peercast = PeerCastStation::Core::PeerCast.new
-    @peercast.start_listen(endpoint)
+    @peercast.start_listen(endpoint, accepts, accepts)
   end
 
   def teardown
@@ -195,7 +200,12 @@ class TC_HTTPSourceStream < Test::Unit::TestCase
   def setup
     endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147)
     @peercast = PeerCastStation::Core::PeerCast.new
-    @peercast.start_listen(endpoint)
+    accepts =
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.interface
+    @peercast.start_listen(endpoint, accepts, accepts)
     @source_uri = System::Uri.new('http://127.0.0.1:8888/')
     @channel = PCSCore::Channel.new(
       @peercast,

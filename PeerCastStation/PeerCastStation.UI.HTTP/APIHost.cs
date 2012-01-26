@@ -193,7 +193,7 @@ namespace PeerCastStation.UI.HTTP
                 try {
                   arguments[i] = ToObject(param_infos[i].ParameterType, ary[i]);
                 }
-                catch (ArgumentException e) {
+                catch (ArgumentException) {
                   throw new RPCError(
                     RPCErrorCode.InvalidParams, 
                     String.Format("{0} must be {1})", param_infos[i].Name, JsonType(param_infos[i].ParameterType)));
@@ -208,7 +208,7 @@ namespace PeerCastStation.UI.HTTP
                   try {
                     arguments[i] = ToObject(param_infos[i].ParameterType, value);
                   }
-                  catch (ArgumentException e) {
+                  catch (ArgumentException) {
                     throw new RPCError(
                       RPCErrorCode.InvalidParams, 
                       String.Format("{0} must be {1})", param_infos[i].Name, JsonType(param_infos[i].ParameterType)));
@@ -650,31 +650,34 @@ namespace PeerCastStation.UI.HTTP
           res["id"]      = ol.GetHashCode();
           res["address"] = ol.LocalEndPoint.Address.ToString();
           res["port"]    = ol.LocalEndPoint.Port;
+          res["localAccepts"]  = (int)ol.LocalOutputAccepts;
+          res["globalAccepts"] = (int)ol.GlobalOutputAccepts;
           return res;
         }).ToArray());
       }
 
       [RPCMethod("addListener")]
-      private JObject AddListener(string address, int port)
+      private JObject AddListener(string address, int port, int localAccepts, int globalAccepts)
       {
         IPAddress addr;
         OutputListener listener;
+        IPEndPoint endpoint;
         if (address==null) {
-          var endpoint = new IPEndPoint(IPAddress.Any, port);
-          listener = PeerCast.StartListen(endpoint);
-
+          endpoint = new IPEndPoint(IPAddress.Any, port);
         }
         else if (IPAddress.TryParse(address, out addr)) {
-          var endpoint = new IPEndPoint(addr, port);
-          listener = PeerCast.StartListen(endpoint);
+          endpoint = new IPEndPoint(addr, port);
         }
         else {
           throw new RPCError(RPCErrorCode.InvalidParams, "Invalid ip address");
         }
+        listener = PeerCast.StartListen(endpoint, (OutputStreamType)localAccepts, (OutputStreamType)globalAccepts);
         var res = new JObject();
         res["id"]      = listener.GetHashCode();
         res["address"] = listener.LocalEndPoint.Address.ToString();
         res["port"]    = listener.LocalEndPoint.Port;
+        res["localAccepts"]  = (int)listener.LocalOutputAccepts;
+        res["globalAccepts"] = (int)listener.GlobalOutputAccepts;
         return res;
       }
 
@@ -894,6 +897,11 @@ namespace PeerCastStation.UI.HTTP
       public override string Name
       {
         get { return "API Host UI"; }
+      }
+
+      public override OutputStreamType OutputStreamType
+      {
+        get { return OutputStreamType.Interface; }
       }
 
       public override IOutputStream Create(

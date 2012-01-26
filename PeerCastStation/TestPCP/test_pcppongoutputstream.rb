@@ -39,7 +39,12 @@ class TC_PCPPongOutputStreamFactory < Test::Unit::TestCase
   def setup
     @endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
     @peercast = PeerCastStation::Core::PeerCast.new
-    @peercast.start_listen(@endpoint)
+    accepts =
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.interface
+    @peercast.start_listen(@endpoint, accepts, accepts)
     @channel_id = System::Guid.empty
     @channel  = nil
   end
@@ -88,7 +93,12 @@ class TC_PCPPongOutputStream < Test::Unit::TestCase
   def setup
     @endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
     @peercast = PeerCastStation::Core::PeerCast.new
-    @peercast.start_listen(@endpoint)
+    accepts =
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.interface
+    @peercast.start_listen(@endpoint, accepts, accepts)
     @pipe = PipeStream.new
     @input  = @pipe.input
     @output = @pipe.output

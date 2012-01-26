@@ -371,6 +371,11 @@ namespace PeerCastStation.UI.HTTP
         get { return "HTTP HTML Host UI"; }
       }
 
+      public override OutputStreamType OutputStreamType
+      {
+        get { return OutputStreamType.Interface; }
+      }
+
       HTMLHost owner;
       public HTMLHost Owner
       {

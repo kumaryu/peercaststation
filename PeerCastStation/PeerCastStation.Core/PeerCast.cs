@@ -412,14 +412,16 @@ namespace PeerCastStation.Core
     /// 指定したエンドポイントで接続待ち受けを開始します
     /// </summary>
     /// <param name="ip">待ち受けを開始するエンドポイント</param>
+    /// <param name="local_accepts">リンクローカルな接続相手に許可する出力ストリームタイプ</param>
+    /// <param name="global_accepts">リンクグローバルな接続相手に許可する出力ストリームタイプ</param>
     /// <returns>接続待ち受け</returns>
     /// <exception cref="System.Net.Sockets.SocketException">待ち受けが開始できませんでした</exception>
-    public OutputListener StartListen(IPEndPoint ip)
+    public OutputListener StartListen(IPEndPoint ip, OutputStreamType local_accepts, OutputStreamType global_accepts)
     {
       OutputListener res = null;
       logger.Info("starting listen at {0}", ip);
       try {
-        res = new OutputListener(this, ip);
+        res = new OutputListener(this, ip, local_accepts, global_accepts);
         Utils.ReplaceCollection(ref outputListeners, orig => {
           var new_collection = new List<OutputListener>(orig);
           new_collection.Add(res);

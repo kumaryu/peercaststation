@@ -192,6 +192,10 @@ namespace PeerCastStation.Core
   public enum OutputStreamType
   {
     /// <summary>
+    /// 指定無し
+    /// </summary>
+    None = 0,
+    /// <summary>
     /// 視聴用出力ストリーム
     /// </summary>
     Play = 1,
@@ -207,6 +211,10 @@ namespace PeerCastStation.Core
     /// ユーザインターフェース用出力ストリーム
     /// </summary>
     Interface = 8,
+    /// <summary>
+    /// 全て
+    /// </summary>
+    All = 0x7FFFFFFF,
   }
 
   /// <summary>
@@ -253,9 +261,13 @@ namespace PeerCastStation.Core
   public interface IOutputStreamFactory
   {
     /// <summary>
-    /// このOutputStreamが扱うプロトコルの名前を取得します
+    /// 作成されるOutputStreamが扱うプロトコルの名前を取得します
     /// </summary>
     string Name { get; }
+    /// <summary>
+    /// 作成される出力ストリームの種類を取得します
+    /// </summary>
+    OutputStreamType OutputStreamType { get; }
     /// <summary>
     /// OutpuStreamのインスタンスを作成します
     /// </summary>

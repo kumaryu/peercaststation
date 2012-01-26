@@ -220,6 +220,11 @@ namespace PeerCastStation.UI.HTTP
         get { return "Admin Host UI"; }
       }
 
+      public override OutputStreamType OutputStreamType
+      {
+        get { return OutputStreamType.Interface; }
+      }
+
       public override IOutputStream Create(
         Stream input_stream,
         Stream output_stream,

@@ -31,6 +31,7 @@ namespace PeerCastStation.Core
     }
 
     public abstract string Name { get; }
+    public abstract OutputStreamType OutputStreamType { get; }
     public abstract IOutputStream Create(Stream input_stream, Stream output_stream, EndPoint remote_endpoint, Guid channel_id, byte[] header);
     public abstract Guid? ParseChannelID(byte[] header);
   }

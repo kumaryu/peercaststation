@@ -30,6 +30,11 @@ namespace PeerCastStation.PCP
       get { return "PCPPong"; }
     }
 
+    public override OutputStreamType OutputStreamType
+    {
+      get { return OutputStreamType.Metadata; }
+    }
+
     public PCPPongOutputStreamFactory(PeerCast peercast)
       : base(peercast)
     {

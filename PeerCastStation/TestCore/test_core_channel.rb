@@ -25,7 +25,7 @@ class TC_CoreChannel < Test::Unit::TestCase
 
   def setup
     @peercast = PeerCastStation::Core::PeerCast.new
-    @peercast.start_listen(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147))
+    @peercast.start_listen(System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147), 15, 15)
   end
   
   def teardown

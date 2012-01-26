@@ -61,6 +61,11 @@ namespace PeerCastStation.Ohaoha
       : base(peercast)
     {
     }
+
+    public override OutputStreamType OutputStreamType
+    {
+      get { return OutputStreamType.Metadata; }
+    }
   }
 
   public class OhaohaCheckOutputStream
