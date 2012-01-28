@@ -421,9 +421,27 @@ namespace PeerCastStation.GUI
       }));
     }
 
+    private class YellowPageItem
+    {
+      public string Name { get; private set; }
+      public IYellowPageClient YellowPageClient { get; private set; }
+      public YellowPageItem(string name, IYellowPageClient yellowpage)
+      {
+        this.Name = name;
+        this.YellowPageClient = yellowpage;
+      }
+      public override string ToString()
+      {
+        return this.Name;
+      }
+    }
+
     private void YellowPagesChanged(object sender, EventArgs e)
     {
-      bcYP.DataSource = peerCast.YellowPages;
+      var items = new List<YellowPageItem>();
+      items.AddRange(peerCast.YellowPages.Select(yp => new YellowPageItem(yp.Name, yp)));
+      items.Add(new YellowPageItem("YPに掲載しない", null));
+      bcYP.DataSource = items;
     }
 
     private void ContentReadersChanged(object sender, EventArgs e)
@@ -800,8 +818,9 @@ namespace PeerCastStation.GUI
         if (bcDescription.Text!="") channel_info.SetChanInfoDesc(bcDescription.Text);
         if (bcContactUrl.Text!="") channel_info.SetChanInfoURL(bcContactUrl.Text);
         var reader = bcContentType.SelectedItem as ContentReaderWrapper;
-        var yp = bcYP.SelectedItem as IYellowPageClient;
-        if (peerCast.BroadcastChannel(yp, channel_id, new ChannelInfo(channel_info), new Uri(source_uri), reader.Reader)!=null) {
+        var yp = bcYP.SelectedItem as YellowPageItem;
+        var yp_client = yp!=null ? yp.YellowPageClient : null;
+        if (peerCast.BroadcastChannel(yp_client, channel_id, new ChannelInfo(channel_info), new Uri(source_uri), reader.Reader)!=null) {
           mainTab.SelectTab(0);
           bcStreamUrl.Text   = "";
           bcChannelName.Text = "";

@@ -96,8 +96,9 @@ namespace PeerCastStation.GUI
       this.channelList = new System.Windows.Forms.ListBox();
       this.tabControl2 = new System.Windows.Forms.TabControl();
       this.tabPage1 = new System.Windows.Forms.TabPage();
-      this.outputList = new System.Windows.Forms.ListBox();
+      this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
       this.downStreamClose = new System.Windows.Forms.Button();
+      this.outputList = new System.Windows.Forms.ListBox();
       this.tabPage3 = new System.Windows.Forms.TabPage();
       this.groupBox2 = new System.Windows.Forms.GroupBox();
       this.chanTrackContactURL = new System.Windows.Forms.TextBox();
@@ -167,7 +168,6 @@ namespace PeerCastStation.GUI
       this.statusBar = new System.Windows.Forms.StatusStrip();
       this.portLabel = new System.Windows.Forms.ToolStripStatusLabel();
       this.portOpenedLabel = new System.Windows.Forms.ToolStripStatusLabel();
-      this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
       label6 = new System.Windows.Forms.Label();
       label7 = new System.Windows.Forms.Label();
       label8 = new System.Windows.Forms.Label();
@@ -214,6 +214,7 @@ namespace PeerCastStation.GUI
       this.splitContainer1.SuspendLayout();
       this.tabControl2.SuspendLayout();
       this.tabPage1.SuspendLayout();
+      this.tableLayoutPanel1.SuspendLayout();
       this.tabPage3.SuspendLayout();
       this.groupBox2.SuspendLayout();
       this.groupBox1.SuspendLayout();
@@ -234,7 +235,6 @@ namespace PeerCastStation.GUI
       ((System.ComponentModel.ISupportInitialize)(this.port1)).BeginInit();
       this.tabLog.SuspendLayout();
       this.statusBar.SuspendLayout();
-      this.tableLayoutPanel1.SuspendLayout();
       this.SuspendLayout();
       // 
       // label6
@@ -740,18 +740,20 @@ namespace PeerCastStation.GUI
       this.tabPage1.Text = "接続一覧";
       this.tabPage1.UseVisualStyleBackColor = true;
       // 
-      // outputList
+      // tableLayoutPanel1
       // 
-      this.outputList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.outputList.FormattingEnabled = true;
-      this.outputList.IntegralHeight = false;
-      this.outputList.ItemHeight = 12;
-      this.outputList.Location = new System.Drawing.Point(3, 3);
-      this.outputList.Name = "outputList";
-      this.outputList.Size = new System.Drawing.Size(342, 217);
-      this.outputList.TabIndex = 8;
+      this.tableLayoutPanel1.ColumnCount = 2;
+      this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+      this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+      this.tableLayoutPanel1.Controls.Add(this.downStreamClose, 1, 0);
+      this.tableLayoutPanel1.Controls.Add(this.outputList, 0, 0);
+      this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+      this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
+      this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+      this.tableLayoutPanel1.RowCount = 1;
+      this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+      this.tableLayoutPanel1.Size = new System.Drawing.Size(417, 223);
+      this.tableLayoutPanel1.TabIndex = 9;
       // 
       // downStreamClose
       // 
@@ -764,6 +766,19 @@ namespace PeerCastStation.GUI
       this.downStreamClose.Text = "下流切断";
       this.downStreamClose.UseVisualStyleBackColor = true;
       this.downStreamClose.Click += new System.EventHandler(this.downStreamClose_Click);
+      // 
+      // outputList
+      // 
+      this.outputList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      this.outputList.FormattingEnabled = true;
+      this.outputList.IntegralHeight = false;
+      this.outputList.ItemHeight = 12;
+      this.outputList.Location = new System.Drawing.Point(3, 3);
+      this.outputList.Name = "outputList";
+      this.outputList.Size = new System.Drawing.Size(342, 217);
+      this.outputList.TabIndex = 8;
       // 
       // tabPage3
       // 
@@ -1613,21 +1628,6 @@ namespace PeerCastStation.GUI
       this.portOpenedLabel.Size = new System.Drawing.Size(134, 18);
       this.portOpenedLabel.Text = "toolStripStatusLabel1";
       // 
-      // tableLayoutPanel1
-      // 
-      this.tableLayoutPanel1.ColumnCount = 2;
-      this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-      this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
-      this.tableLayoutPanel1.Controls.Add(this.downStreamClose, 1, 0);
-      this.tableLayoutPanel1.Controls.Add(this.outputList, 0, 0);
-      this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-      this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
-      this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-      this.tableLayoutPanel1.RowCount = 1;
-      this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-      this.tableLayoutPanel1.Size = new System.Drawing.Size(417, 223);
-      this.tableLayoutPanel1.TabIndex = 9;
-      // 
       // MainForm
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -1649,6 +1649,8 @@ namespace PeerCastStation.GUI
       this.splitContainer1.ResumeLayout(false);
       this.tabControl2.ResumeLayout(false);
       this.tabPage1.ResumeLayout(false);
+      this.tableLayoutPanel1.ResumeLayout(false);
+      this.tableLayoutPanel1.PerformLayout();
       this.tabPage3.ResumeLayout(false);
       this.tabPage3.PerformLayout();
       this.groupBox2.ResumeLayout(false);
@@ -1680,8 +1682,6 @@ namespace PeerCastStation.GUI
       this.tabLog.PerformLayout();
       this.statusBar.ResumeLayout(false);
       this.statusBar.PerformLayout();
-      this.tableLayoutPanel1.ResumeLayout(false);
-      this.tableLayoutPanel1.PerformLayout();
       this.ResumeLayout(false);
       this.PerformLayout();
 
