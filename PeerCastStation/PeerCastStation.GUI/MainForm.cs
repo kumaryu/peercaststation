@@ -102,7 +102,8 @@ namespace PeerCastStation.GUI
     }
 
     private Timer timer = new Timer();
-    private int currentPort;
+    private int currentPort1;
+    private int currentPort2;
     private TextBoxWriter guiWriter = null;
     private BindingList<ChannelListItem> channelListItems = new BindingList<ChannelListItem>();
     private List<YPSettings> yellowPages = new List<YPSettings>();
@@ -178,15 +179,30 @@ namespace PeerCastStation.GUI
         Settings.Default.BroadcastID = peerCast.BroadcastID;
       }
       OnUpdateSettings(null);
-      port.Value                 = Settings.Default.Port;
-      maxRelays.Value            = Settings.Default.MaxRelays;
-      maxDirects.Value           = Settings.Default.MaxPlays;
-      maxUpstreamRate.Value      = Settings.Default.MaxUpstreamRate;
-      logLevelList.SelectedIndex = Settings.Default.LogLevel;
-      logToFileCheck.Checked     = Settings.Default.LogToFile;
-      logFileNameText.Text       = Settings.Default.LogFileName;
-      logToConsoleCheck.Checked  = Settings.Default.LogToConsole;
-      logToGUICheck.Checked      = Settings.Default.LogToGUI;
+      port1LocalRelay.Checked      = Settings.Default.Port1LocalRelay;
+      port1LocalDirect.Checked     = Settings.Default.Port1LocalDirect;
+      port1LocalInterface.Checked  = Settings.Default.Port1LocalInterface;
+      port1GlobalRelay.Checked     = Settings.Default.Port1GlobalRelay;
+      port1GlobalDirect.Checked    = Settings.Default.Port1GlobalDirect;
+      port1GlobalInterface.Checked = Settings.Default.Port1GlobalInterface;
+      port1.Value                  = Settings.Default.Port;
+      port2LocalRelay.Checked      = Settings.Default.Port2LocalRelay;
+      port2LocalDirect.Checked     = Settings.Default.Port2LocalDirect;
+      port2LocalInterface.Checked  = Settings.Default.Port2LocalInterface;
+      port2GlobalRelay.Checked     = Settings.Default.Port2GlobalRelay;
+      port2GlobalDirect.Checked    = Settings.Default.Port2GlobalDirect;
+      port2GlobalInterface.Checked = Settings.Default.Port2GlobalInterface;
+      port2.Value                  = Settings.Default.Port2;
+      maxRelays.Value              = Settings.Default.MaxRelays;
+      maxDirects.Value             = Settings.Default.MaxPlays;
+      maxRelaysPerChannel.Value    = Settings.Default.MaxRelaysPerChannel;
+      maxDirectsPerChannel.Value   = Settings.Default.MaxPlaysPerChannel;
+      maxUpstreamRate.Value        = Settings.Default.MaxUpstreamRate;
+      logLevelList.SelectedIndex   = Settings.Default.LogLevel;
+      logToFileCheck.Checked       = Settings.Default.LogToFile;
+      logFileNameText.Text         = Settings.Default.LogFileName;
+      logToConsoleCheck.Checked    = Settings.Default.LogToConsole;
+      logToGUICheck.Checked        = Settings.Default.LogToGUI;
       if (Settings.Default.YellowPages!=null) {
         yellowPages = new List<YPSettings>(Settings.Default.YellowPages);
         peerCast.YellowPages = ToYPClients(yellowPages);
@@ -203,23 +219,64 @@ namespace PeerCastStation.GUI
 
     private void OnUpdateSettings(string property_name)
     {
-      if (property_name==null || property_name=="Port") {
-        var listener = peerCast.OutputListeners.FirstOrDefault(x => x.LocalEndPoint.Port==currentPort);
-        if (listener!=null) peerCast.StopListen(listener);
-        currentPort = Settings.Default.Port;
+      if (property_name==null || property_name=="Port" || property_name=="Port2") {
+        bool port1_opened = false;
+        bool port2_opened = false;
+        var listener1 = peerCast.OutputListeners.FirstOrDefault(x => x.LocalEndPoint.Port==currentPort1);
+        if (listener1!=null) peerCast.StopListen(listener1);
+        currentPort1 = Settings.Default.Port;
         try {
+          OutputStreamType local_accepts =
+            OutputStreamType.Metadata |
+            (Settings.Default.Port1LocalDirect    ? OutputStreamType.Play : OutputStreamType.None) |
+            (Settings.Default.Port1LocalRelay     ? OutputStreamType.Relay : OutputStreamType.None) |
+            (Settings.Default.Port1LocalInterface ? OutputStreamType.Interface : OutputStreamType.None);
+          OutputStreamType global_accepts =
+            OutputStreamType.Metadata |
+            (Settings.Default.Port1GlobalDirect    ? OutputStreamType.Play : OutputStreamType.None) |
+            (Settings.Default.Port1GlobalRelay     ? OutputStreamType.Relay : OutputStreamType.None) |
+            (Settings.Default.Port1GlobalInterface ? OutputStreamType.Interface : OutputStreamType.None);
           peerCast.StartListen(
-            new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort),
-            OutputStreamType.Interface |
-            OutputStreamType.Metadata |
-            OutputStreamType.Play |
-            OutputStreamType.Relay,
-            OutputStreamType.Metadata |
-            OutputStreamType.Relay);
-          portLabel.Text = String.Format("ポート:{0}", currentPort);
+            new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort1),
+            local_accepts,
+            global_accepts);
+          port1_opened = true;
         }
         catch (System.Net.Sockets.SocketException) {
-          portLabel.Text = String.Format("ポート{0}を開けません", currentPort);
+        }
+        var listener2 = peerCast.OutputListeners.FirstOrDefault(x => x.LocalEndPoint.Port==currentPort2);
+        if (listener2!=null) peerCast.StopListen(listener2);
+        currentPort2 = Settings.Default.Port2;
+        try {
+          OutputStreamType local_accepts =
+            OutputStreamType.Metadata |
+            (Settings.Default.Port2LocalDirect    ? OutputStreamType.Play : OutputStreamType.None) |
+            (Settings.Default.Port2LocalRelay     ? OutputStreamType.Relay : OutputStreamType.None) |
+            (Settings.Default.Port2LocalInterface ? OutputStreamType.Interface : OutputStreamType.None);
+          OutputStreamType global_accepts =
+            OutputStreamType.Metadata |
+            (Settings.Default.Port2GlobalDirect    ? OutputStreamType.Play : OutputStreamType.None) |
+            (Settings.Default.Port2GlobalRelay     ? OutputStreamType.Relay : OutputStreamType.None) |
+            (Settings.Default.Port2GlobalInterface ? OutputStreamType.Interface : OutputStreamType.None);
+          peerCast.StartListen(
+            new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort2),
+            local_accepts,
+            global_accepts);
+          port2_opened = true;
+        }
+        catch (System.Net.Sockets.SocketException) {
+        }
+        if (!port1_opened && !port2_opened) {
+          portLabel.Text = String.Format("ポート{0}, {1}を開けません", currentPort1, currentPort2);
+        }
+        else if (!port1_opened) {
+          portLabel.Text = String.Format("ポート{0}を開けません", currentPort1);
+        }
+        else if (!port2_opened) {
+          portLabel.Text = String.Format("ポート{0}を開けません", currentPort2);
+        }
+        else {
+          portLabel.Text = String.Format("ポート{0}, {1}", currentPort1, currentPort2);
         }
       }
       if (property_name==null || property_name=="MaxPlays") {
@@ -227,6 +284,12 @@ namespace PeerCastStation.GUI
       }
       if (property_name==null || property_name=="MaxRelays") {
         peerCast.AccessController.MaxRelays = Settings.Default.MaxRelays;
+      }
+      if (property_name==null || property_name=="MaxPlaysPerChannel") {
+        peerCast.AccessController.MaxPlaysPerChannel = Settings.Default.MaxPlaysPerChannel;
+      }
+      if (property_name==null || property_name=="MaxRelaysPerChannel") {
+        peerCast.AccessController.MaxRelaysPerChannel = Settings.Default.MaxRelaysPerChannel;
       }
       if (property_name==null || property_name=="MaxUpStreamRate") {
         peerCast.AccessController.MaxUpstreamRate = Settings.Default.MaxUpstreamRate;
@@ -394,10 +457,25 @@ namespace PeerCastStation.GUI
 
     private void applySettings_Click(object sender, EventArgs e)
     {
-      Settings.Default.Port            = (int)port.Value;
-      Settings.Default.MaxRelays       = (int)maxRelays.Value;
-      Settings.Default.MaxPlays        = (int)maxDirects.Value;
-      Settings.Default.MaxUpstreamRate = (int)maxUpstreamRate.Value;
+      Settings.Default.Port1LocalRelay      = port1LocalRelay.Checked;
+      Settings.Default.Port1LocalDirect     = port1LocalDirect.Checked;
+      Settings.Default.Port1LocalInterface  = port1LocalInterface.Checked;
+      Settings.Default.Port1GlobalRelay     = port1GlobalRelay.Checked;
+      Settings.Default.Port1GlobalDirect    = port1GlobalDirect.Checked;
+      Settings.Default.Port1GlobalInterface = port1GlobalInterface.Checked;
+      Settings.Default.Port                 = (int)port1.Value;
+      Settings.Default.Port2LocalRelay      = port2LocalRelay.Checked;
+      Settings.Default.Port2LocalDirect     = port2LocalDirect.Checked;
+      Settings.Default.Port2LocalInterface  = port2LocalInterface.Checked;
+      Settings.Default.Port2GlobalRelay     = port2GlobalRelay.Checked;
+      Settings.Default.Port2GlobalDirect    = port2GlobalDirect.Checked;
+      Settings.Default.Port2GlobalInterface = port2GlobalInterface.Checked;
+      Settings.Default.Port2                = (int)port2.Value;
+      Settings.Default.MaxRelays            = (int)maxRelays.Value;
+      Settings.Default.MaxPlays             = (int)maxDirects.Value;
+      Settings.Default.MaxRelaysPerChannel  = (int)maxRelaysPerChannel.Value;
+      Settings.Default.MaxPlaysPerChannel   = (int)maxDirectsPerChannel.Value;
+      Settings.Default.MaxUpstreamRate      = (int)maxUpstreamRate.Value;
       if (peerCast.IsFirewalled.HasValue) {
         portOpenedLabel.Text = peerCast.IsFirewalled.Value ? "未開放" : "開放";
       }
