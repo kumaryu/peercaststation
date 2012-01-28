@@ -29,47 +29,45 @@
     {
       this.components = new System.ComponentModel.Container();
       System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
-      System.Windows.Forms.Panel panel3;
-      System.Windows.Forms.Panel panel1;
+      System.Windows.Forms.Label label14;
+      System.Windows.Forms.Label label16;
+      System.Windows.Forms.Label label15;
       System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
       System.Windows.Forms.Button ypRemoveButton;
       System.Windows.Forms.Button ypAddButton;
+      System.Windows.Forms.Panel panel3;
+      System.Windows.Forms.Label label18;
       System.Windows.Forms.Label label17;
       System.Windows.Forms.Button ypDownButton;
       System.Windows.Forms.Button ypUpButton;
-      System.Windows.Forms.Panel panel2;
-      System.Windows.Forms.Label label18;
-      System.Windows.Forms.Label label16;
-      System.Windows.Forms.Label label15;
-      System.Windows.Forms.Label label14;
+      this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
+      this.ypAddressText = new System.Windows.Forms.TextBox();
+      this.ypSettingsBindingSource = new System.Windows.Forms.BindingSource(this.components);
+      this.ypProtocolList = new System.Windows.Forms.ComboBox();
+      this.ypEnabledCheck = new System.Windows.Forms.CheckBox();
+      this.ypNameText = new System.Windows.Forms.TextBox();
       this.button2 = new System.Windows.Forms.Button();
       this.button1 = new System.Windows.Forms.Button();
+      this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
       this.ypList = new System.Windows.Forms.ListBox();
-      this.ypSettingsBindingSource = new System.Windows.Forms.BindingSource(this.components);
-      this.ypEnabledCheck = new System.Windows.Forms.CheckBox();
-      this.ypProtocolList = new System.Windows.Forms.ComboBox();
-      this.ypAddressText = new System.Windows.Forms.TextBox();
-      this.ypNameText = new System.Windows.Forms.TextBox();
       tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-      panel3 = new System.Windows.Forms.Panel();
-      panel1 = new System.Windows.Forms.Panel();
+      label14 = new System.Windows.Forms.Label();
+      label16 = new System.Windows.Forms.Label();
+      label15 = new System.Windows.Forms.Label();
       tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
       ypRemoveButton = new System.Windows.Forms.Button();
       ypAddButton = new System.Windows.Forms.Button();
+      panel3 = new System.Windows.Forms.Panel();
+      label18 = new System.Windows.Forms.Label();
       label17 = new System.Windows.Forms.Label();
       ypDownButton = new System.Windows.Forms.Button();
       ypUpButton = new System.Windows.Forms.Button();
-      panel2 = new System.Windows.Forms.Panel();
-      label18 = new System.Windows.Forms.Label();
-      label16 = new System.Windows.Forms.Label();
-      label15 = new System.Windows.Forms.Label();
-      label14 = new System.Windows.Forms.Label();
       tableLayoutPanel1.SuspendLayout();
-      panel3.SuspendLayout();
-      panel1.SuspendLayout();
-      tableLayoutPanel2.SuspendLayout();
+      this.tableLayoutPanel4.SuspendLayout();
       ((System.ComponentModel.ISupportInitialize)(this.ypSettingsBindingSource)).BeginInit();
-      panel2.SuspendLayout();
+      tableLayoutPanel2.SuspendLayout();
+      panel3.SuspendLayout();
+      this.tableLayoutPanel3.SuspendLayout();
       this.SuspendLayout();
       // 
       // tableLayoutPanel1
@@ -77,17 +75,172 @@
       tableLayoutPanel1.ColumnCount = 2;
       tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
       tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-      tableLayoutPanel1.Controls.Add(panel3, 0, 1);
-      tableLayoutPanel1.Controls.Add(panel1, 0, 0);
-      tableLayoutPanel1.Controls.Add(panel2, 1, 0);
+      tableLayoutPanel1.Controls.Add(this.tableLayoutPanel4, 1, 1);
+      tableLayoutPanel1.Controls.Add(panel3, 0, 2);
+      tableLayoutPanel1.Controls.Add(label18, 1, 0);
+      tableLayoutPanel1.Controls.Add(label17, 0, 0);
+      tableLayoutPanel1.Controls.Add(this.tableLayoutPanel3, 0, 1);
       tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
       tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
       tableLayoutPanel1.Name = "tableLayoutPanel1";
-      tableLayoutPanel1.RowCount = 2;
+      tableLayoutPanel1.RowCount = 3;
+      tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
       tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
       tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+      tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
       tableLayoutPanel1.Size = new System.Drawing.Size(521, 338);
       tableLayoutPanel1.TabIndex = 14;
+      // 
+      // tableLayoutPanel4
+      // 
+      this.tableLayoutPanel4.AutoSize = true;
+      this.tableLayoutPanel4.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+      this.tableLayoutPanel4.ColumnCount = 2;
+      this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+      this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+      this.tableLayoutPanel4.Controls.Add(label14, 0, 0);
+      this.tableLayoutPanel4.Controls.Add(this.ypAddressText, 1, 2);
+      this.tableLayoutPanel4.Controls.Add(this.ypProtocolList, 1, 1);
+      this.tableLayoutPanel4.Controls.Add(this.ypEnabledCheck, 1, 3);
+      this.tableLayoutPanel4.Controls.Add(label16, 0, 1);
+      this.tableLayoutPanel4.Controls.Add(this.ypNameText, 1, 0);
+      this.tableLayoutPanel4.Controls.Add(label15, 0, 2);
+      this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Top;
+      this.tableLayoutPanel4.Location = new System.Drawing.Point(260, 12);
+      this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(0);
+      this.tableLayoutPanel4.Name = "tableLayoutPanel4";
+      this.tableLayoutPanel4.RowCount = 4;
+      this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle());
+      this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle());
+      this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle());
+      this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle());
+      this.tableLayoutPanel4.Size = new System.Drawing.Size(261, 98);
+      this.tableLayoutPanel4.TabIndex = 7;
+      // 
+      // label14
+      // 
+      label14.AutoSize = true;
+      label14.Dock = System.Windows.Forms.DockStyle.Fill;
+      label14.Location = new System.Drawing.Point(3, 0);
+      label14.Name = "label14";
+      label14.Size = new System.Drawing.Size(64, 25);
+      label14.TabIndex = 1;
+      label14.Text = "YP名(&N)";
+      label14.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+      // 
+      // ypAddressText
+      // 
+      this.ypAddressText.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      this.ypAddressText.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.ypSettingsBindingSource, "Address", true));
+      this.ypAddressText.Location = new System.Drawing.Point(73, 54);
+      this.ypAddressText.Name = "ypAddressText";
+      this.ypAddressText.Size = new System.Drawing.Size(185, 19);
+      this.ypAddressText.TabIndex = 0;
+      // 
+      // ypSettingsBindingSource
+      // 
+      this.ypSettingsBindingSource.DataSource = typeof(PeerCastStation.GUI.YPSettings);
+      // 
+      // ypProtocolList
+      // 
+      this.ypProtocolList.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      this.ypProtocolList.DataBindings.Add(new System.Windows.Forms.Binding("SelectedItem", this.ypSettingsBindingSource, "Protocol", true));
+      this.ypProtocolList.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+      this.ypProtocolList.FormattingEnabled = true;
+      this.ypProtocolList.Location = new System.Drawing.Point(73, 28);
+      this.ypProtocolList.Name = "ypProtocolList";
+      this.ypProtocolList.Size = new System.Drawing.Size(185, 20);
+      this.ypProtocolList.TabIndex = 4;
+      // 
+      // ypEnabledCheck
+      // 
+      this.ypEnabledCheck.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      this.ypEnabledCheck.AutoSize = true;
+      this.ypEnabledCheck.DataBindings.Add(new System.Windows.Forms.Binding("Checked", this.ypSettingsBindingSource, "Enabled", true));
+      this.ypEnabledCheck.Location = new System.Drawing.Point(73, 79);
+      this.ypEnabledCheck.Name = "ypEnabledCheck";
+      this.ypEnabledCheck.Size = new System.Drawing.Size(185, 16);
+      this.ypEnabledCheck.TabIndex = 6;
+      this.ypEnabledCheck.Text = "このYPを使用する(&E)";
+      this.ypEnabledCheck.UseVisualStyleBackColor = true;
+      // 
+      // label16
+      // 
+      label16.AutoSize = true;
+      label16.Dock = System.Windows.Forms.DockStyle.Fill;
+      label16.Location = new System.Drawing.Point(3, 25);
+      label16.Name = "label16";
+      label16.Size = new System.Drawing.Size(64, 26);
+      label16.TabIndex = 3;
+      label16.Text = "プロトコル(&P)";
+      label16.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+      // 
+      // ypNameText
+      // 
+      this.ypNameText.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      this.ypNameText.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.ypSettingsBindingSource, "Name", true));
+      this.ypNameText.Location = new System.Drawing.Point(73, 3);
+      this.ypNameText.Name = "ypNameText";
+      this.ypNameText.Size = new System.Drawing.Size(185, 19);
+      this.ypNameText.TabIndex = 2;
+      // 
+      // label15
+      // 
+      label15.AutoSize = true;
+      label15.Dock = System.Windows.Forms.DockStyle.Fill;
+      label15.Location = new System.Drawing.Point(3, 51);
+      label15.Name = "label15";
+      label15.Size = new System.Drawing.Size(64, 25);
+      label15.TabIndex = 5;
+      label15.Text = "アドレス(&D)";
+      label15.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+      // 
+      // tableLayoutPanel2
+      // 
+      tableLayoutPanel2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      tableLayoutPanel2.ColumnCount = 2;
+      tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+      tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+      tableLayoutPanel2.Controls.Add(ypRemoveButton, 0, 0);
+      tableLayoutPanel2.Controls.Add(ypAddButton, 0, 0);
+      tableLayoutPanel2.Location = new System.Drawing.Point(0, 265);
+      tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(0);
+      tableLayoutPanel2.Name = "tableLayoutPanel2";
+      tableLayoutPanel2.RowCount = 1;
+      tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+      tableLayoutPanel2.Size = new System.Drawing.Size(227, 26);
+      tableLayoutPanel2.TabIndex = 4;
+      // 
+      // ypRemoveButton
+      // 
+      ypRemoveButton.AutoSize = true;
+      ypRemoveButton.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+      ypRemoveButton.Dock = System.Windows.Forms.DockStyle.Fill;
+      ypRemoveButton.Location = new System.Drawing.Point(116, 3);
+      ypRemoveButton.Name = "ypRemoveButton";
+      ypRemoveButton.Size = new System.Drawing.Size(108, 20);
+      ypRemoveButton.TabIndex = 1;
+      ypRemoveButton.Text = "削除(&R)";
+      ypRemoveButton.UseVisualStyleBackColor = true;
+      ypRemoveButton.Click += new System.EventHandler(this.ypRemoveButton_Click);
+      // 
+      // ypAddButton
+      // 
+      ypAddButton.AutoSize = true;
+      ypAddButton.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+      ypAddButton.Dock = System.Windows.Forms.DockStyle.Fill;
+      ypAddButton.Location = new System.Drawing.Point(3, 3);
+      ypAddButton.Name = "ypAddButton";
+      ypAddButton.Size = new System.Drawing.Size(107, 20);
+      ypAddButton.TabIndex = 0;
+      ypAddButton.Text = "追加(&A)";
+      ypAddButton.UseVisualStyleBackColor = true;
+      ypAddButton.Click += new System.EventHandler(this.ypAddButton_Click);
       // 
       // panel3
       // 
@@ -124,93 +277,57 @@
       this.button1.Text = "OK";
       this.button1.UseVisualStyleBackColor = true;
       // 
-      // panel1
+      // label18
       // 
-      panel1.Controls.Add(tableLayoutPanel2);
-      panel1.Controls.Add(label17);
-      panel1.Controls.Add(ypDownButton);
-      panel1.Controls.Add(ypUpButton);
-      panel1.Controls.Add(this.ypList);
-      panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-      panel1.Location = new System.Drawing.Point(0, 0);
-      panel1.Margin = new System.Windows.Forms.Padding(0);
-      panel1.Name = "panel1";
-      panel1.Size = new System.Drawing.Size(260, 303);
-      panel1.TabIndex = 0;
-      // 
-      // tableLayoutPanel2
-      // 
-      tableLayoutPanel2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      tableLayoutPanel2.ColumnCount = 2;
-      tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-      tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-      tableLayoutPanel2.Controls.Add(ypRemoveButton, 0, 0);
-      tableLayoutPanel2.Controls.Add(ypAddButton, 0, 0);
-      tableLayoutPanel2.Location = new System.Drawing.Point(4, 270);
-      tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(0);
-      tableLayoutPanel2.Name = "tableLayoutPanel2";
-      tableLayoutPanel2.RowCount = 1;
-      tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-      tableLayoutPanel2.Size = new System.Drawing.Size(219, 26);
-      tableLayoutPanel2.TabIndex = 4;
-      // 
-      // ypRemoveButton
-      // 
-      ypRemoveButton.Dock = System.Windows.Forms.DockStyle.Fill;
-      ypRemoveButton.Location = new System.Drawing.Point(112, 3);
-      ypRemoveButton.Name = "ypRemoveButton";
-      ypRemoveButton.Size = new System.Drawing.Size(104, 20);
-      ypRemoveButton.TabIndex = 1;
-      ypRemoveButton.Text = "削除(&R)";
-      ypRemoveButton.UseVisualStyleBackColor = true;
-      ypRemoveButton.Click += new System.EventHandler(this.ypRemoveButton_Click);
-      // 
-      // ypAddButton
-      // 
-      ypAddButton.Dock = System.Windows.Forms.DockStyle.Fill;
-      ypAddButton.Location = new System.Drawing.Point(3, 3);
-      ypAddButton.Name = "ypAddButton";
-      ypAddButton.Size = new System.Drawing.Size(103, 20);
-      ypAddButton.TabIndex = 0;
-      ypAddButton.Text = "追加(&A)";
-      ypAddButton.UseVisualStyleBackColor = true;
-      ypAddButton.Click += new System.EventHandler(this.ypAddButton_Click);
+      label18.AutoSize = true;
+      label18.Location = new System.Drawing.Point(263, 0);
+      label18.Name = "label18";
+      label18.Size = new System.Drawing.Size(102, 12);
+      label18.TabIndex = 0;
+      label18.Text = "YellowPage設定(&S)";
       // 
       // label17
       // 
       label17.AutoSize = true;
-      label17.Location = new System.Drawing.Point(4, 5);
+      label17.Location = new System.Drawing.Point(3, 0);
       label17.Name = "label17";
       label17.Size = new System.Drawing.Size(101, 12);
       label17.TabIndex = 0;
       label17.Text = "YellowPage一覧(&L)";
+      // 
+      // tableLayoutPanel3
+      // 
+      this.tableLayoutPanel3.ColumnCount = 2;
+      this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+      this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+      this.tableLayoutPanel3.Controls.Add(ypDownButton, 1, 1);
+      this.tableLayoutPanel3.Controls.Add(tableLayoutPanel2, 0, 3);
+      this.tableLayoutPanel3.Controls.Add(this.ypList, 0, 0);
+      this.tableLayoutPanel3.Controls.Add(ypUpButton, 1, 0);
+      this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
+      this.tableLayoutPanel3.Location = new System.Drawing.Point(0, 12);
+      this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(0);
+      this.tableLayoutPanel3.Name = "tableLayoutPanel3";
+      this.tableLayoutPanel3.RowCount = 4;
+      this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle());
+      this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle());
+      this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+      this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle());
+      this.tableLayoutPanel3.Size = new System.Drawing.Size(260, 291);
+      this.tableLayoutPanel3.TabIndex = 8;
       // 
       // ypDownButton
       // 
       ypDownButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
       ypDownButton.AutoSize = true;
       ypDownButton.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-      ypDownButton.Location = new System.Drawing.Point(229, 49);
+      ypDownButton.Location = new System.Drawing.Point(230, 31);
       ypDownButton.Name = "ypDownButton";
       ypDownButton.Size = new System.Drawing.Size(27, 22);
       ypDownButton.TabIndex = 3;
       ypDownButton.Text = "↓";
       ypDownButton.UseVisualStyleBackColor = true;
       ypDownButton.Click += new System.EventHandler(this.ypDownButton_Click);
-      // 
-      // ypUpButton
-      // 
-      ypUpButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-      ypUpButton.AutoSize = true;
-      ypUpButton.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-      ypUpButton.Location = new System.Drawing.Point(229, 20);
-      ypUpButton.Name = "ypUpButton";
-      ypUpButton.Size = new System.Drawing.Size(27, 22);
-      ypUpButton.TabIndex = 2;
-      ypUpButton.Text = "↑";
-      ypUpButton.UseVisualStyleBackColor = true;
-      ypUpButton.Click += new System.EventHandler(this.ypUpButton_Click);
       // 
       // ypList
       // 
@@ -222,112 +339,24 @@
       this.ypList.FormattingEnabled = true;
       this.ypList.IntegralHeight = false;
       this.ypList.ItemHeight = 12;
-      this.ypList.Location = new System.Drawing.Point(4, 20);
+      this.ypList.Location = new System.Drawing.Point(3, 3);
       this.ypList.Name = "ypList";
-      this.ypList.Size = new System.Drawing.Size(219, 244);
+      this.tableLayoutPanel3.SetRowSpan(this.ypList, 3);
+      this.ypList.Size = new System.Drawing.Size(221, 259);
       this.ypList.TabIndex = 1;
       // 
-      // ypSettingsBindingSource
+      // ypUpButton
       // 
-      this.ypSettingsBindingSource.DataSource = typeof(PeerCastStation.GUI.YPSettings);
-      // 
-      // panel2
-      // 
-      panel2.Controls.Add(this.ypEnabledCheck);
-      panel2.Controls.Add(label18);
-      panel2.Controls.Add(this.ypProtocolList);
-      panel2.Controls.Add(label16);
-      panel2.Controls.Add(this.ypAddressText);
-      panel2.Controls.Add(label15);
-      panel2.Controls.Add(label14);
-      panel2.Controls.Add(this.ypNameText);
-      panel2.Dock = System.Windows.Forms.DockStyle.Fill;
-      panel2.Location = new System.Drawing.Point(260, 0);
-      panel2.Margin = new System.Windows.Forms.Padding(0);
-      panel2.Name = "panel2";
-      panel2.Size = new System.Drawing.Size(261, 303);
-      panel2.TabIndex = 1;
-      // 
-      // ypEnabledCheck
-      // 
-      this.ypEnabledCheck.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.ypEnabledCheck.AutoSize = true;
-      this.ypEnabledCheck.DataBindings.Add(new System.Windows.Forms.Binding("Checked", this.ypSettingsBindingSource, "Enabled", true));
-      this.ypEnabledCheck.Location = new System.Drawing.Point(72, 96);
-      this.ypEnabledCheck.Name = "ypEnabledCheck";
-      this.ypEnabledCheck.Size = new System.Drawing.Size(123, 16);
-      this.ypEnabledCheck.TabIndex = 6;
-      this.ypEnabledCheck.Text = "このYPを使用する(&E)";
-      this.ypEnabledCheck.UseVisualStyleBackColor = true;
-      // 
-      // label18
-      // 
-      label18.AutoSize = true;
-      label18.Location = new System.Drawing.Point(2, 5);
-      label18.Name = "label18";
-      label18.Size = new System.Drawing.Size(102, 12);
-      label18.TabIndex = 0;
-      label18.Text = "YellowPage設定(&S)";
-      // 
-      // ypProtocolList
-      // 
-      this.ypProtocolList.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.ypProtocolList.DataBindings.Add(new System.Windows.Forms.Binding("SelectedItem", this.ypSettingsBindingSource, "Protocol", true));
-      this.ypProtocolList.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-      this.ypProtocolList.FormattingEnabled = true;
-      this.ypProtocolList.Location = new System.Drawing.Point(72, 45);
-      this.ypProtocolList.Name = "ypProtocolList";
-      this.ypProtocolList.Size = new System.Drawing.Size(181, 20);
-      this.ypProtocolList.TabIndex = 4;
-      // 
-      // label16
-      // 
-      label16.AutoSize = true;
-      label16.Location = new System.Drawing.Point(2, 48);
-      label16.Name = "label16";
-      label16.Size = new System.Drawing.Size(64, 12);
-      label16.TabIndex = 3;
-      label16.Text = "プロトコル(&P)";
-      // 
-      // ypAddressText
-      // 
-      this.ypAddressText.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.ypAddressText.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.ypSettingsBindingSource, "Address", true));
-      this.ypAddressText.Location = new System.Drawing.Point(72, 71);
-      this.ypAddressText.Name = "ypAddressText";
-      this.ypAddressText.Size = new System.Drawing.Size(181, 19);
-      this.ypAddressText.TabIndex = 0;
-      // 
-      // label15
-      // 
-      label15.AutoSize = true;
-      label15.Location = new System.Drawing.Point(3, 74);
-      label15.Name = "label15";
-      label15.Size = new System.Drawing.Size(57, 12);
-      label15.TabIndex = 5;
-      label15.Text = "アドレス(&D)";
-      // 
-      // label14
-      // 
-      label14.AutoSize = true;
-      label14.Location = new System.Drawing.Point(3, 23);
-      label14.Name = "label14";
-      label14.Size = new System.Drawing.Size(47, 12);
-      label14.TabIndex = 1;
-      label14.Text = "YP名(&N)";
-      // 
-      // ypNameText
-      // 
-      this.ypNameText.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.ypNameText.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.ypSettingsBindingSource, "Name", true));
-      this.ypNameText.Location = new System.Drawing.Point(72, 20);
-      this.ypNameText.Name = "ypNameText";
-      this.ypNameText.Size = new System.Drawing.Size(181, 19);
-      this.ypNameText.TabIndex = 2;
+      ypUpButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      ypUpButton.AutoSize = true;
+      ypUpButton.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+      ypUpButton.Location = new System.Drawing.Point(230, 3);
+      ypUpButton.Name = "ypUpButton";
+      ypUpButton.Size = new System.Drawing.Size(27, 22);
+      ypUpButton.TabIndex = 2;
+      ypUpButton.Text = "↑";
+      ypUpButton.UseVisualStyleBackColor = true;
+      ypUpButton.Click += new System.EventHandler(this.ypUpButton_Click);
       // 
       // YellowPagesEditDialog
       // 
@@ -343,13 +372,14 @@
       this.Text = "YellowPage設定の編集";
       tableLayoutPanel1.ResumeLayout(false);
       tableLayoutPanel1.PerformLayout();
-      panel3.ResumeLayout(false);
-      panel1.ResumeLayout(false);
-      panel1.PerformLayout();
-      tableLayoutPanel2.ResumeLayout(false);
+      this.tableLayoutPanel4.ResumeLayout(false);
+      this.tableLayoutPanel4.PerformLayout();
       ((System.ComponentModel.ISupportInitialize)(this.ypSettingsBindingSource)).EndInit();
-      panel2.ResumeLayout(false);
-      panel2.PerformLayout();
+      tableLayoutPanel2.ResumeLayout(false);
+      tableLayoutPanel2.PerformLayout();
+      panel3.ResumeLayout(false);
+      this.tableLayoutPanel3.ResumeLayout(false);
+      this.tableLayoutPanel3.PerformLayout();
       this.ResumeLayout(false);
 
     }
@@ -364,5 +394,7 @@
     private System.Windows.Forms.Button button2;
     private System.Windows.Forms.Button button1;
     private System.Windows.Forms.BindingSource ypSettingsBindingSource;
+    private System.Windows.Forms.TableLayoutPanel tableLayoutPanel4;
+    private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
   }
 }
