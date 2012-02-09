@@ -235,11 +235,17 @@ namespace PeerCastStation.PCP
           //Do nothing
         }
         else {
-          helo.SetHeloPort(PeerCast.LocalEndPoint.Port);
+          var relay_point = PeerCast.FindConnectableEndPoint(
+            Uphost.GlobalEndPoint.Address,
+            OutputStreamType.Relay | OutputStreamType.Metadata);
+          helo.SetHeloPort(relay_point.Port);
         }
       }
       else {
-        helo.SetHeloPing(PeerCast.LocalEndPoint.Port);
+        var relay_point = PeerCast.FindConnectableEndPoint(
+          Uphost.GlobalEndPoint.Address,
+          OutputStreamType.Relay | OutputStreamType.Metadata);
+        helo.SetHeloPing(relay_point.Port);
       }
       helo.SetHeloVersion(PCP_VERSION);
       Send(new Atom(Atom.PCP_HELO, helo));
@@ -339,10 +345,53 @@ namespace PeerCastStation.PCP
       hostInfoUpdated = false;
     }
 
+    private bool IsSiteLocal(Host node)
+    {
+      if (node.GlobalEndPoint!=null) {
+        IPAddress global;
+        switch (node.GlobalEndPoint.AddressFamily) {
+        case AddressFamily.InterNetwork:
+          global = PeerCast.GlobalAddress;
+          break;
+        case AddressFamily.InterNetworkV6:
+          global = PeerCast.GlobalAddress6;
+          break;
+        default:
+          throw new ArgumentException("Unsupported AddressFamily", "addr");
+        }
+        return node.GlobalEndPoint.Equals(global);
+      }
+      else {
+        return false;
+      }
+    }
+
+    private Host SelectSourceHost()
+    {
+      var rnd = new Random();
+      var res = Channel.Nodes.Except(Channel.IgnoredHosts).OrderByDescending(n =>
+        (IsSiteLocal(n) ? 8000 : 0) +
+        ( n.IsReceiving ? 4000 : 0) +
+        (!n.IsRelayFull ? 2000 : 0) +
+        (Math.Max(10-n.Hops, 0)*100) +
+        (n.RelayCount*10) +
+        rnd.NextDouble()
+      ).DefaultIfEmpty().Take(1).ToArray()[0];
+      if (res!=null) {
+        return res;
+      }
+      else if (!Channel.IgnoredHosts.Contains(Channel.SourceHost)) {
+        return Channel.SourceHost;
+      }
+      else {
+        return null;
+      }
+    }
+
     private void OnConnecting()
     {
       state = State.Connecting;
-      var host = Channel.SelectSourceHost(SourceHostSelection.Receiving);
+      var host = SelectSourceHost();
       if (host!=null) {
         Logger.Debug("{0} is selected as source", host.GlobalEndPoint);
         if (StartConnection(host)) {

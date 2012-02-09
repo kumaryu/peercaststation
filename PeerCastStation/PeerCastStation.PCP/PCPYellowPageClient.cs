@@ -256,11 +256,17 @@ namespace PeerCastStation.PCP
                   //Do nothing
                 }
                 else {
-                  helo.SetHeloPort(PeerCast.LocalEndPoint.Port);
+                  var relay_point = PeerCast.FindConnectableEndPoint(
+                    ((IPEndPoint)client.Client.RemoteEndPoint).Address,
+                    OutputStreamType.Relay | OutputStreamType.Metadata);
+                  helo.SetHeloPort(relay_point.Port);
                 }
               }
               else {
-                helo.SetHeloPing(PeerCast.LocalEndPoint.Port);
+                var relay_point = PeerCast.FindConnectableEndPoint(
+                  ((IPEndPoint)client.Client.RemoteEndPoint).Address,
+                  OutputStreamType.Relay | OutputStreamType.Metadata);
+                helo.SetHeloPing(relay_point.Port);
               }
               AtomWriter.Write(stream, new Atom(Atom.PCP_HELO, helo));
               while (!isStopped) {

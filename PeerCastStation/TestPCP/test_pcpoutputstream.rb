@@ -126,12 +126,11 @@ class TC_PCPOutputStream < Test::Unit::TestCase
       instance.instance_eval do 
         @status = PCSCore::SourceStreamStatus.idle
         @is_relay_full = false
-        @source_nodes = nil
         @broadcasts = []
       end
       instance
     end
-    attr_accessor :source_nodes, :broadcasts
+    attr_accessor :broadcasts
 
     def Status
       @status
@@ -159,14 +158,6 @@ class TC_PCPOutputStream < Test::Unit::TestCase
 
     def is_relay_full=(value)
       @is_relay_full = value
-    end
-
-    def SelectSourceNodes(selection)
-      if @source_nodes then
-        System::Array[PCSCore::Host].new(@source_nodes[0,8])
-      else
-        super
-      end
     end
 
     def Broadcast(from, packet, group)
@@ -347,7 +338,7 @@ class TC_PCPOutputStream < Test::Unit::TestCase
     channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
     channel.status = PCSCore::SourceStreamStatus.receiving
     channel.is_relay_full = true
-    channel.source_nodes = Array.new(16) {|i|
+    16.times do |i|
       host = PCSCore::HostBuilder.new
       host.SessionID = System::Guid.new_guid
       host.LocalEndPoint = System::Net::IPEndPoint.new(
@@ -369,17 +360,17 @@ class TC_PCPOutputStream < Test::Unit::TestCase
       host.is_direct_full  = ((i+3) % 2)==1
       host.is_receiving    = ((i+4) % 2)==1
       host.is_control_full = ((i+5) % 2)==1
-      host.to_host
-    }
+      channel.add_node(host.to_host)
+    end
     stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
     stream.start
     header = read_http_header(@pipe)
     assert_http_header(503, {'Content-Type' => 'application/x-peercast-pcp'}, header)
     pcp_handshake(@pipe)
     8.times do |i|
-      node = channel.source_nodes[i]
       host = PCPAtom.read(@pipe)
       assert_equal(PCP_HOST, host.name)
+      node = channel.nodes.find {|n| n.SessionID.ToString('N')==host[PCP_HOST_ID].to_s }
       assert_equal(node.SessionID.ToString('N'),                         host[PCP_HOST_ID].to_s)
       assert_equal(2,                                                    host[PCP_HOST_IP].size)
       assert_equal(node.global_end_point.address.get_address_bytes.to_a, host[PCP_HOST_IP][0])

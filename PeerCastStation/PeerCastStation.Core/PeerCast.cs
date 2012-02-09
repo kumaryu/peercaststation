@@ -392,6 +392,8 @@ namespace PeerCastStation.Core
           break;
         }
       }
+      if (this.LocalAddress==null)  this.LocalAddress  = IPAddress.Loopback;
+      if (this.LocalAddress6==null) this.LocalAddress6 = IPAddress.IPv6Loopback;
     }
 
     public bool? IsFirewalled { get; set; }
@@ -509,6 +511,29 @@ namespace PeerCastStation.Core
           return null;
         }
       }
+    }
+
+    public IPEndPoint FindConnectableEndPoint(IPAddress remote_addr, OutputStreamType connection_type)
+    {
+      if (Utils.IsSiteLocal(remote_addr)) {
+        var listener = outputListeners.FirstOrDefault(
+          x =>  x.LocalEndPoint.AddressFamily==remote_addr.AddressFamily &&
+               (x.LocalOutputAccepts & connection_type)!=0);
+        var addr = remote_addr.AddressFamily==AddressFamily.InterNetwork ? LocalAddress : LocalAddress6;
+        if (listener!=null) {
+          return new IPEndPoint(addr, listener.LocalEndPoint.Port);
+        }
+      }
+      else {
+        var listener = outputListeners.FirstOrDefault(
+          x => x.LocalEndPoint.AddressFamily==remote_addr.AddressFamily &&
+               (x.GlobalOutputAccepts & connection_type)!=0);
+        var addr = remote_addr.AddressFamily==AddressFamily.InterNetwork ? GlobalAddress : GlobalAddress6;
+        if (listener!=null && addr!=null) {
+          return new IPEndPoint(addr, listener.LocalEndPoint.Port);
+        }
+      }
+      return null;
     }
 
     /// <summary>

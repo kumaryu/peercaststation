@@ -531,6 +531,19 @@ namespace PeerCastStation.PCP
       return !Utils.IsSiteLocal(address);
     }
 
+    private IEnumerable<Host> SelectSourceHosts(IPEndPoint endpoint)
+    {
+      var rnd = new Random();
+      return Channel.Nodes.Except(Channel.IgnoredHosts).OrderByDescending(n =>
+        ( n.GlobalEndPoint.Address.Equals(endpoint.Address) ? 8000 : 0) +
+        (!n.IsRelayFull ? 4000 : 0) +
+        ( n.IsReceiving ? 2000 : 0) +
+        (Math.Max(10-n.Hops, 0)*100) +
+        (n.RelayCount*10) +
+        rnd.NextDouble()
+      ).Take(8);
+    }
+
     protected virtual void OnPCPHelo(Atom atom)
     {
       if (Downhost!=null) return;
@@ -589,19 +602,7 @@ namespace PeerCastStation.PCP
       else if (IsRelayFull) {
         Logger.Debug("Handshake succeeded {0}({1}) but relay is full", Downhost.GlobalEndPoint, Downhost.SessionID.ToString("N"));
         //次に接続するホストを送ってQUIT
-        var nodes = Channel.SelectSourceNodes(
-          SourceHostSelection.Lower |
-          SourceHostSelection.Receiving |
-          SourceHostSelection.Relayable);
-        if (nodes.Length==0) {
-          nodes = Channel.SelectSourceNodes(
-            SourceHostSelection.Lower |
-            SourceHostSelection.Relayable);
-          if (nodes.Length==0) {
-            nodes = Channel.SelectSourceNodes(SourceHostSelection.Lower);
-          }
-        }
-        foreach (var node in nodes) {
+        foreach (var node in SelectSourceHosts((IPEndPoint)RemoteEndPoint)) {
           var host_atom = new AtomCollection(node.Extra);
           Atom ip = host_atom.FindByName(Atom.PCP_HOST_IP);
           while (ip!=null) {

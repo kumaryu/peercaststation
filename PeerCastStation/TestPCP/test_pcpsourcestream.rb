@@ -378,12 +378,11 @@ class TC_PCPSourceStream < Test::Unit::TestCase
       instance = super
       instance.instance_eval do 
         @is_relay_full = false
-        @source_nodes = nil
         @broadcasts = []
       end
       instance
     end
-    attr_accessor :source_nodes, :broadcasts
+    attr_accessor :broadcasts
 
     def IsRelayFull
       @is_relay_full
@@ -399,14 +398,6 @@ class TC_PCPSourceStream < Test::Unit::TestCase
 
     def is_relay_full=(value)
       @is_relay_full = value
-    end
-
-    def SelectSourceNodes
-      if @source_nodes then
-        System::Array[PCSCore::Host].new(@source_nodes[0,8])
-      else
-        super
-      end
     end
 
     def Broadcast(from, packet, group)
