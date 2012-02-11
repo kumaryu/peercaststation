@@ -37,6 +37,8 @@ namespace PeerCastStation.Main
       peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPOutputStreamFactory(peerCast));
       peerCast.OutputStreamFactories.Add(new PeerCastStation.Ohaoha.OhaohaCheckOutputStreamFactory(peerCast));
       peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPDummyOutputStreamFactory(peerCast));
+      peerCast.AddContentReader(new PeerCastStation.ASF.ASFContentReader());
+      peerCast.AddContentReader(new RawContentReader());
 
       var uis = userInterfaceFactories.Select(factory => factory.CreateUserInterface()).ToArray();
       foreach (var ui in uis) {
