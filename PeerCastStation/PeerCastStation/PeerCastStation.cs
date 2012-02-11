@@ -85,6 +85,7 @@ namespace PeerCastStation.Main
       }
     }
 
+    [STAThread]
     static void Main(string[] args)
     {
       (new Application()).Run();

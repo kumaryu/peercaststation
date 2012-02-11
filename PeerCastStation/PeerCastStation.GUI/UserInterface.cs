@@ -27,6 +27,7 @@ namespace PeerCastStation.GUI
         };
         System.Windows.Forms.Application.Run(mainForm);
       });
+      mainThread.SetApartmentState(ApartmentState.STA);
       mainThread.Start();
     }
 
