@@ -581,8 +581,8 @@ namespace PeerCastStation.GUI
     {
       var host = new HostBuilder();
       host.SessionID      = peerCast.SessionID;
-      host.LocalEndPoint  = peerCast.LocalEndPoint;
-      host.GlobalEndPoint = peerCast.GlobalEndPoint ?? peerCast.LocalEndPoint;
+      host.LocalEndPoint  = peerCast.GetLocalEndPoint(channel.SourceHost.GlobalEndPoint.AddressFamily, OutputStreamType.Relay);
+      host.GlobalEndPoint = peerCast.GetGlobalEndPoint(channel.SourceHost.GlobalEndPoint.AddressFamily, OutputStreamType.Relay);
       host.IsFirewalled   = peerCast.IsFirewalled ?? true;
       host.DirectCount    = channel.LocalDirects;
       host.RelayCount     = channel.LocalRelays;

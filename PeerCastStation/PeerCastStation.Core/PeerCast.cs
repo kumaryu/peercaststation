@@ -453,87 +453,39 @@ namespace PeerCastStation.Core
       });
     }
 
-    public IPEndPoint LocalEndPoint
+    public IPEndPoint GetGlobalEndPoint(AddressFamily addr_family, OutputStreamType connection_type)
     {
-      get
-      {
-        var listener = outputListeners.FirstOrDefault(
-          x => x.LocalEndPoint.AddressFamily==AddressFamily.InterNetwork);
-        if (listener!=null) {
-          return new IPEndPoint(LocalAddress, listener.LocalEndPoint.Port);
-        }
-        else {
-          return null;
-        }
-      }
-    }
-
-    public IPEndPoint LocalEndPoint6
-    {
-      get
-      {
-        var listener = outputListeners.FirstOrDefault(
-          x => x.LocalEndPoint.AddressFamily==AddressFamily.InterNetworkV6);
-        if (listener!=null) {
-          return new IPEndPoint(LocalAddress6, listener.LocalEndPoint.Port);
-        }
-        else {
-          return null;
-        }
-      }
-    }
-
-    public IPEndPoint GlobalEndPoint
-    {
-      get
-      {
-        var listener = outputListeners.FirstOrDefault(
-          x => x.LocalEndPoint.AddressFamily==AddressFamily.InterNetwork);
-        if (listener!=null && GlobalAddress!=null) {
-          return new IPEndPoint(GlobalAddress, listener.LocalEndPoint.Port);
-        }
-        else {
-          return null;
-        }
-      }
-    }
-
-    public IPEndPoint GlobalEndPoint6
-    {
-      get
-      {
-        var listener = outputListeners.FirstOrDefault(
-          x => x.LocalEndPoint.AddressFamily==AddressFamily.InterNetworkV6);
-        if (listener!=null && GlobalAddress6!=null) {
-          return new IPEndPoint(GlobalAddress6, listener.LocalEndPoint.Port);
-        }
-        else {
-          return null;
-        }
-      }
-    }
-
-    public IPEndPoint FindConnectableEndPoint(IPAddress remote_addr, OutputStreamType connection_type)
-    {
-      if (Utils.IsSiteLocal(remote_addr)) {
-        var listener = outputListeners.FirstOrDefault(
-          x =>  x.LocalEndPoint.AddressFamily==remote_addr.AddressFamily &&
-               (x.LocalOutputAccepts & connection_type)!=0);
-        var addr = remote_addr.AddressFamily==AddressFamily.InterNetwork ? LocalAddress : LocalAddress6;
-        if (listener!=null) {
-          return new IPEndPoint(addr, listener.LocalEndPoint.Port);
-        }
-      }
-      else {
-        var listener = outputListeners.FirstOrDefault(
-          x => x.LocalEndPoint.AddressFamily==remote_addr.AddressFamily &&
-               (x.GlobalOutputAccepts & connection_type)!=0);
-        var addr = remote_addr.AddressFamily==AddressFamily.InterNetwork ? GlobalAddress : GlobalAddress6;
-        if (listener!=null && addr!=null) {
-          return new IPEndPoint(addr, listener.LocalEndPoint.Port);
-        }
+      var listener = outputListeners.FirstOrDefault(
+        x => x.LocalEndPoint.AddressFamily==addr_family &&
+             (x.GlobalOutputAccepts & connection_type)!=0);
+      var addr = addr_family==AddressFamily.InterNetwork ? GlobalAddress : GlobalAddress6;
+      if (listener!=null && addr!=null) {
+        return new IPEndPoint(addr, listener.LocalEndPoint.Port);
       }
       return null;
+    }
+
+    public IPEndPoint GetLocalEndPoint(AddressFamily addr_family, OutputStreamType connection_type)
+    {
+      var listener = outputListeners.FirstOrDefault(
+        x =>  x.LocalEndPoint.AddressFamily==addr_family &&
+             (x.LocalOutputAccepts & connection_type)!=0);
+      var addr = addr_family==AddressFamily.InterNetwork ? LocalAddress : LocalAddress6;
+      if (listener!=null) {
+        return new IPEndPoint(addr, listener.LocalEndPoint.Port);
+      }
+      return null;
+    }
+
+    public IPEndPoint GetEndPoint(IPAddress remote_addr, OutputStreamType connection_type)
+    {
+      if (remote_addr==null) throw new ArgumentNullException("remote_addr");
+      if (Utils.IsSiteLocal(remote_addr)) {
+        return GetLocalEndPoint(remote_addr.AddressFamily, connection_type);
+      }
+      else {
+        return GetGlobalEndPoint(remote_addr.AddressFamily, connection_type);
+      }
     }
 
     /// <summary>

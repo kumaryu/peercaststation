@@ -256,14 +256,14 @@ namespace PeerCastStation.PCP
                   //Do nothing
                 }
                 else {
-                  var relay_point = PeerCast.FindConnectableEndPoint(
+                  var relay_point = PeerCast.GetEndPoint(
                     ((IPEndPoint)client.Client.RemoteEndPoint).Address,
                     OutputStreamType.Relay | OutputStreamType.Metadata);
                   helo.SetHeloPort(relay_point.Port);
                 }
               }
               else {
-                var relay_point = PeerCast.FindConnectableEndPoint(
+                var relay_point = PeerCast.GetEndPoint(
                   ((IPEndPoint)client.Client.RemoteEndPoint).Address,
                   OutputStreamType.Relay | OutputStreamType.Metadata);
                 helo.SetHeloPing(relay_point.Port);
@@ -359,12 +359,22 @@ namespace PeerCastStation.PCP
       var host = new AtomCollection();
       host.SetHostChannelID(channel.ChannelID);
       host.SetHostSessionID(PeerCast.SessionID);
-      var globalendpoint = PeerCast.GlobalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
-      host.AddHostIP(globalendpoint.Address);
-      host.AddHostPort(globalendpoint.Port);
-      var localendpoint = PeerCast.LocalEndPoint ?? new IPEndPoint(IPAddress.Loopback, 7144);
-      host.AddHostIP(localendpoint.Address);
-      host.AddHostPort(localendpoint.Port);
+      var globalendpoint = 
+        PeerCast.GetGlobalEndPoint(
+          channel.SourceHost.GlobalEndPoint.AddressFamily,
+          OutputStreamType.Relay);
+      if (globalendpoint!=null) {
+        host.AddHostIP(globalendpoint.Address);
+        host.AddHostPort(globalendpoint.Port);
+      }
+      var localendpoint = 
+        PeerCast.GetLocalEndPoint(
+          channel.SourceHost.GlobalEndPoint.AddressFamily,
+          OutputStreamType.Relay);
+      if (localendpoint!=null) {
+        host.AddHostIP(localendpoint.Address);
+        host.AddHostPort(localendpoint.Port);
+      }
       host.SetHostNumListeners(channel.TotalDirects);
       host.SetHostNumRelays(channel.TotalRelays);
       host.SetHostUptime(channel.Uptime);

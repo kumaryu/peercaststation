@@ -43,7 +43,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert_nil(@peercast.is_firewalled)
   end
 
-  def test_find_connectable_end_point_no_listener_v4
+  def test_get_end_point_no_listener_v4
     @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.start_listen(
       System::Net::IPEndPoint.new(System::Net::IPAddress.IPv6Any, 7147),
@@ -55,13 +55,13 @@ class TC_CorePeerCast < Test::Unit::TestCase
       PeerCastStation::Core::OutputStreamType.relay |
       PeerCastStation::Core::OutputStreamType.play |
       PeerCastStation::Core::OutputStreamType.interface)
-    endpoint = @peercast.find_connectable_end_point(
+    endpoint = @peercast.get_end_point(
       System::Net::IPAddress.parse('192.168.1.1'),
       PeerCastStation::Core::OutputStreamType.relay)
     assert_nil(endpoint)
   end
   
-  def test_find_connectable_end_point_no_localrelay_listener_v4
+  def test_get_end_point_no_localrelay_listener_v4
     @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.start_listen(
       System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
@@ -78,13 +78,13 @@ class TC_CorePeerCast < Test::Unit::TestCase
       PeerCastStation::Core::OutputStreamType.relay |
       PeerCastStation::Core::OutputStreamType.play |
       PeerCastStation::Core::OutputStreamType.interface)
-    endpoint = @peercast.find_connectable_end_point(
+    endpoint = @peercast.get_end_point(
       System::Net::IPAddress.parse('192.168.1.1'),
       PeerCastStation::Core::OutputStreamType.relay)
     assert_nil(endpoint)
   end
   
-  def test_find_connectable_end_point_localrelay_listener_v4
+  def test_get_end_point_localrelay_listener_v4
     @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.start_listen(
       System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7148),
@@ -97,14 +97,14 @@ class TC_CorePeerCast < Test::Unit::TestCase
       PeerCastStation::Core::OutputStreamType.play |
       PeerCastStation::Core::OutputStreamType.interface,
       PeerCastStation::Core::OutputStreamType.none)
-    endpoint = @peercast.find_connectable_end_point(
+    endpoint = @peercast.get_end_point(
       System::Net::IPAddress.parse('192.168.1.1'),
       PeerCastStation::Core::OutputStreamType.relay)
     assert_equal(@peercast.local_address, endpoint.address)
     assert_equal(7147, endpoint.port)
   end
   
-  def test_find_connectable_end_point_no_globalrelay_listener_v4
+  def test_get_end_point_no_globalrelay_listener_v4
     @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.global_address  = System::Net::IPAddress.parse('123.45.123.45')
     @peercast.global_address6 = System::Net::IPAddress.parse('3FFE:FFFF:0:CD30::5678:1234')
@@ -123,13 +123,13 @@ class TC_CorePeerCast < Test::Unit::TestCase
       PeerCastStation::Core::OutputStreamType.relay |
       PeerCastStation::Core::OutputStreamType.play |
       PeerCastStation::Core::OutputStreamType.interface)
-    endpoint = @peercast.find_connectable_end_point(
+    endpoint = @peercast.get_end_point(
       System::Net::IPAddress.parse('123.45.67.8'),
       PeerCastStation::Core::OutputStreamType.relay)
     assert_nil(endpoint)
   end
   
-  def test_find_connectable_end_point_globalrelay_listener_v4
+  def test_get_end_point_globalrelay_listener_v4
     @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.global_address  = System::Net::IPAddress.parse('123.45.123.45')
     @peercast.global_address6 = System::Net::IPAddress.parse('3FFE:FFFF:0:CD30::5678:1234')
@@ -144,14 +144,14 @@ class TC_CorePeerCast < Test::Unit::TestCase
       PeerCastStation::Core::OutputStreamType.relay |
       PeerCastStation::Core::OutputStreamType.play |
       PeerCastStation::Core::OutputStreamType.interface)
-    endpoint = @peercast.find_connectable_end_point(
+    endpoint = @peercast.get_end_point(
       System::Net::IPAddress.parse('123.45.67.8'),
       PeerCastStation::Core::OutputStreamType.relay)
     assert_equal(@peercast.global_address, endpoint.address)
     assert_equal(7147, endpoint.port)
   end
   
-  def test_find_connectable_end_point_no_listener_v6
+  def test_get_end_point_no_listener_v6
     @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.start_listen(
       System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
@@ -163,13 +163,13 @@ class TC_CorePeerCast < Test::Unit::TestCase
       PeerCastStation::Core::OutputStreamType.relay |
       PeerCastStation::Core::OutputStreamType.play |
       PeerCastStation::Core::OutputStreamType.interface)
-    endpoint = @peercast.find_connectable_end_point(
+    endpoint = @peercast.get_end_point(
       System::Net::IPAddress.parse('FEC0::1234:5678'),
       PeerCastStation::Core::OutputStreamType.relay)
     assert_nil(endpoint)
   end
 
-  def test_find_connectable_end_point_no_localrelay_listener_v6
+  def test_get_end_point_no_localrelay_listener_v6
     @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.start_listen(
       System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
@@ -186,13 +186,13 @@ class TC_CorePeerCast < Test::Unit::TestCase
       PeerCastStation::Core::OutputStreamType.metadata,
       PeerCastStation::Core::OutputStreamType.metadata |
       PeerCastStation::Core::OutputStreamType.relay)
-    endpoint = @peercast.find_connectable_end_point(
+    endpoint = @peercast.get_end_point(
       System::Net::IPAddress.parse('FEC0::1234:5678'),
       PeerCastStation::Core::OutputStreamType.relay)
     assert_nil(endpoint)
   end
   
-  def test_find_connectable_end_point_localrelay_listener_v6
+  def test_get_end_point_localrelay_listener_v6
     @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.start_listen(
       System::Net::IPEndPoint.new(System::Net::IPAddress.IPv6Any, 7148),
@@ -205,14 +205,14 @@ class TC_CorePeerCast < Test::Unit::TestCase
       PeerCastStation::Core::OutputStreamType.play |
       PeerCastStation::Core::OutputStreamType.interface,
       PeerCastStation::Core::OutputStreamType.none)
-    endpoint = @peercast.find_connectable_end_point(
+    endpoint = @peercast.get_end_point(
       System::Net::IPAddress.parse('FEC0::1234:5678'),
       PeerCastStation::Core::OutputStreamType.relay)
     assert_equal(@peercast.local_address6, endpoint.address)
     assert_equal(7147, endpoint.port)
   end
   
-  def test_find_connectable_end_point_no_globalrelay_listener_v6
+  def test_get_end_point_no_globalrelay_listener_v6
     @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.global_address  = System::Net::IPAddress.parse('123.45.123.45')
     @peercast.global_address6 = System::Net::IPAddress.parse('3FFE:FFFF:0:CD30::5678:1234')
@@ -231,13 +231,13 @@ class TC_CorePeerCast < Test::Unit::TestCase
       PeerCastStation::Core::OutputStreamType.metadata |
       PeerCastStation::Core::OutputStreamType.relay,
       PeerCastStation::Core::OutputStreamType.metadata)
-    endpoint = @peercast.find_connectable_end_point(
+    endpoint = @peercast.get_end_point(
       System::Net::IPAddress.parse('3FFE:FFFF:0:CD30::1234:5678'),
       PeerCastStation::Core::OutputStreamType.relay)
     assert_nil(endpoint)
   end
   
-  def test_find_connectable_end_point_globalrelay_listener_v6
+  def test_get_end_point_globalrelay_listener_v6
     @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.global_address  = System::Net::IPAddress.parse('123.45.123.45')
     @peercast.global_address6 = System::Net::IPAddress.parse('3FFE:FFFF:0:CD30::5678:1234')
@@ -252,7 +252,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
       PeerCastStation::Core::OutputStreamType.relay |
       PeerCastStation::Core::OutputStreamType.play |
       PeerCastStation::Core::OutputStreamType.interface)
-    endpoint = @peercast.find_connectable_end_point(
+    endpoint = @peercast.get_end_point(
       System::Net::IPAddress.parse('3FFE:FFFF:0:CD30::1234:5678'),
       PeerCastStation::Core::OutputStreamType.relay)
     assert_equal(@peercast.global_address6, endpoint.address)
@@ -372,8 +372,6 @@ class TC_CorePeerCast < Test::Unit::TestCase
   
   def test_output_connection
     @peercast = PeerCastStation::Core::PeerCast.new
-    assert_nil(@peercast.local_end_point)
-    assert_nil(@peercast.global_end_point)
     @peercast.start_listen(
       System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
       PeerCastStation::Core::OutputStreamType.interface |
@@ -382,12 +380,15 @@ class TC_CorePeerCast < Test::Unit::TestCase
       PeerCastStation::Core::OutputStreamType.play,
       PeerCastStation::Core::OutputStreamType.metadata |
       PeerCastStation::Core::OutputStreamType.relay)
-    assert_not_nil(@peercast.local_end_point)
-    assert_equal(@peercast.local_address, @peercast.local_end_point.address)
-    assert_equal(7147, @peercast.local_end_point.port)
-    assert_nil(@peercast.global_end_point)
+    local_end_point  = @peercast.get_local_end_point(System::Net::Sockets::AddressFamily.inter_network, PeerCastStation::Core::OutputStreamType.relay)
+    global_end_point = @peercast.get_global_end_point(System::Net::Sockets::AddressFamily.inter_network, PeerCastStation::Core::OutputStreamType.relay)
+    assert_not_nil(local_end_point)
+    assert_equal(@peercast.local_address, local_end_point.address)
+    assert_equal(7147, local_end_point.port)
+    assert_nil(global_end_point)
     @peercast.global_address = @peercast.local_address
-    assert_not_nil(@peercast.global_end_point)
+    global_end_point = @peercast.get_global_end_point(System::Net::Sockets::AddressFamily.inter_network, PeerCastStation::Core::OutputStreamType.relay)
+    assert_not_nil(global_end_point)
     
     output_stream_factory = MockOutputStreamFactory.new(
       PeerCastStation::Core::OutputStreamType.metadata)
@@ -405,20 +406,21 @@ class TC_CorePeerCast < Test::Unit::TestCase
   
   def test_output_connection_not_acceptable
     @peercast = PeerCastStation::Core::PeerCast.new
-    assert_nil(@peercast.local_end_point)
-    assert_nil(@peercast.global_end_point)
     @peercast.start_listen(
       System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
       PeerCastStation::Core::OutputStreamType.interface |
       PeerCastStation::Core::OutputStreamType.relay |
       PeerCastStation::Core::OutputStreamType.play,
       PeerCastStation::Core::OutputStreamType.relay)
-    assert_not_nil(@peercast.local_end_point)
-    assert_equal(@peercast.local_address, @peercast.local_end_point.address)
-    assert_equal(7147, @peercast.local_end_point.port)
-    assert_nil(@peercast.global_end_point)
+    local_end_point  = @peercast.get_local_end_point(System::Net::Sockets::AddressFamily.inter_network, PeerCastStation::Core::OutputStreamType.relay)
+    global_end_point = @peercast.get_global_end_point(System::Net::Sockets::AddressFamily.inter_network, PeerCastStation::Core::OutputStreamType.relay)
+    assert_not_nil(local_end_point)
+    assert_equal(@peercast.local_address, local_end_point.address)
+    assert_equal(7147, local_end_point.port)
+    assert_nil(global_end_point)
     @peercast.global_address = @peercast.local_address
-    assert_not_nil(@peercast.global_end_point)
+    global_end_point = @peercast.get_global_end_point(System::Net::Sockets::AddressFamily.inter_network, PeerCastStation::Core::OutputStreamType.relay)
+    assert_not_nil(global_end_point)
     
     output_stream_factory = MockOutputStreamFactory.new(
       PeerCastStation::Core::OutputStreamType.metadata)
@@ -455,10 +457,10 @@ class TC_CorePeerCast < Test::Unit::TestCase
       PeerCastStation::Core::OutputStreamType.metadata |
       PeerCastStation::Core::OutputStreamType.relay,
       listener.global_output_accepts)
-    assert_not_nil(@peercast.local_end_point)
+    assert_not_nil(@peercast.get_local_end_point(System::Net::Sockets::AddressFamily.inter_network, PeerCastStation::Core::OutputStreamType.relay))
     @peercast.StopListen(listener)
     assert(listener.is_closed)
-    assert_nil(@peercast.local_end_point)
+    assert_nil(@peercast.get_local_end_point(System::Net::Sockets::AddressFamily.inter_network, PeerCastStation::Core::OutputStreamType.relay))
   end
 end
 
