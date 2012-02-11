@@ -26,6 +26,7 @@ namespace PeerCastStation.GUI
           app.Stop();
         };
         System.Windows.Forms.Application.Run(mainForm);
+        mainForm = null;
       });
       mainThread.SetApartmentState(ApartmentState.STA);
       mainThread.Start();
@@ -33,7 +34,11 @@ namespace PeerCastStation.GUI
 
     public void Stop()
     {
-      System.Windows.Forms.Application.Exit();
+      if (mainForm!=null) {
+        mainForm.Invoke(new Action(() => {
+          System.Windows.Forms.Application.ExitThread();
+        }));
+      }
       mainThread.Join();
     }
   }
