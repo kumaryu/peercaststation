@@ -1,0 +1,207 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>設定 - PeerCastStation </title>
+    <link type="text/css" href="css/bootstrap.css" rel="stylesheet" />
+    <link type="text/css" href="css/index.css" rel="stylesheet" />
+    <script type="text/javascript" src="js/jquery-1.7.1.js"></script>
+    <script type="text/javascript" src="js/jquery.json-2.3.js"></script>
+    <script type="text/javascript" src="js/peercaststation.1.0.0.js"></script>
+    <script type="text/javascript" src="js/knockout-2.0.0.debug.js"></script>
+    <script type="text/javascript" src="js/bootstrap.js"></script>
+    <script type="text/javascript" src="js/settings.js"></script>
+  </head>
+  <body>
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <a class="brand" href="#">PeerCastStation</a>
+          <ul class="nav">
+            <li><a href="index.html">情報</a></li>
+            <li><a href="relays.html">リレー</a></li>
+            <li class="active"><a href="settings.html">設定</a></li>
+            <li><a href="logs.html">ログ</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fluid" id="settings">
+      <div class="row-fluid">
+        <div class="span8">
+          <h2>ポート一覧</h2>
+          <table class="table table-condensed">
+            <thead>
+              <tr>
+                <th>削除</th>
+                <th>アドレス</th>
+                <th>ポート</th>
+                <th>LAN接続許可</th>
+                <th>WAN接続許可</th>
+              </tr>
+            </thead>
+            <tfoot>
+              <tr>
+                <td class="form-actions" colspan="5">
+                  <button class="btn" data-bind="click:addListener">追加</button>
+                  <button class="btn" data-bind="click:removeListener">削除</button>
+                </td>
+              </tr>
+            </tfoot>
+            <tbody data-bind="foreach: listeners">
+              <tr>
+                <td><input type="checkbox" data-bind="checked:checked"></div>
+                <td><span data-bind="text:addressLabel"></span></div>
+                <td><span data-bind="text:port"></span></div>
+                <td>
+                  <label class="checkbox"><input type="checkbox" data-bind="checked:lanPlayAccept">視聴</label>
+                  <label class="checkbox"><input type="checkbox" data-bind="checked:lanRelayAccept">リレー</label>
+                  <label class="checkbox"><input type="checkbox" data-bind="checked:lanInterfaceAccept">操作</label>
+                </td>
+                <td>
+                  <label class="checkbox"><input type="checkbox" data-bind="checked:wanPlayAccept">視聴</label>
+                  <label class="checkbox"><input type="checkbox" data-bind="checked:wanRelayAccept">リレー</label>
+                  <label class="checkbox"><input type="checkbox" data-bind="checked:wanInterfaceAccept">操作</label>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <h2>YP一覧</h2>
+          <table class="table table-condensed">
+            <thead>
+              <tr>
+                <th>削除</th>
+                <th>YP名</th>
+                <th>URL</th>
+                <th>プロトコル</th>
+              </tr>
+            </thead>
+            <tfoot>
+              <tr>
+                <td class="form-actions" colspan="5">
+                  <button class="btn" data-bind="click:addYellowPage">追加</button>
+                  <button class="btn" data-bind="click:removeYellowPages">削除</button>
+                </td>
+              </tr>
+            </tfoot>
+            <tbody data-bind="foreach: yellowPages">
+              <tr>
+                <td><input type="checkbox" data-bind="checked:checked"></td>
+                <td><span data-bind="text:name"></span></td>
+                <td><span data-bind="text:uri"></span></td>
+                <td><span data-bind="text:protocol"></span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="span4">
+          <h2>その他設定</h2>
+          <div class="form-horizontal">
+            <div class="control-group">
+              <span class="control-label">最大リレー数</span>
+              <div class="controls">
+                <label>合計        </label><input type="text" class="input-small" data-bind="value:maxRelays">
+                <label>チャンネル毎</label><input type="text" class="input-small" data-bind="value:maxRelaysPerChannel">
+              </div>
+            </div>
+            <div class="control-group">
+              <span class="control-label">最大視聴数</span>
+              <div class="controls">
+                <label>合計        </label><input type="text" class="input-small" data-bind="value:maxDirects">
+                <label>チャンネル毎</label><input type="text" class="input-small" data-bind="value:maxDirectsPerChannel">
+              </div>
+            </div>
+            <div class="control-group">
+              <span class="control-label">最大上り帯域</span>
+              <div class="controls">
+                <input type="text" class="input-small" data-bind="value:maxUpstreamRate">
+                <span class="help-inline">kbps</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="yellowPageEditDialog" class="modal" style="display: none; max-height: none">
+      <div class="modal-header">
+        <a class="close" data-dismiss="modal">×</a>
+        <h3>YP追加</h3>
+      </div>
+      <div class="modal-body">
+        <div class="form-horizontal">
+          <div class="control-group">
+            <label class="control-label">YP名</label>
+            <div class="controls">
+              <input type="text" data-bind="value:name">
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">URL</label>
+            <div class="controls">
+              <input type="text" data-bind="value:uri">
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">プロトコル</label>
+            <div class="controls">
+              <select data-bind="options:yellowPageProtocols, value:protocol"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a data-dismiss="modal" class="btn">閉じる</a>
+        <a href="#" data-bind="click:onUpdate" class="btn btn-primary">追加</a>
+      </div>
+    </div>
+
+    <div id="listenerEditDialog" class="modal" style="display: none; max-height: none">
+      <div class="modal-header">
+        <a class="close" data-dismiss="modal">×</a>
+        <h3>ポート追加</h3>
+      </div>
+      <div class="modal-body">
+        <div class="form-horizontal">
+          <div class="control-group">
+            <label class="control-label">アドレス</label>
+            <div class="controls">
+              <select data-bind="value:address">
+                <option value="0.0.0.0">IPv4 Any</option>
+                <option value="0::0">IPv6 Any</option>
+              </select>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">ポート番号</label>
+            <div class="controls">
+              <input type="text" data-bind="value:port">
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">LAN接続許可</label>
+            <div class="controls">
+              <label class="checkbox inline"><input type="checkbox" data-bind="checked:lanPlayAccept">視聴</label>
+              <label class="checkbox inline"><input type="checkbox" data-bind="checked:lanRelayAccept">リレー</label>
+              <label class="checkbox inline"><input type="checkbox" data-bind="checked:lanInterfaceAccept">操作</label>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">WAN接続許可</label>
+            <div class="controls">
+              <label class="checkbox inline"><input type="checkbox" data-bind="checked:wanPlayAccept">視聴</label>
+              <label class="checkbox inline"><input type="checkbox" data-bind="checked:wanRelayAccept">リレー</label>
+              <label class="checkbox inline"><input type="checkbox" data-bind="checked:wanInterfaceAccept">操作</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a data-dismiss="modal" class="btn">閉じる</a>
+        <a href="#" data-bind="click:onUpdate" class="btn btn-primary">追加</a>
+      </div>
+    </div>
+  </body>
+</html>
+

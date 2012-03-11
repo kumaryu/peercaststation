@@ -16,11 +16,14 @@ namespace PeerCastStation.UI.HTTP
       IUserInterface
   {
     public string Name { get { return "HTTP API Host UI"; } }
+    public StringWriter LogWriter { get { return logWriter; } }
 
+    StringWriter logWriter = new StringWriter();
     APIHostOutputStreamFactory factory;
     PeerCastApplication application;
     public void Start(PeerCastApplication app)
     {
+      Logger.AddWriter(logWriter);
       application = app;
       factory = new APIHostOutputStreamFactory(this, app.PeerCast);
       if (application.PeerCast.OutputStreamFactories.Count>0) {
@@ -34,6 +37,7 @@ namespace PeerCastStation.UI.HTTP
     public void Stop()
     {
       application.PeerCast.OutputStreamFactories.Remove(factory);
+      Logger.RemoveWriter(logWriter);
     }
 
     public class APIHostOutputStream
@@ -48,8 +52,9 @@ namespace PeerCastStation.UI.HTTP
         Stream input_stream,
         Stream output_stream,
         EndPoint remote_endpoint,
-        HTTPRequest request)
-        : base(peercast, input_stream, output_stream, remote_endpoint, null, null)
+        HTTPRequest request,
+        byte[] header)
+        : base(peercast, input_stream, output_stream, remote_endpoint, null, header)
       {
         this.owner   = owner;
         this.request = request;
@@ -447,10 +452,57 @@ namespace PeerCastStation.UI.HTTP
         }
       }
 
+      [RPCMethod("getLogSettings")]
+      private JToken GetLogSettings()
+      {
+        var res = new JObject();
+        res["level"] = (int)Logger.Level;
+        return res;
+      }
+
+      [RPCMethod("setLogSettings")]
+      private void setLogSettings(JObject settings)
+      {
+        var res = new JObject();
+        if (settings["level"]!=null) {
+          Logger.Level = (LogLevel)(int)settings["level"];
+        }
+      }
+
+      [RPCMethod("getLog")]
+      private JToken GetLog(int? from, int? maxLines)
+      {
+        var lines = owner.LogWriter.ToString().Split('\n');
+        var logs  = lines.Skip(from ?? 0).Take(maxLines ?? lines.Length).ToArray();
+        var res = new JObject();
+        res["from"]  = from ?? 0;
+        res["lines"] = logs.Length;
+        res["log"]   = String.Join("\n", logs);
+        return res;
+      }
+
+      [RPCMethod("clearLog")]
+      private void ClearLog()
+      {
+        owner.LogWriter.Flush();
+        owner.LogWriter.GetStringBuilder().Length = 0;
+      }
+
       [RPCMethod("getChannels")]
       private JArray GetChannels()
       {
-        return new JArray(PeerCast.Channels.Select(c => c.ChannelID.ToString("N").ToUpper()));
+        return new JArray(
+          PeerCast.Channels.Select(c => {
+            var res = new JObject();
+            var cid = c.ChannelID.ToString("N").ToUpper();
+            res["channelId"] = cid;
+            res["status"] = GetChannelStatus(cid);
+            var info = GetChannelInfo(cid);
+            res["info"] = info["info"];
+            res["track"] = info["track"];
+            return res;
+          })
+        );
       }
 
       private Channel GetChannel(string channel_id)
@@ -479,11 +531,13 @@ namespace PeerCastStation.UI.HTTP
         var res = new JObject();
         res["status"]         = channel.Status.ToString();
         res["uptime"]         = (int)channel.Uptime.TotalSeconds;
+        res["localRelays"]    = channel.LocalRelays;
+        res["localDirects"]   = channel.LocalDirects;
         res["totalRelays"]    = channel.TotalRelays;
         res["totalDirects"]   = channel.TotalDirects;
         res["isBroadcasting"] = channel.BroadcastID==PeerCast.BroadcastID;
         res["isRelayFull"]    = channel.IsRelayFull;
-        res["isDirectFull"]   = channel.IsRelayFull;
+        res["isDirectFull"]   = channel.IsDirectFull;
         return res;
       }
 
@@ -558,17 +612,17 @@ namespace PeerCastStation.UI.HTTP
         var channel = GetChannel(channelId);
         return new JArray(channel.OutputStreams.Select(os => {
           var res = new JObject();
-          res["id"]   = os.GetHashCode();
-          res["name"] = os.ToString();
+          res["outputId"] = os.GetHashCode();
+          res["name"]     = os.ToString();
           return res;
         }));
       }
 
       [RPCMethod("stopChannelOutput")]
-      private void StopChannelOutput(string channelId, int id)
+      private void StopChannelOutput(string channelId, int outputId)
       {
         var channel = GetChannel(channelId);
-        var output_stream = channel.OutputStreams.FirstOrDefault(os => os.GetHashCode()==id);
+        var output_stream = channel.OutputStreams.FirstOrDefault(os => os.GetHashCode()==outputId);
         if (output_stream!=null) {
           channel.RemoveOutputStream(output_stream);
           output_stream.Stop();
@@ -580,8 +634,8 @@ namespace PeerCastStation.UI.HTTP
       {
         return new JArray(PeerCast.ContentReaders.Select(reader => {
           var res = new JObject();
-          res["id"]   = reader.GetHashCode();
           res["name"] = reader.Name;
+          res["desc"] = reader.Name;
           return res;
         }).ToArray());
       }
@@ -591,8 +645,8 @@ namespace PeerCastStation.UI.HTTP
       {
         return new JArray(PeerCast.YellowPageFactories.Select(protocol => {
           var res = new JObject();
-          res["id"] = protocol.GetHashCode();
           res["name"] = protocol.Name;
+          res["desc"] = protocol.Name;
           return res;
         }).ToArray());
       }
@@ -602,17 +656,18 @@ namespace PeerCastStation.UI.HTTP
       {
         return new JArray(PeerCast.YellowPages.Select(yp => {
           var res = new JObject();
-          res["id"]   = yp.GetHashCode();
-          res["name"] = yp.Name;
-          res["uri"]  = yp.Uri.ToString();
+          res["yellowPageId"] = yp.GetHashCode();
+          res["name"]         = yp.Name;
+          res["uri"]          = yp.Uri.ToString();
+          res["protocol"]     = yp.Uri.Scheme;
           return res;
         }).ToArray());
       }
 
       [RPCMethod("addYellowPage")]
-      private JObject AddYellowPage(int protocol, string name, string uri)
+      private JObject AddYellowPage(string protocol, string name, string uri)
       {
-        var factory = PeerCast.YellowPageFactories.FirstOrDefault(p => protocol==p.GetHashCode());
+        var factory = PeerCast.YellowPageFactories.FirstOrDefault(p => protocol==p.Name);
         if (factory==null) throw new RPCError(RPCErrorCode.InvalidParams, "protocol Not Found");
         if (name==null) throw new RPCError(RPCErrorCode.InvalidParams, "name must be String");
         Uri yp_uri;
@@ -627,16 +682,16 @@ namespace PeerCastStation.UI.HTTP
         }
         var yp = PeerCast.AddYellowPage(factory.Name, name, yp_uri);
         var res = new JObject();
-        res["id"]   = yp.GetHashCode();
-        res["name"] = yp.Name;
-        res["uri"]  = yp.Uri.ToString();
+        res["yellowPageId"] = yp.GetHashCode();
+        res["name"]         = yp.Name;
+        res["uri"]          = yp.Uri.ToString();
         return res;
       }
 
       [RPCMethod("removeYellowPage")]
-      private void RemoveYellowPage(int id)
+      private void RemoveYellowPage(int yellowPageId)
       {
-        var yp = PeerCast.YellowPages.FirstOrDefault(p => p.GetHashCode()==id);
+        var yp = PeerCast.YellowPages.FirstOrDefault(p => p.GetHashCode()==yellowPageId);
         if (yp!=null) {
           PeerCast.RemoveYellowPage(yp);
         }
@@ -647,9 +702,9 @@ namespace PeerCastStation.UI.HTTP
       {
         return new JArray(PeerCast.OutputListeners.Select(ol => {
           var res = new JObject();
-          res["id"]      = ol.GetHashCode();
-          res["address"] = ol.LocalEndPoint.Address.ToString();
-          res["port"]    = ol.LocalEndPoint.Port;
+          res["listenerId"]    = ol.GetHashCode();
+          res["address"]       = ol.LocalEndPoint.Address.ToString();
+          res["port"]          = ol.LocalEndPoint.Port;
           res["localAccepts"]  = (int)ol.LocalOutputAccepts;
           res["globalAccepts"] = (int)ol.GlobalOutputAccepts;
           return res;
@@ -673,28 +728,28 @@ namespace PeerCastStation.UI.HTTP
         }
         listener = PeerCast.StartListen(endpoint, (OutputStreamType)localAccepts, (OutputStreamType)globalAccepts);
         var res = new JObject();
-        res["id"]      = listener.GetHashCode();
-        res["address"] = listener.LocalEndPoint.Address.ToString();
-        res["port"]    = listener.LocalEndPoint.Port;
+        res["listenerId"]    = listener.GetHashCode();
+        res["address"]       = listener.LocalEndPoint.Address.ToString();
+        res["port"]          = listener.LocalEndPoint.Port;
         res["localAccepts"]  = (int)listener.LocalOutputAccepts;
         res["globalAccepts"] = (int)listener.GlobalOutputAccepts;
         return res;
       }
 
       [RPCMethod("removeListener")]
-      private void RemoveListener(int id)
+      private void RemoveListener(int listenerId)
       {
-        foreach (var listener in PeerCast.OutputListeners.Where(ol => ol.GetHashCode()==id)) {
+        foreach (var listener in PeerCast.OutputListeners.Where(ol => ol.GetHashCode()==listenerId)) {
           PeerCast.StopListen(listener);
         }
       }
 
       [RPCMethod("broadcastChannel")]
-      private string BroadcastChannel(int? yellowPage, string sourceUri, int contentReader, JObject info, JObject track)
+      private string BroadcastChannel(int? yellowPageId, string sourceUri, string contentReader, JObject info, JObject track)
       {
         IYellowPageClient yp = null;
-        if (yellowPage.HasValue) {
-          yp = PeerCast.YellowPages.FirstOrDefault(y => y.GetHashCode()==yellowPage.Value);
+        if (yellowPageId.HasValue) {
+          yp = PeerCast.YellowPages.FirstOrDefault(y => y.GetHashCode()==yellowPageId.Value);
           if (yp==null) throw new RPCError(RPCErrorCode.InvalidParams, "Yellow page not found");
         }
         if (sourceUri==null) throw new RPCError(RPCErrorCode.InvalidParams, "source uri required");
@@ -705,7 +760,7 @@ namespace PeerCastStation.UI.HTTP
         catch (UriFormatException) {
           throw new RPCError(RPCErrorCode.InvalidParams, "Invalid Uri");
         }
-        var content_reader = PeerCast.ContentReaders.FirstOrDefault(reader => reader.GetHashCode()==contentReader);
+        var content_reader = PeerCast.ContentReaders.FirstOrDefault(reader => reader.Name==contentReader);
         if (content_reader==null) throw new RPCError(RPCErrorCode.InvalidParams, "Content reader not found");
 
         var new_info = new AtomCollection();
@@ -919,7 +974,14 @@ namespace PeerCastStation.UI.HTTP
           catch (EndOfStreamException) {
           }
         }
-        return new APIHostOutputStream(owner, PeerCast, input_stream, output_stream, remote_endpoint, request);
+        return new APIHostOutputStream(
+          owner,
+          PeerCast,
+          input_stream,
+          output_stream,
+          remote_endpoint,
+          request,
+          header.Skip(request.Bytesize).ToArray());
       }
 
       public override Guid? ParseChannelID(byte[] header)

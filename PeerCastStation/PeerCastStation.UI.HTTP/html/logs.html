@@ -1,0 +1,52 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>ログ - PeerCastStation </title>
+    <link type="text/css" href="css/bootstrap.css" rel="stylesheet" />
+    <link type="text/css" href="css/logs.css" rel="stylesheet" />
+    <script type="text/javascript" src="js/jquery-1.7.1.js"></script>
+    <script type="text/javascript" src="js/jquery.json-2.3.js"></script>
+    <script type="text/javascript" src="js/peercaststation.1.0.0.js"></script>
+    <script type="text/javascript" src="js/knockout-2.0.0.debug.js"></script>
+    <script type="text/javascript" src="js/bootstrap.js"></script>
+    <script type="text/javascript" src="js/logs.js"></script>
+  </head>
+  <body>
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <a class="brand" href="#">PeerCastStation</a>
+          <ul class="nav">
+            <li><a href="index.html">情報</a></li>
+            <li><a href="relays.html">リレー</a></li>
+            <li><a href="settings.html">設定</a></li>
+            <li class="active"><a href="log.html">ログ</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container-fluid" id="logs">
+      <h1>ログ</h1>
+      <div class="row-fluid">
+        <div class="span11">
+          <select data-bind="value:logLevel">
+            <option value="0">なし</option>
+            <option value="1">致命的なエラー</option>
+            <option value="2">エラー</option>
+            <option value="3">警告</option>
+            <option value="4">情報</option>
+            <option value="5">デバッグ</option>
+          </select>
+        </div>
+        <div class="span1">
+          <button class="btn" data-bind="click:clear">クリア</button>
+        </div>
+      </div>
+      <div class="row-fluid">
+        <pre data-bind="text:logs"></pre>
+      </div>
+    </div>
+  </body>
+</html>
+

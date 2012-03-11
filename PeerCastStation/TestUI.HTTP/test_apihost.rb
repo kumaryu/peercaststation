@@ -4,6 +4,7 @@ $: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.UI.HTTP', 'bin', 
 require 'System.Core'
 require 'PeerCastStation.Core.dll'
 require 'PeerCastStation.UI.HTTP.dll'
+require 'PeerCastStation.Logger.dll'
 require 'test/unit'
 
 def rubyize_name(name)
@@ -113,9 +114,11 @@ class TCAPIHostOutputStream < Test::Unit::TestCase
     @output_stream   = System::IO::MemoryStream.new
     @remote_endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
     @factory = PCSHTTPUI::APIHost::APIHostOutputStreamFactory.new(@host, @app.peercast)
+    @host.start(@app)
   end
 
   def teardown
+    @host.stop
     @app.stop
   end
 
@@ -508,6 +511,81 @@ JSON
     assert_equal(params['settings']['maxUpstreamRate'],      actrl.max_upstream_rate)
   end
 
+  def test_getLogSettings
+    PCSCore::Logger.level = PCSCore::LogLevel.debug
+    res = invoke_method('getLogSettings')
+    assert_equal(1, res.body.id)
+    assert_nil(res.body.error)
+    assert_equal(PCSCore::Logger.level.value__, res.body.result['level'])
+  end
+
+  def test_setLogSettings
+    params = {
+      'settings' => {
+        'level' => 3,
+      }
+    }
+    res = invoke_method('setLogSettings', params)
+    assert_equal(1, res.body.id)
+    assert_nil(res.body.error)
+    assert_equal(3, PCSCore::Logger.level.value__)
+  end
+
+  def test_getLog_without_args
+    PCSCore::Logger.level = PCSCore::LogLevel.debug
+    logger = PCSCore::Logger.new('test')
+    10.times do 
+      logger.debug('hello')
+    end
+    params = {
+      'from'     => nil,
+      'maxLines' => nil,
+    }
+    res = invoke_method('getLog', params)
+    assert_equal(1, res.body.id)
+    assert_nil(res.body.error)
+    assert(res.body.result['lines']>=10)
+    assert_equal(0, res.body.result['from'])
+    assert_equal(res.body.result['lines'], res.body.result['log'].count("\n")+1)
+  end
+
+  def test_getLog_with_args
+    PCSCore::Logger.level = PCSCore::LogLevel.debug
+    logger = PCSCore::Logger.new('test')
+    20.times do 
+      logger.debug('hello')
+    end
+    params = {
+      'from'     => 5,
+      'maxLines' => 10,
+    }
+    res = invoke_method('getLog', params)
+    assert_equal(1, res.body.id)
+    assert_nil(res.body.error)
+    assert_equal(10, res.body.result['lines'])
+    assert_equal(5,  res.body.result['from'])
+    assert_equal(res.body.result['lines'], res.body.result['log'].split(/\n/).size)
+  end
+
+  def test_clearLog
+    PCSCore::Logger.level = PCSCore::LogLevel.debug
+    logger = PCSCore::Logger.new('test')
+    20.times do 
+      logger.debug('hello')
+    end
+    res = invoke_method('clearLog')
+    assert_equal(1, res.body.id)
+    assert_nil(res.body.error)
+    params = {
+      'from'     => nil,
+      'maxLines' => nil,
+    }
+    res = invoke_method('getLog', params)
+    assert_equal(1, res.body.id)
+    assert_nil(res.body.error)
+    assert(res.body.result['lines']<20)
+  end
+
   def test_getChannels
     channels = Array.new(10) {
       PCSCore::Channel.new(
@@ -522,7 +600,34 @@ JSON
     assert_equal(1, res.body.id)
     assert_nil(res.body.error)
     assert_equal(channels.size, res.body.result.size)
-    assert_equal(channels.collect {|c| c.ChannelID.to_string('N').to_s.upcase }.sort, res.body.result.sort)
+    channels.sort_by {|c| c.ChannelID.to_string('N').to_s.upcase }.zip(
+      res.body.result.sort_by {|c| c['channelId'] }
+    ).each do |channel, c|
+      assert_equal(channel.ChannelID.to_string('N').to_s.upcase, c['channelId'])
+      status = c['status']
+      assert_equal(channel.status.to_s,               status['status'])
+      assert_equal(channel.uptime.total_seconds.to_i, status['uptime'])
+      assert_equal(channel.total_relays,              status['totalRelays'])
+      assert_equal(channel.total_directs,             status['totalDirects'])
+      assert_equal(channel.BroadcastID==@app.peercast.BroadcastID, status['isBroadcasting'])
+      assert_equal(channel.is_relay_full,             status['isRelayFull'])
+      assert_equal(channel.is_direct_full,            status['isDirectFull'])
+      info = c['info']
+      assert_equal(channel.channel_info.name,         info['name'])
+      assert_equal(channel.channel_info.URL,          info['url'])
+      assert_equal(channel.channel_info.genre,        info['genre'])
+      assert_equal(channel.channel_info.desc,         info['desc'])
+      assert_equal(channel.channel_info.comment,      info['comment'])
+      assert_equal(channel.channel_info.bitrate,      info['bitrate'])
+      assert_equal(channel.channel_info.content_type, info['contentType'])
+      assert_equal(channel.channel_info.MIMEType,     info['mimeType'])
+      track = c['track']
+      assert_equal(channel.channel_track.name,        track['name'])
+      assert_equal(channel.channel_track.genre,       track['genre'])
+      assert_equal(channel.channel_track.album,       track['album'])
+      assert_equal(channel.channel_track.creator,     track['creator'])
+      assert_equal(channel.channel_track.URL,         track['url'])
+    end
   end
 
   def test_getChannelStatus_args_by_position
@@ -970,7 +1075,7 @@ JSON
     assert_nil(res.body.error)
     assert_equal(channel.output_streams.count, res.body.result.size)
     channel.output_streams.count.times do |i|
-      assert_equal(channel.output_streams[i].hash, res.body.result[i]['id'])
+      assert_equal(channel.output_streams[i].hash, res.body.result[i]['outputId'])
       assert_equal(channel.output_streams[i].to_s, res.body.result[i]['name'])
     end
   end
@@ -992,7 +1097,7 @@ JSON
     assert_nil(res.body.error)
     assert_equal(channel.output_streams.count, res.body.result.size)
     channel.output_streams.count.times do |i|
-      assert_equal(channel.output_streams[i].hash, res.body.result[i]['id'])
+      assert_equal(channel.output_streams[i].hash, res.body.result[i]['outputId'])
       assert_equal(channel.output_streams[i].to_s, res.body.result[i]['name'])
     end
   end
@@ -1015,7 +1120,7 @@ JSON
     end
     params = {
       'channelId' => channel.ChannelID.to_string('N'),
-      'id' => outputs[1].hash,
+      'outputId' => outputs[1].hash,
     }
     res = invoke_method('stopChannelOutput', params)
     assert_equal(1, res.body.id)
@@ -1077,8 +1182,8 @@ JSON
     assert_nil(res.body.error)
     assert_equal(@app.peercast.content_readers.count, res.body.result.size)
     readers.size.times do |i|
-      assert_equal(readers[i].hash, res.body.result[i]['id'])
       assert_equal(readers[i].name, res.body.result[i]['name'])
+      assert_equal(readers[i].name, res.body.result[i]['desc'])
     end
   end
 
@@ -1136,7 +1241,7 @@ JSON
     assert_nil(res.body.error)
     assert_equal(@app.peercast.yellow_page_factories.count, res.body.result.size)
     factories.size.times do |i|
-      assert_equal(factories[i].hash, res.body.result[i]['id'])
+      assert_equal(factories[i].name, res.body.result[i]['desc'])
       assert_equal(factories[i].name, res.body.result[i]['name'])
     end
   end
@@ -1155,7 +1260,7 @@ JSON
     assert_nil(res.body.error)
     assert_equal(@app.peercast.yellow_pages.count, res.body.result.size)
     yps.size.times do |i|
-      assert_equal(yps[i].hash,     res.body.result[i]['id'])
+      assert_equal(yps[i].hash,     res.body.result[i]['yellowPageId'])
       assert_equal(yps[i].name,     res.body.result[i]['name'])
       assert_equal(yps[i].uri.to_s, res.body.result[i]['uri'])
     end
@@ -1164,7 +1269,7 @@ JSON
   def test_addYellowPage_args_by_name
     @app.peercast.yellow_page_factories.add(TestYPClientFactory.new('pcp'))
     params = {
-      'protocol' => @app.peercast.yellow_page_factories[0].hash,
+      'protocol' => @app.peercast.yellow_page_factories[0].name,
       'name'     => 'foo',
       'uri'      => 'pcp://foo.example.com/',
     }
@@ -1173,7 +1278,7 @@ JSON
     assert_nil(res.body.error)
     assert_equal(1, @app.peercast.yellow_pages.count)
     yp = @app.peercast.yellow_pages[0]
-    assert_equal(yp.hash,     res.body.result['id'])
+    assert_equal(yp.hash,     res.body.result['yellowPageId'])
     assert_equal(yp.name,     res.body.result['name'])
     assert_equal(yp.uri.to_s, res.body.result['uri'])
     assert_equal(params['name'], yp.name)
@@ -1183,7 +1288,7 @@ JSON
   def test_addYellowPage_args_by_position
     @app.peercast.yellow_page_factories.add(TestYPClientFactory.new('pcp'))
     params = [
-      @app.peercast.yellow_page_factories[0].hash,
+      'pcp',
       'foo',
       'pcp://foo.example.com/',
     ]
@@ -1192,7 +1297,7 @@ JSON
     assert_nil(res.body.error)
     assert_equal(1, @app.peercast.yellow_pages.count)
     yp = @app.peercast.yellow_pages[0]
-    assert_equal(yp.hash,     res.body.result['id'])
+    assert_equal(yp.hash,     res.body.result['yellowPageId'])
     assert_equal(yp.name,     res.body.result['name'])
     assert_equal(yp.uri.to_s, res.body.result['uri'])
     assert_equal(params[1], yp.name)
@@ -1208,7 +1313,7 @@ JSON
     ].collect {|name, uri|
       @app.peercast.add_yellow_page('pcp', name, System::Uri.new(uri))
     }
-    res = invoke_method('removeYellowPage', 'id' => @app.peercast.yellow_pages[1].hash)
+    res = invoke_method('removeYellowPage', 'yellowPageId' => @app.peercast.yellow_pages[1].hash)
     assert_equal(1, res.body.id)
     assert_equal(2, @app.peercast.yellow_pages.count)
     assert_equal('foo', @app.peercast.yellow_pages[0].name)
@@ -1238,7 +1343,7 @@ JSON
     assert_equal(1, res.body.id)
     assert_equal(3, res.body.result.count)
     3.times do |i|
-      assert_equal(listeners[i].hash,                       res.body.result[i]['id'])
+      assert_equal(listeners[i].hash,                       res.body.result[i]['listenerId'])
       assert_equal(listeners[i].LocalEndPoint.address.to_s, res.body.result[i]['address'])
       assert_equal(listeners[i].LocalEndPoint.port,         res.body.result[i]['port'])
       assert_equal(local_accepts.value__,  res.body.result[i]['localAccepts'])
@@ -1269,9 +1374,9 @@ JSON
       assert_equal(1, res.body.id)
       assert_nil(res.body.error)
       new_listener = @app.peercast.output_listeners[@app.peercast.output_listeners.count-1]
-      assert_equal(new_listener.hash,                       res.body.result['id'])
-      assert_equal(new_listener.LocalEndPoint.address.to_s, res.body.result['address'])
-      assert_equal(new_listener.LocalEndPoint.port,         res.body.result['port'])
+      assert_equal(new_listener.hash,                        res.body.result['listenerId'])
+      assert_equal(new_listener.LocalEndPoint.address.to_s,  res.body.result['address'])
+      assert_equal(new_listener.LocalEndPoint.port,          res.body.result['port'])
       assert_equal(new_listener.LocalOutputAccepts.value__,  res.body.result['localAccepts'])
       assert_equal(new_listener.GlobalOutputAccepts.value__, res.body.result['globalAccepts'])
     end
@@ -1291,7 +1396,7 @@ JSON
     ].collect {|addr, port|
       @app.peercast.start_listen(System::Net::IPEndPoint.new(System::Net::IPAddress.parse(addr), port), accepts, accepts)
     }
-    res = invoke_method('removeListener', 'id' => listeners[1].hash)
+    res = invoke_method('removeListener', 'listenerId' => listeners[1].hash)
     assert_equal(1, res.body.id)
     assert_nil(res.body.error)
     assert_equal(listeners.count-1, @app.peercast.output_listeners.count)
@@ -1392,9 +1497,9 @@ JSON
       'url'     => 'http://test.example.com/',
     }
     res = invoke_method('broadcastChannel',
-      'yellowPage'    => yp.hash,
+      'yellowPageId'  => yp.hash,
       'sourceUri'     => source,
-      'contentReader' => reader.hash,
+      'contentReader' => reader.name,
       'info'          => info,
       'track'         => track)
     assert_equal(1, res.body.id)
