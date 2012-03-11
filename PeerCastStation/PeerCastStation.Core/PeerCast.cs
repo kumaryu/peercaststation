@@ -488,6 +488,23 @@ namespace PeerCastStation.Core
       }
     }
 
+    public OutputListener FindListener(IPAddress remote_addr, OutputStreamType connection_type)
+    {
+      if (remote_addr==null) throw new ArgumentNullException("remote_addr");
+      if (Utils.IsSiteLocal(remote_addr)) {
+        var listener = outputListeners.FirstOrDefault(
+          x =>  x.LocalEndPoint.AddressFamily==remote_addr.AddressFamily &&
+               (x.LocalOutputAccepts & connection_type)!=0);
+        return listener;
+      }
+      else {
+        var listener = outputListeners.FirstOrDefault(
+          x => x.LocalEndPoint.AddressFamily==remote_addr.AddressFamily &&
+               (x.GlobalOutputAccepts & connection_type)!=0);
+        return listener;
+      }
+    }
+
     /// <summary>
     /// 待ち受けと全てのチャンネルを終了します
     /// </summary>

@@ -43,6 +43,42 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert_nil(@peercast.is_firewalled)
   end
 
+  def test_find_listener_v4
+    @peercast = PeerCastStation::Core::PeerCast.new
+    @peercast.start_listen(
+      System::Net::IPEndPoint.new(System::Net::IPAddress.Any, 7147),
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.interface,
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.interface)
+    listener = @peercast.find_listener(
+      System::Net::IPAddress.parse('192.168.1.1'),
+      PeerCastStation::Core::OutputStreamType.relay)
+    assert_kind_of(PeerCastStation::Core::OutputListener, listener)
+  end
+  
+  def test_find_listener_v6
+    @peercast = PeerCastStation::Core::PeerCast.new
+    @peercast.start_listen(
+      System::Net::IPEndPoint.new(System::Net::IPAddress.IPv6Any, 7147),
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.interface,
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.interface)
+    listener = @peercast.find_listener(
+      System::Net::IPAddress.parse('3FFE:FFFF:0:CD30::5678:1234'),
+      PeerCastStation::Core::OutputStreamType.relay)
+    assert_kind_of(PeerCastStation::Core::OutputListener, listener)
+  end
+  
   def test_get_end_point_no_listener_v4
     @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.start_listen(

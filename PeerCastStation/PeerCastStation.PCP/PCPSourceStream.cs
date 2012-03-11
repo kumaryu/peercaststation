@@ -235,17 +235,17 @@ namespace PeerCastStation.PCP
           //Do nothing
         }
         else {
-          var relay_point = PeerCast.GetEndPoint(
+          var listener = PeerCast.FindListener(
             Uphost.GlobalEndPoint.Address,
             OutputStreamType.Relay | OutputStreamType.Metadata);
-          helo.SetHeloPort(relay_point.Port);
+          helo.SetHeloPort(listener.LocalEndPoint.Port);
         }
       }
       else {
-        var relay_point = PeerCast.GetEndPoint(
+        var listener = PeerCast.FindListener(
           Uphost.GlobalEndPoint.Address,
           OutputStreamType.Relay | OutputStreamType.Metadata);
-        helo.SetHeloPing(relay_point.Port);
+        helo.SetHeloPing(listener.LocalEndPoint.Port);
       }
       helo.SetHeloVersion(PCP_VERSION);
       Send(new Atom(Atom.PCP_HELO, helo));
