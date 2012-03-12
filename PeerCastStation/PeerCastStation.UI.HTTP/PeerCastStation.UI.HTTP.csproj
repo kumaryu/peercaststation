@@ -30,6 +30,12 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>PeerCastStation.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="DotLiquid">
       <HintPath>..\packages\DotLiquid.1.6.1.0\lib\NET35\DotLiquid.dll</HintPath>
@@ -67,6 +73,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="PeerCastStation.snk" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="html\index.html">
