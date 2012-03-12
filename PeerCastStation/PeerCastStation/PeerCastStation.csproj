@@ -45,7 +45,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>PeerCastStation.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\PeerCastStation.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -91,10 +91,14 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="PeerCastStation.snk" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="peercaststation.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\PeerCastStation.snk">
+      <Link>PeerCastStation.snk</Link>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

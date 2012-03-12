@@ -34,7 +34,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>PeerCastStation.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\PeerCastStation.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="DotLiquid">
@@ -73,7 +73,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="PeerCastStation.snk" />
+    <None Include="..\PeerCastStation.snk">
+      <Link>PeerCastStation.snk</Link>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Content Include="html\index.html">
