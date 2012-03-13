@@ -26,12 +26,7 @@ namespace PeerCastStation.UI.HTTP
       Logger.AddWriter(logWriter);
       application = app;
       factory = new APIHostOutputStreamFactory(this, app.PeerCast);
-      if (application.PeerCast.OutputStreamFactories.Count>0) {
-        application.PeerCast.OutputStreamFactories.Insert(application.PeerCast.OutputStreamFactories.Count-1, factory);
-      }
-      else {
-        application.PeerCast.OutputStreamFactories.Add(factory);
-      }
+      application.PeerCast.OutputStreamFactories.Add(factory);
     }
 
     public void Stop()

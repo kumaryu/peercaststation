@@ -192,12 +192,7 @@ namespace PeerCastStation.UI.HTTP
     {
       application = app;
       factory = new HTMLHostOutputStreamFactory(this, application.PeerCast);
-      if (app.PeerCast.OutputStreamFactories.Count>0) {
-        application.PeerCast.OutputStreamFactories.Insert(app.PeerCast.OutputStreamFactories.Count-1, factory);
-      }
-      else {
-        application.PeerCast.OutputStreamFactories.Add(factory);
-      }
+      application.PeerCast.OutputStreamFactories.Add(factory);
     }
 
     public void Stop()
