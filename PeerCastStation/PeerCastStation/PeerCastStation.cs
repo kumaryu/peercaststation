@@ -51,36 +51,36 @@ namespace PeerCastStation.Main
     }
 
     public static readonly string PluginPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
-    System.Reflection.Assembly[] LoadPluginAssemblies()
+    IEnumerable<KeyValuePair<PluginAttribute, Type>> LoadPluginAssemblies()
     {
-      List<System.Reflection.Assembly> res = new List<System.Reflection.Assembly>();
+      var res = Enumerable.Empty<KeyValuePair<PluginAttribute, Type>>();
       foreach (var dll in System.IO.Directory.GetFiles(PluginPath, "*.dll")) {
         var asm = System.Reflection.Assembly.LoadFrom(dll);
-        if (asm.GetTypes().Any(type => type.GetCustomAttributes(typeof(PluginAttribute), true).Length>0)) {
-          res.Add(asm);
-        }
+        res = res.Concat(
+          asm.GetTypes().Where(
+            type => type.GetCustomAttributes(typeof(PluginAttribute), true).Length>0
+          ).Select(
+            type => new KeyValuePair<PluginAttribute, Type>((PluginAttribute)type.GetCustomAttributes(typeof(PluginAttribute), true)[0], type)
+          )
+        );
       }
-      return res.ToArray();
+      return res;
     }
 
     void LoadPlugins()
     {
-      var assemblies = LoadPluginAssemblies();
-      foreach (var asm in assemblies) {
-        foreach (var type in asm.GetTypes()) {
-          foreach (var attr in type.GetCustomAttributes(typeof(PluginAttribute), true)) {
-            switch (((PluginAttribute)attr).Type) {
-            case PluginType.UserInterface:
-              var constructor = type.GetConstructor(Type.EmptyTypes);
-              if (constructor!=null) {
-                var obj = constructor.Invoke(null) as IUserInterfaceFactory;
-                if (obj!=null) userInterfaceFactories.Add(obj);
-              }
-              break;
-            default:
-              break;
-            }
+      var types = LoadPluginAssemblies();
+      foreach (var attr_type in types) {
+        switch (attr_type.Key.Type) {
+        case PluginType.UserInterface:
+          var constructor = attr_type.Value.GetConstructor(Type.EmptyTypes);
+          if (constructor!=null) {
+            var obj = constructor.Invoke(null) as IUserInterfaceFactory;
+            if (obj!=null) userInterfaceFactories.Add(obj);
           }
+          break;
+        default:
+          break;
         }
       }
     }
