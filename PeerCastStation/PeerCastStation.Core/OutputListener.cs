@@ -110,7 +110,7 @@ namespace PeerCastStation.Core
 
     private IOutputStreamFactory FindMatchedFactory(bool is_local, NetworkStream stream, out List<byte> header, out Guid channel_id)
     {
-      var output_factories = PeerCast.OutputStreamFactories;
+      var output_factories = PeerCast.OutputStreamFactories.OrderBy(factory => factory.Priority);
       header = new List<byte>();
       channel_id = Guid.Empty;
       bool eos = false;

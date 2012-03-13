@@ -66,6 +66,11 @@ namespace PeerCastStation.Ohaoha
     {
       get { return OutputStreamType.Metadata; }
     }
+
+    public override int Priority
+    {
+      get { return 100; }
+    }
   }
 
   public class OhaohaCheckOutputStream

@@ -69,6 +69,11 @@ namespace PeerCastStation.HTTP
       : base(peercast)
     {
     }
+
+    public override int Priority
+    {
+      get { return int.MaxValue; }
+    }
   }
 
   public class HTTPDummyOutputStream

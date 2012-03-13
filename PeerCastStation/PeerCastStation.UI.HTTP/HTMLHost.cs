@@ -376,6 +376,11 @@ namespace PeerCastStation.UI.HTTP
         get { return OutputStreamType.Interface; }
       }
 
+      public override int Priority
+      {
+        get { return 10; }
+      }
+
       HTMLHost owner;
       public HTMLHost Owner
       {

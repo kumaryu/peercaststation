@@ -62,6 +62,8 @@ class TCHTMLHostOutputStreamFactory < Test::Unit::TestCase
     host    = PCSHTTPUI::HTMLHost.new
     factory = PCSHTTPUI::HTMLHost::HTMLHostOutputStreamFactory.new(host, app.peercast)
     assert_same(host, factory.owner)
+    assert(factory.priority>0)
+    assert(factory.priority<100)
   end
 
   def test_parse_channel_id

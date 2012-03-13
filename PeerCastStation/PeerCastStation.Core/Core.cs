@@ -265,6 +265,13 @@ namespace PeerCastStation.Core
     /// </summary>
     string Name { get; }
     /// <summary>
+    /// クライアントのリクエストをパースできるOutputStreamFactoryを検索する際の優先度を取得します
+    /// </summary>
+    /// <remarks>
+    /// 値が小さいOutputStreamFactoryが先にリクエストのパースを試行します
+    /// </remarks>
+    int Priority { get; }
+    /// <summary>
     /// 作成される出力ストリームの種類を取得します
     /// </summary>
     OutputStreamType OutputStreamType { get; }

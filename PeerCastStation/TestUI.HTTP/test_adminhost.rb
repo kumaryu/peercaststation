@@ -80,6 +80,14 @@ class TC_AdminHost < Test::Unit::TestCase
 end
 
 class TCAdminHostOutputStreamFactory < Test::Unit::TestCase
+  def test_construct
+    app     = TestApplication.new
+    host    = PCSHTTPUI::AdminHost.new
+    factory = PCSHTTPUI::AdminHost::AdminHostOutputStreamFactory.new(host, app.peercast)
+    assert(factory.priority>0)
+    assert(factory.priority<100)
+  end
+  
   def test_parse_channel_id
     app     = TestApplication.new
     host    = PCSHTTPUI::AdminHost.new

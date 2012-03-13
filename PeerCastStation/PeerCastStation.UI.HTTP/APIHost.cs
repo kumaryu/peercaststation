@@ -959,6 +959,11 @@ namespace PeerCastStation.UI.HTTP
         get { return OutputStreamType.Interface; }
       }
 
+      public override int Priority
+      {
+        get { return 10; }
+      }
+
       public override IOutputStream Create(
         Stream input_stream,
         Stream output_stream,

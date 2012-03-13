@@ -180,9 +180,10 @@ class MockOutputStreamFactory
   
   def initialize(type=0)
     @type = type
+    @priority = 0
     @log = []
   end
-  attr_reader :log
+  attr_reader :log, :priority
   
   def name
     'MockOutputStream'

@@ -90,6 +90,7 @@ class TC_HTTPOutputStreamFactory < Test::Unit::TestCase
   def test_construct
     factory = PCSHTTP::HTTPOutputStreamFactory.new(@peercast)
     assert_equal('HTTP', factory.Name)
+    assert(factory.priority==0)
     assert(factory.respond_to?(:create_obj_ref))
   end
 

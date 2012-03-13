@@ -80,6 +80,14 @@ class TC_APIHost < Test::Unit::TestCase
 end
 
 class TCAPIHostOutputStreamFactory < Test::Unit::TestCase
+  def test_construct
+    app     = TestApplication.new
+    host    = PCSHTTPUI::APIHost.new
+    factory = PCSHTTPUI::APIHost::APIHostOutputStreamFactory.new(host, app.peercast)
+    assert(factory.priority>0)
+    assert(factory.priority<100)
+  end
+
   def test_parse_channel_id
     app     = TestApplication.new
     host    = PCSHTTPUI::APIHost.new
