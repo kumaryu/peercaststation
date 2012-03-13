@@ -967,9 +967,11 @@ namespace PeerCastStation.UI.HTTP
         byte[] header)
       {
         HTTPRequest request = null;
+        long bytes = 0;
         using (var stream = new MemoryStream(header)) {
           try {
             request = HTTPRequestReader.Read(stream);
+            bytes = stream.Position;
           }
           catch (EndOfStreamException) {
           }
@@ -981,7 +983,7 @@ namespace PeerCastStation.UI.HTTP
           output_stream,
           remote_endpoint,
           request,
-          header.Skip(request.Bytesize).ToArray());
+          header.Skip((int)bytes).ToArray());
       }
 
       public override Guid? ParseChannelID(byte[] header)

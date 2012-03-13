@@ -40,15 +40,13 @@ namespace PeerCastStation.HTTP
     /// リクエストヘッダの値のコレクション取得します
     /// </summary>
     public Dictionary<string, string> Headers { get; private set; }
-    public int Bytesize { get; private set; }
 
     /// <summary>
     /// HTTPリクエスト文字列からHTTPRequestオブジェクトを構築します
     /// </summary>
     /// <param name="requests">行毎に区切られたHTTPリクエストの文字列表現</param>
-    public HTTPRequest(IEnumerable<string> requests, int bytesize)
+    public HTTPRequest(IEnumerable<string> requests)
     {
-      Bytesize = bytesize;
       Headers = new Dictionary<string, string>();
       string host = "localhost";
       string path = "/";
@@ -94,13 +92,11 @@ namespace PeerCastStation.HTTP
       string line = null;
       var requests = new List<string>();
       var buf = new List<byte>();
-      var bytes = 0;
       while (line!="") {
         var value = stream.ReadByte();
         if (value<0) {
           throw new EndOfStreamException();
         }
-        bytes++;
         buf.Add((byte)value);
         if (buf.Count >= 2 && buf[buf.Count - 2] == '\r' && buf[buf.Count - 1] == '\n') {
           line = System.Text.Encoding.UTF8.GetString(buf.ToArray(), 0, buf.Count - 2);
@@ -108,7 +104,7 @@ namespace PeerCastStation.HTTP
           buf.Clear();
         }
       }
-      return new HTTPRequest(requests, bytes);
+      return new HTTPRequest(requests);
     }
   }
 
