@@ -23,7 +23,7 @@ using_clr_extensions PeerCastStation::Core
 PCSCore = PeerCastStation::Core
 PCSHTTP = PeerCastStation::HTTP
 
-class TC_PLSPlayList < Test::Unit::TestCase
+class TC_M3UPlayList < Test::Unit::TestCase
   def setup
     @peercast = PeerCastStation::Core::PeerCast.new
   end
@@ -33,13 +33,13 @@ class TC_PLSPlayList < Test::Unit::TestCase
   end
 
   def test_construct
-    pls = PCSHTTP::PLSPlayList.new
+    pls = PCSHTTP::M3UPlayList.new
     assert_equal('audio/x-mpegurl', pls.MIMEType)
     assert_equal(0, pls.channels.count)
   end
 
   def test_create_playlist
-    pls = PCSHTTP::PLSPlayList.new
+    pls = PCSHTTP::M3UPlayList.new
     baseuri = System::Uri.new('http://localhost/stream/')
     res = pls.create_play_list(baseuri)
     assert_equal([], res.to_a)

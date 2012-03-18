@@ -45,13 +45,13 @@ namespace PeerCastStation.HTTP
   /// <summary>
   /// URLを列挙するだけの簡単なプレイリストを作成するクラスです
   /// </summary>
-  public class PLSPlayList
+  public class M3UPlayList
     : IPlayList
   {
     public string MIMEType { get { return "audio/x-mpegurl"; } }
     public IList<Channel> Channels { get; private set; }
 
-    public PLSPlayList()
+    public M3UPlayList()
     {
       Channels = new List<Channel>();
     }

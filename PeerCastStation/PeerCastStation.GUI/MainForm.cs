@@ -564,7 +564,7 @@ namespace PeerCastStation.GUI
         var channel_id = item.Channel.ChannelID;
         var ext = (item.Channel.ChannelInfo.ContentType=="WMV" ||
                    item.Channel.ChannelInfo.ContentType=="WMA" ||
-                   item.Channel.ChannelInfo.ContentType=="ASX") ? ".asx" : ".pls";
+                   item.Channel.ChannelInfo.ContentType=="ASX") ? ".asx" : ".m3u";
         var endpoint = peerCast.OutputListeners[0].LocalEndPoint;
         string pls;
         if (endpoint.Address.Equals(System.Net.IPAddress.Any)) {

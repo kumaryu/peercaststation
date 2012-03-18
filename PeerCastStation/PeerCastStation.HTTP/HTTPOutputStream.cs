@@ -387,7 +387,7 @@ namespace PeerCastStation.HTTP
             pls = new ASXPlayList();
           }
           else {
-            pls = new PLSPlayList();
+            pls = new M3UPlayList();
           }
           pls.Channels.Add(Channel);
           return String.Format(
@@ -419,7 +419,7 @@ namespace PeerCastStation.HTTP
         pls = new ASXPlayList();
       }
       else {
-        pls = new PLSPlayList();
+        pls = new M3UPlayList();
       }
       pls.Channels.Add(Channel);
       var baseuri = new Uri(
