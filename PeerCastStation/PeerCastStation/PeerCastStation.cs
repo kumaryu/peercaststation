@@ -40,6 +40,7 @@ namespace PeerCastStation.Main
       peerCast.AddContentReader(new PeerCastStation.ASF.ASFContentReader());
       peerCast.AddContentReader(new RawContentReader());
 
+      LoadSettings();
       var uis = userInterfaceFactories.Select(factory => factory.CreateUserInterface()).ToArray();
       foreach (var ui in uis) {
         ui.Start(this);
@@ -48,6 +49,9 @@ namespace PeerCastStation.Main
       foreach (var ui in uis) {
         ui.Stop();
       }
+      SaveSettings();
+
+      peerCast.Stop();
     }
 
     public static readonly string PluginPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
@@ -83,6 +87,62 @@ namespace PeerCastStation.Main
           break;
         }
       }
+    }
+
+    void LoadSettings()
+    {
+      var settings = PeerCastStation.Properties.Settings.Default;
+      if (settings.AccessController!=null) {
+        peerCast.AccessController.MaxPlays  = settings.AccessController.MaxDirects;
+        peerCast.AccessController.MaxRelays = settings.AccessController.MaxRelays;
+        peerCast.AccessController.MaxPlaysPerChannel  = settings.AccessController.MaxDirectsPerChannel;
+        peerCast.AccessController.MaxRelaysPerChannel = settings.AccessController.MaxRelaysPerChannel;
+        peerCast.AccessController.MaxUpstreamRate     = settings.AccessController.MaxUpstreamRate;
+      }
+      if (settings.BroadcastID==Guid.Empty) {
+        peerCast.BroadcastID = Guid.NewGuid();
+      }
+      else {
+        peerCast.BroadcastID = settings.BroadcastID;
+      }
+      if (settings.Listeners!=null) {
+        foreach (var listener in settings.Listeners) {
+          peerCast.StartListen(listener.EndPoint, listener.LocalAccepts, listener.GlobalAccepts);
+        }
+      }
+      if (settings.YellowPages!=null) {
+        foreach (var yellowpage in settings.YellowPages) {
+          peerCast.AddYellowPage(yellowpage.Protocol, yellowpage.Name, yellowpage.Uri);
+        }
+      }
+    }
+
+    void SaveSettings()
+    {
+      var settings = PeerCastStation.Properties.Settings.Default;
+      settings.AccessController = new AccessControllerSettings {
+        MaxDirects           = peerCast.AccessController.MaxPlays,
+        MaxRelays            = peerCast.AccessController.MaxRelays,
+        MaxDirectsPerChannel = peerCast.AccessController.MaxPlaysPerChannel,
+        MaxRelaysPerChannel  = peerCast.AccessController.MaxRelaysPerChannel,
+        MaxUpstreamRate      = peerCast.AccessController.MaxUpstreamRate,
+      };
+      settings.BroadcastID = peerCast.BroadcastID;
+      settings.Listeners = peerCast.OutputListeners.Select(listener => 
+        new ListenerSettings {
+          EndPoint = listener.LocalEndPoint,
+          GlobalAccepts = listener.GlobalOutputAccepts,
+          LocalAccepts = listener.LocalOutputAccepts,
+        }
+      ).ToArray();
+      settings.YellowPages = peerCast.YellowPages.Select(yellowpage =>
+        new YellowPageSettings {
+          Protocol = yellowpage.Uri.Scheme,
+          Name = yellowpage.Name,
+          Uri = yellowpage.Uri,
+        }
+      ).ToArray();
+      settings.Save();
     }
 
     [STAThread]

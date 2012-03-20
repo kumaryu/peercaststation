@@ -513,7 +513,6 @@ namespace PeerCastStation.GUI
 
     private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
     {
-      peerCast.Stop();
       Settings.Default.YellowPages = new YPSettingsCollection(yellowPages);
       Settings.Default.Save();
       Logger.RemoveWriter(guiWriter);

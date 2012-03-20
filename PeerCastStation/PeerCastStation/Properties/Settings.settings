@@ -1,0 +1,18 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="PeerCastStation.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="Listeners" Type="PeerCastStation.ListenerSettings[]" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="AccessController" Type="PeerCastStation.AccessControllerSettings" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="YellowPages" Type="PeerCastStation.YellowPageSettings[]" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="BroadcastID" Type="System.Guid" Scope="User">
+      <Value Profile="(Default)">00000000-0000-0000-0000-000000000000</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
