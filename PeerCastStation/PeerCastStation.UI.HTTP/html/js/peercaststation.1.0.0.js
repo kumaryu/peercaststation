@@ -78,7 +78,7 @@ PeerCast = {
     this.postRequest('getListeners', null, completed);
   },
   addListener: function(address, port, localAccepts, globalAccepts, completed) {
-    this.postRequest('addListsner', {
+    this.postRequest('addListener', {
       address: address,
       port: port,
       localAccepts: localAccepts,

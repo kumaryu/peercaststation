@@ -215,11 +215,11 @@ var SettingsViewModel = new function() {
   });
   self.submit = function() {
     var settings = {
-      maxRelays:            self.maxRelays(),
-      maxDirects:           self.maxDirects(),
-      maxRelaysPerChannel:  self.maxRelaysPerChannel(),
-      maxDirectsPerChannel: self.maxDirectsPerChannel(),
-      maxUpstreamRate:      self.maxUpstreamRate()
+      maxRelays:            Number(self.maxRelays()),
+      maxDirects:           Number(self.maxDirects()),
+      maxRelaysPerChannel:  Number(self.maxRelaysPerChannel()),
+      maxDirectsPerChannel: Number(self.maxDirectsPerChannel()),
+      maxUpstreamRate:      Number(self.maxUpstreamRate())
     };
     PeerCast.setSettings(settings);
   };
