@@ -77,11 +77,6 @@ namespace PeerCastStation.GUI
       System.Windows.Forms.Label label2;
       System.Windows.Forms.Label label27;
       System.Windows.Forms.Label label28;
-      System.Windows.Forms.Label label29;
-      System.Windows.Forms.Label label31;
-      System.Windows.Forms.Label label30;
-      System.Windows.Forms.Label label32;
-      System.Windows.Forms.Label label14;
       System.Windows.Forms.Label label4;
       System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
       this.chanInfoUpdateButton = new System.Windows.Forms.Button();
@@ -128,31 +123,26 @@ namespace PeerCastStation.GUI
       this.bcContentType = new System.Windows.Forms.ComboBox();
       this.tabSettings = new System.Windows.Forms.TabPage();
       this.panel2 = new System.Windows.Forms.Panel();
-      this.groupBox5 = new System.Windows.Forms.GroupBox();
+      this.groupBox3 = new System.Windows.Forms.GroupBox();
       this.ypListEditButton = new System.Windows.Forms.Button();
+      this.groupBox5 = new System.Windows.Forms.GroupBox();
+      this.applySettings = new System.Windows.Forms.Button();
       this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
       this.maxUpstreamRate = new System.Windows.Forms.NumericUpDown();
       this.maxDirectsPerChannel = new System.Windows.Forms.NumericUpDown();
       this.maxDirects = new System.Windows.Forms.NumericUpDown();
       this.maxRelaysPerChannel = new System.Windows.Forms.NumericUpDown();
       this.maxRelays = new System.Windows.Forms.NumericUpDown();
-      this.groupBox3 = new System.Windows.Forms.GroupBox();
-      this.port2GlobalInterface = new System.Windows.Forms.CheckBox();
-      this.port2LocalInterface = new System.Windows.Forms.CheckBox();
-      this.port2LocalDirect = new System.Windows.Forms.CheckBox();
-      this.port2LocalRelay = new System.Windows.Forms.CheckBox();
-      this.port2GlobalDirect = new System.Windows.Forms.CheckBox();
-      this.port2GlobalRelay = new System.Windows.Forms.CheckBox();
-      this.port2 = new System.Windows.Forms.NumericUpDown();
       this.groupBox4 = new System.Windows.Forms.GroupBox();
-      this.port1GlobalInterface = new System.Windows.Forms.CheckBox();
-      this.port1LocalInterface = new System.Windows.Forms.CheckBox();
-      this.port1LocalDirect = new System.Windows.Forms.CheckBox();
-      this.port1LocalRelay = new System.Windows.Forms.CheckBox();
-      this.port1GlobalDirect = new System.Windows.Forms.CheckBox();
-      this.port1GlobalRelay = new System.Windows.Forms.CheckBox();
-      this.port1 = new System.Windows.Forms.NumericUpDown();
-      this.applySettings = new System.Windows.Forms.Button();
+      this.portRemoveButton = new System.Windows.Forms.Button();
+      this.portAddButton = new System.Windows.Forms.Button();
+      this.portsList = new System.Windows.Forms.ListBox();
+      this.portGlobalInterface = new System.Windows.Forms.CheckBox();
+      this.portLocalInterface = new System.Windows.Forms.CheckBox();
+      this.portLocalDirect = new System.Windows.Forms.CheckBox();
+      this.portLocalRelay = new System.Windows.Forms.CheckBox();
+      this.portGlobalDirect = new System.Windows.Forms.CheckBox();
+      this.portGlobalRelay = new System.Windows.Forms.CheckBox();
       this.tabLog = new System.Windows.Forms.TabPage();
       this.versionInfoButton = new System.Windows.Forms.Button();
       this.logToGUICheck = new System.Windows.Forms.CheckBox();
@@ -199,11 +189,6 @@ namespace PeerCastStation.GUI
       label2 = new System.Windows.Forms.Label();
       label27 = new System.Windows.Forms.Label();
       label28 = new System.Windows.Forms.Label();
-      label29 = new System.Windows.Forms.Label();
-      label31 = new System.Windows.Forms.Label();
-      label30 = new System.Windows.Forms.Label();
-      label32 = new System.Windows.Forms.Label();
-      label14 = new System.Windows.Forms.Label();
       label4 = new System.Windows.Forms.Label();
       panel1.SuspendLayout();
       this.notifyIconMenu.SuspendLayout();
@@ -222,6 +207,7 @@ namespace PeerCastStation.GUI
       this.tabBroadcast.SuspendLayout();
       this.tabSettings.SuspendLayout();
       this.panel2.SuspendLayout();
+      this.groupBox3.SuspendLayout();
       this.groupBox5.SuspendLayout();
       this.tableLayoutPanel3.SuspendLayout();
       ((System.ComponentModel.ISupportInitialize)(this.maxUpstreamRate)).BeginInit();
@@ -229,10 +215,7 @@ namespace PeerCastStation.GUI
       ((System.ComponentModel.ISupportInitialize)(this.maxDirects)).BeginInit();
       ((System.ComponentModel.ISupportInitialize)(this.maxRelaysPerChannel)).BeginInit();
       ((System.ComponentModel.ISupportInitialize)(this.maxRelays)).BeginInit();
-      this.groupBox3.SuspendLayout();
-      ((System.ComponentModel.ISupportInitialize)(this.port2)).BeginInit();
       this.groupBox4.SuspendLayout();
-      ((System.ComponentModel.ISupportInitialize)(this.port1)).BeginInit();
       this.tabLog.SuspendLayout();
       this.statusBar.SuspendLayout();
       this.SuspendLayout();
@@ -464,7 +447,7 @@ namespace PeerCastStation.GUI
       // 
       label34.AutoSize = true;
       label34.Dock = System.Windows.Forms.DockStyle.Fill;
-      label34.Location = new System.Drawing.Point(247, 25);
+      label34.Location = new System.Drawing.Point(254, 25);
       label34.Name = "label34";
       label34.Size = new System.Drawing.Size(65, 25);
       label34.TabIndex = 8;
@@ -497,7 +480,7 @@ namespace PeerCastStation.GUI
       // 
       label33.AutoSize = true;
       label33.Dock = System.Windows.Forms.DockStyle.Fill;
-      label33.Location = new System.Drawing.Point(247, 0);
+      label33.Location = new System.Drawing.Point(254, 0);
       label33.Name = "label33";
       label33.Size = new System.Drawing.Size(65, 25);
       label33.TabIndex = 3;
@@ -529,7 +512,7 @@ namespace PeerCastStation.GUI
       // label27
       // 
       label27.AutoSize = true;
-      label27.Location = new System.Drawing.Point(8, 44);
+      label27.Location = new System.Drawing.Point(6, 101);
       label27.Name = "label27";
       label27.Size = new System.Drawing.Size(126, 12);
       label27.TabIndex = 2;
@@ -539,62 +522,12 @@ namespace PeerCastStation.GUI
       // label28
       // 
       label28.AutoSize = true;
-      label28.Location = new System.Drawing.Point(8, 66);
+      label28.Location = new System.Drawing.Point(6, 123);
       label28.Name = "label28";
       label28.Size = new System.Drawing.Size(117, 12);
       label28.TabIndex = 6;
       label28.Text = "WANからの接続を許可:";
       label28.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-      // 
-      // label29
-      // 
-      label29.AutoSize = true;
-      label29.Location = new System.Drawing.Point(8, 20);
-      label29.Name = "label29";
-      label29.Size = new System.Drawing.Size(59, 12);
-      label29.TabIndex = 0;
-      label29.Text = "ポート番号:";
-      label29.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-      // 
-      // label31
-      // 
-      label31.AutoSize = true;
-      label31.Location = new System.Drawing.Point(8, 44);
-      label31.Name = "label31";
-      label31.Size = new System.Drawing.Size(126, 12);
-      label31.TabIndex = 2;
-      label31.Text = "LAN内からの接続を許可:";
-      label31.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-      // 
-      // label30
-      // 
-      label30.AutoSize = true;
-      label30.Location = new System.Drawing.Point(8, 66);
-      label30.Name = "label30";
-      label30.Size = new System.Drawing.Size(117, 12);
-      label30.TabIndex = 6;
-      label30.Text = "WANからの接続を許可:";
-      label30.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-      // 
-      // label32
-      // 
-      label32.AutoSize = true;
-      label32.Location = new System.Drawing.Point(8, 20);
-      label32.Name = "label32";
-      label32.Size = new System.Drawing.Size(59, 12);
-      label32.TabIndex = 0;
-      label32.Text = "ポート番号:";
-      label32.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-      // 
-      // label14
-      // 
-      label14.AutoSize = true;
-      label14.Location = new System.Drawing.Point(8, 99);
-      label14.Name = "label14";
-      label14.Size = new System.Drawing.Size(45, 12);
-      label14.TabIndex = 0;
-      label14.Text = "YP一覧:";
-      label14.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
       // 
       // label4
       // 
@@ -634,8 +567,9 @@ namespace PeerCastStation.GUI
       this.mainTab.Location = new System.Drawing.Point(0, 0);
       this.mainTab.Name = "mainTab";
       this.mainTab.SelectedIndex = 0;
-      this.mainTab.Size = new System.Drawing.Size(445, 435);
+      this.mainTab.Size = new System.Drawing.Size(445, 461);
       this.mainTab.TabIndex = 0;
+      this.mainTab.SelectedIndexChanged += new System.EventHandler(this.mainTab_SelectedIndexChanged);
       // 
       // tabChannels
       // 
@@ -643,7 +577,7 @@ namespace PeerCastStation.GUI
       this.tabChannels.Location = new System.Drawing.Point(4, 22);
       this.tabChannels.Name = "tabChannels";
       this.tabChannels.Padding = new System.Windows.Forms.Padding(3);
-      this.tabChannels.Size = new System.Drawing.Size(437, 409);
+      this.tabChannels.Size = new System.Drawing.Size(437, 435);
       this.tabChannels.TabIndex = 1;
       this.tabChannels.Text = "チャンネル一覧";
       this.tabChannels.UseVisualStyleBackColor = true;
@@ -665,8 +599,8 @@ namespace PeerCastStation.GUI
       // splitContainer1.Panel2
       // 
       this.splitContainer1.Panel2.Controls.Add(this.tabControl2);
-      this.splitContainer1.Size = new System.Drawing.Size(431, 403);
-      this.splitContainer1.SplitterDistance = 144;
+      this.splitContainer1.Size = new System.Drawing.Size(431, 429);
+      this.splitContainer1.SplitterDistance = 153;
       this.splitContainer1.TabIndex = 9;
       // 
       // channelBump
@@ -713,7 +647,7 @@ namespace PeerCastStation.GUI
       this.channelList.ItemHeight = 12;
       this.channelList.Location = new System.Drawing.Point(0, 0);
       this.channelList.Name = "channelList";
-      this.channelList.Size = new System.Drawing.Size(361, 144);
+      this.channelList.Size = new System.Drawing.Size(361, 153);
       this.channelList.TabIndex = 6;
       this.channelList.SelectedIndexChanged += new System.EventHandler(this.channelList_SelectedIndexChanged);
       // 
@@ -726,7 +660,7 @@ namespace PeerCastStation.GUI
       this.tabControl2.Location = new System.Drawing.Point(0, 0);
       this.tabControl2.Name = "tabControl2";
       this.tabControl2.SelectedIndex = 0;
-      this.tabControl2.Size = new System.Drawing.Size(431, 255);
+      this.tabControl2.Size = new System.Drawing.Size(431, 272);
       this.tabControl2.TabIndex = 9;
       // 
       // tabPage1
@@ -735,7 +669,7 @@ namespace PeerCastStation.GUI
       this.tabPage1.Location = new System.Drawing.Point(4, 22);
       this.tabPage1.Name = "tabPage1";
       this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-      this.tabPage1.Size = new System.Drawing.Size(423, 229);
+      this.tabPage1.Size = new System.Drawing.Size(423, 246);
       this.tabPage1.TabIndex = 0;
       this.tabPage1.Text = "接続一覧";
       this.tabPage1.UseVisualStyleBackColor = true;
@@ -752,7 +686,7 @@ namespace PeerCastStation.GUI
       this.tableLayoutPanel1.Name = "tableLayoutPanel1";
       this.tableLayoutPanel1.RowCount = 1;
       this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-      this.tableLayoutPanel1.Size = new System.Drawing.Size(417, 223);
+      this.tableLayoutPanel1.Size = new System.Drawing.Size(417, 240);
       this.tableLayoutPanel1.TabIndex = 9;
       // 
       // downStreamClose
@@ -777,7 +711,7 @@ namespace PeerCastStation.GUI
       this.outputList.ItemHeight = 12;
       this.outputList.Location = new System.Drawing.Point(3, 3);
       this.outputList.Name = "outputList";
-      this.outputList.Size = new System.Drawing.Size(342, 217);
+      this.outputList.Size = new System.Drawing.Size(342, 234);
       this.outputList.TabIndex = 8;
       // 
       // tabPage3
@@ -788,7 +722,7 @@ namespace PeerCastStation.GUI
       this.tabPage3.Controls.Add(this.groupBox1);
       this.tabPage3.Location = new System.Drawing.Point(4, 22);
       this.tabPage3.Name = "tabPage3";
-      this.tabPage3.Size = new System.Drawing.Size(423, 229);
+      this.tabPage3.Size = new System.Drawing.Size(423, 246);
       this.tabPage3.TabIndex = 2;
       this.tabPage3.Text = "チャンネル情報";
       this.tabPage3.UseVisualStyleBackColor = true;
@@ -979,7 +913,7 @@ namespace PeerCastStation.GUI
       this.tabPage2.Location = new System.Drawing.Point(4, 22);
       this.tabPage2.Name = "tabPage2";
       this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-      this.tabPage2.Size = new System.Drawing.Size(423, 229);
+      this.tabPage2.Size = new System.Drawing.Size(423, 246);
       this.tabPage2.TabIndex = 1;
       this.tabPage2.Text = "リレーツリー";
       this.tabPage2.UseVisualStyleBackColor = true;
@@ -991,7 +925,7 @@ namespace PeerCastStation.GUI
             | System.Windows.Forms.AnchorStyles.Right)));
       this.relayTree.Location = new System.Drawing.Point(0, 0);
       this.relayTree.Name = "relayTree";
-      this.relayTree.Size = new System.Drawing.Size(422, 229);
+      this.relayTree.Size = new System.Drawing.Size(422, 246);
       this.relayTree.TabIndex = 5;
       // 
       // tabBroadcast
@@ -1015,7 +949,7 @@ namespace PeerCastStation.GUI
       this.tabBroadcast.Controls.Add(this.bcContentType);
       this.tabBroadcast.Location = new System.Drawing.Point(4, 22);
       this.tabBroadcast.Name = "tabBroadcast";
-      this.tabBroadcast.Size = new System.Drawing.Size(437, 409);
+      this.tabBroadcast.Size = new System.Drawing.Size(437, 435);
       this.tabBroadcast.TabIndex = 4;
       this.tabBroadcast.Text = "配信";
       this.tabBroadcast.UseVisualStyleBackColor = true;
@@ -1068,7 +1002,7 @@ namespace PeerCastStation.GUI
       // bcStart
       // 
       this.bcStart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-      this.bcStart.Location = new System.Drawing.Point(337, 380);
+      this.bcStart.Location = new System.Drawing.Point(337, 406);
       this.bcStart.Name = "bcStart";
       this.bcStart.Size = new System.Drawing.Size(90, 26);
       this.bcStart.TabIndex = 16;
@@ -1111,56 +1045,76 @@ namespace PeerCastStation.GUI
       // tabSettings
       // 
       this.tabSettings.Controls.Add(this.panel2);
-      this.tabSettings.Controls.Add(this.applySettings);
       this.tabSettings.Location = new System.Drawing.Point(4, 22);
       this.tabSettings.Name = "tabSettings";
-      this.tabSettings.Size = new System.Drawing.Size(437, 409);
+      this.tabSettings.Size = new System.Drawing.Size(437, 435);
       this.tabSettings.TabIndex = 2;
       this.tabSettings.Text = "設定";
       this.tabSettings.UseVisualStyleBackColor = true;
       // 
       // panel2
       // 
-      this.panel2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.panel2.Controls.Add(this.groupBox5);
+      this.panel2.AutoScroll = true;
       this.panel2.Controls.Add(this.groupBox3);
+      this.panel2.Controls.Add(this.groupBox5);
       this.panel2.Controls.Add(this.groupBox4);
-      this.panel2.Location = new System.Drawing.Point(8, 3);
+      this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
+      this.panel2.Location = new System.Drawing.Point(0, 0);
       this.panel2.Name = "panel2";
-      this.panel2.Size = new System.Drawing.Size(419, 371);
+      this.panel2.Padding = new System.Windows.Forms.Padding(4);
+      this.panel2.Size = new System.Drawing.Size(437, 435);
       this.panel2.TabIndex = 1;
+      // 
+      // groupBox3
+      // 
+      this.groupBox3.AutoSize = true;
+      this.groupBox3.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+      this.groupBox3.Controls.Add(this.ypListEditButton);
+      this.groupBox3.Dock = System.Windows.Forms.DockStyle.Top;
+      this.groupBox3.Location = new System.Drawing.Point(4, 298);
+      this.groupBox3.Name = "groupBox3";
+      this.groupBox3.Size = new System.Drawing.Size(429, 61);
+      this.groupBox3.TabIndex = 3;
+      this.groupBox3.TabStop = false;
+      this.groupBox3.Text = "YP一覧";
+      // 
+      // ypListEditButton
+      // 
+      this.ypListEditButton.Location = new System.Drawing.Point(6, 18);
+      this.ypListEditButton.Name = "ypListEditButton";
+      this.ypListEditButton.Size = new System.Drawing.Size(97, 25);
+      this.ypListEditButton.TabIndex = 2;
+      this.ypListEditButton.Text = "編集...";
+      this.ypListEditButton.UseVisualStyleBackColor = true;
+      this.ypListEditButton.Click += new System.EventHandler(this.ypListEditButton_Click);
       // 
       // groupBox5
       // 
       this.groupBox5.AutoSize = true;
       this.groupBox5.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-      this.groupBox5.Controls.Add(this.ypListEditButton);
-      this.groupBox5.Controls.Add(label14);
+      this.groupBox5.Controls.Add(this.applySettings);
       this.groupBox5.Controls.Add(this.tableLayoutPanel3);
       this.groupBox5.Dock = System.Windows.Forms.DockStyle.Top;
-      this.groupBox5.Location = new System.Drawing.Point(0, 198);
+      this.groupBox5.Location = new System.Drawing.Point(4, 161);
       this.groupBox5.Name = "groupBox5";
-      this.groupBox5.Size = new System.Drawing.Size(419, 136);
+      this.groupBox5.Size = new System.Drawing.Size(429, 137);
       this.groupBox5.TabIndex = 2;
       this.groupBox5.TabStop = false;
       this.groupBox5.Text = "その他";
       // 
-      // ypListEditButton
+      // applySettings
       // 
-      this.ypListEditButton.Location = new System.Drawing.Point(119, 93);
-      this.ypListEditButton.Name = "ypListEditButton";
-      this.ypListEditButton.Size = new System.Drawing.Size(97, 25);
-      this.ypListEditButton.TabIndex = 1;
-      this.ypListEditButton.Text = "編集...";
-      this.ypListEditButton.UseVisualStyleBackColor = true;
-      this.ypListEditButton.Click += new System.EventHandler(this.ypListEditButton_Click);
+      this.applySettings.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.applySettings.Location = new System.Drawing.Point(349, 93);
+      this.applySettings.Name = "applySettings";
+      this.applySettings.Size = new System.Drawing.Size(73, 26);
+      this.applySettings.TabIndex = 54;
+      this.applySettings.Text = "適用";
+      this.applySettings.UseVisualStyleBackColor = true;
+      this.applySettings.Click += new System.EventHandler(this.applySettings_Click);
       // 
       // tableLayoutPanel3
       // 
-      this.tableLayoutPanel3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
       this.tableLayoutPanel3.AutoSize = true;
       this.tableLayoutPanel3.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
       this.tableLayoutPanel3.ColumnCount = 5;
@@ -1181,6 +1135,7 @@ namespace PeerCastStation.GUI
       this.tableLayoutPanel3.Controls.Add(this.maxRelays, 2, 0);
       this.tableLayoutPanel3.Controls.Add(label1, 1, 0);
       this.tableLayoutPanel3.Controls.Add(label2, 0, 0);
+      this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Top;
       this.tableLayoutPanel3.Location = new System.Drawing.Point(3, 15);
       this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(0);
       this.tableLayoutPanel3.Name = "tableLayoutPanel3";
@@ -1188,7 +1143,7 @@ namespace PeerCastStation.GUI
       this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle());
       this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle());
       this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-      this.tableLayoutPanel3.Size = new System.Drawing.Size(409, 70);
+      this.tableLayoutPanel3.Size = new System.Drawing.Size(423, 70);
       this.tableLayoutPanel3.TabIndex = 53;
       // 
       // maxUpstreamRate
@@ -1203,15 +1158,15 @@ namespace PeerCastStation.GUI
             0,
             0});
       this.maxUpstreamRate.Name = "maxUpstreamRate";
-      this.maxUpstreamRate.Size = new System.Drawing.Size(290, 19);
+      this.maxUpstreamRate.Size = new System.Drawing.Size(304, 19);
       this.maxUpstreamRate.TabIndex = 11;
       // 
       // maxDirectsPerChannel
       // 
       this.maxDirectsPerChannel.Dock = System.Windows.Forms.DockStyle.Fill;
-      this.maxDirectsPerChannel.Location = new System.Drawing.Point(318, 28);
+      this.maxDirectsPerChannel.Location = new System.Drawing.Point(325, 28);
       this.maxDirectsPerChannel.Name = "maxDirectsPerChannel";
-      this.maxDirectsPerChannel.Size = new System.Drawing.Size(88, 19);
+      this.maxDirectsPerChannel.Size = new System.Drawing.Size(95, 19);
       this.maxDirectsPerChannel.TabIndex = 9;
       // 
       // maxDirects
@@ -1219,15 +1174,15 @@ namespace PeerCastStation.GUI
       this.maxDirects.Dock = System.Windows.Forms.DockStyle.Fill;
       this.maxDirects.Location = new System.Drawing.Point(153, 28);
       this.maxDirects.Name = "maxDirects";
-      this.maxDirects.Size = new System.Drawing.Size(88, 19);
+      this.maxDirects.Size = new System.Drawing.Size(95, 19);
       this.maxDirects.TabIndex = 7;
       // 
       // maxRelaysPerChannel
       // 
       this.maxRelaysPerChannel.Dock = System.Windows.Forms.DockStyle.Fill;
-      this.maxRelaysPerChannel.Location = new System.Drawing.Point(318, 3);
+      this.maxRelaysPerChannel.Location = new System.Drawing.Point(325, 3);
       this.maxRelaysPerChannel.Name = "maxRelaysPerChannel";
-      this.maxRelaysPerChannel.Size = new System.Drawing.Size(88, 19);
+      this.maxRelaysPerChannel.Size = new System.Drawing.Size(95, 19);
       this.maxRelaysPerChannel.TabIndex = 4;
       // 
       // maxRelays
@@ -1235,231 +1190,131 @@ namespace PeerCastStation.GUI
       this.maxRelays.Dock = System.Windows.Forms.DockStyle.Fill;
       this.maxRelays.Location = new System.Drawing.Point(153, 3);
       this.maxRelays.Name = "maxRelays";
-      this.maxRelays.Size = new System.Drawing.Size(88, 19);
+      this.maxRelays.Size = new System.Drawing.Size(95, 19);
       this.maxRelays.TabIndex = 2;
-      // 
-      // groupBox3
-      // 
-      this.groupBox3.AutoSize = true;
-      this.groupBox3.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-      this.groupBox3.Controls.Add(this.port2GlobalInterface);
-      this.groupBox3.Controls.Add(label31);
-      this.groupBox3.Controls.Add(this.port2LocalInterface);
-      this.groupBox3.Controls.Add(label30);
-      this.groupBox3.Controls.Add(this.port2LocalDirect);
-      this.groupBox3.Controls.Add(this.port2LocalRelay);
-      this.groupBox3.Controls.Add(this.port2GlobalDirect);
-      this.groupBox3.Controls.Add(this.port2GlobalRelay);
-      this.groupBox3.Controls.Add(label32);
-      this.groupBox3.Controls.Add(this.port2);
-      this.groupBox3.Dock = System.Windows.Forms.DockStyle.Top;
-      this.groupBox3.Location = new System.Drawing.Point(0, 99);
-      this.groupBox3.Name = "groupBox3";
-      this.groupBox3.Size = new System.Drawing.Size(419, 99);
-      this.groupBox3.TabIndex = 1;
-      this.groupBox3.TabStop = false;
-      this.groupBox3.Text = "ポート2";
-      // 
-      // port2GlobalInterface
-      // 
-      this.port2GlobalInterface.AutoSize = true;
-      this.port2GlobalInterface.Location = new System.Drawing.Point(247, 65);
-      this.port2GlobalInterface.Name = "port2GlobalInterface";
-      this.port2GlobalInterface.Size = new System.Drawing.Size(48, 16);
-      this.port2GlobalInterface.TabIndex = 9;
-      this.port2GlobalInterface.Text = "操作";
-      this.port2GlobalInterface.UseVisualStyleBackColor = true;
-      // 
-      // port2LocalInterface
-      // 
-      this.port2LocalInterface.AutoSize = true;
-      this.port2LocalInterface.Location = new System.Drawing.Point(247, 43);
-      this.port2LocalInterface.Name = "port2LocalInterface";
-      this.port2LocalInterface.Size = new System.Drawing.Size(48, 16);
-      this.port2LocalInterface.TabIndex = 5;
-      this.port2LocalInterface.Text = "操作";
-      this.port2LocalInterface.UseVisualStyleBackColor = true;
-      // 
-      // port2LocalDirect
-      // 
-      this.port2LocalDirect.AutoSize = true;
-      this.port2LocalDirect.Location = new System.Drawing.Point(193, 43);
-      this.port2LocalDirect.Name = "port2LocalDirect";
-      this.port2LocalDirect.Size = new System.Drawing.Size(48, 16);
-      this.port2LocalDirect.TabIndex = 4;
-      this.port2LocalDirect.Text = "視聴";
-      this.port2LocalDirect.UseVisualStyleBackColor = true;
-      // 
-      // port2LocalRelay
-      // 
-      this.port2LocalRelay.AutoSize = true;
-      this.port2LocalRelay.Location = new System.Drawing.Point(137, 43);
-      this.port2LocalRelay.Name = "port2LocalRelay";
-      this.port2LocalRelay.Size = new System.Drawing.Size(50, 16);
-      this.port2LocalRelay.TabIndex = 3;
-      this.port2LocalRelay.Text = "リレー";
-      this.port2LocalRelay.UseVisualStyleBackColor = true;
-      // 
-      // port2GlobalDirect
-      // 
-      this.port2GlobalDirect.AutoSize = true;
-      this.port2GlobalDirect.Location = new System.Drawing.Point(193, 65);
-      this.port2GlobalDirect.Name = "port2GlobalDirect";
-      this.port2GlobalDirect.Size = new System.Drawing.Size(48, 16);
-      this.port2GlobalDirect.TabIndex = 8;
-      this.port2GlobalDirect.Text = "視聴";
-      this.port2GlobalDirect.UseVisualStyleBackColor = true;
-      // 
-      // port2GlobalRelay
-      // 
-      this.port2GlobalRelay.AutoSize = true;
-      this.port2GlobalRelay.Location = new System.Drawing.Point(137, 65);
-      this.port2GlobalRelay.Name = "port2GlobalRelay";
-      this.port2GlobalRelay.Size = new System.Drawing.Size(50, 16);
-      this.port2GlobalRelay.TabIndex = 7;
-      this.port2GlobalRelay.Text = "リレー";
-      this.port2GlobalRelay.UseVisualStyleBackColor = true;
-      // 
-      // port2
-      // 
-      this.port2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.port2.Location = new System.Drawing.Point(137, 18);
-      this.port2.Maximum = new decimal(new int[] {
-            65535,
-            0,
-            0,
-            0});
-      this.port2.Minimum = new decimal(new int[] {
-            1025,
-            0,
-            0,
-            0});
-      this.port2.Name = "port2";
-      this.port2.Size = new System.Drawing.Size(273, 19);
-      this.port2.TabIndex = 1;
-      this.port2.Value = new decimal(new int[] {
-            7145,
-            0,
-            0,
-            0});
       // 
       // groupBox4
       // 
       this.groupBox4.AutoSize = true;
       this.groupBox4.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-      this.groupBox4.Controls.Add(this.port1GlobalInterface);
+      this.groupBox4.Controls.Add(this.portRemoveButton);
+      this.groupBox4.Controls.Add(this.portAddButton);
+      this.groupBox4.Controls.Add(this.portsList);
+      this.groupBox4.Controls.Add(this.portGlobalInterface);
       this.groupBox4.Controls.Add(label27);
-      this.groupBox4.Controls.Add(this.port1LocalInterface);
+      this.groupBox4.Controls.Add(this.portLocalInterface);
       this.groupBox4.Controls.Add(label28);
-      this.groupBox4.Controls.Add(this.port1LocalDirect);
-      this.groupBox4.Controls.Add(this.port1LocalRelay);
-      this.groupBox4.Controls.Add(this.port1GlobalDirect);
-      this.groupBox4.Controls.Add(this.port1GlobalRelay);
-      this.groupBox4.Controls.Add(label29);
-      this.groupBox4.Controls.Add(this.port1);
+      this.groupBox4.Controls.Add(this.portLocalDirect);
+      this.groupBox4.Controls.Add(this.portLocalRelay);
+      this.groupBox4.Controls.Add(this.portGlobalDirect);
+      this.groupBox4.Controls.Add(this.portGlobalRelay);
       this.groupBox4.Dock = System.Windows.Forms.DockStyle.Top;
-      this.groupBox4.Location = new System.Drawing.Point(0, 0);
+      this.groupBox4.Location = new System.Drawing.Point(4, 4);
       this.groupBox4.Name = "groupBox4";
-      this.groupBox4.Size = new System.Drawing.Size(419, 99);
+      this.groupBox4.Size = new System.Drawing.Size(429, 157);
       this.groupBox4.TabIndex = 0;
       this.groupBox4.TabStop = false;
-      this.groupBox4.Text = "ポート1";
+      this.groupBox4.Text = "ポート";
       // 
-      // port1GlobalInterface
+      // portRemoveButton
       // 
-      this.port1GlobalInterface.AutoSize = true;
-      this.port1GlobalInterface.Location = new System.Drawing.Point(247, 65);
-      this.port1GlobalInterface.Name = "port1GlobalInterface";
-      this.port1GlobalInterface.Size = new System.Drawing.Size(48, 16);
-      this.port1GlobalInterface.TabIndex = 9;
-      this.port1GlobalInterface.Text = "操作";
-      this.port1GlobalInterface.UseVisualStyleBackColor = true;
+      this.portRemoveButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.portRemoveButton.Location = new System.Drawing.Point(347, 47);
+      this.portRemoveButton.Name = "portRemoveButton";
+      this.portRemoveButton.Size = new System.Drawing.Size(75, 23);
+      this.portRemoveButton.TabIndex = 14;
+      this.portRemoveButton.Text = "削除";
+      this.portRemoveButton.UseVisualStyleBackColor = true;
+      this.portRemoveButton.Click += new System.EventHandler(this.portRemoveButton_Click);
       // 
-      // port1LocalInterface
+      // portAddButton
       // 
-      this.port1LocalInterface.AutoSize = true;
-      this.port1LocalInterface.Location = new System.Drawing.Point(247, 43);
-      this.port1LocalInterface.Name = "port1LocalInterface";
-      this.port1LocalInterface.Size = new System.Drawing.Size(48, 16);
-      this.port1LocalInterface.TabIndex = 5;
-      this.port1LocalInterface.Text = "操作";
-      this.port1LocalInterface.UseVisualStyleBackColor = true;
+      this.portAddButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.portAddButton.Location = new System.Drawing.Point(347, 18);
+      this.portAddButton.Name = "portAddButton";
+      this.portAddButton.Size = new System.Drawing.Size(75, 23);
+      this.portAddButton.TabIndex = 13;
+      this.portAddButton.Text = "追加...";
+      this.portAddButton.UseVisualStyleBackColor = true;
+      this.portAddButton.Click += new System.EventHandler(this.portAddButton_Click);
       // 
-      // port1LocalDirect
+      // portsList
       // 
-      this.port1LocalDirect.AutoSize = true;
-      this.port1LocalDirect.Location = new System.Drawing.Point(193, 43);
-      this.port1LocalDirect.Name = "port1LocalDirect";
-      this.port1LocalDirect.Size = new System.Drawing.Size(48, 16);
-      this.port1LocalDirect.TabIndex = 4;
-      this.port1LocalDirect.Text = "視聴";
-      this.port1LocalDirect.UseVisualStyleBackColor = true;
-      // 
-      // port1LocalRelay
-      // 
-      this.port1LocalRelay.AutoSize = true;
-      this.port1LocalRelay.Location = new System.Drawing.Point(137, 43);
-      this.port1LocalRelay.Name = "port1LocalRelay";
-      this.port1LocalRelay.Size = new System.Drawing.Size(50, 16);
-      this.port1LocalRelay.TabIndex = 3;
-      this.port1LocalRelay.Text = "リレー";
-      this.port1LocalRelay.UseVisualStyleBackColor = true;
-      // 
-      // port1GlobalDirect
-      // 
-      this.port1GlobalDirect.AutoSize = true;
-      this.port1GlobalDirect.Location = new System.Drawing.Point(193, 65);
-      this.port1GlobalDirect.Name = "port1GlobalDirect";
-      this.port1GlobalDirect.Size = new System.Drawing.Size(48, 16);
-      this.port1GlobalDirect.TabIndex = 8;
-      this.port1GlobalDirect.Text = "視聴";
-      this.port1GlobalDirect.UseVisualStyleBackColor = true;
-      // 
-      // port1GlobalRelay
-      // 
-      this.port1GlobalRelay.AutoSize = true;
-      this.port1GlobalRelay.Location = new System.Drawing.Point(137, 65);
-      this.port1GlobalRelay.Name = "port1GlobalRelay";
-      this.port1GlobalRelay.Size = new System.Drawing.Size(50, 16);
-      this.port1GlobalRelay.TabIndex = 7;
-      this.port1GlobalRelay.Text = "リレー";
-      this.port1GlobalRelay.UseVisualStyleBackColor = true;
-      // 
-      // port1
-      // 
-      this.port1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+      this.portsList.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-      this.port1.Location = new System.Drawing.Point(137, 18);
-      this.port1.Maximum = new decimal(new int[] {
-            65535,
-            0,
-            0,
-            0});
-      this.port1.Minimum = new decimal(new int[] {
-            1025,
-            0,
-            0,
-            0});
-      this.port1.Name = "port1";
-      this.port1.Size = new System.Drawing.Size(273, 19);
-      this.port1.TabIndex = 1;
-      this.port1.Value = new decimal(new int[] {
-            7144,
-            0,
-            0,
-            0});
+      this.portsList.FormattingEnabled = true;
+      this.portsList.ItemHeight = 12;
+      this.portsList.Location = new System.Drawing.Point(6, 18);
+      this.portsList.Name = "portsList";
+      this.portsList.Size = new System.Drawing.Size(335, 76);
+      this.portsList.TabIndex = 11;
+      this.portsList.SelectedIndexChanged += new System.EventHandler(this.portsList_SelectedIndexChanged);
       // 
-      // applySettings
+      // portGlobalInterface
       // 
-      this.applySettings.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-      this.applySettings.Location = new System.Drawing.Point(337, 380);
-      this.applySettings.Name = "applySettings";
-      this.applySettings.Size = new System.Drawing.Size(90, 26);
-      this.applySettings.TabIndex = 0;
-      this.applySettings.Text = "適用";
-      this.applySettings.UseVisualStyleBackColor = true;
-      this.applySettings.Click += new System.EventHandler(this.applySettings_Click);
+      this.portGlobalInterface.AutoSize = true;
+      this.portGlobalInterface.Location = new System.Drawing.Point(245, 122);
+      this.portGlobalInterface.Name = "portGlobalInterface";
+      this.portGlobalInterface.Size = new System.Drawing.Size(48, 16);
+      this.portGlobalInterface.TabIndex = 9;
+      this.portGlobalInterface.Text = "操作";
+      this.portGlobalInterface.UseVisualStyleBackColor = true;
+      this.portGlobalInterface.CheckedChanged += new System.EventHandler(this.portGlobalInterface_CheckedChanged);
+      // 
+      // portLocalInterface
+      // 
+      this.portLocalInterface.AutoSize = true;
+      this.portLocalInterface.Location = new System.Drawing.Point(245, 100);
+      this.portLocalInterface.Name = "portLocalInterface";
+      this.portLocalInterface.Size = new System.Drawing.Size(48, 16);
+      this.portLocalInterface.TabIndex = 5;
+      this.portLocalInterface.Text = "操作";
+      this.portLocalInterface.UseVisualStyleBackColor = true;
+      this.portLocalInterface.CheckedChanged += new System.EventHandler(this.portLocalInterface_CheckedChanged);
+      // 
+      // portLocalDirect
+      // 
+      this.portLocalDirect.AutoSize = true;
+      this.portLocalDirect.Location = new System.Drawing.Point(191, 100);
+      this.portLocalDirect.Name = "portLocalDirect";
+      this.portLocalDirect.Size = new System.Drawing.Size(48, 16);
+      this.portLocalDirect.TabIndex = 4;
+      this.portLocalDirect.Text = "視聴";
+      this.portLocalDirect.UseVisualStyleBackColor = true;
+      this.portLocalDirect.CheckedChanged += new System.EventHandler(this.portLocalDirect_CheckedChanged);
+      // 
+      // portLocalRelay
+      // 
+      this.portLocalRelay.AutoSize = true;
+      this.portLocalRelay.Location = new System.Drawing.Point(135, 100);
+      this.portLocalRelay.Name = "portLocalRelay";
+      this.portLocalRelay.Size = new System.Drawing.Size(50, 16);
+      this.portLocalRelay.TabIndex = 3;
+      this.portLocalRelay.Text = "リレー";
+      this.portLocalRelay.UseVisualStyleBackColor = true;
+      this.portLocalRelay.CheckedChanged += new System.EventHandler(this.portLocalRelay_CheckedChanged);
+      // 
+      // portGlobalDirect
+      // 
+      this.portGlobalDirect.AutoSize = true;
+      this.portGlobalDirect.Location = new System.Drawing.Point(191, 122);
+      this.portGlobalDirect.Name = "portGlobalDirect";
+      this.portGlobalDirect.Size = new System.Drawing.Size(48, 16);
+      this.portGlobalDirect.TabIndex = 8;
+      this.portGlobalDirect.Text = "視聴";
+      this.portGlobalDirect.UseVisualStyleBackColor = true;
+      this.portGlobalDirect.CheckedChanged += new System.EventHandler(this.portGlobalDirect_CheckedChanged);
+      // 
+      // portGlobalRelay
+      // 
+      this.portGlobalRelay.AutoSize = true;
+      this.portGlobalRelay.Location = new System.Drawing.Point(135, 123);
+      this.portGlobalRelay.Name = "portGlobalRelay";
+      this.portGlobalRelay.Size = new System.Drawing.Size(50, 16);
+      this.portGlobalRelay.TabIndex = 7;
+      this.portGlobalRelay.Text = "リレー";
+      this.portGlobalRelay.UseVisualStyleBackColor = true;
+      this.portGlobalRelay.CheckedChanged += new System.EventHandler(this.portGlobalRelay_CheckedChanged);
       // 
       // tabLog
       // 
@@ -1476,7 +1331,7 @@ namespace PeerCastStation.GUI
       this.tabLog.Location = new System.Drawing.Point(4, 22);
       this.tabLog.Name = "tabLog";
       this.tabLog.Padding = new System.Windows.Forms.Padding(3);
-      this.tabLog.Size = new System.Drawing.Size(437, 409);
+      this.tabLog.Size = new System.Drawing.Size(437, 435);
       this.tabLog.TabIndex = 3;
       this.tabLog.Text = "ログ";
       this.tabLog.UseVisualStyleBackColor = true;
@@ -1485,7 +1340,7 @@ namespace PeerCastStation.GUI
       // 
       this.versionInfoButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
       this.versionInfoButton.AutoSize = true;
-      this.versionInfoButton.Location = new System.Drawing.Point(8, 377);
+      this.versionInfoButton.Location = new System.Drawing.Point(8, 403);
       this.versionInfoButton.Name = "versionInfoButton";
       this.versionInfoButton.Size = new System.Drawing.Size(90, 26);
       this.versionInfoButton.TabIndex = 13;
@@ -1519,7 +1374,7 @@ namespace PeerCastStation.GUI
       // 
       this.logClearButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
       this.logClearButton.AutoSize = true;
-      this.logClearButton.Location = new System.Drawing.Point(337, 377);
+      this.logClearButton.Location = new System.Drawing.Point(337, 403);
       this.logClearButton.Name = "logClearButton";
       this.logClearButton.Size = new System.Drawing.Size(90, 26);
       this.logClearButton.TabIndex = 8;
@@ -1559,7 +1414,7 @@ namespace PeerCastStation.GUI
       this.logText.Name = "logText";
       this.logText.ReadOnly = true;
       this.logText.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-      this.logText.Size = new System.Drawing.Size(419, 314);
+      this.logText.Size = new System.Drawing.Size(419, 340);
       this.logText.TabIndex = 5;
       // 
       // logFileNameText
@@ -1611,7 +1466,7 @@ namespace PeerCastStation.GUI
       this.statusBar.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.portLabel,
             this.portOpenedLabel});
-      this.statusBar.Location = new System.Drawing.Point(0, 433);
+      this.statusBar.Location = new System.Drawing.Point(0, 459);
       this.statusBar.Name = "statusBar";
       this.statusBar.Size = new System.Drawing.Size(443, 23);
       this.statusBar.TabIndex = 1;
@@ -1632,7 +1487,7 @@ namespace PeerCastStation.GUI
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-      this.ClientSize = new System.Drawing.Size(443, 456);
+      this.ClientSize = new System.Drawing.Size(443, 482);
       this.Controls.Add(this.statusBar);
       this.Controls.Add(this.mainTab);
       this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -1663,6 +1518,7 @@ namespace PeerCastStation.GUI
       this.tabSettings.ResumeLayout(false);
       this.panel2.ResumeLayout(false);
       this.panel2.PerformLayout();
+      this.groupBox3.ResumeLayout(false);
       this.groupBox5.ResumeLayout(false);
       this.groupBox5.PerformLayout();
       this.tableLayoutPanel3.ResumeLayout(false);
@@ -1672,12 +1528,8 @@ namespace PeerCastStation.GUI
       ((System.ComponentModel.ISupportInitialize)(this.maxDirects)).EndInit();
       ((System.ComponentModel.ISupportInitialize)(this.maxRelaysPerChannel)).EndInit();
       ((System.ComponentModel.ISupportInitialize)(this.maxRelays)).EndInit();
-      this.groupBox3.ResumeLayout(false);
-      this.groupBox3.PerformLayout();
-      ((System.ComponentModel.ISupportInitialize)(this.port2)).EndInit();
       this.groupBox4.ResumeLayout(false);
       this.groupBox4.PerformLayout();
-      ((System.ComponentModel.ISupportInitialize)(this.port1)).EndInit();
       this.tabLog.ResumeLayout(false);
       this.tabLog.PerformLayout();
       this.statusBar.ResumeLayout(false);
@@ -1692,7 +1544,6 @@ namespace PeerCastStation.GUI
     private System.Windows.Forms.TabControl mainTab;
     private System.Windows.Forms.TabPage tabChannels;
     private System.Windows.Forms.TabPage tabSettings;
-    private System.Windows.Forms.Button applySettings;
     private System.Windows.Forms.TabPage tabLog;
     private System.Windows.Forms.ComboBox logLevelList;
     private System.Windows.Forms.Label label5;
@@ -1755,24 +1606,20 @@ namespace PeerCastStation.GUI
     private System.Windows.Forms.NumericUpDown maxRelaysPerChannel;
     private System.Windows.Forms.NumericUpDown maxRelays;
     private System.Windows.Forms.GroupBox groupBox4;
-    private System.Windows.Forms.CheckBox port1GlobalInterface;
-    private System.Windows.Forms.CheckBox port1LocalInterface;
-    private System.Windows.Forms.CheckBox port1LocalDirect;
-    private System.Windows.Forms.CheckBox port1LocalRelay;
-    private System.Windows.Forms.CheckBox port1GlobalDirect;
-    private System.Windows.Forms.CheckBox port1GlobalRelay;
-    private System.Windows.Forms.NumericUpDown port1;
-    private System.Windows.Forms.GroupBox groupBox3;
-    private System.Windows.Forms.CheckBox port2GlobalInterface;
-    private System.Windows.Forms.CheckBox port2LocalInterface;
-    private System.Windows.Forms.CheckBox port2LocalDirect;
-    private System.Windows.Forms.CheckBox port2LocalRelay;
-    private System.Windows.Forms.CheckBox port2GlobalDirect;
-    private System.Windows.Forms.CheckBox port2GlobalRelay;
-    private System.Windows.Forms.NumericUpDown port2;
-    private System.Windows.Forms.Button ypListEditButton;
+    private System.Windows.Forms.CheckBox portGlobalInterface;
+    private System.Windows.Forms.CheckBox portLocalInterface;
+    private System.Windows.Forms.CheckBox portLocalDirect;
+    private System.Windows.Forms.CheckBox portLocalRelay;
+    private System.Windows.Forms.CheckBox portGlobalDirect;
+    private System.Windows.Forms.CheckBox portGlobalRelay;
     private System.Windows.Forms.NumericUpDown maxUpstreamRate;
     private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
+    private System.Windows.Forms.Button portRemoveButton;
+    private System.Windows.Forms.Button portAddButton;
+    private System.Windows.Forms.ListBox portsList;
+    private System.Windows.Forms.Button applySettings;
+    private System.Windows.Forms.GroupBox groupBox3;
+    private System.Windows.Forms.Button ypListEditButton;
 
   }
 }

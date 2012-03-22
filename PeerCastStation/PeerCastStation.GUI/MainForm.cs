@@ -102,8 +102,6 @@ namespace PeerCastStation.GUI
     }
 
     private Timer timer = new Timer();
-    private int currentPort1;
-    private int currentPort2;
     private TextBoxWriter guiWriter = null;
     private BindingList<ChannelListItem> channelListItems = new BindingList<ChannelListItem>();
     private List<YPSettings> yellowPages = new List<YPSettings>();
@@ -167,133 +165,39 @@ namespace PeerCastStation.GUI
         notifyIcon.DoubleClick += showGUIMenuItem_Click;
       }
       peerCast = peercast;
-      peerCast.ChannelAdded   += ChannelAdded;
-      peerCast.ChannelRemoved += ChannelRemoved;
-      peerCast.YellowPagesChanged += YellowPagesChanged;
+      peerCast.ChannelAdded          += ChannelAdded;
+      peerCast.ChannelRemoved        += ChannelRemoved;
+      peerCast.YellowPagesChanged    += YellowPagesChanged;
       peerCast.ContentReadersChanged += ContentReadersChanged;
       bcContentType.DataSource = peerCast.ContentReaders.Select(r => new ContentReaderWrapper(r)).ToList();
-      if (Settings.Default.BroadcastID!=Guid.Empty) {
-        peerCast.BroadcastID = Settings.Default.BroadcastID;
-      }
-      else {
-        Settings.Default.BroadcastID = peerCast.BroadcastID;
-      }
+      logLevelList.SelectedIndex = Settings.Default.LogLevel;
+      logToFileCheck.Checked     = Settings.Default.LogToFile;
+      logFileNameText.Text       = Settings.Default.LogFileName;
+      logToConsoleCheck.Checked  = Settings.Default.LogToConsole;
+      logToGUICheck.Checked      = Settings.Default.LogToGUI;
       OnUpdateSettings(null);
-      port1LocalRelay.Checked      = Settings.Default.Port1LocalRelay;
-      port1LocalDirect.Checked     = Settings.Default.Port1LocalDirect;
-      port1LocalInterface.Checked  = Settings.Default.Port1LocalInterface;
-      port1GlobalRelay.Checked     = Settings.Default.Port1GlobalRelay;
-      port1GlobalDirect.Checked    = Settings.Default.Port1GlobalDirect;
-      port1GlobalInterface.Checked = Settings.Default.Port1GlobalInterface;
-      port1.Value                  = Settings.Default.Port;
-      port2LocalRelay.Checked      = Settings.Default.Port2LocalRelay;
-      port2LocalDirect.Checked     = Settings.Default.Port2LocalDirect;
-      port2LocalInterface.Checked  = Settings.Default.Port2LocalInterface;
-      port2GlobalRelay.Checked     = Settings.Default.Port2GlobalRelay;
-      port2GlobalDirect.Checked    = Settings.Default.Port2GlobalDirect;
-      port2GlobalInterface.Checked = Settings.Default.Port2GlobalInterface;
-      port2.Value                  = Settings.Default.Port2;
-      maxRelays.Value              = Settings.Default.MaxRelays;
-      maxDirects.Value             = Settings.Default.MaxPlays;
-      maxRelaysPerChannel.Value    = Settings.Default.MaxRelaysPerChannel;
-      maxDirectsPerChannel.Value   = Settings.Default.MaxPlaysPerChannel;
-      maxUpstreamRate.Value        = Settings.Default.MaxUpstreamRate;
-      logLevelList.SelectedIndex   = Settings.Default.LogLevel;
-      logToFileCheck.Checked       = Settings.Default.LogToFile;
-      logFileNameText.Text         = Settings.Default.LogFileName;
-      logToConsoleCheck.Checked    = Settings.Default.LogToConsole;
-      logToGUICheck.Checked        = Settings.Default.LogToGUI;
-      if (Settings.Default.YellowPages!=null) {
-        yellowPages = new List<YPSettings>(Settings.Default.YellowPages);
-        peerCast.YellowPages = ToYPClients(yellowPages);
-      }
-      if (peerCast.IsFirewalled.HasValue) {
-        portOpenedLabel.Text = peerCast.IsFirewalled.Value ? "未開放" : "開放";
-      }
-      else {
-        portOpenedLabel.Text = "開放状態不明";
-      }
-      timer.Interval = 1;
+      timer.Interval = 1000;
       timer.Enabled = true;
+      timer.Tick += (sender, args) => {
+        if (peerCast.IsFirewalled.HasValue) {
+          portOpenedLabel.Text = peerCast.IsFirewalled.Value ? "未開放" : "開放";
+        }
+        else {
+          portOpenedLabel.Text = "開放状態不明";
+        }
+        portLabel.Text = "リレー可能ポート:" + String.Join(", ",
+          peerCast.OutputListeners.Where(listener =>
+            (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0
+          ).Select(
+            listener => listener.LocalEndPoint.Port
+          ).Distinct().Select(
+            port => port.ToString()
+          ).ToArray());
+      };
     }
 
     private void OnUpdateSettings(string property_name)
     {
-      if (property_name==null || property_name=="Port" || property_name=="Port2") {
-        bool port1_opened = false;
-        bool port2_opened = false;
-        var listener1 = peerCast.OutputListeners.FirstOrDefault(x => x.LocalEndPoint.Port==currentPort1);
-        if (listener1!=null) peerCast.StopListen(listener1);
-        currentPort1 = Settings.Default.Port;
-        try {
-          OutputStreamType local_accepts =
-            OutputStreamType.Metadata |
-            (Settings.Default.Port1LocalDirect    ? OutputStreamType.Play : OutputStreamType.None) |
-            (Settings.Default.Port1LocalRelay     ? OutputStreamType.Relay : OutputStreamType.None) |
-            (Settings.Default.Port1LocalInterface ? OutputStreamType.Interface : OutputStreamType.None);
-          OutputStreamType global_accepts =
-            OutputStreamType.Metadata |
-            (Settings.Default.Port1GlobalDirect    ? OutputStreamType.Play : OutputStreamType.None) |
-            (Settings.Default.Port1GlobalRelay     ? OutputStreamType.Relay : OutputStreamType.None) |
-            (Settings.Default.Port1GlobalInterface ? OutputStreamType.Interface : OutputStreamType.None);
-          peerCast.StartListen(
-            new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort1),
-            local_accepts,
-            global_accepts);
-          port1_opened = true;
-        }
-        catch (System.Net.Sockets.SocketException) {
-        }
-        var listener2 = peerCast.OutputListeners.FirstOrDefault(x => x.LocalEndPoint.Port==currentPort2);
-        if (listener2!=null) peerCast.StopListen(listener2);
-        currentPort2 = Settings.Default.Port2;
-        try {
-          OutputStreamType local_accepts =
-            OutputStreamType.Metadata |
-            (Settings.Default.Port2LocalDirect    ? OutputStreamType.Play : OutputStreamType.None) |
-            (Settings.Default.Port2LocalRelay     ? OutputStreamType.Relay : OutputStreamType.None) |
-            (Settings.Default.Port2LocalInterface ? OutputStreamType.Interface : OutputStreamType.None);
-          OutputStreamType global_accepts =
-            OutputStreamType.Metadata |
-            (Settings.Default.Port2GlobalDirect    ? OutputStreamType.Play : OutputStreamType.None) |
-            (Settings.Default.Port2GlobalRelay     ? OutputStreamType.Relay : OutputStreamType.None) |
-            (Settings.Default.Port2GlobalInterface ? OutputStreamType.Interface : OutputStreamType.None);
-          peerCast.StartListen(
-            new System.Net.IPEndPoint(System.Net.IPAddress.Any, currentPort2),
-            local_accepts,
-            global_accepts);
-          port2_opened = true;
-        }
-        catch (System.Net.Sockets.SocketException) {
-        }
-        if (!port1_opened && !port2_opened) {
-          portLabel.Text = String.Format("ポート{0}, {1}を開けません", currentPort1, currentPort2);
-        }
-        else if (!port1_opened) {
-          portLabel.Text = String.Format("ポート{0}を開けません", currentPort1);
-        }
-        else if (!port2_opened) {
-          portLabel.Text = String.Format("ポート{0}を開けません", currentPort2);
-        }
-        else {
-          portLabel.Text = String.Format("ポート{0}, {1}", currentPort1, currentPort2);
-        }
-      }
-      if (property_name==null || property_name=="MaxPlays") {
-        peerCast.AccessController.MaxPlays = Settings.Default.MaxPlays;
-      }
-      if (property_name==null || property_name=="MaxRelays") {
-        peerCast.AccessController.MaxRelays = Settings.Default.MaxRelays;
-      }
-      if (property_name==null || property_name=="MaxPlaysPerChannel") {
-        peerCast.AccessController.MaxPlaysPerChannel = Settings.Default.MaxPlaysPerChannel;
-      }
-      if (property_name==null || property_name=="MaxRelaysPerChannel") {
-        peerCast.AccessController.MaxRelaysPerChannel = Settings.Default.MaxRelaysPerChannel;
-      }
-      if (property_name==null || property_name=="MaxUpStreamRate") {
-        peerCast.AccessController.MaxUpstreamRate = Settings.Default.MaxUpstreamRate;
-      }
       if (property_name==null || property_name=="LogLevel") {
         switch (Settings.Default.LogLevel) {
         case 0: Logger.Level = LogLevel.None;  break;
@@ -475,25 +379,11 @@ namespace PeerCastStation.GUI
 
     private void applySettings_Click(object sender, EventArgs e)
     {
-      Settings.Default.Port1LocalRelay      = port1LocalRelay.Checked;
-      Settings.Default.Port1LocalDirect     = port1LocalDirect.Checked;
-      Settings.Default.Port1LocalInterface  = port1LocalInterface.Checked;
-      Settings.Default.Port1GlobalRelay     = port1GlobalRelay.Checked;
-      Settings.Default.Port1GlobalDirect    = port1GlobalDirect.Checked;
-      Settings.Default.Port1GlobalInterface = port1GlobalInterface.Checked;
-      Settings.Default.Port                 = (int)port1.Value;
-      Settings.Default.Port2LocalRelay      = port2LocalRelay.Checked;
-      Settings.Default.Port2LocalDirect     = port2LocalDirect.Checked;
-      Settings.Default.Port2LocalInterface  = port2LocalInterface.Checked;
-      Settings.Default.Port2GlobalRelay     = port2GlobalRelay.Checked;
-      Settings.Default.Port2GlobalDirect    = port2GlobalDirect.Checked;
-      Settings.Default.Port2GlobalInterface = port2GlobalInterface.Checked;
-      Settings.Default.Port2                = (int)port2.Value;
-      Settings.Default.MaxRelays            = (int)maxRelays.Value;
-      Settings.Default.MaxPlays             = (int)maxDirects.Value;
-      Settings.Default.MaxRelaysPerChannel  = (int)maxRelaysPerChannel.Value;
-      Settings.Default.MaxPlaysPerChannel   = (int)maxDirectsPerChannel.Value;
-      Settings.Default.MaxUpstreamRate      = (int)maxUpstreamRate.Value;
+      peerCast.AccessController.MaxRelays           = (int)maxRelays.Value;
+      peerCast.AccessController.MaxPlays            = (int)maxDirects.Value;
+      peerCast.AccessController.MaxRelaysPerChannel = (int)maxRelaysPerChannel.Value;
+      peerCast.AccessController.MaxPlaysPerChannel  = (int)maxDirectsPerChannel.Value;
+      peerCast.AccessController.MaxUpstreamRate     = (int)maxUpstreamRate.Value;
       if (peerCast.IsFirewalled.HasValue) {
         portOpenedLabel.Text = peerCast.IsFirewalled.Value ? "未開放" : "開放";
       }
@@ -513,7 +403,6 @@ namespace PeerCastStation.GUI
 
     private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
     {
-      Settings.Default.YellowPages = new YPSettingsCollection(yellowPages);
       Settings.Default.Save();
       Logger.RemoveWriter(guiWriter);
     }
@@ -869,6 +758,205 @@ namespace PeerCastStation.GUI
     {
       var dlg = new VersionInfoDialog(new string[] { "PeerCastStation" });
       dlg.ShowDialog();
+    }
+
+    class PortListItem
+    {
+      public OutputListener Listener { get; set; }
+
+      public PortListItem(OutputListener listener)
+      {
+        Listener = listener;
+      }
+
+      public override string  ToString()
+      {
+        var addr = Listener.LocalEndPoint.Address.ToString();
+        if (Listener.LocalEndPoint.Address.Equals(System.Net.IPAddress.Any))     addr = "IPv4 Any";
+        if (Listener.LocalEndPoint.Address.Equals(System.Net.IPAddress.IPv6Any)) addr = "IPv6 Any";
+        var local_accepts = "無し";
+        if ((Listener.LocalOutputAccepts & ~OutputStreamType.Metadata)!=OutputStreamType.None) {
+          var accepts = new List<string>();
+          if ((Listener.LocalOutputAccepts & OutputStreamType.Interface)!=0) accepts.Add("操作");
+          if ((Listener.LocalOutputAccepts & OutputStreamType.Relay)!=0) accepts.Add("リレー");
+          if ((Listener.LocalOutputAccepts & OutputStreamType.Play)!=0) accepts.Add("視聴");
+          local_accepts = String.Join(",", accepts.ToArray());
+        }
+        var global_accepts = "無し";
+        if ((Listener.GlobalOutputAccepts & ~OutputStreamType.Metadata)!=OutputStreamType.None) {
+          var accepts = new List<string>();
+          if ((Listener.GlobalOutputAccepts & OutputStreamType.Interface)!=0) accepts.Add("操作");
+          if ((Listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0) accepts.Add("リレー");
+          if ((Listener.GlobalOutputAccepts & OutputStreamType.Play)!=0) accepts.Add("視聴");
+          global_accepts = String.Join(",", accepts.ToArray());
+        }
+        return String.Format(
+          "{0}:{1} LAN:{2} WAN:{3}",
+          addr,
+          Listener.LocalEndPoint.Port,
+          local_accepts,
+          global_accepts);
+      }
+    }
+
+    private void mainTab_SelectedIndexChanged(object sender, EventArgs e)
+    {
+      if (mainTab.SelectedTab==tabSettings) {
+        maxRelays.Value            = peerCast.AccessController.MaxRelays;
+        maxDirects.Value           = peerCast.AccessController.MaxPlays;
+        maxRelaysPerChannel.Value  = peerCast.AccessController.MaxRelaysPerChannel;
+        maxDirectsPerChannel.Value = peerCast.AccessController.MaxPlaysPerChannel;
+        maxUpstreamRate.Value      = peerCast.AccessController.MaxUpstreamRate;
+        portsList.Items.Clear();
+        portsList.Items.AddRange(peerCast.OutputListeners.Select(listener => new PortListItem(listener)).ToArray());
+        portGlobalRelay.Enabled     = false;
+        portGlobalDirect.Enabled    = false;
+        portGlobalInterface.Enabled = false;
+        portLocalRelay.Enabled      = false;
+        portLocalDirect.Enabled     = false;
+        portLocalInterface.Enabled  = false;
+      }
+    }
+
+    private void portsList_SelectedIndexChanged(object sender, EventArgs e)
+    {
+      var item = portsList.SelectedItem as PortListItem;
+      if (item!=null) {
+        var listener = item.Listener;
+        portGlobalRelay.Checked     = (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0;
+        portGlobalDirect.Checked    = (listener.GlobalOutputAccepts & OutputStreamType.Play)!=0;
+        portGlobalInterface.Checked = (listener.GlobalOutputAccepts & OutputStreamType.Interface)!=0;
+        portLocalRelay.Checked      = (listener.LocalOutputAccepts & OutputStreamType.Relay)!=0;
+        portLocalDirect.Checked     = (listener.LocalOutputAccepts & OutputStreamType.Play)!=0;
+        portLocalInterface.Checked  = (listener.LocalOutputAccepts & OutputStreamType.Interface)!=0;
+        portGlobalRelay.Enabled     = true;
+        portGlobalDirect.Enabled    = true;
+        portGlobalInterface.Enabled = true;
+        portLocalRelay.Enabled      = true;
+        portLocalDirect.Enabled     = true;
+        portLocalInterface.Enabled  = true;
+      }
+      else {
+        portGlobalRelay.Enabled     = false;
+        portGlobalDirect.Enabled    = false;
+        portGlobalInterface.Enabled = false;
+        portLocalRelay.Enabled      = false;
+        portLocalDirect.Enabled     = false;
+        portLocalInterface.Enabled  = false;
+      }
+    }
+
+    private void portLocalRelay_CheckedChanged(object sender, EventArgs e)
+    {
+      var item = portsList.SelectedItem as PortListItem;
+      if (item!=null) {
+        var listener = item.Listener;
+        if (portLocalRelay.Checked) {
+          listener.LocalOutputAccepts |= OutputStreamType.Relay;
+        }
+        else {
+          listener.LocalOutputAccepts &= ~OutputStreamType.Relay;
+        }
+        portsList.Items[portsList.Items.IndexOf(item)] = item;
+      }
+    }
+
+    private void portGlobalRelay_CheckedChanged(object sender, EventArgs e)
+    {
+      var item = portsList.SelectedItem as PortListItem;
+      if (item!=null) {
+        var listener = item.Listener;
+        if (portGlobalRelay.Checked) {
+          listener.GlobalOutputAccepts |= OutputStreamType.Relay;
+        }
+        else {
+          listener.GlobalOutputAccepts &= ~OutputStreamType.Relay;
+        }
+        portsList.Items[portsList.Items.IndexOf(item)] = item;
+      }
+    }
+
+    private void portLocalDirect_CheckedChanged(object sender, EventArgs e)
+    {
+      var item = portsList.SelectedItem as PortListItem;
+      if (item!=null) {
+        var listener = item.Listener;
+        if (portLocalDirect.Checked) {
+          listener.LocalOutputAccepts |= OutputStreamType.Play;
+        }
+        else {
+          listener.LocalOutputAccepts &= ~OutputStreamType.Play;
+        }
+        portsList.Items[portsList.Items.IndexOf(item)] = item;
+      }
+    }
+
+    private void portGlobalDirect_CheckedChanged(object sender, EventArgs e)
+    {
+      var item = portsList.SelectedItem as PortListItem;
+      if (item!=null) {
+        var listener = item.Listener;
+        if (portGlobalDirect.Checked) {
+          listener.GlobalOutputAccepts |= OutputStreamType.Play;
+        }
+        else {
+          listener.GlobalOutputAccepts &= ~OutputStreamType.Play;
+        }
+        portsList.Items[portsList.Items.IndexOf(item)] = item;
+      }
+    }
+
+    private void portLocalInterface_CheckedChanged(object sender, EventArgs e)
+    {
+      var item = portsList.SelectedItem as PortListItem;
+      if (item!=null) {
+        var listener = item.Listener;
+        if (portLocalInterface.Checked) {
+          listener.LocalOutputAccepts |= OutputStreamType.Interface;
+        }
+        else {
+          listener.LocalOutputAccepts &= ~OutputStreamType.Interface;
+        }
+        portsList.Items[portsList.Items.IndexOf(item)] = item;
+      }
+    }
+
+    private void portGlobalInterface_CheckedChanged(object sender, EventArgs e)
+    {
+      var item = portsList.SelectedItem as PortListItem;
+      if (item!=null) {
+        var listener = item.Listener;
+        if (portGlobalInterface.Checked) {
+          listener.GlobalOutputAccepts |= OutputStreamType.Interface;
+        }
+        else {
+          listener.GlobalOutputAccepts &= ~OutputStreamType.Interface;
+        }
+        portsList.Items[portsList.Items.IndexOf(item)] = item;
+      }
+    }
+
+    private void portAddButton_Click(object sender, EventArgs args)
+    {
+      var dlg = new ListenerEditDialog();
+      if (dlg.ShowDialog(this)==System.Windows.Forms.DialogResult.OK) {
+        try {
+          var listener = peerCast.StartListen(new System.Net.IPEndPoint(dlg.Address, dlg.Port), dlg.LocalAccepts, dlg.GlobalAccepts);
+          portsList.Items.Add(new PortListItem(listener));
+        }
+        catch (System.Net.Sockets.SocketException) {
+        }
+      }
+    }
+
+    private void portRemoveButton_Click(object sender, EventArgs e)
+    {
+      var item = portsList.SelectedItem as PortListItem;
+      if (item!=null) {
+        peerCast.StopListen(item.Listener);
+        portsList.Items.Clear();
+        portsList.Items.AddRange(peerCast.OutputListeners.Select(listener => new PortListItem(listener)).ToArray());
+      }
     }
   }
 }
