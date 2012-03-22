@@ -460,6 +460,44 @@ JSON
     parse_jsonrpc_response(@output_stream.to_array.to_a.pack('C*'))
   end
 
+  def test_get_status
+    local_accepts =
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.interface
+    global_accepts =
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.metadata
+    listeners = [
+      ['127.0.0.1', 7144],
+      ['0.0.0.0',   7145],
+      ['127.0.0.1', 7146],
+    ].collect {|addr, port|
+      @app.peercast.start_listen(
+        System::Net::IPEndPoint.new(System::Net::IPAddress.parse(addr), port),
+        local_accepts,
+        global_accepts)
+    }
+    res = invoke_method('getStatus')
+    assert_equal(1, res.body.id)
+    assert_nil(res.body.error)
+    assert_equal(@app.peercast.uptime.total_seconds.to_i, res.body.result['uptime'])
+    assert_equal(@app.peercast.is_firewalled, res.body.result['isFirewalled'])
+    assert_nil(res.body.result['globalRelayEndPoint'])
+    assert_nil(res.body.result['globalDirectEndPoint'])
+    endpoint = @app.peercast.get_local_end_point(
+        System::Net::Sockets::AddressFamily.inter_network,
+        PeerCastStation::Core::OutputStreamType.relay)
+    assert_equal(endpoint.address.to_s, res.body.result['localRelayEndPoint'][0])
+    assert_equal(endpoint.port,         res.body.result['localRelayEndPoint'][1])
+    endpoint = @app.peercast.get_local_end_point(
+        System::Net::Sockets::AddressFamily.inter_network,
+        PeerCastStation::Core::OutputStreamType.play)
+    assert_equal(endpoint.address.to_s, res.body.result['localDirectEndPoint'][0])
+    assert_equal(endpoint.port,         res.body.result['localDirectEndPoint'][1])
+  end
+
   def test_getSettings
     actrl = @app.peercast.access_controller
     actrl.max_plays              = rand(100)
@@ -1410,6 +1448,34 @@ JSON
     assert_equal(listeners.count-1, @app.peercast.output_listeners.count)
     assert_same(listeners[0], @app.peercast.output_listeners[0])
     assert_same(listeners[2], @app.peercast.output_listeners[1])
+  end
+
+  def test_setListenerAccepts
+    accepts =
+      PeerCastStation::Core::OutputStreamType.metadata |
+      PeerCastStation::Core::OutputStreamType.play |
+      PeerCastStation::Core::OutputStreamType.relay |
+      PeerCastStation::Core::OutputStreamType.interface
+    listeners = [
+      ['127.0.0.1', 7144],
+      ['0.0.0.0',   7145],
+      ['127.0.0.1', 7146],
+    ].collect {|addr, port|
+      @app.peercast.start_listen(System::Net::IPEndPoint.new(System::Net::IPAddress.parse(addr), port), accepts, accepts)
+    }
+    res = invoke_method(
+      'setListenerAccepts',
+      'listenerId' => listeners[1].hash,
+      'localAccepts' => 0,
+      'globalAccepts' => 0)
+    assert_equal(1, res.body.id)
+    assert_nil(res.body.error)
+    assert_equal(accepts, listeners[0].local_output_accepts)
+    assert_equal(accepts, listeners[0].global_output_accepts)
+    assert_equal(PeerCastStation::Core::OutputStreamType.none, listeners[1].local_output_accepts)
+    assert_equal(PeerCastStation::Core::OutputStreamType.none, listeners[1].global_output_accepts)
+    assert_equal(accepts, listeners[2].local_output_accepts)
+    assert_equal(accepts, listeners[2].global_output_accepts)
   end
 
   class TestSourceStreamFactory

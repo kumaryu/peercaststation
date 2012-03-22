@@ -415,6 +415,35 @@ namespace PeerCastStation.UI.HTTP
         return res;
       }
 
+      [RPCMethod("getStatus")]
+      private JObject GetStatus()
+      {
+        var res = new JObject();
+        res["uptime"]       = (int)PeerCast.Uptime.TotalSeconds;
+        res["isFirewalled"] = PeerCast.IsFirewalled;
+        var endpoint = 
+          PeerCast.GetGlobalEndPoint(
+            System.Net.Sockets.AddressFamily.InterNetwork,
+            Core.OutputStreamType.Relay);
+        res["globalRelayEndPoint"]  = endpoint!=null ? new JArray(endpoint.Address.ToString(), endpoint.Port) : null;
+        endpoint = 
+          PeerCast.GetGlobalEndPoint(
+            System.Net.Sockets.AddressFamily.InterNetwork,
+            Core.OutputStreamType.Play);
+        res["globalDirectEndPoint"] = endpoint!=null ? new JArray(endpoint.Address.ToString(), endpoint.Port) : null;
+        endpoint = 
+          PeerCast.GetLocalEndPoint(
+            System.Net.Sockets.AddressFamily.InterNetwork,
+            Core.OutputStreamType.Relay);
+        res["localRelayEndPoint"]   = endpoint!=null ? new JArray(endpoint.Address.ToString(), endpoint.Port) : null;
+        endpoint = 
+          PeerCast.GetLocalEndPoint(
+            System.Net.Sockets.AddressFamily.InterNetwork,
+            Core.OutputStreamType.Play);
+        res["localDirectEndPoint"]  = endpoint!=null ? new JArray(endpoint.Address.ToString(), endpoint.Port) : null;
+        return res;
+      }
+
       [RPCMethod("getSettings")]
       private JToken GetSettings()
       {
@@ -736,6 +765,15 @@ namespace PeerCastStation.UI.HTTP
       {
         foreach (var listener in PeerCast.OutputListeners.Where(ol => ol.GetHashCode()==listenerId)) {
           PeerCast.StopListen(listener);
+        }
+      }
+
+      [RPCMethod("setListenerAccepts")]
+      private void setListenerAccepts(int listenerId, int localAccepts, int globalAccepts)
+      {
+        foreach (var listener in PeerCast.OutputListeners.Where(ol => ol.GetHashCode()==listenerId)) {
+          listener.LocalOutputAccepts = (OutputStreamType)localAccepts;
+          listener.GlobalOutputAccepts = (OutputStreamType)globalAccepts;
         }
       }
 
