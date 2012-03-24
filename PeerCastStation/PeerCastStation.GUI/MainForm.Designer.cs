@@ -124,7 +124,9 @@ namespace PeerCastStation.GUI
       this.tabSettings = new System.Windows.Forms.TabPage();
       this.panel2 = new System.Windows.Forms.Panel();
       this.groupBox3 = new System.Windows.Forms.GroupBox();
-      this.ypListEditButton = new System.Windows.Forms.Button();
+      this.button1 = new System.Windows.Forms.Button();
+      this.button2 = new System.Windows.Forms.Button();
+      this.yellowPagesList = new System.Windows.Forms.ListBox();
       this.groupBox5 = new System.Windows.Forms.GroupBox();
       this.applySettings = new System.Windows.Forms.Button();
       this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
@@ -1069,24 +1071,49 @@ namespace PeerCastStation.GUI
       // 
       this.groupBox3.AutoSize = true;
       this.groupBox3.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-      this.groupBox3.Controls.Add(this.ypListEditButton);
+      this.groupBox3.Controls.Add(this.button1);
+      this.groupBox3.Controls.Add(this.button2);
+      this.groupBox3.Controls.Add(this.yellowPagesList);
       this.groupBox3.Dock = System.Windows.Forms.DockStyle.Top;
       this.groupBox3.Location = new System.Drawing.Point(4, 298);
       this.groupBox3.Name = "groupBox3";
-      this.groupBox3.Size = new System.Drawing.Size(429, 61);
+      this.groupBox3.Size = new System.Drawing.Size(429, 112);
       this.groupBox3.TabIndex = 3;
       this.groupBox3.TabStop = false;
       this.groupBox3.Text = "YP一覧";
       // 
-      // ypListEditButton
+      // button1
       // 
-      this.ypListEditButton.Location = new System.Drawing.Point(6, 18);
-      this.ypListEditButton.Name = "ypListEditButton";
-      this.ypListEditButton.Size = new System.Drawing.Size(97, 25);
-      this.ypListEditButton.TabIndex = 2;
-      this.ypListEditButton.Text = "編集...";
-      this.ypListEditButton.UseVisualStyleBackColor = true;
-      this.ypListEditButton.Click += new System.EventHandler(this.ypListEditButton_Click);
+      this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.button1.Location = new System.Drawing.Point(347, 47);
+      this.button1.Name = "button1";
+      this.button1.Size = new System.Drawing.Size(75, 23);
+      this.button1.TabIndex = 17;
+      this.button1.Text = "削除";
+      this.button1.UseVisualStyleBackColor = true;
+      this.button1.Click += new System.EventHandler(this.yellowPageRemoveButton_Click);
+      // 
+      // button2
+      // 
+      this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.button2.Location = new System.Drawing.Point(347, 18);
+      this.button2.Name = "button2";
+      this.button2.Size = new System.Drawing.Size(75, 23);
+      this.button2.TabIndex = 16;
+      this.button2.Text = "追加...";
+      this.button2.UseVisualStyleBackColor = true;
+      this.button2.Click += new System.EventHandler(this.yellowPageAddButton_Click);
+      // 
+      // yellowPagesList
+      // 
+      this.yellowPagesList.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      this.yellowPagesList.FormattingEnabled = true;
+      this.yellowPagesList.ItemHeight = 12;
+      this.yellowPagesList.Location = new System.Drawing.Point(6, 18);
+      this.yellowPagesList.Name = "yellowPagesList";
+      this.yellowPagesList.Size = new System.Drawing.Size(335, 76);
+      this.yellowPagesList.TabIndex = 15;
       // 
       // groupBox5
       // 
@@ -1619,7 +1646,9 @@ namespace PeerCastStation.GUI
     private System.Windows.Forms.ListBox portsList;
     private System.Windows.Forms.Button applySettings;
     private System.Windows.Forms.GroupBox groupBox3;
-    private System.Windows.Forms.Button ypListEditButton;
+    private System.Windows.Forms.Button button1;
+    private System.Windows.Forms.Button button2;
+    private System.Windows.Forms.ListBox yellowPagesList;
 
   }
 }

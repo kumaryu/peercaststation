@@ -86,7 +86,6 @@
     <Compile Include="YellowPagesEditDialog.Designer.cs">
       <DependentUpon>YellowPagesEditDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="YPSettings.cs" />
     <EmbeddedResource Include="ListenerEditDialog.resx">
       <DependentUpon>ListenerEditDialog.cs</DependentUpon>
     </EmbeddedResource>

@@ -104,7 +104,6 @@ namespace PeerCastStation.GUI
     private Timer timer = new Timer();
     private TextBoxWriter guiWriter = null;
     private BindingList<ChannelListItem> channelListItems = new BindingList<ChannelListItem>();
-    private List<YPSettings> yellowPages = new List<YPSettings>();
     public class ContentReaderWrapper
     {
       public IContentReader Reader { get; private set; }
@@ -167,7 +166,6 @@ namespace PeerCastStation.GUI
       peerCast = peercast;
       peerCast.ChannelAdded          += ChannelAdded;
       peerCast.ChannelRemoved        += ChannelRemoved;
-      peerCast.YellowPagesChanged    += YellowPagesChanged;
       peerCast.ContentReadersChanged += ContentReadersChanged;
       bcContentType.DataSource = peerCast.ContentReaders.Select(r => new ContentReaderWrapper(r)).ToList();
       logLevelList.SelectedIndex = Settings.Default.LogLevel;
@@ -334,18 +332,16 @@ namespace PeerCastStation.GUI
         this.Name = name;
         this.YellowPageClient = yellowpage;
       }
+
+      public YellowPageItem(IYellowPageClient yellowpage)
+        : this(String.Format("{0} ({1})", yellowpage.Name, yellowpage.Uri), yellowpage)
+      {
+      }
+
       public override string ToString()
       {
         return this.Name;
       }
-    }
-
-    private void YellowPagesChanged(object sender, EventArgs e)
-    {
-      var items = new List<YellowPageItem>();
-      items.AddRange(peerCast.YellowPages.Select(yp => new YellowPageItem(yp.Name, yp)));
-      items.Add(new YellowPageItem("YPに掲載しない", null));
-      bcYP.DataSource = items;
     }
 
     private void ContentReadersChanged(object sender, EventArgs e)
@@ -730,30 +726,6 @@ namespace PeerCastStation.GUI
       Application.Exit();
     }
 
-    private void ypListEditButton_Click(object sender, EventArgs e)
-    {
-      var dlg = new YellowPagesEditDialog(peerCast);
-      dlg.YPSettingsList = yellowPages;
-      if (dlg.ShowDialog()==DialogResult.OK) {
-        yellowPages = new List<YPSettings>(dlg.YPSettingsList);
-        peerCast.YellowPages = ToYPClients(yellowPages);
-      }
-    }
-
-    private IList<IYellowPageClient> ToYPClients(IList<YPSettings> ypsettings)
-    {
-      List<IYellowPageClient> res = new List<IYellowPageClient>();
-      foreach (var setting in ypsettings) {
-        if (!setting.Enabled) continue;
-        var factory = peerCast.YellowPageFactories.FirstOrDefault(f => f.Name==setting.Protocol);
-        if (factory!=null) {
-          var uri = new Uri(String.Format("{0}://{1}", setting.Protocol, setting.Address));
-          res.Add(factory.Create(setting.Name, uri));
-        }
-      }
-      return res;
-    }
-
     private void versionInfoButton_Click(object sender, EventArgs e)
     {
       var dlg = new VersionInfoDialog(new string[] { "PeerCastStation" });
@@ -815,6 +787,13 @@ namespace PeerCastStation.GUI
         portLocalRelay.Enabled      = false;
         portLocalDirect.Enabled     = false;
         portLocalInterface.Enabled  = false;
+        yellowPagesList.Items.Clear();
+        yellowPagesList.Items.AddRange(peerCast.YellowPages.Select(yp => new YellowPageItem(yp)).ToArray());
+      }
+      else if (mainTab.SelectedTab==tabBroadcast) {
+        bcYP.Items.Clear();
+        bcYP.Items.AddRange(peerCast.YellowPages.Select(yp => new YellowPageItem(yp)).ToArray());
+        bcYP.Items.Add(new YellowPageItem("YPに掲載しない", null));
       }
     }
 
@@ -956,6 +935,26 @@ namespace PeerCastStation.GUI
         peerCast.StopListen(item.Listener);
         portsList.Items.Clear();
         portsList.Items.AddRange(peerCast.OutputListeners.Select(listener => new PortListItem(listener)).ToArray());
+      }
+    }
+
+    private void yellowPageAddButton_Click(object sender, EventArgs args)
+    {
+      var dlg = new YellowPagesEditDialog(peerCast);
+      if (dlg.ShowDialog(this)==System.Windows.Forms.DialogResult.OK) {
+        peerCast.AddYellowPage(dlg.Protocol, dlg.YPName, dlg.Uri);
+        yellowPagesList.Items.Clear();
+        yellowPagesList.Items.AddRange(peerCast.YellowPages.Select(yp => new YellowPageItem(yp)).ToArray());
+      }
+    }
+
+    private void yellowPageRemoveButton_Click(object sender, EventArgs e)
+    {
+      var item = yellowPagesList.SelectedItem as YellowPageItem;
+      if (item!=null) {
+        peerCast.RemoveYellowPage(item.YellowPageClient);
+        yellowPagesList.Items.Clear();
+        yellowPagesList.Items.AddRange(peerCast.YellowPages.Select(yp => new YellowPageItem(yp)).ToArray());
       }
     }
   }
