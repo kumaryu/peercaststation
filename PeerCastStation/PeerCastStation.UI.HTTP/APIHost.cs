@@ -487,7 +487,6 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("setLogSettings")]
       private void setLogSettings(JObject settings)
       {
-        var res = new JObject();
         if (settings["level"]!=null) {
           Logger.Level = (LogLevel)(int)settings["level"];
         }
