@@ -59,6 +59,12 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BroadcastDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BroadcastDialog.Designer.cs">
+      <DependentUpon>BroadcastDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="ListenerEditDialog.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -86,6 +92,9 @@
     <Compile Include="YellowPagesEditDialog.Designer.cs">
       <DependentUpon>YellowPagesEditDialog.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="BroadcastDialog.resx">
+      <DependentUpon>BroadcastDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="ListenerEditDialog.resx">
       <DependentUpon>ListenerEditDialog.cs</DependentUpon>
     </EmbeddedResource>

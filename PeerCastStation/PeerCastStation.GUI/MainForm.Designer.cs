@@ -46,14 +46,6 @@ namespace PeerCastStation.GUI
     private void InitializeComponent()
     {
       this.components = new System.ComponentModel.Container();
-      System.Windows.Forms.Label label6;
-      System.Windows.Forms.Label label7;
-      System.Windows.Forms.Label label8;
-      System.Windows.Forms.Label label9;
-      System.Windows.Forms.Label label10;
-      System.Windows.Forms.Label label11;
-      System.Windows.Forms.Label label12;
-      System.Windows.Forms.Label label13;
       System.Windows.Forms.ToolStripMenuItem showGUIMenuItem;
       System.Windows.Forms.ToolStripMenuItem quitMenuItem;
       System.Windows.Forms.Label label21;
@@ -85,6 +77,7 @@ namespace PeerCastStation.GUI
       this.mainTab = new System.Windows.Forms.TabControl();
       this.tabChannels = new System.Windows.Forms.TabPage();
       this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+      this.channelStart = new System.Windows.Forms.Button();
       this.channelBump = new System.Windows.Forms.Button();
       this.channelClose = new System.Windows.Forms.Button();
       this.channelPlay = new System.Windows.Forms.Button();
@@ -111,16 +104,6 @@ namespace PeerCastStation.GUI
       this.chanInfoChannelName = new System.Windows.Forms.TextBox();
       this.tabPage2 = new System.Windows.Forms.TabPage();
       this.relayTree = new System.Windows.Forms.TreeView();
-      this.tabBroadcast = new System.Windows.Forms.TabPage();
-      this.bcBitrate = new System.Windows.Forms.TextBox();
-      this.bcContactUrl = new System.Windows.Forms.TextBox();
-      this.bcGenre = new System.Windows.Forms.TextBox();
-      this.bcDescription = new System.Windows.Forms.TextBox();
-      this.bcChannelName = new System.Windows.Forms.TextBox();
-      this.bcStart = new System.Windows.Forms.Button();
-      this.bcYP = new System.Windows.Forms.ComboBox();
-      this.bcStreamUrl = new System.Windows.Forms.TextBox();
-      this.bcContentType = new System.Windows.Forms.ComboBox();
       this.tabSettings = new System.Windows.Forms.TabPage();
       this.panel2 = new System.Windows.Forms.Panel();
       this.groupBox3 = new System.Windows.Forms.GroupBox();
@@ -160,14 +143,6 @@ namespace PeerCastStation.GUI
       this.statusBar = new System.Windows.Forms.StatusStrip();
       this.portLabel = new System.Windows.Forms.ToolStripStatusLabel();
       this.portOpenedLabel = new System.Windows.Forms.ToolStripStatusLabel();
-      label6 = new System.Windows.Forms.Label();
-      label7 = new System.Windows.Forms.Label();
-      label8 = new System.Windows.Forms.Label();
-      label9 = new System.Windows.Forms.Label();
-      label10 = new System.Windows.Forms.Label();
-      label11 = new System.Windows.Forms.Label();
-      label12 = new System.Windows.Forms.Label();
-      label13 = new System.Windows.Forms.Label();
       showGUIMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       quitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       label21 = new System.Windows.Forms.Label();
@@ -206,7 +181,6 @@ namespace PeerCastStation.GUI
       this.groupBox2.SuspendLayout();
       this.groupBox1.SuspendLayout();
       this.tabPage2.SuspendLayout();
-      this.tabBroadcast.SuspendLayout();
       this.tabSettings.SuspendLayout();
       this.panel2.SuspendLayout();
       this.groupBox3.SuspendLayout();
@@ -221,78 +195,6 @@ namespace PeerCastStation.GUI
       this.tabLog.SuspendLayout();
       this.statusBar.SuspendLayout();
       this.SuspendLayout();
-      // 
-      // label6
-      // 
-      label6.AutoSize = true;
-      label6.Location = new System.Drawing.Point(8, 19);
-      label6.Name = "label6";
-      label6.Size = new System.Drawing.Size(73, 12);
-      label6.TabIndex = 0;
-      label6.Text = "ストリームURL:";
-      // 
-      // label7
-      // 
-      label7.AutoSize = true;
-      label7.Location = new System.Drawing.Point(8, 169);
-      label7.Name = "label7";
-      label7.Size = new System.Drawing.Size(33, 12);
-      label7.TabIndex = 12;
-      label7.Text = "タイプ:";
-      // 
-      // label8
-      // 
-      label8.AutoSize = true;
-      label8.Location = new System.Drawing.Point(8, 195);
-      label8.Name = "label8";
-      label8.Size = new System.Drawing.Size(21, 12);
-      label8.TabIndex = 14;
-      label8.Text = "YP:";
-      // 
-      // label9
-      // 
-      label9.AutoSize = true;
-      label9.Location = new System.Drawing.Point(8, 44);
-      label9.Name = "label9";
-      label9.Size = new System.Drawing.Size(65, 12);
-      label9.TabIndex = 2;
-      label9.Text = "チャンネル名:";
-      // 
-      // label10
-      // 
-      label10.AutoSize = true;
-      label10.Location = new System.Drawing.Point(8, 94);
-      label10.Name = "label10";
-      label10.Size = new System.Drawing.Size(42, 12);
-      label10.TabIndex = 6;
-      label10.Text = "ジャンル";
-      // 
-      // label11
-      // 
-      label11.AutoSize = true;
-      label11.Location = new System.Drawing.Point(8, 69);
-      label11.Name = "label11";
-      label11.Size = new System.Drawing.Size(29, 12);
-      label11.TabIndex = 4;
-      label11.Text = "概要";
-      // 
-      // label12
-      // 
-      label12.AutoSize = true;
-      label12.Location = new System.Drawing.Point(8, 119);
-      label12.Name = "label12";
-      label12.Size = new System.Drawing.Size(70, 12);
-      label12.TabIndex = 8;
-      label12.Text = "コンタクトURL:";
-      // 
-      // label13
-      // 
-      label13.AutoSize = true;
-      label13.Location = new System.Drawing.Point(8, 144);
-      label13.Name = "label13";
-      label13.Size = new System.Drawing.Size(55, 12);
-      label13.TabIndex = 10;
-      label13.Text = "ビットレート";
       // 
       // showGUIMenuItem
       // 
@@ -563,7 +465,6 @@ namespace PeerCastStation.GUI
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
       this.mainTab.Controls.Add(this.tabChannels);
-      this.mainTab.Controls.Add(this.tabBroadcast);
       this.mainTab.Controls.Add(this.tabSettings);
       this.mainTab.Controls.Add(this.tabLog);
       this.mainTab.Location = new System.Drawing.Point(0, 0);
@@ -593,6 +494,7 @@ namespace PeerCastStation.GUI
       // 
       // splitContainer1.Panel1
       // 
+      this.splitContainer1.Panel1.Controls.Add(this.channelStart);
       this.splitContainer1.Panel1.Controls.Add(this.channelBump);
       this.splitContainer1.Panel1.Controls.Add(this.channelClose);
       this.splitContainer1.Panel1.Controls.Add(this.channelPlay);
@@ -604,6 +506,17 @@ namespace PeerCastStation.GUI
       this.splitContainer1.Size = new System.Drawing.Size(431, 429);
       this.splitContainer1.SplitterDistance = 153;
       this.splitContainer1.TabIndex = 9;
+      // 
+      // channelStart
+      // 
+      this.channelStart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.channelStart.Location = new System.Drawing.Point(365, 108);
+      this.channelStart.Name = "channelStart";
+      this.channelStart.Size = new System.Drawing.Size(61, 30);
+      this.channelStart.TabIndex = 10;
+      this.channelStart.Text = "配信...";
+      this.channelStart.UseVisualStyleBackColor = true;
+      this.channelStart.Click += new System.EventHandler(this.channelStart_Click);
       // 
       // channelBump
       // 
@@ -929,120 +842,6 @@ namespace PeerCastStation.GUI
       this.relayTree.Name = "relayTree";
       this.relayTree.Size = new System.Drawing.Size(422, 246);
       this.relayTree.TabIndex = 5;
-      // 
-      // tabBroadcast
-      // 
-      this.tabBroadcast.Controls.Add(this.bcBitrate);
-      this.tabBroadcast.Controls.Add(this.bcContactUrl);
-      this.tabBroadcast.Controls.Add(this.bcGenre);
-      this.tabBroadcast.Controls.Add(this.bcDescription);
-      this.tabBroadcast.Controls.Add(this.bcChannelName);
-      this.tabBroadcast.Controls.Add(label13);
-      this.tabBroadcast.Controls.Add(label12);
-      this.tabBroadcast.Controls.Add(label11);
-      this.tabBroadcast.Controls.Add(label10);
-      this.tabBroadcast.Controls.Add(label9);
-      this.tabBroadcast.Controls.Add(this.bcStart);
-      this.tabBroadcast.Controls.Add(label8);
-      this.tabBroadcast.Controls.Add(label7);
-      this.tabBroadcast.Controls.Add(label6);
-      this.tabBroadcast.Controls.Add(this.bcYP);
-      this.tabBroadcast.Controls.Add(this.bcStreamUrl);
-      this.tabBroadcast.Controls.Add(this.bcContentType);
-      this.tabBroadcast.Location = new System.Drawing.Point(4, 22);
-      this.tabBroadcast.Name = "tabBroadcast";
-      this.tabBroadcast.Size = new System.Drawing.Size(437, 435);
-      this.tabBroadcast.TabIndex = 4;
-      this.tabBroadcast.Text = "配信";
-      this.tabBroadcast.UseVisualStyleBackColor = true;
-      // 
-      // bcBitrate
-      // 
-      this.bcBitrate.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.bcBitrate.Location = new System.Drawing.Point(87, 141);
-      this.bcBitrate.Name = "bcBitrate";
-      this.bcBitrate.Size = new System.Drawing.Size(340, 19);
-      this.bcBitrate.TabIndex = 11;
-      // 
-      // bcContactUrl
-      // 
-      this.bcContactUrl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.bcContactUrl.Location = new System.Drawing.Point(87, 116);
-      this.bcContactUrl.Name = "bcContactUrl";
-      this.bcContactUrl.Size = new System.Drawing.Size(340, 19);
-      this.bcContactUrl.TabIndex = 9;
-      // 
-      // bcGenre
-      // 
-      this.bcGenre.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.bcGenre.Location = new System.Drawing.Point(87, 91);
-      this.bcGenre.Name = "bcGenre";
-      this.bcGenre.Size = new System.Drawing.Size(340, 19);
-      this.bcGenre.TabIndex = 7;
-      // 
-      // bcDescription
-      // 
-      this.bcDescription.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.bcDescription.Location = new System.Drawing.Point(87, 66);
-      this.bcDescription.Name = "bcDescription";
-      this.bcDescription.Size = new System.Drawing.Size(340, 19);
-      this.bcDescription.TabIndex = 5;
-      // 
-      // bcChannelName
-      // 
-      this.bcChannelName.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.bcChannelName.Location = new System.Drawing.Point(87, 41);
-      this.bcChannelName.Name = "bcChannelName";
-      this.bcChannelName.Size = new System.Drawing.Size(340, 19);
-      this.bcChannelName.TabIndex = 3;
-      // 
-      // bcStart
-      // 
-      this.bcStart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-      this.bcStart.Location = new System.Drawing.Point(337, 406);
-      this.bcStart.Name = "bcStart";
-      this.bcStart.Size = new System.Drawing.Size(90, 26);
-      this.bcStart.TabIndex = 16;
-      this.bcStart.Text = "配信開始";
-      this.bcStart.UseVisualStyleBackColor = true;
-      this.bcStart.Click += new System.EventHandler(this.bcStart_Click);
-      // 
-      // bcYP
-      // 
-      this.bcYP.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.bcYP.DisplayMember = "Name";
-      this.bcYP.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-      this.bcYP.FormattingEnabled = true;
-      this.bcYP.Location = new System.Drawing.Point(87, 192);
-      this.bcYP.Name = "bcYP";
-      this.bcYP.Size = new System.Drawing.Size(340, 20);
-      this.bcYP.TabIndex = 15;
-      // 
-      // bcStreamUrl
-      // 
-      this.bcStreamUrl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.bcStreamUrl.Location = new System.Drawing.Point(87, 16);
-      this.bcStreamUrl.Name = "bcStreamUrl";
-      this.bcStreamUrl.Size = new System.Drawing.Size(340, 19);
-      this.bcStreamUrl.TabIndex = 1;
-      // 
-      // bcContentType
-      // 
-      this.bcContentType.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.bcContentType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-      this.bcContentType.FormattingEnabled = true;
-      this.bcContentType.Location = new System.Drawing.Point(87, 166);
-      this.bcContentType.Name = "bcContentType";
-      this.bcContentType.Size = new System.Drawing.Size(340, 20);
-      this.bcContentType.TabIndex = 13;
       // 
       // tabSettings
       // 
@@ -1540,8 +1339,6 @@ namespace PeerCastStation.GUI
       this.groupBox1.ResumeLayout(false);
       this.groupBox1.PerformLayout();
       this.tabPage2.ResumeLayout(false);
-      this.tabBroadcast.ResumeLayout(false);
-      this.tabBroadcast.PerformLayout();
       this.tabSettings.ResumeLayout(false);
       this.panel2.ResumeLayout(false);
       this.panel2.PerformLayout();
@@ -1597,16 +1394,6 @@ namespace PeerCastStation.GUI
     private System.Windows.Forms.TabPage tabPage3;
     private System.Windows.Forms.TabPage tabPage2;
     private System.Windows.Forms.TreeView relayTree;
-    private System.Windows.Forms.TabPage tabBroadcast;
-    private System.Windows.Forms.TextBox bcBitrate;
-    private System.Windows.Forms.TextBox bcContactUrl;
-    private System.Windows.Forms.TextBox bcGenre;
-    private System.Windows.Forms.TextBox bcDescription;
-    private System.Windows.Forms.TextBox bcChannelName;
-    private System.Windows.Forms.Button bcStart;
-    private System.Windows.Forms.ComboBox bcYP;
-    private System.Windows.Forms.TextBox bcStreamUrl;
-    private System.Windows.Forms.ComboBox bcContentType;
     private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
     private System.Windows.Forms.ContextMenuStrip notifyIconMenu;
     private System.Windows.Forms.GroupBox groupBox2;
@@ -1649,6 +1436,7 @@ namespace PeerCastStation.GUI
     private System.Windows.Forms.Button button1;
     private System.Windows.Forms.Button button2;
     private System.Windows.Forms.ListBox yellowPagesList;
+    private System.Windows.Forms.Button channelStart;
 
   }
 }

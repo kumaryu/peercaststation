@@ -166,8 +166,6 @@ namespace PeerCastStation.GUI
       peerCast = peercast;
       peerCast.ChannelAdded          += ChannelAdded;
       peerCast.ChannelRemoved        += ChannelRemoved;
-      peerCast.ContentReadersChanged += ContentReadersChanged;
-      bcContentType.DataSource = peerCast.ContentReaders.Select(r => new ContentReaderWrapper(r)).ToList();
       logLevelList.SelectedIndex = Settings.Default.LogLevel;
       logToFileCheck.Checked     = Settings.Default.LogToFile;
       logFileNameText.Text       = Settings.Default.LogFileName;
@@ -344,11 +342,6 @@ namespace PeerCastStation.GUI
       }
     }
 
-    private void ContentReadersChanged(object sender, EventArgs e)
-    {
-      bcContentType.DataSource = peerCast.ContentReaders.Select(r => new ContentReaderWrapper(r)).ToList();
-    }
-
     private void ChannelInfoChanged(object sender, EventArgs e)
     {
       this.BeginInvoke(new Action(() => {
@@ -482,7 +475,7 @@ namespace PeerCastStation.GUI
       IList<Host> node_list,
       IList<Guid> added_list)
     {
-      var endpoint = node.GlobalEndPoint.Port==0 ? node.LocalEndPoint : node.GlobalEndPoint;
+      var endpoint = (node.GlobalEndPoint==null || node.GlobalEndPoint.Port==0) ? node.LocalEndPoint : node.GlobalEndPoint;
       if (endpoint==null) return;
       var nodeinfo = String.Format(
         "({0}/{1}) {2}{3}{4}",
@@ -686,32 +679,23 @@ namespace PeerCastStation.GUI
       }
     }
 
-    private void bcStart_Click(object sender, EventArgs e)
+    private void channelStart_Click(object sender, EventArgs args)
     {
-      var channel_name = bcChannelName.Text;
-      if (channel_name!="" && bcContentType.SelectedItem!=null) {
-        var source_uri = bcStreamUrl.Text;
-        var genre = bcGenre.Text;
-        int bitrate;
-        if (!Int32.TryParse(bcBitrate.Text, out bitrate)) bitrate = -1;
-        var channel_id = Utils.CreateChannelID(peerCast.BroadcastID, channel_name, genre, source_uri);
-        var channel_info = new AtomCollection();
-        channel_info.SetChanInfoName(channel_name);
-        if (genre!="") channel_info.SetChanInfoGenre(genre);
-        if (bitrate>0) channel_info.SetChanInfoBitrate(bitrate);
-        if (bcDescription.Text!="") channel_info.SetChanInfoDesc(bcDescription.Text);
-        if (bcContactUrl.Text!="") channel_info.SetChanInfoURL(bcContactUrl.Text);
-        var reader = bcContentType.SelectedItem as ContentReaderWrapper;
-        var yp = bcYP.SelectedItem as YellowPageItem;
-        var yp_client = yp!=null ? yp.YellowPageClient : null;
-        if (peerCast.BroadcastChannel(yp_client, channel_id, new ChannelInfo(channel_info), new Uri(source_uri), reader.Reader)!=null) {
-          mainTab.SelectTab(0);
-          bcStreamUrl.Text   = "";
-          bcChannelName.Text = "";
-          bcGenre.Text       = "";
-          bcDescription.Text = "";
-          bcContactUrl.Text  = "";
-          bcBitrate.Text     = "";
+      var dlg = new BroadcastDialog(peerCast);
+      if (dlg.ShowDialog(this)==DialogResult.OK) {
+        var channel_id = Utils.CreateChannelID(
+          peerCast.BroadcastID,
+          dlg.ChannelInfo.Name,
+          dlg.ChannelInfo.Genre,
+          dlg.StreamSource.ToString());
+        var channel = peerCast.BroadcastChannel(
+          dlg.YellowPage,
+          channel_id,
+          dlg.ChannelInfo,
+          dlg.StreamSource,
+          dlg.ContentReader);
+        if (channel!=null) {
+          channel.ChannelTrack = dlg.ChannelTrack;
         }
       }
     }
@@ -789,11 +773,6 @@ namespace PeerCastStation.GUI
         portLocalInterface.Enabled  = false;
         yellowPagesList.Items.Clear();
         yellowPagesList.Items.AddRange(peerCast.YellowPages.Select(yp => new YellowPageItem(yp)).ToArray());
-      }
-      else if (mainTab.SelectedTab==tabBroadcast) {
-        bcYP.Items.Clear();
-        bcYP.Items.AddRange(peerCast.YellowPages.Select(yp => new YellowPageItem(yp)).ToArray());
-        bcYP.Items.Add(new YellowPageItem("YPに掲載しない", null));
       }
     }
 
