@@ -103,7 +103,6 @@ namespace PeerCastStation.GUI
 
     private Timer timer = new Timer();
     private TextBoxWriter guiWriter = null;
-    private BindingList<ChannelListItem> channelListItems = new BindingList<ChannelListItem>();
     public class ContentReaderWrapper
     {
       public IContentReader Reader { get; private set; }
@@ -147,7 +146,6 @@ namespace PeerCastStation.GUI
     public MainForm(PeerCast peercast)
     {
       InitializeComponent();
-      channelList.DataSource = channelListItems; 
       Settings.Default.PropertyChanged += SettingsPropertyChanged;
       Logger.Level = LogLevel.Warn;
       Logger.AddWriter(new DebugWriter());
@@ -189,6 +187,7 @@ namespace PeerCastStation.GUI
           ).Distinct().Select(
             port => port.ToString()
           ).ToArray());
+        UpdateChannelList();
       };
     }
 
@@ -253,71 +252,76 @@ namespace PeerCastStation.GUI
     }
 
     private class ChannelListItem
-      : INotifyPropertyChanged
     {
-      
       public Channel Channel { get; private set; }
       public ChannelListItem(Channel channel)
       {
         this.Channel = channel;
       }
 
-      public void Update()
+      public override string ToString()
       {
-        if (PropertyChanged!=null) {
-          PropertyChanged(this, new PropertyChangedEventArgs("Name"));
+        var status = "UNKNOWN";
+        switch (Channel.Status) {
+        case SourceStreamStatus.Idle:       status = "IDLE";    break;
+        case SourceStreamStatus.Connecting: status = "CONNECT"; break;
+        case SourceStreamStatus.Searching:  status = "SEARCH";  break;
+        case SourceStreamStatus.Receiving:  status = "RECEIVE"; break;
+        case SourceStreamStatus.Error:      status = "ERROR";   break;
         }
+        return String.Format(
+          "{0} {1}kbps ({2}/{3}) [{4}/{5}] {6}",
+          Channel.ChannelInfo.Name,
+          Channel.ChannelInfo.Bitrate,
+          Channel.TotalDirects,
+          Channel.TotalRelays,
+          Channel.LocalDirects,
+          Channel.LocalRelays,
+          status);
       }
+    }
 
-      public string Name
-      {
-        get
-        {
-          var status = "UNKNOWN";
-          switch (Channel.Status) {
-          case SourceStreamStatus.Idle:       status = "IDLE";    break;
-          case SourceStreamStatus.Connecting: status = "CONNECT"; break;
-          case SourceStreamStatus.Searching:  status = "SEARCH";  break;
-          case SourceStreamStatus.Receiving:  status = "RECEIVE"; break;
-          case SourceStreamStatus.Error:      status = "ERROR";   break;
+    private void UpdateChannelList()
+    {
+      var new_list = peerCast.Channels;
+      var old_list = channelList.Items.OfType<ChannelListItem>().Select(item => item.Channel);
+      foreach (var channel in old_list.Intersect(new_list).ToArray()) {
+        for (var i=0; i<channelList.Items.Count; i++) {
+          if ((channelList.Items[i] as ChannelListItem).Channel==channel) {
+            channelList.Items[i] = new ChannelListItem(channel);
+            if (channelList.SelectedIndex==i) {
+              UpdateTree(channel);
+              UpdateChannelInfo(channel);
+              UpdateOutputList(channel);
+            }
+            break;
           }
-          return String.Format(
-            "{0} {1}kbps ({2}/{3}) [{4}/{5}] {6}",
-            Channel.ChannelInfo.Name,
-            Channel.ChannelInfo.Bitrate,
-            Channel.TotalDirects,
-            Channel.TotalRelays,
-            Channel.LocalDirects,
-            Channel.LocalRelays,
-            status);
         }
       }
-
-      public event PropertyChangedEventHandler PropertyChanged;
+      foreach (var channel in new_list.Except(old_list).ToArray()) {
+        channelList.Items.Add(new ChannelListItem(channel));
+      }
+      foreach (var channel in old_list.Except(new_list).ToArray()) {
+        for (var i=0; i<channelList.Items.Count; i++) {
+          if ((channelList.Items[i] as ChannelListItem).Channel==channel) {
+            channelList.Items.RemoveAt(i);
+            break;
+          }
+        }
+      }
     }
 
     private void ChannelAdded(object sender, PeerCastStation.Core.ChannelChangedEventArgs e)
     {
       this.BeginInvoke(new Action(() => {
-        channelListItems.Add(new ChannelListItem(e.Channel));
-        e.Channel.ChannelInfoChanged += ChannelInfoChanged;
+        UpdateChannelList();
       }));
     }
 
     private void ChannelRemoved(object sender, PeerCastStation.Core.ChannelChangedEventArgs e)
     {
       this.BeginInvoke(new Action(() => {
-        e.Channel.ChannelInfoChanged -= ChannelInfoChanged;
-        ChannelListItem item = null;
-        foreach (var i in channelListItems) {
-          if (i.Channel==e.Channel) {
-            item = i;
-            break;
-          }
-        }
-        if (item!=null) {
-          channelListItems.Remove(item);
-        }
+        UpdateChannelList();
       }));
     }
 
@@ -340,30 +344,6 @@ namespace PeerCastStation.GUI
       {
         return this.Name;
       }
-    }
-
-    private void ChannelInfoChanged(object sender, EventArgs e)
-    {
-      this.BeginInvoke(new Action(() => {
-        foreach (var i in channelListItems) {
-          if (i.Channel==sender) {
-            i.Update();
-            break;
-          }
-        }
-        var item = channelList.SelectedItem as ChannelListItem;
-        if (item!=null && item.Channel==sender) {
-          refreshTree(item.Channel);
-          refreshChannelInfo(item.Channel);
-          refreshOutputList(item.Channel);
-        }
-        if (peerCast.IsFirewalled.HasValue) {
-          portOpenedLabel.Text = peerCast.IsFirewalled.Value ? "未開放" : "開放";
-        }
-        else {
-          portOpenedLabel.Text = "開放状態不明";
-        }
-      }));
     }
 
     private void applySettings_Click(object sender, EventArgs e)
@@ -400,9 +380,9 @@ namespace PeerCastStation.GUI
     {
       var item = channelList.SelectedItem as ChannelListItem;
       if (item!=null) {
-        refreshTree(item.Channel);
-        refreshChannelInfo(item.Channel);
-        refreshOutputList(item.Channel);
+        UpdateTree(item.Channel);
+        UpdateChannelInfo(item.Channel);
+        UpdateOutputList(item.Channel);
       }
       else {
         relayTree.Nodes.Clear();
@@ -501,7 +481,7 @@ namespace PeerCastStation.GUI
       addRelayTreeNode(tree_nodes, node, node_list, new List<Guid>());
     }
 
-    private void refreshTree(Channel channel)
+    private void UpdateTree(Channel channel)
     {
       relayTree.BeginUpdate();
       relayTree.Nodes.Clear();
@@ -561,7 +541,7 @@ namespace PeerCastStation.GUI
     }
 
     private ChannelInfoContainer channelInfo = new ChannelInfoContainer(null, null);
-    private void refreshChannelInfo(Channel channel)
+    private void UpdateChannelInfo(Channel channel)
     {
       var is_tracker = peerCast.BroadcastID==channel.BroadcastID;
       var info = new ChannelInfoContainer(channel.ChannelInfo, channel.ChannelTrack);
@@ -616,7 +596,7 @@ namespace PeerCastStation.GUI
       }
     }
 
-    private void refreshOutputList(Channel channel)
+    private void UpdateOutputList(Channel channel)
     {
       var new_list = channel.OutputStreams;
       var old_list = outputList.Items.OfType<IOutputStream>();

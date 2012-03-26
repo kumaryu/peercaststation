@@ -513,7 +513,7 @@ namespace PeerCastStation.GUI
       this.channelStart.Location = new System.Drawing.Point(365, 108);
       this.channelStart.Name = "channelStart";
       this.channelStart.Size = new System.Drawing.Size(61, 30);
-      this.channelStart.TabIndex = 10;
+      this.channelStart.TabIndex = 4;
       this.channelStart.Text = "配信...";
       this.channelStart.UseVisualStyleBackColor = true;
       this.channelStart.Click += new System.EventHandler(this.channelStart_Click);
@@ -524,7 +524,7 @@ namespace PeerCastStation.GUI
       this.channelBump.Location = new System.Drawing.Point(365, 72);
       this.channelBump.Name = "channelBump";
       this.channelBump.Size = new System.Drawing.Size(61, 30);
-      this.channelBump.TabIndex = 9;
+      this.channelBump.TabIndex = 3;
       this.channelBump.Text = "再接続";
       this.channelBump.UseVisualStyleBackColor = true;
       this.channelBump.Click += new System.EventHandler(this.channelBump_Click);
@@ -535,7 +535,7 @@ namespace PeerCastStation.GUI
       this.channelClose.Location = new System.Drawing.Point(365, 36);
       this.channelClose.Name = "channelClose";
       this.channelClose.Size = new System.Drawing.Size(61, 30);
-      this.channelClose.TabIndex = 8;
+      this.channelClose.TabIndex = 2;
       this.channelClose.Text = "切断";
       this.channelClose.UseVisualStyleBackColor = true;
       this.channelClose.Click += new System.EventHandler(this.channelClose_Click);
@@ -546,7 +546,7 @@ namespace PeerCastStation.GUI
       this.channelPlay.Location = new System.Drawing.Point(365, 0);
       this.channelPlay.Name = "channelPlay";
       this.channelPlay.Size = new System.Drawing.Size(61, 30);
-      this.channelPlay.TabIndex = 7;
+      this.channelPlay.TabIndex = 1;
       this.channelPlay.Text = "再生";
       this.channelPlay.UseVisualStyleBackColor = true;
       this.channelPlay.Click += new System.EventHandler(this.channelPlay_Click);
@@ -556,14 +556,12 @@ namespace PeerCastStation.GUI
       this.channelList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-      this.channelList.DisplayMember = "Name";
-      this.channelList.FormattingEnabled = true;
       this.channelList.IntegralHeight = false;
       this.channelList.ItemHeight = 12;
       this.channelList.Location = new System.Drawing.Point(0, 0);
       this.channelList.Name = "channelList";
       this.channelList.Size = new System.Drawing.Size(361, 153);
-      this.channelList.TabIndex = 6;
+      this.channelList.TabIndex = 0;
       this.channelList.SelectedIndexChanged += new System.EventHandler(this.channelList_SelectedIndexChanged);
       // 
       // tabControl2
@@ -576,7 +574,7 @@ namespace PeerCastStation.GUI
       this.tabControl2.Name = "tabControl2";
       this.tabControl2.SelectedIndex = 0;
       this.tabControl2.Size = new System.Drawing.Size(431, 272);
-      this.tabControl2.TabIndex = 9;
+      this.tabControl2.TabIndex = 0;
       // 
       // tabPage1
       // 
@@ -602,7 +600,7 @@ namespace PeerCastStation.GUI
       this.tableLayoutPanel1.RowCount = 1;
       this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
       this.tableLayoutPanel1.Size = new System.Drawing.Size(417, 240);
-      this.tableLayoutPanel1.TabIndex = 9;
+      this.tableLayoutPanel1.TabIndex = 0;
       // 
       // downStreamClose
       // 
@@ -611,7 +609,7 @@ namespace PeerCastStation.GUI
       this.downStreamClose.Location = new System.Drawing.Point(351, 3);
       this.downStreamClose.Name = "downStreamClose";
       this.downStreamClose.Size = new System.Drawing.Size(63, 30);
-      this.downStreamClose.TabIndex = 7;
+      this.downStreamClose.TabIndex = 1;
       this.downStreamClose.Text = "下流切断";
       this.downStreamClose.UseVisualStyleBackColor = true;
       this.downStreamClose.Click += new System.EventHandler(this.downStreamClose_Click);
@@ -627,7 +625,7 @@ namespace PeerCastStation.GUI
       this.outputList.Location = new System.Drawing.Point(3, 3);
       this.outputList.Name = "outputList";
       this.outputList.Size = new System.Drawing.Size(342, 234);
-      this.outputList.TabIndex = 8;
+      this.outputList.TabIndex = 0;
       // 
       // tabPage3
       // 
