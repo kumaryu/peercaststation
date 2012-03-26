@@ -618,9 +618,16 @@ namespace PeerCastStation.GUI
 
     private void refreshOutputList(Channel channel)
     {
-      outputList.Items.Clear();
-      foreach (var os in channel.OutputStreams) {
+      var new_list = channel.OutputStreams;
+      var old_list = outputList.Items.OfType<IOutputStream>();
+      foreach (var os in old_list.Intersect(new_list)) {
+        outputList.Items[outputList.Items.IndexOf(os)] = os;
+      }
+      foreach (var os in new_list.Except(old_list)) {
         outputList.Items.Add(os);
+      }
+      foreach (var os in old_list.Except(new_list)) {
+        outputList.Items.Remove(os);
       }
     }
 
