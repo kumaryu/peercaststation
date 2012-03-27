@@ -434,7 +434,7 @@ namespace PeerCastStation.GUI
       }
     }
 
-    private Host createSelfNodeInfo(Channel channel)
+    private Host CreateSelfNodeInfo(Channel channel)
     {
       var host = new HostBuilder();
       host.SessionID      = peerCast.SessionID;
@@ -449,7 +449,7 @@ namespace PeerCastStation.GUI
       return host.ToHost();
     }
 
-    private void addRelayTreeNode(
+    private void AddRelayTreeNode(
       TreeNodeCollection tree_nodes,
       Host node,
       IList<Host> node_list,
@@ -471,22 +471,22 @@ namespace PeerCastStation.GUI
         if (added_list.Contains(child.SessionID)) continue;
         var uphost = child.Extra.GetHostUphostEndPoint();
         if (uphost!=null && endpoint.Equals(uphost)) {
-          addRelayTreeNode(tree_node.Nodes, child, node_list, added_list);
+          AddRelayTreeNode(tree_node.Nodes, child, node_list, added_list);
         }
       }
     }
 
-    private void addRelayTreeNode(TreeNodeCollection tree_nodes, Host node, IList<Host> node_list)
+    private void AddRelayTreeNode(TreeNodeCollection tree_nodes, Host node, IList<Host> node_list)
     {
-      addRelayTreeNode(tree_nodes, node, node_list, new List<Guid>());
+      AddRelayTreeNode(tree_nodes, node, node_list, new List<Guid>());
     }
 
     private void UpdateTree(Channel channel)
     {
       relayTree.BeginUpdate();
       relayTree.Nodes.Clear();
-      var root = createSelfNodeInfo(channel);
-      addRelayTreeNode(relayTree.Nodes, root, channel.Nodes);
+      var root = CreateSelfNodeInfo(channel);
+      AddRelayTreeNode(relayTree.Nodes, root, channel.Nodes);
       relayTree.ExpandAll();
       relayTree.EndUpdate();
     }
@@ -600,13 +600,13 @@ namespace PeerCastStation.GUI
     {
       var new_list = channel.OutputStreams;
       var old_list = outputList.Items.OfType<IOutputStream>();
-      foreach (var os in old_list.Intersect(new_list)) {
+      foreach (var os in old_list.Intersect(new_list).ToArray()) {
         outputList.Items[outputList.Items.IndexOf(os)] = os;
       }
-      foreach (var os in new_list.Except(old_list)) {
+      foreach (var os in new_list.Except(old_list).ToArray()) {
         outputList.Items.Add(os);
       }
-      foreach (var os in old_list.Except(new_list)) {
+      foreach (var os in old_list.Except(new_list).ToArray()) {
         outputList.Items.Remove(os);
       }
     }
