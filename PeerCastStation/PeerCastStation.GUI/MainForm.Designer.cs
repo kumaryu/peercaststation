@@ -84,9 +84,6 @@ namespace PeerCastStation.GUI
       this.channelList = new System.Windows.Forms.ListBox();
       this.tabControl2 = new System.Windows.Forms.TabControl();
       this.tabPage1 = new System.Windows.Forms.TabPage();
-      this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-      this.downStreamClose = new System.Windows.Forms.Button();
-      this.outputList = new System.Windows.Forms.ListBox();
       this.tabPage3 = new System.Windows.Forms.TabPage();
       this.groupBox2 = new System.Windows.Forms.GroupBox();
       this.chanTrackContactURL = new System.Windows.Forms.TextBox();
@@ -103,6 +100,7 @@ namespace PeerCastStation.GUI
       this.chanInfoChannelID = new System.Windows.Forms.TextBox();
       this.chanInfoChannelName = new System.Windows.Forms.TextBox();
       this.tabPage2 = new System.Windows.Forms.TabPage();
+      this.relayTreeUpdate = new System.Windows.Forms.Button();
       this.relayTree = new System.Windows.Forms.TreeView();
       this.tabSettings = new System.Windows.Forms.TabPage();
       this.panel2 = new System.Windows.Forms.Panel();
@@ -143,6 +141,8 @@ namespace PeerCastStation.GUI
       this.statusBar = new System.Windows.Forms.StatusStrip();
       this.portLabel = new System.Windows.Forms.ToolStripStatusLabel();
       this.portOpenedLabel = new System.Windows.Forms.ToolStripStatusLabel();
+      this.downStreamClose = new System.Windows.Forms.Button();
+      this.outputList = new System.Windows.Forms.ListBox();
       showGUIMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       quitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       label21 = new System.Windows.Forms.Label();
@@ -176,7 +176,6 @@ namespace PeerCastStation.GUI
       this.splitContainer1.SuspendLayout();
       this.tabControl2.SuspendLayout();
       this.tabPage1.SuspendLayout();
-      this.tableLayoutPanel1.SuspendLayout();
       this.tabPage3.SuspendLayout();
       this.groupBox2.SuspendLayout();
       this.groupBox1.SuspendLayout();
@@ -575,10 +574,12 @@ namespace PeerCastStation.GUI
       this.tabControl2.SelectedIndex = 0;
       this.tabControl2.Size = new System.Drawing.Size(431, 272);
       this.tabControl2.TabIndex = 0;
+      this.tabControl2.SelectedIndexChanged += new System.EventHandler(this.channelList_SelectedIndexChanged);
       // 
       // tabPage1
       // 
-      this.tabPage1.Controls.Add(this.tableLayoutPanel1);
+      this.tabPage1.Controls.Add(this.downStreamClose);
+      this.tabPage1.Controls.Add(this.outputList);
       this.tabPage1.Location = new System.Drawing.Point(4, 22);
       this.tabPage1.Name = "tabPage1";
       this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
@@ -586,46 +587,6 @@ namespace PeerCastStation.GUI
       this.tabPage1.TabIndex = 0;
       this.tabPage1.Text = "接続一覧";
       this.tabPage1.UseVisualStyleBackColor = true;
-      // 
-      // tableLayoutPanel1
-      // 
-      this.tableLayoutPanel1.ColumnCount = 2;
-      this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-      this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
-      this.tableLayoutPanel1.Controls.Add(this.downStreamClose, 1, 0);
-      this.tableLayoutPanel1.Controls.Add(this.outputList, 0, 0);
-      this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-      this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
-      this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-      this.tableLayoutPanel1.RowCount = 1;
-      this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-      this.tableLayoutPanel1.Size = new System.Drawing.Size(417, 240);
-      this.tableLayoutPanel1.TabIndex = 0;
-      // 
-      // downStreamClose
-      // 
-      this.downStreamClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-      this.downStreamClose.AutoSize = true;
-      this.downStreamClose.Location = new System.Drawing.Point(351, 3);
-      this.downStreamClose.Name = "downStreamClose";
-      this.downStreamClose.Size = new System.Drawing.Size(63, 30);
-      this.downStreamClose.TabIndex = 1;
-      this.downStreamClose.Text = "下流切断";
-      this.downStreamClose.UseVisualStyleBackColor = true;
-      this.downStreamClose.Click += new System.EventHandler(this.downStreamClose_Click);
-      // 
-      // outputList
-      // 
-      this.outputList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.outputList.FormattingEnabled = true;
-      this.outputList.IntegralHeight = false;
-      this.outputList.ItemHeight = 12;
-      this.outputList.Location = new System.Drawing.Point(3, 3);
-      this.outputList.Name = "outputList";
-      this.outputList.Size = new System.Drawing.Size(342, 234);
-      this.outputList.TabIndex = 0;
       // 
       // tabPage3
       // 
@@ -822,6 +783,7 @@ namespace PeerCastStation.GUI
       // 
       // tabPage2
       // 
+      this.tabPage2.Controls.Add(this.relayTreeUpdate);
       this.tabPage2.Controls.Add(this.relayTree);
       this.tabPage2.Location = new System.Drawing.Point(4, 22);
       this.tabPage2.Name = "tabPage2";
@@ -831,14 +793,25 @@ namespace PeerCastStation.GUI
       this.tabPage2.Text = "リレーツリー";
       this.tabPage2.UseVisualStyleBackColor = true;
       // 
+      // relayTreeUpdate
+      // 
+      this.relayTreeUpdate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.relayTreeUpdate.Location = new System.Drawing.Point(361, 6);
+      this.relayTreeUpdate.Name = "relayTreeUpdate";
+      this.relayTreeUpdate.Size = new System.Drawing.Size(61, 30);
+      this.relayTreeUpdate.TabIndex = 6;
+      this.relayTreeUpdate.Text = "更新";
+      this.relayTreeUpdate.UseVisualStyleBackColor = true;
+      this.relayTreeUpdate.Click += new System.EventHandler(this.relayTreeUpdate_Click);
+      // 
       // relayTree
       // 
       this.relayTree.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-      this.relayTree.Location = new System.Drawing.Point(0, 0);
+      this.relayTree.Location = new System.Drawing.Point(6, 6);
       this.relayTree.Name = "relayTree";
-      this.relayTree.Size = new System.Drawing.Size(422, 246);
+      this.relayTree.Size = new System.Drawing.Size(351, 234);
       this.relayTree.TabIndex = 5;
       // 
       // tabSettings
@@ -1307,6 +1280,30 @@ namespace PeerCastStation.GUI
       this.portOpenedLabel.Size = new System.Drawing.Size(134, 18);
       this.portOpenedLabel.Text = "toolStripStatusLabel1";
       // 
+      // downStreamClose
+      // 
+      this.downStreamClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.downStreamClose.Location = new System.Drawing.Point(361, 6);
+      this.downStreamClose.Name = "downStreamClose";
+      this.downStreamClose.Size = new System.Drawing.Size(61, 30);
+      this.downStreamClose.TabIndex = 3;
+      this.downStreamClose.Text = "切断";
+      this.downStreamClose.UseVisualStyleBackColor = true;
+      this.downStreamClose.Click += new System.EventHandler(this.downStreamClose_Click);
+      // 
+      // outputList
+      // 
+      this.outputList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      this.outputList.FormattingEnabled = true;
+      this.outputList.IntegralHeight = false;
+      this.outputList.ItemHeight = 12;
+      this.outputList.Location = new System.Drawing.Point(6, 6);
+      this.outputList.Name = "outputList";
+      this.outputList.Size = new System.Drawing.Size(351, 234);
+      this.outputList.TabIndex = 2;
+      // 
       // MainForm
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -1328,8 +1325,6 @@ namespace PeerCastStation.GUI
       this.splitContainer1.ResumeLayout(false);
       this.tabControl2.ResumeLayout(false);
       this.tabPage1.ResumeLayout(false);
-      this.tableLayoutPanel1.ResumeLayout(false);
-      this.tableLayoutPanel1.PerformLayout();
       this.tabPage3.ResumeLayout(false);
       this.tabPage3.PerformLayout();
       this.groupBox2.ResumeLayout(false);
@@ -1387,8 +1382,6 @@ namespace PeerCastStation.GUI
     private System.Windows.Forms.ListBox channelList;
     private System.Windows.Forms.TabControl tabControl2;
     private System.Windows.Forms.TabPage tabPage1;
-    private System.Windows.Forms.ListBox outputList;
-    private System.Windows.Forms.Button downStreamClose;
     private System.Windows.Forms.TabPage tabPage3;
     private System.Windows.Forms.TabPage tabPage2;
     private System.Windows.Forms.TreeView relayTree;
@@ -1425,7 +1418,6 @@ namespace PeerCastStation.GUI
     private System.Windows.Forms.CheckBox portGlobalDirect;
     private System.Windows.Forms.CheckBox portGlobalRelay;
     private System.Windows.Forms.NumericUpDown maxUpstreamRate;
-    private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
     private System.Windows.Forms.Button portRemoveButton;
     private System.Windows.Forms.Button portAddButton;
     private System.Windows.Forms.ListBox portsList;
@@ -1435,6 +1427,9 @@ namespace PeerCastStation.GUI
     private System.Windows.Forms.Button button2;
     private System.Windows.Forms.ListBox yellowPagesList;
     private System.Windows.Forms.Button channelStart;
+    private System.Windows.Forms.Button relayTreeUpdate;
+    private System.Windows.Forms.Button downStreamClose;
+    private System.Windows.Forms.ListBox outputList;
 
   }
 }

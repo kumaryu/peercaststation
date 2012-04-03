@@ -173,22 +173,29 @@ namespace PeerCastStation.GUI
       timer.Interval = 1000;
       timer.Enabled = true;
       timer.Tick += (sender, args) => {
-        if (peerCast.IsFirewalled.HasValue) {
-          portOpenedLabel.Text = peerCast.IsFirewalled.Value ? "未開放" : "開放";
-        }
-        else {
-          portOpenedLabel.Text = "開放状態不明";
-        }
-        portLabel.Text = "リレー可能ポート:" + String.Join(", ",
-          peerCast.OutputListeners.Where(listener =>
-            (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0
-          ).Select(
-            listener => listener.LocalEndPoint.Port
-          ).Distinct().Select(
-            port => port.ToString()
-          ).ToArray());
-        UpdateChannelList();
+        UpdateStatus();
       };
+      UpdateStatus();
+    }
+
+    private bool updating = false;
+    private void UpdateStatus()
+    {
+      if (peerCast.IsFirewalled.HasValue) {
+        portOpenedLabel.Text = peerCast.IsFirewalled.Value ? "未開放" : "開放";
+      }
+      else {
+        portOpenedLabel.Text = "開放状態不明";
+      }
+      portLabel.Text = "リレー可能ポート:" + String.Join(", ",
+        peerCast.OutputListeners.Where(listener =>
+          (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0
+        ).Select(
+          listener => listener.LocalEndPoint.Port
+        ).Distinct().Select(
+          port => port.ToString()
+        ).ToArray());
+      UpdateChannelList();
     }
 
     private void OnUpdateSettings(string property_name)
@@ -285,12 +292,12 @@ namespace PeerCastStation.GUI
     {
       var new_list = peerCast.Channels;
       var old_list = channelList.Items.OfType<ChannelListItem>().Select(item => item.Channel);
+      updating = true;
       foreach (var channel in old_list.Intersect(new_list).ToArray()) {
         for (var i=0; i<channelList.Items.Count; i++) {
           if ((channelList.Items[i] as ChannelListItem).Channel==channel) {
             channelList.Items[i] = new ChannelListItem(channel);
             if (channelList.SelectedIndex==i) {
-              UpdateTree(channel);
               UpdateChannelInfo(channel);
               UpdateOutputList(channel);
             }
@@ -309,6 +316,7 @@ namespace PeerCastStation.GUI
           }
         }
       }
+      updating = false;
     }
 
     private void ChannelAdded(object sender, PeerCastStation.Core.ChannelChangedEventArgs e)
@@ -378,6 +386,7 @@ namespace PeerCastStation.GUI
 
     private void channelList_SelectedIndexChanged(object sender, EventArgs e)
     {
+      if (updating) return;
       var item = channelList.SelectedItem as ChannelListItem;
       if (item!=null) {
         UpdateTree(item.Channel);
@@ -451,42 +460,54 @@ namespace PeerCastStation.GUI
 
     private void AddRelayTreeNode(
       TreeNodeCollection tree_nodes,
-      Host node,
-      IList<Host> node_list,
-      IList<Guid> added_list)
+      IEnumerable<Utils.HostTreeNode> nodes,
+      HashSet<Guid> added)
     {
-      var endpoint = (node.GlobalEndPoint==null || node.GlobalEndPoint.Port==0) ? node.LocalEndPoint : node.GlobalEndPoint;
-      if (endpoint==null) return;
-      var nodeinfo = String.Format(
-        "({0}/{1}) {2}{3}{4}",
-        node.DirectCount,
-        node.RelayCount,
-        node.IsFirewalled ? "0" : "",
-        node.IsRelayFull  ? "-" : "",
-        node.IsReceiving  ? "" : "B");
-      var tree_node = tree_nodes.Add(String.Format("{0} {1}", endpoint, nodeinfo));
-      added_list.Add(node.SessionID);
-      tree_node.Tag = node;
-      foreach (var child in node_list) {
-        if (added_list.Contains(child.SessionID)) continue;
-        var uphost = child.Extra.GetHostUphostEndPoint();
-        if (uphost!=null && endpoint.Equals(uphost)) {
-          AddRelayTreeNode(tree_node.Nodes, child, node_list, added_list);
+      foreach (var node in nodes) {
+        if (added.Contains(node.Host.SessionID)) continue;
+        added.Add(node.Host.SessionID);
+        var endpoint = (node.Host.GlobalEndPoint!=null && node.Host.GlobalEndPoint.Port!=0) ? node.Host.GlobalEndPoint : node.Host.LocalEndPoint;
+        string version = "";
+        var pcp = node.Host.Extra.GetHostVersion();
+        if (pcp.HasValue) {
+          version += pcp.Value.ToString();
         }
+        var vp = node.Host.Extra.GetHostVersionVP();
+        if (vp.HasValue) {
+          version += " VP" + vp.Value.ToString();
+        }
+        var ex    = node.Host.Extra.GetHostVersionEXPrefix();
+        var exnum = node.Host.Extra.GetHostVersionEXNumber();
+        if (ex!=null && exnum.HasValue) {
+          try {
+            version += " " + System.Text.Encoding.UTF8.GetString(ex) + exnum.ToString();
+          }
+          catch (ArgumentException) {
+            //ignore
+          }
+        }
+        var nodeinfo = String.Format(
+          "{0} ({1}/{2}) {3}{4}{5} {6}",
+          endpoint,
+          node.Host.DirectCount,
+          node.Host.RelayCount,
+          node.Host.IsFirewalled ? "0" : "",
+          node.Host.IsRelayFull  ? "-" : "",
+          node.Host.IsReceiving  ? "" : "B",
+          version);
+        var tree_node = tree_nodes.Add(nodeinfo);
+        AddRelayTreeNode(tree_node.Nodes, node.Children, added);
       }
-    }
-
-    private void AddRelayTreeNode(TreeNodeCollection tree_nodes, Host node, IList<Host> node_list)
-    {
-      AddRelayTreeNode(tree_nodes, node, node_list, new List<Guid>());
     }
 
     private void UpdateTree(Channel channel)
     {
       relayTree.BeginUpdate();
       relayTree.Nodes.Clear();
-      var root = CreateSelfNodeInfo(channel);
-      AddRelayTreeNode(relayTree.Nodes, root, channel.Nodes);
+      var self = CreateSelfNodeInfo(channel);
+      var nodes = new Host[] { self }.Concat(channel.Nodes);
+      var roots = Utils.CreateHostTree(nodes).Where(node => node.Host==self);
+      AddRelayTreeNode(relayTree.Nodes, roots, new HashSet<Guid>());
       relayTree.ExpandAll();
       relayTree.EndUpdate();
     }
@@ -921,6 +942,17 @@ namespace PeerCastStation.GUI
         peerCast.RemoveYellowPage(item.YellowPageClient);
         yellowPagesList.Items.Clear();
         yellowPagesList.Items.AddRange(peerCast.YellowPages.Select(yp => new YellowPageItem(yp)).ToArray());
+      }
+    }
+
+    private void relayTreeUpdate_Click(object sender, EventArgs e)
+    {
+      var item = channelList.SelectedItem as ChannelListItem;
+      if (item!=null) {
+        UpdateTree(item.Channel);
+      }
+      else {
+        relayTree.Nodes.Clear();
       }
     }
   }

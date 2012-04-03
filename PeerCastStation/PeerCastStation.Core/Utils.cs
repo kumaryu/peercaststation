@@ -15,6 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
 using System.Net;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace PeerCastStation.Core
 {
@@ -84,5 +86,36 @@ namespace PeerCastStation.Core
       }
     }
 
+    public class HostTreeNode
+    {
+      public Host Host { get; private set; }
+      public IList<HostTreeNode> Children { get; private set; }
+      public HostTreeNode(Host host)
+      {
+        this.Host = host;
+        this.Children = new List<HostTreeNode>();
+      }
+    }
+
+    static public IEnumerable<HostTreeNode> CreateHostTree(IEnumerable<Host> hosts)
+    {
+      var nodes = new Dictionary<IPEndPoint, HostTreeNode>();
+      var roots = new List<HostTreeNode>();
+      foreach (var host in hosts) {
+        var endpoint = (host.GlobalEndPoint==null || host.GlobalEndPoint.Port==0) ? host.LocalEndPoint : host.GlobalEndPoint;
+        if (endpoint==null) continue;
+        nodes[endpoint] = new HostTreeNode(host);
+      }
+      foreach (var node in nodes.Values) {
+        var uphost = node.Host.Extra.GetHostUphostEndPoint();
+        if (uphost!=null && nodes.ContainsKey(uphost)) {
+          nodes[uphost].Children.Add(node);
+        }
+        else {
+          roots.Add(node);
+        }
+      }
+      return roots;
+    }
   }
 }
