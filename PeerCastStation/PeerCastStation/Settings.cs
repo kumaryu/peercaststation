@@ -2,9 +2,35 @@
 using PeerCastStation.Core;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using System.Configuration;
 
-namespace PeerCastStation
+namespace PeerCastStation.Properties
 {
+  internal sealed partial class Settings
+    : System.Configuration.ApplicationSettingsBase
+  {
+    [UserScopedSetting]
+    [SettingsSerializeAs(SettingsSerializeAs.Binary)]
+    public ListenerSettings[] Listeners {
+      get { return ((ListenerSettings[])(this["Listeners"])); }
+      set { this["Listeners"] = value; }
+    }
+    
+    [UserScopedSetting]
+    [SettingsSerializeAs(SettingsSerializeAs.Binary)]
+    public AccessControllerSettings AccessController {
+      get { return ((AccessControllerSettings)(this["AccessController"])); }
+      set { this["AccessController"] = value; }
+    }
+    
+    [UserScopedSettingAttribute()]
+    [SettingsSerializeAs(SettingsSerializeAs.Binary)]
+    public YellowPageSettings[] YellowPages {
+      get { return ((YellowPageSettings[])(this["YellowPages"])); }
+      set { this["YellowPages"] = value; }
+    }
+  }
+
   [Serializable]
   public class ListenerSettings
   {

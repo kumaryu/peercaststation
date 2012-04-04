@@ -9,6 +9,7 @@ namespace PeerCastStation.Main
   public class Application
     : PeerCastApplication
   {
+    private static Logger logger = new Logger(typeof(Application));
     private List<IUserInterfaceFactory> userInterfaceFactories = new List<IUserInterfaceFactory>();
     public IList<IUserInterfaceFactory> UserInterfaceFactories {
       get { return userInterfaceFactories; }
@@ -107,7 +108,27 @@ namespace PeerCastStation.Main
       }
       if (settings.Listeners!=null) {
         foreach (var listener in settings.Listeners) {
-          peerCast.StartListen(listener.EndPoint, listener.LocalAccepts, listener.GlobalAccepts);
+          try {
+            peerCast.StartListen(listener.EndPoint, listener.LocalAccepts, listener.GlobalAccepts);
+          }
+          catch (System.Net.Sockets.SocketException e) {
+            logger.Error(e);
+          }
+        }
+      }
+      if (peerCast.OutputListeners.Count==0) {
+        System.Net.IPAddress listen_addr;
+        if (!System.Net.IPAddress.TryParse(settings.DefaultListenAddress, out listen_addr)) {
+          listen_addr = System.Net.IPAddress.Any;
+        }
+        try {
+          peerCast.StartListen(
+            new System.Net.IPEndPoint(listen_addr, settings.DefaultListenPort),
+            OutputStreamType.All,
+            OutputStreamType.Metadata | OutputStreamType.Relay);
+        }
+        catch (System.Net.Sockets.SocketException e) {
+          logger.Error(e);
         }
       }
       if (settings.YellowPages!=null) {
@@ -120,7 +141,7 @@ namespace PeerCastStation.Main
     void SaveSettings()
     {
       var settings = PeerCastStation.Properties.Settings.Default;
-      settings.AccessController = new AccessControllerSettings {
+      settings.AccessController = new PeerCastStation.Properties.AccessControllerSettings {
         MaxDirects           = peerCast.AccessController.MaxPlays,
         MaxRelays            = peerCast.AccessController.MaxRelays,
         MaxDirectsPerChannel = peerCast.AccessController.MaxPlaysPerChannel,
@@ -129,17 +150,17 @@ namespace PeerCastStation.Main
       };
       settings.BroadcastID = peerCast.BroadcastID;
       settings.Listeners = peerCast.OutputListeners.Select(listener => 
-        new ListenerSettings {
-          EndPoint = listener.LocalEndPoint,
+        new PeerCastStation.Properties.ListenerSettings {
+          EndPoint      = listener.LocalEndPoint,
           GlobalAccepts = listener.GlobalOutputAccepts,
-          LocalAccepts = listener.LocalOutputAccepts,
+          LocalAccepts  = listener.LocalOutputAccepts,
         }
       ).ToArray();
       settings.YellowPages = peerCast.YellowPages.Select(yellowpage =>
-        new YellowPageSettings {
+        new PeerCastStation.Properties.YellowPageSettings {
           Protocol = yellowpage.Uri.Scheme,
-          Name = yellowpage.Name,
-          Uri = yellowpage.Uri,
+          Name     = yellowpage.Name,
+          Uri      = yellowpage.Uri,
         }
       ).ToArray();
       settings.Save();

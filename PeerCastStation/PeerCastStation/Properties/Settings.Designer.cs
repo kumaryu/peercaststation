@@ -25,41 +25,6 @@ namespace PeerCastStation.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.SettingsSerializeAs(System.Configuration.SettingsSerializeAs.Binary)]
-        public global::PeerCastStation.ListenerSettings[] Listeners {
-            get {
-                return ((global::PeerCastStation.ListenerSettings[])(this["Listeners"]));
-            }
-            set {
-                this["Listeners"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        public global::PeerCastStation.AccessControllerSettings AccessController {
-            get {
-                return ((global::PeerCastStation.AccessControllerSettings)(this["AccessController"]));
-            }
-            set {
-                this["AccessController"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.SettingsSerializeAs(System.Configuration.SettingsSerializeAs.Binary)]
-        public global::PeerCastStation.YellowPageSettings[] YellowPages {
-            get {
-                return ((global::PeerCastStation.YellowPageSettings[])(this["YellowPages"]));
-            }
-            set {
-                this["YellowPages"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("00000000-0000-0000-0000-000000000000")]
         public global::System.Guid BroadcastID {
             get {
@@ -67,6 +32,24 @@ namespace PeerCastStation.Properties {
             }
             set {
                 this["BroadcastID"] = value;
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.0.0.0")]
+        public string DefaultListenAddress {
+            get {
+                return ((string)(this["DefaultListenAddress"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("7144")]
+        public int DefaultListenPort {
+            get {
+                return ((int)(this["DefaultListenPort"]));
             }
         }
     }
