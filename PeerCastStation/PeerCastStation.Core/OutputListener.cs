@@ -108,7 +108,27 @@ namespace PeerCastStation.Core
       listenerThread.Join();
     }
 
-    private IOutputStreamFactory FindMatchedFactory(bool is_local, NetworkStream stream, out List<byte> header, out Guid channel_id)
+    private enum RemoteType {
+      Loopback,
+      SiteLocal,
+      Global,
+    }
+
+    private RemoteType GetRemoteType(IPEndPoint remote_endpoint)
+    {
+        if (remote_endpoint.Address.Equals(IPAddress.Loopback) ||
+            remote_endpoint.Address.Equals(IPAddress.IPv6Loopback)) {
+          return RemoteType.Loopback;
+        }
+        else if (Utils.IsSiteLocal(remote_endpoint.Address)) {
+          return RemoteType.SiteLocal;
+        }
+        else {
+          return RemoteType.Global;
+        }
+    }
+
+    private IOutputStreamFactory FindMatchedFactory(RemoteType remote_type, NetworkStream stream, out List<byte> header, out Guid channel_id)
     {
       var output_factories = PeerCast.OutputStreamFactories.OrderBy(factory => factory.Priority);
       header = new List<byte>();
@@ -131,12 +151,8 @@ namespace PeerCastStation.Core
         }
         var header_ary = header.ToArray();
         foreach (var factory in output_factories) {
-          if (is_local) {
-            if ((factory.OutputStreamType & this.LocalOutputAccepts)==0) continue;
-          }
-          else {
-            if ((factory.OutputStreamType & this.GlobalOutputAccepts)==0) continue;
-          }
+          if (remote_type==RemoteType.SiteLocal && (factory.OutputStreamType & this.LocalOutputAccepts)==0) continue;
+          if (remote_type==RemoteType.Global    && (factory.OutputStreamType & this.GlobalOutputAccepts)==0) continue;
           var cid = factory.ParseChannelID(header_ary);
           if (cid.HasValue) {
             channel_id = cid.Value;
@@ -158,12 +174,12 @@ namespace PeerCastStation.Core
       IOutputStream output_stream = null;
       Channel channel = null;
       try {
+        var remote_endpoint = (IPEndPoint)client.Client.RemoteEndPoint;
         List<byte> header;
         Guid channel_id;
-        bool is_local = Utils.IsSiteLocal(((IPEndPoint)client.Client.RemoteEndPoint).Address);
-        var factory = FindMatchedFactory(is_local, stream, out header, out channel_id);
+        var factory = FindMatchedFactory(GetRemoteType(remote_endpoint), stream, out header, out channel_id);
         if (factory!=null) {
-          output_stream = factory.Create(stream, stream, client.Client.RemoteEndPoint, channel_id, header.ToArray());
+          output_stream = factory.Create(stream, stream, remote_endpoint, channel_id, header.ToArray());
           channel = PeerCast.Channels.FirstOrDefault(c => c.ChannelID==channel_id);
           if (channel!=null) {
             channel.AddOutputStream(output_stream);

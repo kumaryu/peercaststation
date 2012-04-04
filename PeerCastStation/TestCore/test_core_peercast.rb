@@ -441,33 +441,8 @@ class TC_CorePeerCast < Test::Unit::TestCase
   end
   
   def test_output_connection_not_acceptable
-    @peercast = PeerCastStation::Core::PeerCast.new
-    @peercast.start_listen(
-      System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
-      PeerCastStation::Core::OutputStreamType.interface |
-      PeerCastStation::Core::OutputStreamType.relay |
-      PeerCastStation::Core::OutputStreamType.play,
-      PeerCastStation::Core::OutputStreamType.relay)
-    local_end_point  = @peercast.get_local_end_point(System::Net::Sockets::AddressFamily.inter_network, PeerCastStation::Core::OutputStreamType.relay)
-    global_end_point = @peercast.get_global_end_point(System::Net::Sockets::AddressFamily.inter_network, PeerCastStation::Core::OutputStreamType.relay)
-    assert_not_nil(local_end_point)
-    assert_equal(@peercast.local_address, local_end_point.address)
-    assert_equal(7147, local_end_point.port)
-    assert_nil(global_end_point)
-    @peercast.global_address = @peercast.local_address
-    global_end_point = @peercast.get_global_end_point(System::Net::Sockets::AddressFamily.inter_network, PeerCastStation::Core::OutputStreamType.relay)
-    assert_not_nil(global_end_point)
-    
-    output_stream_factory = MockOutputStreamFactory.new(
-      PeerCastStation::Core::OutputStreamType.metadata)
-    @peercast.output_stream_factories.add(output_stream_factory)
-    
-    sock = TCPSocket.new('localhost', 7147)
-    sock.write('mock 9778E62BDC59DF56F9216D0387F80BF2')
-    sock.close
-    
-    sleep(1)
-    assert_equal(0, output_stream_factory.log.size)
+    #ループバックアドレスからの接続は常に許可するので
+    #テストできないため保留
   end
   
   def test_listen
