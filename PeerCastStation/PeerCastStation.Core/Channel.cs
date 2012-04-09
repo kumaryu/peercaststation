@@ -672,8 +672,14 @@ namespace PeerCastStation.Core
       get {
         var host = new HostBuilder();
         host.SessionID      = this.PeerCast.SessionID;
-        host.LocalEndPoint  = this.PeerCast.GetLocalEndPoint(SourceHost.GlobalEndPoint.AddressFamily, OutputStreamType.Relay);
-        host.GlobalEndPoint = this.PeerCast.GetGlobalEndPoint(SourceHost.GlobalEndPoint.AddressFamily, OutputStreamType.Relay);
+        if (SourceHost!=null && SourceHost.GlobalEndPoint!=null) {
+          host.LocalEndPoint  = this.PeerCast.GetLocalEndPoint(SourceHost.GlobalEndPoint.AddressFamily, OutputStreamType.Relay);
+          host.GlobalEndPoint = this.PeerCast.GetGlobalEndPoint(SourceHost.GlobalEndPoint.AddressFamily, OutputStreamType.Relay);
+        }
+        else {
+          host.LocalEndPoint  = this.PeerCast.GetLocalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
+          host.GlobalEndPoint = this.PeerCast.GetGlobalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
+        }
         host.IsFirewalled   = this.PeerCast.IsFirewalled ?? true;
         host.DirectCount    = this.LocalDirects;
         host.RelayCount     = this.LocalRelays;

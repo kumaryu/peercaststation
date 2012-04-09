@@ -305,6 +305,27 @@ class TC_CoreChannel < Test::Unit::TestCase
     assert_equal(3+relays, channel.total_relays)
   end
 
+  def test_self_node
+    channel = PeerCastStation::Core::Channel.new(
+      @peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
+    local_end_point = @peercast.get_local_end_point(
+      System::Net::Sockets::AddressFamily.inter_network,
+      PeerCastStation::Core::OutputStreamType.relay);
+    global_end_point = @peercast.get_global_end_point(
+      System::Net::Sockets::AddressFamily.inter_network,
+      PeerCastStation::Core::OutputStreamType.relay);
+    host = channel.self_node
+    assert_equal(@peercast.SessionID, host.SessionID)
+    assert_equal(local_end_point, host.local_end_point)
+    assert_equal(global_end_point, host.global_end_point)
+    assert_equal(@peercast.IsFirewalled.nil? ? true : peercast.IsFirewalled, host.IsFirewalled)
+    assert_equal(channel.local_directs, host.direct_count)
+    assert_equal(channel.local_relays,  host.relay_count)
+    assert_equal(!@peercast.AccessController.IsChannelPlayable(channel),  host.IsDirectFull)
+    assert_equal(!@peercast.AccessController.IsChannelRelayable(channel), host.IsRelayFull)
+    assert_equal(true, host.IsReceiving)
+  end
+
   class TestSourceStream
     include PeerCastStation::Core::ISourceStream
     
