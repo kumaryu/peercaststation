@@ -652,6 +652,32 @@ namespace PeerCastStation.UI.HTTP
         }
       }
 
+      private JObject CreateRelayTreeNode(Utils.HostTreeNode node)
+      {
+        var res = new JObject();
+        var host = node.Host;
+        res["sessionId"]    = host.SessionID.ToString("N").ToUpper();
+        res["address"]      = host.LocalEndPoint.Address.ToString();
+        res["port"]         = host.LocalEndPoint.Port;
+        res["isFirewalled"] = host.IsFirewalled;
+        res["localRelays"]  = host.RelayCount;
+        res["localDirects"] = host.DirectCount;
+        res["isTracker"]    = host.IsTracker;
+        res["isRelayFull"]  = host.IsRelayFull;
+        res["isDirectFull"] = host.IsDirectFull;
+        res["isReceiving"]  = host.IsReceiving;
+        res["isControlFull"]= host.IsControlFull;
+        res["children"] = new JArray(node.Children.Select(c => CreateRelayTreeNode(c)));
+        return res;
+      }
+
+      [RPCMethod("getChannelRelayTree")]
+      private JArray GetChannelRelayTree(string channelId)
+      {
+        var channel = GetChannel(channelId);
+        return new JArray(channel.CreateHostTree().Select(node => CreateRelayTreeNode(node)));
+      }
+
       [RPCMethod("getContentReaders")]
       private JArray GetContentReaders()
       {

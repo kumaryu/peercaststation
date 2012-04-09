@@ -1202,6 +1202,71 @@ JSON
     assert(channel.output_streams.all? {|os| os!=outputs[1] })
   end
 
+  def create_node(endpoint, uphost, hops, version)
+    host = PCSCore::HostBuilder.new
+    host.SessionID = System::Guid.new_guid
+    host.local_end_point  = System::Net::IPEndPoint.new(System::Net::IPAddress.parse(endpoint[0]), endpoint[1])
+    host.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse(endpoint[0]), endpoint[1])
+    host.is_firewalled   = false
+    host.relay_count     = rand(50)
+    host.direct_count    = rand(50)
+    host.is_tracker      = false
+    host.is_relay_full   = rand<0.5
+    host.is_direct_full  = rand<0.5
+    host.is_receiving    = rand<0.5
+    host.is_control_full = rand<0.5
+    host.extra.SetHostUphostIP(System::Net::IPAddress.parse(uphost[0])) if uphost and uphost[0]
+    host.extra.SetHostUphostPort(uphost[1]) if uphost and uphost[1]
+    host.extra.SetHostUphostHops(hops) if hops
+    host.extra.SetHostVersion(version[0]) if version and version[0]
+    host.extra.SetHostVersionVP(version[1]) if version and version[1]
+    host.extra.SetHostVersionEXPrefix(version[2]) if version and version[2]
+    host.extra.SetHostVersionEXNumber(version[3]) if version and version[3]
+    host.to_host
+  end
+
+  def test_getChannelRelayTree
+    channel = PCSCore::Channel.new(
+        @app.peercast,
+        System::Guid.new_guid,
+        @app.peercast.BroadcastID,
+        System::Uri.new('pcp://example.com'))
+    channel.channel_info = create_chan_info("Foo ch", 'WMV', 774)
+    @app.peercast.add_channel(channel)
+    channel.add_node(create_node(['192.168.1.1', 7144], ['127.0.0.1', 7144],   2, [1218, 26, nil, nil]))
+    channel.add_node(create_node(['192.168.1.2', 7144], ['192.168.1.1', 7144], 3, [1218, 26, 'PP', 1]))
+    channel.add_node(create_node(['192.168.1.3', 7144], nil, nil, nil))
+    channel.add_node(create_node(['192.168.2.1', 9000], ['192.168.1.3', 7144], 1, [1217]))
+    channel.add_node(create_node(['192.168.3.3', 7146], ['192.168.2.1', 9000], 2, nil))
+    channel.add_node(create_node(['192.168.1.3', 7144], ['192.168.3.3', 7146], 3, nil))
+    tree = PCSCore::Utils.create_host_tree(channel).to_array.to_a
+    params = { 'channelId' => channel.ChannelID.to_string('N'), }
+    res = invoke_method('getChannelRelayTree', params)
+    assert_equal(1, res.body.id)
+    assert_nil(res.body.error)
+    assert_node_equal = proc {|a, b|
+      assert_equal(a.host.SessionID.to_string('N').upcase,b['sessionId'])
+      assert_equal(a.host.global_end_point.address.to_s, b['address'])
+      assert_equal(a.host.global_end_point.port,         b['port'])
+      assert_equal(a.host.is_firewalled,                 b['isFirewalled'])
+      assert_equal(a.host.relay_count,                   b['localRelays'])
+      assert_equal(a.host.direct_count,                  b['localDirects'])
+      assert_equal(a.host.is_tracker,                    b['isTracker'])
+      assert_equal(a.host.is_relay_full,                 b['isRelayFull'])
+      assert_equal(a.host.is_direct_full,                b['isDirectFull'])
+      assert_equal(a.host.is_receiving,                  b['isReceiving'])
+      assert_equal(a.host.is_control_full,               b['isControlFull'])
+      assert_equal(a.children.count, b['children'].size)
+      a.children.count.times do |i|
+        assert_node_equal.call(a.children[i], b['children'][i])
+      end
+    }
+    assert_equal(tree.size, res.body.result.size)
+    tree.size.times do |i|
+      assert_node_equal.call(tree[i], res.body.result[i])
+    end
+  end
+
   class TestContentReader
     include PCSCore::IContentReader
     def initialize(name)
