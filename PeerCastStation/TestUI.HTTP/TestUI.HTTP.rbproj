@@ -12,6 +12,8 @@
     <AssemblyName>TestUI.HTTP</AssemblyName>
     <Name>TestUI.HTTP</Name>
     <RootNamespace>TestUI.HTTP</RootNamespace>
+    <CommandLineArguments></CommandLineArguments>
+    <IsWindowsApplication>False</IsWindowsApplication>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,15 +24,16 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\TestUI.HTTP\fixtures" />
-    <None Include="C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\TestUI.HTTP\fixtures\index.html" />
-    <None Include="C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\TestUI.HTTP\fixtures\foo" />
-    <None Include="C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\TestUI.HTTP\fixtures\foo\bar.html" />
-    <None Include="C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\TestUI.HTTP\fixtures\foo\baz.txt" />
-    <None Include="Program.rb" />
-    <None Include="Program.rb" />
-    <None Include="C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\TestUI.HTTP\test_htmlhost.rb" />
+    <None Include="fixtures" />
+    <None Include="fixtures\foo" />
+    <None Include="fixtures\foo\bar.html" />
+    <None Include="fixtures\foo\baz.txt" />
+    <None Include="fixtures\foo\bar.html" />
+    <None Include="fixtures\foo\baz.txt" />
+    <None Include="fixtures\index.html" />
     <None Include="Program.rb" />
     <None Include="test_adminhost.rb" />
+    <None Include="test_apihost.rb" />
+    <None Include="test_htmlhost.rb" />
   </ItemGroup>
 </Project>
