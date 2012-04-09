@@ -504,9 +504,7 @@ namespace PeerCastStation.GUI
     {
       relayTree.BeginUpdate();
       relayTree.Nodes.Clear();
-      var self = CreateSelfNodeInfo(channel);
-      var nodes = new Host[] { self }.Concat(channel.Nodes);
-      var roots = Utils.CreateHostTree(nodes).Where(node => node.Host==self);
+      var roots = channel.CreateHostTree().Where(node => node.Host.SessionID==peerCast.SessionID);
       AddRelayTreeNode(relayTree.Nodes, roots, new HashSet<Guid>());
       relayTree.ExpandAll();
       relayTree.EndUpdate();

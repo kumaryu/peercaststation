@@ -668,6 +668,22 @@ namespace PeerCastStation.Core
       }
     }
 
+    public Host SelfNode {
+      get {
+        var host = new HostBuilder();
+        host.SessionID      = this.PeerCast.SessionID;
+        host.LocalEndPoint  = this.PeerCast.GetLocalEndPoint(SourceHost.GlobalEndPoint.AddressFamily, OutputStreamType.Relay);
+        host.GlobalEndPoint = this.PeerCast.GetGlobalEndPoint(SourceHost.GlobalEndPoint.AddressFamily, OutputStreamType.Relay);
+        host.IsFirewalled   = this.PeerCast.IsFirewalled ?? true;
+        host.DirectCount    = this.LocalDirects;
+        host.RelayCount     = this.LocalRelays;
+        host.IsDirectFull   = !this.PeerCast.AccessController.IsChannelPlayable(this);
+        host.IsRelayFull    = !this.PeerCast.AccessController.IsChannelRelayable(this);
+        host.IsReceiving    = true;
+        return host.ToHost();
+      }
+    }
+
     public event EventHandler StatusChanged;
     private void SourceStream_StatusChanged(object sender, SourceStreamStatusChangedEventArgs args)
     {

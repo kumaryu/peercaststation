@@ -97,7 +97,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    static public IEnumerable<HostTreeNode> CreateHostTree(IEnumerable<Host> hosts)
+    static private IEnumerable<HostTreeNode> CreateHostTree(IEnumerable<Host> hosts)
     {
       var nodes = new Dictionary<IPEndPoint, HostTreeNode>();
       var roots = new List<HostTreeNode>();
@@ -116,6 +116,11 @@ namespace PeerCastStation.Core
         }
       }
       return roots;
+    }
+
+    static public IEnumerable<HostTreeNode> CreateHostTree(this Channel channel)
+    {
+      return Utils.CreateHostTree(new Host[] { channel.SelfNode }.Concat(channel.Nodes));
     }
   }
 }
