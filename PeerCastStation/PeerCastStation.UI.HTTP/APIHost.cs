@@ -667,6 +667,18 @@ namespace PeerCastStation.UI.HTTP
         res["isDirectFull"] = host.IsDirectFull;
         res["isReceiving"]  = host.IsReceiving;
         res["isControlFull"]= host.IsControlFull;
+        res["version"]      = host.Extra.GetHostVersion();
+        res["versionVP"]    = host.Extra.GetHostVersionVP();
+        var ex              = host.Extra.GetHostVersionEXPrefix();
+        var exnum           = host.Extra.GetHostVersionEXNumber();
+        if (ex!=null && exnum.HasValue) {
+          try {
+            res["versionEX"] = System.Text.Encoding.UTF8.GetString(ex) + exnum.ToString();
+          }
+          catch (ArgumentException) {
+            //ignore
+          }
+        }
         res["children"] = new JArray(node.Children.Select(c => CreateRelayTreeNode(c)));
         return res;
       }
