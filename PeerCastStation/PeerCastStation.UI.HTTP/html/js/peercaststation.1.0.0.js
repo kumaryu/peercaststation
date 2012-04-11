@@ -61,6 +61,9 @@ PeerCast = {
   stopChannelOutput: function(channelId, id, completed) {
     this.postRequest('stopChannelOutput', { channelId: channelId, outputId: id }, completed);
   },
+  getChannelRelayTree: function(channelId, completed) {
+    this.postRequest('getChannelRelayTree', { channelId: channelId }, completed);
+  },
   getContentReaders:      function(completed) { this.postRequest('getContentReaders',      null, completed); },
   getYellowPageProtocols: function(completed) { this.postRequest('getYellowPageProtocols', null, completed); },
   getYellowPages:         function(completed) { this.postRequest('getYellowPages',         null, completed); },

@@ -211,6 +211,7 @@ var ChannelViewModel = function(initial_value) {
   self.isRelayFull     = ko.observable(initial_value.status.isRelayFull);
   self.isDirectFull    = ko.observable(initial_value.status.isDirectFull);
   self.outputs         = ko.observableArray();
+  self.nodes           = ko.observableArray();
   self.uptimeReadable  = ko.computed(function() {
     var seconds = self.uptime();
     var minutes = Math.floor(seconds /  60) % 60;
@@ -234,10 +235,74 @@ var ChannelViewModel = function(initial_value) {
     $('#channelInfo-'+self.channelId()).slideToggle("fast");
   };
 
-  self.outputsVisible = false;
+  var updateOutputs = function() {
+    PeerCast.getChannelOutputs(self.channelId(), function(result) {
+      if (result) {
+        var outputs = self.outputs();
+        var new_outputs = $.map(result, function(output_info) {
+          for (var i=0,l=outputs.length; i<l; i++) {
+            if (outputs[i].outputId()==output_info.outputId) {
+              return outputs[i].update(output_info);
+            }
+          }
+          return new ChannelOutputViewModel(self, output_info);
+        });
+        self.outputs.splice.apply(self.outputs, [0, self.outputs().length].concat(new_outputs));
+      }
+    });
+  };
+
+  var outputsVisible = false;
   self.showOutputs = function() {
-    self.outputsVisible = !self.outputsVisible;
+    outputsVisible = !outputsVisible;
+    if (outputsVisible) updateOutputs();
     $('#channelOutputs-'+self.channelId()).slideToggle("fast");
+  };
+
+  var createTreeNode = function(node) {
+    var version = "";
+    if (node.version)   version += node.version;
+    if (node.versionVP) version += " VP" + node.versionVP;
+    if (node.versionEX) version += " "   + node.versionEX;
+    var title =
+      node.address + ":" + node.port +
+      " (" + node.localDirects + "/" + node.localRelays + ") " +
+      (node.isFirewalled ? "0" : "") +
+      (node.isRelayFull ? "-" : "") +
+      (node.isReceiving ? "" : "B") + " " +
+      version;
+    return {
+      title:         title,
+      sessionId:     node.sessionId,
+      address:       node.address,
+      port:          node.port,
+      isFirewalled:  node.isFirewalled,
+      localRelays:   node.localRelays,
+      localDirects:  node.localDirects,
+      isTracker:     node.isTracker,
+      isRelayFull:   node.isRelayFull,
+      isDirectFull:  node.isDirectFull,
+      isReceiving:   node.isReceiving,
+      isControlFull: node.isControlFull,
+      version:       node.version,
+      versionVP:     node.versionVP,
+      versionEX:     node.versionEX,
+      children: $.map(node.children, createTreeNode)
+    };
+  };
+
+  var updateRelayTree = function() {
+    PeerCast.getChannelRelayTree(self.channelId(), function(result) {
+      var nodes = $.map(result, createTreeNode);
+      self.nodes.splice.apply(self.nodes, [0, self.nodes().length].concat(nodes));
+    });
+  }
+
+  var relayTreeVisible = false;
+  self.showRelayTree = function() {
+    relayTreeVisible = !relayTreeVisible;
+    $('#channelRelayTree-'+self.channelId()).slideToggle("fast");
+    if (relayTreeVisible) updateRelayTree();
   };
 
   self.editChannelInfo = function() {
@@ -276,22 +341,8 @@ var ChannelViewModel = function(initial_value) {
     self.isBroadcasting(c.status.isBroadcasting);
     self.isRelayFull(c.status.isRelayFull);
     self.isDirectFull(c.status.isDirectFull);
-    if (self.outputsVisible) {
-      PeerCast.getChannelOutputs(self.channelId(), function(result) {
-        if (result) {
-          var outputs = self.outputs();
-          var new_outputs = $.map(result, function(output_info) {
-            for (var i=0,l=outputs.length; i<l; i++) {
-              if (outputs[i].outputId()==output_info.outputId) {
-                return outputs[i].update(output_info);
-              }
-            }
-            return new ChannelOutputViewModel(self, output_info);
-          });
-          self.outputs.splice.apply(self.outputs, [0, self.outputs().length].concat(new_outputs));
-        }
-      });
-    }
+    if (outputsVisible) updateOutputs();
+    if (relayTreeVisible) updateRelayTree();
     return self;
   };
 };
