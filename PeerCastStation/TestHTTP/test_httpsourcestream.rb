@@ -87,6 +87,7 @@ class TC_HTTPSourceStreamFactory < Test::Unit::TestCase
   def test_construct
     factory = PCSHTTP::HTTPSourceStreamFactory.new(@peercast)
     assert_equal('http', factory.Name)
+    assert_equal('http', factory.scheme)
     assert(factory.respond_to?(:create_obj_ref))
   end
 

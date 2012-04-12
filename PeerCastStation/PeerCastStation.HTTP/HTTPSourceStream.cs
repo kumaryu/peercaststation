@@ -85,6 +85,7 @@ namespace PeerCastStation.HTTP
     : SourceStreamFactoryBase
   {
     public override string Name { get { return "http"; } }
+    public override string Scheme { get { return "http"; } }
     public override ISourceStream Create(Channel channel, Uri source, IContentReader reader)
     {
       return new HTTPSourceStream(this.PeerCast, channel, source, reader);

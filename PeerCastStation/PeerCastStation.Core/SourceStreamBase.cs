@@ -31,6 +31,7 @@ namespace PeerCastStation.Core
     }
 
     public abstract string Name { get; }
+    public abstract string Scheme { get; }
     public virtual ISourceStream Create(Channel channel, Uri tracker)
     {
       throw new NotImplementedException();

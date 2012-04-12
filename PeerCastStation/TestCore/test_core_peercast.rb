@@ -297,7 +297,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
   
   def test_relay_from_tracker
     @peercast = PeerCastStation::Core::PeerCast.new
-    @peercast.source_stream_factories['mock'] = MockSourceStreamFactory.new
+    @peercast.source_stream_factories.add(MockSourceStreamFactory.new)
     
     tracker = System::Uri.new('pcp://127.0.0.1:7147')
     channel_id = System::Guid.empty
@@ -322,7 +322,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
   def test_relay_from_yp
     @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.yellow_page_factories.add(MockYellowPageClientFactory.new)
-    @peercast.source_stream_factories['mock'] = MockSourceStreamFactory.new
+    @peercast.source_stream_factories.add(MockSourceStreamFactory.new)
     @peercast.add_yellow_page('mock_yp', 'mock_yp', System::Uri.new('pcp:example.com:7147'))
     
     channel_id = System::Guid.empty
@@ -344,7 +344,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
   def test_request_channel
     @peercast = PeerCastStation::Core::PeerCast.new
     @peercast.yellow_page_factories.add(MockYellowPageClientFactory.new)
-    @peercast.source_stream_factories['mock'] = MockSourceStreamFactory.new
+    @peercast.source_stream_factories.add(MockSourceStreamFactory.new)
     @peercast.add_yellow_page('mock_yp', 'mock_yp', System::Uri.new('pcp:example.com:7147'))
     
     channel_id = System::Guid.new_guid
@@ -368,7 +368,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
   def test_broadcast_channel
     @peercast = PeerCastStation::Core::PeerCast.new
     yp = MockYellowPageClient.new(@peercast, System::Uri.new('pcp:example.com:7147'))
-    @peercast.source_stream_factories['mock'] = MockSourceStreamFactory.new
+    @peercast.source_stream_factories.add(MockSourceStreamFactory.new)
     
     channel_id = System::Guid.new_guid
     source = System::Uri.new('mock://localhost/')
@@ -398,7 +398,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
   def test_close_channel
     tracker = System::Uri.new('mock://127.0.0.1:7147')
     @peercast = PeerCastStation::Core::PeerCast.new
-    @peercast.source_stream_factories['mock'] = MockSourceStreamFactory.new
+    @peercast.source_stream_factories.add(MockSourceStreamFactory.new)
     channel_id = System::Guid.empty
     channel = @peercast.relay_channel(channel_id, tracker);
     assert_equal(1, @peercast.channels.count)

@@ -72,6 +72,10 @@ class MockSourceStreamFactory
     'MockSourceStream'
   end
   
+  def scheme
+    'mock'
+  end
+  
   def create(channel, uri, reader=nil)
     @log << [:create, channel, uri, reader]
     MockSourceStream.new(channel, uri, reader)

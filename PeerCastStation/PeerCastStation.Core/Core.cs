@@ -167,6 +167,10 @@ namespace PeerCastStation.Core
     /// </summary>
     string Name { get; }
     /// <summary>
+    /// このSourceStreamFactoryが扱うプロトコルのURIスキームを取得します
+    /// </summary>
+    string Scheme { get; }
+    /// <summary>
     /// URIからプロトコルを判別しSourceStreamのインスタンスを作成します。
     /// </summary>
     /// <param name="channel">所属するチャンネル</param>

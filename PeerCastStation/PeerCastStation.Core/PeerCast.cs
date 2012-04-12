@@ -112,9 +112,9 @@ namespace PeerCastStation.Core
     /// </summary>
     public IList<IYellowPageClientFactory> YellowPageFactories { get; private set; }
     /// <summary>
-    /// 登録されているSourceStreamのプロトコルとファクトリの辞書を取得します
+    /// 登録されているSourceStreamプロトコルのリストを取得します
     /// </summary>
-    public IDictionary<string, ISourceStreamFactory> SourceStreamFactories { get; private set; }
+    public IList<ISourceStreamFactory> SourceStreamFactories { get; private set; }
     /// <summary>
     /// 登録されているOutputStreamのリストを取得します
     /// </summary>
@@ -170,8 +170,8 @@ namespace PeerCastStation.Core
     {
       Channel channel = null;
       logger.Debug("Requesting channel {0} from {1}", channel_id.ToString("N"), tracker);
-      ISourceStreamFactory source_factory = null;
-      if (!SourceStreamFactories.TryGetValue(tracker.Scheme, out source_factory)) {
+      ISourceStreamFactory source_factory = SourceStreamFactories.FirstOrDefault(factory => tracker.Scheme==factory.Scheme);
+      if (source_factory==null) {
         logger.Error("Protocol `{0}' is not found", tracker.Scheme);
         throw new ArgumentException(String.Format("Protocol `{0}' is not found", tracker.Scheme));
       }
@@ -225,8 +225,8 @@ namespace PeerCastStation.Core
     {
       Channel channel = null;
       logger.Debug("Broadcasting channel {0} from {1}", channel_id.ToString("N"), source);
-      ISourceStreamFactory source_factory = null;
-      if (!SourceStreamFactories.TryGetValue(source.Scheme, out source_factory)) {
+      ISourceStreamFactory source_factory = SourceStreamFactories.FirstOrDefault(factory => source.Scheme==factory.Scheme);
+      if (source_factory==null) {
         logger.Error("Protocol `{0}' is not found", source.Scheme);
         throw new ArgumentException(String.Format("Protocol `{0}' is not found", source.Scheme));
       }
@@ -365,7 +365,7 @@ namespace PeerCastStation.Core
       this.GlobalAddress6 = null;
       this.IsFirewalled = null;
       this.YellowPageFactories = new List<IYellowPageClientFactory>();
-      this.SourceStreamFactories = new Dictionary<string, ISourceStreamFactory>();
+      this.SourceStreamFactories = new List<ISourceStreamFactory>();
       this.OutputStreamFactories = new List<IOutputStreamFactory>();
       foreach (var addr in Dns.GetHostAddresses(Dns.GetHostName())) {
         switch (addr.AddressFamily) {

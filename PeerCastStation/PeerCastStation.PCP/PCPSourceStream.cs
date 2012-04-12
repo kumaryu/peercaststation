@@ -34,6 +34,7 @@ namespace PeerCastStation.PCP
     }
 
     public override string Name { get { return "pcp"; } }
+    public override string Scheme { get { return "pcp"; } }
     public override ISourceStream Create(Channel channel, Uri tracker)
     {
       return new PCPSourceStream(PeerCast, channel, tracker);

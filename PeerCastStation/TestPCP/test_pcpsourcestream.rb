@@ -129,6 +129,7 @@ class TC_PCPSourceStreamFactory < Test::Unit::TestCase
   def test_construct
     factory = PCSPCP::PCPSourceStreamFactory.new(@peercast)
     assert_equal('pcp', factory.Name)
+    assert_equal('pcp', factory.scheme)
     assert_equal(@peercast, factory.PeerCast)
     assert(factory.respond_to?(:create_obj_ref))
   end
