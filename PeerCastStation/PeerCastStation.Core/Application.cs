@@ -30,6 +30,7 @@ namespace PeerCastStation.Core
     Lowest  = -200,
   }
 
+  [AttributeUsage(AttributeTargets.Class)]
   public class PluginAttribute
     : Attribute
   {
