@@ -66,6 +66,8 @@ namespace PeerCastStation.Main
             type => type.GetCustomAttributes(typeof(PluginAttribute), true).Length>0
           ).Select(
             type => new KeyValuePair<PluginAttribute, Type>((PluginAttribute)type.GetCustomAttributes(typeof(PluginAttribute), true)[0], type)
+          ).OrderByDescending(
+            pair => (int)pair.Key.Priority
           )
         );
       }
