@@ -1088,7 +1088,7 @@ namespace PeerCastStation.UI.HTTP
     }
   }
 
-  [Plugin(PluginType.UserInterface)]
+  [Plugin]
   public class APIHostFactory
     : IUserInterfaceFactory
   {

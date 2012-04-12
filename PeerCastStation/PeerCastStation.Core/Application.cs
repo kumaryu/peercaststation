@@ -15,12 +15,6 @@ namespace PeerCastStation.Core
     IUserInterface CreateUserInterface();
   }
 
-  public enum PluginType
-  {
-    Unknown,
-    UserInterface,
-  }
-
   public enum PluginPriority
   {
     Highest =  200,
@@ -34,17 +28,15 @@ namespace PeerCastStation.Core
   public class PluginAttribute
     : Attribute
   {
-    public PluginType     Type     { get; private set; }
     public PluginPriority Priority { get; private set; }
 
-    public PluginAttribute(PluginType type, PluginPriority priority)
+    public PluginAttribute(PluginPriority priority)
     {
-      this.Type = type;
       this.Priority = priority;
     }
 
-    public PluginAttribute(PluginType type)
-      : this(type, PluginPriority.Normal)
+    public PluginAttribute()
+      : this(PluginPriority.Normal)
     {
     }
   }

@@ -270,7 +270,7 @@ namespace PeerCastStation.UI.HTTP
     }
   }
 
-  [Plugin(PluginType.UserInterface)]
+  [Plugin]
   public class AdminHostFactory
     : IUserInterfaceFactory
   {

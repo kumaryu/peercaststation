@@ -56,18 +56,16 @@ namespace PeerCastStation.Main
     }
 
     public static readonly string PluginPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
-    IEnumerable<KeyValuePair<PluginAttribute, Type>> LoadPluginAssemblies()
+    IEnumerable<Type> LoadPluginAssemblies()
     {
-      var res = Enumerable.Empty<KeyValuePair<PluginAttribute, Type>>();
+      var res = Enumerable.Empty<Type>();
       foreach (var dll in System.IO.Directory.GetFiles(PluginPath, "*.dll")) {
         var asm = System.Reflection.Assembly.LoadFrom(dll);
         res = res.Concat(
           asm.GetTypes().Where(
             type => type.GetCustomAttributes(typeof(PluginAttribute), true).Length>0
-          ).Select(
-            type => new KeyValuePair<PluginAttribute, Type>((PluginAttribute)type.GetCustomAttributes(typeof(PluginAttribute), true)[0], type)
           ).OrderByDescending(
-            pair => (int)pair.Key.Priority
+            type => ((PluginAttribute)(type.GetCustomAttributes(typeof(PluginAttribute), true)[0])).Priority
           )
         );
       }
@@ -78,16 +76,13 @@ namespace PeerCastStation.Main
     {
       var types = LoadPluginAssemblies();
       foreach (var attr_type in types) {
-        switch (attr_type.Key.Type) {
-        case PluginType.UserInterface:
-          var constructor = attr_type.Value.GetConstructor(Type.EmptyTypes);
+        var interfaces = attr_type.GetInterfaces();
+        if (interfaces.Contains(typeof(IUserInterfaceFactory))) {
+          var constructor = attr_type.GetConstructor(Type.EmptyTypes);
           if (constructor!=null) {
             var obj = constructor.Invoke(null) as IUserInterfaceFactory;
             if (obj!=null) userInterfaceFactories.Add(obj);
           }
-          break;
-        default:
-          break;
         }
       }
     }

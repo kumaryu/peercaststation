@@ -43,7 +43,7 @@ namespace PeerCastStation.GUI
     }
   }
 
-  [Plugin(PluginType.UserInterface)]
+  [Plugin]
   public class UserInterfaceFactory
     : MarshalByRefObject,
       IUserInterfaceFactory
