@@ -17,11 +17,11 @@ namespace PeerCastStation.Core
 
   public enum PluginPriority
   {
-    Highest =  200,
-    Higher  =  100,
+    Highest = -200,
+    Higher  = -100,
     Normal  =    0,
-    Lower   = -100,
-    Lowest  = -200,
+    Lower   =  100,
+    Lowest  =  200,
   }
 
   [AttributeUsage(AttributeTargets.Class)]

@@ -53,7 +53,7 @@ namespace PeerCastStation.Main
         res = res.Concat(
           asm.GetTypes().Where(
             type => type.GetCustomAttributes(typeof(PluginAttribute), true).Length>0
-          ).OrderByDescending(
+          ).OrderBy(
             type => ((PluginAttribute)(type.GetCustomAttributes(typeof(PluginAttribute), true)[0])).Priority
           )
         );
