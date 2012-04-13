@@ -17,6 +17,7 @@ namespace PeerCastStation.PCP
   {
     public PeerCast PeerCast { get; private set; }
     public string Name { get { return "PCP"; } }
+    public string Protocol { get { return "pcp"; } }
 
     public IYellowPageClient Create(string name, Uri uri)
     {
@@ -39,6 +40,7 @@ namespace PeerCastStation.PCP
     public const int DefaultPort = 7144;
     public PeerCast PeerCast { get; private set; }
     public string Name { get; private set; }
+    public string Protocol { get { return "pcp"; } }
     public Uri Uri { get; private set; }
 
     private string ReadResponse(Stream s)

@@ -9,16 +9,13 @@ var YellowPageEditDialog = new function() {
     ko.applyBindings(self, dialog.get(0));
     PeerCast.getYellowPageProtocols(function(result) {
       if (result) {
-        var new_protocols = $.map(result, function(protocol) {
-          return protocol.name;
-        });
         self.yellowPageProtocols.splice.apply(
           self.yellowPageProtocols,
-          [0, self.yellowPageProtocols().length].concat(new_protocols));
+          [0, self.yellowPageProtocols().length].concat(result));
       }
     });
   });
-  self.yellowPageProtocols  = ko.observableArray();
+  self.yellowPageProtocols = ko.observableArray();
   self.name     = ko.observable("");
   self.uri      = ko.observable("");
   self.protocol = ko.observable("");

@@ -1300,12 +1300,13 @@ JSON
 
   class TestYPClient
     include PCSCore::IYellowPageClient
-    def initialize(name, uri)
+    def initialize(name, protocol, uri)
       @name = name
+      @protocol = protocol
       @uri  = uri
       @log  = []
     end
-    attr_reader :name, :uri, :log
+    attr_reader :name, :protocol, :uri, :log
 
     def find_tracker(channel_id)
       @log << :find_tracker
@@ -1327,13 +1328,15 @@ JSON
 
   class TestYPClientFactory
     include PCSCore::IYellowPageClientFactory
-    def initialize(name)
+    def initialize(name, protocol=nil)
       @name = name
+      @protocol = protocol || name
     end
     attr_reader :name
+    attr_reader :protocol
 
     def create(yp_name, uri)
-      TestYPClient.new(yp_name, uri)
+      TestYPClient.new(yp_name, @protocol, uri)
     end
   end
 
@@ -1352,8 +1355,8 @@ JSON
     assert_nil(res.body.error)
     assert_equal(@app.peercast.yellow_page_factories.count, res.body.result.size)
     factories.size.times do |i|
-      assert_equal(factories[i].name, res.body.result[i]['desc'])
-      assert_equal(factories[i].name, res.body.result[i]['name'])
+      assert_equal(factories[i].name,     res.body.result[i]['name'])
+      assert_equal(factories[i].protocol, res.body.result[i]['protocol'])
     end
   end
 
@@ -1374,13 +1377,14 @@ JSON
       assert_equal(yps[i].hash,     res.body.result[i]['yellowPageId'])
       assert_equal(yps[i].name,     res.body.result[i]['name'])
       assert_equal(yps[i].uri.to_s, res.body.result[i]['uri'])
+      assert_equal(yps[i].protocol, res.body.result[i]['protocol'])
     end
   end
 
   def test_addYellowPage_args_by_name
     @app.peercast.yellow_page_factories.add(TestYPClientFactory.new('pcp'))
     params = {
-      'protocol' => @app.peercast.yellow_page_factories[0].name,
+      'protocol' => @app.peercast.yellow_page_factories[0].protocol,
       'name'     => 'foo',
       'uri'      => 'pcp://foo.example.com/',
     }
@@ -1392,8 +1396,10 @@ JSON
     assert_equal(yp.hash,     res.body.result['yellowPageId'])
     assert_equal(yp.name,     res.body.result['name'])
     assert_equal(yp.uri.to_s, res.body.result['uri'])
-    assert_equal(params['name'], yp.name)
-    assert_equal(params['uri'],  yp.uri.to_s)
+    assert_equal(yp.protocol, res.body.result['protocol'])
+    assert_equal(params['protocol'], yp.protocol)
+    assert_equal(params['name'],     yp.name)
+    assert_equal(params['uri'],      yp.uri.to_s)
   end
 
   def test_addYellowPage_args_by_position
@@ -1411,6 +1417,8 @@ JSON
     assert_equal(yp.hash,     res.body.result['yellowPageId'])
     assert_equal(yp.name,     res.body.result['name'])
     assert_equal(yp.uri.to_s, res.body.result['uri'])
+    assert_equal(yp.protocol, res.body.result['protocol'])
+    assert_equal(params[0], yp.protocol)
     assert_equal(params[1], yp.name)
     assert_equal(params[2], yp.uri.to_s)
   end
@@ -1554,6 +1562,10 @@ JSON
       'TestSourceStream'
     end
     
+    def scheme
+      'test'
+    end
+    
     def create(channel, uri, reader=nil)
       @log << [:create, channel, uri, reader]
       TestSourceStream.new(channel, uri, reader)
@@ -1615,7 +1627,7 @@ JSON
   end
 
   def test_broadcastChannel
-    @app.peercast.source_stream_factories.add('test', TestSourceStreamFactory.new)
+    @app.peercast.source_stream_factories.add(TestSourceStreamFactory.new)
     @app.peercast.yellow_page_factories.add(TestYPClientFactory.new('pcp'))
     yp = @app.peercast.add_yellow_page('pcp', 'foo', System::Uri.new('pcp://foo.example.com'))
     reader = TestContentReader.new('WMV')

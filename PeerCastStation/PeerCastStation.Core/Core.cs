@@ -26,9 +26,13 @@ namespace PeerCastStation.Core
   public interface IYellowPageClient
   {
     /// <summary>
-    /// YwlloePageに関連付けられた名前を取得します
+    /// YelloePageに関連付けられた名前を取得します
     /// </summary>
     string Name { get; }
+    /// <summary>
+    /// YelloePageの通信プロトコルを取得します
+    /// </summary>
+    string Protocol { get; }
     /// <summary>
     /// YellowPageのURLを取得します
     /// </summary>
@@ -60,9 +64,13 @@ namespace PeerCastStation.Core
   public interface IYellowPageClientFactory
   {
     /// <summary>
-    /// このYellowPageFactoryが扱うプロトコルの名前を取得します
+    /// このYellowPageFactoryが扱うプロトコルの表示名を取得します
     /// </summary>
     string Name { get; }
+    /// <summary>
+    /// このYellowPageFactoryが扱うプロトコルの識別子を取得します
+    /// </summary>
+    string Protocol { get; }
     /// <summary>
     /// YellowPageクライアントインスタンスを作成し返します
     /// </summary>

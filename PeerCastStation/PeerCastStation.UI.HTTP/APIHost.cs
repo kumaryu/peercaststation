@@ -706,8 +706,8 @@ namespace PeerCastStation.UI.HTTP
       {
         return new JArray(PeerCast.YellowPageFactories.Select(protocol => {
           var res = new JObject();
-          res["name"] = protocol.Name;
-          res["desc"] = protocol.Name;
+          res["name"]     = protocol.Name;
+          res["protocol"] = protocol.Protocol;
           return res;
         }).ToArray());
       }
@@ -720,7 +720,7 @@ namespace PeerCastStation.UI.HTTP
           res["yellowPageId"] = yp.GetHashCode();
           res["name"]         = yp.Name;
           res["uri"]          = yp.Uri.ToString();
-          res["protocol"]     = yp.Uri.Scheme;
+          res["protocol"]     = yp.Protocol;
           return res;
         }).ToArray());
       }
@@ -728,7 +728,7 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("addYellowPage")]
       private JObject AddYellowPage(string protocol, string name, string uri)
       {
-        var factory = PeerCast.YellowPageFactories.FirstOrDefault(p => protocol==p.Name);
+        var factory = PeerCast.YellowPageFactories.FirstOrDefault(p => protocol==p.Protocol);
         if (factory==null) throw new RPCError(RPCErrorCode.InvalidParams, "protocol Not Found");
         if (name==null) throw new RPCError(RPCErrorCode.InvalidParams, "name must be String");
         Uri yp_uri;
@@ -741,11 +741,12 @@ namespace PeerCastStation.UI.HTTP
         catch (UriFormatException) {
           throw new RPCError(RPCErrorCode.InvalidParams, "Invalid uri");
         }
-        var yp = PeerCast.AddYellowPage(factory.Name, name, yp_uri);
+        var yp = PeerCast.AddYellowPage(factory.Protocol, name, yp_uri);
         var res = new JObject();
         res["yellowPageId"] = yp.GetHashCode();
         res["name"]         = yp.Name;
         res["uri"]          = yp.Uri.ToString();
+        res["protocol"]     = yp.Protocol;
         return res;
       }
 

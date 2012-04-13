@@ -12,19 +12,33 @@ namespace PeerCastStation.GUI
     public Uri    Uri      { get; set; }
     public string Protocol { get; set; }
 
+    private class YellowPageFactoryItem
+    {
+      public IYellowPageClientFactory Factory { get; private set; }
+      public YellowPageFactoryItem(IYellowPageClientFactory factory)
+      {
+        this.Factory = factory;
+      }
+      public override string ToString()
+      {
+        return this.Factory.Name;
+      }
+    }
+
     public YellowPagesEditDialog(PeerCast peerCast)
     {
       InitializeComponent();
       if (MainForm.IsOSX) {
         this.Font = new System.Drawing.Font("Osaka", this.Font.SizeInPoints);
       }
-      ypProtocolList.Items.AddRange(peerCast.YellowPageFactories.Select(factory => factory.Name).ToArray());
+      ypProtocolList.Items.AddRange(peerCast.YellowPageFactories.Select(factory => new YellowPageFactoryItem(factory)).ToArray());
     }
 
     private void okButton_Click(object sender, EventArgs e)
     {
       YPName   = ypNameText.Text;
-      Protocol = ypProtocolList.Text;
+      var protocol_item = ypProtocolList.SelectedItem as YellowPageFactoryItem;
+      Protocol = protocol_item!=null ? protocol_item.Factory.Protocol : null;
       Uri uri;
       if (!String.IsNullOrEmpty(YPName) &&
           !String.IsNullOrEmpty(Protocol) &&

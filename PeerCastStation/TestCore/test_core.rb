@@ -25,20 +25,25 @@ class MockYellowPageClientFactory
     'mock_yp'
   end
   
+  def protocol
+    'mock'
+  end
+  
   def create(name, uri)
-    MockYellowPageClient.new(name, uri)
+    MockYellowPageClient.new(name, uri, 'mock')
   end
 end
 
 class MockYellowPageClient
   include PeerCastStation::Core::IYellowPageClient
-  def initialize(name, uri)
+  def initialize(name, uri, protocol)
     @name = name
     @uri = uri
+    @protocol = protocol
     @log = []
     @channels = []
   end
-  attr_reader :name, :uri, :log, :channels
+  attr_reader :name, :uri, :protocol, :log, :channels
   
   def find_tracker(channel_id)
     @log << [:find_tracker, channel_id]

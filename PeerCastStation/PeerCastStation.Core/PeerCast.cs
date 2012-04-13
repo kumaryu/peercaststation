@@ -283,7 +283,7 @@ namespace PeerCastStation.Core
     {
       IYellowPageClient yp = null;
       foreach (var factory in YellowPageFactories) {
-        if (factory.Name==protocol) {
+        if (factory.Protocol==protocol) {
           yp = factory.Create(name, uri);
           break;
         }

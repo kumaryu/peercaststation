@@ -178,7 +178,12 @@ namespace PeerCastStation.Main
       }
       if (settings.YellowPages!=null) {
         foreach (var yellowpage in settings.YellowPages) {
-          peerCast.AddYellowPage(yellowpage.Protocol, yellowpage.Name, yellowpage.Uri);
+          try {
+            peerCast.AddYellowPage(yellowpage.Protocol, yellowpage.Name, yellowpage.Uri);
+          }
+          catch (ArgumentException e) {
+            logger.Error(e);
+          }
         }
       }
     }
@@ -203,7 +208,7 @@ namespace PeerCastStation.Main
       ).ToArray();
       settings.YellowPages = peerCast.YellowPages.Select(yellowpage =>
         new PeerCastStation.Properties.YellowPageSettings {
-          Protocol = yellowpage.Uri.Scheme,
+          Protocol = yellowpage.Protocol,
           Name     = yellowpage.Name,
           Uri      = yellowpage.Uri,
         }
