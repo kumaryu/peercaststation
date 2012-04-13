@@ -21,6 +21,7 @@ using PeerCastStation.Core;
 
 namespace PeerCastStation.HTTP
 {
+  [Plugin]
   public class HTTPDummyOutputStreamFactory
     : OutputStreamFactoryBase
   {

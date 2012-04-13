@@ -111,6 +111,7 @@ namespace PeerCastStation.HTTP
   /// <summary>
   /// HTTPで視聴出力をするHTTPOutputStreamを作成するクラスです
   /// </summary>
+  [Plugin]
   public class HTTPOutputStreamFactory
     : OutputStreamFactoryBase
   {

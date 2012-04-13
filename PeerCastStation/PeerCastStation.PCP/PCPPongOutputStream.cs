@@ -22,6 +22,7 @@ using PeerCastStation.Core;
 
 namespace PeerCastStation.PCP
 {
+  [Plugin]
   public class PCPPongOutputStreamFactory
     : OutputStreamFactoryBase
   {

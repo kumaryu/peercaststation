@@ -116,6 +116,7 @@ namespace PeerCastStation.PCP
   /// <summary>
   /// PCPでリレー出力をするPCPOutputStreamを作成するクラスです
   /// </summary>
+  [Plugin]
   public class PCPOutputStreamFactory
     : OutputStreamFactoryBase
   {

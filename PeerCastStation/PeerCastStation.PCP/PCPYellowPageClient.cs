@@ -10,6 +10,7 @@ using System.Net;
 
 namespace PeerCastStation.PCP
 {
+  [Plugin]
   public class PCPYellowPageClientFactory
     : MarshalByRefObject,
       IYellowPageClientFactory

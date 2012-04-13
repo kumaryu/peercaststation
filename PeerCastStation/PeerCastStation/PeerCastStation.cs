@@ -30,17 +30,6 @@ namespace PeerCastStation.Main
     override public PeerCast PeerCast { get { return peerCast; } }
     public void Run()
     {
-      peerCast.YellowPageFactories.Add(new PeerCastStation.PCP.PCPYellowPageClientFactory(peerCast));
-      peerCast.SourceStreamFactories.Add(new PeerCastStation.PCP.PCPSourceStreamFactory(peerCast));
-      peerCast.SourceStreamFactories.Add(new PeerCastStation.HTTP.HTTPSourceStreamFactory(peerCast));
-      peerCast.OutputStreamFactories.Add(new PeerCastStation.PCP.PCPPongOutputStreamFactory(peerCast));
-      peerCast.OutputStreamFactories.Add(new PeerCastStation.PCP.PCPOutputStreamFactory(peerCast));
-      peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPOutputStreamFactory(peerCast));
-      peerCast.OutputStreamFactories.Add(new PeerCastStation.Ohaoha.OhaohaCheckOutputStreamFactory(peerCast));
-      peerCast.OutputStreamFactories.Add(new PeerCastStation.HTTP.HTTPDummyOutputStreamFactory(peerCast));
-      peerCast.AddContentReader(new PeerCastStation.ASF.ASFContentReader());
-      peerCast.AddContentReader(new RawContentReader());
-
       LoadSettings();
       var uis = userInterfaceFactories.Select(factory => factory.CreateUserInterface()).ToArray();
       foreach (var ui in uis) {
@@ -72,18 +61,77 @@ namespace PeerCastStation.Main
       return res;
     }
 
+    private void AddUserInterfaceFactory(Type type)
+    {
+      var constructor = type.GetConstructor(Type.EmptyTypes);
+      if (constructor!=null) {
+        var obj = constructor.Invoke(null) as IUserInterfaceFactory;
+        if (obj!=null) userInterfaceFactories.Add(obj);
+      }
+    }
+
+    private void AddSourceStreamFactory(Type type)
+    {
+      ISourceStreamFactory factory = null;
+      var constructor = type.GetConstructor(Type.EmptyTypes);
+      if (constructor!=null) {
+        factory = constructor.Invoke(null) as ISourceStreamFactory;
+      }
+      else if ((constructor=type.GetConstructor(new Type[] { typeof(PeerCast) }))!=null) {
+        factory = constructor.Invoke(new object[] { peerCast }) as ISourceStreamFactory;
+      }
+      if (factory!=null) peerCast.SourceStreamFactories.Add(factory);
+    }
+
+    private void AddOutputStreamFactory(Type type)
+    {
+      IOutputStreamFactory factory = null;
+      var constructor = type.GetConstructor(Type.EmptyTypes);
+      if (constructor!=null) {
+        factory = constructor.Invoke(null) as IOutputStreamFactory;
+      }
+      else if ((constructor=type.GetConstructor(new Type[] { typeof(PeerCast) }))!=null) {
+        factory = constructor.Invoke(new object[] { peerCast }) as IOutputStreamFactory;
+      }
+      if (factory!=null) peerCast.OutputStreamFactories.Add(factory);
+    }
+
+    private void AddYellowPageClientFactory(Type type)
+    {
+      IYellowPageClientFactory factory = null;
+      var constructor = type.GetConstructor(Type.EmptyTypes);
+      if (constructor!=null) {
+        factory = constructor.Invoke(null) as IYellowPageClientFactory;
+      }
+      else if ((constructor=type.GetConstructor(new Type[] { typeof(PeerCast) }))!=null) {
+        factory = constructor.Invoke(new object[] { peerCast }) as IYellowPageClientFactory;
+      }
+      if (factory!=null) peerCast.YellowPageFactories.Add(factory);
+    }
+
+    private void AddContentReader(Type type)
+    {
+      IContentReader reader = null;
+      var constructor = type.GetConstructor(Type.EmptyTypes);
+      if (constructor!=null) {
+        reader = constructor.Invoke(null) as IContentReader;
+      }
+      else if ((constructor=type.GetConstructor(new Type[] { typeof(PeerCast) }))!=null) {
+        reader = constructor.Invoke(new object[] { peerCast }) as IContentReader;
+      }
+      if (reader!=null) peerCast.AddContentReader(reader);
+    }
+
     void LoadPlugins()
     {
       var types = LoadPluginAssemblies();
-      foreach (var attr_type in types) {
-        var interfaces = attr_type.GetInterfaces();
-        if (interfaces.Contains(typeof(IUserInterfaceFactory))) {
-          var constructor = attr_type.GetConstructor(Type.EmptyTypes);
-          if (constructor!=null) {
-            var obj = constructor.Invoke(null) as IUserInterfaceFactory;
-            if (obj!=null) userInterfaceFactories.Add(obj);
-          }
-        }
+      foreach (var type in types) {
+        var interfaces = type.GetInterfaces();
+        if (interfaces.Contains(typeof(IUserInterfaceFactory)))    AddUserInterfaceFactory(type);
+        if (interfaces.Contains(typeof(ISourceStreamFactory)))     AddSourceStreamFactory(type);
+        if (interfaces.Contains(typeof(IOutputStreamFactory)))     AddOutputStreamFactory(type);
+        if (interfaces.Contains(typeof(IYellowPageClientFactory))) AddYellowPageClientFactory(type);
+        if (interfaces.Contains(typeof(IContentReader)))           AddContentReader(type);
       }
     }
 

@@ -21,6 +21,7 @@ using PeerCastStation.HTTP;
 
 namespace PeerCastStation.Ohaoha
 {
+  [Plugin]
   public class OhaohaCheckOutputStreamFactory
     : OutputStreamFactoryBase
   {

@@ -321,6 +321,7 @@ namespace PeerCastStation.ASF
     }
   };
 
+  [Plugin]
   public class ASFContentReader
     : MarshalByRefObject,
       IContentReader

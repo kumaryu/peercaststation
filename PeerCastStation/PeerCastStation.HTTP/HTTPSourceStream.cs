@@ -81,6 +81,7 @@ namespace PeerCastStation.HTTP
     }
   }
 
+  [Plugin]
   public class HTTPSourceStreamFactory
     : SourceStreamFactoryBase
   {

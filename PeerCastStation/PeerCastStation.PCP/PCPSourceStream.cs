@@ -25,6 +25,7 @@ using System.Text.RegularExpressions;
 
 namespace PeerCastStation.PCP
 {
+  [Plugin]
   public class PCPSourceStreamFactory
     : SourceStreamFactoryBase
   {

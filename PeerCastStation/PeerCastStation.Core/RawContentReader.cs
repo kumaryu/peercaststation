@@ -7,6 +7,7 @@ namespace PeerCastStation.Core
   /// <summary>
   /// 読み取ったデータをそのままコンテントとして流すクラスです
   /// </summary>
+  [Plugin(PluginPriority.Lower)]
   public class RawContentReader
     : MarshalByRefObject,
       IContentReader
