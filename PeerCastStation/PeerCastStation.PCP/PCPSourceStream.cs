@@ -680,8 +680,12 @@ namespace PeerCastStation.PCP
     protected override void DoPost(Host from, Atom packet)
     {
       if (Uphost!=from) {
-        //TODO:接続が閉じられている時は送信しないかエラー処理する
-        Send(packet);
+        try {
+          Send(packet);
+        }
+        catch (InvalidOperationException e) {
+          Logger.Error(e);
+        }
       }
     }
 
