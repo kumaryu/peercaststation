@@ -415,6 +415,32 @@ namespace PeerCastStation.UI.HTTP
         return res;
       }
 
+      [RPCMethod("getPlugins")]
+      private JArray GetPlugins()
+      {
+        var res = new JArray(owner.application.Plugins.Select(plugin => {
+          var jplugin = new JObject();
+          jplugin["name"] = plugin.FullName;
+          jplugin["interfaces"] = new JArray(plugin.GetInterfaces().Select(intf => intf.Name));
+          var jassembly = new JObject();
+          var asm = plugin.Assembly;
+          jassembly["name"] = asm.FullName;
+          jassembly["path"] = asm.Location;
+          if (File.Exists(asm.Location)) {
+            var info = System.Diagnostics.FileVersionInfo.GetVersionInfo(asm.Location);
+            jassembly["version"] = info.FileVersion;
+            jassembly["copyright"] = info.LegalCopyright;
+          }
+          else {
+            jassembly["version"] = "";
+            jassembly["copyright"] = "";
+          }
+          jplugin["assembly"] = jassembly;
+          return jplugin;
+        }));
+        return res;
+      }
+
       [RPCMethod("getStatus")]
       private JObject GetStatus()
       {

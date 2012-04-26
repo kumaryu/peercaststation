@@ -54,12 +54,18 @@ class TC_APIHostFactory < Test::Unit::TestCase
 end
 
 class TestApplication < PCSCore::PeerCastApplication
-  def peer_cast
-    @peercast ||= PCSCore::PeerCast.new
+  def self.new
+    instance = super
+    instance.instance_eval do
+      @peercast = PCSCore::PeerCast.new
+      @plugins = []
+    end
+    instance
   end
+  attr_accessor :peercast, :plugins
 
-  def peercast
-    @peercast ||= PCSCore::PeerCast.new
+  def peer_cast
+    @peercast
   end
 
   def stop
@@ -458,6 +464,31 @@ JSON
     os.start
     os.join
     parse_jsonrpc_response(@output_stream.to_array.to_a.pack('C*'))
+  end
+
+  def test_get_plugins
+    PeerCastStation::Core::PeerCastApplication.current = @app
+    @app.plugins = System::Array[System::Type].new([
+      PeerCastStation::Core::RawContentReader.to_clr_type,
+    ])
+    res = invoke_method('getPlugins')
+    assert_equal(1, res.body.id)
+    assert_nil(res.body.error)
+    assert_equal(@app.plugins.size, res.body.result.size)
+    res.body.result.size.times do |i|
+      type = @app.plugins[i]
+      result = res.body.result[i]
+      assert_equal type.full_name, result['name']
+      assert result['interfaces'].include?('IContentReader')
+      resasm = result['assembly']
+      assert_not_nil resasm
+      asm  = type.assembly
+      info = System::Diagnostics::FileVersionInfo.get_version_info(asm.location)
+      assert_equal asm.full_name,        resasm['name']
+      assert_equal asm.location,         resasm['path']
+      assert_equal info.file_version,    resasm['version']
+      assert_equal info.legal_copyright, resasm['copyright']
+    end
   end
 
   def test_get_status
