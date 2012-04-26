@@ -15,6 +15,11 @@ namespace PeerCastStation.Main
       get { return userInterfaceFactories; }
     }
 
+    private IEnumerable<Type> plugins;
+    override public IEnumerable<Type> Plugins {
+      get { return plugins; }
+    }
+
     public Application()
     {
       LoadPlugins();
@@ -124,8 +129,8 @@ namespace PeerCastStation.Main
 
     void LoadPlugins()
     {
-      var types = LoadPluginAssemblies();
-      foreach (var type in types) {
+      plugins = LoadPluginAssemblies();
+      foreach (var type in plugins) {
         var interfaces = type.GetInterfaces();
         if (interfaces.Contains(typeof(IUserInterfaceFactory)))    AddUserInterfaceFactory(type);
         if (interfaces.Contains(typeof(ISourceStreamFactory)))     AddSourceStreamFactory(type);

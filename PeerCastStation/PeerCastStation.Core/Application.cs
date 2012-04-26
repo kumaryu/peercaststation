@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace PeerCastStation.Core
 {
@@ -49,6 +50,7 @@ namespace PeerCastStation.Core
       get { return current; }
       set { current = value; }
     }
+    public abstract IEnumerable<Type> Plugins { get; }
     public abstract PeerCast PeerCast { get; }
     public abstract void Stop();
   }
