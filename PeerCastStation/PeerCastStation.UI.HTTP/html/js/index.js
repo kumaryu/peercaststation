@@ -75,20 +75,22 @@ var PeercastViewModel = new function() {
     PeerCast.getPlugins(function(result) {
       if (result) {
         var pluginDLLs = {};
-        var plugins = $.map(result, function(plugin) {
-          pluginDLLs[plugin.assembly.path] = {
+        var plugins = [];
+        $.each(result, function(i, plugin) {
+          var dllname = plugin.assembly.path.match(/^.*[\/\\](.*)$/)[1];
+          pluginDLLs[dllname] = {
             name:    plugin.assembly.name,
             path:    plugin.assembly.path,
+            dll:     dllname,
             version: plugin.assembly.version
           };
-          return {
+          plugins.push({
             name:    plugin.name,
-            dll:     plugin.assembly.path,
-            version: plugin.assembly.version
-          };
+            dll:     dllname,
+          });
         });
-        for (var dll in pluginDLLs) {
-          self.pluginDLLs.push(pluginDLLs[dll]);
+        for (var dllname in pluginDLLs) {
+          self.pluginDLLs.push(pluginDLLs[dllname]);
         }
         self.plugins.splice.apply(self.plugins, [0, self.plugins().length].concat(plugins));
       }
