@@ -718,7 +718,7 @@ namespace PeerCastStation.GUI
 
     private void versionInfoButton_Click(object sender, EventArgs e)
     {
-      var dlg = new VersionInfoDialog(new string[] { "PeerCastStation" });
+      var dlg = new VersionInfoDialog(PeerCastApplication.Current);
       dlg.ShowDialog();
     }
 
