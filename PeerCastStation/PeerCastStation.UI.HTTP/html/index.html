@@ -26,11 +26,11 @@
         </div>
       </div>
     </div>
-    <div class="container-fluid">
-      <div class="row-fluid" id="version">
+    <div class="container-fluid" id="status">
+      <div class="row-fluid">
         <h1><span data-bind="text:agentName"></span></h1>
       </div>
-      <div class="row-fluid" id="status">
+      <div class="row-fluid">
         <div class="span6">
           <h2>状態</h2>
           <table class="table">
@@ -58,6 +58,25 @@
               <th>視聴可能アドレス(LAN内)</th>
               <td><span data-bind="text:localDirectAddress"></span></td>
             </tr>
+          </table>
+        </div>
+      </div>
+      <div class="row-fluid">
+        <div class="span6">
+          <h2>プラグイン</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>DLL</th>
+                <th>バージョン</th>
+              </tr>
+            </thead>
+            <tbody data-bind="foreach:pluginDLLs">
+              <tr>
+                <td data-bind="text:path"></td>
+                <td data-bind="text:version"></td>
+              </tr>
+            </tbody>
           </table>
         </div>
       </div>

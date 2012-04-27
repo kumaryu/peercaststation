@@ -9,6 +9,8 @@ var PeercastViewModel = new function() {
   self.globalDirectEndPoint = ko.observable(null);
   self.localRelayEndPoint   = ko.observable(null);
   self.localDirectEndPoint  = ko.observable(null);
+  self.plugins              = ko.observableArray();
+  self.pluginDLLs           = ko.observableArray();
 
   self.firewalledStatus = ko.computed(function() {
     var firewalled = self.isFirewalled();
@@ -50,7 +52,6 @@ var PeercastViewModel = new function() {
     return endpoint ? (endpoint[0]+':'+endpoint[1]) : '無し';
   });
 
-
   self.update = function() {
     PeerCast.getVersionInfo(function(result) {
       if (result) {
@@ -69,6 +70,30 @@ var PeercastViewModel = new function() {
       }
     });
   };
+
+  $(document).ready(function() {
+    PeerCast.getPlugins(function(result) {
+      if (result) {
+        var pluginDLLs = {};
+        var plugins = $.map(result, function(plugin) {
+          pluginDLLs[plugin.assembly.path] = {
+            name:    plugin.assembly.name,
+            path:    plugin.assembly.path,
+            version: plugin.assembly.version
+          };
+          return {
+            name:    plugin.name,
+            dll:     plugin.assembly.path,
+            version: plugin.assembly.version
+          };
+        });
+        for (var dll in pluginDLLs) {
+          self.pluginDLLs.push(pluginDLLs[dll]);
+        }
+        self.plugins.splice.apply(self.plugins, [0, self.plugins().length].concat(plugins));
+      }
+    });
+  });
 };
 
 $(document).ready(function() {

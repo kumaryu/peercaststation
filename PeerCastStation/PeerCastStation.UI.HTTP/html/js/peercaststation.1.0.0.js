@@ -36,6 +36,7 @@ PeerCast = {
     $.post('/api/1', $.toJSON(request), this.onSuccessFunc(completed)).error(this.onErrorFunc(completed));
   },
   getVersionInfo: function(completed)    { this.postRequest('getVersionInfo', null, completed); },
+  getPlugins:  function(completed)       { this.postRequest('getPlugins',     null, completed); },
   getStatus:   function(completed)       { this.postRequest('getStatus',      null, completed); },
   getSettings: function(completed)       { this.postRequest('getSettings',    null, completed); },
   setSettings: function(args, completed) { this.postRequest('setSettings',    { settings: args }, completed); },
