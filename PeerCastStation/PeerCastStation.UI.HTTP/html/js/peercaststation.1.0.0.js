@@ -95,9 +95,9 @@ PeerCast = {
   removeListener: function(id, completed) {
     this.postRequest('removeListener', { listenerId: id }, completed);
   },
-  broadcastChannel: function(yellowPage, sourceUri, contentReader, info, track, completed) {
+  broadcastChannel: function(yellowPageId, sourceUri, contentReader, info, track, completed) {
     this.postRequest('broadcastChannel', {
-      yellowPage: yellowPage,
+      yellowPageId: yellowPageId,
       sourceUri: sourceUri,
       contentReader: contentReader,
       info: info,
