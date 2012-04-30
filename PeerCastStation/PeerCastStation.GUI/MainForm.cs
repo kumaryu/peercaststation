@@ -965,5 +965,48 @@ namespace PeerCastStation.GUI
         System.Diagnostics.Process.Start(String.Format("http://{0}/html/index.html", host));
       }
     }
+
+    private void openContactURLMenu_Click(object sender, EventArgs e)
+    {
+      var item = channelList.SelectedItem as ChannelListItem;
+      if (item!=null) {
+        var url = item.Channel.ChannelInfo.URL;
+        Uri uri;
+        if (!String.IsNullOrEmpty(url) && Uri.TryCreate(url, UriKind.Absolute, out uri)) {
+          System.Diagnostics.Process.Start(uri.ToString());
+        }
+      }
+    }
+
+    private void copyStreamURLMenu_Click(object sender, EventArgs e)
+    {
+      var item = channelList.SelectedItem as ChannelListItem;
+      if (item!=null && peerCast.OutputListeners.Count>0) {
+        var channel_id = item.Channel.ChannelID;
+        var endpoint = peerCast.OutputListeners[0].LocalEndPoint;
+        var ext = item.Channel.ChannelInfo.ContentExtension;
+        string url;
+        if (endpoint.Address.Equals(System.Net.IPAddress.Any)) {
+          url = String.Format("http://localhost:{0}/stream/{1}{2}", endpoint.Port, channel_id.ToString("N"), ext);
+        }
+        else {
+          url = String.Format("http://{0}/pls/{1}{2}", endpoint.ToString(), channel_id.ToString("N"), ext);
+        }
+        Clipboard.SetText(url);
+      }
+    }
+
+    private void copyContactURLMenu_Click(object sender, EventArgs e)
+    {
+      var item = channelList.SelectedItem as ChannelListItem;
+      if (item!=null) {
+        var url = item.Channel.ChannelInfo.URL;
+        Uri uri;
+        if (!String.IsNullOrEmpty(url) && Uri.TryCreate(url, UriKind.Absolute, out uri)) {
+          Clipboard.SetText(uri.ToString());
+        }
+      }
+    }
+
   }
 }

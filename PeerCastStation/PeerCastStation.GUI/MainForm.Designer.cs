@@ -71,6 +71,11 @@ namespace PeerCastStation.GUI
       System.Windows.Forms.Label label28;
       System.Windows.Forms.Label label4;
       System.Windows.Forms.ToolStripMenuItem showHTMLUIMenuItem;
+      System.Windows.Forms.ToolStripMenuItem playMenu;
+      System.Windows.Forms.ToolStripMenuItem openContactURLMenu;
+      System.Windows.Forms.ToolStripSeparator toolStripMenuItem2;
+      System.Windows.Forms.ToolStripMenuItem copyStreamURLMenu;
+      System.Windows.Forms.ToolStripMenuItem copyContactURLMenu;
       System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
       this.chanInfoUpdateButton = new System.Windows.Forms.Button();
       this.notifyIconMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
@@ -144,6 +149,7 @@ namespace PeerCastStation.GUI
       this.statusBar = new System.Windows.Forms.StatusStrip();
       this.portLabel = new System.Windows.Forms.ToolStripStatusLabel();
       this.portOpenedLabel = new System.Windows.Forms.ToolStripStatusLabel();
+      this.channelListMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
       showGUIMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       quitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       label21 = new System.Windows.Forms.Label();
@@ -169,6 +175,11 @@ namespace PeerCastStation.GUI
       label28 = new System.Windows.Forms.Label();
       label4 = new System.Windows.Forms.Label();
       showHTMLUIMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      playMenu = new System.Windows.Forms.ToolStripMenuItem();
+      openContactURLMenu = new System.Windows.Forms.ToolStripMenuItem();
+      toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
+      copyStreamURLMenu = new System.Windows.Forms.ToolStripMenuItem();
+      copyContactURLMenu = new System.Windows.Forms.ToolStripMenuItem();
       panel1.SuspendLayout();
       this.notifyIconMenu.SuspendLayout();
       this.mainTab.SuspendLayout();
@@ -195,6 +206,7 @@ namespace PeerCastStation.GUI
       this.groupBox4.SuspendLayout();
       this.tabLog.SuspendLayout();
       this.statusBar.SuspendLayout();
+      this.channelListMenu.SuspendLayout();
       this.SuspendLayout();
       // 
       // showGUIMenuItem
@@ -454,7 +466,7 @@ namespace PeerCastStation.GUI
             quitMenuItem});
       this.notifyIconMenu.Name = "notifyIconMenu";
       this.notifyIconMenu.ShowImageMargin = false;
-      this.notifyIconMenu.Size = new System.Drawing.Size(159, 98);
+      this.notifyIconMenu.Size = new System.Drawing.Size(159, 76);
       // 
       // toolStripMenuItem1
       // 
@@ -558,6 +570,7 @@ namespace PeerCastStation.GUI
       this.channelList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+      this.channelList.ContextMenuStrip = this.channelListMenu;
       this.channelList.IntegralHeight = false;
       this.channelList.ItemHeight = 12;
       this.channelList.Location = new System.Drawing.Point(0, 0);
@@ -1314,6 +1327,50 @@ namespace PeerCastStation.GUI
       showHTMLUIMenuItem.Text = "HTML UIを表示(&H)";
       showHTMLUIMenuItem.Click += new System.EventHandler(this.showHTMLUIMenuItem_Click);
       // 
+      // channelListMenu
+      // 
+      this.channelListMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            playMenu,
+            openContactURLMenu,
+            toolStripMenuItem2,
+            copyStreamURLMenu,
+            copyContactURLMenu});
+      this.channelListMenu.Name = "channelListMenu";
+      this.channelListMenu.Size = new System.Drawing.Size(227, 120);
+      // 
+      // playMenu
+      // 
+      playMenu.Name = "playMenu";
+      playMenu.Size = new System.Drawing.Size(226, 22);
+      playMenu.Text = "再生(&P)";
+      playMenu.Click += new System.EventHandler(this.channelPlay_Click);
+      // 
+      // openContactURLMenu
+      // 
+      openContactURLMenu.Name = "openContactURLMenu";
+      openContactURLMenu.Size = new System.Drawing.Size(226, 22);
+      openContactURLMenu.Text = "コンタクトURLを開く(&U)";
+      openContactURLMenu.Click += new System.EventHandler(this.openContactURLMenu_Click);
+      // 
+      // toolStripMenuItem2
+      // 
+      toolStripMenuItem2.Name = "toolStripMenuItem2";
+      toolStripMenuItem2.Size = new System.Drawing.Size(223, 6);
+      // 
+      // copyStreamURLMenu
+      // 
+      copyStreamURLMenu.Name = "copyStreamURLMenu";
+      copyStreamURLMenu.Size = new System.Drawing.Size(226, 22);
+      copyStreamURLMenu.Text = "ストリームURLをコピー(&S)";
+      copyStreamURLMenu.Click += new System.EventHandler(this.copyStreamURLMenu_Click);
+      // 
+      // copyContactURLMenu
+      // 
+      copyContactURLMenu.Name = "copyContactURLMenu";
+      copyContactURLMenu.Size = new System.Drawing.Size(226, 22);
+      copyContactURLMenu.Text = "コンタクトURLをコピー(&C)";
+      copyContactURLMenu.Click += new System.EventHandler(this.copyContactURLMenu_Click);
+      // 
       // MainForm
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -1361,6 +1418,7 @@ namespace PeerCastStation.GUI
       this.tabLog.PerformLayout();
       this.statusBar.ResumeLayout(false);
       this.statusBar.PerformLayout();
+      this.channelListMenu.ResumeLayout(false);
       this.ResumeLayout(false);
       this.PerformLayout();
 
@@ -1440,6 +1498,7 @@ namespace PeerCastStation.GUI
     private System.Windows.Forms.Button relayTreeUpdate;
     private System.Windows.Forms.Button downStreamClose;
     private System.Windows.Forms.ListBox outputList;
+    private System.Windows.Forms.ContextMenuStrip channelListMenu;
 
   }
 }
