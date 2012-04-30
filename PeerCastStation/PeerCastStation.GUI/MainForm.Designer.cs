@@ -70,6 +70,7 @@ namespace PeerCastStation.GUI
       System.Windows.Forms.Label label27;
       System.Windows.Forms.Label label28;
       System.Windows.Forms.Label label4;
+      System.Windows.Forms.ToolStripMenuItem showHTMLUIMenuItem;
       System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
       this.chanInfoUpdateButton = new System.Windows.Forms.Button();
       this.notifyIconMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
@@ -84,6 +85,8 @@ namespace PeerCastStation.GUI
       this.channelList = new System.Windows.Forms.ListBox();
       this.tabControl2 = new System.Windows.Forms.TabControl();
       this.tabPage1 = new System.Windows.Forms.TabPage();
+      this.downStreamClose = new System.Windows.Forms.Button();
+      this.outputList = new System.Windows.Forms.ListBox();
       this.tabPage3 = new System.Windows.Forms.TabPage();
       this.groupBox2 = new System.Windows.Forms.GroupBox();
       this.chanTrackContactURL = new System.Windows.Forms.TextBox();
@@ -141,8 +144,6 @@ namespace PeerCastStation.GUI
       this.statusBar = new System.Windows.Forms.StatusStrip();
       this.portLabel = new System.Windows.Forms.ToolStripStatusLabel();
       this.portOpenedLabel = new System.Windows.Forms.ToolStripStatusLabel();
-      this.downStreamClose = new System.Windows.Forms.Button();
-      this.outputList = new System.Windows.Forms.ListBox();
       showGUIMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       quitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       label21 = new System.Windows.Forms.Label();
@@ -167,6 +168,7 @@ namespace PeerCastStation.GUI
       label27 = new System.Windows.Forms.Label();
       label28 = new System.Windows.Forms.Label();
       label4 = new System.Windows.Forms.Label();
+      showHTMLUIMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       panel1.SuspendLayout();
       this.notifyIconMenu.SuspendLayout();
       this.mainTab.SuspendLayout();
@@ -199,7 +201,7 @@ namespace PeerCastStation.GUI
       // 
       showGUIMenuItem.AutoToolTip = true;
       showGUIMenuItem.Name = "showGUIMenuItem";
-      showGUIMenuItem.Size = new System.Drawing.Size(129, 22);
+      showGUIMenuItem.Size = new System.Drawing.Size(158, 22);
       showGUIMenuItem.Text = "GUIを表示(&G)";
       showGUIMenuItem.ToolTipText = "PeerCastStationのGUIを表示します";
       showGUIMenuItem.Click += new System.EventHandler(this.showGUIMenuItem_Click);
@@ -208,7 +210,7 @@ namespace PeerCastStation.GUI
       // 
       quitMenuItem.AutoToolTip = true;
       quitMenuItem.Name = "quitMenuItem";
-      quitMenuItem.Size = new System.Drawing.Size(129, 22);
+      quitMenuItem.Size = new System.Drawing.Size(158, 22);
       quitMenuItem.Text = "終了(&Q)";
       quitMenuItem.ToolTipText = "PeerCastStationを終了します";
       quitMenuItem.Click += new System.EventHandler(this.quitMenuItem_Click);
@@ -446,17 +448,18 @@ namespace PeerCastStation.GUI
       // notifyIconMenu
       // 
       this.notifyIconMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            showHTMLUIMenuItem,
             showGUIMenuItem,
             this.toolStripMenuItem1,
             quitMenuItem});
       this.notifyIconMenu.Name = "notifyIconMenu";
       this.notifyIconMenu.ShowImageMargin = false;
-      this.notifyIconMenu.Size = new System.Drawing.Size(130, 54);
+      this.notifyIconMenu.Size = new System.Drawing.Size(159, 98);
       // 
       // toolStripMenuItem1
       // 
       this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-      this.toolStripMenuItem1.Size = new System.Drawing.Size(126, 6);
+      this.toolStripMenuItem1.Size = new System.Drawing.Size(155, 6);
       // 
       // mainTab
       // 
@@ -587,6 +590,30 @@ namespace PeerCastStation.GUI
       this.tabPage1.TabIndex = 0;
       this.tabPage1.Text = "接続一覧";
       this.tabPage1.UseVisualStyleBackColor = true;
+      // 
+      // downStreamClose
+      // 
+      this.downStreamClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.downStreamClose.Location = new System.Drawing.Point(361, 6);
+      this.downStreamClose.Name = "downStreamClose";
+      this.downStreamClose.Size = new System.Drawing.Size(61, 30);
+      this.downStreamClose.TabIndex = 3;
+      this.downStreamClose.Text = "切断";
+      this.downStreamClose.UseVisualStyleBackColor = true;
+      this.downStreamClose.Click += new System.EventHandler(this.downStreamClose_Click);
+      // 
+      // outputList
+      // 
+      this.outputList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      this.outputList.FormattingEnabled = true;
+      this.outputList.IntegralHeight = false;
+      this.outputList.ItemHeight = 12;
+      this.outputList.Location = new System.Drawing.Point(6, 6);
+      this.outputList.Name = "outputList";
+      this.outputList.Size = new System.Drawing.Size(351, 234);
+      this.outputList.TabIndex = 2;
       // 
       // tabPage3
       // 
@@ -1280,29 +1307,12 @@ namespace PeerCastStation.GUI
       this.portOpenedLabel.Size = new System.Drawing.Size(134, 18);
       this.portOpenedLabel.Text = "toolStripStatusLabel1";
       // 
-      // downStreamClose
+      // showHTMLUIMenuItem
       // 
-      this.downStreamClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-      this.downStreamClose.Location = new System.Drawing.Point(361, 6);
-      this.downStreamClose.Name = "downStreamClose";
-      this.downStreamClose.Size = new System.Drawing.Size(61, 30);
-      this.downStreamClose.TabIndex = 3;
-      this.downStreamClose.Text = "切断";
-      this.downStreamClose.UseVisualStyleBackColor = true;
-      this.downStreamClose.Click += new System.EventHandler(this.downStreamClose_Click);
-      // 
-      // outputList
-      // 
-      this.outputList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.outputList.FormattingEnabled = true;
-      this.outputList.IntegralHeight = false;
-      this.outputList.ItemHeight = 12;
-      this.outputList.Location = new System.Drawing.Point(6, 6);
-      this.outputList.Name = "outputList";
-      this.outputList.Size = new System.Drawing.Size(351, 234);
-      this.outputList.TabIndex = 2;
+      showHTMLUIMenuItem.Name = "showHTMLUIMenuItem";
+      showHTMLUIMenuItem.Size = new System.Drawing.Size(158, 22);
+      showHTMLUIMenuItem.Text = "HTML UIを表示(&H)";
+      showHTMLUIMenuItem.Click += new System.EventHandler(this.showHTMLUIMenuItem_Click);
       // 
       // MainForm
       // 
