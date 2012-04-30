@@ -143,53 +143,58 @@ namespace PeerCastStation.Main
     void LoadSettings()
     {
       var settings = PeerCastStation.Properties.Settings.Default;
-      if (settings.AccessController!=null) {
-        peerCast.AccessController.MaxPlays  = settings.AccessController.MaxDirects;
-        peerCast.AccessController.MaxRelays = settings.AccessController.MaxRelays;
-        peerCast.AccessController.MaxPlaysPerChannel  = settings.AccessController.MaxDirectsPerChannel;
-        peerCast.AccessController.MaxRelaysPerChannel = settings.AccessController.MaxRelaysPerChannel;
-        peerCast.AccessController.MaxUpstreamRate     = settings.AccessController.MaxUpstreamRate;
-      }
-      if (settings.BroadcastID==Guid.Empty) {
-        peerCast.BroadcastID = Guid.NewGuid();
-      }
-      else {
-        peerCast.BroadcastID = settings.BroadcastID;
-      }
-      if (settings.Listeners!=null) {
-        foreach (var listener in settings.Listeners) {
+      try {
+        if (settings.AccessController!=null) {
+          peerCast.AccessController.MaxPlays  = settings.AccessController.MaxDirects;
+          peerCast.AccessController.MaxRelays = settings.AccessController.MaxRelays;
+          peerCast.AccessController.MaxPlaysPerChannel  = settings.AccessController.MaxDirectsPerChannel;
+          peerCast.AccessController.MaxRelaysPerChannel = settings.AccessController.MaxRelaysPerChannel;
+          peerCast.AccessController.MaxUpstreamRate     = settings.AccessController.MaxUpstreamRate;
+        }
+        if (settings.BroadcastID==Guid.Empty) {
+          peerCast.BroadcastID = Guid.NewGuid();
+        }
+        else {
+          peerCast.BroadcastID = settings.BroadcastID;
+        }
+        if (settings.Listeners!=null) {
+          foreach (var listener in settings.Listeners) {
+            try {
+              peerCast.StartListen(listener.EndPoint, listener.LocalAccepts, listener.GlobalAccepts);
+            }
+            catch (System.Net.Sockets.SocketException e) {
+              logger.Error(e);
+            }
+          }
+        }
+        if (peerCast.OutputListeners.Count==0) {
+          System.Net.IPAddress listen_addr;
+          if (!System.Net.IPAddress.TryParse(settings.DefaultListenAddress, out listen_addr)) {
+            listen_addr = System.Net.IPAddress.Any;
+          }
           try {
-            peerCast.StartListen(listener.EndPoint, listener.LocalAccepts, listener.GlobalAccepts);
+            peerCast.StartListen(
+              new System.Net.IPEndPoint(listen_addr, settings.DefaultListenPort),
+              OutputStreamType.All,
+              OutputStreamType.Metadata | OutputStreamType.Relay);
           }
           catch (System.Net.Sockets.SocketException e) {
             logger.Error(e);
           }
         }
-      }
-      if (peerCast.OutputListeners.Count==0) {
-        System.Net.IPAddress listen_addr;
-        if (!System.Net.IPAddress.TryParse(settings.DefaultListenAddress, out listen_addr)) {
-          listen_addr = System.Net.IPAddress.Any;
-        }
-        try {
-          peerCast.StartListen(
-            new System.Net.IPEndPoint(listen_addr, settings.DefaultListenPort),
-            OutputStreamType.All,
-            OutputStreamType.Metadata | OutputStreamType.Relay);
-        }
-        catch (System.Net.Sockets.SocketException e) {
-          logger.Error(e);
-        }
-      }
-      if (settings.YellowPages!=null) {
-        foreach (var yellowpage in settings.YellowPages) {
-          try {
-            peerCast.AddYellowPage(yellowpage.Protocol, yellowpage.Name, yellowpage.Uri);
-          }
-          catch (ArgumentException e) {
-            logger.Error(e);
+        if (settings.YellowPages!=null) {
+          foreach (var yellowpage in settings.YellowPages) {
+            try {
+              peerCast.AddYellowPage(yellowpage.Protocol, yellowpage.Name, yellowpage.Uri);
+            }
+            catch (ArgumentException e) {
+              logger.Error(e);
+            }
           }
         }
+      }
+      catch (FormatException)
+      {
       }
     }
 
