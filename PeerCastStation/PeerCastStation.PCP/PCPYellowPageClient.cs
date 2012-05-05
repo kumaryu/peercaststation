@@ -259,17 +259,21 @@ namespace PeerCastStation.PCP
                   //Do nothing
                 }
                 else {
-                  var relay_point = PeerCast.GetEndPoint(
+                  var listener = PeerCast.FindListener(
                     ((IPEndPoint)client.Client.RemoteEndPoint).Address,
                     OutputStreamType.Relay | OutputStreamType.Metadata);
-                  helo.SetHeloPort(relay_point.Port);
+                  if (listener!=null) {
+                    helo.SetHeloPort(listener.LocalEndPoint.Port);
+                  }
                 }
               }
               else {
-                var relay_point = PeerCast.GetEndPoint(
+                var listener = PeerCast.FindListener(
                   ((IPEndPoint)client.Client.RemoteEndPoint).Address,
                   OutputStreamType.Relay | OutputStreamType.Metadata);
-                helo.SetHeloPing(relay_point.Port);
+                if (listener!=null) {
+                  helo.SetHeloPing(listener.LocalEndPoint.Port);
+                }
               }
               AtomWriter.Write(stream, new Atom(Atom.PCP_HELO, helo));
               while (!isStopped) {
