@@ -78,6 +78,12 @@ namespace PeerCastStation.Core
     /// <param name="uri">YellowPageのURI</param>
     /// <returns>IYellowPageClientを実装するオブジェクトのインスタンス</returns>
     IYellowPageClient Create(string name, Uri uri);
+    /// <summary>
+    /// URIがこのYellowPageFactoryで扱えるかどうかを返します
+    /// </summary>
+    /// <param name="uri">チェックするURI</param>
+    /// <returns>扱えるURIの場合はtrue、それ以外はfalse</returns>
+    bool CheckURI(Uri uri);
   }
 
   /// <summary>

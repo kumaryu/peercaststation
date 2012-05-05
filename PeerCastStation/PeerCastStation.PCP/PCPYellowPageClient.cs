@@ -24,6 +24,11 @@ namespace PeerCastStation.PCP
       return new PCPYellowPageClient(PeerCast, name, uri);
     }
 
+    public bool CheckURI(Uri uri)
+    {
+      return uri.Scheme=="pcp";
+    }
+
     public PCPYellowPageClientFactory(PeerCast peercast)
     {
       this.PeerCast = peercast;

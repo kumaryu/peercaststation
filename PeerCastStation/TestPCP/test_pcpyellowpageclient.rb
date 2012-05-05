@@ -52,8 +52,14 @@ class TC_PCPYellowPageClientFactory < Test::Unit::TestCase
 
   def test_create
     factory = PCSPCP::PCPYellowPageClientFactory.new(@peercast)
-    yp = factory.Create('Test YP', System::Uri.new('http://yp.example.com/'))
+    yp = factory.Create('Test YP', System::Uri.new('pcp://yp.example.com/'))
     assert_kind_of(PCSPCP::PCPYellowPageClient, yp)
+  end
+  
+  def test_check_uri
+    factory = PCSPCP::PCPYellowPageClientFactory.new(@peercast)
+    assert(!factory.CheckURI(System::Uri.new('http://yp.example.com/')))
+    assert(factory.CheckURI(System::Uri.new('pcp://yp.example.com/')))
   end
 end
 

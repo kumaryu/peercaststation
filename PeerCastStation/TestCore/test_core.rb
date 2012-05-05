@@ -29,6 +29,10 @@ class MockYellowPageClientFactory
     'mock'
   end
   
+  def CheckURI(uri)
+    true
+  end
+  
   def create(name, uri)
     MockYellowPageClient.new(name, uri, 'mock')
   end

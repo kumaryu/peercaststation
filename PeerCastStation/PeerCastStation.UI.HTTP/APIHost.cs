@@ -767,6 +767,9 @@ namespace PeerCastStation.UI.HTTP
         catch (UriFormatException) {
           throw new RPCError(RPCErrorCode.InvalidParams, "Invalid uri");
         }
+        if (!factory.CheckURI(yp_uri)) {
+          throw new RPCError(RPCErrorCode.InvalidParams, String.Format("Not suitable uri for {0}", protocol));
+        }
         var yp = PeerCast.AddYellowPage(factory.Protocol, name, yp_uri);
         var res = new JObject();
         res["yellowPageId"] = yp.GetHashCode();

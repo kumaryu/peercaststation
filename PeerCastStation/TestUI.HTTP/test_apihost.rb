@@ -1366,6 +1366,10 @@ JSON
     attr_reader :name
     attr_reader :protocol
 
+    def CheckURI(uri)
+      uri.scheme==@protocol
+    end
+    
     def create(yp_name, uri)
       TestYPClient.new(yp_name, @protocol, uri)
     end
@@ -1454,6 +1458,19 @@ JSON
     assert_equal(params[2], yp.uri.to_s)
   end
   
+  def test_addYellowPage_not_suitable_uri
+    @app.peercast.yellow_page_factories.add(TestYPClientFactory.new('pcp'))
+    params = {
+      'protocol' => @app.peercast.yellow_page_factories[0].protocol,
+      'name'     => 'foo',
+      'uri'      => 'http://foo.example.com/',
+    }
+    res = invoke_method('addYellowPage', params)
+    assert_equal(1, res.body.id)
+    assert_not_nil(res.body.error)
+    assert_equal(-32602, res.body.error['code'])
+  end
+
   def test_removeYellowPage
     @app.peercast.yellow_page_factories.add(TestYPClientFactory.new('pcp'))
     yps = [

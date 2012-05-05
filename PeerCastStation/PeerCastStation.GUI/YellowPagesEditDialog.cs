@@ -39,13 +39,21 @@ namespace PeerCastStation.GUI
       YPName   = ypNameText.Text;
       var protocol_item = ypProtocolList.SelectedItem as YellowPageFactoryItem;
       Protocol = protocol_item!=null ? protocol_item.Factory.Protocol : null;
-      Uri uri;
-      if (!String.IsNullOrEmpty(YPName) &&
-          !String.IsNullOrEmpty(Protocol) &&
-          (Uri.TryCreate(ypAddressText.Text, UriKind.Absolute, out uri) ||
-           Uri.TryCreate(Protocol + "://" + ypAddressText.Text, UriKind.Absolute, out uri))) {
-        Uri = uri;
-        DialogResult = DialogResult.OK;
+      if (!String.IsNullOrEmpty(YPName) && !String.IsNullOrEmpty(Protocol)) {
+        Uri uri;
+        var md = System.Text.RegularExpressions.Regex.Match(ypAddressText.Text, @"\A(\S+):(\d+)\Z");
+        if (md.Success &&
+            Uri.CheckHostName(md.Groups[1].Value)!=UriHostNameType.Unknown &&
+            Uri.TryCreate(Protocol + "://" + ypAddressText.Text, UriKind.Absolute, out uri) &&
+            protocol_item.Factory.CheckURI(uri)) {
+          Uri = uri;
+          DialogResult = DialogResult.OK;
+        }
+        else if (Uri.TryCreate(ypAddressText.Text, UriKind.Absolute, out uri) &&
+                 protocol_item.Factory.CheckURI(uri)) {
+          Uri = uri;
+          DialogResult = DialogResult.OK;
+        }
       }
     }
   }
