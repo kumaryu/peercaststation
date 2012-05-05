@@ -226,10 +226,18 @@ namespace PeerCastStation.Main
       settings.Save();
     }
 
+    static Mutex sharedMutex;
     [STAThread]
     static void Main(string[] args)
     {
-      (new Application()).Run();
+      bool is_first_instance;
+      sharedMutex = new Mutex(
+        false,
+        System.Reflection.Assembly.GetEntryAssembly().Location.Replace('\\', '/')+".mutex",
+        out is_first_instance);
+      if (is_first_instance) {
+        (new Application()).Run();
+      }
     }
   }
 }
