@@ -261,6 +261,11 @@ namespace PeerCastStation.Core
     public const int PCP_ERROR_NOROOT           = 10;
     public const int PCP_ERROR_BANNED           = 11;
 
+    #region PeerCastStation拡張
+    public static readonly ID4 PCP_CHAN_INFO_STREAMTYPE = new ID4("styp");
+    public static readonly ID4 PCP_CHAN_INFO_STREAMEXT  = new ID4("sext");
+    #endregion
+
     private byte[] value = null;
     private IAtomCollection children = null;
 

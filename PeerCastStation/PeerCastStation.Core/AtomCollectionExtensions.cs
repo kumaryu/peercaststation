@@ -340,6 +340,16 @@ namespace PeerCastStation.Core
       return GetIntFrom(collection, Atom.PCP_CHAN_INFO_PPFLAGS);
     }
 
+    public static string GetChanInfoStreamType(this IAtomCollection collection)
+    {
+      return GetStringFrom(collection, Atom.PCP_CHAN_INFO_STREAMTYPE);
+    }
+
+    public static string GetChanInfoStreamExt(this IAtomCollection collection)
+    {
+      return GetStringFrom(collection, Atom.PCP_CHAN_INFO_STREAMEXT);
+    }
+
     public static IAtomCollection GetChanTrack(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_CHAN_TRACK);
@@ -738,6 +748,16 @@ namespace PeerCastStation.Core
     public static void SetChanInfoURL(this IAtomCollection collection, string value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_INFO_URL, value));
+    }
+
+    public static void SetChanInfoStreamType(this IAtomCollection collection, string value)
+    {
+      SetAtomTo(collection, new Atom(Atom.PCP_CHAN_INFO_STREAMTYPE, value));
+    }
+
+    public static void SetChanInfoStreamExt(this IAtomCollection collection, string value)
+    {
+      SetAtomTo(collection, new Atom(Atom.PCP_CHAN_INFO_STREAMEXT, value));
     }
 
     public static void SetChanPkt(this IAtomCollection collection, IList<Atom> value)

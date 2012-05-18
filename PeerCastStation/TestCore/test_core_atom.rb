@@ -605,6 +605,8 @@ EOS
   define_test_string('CHAN_INFO_NAME')
   define_test_string('CHAN_INFO_TYPE')
   define_test_string('CHAN_INFO_URL', 'ChanInfoURL')
+  define_test_string('CHAN_INFO_STREAMTYPE', 'ChanInfoStreamType')
+  define_test_string('CHAN_INFO_STREAMEXT', 'ChanInfoStreamExt')
   define_test_atom('CHAN_PKT')
   define_test_bytes('CHAN_PKT_DATA')
   define_test_uint('CHAN_PKT_POS')

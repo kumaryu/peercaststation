@@ -261,6 +261,36 @@ class TC_CoreChannelInfo < Test::Unit::TestCase
     assert_equal('WMV', obj.content_type)
   end
 
+  def test_mime_type
+    info = PeerCastStation::Core::AtomCollection.new
+    info.set_chan_info_type('WMV')
+    obj = PeerCastStation::Core::ChannelInfo.new(info)
+    assert_equal('video/x-ms-wmv', obj.MIMEType)
+  end
+
+  def test_mime_type_with_styp
+    info = PeerCastStation::Core::AtomCollection.new
+    info.set_chan_info_type('WMV')
+    info.set_chan_info_stream_type('application/x-hoge')
+    obj = PeerCastStation::Core::ChannelInfo.new(info)
+    assert_equal('application/x-hoge', obj.MIMEType)
+  end
+
+  def test_content_extension
+    info = PeerCastStation::Core::AtomCollection.new
+    info.set_chan_info_type('WMV')
+    obj = PeerCastStation::Core::ChannelInfo.new(info)
+    assert_equal('.wmv', obj.content_extension)
+  end
+
+  def test_content_extension_with_sext
+    info = PeerCastStation::Core::AtomCollection.new
+    info.set_chan_info_type('WMV')
+    info.set_chan_info_stream_ext('.hoge')
+    obj = PeerCastStation::Core::ChannelInfo.new(info)
+    assert_equal('.hoge', obj.content_extension)
+  end
+
   def test_comment
     info = PeerCastStation::Core::AtomCollection.new
     info.set_chan_info_comment('comment')

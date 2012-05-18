@@ -95,39 +95,57 @@ namespace PeerCastStation.Core
       }
     }
 
+    /// <summary>
+    /// ストリームのMIME Typeを取得します。
+    /// </summary>
     public string MIMEType {
       get {
-        switch (ContentType) {
-        case "MP3": return "audio/mpeg";
-        case "OGG": return "audio/ogg";
-        case "OGM": return "video/ogg";
-        case "RAW": return "application/octet-stream";
-        case "NSV": return "video/nsv";
-        case "WMA": return "audio/x-ms-wma";
-        case "WMV": return "video/x-ms-wmv";
-        case "PLS": return "audio/mpegurl";
-        case "M3U": return "audio/m3u";
-        case "ASX": return "video/x-ms-asf";
-        default: return "application/octet-stream";
+        var stream_type = extra.GetChanInfoStreamType();
+        if (!String.IsNullOrEmpty(stream_type)) {
+          return stream_type;
+        }
+        else {
+          switch (ContentType) {
+          case "MP3": return "audio/mpeg";
+          case "OGG": return "audio/ogg";
+          case "OGM": return "video/ogg";
+          case "RAW": return "application/octet-stream";
+          case "NSV": return "video/nsv";
+          case "WMA": return "audio/x-ms-wma";
+          case "WMV": return "video/x-ms-wmv";
+          case "PLS": return "audio/mpegurl";
+          case "M3U": return "audio/m3u";
+          case "ASX": return "video/x-ms-asf";
+          default: return "application/octet-stream";
+          }
         }
       }
     }
 
+    /// <summary>
+    /// ストリームファイルの拡張子を取得します
+    /// </summary>
     public string ContentExtension
     {
       get {
-        switch (ContentType) {
-        case "MP3": return ".mp3";
-        case "OGG": return ".ogg";
-        case "OGM": return ".ogv";
-        case "RAW": return "";
-        case "NSV": return ".nsv";
-        case "WMA": return ".wma";
-        case "WMV": return ".wmv";
-        case "PLS": return ".pls";
-        case "M3U": return ".m3u";
-        case "ASX": return ".asx";
-        default: return "";
+        var stream_ext = extra.GetChanInfoStreamExt();
+        if (!String.IsNullOrEmpty(stream_ext)) {
+          return stream_ext;
+        }
+        else {
+          switch (ContentType) {
+          case "MP3": return ".mp3";
+          case "OGG": return ".ogg";
+          case "OGM": return ".ogv";
+          case "RAW": return "";
+          case "NSV": return ".nsv";
+          case "WMA": return ".wma";
+          case "WMV": return ".wmv";
+          case "PLS": return ".pls";
+          case "M3U": return ".m3u";
+          case "ASX": return ".asx";
+          default: return "";
+          }
         }
       }
     }
