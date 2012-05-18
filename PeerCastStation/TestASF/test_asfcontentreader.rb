@@ -80,6 +80,9 @@ class TC_ASFContentReader < Test::Unit::TestCase
     assert_not_nil(content.content_header)
     assert_not_nil(content.channel_info)
     assert_equal("WMV", content.channel_info.content_type)
+    
+    assert_equal('video/x-ms-wmv', PCSCore::AtomCollectionExtensions.get_chan_info_stream_type(content.channel_info.extra))
+    assert_equal('.wmv', PCSCore::AtomCollectionExtensions.get_chan_info_stream_ext(content.channel_info.extra))
     assert_equal(439, content.channel_info.bitrate)
     assert_equal(0, content.content_header.position)
     assert_equal(5271, content.content_header.data.length)

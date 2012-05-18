@@ -24,6 +24,8 @@ namespace PeerCastStation.Core
         res.ContentHeader = new Content(pos, new byte[] { });
         var channel_info = new AtomCollection(Channel.ChannelInfo.Extra);
         channel_info.SetChanInfoType("RAW");
+        channel_info.SetChanInfoStreamType("application/octet-stream");
+        channel_info.SetChanInfoStreamExt("");
         res.ChannelInfo = new ChannelInfo(channel_info);
       }
       res.Contents = new List<Content>();

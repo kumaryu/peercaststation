@@ -69,6 +69,8 @@ class TC_CoreRawContentReader < Test::Unit::TestCase
     content = @reader.read(stream)
     assert_nil(content.channel_track)
     assert_equal('RAW',    content.channel_info.content_type)
+    assert_equal('application/octet-stream', content.channel_info.extra.get_chan_info_stream_type)
+    assert_equal('', content.channel_info.extra.get_chan_info_stream_ext)
     assert_equal('foobar', content.channel_info.name)
     assert_equal(0, content.content_header.position)
     assert_equal(0, content.content_header.data.length)

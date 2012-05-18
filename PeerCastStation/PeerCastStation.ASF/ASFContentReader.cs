@@ -349,12 +349,18 @@ namespace PeerCastStation.ASF
               info.SetChanInfoBitrate(header.Bitrate);
               if (header.Streams.Any(type => type==ASFHeader.StreamType.Video)) {
                 info.SetChanInfoType("WMV");
+                info.SetChanInfoStreamType("video/x-ms-wmv");
+                info.SetChanInfoStreamExt(".wmv");
               }
               else if (header.Streams.Any(type => type==ASFHeader.StreamType.Audio)) {
                 info.SetChanInfoType("WMA");
+                info.SetChanInfoStreamType("audio/x-ms-wma");
+                info.SetChanInfoStreamExt(".wma");
               }
               else {
                 info.SetChanInfoType("ASF");
+                info.SetChanInfoStreamType("video/x-ms-asf");
+                info.SetChanInfoStreamExt(".asf");
               }
               res.ChannelInfo = new ChannelInfo(info);
               res.ContentHeader = new Content(pos, chunk.ToByteArray());
