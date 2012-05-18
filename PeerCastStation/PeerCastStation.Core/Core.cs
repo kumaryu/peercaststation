@@ -197,7 +197,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="channel">所属するチャンネル</param>
     /// <param name="source">ストリーム取得起点のURI</param>
-    /// <param name="reader">ストリームからコンテンツを読み取るためのIContentReaderインスタンス</param>
+    /// <param name="reader_factory">ストリームからコンテンツを読み取るためのContentReaderインスタンス</param>
     /// <returns>プロトコルが適合していればSourceStreamのインスタンス、それ以外はnull</returns>
     /// <exception cref="NotImplentedException">このプロトコルではContentReaderを指定した読み取りができない</exception> 
     ISourceStream Create(Channel channel, Uri source, IContentReader reader);
@@ -347,18 +347,49 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 指定したストリームからデータを読み取ります
     /// </summary>
-    /// <param name="channel">チャンネル情報設定先のチャンネル</param>
     /// <param name="stream">読み取り元のストリーム</param>
     /// <returns>読み取ったデータを保持するParsedContent</returns>
     /// <exception cref="EndOfStreamException">
     /// 必要なデータを読み取る前にストリームが終端に到達した
     /// </exception>
-    ParsedContent Read(Channel channel, Stream stream);
+    /// <remarks>
+    /// 戻り値にChannelInfoが存在する場合には、次のパケットが設定されていることが期待されます。
+    /// <list type="bullet">
+    ///   <item><description>Atom.PCP_CHAN_INFO_TYPE</description></item>
+    ///   <item><description>Atom.PCP_CHAN_INFO_MIME</description></item>
+    ///   <item><description>Atom.PCP_CHAN_INFO_PLS</description></item>
+    ///   <item><description>Atom.PCP_CHAN_INFO_EXT</description></item>
+    /// </list>
+    /// </remarks>
+    ParsedContent Read(Stream stream);
 
     /// <summary>
     /// コンテント解析器の名称を取得します
     /// </summary>
     string Name { get; } 
+
+    /// <summary>
+    /// コンテント追加対象のチャンネルを取得します
+    /// </summary>
+    Channel Channel { get; }
+  }
+
+  /// <summary>
+  /// IContentReaderのインスタンスを作成するファクトリインターフェースです
+  /// </summary>
+  public interface IContentReaderFactory
+  {
+    /// <summary>
+    /// 作成するコンテント解析器の名称を取得します
+    /// </summary>
+    string Name { get; } 
+
+    /// <summary>
+    /// 指定したチャンネルにコンテントデータを追加するIContentReaderを作成します
+    /// </summary>
+    /// <param name="channel">データ追加先となるチャンネル</param>
+    /// <returns>IContentReaderを実装するオブジェクト</returns>
+    IContentReader Create(Channel channel);
   }
 }
 

@@ -34,6 +34,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
     assert_equal(0, @peercast.yellow_page_factories.count)
     assert_equal(0, @peercast.source_stream_factories.count)
     assert_equal(0, @peercast.output_stream_factories.count)
+    assert_equal(0, @peercast.content_reader_factories.count)
     assert_equal(0, @peercast.channels.count)
     
     assert_not_nil(@peercast.local_address)
@@ -372,7 +373,7 @@ class TC_CorePeerCast < Test::Unit::TestCase
     
     channel_id = System::Guid.new_guid
     source = System::Uri.new('mock://localhost/')
-    reader = PCSCore::RawContentReader.new
+    reader = PCSCore::RawContentReaderFactory.new
     channel_info = PCSCore::AtomCollection.new
     channel_info.set_chan_info_name('foobar')
     channel_info = PCSCore::ChannelInfo.new(channel_info)

@@ -114,17 +114,17 @@ namespace PeerCastStation.Main
       if (factory!=null) peerCast.YellowPageFactories.Add(factory);
     }
 
-    private void AddContentReader(Type type)
+    private void AddContentReaderFactory(Type type)
     {
-      IContentReader reader = null;
+      IContentReaderFactory factory = null;
       var constructor = type.GetConstructor(Type.EmptyTypes);
       if (constructor!=null) {
-        reader = constructor.Invoke(null) as IContentReader;
+        factory = constructor.Invoke(null) as IContentReaderFactory;
       }
       else if ((constructor=type.GetConstructor(new Type[] { typeof(PeerCast) }))!=null) {
-        reader = constructor.Invoke(new object[] { peerCast }) as IContentReader;
+        factory = constructor.Invoke(new object[] { peerCast }) as IContentReaderFactory;
       }
-      if (reader!=null) peerCast.AddContentReader(reader);
+      if (factory!=null) peerCast.ContentReaderFactories.Add(factory);
     }
 
     void LoadPlugins()
@@ -136,7 +136,7 @@ namespace PeerCastStation.Main
         if (interfaces.Contains(typeof(ISourceStreamFactory)))     AddSourceStreamFactory(type);
         if (interfaces.Contains(typeof(IOutputStreamFactory)))     AddOutputStreamFactory(type);
         if (interfaces.Contains(typeof(IYellowPageClientFactory))) AddYellowPageClientFactory(type);
-        if (interfaces.Contains(typeof(IContentReader)))           AddContentReader(type);
+        if (interfaces.Contains(typeof(IContentReaderFactory)))    AddContentReaderFactory(type);
       }
     }
 

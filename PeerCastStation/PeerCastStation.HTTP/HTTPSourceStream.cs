@@ -212,7 +212,7 @@ namespace PeerCastStation.HTTP
       Status = SourceStreamStatus.Receiving;
       Recv(stream => {
         if (stream.Length>0) {
-          var data = ContentReader.Read(Channel, stream);
+          var data = ContentReader.Read(stream);
           if (data.ChannelInfo!=null) {
             Channel.ChannelInfo = data.ChannelInfo;
           }

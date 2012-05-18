@@ -7,19 +7,22 @@ namespace PeerCastStation.Core
   /// <summary>
   /// 読み取ったデータをそのままコンテントとして流すクラスです
   /// </summary>
-  [Plugin(PluginPriority.Lower)]
   public class RawContentReader
-    : MarshalByRefObject,
-      IContentReader
+    : IContentReader
   {
-    public ParsedContent Read(Channel channel, Stream stream)
+    public RawContentReader(Channel channel)
+    {
+      this.Channel = channel;
+    }
+
+    public ParsedContent Read(Stream stream)
     {
       if (stream.Length-stream.Position<=0) throw new EndOfStreamException();
       var res = new ParsedContent();
-      var pos = channel.ContentPosition;
-      if (channel.ContentHeader==null) {
+      var pos = Channel.ContentPosition;
+      if (Channel.ContentHeader==null) {
         res.ContentHeader = new Content(pos, new byte[] { });
-        var channel_info = new AtomCollection(channel.ChannelInfo.Extra);
+        var channel_info = new AtomCollection(Channel.ChannelInfo.Extra);
         channel_info.SetChanInfoType("RAW");
         res.ChannelInfo = new ChannelInfo(channel_info);
       }
@@ -36,9 +39,25 @@ namespace PeerCastStation.Core
       return res;
     }
 
+    public string  Name    { get { return "RAW"; } }
+    public Channel Channel { get; private set; }
+  }
+
+  /// <summary>
+  /// 読み取ったデータをそのままコンテントとして流すRawContentReaderのファクトリクラスです
+  /// </summary>
+  [Plugin(PluginPriority.Lower)]
+  public class RawContentReaderFactory
+    : IContentReaderFactory
+  {
     public string Name
     {
       get { return "RAW"; }
+    }
+
+    public IContentReader Create(Channel channel)
+    {
+      return new RawContentReader(channel);
     }
   }
 }

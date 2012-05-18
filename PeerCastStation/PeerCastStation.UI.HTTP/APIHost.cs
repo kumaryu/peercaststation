@@ -719,7 +719,7 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("getContentReaders")]
       private JArray GetContentReaders()
       {
-        return new JArray(PeerCast.ContentReaders.Select(reader => {
+        return new JArray(PeerCast.ContentReaderFactories.Select(reader => {
           var res = new JObject();
           res["name"] = reader.Name;
           res["desc"] = reader.Name;
@@ -860,7 +860,7 @@ namespace PeerCastStation.UI.HTTP
         catch (UriFormatException) {
           throw new RPCError(RPCErrorCode.InvalidParams, "Invalid Uri");
         }
-        var content_reader = PeerCast.ContentReaders.FirstOrDefault(reader => reader.Name==contentReader);
+        var content_reader = PeerCast.ContentReaderFactories.FirstOrDefault(reader => reader.Name==contentReader);
         if (content_reader==null) throw new RPCError(RPCErrorCode.InvalidParams, "Content reader not found");
 
         var new_info = new AtomCollection();

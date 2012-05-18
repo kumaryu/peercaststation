@@ -469,7 +469,7 @@ JSON
   def test_get_plugins
     PeerCastStation::Core::PeerCastApplication.current = @app
     @app.plugins = System::Array[System::Type].new([
-      PeerCastStation::Core::RawContentReader.to_clr_type,
+      PeerCastStation::Core::RawContentReaderFactory.to_clr_type,
     ])
     res = invoke_method('getPlugins')
     assert_equal(1, res.body.id)
@@ -479,7 +479,7 @@ JSON
       type = @app.plugins[i]
       result = res.body.result[i]
       assert_equal type.full_name, result['name']
-      assert result['interfaces'].include?('IContentReader')
+      assert result['interfaces'].include?('IContentReaderFactory')
       resasm = result['assembly']
       assert_not_nil resasm
       asm  = type.assembly
@@ -1298,34 +1298,34 @@ JSON
     end
   end
 
-  class TestContentReader
-    include PCSCore::IContentReader
+  class TestContentReaderFactory
+    include PCSCore::IContentReaderFactory
     def initialize(name)
       @name = name
     end
     attr_reader :name
 
-    def read(channel, stream)
+    def create(channel)
       nil
     end
   end
 
   def test_getContentReaders
-    readers = [
-      TestContentReader.new('WMV'),
-      TestContentReader.new('OGG'),
-      TestContentReader.new('RAW'),
+    factories = [
+      TestContentReaderFactory.new('WMV'),
+      TestContentReaderFactory.new('OGG'),
+      TestContentReaderFactory.new('RAW'),
     ]
-    readers.each do |reader|
-      @app.peercast.add_content_reader(reader)
+    factories.each do |factory|
+      @app.peercast.content_reader_factories.add(factory)
     end
     res = invoke_method('getContentReaders')
     assert_equal(1, res.body.id)
     assert_nil(res.body.error)
-    assert_equal(@app.peercast.content_readers.count, res.body.result.size)
-    readers.size.times do |i|
-      assert_equal(readers[i].name, res.body.result[i]['name'])
-      assert_equal(readers[i].name, res.body.result[i]['desc'])
+    assert_equal(@app.peercast.content_reader_factories.count, res.body.result.size)
+    factories.size.times do |i|
+      assert_equal(factories[i].name, res.body.result[i]['name'])
+      assert_equal(factories[i].name, res.body.result[i]['desc'])
     end
   end
 
@@ -1678,8 +1678,8 @@ JSON
     @app.peercast.source_stream_factories.add(TestSourceStreamFactory.new)
     @app.peercast.yellow_page_factories.add(TestYPClientFactory.new('pcp'))
     yp = @app.peercast.add_yellow_page('pcp', 'foo', System::Uri.new('pcp://foo.example.com'))
-    reader = TestContentReader.new('WMV')
-    @app.peercast.add_content_reader(reader)
+    reader = TestContentReaderFactory.new('WMV')
+    @app.peercast.content_reader_factories.add(reader)
     source = 'test://example.com:8080/'
     info = {
       'name'    => 'TestChannel',

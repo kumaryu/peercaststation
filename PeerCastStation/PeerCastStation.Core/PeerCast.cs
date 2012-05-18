@@ -88,26 +88,6 @@ namespace PeerCastStation.Core
     public event EventHandler YellowPagesChanged;
 
     /// <summary>
-    /// 登録されているContentReaderリストを取得および設定します
-    /// 取得は読み取り専用のリストを、設定は指定したリストのコピーを設定します
-    /// </summary>
-    public IList<IContentReader> ContentReaders {
-      get { return contentReaders.AsReadOnly(); }
-      set {
-        Utils.ReplaceCollection(ref contentReaders, org => {
-          return new List<IContentReader>(value);
-        });
-        ContentReadersChanged(this, new EventArgs());
-      }
-    }
-    private List<IContentReader> contentReaders = new List<IContentReader>();
-
-    /// <summary>
-    /// ContentReaderリストが変更された時に呼び出されます。
-    /// </summary>
-    public event EventHandler ContentReadersChanged;
-
-    /// <summary>
     /// 登録されているYellowPageファクトリのリストを取得します
     /// </summary>
     public IList<IYellowPageClientFactory> YellowPageFactories { get; private set; }
@@ -119,6 +99,10 @@ namespace PeerCastStation.Core
     /// 登録されているOutputStreamのリストを取得します
     /// </summary>
     public IList<IOutputStreamFactory> OutputStreamFactories { get; private set; }
+    /// <summary>
+    /// 登録されているIContentReaderFactoryのリストを取得します
+    /// </summary>
+    public IList<IContentReaderFactory> ContentReaderFactories { get; private set; }
     /// <summary>
     /// 接続しているチャンネルの読み取り専用リストを取得します
     /// </summary>
@@ -219,9 +203,9 @@ namespace PeerCastStation.Core
     /// <param name="channel_id">チャンネルID</param>
     /// <param name="channel_info">チャンネル情報</param>
     /// <param name="source">配信ソース</param>
-    /// <param name="content_reader">配信ソースのコンテンツを解析するContentReader</param>
+    /// <param name="content_reader_factory">配信ソースのコンテンツを解析するIContentReaderFactory</param>
     /// <returns>Channelのインスタンス</returns>
-    public Channel BroadcastChannel(IYellowPageClient yp, Guid channel_id, ChannelInfo channel_info, Uri source, IContentReader content_reader)
+    public Channel BroadcastChannel(IYellowPageClient yp, Guid channel_id, ChannelInfo channel_info, Uri source, IContentReaderFactory content_reader_factory)
     {
       Channel channel = null;
       logger.Debug("Broadcasting channel {0} from {1}", channel_id.ToString("N"), source);
@@ -237,6 +221,7 @@ namespace PeerCastStation.Core
         return new_collection;
       });
       channel.ChannelInfo = channel_info;
+      var content_reader = content_reader_factory.Create(channel);
       var source_stream = source_factory.Create(channel, source, content_reader);
       channel.Start(source_stream);
       if (ChannelAdded!=null) ChannelAdded(this, new ChannelChangedEventArgs(channel));
@@ -318,36 +303,6 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
-    /// 指定されたContentReaderをContentReaderリストに追加します
-    /// </summary>
-    /// <param name="reader">追加するContentReader</param>
-    public void AddContentReader(IContentReader reader)
-    {
-      Utils.ReplaceCollection(ref contentReaders, orig => {
-        var new_readers = new List<IContentReader>(orig);
-        new_readers.Add(reader);
-        return new_readers;
-      });
-      logger.Debug("ContentReader Added: {0}", reader.Name);
-      if (ContentReadersChanged!=null) ContentReadersChanged(this, new EventArgs());
-    }
-
-    /// <summary>
-    /// 指定したContentReaderをContentReaderリストから取り除きます
-    /// </summary>
-    /// <param name="reader">取り除くContentReader</param>
-    public void RemoveContentReader(IContentReader reader)
-    {
-      Utils.ReplaceCollection(ref contentReaders, orig => {
-        var new_readers = new List<IContentReader>(orig);
-        new_readers.Remove(reader);
-        return new_readers;
-      });
-      logger.Debug("ContentReader Removed: {0}", reader.Name);
-      if (ContentReadersChanged!=null) ContentReadersChanged(this, new EventArgs());
-    }
-
-    /// <summary>
     /// PeerCastを初期化します
     /// </summary>
     public PeerCast()
@@ -367,6 +322,7 @@ namespace PeerCastStation.Core
       this.YellowPageFactories = new List<IYellowPageClientFactory>();
       this.SourceStreamFactories = new List<ISourceStreamFactory>();
       this.OutputStreamFactories = new List<IOutputStreamFactory>();
+      this.ContentReaderFactories = new List<IContentReaderFactory>();
       foreach (var addr in Dns.GetHostAddresses(Dns.GetHostName())) {
         switch (addr.AddressFamily) {
         case AddressFamily.InterNetwork:

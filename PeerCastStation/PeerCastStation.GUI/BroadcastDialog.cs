@@ -8,22 +8,22 @@ namespace PeerCastStation.GUI
   public partial class BroadcastDialog : Form
   {
     public Uri  StreamSource { get; set; }
-    public IContentReader ContentReader { get; set; }
+    public IContentReaderFactory ContentReaderFactory { get; set; }
     public IYellowPageClient YellowPage { get; set; }
     public ChannelInfo  ChannelInfo { get; set; }
     public ChannelTrack ChannelTrack { get; set; }
 
     private class ContentReaderItem
     {
-      public IContentReader ContentReader { get; private set; }
-      public ContentReaderItem(IContentReader reader)
+      public IContentReaderFactory ContentReaderFactory { get; private set; }
+      public ContentReaderItem(IContentReaderFactory reader)
       {
-        ContentReader = reader;
+        ContentReaderFactory = reader;
       }
 
       public override string ToString()
       {
-        return ContentReader.Name;
+        return ContentReaderFactory.Name;
       }
     }
 
@@ -46,7 +46,7 @@ namespace PeerCastStation.GUI
     {
       peerCast = peercast;
       InitializeComponent();
-      bcContentType.Items.AddRange(peerCast.ContentReaders.Select(reader => new ContentReaderItem(reader)).ToArray());
+      bcContentType.Items.AddRange(peerCast.ContentReaderFactories.Select(reader => new ContentReaderItem(reader)).ToArray());
       bcYP.Items.AddRange(peerCast.YellowPages.Select(yp => new YellowPageItem(yp)).ToArray());
       if (bcContentType.Items.Count>0) bcContentType.SelectedIndex = 0;
       if (bcYP.Items.Count>0) bcYP.SelectedIndex = 0;
@@ -62,7 +62,7 @@ namespace PeerCastStation.GUI
         StreamSource = null;
       }
       var reader = bcContentType.SelectedItem as ContentReaderItem;
-      if (reader!=null) ContentReader = reader.ContentReader;
+      if (reader!=null) ContentReaderFactory = reader.ContentReaderFactory;
       var yp = bcYP.SelectedItem as YellowPageItem;
       if (yp!=null) YellowPage = yp.YellowPage;
       var info = new AtomCollection();
@@ -83,7 +83,7 @@ namespace PeerCastStation.GUI
       track.SetChanTrackCreator(bcCreator.Text);
       track.SetChanTrackURL(bcTrackURL.Text);
       ChannelTrack = new ChannelTrack(track);
-      if (StreamSource!=null && ContentReader!=null && !String.IsNullOrEmpty(ChannelInfo.Name)) {
+      if (StreamSource!=null && ContentReaderFactory!=null && !String.IsNullOrEmpty(ChannelInfo.Name)) {
         DialogResult = DialogResult.OK;
       }
     }

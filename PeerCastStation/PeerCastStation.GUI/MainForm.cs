@@ -103,19 +103,6 @@ namespace PeerCastStation.GUI
 
     private Timer timer = new Timer();
     private TextBoxWriter guiWriter = null;
-    public class ContentReaderWrapper
-    {
-      public IContentReader Reader { get; private set; }
-      public ContentReaderWrapper(IContentReader reader)
-      {
-        this.Reader = reader;
-      }
-
-      public override string ToString()
-      {
-        return this.Reader.Name;
-      }
-    }
 
     static bool isOSX;
     static public bool IsOSX { get { return isOSX; } }
@@ -699,7 +686,7 @@ namespace PeerCastStation.GUI
           channel_id,
           dlg.ChannelInfo,
           dlg.StreamSource,
-          dlg.ContentReader);
+          dlg.ContentReaderFactory);
         if (channel!=null) {
           channel.ChannelTrack = dlg.ChannelTrack;
         }

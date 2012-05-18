@@ -110,7 +110,8 @@ class TC_HTTPSourceStreamFactory < Test::Unit::TestCase
       channel_id,
       System::Uri.new('http://localhost:8888/'))
     factory = PCSHTTP::HTTPSourceStreamFactory.new(@peercast)
-    reader = PCSCore::RawContentReader.new
+    reader_factory = PCSCore::RawContentReaderFactory.new
+    reader = reader_factory.create(channel)
     source = factory.create(channel, System::Uri.new('http://localhost:8888/'), reader)
     assert_kind_of(PCSHTTP::HTTPSourceStream, source)
     assert_equal(@peercast, source.PeerCast)
@@ -212,7 +213,8 @@ class TC_HTTPSourceStream < Test::Unit::TestCase
       @peercast,
       System::Guid.new('9778E62BDC59DF56F9216D0387F80BF2'.to_clr_string), 
       @source_uri)
-    @reader = PCSCore::RawContentReader.new
+    reader_factory = PCSCore::RawContentReaderFactory.new
+    @reader = reader_factory.create(@channel)
     @server = TestHTTPServer.new
   end
 

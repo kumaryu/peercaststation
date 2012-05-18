@@ -321,16 +321,23 @@ namespace PeerCastStation.ASF
     }
   };
 
-  [Plugin]
   public class ASFContentReader
     : MarshalByRefObject,
       IContentReader
   {
-    public ParsedContent Read(Channel channel, Stream stream)
+    public ASFContentReader(Channel channel)
+    {
+      this.Channel = channel;
+    }
+
+    public string Name { get { return "ASF(WMV or WMA)"; } }
+    public Channel Channel { get; private set; }
+
+    public ParsedContent Read(Stream stream)
     {
       var chunks = 0;
       var res = new ParsedContent();
-      var pos = channel.ContentPosition;
+      var pos = Channel.ContentPosition;
       try {
         while (chunks<8) {
           var chunk = ASFChunk.Read(stream);
@@ -338,7 +345,7 @@ namespace PeerCastStation.ASF
           switch (chunk.KnownType) {
           case ASFChunk.ChunkType.Header: {
               var header = ASFHeader.Read(chunk);
-              var info = new AtomCollection(channel.ChannelInfo.Extra);
+              var info = new AtomCollection(Channel.ChannelInfo.Extra);
               info.SetChanInfoBitrate(header.Bitrate);
               if (header.Streams.Any(type => type==ASFHeader.StreamType.Video)) {
                 info.SetChanInfoType("WMV");
@@ -369,10 +376,17 @@ namespace PeerCastStation.ASF
       }
       return res;
     }
+  }
 
-    public string Name
+  [Plugin]
+  public class ASFContentReaderFactory
+    : IContentReaderFactory
+  {
+    public string Name { get { return "ASF(WMV or WMA)"; } }
+
+    public IContentReader Create(Channel channel)
     {
-      get { return "ASF(WMV or WMA)"; }
+      return new ASFContentReader(channel);
     }
   }
 }
