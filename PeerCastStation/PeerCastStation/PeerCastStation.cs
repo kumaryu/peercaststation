@@ -151,10 +151,8 @@ namespace PeerCastStation.Main
           peerCast.AccessController.MaxRelaysPerChannel = settings.AccessController.MaxRelaysPerChannel;
           peerCast.AccessController.MaxUpstreamRate     = settings.AccessController.MaxUpstreamRate;
         }
-        if (settings.BroadcastID==Guid.Empty) {
-          peerCast.BroadcastID = Guid.NewGuid();
-        }
-        else {
+        if ( settings.BroadcastID!=Guid.Empty &&
+            (AtomCollectionExtensions.IDToByteArray(settings.BroadcastID)[0] & 0x01)==0) {
           peerCast.BroadcastID = settings.BroadcastID;
         }
         if (settings.Listeners!=null) {

@@ -313,7 +313,9 @@ namespace PeerCastStation.Core
         System.Reflection.Assembly.GetExecutingAssembly().Location);
       this.AgentName = String.Format("{0}/{1}", filever.ProductName, filever.ProductVersion);
       this.SessionID   = Guid.NewGuid();
-      this.BroadcastID = Guid.NewGuid();
+      var bcid = AtomCollectionExtensions.IDToByteArray(Guid.NewGuid());
+      bcid[0] = 0x00;
+      this.BroadcastID = AtomCollectionExtensions.ByteArrayToID(bcid);
       logger.Debug("SessionID: {0}",   this.SessionID.ToString("N"));
       logger.Debug("BroadcastID: {0}", this.BroadcastID.ToString("N"));
       this.GlobalAddress = null;

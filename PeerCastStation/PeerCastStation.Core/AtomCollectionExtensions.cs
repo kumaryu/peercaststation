@@ -86,20 +86,7 @@ namespace PeerCastStation.Core
       var atom = collection.FindByName(name);
       byte[] value = null;
       if (atom != null && atom.TryGetBytes(out value) && value.Length==16) {
-        var value_le = new byte[16] {
-          value[3], value[2], value[1], value[0],
-          value[5], value[4],
-          value[7], value[6],
-          value[8],
-          value[9],
-          value[10],
-          value[11],
-          value[12],
-          value[13],
-          value[14],
-          value[15],
-        };
-        return new Guid(value_le);
+        return ByteArrayToID(value);
       }
       else {
         return null;
@@ -183,21 +170,51 @@ namespace PeerCastStation.Core
 
     public static byte[] IDToByteArray(Guid value)
     {
-      var value_le = value.ToByteArray();
-      var value_be = new byte[16] {
-        value_le[3], value_le[2], value_le[1], value_le[0],
-        value_le[5], value_le[4],
-        value_le[7], value_le[6],
-        value_le[8],
-        value_le[9],
-        value_le[10],
-        value_le[11],
-        value_le[12],
-        value_le[13],
-        value_le[14],
-        value_le[15],
-      };
-      return value_be;
+      if (BitConverter.IsLittleEndian) {
+        var value_le = value.ToByteArray();
+        var value_be = new byte[16] {
+          value_le[3], value_le[2], value_le[1], value_le[0],
+          value_le[5], value_le[4],
+          value_le[7], value_le[6],
+          value_le[8],
+          value_le[9],
+          value_le[10],
+          value_le[11],
+          value_le[12],
+          value_le[13],
+          value_le[14],
+          value_le[15],
+        };
+        return value_be;
+      }
+      else {
+        return value.ToByteArray();
+      }
+    }
+
+    public static Guid ByteArrayToID(byte[] value)
+    {
+      if (value==null) throw new ArgumentNullException("value");
+      if (value.Length<16) throw new ArgumentException("value");
+      if (BitConverter.IsLittleEndian) {
+        var value_le = new byte[16] {
+          value[3], value[2], value[1], value[0],
+          value[5], value[4],
+          value[7], value[6],
+          value[8],
+          value[9],
+          value[10],
+          value[11],
+          value[12],
+          value[13],
+          value[14],
+          value[15],
+        };
+        return new Guid(value_le);
+      }
+      else {
+        return new Guid(value);
+      }
     }
 
     public static IAtomCollection GetHelo(this IAtomCollection collection)
