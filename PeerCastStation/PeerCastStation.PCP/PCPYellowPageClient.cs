@@ -239,6 +239,7 @@ namespace PeerCastStation.PCP
     private List<Atom> posts = new List<Atom>();
     private AutoResetEvent restartEvent = new AutoResetEvent(false);
     private class RestartException : Exception {}
+    private class BannedException : Exception {}
     private void AnnounceThreadProc()
     {
       Logger.Debug("Thread started");
@@ -327,6 +328,10 @@ namespace PeerCastStation.PCP
         }
         catch (RestartException) {
         }
+        catch (BannedException) {
+          Logger.Error("Your BCID is banned");
+          break;
+        }
         catch (SocketException e) {
           Logger.Info(e);
         }
@@ -343,6 +348,9 @@ namespace PeerCastStation.PCP
 
     private void OnPCPOleh(Atom atom)
     {
+      var dis = atom.Children.GetHeloDisable();
+      if (dis!=null && dis.Value!=0) {
+      }
       var rip = atom.Children.GetHeloRemoteIP();
       if (rip!=null) {
         switch (rip.AddressFamily) {
