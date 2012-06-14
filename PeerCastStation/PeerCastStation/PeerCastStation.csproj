@@ -82,6 +82,10 @@
       <Project>{EB11900C-4868-45A4-A046-11D17A3F4220}</Project>
       <Name>PeerCastStation.Logger</Name>
     </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.MKV\PeerCastStation.MKV.csproj">
+      <Project>{C8F8BAEC-67BC-41F3-A1A4-56308CD2CAB7}</Project>
+      <Name>PeerCastStation.MKV</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.Ohaoha\PeerCastStation.Ohaoha.csproj">
       <Project>{6E45FCD8-3569-48E9-A704-083A7BBD6743}</Project>
       <Name>PeerCastStation.Ohaoha</Name>
