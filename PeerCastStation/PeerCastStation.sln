@@ -56,6 +56,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.MKV", "Peer
 EndProject
 Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestMKV", "TestMKV\TestMKV.rbproj", "{8506DD10-3565-4253-8596-012E6425AFA9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.FLV", "PeerCastStation.FLV\PeerCastStation.FLV.csproj", "{895D4DF8-A8B2-43A0-85E4-ED74152E73B2}"
+EndProject
+Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestFLV", "TestFLV\TestFLV.rbproj", "{A21A8B81-F2C8-4303-962E-FD2B8D528B75}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -130,6 +134,14 @@ Global
 		{8506DD10-3565-4253-8596-012E6425AFA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8506DD10-3565-4253-8596-012E6425AFA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8506DD10-3565-4253-8596-012E6425AFA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{895D4DF8-A8B2-43A0-85E4-ED74152E73B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{895D4DF8-A8B2-43A0-85E4-ED74152E73B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{895D4DF8-A8B2-43A0-85E4-ED74152E73B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{895D4DF8-A8B2-43A0-85E4-ED74152E73B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A21A8B81-F2C8-4303-962E-FD2B8D528B75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A21A8B81-F2C8-4303-962E-FD2B8D528B75}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A21A8B81-F2C8-4303-962E-FD2B8D528B75}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A21A8B81-F2C8-4303-962E-FD2B8D528B75}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

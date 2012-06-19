@@ -70,6 +70,10 @@
       <Project>{387996F5-E31D-4D92-BD86-8983C599F748}</Project>
       <Name>PeerCastStation.Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.FLV\PeerCastStation.FLV.csproj">
+      <Project>{895D4DF8-A8B2-43A0-85E4-ED74152E73B2}</Project>
+      <Name>PeerCastStation.FLV</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.GUI\PeerCastStation.GUI.csproj">
       <Project>{C48B0B43-0061-4049-8EBF-5F3757009F13}</Project>
       <Name>PeerCastStation.GUI</Name>
