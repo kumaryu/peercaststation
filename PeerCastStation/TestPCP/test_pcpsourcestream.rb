@@ -166,7 +166,10 @@ class TestPCPServer
             begin
               process_client(client)
             ensure
-              client.close
+              begin
+                client.close
+              rescue
+              end
             end
           }
         end
@@ -513,7 +516,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
       @channel,
       @source_uri)
     @channel.start(stream)
-    sleep(0.1) until stream.is_stopped
+    sleep(1) until stream.is_stopped
     assert_equal(PCSCore::SourceStreamStatus.error.to_s, @channel.status.to_s)
     @channel.close
   end
@@ -627,7 +630,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
         @server.close
         server2.close
       else
-        sleep(0.1)
+        sleep(0.2)
       end
     end
     client_hosts.each do |host|
@@ -718,7 +721,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     end
     assert_equal(2, @channel.broadcasts.size)
     posted = @channel.broadcasts.find {|b| b[1].children.get_ok }
-    assert_equal(@channel.source_host, posted[0])
+    assert_equal(@server.session_id.to_s, posted[0].SessionID.ToString('N'))
     assert_equal(PCP_BCST_GROUP_ALL, posted[2])
     atom = posted[1]
     assert_equal(PCSCore::Atom.PCP_BCST, atom.name)
@@ -801,7 +804,7 @@ class TC_PCPSourceStream < Test::Unit::TestCase
     end
     assert_equal(2, @channel.broadcasts.size)
     posted = @channel.broadcasts.find {|b| b[1].children.get_ok }
-    assert_equal(@channel.source_host, posted[0])
+    assert_equal(@server.session_id.to_s, posted[0].SessionID.ToString('N'))
     assert_equal(PCP_BCST_GROUP_ALL, posted[2])
     atom = posted[1]
     assert_equal(bcst[PCP_BCST_DEST].to_s, atom.children.GetBcstDest.to_s)

@@ -430,21 +430,6 @@ namespace PeerCastStation.GUI
       }
     }
 
-    private Host CreateSelfNodeInfo(Channel channel)
-    {
-      var host = new HostBuilder();
-      host.SessionID      = peerCast.SessionID;
-      host.LocalEndPoint  = peerCast.GetLocalEndPoint(channel.SourceHost.GlobalEndPoint.AddressFamily, OutputStreamType.Relay);
-      host.GlobalEndPoint = peerCast.GetGlobalEndPoint(channel.SourceHost.GlobalEndPoint.AddressFamily, OutputStreamType.Relay);
-      host.IsFirewalled   = peerCast.IsFirewalled ?? true;
-      host.DirectCount    = channel.LocalDirects;
-      host.RelayCount     = channel.LocalRelays;
-      host.IsDirectFull   = !peerCast.AccessController.IsChannelPlayable(channel);
-      host.IsRelayFull    = !peerCast.AccessController.IsChannelRelayable(channel);
-      host.IsReceiving    = true;
-      return host.ToHost();
-    }
-
     private void AddRelayTreeNode(
       TreeNodeCollection tree_nodes,
       IEnumerable<Utils.HostTreeNode> nodes,

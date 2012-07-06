@@ -376,41 +376,36 @@ namespace PeerCastStation.PCP
 
     private void PostHostInfo(AtomCollection parent, Channel channel, bool playing)
     {
-      var host = new AtomCollection();
-      host.SetHostChannelID(channel.ChannelID);
-      host.SetHostSessionID(PeerCast.SessionID);
-      var globalendpoint = 
-        PeerCast.GetGlobalEndPoint(
-          channel.SourceHost.GlobalEndPoint.AddressFamily,
-          OutputStreamType.Relay);
+      var host = channel.SelfNode;
+      var hostinfo = new AtomCollection();
+      hostinfo.SetHostChannelID(channel.ChannelID);
+      hostinfo.SetHostSessionID(PeerCast.SessionID);
+      var globalendpoint = host.GlobalEndPoint;
       if (globalendpoint!=null) {
-        host.AddHostIP(globalendpoint.Address);
-        host.AddHostPort(globalendpoint.Port);
+        hostinfo.AddHostIP(globalendpoint.Address);
+        hostinfo.AddHostPort(globalendpoint.Port);
       }
-      var localendpoint = 
-        PeerCast.GetLocalEndPoint(
-          channel.SourceHost.GlobalEndPoint.AddressFamily,
-          OutputStreamType.Relay);
+      var localendpoint = host.LocalEndPoint;
       if (localendpoint!=null) {
-        host.AddHostIP(localendpoint.Address);
-        host.AddHostPort(localendpoint.Port);
+        hostinfo.AddHostIP(localendpoint.Address);
+        hostinfo.AddHostPort(localendpoint.Port);
       }
-      host.SetHostNumListeners(channel.TotalDirects);
-      host.SetHostNumRelays(channel.TotalRelays);
-      host.SetHostUptime(channel.Uptime);
+      hostinfo.SetHostNumListeners(channel.TotalDirects);
+      hostinfo.SetHostNumRelays(channel.TotalRelays);
+      hostinfo.SetHostUptime(channel.Uptime);
       if (channel.Contents.Count > 0) {
-        host.SetHostOldPos((uint)(channel.Contents.Oldest.Position & 0xFFFFFFFFU));
-        host.SetHostNewPos((uint)(channel.Contents.Newest.Position & 0xFFFFFFFFU));
+        hostinfo.SetHostOldPos((uint)(channel.Contents.Oldest.Position & 0xFFFFFFFFU));
+        hostinfo.SetHostNewPos((uint)(channel.Contents.Newest.Position & 0xFFFFFFFFU));
       }
-      host.SetHostVersion(PCP_VERSION);
-      host.SetHostVersionVP(PCP_VERSION_VP);
-      host.SetHostFlags1(
+      hostinfo.SetHostVersion(PCP_VERSION);
+      hostinfo.SetHostVersionVP(PCP_VERSION_VP);
+      hostinfo.SetHostFlags1(
         (PeerCast.AccessController.IsChannelRelayable(channel) ? PCPHostFlags1.Relay : 0) |
         (PeerCast.AccessController.IsChannelPlayable(channel) ? PCPHostFlags1.Direct : 0) |
         ((!PeerCast.IsFirewalled.HasValue || PeerCast.IsFirewalled.Value) ? PCPHostFlags1.Firewalled : 0) |
         PCPHostFlags1.Tracker |
         (playing ? PCPHostFlags1.Receiving : PCPHostFlags1.None));
-      parent.SetHost(host);
+      parent.SetHost(hostinfo);
     }
 
     private void PostChannelInfo(AtomCollection parent, Channel channel)

@@ -114,31 +114,24 @@ namespace PeerCastStation.PCP
     private const int PCP_VERSION    = 1218;
     private const int PCP_VERSION_VP = 27;
 
-    public Host Uphost { get; private set; }
+    public Host Uphost      { get; private set; }
+    public Host TrackerHost { get; private set; }
+    public IPEndPoint RemoteEndPoint { get; private set; }
 
-    public bool StartConnection(Host host)
+    private bool StartConnection(IPEndPoint endpoint)
     {
-      if (host!=null && host.GlobalEndPoint!=null) {
+      if (endpoint!=null) {
         client = new TcpClient();
-        IPEndPoint point;
-        if (PeerCast.GlobalAddress!=null &&
-            PeerCast.GlobalAddress.Equals(host.GlobalEndPoint.Address) &&
-            host.LocalEndPoint!=null) {
-          point = host.LocalEndPoint;
-        }
-        else {
-          point = host.GlobalEndPoint;
-        }
         try {
-          client.Connect(point);
+          client.Connect(endpoint);
           var stream = client.GetStream();
           StartConnection(stream, stream);
-          Uphost = host;
-          Logger.Debug("Connected: {0}", point);
+          RemoteEndPoint = endpoint;
+          Logger.Debug("Connected: {0}", endpoint);
           return true;
         }
         catch (SocketException e) {
-          Logger.Debug("Connection Failed: {0}", point);
+          Logger.Debug("Connection Failed: {0}", endpoint);
           Logger.Debug(e);
           OnError();
           return false;
@@ -148,6 +141,39 @@ namespace PeerCastStation.PCP
         Stop(StopReason.NoHost);
         return false;
       }
+    }
+
+    public bool StartConnection(Uri source)
+    {
+      var port = source.Port < 0 ? 7144 : source.Port;
+      IPEndPoint endpoint = null;
+      try {
+        var addresses = Dns.GetHostAddresses(source.DnsSafeHost);
+        var addr = addresses.FirstOrDefault(x => x.AddressFamily==AddressFamily.InterNetwork);
+        if (addr!=null) {
+          endpoint = new IPEndPoint(addr, port);
+        }
+      }
+      catch (SocketException) {
+      }
+      return StartConnection(endpoint);
+    }
+
+    private bool StartConnection(Host host)
+    {
+      IPEndPoint endpoint = null;
+      if (host!=null && host.GlobalEndPoint!=null) {
+        client = new TcpClient();
+        if (PeerCast.GlobalAddress!=null &&
+            PeerCast.GlobalAddress.Equals(host.GlobalEndPoint.Address) &&
+            host.LocalEndPoint!=null) {
+          endpoint = host.LocalEndPoint;
+        }
+        else {
+          endpoint = host.GlobalEndPoint;
+        }
+      }
+      return StartConnection(endpoint);
     }
 
     protected override void EndConnection()
@@ -162,7 +188,7 @@ namespace PeerCastStation.PCP
       if (host!=null) {
         Logger.Debug("Host {0}({1}) is ignored", host.GlobalEndPoint, host.SessionID.ToString("N"));
       }
-      Channel.IgnoreHost(host);
+      Channel.IgnoreNode(host.SessionID);
     }
 
     protected override void DoStop(SourceStreamBase.StopReason reason)
@@ -187,7 +213,7 @@ namespace PeerCastStation.PCP
         break;
       case StopReason.OffAir:
       case StopReason.ConnectionError:
-        if (Uphost==null || Uphost.Equals(Channel.SourceHost)) {
+        if (Uphost==null || TrackerHost==null || Uphost.SessionID==TrackerHost.SessionID) {
           Status = SourceStreamStatus.Error;
           state = State.None;
           base.DoStop(reason);
@@ -238,14 +264,14 @@ namespace PeerCastStation.PCP
         }
         else {
           var listener = PeerCast.FindListener(
-            Uphost.GlobalEndPoint.Address,
+            RemoteEndPoint.Address,
             OutputStreamType.Relay | OutputStreamType.Metadata);
           helo.SetHeloPort(listener.LocalEndPoint.Port);
         }
       }
       else {
         var listener = PeerCast.FindListener(
-          Uphost.GlobalEndPoint.Address,
+          RemoteEndPoint.Address,
           OutputStreamType.Relay | OutputStreamType.Metadata);
         helo.SetHeloPing(listener.LocalEndPoint.Port);
       }
@@ -292,7 +318,7 @@ namespace PeerCastStation.PCP
       host.SetHostSessionID(PeerCast.SessionID);
       var globalendpoint = 
         PeerCast.GetGlobalEndPoint(
-          Channel.SourceHost.GlobalEndPoint.AddressFamily,
+          RemoteEndPoint.AddressFamily,
           OutputStreamType.Relay);
       if (globalendpoint!=null) {
         host.AddHostIP(globalendpoint.Address);
@@ -300,7 +326,7 @@ namespace PeerCastStation.PCP
       }
       var localendpoint = 
         PeerCast.GetLocalEndPoint(
-          Channel.SourceHost.GlobalEndPoint.AddressFamily,
+          RemoteEndPoint.AddressFamily,
           OutputStreamType.Relay);
       if (localendpoint!=null) {
         host.AddHostIP(localendpoint.Address);
@@ -320,13 +346,8 @@ namespace PeerCastStation.PCP
         (PeerCast.AccessController.IsChannelPlayable(Channel) ? PCPHostFlags1.Direct : 0) |
         ((!PeerCast.IsFirewalled.HasValue || PeerCast.IsFirewalled.Value) ? PCPHostFlags1.Firewalled : 0) |
         PCPHostFlags1.Receiving); //TODO:受信中かどうかちゃんと判別する
-      if (Uphost != null) {
-        var endpoint = Uphost.GlobalEndPoint;
-        if (endpoint != null) {
-          host.SetHostUphostIP(endpoint.Address);
-          host.SetHostUphostPort(endpoint.Port);
-        }
-      }
+      host.SetHostUphostIP(RemoteEndPoint.Address);
+      host.SetHostUphostPort(RemoteEndPoint.Port);
       return new Atom(Atom.PCP_HOST, host);
     }
 
@@ -381,19 +402,19 @@ namespace PeerCastStation.PCP
     private Host SelectSourceHost()
     {
       var rnd = new Random();
-      var res = Channel.Nodes.Except(Channel.IgnoredHosts).OrderByDescending(n =>
+      var res = Channel.GetConnectableNodes().OrderByDescending(n =>
         (IsSiteLocal(n) ? 8000 : 0) +
         ( n.IsReceiving ? 4000 : 0) +
         (!n.IsRelayFull ? 2000 : 0) +
         (Math.Max(10-n.Hops, 0)*100) +
         (n.RelayCount*10) +
         rnd.NextDouble()
-      ).DefaultIfEmpty().Take(1).ToArray()[0];
+      ).DefaultIfEmpty().First();
       if (res!=null) {
         return res;
       }
-      else if (!Channel.IgnoredHosts.Contains(Channel.SourceHost)) {
-        return Channel.SourceHost;
+      else if (TrackerHost!=null && !Channel.IsIgnored(TrackerHost.SessionID)) {
+        return TrackerHost;
       }
       else {
         return null;
@@ -403,17 +424,25 @@ namespace PeerCastStation.PCP
     private void OnConnecting()
     {
       state = State.Connecting;
-      var host = SelectSourceHost();
-      if (host!=null) {
-        Logger.Debug("{0} is selected as source", host.GlobalEndPoint);
-        if (StartConnection(host)) {
+      if (TrackerHost==null) {
+        if (StartConnection(SourceUri)) {
           SendRelayRequest();
           state = State.WaitRequestResponse;
         }
       }
       else {
-        Logger.Debug("No selectable host");
-        Stop(StopReason.NoHost);
+        var host = SelectSourceHost();
+        if (host!=null) {
+          Logger.Debug("{0} is selected as source", host.GlobalEndPoint);
+          if (StartConnection(host)) {
+            SendRelayRequest();
+            state = State.WaitRequestResponse;
+          }
+        }
+        else {
+          Logger.Debug("No selectable host");
+          Stop(StopReason.NoHost);
+        }
       }
     }
 
@@ -532,6 +561,14 @@ namespace PeerCastStation.PCP
       var port = atom.Children.GetHeloPort();
       if (port.HasValue) {
         PeerCast.IsFirewalled = port.Value==0;
+      }
+      var sid = atom.Children.GetHeloSessionID();
+      if (sid.HasValue) {
+        var host = new HostBuilder();
+        host.SessionID      = sid.Value;
+        host.GlobalEndPoint = RemoteEndPoint;
+        Uphost = host.ToHost();
+        if (TrackerHost==null) TrackerHost = Uphost;
       }
       Logger.Debug("Handshake Finished: {0}", PeerCast.GlobalAddress);
     }

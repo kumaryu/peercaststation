@@ -292,27 +292,6 @@ namespace PeerCastStation.Core
     }
   }
 
-  [Flags]
-  public enum SourceHostSelection
-  {
-    /// <summary>
-    /// 特に指定しない
-    /// </summary>
-    None  = 0,
-    /// <summary>
-    /// 直下のホストを選択する
-    /// </summary>
-    Lower = 1,
-    /// <summary>
-    /// 受信中のホストを選択する
-    /// </summary>
-    Receiving = 2,
-    /// <summary>
-    /// リレー可能なホストを選択する
-    /// </summary>
-    Relayable = 4,
-  }
-
   /// <summary>
   /// チャンネル接続を管理するクラスです
   /// </summary>
@@ -356,7 +335,6 @@ namespace PeerCastStation.Core
     /// コンテント取得元のUriを取得します
     /// </summary>
     public Uri SourceUri { get; private set; }
-    public Host SourceHost { get; private set; }
 
     /// <summary>
     /// ソースストリームを取得および設定します
@@ -577,31 +555,29 @@ namespace PeerCastStation.Core
       }
     }
 
-    private class IgnoredHostCollection
+    private class IgnoredNodeCollection
     {
-      private Dictionary<Host, int> ignoredHosts = new Dictionary<Host, int>();
+      private Dictionary<Guid, int> ignoredNodes = new Dictionary<Guid, int>();
       private int threshold;
-      public IgnoredHostCollection(int threshold)
+      public IgnoredNodeCollection(int threshold)
       {
         this.threshold = threshold;
       }
 
-      public void Add(Host host)
+      public void Add(Guid session_id)
       {
-        if (host!=null) {
-          ignoredHosts[host] = Environment.TickCount;
-        }
+        ignoredNodes[session_id] = Environment.TickCount;
       }
 
-      public bool Contains(Host host)
+      public bool Contains(Guid session_id)
       {
-        if (ignoredHosts.ContainsKey(host)) {
+        if (ignoredNodes.ContainsKey(session_id)) {
           int tick = Environment.TickCount;
-          if (tick - ignoredHosts[host] <= threshold) {
+          if (tick - ignoredNodes[session_id] <= threshold) {
             return true;
           }
           else {
-            ignoredHosts.Remove(host);
+            ignoredNodes.Remove(session_id);
             return false;
           }
         }
@@ -612,13 +588,22 @@ namespace PeerCastStation.Core
 
       public void Clear()
       {
-        ignoredHosts.Clear();
+        ignoredNodes.Clear();
       }
 
-      public ICollection<Host> Hosts { get { return ignoredHosts.Keys; } }
+      public ICollection<Guid> Nodes { get { return ignoredNodes.Keys; } }
     }
-    private IgnoredHostCollection ignoredHosts = new IgnoredHostCollection(NodeLimit);
-    public ICollection<Host> IgnoredHosts { get { return ignoredHosts.Hosts; } }
+    private IgnoredNodeCollection ignoredNodes = new IgnoredNodeCollection(NodeLimit);
+
+    public bool IsIgnored(Guid session_id)
+    {
+      return ignoredNodes.Contains(session_id);
+    }
+
+    public IEnumerable<Host> GetConnectableNodes()
+    {
+      return nodes.Where(h => !ignoredNodes.Contains(h.SessionID));
+    }
 
     /// <summary>
     /// このチャンネルに関連付けられたノードの読み取り専用リストを取得します
@@ -665,24 +650,24 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
-    /// 指定したホストが接続先として選択されないように指定します。
-    /// 一度無視されたホストは一定時間経過した後、再度選択されるようになります
+    /// 指定したノードが接続先として選択されないように保持します。
+    /// 一度無視されたノードは一定時間経過した後、再度選択されるようになります
     /// </summary>
-    /// <param name="host">接続先として選択されないようにするホスト</param>
-    public void IgnoreHost(Host host)
+    /// <param name="session_id">接続先として選択されないようにするノードのセッションID</param>
+    public void IgnoreNode(Guid session_id)
     {
-      lock (ignoredHosts) {
-        ignoredHosts.Add(host);
+      lock (ignoredNodes) {
+        ignoredNodes.Add(session_id);
       }
     }
 
     /// <summary>
-    /// 全てのホストを接続先として選択可能にします
+    /// 全てのノードを接続先として選択可能にします
     /// </summary>
     public void ClearIgnored()
     {
-      lock (ignoredHosts) {
-        ignoredHosts.Clear();
+      lock (ignoredNodes) {
+        ignoredNodes.Clear();
       }
     }
 
@@ -690,14 +675,8 @@ namespace PeerCastStation.Core
       get {
         var host = new HostBuilder();
         host.SessionID      = this.PeerCast.SessionID;
-        if (SourceHost!=null && SourceHost.GlobalEndPoint!=null) {
-          host.LocalEndPoint  = this.PeerCast.GetLocalEndPoint(SourceHost.GlobalEndPoint.AddressFamily, OutputStreamType.Relay);
-          host.GlobalEndPoint = this.PeerCast.GetGlobalEndPoint(SourceHost.GlobalEndPoint.AddressFamily, OutputStreamType.Relay);
-        }
-        else {
-          host.LocalEndPoint  = this.PeerCast.GetLocalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
-          host.GlobalEndPoint = this.PeerCast.GetGlobalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
-        }
+        host.LocalEndPoint  = this.PeerCast.GetLocalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
+        host.GlobalEndPoint = this.PeerCast.GetGlobalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
         host.IsFirewalled   = this.PeerCast.IsFirewalled ?? true;
         host.DirectCount    = this.LocalDirects;
         host.RelayCount     = this.LocalRelays;
@@ -809,19 +788,6 @@ namespace PeerCastStation.Core
       this.SourceUri = source_uri;
       this.ChannelID = channel_id;
       this.BroadcastID = broadcast_id;
-      var host = new HostBuilder();
-      var port = SourceUri.Port < 0 ? 7144 : SourceUri.Port;
-      try {
-        var addresses = Dns.GetHostAddresses(SourceUri.DnsSafeHost);
-        var addr = addresses.FirstOrDefault(x => x.AddressFamily==AddressFamily.InterNetwork);
-        if (addr!=null) {
-          host.GlobalEndPoint = new IPEndPoint(addr, port);
-        }
-      }
-      catch (SocketException) {
-        host.GlobalEndPoint = null;
-      }
-      SourceHost = host.ToHost();
       contents.ContentChanged += (sender, e) => {
         OnContentChanged();
       };
