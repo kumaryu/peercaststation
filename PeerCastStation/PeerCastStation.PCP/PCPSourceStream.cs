@@ -187,13 +187,14 @@ namespace PeerCastStation.PCP
     {
       if (host!=null) {
         Logger.Debug("Host {0}({1}) is ignored", host.GlobalEndPoint, host.SessionID.ToString("N"));
+        Channel.IgnoreNode(host.SessionID);
       }
-      Channel.IgnoreNode(host.SessionID);
     }
 
     protected override void DoStop(SourceStreamBase.StopReason reason)
     {
       EndConnection();
+      Uphost = null;
       switch (reason) {
       case StopReason.UserShutdown:
         Status = SourceStreamStatus.Idle;
@@ -424,6 +425,7 @@ namespace PeerCastStation.PCP
     private void OnConnecting()
     {
       state = State.Connecting;
+      Uphost = null;
       if (TrackerHost==null) {
         if (StartConnection(SourceUri)) {
           SendRelayRequest();
