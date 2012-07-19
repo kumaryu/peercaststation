@@ -25,13 +25,15 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="pcp" />
+    <None Include="pcp.rb" />
+    <None Include="pcp\rootserver.rb" />
     <None Include="peca.rb" />
     <None Include="start.rb" />
     <None Include="test_pcpoutputstream.rb" />
     <None Include="test_pcppongoutputstream.rb" />
     <None Include="test_pcpsourcestream.rb" />
     <None Include="test_pcpyellowpageclient.rb" />
-    <None Include="utils.rb" />
-    <None Include="yp.rb" />
+    <None Include="test_pcp_common.rb" />
   </ItemGroup>
 </Project>

@@ -13,12 +13,6 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-Thread.abort_on_exception = true
-$: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.Core', 'bin', 'Debug')
-require 'System.Core'
-require 'PeerCastStation.Core.dll'
-require 'utils'
-
 require 'test_pcpsourcestream'
 require 'test_pcpoutputstream'
 require 'test_pcppongoutputstream'
