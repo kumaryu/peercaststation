@@ -13,41 +13,6 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-$: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.Core', 'bin', 'Debug')
-require 'System.Core'
-require 'PeerCastStation.Core.dll'
-
-def rubyize_name(name)
-  unless /[A-Z]{2,}/=~name then
-    name.gsub(/(?!^)[A-Z]/, '_\&').downcase
-  else
-    nil
-  end
-end
-
-def explicit_extensions(klass)
-  methods = klass.to_clr_type.get_methods(System::Reflection::BindingFlags.public | System::Reflection::BindingFlags.static)
-  methods.each do |method|
-    if not method.get_custom_attributes(System::Runtime::CompilerServices::ExtensionAttribute.to_clr_type, true).empty? then
-      target_type = method.get_parameters[0].parameter_type
-      if target_type.is_interface then
-        type = target_type.to_module
-      else
-        type = target_type.to_class
-      end
-      type.module_eval do
-        [method.name, rubyize_name(method.name)].compact.each do |name|
-          define_method(name) do |*args|
-            klass.__send__(method.name, self, *args)
-          end
-        end
-      end
-    end
-  end
-end
-explicit_extensions PeerCastStation::Core::AtomCollectionExtensions
-
-
 require 'test_httpoutputstream'
 require 'test_httpsourcestream'
 require 'test_playlist'
