@@ -194,7 +194,6 @@ namespace PeerCastStation.PCP
     protected override void DoStop(SourceStreamBase.StopReason reason)
     {
       EndConnection();
-      Uphost = null;
       switch (reason) {
       case StopReason.UserShutdown:
         Status = SourceStreamStatus.Idle;
@@ -229,6 +228,7 @@ namespace PeerCastStation.PCP
         base.DoStop(reason);
         break;
       }
+      Uphost = null;
     }
 
     public virtual void SendRelayRequest()
