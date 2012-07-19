@@ -7,6 +7,7 @@ Rake::TestTask.new('test:Debug') do |t|
   t.libs << 'TestCore'
   t.libs << 'TestPCP'
   t.test_files = FileList[
+    'TestLogger/test_*.rb',
     'TestCore/test_*.rb',
     'TestPCP/test_*.rb',
   ]
@@ -19,6 +20,7 @@ Rake::TestTask.new('test:Release') do |t|
   t.libs << 'TestCore'
   t.libs << 'TestPCP'
   t.test_files = FileList[
+    'TestLogger/test_*.rb',
     'TestCore/test_*.rb',
     'TestPCP/test_*.rb',
   ]
