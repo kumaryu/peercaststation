@@ -13,120 +13,122 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-$: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.Core', 'bin', 'Debug')
-$: << File.join(File.dirname(__FILE__), '..', 'PeerCastStation.ASF', 'bin', 'Debug')
-require 'PeerCastStation.Core.dll'
-require 'PeerCastStation.ASF.dll'
+require File.join(File.dirname(__FILE__), '..', 'TestCommon', 'utils.rb')
+TestUtils.require_peercaststation 'Core'
+TestUtils.require_peercaststation 'ASF'
 require 'test/unit'
-PCSCore = PeerCastStation::Core unless defined?(PCSCore)
-PCSASF = PeerCastStation::ASF unless defined?(PCSASF)
 
-class TC_ASFContentReaderFactory < Test::Unit::TestCase
-  def setup
-    @peercast = PCSCore::PeerCast.new
-    @channel = PCSCore::Channel.new(
-      @peercast,
-      System::Guid.new('9778E62BDC59DF56F9216D0387F80BF2'.to_clr_string), 
-      System::Uri.new('http://127.0.0.1:8888/'))
-  end
-  
-  def teardown
-    @peercast.stop if @peercast
-  end
+module TestASF
+  PCSCore = PeerCastStation::Core unless defined?(PCSCore)
+  PCSASF = PeerCastStation::ASF unless defined?(PCSASF)
 
-  def test_construct
-    factory = PCSASF::ASFContentReaderFactory.new
-    assert_equal("ASF(WMV or WMA)", factory.name)
-    assert_kind_of(PCSCore::IContentReaderFactory, factory)
-  end
-
-  def test_create
-    factory = PCSASF::ASFContentReaderFactory.new
-    reader = factory.create(@channel)
-    assert_equal("ASF(WMV or WMA)", reader.name)
-    assert_kind_of(PCSCore::IContentReader, reader)
-  end
-end
-
-class TC_ASFContentReader < Test::Unit::TestCase
-  def fixture(name)
-    File.join(File.dirname(__FILE__), 'fixtures', name)
-  end
-
-  def setup
-    @peercast = PCSCore::PeerCast.new
-    @channel = PCSCore::Channel.new(
-      @peercast,
-      System::Guid.new('9778E62BDC59DF56F9216D0387F80BF2'.to_clr_string), 
-      System::Uri.new('http://127.0.0.1:8888/'))
-    factory = PCSASF::ASFContentReaderFactory.new
-    @reader = factory.create(@channel)
-  end
-  
-  def teardown
-    @peercast.stop if @peercast
-  end
-
-  def test_read_empty
-    stream = System::IO::MemoryStream.new
-    assert_raises(System::IO::EndOfStreamException) do
-      content = @reader.read(stream)
-    end
-  end
-
-  def test_read
-    stream = System::IO::File.open_read(fixture('test.asf'))
-    content = @reader.read(stream)
-    assert_not_nil(content.content_header)
-    assert_not_nil(content.channel_info)
-    assert_equal("WMV", content.channel_info.content_type)
-    
-    assert_equal('video/x-ms-wmv', PCSCore::AtomCollectionExtensions.get_chan_info_stream_type(content.channel_info.extra))
-    assert_equal('.wmv', PCSCore::AtomCollectionExtensions.get_chan_info_stream_ext(content.channel_info.extra))
-    assert_equal(439, content.channel_info.bitrate)
-    assert_equal(0, content.content_header.position)
-    assert_equal(5271, content.content_header.data.length)
-    assert_equal(7, content.contents.count)
-    pos = 0+content.content_header.data.length
-    content.contents.count.times do |i|
-      assert_equal(pos, content.contents[i].position)
-      pos += content.contents[i].data.length
-    end
-  ensure
-    stream.close if stream
-  end
-
-  def test_read_continue
-    stream = System::IO::File.open_read(fixture('test.asf'))
-    cnt = 0
-    content = @reader.read(stream)
-    assert_not_nil(content.content_header)
-    assert_not_nil(content.channel_info)
-    pos = 0+content.content_header.data.length
-    content.contents.count.times do |i|
-      pos += content.contents[i].data.length
-    end
-    cnt += content.contents.count
-
-    @channel.content_header = content.content_header
-    content.contents.each do |c|
-      @channel.contents.add(c)
+  class TC_ASFContentReaderFactory < Test::Unit::TestCase
+    def setup
+      @peercast = PCSCore::PeerCast.new
+      @channel = PCSCore::Channel.new(
+        @peercast,
+        System::Guid.new('9778E62BDC59DF56F9216D0387F80BF2'.to_clr_string), 
+        System::Uri.new('http://127.0.0.1:8888/'))
     end
     
-    while cnt<361 do
+    def teardown
+      @peercast.stop if @peercast
+    end
+
+    def test_construct
+      factory = PCSASF::ASFContentReaderFactory.new
+      assert_equal("ASF(WMV or WMA)", factory.name)
+      assert_kind_of(PCSCore::IContentReaderFactory, factory)
+    end
+
+    def test_create
+      factory = PCSASF::ASFContentReaderFactory.new
+      reader = factory.create(@channel)
+      assert_equal("ASF(WMV or WMA)", reader.name)
+      assert_kind_of(PCSCore::IContentReader, reader)
+    end
+  end
+
+  class TC_ASFContentReader < Test::Unit::TestCase
+    def fixture(name)
+      File.join(File.dirname(__FILE__), 'fixtures', name)
+    end
+
+    def setup
+      @peercast = PCSCore::PeerCast.new
+      @channel = PCSCore::Channel.new(
+        @peercast,
+        System::Guid.new('9778E62BDC59DF56F9216D0387F80BF2'.to_clr_string), 
+        System::Uri.new('http://127.0.0.1:8888/'))
+      factory = PCSASF::ASFContentReaderFactory.new
+      @reader = factory.create(@channel)
+    end
+    
+    def teardown
+      @peercast.stop if @peercast
+    end
+
+    def test_read_empty
+      stream = System::IO::MemoryStream.new
+      assert_raises(System::IO::EndOfStreamException) do
+        content = @reader.read(stream)
+      end
+    end
+
+    def test_read
+      stream = System::IO::File.open_read(fixture('test.asf'))
       content = @reader.read(stream)
-      assert_nil(content.content_header)
-      assert_nil(content.channel_info)
-      assert_equal([8, 361-cnt].min, content.contents.count)
+      assert_not_nil(content.content_header)
+      assert_not_nil(content.channel_info)
+      assert_equal("WMV", content.channel_info.content_type)
+      
+      assert_equal('video/x-ms-wmv', PCSCore::AtomCollectionExtensions.get_chan_info_stream_type(content.channel_info.extra))
+      assert_equal('.wmv', PCSCore::AtomCollectionExtensions.get_chan_info_stream_ext(content.channel_info.extra))
+      assert_equal(439, content.channel_info.bitrate)
+      assert_equal(0, content.content_header.position)
+      assert_equal(5271, content.content_header.data.length)
+      assert_equal(7, content.contents.count)
+      pos = 0+content.content_header.data.length
       content.contents.count.times do |i|
         assert_equal(pos, content.contents[i].position)
         pos += content.contents[i].data.length
-        @channel.contents.add(content.contents[i])
+      end
+    ensure
+      stream.close if stream
+    end
+
+    def test_read_continue
+      stream = System::IO::File.open_read(fixture('test.asf'))
+      cnt = 0
+      content = @reader.read(stream)
+      assert_not_nil(content.content_header)
+      assert_not_nil(content.channel_info)
+      pos = 0+content.content_header.data.length
+      content.contents.count.times do |i|
+        pos += content.contents[i].data.length
       end
       cnt += content.contents.count
+
+      @channel.content_header = content.content_header
+      content.contents.each do |c|
+        @channel.contents.add(c)
+      end
+      
+      while cnt<361 do
+        content = @reader.read(stream)
+        assert_nil(content.content_header)
+        assert_nil(content.channel_info)
+        assert_equal([8, 361-cnt].min, content.contents.count)
+        content.contents.count.times do |i|
+          assert_equal(pos, content.contents[i].position)
+          pos += content.contents[i].data.length
+          @channel.contents.add(content.contents[i])
+        end
+        cnt += content.contents.count
+      end
+    ensure
+      stream.close if stream
     end
-  ensure
-    stream.close if stream
   end
 end
 
