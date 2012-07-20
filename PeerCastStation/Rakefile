@@ -1,39 +1,28 @@
 
 require 'rake/testtask'
 
-Rake::TestTask.new('test:Debug') do |t|
-  t.libs << 'PeerCastStation.Logger/bin/Debug'
-  t.libs << 'PeerCastStation.Core/bin/Debug'
-  t.libs << 'PeerCastStation.PCP/bin/Debug'
-  t.libs << 'PeerCastStation.HTTP/bin/Debug'
-  t.libs << 'TestLogger'
-  t.libs << 'TestCore'
-  t.libs << 'TestPCP'
-  t.libs << 'TestHTTP'
-  t.test_files = FileList[
-    'TestLogger/test_*.rb',
-    'TestCore/test_*.rb',
-    'TestPCP/test_*.rb',
-    'TestHTTP/test_*.rb',
-  ]
-  t.verbose = true
+TestModules = %w[
+  Logger
+  Core
+  PCP
+  HTTP
+]
+
+Configurations = %w[
+  Debug
+  Release
+]
+
+Configurations.each do |config|
+  Rake::TestTask.new("test:#{config}") do |t|
+    TestModules.each do |name|
+      t.libs << "PeerCastStation.#{name}/bin/#{config}"
+      t.libs << "Test#{name}"
+      (t.pattern ||=[]) << "Test#{name}/test_*.rb"
+    end
+    t.verbose = true
+  end
 end
 
-Rake::TestTask.new('test:Release') do |t|
-  t.libs << 'PeerCastStation.Logger/bin/Release'
-  t.libs << 'PeerCastStation.Core/bin/Release'
-  t.libs << 'PeerCastStation.PCP/bin/Release'
-  t.libs << 'PeerCastStation.HTTP/bin/Release'
-  t.libs << 'TestLogger'
-  t.libs << 'TestCore'
-  t.libs << 'TestPCP'
-  t.libs << 'TestHTTP'
-  t.test_files = FileList[
-    'TestLogger/test_*.rb',
-    'TestCore/test_*.rb',
-    'TestPCP/test_*.rb',
-    'TestHTTP/test_*.rb',
-  ]
-  t.verbose = true
-end
+task :test => 'test:Debug'
 
