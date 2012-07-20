@@ -14,14 +14,15 @@ Configurations = %w[
 ]
 
 Configurations.each do |config|
-  Rake::TestTask.new("test:#{config}") do |t|
-    TestModules.each do |name|
+  TestModules.each do |name|
+    Rake::TestTask.new("test:#{name}:#{config}") do |t|
       t.libs << "PeerCastStation.#{name}/bin/#{config}"
       t.libs << "Test#{name}"
       (t.pattern ||=[]) << "Test#{name}/test_*.rb"
+      t.verbose = true
     end
-    t.verbose = true
   end
+  task "test:#{config}" => TestModules.collect {|name| "test:#{name}:#{config}" }
 end
 
 task :test => 'test:Debug'
