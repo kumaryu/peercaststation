@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{a5c59da0-3105-48fc-9c46-b988a6f1541a}</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>startup.rb</StartupFile>
+    <StartupFile>Program.rb</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -25,7 +25,7 @@
     <None Include="asfparser.rb" />
     <None Include="fixtures" />
     <None Include="fixtures\test.asf" />
-    <None Include="startup.rb" />
+    <None Include="Program.rb" />
     <None Include="test_asfcontentreader.rb" />
   </ItemGroup>
 </Project>

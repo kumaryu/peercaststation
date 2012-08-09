@@ -1,5 +1,5 @@
 
-require 'test_mkvcontentreader.rb'
+require 'test_asfcontentreader.rb'
 require '../TestCommon/loader.rb'
 TestLoader.run
 

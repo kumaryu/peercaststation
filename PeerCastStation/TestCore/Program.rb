@@ -13,7 +13,14 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-require 'test_pcpsourcestream'
-require 'test_pcpoutputstream'
-require 'test_pcppongoutputstream'
-require 'test_pcpyellowpageclient'
+require 'test_core'
+require 'test_core_host'
+require 'test_core_peercast'
+require 'test_core_atom'
+require 'test_core_channel'
+require 'test_core_accesscontroller'
+require 'test_core_queuedsynchronizationcontext'
+require 'test_core_rawcontentreader'
+require '../TestCommon/loader.rb'
+TestLoader.run
+

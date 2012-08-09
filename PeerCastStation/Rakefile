@@ -1,5 +1,6 @@
 
-require 'rake/testtask'
+require 'TestCommon/testtask'
+#require 'albacore'
 
 TestModules = %w[
   Logger
@@ -19,11 +20,14 @@ Configurations = %w[
 
 Configurations.each do |config|
   TestModules.each do |name|
-    Rake::TestTask.new("test:#{name}:#{config}") do |t|
+    PeerCastTestTask.new("test:#{name}:#{config}") do |t|
       t.libs << "PeerCastStation.#{name}/bin/#{config}"
       t.libs << "Test#{name}"
-      (t.pattern ||=[]) << "Test#{name}/test_*.rb"
+      t.test_files = Rake::FileList[
+        "Test#{name}/test_*.rb",
+      ]
       t.verbose = true
+      t.warning = true
     end
   end
   task "test:#{config}" => TestModules.collect {|name| "test:#{name}:#{config}" }

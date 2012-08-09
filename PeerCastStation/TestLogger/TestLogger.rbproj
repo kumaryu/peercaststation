@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{74826faf-d2bd-4e2a-9efd-0c2df6c1d680}</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>test_logger.rb</StartupFile>
+    <StartupFile>Program.rb</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -22,6 +22,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="Program.rb" />
     <None Include="test_logger.rb" />
   </ItemGroup>
 </Project>

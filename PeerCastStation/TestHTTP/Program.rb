@@ -16,4 +16,6 @@
 require 'test_httpoutputstream'
 require 'test_httpsourcestream'
 require 'test_playlist'
+require '../TestCommon/loader.rb'
+TestLoader.run
 
