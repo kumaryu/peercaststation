@@ -20,6 +20,20 @@ using System.Net;
 
 namespace PeerCastStation.Core
 {
+
+  public enum AnnouncingStatus {
+    Idle,
+    Connecting,
+    Connected,
+    Error,
+  }
+
+  public interface IAnnouncingChannel
+  {
+    Channel          Channel { get; }
+    AnnouncingStatus Status { get; }
+  }
+
   /// <summary>
   /// YellowPageとやりとりするクライアントのインターフェースです
   /// </summary>
@@ -43,19 +57,40 @@ namespace PeerCastStation.Core
     /// <param name="channel_id">検索するチャンネルID</param>
     /// <returns>見付かった場合は接続先URI、見付からなかった場合はnull</returns>
     Uri FindTracker(Guid channel_id);
+
     /// <summary>
     /// YellowPageにチャンネルを載せます
     /// </summary>
     /// <param name="channel">載せるチャンネル</param>
-    void Announce(Channel channel);
+    /// <returns>掲載するチャンネルの状態を保持するオブジェクト</returns>
+    IAnnouncingChannel Announce(Channel channel);
+
     /// <summary>
     /// YellowPageとの接続を終了し、載せているチャンネルを全て削除します
     /// </summary>
     void StopAnnounce();
+
     /// <summary>
-    /// YellowPageへ強制的に再接続を試みます
+    /// 指定したチャンネルの掲載を停止します
+    /// </summary>
+    /// <param name="announcing">掲載を停止するチャンネル</param>
+    void StopAnnounce(IAnnouncingChannel announcing);
+
+    /// <summary>
+    /// 全てのチャンネルの再掲載を試みます
     /// </summary>
     void RestartAnnounce();
+
+    /// <summary>
+    /// 指定したチャンネルの再掲載を試みます
+    /// </summary>
+    /// <param name="announcing">再掲載を行なうチャンネル</param>
+    void RestartAnnounce(IAnnouncingChannel announcing);
+
+    /// <summary>
+    /// YellowPageに掲載しようとしているチャンネルの一覧を取得します
+    /// </summary>
+    IList<IAnnouncingChannel> AnnouncingChannels { get; }
   }
 
   /// <summary>

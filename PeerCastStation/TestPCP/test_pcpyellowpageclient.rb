@@ -1,3 +1,4 @@
+# coding: utf-8
 # PeerCastStation, a P2P streaming servent.
 # Copyright (C) 2011 Ryuichi Sakamoto (kumaryu@kumaryu.net)
 # 
@@ -16,6 +17,8 @@
 require 'test_pcp_common'
 require 'pcp'
 require 'pcp/rootserver'
+require 'shoulda/context'
+require 'timeout'
 
 module TestPCP
   class TC_PCPYellowPageClientFactory < Test::Unit::TestCase
@@ -166,33 +169,79 @@ module TestPCP
       end
     end
 
+    def assert_not_timeout(expires=5, &block)
+      assert_nothing_raised(Timeout::Error) do
+        timeout(expires, &block)
+      end
+    end
+
+    def wait_equal_status(status, announcing_channel, expires=5)
+      status = PCSCore::AnnouncingStatus.send(status) if status.kind_of?(Symbol)
+      timeout(expires) do
+        sleep 1 until announcing_channel.Status==status
+      end
+    end
+
+    def wait_not_equal_status(status, announcing_channel, expires=5)
+      status = PCSCore::AnnouncingStatus.send(status) if status.kind_of?(Symbol)
+      timeout(expires) do
+        sleep 1 until announcing_channel.Status!=status
+      end
+    end
+
+    def assert_equal_status(status, announcing_channel, expires=5)
+      status = PCSCore::AnnouncingStatus.send(status) if status.kind_of?(Symbol)
+      begin
+        timeout(expires) do
+          sleep 1 until announcing_channel.Status==status
+        end
+      rescue Timeout::Error
+      end
+      assert_equal status.to_s, announcing_channel.Status.to_s
+    end
+
+    def assert_not_equal_status(status, announcing_channel, expires=5)
+      status = PCSCore::AnnouncingStatus.send(status) if status.kind_of?(Symbol)
+      begin
+        timeout(expires) do
+          sleep 1 until announcing_channel.Status!=status
+        end
+      rescue Timeout::Error
+      end
+      assert_not_equal status.to_s, announcing_channel.Status.to_s
+    end
+
     def setup
-      @session_id = System::Guid.new_guid
-      @endpoint   = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
+      @endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
       accepts =
         PeerCastStation::Core::OutputStreamType.metadata |
         PeerCastStation::Core::OutputStreamType.play |
         PeerCastStation::Core::OutputStreamType.relay |
         PeerCastStation::Core::OutputStreamType.interface
-      @peercast   = PCSCore::PeerCast.new
+      @peercast = PCSCore::PeerCast.new
+      @peercast.OutputStreamFactories.add(PeerCastStation::PCP::PCPPongOutputStreamFactory.new(@peercast))
       @peercast.start_listen(@endpoint, accepts, accepts)
-      @channel_id = System::Guid.parse('531DC8DFC7FB42928AC2C0A626517A87')
     end
     
     def teardown
       @peercast.stop if @peercast
     end
-    
-    def test_construct
-      yp = PCSPCP::PCPYellowPageClient.new(
-        @peercast,
-        'TestYP',
-        System::Uri.new('http://yp.example.com/'))
-      assert_equal(@peercast, yp.PeerCast)
-      assert_equal('TestYP',  yp.Name)
-      assert_equal('pcp',     yp.Protocol)
-      assert_equal('http://yp.example.com/', yp.Uri.ToString.to_s)
-      assert(yp.respond_to?(:create_obj_ref))
+
+    context 'construct' do
+      setup do
+        @factory = PCSPCP::PCPYellowPageClientFactory.new(@peercast)
+        @yp = @factory.Create('TestYP', System::Uri.new('pcp://yp.example.com/'))
+      end
+
+      should 'Protocolがpcpである' do
+        assert_equal 'pcp', @yp.Protocol
+      end
+
+      should '各種プロパティがコンストラクタに渡したのと一致する' do
+        assert_equal @peercast, @yp.PeerCast
+        assert_equal 'TestYP',  @yp.Name
+        assert_equal 'pcp://yp.example.com/', @yp.Uri.ToString.to_s
+      end
     end
 
     def test_find_tracker_connection_failed
@@ -264,7 +313,7 @@ module TestPCP
     end
 
     def create_channel(channel_id, name)
-      channel = PCSCore::Channel.new(@peercast, channel_id, System::Uri.new('http://127.0.0.1:8080/'))
+      channel = PCSCore::Channel.new(@peercast, channel_id, @peercast.BroadcastID, System::Uri.new('http://127.0.0.1:8080/'))
       info = PCSCore::AtomCollection.new
       info.SetChanInfoName(name)
       info.SetChanInfoBitrate(7144)
@@ -281,104 +330,240 @@ module TestPCP
       channel
     end
 
-    def test_announce
-      client  = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://127.0.0.1:14288/'))
-      server  = PCP::RootServer.new('127.0.0.1', 14288)
-      channel = create_channel(@channel_id, 'Test Channel')
-      client.announce(channel)
-      sleep(0.1) while server.channels.empty?
-      assert_equal(1, server.channels.size)
-      c = server.channels.values.first
-      assert_equal(@channel_id.to_s, c.channel_id.to_s)
-      assert_equal(@peercast.BroadcastID.to_s, c.broadcast_id.to_s)
-      assert_equal('Test Channel',        c.info[PCP::CHAN_INFO_NAME])
-      assert_equal(7144,                  c.info[PCP::CHAN_INFO_BITRATE])
-      assert_equal('test',                c.info[PCP::CHAN_INFO_GENRE])
-      assert_equal('test channel',        c.info[PCP::CHAN_INFO_DESC])
-      assert_equal('http://example.com/', c.info[PCP::CHAN_INFO_URL])
-      assert_equal('title',               c.track[PCP::CHAN_TRACK_TITLE])
-      assert_equal('album',               c.track[PCP::CHAN_TRACK_ALBUM])
-      assert_equal('creator',             c.track[PCP::CHAN_TRACK_CREATOR])
-      assert_equal('url',                 c.track[PCP::CHAN_TRACK_URL])
-      sleep(0.1) while c.hosts.empty?
-      assert_equal(1, c.hosts.size)
-      host = c.hosts.values.first
-      assert_equal(@peercast.SessionID.to_s,   host.session_id.to_s)
-      assert_equal(@peercast.BroadcastID.to_s, host.broadcast_id.to_s)
-      assert_equal(@peercast.agent_name,       host.agent)
-      assert_equal(@endpoint.address.to_s,     host.ip.to_s)
-      assert_equal(0,                          host.port)
-      assert_equal(1218,                       host.version)
-      assert_equal(27,                         host.vp_version)
-      assert_equal(0,                          host.info[PCP::HOST_NUML])
-      assert_equal(0,                          host.info[PCP::HOST_NUMR])
-      assert((host.info[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_DIRECT)!=0)
-      assert((host.info[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_RELAY)!=0)
-      assert((host.info[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_PUSH)==0)
-      assert((host.info[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_TRACKER)!=0)
-      assert_equal(1, server.client_threads.size)
-    ensure
-      client.stop_announce
-      server.close if server
+    context 'Announce' do
+      setup do
+        @client  = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://127.0.0.1:14288/'))
+        @channel = create_channel(System::Guid.new_guid, 'Test Channel')
+      end
+
+      teardown do
+        @client.stop_announce
+      end
+
+      should 'AnnouncingChannelsにチャンネルを追加する' do
+        announcing = @client.Announce(@channel)
+        assert_equal 1,          @client.AnnouncingChannels.Count
+        assert_equal announcing, @client.AnnouncingChannels[0]
+        assert_equal @channel,  announcing.Channel
+      end
+
+      context 'サーバが無い場合' do
+        should '追加したチャンネルのStatusをErrorにする' do
+          announcing = @client.Announce(@channel)
+          wait_not_equal_status :idle,  announcing
+          assert_equal_status   :error, announcing
+        end
+      end
+
+      context 'サーバがある場合' do
+        setup do
+          @server = PCP::RootServer.new('127.0.0.1', 14288)
+        end
+
+        teardown do
+          @server.close
+        end
+
+        should '追加したチャンネルのStatusをConnectingかConnectedにする' do
+          announcing = @client.Announce(@channel)
+          wait_not_equal_status :idle, announcing
+          assert [
+            PCSCore::AnnouncingStatus.connecting,
+            PCSCore::AnnouncingStatus.connected,
+          ].include?(announcing.Status)
+        end
+
+        should 'Connectedになったチャンネルはサーバに追加されてる' do
+          announcing = @client.Announce(@channel)
+          wait_equal_status :connected, announcing
+          assert_equal 1, @server.channels.size
+          c = @server.channels.values.first
+          assert_equal @channel.ChannelID.ToString('N').to_s, c.channel_id.to_s
+          assert_equal @channel.BroadcastID.to_s,     c.broadcast_id.to_s
+          assert_equal @channel.ChannelInfo.Name,     c.info[PCP::CHAN_INFO_NAME]
+          assert_equal @channel.ChannelInfo.Bitrate,  c.info[PCP::CHAN_INFO_BITRATE]
+          assert_equal @channel.ChannelInfo.Genre,    c.info[PCP::CHAN_INFO_GENRE]
+          assert_equal @channel.ChannelInfo.Desc,     c.info[PCP::CHAN_INFO_DESC]
+          assert_equal @channel.ChannelInfo.URL,      c.info[PCP::CHAN_INFO_URL]
+          assert_equal @channel.ChannelTrack.Name,    c.track[PCP::CHAN_TRACK_TITLE]
+          assert_equal @channel.ChannelTrack.Album,   c.track[PCP::CHAN_TRACK_ALBUM]
+          assert_equal @channel.ChannelTrack.Creator, c.track[PCP::CHAN_TRACK_CREATOR]
+          assert_equal @channel.ChannelTrack.URL,     c.track[PCP::CHAN_TRACK_URL]
+          assert_equal 1, c.hosts.size
+          host = c.hosts.values.first
+          assert_equal @peercast.SessionID.to_s,   host.session_id.to_s
+          assert_equal @peercast.BroadcastID.to_s, host.broadcast_id.to_s
+          assert_equal @peercast.agent_name,       host.agent
+          assert_equal @endpoint.address.to_s,     host.ip.to_s
+          assert_equal 7147,                       host.port
+          assert_equal 1218,                       host.version
+          assert_equal 27,                         host.vp_version
+          assert_equal 0,                          host.info[PCP::HOST_NUML]
+          assert_equal 0,                          host.info[PCP::HOST_NUMR]
+          assert (host.info[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_DIRECT)!=0
+          assert (host.info[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_RELAY)!=0
+          assert (host.info[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_PUSH)==0
+          assert (host.info[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_TRACKER)!=0
+        end
+
+        should 'サーバとの接続が切断されたらStatusがErrorになる' do
+          log do
+          announcing = @client.Announce(@channel)
+          wait_equal_status :connected, announcing
+          @server.close
+          assert_equal_status :error, announcing
+          end
+        end
+
+        should '複数のチャンネルも掲載できる' do
+          channel1 = create_channel(System::Guid.new_guid, 'Test1')
+          channel2 = create_channel(System::Guid.new_guid, 'Test2')
+          announcing1 = @client.Announce(channel1)
+          announcing2 = @client.Announce(channel2)
+          wait_equal_status :connected, announcing1
+          wait_equal_status :connected, announcing2
+          assert_equal 2, @server.channels.size
+          c = @server.channels[PCP::GID.from_string(channel1.ChannelID.to_s)]
+          assert_equal channel1.ChannelID.to_s,   c.channel_id.to_s
+          assert_equal channel1.BroadcastID.to_s, c.broadcast_id.to_s
+          assert_equal 'Test1',                   c.info[PCP::CHAN_INFO_NAME]
+          c = @server.channels[PCP::GID.from_string(channel2.ChannelID.to_s)]
+          assert_equal channel2.ChannelID.to_s,   c.channel_id.to_s
+          assert_equal channel2.BroadcastID.to_s, c.broadcast_id.to_s
+          assert_equal 'Test2',                   c.info[PCP::CHAN_INFO_NAME]
+        end
+      end
     end
 
-    def test_restart_announce
-      client  = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://127.0.0.1:14288/'))
-      server  = PCP::RootServer.new('127.0.0.1', 14288)
-      channel = create_channel(@channel_id, 'Test Channel')
-      client.announce(channel)
-      sleep(0.1) while server.channels.empty?
-      client.restart_announce
-      sleep(11)
-      assert_equal(2, server.client_threads.size)
-    ensure
-      client.stop_announce
-      server.close if server
+    context 'RestartAnnounce(announcing_channel)' do
+      setup do
+        @client  = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://127.0.0.1:14288/'))
+        @channel = create_channel(System::Guid.new_guid, 'Test Channel')
+        @server  = nil
+      end
+
+      teardown do
+        @client.stop_announce
+        @server.close if @server
+      end
+
+      should 'Errorのチャンネルでも再接続する' do
+        announcing = @client.Announce(@channel)
+        @client.Announce(@channel)
+        wait_equal_status :error, announcing
+        @client.RestartAnnounce(announcing)
+        @server = PCP::RootServer.new('127.0.0.1', 14288)
+        wait_not_equal_status :error, announcing
+        assert [
+          PCSCore::AnnouncingStatus.connecting,
+          PCSCore::AnnouncingStatus.connected,
+        ].include?(announcing.Status)
+        @server.close
+      end
+
+      should 'Connectedのチャンネルでも再接続する' do
+        @server = PCP::RootServer.new('127.0.0.1', 14288)
+        announcing = @client.Announce(@channel)
+        @client.Announce(@channel)
+        wait_equal_status :connected, announcing
+        @server.close
+        @client.RestartAnnounce(announcing)
+        wait_not_equal_status :connected, announcing
+        assert [
+          PCSCore::AnnouncingStatus.connecting,
+          PCSCore::AnnouncingStatus.error,
+        ].include?(announcing.Status)
+      end
     end
 
-    def test_announce_channels
-      client  = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://127.0.0.1:14288/'))
-      server  = PCP::RootServer.new('127.0.0.1', 14288)
-      channel1 = create_channel(System::Guid.new_guid, 'Test1')
-      channel2 = create_channel(System::Guid.new_guid, 'Test2')
-      client.announce(channel1)
-      client.announce(channel2)
-      sleep(0.1) while server.channels.size<2
-      assert_equal(2, server.channels.size)
-      c = server.channels[PCP::GID.from_string(channel1.ChannelID.to_s)]
-      assert_equal(channel1.ChannelID.to_s,    c.channel_id.to_s)
-      assert_equal(@peercast.BroadcastID.to_s, c.broadcast_id.to_s)
-      assert_equal('Test1',                    c.info[PCP::CHAN_INFO_NAME])
-      c = server.channels[PCP::GID.from_string(channel2.ChannelID.to_s)]
-      assert_equal(channel2.ChannelID.to_s,    c.channel_id.to_s)
-      assert_equal(@peercast.BroadcastID.to_s, c.broadcast_id.to_s)
-      assert_equal('Test2',                    c.info[PCP::CHAN_INFO_NAME])
-    ensure
-      client.stop_announce
-      server.close if server
+    context 'RestartAnnounce()' do
+      setup do
+        @client = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://127.0.0.1:14288/'))
+        @server = nil
+      end
+
+      teardown do
+        @client.stop_announce
+        @server.close if @server
+      end
+
+      should '全てのチャンネルが再接続する' do
+        channel1 = create_channel(System::Guid.new_guid, 'Test Channel 1')
+        channel2 = create_channel(System::Guid.new_guid, 'Test Channel 2')
+        announcing1 = @client.Announce(channel1)
+        announcing2 = @client.Announce(channel2)
+        wait_equal_status :error, announcing1
+        wait_equal_status :error, announcing2
+        @server = PCP::RootServer.new('127.0.0.1', 14288)
+        @client.RestartAnnounce
+        wait_not_equal_status :error, announcing1
+        wait_not_equal_status :error, announcing2
+        [announcing1, announcing2].each do |announcing|
+          assert [
+            PCSCore::AnnouncingStatus.connecting,
+            PCSCore::AnnouncingStatus.connected,
+          ].include?(announcing1.Status)
+        end
+        @server.close
+      end
     end
 
-    def test_stop_announce
-      client  = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://127.0.0.1:14288/'))
-      server  = PCP::RootServer.new('127.0.0.1', 14288)
-      channel1 = create_channel(System::Guid.new_guid, 'Test1')
-      channel2 = create_channel(System::Guid.new_guid, 'Test2')
-      client.announce(channel1)
-      client.stop_announce
-      client.announce(channel2)
-      sleep(0.1) while server.channels.size<2
-      assert_equal(2, server.channels.size)
-      c = server.channels[PCP::GID.from_string(channel1.ChannelID.to_s)]
-      assert_equal(channel1.ChannelID.to_s,    c.channel_id.to_s)
-      assert_equal(@peercast.BroadcastID.to_s, c.broadcast_id.to_s)
-      assert_equal('Test1',                    c.info[PCP::CHAN_INFO_NAME])
-      c = server.channels[PCP::GID.from_string(channel2.ChannelID.to_s)]
-      assert_equal(channel2.ChannelID.to_s,    c.channel_id.to_s)
-      assert_equal(@peercast.BroadcastID.to_s, c.broadcast_id.to_s)
-      assert_equal('Test2',                    c.info[PCP::CHAN_INFO_NAME])
-    ensure
-      client.stop_announce
-      server.close if server
+    context 'StopAnnounce(announcing_channel)' do
+      setup do
+        @client  = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://127.0.0.1:14288/'))
+        @channel = create_channel(System::Guid.new_guid, 'Test Channel')
+        @server  = nil
+      end
+
+      teardown do
+        @client.stop_announce
+        @server.close if @server
+      end
+
+      should 'AnnouncingChannelsから取り除く' do
+        channel1 = create_channel(System::Guid.new_guid, 'Test1')
+        channel2 = create_channel(System::Guid.new_guid, 'Test2')
+        announcing1 = @client.Announce(channel1)
+        announcing2 = @client.Announce(channel2)
+        @client.StopAnnounce(announcing1)
+        assert_equal 1, @client.AnnouncingChannels.Count
+        assert_equal announcing2, @client.AnnouncingChannels[0]
+        @client.StopAnnounce(announcing2)
+        assert_equal 0, @client.AnnouncingChannels.Count
+      end
+
+      should 'ConnectingかConnectedだったAnnouncingChannelのStatusがIdleになる' do
+        begin
+          server = PCP::RootServer.new('127.0.0.1', 14288)
+          announcing = @client.Announce(@channel)
+          wait_not_equal_status :idle, announcing
+          @client.StopAnnounce(announcing)
+          wait_not_equal_status :connecting, announcing
+          wait_not_equal_status :connected,  announcing
+          assert_equal PCSCore::AnnouncingStatus.idle, announcing.Status
+        ensure
+          server.close
+        end
+      end
+    end
+
+    context 'StopAnnounce()' do
+      setup do
+        @client = PCSPCP::PCPYellowPageClient.new(@peercast, 'TestYP', System::Uri.new('http://127.0.0.1:14288/'))
+      end
+
+      teardown do
+        @client.stop_announce
+      end
+
+      should 'AnnouncingChannelsから全て取り除く' do
+        channel1 = create_channel(System::Guid.new_guid, 'Test1')
+        channel2 = create_channel(System::Guid.new_guid, 'Test2')
+        announcing1 = @client.Announce(channel1)
+        announcing2 = @client.Announce(channel2)
+        @client.StopAnnounce()
+        assert_equal 0, @client.AnnouncingChannels.Count
+      end
     end
   end
 end

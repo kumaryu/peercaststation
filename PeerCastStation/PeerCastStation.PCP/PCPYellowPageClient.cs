@@ -5,7 +5,6 @@ using System.Linq;
 using System.Net.Sockets;
 using PeerCastStation.Core;
 using System.Threading;
-using System.ComponentModel;
 using System.Net;
 
 namespace PeerCastStation.PCP
@@ -47,6 +46,37 @@ namespace PeerCastStation.PCP
     public string Name { get; private set; }
     public string Protocol { get { return "pcp"; } }
     public Uri Uri { get; private set; }
+    public IList<IAnnouncingChannel> AnnouncingChannels {
+      get {
+        lock (announcingChannels) {
+          return announcingChannels.Cast<IAnnouncingChannel>().ToList();
+        }
+      }
+    }
+
+    private class AnnouncingChannel
+      : IAnnouncingChannel
+    {
+      public PCPYellowPageClient Owner     { get; set; }
+      public Channel             Channel   { get; set; }
+      public bool                IsStopped { get; set; }
+      public AnnouncingStatus Status {
+        get {
+          return IsStopped ? AnnouncingStatus.Idle : Owner.AnnouncingStatus;
+        }
+      }
+    }
+    private List<AnnouncingChannel> announcingChannels = new List<AnnouncingChannel>();
+    private AnnouncingStatus AnnouncingStatus { get; set; }
+
+    public PCPYellowPageClient(PeerCast peercast, string name, Uri uri)
+    {
+      this.PeerCast = peercast;
+      this.Name = name;
+      this.Uri = uri;
+      this.Logger = new Logger(this.GetType());
+      this.AnnouncingStatus = AnnouncingStatus.Idle;
+    }
 
     private string ReadResponse(Stream s)
     {
@@ -183,16 +213,20 @@ namespace PeerCastStation.PCP
     }
 
     private Thread announceThread;
-    private List<Channel> channels = new List<Channel>();
-    public void Announce(Channel channel)
+    public IAnnouncingChannel Announce(Channel channel)
     {
-      if (channels.Contains(channel)) return;
+      AnnouncingChannel announcing = null;
+      lock (announcingChannels) {
+        announcing = announcingChannels.FirstOrDefault(a => a.Channel==channel);
+        if (announcing!=null) return announcing;
+      }
       Logger.Debug("Start announce channel {0} to {1}", channel.ChannelID.ToString("N"), Uri);
-      channel.ChannelInfoChanged += OnChannelPropertyChanged;
+      channel.ChannelInfoChanged  += OnChannelPropertyChanged;
       channel.ChannelTrackChanged += OnChannelPropertyChanged;
-      channel.Closed += OnChannelClosed;
-      lock (channels) {
-        channels.Add(channel);
+      channel.Closed              += OnChannelClosed;
+      announcing = new AnnouncingChannel { Channel=channel, Owner=this, IsStopped=false };
+      lock (announcingChannels) {
+        announcingChannels.Add(announcing);
       }
       if (announceThread==null || !announceThread.IsAlive) {
         isStopped = false;
@@ -201,6 +235,52 @@ namespace PeerCastStation.PCP
         announceThread.Name = String.Format("PCPYP {0} Announce", Uri);
         announceThread.Start();
       }
+      return announcing;
+    }
+
+    public void StopAnnounce(IAnnouncingChannel announcing)
+    {
+      var achan = announcing as AnnouncingChannel;
+      if (achan!=null) {
+        lock (announcingChannels) {
+          if (announcingChannels.Remove(achan)) {
+            achan.IsStopped = true;
+            PostChannelBcst(achan.Channel, false);
+          }
+        }
+      }
+    }
+
+    public void StopAnnounce()
+    {
+      lock (announcingChannels) {
+        foreach (var announcing in announcingChannels) {
+          announcing.IsStopped = true;
+          PostChannelBcst(announcing.Channel, false);
+        }
+        announcingChannels.Clear();
+      }
+    }
+
+    public void RestartAnnounce(IAnnouncingChannel announcing)
+    {
+      RestartAnnounce();
+    }
+
+    public void RestartAnnounce()
+    {
+      if (announceThread==null || !announceThread.IsAlive) {
+        if (announcingChannels.Count>0) {
+          isStopped = false;
+          restartEvent.Reset();
+          announceThread = new Thread(AnnounceThreadProc);
+          announceThread.Name = String.Format("PCPYP {0} Announce", Uri);
+          announceThread.Start();
+        }
+      }
+      else {
+        restartEvent.Set();
+      }
     }
 
     private void OnPCPBcst(Atom atom)
@@ -208,8 +288,8 @@ namespace PeerCastStation.PCP
       var channel_id = atom.Children.GetBcstChannelID();
       if (channel_id!=null) {
         Channel channel;
-        lock (channels) {
-          channel = channels.Find(c => c.ChannelID==channel_id);
+        lock (announcingChannels) {
+          channel = announcingChannels.Find(c => c.Channel.ChannelID==channel_id).Channel;
         }
         var group = atom.Children.GetBcstGroup();
         var from  = atom.Children.GetBcstFrom();
@@ -226,7 +306,8 @@ namespace PeerCastStation.PCP
 
     private void OnPCPQuit(Atom atom)
     {
-      isStopped = true;
+      Logger.Debug("Connection aborted by PCP_QUIT ({0})", atom.GetInt32());
+      throw new QuitException();
     }
 
     private void ProcessAtom(Atom atom)
@@ -236,9 +317,11 @@ namespace PeerCastStation.PCP
     }
 
     private bool isStopped;
+    private bool IsStopped { get { return isStopped || announcingChannels.Count==0; } }
     private List<Atom> posts = new List<Atom>();
     private AutoResetEvent restartEvent = new AutoResetEvent(false);
     private class RestartException : Exception {}
+    private class QuitException : Exception {}
     private class BannedException : Exception {}
     private void AnnounceThreadProc()
     {
@@ -246,11 +329,12 @@ namespace PeerCastStation.PCP
       var host = Uri.DnsSafeHost;
       var port = Uri.Port;
       if (port<0) port = DefaultPort;
-      while (!isStopped) {
-        int last_updated = 0;
+      while (!IsStopped) {
+        int next_update = Environment.TickCount;
         posts.Clear();
         try {
-        Logger.Debug("Connecting to YP");
+          Logger.Debug("Connecting to YP");
+          AnnouncingStatus = AnnouncingStatus.Connecting;
           using (var client = new TcpClient(host, port)) {
             using (var stream = client.GetStream()) {
               AtomWriter.Write(stream, new Atom(new ID4("pcp\n"), (int)1));
@@ -282,7 +366,7 @@ namespace PeerCastStation.PCP
                 }
               }
               AtomWriter.Write(stream, new Atom(Atom.PCP_HELO, helo));
-              while (!isStopped) {
+              while (!IsStopped) {
                 var atom = AtomReader.Read(stream);
                 if (atom.Name==Atom.PCP_OLEH) {
                   OnPCPOleh(atom);
@@ -290,19 +374,21 @@ namespace PeerCastStation.PCP
                 }
                 else if (atom.Name==Atom.PCP_QUIT) {
                   Logger.Debug("Handshake aborted by PCP_QUIT ({0})", atom.GetInt32());
-                  throw new RestartException();
+                  throw new QuitException();
                 }
                 if (restartEvent.WaitOne(1)) throw new RestartException();
               }
               Logger.Debug("Handshake succeeded");
-              while (!isStopped) {
-                if (Environment.TickCount-last_updated>30000) {
-                  lock (channels) {
-                    foreach (var channel in channels) {
-                      PostChannelBcst(channel, true);
+              AnnouncingStatus = AnnouncingStatus.Connected;
+              while (!IsStopped) {
+                if (next_update-Environment.TickCount<=0) {
+                  Logger.Debug("Sending channel info");
+                  lock (announcingChannels) {
+                    foreach (var announcing in announcingChannels) {
+                      PostChannelBcst(announcing.Channel, true);
                     }
                   }
-                  last_updated = Environment.TickCount;
+                  next_update = Environment.TickCount+30000;
                 }
                 if (stream.DataAvailable) {
                   Atom atom = AtomReader.Read(stream);
@@ -322,25 +408,37 @@ namespace PeerCastStation.PCP
                 }
                 posts.Clear();
               }
+              Logger.Debug("Closing connection");
               AtomWriter.Write(stream, new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT));
             }
           }
         }
         catch (RestartException) {
+          Logger.Debug("Connection retrying");
+          AnnouncingStatus = AnnouncingStatus.Connecting;
         }
         catch (BannedException) {
+          AnnouncingStatus = AnnouncingStatus.Error;
           Logger.Error("Your BCID is banned");
           break;
         }
+        catch (QuitException) {
+          AnnouncingStatus = AnnouncingStatus.Error;
+        }
         catch (SocketException e) {
+          AnnouncingStatus = AnnouncingStatus.Error;
           Logger.Info(e);
         }
         catch (IOException e) {
+          AnnouncingStatus = AnnouncingStatus.Error;
           Logger.Info(e);
         }
         Logger.Debug("Connection closed");
-        if (!isStopped) {
-          Thread.Sleep(10000);
+        if (!IsStopped) {
+          restartEvent.WaitOne(10000);
+        }
+        else {
+          AnnouncingStatus = AnnouncingStatus.Idle;
         }
       }
       Logger.Debug("Thread finished");
@@ -445,36 +543,17 @@ namespace PeerCastStation.PCP
     {
       var channel = sender as Channel;
       if (channel!=null) {
-        channel.Closed -= OnChannelClosed;
-        channel.ChannelInfoChanged -= OnChannelPropertyChanged;
+        channel.Closed              -= OnChannelClosed;
+        channel.ChannelInfoChanged  -= OnChannelPropertyChanged;
         channel.ChannelTrackChanged -= OnChannelPropertyChanged;
-        lock (channels) {
-          channels.Remove(channel);
+        lock (announcingChannels) {
+          var announcing = announcingChannels.FirstOrDefault(a => a.Channel==channel);
+          if (announcing!=null) {
+            announcingChannels.Remove(announcing);
+          }
         }
         PostChannelBcst(channel, false);
-        if (channels.Count==0) isStopped = true;
       }
-    }
-
-    public void StopAnnounce()
-    {
-      isStopped = true;
-      if (announceThread!=null) {
-        announceThread.Join();
-      }
-    }
-
-    public void RestartAnnounce()
-    {
-      restartEvent.Set();
-    }
-
-    public PCPYellowPageClient(PeerCast peercast, string name, Uri uri)
-    {
-      this.PeerCast = peercast;
-      this.Name = name;
-      this.Uri = uri;
-      this.Logger = new Logger(this.GetType());
     }
   }
 }

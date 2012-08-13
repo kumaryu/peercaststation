@@ -28,7 +28,10 @@ module PCP
               rescue System::Net::Sockets::SocketException
               rescue System::IO::IOException
               ensure
-                client.close unless client.closed?
+                if not client.closed? then
+                  client.flush
+                  client.close
+                end
               end
             }
           end
@@ -87,9 +90,9 @@ module PCP
         helo[PCP::HELO_SESSIONID] = @session_id
         helo.write(ping_sock)
         oleh = PCP::Atom.read(ping_sock)
-        port = 0 unless oleh[PCP::HELO_SESSIONID]==session_id
+        return oleh[PCP::HELO_SESSIONID]==session_id ? port : 0
       rescue
-        port = 0
+        return 0
       ensure
         ping_sock.close if ping_sock
       end
