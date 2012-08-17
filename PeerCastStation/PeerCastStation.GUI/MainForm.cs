@@ -653,7 +653,7 @@ namespace PeerCastStation.GUI
     private void showGUIMenuItem_Click(object sender, EventArgs e)
     {
       this.Show();
-      this.Focus();
+      this.Activate();
     }
 
     private void quitMenuItem_Click(object sender, EventArgs e)
