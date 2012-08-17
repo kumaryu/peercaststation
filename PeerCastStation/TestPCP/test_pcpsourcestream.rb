@@ -16,6 +16,7 @@
 require 'test_pcp_common'
 require 'pcp'
 require 'uri'
+require 'timeout'
 
 module TestPCP
   class MockOutputStream
@@ -151,15 +152,21 @@ EOS
       @client_threads = []
       @server_thread = Thread.new {
         until @closed do
-          if IO.select([@server], [], [], 0.001) then
+          if IO.select([@server], [], [], 0.1) then
             client = @server.accept
             @client_threads << Thread.new {
               begin
                 process_client(client)
+              rescue System::Net::Sockets::SocketException
+              rescue System::IO::IOException
               ensure
                 begin
+                  client.flush
+                  client.close_read
+                  client.close_write
                   client.close
-                rescue
+                rescue System::ObjectDisposedException
+                rescue System::IO::IOException
                 end
               end
             }
@@ -217,19 +224,21 @@ EOS
         helo[PCP::HELO_SESSIONID] = @session_id
         helo.write(ping_sock)
         oleh = PCP::Atom.read(ping_sock)
-        port = 0 unless oleh[PCP::HELO_SESSIONID]==session_id
-        ping_sock.close
+        return 0 unless oleh[PCP::HELO_SESSIONID]==session_id
       rescue
-        port = 0
+        return 0
       ensure
-        ping_sock.close if ping_sock
+        if ping_sock and not ping_sock.closed? then
+          ping_sock.flush
+          ping_sock.close
+        end
       end
     end
 
     def on_helo(sock, atom)
       session_id = atom[PCP::HELO_SESSIONID]
       if atom[PCP::HELO_PING] then
-        port = pcp_ping(session_id, sock.peeraddr[3], atom[PCP::HELO_PING])
+        port = pcp_ping(session_id, sock.peeraddr[3], atom[PCP::HELO_PING]) || 0
       else
         port = atom[PCP::HELO_PORT] || 0
       end
@@ -288,82 +297,90 @@ EOS
       attr_reader :status
     end
 
+    def quit(sock, code)
+      PCP::Atom.new(PCP::QUIT, nil, [code].pack('V')).write(sock)
+      sock.flush
+      sleep 1
+      sock.close
+    end
+
     def process_client(sock)
-      request = read_http_header(sock)
-      raise HTTPRequestError.new(400, 'Bad Request') unless request.headers['x-peercast-pcp']=='1'
-      raise HTTPRequestError.new(404, 'Not Found')   unless %r;^/channel/([A-Fa-f0-9]{32});=~request.uri.path
-      channel_id = PCP::GID.from_string($1)
-      channel = @channels.find {|c| c.channel_id.to_s==channel_id.to_s }
-      raise HTTPRequestError.new(404, 'Not Found')   unless channel
-      if @relayable then
-        sock.write([
-          "HTTP/1.0 200 OK",
-          "Server: #{AgentName}",
-          "Content-Type:application/x-peercast-pcp",
-          "x-peercast-pcp:1",
-          ""
-        ].join("\r\n")+"\r\n")
-        helo = PCP::Atom.read(sock)
-        raise RuntimeError, "Handshake failed" unless helo.name==PCP::HELO
-        on_helo(sock, helo)
-        PCP::Atom.new(PCP::OK, nil, [0].pack('V')).write(sock)
-        chan = PCP::Atom.new(PCP::CHAN, [], nil)
-        chan[PCP::CHAN_ID] = channel.channel_id
-        chan.children << channel.info  if channel.info  and not channel.info.children.empty?
-        chan.children << channel.track if channel.track and not channel.track.children.empty?
-        chan_pkt = PCP::Atom.new(PCP::CHAN_PKT, [], nil)
-        chan_pkt[PCP::CHAN_PKT_TYPE] = PCP::CHAN_PKT_HEAD
-        chan_pkt[PCP::CHAN_PKT_POS]  = channel.header.position
-        chan_pkt[PCP::CHAN_PKT_DATA] = channel.header.data
-        last_pos = channel.header.position
-        chan.children << chan_pkt
-        chan.write(sock)
-        until @closed do
-          if IO.select([sock], [], [], 0.01) then
-            process_atom(sock, PCP::Atom.read(sock))
-          elsif not @post.empty? then
-            atom = @post.shift
-            atom.write(sock)
-          else
-            content = channel.contents.find {|c| c.position>last_pos }
-            if content then
-              chan = PCP::Atom.new(PCP::CHAN, [], nil)
-              chan[PCP::CHAN_ID]    = channel.channel_id
-              chan_pkt = PCP::Atom.new(PCP::CHAN_PKT, [], nil)
-              chan_pkt[PCP::CHAN_PKT_TYPE] = PCP::CHAN_PKT_DATA
-              chan_pkt[PCP::CHAN_PKT_POS]  = content.position
-              chan_pkt[PCP::CHAN_PKT_DATA] = content.data
-              last_pos = content.position
-              chan.children << chan_pkt
-              chan.write(sock)
+      begin
+        request = read_http_header(sock)
+        raise HTTPRequestError.new(400, 'Bad Request') unless request.headers['x-peercast-pcp']=='1'
+        raise HTTPRequestError.new(404, 'Not Found')   unless %r;^/channel/([A-Fa-f0-9]{32});=~request.uri.path
+        channel_id = PCP::GID.from_string($1)
+        channel = @channels.find {|c| c.channel_id.to_s==channel_id.to_s }
+        raise HTTPRequestError.new(404, 'Not Found')   unless channel
+        if @relayable then
+          sock.write([
+            "HTTP/1.0 200 OK",
+            "Server: #{AgentName}",
+            "Content-Type:application/x-peercast-pcp",
+            "x-peercast-pcp:1",
+            ""
+          ].join("\r\n")+"\r\n")
+          helo = PCP::Atom.read(sock)
+          raise RuntimeError, "Handshake failed" unless helo.name==PCP::HELO
+          on_helo(sock, helo)
+          PCP::Atom.new(PCP::OK, nil, [0].pack('V')).write(sock)
+          chan = PCP::Atom.new(PCP::CHAN, [], nil)
+          chan[PCP::CHAN_ID] = channel.channel_id
+          chan.children << channel.info  if channel.info  and not channel.info.children.empty?
+          chan.children << channel.track if channel.track and not channel.track.children.empty?
+          chan_pkt = PCP::Atom.new(PCP::CHAN_PKT, [], nil)
+          chan_pkt[PCP::CHAN_PKT_TYPE] = PCP::CHAN_PKT_HEAD
+          chan_pkt[PCP::CHAN_PKT_POS]  = channel.header.position
+          chan_pkt[PCP::CHAN_PKT_DATA] = channel.header.data
+          last_pos = channel.header.position
+          chan.children << chan_pkt
+          chan.write(sock)
+          until @closed do
+            if IO.select([sock], [], [], 0.01) then
+              process_atom(sock, PCP::Atom.read(sock))
+            elsif not @post.empty? then
+              atom = @post.shift
+              atom.write(sock)
+            else
+              content = channel.contents.find {|c| c.position>last_pos }
+              if content then
+                chan = PCP::Atom.new(PCP::CHAN, [], nil)
+                chan[PCP::CHAN_ID]    = channel.channel_id
+                chan_pkt = PCP::Atom.new(PCP::CHAN_PKT, [], nil)
+                chan_pkt[PCP::CHAN_PKT_TYPE] = PCP::CHAN_PKT_DATA
+                chan_pkt[PCP::CHAN_PKT_POS]  = content.position
+                chan_pkt[PCP::CHAN_PKT_DATA] = content.data
+                last_pos = content.position
+                chan.children << chan_pkt
+                chan.write(sock)
+              end
             end
           end
+          quit(sock, PCP::ERROR_SHUTDOWN+PCP::ERROR_QUIT)
+        else
+          sock.write([
+            "HTTP/1.0 503 Unavailable",
+            "Server: #{AgentName}",
+            "Content-Type:application/x-peercast-pcp",
+            "x-peercast-pcp:1",
+            ""
+          ].join("\r\n")+"\r\n")
+          helo = PCP::Atom.read(sock)
+          raise RuntimeError, "Handshake failed" unless helo.name==PCP::HELO
+          on_helo(sock, helo)
+          hosts[0,8].each do |host|
+            host.write(sock)
+          end
+          quit(sock,PCP::ERROR_UNAVAILABLE+PCP::ERROR_QUIT)
         end
-        PCP::Atom.new(PCP::QUIT, nil, [PCP::ERROR_SHUTDOWN+PCP::ERROR_QUIT].pack('V')).write(sock)
-      else
+      rescue HTTPRequestError => e
         sock.write([
-          "HTTP/1.0 503 Unavailable",
+          "HTTP/1.0 #{e.status} #{e.message}",
           "Server: #{AgentName}",
-          "Content-Type:application/x-peercast-pcp",
-          "x-peercast-pcp:1",
           ""
         ].join("\r\n")+"\r\n")
-        helo = PCP::Atom.read(sock)
-        raise RuntimeError, "Handshake failed" unless helo.name==PCP::HELO
-        on_helo(sock, helo)
-        hosts[0,8].each do |host|
-          host.write(sock)
-        end
-        PCP::Atom.new(PCP::QUIT, nil, [PCP::ERROR_UNAVAILABLE+PCP::ERROR_QUIT].pack('V')).write(sock)
+      rescue PCPQuitError
       end
-    rescue HTTPRequestError => e
-      sock.write([
-        "HTTP/1.0 #{e.status} #{e.message}",
-        "Server: #{AgentName}",
-        ""
-      ].join("\r\n")+"\r\n")
-    rescue PCPQuitError
-    rescue System::Net::Sockets::SocketException
     end
   end
 
@@ -443,6 +460,7 @@ EOS
         PeerCastStation::Core::OutputStreamType.interface
       @peercast   = PCSCore::PeerCast.new
       @peercast.start_listen(@endpoint, accepts, accepts)
+      @peercast.OutputStreamFactories.add(PeerCastStation::PCP::PCPPongOutputStreamFactory.new(@peercast))
       @channel_id = System::Guid.parse('531dc8dfc7fb42928ac2c0a626517a87')
       @source_uri = System::Uri.new('pcp://127.0.0.1:17144')
       @channel    = TestChannel.new(@peercast, @channel_id, @source_uri)
@@ -491,7 +509,9 @@ EOS
         @channel,
         @source_uri)
       @channel.start(stream)
-      sleep(0.1) until stream.is_stopped
+      timeout(10) do
+        sleep 0.1 until stream.is_stopped
+      end
       assert_equal(PCSCore::SourceStreamStatus.error.to_s, @channel.status.to_s)
       @channel.close
     end
@@ -507,9 +527,8 @@ EOS
         @channel,
         @source_uri)
       @channel.start(stream)
-      100.times do
-        break if stream.is_stopped
-        sleep(0.1)
+      timeout(10) do
+        sleep 0.1 until stream.is_stopped
       end
       assert_equal(PCSCore::SourceStreamStatus.error.to_s, @channel.status.to_s)
       @channel.close
@@ -529,13 +548,15 @@ EOS
         @channel,
         @source_uri)
       @channel.start(stream)
-      until stream.is_stopped do
-        if hosts.size>0 and
-           @channel.content_header and
-           @channel.contents.count>=10 then
-          @server.close
-        else
-          sleep(0.1)
+      timeout(5) do
+        until stream.is_stopped do
+          if hosts.size>0 and
+             @channel.content_header and
+             @channel.contents.count>=10 then
+            @server.close
+          else
+            sleep 0.1
+          end
         end
       end
       hosts.each do |host|
@@ -552,7 +573,7 @@ EOS
         assert_equal(@channel_id.to_s, host[PCP::HOST_CHANID].to_s)
         assert_equal(0, host[PCP::HOST_NUML])
         assert_equal(0, host[PCP::HOST_NUMR])
-        assert(0<host[PCP::HOST_UPTIME])
+        assert(0<=host[PCP::HOST_UPTIME])
         assert_equal(1218, host[PCP::HOST_VERSION])
         assert_equal(27,   host[PCP::HOST_VERSION_VP])
         assert_nil(host[PCP::HOST_CLAP_PP])
@@ -617,14 +638,16 @@ EOS
         @channel,
         @source_uri)
       @channel.start(stream)
-      until stream.is_stopped do
-        if client_hosts.size>0 and
-           @channel.content_header and
-           @channel.contents.count>=10 then
-          @server.close
-          server2.close
-        else
-          sleep(0.2)
+      timeout(5) do
+        until stream.is_stopped do
+          if client_hosts.size>0 and
+             @channel.content_header and
+             @channel.contents.count>=10 then
+            @server.close
+            server2.close
+          else
+            sleep 0.1
+          end
         end
       end
       client_hosts.each do |host|
@@ -641,12 +664,12 @@ EOS
         assert_equal(@channel_id.to_s, host[PCP::HOST_CHANID].to_s)
         assert_equal(0, host[PCP::HOST_NUML])
         assert_equal(0, host[PCP::HOST_NUMR])
-        assert(0<host[PCP::HOST_UPTIME])
+        assert(0<=host[PCP::HOST_UPTIME])
         assert_equal(1218, host[PCP::HOST_VERSION])
         assert_equal(27,   host[PCP::HOST_VERSION_VP])
         assert_nil(host[PCP::HOST_CLAP_PP])
-        assert_equal(6,  host[PCP::HOST_OLDPOS])
-        assert_equal(96, host[PCP::HOST_NEWPOS])
+        assert_nil(host[PCP::HOST_OLDPOS])
+        assert_nil(host[PCP::HOST_NEWPOS])
         assert_equal(
           PCP::HOST_FLAGS1_PUSH   |
           PCP::HOST_FLAGS1_RELAY  |
@@ -679,7 +702,6 @@ EOS
       assert( node.IsReceiving)
       assert( node.IsControlFull)
       assert(!node.IsTracker)
-      assert(0<node.LastUpdated.Ticks)
     ensure
       server2.close if server2
     end
@@ -704,17 +726,19 @@ EOS
         @channel,
         @source_uri)
       @channel.start(stream)
-      until stream.is_stopped do
-        if @channel.broadcasts.find {|b| b[1].children.get_ok } and
-           @channel.content_header and
-           @channel.contents.count>=10 then
-          @server.close
-        else
-          sleep(0.1)
+      timeout(10) do
+        until stream.is_stopped do
+          if @channel.broadcasts.find {|b| b[1].children.get_ok } and
+             @channel.content_header and
+             @channel.contents.count>=10 then
+            @server.close
+          else
+            sleep 0.1
+          end
         end
       end
-      assert_equal(2, @channel.broadcasts.size)
       posted = @channel.broadcasts.find {|b| b[1].children.get_ok }
+      assert_not_nil(posted)
       assert_equal(@server.session_id.to_s, posted[0].SessionID.ToString('N'))
       assert_equal(PCP::BCST_GROUP_ALL, posted[2])
       atom = posted[1]
@@ -753,16 +777,16 @@ EOS
         @channel,
         @source_uri)
       @channel.start(stream)
-      until stream.is_stopped do
-        if @channel.broadcasts.size>0 and
-           @channel.content_header and
-           @channel.contents.count>=10 then
-          @server.close
-        else
-          sleep(0.1)
+      timeout(10) do
+        until stream.is_stopped do
+          if @channel.content_header and
+             @channel.contents.count>=10 then
+            @server.close
+          else
+            sleep 0.1
+          end
         end
       end
-      assert_equal(1, @channel.broadcasts.size)
       assert_nil(@channel.broadcasts.find {|b| b[1].children.get_ok })
     end
 
@@ -787,17 +811,19 @@ EOS
         @channel,
         @source_uri)
       @channel.start(stream)
-      until stream.is_stopped do
-        if @channel.broadcasts.size>0 and
-           @channel.content_header and
-           @channel.contents.count>=10 then
-          @server.close
-        else
-          sleep(0.1)
+      timeout(10) do
+        until stream.is_stopped do
+          if @channel.broadcasts.size>0 and
+             @channel.content_header and
+             @channel.contents.count>=10 then
+            @server.close
+          else
+            sleep 0.1
+          end
         end
       end
-      assert_equal(2, @channel.broadcasts.size)
       posted = @channel.broadcasts.find {|b| b[1].children.get_ok }
+      assert_not_nil(posted)
       assert_equal(@server.session_id.to_s, posted[0].SessionID.ToString('N'))
       assert_equal(PCP::BCST_GROUP_ALL, posted[2])
       atom = posted[1]

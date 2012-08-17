@@ -49,6 +49,8 @@ module TestPCP
           if @writes.bytesize>0 then
             begin
               @writer.write(@writes, 0, @writes.bytesize)
+              @writer.flush if @flushed
+              @flushed = false
               @writes = ''
             rescue System::IO::IOException
               @closed = true
@@ -60,15 +62,17 @@ module TestPCP
         System::Threading::EventWaitHandle.wait_any(
           System::Array[System::Threading::EventWaitHandle].new(wait_handles.compact))
       end
-        @lock.synchronize do
-          if @writes.bytesize>0 then
-            begin
-              @writer.write(@writes, 0, @writes.bytesize)
-              @writes = ''
-            rescue System::ObjectDisposedException, System::IO::IOException
-            end
+      @lock.synchronize do
+        if @writes.bytesize>0 then
+          begin
+            @writer.write(@writes, 0, @writes.bytesize)
+            @writer.flush if @flushed
+            @flushed = false
+            @writes = ''
+          rescue System::ObjectDisposedException, System::IO::IOException
           end
         end
+      end
       if read_result and read_result.is_completed then
         begin
           sz = @reader.end_read(read_result)
@@ -90,6 +94,7 @@ module TestPCP
       @reads  = []
       @writes = ''
       @closed = false
+      @flushed = false
       @write_event = System::Threading::AutoResetEvent.new(false)
       @read_event  = System::Threading::AutoResetEvent.new(false)
       @lock = Mutex.new
@@ -126,6 +131,10 @@ module TestPCP
         @writes.concat(bytes)
       end
       @write_event.set
+    end
+
+    def flush
+      @flushed = true
     end
 
     def puts(string)

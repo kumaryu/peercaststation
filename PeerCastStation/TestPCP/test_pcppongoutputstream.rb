@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 require 'pcp'
+require 'timeout'
 require 'test_pcp_common'
 
 module TestPCP
@@ -98,6 +99,7 @@ EOS
     
     def teardown
       @peercast.stop if @peercast
+      @pipe.close if @pipe
     end
     
     def test_construct
@@ -135,7 +137,9 @@ EOS
     end
 
     def test_helo_no_session_id
+      stopped = false
       stream = PCSPCP::PCPPongOutputStream.new(@peercast, @input, @output, @endpoint, @header)
+      stream.stopped { stopped = true }
       stream.start
       helo = PCP::Atom.new(PCP::HELO, [], nil)
       helo[PCP::HELO_VERSION] = 1218
@@ -144,10 +148,13 @@ EOS
       assert_equal(PCP::OLEH, oleh.name)
       assert_equal(oleh[PCP::HELO_SESSIONID].to_s, @peercast.SessionID.to_s)
       assert(stream.is_stopped)
+      timeout(10) { sleep 0.1 until stopped }
     end
 
     def test_helo
+      stopped = false
       stream = PCSPCP::PCPPongOutputStream.new(@peercast, @input, @output, @endpoint, @header)
+      stream.stopped { stopped = true }
       stream.start
       helo = PCP::Atom.new(PCP::HELO, [], nil)
       helo[PCP::HELO_SESSIONID] = PCP::GID.generate
@@ -156,16 +163,20 @@ EOS
       assert_equal(PCP::OLEH, oleh.name)
       assert_equal(oleh[PCP::HELO_SESSIONID].to_s, @peercast.SessionID.to_s)
       assert(stream.is_stopped)
+      timeout(10) { sleep 0.1 until stopped }
     end
 
     def test_quit
+      stopped = false
       stream = PCSPCP::PCPPongOutputStream.new(@peercast, @input, @output, @endpoint, @header)
+      stream.stopped { stopped = true }
       stream.start
       quit = PCP::Atom.new(PCP::QUIT, nil, nil)
       quit.value = PCP::ERROR_QUIT
       quit.write(@pipe)
       sleep(0.1)
       assert(stream.is_stopped)
+      timeout(10) { sleep 0.1 until stopped }
     end
   end
 end

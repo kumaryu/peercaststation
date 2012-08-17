@@ -83,9 +83,9 @@ namespace PeerCastStation.Core
     /// </summary>
     public IAtomCollection Extra { get; private set; }
     /// <summary>
-    /// ノードの最終更新時間を取得します
+    /// ノードの最終更新時刻をTickCount単位で取得します
     /// </summary>
-    public TimeSpan LastUpdated { get; private set; }
+    public int LastUpdated { get; private set; }
 
     public int Hops { get { return Extra.GetHostUphostHops() ?? 0; } }
     public TimeSpan Uptime { get { return Extra.GetHostUptime() ?? TimeSpan.Zero; } }
@@ -124,7 +124,7 @@ namespace PeerCastStation.Core
       this.IsControlFull  = isControlFull;
       this.Extensions     = new List<string>(extensions).AsReadOnly();
       this.Extra          = (new AtomCollection(extra)).AsReadOnly();
-      this.LastUpdated    = TimeSpan.FromMilliseconds(Environment.TickCount);
+      this.LastUpdated    = Environment.TickCount;
     }
   }
 

@@ -358,9 +358,11 @@ module PCP
         self.children.each do |c|
           c.write(stream)
         end
+        stream.flush
       else
         stream.write([self.name, self.content.bytesize].pack('Z4V'))
         stream.write(self.content)
+        stream.flush
       end
     end
 

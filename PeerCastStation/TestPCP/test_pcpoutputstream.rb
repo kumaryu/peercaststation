@@ -710,13 +710,16 @@ EOS
       ping_helo = nil
       server = TCPServer.open('localhost', 7146)
       thread = Thread.new {
-        socket = server.accept
-        ping_conn = PCP::Atom.read(socket)
-        ping_helo = PCP::Atom.read(socket)
-        oleh = PCP::Atom.new(PCP::OLEH, [])
-        oleh[PCP::HELO_SESSIONID] = session_id
-        oleh.write(socket)
-        socket.close
+        begin
+          socket = server.accept
+          ping_conn = PCP::Atom.read(socket)
+          ping_helo = PCP::Atom.read(socket)
+          oleh = PCP::Atom.new(PCP::OLEH, [])
+          oleh[PCP::HELO_SESSIONID] = session_id
+          oleh.write(socket)
+          socket.close
+        rescue
+        end
       }
 
       helo = PCP::Atom.new(PCP::HELO, [], nil)
@@ -761,13 +764,16 @@ EOS
       ping_helo = nil
       server = TCPServer.open('localhost', 7146)
       thread = Thread.new {
-        socket = server.accept
-        ping_conn = PCP::Atom.read(socket)
-        ping_helo = PCP::Atom.read(socket)
-        oleh = PCP::Atom.new(PCP::OLEH, [])
-        oleh[PCP::HELO_SESSIONID] = PCP::GID.generate
-        oleh.write(socket)
-        socket.close
+        begin
+          socket = server.accept
+          ping_conn = PCP::Atom.read(socket)
+          ping_helo = PCP::Atom.read(socket)
+          oleh = PCP::Atom.new(PCP::OLEH, [])
+          oleh[PCP::HELO_SESSIONID] = PCP::GID.generate
+          oleh.write(socket)
+          socket.close
+        rescue
+        end
       }
 
       session_id = System::Guid.new_guid

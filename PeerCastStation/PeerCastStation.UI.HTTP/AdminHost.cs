@@ -88,21 +88,21 @@ namespace PeerCastStation.UI.HTTP
             new XAttribute("firewalled", c.Nodes.Count(n => n.IsFirewalled)),
             new XAttribute("closest",    c.Nodes.Min(n => n.Hops==0 ? int.MaxValue : n.Hops)),
             new XAttribute("furthest",   c.Nodes.Max(n => n.Hops)),
-            new XAttribute("newest",     TimeSpan.FromMilliseconds(Environment.TickCount)-c.Nodes.Max(n => n.LastUpdated)));
+            new XAttribute("newest",     Environment.TickCount-c.Nodes.Max(n => n.LastUpdated)));
           foreach (var n in c.Nodes) {
             hits.Add(new XElement("host",
               new XAttribute("ip",        n.GlobalEndPoint.Address.ToString()),
               new XAttribute("hops",      n.Hops),
               new XAttribute("listeners", n.DirectCount),
               new XAttribute("relays",    n.RelayCount),
-              new XAttribute("uptime",    n.Uptime),
+              new XAttribute("uptime",    (int)n.Uptime.TotalSeconds),
               new XAttribute("push",      n.IsFirewalled  ? 1 : 0),
               new XAttribute("relay",     n.IsRelayFull   ? 0 : 1),
               new XAttribute("direct",    n.IsDirectFull  ? 0 : 1),
               new XAttribute("cin",       n.IsControlFull ? 0 : 1),
               new XAttribute("stable",    0),
               new XAttribute("version",   n.Version),
-              new XAttribute("update",    TimeSpan.FromMilliseconds(Environment.TickCount)-n.LastUpdated),
+              new XAttribute("update",    (Environment.TickCount-n.LastUpdated)/1000),
               new XAttribute("tracker",   n.IsTracker ? 1 : 0)));
           }
         }

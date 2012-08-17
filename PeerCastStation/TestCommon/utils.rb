@@ -17,6 +17,20 @@ end
 
 module TestUtils
   module_function
+  def show_log(&block)
+    require_peercaststation 'Logger'
+    writer = System::Console.out
+    level  = PeerCastStation::Core::Logger.level
+    begin
+      PeerCastStation::Core::Logger.add_writer(writer)
+      PeerCastStation::Core::Logger.level = PeerCastStation::Core::LogLevel.debug
+      block.call
+    ensure
+      PeerCastStation::Core::Logger.level = level
+      PeerCastStation::Core::Logger.remove_writer(writer)
+    end
+  end
+
   def require_peercaststation(name, config='Debug')
     path = File.join(File.dirname(__FILE__), '..', "PeerCastStation.#{name}", 'bin', config)
     $: << path unless $:.include?(path)

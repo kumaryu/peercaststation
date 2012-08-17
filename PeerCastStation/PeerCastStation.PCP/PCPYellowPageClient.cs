@@ -260,6 +260,9 @@ namespace PeerCastStation.PCP
         }
         announcingChannels.Clear();
       }
+      if (announceThread!=null && announceThread.IsAlive) {
+        announceThread.Join();
+      }
     }
 
     public void RestartAnnounce(IAnnouncingChannel announcing)
@@ -376,7 +379,7 @@ namespace PeerCastStation.PCP
                   Logger.Debug("Handshake aborted by PCP_QUIT ({0})", atom.GetInt32());
                   throw new QuitException();
                 }
-                if (restartEvent.WaitOne(1)) throw new RestartException();
+                if (restartEvent.WaitOne(10)) throw new RestartException();
               }
               Logger.Debug("Handshake succeeded");
               AnnouncingStatus = AnnouncingStatus.Connected;
@@ -400,7 +403,7 @@ namespace PeerCastStation.PCP
                   }
                   posts.Clear();
                 }
-                if (restartEvent.WaitOne(1)) throw new RestartException();
+                if (restartEvent.WaitOne(10)) throw new RestartException();
               }
               lock (posts) {
                 foreach (var atom in posts) {

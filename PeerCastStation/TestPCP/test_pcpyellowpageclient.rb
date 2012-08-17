@@ -58,6 +58,90 @@ module TestPCP
   end
 
   class TC_PCPYellowPageClient < Test::Unit::TestCase
+    def assert_not_timeout(expires=10, &block)
+      assert_nothing_raised(Timeout::Error) do
+        timeout(expires, &block)
+      end
+    end
+
+    def wait_equal_status(status, announcing_channel, expires=10)
+      status = PCSCore::AnnouncingStatus.send(status) if status.kind_of?(Symbol)
+      timeout(expires) do
+        sleep 0.1 until announcing_channel.Status==status
+      end
+    end
+
+    def wait_not_equal_status(status, announcing_channel, expires=10)
+      status = PCSCore::AnnouncingStatus.send(status) if status.kind_of?(Symbol)
+      timeout(expires) do
+        sleep 0.1 until announcing_channel.Status!=status
+      end
+    end
+
+    def assert_equal_status(status, announcing_channel, expires=10)
+      status = PCSCore::AnnouncingStatus.send(status) if status.kind_of?(Symbol)
+      begin
+        timeout(expires) do
+          sleep 0.1 until announcing_channel.Status==status
+        end
+      rescue Timeout::Error
+      end
+      assert_equal status.to_s, announcing_channel.Status.to_s
+    end
+
+    def assert_not_equal_status(status, announcing_channel, expires=10)
+      status = PCSCore::AnnouncingStatus.send(status) if status.kind_of?(Symbol)
+      begin
+        timeout(expires) do
+          sleep 0.1 until announcing_channel.Status!=status
+        end
+      rescue Timeout::Error
+      end
+      assert_not_equal status.to_s, announcing_channel.Status.to_s
+    end
+
+    def create_channel(channel_id, name)
+      channel = PCSCore::Channel.new(@peercast, channel_id, @peercast.BroadcastID, System::Uri.new('http://127.0.0.1:8080/'))
+      info = PCSCore::AtomCollection.new
+      info.SetChanInfoName(name)
+      info.SetChanInfoBitrate(7144)
+      info.SetChanInfoGenre('test')
+      info.SetChanInfoDesc('test channel')
+      info.SetChanInfoURL('http://example.com/')
+      channel.channel_info = PCSCore::ChannelInfo.new(info)
+      track = PCSCore::AtomCollection.new
+      track.SetChanTrackTitle('title')
+      track.SetChanTrackAlbum('album')
+      track.SetChanTrackCreator('creator')
+      track.SetChanTrackURL('url')
+      channel.channel_track = PCSCore::ChannelTrack.new(track)
+      channel
+    end
+
+    def create_host(tracker)
+      host = PCSCore::HostBuilder.new
+      host.SessionID = System::Guid.new_guid
+      host.is_tracker = tracker
+      host.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse("192.168.1.#{rand(253)+1}"), 7144)
+      host.to_host
+    end
+
+    def setup
+      @endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
+      accepts =
+        PeerCastStation::Core::OutputStreamType.metadata |
+        PeerCastStation::Core::OutputStreamType.play |
+        PeerCastStation::Core::OutputStreamType.relay |
+        PeerCastStation::Core::OutputStreamType.interface
+      @peercast = PCSCore::PeerCast.new
+      @peercast.OutputStreamFactories.add(PeerCastStation::PCP::PCPPongOutputStreamFactory.new(@peercast))
+      @peercast.start_listen(@endpoint, accepts, accepts)
+    end
+    
+    def teardown
+      @peercast.stop if @peercast
+    end
+
     class FindTrackerTestYP
       AccessLog = Struct.new(:session_id, :channel_id)
       def initialize(port, channel_id)
@@ -169,64 +253,6 @@ module TestPCP
       end
     end
 
-    def assert_not_timeout(expires=5, &block)
-      assert_nothing_raised(Timeout::Error) do
-        timeout(expires, &block)
-      end
-    end
-
-    def wait_equal_status(status, announcing_channel, expires=5)
-      status = PCSCore::AnnouncingStatus.send(status) if status.kind_of?(Symbol)
-      timeout(expires) do
-        sleep 1 until announcing_channel.Status==status
-      end
-    end
-
-    def wait_not_equal_status(status, announcing_channel, expires=5)
-      status = PCSCore::AnnouncingStatus.send(status) if status.kind_of?(Symbol)
-      timeout(expires) do
-        sleep 1 until announcing_channel.Status!=status
-      end
-    end
-
-    def assert_equal_status(status, announcing_channel, expires=5)
-      status = PCSCore::AnnouncingStatus.send(status) if status.kind_of?(Symbol)
-      begin
-        timeout(expires) do
-          sleep 1 until announcing_channel.Status==status
-        end
-      rescue Timeout::Error
-      end
-      assert_equal status.to_s, announcing_channel.Status.to_s
-    end
-
-    def assert_not_equal_status(status, announcing_channel, expires=5)
-      status = PCSCore::AnnouncingStatus.send(status) if status.kind_of?(Symbol)
-      begin
-        timeout(expires) do
-          sleep 1 until announcing_channel.Status!=status
-        end
-      rescue Timeout::Error
-      end
-      assert_not_equal status.to_s, announcing_channel.Status.to_s
-    end
-
-    def setup
-      @endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7147)
-      accepts =
-        PeerCastStation::Core::OutputStreamType.metadata |
-        PeerCastStation::Core::OutputStreamType.play |
-        PeerCastStation::Core::OutputStreamType.relay |
-        PeerCastStation::Core::OutputStreamType.interface
-      @peercast = PCSCore::PeerCast.new
-      @peercast.OutputStreamFactories.add(PeerCastStation::PCP::PCPPongOutputStreamFactory.new(@peercast))
-      @peercast.start_listen(@endpoint, accepts, accepts)
-    end
-    
-    def teardown
-      @peercast.stop if @peercast
-    end
-
     context 'construct' do
       setup do
         @factory = PCSPCP::PCPYellowPageClientFactory.new(@peercast)
@@ -259,14 +285,6 @@ module TestPCP
       assert_nil(uri)
     ensure
       yp.stop
-    end
-
-    def create_host(tracker)
-      host = PCSCore::HostBuilder.new
-      host.SessionID = System::Guid.new_guid
-      host.is_tracker = tracker
-      host.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse("192.168.1.#{rand(253)+1}"), 7144)
-      host.to_host
     end
 
     def test_find_tracker_found
@@ -310,24 +328,6 @@ module TestPCP
       assert_nil(uri)
     ensure
       yp.stop
-    end
-
-    def create_channel(channel_id, name)
-      channel = PCSCore::Channel.new(@peercast, channel_id, @peercast.BroadcastID, System::Uri.new('http://127.0.0.1:8080/'))
-      info = PCSCore::AtomCollection.new
-      info.SetChanInfoName(name)
-      info.SetChanInfoBitrate(7144)
-      info.SetChanInfoGenre('test')
-      info.SetChanInfoDesc('test channel')
-      info.SetChanInfoURL('http://example.com/')
-      channel.channel_info = PCSCore::ChannelInfo.new(info)
-      track = PCSCore::AtomCollection.new
-      track.SetChanTrackTitle('title')
-      track.SetChanTrackAlbum('album')
-      track.SetChanTrackCreator('creator')
-      track.SetChanTrackURL('url')
-      channel.channel_track = PCSCore::ChannelTrack.new(track)
-      channel
     end
 
     context 'Announce' do
@@ -375,7 +375,10 @@ module TestPCP
 
         should 'Connectedになったチャンネルはサーバに追加されてる' do
           announcing = @client.Announce(@channel)
-          wait_equal_status :connected, announcing
+          assert_equal_status :connected, announcing
+          timeout 5 do
+            sleep 0.1 while @server.channels.empty?
+          end
           assert_equal 1, @server.channels.size
           c = @server.channels.values.first
           assert_equal @channel.ChannelID.ToString('N').to_s, c.channel_id.to_s
@@ -407,12 +410,10 @@ module TestPCP
         end
 
         should 'サーバとの接続が切断されたらStatusがErrorになる' do
-          log do
           announcing = @client.Announce(@channel)
           wait_equal_status :connected, announcing
           @server.close
           assert_equal_status :error, announcing
-          end
         end
 
         should '複数のチャンネルも掲載できる' do

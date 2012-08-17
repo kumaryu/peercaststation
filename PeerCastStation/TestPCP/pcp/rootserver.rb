@@ -20,17 +20,22 @@ module PCP
       @client_threads = []
       @server_thread = Thread.new {
         until @closed do
-          if IO.select([@server], [], [], 0.001) then
+          if IO.select([@server], [], [], 0.1) then
             client = @server.accept
             @client_threads << Thread.new {
               begin
                 process_client(client)
-              rescue System::Net::Sockets::SocketException
-              rescue System::IO::IOException
+              rescue System::Net::Sockets::SocketException => e
+              rescue System::IO::IOException => e
+              rescue System::ObjectDisposedException => e
               ensure
-                if not client.closed? then
+                begin
                   client.flush
-                  client.close
+                  client.close_read
+                  client.close_write
+                  client.close unless client.closed?
+                rescue System::ObjectDisposedException
+                rescue System::IO::IOException
                 end
               end
             }
@@ -72,7 +77,7 @@ module PCP
       header = io.read(4)
       if header=="pcp\n" then
         len = io.read(4).unpack('V')[0]
-        raise "Length Error" unless len==4
+        raise "Length Error: #{len}" unless len==4
         PCPRequest.new(io.read(4).unpack('V')[0])
       else
         until /\r\n\r\n$/=~header do
@@ -239,12 +244,12 @@ module PCP
       raise PCPError.new('Handshake failed', PCP::ERROR_QUIT+PCP::ERROR_GENERAL) unless helo.name==PCP::HELO
       host = on_helo(sock, helo)
       until @closed do
-        if IO.select([sock], [], [], 0.01) then
+        if IO.select([sock], [], [], 0.1) then
           process_atom(sock, host, PCP::Atom.read(sock))
         end
       end
       PCP::Atom.new(PCP::QUIT, nil, [PCP::ERROR_QUIT+PCP::ERROR_SHUTDOWN].pack('V')).write(sock)
-    rescue PCPError => e
+    rescue PCPError
       PCP::Atom.new(PCP::QUIT, nil, [e.quit].pack('V')).write(sock)
     rescue PCPQuitError
     ensure

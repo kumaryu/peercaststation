@@ -142,13 +142,12 @@ namespace PeerCastStation.Core
     protected virtual void DoStart()
     {
       try {
-        if ((mainThread.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted))!=0) {
-          IsStopped = false;
-          mainThread.Start();
+        if ((mainThread.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted))==0) {
+          Stop(StopReason.UserShutdown);
+          mainThread.Join();
         }
-        else {
-          throw new InvalidOperationException("Output Streams is already started");
-        }
+        IsStopped = false;
+        mainThread.Start();
       }
       catch (ThreadStateException) {
         throw new InvalidOperationException("Output Streams is already started");
@@ -242,6 +241,9 @@ namespace PeerCastStation.Core
         PostAction(() => {
           DoReconnect();
         });
+      }
+      else {
+        Start();
       }
     }
 

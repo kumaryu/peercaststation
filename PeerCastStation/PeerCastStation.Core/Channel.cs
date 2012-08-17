@@ -611,9 +611,9 @@ namespace PeerCastStation.Core
     public ReadOnlyCollection<Host> Nodes
     {
       get {
-        var limit_time = TimeSpan.FromMilliseconds(Environment.TickCount-NodeLimit);
+        var cur_time = Environment.TickCount;
         Utils.ReplaceCollection(ref nodes, orig => {
-          return new List<Host>(orig.Where(n => n.LastUpdated>limit_time));
+          return new List<Host>(orig.Where(n => cur_time-n.LastUpdated<=NodeLimit));
         });
         return new ReadOnlyCollection<Host>(nodes);
       }

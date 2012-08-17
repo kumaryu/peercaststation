@@ -109,6 +109,7 @@ namespace PeerCastStation.PCP
     private State state;
     private TcpClient client = null;
     private bool hostInfoUpdated = true;
+    private int nextHostInfoUpdate = Environment.TickCount;
     private System.Threading.AutoResetEvent changedEvent = new System.Threading.AutoResetEvent(true);
 
     private const int PCP_VERSION    = 1218;
@@ -194,6 +195,7 @@ namespace PeerCastStation.PCP
     protected override void DoStop(SourceStreamBase.StopReason reason)
     {
       EndConnection();
+      Logger.Info("Channel Stopped by {0}", reason);
       switch (reason) {
       case StopReason.UserShutdown:
         Status = SourceStreamStatus.Idle;
@@ -274,7 +276,9 @@ namespace PeerCastStation.PCP
         var listener = PeerCast.FindListener(
           RemoteEndPoint.Address,
           OutputStreamType.Relay | OutputStreamType.Metadata);
-        helo.SetHeloPing(listener.LocalEndPoint.Port);
+        if (listener!=null) {
+          helo.SetHeloPing(listener.LocalEndPoint.Port);
+        }
       }
       helo.SetHeloVersion(PCP_VERSION);
       Send(new Atom(Atom.PCP_HELO, helo));
@@ -473,6 +477,7 @@ namespace PeerCastStation.PCP
       if (atom==null) return;
       else if (atom.Name==Atom.PCP_OLEH) {
         OnPCPOleh(atom);
+        OnConnected();
         state = State.Receiving;
       }
       else if (atom.Name==Atom.PCP_QUIT) {
@@ -480,15 +485,19 @@ namespace PeerCastStation.PCP
       }
     }
 
-    private int LastHostInfoUpdated = 0;
+    private void OnConnected()
+    {
+      nextHostInfoUpdate = Environment.TickCount;
+    }
+
     private void OnReceiving()
     {
       Status = SourceStreamStatus.Receiving;
       WaitHandle.WaitAny(new WaitHandle[] { RecvEvent, changedEvent }, 1);
-      if ((Environment.TickCount-LastHostInfoUpdated>=10000 && hostInfoUpdated) ||
-           Environment.TickCount-LastHostInfoUpdated>=120000) {
+      if ((nextHostInfoUpdate-Environment.TickCount<=110000 && hostInfoUpdated) ||
+           nextHostInfoUpdate-Environment.TickCount<=0) {
         BroadcastHostInfo();
-        LastHostInfoUpdated = Environment.TickCount;
+        nextHostInfoUpdate = Environment.TickCount+120000;
       }
       ProcessAtom(RecvAtom());
     }
