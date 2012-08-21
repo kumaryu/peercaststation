@@ -150,6 +150,7 @@ namespace PeerCastStation.GUI
       this.statusBar = new System.Windows.Forms.StatusStrip();
       this.portLabel = new System.Windows.Forms.ToolStripStatusLabel();
       this.portOpenedLabel = new System.Windows.Forms.ToolStripStatusLabel();
+      this.downStreamReconnect = new System.Windows.Forms.Button();
       showGUIMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       quitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       label21 = new System.Windows.Forms.Label();
@@ -628,7 +629,7 @@ namespace PeerCastStation.GUI
             copyStreamURLMenu,
             copyContactURLMenu});
       this.channelListMenu.Name = "channelListMenu";
-      this.channelListMenu.Size = new System.Drawing.Size(227, 120);
+      this.channelListMenu.Size = new System.Drawing.Size(227, 98);
       // 
       // tabControl2
       // 
@@ -645,6 +646,7 @@ namespace PeerCastStation.GUI
       // 
       // tabPage1
       // 
+      this.tabPage1.Controls.Add(this.downStreamReconnect);
       this.tabPage1.Controls.Add(this.downStreamClose);
       this.tabPage1.Controls.Add(this.outputList);
       this.tabPage1.Location = new System.Drawing.Point(4, 22);
@@ -658,6 +660,7 @@ namespace PeerCastStation.GUI
       // downStreamClose
       // 
       this.downStreamClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.downStreamClose.Enabled = false;
       this.downStreamClose.Location = new System.Drawing.Point(361, 6);
       this.downStreamClose.Name = "downStreamClose";
       this.downStreamClose.Size = new System.Drawing.Size(61, 30);
@@ -678,6 +681,7 @@ namespace PeerCastStation.GUI
       this.outputList.Name = "outputList";
       this.outputList.Size = new System.Drawing.Size(351, 234);
       this.outputList.TabIndex = 2;
+      this.outputList.SelectedIndexChanged += new System.EventHandler(this.outputList_SelectedIndexChanged);
       // 
       // tabPage3
       // 
@@ -1359,6 +1363,18 @@ namespace PeerCastStation.GUI
       this.portOpenedLabel.Size = new System.Drawing.Size(134, 18);
       this.portOpenedLabel.Text = "toolStripStatusLabel1";
       // 
+      // downStreamReconnect
+      // 
+      this.downStreamReconnect.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.downStreamReconnect.Enabled = false;
+      this.downStreamReconnect.Location = new System.Drawing.Point(361, 42);
+      this.downStreamReconnect.Name = "downStreamReconnect";
+      this.downStreamReconnect.Size = new System.Drawing.Size(61, 30);
+      this.downStreamReconnect.TabIndex = 4;
+      this.downStreamReconnect.Text = "再接続";
+      this.downStreamReconnect.UseVisualStyleBackColor = true;
+      this.downStreamReconnect.Click += new System.EventHandler(this.downStreamReconnect_Click);
+      // 
       // MainForm
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -1487,6 +1503,7 @@ namespace PeerCastStation.GUI
     private System.Windows.Forms.Button downStreamClose;
     private System.Windows.Forms.ListBox outputList;
     private System.Windows.Forms.ContextMenuStrip channelListMenu;
+    private System.Windows.Forms.Button downStreamReconnect;
 
   }
 }

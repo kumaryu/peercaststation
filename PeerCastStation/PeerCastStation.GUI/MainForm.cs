@@ -559,19 +559,88 @@ namespace PeerCastStation.GUI
       }
     }
 
+    public interface IChannelOutputItem
+    {
+      void Disconnect();
+      void Reconnect();
+      bool IsReconnectable { get; }
+    }
+
+    public class ChannelOutputStreamItem : IChannelOutputItem
+    {
+      private IOutputStream outputStream;
+      public ChannelOutputStreamItem(IOutputStream os)
+      {
+        outputStream = os;
+      }
+
+      public void Disconnect()
+      {
+        outputStream.Stop();
+      }
+
+      public void Reconnect()
+      {
+        throw new InvalidOperationException();
+      }
+
+      public bool IsReconnectable
+      {
+        get { return false; }
+      }
+
+      public override string ToString()
+      {
+        return outputStream.ToString();
+      }
+    }
+
+    public class ChannelOutputAnnouncingItem : IChannelOutputItem
+    {
+      private IAnnouncingChannel announcingChannel;
+      public ChannelOutputAnnouncingItem(IAnnouncingChannel ac)
+      {
+        announcingChannel = ac;
+      }
+
+      public void Disconnect()
+      {
+        announcingChannel.YellowPage.StopAnnounce(announcingChannel);
+      }
+
+      public void Reconnect()
+      {
+        announcingChannel.YellowPage.RestartAnnounce(announcingChannel);
+      }
+
+      public bool IsReconnectable
+      {
+        get { return true; }
+      }
+
+      public override string ToString()
+      {
+        var yp = announcingChannel.YellowPage;
+        return String.Format("COUT {0}({1}) {2}", yp.Name, yp.Protocol, announcingChannel.Status);
+      }
+    }
+
     private void UpdateOutputList(Channel channel)
     {
-      var new_list = channel.OutputStreams;
-      var old_list = outputList.Items.OfType<IOutputStream>();
-      foreach (var os in old_list.Intersect(new_list).ToArray()) {
-        outputList.Items[outputList.Items.IndexOf(os)] = os;
+      var idx = outputList.SelectedIndex;
+      outputList.BeginUpdate();
+      outputList.Items.Clear();
+      var announcings = peerCast.YellowPages
+        .Select(yp => yp.AnnouncingChannels.FirstOrDefault(c => c.Channel.ChannelID==channel.ChannelID))
+        .Where(c => c!=null);
+      foreach (var announcing in announcings.ToArray()) {
+        outputList.Items.Add(new ChannelOutputAnnouncingItem(announcing));
       }
-      foreach (var os in new_list.Except(old_list).ToArray()) {
-        outputList.Items.Add(os);
+      foreach (var os in channel.OutputStreams.ToArray()) {
+        outputList.Items.Add(new ChannelOutputStreamItem(os));
       }
-      foreach (var os in old_list.Except(new_list).ToArray()) {
-        outputList.Items.Remove(os);
-      }
+      outputList.SelectedIndex = Math.Min(idx, outputList.Items.Count-1);
+      outputList.EndUpdate();
     }
 
     private System.IO.TextWriter logFileWriter = null;
@@ -623,9 +692,17 @@ namespace PeerCastStation.GUI
 
     private void downStreamClose_Click(object sender, EventArgs e)
     {
-      var connection = outputList.SelectedItem as IOutputStream;
+      var connection = outputList.SelectedItem as IChannelOutputItem;
       if (connection!=null) {
-        connection.Stop();
+        connection.Disconnect();
+      }
+    }
+
+    private void downStreamReconnect_Click(object sender, EventArgs e)
+    {
+      var connection = outputList.SelectedItem as IChannelOutputItem;
+      if (connection!=null && connection.IsReconnectable) {
+        connection.Reconnect();
       }
     }
 
@@ -953,5 +1030,11 @@ namespace PeerCastStation.GUI
       }
     }
 
+    private void outputList_SelectedIndexChanged(object sender, EventArgs e)
+    {
+      var item = outputList.SelectedItem as IChannelOutputItem;
+      downStreamClose.Enabled     = item!=null;
+      downStreamReconnect.Enabled = item!=null && item.IsReconnectable;
+    }
   }
 }
