@@ -344,7 +344,8 @@ module TestPCP
         announcing = @client.Announce(@channel)
         assert_equal 1,          @client.AnnouncingChannels.Count
         assert_equal announcing, @client.AnnouncingChannels[0]
-        assert_equal @channel,  announcing.Channel
+        assert_equal @channel,   announcing.Channel
+        assert_equal @client,    announcing.YellowPage
       end
 
       context 'サーバが無い場合' do

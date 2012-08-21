@@ -65,6 +65,11 @@ namespace PeerCastStation.PCP
           return IsStopped ? AnnouncingStatus.Idle : Owner.AnnouncingStatus;
         }
       }
+      public IYellowPageClient YellowPage {
+        get {
+          return Owner;
+        }
+      }
     }
     private List<AnnouncingChannel> announcingChannels = new List<AnnouncingChannel>();
     private AnnouncingStatus AnnouncingStatus { get; set; }

@@ -20,18 +20,45 @@ using System.Net;
 
 namespace PeerCastStation.Core
 {
-
+  /// <summary>
+  /// YellowPageへの掲載状況を表します
+  /// </summary>
   public enum AnnouncingStatus {
+    /// <summary>
+    /// 未接続
+    /// </summary>
     Idle,
+    /// <summary>
+    /// 接続試行中
+    /// </summary>
     Connecting,
+    /// <summary>
+    /// 接続中
+    /// </summary>
     Connected,
+    /// <summary>
+    /// エラーにより切断された
+    /// </summary>
     Error,
   }
 
+  /// <summary>
+  /// YellowPageへ掲載中のチャンネル状態を取得するインターフェースです
+  /// </summary>
   public interface IAnnouncingChannel
   {
-    Channel          Channel { get; }
-    AnnouncingStatus Status { get; }
+    /// <summary>
+    /// 掲載しようとしているチャンネルを取得します
+    /// </summary>
+    Channel           Channel    { get; }
+    /// <summary>
+    /// YellowPageへの接続状況を取得します
+    /// </summary>
+    AnnouncingStatus  Status     { get; }
+    /// <summary>
+    /// 掲載するYellowPageを取得します
+    /// </summary>
+    IYellowPageClient YellowPage { get; }
   }
 
   /// <summary>
