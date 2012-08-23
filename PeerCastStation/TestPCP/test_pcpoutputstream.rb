@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 require 'test_pcp_common'
 require 'pcp'
+require 'timeout'
 
 module TestPCP
   class TC_RelayRequest < Test::Unit::TestCase
@@ -220,9 +221,16 @@ EOS
       @pipe = PipeStream.new
       @input = @pipe.input
       @output = @pipe.output
+      @stream = nil
     end
     
     def teardown
+      if @stream then
+        @stream.stop
+        timeout(5) do
+          sleep(0.1) until @stream.is_stopped
+        end
+      end
       @peercast.stop if @peercast
       @pipe.close if @pipe
     end
@@ -266,21 +274,19 @@ EOS
     end
 
     def test_relay_not_found_channel_nil
-      stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, nil, @request)
-      stream.start
+      @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, nil, @request)
+      @stream.start
       res = read_http_header(@pipe)
       assert_http_header(404, {}, res)
-      sleep(0.1) until stream.is_stopped
     end
 
     def test_relay_not_found_channel_not_ready
       channel = TestChannel.new(@peercast, System::Guid.empty, System::Uri.new('mock://localhost'))
       channel.status = PCSCore::SourceStreamStatus.idle
-      stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
-      stream.start
+      @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
+      @stream.start
       res = read_http_header(@pipe)
       assert_http_header(404, {}, res)
-      sleep(0.1) until stream.is_stopped
     end
 
     def assert_pcp_oleh(session_id, ip, port, version, agent, atom)
@@ -317,13 +323,12 @@ EOS
       channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
       channel.status = PCSCore::SourceStreamStatus.receiving
       channel.is_relay_full = true
-      stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
-      stream.start
+      @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
+      @stream.start
       header = read_http_header(@pipe)
       assert_http_header(503, {}, header)
       pcp_handshake(@pipe)
       assert_pcp_quit(PCP::ERROR_QUIT, PCP::Atom.read(@pipe))
-      sleep(0.1) until stream.is_stopped
     end
 
     def test_relay_relay_full_with_other_nodes
@@ -354,8 +359,8 @@ EOS
         host.is_control_full = ((i+5) % 2)==1
         channel.add_node(host.to_host)
       end
-      stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
-      stream.start
+      @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
+      @stream.start
       header = read_http_header(@pipe)
       assert_http_header(503, {'Content-Type' => 'application/x-peercast-pcp'}, header)
       pcp_handshake(@pipe)
@@ -388,15 +393,14 @@ EOS
         assert_equal(node.is_firewalled,   (host[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_PUSH)!=0)
       end
       assert_pcp_quit(PCP::ERROR_QUIT, PCP::Atom.read(@pipe))
-      sleep(0.1) until stream.is_stopped
     end
 
     def test_relay
       channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
       channel.status = PCSCore::SourceStreamStatus.receiving
       channel.is_relay_full = false
-      stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
-      stream.start
+      @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
+      @stream.start
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
       pcp_handshake(@pipe)
@@ -428,9 +432,53 @@ EOS
         assert_equal(6+i*8,             pkt[PCP::CHAN_PKT_POS])
         assert_equal("content#{i+1}",   pkt[PCP::CHAN_PKT_DATA])
       end
-      stream.stop
+      @stream.stop
       assert_pcp_quit(PCP::ERROR_QUIT, PCP::Atom.read(@pipe))
-      sleep(0.1) until stream.is_stopped
+    end
+
+    def test_relay_with_splitting_large_packet
+      channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
+      channel.status = PCSCore::SourceStreamStatus.receiving
+      channel.is_relay_full = false
+      @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
+      @stream.start
+      header = read_http_header(@pipe)
+      assert_http_header(200, {}, header)
+      pcp_handshake(@pipe)
+      channel.content_header = PCSCore::Content.new(0, 'header')
+      channel.contents.add(PCSCore::Content.new( 6,         '1'*(15*1024)))
+      channel.contents.add(PCSCore::Content.new( 6+15*1024, '2'*(16*1024)))
+      channel.contents.add(PCSCore::Content.new( 6+31*1024, '3'*10))
+      channel.contents.add(PCSCore::Content.new(16+31*1024, '4'*(96*1024)))
+      ok = PCP::Atom.read(@pipe)
+      chan = PCP::Atom.read(@pipe)
+      pos = 6
+      [
+        '1'*(15*1024),
+        '2'*(15*1024),
+        '2'*(1*1024),
+        '3'*(10),
+        '4'*(15*1024),
+        '4'*(15*1024),
+        '4'*(15*1024),
+        '4'*(15*1024),
+        '4'*(15*1024),
+        '4'*(15*1024),
+        '4'*(6*1024),
+      ].each do |expected|
+        chan = PCP::Atom.read(@pipe)
+        assert_equal(PCP::CHAN, chan.name)
+        assert_nil(chan[PCP::CHAN_INFO])
+        assert_nil(chan[PCP::CHAN_TRACK])
+        assert_not_nil(chan[PCP::CHAN_PKT])
+        pkt = chan[PCP::CHAN_PKT]
+        assert_equal(PCP::CHAN_PKT_DATA, pkt[PCP::CHAN_PKT_TYPE])
+        assert_equal(pos,                pkt[PCP::CHAN_PKT_POS])
+        assert_equal(expected,           pkt[PCP::CHAN_PKT_DATA])
+        pos += expected.bytesize
+      end
+      @stream.stop
+      assert_pcp_quit(PCP::ERROR_QUIT, PCP::Atom.read(@pipe))
     end
 
     def test_relay_with_stream_pos
@@ -446,8 +494,8 @@ EOS
           'foo:bar',
         ])
       )
-      stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, request)
-      stream.start
+      @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, request)
+      @stream.start
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
       pcp_handshake(@pipe)
@@ -478,17 +526,16 @@ EOS
         assert_equal(6+i*8,             pkt[PCP::CHAN_PKT_POS])
         assert_equal("content#{i+1}",   pkt[PCP::CHAN_PKT_DATA])
       end
-      stream.stop
+      @stream.stop
       assert_pcp_quit(PCP::ERROR_QUIT, PCP::Atom.read(@pipe))
-      sleep(0.1) until stream.is_stopped
     end
 
     def test_bcst
       channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
       channel.status = PCSCore::SourceStreamStatus.receiving
       channel.is_relay_full = false
-      stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
-      stream.start
+      @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
+      @stream.start
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
       pcp_handshake(@pipe)
@@ -509,7 +556,9 @@ EOS
       bcst[PCP::QUIT] = PCP::ERROR_QUIT | PCP::ERROR_OFFAIR
       bcst.write(@pipe)
 
-      sleep(0.1) while channel.broadcasts.empty?
+      timeout(5) do
+        sleep(0.1) while channel.broadcasts.empty?
+      end
       broadcast = channel.broadcasts.first
       assert_not_nil(broadcast[0])
       atom = broadcast[1]
@@ -523,17 +572,14 @@ EOS
       assert_equal(bcst[PCP::BCST_VERSION_VP],  atom.children.GetBcstVersionVP)
       assert_equal(bcst[PCP::QUIT],             atom.children.GetQuit)
       assert_equal(PCSCore::BroadcastGroup.trackers, broadcast[2])
-
-      stream.stop
-      sleep(0.1) until stream.is_stopped
     end
 
     def test_bcst_dest_matched
       channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
       channel.status = PCSCore::SourceStreamStatus.receiving
       channel.is_relay_full = false
-      stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
-      stream.start
+      @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
+      @stream.start
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
       pcp_handshake(@pipe)
@@ -556,17 +602,14 @@ EOS
 
       sleep(0.5)
       assert(channel.broadcasts.empty?)
-
-      stream.stop
-      sleep(0.1) until stream.is_stopped
     end
 
     def test_bcst_dest_not_matched
       channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
       channel.status = PCSCore::SourceStreamStatus.receiving
       channel.is_relay_full = false
-      stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
-      stream.start
+      @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
+      @stream.start
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
       pcp_handshake(@pipe)
@@ -589,17 +632,14 @@ EOS
 
       sleep(0.5)
       assert(!channel.broadcasts.empty?)
-
-      stream.stop
-      sleep(0.1) until stream.is_stopped
     end
 
     def test_bcst_no_ttl
       channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
       channel.status = PCSCore::SourceStreamStatus.receiving
       channel.is_relay_full = false
-      stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
-      stream.start
+      @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
+      @stream.start
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
       pcp_handshake(@pipe)
@@ -621,17 +661,14 @@ EOS
 
       sleep(0.5)
       assert(channel.broadcasts.empty?)
-
-      stream.stop
-      sleep(0.1) until stream.is_stopped
     end
 
     def test_ping_host_local
       channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
       channel.status = PCSCore::SourceStreamStatus.receiving
       channel.is_relay_full = false
-      stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
-      stream.start
+      @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
+      @stream.start
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
 
@@ -669,9 +706,6 @@ EOS
       server.close
       assert_nil(ping_conn)
       assert_nil(ping_helo)
-
-      stream.stop
-      sleep(0.1) until stream.is_stopped
     ensure
       server.close if server and not server.closed?
     end
@@ -698,9 +732,9 @@ EOS
       channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
       channel.status = PCSCore::SourceStreamStatus.receiving
       channel.is_relay_full = false
-      stream = TestPingHostPCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
-      stream.ping_to_any = true
-      stream.start
+      @stream = TestPingHostPCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
+      @stream.ping_to_any = true
+      @stream.start
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
 
@@ -743,9 +777,6 @@ EOS
                   1218,
                   @peercast.agent_name,
                   PCP::Atom.read(@pipe))
-
-      stream.stop
-      sleep(0.1) until stream.is_stopped
     ensure
       server.close if server and not server.closed?
     end
@@ -754,9 +785,9 @@ EOS
       channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
       channel.status = PCSCore::SourceStreamStatus.receiving
       channel.is_relay_full = false
-      stream = TestPingHostPCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
-      stream.ping_to_any = true
-      stream.start
+      @stream = TestPingHostPCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
+      @stream.ping_to_any = true
+      @stream.start
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
 
@@ -798,9 +829,6 @@ EOS
                   1218,
                   @peercast.agent_name,
                   PCP::Atom.read(@pipe))
-
-      stream.stop
-      sleep(0.1) until stream.is_stopped
     ensure
       server.close if server and not server.closed?
     end
@@ -809,8 +837,8 @@ EOS
       channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
       channel.status = PCSCore::SourceStreamStatus.receiving
       channel.is_relay_full = false
-      stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
-      stream.start
+      @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
+      @stream.start
       header = read_http_header(@pipe)
       pcp_handshake(@pipe)
 
@@ -839,9 +867,6 @@ EOS
           (node.is_control_full ? 0 : PCP::HOST_FLAGS1_CIN)
       host.write(@pipe)
       sleep(0.5)
-      stream.stop
-      sleep(0.1) until stream.is_stopped
-
       assert_equal(1, channel.nodes.count)
       channel_node = channel.nodes.find {|n| n.SessionID.eql?(node.SessionID) }
       assert(channel_node)

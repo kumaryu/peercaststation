@@ -332,7 +332,7 @@ namespace PeerCastStation.PCP
       return changedEvent.WaitOne(1);
     }
 
-    protected Atom CreateContentHeaderPacket(Channel channel, Content content)
+    protected IEnumerable<Atom> CreateContentHeaderPacket(Channel channel, Content content)
     {
       var chan = new AtomCollection();
       chan.SetChanID(channel.ChannelID);
@@ -344,32 +344,49 @@ namespace PeerCastStation.PCP
       chan.SetChanInfo(channel.ChannelInfo.Extra);
       chan.SetChanTrack(channel.ChannelTrack.Extra);
       Logger.Debug("Sending Header: {0}", content.Position);
-      return new Atom(Atom.PCP_CHAN, chan);
+      return Enumerable.Repeat(new Atom(Atom.PCP_CHAN, chan), 1);
     }
 
-    protected Atom CreateContentBodyPacket(Channel channel, Content content)
+    private Atom CreateContentBodyPacket(Channel channel, long pos, IEnumerable<byte> data)
     {
       var chan = new AtomCollection();
       chan.SetChanID(channel.ChannelID);
       var chan_pkt = new AtomCollection();
       chan_pkt.SetChanPktType(Atom.PCP_CHAN_PKT_DATA);
-      chan_pkt.SetChanPktPos((uint)(content.Position & 0xFFFFFFFFU));
-      chan_pkt.SetChanPktData(content.Data);
+      chan_pkt.SetChanPktPos((uint)(pos & 0xFFFFFFFFU));
+      chan_pkt.SetChanPktData(data.ToArray());
       chan.SetChanPkt(chan_pkt);
       return new Atom(Atom.PCP_CHAN, chan);
     }
 
-    protected Atom CreateContentPacket(Channel channel, ref Content lastHeader, ref Content lastContent)
+    public static readonly int MaxBodyLength = 15*1024;
+    protected IEnumerable<Atom> CreateContentBodyPacket(Channel channel, Content content)
     {
+      if (content.Data.Length>MaxBodyLength) {
+        return Enumerable.Range(0, (content.Data.Length+MaxBodyLength-1)/MaxBodyLength).Select(i =>
+          CreateContentBodyPacket(
+            channel,
+            i*MaxBodyLength+content.Position,
+            content.Data.Skip(i*MaxBodyLength).Take(MaxBodyLength))
+        );
+      }
+      else {
+        return Enumerable.Repeat(CreateContentBodyPacket(channel, content.Position, content.Data), 1);
+      }
+    }
+
+    protected IEnumerable<Atom> CreateContentPackets(Channel channel, ref Content lastHeader, ref Content lastContent)
+    {
+      var atoms = Enumerable.Empty<Atom>();
       if (channel.ContentHeader!=null &&
           (lastHeader==null || channel.ContentHeader.Position!=lastHeader.Position)) {
         lastHeader = channel.ContentHeader;
         if (lastContent!=null && lastContent.Position<lastHeader.Position) {
           lastContent = lastHeader;
         }
-        return CreateContentHeaderPacket(channel, lastHeader);
+        atoms = atoms.Concat(CreateContentHeaderPacket(channel, lastHeader));
       }
-      else if (lastHeader!=null) {
+      if (lastHeader!=null) {
         Content content;
         if (lastContent!=null) {
           content = channel.Contents.NextOf(lastContent.Position);
@@ -387,15 +404,10 @@ namespace PeerCastStation.PCP
         }
         if (content!=null) {
           lastContent = content;
-          return CreateContentBodyPacket(channel, content);
-        }
-        else {
-          return null;
+          atoms = atoms.Concat(CreateContentBodyPacket(channel, content));
         }
       }
-      else {
-        return null;
-      }
+      return atoms;
     }
 
     protected virtual void SendRelayBody(ref Content lastHeader, ref Content lastContent)
@@ -403,13 +415,12 @@ namespace PeerCastStation.PCP
       if (IsContentChanged()) {
         bool sent = true;
         while (sent) {
-          var atom = CreateContentPacket(Channel, ref lastHeader, ref lastContent);
-          if (atom!=null) {
+          sent = false;
+          int cnt = 0;
+          foreach (var atom in CreateContentPackets(Channel, ref lastHeader, ref lastContent)) {
             sent = true;
             Send(atom);
-          }
-          else {
-            sent = false;
+            cnt++;
           }
         }
       }
