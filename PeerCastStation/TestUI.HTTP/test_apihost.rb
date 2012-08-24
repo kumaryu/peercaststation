@@ -1301,11 +1301,23 @@ JSON
 
     class TestYPClient
       include PCSCore::IYellowPageClient
+
+      class TestYPAnnouncingChannel
+        include PCSCore::IAnnouncingChannel
+        def initialize(yp, channel, status)
+          @yellow_page = yp
+          @channel     = channel
+          @status      = status
+        end
+        attr_reader :yellow_page, :channe, :status
+      end
+
       def initialize(name, protocol, uri)
         @name = name
         @protocol = protocol
         @uri  = uri
         @log  = []
+        @announcing_channels = []
       end
       attr_reader :name, :protocol, :uri, :log
 
@@ -1316,14 +1328,21 @@ JSON
 
       def announce(channel)
         @log << :announce
+        @announcing_channels << TestYPAnnouncingChannel.new(self, channel, PCSCore::AnnouncingStatus.connected)
+        @announcing_channels.last
       end
 
-      def stop_announce
+      def stop_announce(announcing=nil)
         @log << :stop_announce
+        @announcing_channels.delete(announcing)
       end
 
-      def restart_announce
+      def restart_announce(announcing=nil)
         @log << :restart_announce
+      end
+
+      def announcing_channels
+        System::Array[PCSCore::IAnnouncingChannel].new(@announcing_channels)
       end
     end
 
