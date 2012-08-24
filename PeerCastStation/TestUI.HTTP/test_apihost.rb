@@ -1309,7 +1309,8 @@ JSON
           @channel     = channel
           @status      = status
         end
-        attr_reader :yellow_page, :channe, :status
+        attr_reader :yellow_page, :channel
+        attr_accessor :status
       end
 
       def initialize(name, protocol, uri)
@@ -1386,12 +1387,23 @@ JSON
 
     def test_getYellowPages
       @app.peercast.yellow_page_factories.add(TestYPClientFactory.new('pcp'))
+      status = [
+        PCSCore::AnnouncingStatus.idle,
+        PCSCore::AnnouncingStatus.connecting,
+        PCSCore::AnnouncingStatus.connected,
+        PCSCore::AnnouncingStatus.error,
+      ]
       yps = [
         ['foo', 'pcp://foo.example.com/'],
         ['bar', 'pcp://bar.example.com/'],
         ['baz', 'pcp://baz.example.com/'],
       ].collect {|name, uri|
-        @app.peercast.add_yellow_page('pcp', name, System::Uri.new(uri))
+        yp = @app.peercast.add_yellow_page('pcp', name, System::Uri.new(uri))
+        status.each do |s|
+          announcing = yp.announce(PCSCore::Channel.new(@app.peercast, System::Guid.new_guid, System::Uri.new(uri)))
+          announcing.status = s
+        end
+        yp
       }
       res = invoke_method('getYellowPages')
       assert_equal(1, res.body.id)
@@ -1402,6 +1414,11 @@ JSON
         assert_equal(yps[i].name,     res.body.result[i]['name'])
         assert_equal(yps[i].uri.to_s, res.body.result[i]['uri'])
         assert_equal(yps[i].protocol, res.body.result[i]['protocol'])
+        assert_equal(status.size, res.body.result[i]['channels'].size)
+        status.size.times do |j|
+          assert_equal(yps[i].announcing_channels[j].channel.ChannelID.to_s.upcase, res.body.result[i]['channels'][j]['channelId'])
+          assert_equal(status[j].to_s, res.body.result[i]['channels'][j]['status'])
+        end
       end
     end
 

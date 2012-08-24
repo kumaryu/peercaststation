@@ -398,8 +398,14 @@ namespace PeerCastStation.UI.HTTP
           res["name"]         = yp.Name;
           res["uri"]          = yp.Uri.ToString();
           res["protocol"]     = yp.Protocol;
+          res["channels"]     = new JArray(yp.AnnouncingChannels.Select(ac => {
+            var announcing = new JObject();
+            announcing["channelId"] = ac.Channel.ChannelID.ToString("N").ToUpperInvariant();
+            announcing["status"]  = ac.Status.ToString();
+            return announcing;
+          }));
           return res;
-        }).ToArray());
+        }));
       }
 
       [RPCMethod("addYellowPage")]
