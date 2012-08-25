@@ -55,7 +55,7 @@ namespace PeerCastStation.Core
     public long LimitPackets { get; set; }
     public ContentCollection()
     {
-      LimitPackets = 10;
+      LimitPackets = 100;
     }
 
     public event EventHandler ContentChanged;
