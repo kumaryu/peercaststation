@@ -399,7 +399,7 @@ module TestCore
     def test_construct
       contents = PeerCastStation::Core::ContentCollection.new
       assert_equal(0, contents.count)
-      assert_equal(10, contents.limit_packets)
+      assert_equal(100, contents.limit_packets)
       assert(contents.respond_to?(:create_obj_ref))
     end
 

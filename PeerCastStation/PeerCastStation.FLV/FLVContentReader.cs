@@ -13,6 +13,7 @@ namespace PeerCastStation.FLV
   public class FLVContentReader
     : IContentReader
   {
+    private static readonly Logger Logger = new Logger(typeof(FLVContentReader));
     public FLVContentReader(Channel channel)
     {
       this.Channel = channel;
@@ -146,6 +147,7 @@ namespace PeerCastStation.FLV
               var bin = ReadBytes(stream, 13);
               var header = new FileHeader(bin);
               if (header.IsValid) {
+                Logger.Info("FLV Header found");
                 fileHeader = header;
                 bin = header.Binary;
                 res.ContentHeader = new Content(position, bin);
@@ -191,6 +193,7 @@ namespace PeerCastStation.FLV
                 stream.Position = start_pos;
                 var header = new FileHeader(ReadBytes(stream, 13));
                 if (header.IsValid) {
+                  Logger.Info("New FLV Header found");
                   read_valid = true;
                   fileHeader = header;
                   bin = header.Binary;
