@@ -766,6 +766,20 @@ JSON
     end
 
     def test_getChannelInfo_args_by_name
+      @app.peercast.yellow_page_factories.add(TestYPClientFactory.new('pcp'))
+      yps = [
+        ['foo', 'pcp://foo.example.com/'],
+        ['bar', 'pcp://bar.example.com/'],
+        ['baz', 'pcp://baz.example.com/'],
+      ].collect {|name, uri|
+        @app.peercast.add_yellow_page('pcp', name, System::Uri.new(uri))
+      }
+      status = [
+        PCSCore::AnnouncingStatus.idle,
+        PCSCore::AnnouncingStatus.connecting,
+        PCSCore::AnnouncingStatus.connected,
+        PCSCore::AnnouncingStatus.error,
+      ]
       channels = Array.new(10) {|i|
         c = PCSCore::Channel.new(
           @app.peercast,
@@ -776,6 +790,12 @@ JSON
       }
       channels.each do |c|
         @app.peercast.add_channel(c)
+        yps.each do |yp|
+          status.each do |s|
+            announcing = yp.announce(c)
+            announcing.status = s
+          end
+        end
       end
       actrl = @app.peercast.access_controller
       params = { 'channelId' => channels[3].ChannelID.to_string('N') }
@@ -797,6 +817,13 @@ JSON
       assert_equal(track.album,       res.body.result['track']['album'])
       assert_equal(track.creator,     res.body.result['track']['creator'])
       assert_equal(track.URL,         res.body.result['track']['url'])
+      assert_not_nil res.body.result['yellowPages']
+      announcings = yps.collect {|yp| yp.announcing_channels.to_a.select {|ac| ac.channel.ChannelID==channels[3].ChannelID } }.flatten
+      res.body.result['yellowPages'].each_with_index do |ypinfo, i|
+        announcing = announcing.find {|ac| ac.yellow_page.name==ypinfo['name'] and ac.yellow_page.protocol==ypinfo['protocol'] }
+        assert_not_nil announcing
+        assert_equal announcing.status.to_s, ypinfo['status']
+      end
     end
 
     def test_setChannelInfo_args_by_position

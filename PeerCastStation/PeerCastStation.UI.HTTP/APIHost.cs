@@ -241,6 +241,22 @@ namespace PeerCastStation.UI.HTTP
         return res;
       }
 
+      private JArray GetChannelAnnouncingInfo(string channelId)
+      {
+        var announcings = Enumerable.Empty<IAnnouncingChannel>();
+        var channel = GetChannel(channelId);
+        foreach (var yp in PeerCast.YellowPages) {
+          announcings.Concat(yp.AnnouncingChannels.Where(ac => ac.Channel.ChannelID==channel.ChannelID));
+        }
+        return new JArray(announcings.Select(ac => {
+          var acinfo = new JObject();
+          acinfo["name"]     = ac.YellowPage.Name;
+          acinfo["protocol"] = ac.YellowPage.Protocol;
+          acinfo["status"]   = ac.Status.ToString();
+          return acinfo;
+        }));
+      }
+
       [RPCMethod("getChannelInfo")]
       private JObject GetChannelInfo(string channelId)
       {
@@ -260,9 +276,11 @@ namespace PeerCastStation.UI.HTTP
         track["album"]   = channel.ChannelTrack.Album;
         track["creator"] = channel.ChannelTrack.Creator;
         track["url"]     = channel.ChannelTrack.URL;
+        var announcings = GetChannelAnnouncingInfo(channelId);
         var res = new JObject();
         res["info"] = info;
         res["track"] = track;
+        res["yellowPages"] = announcings;
         return res;
       }
 
