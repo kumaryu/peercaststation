@@ -820,9 +820,12 @@ JSON
       assert_not_nil res.body.result['yellowPages']
       announcings = yps.collect {|yp| yp.announcing_channels.to_a.select {|ac| ac.channel.ChannelID==channels[3].ChannelID } }.flatten
       res.body.result['yellowPages'].each_with_index do |ypinfo, i|
-        announcing = announcing.find {|ac| ac.yellow_page.name==ypinfo['name'] and ac.yellow_page.protocol==ypinfo['protocol'] }
+        announcing = announcing.find {|ac| ac.yellow_page.hash==ypinfo['yellowPageId'] }
         assert_not_nil announcing
-        assert_equal announcing.status.to_s, ypinfo['status']
+        assert_equal announcing.status.to_s,          ypinfo['status']
+        assert_equal announcing.yellow_page.name,     ypinfo['name']
+        assert_equal announcing.yellow_page.protocol, ypinfo['protocol']
+        assert_equal announcing.yellow_page.uri.to_s, ypinfo['uri']
       end
     end
 
@@ -951,7 +954,6 @@ JSON
       channels.each do |c|
         @app.peercast.add_channel(c)
       end
-      actrl = @app.peercast.access_controller
       new_info = {
         'name'        => 'Foo ch',
         'url'         => 'http://www.example.com/',
@@ -1361,11 +1363,22 @@ JSON
       end
 
       def stop_announce(announcing=nil)
+        if announcing then
+          @announcing_channels.delete(announcing)
+        else
+          @announcing_channels.clear
+        end
         @log << :stop_announce
-        @announcing_channels.delete(announcing)
       end
 
       def restart_announce(announcing=nil)
+        if announcing then
+          announcing.status = PCSCore::AnnouncingStatus.connecting
+        else
+          @announcing_channels.each do |ac|
+            ac.status = PCSCore::AnnouncingStatus.connecting
+          end
+        end
         @log << :restart_announce
       end
 
@@ -1518,6 +1531,155 @@ JSON
       assert_equal(2, @app.peercast.yellow_pages.count)
       assert_equal('foo', @app.peercast.yellow_pages[0].name)
       assert_equal('baz', @app.peercast.yellow_pages[1].name)
+    end
+
+    def test_stopAnnounce_with_channel_id
+      @app.peercast.yellow_page_factories.add(TestYPClientFactory.new('pcp'))
+      yps = [
+        ['foo', 'pcp://foo.example.com/'],
+        ['bar', 'pcp://bar.example.com/'],
+        ['baz', 'pcp://baz.example.com/'],
+      ].collect {|name, uri|
+        @app.peercast.add_yellow_page('pcp', name, System::Uri.new(uri))
+      }
+      channels = Array.new(10) {|i|
+        channel = PCSCore::Channel.new(@app.peercast, System::Guid.new_guid, System::Uri.new('pcp://example.com'))
+        channel.channel_info = create_chan_info("#{i}ch", 'WMV', 774*i)
+        @app.peercast.add_channel(channel)
+        yps.each do |yp|
+          announcing = yp.announce(channel)
+        end
+        channel
+      }
+      params = {
+        'yellowPageId' => yps[1].hash,
+        'channelId'    => channels[3].ChannelID.to_string('N')
+      }
+      res = invoke_method('stopAnnounce', params)
+      assert_equal(1, res.body.id)
+      assert_nil(res.body.error)
+      channels.size.times do |i|
+        channel = channels[i]
+        if i==3 then
+          assert yps[0].announcing_channels.any? {|ac| ac.channel.ChannelID==channel.ChannelID }
+          assert yps[1].announcing_channels.all? {|ac| ac.channel.ChannelID!=channel.ChannelID }
+          assert yps[2].announcing_channels.any? {|ac| ac.channel.ChannelID==channel.ChannelID }
+        else
+          assert yps[0].announcing_channels.any? {|ac| ac.channel.ChannelID==channel.ChannelID }
+          assert yps[1].announcing_channels.any? {|ac| ac.channel.ChannelID==channel.ChannelID }
+          assert yps[2].announcing_channels.any? {|ac| ac.channel.ChannelID==channel.ChannelID }
+        end
+      end
+    end
+
+    def test_stopAnnounce_without_channel_id
+      @app.peercast.yellow_page_factories.add(TestYPClientFactory.new('pcp'))
+      yps = [
+        ['foo', 'pcp://foo.example.com/'],
+        ['bar', 'pcp://bar.example.com/'],
+        ['baz', 'pcp://baz.example.com/'],
+      ].collect {|name, uri|
+        @app.peercast.add_yellow_page('pcp', name, System::Uri.new(uri))
+      }
+      channels = Array.new(10) {|i|
+        channel = PCSCore::Channel.new(@app.peercast, System::Guid.new_guid, System::Uri.new('pcp://example.com'))
+        channel.channel_info = create_chan_info("#{i}ch", 'WMV', 774*i)
+        @app.peercast.add_channel(channel)
+        yps.each do |yp|
+          announcing = yp.announce(channel)
+        end
+        channel
+      }
+      params = {
+        'yellowPageId' => yps[1].hash,
+      }
+      res = invoke_method('stopAnnounce', params)
+      assert_equal(1, res.body.id)
+      assert_nil(res.body.error)
+      channels.size.times do |i|
+        channel = channels[i]
+        assert yps[0].announcing_channels.any? {|ac| ac.channel.ChannelID==channel.ChannelID }
+        assert yps[1].announcing_channels.all? {|ac| ac.channel.ChannelID!=channel.ChannelID }
+        assert yps[2].announcing_channels.any? {|ac| ac.channel.ChannelID==channel.ChannelID }
+      end
+    end
+
+    def test_restartAnnounce_with_channel_id
+      @app.peercast.yellow_page_factories.add(TestYPClientFactory.new('pcp'))
+      yps = [
+        ['foo', 'pcp://foo.example.com/'],
+        ['bar', 'pcp://bar.example.com/'],
+        ['baz', 'pcp://baz.example.com/'],
+      ].collect {|name, uri|
+        @app.peercast.add_yellow_page('pcp', name, System::Uri.new(uri))
+      }
+      channels = Array.new(10) {|i|
+        channel = PCSCore::Channel.new(@app.peercast, System::Guid.new_guid, System::Uri.new('pcp://example.com'))
+        channel.channel_info = create_chan_info("#{i}ch", 'WMV', 774*i)
+        @app.peercast.add_channel(channel)
+        yps.each do |yp|
+          announcing = yp.announce(channel)
+        end
+        channel
+      }
+      params = {
+        'yellowPageId' => yps[1].hash,
+        'channelId'    => channels[3].ChannelID.to_string('N')
+      }
+      res = invoke_method('restartAnnounce', params)
+      assert_equal(1, res.body.id)
+      assert_nil(res.body.error)
+      channels.size.times do |i|
+        channel = channels[i]
+        if i==3 then
+          ac = yps[0].announcing_channels.find {|ac| ac.channel.ChannelID==channel.ChannelID }
+          assert_equal PCSCore::AnnouncingStatus.connected, ac.status
+          ac = yps[1].announcing_channels.find {|ac| ac.channel.ChannelID==channel.ChannelID }
+          assert_equal PCSCore::AnnouncingStatus.connecting, ac.status
+          ac = yps[2].announcing_channels.find {|ac| ac.channel.ChannelID==channel.ChannelID }
+          assert_equal PCSCore::AnnouncingStatus.connected, ac.status
+        else
+          yps.each do |yp|
+            ac = yp.announcing_channels.find {|ac| ac.channel.ChannelID==channel.ChannelID }
+            assert_equal PCSCore::AnnouncingStatus.connected, ac.status
+          end
+        end
+      end
+    end
+
+    def test_restartAnnounce_without_channel_id
+      @app.peercast.yellow_page_factories.add(TestYPClientFactory.new('pcp'))
+      yps = [
+        ['foo', 'pcp://foo.example.com/'],
+        ['bar', 'pcp://bar.example.com/'],
+        ['baz', 'pcp://baz.example.com/'],
+      ].collect {|name, uri|
+        @app.peercast.add_yellow_page('pcp', name, System::Uri.new(uri))
+      }
+      channels = Array.new(10) {|i|
+        channel = PCSCore::Channel.new(@app.peercast, System::Guid.new_guid, System::Uri.new('pcp://example.com'))
+        channel.channel_info = create_chan_info("#{i}ch", 'WMV', 774*i)
+        @app.peercast.add_channel(channel)
+        yps.each do |yp|
+          announcing = yp.announce(channel)
+        end
+        channel
+      }
+      params = {
+        'yellowPageId' => yps[1].hash,
+      }
+      res = invoke_method('restartAnnounce', params)
+      assert_equal(1, res.body.id)
+      assert_nil(res.body.error)
+      channels.size.times do |i|
+        channel = channels[i]
+        ac = yps[0].announcing_channels.find {|ac| ac.channel.ChannelID==channel.ChannelID }
+        assert_equal PCSCore::AnnouncingStatus.connected, ac.status
+        ac = yps[1].announcing_channels.find {|ac| ac.channel.ChannelID==channel.ChannelID }
+        assert_equal PCSCore::AnnouncingStatus.connecting, ac.status
+        ac = yps[2].announcing_channels.find {|ac| ac.channel.ChannelID==channel.ChannelID }
+        assert_equal PCSCore::AnnouncingStatus.connected, ac.status
+      end
     end
 
     def test_getListeners

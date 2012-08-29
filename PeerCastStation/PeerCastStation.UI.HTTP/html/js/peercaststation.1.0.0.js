@@ -78,6 +78,12 @@ PeerCast = {
   removeYellowPage: function(id, completed) {
     this.postRequest('removeYellowPage', { yellowPageId: id }, completed);
   },
+  stopAnnounce: function(yellowPageId, channelId, completed) {
+    this.postRequest('stopAnnounce', { yellowPageId: yellowPageId, channelId: channelId }, completed);
+  },
+  restartAnnounce: function(yellowPageId, channelId, completed) {
+    this.postRequest('restartAnnounce', { yellowPageId: yellowPageId, channelId: channelId }, completed);
+  },
   getListeners: function(completed) {
     this.postRequest('getListeners', null, completed);
   },

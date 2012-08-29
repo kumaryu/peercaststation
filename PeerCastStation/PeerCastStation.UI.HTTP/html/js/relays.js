@@ -182,6 +182,32 @@ var ChannelOutputViewModel = function(owner, initial_value) {
   };
 };
 
+var ChannelYellowPageViewModel = function(owner, initial_value) {
+  var self = this;
+  self.channel      = owner;
+  self.yellowPageId = ko.observable(initial_value.yellowPageId);
+  self.name         = ko.observable(initial_value.name);
+  self.protocol     = ko.observable(initial_value.protocol);
+  self.uri          = ko.observable(initial_value.uri);
+  self.status       = ko.observable(initial_value.status);
+
+  self.update = function(value) {
+    self.yellowPageId(value.yellowPageId);
+    self.name(value.name);
+    self.protocol(value.protocol);
+    self.uri(value.uri);
+    self.status(value.status);
+    return self;
+  };
+
+  self.stop = function() {
+    PeerCast.stopAnnounce(self.yellowPageId(), self.channel.channelId());
+  };
+  self.reconnect = function() {
+    PeerCast.restartAnnounce(self.yellowPageId(), self.channel.channelId());
+  };
+};
+
 var ChannelViewModel = function(initial_value) {
   var self = this;
   self.channelId       = ko.observable(initial_value.channelId);
@@ -212,6 +238,9 @@ var ChannelViewModel = function(initial_value) {
   self.isDirectFull    = ko.observable(initial_value.status.isDirectFull);
   self.outputs         = ko.observableArray();
   self.nodes           = ko.observableArray();
+  self.yellowPages     = ko.observableArray($.map(initial_value.yellowPages, function(yp) {
+    return new ChannelYellowPageViewModel(self, yp);
+  }));
   self.uptimeReadable  = ko.computed(function() {
     var seconds = self.uptime();
     var minutes = Math.floor(seconds /  60) % 60;
@@ -298,6 +327,19 @@ var ChannelViewModel = function(initial_value) {
     });
   }
 
+  var updateYellowPages = function(new_value) {
+    var yellowpages = self.yellowPages();
+    var new_yps = $.map(new_value, function(yp) {
+      for (var i=0,l=yellowpages.length; i<l; i++) {
+        if (yellowpages[i].name()==yp.name && yellowpages[i].protocol()==yp.protocol ) {
+          return yellowpages[i].update(yp);
+        }
+      }
+      return new ChannelYellowPageViewModel(self, yp);
+    });
+    self.outputs.splice.apply(self.yellowPages, [0, self.yellowPages().length].concat(new_yps));
+  }
+
   var relayTreeVisible = false;
   self.showRelayTree = function() {
     relayTreeVisible = !relayTreeVisible;
@@ -341,6 +383,7 @@ var ChannelViewModel = function(initial_value) {
     self.isBroadcasting(c.status.isBroadcasting);
     self.isRelayFull(c.status.isRelayFull);
     self.isDirectFull(c.status.isDirectFull);
+    updateYellowPages(c.yellowPages);
     if (outputsVisible) updateOutputs();
     if (relayTreeVisible) updateRelayTree();
     return self;

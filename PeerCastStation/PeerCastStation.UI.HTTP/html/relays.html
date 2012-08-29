@@ -124,6 +124,18 @@
                 <tr><th>アーティスト</th>       <td data-bind="text: trackCreator   "></td></tr>
                 <tr><th>ジャンル</th>           <td data-bind="text: trackGenre     "></td></tr>
                 <tr><th>URL</th>                <td data-bind="text: trackUrl       "></td></tr>
+                <tr data-bind="if: isBroadcasting">
+                  <th>掲載中YellowPage</th>
+                  <td>
+                    <ul class="unstyled" data-bind="foreach: yellowPages">
+                      <li><a class="btn btn-mini" href="#" data-bind="click:reconnect"><i class="icon-repeat"></i></a>
+                          <span class="label" data-bind="text:status"></span>
+                          <span data-bind="text:name"></span>
+                          (<span data-bind="text:uri"></span>)
+                      </li>
+                    </ul>
+                  </td>
+                </tr>
                 <tr data-bind="if: isBroadcasting"><td colspan="2"><button class="btn" data-bind="click:editChannelInfo">編集</button></td></tr>
               </table>
             </div>

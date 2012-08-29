@@ -250,9 +250,11 @@ namespace PeerCastStation.UI.HTTP
         }
         return new JArray(announcings.Select(ac => {
           var acinfo = new JObject();
-          acinfo["name"]     = ac.YellowPage.Name;
-          acinfo["protocol"] = ac.YellowPage.Protocol;
-          acinfo["status"]   = ac.Status.ToString();
+          acinfo["yellowPageId"] = ac.YellowPage.GetHashCode();
+          acinfo["name"]         = ac.YellowPage.Name;
+          acinfo["protocol"]     = ac.YellowPage.Protocol;
+          acinfo["uri"]          = ac.YellowPage.Uri.ToString();
+          acinfo["status"]       = ac.Status.ToString();
           return acinfo;
         }));
       }
@@ -460,6 +462,42 @@ namespace PeerCastStation.UI.HTTP
         var yp = PeerCast.YellowPages.FirstOrDefault(p => p.GetHashCode()==yellowPageId);
         if (yp!=null) {
           PeerCast.RemoveYellowPage(yp);
+        }
+      }
+
+      [RPCMethod("stopAnnounce")]
+      private void StopAnnounce(int yellowPageId, string channelId=null)
+      {
+        var yp = PeerCast.YellowPages.FirstOrDefault(p => p.GetHashCode()==yellowPageId);
+        if (yp!=null) {
+          if (channelId!=null) {
+            var channel = GetChannel(channelId);
+            var announcing = yp.AnnouncingChannels.FirstOrDefault(ac => ac.Channel.ChannelID==channel.ChannelID);
+            if (announcing!=null) {
+              yp.StopAnnounce(announcing);
+            }
+          }
+          else {
+            yp.StopAnnounce();
+          }
+        }
+      }
+
+      [RPCMethod("restartAnnounce")]
+      private void RestartAnnounce(int yellowPageId, string channelId=null)
+      {
+        var yp = PeerCast.YellowPages.FirstOrDefault(p => p.GetHashCode()==yellowPageId);
+        if (yp!=null) {
+          if (channelId!=null) {
+            var channel = GetChannel(channelId);
+            var announcing = yp.AnnouncingChannels.FirstOrDefault(ac => ac.Channel.ChannelID==channel.ChannelID);
+            if (announcing!=null) {
+              yp.RestartAnnounce(announcing);
+            }
+          }
+          else {
+            yp.RestartAnnounce();
+          }
         }
       }
 
