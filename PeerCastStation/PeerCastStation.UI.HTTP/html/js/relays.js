@@ -201,10 +201,10 @@ var ChannelYellowPageViewModel = function(owner, initial_value) {
   };
 
   self.stop = function() {
-    PeerCast.stopAnnounce(self.yellowPageId(), self.channel.channelId());
+    PeerCast.stopAnnounce(self.yellowPageId(), self.channel.channelId(), refresh);
   };
   self.reconnect = function() {
-    PeerCast.restartAnnounce(self.yellowPageId(), self.channel.channelId());
+    PeerCast.restartAnnounce(self.yellowPageId(), self.channel.channelId(), refresh);
   };
 };
 

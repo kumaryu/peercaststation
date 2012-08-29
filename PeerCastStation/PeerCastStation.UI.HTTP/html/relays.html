@@ -143,9 +143,9 @@
           <div data-bind="attr: { id: 'channelOutputs-'+channelId()}" class="row-fluid" style="display:none">
             <ul class="span12 unstyled" data-bind="foreach: outputs">
               <li>
-              <a class="close-inline" href="#" data-bind="click:stop">×</a>
-                <span data-bind="text:name"></span>
+                <a class="btn btn-mini" href="#" data-bind="click:stop"><i class="icon-remove"></i></a>
                 <span class="label" data-bind="text:typeName"></span>
+                <span data-bind="text:name"></span>
               </li>
             </ul>
           </div>
