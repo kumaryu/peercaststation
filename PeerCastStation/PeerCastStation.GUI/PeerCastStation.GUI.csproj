@@ -151,10 +151,6 @@
       <Project>{EB11900C-4868-45A4-A046-11D17A3F4220}</Project>
       <Name>PeerCastStation.Logger</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.Ohaoha\PeerCastStation.Ohaoha.csproj">
-      <Project>{6E45FCD8-3569-48E9-A704-083A7BBD6743}</Project>
-      <Name>PeerCastStation.Ohaoha</Name>
-    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.PCP\PeerCastStation.PCP.csproj">
       <Project>{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}</Project>
       <Name>PeerCastStation.PCP</Name>
