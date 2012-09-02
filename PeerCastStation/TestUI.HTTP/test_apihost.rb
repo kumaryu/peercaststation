@@ -674,6 +674,9 @@ JSON
         assert_equal(channel.channel_track.album,       track['album'])
         assert_equal(channel.channel_track.creator,     track['creator'])
         assert_equal(channel.channel_track.URL,         track['url'])
+        yellow_pages = c['yellowPages']
+        assert_not_nil yellow_pages
+        assert_equal 0, yellow_pages.size
       end
     end
 

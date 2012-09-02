@@ -200,6 +200,7 @@ namespace PeerCastStation.UI.HTTP
             var info = GetChannelInfo(cid);
             res["info"] = info["info"];
             res["track"] = info["track"];
+            res["yellowPages"] = info["yellowPages"];
             return res;
           })
         );
