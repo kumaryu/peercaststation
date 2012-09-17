@@ -104,7 +104,9 @@ namespace PeerCastStation.GUI
     private Timer timer = new Timer();
     private TextBoxWriter guiWriter = null;
 
+    private Uri        balloonURL = null;
     private NotifyIcon notifyIcon;
+    private AppCastReader versionChecker;
 
     public MainForm(PeerCast peercast)
     {
@@ -119,10 +121,16 @@ namespace PeerCastStation.GUI
         notifyIcon.ContextMenuStrip = notifyIconMenu;
         notifyIcon.Visible = true;
         notifyIcon.DoubleClick += showGUIMenuItem_Click;
+        notifyIcon.BalloonTipClicked += notifyIcon_BalloonTipClicked;
+        versionChecker = new AppCastReader(
+          new Uri(Settings.Default.UpdateURL, UriKind.Absolute),
+          Settings.Default.CurrentVersion);
+        versionChecker.NewVersionFound += versionChecker_Found;
+        versionChecker.CheckVersion();
       }
       peerCast = peercast;
-      peerCast.ChannelAdded          += ChannelAdded;
-      peerCast.ChannelRemoved        += ChannelRemoved;
+      peerCast.ChannelAdded      += ChannelAdded;
+      peerCast.ChannelRemoved    += ChannelRemoved;
       logLevelList.SelectedIndex = Settings.Default.LogLevel;
       logToFileCheck.Checked     = Settings.Default.LogToFile;
       logFileNameText.Text       = Settings.Default.LogFileName;
@@ -135,6 +143,23 @@ namespace PeerCastStation.GUI
         UpdateStatus();
       };
       UpdateStatus();
+    }
+
+    private void notifyIcon_BalloonTipClicked(object sender, EventArgs args)
+    {
+      if (balloonURL!=null) {
+        System.Diagnostics.Process.Start(balloonURL.ToString());
+      }
+    }
+
+    private void versionChecker_Found(object sender, NewVersionFoundEventArgs args)
+    {
+      balloonURL = args.VersionDescription.Link;
+      notifyIcon.ShowBalloonTip(
+        30000,
+        "新しいバージョンがあります",
+        args.VersionDescription.Title,
+        ToolTipIcon.Info);
     }
 
     private bool updating = false;
