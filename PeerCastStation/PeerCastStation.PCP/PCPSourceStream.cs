@@ -134,7 +134,6 @@ namespace PeerCastStation.PCP
         catch (SocketException e) {
           Logger.Debug("Connection Failed: {0}", endpoint);
           Logger.Debug(e);
-          OnError();
           return false;
         }
       }
@@ -435,6 +434,9 @@ namespace PeerCastStation.PCP
           SendRelayRequest();
           state = State.WaitRequestResponse;
         }
+        else {
+          OnError();
+        }
       }
       else {
         var host = SelectSourceHost();
@@ -443,6 +445,9 @@ namespace PeerCastStation.PCP
           if (StartConnection(host)) {
             SendRelayRequest();
             state = State.WaitRequestResponse;
+          }
+          else {
+            IgnoreHost(host);
           }
         }
         else {

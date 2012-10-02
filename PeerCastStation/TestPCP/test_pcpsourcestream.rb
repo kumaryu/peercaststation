@@ -706,6 +706,66 @@ EOS
       server2.close if server2
     end
 
+    def test_start_unavailable_with_invalid_hosts
+      srv_channel = setup_srv_channel(@channel_id)
+      client_hosts = []
+      @server = TestPCPServer.new('127.0.0.1', 17144)
+      @server.relayable = false
+      @server.channels << srv_channel
+      server2 = TestPCPServer.new('127.0.0.1', 17145)
+      server2.relayable = true
+      server2.channels << srv_channel
+      server2.on_atom[PCP::HOST] = proc {|atom| client_hosts << atom }
+      ports = [0, 17146, 17145]
+
+      ports.each_with_index do |port, i|
+        host = PCP::Atom.new(PCP::HOST, [], nil)
+        host[PCP::HOST_ID] = System::Guid.new_guid
+        host.children << PCP::Atom.new(PCP::HOST_IP,   nil, [127, 0, 0, 1].reverse.pack('C*'))
+        host.children << PCP::Atom.new(PCP::HOST_PORT, nil, [port].pack('v'))
+        host.children << PCP::Atom.new(PCP::HOST_IP,   nil, [127, 0, 0, 1].reverse.pack('C*'))
+        host.children << PCP::Atom.new(PCP::HOST_PORT, nil, [port].pack('v'))
+        host[PCP::HOST_CHANID]  = @channel_id
+        host[PCP::HOST_NUML]    = 3
+        host[PCP::HOST_NUMR]    = 8*(ports.size-i-1)
+        host[PCP::HOST_UPTIME]  = rand(65536)
+        host[PCP::HOST_VERSION] = 1218
+        host[PCP::HOST_VERSION] = 27
+        host[PCP::HOST_OLDPOS]  = 0
+        host[PCP::HOST_NEWPOS]  = 96
+        host[PCP::HOST_FLAGS1]  =
+          PCP::HOST_FLAGS1_PUSH   |
+          PCP::HOST_FLAGS1_RELAY  |
+          PCP::HOST_FLAGS1_DIRECT |
+          PCP::HOST_FLAGS1_RECV
+        host[PCP::HOST_UPHOST_IP]   = [127, 0, 0, 1]
+        host[PCP::HOST_UPHOST_PORT] = 17144
+        host[PCP::HOST_UPHOST_HOPS] = 1
+        @server.hosts << host
+      end
+
+      stream = PCSPCP::PCPSourceStream.new(
+        @peercast,
+        @channel,
+        @source_uri)
+      @channel.start(stream)
+      timeout(5) do
+        until stream.is_stopped do
+          if client_hosts.size>0 and
+             @channel.content_header and
+             @channel.contents.count>=10 then
+            @server.close
+            server2.close
+          else
+            sleep 0.1
+          end
+        end
+      end
+      assert !client_hosts.empty?
+    ensure
+      server2.close if server2
+    end
+
     def test_broadcast
       srv_channel = setup_srv_channel(@channel_id)
       @server = TestPCPServer.new('127.0.0.1', 17144)
