@@ -693,7 +693,7 @@ namespace PeerCastStation.GUI
       this.connectionList.Name = "connectionList";
       this.connectionList.Size = new System.Drawing.Size(351, 234);
       this.connectionList.TabIndex = 2;
-      this.connectionList.SelectedIndexChanged += new System.EventHandler(this.channelList_SelectedIndexChanged);
+      this.connectionList.SelectedIndexChanged += new System.EventHandler(this.connectionList_SelectedIndexChanged);
       // 
       // tabPage3
       // 
