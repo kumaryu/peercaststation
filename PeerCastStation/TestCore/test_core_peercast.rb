@@ -58,6 +58,7 @@ module TestCore
       def announce(channel)
         @log << [:announce, channel]
         @channels << channel
+        nil
       end
 
       def restart_announce

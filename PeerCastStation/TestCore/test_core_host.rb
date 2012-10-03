@@ -203,7 +203,7 @@ module TestCore
       assert_equal('test', host.Extra[0].name.to_s)
       assert_equal(1,      host.Extensions.count)
       assert_equal('test', host.Extensions[0])
-      assert_not_equal(0, host.LastUpdated.ticks)
+      assert_not_equal(0, host.LastUpdated)
       assert(host.GetType.get_custom_attributes(System::SerializableAttribute.to_clr_type, true).length>0)
       assert(!host.respond_to?(:create_obj_ref))
     end
