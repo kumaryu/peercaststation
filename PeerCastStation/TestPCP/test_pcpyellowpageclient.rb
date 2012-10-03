@@ -404,10 +404,10 @@ module TestPCP
           assert_equal 27,                         host.vp_version
           assert_equal 0,                          host.info[PCP::HOST_NUML]
           assert_equal 0,                          host.info[PCP::HOST_NUMR]
-          assert (host.info[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_DIRECT)!=0
-          assert (host.info[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_RELAY)!=0
-          assert (host.info[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_PUSH)==0
-          assert (host.info[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_TRACKER)!=0
+          assert((host.info[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_DIRECT)!=0)
+          assert((host.info[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_RELAY)!=0)
+          assert((host.info[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_PUSH)==0)
+          assert((host.info[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_TRACKER)!=0)
         end
 
         should 'サーバとの接続が切断されたらStatusがErrorになる' do
