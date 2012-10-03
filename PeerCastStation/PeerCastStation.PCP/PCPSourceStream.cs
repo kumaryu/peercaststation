@@ -749,5 +749,23 @@ namespace PeerCastStation.PCP
         channel!=null ? channel.ChannelID.ToString("N") : "(null)",
         source_uri);
     }
+
+    public override string ToString()
+    {
+      if (Uphost!=null) {
+        return String.Format(
+          "PCP {0} Host:{1} Hops:{2} Recv:{3}kbps Send:{4}kbps",
+          Status,
+          Uphost.GlobalEndPoint,
+          Uphost.Hops,
+          (int)RecvRate*8/1000,
+          (int)SendRate*8/1000);
+      }
+      else {
+        return String.Format(
+          "PCP {0} Host:NotConnected",
+          Status);
+      }
+    }
   }
 }

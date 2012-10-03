@@ -295,7 +295,12 @@ namespace PeerCastStation.HTTP
       if (request.Headers.ContainsKey("User-Agent")) {
         user_agent = request.Headers["User-Agent"];
       }
-      return String.Format("HTTP Direct {0} ({1})", RemoteEndPoint, user_agent);
+      return String.Format(
+        "HTTP Direct {0} ({1}) Recv:{2}kbps Send:{3}kbps",
+        RemoteEndPoint,
+        user_agent,
+        (int)RecvRate*8/1000,
+        (int)SendRate*8/1000);
     }
 
     /// <summary>

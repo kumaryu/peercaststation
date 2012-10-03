@@ -242,16 +242,25 @@ namespace PeerCastStation.PCP
     {
       if (Downhost!=null) {
         var nodeinfo = String.Format(
-          "({0}/{1}) {2}{3}{4}",
+          "[{0}/{1}] {2}{3}{4}",
           Downhost.DirectCount,
           Downhost.RelayCount,
           Downhost.IsFirewalled ? "0" : "",
           Downhost.IsRelayFull  ? "-" : "",
           Downhost.IsReceiving  ? "" : "B");
-        return String.Format("PCP Relay {0} {1} {2}", RemoteEndPoint, relayRequest.UserAgent, nodeinfo);
+        return String.Format("PCP Relay {0}({1}) {2} Recv:{3}kbps Send:{4}kbps",
+          RemoteEndPoint,
+          relayRequest.UserAgent,
+          nodeinfo,
+          (int)RecvRate*8/1000,
+          (int)SendRate*8/1000);
       }
       else {
-        return String.Format("PCP Relay {0} {1}", RemoteEndPoint, relayRequest.UserAgent);
+        return String.Format("PCP Relay {0}({1}) Recv:{3}kbps Send:{4}kbps",
+          RemoteEndPoint,
+          relayRequest.UserAgent,
+          (int)RecvRate*8/1000,
+          (int)SendRate*8/1000);
       }
     }
     private RelayRequest relayRequest;
