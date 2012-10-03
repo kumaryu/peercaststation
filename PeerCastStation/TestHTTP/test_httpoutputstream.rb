@@ -449,6 +449,66 @@ module TestHTTP
       assert(!input.can_read)
       assert(!output.can_write)
     end
+
+    def test_recv_rate
+      endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
+      req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
+        'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
+      ]))
+      set_chan_info('Test Channel', 'WMV', 7144)
+      input  = System::IO::MemoryStream.new
+      output = System::IO::MemoryStream.new
+      stream = PCSHTTP::HTTPOutputStream.new(@peercast, input, output, endpoint, @channel, req)
+      stopped = false
+      stream.stopped.add(proc { stopped = true })
+
+      start = Time.now
+      stream.start
+      @channel.content_header = PCSCore::Content.new(0, 'header')
+      @channel.contents.add(PCSCore::Content.new( 6, 'content1'))
+      @channel.contents.add(PCSCore::Content.new(14, 'content2'))
+      @channel.contents.add(PCSCore::Content.new(22, 'content3'))
+      @channel.contents.add(PCSCore::Content.new(30, 'content4'))
+      sleep(1)
+      res = output.to_array.to_a.pack('C*')
+      get_body(res)
+      stream.stop
+      sleep(0.1) until stopped
+      t = Time.now
+      sleep([11-(t-start), 0].max)
+      recv_rate = stream.recv_rate
+      assert_in_delta 0, recv_rate, 5 
+    end
+
+    def test_send_rate
+      endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
+      req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
+        'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
+      ]))
+      set_chan_info('Test Channel', 'WMV', 7144)
+      input  = System::IO::MemoryStream.new
+      output = System::IO::MemoryStream.new
+      stream = PCSHTTP::HTTPOutputStream.new(@peercast, input, output, endpoint, @channel, req)
+      stopped = false
+      stream.stopped.add(proc { stopped = true })
+
+      start = Time.now
+      stream.start
+      @channel.content_header = PCSCore::Content.new(0, 'header')
+      @channel.contents.add(PCSCore::Content.new( 6, 'content1'))
+      @channel.contents.add(PCSCore::Content.new(14, 'content2'))
+      @channel.contents.add(PCSCore::Content.new(22, 'content3'))
+      @channel.contents.add(PCSCore::Content.new(30, 'content4'))
+      sleep(1)
+      res = output.to_array.to_a.pack('C*')
+      get_body(res)
+      stream.stop
+      sleep(0.1) until stopped
+      t = Time.now
+      sleep([11-(t-start), 0].max)
+      send_rate = stream.send_rate
+      assert_in_delta 35, send_rate, 5 
+    end
   end
 end
 

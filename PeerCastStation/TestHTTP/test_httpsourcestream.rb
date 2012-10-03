@@ -371,8 +371,68 @@ module TestHTTP
       source.join
     end
 
-    def test_status
+    def test_recv_rate
+      source = PCSHTTP::HTTPSourceStream.new(@peercast, @channel, @source_uri, @reader)
+      requested = 0
+      @server.on('/') do |req, sock|
+        assert_equal('1.1', req.version)
+        assert_equal('127.0.0.1:8888', req.headers['HOST'])
+        assert_match(@peercast.agent_name.to_s, req.headers['USER-AGENT'])
+        write_response(sock, req, 200, 'Content-Type' => 'application/octet-stream')
+        sock.write('header')
+        sock.write('content0')
+        sock.write('content1')
+        sock.write('content2')
+        sock.write('content3')
+        sock.write('content4')
+        sock.write('content5')
+        requested += 1
+      end
+      start = Time.now
+      source.start
+      50.times do
+        break if @channel.contents.count>=6
+        sleep(0.1)
+      end
+      source.stop
+      source.join
+      t = Time.now
+      sleep([11-(t-start), 0].max)
+      recv_rate = source.recv_rate
+      assert_in_delta 8.5, recv_rate, 5 
     end
+
+    def test_send_rate
+      source = PCSHTTP::HTTPSourceStream.new(@peercast, @channel, @source_uri, @reader)
+      requested = 0
+      @server.on('/') do |req, sock|
+        assert_equal('1.1', req.version)
+        assert_equal('127.0.0.1:8888', req.headers['HOST'])
+        assert_match(@peercast.agent_name.to_s, req.headers['USER-AGENT'])
+        write_response(sock, req, 200, 'Content-Type' => 'application/octet-stream')
+        sock.write('header')
+        sock.write('content0')
+        sock.write('content1')
+        sock.write('content2')
+        sock.write('content3')
+        sock.write('content4')
+        sock.write('content5')
+        requested += 1
+      end
+      start = Time.now
+      source.start
+      50.times do
+        break if @channel.contents.count>=6
+        sleep(0.1)
+      end
+      source.stop
+      source.join
+      t = Time.now
+      sleep([11-(t-start), 0].max)
+      send_rate = source.send_rate
+      assert_in_delta 8.5, send_rate, 5 
+    end
+
   end
 end
 

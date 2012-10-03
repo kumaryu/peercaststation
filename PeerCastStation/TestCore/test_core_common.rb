@@ -78,6 +78,14 @@ module TestCore
     def stop
       @log << [:stop]
     end
+
+    def send_rate
+      0.0
+    end
+
+    def recv_rate
+      0.0
+    end
   end
 
   class MockOutputStream
@@ -120,6 +128,14 @@ module TestCore
       @stopped.each do |event|
         event.invoke(self, System::EventArgs.new)
       end
+    end
+
+    def send_rate
+      0.0
+    end
+
+    def recv_rate
+      0.0
     end
   end
 

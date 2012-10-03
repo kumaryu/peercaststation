@@ -123,4 +123,43 @@ namespace PeerCastStation.Core
       return Utils.CreateHostTree(new Host[] { channel.SelfNode }.Concat(channel.Nodes));
     }
   }
+
+  public class RateCounter
+  {
+    private int count;
+    private int begin = Environment.TickCount;
+    private float rate;
+    public int Duration { get; private set; }
+    public float Rate { get { Check(); return rate; } }
+
+    public RateCounter(int duration)
+    {
+      this.Duration = duration;
+    }
+
+    public void Add(int value)
+    {
+      Check();
+      count += value;
+    }
+
+    public void Reset()
+    {
+      rate = 0;
+      count = 0;
+      begin = Environment.TickCount;
+    }
+
+    private void Check()
+    {
+      var t = Environment.TickCount;
+      var d = Math.Abs(t-begin);
+      if (d>Duration) {
+        rate = count*1000 / (float)d;
+        count = 0;
+        begin = Environment.TickCount;
+      }
+    }
+  }
+
 }

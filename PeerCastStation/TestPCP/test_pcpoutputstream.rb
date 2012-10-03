@@ -882,6 +882,61 @@ EOS
       assert_equal(node.global_end_point, channel_node.global_end_point)
     end
 
+    def test_recv_rate
+      channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
+      channel.status = PCSCore::SourceStreamStatus.receiving
+      channel.is_relay_full = false
+      @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
+      start = Time.now
+      @stream.start
+      header = read_http_header(@pipe)
+      assert_http_header(200, {}, header)
+      pcp_handshake(@pipe)
+      channel.content_header = PCSCore::Content.new(0, 'header')
+      channel.contents.add(PCSCore::Content.new( 6, 'content1'))
+      channel.contents.add(PCSCore::Content.new(14, 'content2'))
+      channel.contents.add(PCSCore::Content.new(22, 'content3'))
+      channel.contents.add(PCSCore::Content.new(30, 'content4'))
+      ok = PCP::Atom.read(@pipe)
+      chan = PCP::Atom.read(@pipe)
+      4.times do |i|
+        chan = PCP::Atom.read(@pipe)
+      end
+      @stream.stop
+      quit = PCP::Atom.read(@pipe)
+      t = Time.now
+      sleep([10-(t-start), 0].max)
+      recv_rate = @stream.recv_rate
+      assert_in_delta 8.5, recv_rate, 5 
+    end
+
+    def test_send_rate
+      channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
+      channel.status = PCSCore::SourceStreamStatus.receiving
+      channel.is_relay_full = false
+      @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
+      start = Time.now
+      @stream.start
+      header = read_http_header(@pipe)
+      assert_http_header(200, {}, header)
+      pcp_handshake(@pipe)
+      channel.content_header = PCSCore::Content.new(0, 'header')
+      channel.contents.add(PCSCore::Content.new( 6, 'content1'))
+      channel.contents.add(PCSCore::Content.new(14, 'content2'))
+      channel.contents.add(PCSCore::Content.new(22, 'content3'))
+      channel.contents.add(PCSCore::Content.new(30, 'content4'))
+      ok = PCP::Atom.read(@pipe)
+      chan = PCP::Atom.read(@pipe)
+      4.times do |i|
+        chan = PCP::Atom.read(@pipe)
+      end
+      @stream.stop
+      quit = PCP::Atom.read(@pipe)
+      t = Time.now
+      sleep([10-(t-start), 0].max)
+      send_rate = @stream.send_rate
+      assert_in_delta 160, send_rate, 5 
+    end
   end
 end
 

@@ -62,6 +62,8 @@ namespace PeerCastStation.Core
     public bool IsStopped { get { return isStopped; } private set { isStopped = value; } }
     public event EventHandler Stopped;
     public bool HasError { get; private set; }
+    public float SendRate { get { return sendBytesCounter.Rate; } }
+    public float RecvRate { get { return recvBytesCounter.Rate; } }
     protected QueuedSynchronizationContext SyncContext { get; private set; }
     protected Logger Logger { get; private set; }
 
@@ -116,6 +118,9 @@ namespace PeerCastStation.Core
           if (bytes < 0) {
             OnError();
           }
+          else {
+            recvBytesCounter.Add(bytes);
+          }
         }
         catch (ObjectDisposedException) {}
         catch (IOException) {
@@ -125,6 +130,7 @@ namespace PeerCastStation.Core
       if (sendResult!=null) {
         try {
           OutputStream.EndWrite(sendResult);
+          sendBytesCounter.Add((int)sendResult.AsyncState);
         }
         catch (ObjectDisposedException) {}
         catch (IOException) {
@@ -287,6 +293,7 @@ namespace PeerCastStation.Core
       }
     }
 
+    RateCounter recvBytesCounter = new RateCounter(10000);
     MemoryStream recvStream = new MemoryStream();
     byte[] recvBuffer = new byte[8192];
     IAsyncResult recvResult = null;
@@ -296,6 +303,7 @@ namespace PeerCastStation.Core
         try {
           int bytes = InputStream.EndRead(recvResult);
           if (bytes>0) {
+            recvBytesCounter.Add(bytes);
             recvStream.Seek(0, SeekOrigin.End);
             recvStream.Write(recvBuffer, 0, bytes);
             recvStream.Seek(0, SeekOrigin.Begin);
@@ -322,6 +330,7 @@ namespace PeerCastStation.Core
       }
     }
 
+    private RateCounter sendBytesCounter = new RateCounter(10000);
     MemoryStream sendStream = new MemoryStream(8192);
     IAsyncResult sendResult = null;
     private void ProcessSend()
@@ -329,6 +338,7 @@ namespace PeerCastStation.Core
       if (sendResult!=null && sendResult.IsCompleted) {
         try {
           OutputStream.EndWrite(sendResult);
+          sendBytesCounter.Add((int)sendResult.AsyncState);
         }
         catch (ObjectDisposedException) {
         }
@@ -342,7 +352,8 @@ namespace PeerCastStation.Core
         sendStream.SetLength(0);
         sendStream.Position = 0;
         try {
-          sendResult = OutputStream.BeginWrite(buf, 0, buf.Length, null, null);
+          sendResult = OutputStream.BeginWrite(buf, 0, buf.Length, null, buf.Length);
+          sendBytesCounter.Add((int)sendResult.AsyncState);
         }
         catch (ObjectDisposedException) {
         }

@@ -889,6 +889,54 @@ EOS
       atom = posted[1]
       assert_equal(bcst[PCP::BCST_DEST].to_s, atom.children.GetBcstDest.to_s)
     end
+
+    def test_recv_rate
+      srv_channel = setup_srv_channel(@channel_id)
+      @server = TestPCPServer.new('127.0.0.1', 17144)
+      @server.channels << srv_channel
+      stream = PCSPCP::PCPSourceStream.new(@peercast, @channel, @source_uri)
+      assert_equal 0, stream.recv_rate
+      start = Time.now
+      @channel.start(stream)
+      timeout(5) do
+        until stream.is_stopped do
+          if @channel.content_header and
+             @channel.contents.count>=10 then
+            @server.close
+          else
+            sleep 0.1
+          end
+        end
+      end
+      t = Time.now
+      sleep([10-(t-start), 0].max)
+      recv_rate = stream.recv_rate
+      assert_in_delta 120, recv_rate, 5 
+    end
+
+    def test_send_rate
+      srv_channel = setup_srv_channel(@channel_id)
+      @server = TestPCPServer.new('127.0.0.1', 17144)
+      @server.channels << srv_channel
+      stream = PCSPCP::PCPSourceStream.new(@peercast, @channel, @source_uri)
+      assert_equal 0, stream.recv_rate
+      start = Time.now
+      @channel.start(stream)
+      timeout(5) do
+        until stream.is_stopped do
+          if @channel.content_header and
+             @channel.contents.count>=10 then
+            @server.close
+          else
+            sleep 0.1
+          end
+        end
+      end
+      t = Time.now
+      sleep([10-(t-start), 0].max)
+      send_rate = stream.send_rate
+      assert_in_delta 45, send_rate, 5 
+    end
   end
 end
 
