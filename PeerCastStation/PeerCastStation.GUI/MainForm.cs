@@ -697,21 +697,21 @@ namespace PeerCastStation.GUI
 
     private void UpdateOutputList(Channel channel)
     {
-      var idx = outputList.SelectedIndex;
-      outputList.BeginUpdate();
-      outputList.Items.Clear();
-      outputList.Items.Add(new ChannelConnectionSourceItem(channel.SourceStream));
+      var idx = connectionList.SelectedIndex;
+      connectionList.BeginUpdate();
+      connectionList.Items.Clear();
+      connectionList.Items.Add(new ChannelConnectionSourceItem(channel.SourceStream));
       var announcings = peerCast.YellowPages
         .Select(yp => yp.AnnouncingChannels.FirstOrDefault(c => c.Channel.ChannelID==channel.ChannelID))
         .Where(c => c!=null);
       foreach (var announcing in announcings.ToArray()) {
-        outputList.Items.Add(new ChannelConnectionAnnouncingItem(announcing));
+        connectionList.Items.Add(new ChannelConnectionAnnouncingItem(announcing));
       }
       foreach (var os in channel.OutputStreams.ToArray()) {
-        outputList.Items.Add(new ChannelConnectionOutputItem(os));
+        connectionList.Items.Add(new ChannelConnectionOutputItem(os));
       }
-      outputList.SelectedIndex = Math.Min(idx, outputList.Items.Count-1);
-      outputList.EndUpdate();
+      connectionList.SelectedIndex = Math.Min(idx, connectionList.Items.Count-1);
+      connectionList.EndUpdate();
     }
 
     private System.IO.TextWriter logFileWriter = null;
@@ -761,17 +761,17 @@ namespace PeerCastStation.GUI
       }
     }
 
-    private void downStreamClose_Click(object sender, EventArgs e)
+    private void connectionClose_Click(object sender, EventArgs e)
     {
-      var connection = outputList.SelectedItem as IChannelConnectionItem;
+      var connection = connectionList.SelectedItem as IChannelConnectionItem;
       if (connection!=null && connection.IsDisconnectable) {
         connection.Disconnect();
       }
     }
 
-    private void downStreamReconnect_Click(object sender, EventArgs e)
+    private void connectionReconnect_Click(object sender, EventArgs e)
     {
-      var connection = outputList.SelectedItem as IChannelConnectionItem;
+      var connection = connectionList.SelectedItem as IChannelConnectionItem;
       if (connection!=null && connection.IsReconnectable) {
         connection.Reconnect();
       }
@@ -1101,11 +1101,11 @@ namespace PeerCastStation.GUI
       }
     }
 
-    private void outputList_SelectedIndexChanged(object sender, EventArgs e)
+    private void connectionList_SelectedIndexChanged(object sender, EventArgs e)
     {
-      var item = outputList.SelectedItem as IChannelConnectionItem;
-      downStreamClose.Enabled     = item!=null && item.IsDisconnectable;
-      downStreamReconnect.Enabled = item!=null && item.IsReconnectable;
+      var item = connectionList.SelectedItem as IChannelConnectionItem;
+      connectionClose.Enabled     = item!=null && item.IsDisconnectable;
+      connectionReconnect.Enabled = item!=null && item.IsReconnectable;
     }
   }
 }

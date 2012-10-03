@@ -91,8 +91,9 @@ namespace PeerCastStation.GUI
       this.channelListMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
       this.tabControl2 = new System.Windows.Forms.TabControl();
       this.tabPage1 = new System.Windows.Forms.TabPage();
-      this.downStreamClose = new System.Windows.Forms.Button();
-      this.outputList = new System.Windows.Forms.ListBox();
+      this.connectionReconnect = new System.Windows.Forms.Button();
+      this.connectionClose = new System.Windows.Forms.Button();
+      this.connectionList = new System.Windows.Forms.ListBox();
       this.tabPage3 = new System.Windows.Forms.TabPage();
       this.groupBox2 = new System.Windows.Forms.GroupBox();
       this.chanTrackContactURL = new System.Windows.Forms.TextBox();
@@ -150,7 +151,6 @@ namespace PeerCastStation.GUI
       this.statusBar = new System.Windows.Forms.StatusStrip();
       this.portLabel = new System.Windows.Forms.ToolStripStatusLabel();
       this.portOpenedLabel = new System.Windows.Forms.ToolStripStatusLabel();
-      this.downStreamReconnect = new System.Windows.Forms.Button();
       showGUIMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       quitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       label21 = new System.Windows.Forms.Label();
@@ -646,9 +646,9 @@ namespace PeerCastStation.GUI
       // 
       // tabPage1
       // 
-      this.tabPage1.Controls.Add(this.downStreamReconnect);
-      this.tabPage1.Controls.Add(this.downStreamClose);
-      this.tabPage1.Controls.Add(this.outputList);
+      this.tabPage1.Controls.Add(this.connectionReconnect);
+      this.tabPage1.Controls.Add(this.connectionClose);
+      this.tabPage1.Controls.Add(this.connectionList);
       this.tabPage1.Location = new System.Drawing.Point(4, 22);
       this.tabPage1.Name = "tabPage1";
       this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
@@ -657,31 +657,43 @@ namespace PeerCastStation.GUI
       this.tabPage1.Text = "接続一覧";
       this.tabPage1.UseVisualStyleBackColor = true;
       // 
-      // downStreamClose
+      // connectionReconnect
       // 
-      this.downStreamClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-      this.downStreamClose.Enabled = false;
-      this.downStreamClose.Location = new System.Drawing.Point(361, 6);
-      this.downStreamClose.Name = "downStreamClose";
-      this.downStreamClose.Size = new System.Drawing.Size(61, 30);
-      this.downStreamClose.TabIndex = 3;
-      this.downStreamClose.Text = "切断";
-      this.downStreamClose.UseVisualStyleBackColor = true;
-      this.downStreamClose.Click += new System.EventHandler(this.downStreamClose_Click);
+      this.connectionReconnect.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.connectionReconnect.Enabled = false;
+      this.connectionReconnect.Location = new System.Drawing.Point(361, 42);
+      this.connectionReconnect.Name = "connectionReconnect";
+      this.connectionReconnect.Size = new System.Drawing.Size(61, 30);
+      this.connectionReconnect.TabIndex = 4;
+      this.connectionReconnect.Text = "再接続";
+      this.connectionReconnect.UseVisualStyleBackColor = true;
+      this.connectionReconnect.Click += new System.EventHandler(this.connectionReconnect_Click);
       // 
-      // outputList
+      // connectionClose
       // 
-      this.outputList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+      this.connectionClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.connectionClose.Enabled = false;
+      this.connectionClose.Location = new System.Drawing.Point(361, 6);
+      this.connectionClose.Name = "connectionClose";
+      this.connectionClose.Size = new System.Drawing.Size(61, 30);
+      this.connectionClose.TabIndex = 3;
+      this.connectionClose.Text = "切断";
+      this.connectionClose.UseVisualStyleBackColor = true;
+      this.connectionClose.Click += new System.EventHandler(this.connectionClose_Click);
+      // 
+      // connectionList
+      // 
+      this.connectionList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-      this.outputList.FormattingEnabled = true;
-      this.outputList.IntegralHeight = false;
-      this.outputList.ItemHeight = 12;
-      this.outputList.Location = new System.Drawing.Point(6, 6);
-      this.outputList.Name = "outputList";
-      this.outputList.Size = new System.Drawing.Size(351, 234);
-      this.outputList.TabIndex = 2;
-      this.outputList.SelectedIndexChanged += new System.EventHandler(this.outputList_SelectedIndexChanged);
+      this.connectionList.FormattingEnabled = true;
+      this.connectionList.IntegralHeight = false;
+      this.connectionList.ItemHeight = 12;
+      this.connectionList.Location = new System.Drawing.Point(6, 6);
+      this.connectionList.Name = "connectionList";
+      this.connectionList.Size = new System.Drawing.Size(351, 234);
+      this.connectionList.TabIndex = 2;
+      this.connectionList.SelectedIndexChanged += new System.EventHandler(this.channelList_SelectedIndexChanged);
       // 
       // tabPage3
       // 
@@ -1363,18 +1375,6 @@ namespace PeerCastStation.GUI
       this.portOpenedLabel.Size = new System.Drawing.Size(134, 18);
       this.portOpenedLabel.Text = "toolStripStatusLabel1";
       // 
-      // downStreamReconnect
-      // 
-      this.downStreamReconnect.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-      this.downStreamReconnect.Enabled = false;
-      this.downStreamReconnect.Location = new System.Drawing.Point(361, 42);
-      this.downStreamReconnect.Name = "downStreamReconnect";
-      this.downStreamReconnect.Size = new System.Drawing.Size(61, 30);
-      this.downStreamReconnect.TabIndex = 4;
-      this.downStreamReconnect.Text = "再接続";
-      this.downStreamReconnect.UseVisualStyleBackColor = true;
-      this.downStreamReconnect.Click += new System.EventHandler(this.downStreamReconnect_Click);
-      // 
       // MainForm
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -1500,10 +1500,10 @@ namespace PeerCastStation.GUI
     private System.Windows.Forms.ListBox yellowPagesList;
     private System.Windows.Forms.Button channelStart;
     private System.Windows.Forms.Button relayTreeUpdate;
-    private System.Windows.Forms.Button downStreamClose;
-    private System.Windows.Forms.ListBox outputList;
+    private System.Windows.Forms.Button connectionClose;
+    private System.Windows.Forms.ListBox connectionList;
     private System.Windows.Forms.ContextMenuStrip channelListMenu;
-    private System.Windows.Forms.Button downStreamReconnect;
+    private System.Windows.Forms.Button connectionReconnect;
 
   }
 }
