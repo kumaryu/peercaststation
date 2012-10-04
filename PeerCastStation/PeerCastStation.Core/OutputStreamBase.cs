@@ -353,7 +353,6 @@ namespace PeerCastStation.Core
         sendStream.Position = 0;
         try {
           sendResult = OutputStream.BeginWrite(buf, 0, buf.Length, null, buf.Length);
-          sendBytesCounter.Add((int)sendResult.AsyncState);
         }
         catch (ObjectDisposedException) {
         }
