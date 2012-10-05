@@ -270,11 +270,10 @@ namespace PeerCastStation.HTTP
     public override string ToString()
     {
       return String.Format(
-        "HTTP {0} Source:{1} Recv:{2}kbps Send:{3}kbps",
+        "HTTP {0} Source:{1} {2}kbps",
         Status,
         SourceUri,
-        (int)RecvRate*8/1000,
-        (int)SendRate*8/1000);
+        (int)(RecvRate+SendRate)*8/1000);
     }
   }
 }

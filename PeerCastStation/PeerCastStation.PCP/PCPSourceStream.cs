@@ -754,16 +754,15 @@ namespace PeerCastStation.PCP
     {
       if (Uphost!=null) {
         return String.Format(
-          "PCP {0} Host:{1} Hops:{2} Recv:{3}kbps Send:{4}kbps",
+          "PCP {0} {1}{2} {3}kbps",
           Status,
           Uphost.GlobalEndPoint,
-          Uphost.Hops,
-          (int)RecvRate*8/1000,
-          (int)SendRate*8/1000);
+          (TrackerHost==null || Uphost.SessionID==TrackerHost.SessionID) ? "T" : "",
+          (int)(RecvRate+SendRate)*8/1000);
       }
       else {
         return String.Format(
-          "PCP {0} Host:NotConnected",
+          "PCP {0} NotConnected",
           Status);
       }
     }
