@@ -349,7 +349,7 @@ namespace PeerCastStation.PCP
         (PeerCast.AccessController.IsChannelRelayable(Channel) ? PCPHostFlags1.Relay : 0) |
         (PeerCast.AccessController.IsChannelPlayable(Channel) ? PCPHostFlags1.Direct : 0) |
         ((!PeerCast.IsFirewalled.HasValue || PeerCast.IsFirewalled.Value) ? PCPHostFlags1.Firewalled : 0) |
-        PCPHostFlags1.Receiving); //TODO:受信中かどうかちゃんと判別する
+        (RecvRate>0 ? PCPHostFlags1.Receiving : 0));
       host.SetHostUphostIP(RemoteEndPoint.Address);
       host.SetHostUphostPort(RemoteEndPoint.Port);
       return new Atom(Atom.PCP_HOST, host);

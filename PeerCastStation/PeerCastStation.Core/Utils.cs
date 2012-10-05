@@ -127,7 +127,7 @@ namespace PeerCastStation.Core
   public class RateCounter
   {
     private int count;
-    private int begin = Environment.TickCount;
+    private int begin;
     private float rate;
     public int Duration { get; private set; }
     public float Rate { get { Check(); return rate; } }
@@ -135,12 +135,13 @@ namespace PeerCastStation.Core
     public RateCounter(int duration)
     {
       this.Duration = duration;
+      this.begin = Environment.TickCount-duration;
     }
 
     public void Add(int value)
     {
-      Check();
       count += value;
+      Check();
     }
 
     public void Reset()
