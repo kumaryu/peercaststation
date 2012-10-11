@@ -29,37 +29,6 @@ namespace PeerCastStation.GUI
   {
     private PeerCastStation.Core.PeerCast peerCast;
 
-    private class DebugWriter : System.IO.TextWriter
-    {
-      public DebugWriter()
-      {
-      }
-
-      public override System.Text.Encoding Encoding
-      {
-        get { return System.Text.Encoding.Unicode; }
-      }
-
-      public override void Write(char[] buffer)
-      {
-        Write(new String(buffer));
-      }
-
-      public override void Write(char[] buffer, int index, int count)
-      {
-        Write(new String(buffer, index, count));
-      }
-
-      public override void Write(char buffer)
-      {
-        System.Diagnostics.Debug.Write(buffer);
-      }
-
-      public override void Write(string buffer)
-      {
-        System.Diagnostics.Debug.Write(buffer);
-      }
-    }
     private class TextBoxWriter : System.IO.TextWriter
     {
       private TextBox textBox;
@@ -112,8 +81,6 @@ namespace PeerCastStation.GUI
     {
       InitializeComponent();
       Settings.Default.PropertyChanged += SettingsPropertyChanged;
-      Logger.Level = LogLevel.Warn;
-      Logger.AddWriter(new DebugWriter());
       guiWriter = new TextBoxWriter(logText);
       if (PlatformID.Win32NT==Environment.OSVersion.Platform) {
         notifyIcon = new NotifyIcon(this.components);

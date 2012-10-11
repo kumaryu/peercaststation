@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Diagnostics;
 
 namespace PeerCastStation.Core
 {
@@ -49,44 +50,54 @@ namespace PeerCastStation.Core
     /// </summary>
     Debug,
   }
-  /// <summary>
-  /// ログの出力先を表します
-  /// </summary>
-  [Flags]
-  public enum LogOutputTarget
-  {
-    /// <summary>
-    /// 出力しない
-    /// </summary>
-    None    = 0,
-    /// <summary>
-    /// メモリに記録する
-    /// </summary>
-    Memory  = 1,
-    /// <summary>
-    /// コンソールへ出力する
-    /// </summary>
-    Console = 2,
-    /// <summary>
-    /// ファイルに記録する
-    /// </summary>
-    File    = 4,
-    /// <summary>
-    /// 全てに記録する
-    /// </summary>
-    All     = 0xFFFF,
-  }
 
   public class Logger
   {
+    private static TraceSwitch generalSwitch = new TraceSwitch("General", "Entire of PeerCastStation");
+
+    /// <summary>
+    /// ログ出力用の全体スイッチを取得します
+    /// </summary>
+    public static TraceSwitch GeneralSwitch { get { return generalSwitch; } }
+
     /// <summary>
     /// ログの出力先読み取り専用コレクションを取得します
     /// </summary>
-    public static IList<System.IO.TextWriter> Writers { get { return writers.AsReadOnly(); } }
+    public static IList<System.IO.TextWriter> Writers {
+      get {
+        return Trace.Listeners.OfType<TraceListener>()
+          .Select(listener => listener as TextWriterTraceListener)
+          .Where(listener => listener!=null)
+          .Select(listener => listener.Writer).ToList().AsReadOnly();
+      }
+    }
+
     /// <summary>
     /// 出力するログレベルを取得および設定します
     /// </summary>
-    public static LogLevel Level { get; set; }
+    public static LogLevel Level {
+      get {
+        switch (generalSwitch.Level) {
+        case TraceLevel.Off:     return LogLevel.None;
+        case TraceLevel.Error:   return LogLevel.Error;
+        case TraceLevel.Warning: return LogLevel.Warn;
+        case TraceLevel.Info:    return LogLevel.Info;
+        case TraceLevel.Verbose: return LogLevel.Debug;
+        default: return LogLevel.Debug;
+        }
+      }
+      set {
+        TraceLevel level = generalSwitch.Level;
+        switch (value) {
+        case LogLevel.None:  level = TraceLevel.Off; break;
+        case LogLevel.Error: level = TraceLevel.Error; break;
+        case LogLevel.Warn:  level = TraceLevel.Warning; break;
+        case LogLevel.Info:  level = TraceLevel.Info; break;
+        case LogLevel.Debug: level = TraceLevel.Verbose; break;
+        }
+        generalSwitch.Level = level;
+      }
+    }
 
     /// <summary>
     /// ログの出力先を追加します
@@ -94,18 +105,19 @@ namespace PeerCastStation.Core
     /// <param name="writer">出力先として追加するTextWriter</param>
     public static void AddWriter(System.IO.TextWriter writer)
     {
-      lock (writeLock) {
-        writers.Add(writer);
-      }
+      Trace.Listeners.Add(new TextWriterTraceListener(writer));
     }
-
+ 
     /// <summary>
     /// 指定したWriterをログ出力先から外します
     /// </summary>
     public static void RemoveWriter(System.IO.TextWriter writer)
     {
-      lock (writeLock) {
-        writers.Remove(writer);
+      var listeners = Trace.Listeners.OfType<TraceListener>()
+        .Select(listener => listener as TextWriterTraceListener)
+        .Where(listener => listener!=null && listener.Writer==writer).ToArray();
+      foreach (var listener in listeners) {
+        Trace.Listeners.Remove(listener);
       }
     }
 
@@ -114,57 +126,55 @@ namespace PeerCastStation.Core
     /// </summary>
     public static void ClearWriter()
     {
-      lock (writeLock) {
-        writers.Clear();
-      }
-    }
-
-    private static List<System.IO.TextWriter> writers = new List<System.IO.TextWriter>();
-    private static object writeLock = new Object();
-    static Logger()
-    {
-      Level = LogLevel.Warn;
+      Trace.Listeners.Clear();
     }
 
     static private void Output(LogLevel level, string source, string format, params object[] args)
     {
-      lock (writeLock) {
-        if (level<=Level) {
-          string[] level_name = {
+      string[] level_name = {
+        "",
+        "FATAL",
+        "ERROR",
+        "WARN",
+        "INFO",
+        "DEBUG",
+      };
+      try {
+        var message =  
+          String.Format("{0:s} [{1}] {2} {3} - {4}",
+            DateTime.Now,
+            System.Threading.Thread.CurrentThread.Name,
+            level_name[(int)level],
             "",
-            "FATAL",
-            "ERROR",
-            "WARN",
-            "INFO",
-            "DEBUG",
-          };
-          try {
-            var message =  
-              String.Format("{0:s} [{1}] {2} {3} {4} - {5}",
-                DateTime.Now,
-                System.Threading.Thread.CurrentThread.Name,
-                level_name[(int)level],
-                source,
-                "",
-                String.Format(format, args));
-            foreach (var writer in writers) {
-              writer.WriteLine(message);
-            }
-          }
-          catch (FormatException e) {
-            Output(level, source, e);
-          }
+            String.Format(format, args));
+        switch (level) {
+        case LogLevel.Debug:
+          Trace.WriteLineIf(GeneralSwitch.TraceVerbose, message, source);
+          break;
+        case LogLevel.Info:
+          Trace.WriteLineIf(GeneralSwitch.TraceInfo, message, source);
+          break;
+        case LogLevel.Warn:
+          Trace.WriteLineIf(GeneralSwitch.TraceWarning, message, source);
+          break;
+        case LogLevel.Error:
+        case LogLevel.Fatal:
+          Trace.WriteLineIf(GeneralSwitch.TraceError, message, source);
+          break;
+        default:
+          Trace.WriteLineIf(GeneralSwitch.TraceVerbose, message, source);
+          break;
         }
+      }
+      catch (FormatException) {
       }
     }
 
     static private void Output(LogLevel level, string source, Exception e)
     {
-      lock (writeLock) {
-        Output(level, source, "{0} {1}\n{2}", e.GetType().Name, e.Message, e.StackTrace);
-        if (e.InnerException!=null) {
-          Output(level, source, e.InnerException);
-        }
+      Output(level, source, "{0} {1}\n{2}", e.GetType().Name, e.Message, e.StackTrace);
+      if (e.InnerException!=null) {
+        Output(level, source, e.InnerException);
       }
     }
 
@@ -196,6 +206,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="format">出力するフォーマット文字列</param>
     /// <param name="args">フォーマットへの引数</param>
+    [Conditional("TRACE")]
     public void Fatal(object format, params object[] args)
     {
       Output(LogLevel.Fatal, this.Source, format.ToString(), args);
@@ -205,6 +216,7 @@ namespace PeerCastStation.Core
     /// Fatalレベルのログとして例外を整形して出力します
     /// </summary>
     /// <param name="exception">出力する例外</param>
+    [Conditional("TRACE")]
     public void Fatal(Exception exception)
     {
       Output(LogLevel.Fatal, this.Source, exception);
@@ -215,6 +227,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="format">出力するフォーマット文字列</param>
     /// <param name="args">フォーマットへの引数</param>
+    [Conditional("TRACE")]
     public void Error(object format, params object[] args)
     {
       Output(LogLevel.Error, this.Source, format.ToString(), args);
@@ -224,6 +237,7 @@ namespace PeerCastStation.Core
     /// Errorレベルのログとして例外を整形して出力します
     /// </summary>
     /// <param name="exception">出力する例外</param>
+    [Conditional("TRACE")]
     public void Error(Exception exception)
     {
       Output(LogLevel.Error, this.Source, exception);
@@ -234,6 +248,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="format">出力するフォーマット文字列</param>
     /// <param name="args">フォーマットへの引数</param>
+    [Conditional("TRACE")]
     public void Warn(object format, params object[] args)
     {
       Output(LogLevel.Warn, this.Source, format.ToString(), args);
@@ -243,6 +258,7 @@ namespace PeerCastStation.Core
     /// Warnレベルのログとして例外を整形して出力します
     /// </summary>
     /// <param name="exception">出力する例外</param>
+    [Conditional("TRACE")]
     public void Warn(Exception exception)
     {
       Output(LogLevel.Warn, this.Source, exception);
@@ -253,6 +269,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="format">出力するフォーマット文字列</param>
     /// <param name="args">フォーマットへの引数</param>
+    [Conditional("TRACE")]
     public void Info(object format, params object[] args)
     {
       Output(LogLevel.Info, this.Source, format.ToString(), args);
@@ -262,6 +279,7 @@ namespace PeerCastStation.Core
     /// Infoレベルのログとして例外を整形して出力します
     /// </summary>
     /// <param name="exception">出力する例外</param>
+    [Conditional("TRACE")]
     public void Info(Exception exception)
     {
       Output(LogLevel.Info, this.Source, exception);
@@ -272,6 +290,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="format">出力するフォーマット文字列</param>
     /// <param name="args">フォーマットへの引数</param>
+    [Conditional("TRACE")]
     public void Debug(object format, params object[] args)
     {
       Output(LogLevel.Debug, this.Source, format.ToString(), args);
@@ -281,6 +300,7 @@ namespace PeerCastStation.Core
     /// Debugレベルのログとして例外を整形して出力します
     /// </summary>
     /// <param name="exception">出力する例外</param>
+    [Conditional("TRACE")]
     public void Debug(Exception exception)
     {
       Output(LogLevel.Debug, this.Source, exception);

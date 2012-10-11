@@ -126,7 +126,6 @@ module TestLogger
         logger.info( 'hoge')
         logger.debug('hoge')
         log = writer.to_string.to_s.chomp.split(/\n/).to_a
-        assert_equal(5-i, log.size)
         assert_match(/FATAL/, log[0]) if i<5
         assert_match(/ERROR/, log[1]) if i<4
         assert_match(/WARN/,  log[2]) if i<3
