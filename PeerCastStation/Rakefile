@@ -3,7 +3,6 @@ require 'TestCommon/testtask'
 #require 'albacore'
 
 TestModules = %w[
-  Logger
   Core
   PCP
   HTTP
