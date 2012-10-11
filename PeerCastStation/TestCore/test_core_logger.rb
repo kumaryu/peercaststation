@@ -13,14 +13,11 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-require File.join(File.dirname(__FILE__), '..', 'TestCommon', 'utils.rb')
-TestUtils.require_peercaststation 'Logger'
-require 'test/unit'
+require 'test_core_common'
 
-module TestLogger
-  PCSCore = PeerCastStation::Core
-
-  class TC_Logger < Test::Unit::TestCase
+module TestCore
+  class TC_CoreLogger < Test::Unit::TestCase
+    PCSCore = PeerCastStation::Core
     def test_static_construct
       assert(PCSCore::Logger.writers.clr_member(System::Collections::IList, :is_read_only).call)
     end

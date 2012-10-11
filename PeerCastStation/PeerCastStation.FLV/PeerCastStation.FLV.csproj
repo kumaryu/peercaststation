@@ -44,10 +44,6 @@
       <Project>{387996F5-E31D-4D92-BD86-8983C599F748}</Project>
       <Name>PeerCastStation.Core</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.Logger\PeerCastStation.Logger.csproj">
-      <Project>{EB11900C-4868-45A4-A046-11D17A3F4220}</Project>
-      <Name>PeerCastStation.Logger</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\PeerCastStation.snk">

@@ -53,6 +53,7 @@
     <Compile Include="Content.cs" />
     <Compile Include="Core.cs" />
     <Compile Include="Host.cs" />
+    <Compile Include="Logger.cs" />
     <Compile Include="OutputListener.cs" />
     <Compile Include="OutputStreamBase.cs" />
     <Compile Include="PeerCast.cs" />
@@ -61,12 +62,6 @@
     <Compile Include="RawContentReader.cs" />
     <Compile Include="SourceStreamBase.cs" />
     <Compile Include="Utils.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\PeerCastStation.Logger\PeerCastStation.Logger.csproj">
-      <Project>{EB11900C-4868-45A4-A046-11D17A3F4220}</Project>
-      <Name>PeerCastStation.Logger</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\PeerCastStation.snk">
