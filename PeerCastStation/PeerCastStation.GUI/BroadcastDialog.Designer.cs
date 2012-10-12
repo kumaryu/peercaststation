@@ -45,7 +45,6 @@
       System.Windows.Forms.Label label8;
       System.Windows.Forms.Label label7;
       System.Windows.Forms.Label label6;
-      this.bcStart = new System.Windows.Forms.Button();
       this.bcComment = new System.Windows.Forms.TextBox();
       this.bcContactUrl = new System.Windows.Forms.TextBox();
       this.bcGenre = new System.Windows.Forms.TextBox();
@@ -60,6 +59,7 @@
       this.bcYP = new System.Windows.Forms.ComboBox();
       this.bcStreamUrl = new System.Windows.Forms.TextBox();
       this.bcContentType = new System.Windows.Forms.ComboBox();
+      this.bcStart = new System.Windows.Forms.Button();
       button1 = new System.Windows.Forms.Button();
       groupBox1 = new System.Windows.Forms.GroupBox();
       label1 = new System.Windows.Forms.Label();
@@ -82,17 +82,6 @@
       groupBox2.SuspendLayout();
       groupBox3.SuspendLayout();
       this.SuspendLayout();
-      // 
-      // bcStart
-      // 
-      this.bcStart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-      this.bcStart.Location = new System.Drawing.Point(262, 471);
-      this.bcStart.Name = "bcStart";
-      this.bcStart.Size = new System.Drawing.Size(90, 26);
-      this.bcStart.TabIndex = 3;
-      this.bcStart.Text = "配信開始";
-      this.bcStart.UseVisualStyleBackColor = true;
-      this.bcStart.Click += new System.EventHandler(this.BroadcastStart_Click);
       // 
       // button1
       // 
@@ -138,11 +127,12 @@
       // label1
       // 
       label1.AutoSize = true;
-      label1.Location = new System.Drawing.Point(4, 96);
+      label1.Location = new System.Drawing.Point(1, 96);
       label1.Name = "label1";
-      label1.Size = new System.Drawing.Size(74, 12);
+      label1.Size = new System.Drawing.Size(76, 12);
       label1.TabIndex = 6;
-      label1.Text = "配信者コメント";
+      label1.Text = "配信者コメント:";
+      label1.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // bcContactUrl
       // 
@@ -183,38 +173,42 @@
       // label12
       // 
       label12.AutoSize = true;
-      label12.Location = new System.Drawing.Point(4, 121);
+      label12.Location = new System.Drawing.Point(7, 121);
       label12.Name = "label12";
-      label12.Size = new System.Drawing.Size(68, 12);
+      label12.Size = new System.Drawing.Size(70, 12);
       label12.TabIndex = 8;
-      label12.Text = "コンタクトURL";
+      label12.Text = "コンタクトURL:";
+      label12.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label11
       // 
       label11.AutoSize = true;
-      label11.Location = new System.Drawing.Point(4, 71);
+      label11.Location = new System.Drawing.Point(46, 71);
       label11.Name = "label11";
-      label11.Size = new System.Drawing.Size(29, 12);
+      label11.Size = new System.Drawing.Size(31, 12);
       label11.TabIndex = 4;
-      label11.Text = "概要";
+      label11.Text = "概要:";
+      label11.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label10
       // 
       label10.AutoSize = true;
-      label10.Location = new System.Drawing.Point(4, 46);
+      label10.Location = new System.Drawing.Point(33, 46);
       label10.Name = "label10";
-      label10.Size = new System.Drawing.Size(42, 12);
+      label10.Size = new System.Drawing.Size(44, 12);
       label10.TabIndex = 2;
-      label10.Text = "ジャンル";
+      label10.Text = "ジャンル:";
+      label10.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label9
       // 
       label9.AutoSize = true;
-      label9.Location = new System.Drawing.Point(4, 21);
+      label9.Location = new System.Drawing.Point(12, 21);
       label9.Name = "label9";
-      label9.Size = new System.Drawing.Size(63, 12);
+      label9.Size = new System.Drawing.Size(65, 12);
       label9.TabIndex = 0;
-      label9.Text = "チャンネル名";
+      label9.Text = "チャンネル名:";
+      label9.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // groupBox2
       // 
@@ -249,11 +243,12 @@
       // label2
       // 
       label2.AutoSize = true;
-      label2.Location = new System.Drawing.Point(4, 96);
+      label2.Location = new System.Drawing.Point(33, 96);
       label2.Name = "label2";
-      label2.Size = new System.Drawing.Size(42, 12);
+      label2.Size = new System.Drawing.Size(44, 12);
       label2.TabIndex = 6;
-      label2.Text = "ジャンル";
+      label2.Text = "ジャンル:";
+      label2.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // bcTrackURL
       // 
@@ -294,38 +289,42 @@
       // label3
       // 
       label3.AutoSize = true;
-      label3.Location = new System.Drawing.Point(4, 121);
+      label3.Location = new System.Drawing.Point(48, 121);
       label3.Name = "label3";
-      label3.Size = new System.Drawing.Size(27, 12);
+      label3.Size = new System.Drawing.Size(29, 12);
       label3.TabIndex = 8;
-      label3.Text = "URL";
+      label3.Text = "URL:";
+      label3.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label4
       // 
       label4.AutoSize = true;
-      label4.Location = new System.Drawing.Point(4, 71);
+      label4.Location = new System.Drawing.Point(18, 71);
       label4.Name = "label4";
-      label4.Size = new System.Drawing.Size(57, 12);
+      label4.Size = new System.Drawing.Size(59, 12);
       label4.TabIndex = 4;
-      label4.Text = "アーティスト";
+      label4.Text = "アーティスト:";
+      label4.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label5
       // 
       label5.AutoSize = true;
-      label5.Location = new System.Drawing.Point(4, 46);
+      label5.Location = new System.Drawing.Point(31, 46);
       label5.Name = "label5";
-      label5.Size = new System.Drawing.Size(44, 12);
+      label5.Size = new System.Drawing.Size(46, 12);
       label5.TabIndex = 2;
-      label5.Text = "アルバム";
+      label5.Text = "アルバム:";
+      label5.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label14
       // 
       label14.AutoSize = true;
-      label14.Location = new System.Drawing.Point(4, 21);
+      label14.Location = new System.Drawing.Point(35, 21);
       label14.Name = "label14";
-      label14.Size = new System.Drawing.Size(40, 12);
+      label14.Size = new System.Drawing.Size(42, 12);
       label14.TabIndex = 0;
-      label14.Text = "タイトル";
+      label14.Text = "タイトル:";
+      label14.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // groupBox3
       // 
@@ -358,38 +357,42 @@
       // label13
       // 
       label13.AutoSize = true;
-      label13.Location = new System.Drawing.Point(4, 46);
+      label13.Location = new System.Drawing.Point(20, 46);
       label13.Name = "label13";
-      label13.Size = new System.Drawing.Size(55, 12);
+      label13.Size = new System.Drawing.Size(57, 12);
       label13.TabIndex = 2;
-      label13.Text = "ビットレート";
+      label13.Text = "ビットレート:";
+      label13.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label8
       // 
       label8.AutoSize = true;
-      label8.Location = new System.Drawing.Point(4, 97);
+      label8.Location = new System.Drawing.Point(32, 97);
       label8.Name = "label8";
-      label8.Size = new System.Drawing.Size(43, 12);
+      label8.Size = new System.Drawing.Size(45, 12);
       label8.TabIndex = 6;
-      label8.Text = "掲載YP";
+      label8.Text = "掲載YP:";
+      label8.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label7
       // 
       label7.AutoSize = true;
-      label7.Location = new System.Drawing.Point(4, 71);
+      label7.Location = new System.Drawing.Point(44, 71);
       label7.Name = "label7";
-      label7.Size = new System.Drawing.Size(31, 12);
+      label7.Size = new System.Drawing.Size(33, 12);
       label7.TabIndex = 4;
-      label7.Text = "タイプ";
+      label7.Text = "タイプ:";
+      label7.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label6
       // 
       label6.AutoSize = true;
       label6.Location = new System.Drawing.Point(4, 21);
       label6.Name = "label6";
-      label6.Size = new System.Drawing.Size(71, 12);
+      label6.Size = new System.Drawing.Size(73, 12);
       label6.TabIndex = 0;
-      label6.Text = "ストリームURL";
+      label6.Text = "ストリームURL:";
+      label6.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // bcYP
       // 
@@ -424,6 +427,17 @@
       this.bcContentType.Name = "bcContentType";
       this.bcContentType.Size = new System.Drawing.Size(346, 20);
       this.bcContentType.TabIndex = 5;
+      // 
+      // bcStart
+      // 
+      this.bcStart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+      this.bcStart.Location = new System.Drawing.Point(262, 471);
+      this.bcStart.Name = "bcStart";
+      this.bcStart.Size = new System.Drawing.Size(90, 26);
+      this.bcStart.TabIndex = 3;
+      this.bcStart.Text = "配信開始";
+      this.bcStart.UseVisualStyleBackColor = true;
+      this.bcStart.Click += new System.EventHandler(this.BroadcastStart_Click);
       // 
       // BroadcastDialog
       // 

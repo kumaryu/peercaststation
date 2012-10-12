@@ -76,6 +76,7 @@ namespace PeerCastStation.GUI
       System.Windows.Forms.ToolStripSeparator toolStripMenuItem2;
       System.Windows.Forms.ToolStripMenuItem copyStreamURLMenu;
       System.Windows.Forms.ToolStripMenuItem copyContactURLMenu;
+      System.Windows.Forms.Label label6;
       System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
       this.chanInfoUpdateButton = new System.Windows.Forms.Button();
       this.notifyIconMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
@@ -96,6 +97,7 @@ namespace PeerCastStation.GUI
       this.connectionList = new System.Windows.Forms.ListBox();
       this.tabPage3 = new System.Windows.Forms.TabPage();
       this.groupBox2 = new System.Windows.Forms.GroupBox();
+      this.chanTrackGenre = new System.Windows.Forms.TextBox();
       this.chanTrackContactURL = new System.Windows.Forms.TextBox();
       this.chanTrackAlbum = new System.Windows.Forms.TextBox();
       this.chanTrackTitle = new System.Windows.Forms.TextBox();
@@ -181,6 +183,7 @@ namespace PeerCastStation.GUI
       toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
       copyStreamURLMenu = new System.Windows.Forms.ToolStripMenuItem();
       copyContactURLMenu = new System.Windows.Forms.ToolStripMenuItem();
+      label6 = new System.Windows.Forms.Label();
       panel1.SuspendLayout();
       this.notifyIconMenu.SuspendLayout();
       this.mainTab.SuspendLayout();
@@ -236,6 +239,7 @@ namespace PeerCastStation.GUI
       label21.Size = new System.Drawing.Size(57, 12);
       label21.TabIndex = 21;
       label21.Text = "ビットレート:";
+      label21.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label20
       // 
@@ -245,6 +249,7 @@ namespace PeerCastStation.GUI
       label20.Size = new System.Drawing.Size(31, 12);
       label20.TabIndex = 20;
       label20.Text = "形式:";
+      label20.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label19
       // 
@@ -254,6 +259,7 @@ namespace PeerCastStation.GUI
       label19.Size = new System.Drawing.Size(64, 12);
       label19.TabIndex = 19;
       label19.Text = "チャンネルID:";
+      label19.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label18
       // 
@@ -263,6 +269,7 @@ namespace PeerCastStation.GUI
       label18.Size = new System.Drawing.Size(70, 12);
       label18.TabIndex = 18;
       label18.Text = "コンタクトURL:";
+      label18.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label17
       // 
@@ -272,6 +279,7 @@ namespace PeerCastStation.GUI
       label17.Size = new System.Drawing.Size(31, 12);
       label17.TabIndex = 17;
       label17.Text = "概要:";
+      label17.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label16
       // 
@@ -281,6 +289,7 @@ namespace PeerCastStation.GUI
       label16.Size = new System.Drawing.Size(44, 12);
       label16.TabIndex = 15;
       label16.Text = "ジャンル:";
+      label16.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label15
       // 
@@ -290,43 +299,47 @@ namespace PeerCastStation.GUI
       label15.Size = new System.Drawing.Size(65, 12);
       label15.TabIndex = 14;
       label15.Text = "チャンネル名:";
+      label15.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label22
       // 
       label22.AutoSize = true;
-      label22.Location = new System.Drawing.Point(11, 21);
+      label22.Location = new System.Drawing.Point(17, 71);
       label22.Name = "label22";
       label22.Size = new System.Drawing.Size(59, 12);
-      label22.TabIndex = 24;
+      label22.TabIndex = 4;
       label22.Text = "アーティスト:";
+      label22.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label23
       // 
       label23.AutoSize = true;
-      label23.Location = new System.Drawing.Point(28, 46);
+      label23.Location = new System.Drawing.Point(34, 21);
       label23.Name = "label23";
       label23.Size = new System.Drawing.Size(42, 12);
-      label23.TabIndex = 25;
+      label23.TabIndex = 0;
       label23.Text = "タイトル:";
+      label23.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label24
       // 
       label24.AutoSize = true;
-      label24.Location = new System.Drawing.Point(24, 71);
+      label24.Location = new System.Drawing.Point(30, 46);
       label24.Name = "label24";
       label24.Size = new System.Drawing.Size(46, 12);
-      label24.TabIndex = 26;
+      label24.TabIndex = 2;
       label24.Text = "アルバム:";
+      label24.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label26
       // 
       label26.AutoSize = true;
-      label26.Location = new System.Drawing.Point(24, 96);
+      label26.Location = new System.Drawing.Point(47, 121);
       label26.Name = "label26";
-      label26.Size = new System.Drawing.Size(43, 12);
-      label26.TabIndex = 28;
-      label26.Text = "連絡先:";
-      label26.TextAlign = System.Drawing.ContentAlignment.TopRight;
+      label26.Size = new System.Drawing.Size(29, 12);
+      label26.TabIndex = 8;
+      label26.Text = "URL:";
+      label26.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // panel1
       // 
@@ -334,7 +347,7 @@ namespace PeerCastStation.GUI
       panel1.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
       panel1.Controls.Add(this.chanInfoUpdateButton);
       panel1.Dock = System.Windows.Forms.DockStyle.Top;
-      panel1.Location = new System.Drawing.Point(0, 360);
+      panel1.Location = new System.Drawing.Point(0, 385);
       panel1.Name = "panel1";
       panel1.Size = new System.Drawing.Size(406, 32);
       panel1.TabIndex = 21;
@@ -354,12 +367,12 @@ namespace PeerCastStation.GUI
       // label25
       // 
       label25.AutoSize = true;
-      label25.Location = new System.Drawing.Point(12, 121);
+      label25.Location = new System.Drawing.Point(0, 121);
       label25.Name = "label25";
-      label25.Size = new System.Drawing.Size(64, 12);
+      label25.Size = new System.Drawing.Size(76, 12);
       label25.TabIndex = 28;
-      label25.Text = "配信コメント:";
-      label25.TextAlign = System.Drawing.ContentAlignment.TopRight;
+      label25.Text = "配信者コメント:";
+      label25.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // label34
       // 
@@ -497,6 +510,16 @@ namespace PeerCastStation.GUI
       copyContactURLMenu.Size = new System.Drawing.Size(226, 22);
       copyContactURLMenu.Text = "コンタクトURLをコピー(&C)";
       copyContactURLMenu.Click += new System.EventHandler(this.copyContactURLMenu_Click);
+      // 
+      // label6
+      // 
+      label6.AutoSize = true;
+      label6.Location = new System.Drawing.Point(32, 96);
+      label6.Name = "label6";
+      label6.Size = new System.Drawing.Size(44, 12);
+      label6.TabIndex = 6;
+      label6.Text = "ジャンル:";
+      label6.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
       // 
       // notifyIconMenu
       // 
@@ -712,6 +735,8 @@ namespace PeerCastStation.GUI
       // 
       this.groupBox2.AutoSize = true;
       this.groupBox2.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+      this.groupBox2.Controls.Add(label6);
+      this.groupBox2.Controls.Add(this.chanTrackGenre);
       this.groupBox2.Controls.Add(label26);
       this.groupBox2.Controls.Add(label24);
       this.groupBox2.Controls.Add(label23);
@@ -723,50 +748,60 @@ namespace PeerCastStation.GUI
       this.groupBox2.Dock = System.Windows.Forms.DockStyle.Top;
       this.groupBox2.Location = new System.Drawing.Point(0, 230);
       this.groupBox2.Name = "groupBox2";
-      this.groupBox2.Size = new System.Drawing.Size(406, 130);
+      this.groupBox2.Size = new System.Drawing.Size(406, 155);
       this.groupBox2.TabIndex = 20;
       this.groupBox2.TabStop = false;
       this.groupBox2.Text = "トラック情報";
+      // 
+      // chanTrackGenre
+      // 
+      this.chanTrackGenre.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      this.chanTrackGenre.Location = new System.Drawing.Point(82, 93);
+      this.chanTrackGenre.Name = "chanTrackGenre";
+      this.chanTrackGenre.ReadOnly = true;
+      this.chanTrackGenre.Size = new System.Drawing.Size(321, 19);
+      this.chanTrackGenre.TabIndex = 7;
       // 
       // chanTrackContactURL
       // 
       this.chanTrackContactURL.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-      this.chanTrackContactURL.Location = new System.Drawing.Point(82, 93);
+      this.chanTrackContactURL.Location = new System.Drawing.Point(82, 118);
       this.chanTrackContactURL.Name = "chanTrackContactURL";
       this.chanTrackContactURL.ReadOnly = true;
       this.chanTrackContactURL.Size = new System.Drawing.Size(321, 19);
-      this.chanTrackContactURL.TabIndex = 23;
+      this.chanTrackContactURL.TabIndex = 9;
       // 
       // chanTrackAlbum
       // 
       this.chanTrackAlbum.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-      this.chanTrackAlbum.Location = new System.Drawing.Point(82, 68);
+      this.chanTrackAlbum.Location = new System.Drawing.Point(82, 43);
       this.chanTrackAlbum.Name = "chanTrackAlbum";
       this.chanTrackAlbum.ReadOnly = true;
       this.chanTrackAlbum.Size = new System.Drawing.Size(321, 19);
-      this.chanTrackAlbum.TabIndex = 21;
+      this.chanTrackAlbum.TabIndex = 3;
       // 
       // chanTrackTitle
       // 
       this.chanTrackTitle.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-      this.chanTrackTitle.Location = new System.Drawing.Point(82, 43);
+      this.chanTrackTitle.Location = new System.Drawing.Point(82, 18);
       this.chanTrackTitle.Name = "chanTrackTitle";
       this.chanTrackTitle.ReadOnly = true;
       this.chanTrackTitle.Size = new System.Drawing.Size(321, 19);
-      this.chanTrackTitle.TabIndex = 20;
+      this.chanTrackTitle.TabIndex = 1;
       // 
       // chanTrackArtist
       // 
       this.chanTrackArtist.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-      this.chanTrackArtist.Location = new System.Drawing.Point(82, 18);
+      this.chanTrackArtist.Location = new System.Drawing.Point(82, 68);
       this.chanTrackArtist.Name = "chanTrackArtist";
       this.chanTrackArtist.ReadOnly = true;
       this.chanTrackArtist.Size = new System.Drawing.Size(321, 19);
-      this.chanTrackArtist.TabIndex = 19;
+      this.chanTrackArtist.TabIndex = 5;
       // 
       // groupBox1
       // 
@@ -1504,6 +1539,7 @@ namespace PeerCastStation.GUI
     private System.Windows.Forms.ListBox connectionList;
     private System.Windows.Forms.ContextMenuStrip channelListMenu;
     private System.Windows.Forms.Button connectionReconnect;
+    private System.Windows.Forms.TextBox chanTrackGenre;
 
   }
 }

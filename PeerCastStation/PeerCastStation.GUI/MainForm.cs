@@ -458,6 +458,7 @@ namespace PeerCastStation.GUI
       public string TrackAlbum { get; private set; }
       public string TrackArtist { get; private set; }
       public string TrackTitle { get; private set; }
+      public string TrackGenre { get; private set; }
       public string TrackContactURL { get; private set; }
 
       public ChannelInfoContainer(ChannelInfo info, ChannelTrack track)
@@ -484,12 +485,14 @@ namespace PeerCastStation.GUI
           TrackAlbum      = track.Album;
           TrackArtist     = track.Creator;
           TrackTitle      = track.Name;
+          TrackGenre      = track.Genre;
           TrackContactURL = track.URL;
         }
         else {
           TrackAlbum      = "";
           TrackArtist     = "";
           TrackTitle      = "";
+          TrackGenre      = "";
           TrackContactURL = "";
         }
       }
@@ -511,6 +514,7 @@ namespace PeerCastStation.GUI
       if (info.TrackAlbum     !=channelInfo.TrackAlbum)      chanTrackAlbum.Text      = info.TrackAlbum;
       if (info.TrackArtist    !=channelInfo.TrackArtist)     chanTrackArtist.Text     = info.TrackArtist;
       if (info.TrackTitle     !=channelInfo.TrackTitle)      chanTrackTitle.Text      = info.TrackTitle;
+      if (info.TrackGenre     !=channelInfo.TrackGenre)      chanTrackGenre.Text      = info.TrackGenre;
       if (info.TrackContactURL!=channelInfo.TrackContactURL) chanTrackContactURL.Text = info.TrackContactURL;
       chanInfoGenre.ReadOnly       = !is_tracker;
       chanInfoDesc.ReadOnly        = !is_tracker;
@@ -545,6 +549,7 @@ namespace PeerCastStation.GUI
           track.SetChanTrackAlbum(chanTrackAlbum.Text);
           track.SetChanTrackCreator(chanTrackArtist.Text);
           track.SetChanTrackTitle(chanTrackTitle.Text);
+          track.SetChanTrackGenre(chanTrackGenre.Text);
           track.SetChanTrackURL(chanTrackContactURL.Text);
           channel.ChannelTrack = new ChannelTrack(track);
         }
