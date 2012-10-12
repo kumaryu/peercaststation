@@ -311,6 +311,58 @@ module TestUI_HTTP
       assert(0!=res.headers['Content-Length'.upcase].to_i)
       assert_equal('', res.body)
     end
+
+    def test_start_stop
+      channel0 = PCSCore::Channel.new(
+        @app.peercast,
+        System::Guid.new_guid,
+        System::Uri.new('pcp://example.com'))
+      channel0.channel_info = create_chan_info('Foo ch', 'WMV', 774)
+      @app.peercast.add_channel(channel0)
+      channel1 = PCSCore::Channel.new(
+        @app.peercast,
+        System::Guid.new_guid,
+        System::Uri.new('pcp://example.com'))
+      channel1.channel_info  = create_chan_info('Bar ch', 'OGG', 7144)
+      channel1.channel_track = create_chan_track('PeerCastStation', 'PeCa', 'kumaryu')
+      @app.peercast.add_channel(channel1)
+
+      req = [
+        "GET /admin?cmd=stop&id=#{channel0.ChannelID.ToString('N')} HTTP/1.0",
+      ].join("\r\n") + "\r\n\r\n"
+      os = @factory.create(@input_stream, @output_stream, @remote_endpoint, System::Guid.empty, req)
+      os.start
+      os.join
+      res = parse_response(@output_stream.to_array.to_a.pack('C*'))
+      assert_equal(200, res.status)
+      assert_equal(1, @app.peercast.channels.count)
+    end
+
+    def test_start_bump
+      channel0 = PCSCore::Channel.new(
+        @app.peercast,
+        System::Guid.new_guid,
+        System::Uri.new('pcp://example.com'))
+      channel0.channel_info = create_chan_info('Foo ch', 'WMV', 774)
+      @app.peercast.add_channel(channel0)
+      channel1 = PCSCore::Channel.new(
+        @app.peercast,
+        System::Guid.new_guid,
+        System::Uri.new('pcp://example.com'))
+      channel1.channel_info  = create_chan_info('Bar ch', 'OGG', 7144)
+      channel1.channel_track = create_chan_track('PeerCastStation', 'PeCa', 'kumaryu')
+      @app.peercast.add_channel(channel1)
+
+      req = [
+        "GET /admin?cmd=bump&id=#{channel0.ChannelID.ToString('N')} HTTP/1.0",
+      ].join("\r\n") + "\r\n\r\n"
+      os = @factory.create(@input_stream, @output_stream, @remote_endpoint, System::Guid.empty, req)
+      os.start
+      os.join
+      res = parse_response(@output_stream.to_array.to_a.pack('C*'))
+      assert_equal(200, res.status)
+      assert_equal(2, @app.peercast.channels.count)
+    end
   end
 end
 

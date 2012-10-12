@@ -63,6 +63,12 @@ namespace PeerCastStation.UI.HTTP
             case "viewxml": //リレー情報XML出力
               OnViewXML(query);
               break;
+            case "stop": //チャンネル停止
+              OnStop(query);
+              break;
+            case "bump": //チャンネル再接続
+              OnBump(query);
+              break;
             default:
               throw new HTTPError(HttpStatusCode.BadRequest);
             }
@@ -188,6 +194,59 @@ namespace PeerCastStation.UI.HTTP
         if (this.request.Method!="HEAD") {
           Send(data);
         }
+      }
+
+      private Channel FindChannelFromQuery(Dictionary<string, string> query)
+      {
+        string idstr;
+        if (query.TryGetValue("id", out idstr)) {
+          var channel_id = Guid.Empty;
+          try {
+            channel_id = new Guid(idstr);
+          }
+          catch (Exception) {
+          }
+          return PeerCast.Channels.FirstOrDefault(c => c.ChannelID==channel_id);
+        }
+        else {
+          return null;
+        }
+      }
+
+      private void OnBump(Dictionary<string, string> query)
+      {
+        HttpStatusCode status;
+        var parameters = new Dictionary<string, string> {};
+        string res;
+        var channel = FindChannelFromQuery(query);
+        if (channel!=null) {
+          channel.Reconnect();
+          status = HttpStatusCode.OK;
+          res = "OK";
+        }
+        else {
+          status = HttpStatusCode.NotFound;
+          res = "Channel NotFound";
+        }
+        Send(HTTPUtils.CreateResponse(status, parameters, res));
+      }
+
+      private void OnStop(Dictionary<string, string> query)
+      {
+        HttpStatusCode status;
+        var parameters = new Dictionary<string, string> {};
+        string res;
+        var channel = FindChannelFromQuery(query);
+        if (channel!=null) {
+          PeerCast.CloseChannel(channel);
+          status = HttpStatusCode.OK;
+          res = "OK";
+        }
+        else {
+          status = HttpStatusCode.NotFound;
+          res = "Channel NotFound";
+        }
+        Send(HTTPUtils.CreateResponse(status, parameters, res));
       }
 
       private void Send(string str)
