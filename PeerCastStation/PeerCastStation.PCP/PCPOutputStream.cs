@@ -229,6 +229,7 @@ namespace PeerCastStation.PCP
     public const int PCP_VERSION = 1218;
 
     public Host Downhost       { get; protected set; }
+    public string UserAgent    { get; protected set; }
     public bool IsRelayFull    { get; protected set; }
     public bool IsChannelFound { get; protected set; }
     private System.Threading.AutoResetEvent changedEvent = new System.Threading.AutoResetEvent(true);
@@ -250,7 +251,7 @@ namespace PeerCastStation.PCP
           Downhost.IsReceiving  ? "" : "B");
         return String.Format("PCP Relay {0}({1}) {2} {3}kbps",
           RemoteEndPoint,
-          relayRequest.UserAgent,
+          UserAgent,
           nodeinfo,
           (int)(RecvRate+SendRate)*8/1000);
       }
@@ -280,6 +281,7 @@ namespace PeerCastStation.PCP
         request.PCPVersion,
         request.UserAgent);
       this.Downhost = null;
+      this.UserAgent = request.UserAgent;
       this.IsChannelFound = channel!=null && channel.Status==SourceStreamStatus.Receiving;
       this.IsRelayFull = channel!=null ? !channel.IsRelayable(this) : false;
       this.relayRequest = request;
@@ -598,6 +600,7 @@ namespace PeerCastStation.PCP
         host.IsFirewalled = remote_port==0;
         host.Extra.Update(atom.Children);
         Downhost = host.ToHost();
+        UserAgent = atom.Children.GetHeloAgent() ?? UserAgent;
       }
       var oleh = new AtomCollection();
       if (RemoteEndPoint!=null && RemoteEndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork) {
