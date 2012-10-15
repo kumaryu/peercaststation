@@ -85,7 +85,7 @@ namespace PeerCastStation.Core
       this.IsLocal = ip!=null ? Utils.IsSiteLocal(ip.Address) : true;
       this.IsStopped = false;
       this.mainThread = new Thread(MainProc);
-      this.mainThread.Name = this.GetType().Name;
+      this.mainThread.Name = String.Format("{0}:{1}", this.GetType().Name, remote_endpoint);
       this.SyncContext = new QueuedSynchronizationContext();
       this.Logger = new Logger(this.GetType());
       if (header!=null) {
