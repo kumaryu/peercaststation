@@ -323,6 +323,11 @@ EOS
       channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
       channel.status = PCSCore::SourceStreamStatus.receiving
       channel.is_relay_full = true
+      channel.content_header = PCSCore::Content.new(0, 'header')
+      channel.contents.add(PCSCore::Content.new( 6, 'content1'))
+      channel.contents.add(PCSCore::Content.new(14, 'content2'))
+      channel.contents.add(PCSCore::Content.new(22, 'content3'))
+      channel.contents.add(PCSCore::Content.new(30, 'content4'))
       @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
       @stream.start
       header = read_http_header(@pipe)

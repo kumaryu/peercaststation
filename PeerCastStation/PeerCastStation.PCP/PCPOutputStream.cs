@@ -455,7 +455,7 @@ namespace PeerCastStation.PCP
         while ((atom = RecvAtom())!=null) {
           ProcessAtom(atom);
         }
-        if (Downhost!=null) {
+        if (Downhost!=null && !IsRelayFull) {
           SendRelayBody(ref lastHeader, ref lastContent);
         }
       }
