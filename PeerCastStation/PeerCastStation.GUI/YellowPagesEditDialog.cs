@@ -38,7 +38,7 @@ namespace PeerCastStation.GUI
       Protocol = protocol_item!=null ? protocol_item.Factory.Protocol : null;
       if (!String.IsNullOrEmpty(YPName) && !String.IsNullOrEmpty(Protocol)) {
         Uri uri;
-        var md = System.Text.RegularExpressions.Regex.Match(ypAddressText.Text, @"\A(\S+):(\d+)\Z");
+        var md = System.Text.RegularExpressions.Regex.Match(ypAddressText.Text, @"\A([^:/]+)(:(\d+))?\Z");
         if (md.Success &&
             Uri.CheckHostName(md.Groups[1].Value)!=UriHostNameType.Unknown &&
             Uri.TryCreate(Protocol + "://" + ypAddressText.Text, UriKind.Absolute, out uri) &&
