@@ -56,12 +56,12 @@ namespace PeerCastStation.HTTP
           this.Method = match.Groups[1].Value.ToUpper();
           path = match.Groups[2].Value;
         }
-        else if ((match = Regex.Match(req, @"^Host:\s*(\S*)\s*$", RegexOptions.IgnoreCase)).Success) {
-          host = match.Groups[1].Value;
+        else if ((match = Regex.Match(req, @"^Host:(.+)$", RegexOptions.IgnoreCase)).Success) {
+          host = match.Groups[1].Value.Trim();
           Headers["HOST"] = host;
         }
-        else if ((match = Regex.Match(req, @"^(\S*):\s*(\S*)\s*$", RegexOptions.IgnoreCase)).Success) {
-          Headers[match.Groups[1].Value.ToUpper()] = match.Groups[2].Value;
+        else if ((match = Regex.Match(req, @"^(\S*):(.+)$", RegexOptions.IgnoreCase)).Success) {
+          Headers[match.Groups[1].Value.ToUpper()] = match.Groups[2].Value.Trim();
         }
       }
       Uri uri;
@@ -292,8 +292,8 @@ namespace PeerCastStation.HTTP
     public override string ToString()
     {
       string user_agent = "";
-      if (request.Headers.ContainsKey("User-Agent")) {
-        user_agent = request.Headers["User-Agent"];
+      if (request.Headers.ContainsKey("USER-AGENT")) {
+        user_agent = request.Headers["USER-AGENT"];
       }
       return String.Format(
         "HTTP Direct {0} ({1}) {2}kbps",
