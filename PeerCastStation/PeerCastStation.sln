@@ -40,12 +40,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.UI.HTTP", "
 EndProject
 Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestUI.HTTP", "TestUI.HTTP\TestUI.HTTP.rbproj", "{83C856D6-4500-4E07-B177-3854FC49CC5E}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{AB03130B-F951-4F86-AA8E-839CFFA7EDE6}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.exe = .nuget\NuGet.exe
-		.nuget\NuGet.targets = .nuget\NuGet.targets
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.MKV", "PeerCastStation.MKV\PeerCastStation.MKV.csproj", "{C8F8BAEC-67BC-41F3-A1A4-56308CD2CAB7}"
 EndProject
 Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestMKV", "TestMKV\TestMKV.rbproj", "{8506DD10-3565-4253-8596-012E6425AFA9}"
@@ -53,6 +47,13 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.FLV", "PeerCastStation.FLV\PeerCastStation.FLV.csproj", "{895D4DF8-A8B2-43A0-85E4-ED74152E73B2}"
 EndProject
 Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestFLV", "TestFLV\TestFLV.rbproj", "{A21A8B81-F2C8-4303-962E-FD2B8D528B75}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{162E7CEC-2668-4D57-9DBF-D17A1D4E0E47}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
