@@ -3,7 +3,6 @@ require 'test/unit'
 require File.join(File.dirname(__FILE__), '..', 'TestCommon', 'utils.rb')
 TestUtils.require_peercaststation 'Core'
 TestUtils.require_peercaststation 'UI.HTTP'
-TestUtils.require_peercaststation 'Logger'
 TestUtils.explicit_extensions PeerCastStation::Core::AtomCollectionExtensions
 require 'test/unit'
 
@@ -1145,9 +1144,9 @@ JSON
           System::Uri.new('pcp://example.com'))
       channel.channel_info = create_chan_info("Foo ch", 'WMV', 774)
       @app.peercast.add_channel(channel)
-      channel.add_output_stream(TestOutputStream.new('hoge'))
-      channel.add_output_stream(TestOutputStream.new('fuga'))
-      channel.add_output_stream(TestOutputStream.new('piyo'))
+      channel.add_output_stream(TestOutputStream.new('hoge', 1))
+      channel.add_output_stream(TestOutputStream.new('fuga', 2))
+      channel.add_output_stream(TestOutputStream.new('piyo', 7))
       params = { 'channelId' => channel.ChannelID.to_string('N'), }
       res = invoke_method('getChannelOutputs', params)
       assert_equal(1, res.body.id)
@@ -1156,6 +1155,7 @@ JSON
       channel.output_streams.count.times do |i|
         assert_equal(channel.output_streams[i].hash, res.body.result[i]['outputId'])
         assert_equal(channel.output_streams[i].to_s, res.body.result[i]['name'])
+        assert_equal(channel.output_streams[i].output_stream_type, res.body.result[i]['type'])
       end
     end
 
@@ -1167,9 +1167,9 @@ JSON
           System::Uri.new('pcp://example.com'))
       channel.channel_info = create_chan_info("Foo ch", 'WMV', 774)
       @app.peercast.add_channel(channel)
-      channel.add_output_stream(TestOutputStream.new('hoge'))
-      channel.add_output_stream(TestOutputStream.new('fuga'))
-      channel.add_output_stream(TestOutputStream.new('piyo'))
+      channel.add_output_stream(TestOutputStream.new('hoge', 1))
+      channel.add_output_stream(TestOutputStream.new('fuga', 2))
+      channel.add_output_stream(TestOutputStream.new('piyo', 7))
       params = [ channel.ChannelID.to_string('N'), ]
       res = invoke_method('getChannelOutputs', params)
       assert_equal(1, res.body.id)
@@ -1178,6 +1178,7 @@ JSON
       channel.output_streams.count.times do |i|
         assert_equal(channel.output_streams[i].hash, res.body.result[i]['outputId'])
         assert_equal(channel.output_streams[i].to_s, res.body.result[i]['name'])
+        assert_equal(channel.output_streams[i].output_stream_type, res.body.result[i]['type'])
       end
     end
 

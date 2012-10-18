@@ -335,6 +335,7 @@ namespace PeerCastStation.UI.HTTP
           var res = new JObject();
           res["outputId"] = os.GetHashCode();
           res["name"]     = os.ToString();
+          res["type"]     = (int)os.OutputStreamType;
           return res;
         }));
       }
