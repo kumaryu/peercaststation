@@ -351,6 +351,101 @@ namespace PeerCastStation.UI.HTTP
         }
       }
 
+      private JObject GetChannelConnection(ISourceStream ss)
+      {
+        var res = new JObject();
+        res["type"]         = "Source";
+        res["connectionId"] = ss.GetHashCode();
+        res["name"]         = ss.ToString();
+        res["desc"]         = ss.ToString();
+        res["status"]       = ss.Status.ToString();
+        return res;
+      }
+
+      private JObject GetChannelConnection(IOutputStream os)
+      {
+        var res = new JObject();
+        res["type"]         = "Output";
+        res["connectionId"] = os.GetHashCode();
+        res["name"]         = os.ToString();
+        res["desc"]         = os.ToString();
+        res["status"]       = "Connected";
+        if ((os.OutputStreamType & OutputStreamType.Interface)!=0) res["type"] = "Interface";
+        if ((os.OutputStreamType & OutputStreamType.Play)!=0)      res["type"] = "Play";
+        if ((os.OutputStreamType & OutputStreamType.Relay)!=0)     res["type"] = "Relay";
+        return res;
+      }
+
+      private JObject GetChannelConnection(IAnnouncingChannel ac)
+      {
+        var res = new JObject();
+        res["type"]         = "Announce";
+        res["connectionId"] = ac.YellowPage.GetHashCode();
+        res["name"]         = ac.YellowPage.Name;
+        res["desc"]         = ac.YellowPage.Name;
+        res["status"]       = ac.Status.ToString();
+        return res;
+      }
+
+      [RPCMethod("getChannelConnections")]
+      private JArray GetChannelConnections(string channelId)
+      {
+        var channel = GetChannel(channelId);
+        var res =
+          channel.SourceStream==null ?
+          Enumerable.Empty<JObject>() :
+          Enumerable.Repeat(channel.SourceStream, 1).Select(s => GetChannelConnection(s));
+        res = res.Concat(channel.OutputStreams.Select(s => GetChannelConnection(s)));
+        foreach (var yp in PeerCast.YellowPages) {
+          res = res.Concat(yp.AnnouncingChannels
+                .Where(ac => ac.Channel.ChannelID==channel.ChannelID)
+                .Select(s => GetChannelConnection(s)));
+        }
+        return new JArray(res);
+      }
+
+      [RPCMethod("stopChannelConnection")]
+      private bool StopChannelConnection(string channelId, int connectionId)
+      {
+        var channel = GetChannel(channelId);
+        var os = channel.OutputStreams.FirstOrDefault(s => s.GetHashCode()==connectionId);
+        if (os!=null) {
+          channel.RemoveOutputStream(os);
+          os.Stop();
+          return true;
+        }
+        foreach (var yp in PeerCast.YellowPages) {
+          if (connectionId==yp.GetHashCode()) {
+            var ac = yp.AnnouncingChannels.Where(s => s.Channel.ChannelID==channel.ChannelID).FirstOrDefault();
+            if (ac!=null) {
+              yp.StopAnnounce(ac);
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      [RPCMethod("restartChannelConnection")]
+      private bool RestartChannelConnection(string channelId, int connectionId)
+      {
+        var channel = GetChannel(channelId);
+        if (channel.SourceStream!=null && channel.SourceStream.GetHashCode()==connectionId) {
+          channel.SourceStream.Reconnect();
+          return true;
+        }
+        foreach (var yp in PeerCast.YellowPages) {
+          if (connectionId==yp.GetHashCode()) {
+            var ac = yp.AnnouncingChannels.Where(s => s.Channel.ChannelID==channel.ChannelID).FirstOrDefault();
+            if (ac!=null) {
+              yp.RestartAnnounce(ac);
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
       private JObject CreateRelayTreeNode(Utils.HostTreeNode node)
       {
         var res = new JObject();

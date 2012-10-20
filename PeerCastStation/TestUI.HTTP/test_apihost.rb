@@ -1835,6 +1835,10 @@ JSON
       attr_reader :log, :reader, :tracker, :channel, :status
       attr_accessor :start_proc
 
+      def to_s
+        'TestSourceStream'
+      end
+
       def add_StatusChanged(handler)
         @status_changed << handler
       end
@@ -1918,6 +1922,209 @@ JSON
       assert_equal(track['creator'], channel.channel_track.creator)
       assert(yp.log.size>0)
       assert(yp.log.include?(:announce))
+    end
+
+    def test_getChannelConnections
+      @app.peercast.yellow_page_factories.add(TestYPClientFactory.new('pcp'))
+      channel = PCSCore::Channel.new(
+          @app.peercast,
+          System::Guid.new_guid,
+          @app.peercast.BroadcastID,
+          System::Uri.new('test://example.com'))
+      channel.channel_info = create_chan_info("Foo ch", 'WMV', 774)
+      channel.source_stream = TestSourceStream.new(channel, nil)
+      @app.peercast.add_channel(channel)
+      channel.add_output_stream(TestOutputStream.new('hoge', 1))
+      channel.add_output_stream(TestOutputStream.new('fuga', 2))
+      channel.add_output_stream(TestOutputStream.new('piyo', 7))
+      acs = [
+        ['foo', 'pcp://foo.example.com/'],
+        ['bar', 'pcp://bar.example.com/'],
+        ['baz', 'pcp://baz.example.com/'],
+      ].collect {|name, uri|
+        yp = @app.peercast.add_yellow_page('pcp', name, System::Uri.new(uri))
+        ac = yp.announce(channel)
+        ac.status = PCSCore::AnnouncingStatus.connected
+        ac
+      }
+      params = { 'channelId' => channel.ChannelID.to_string('N'), }
+      res = invoke_method('getChannelConnections', params)
+      assert_equal(1, res.body.id)
+      assert_nil(res.body.error)
+      assert_equal(channel.output_streams.count+acs.count+1, res.body.result.size)
+      res.body.result.each do |conn|
+        case conn['type']
+        when 'Source'
+          ss = channel.source_stream
+          assert_equal(ss.hash,        conn['connectionId'])
+          assert_equal(ss.to_s,        conn['name'])
+          assert_equal(ss.to_s,        conn['desc'])
+          assert_equal(ss.status.to_s, conn['status'])
+        when 'Announce'
+          ac = acs.find {|ac| ac.yellow_page.hash==conn['connectionId'] }
+          assert_not_nil(ac)
+          assert_equal(ac.yellow_page.hash, conn['connectionId'])
+          assert_equal(ac.yellow_page.name, conn['name'])
+          assert_equal(ac.yellow_page.name, conn['desc'])
+          assert_equal(ac.status.to_s,      conn['status'])
+        when 'Output', 'Play', 'Relay', 'Interface'
+          os = channel.output_streams.find {|os| os.hash==conn['connectionId'] }
+          assert_not_nil(os)
+          assert_equal(os.hash, conn['connectionId'])
+          assert_equal(os.to_s, conn['name'])
+          assert_equal(os.to_s, conn['desc'])
+          assert_equal('Connected', conn['status'])
+        end
+      end
+    end
+
+    def test_stopChannelConnection_output
+      channel = PCSCore::Channel.new(
+          @app.peercast,
+          System::Guid.new_guid,
+          @app.peercast.BroadcastID,
+          System::Uri.new('test://example.com'))
+      channel.channel_info = create_chan_info("Foo ch", 'WMV', 774)
+      channel.source_stream = TestSourceStream.new(channel, nil)
+      @app.peercast.add_channel(channel)
+      channel.add_output_stream(TestOutputStream.new('hoge', 1))
+      channel.add_output_stream(TestOutputStream.new('fuga', 2))
+      channel.add_output_stream(TestOutputStream.new('piyo', 7))
+      params = {
+        'channelId'    => channel.ChannelID.to_string('N'),
+        'connectionId' => channel.output_streams[1].hash,
+      }
+      res = invoke_method('stopChannelConnection', params)
+      assert_equal(1, res.body.id)
+      assert_nil(res.body.error)
+      assert_equal(true, res.body.result)
+      assert_equal(2, channel.output_streams.count)
+    end
+
+    def test_stopChannelConnection_source
+      channel = PCSCore::Channel.new(
+          @app.peercast,
+          System::Guid.new_guid,
+          @app.peercast.BroadcastID,
+          System::Uri.new('test://example.com'))
+      channel.channel_info = create_chan_info("Foo ch", 'WMV', 774)
+      channel.source_stream = TestSourceStream.new(channel, nil)
+      @app.peercast.add_channel(channel)
+      params = {
+        'channelId'    => channel.ChannelID.to_string('N'),
+        'connectionId' => channel.source_stream.hash,
+      }
+      res = invoke_method('stopChannelConnection', params)
+      assert_equal(1, res.body.id)
+      assert_nil(res.body.error)
+      assert_equal(false, res.body.result)
+      assert(!channel.source_stream.log.include?(:stop))
+    end
+
+    def test_stopChannelConnection_announce
+      @app.peercast.yellow_page_factories.add(TestYPClientFactory.new('pcp'))
+      channel = PCSCore::Channel.new(
+          @app.peercast,
+          System::Guid.new_guid,
+          @app.peercast.BroadcastID,
+          System::Uri.new('test://example.com'))
+      channel.channel_info = create_chan_info("Foo ch", 'WMV', 774)
+      channel.source_stream = TestSourceStream.new(channel, nil)
+      @app.peercast.add_channel(channel)
+      acs = [
+        ['foo', 'pcp://foo.example.com/'],
+        ['bar', 'pcp://bar.example.com/'],
+        ['baz', 'pcp://baz.example.com/'],
+      ].collect {|name, uri|
+        yp = @app.peercast.add_yellow_page('pcp', name, System::Uri.new(uri))
+        ac = yp.announce(channel)
+        ac.status = PCSCore::AnnouncingStatus.connected
+        ac
+      }
+      params = {
+        'channelId'    => channel.ChannelID.to_string('N'),
+        'connectionId' => acs[1].yellow_page.hash,
+       }
+      res = invoke_method('stopChannelConnection', params)
+      assert_equal(1, res.body.id)
+      assert_nil(res.body.error)
+      assert_equal(true, res.body.result)
+      cnt = @app.peercast.yellow_pages.collect {|yp| yp.announcing_channels.collect {|ac| ac.channel.ChannelID==channel.ChannelID } }.flatten.size
+      assert_equal(acs.size-1, cnt)
+    end
+
+    def test_restartChannelConnection_output
+      channel = PCSCore::Channel.new(
+          @app.peercast,
+          System::Guid.new_guid,
+          @app.peercast.BroadcastID,
+          System::Uri.new('test://example.com'))
+      channel.channel_info = create_chan_info("Foo ch", 'WMV', 774)
+      channel.source_stream = TestSourceStream.new(channel, nil)
+      @app.peercast.add_channel(channel)
+      channel.add_output_stream(TestOutputStream.new('hoge', 1))
+      channel.add_output_stream(TestOutputStream.new('fuga', 2))
+      channel.add_output_stream(TestOutputStream.new('piyo', 7))
+      params = {
+        'channelId'    => channel.ChannelID.to_string('N'),
+        'connectionId' => channel.output_streams[1].hash,
+      }
+      res = invoke_method('restartChannelConnection', params)
+      assert_equal(1, res.body.id)
+      assert_nil(res.body.error)
+      assert_equal(false, res.body.result)
+      assert_equal(3, channel.output_streams.count)
+    end
+
+    def test_restartChannelConnection_source
+      channel = PCSCore::Channel.new(
+          @app.peercast,
+          System::Guid.new_guid,
+          @app.peercast.BroadcastID,
+          System::Uri.new('test://example.com'))
+      channel.channel_info = create_chan_info("Foo ch", 'WMV', 774)
+      channel.source_stream = TestSourceStream.new(channel, nil)
+      @app.peercast.add_channel(channel)
+      params = {
+        'channelId'    => channel.ChannelID.to_string('N'),
+        'connectionId' => channel.source_stream.hash,
+      }
+      res = invoke_method('restartChannelConnection', params)
+      assert_equal(1, res.body.id)
+      assert_nil(res.body.error)
+      assert_equal(true, res.body.result)
+      assert(!channel.source_stream.log.include?(:reconnect))
+    end
+
+    def test_restartChannelConnection_announce
+      @app.peercast.yellow_page_factories.add(TestYPClientFactory.new('pcp'))
+      channel = PCSCore::Channel.new(
+          @app.peercast,
+          System::Guid.new_guid,
+          @app.peercast.BroadcastID,
+          System::Uri.new('test://example.com'))
+      channel.channel_info = create_chan_info("Foo ch", 'WMV', 774)
+      channel.source_stream = TestSourceStream.new(channel, nil)
+      @app.peercast.add_channel(channel)
+      acs = [
+        ['foo', 'pcp://foo.example.com/'],
+        ['bar', 'pcp://bar.example.com/'],
+        ['baz', 'pcp://baz.example.com/'],
+      ].collect {|name, uri|
+        yp = @app.peercast.add_yellow_page('pcp', name, System::Uri.new(uri))
+        ac = yp.announce(channel)
+        ac.status = PCSCore::AnnouncingStatus.connected
+        ac
+      }
+      params = {
+        'channelId'    => channel.ChannelID.to_string('N'),
+        'connectionId' => acs[1].yellow_page.hash,
+       }
+      res = invoke_method('restartChannelConnection', params)
+      assert_equal(1, res.body.id)
+      assert_nil(res.body.error)
+      assert_equal(true, res.body.result)
+      assert_equal(PCSCore::AnnouncingStatus.connecting, acs[1].status)
     end
   end
 end
