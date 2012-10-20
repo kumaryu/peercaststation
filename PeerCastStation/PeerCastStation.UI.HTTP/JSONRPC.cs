@@ -403,6 +403,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       this.host = host;
       this.methods = host.GetType().GetMethods(
         System.Reflection.BindingFlags.Instance |
+        System.Reflection.BindingFlags.Public |
         System.Reflection.BindingFlags.NonPublic).Where(method =>
           Attribute.IsDefined(method, typeof(RPCMethodAttribute), true)
         ).Select(method => new RPCMethodInfo(method));
