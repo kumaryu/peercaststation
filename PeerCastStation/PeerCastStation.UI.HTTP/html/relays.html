@@ -56,7 +56,7 @@
               <div class="btn-toolbar">
                 <div class="btn-group" data-toggle="buttons-checkbox">
                   <a href="#" class="btn btn-mini" data-bind="click:showInfo" rel="tooltip" title="情報"><i class="icon-info-sign"></i></a>
-                  <a href="#" class="btn btn-mini" data-bind="click:showOutputs" rel="tooltip" title="接続一覧"><i class="icon-th-list"></i></a>
+                  <a href="#" class="btn btn-mini" data-bind="click:showConnections" rel="tooltip" title="接続一覧"><i class="icon-th-list"></i></a>
                   <a href="#" class="btn btn-mini" data-bind="click:showRelayTree" rel="tooltip" title="リレーツリー"><i class="icon-signal"></i></a>
                 </div>
                 <div class="btn-group">
@@ -140,12 +140,14 @@
               </table>
             </div>
           </div>
-          <div data-bind="attr: { id: 'channelOutputs-'+channelId()}" class="row-fluid" style="display:none">
-            <ul class="span12 unstyled" data-bind="foreach: outputs">
+          <div data-bind="attr: { id: 'channelConnections-'+channelId()}" class="row-fluid" style="display:none">
+            <ul class="span12 unstyled" data-bind="foreach: connections">
               <li>
                 <a class="btn btn-mini" href="#" data-bind="click:stop"><i class="icon-remove"></i></a>
-                <span class="label" data-bind="text:typeName"></span>
+                <a class="btn btn-mini" href="#" data-bind="click:restart"><i class="icon-repeat"></i></a>
+                <span class="label" data-bind="text:type"></span>
                 <span data-bind="text:name"></span>
+                <span data-bind="text:status"></span>
               </li>
             </ul>
           </div>

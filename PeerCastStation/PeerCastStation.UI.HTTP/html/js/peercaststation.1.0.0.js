@@ -62,6 +62,15 @@ PeerCast = {
   stopChannelOutput: function(channelId, id, completed) {
     this.postRequest('stopChannelOutput', { channelId: channelId, outputId: id }, completed);
   },
+  getChannelConnections: function(channelId, completed) {
+    this.postRequest('getChannelConnections', { channelId: channelId }, completed);
+  },
+  stopChannelConnection: function(channelId, id, completed) {
+    this.postRequest('stopChannelConnection', { channelId: channelId, connectionId: id }, completed);
+  },
+  restartChannelConnection: function(channelId, id, completed) {
+    this.postRequest('restartChannelConnection', { channelId: channelId, connectionId: id }, completed);
+  },
   getChannelRelayTree: function(channelId, completed) {
     this.postRequest('getChannelRelayTree', { channelId: channelId }, completed);
   },

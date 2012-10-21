@@ -153,32 +153,32 @@ var BroadcastDialog = new function() {
   };
 };
 
-var ChannelOutputViewModel = function(owner, initial_value) {
+var ChannelConnectionViewModel = function(owner, initial_value) {
   var self = this;
   self.channel = owner;
-  self.outputId = ko.observable(initial_value.outputId);
-  self.name     = ko.observable(initial_value.name);
-  self.type     = ko.observable(initial_value.type);
-  self.typeName = ko.computed(function() {
-    var type = self.type();
-    if ((type & PeerCast.OutputStreamType.Relay)!=0)     return "Relay";
-    if ((type & PeerCast.OutputStreamType.Play)!=0)      return "Play";
-    if ((type & PeerCast.OutputStreamType.Interface)!=0) return "Interface";
-    return "Other";
-  });
+  self.connectionId = ko.observable(initial_value.connectionId);
+  self.name         = ko.observable(initial_value.name);
+  self.desc         = ko.observable(initial_value.desc);
+  self.type         = ko.observable(initial_value.type);
+  self.status       = ko.observable(initial_value.status);
 
   self.update = function(value) {
     self.name(value.name);
+    self.desc(value.desc);
     self.type(value.type);
+    self.status(value.status);
     return self;
   };
 
   self.stop = function() {
-    PeerCast.stopChannelOutput(self.channel.channelId(), self.outputId(), function(result, error) {
-      if (!error) {
-        self.channel.outputs.remove(self);
+    PeerCast.stopChannelConnection(self.channel.channelId(), self.connectionId(), function(result, error) {
+      if (!error && result) {
+        self.channel.connections.remove(self);
       }
     });
+  };
+  self.restart = function() {
+    PeerCast.restartChannelConnection(self.channel.channelId(), self.connectionId());
   };
 };
 
@@ -236,7 +236,7 @@ var ChannelViewModel = function(initial_value) {
   self.isBroadcasting  = ko.observable(initial_value.status.isBroadcasting);
   self.isRelayFull     = ko.observable(initial_value.status.isRelayFull);
   self.isDirectFull    = ko.observable(initial_value.status.isDirectFull);
-  self.outputs         = ko.observableArray();
+  self.connections     = ko.observableArray();
   self.nodes           = ko.observableArray();
   self.yellowPages     = ko.observableArray($.map(initial_value.yellowPages, function(yp) {
     return new ChannelYellowPageViewModel(self, yp);
@@ -251,12 +251,12 @@ var ChannelViewModel = function(initial_value) {
     return channelsViewModel.isFirewalled();
   });
 
-  PeerCast.getChannelOutputs(self.channelId(), function(result) {
+  PeerCast.getChannelConnections(self.channelId(), function(result) {
     if (result) {
-      var outputs = $.map(result, function(output) {
-        return new ChannelOutputViewModel(self, output);
+      var connections = $.map(result, function(conn) {
+        return new ChannelConnectionViewModel(self, conn);
       });
-      self.outputs.splice.apply(self.outputs, [0, self.outputs().length].concat(outputs));
+      self.connections.splice.apply(self.connections, [0, self.connections().length].concat(connections));
     }
   });
 
@@ -264,28 +264,28 @@ var ChannelViewModel = function(initial_value) {
     $('#channelInfo-'+self.channelId()).slideToggle("fast");
   };
 
-  var updateOutputs = function() {
-    PeerCast.getChannelOutputs(self.channelId(), function(result) {
+  var updateConnections = function() {
+    PeerCast.getChannelConnections(self.channelId(), function(result) {
       if (result) {
-        var outputs = self.outputs();
-        var new_outputs = $.map(result, function(output_info) {
-          for (var i=0,l=outputs.length; i<l; i++) {
-            if (outputs[i].outputId()==output_info.outputId) {
-              return outputs[i].update(output_info);
+        var connections = self.connections();
+        var new_connections = $.map(result, function(conn) {
+          for (var i=0,l=connections.length; i<l; i++) {
+            if (connections[i].connectionId()==conn.connectionId) {
+              return connections[i].update(conn);
             }
           }
-          return new ChannelOutputViewModel(self, output_info);
+          return new ChannelConnectionViewModel(self, conn);
         });
-        self.outputs.splice.apply(self.outputs, [0, self.outputs().length].concat(new_outputs));
+        self.connections.splice.apply(self.connections, [0, self.connections().length].concat(new_connections));
       }
     });
   };
 
-  var outputsVisible = false;
-  self.showOutputs = function() {
-    outputsVisible = !outputsVisible;
-    if (outputsVisible) updateOutputs();
-    $('#channelOutputs-'+self.channelId()).slideToggle("fast");
+  var connectionsVisible = false;
+  self.showConnections = function() {
+    connectionsVisible = !connectionsVisible;
+    if (connectionsVisible) updateConnections();
+    $('#channelConnections-'+self.channelId()).slideToggle("fast");
   };
 
   var createTreeNode = function(node) {
@@ -337,7 +337,7 @@ var ChannelViewModel = function(initial_value) {
       }
       return new ChannelYellowPageViewModel(self, yp);
     });
-    self.outputs.splice.apply(self.yellowPages, [0, self.yellowPages().length].concat(new_yps));
+    self.yellowPages.splice.apply(self.yellowPages, [0, self.yellowPages().length].concat(new_yps));
   }
 
   var relayTreeVisible = false;
@@ -384,7 +384,7 @@ var ChannelViewModel = function(initial_value) {
     self.isRelayFull(c.status.isRelayFull);
     self.isDirectFull(c.status.isDirectFull);
     updateYellowPages(c.yellowPages);
-    if (outputsVisible) updateOutputs();
+    if (connectionsVisible) updateConnections();
     if (relayTreeVisible) updateRelayTree();
     return self;
   };
