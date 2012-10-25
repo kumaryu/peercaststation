@@ -411,7 +411,7 @@ module TestCore
       content1 = PeerCastStation::Core::Content.new(0, 'content')
       contents.add(content0)
       contents.add(content1)
-      assert_equal(content0, contents.newest)
+      assert_equal(content1.position, contents.newest.position)
     end
 
     def test_oldest
@@ -422,7 +422,7 @@ module TestCore
       content1 = PeerCastStation::Core::Content.new(0, 'content')
       contents.add(content0)
       contents.add(content1)
-      assert_equal(content1, contents.oldest)
+      assert_equal(content0.position, contents.oldest.position)
     end
 
     def test_add
@@ -481,6 +481,33 @@ module TestCore
 
       newer = contents.get_newer_contents(100)
       assert_equal(0, newer.count)
+    end
+
+    def test_next_of
+      contents = PeerCastStation::Core::ContentCollection.new
+      [
+        0x00000000, 0x10000000, 0x20000000, 0x30000000,
+        0x40000000, 0x50000000, 0x60000000, 0x70000000,
+        0x80000000, 0x90000000, 0xA0000000, 0xB0000000,
+        0xC0000000, 0xD0000000, 0xE0000000, 0xF0000000,
+      ].each do |i|
+        content = PeerCastStation::Core::Content.new(i, "content#{i}")
+        contents.add(content)
+      end
+      newer = contents.next_of(-1)
+      assert_equal(0x00000000, newer.position)
+
+      newer = contents.next_of(0x00000000)
+      assert_equal(0x10000000, newer.position)
+
+      newer = contents.next_of(0x70000000)
+      assert_equal(0x80000000, newer.position)
+
+      newer = contents.next_of(0x80000000)
+      assert_equal(0x90000000, newer.position)
+
+      newer = contents.next_of(0xF0000000)
+      assert_equal(0x00000000, newer.position)
     end
   end
 end

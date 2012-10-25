@@ -221,6 +221,7 @@ namespace PeerCastStation.HTTP
           }
           if (data.ContentHeader!=null) {
             Channel.ContentHeader = data.ContentHeader;
+            Channel.Contents.Clear();
           }
           if (data.Contents!=null) {
             foreach (var content in data.Contents) {

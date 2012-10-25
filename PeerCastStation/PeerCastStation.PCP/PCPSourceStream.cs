@@ -607,37 +607,12 @@ namespace PeerCastStation.PCP
       if (pkt_type!=null && pkt_data!=null) {
         if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_HEAD) {
           long pkt_pos = atom.Children.GetChanPktPos() ?? 0;
-          long last_pos = 0;
-          if (Channel.Contents.Newest!=null) {
-            last_pos = Channel.Contents.Newest.Position;
-          }
-          else if (Channel.ContentHeader!=null) {
-            last_pos = Channel.ContentHeader.Position;
-          }
-          if (pkt_pos<=(last_pos&0xFFFFFFFFU)-0x80000000) {
-            pkt_pos += (last_pos&0x7FFFFFFF00000000) + 0x100000000;
-          }
-          else {
-            pkt_pos += (last_pos&0x7FFFFFFF00000000);
-          }
           Channel.ContentHeader = new Content(pkt_pos, pkt_data);
+          Channel.Contents.Clear();
         }
         else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_DATA) {
           if (atom.Children.GetChanPktPos()!=null) {
             long pkt_pos = atom.Children.GetChanPktPos().Value;
-            long last_pos = 0;
-            if (Channel.Contents.Newest!=null) {
-              last_pos = Channel.Contents.Newest.Position;
-            }
-            else if (Channel.ContentHeader!=null) {
-              last_pos = Channel.ContentHeader.Position;
-            }
-            if (pkt_pos<=(last_pos&0xFFFFFFFFU)-0x80000000) {
-              pkt_pos += (last_pos&0x7FFFFFFF00000000) + 0x100000000;
-            }
-            else {
-              pkt_pos += (last_pos&0x7FFFFFFF00000000);
-            }
             Channel.Contents.Add(new Content(pkt_pos, pkt_data));
           }
         }

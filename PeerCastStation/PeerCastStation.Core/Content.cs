@@ -51,7 +51,7 @@ namespace PeerCastStation.Core
     : MarshalByRefObject,
       ICollection<Content>
   {
-    private SortedList<long, Content> list = new SortedList<long,Content>();
+    private List<Content> list = new List<Content>();
     public long LimitPackets { get; set; }
     public ContentCollection()
     {
@@ -76,12 +76,7 @@ namespace PeerCastStation.Core
     public void Add(Content item)
     {
       lock (list) {
-        if (list.ContainsKey(item.Position)) {
-          list[item.Position] = item;
-        }
-        else {
-          list.Add(item.Position, item);
-        }
+        list.Add(item);
         while (list.Count>LimitPackets && list.Count>1) {
           list.RemoveAt(0);
         }
@@ -100,14 +95,14 @@ namespace PeerCastStation.Core
     public bool Contains(Content item)
     {
       lock (list) {
-        return list.ContainsValue(item);
+        return list.Contains(item);
       }
     }
 
     public void CopyTo(Content[] array, int arrayIndex)
     {
       lock (list) {
-        list.Values.CopyTo(array, arrayIndex);
+        list.CopyTo(array, arrayIndex);
       }
     }
 
@@ -115,7 +110,7 @@ namespace PeerCastStation.Core
     {
       bool res;
       lock (list) {
-        res = list.Remove(item.Position);
+        res = list.Remove(item);
       }
       if (res) {
         OnContentChanged();
@@ -128,19 +123,19 @@ namespace PeerCastStation.Core
 
     IEnumerator<Content> IEnumerable<Content>.GetEnumerator()
     {
-      return list.Values.GetEnumerator();
+      return list.GetEnumerator();
     }
 
     System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
     {
-      return list.Values.GetEnumerator();
+      return list.GetEnumerator();
     }
 
     public Content Oldest {
       get {
         lock (list) {
           if (list.Count>0) {
-            return list.Values[0];
+            return list[0];
           }
           else {
             return null;
@@ -153,7 +148,7 @@ namespace PeerCastStation.Core
       get {
         lock (list) {
           if (list.Count>0) {
-            return list.Values[list.Count-1];
+            return list[list.Count-1];
           }
           else {
             return null;
@@ -165,37 +160,12 @@ namespace PeerCastStation.Core
     private int GetNewerPacketIndex(long position)
     {
       lock (list) {
-        if (list.Count<1) {
-          return 0;
-        }
-        if (list.Keys[0]>position) {
-          return 0;
-        }
-        if (list.Keys[list.Count-1]<=position) {
-          return list.Count;
-        }
-        var min = 0;
-        var max = list.Count-1;
-        var idx = (max+min)/2;
-        while (true) {
-          if (list.Keys[idx]==position) {
-            return idx+1;
-          }
-          else if (list.Keys[idx]>position) {
-            if (min>=max) {
-              return idx;
-            }
-            max = idx-1;
-            idx = (max+min)/2;
-          }
-          else if (list.Keys[idx]<position) {
-            if (min>=max) {
-              return idx+1;
-            }
-            min = idx+1;
-            idx = (max+min)/2;
+        for (var i=0; i<list.Count; i++) {
+          if (list[i].Position>position || list[i].Position<position-0x80000000) {
+            return i;
           }
         }
+        return list.Count;
       }
     }
 
@@ -205,7 +175,7 @@ namespace PeerCastStation.Core
         int idx = GetNewerPacketIndex(position);
         var res = new List<Content>(Math.Max(list.Count-idx, 0));
         for (var i=idx; i<list.Count; i++) {
-          res.Add(list.Values[i]);
+          res.Add(list[i]);
         }
         return res;
       }
@@ -216,7 +186,7 @@ namespace PeerCastStation.Core
       lock (list) {
         int idx = GetNewerPacketIndex(position);
         if (idx>=list.Count) return null;
-        else return list.Values[idx];
+        else return list[idx];
       }
     }
 
