@@ -17,6 +17,14 @@ require 'test_pcp_common'
 require 'pcp'
 require 'timeout'
 
+def read_atom(io)
+  res = nil
+  timeout(3) do
+    res = PCP::Atom.read(io)
+  end
+  res
+end
+
 module TestPCP
   class TC_RelayRequest < Test::Unit::TestCase
     def test_construct
@@ -311,7 +319,7 @@ EOS
                   7144,
                   1218,
                   @peercast.agent_name,
-                  PCP::Atom.read(io))
+                  read_atom(io))
     end
 
     def assert_pcp_quit(code, atom)
@@ -323,17 +331,17 @@ EOS
       channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
       channel.status = PCSCore::SourceStreamStatus.receiving
       channel.is_relay_full = true
-      channel.content_header = PCSCore::Content.new(0, 'header')
-      channel.contents.add(PCSCore::Content.new( 6, 'content1'))
-      channel.contents.add(PCSCore::Content.new(14, 'content2'))
-      channel.contents.add(PCSCore::Content.new(22, 'content3'))
-      channel.contents.add(PCSCore::Content.new(30, 'content4'))
+      channel.content_header = PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0), 0, 'header')
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.1),  6, 'content1'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.2), 14, 'content2'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.3), 22, 'content3'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.4), 30, 'content4'))
       @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
       @stream.start
       header = read_http_header(@pipe)
       assert_http_header(503, {}, header)
       pcp_handshake(@pipe)
-      assert_pcp_quit(PCP::ERROR_QUIT, PCP::Atom.read(@pipe))
+      assert_pcp_quit(PCP::ERROR_QUIT, read_atom(@pipe))
     end
 
     def test_relay_relay_full_with_other_nodes
@@ -370,7 +378,7 @@ EOS
       assert_http_header(503, {'Content-Type' => 'application/x-peercast-pcp'}, header)
       pcp_handshake(@pipe)
       8.times do |i|
-        host = PCP::Atom.read(@pipe)
+        host = read_atom(@pipe)
         assert_equal(PCP::HOST, host.name)
         node = channel.nodes.find {|n| n.SessionID.ToString('N')==host[PCP::HOST_ID].to_s }
         assert_equal(node.SessionID.ToString('N'),                         host[PCP::HOST_ID].to_s)
@@ -397,7 +405,7 @@ EOS
         assert_equal(node.is_control_full, (host[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_CIN)==0)
         assert_equal(node.is_firewalled,   (host[PCP::HOST_FLAGS1] & PCP::HOST_FLAGS1_PUSH)!=0)
       end
-      assert_pcp_quit(PCP::ERROR_QUIT, PCP::Atom.read(@pipe))
+      assert_pcp_quit(PCP::ERROR_QUIT, read_atom(@pipe))
     end
 
     def test_relay
@@ -409,15 +417,15 @@ EOS
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
       pcp_handshake(@pipe)
-      channel.content_header = PCSCore::Content.new(0, 'header')
-      channel.contents.add(PCSCore::Content.new( 6, 'content1'))
-      channel.contents.add(PCSCore::Content.new(14, 'content2'))
-      channel.contents.add(PCSCore::Content.new(22, 'content3'))
-      channel.contents.add(PCSCore::Content.new(30, 'content4'))
-      ok = PCP::Atom.read(@pipe)
+      channel.content_header = PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0), 0, 'header')
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.1),  6, 'content1'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.2), 14, 'content2'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.3), 22, 'content3'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.4), 30, 'content4'))
+      ok = read_atom(@pipe)
       assert_equal(PCP::OK, ok.name)
       assert_equal(1, ok.value)
-      chan = PCP::Atom.read(@pipe)
+      chan = read_atom(@pipe)
       assert_equal(PCP::CHAN, chan.name)
       assert_not_nil(chan[PCP::CHAN_INFO])
       assert_not_nil(chan[PCP::CHAN_TRACK])
@@ -427,7 +435,7 @@ EOS
       assert_equal(0,                 pkt[PCP::CHAN_PKT_POS])
       assert_equal('header',          pkt[PCP::CHAN_PKT_DATA])
       4.times do |i|
-        chan = PCP::Atom.read(@pipe)
+        chan = read_atom(@pipe)
         assert_equal(PCP::CHAN, chan.name)
         assert_nil(chan[PCP::CHAN_INFO])
         assert_nil(chan[PCP::CHAN_TRACK])
@@ -438,7 +446,7 @@ EOS
         assert_equal("content#{i+1}",   pkt[PCP::CHAN_PKT_DATA])
       end
       @stream.stop
-      assert_pcp_quit(PCP::ERROR_QUIT, PCP::Atom.read(@pipe))
+      assert_pcp_quit(PCP::ERROR_QUIT, read_atom(@pipe))
     end
 
     def test_relay_with_splitting_large_packet
@@ -450,13 +458,13 @@ EOS
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
       pcp_handshake(@pipe)
-      channel.content_header = PCSCore::Content.new(0, 'header')
-      channel.contents.add(PCSCore::Content.new( 6,         '1'*(15*1024)))
-      channel.contents.add(PCSCore::Content.new( 6+15*1024, '2'*(16*1024)))
-      channel.contents.add(PCSCore::Content.new( 6+31*1024, '3'*10))
-      channel.contents.add(PCSCore::Content.new(16+31*1024, '4'*(96*1024)))
-      ok = PCP::Atom.read(@pipe)
-      chan = PCP::Atom.read(@pipe)
+      channel.content_header = PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0), 0, 'header')
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.1),  6,         '1'*(15*1024)))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.2),  6+15*1024, '2'*(16*1024)))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.3),  6+31*1024, '3'*10))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.4), 16+31*1024, '4'*(96*1024)))
+      ok = read_atom(@pipe)
+      chan = read_atom(@pipe)
       pos = 6
       [
         '1'*(15*1024),
@@ -471,7 +479,7 @@ EOS
         '4'*(15*1024),
         '4'*(6*1024),
       ].each do |expected|
-        chan = PCP::Atom.read(@pipe)
+        chan = read_atom(@pipe)
         assert_equal(PCP::CHAN, chan.name)
         assert_nil(chan[PCP::CHAN_INFO])
         assert_nil(chan[PCP::CHAN_TRACK])
@@ -483,13 +491,18 @@ EOS
         pos += expected.bytesize
       end
       @stream.stop
-      assert_pcp_quit(PCP::ERROR_QUIT, PCP::Atom.read(@pipe))
+      assert_pcp_quit(PCP::ERROR_QUIT, read_atom(@pipe))
     end
 
     def test_relay_with_stream_pos
       channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
       channel.status = PCSCore::SourceStreamStatus.receiving
       channel.is_relay_full = false
+      channel.content_header = PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0), 0, 'header')
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.1),  6, 'content1'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.2), 14, 'content2'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.3), 22, 'content3'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.4), 30, 'content4'))
       request = PCSPCP::RelayRequest.new(
         System::Array[System::String].new([
           'GET /channel/531dc8dfc7fb42928ac2c0a626517a87 HTTP/1.1',
@@ -504,14 +517,9 @@ EOS
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
       pcp_handshake(@pipe)
-      channel.content_header = PCSCore::Content.new(0, 'header')
-      channel.contents.add(PCSCore::Content.new( 6, 'content1'))
-      channel.contents.add(PCSCore::Content.new(14, 'content2'))
-      channel.contents.add(PCSCore::Content.new(22, 'content3'))
-      channel.contents.add(PCSCore::Content.new(30, 'content4'))
-      ok = PCP::Atom.read(@pipe)
+      ok = read_atom(@pipe)
       assert_equal(PCP::OK, ok.name)
-      chan = PCP::Atom.read(@pipe)
+      chan = read_atom(@pipe)
       assert_equal(PCP::CHAN, chan.name)
       assert_not_nil(chan[PCP::CHAN_INFO])
       assert_not_nil(chan[PCP::CHAN_TRACK])
@@ -521,18 +529,18 @@ EOS
       assert_equal(0,                 pkt[PCP::CHAN_PKT_POS])
       assert_equal('header',          pkt[PCP::CHAN_PKT_DATA])
       (2..3).each do |i|
-        chan = PCP::Atom.read(@pipe)
+        chan = read_atom(@pipe)
         assert_equal(PCP::CHAN, chan.name)
         assert_nil(chan[PCP::CHAN_INFO])
         assert_nil(chan[PCP::CHAN_TRACK])
         assert_not_nil(chan[PCP::CHAN_PKT])
         pkt = chan[PCP::CHAN_PKT]
         assert_equal(PCP::CHAN_PKT_DATA, pkt[PCP::CHAN_PKT_TYPE])
-        assert_equal(6+i*8,             pkt[PCP::CHAN_PKT_POS])
-        assert_equal("content#{i+1}",   pkt[PCP::CHAN_PKT_DATA])
+        assert_equal(6+i*8,              pkt[PCP::CHAN_PKT_POS])
+        assert_equal("content#{i+1}",    pkt[PCP::CHAN_PKT_DATA])
       end
       @stream.stop
-      assert_pcp_quit(PCP::ERROR_QUIT, PCP::Atom.read(@pipe))
+      assert_pcp_quit(PCP::ERROR_QUIT, read_atom(@pipe))
     end
 
     def test_bcst
@@ -544,11 +552,11 @@ EOS
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
       pcp_handshake(@pipe)
-      channel.content_header = PCSCore::Content.new(0, 'header')
-      channel.contents.add(PCSCore::Content.new( 6, 'content1'))
-      channel.contents.add(PCSCore::Content.new(14, 'content2'))
-      channel.contents.add(PCSCore::Content.new(22, 'content3'))
-      channel.contents.add(PCSCore::Content.new(30, 'content4'))
+      channel.content_header = PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0), 0, 'header')
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.1),  6, 'content1'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.2), 14, 'content2'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.3), 22, 'content3'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.4), 30, 'content4'))
       bcst = PCP::Atom.new(PCP::BCST, [])
       bcst[PCP::BCST_TTL]  = 11
       bcst[PCP::BCST_HOPS] = 0
@@ -588,11 +596,11 @@ EOS
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
       pcp_handshake(@pipe)
-      channel.content_header = PCSCore::Content.new(0, 'header')
-      channel.contents.add(PCSCore::Content.new( 6, 'content1'))
-      channel.contents.add(PCSCore::Content.new(14, 'content2'))
-      channel.contents.add(PCSCore::Content.new(22, 'content3'))
-      channel.contents.add(PCSCore::Content.new(30, 'content4'))
+      channel.content_header = PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0), 0, 'header')
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.1),  6, 'content1'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.2), 14, 'content2'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.3), 22, 'content3'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.4), 30, 'content4'))
       bcst = PCP::Atom.new(PCP::BCST, [])
       bcst[PCP::BCST_TTL]  = 11
       bcst[PCP::BCST_HOPS] = 0
@@ -618,11 +626,11 @@ EOS
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
       pcp_handshake(@pipe)
-      channel.content_header = PCSCore::Content.new(0, 'header')
-      channel.contents.add(PCSCore::Content.new( 6, 'content1'))
-      channel.contents.add(PCSCore::Content.new(14, 'content2'))
-      channel.contents.add(PCSCore::Content.new(22, 'content3'))
-      channel.contents.add(PCSCore::Content.new(30, 'content4'))
+      channel.content_header = PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0), 0, 'header')
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.1),  6, 'content1'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.2), 14, 'content2'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.3), 22, 'content3'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.4), 30, 'content4'))
       bcst = PCP::Atom.new(PCP::BCST, [])
       bcst[PCP::BCST_TTL]  = 11
       bcst[PCP::BCST_HOPS] = 0
@@ -648,11 +656,11 @@ EOS
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
       pcp_handshake(@pipe)
-      channel.content_header = PCSCore::Content.new(0, 'header')
-      channel.contents.add(PCSCore::Content.new( 6, 'content1'))
-      channel.contents.add(PCSCore::Content.new(14, 'content2'))
-      channel.contents.add(PCSCore::Content.new(22, 'content3'))
-      channel.contents.add(PCSCore::Content.new(30, 'content4'))
+      channel.content_header = PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0), 0, 'header')
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.1),  6, 'content1'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.2), 14, 'content2'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.3), 22, 'content3'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.4), 30, 'content4'))
       bcst = PCP::Atom.new(PCP::BCST, [])
       bcst[PCP::BCST_TTL]  = 0
       bcst[PCP::BCST_HOPS] = 11
@@ -683,8 +691,8 @@ EOS
       thread = Thread.new {
         begin
           socket = server.accept
-          ping_conn = PCP::Atom.read(socket)
-          ping_helo = PCP::Atom.read(socket)
+          ping_conn = read_atom(socket)
+          ping_helo = read_atom(socket)
           oleh = PCP::Atom.new(PCP::OLEH, [])
           oleh[PCP::HELO_SESSIONID] = session_id
           oleh.write(socket)
@@ -707,7 +715,7 @@ EOS
                   0,
                   1218,
                   @peercast.agent_name,
-                  PCP::Atom.read(@pipe))
+                  read_atom(@pipe))
       server.close
       assert_nil(ping_conn)
       assert_nil(ping_helo)
@@ -751,8 +759,8 @@ EOS
       thread = Thread.new {
         begin
           socket = server.accept
-          ping_conn = PCP::Atom.read(socket)
-          ping_helo = PCP::Atom.read(socket)
+          ping_conn = read_atom(socket)
+          ping_helo = read_atom(socket)
           oleh = PCP::Atom.new(PCP::OLEH, [])
           oleh[PCP::HELO_SESSIONID] = session_id
           oleh.write(socket)
@@ -781,7 +789,7 @@ EOS
                   7146,
                   1218,
                   @peercast.agent_name,
-                  PCP::Atom.read(@pipe))
+                  read_atom(@pipe))
     ensure
       server.close if server and not server.closed?
     end
@@ -802,8 +810,8 @@ EOS
       thread = Thread.new {
         begin
           socket = server.accept
-          ping_conn = PCP::Atom.read(socket)
-          ping_helo = PCP::Atom.read(socket)
+          ping_conn = read_atom(socket)
+          ping_helo = read_atom(socket)
           oleh = PCP::Atom.new(PCP::OLEH, [])
           oleh[PCP::HELO_SESSIONID] = PCP::GID.generate
           oleh.write(socket)
@@ -833,7 +841,7 @@ EOS
                   0,
                   1218,
                   @peercast.agent_name,
-                  PCP::Atom.read(@pipe))
+                  read_atom(@pipe))
     ensure
       server.close if server and not server.closed?
     end
@@ -897,22 +905,22 @@ EOS
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
       pcp_handshake(@pipe)
-      channel.content_header = PCSCore::Content.new(0, 'header')
-      channel.contents.add(PCSCore::Content.new( 6, 'content1'))
-      channel.contents.add(PCSCore::Content.new(14, 'content2'))
-      channel.contents.add(PCSCore::Content.new(22, 'content3'))
-      channel.contents.add(PCSCore::Content.new(30, 'content4'))
-      ok = PCP::Atom.read(@pipe)
-      chan = PCP::Atom.read(@pipe)
-      4.times do |i|
-        chan = PCP::Atom.read(@pipe)
+      channel.content_header = PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0), 0, 'header')
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.1),  6, 'content1'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.2), 14, 'content2'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.3), 22, 'content3'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.4), 30, 'content4'))
+      ok = read_atom(@pipe)
+      chan = read_atom(@pipe)
+      4.times do
+        chan = read_atom(@pipe)
       end
       @stream.stop
-      quit = PCP::Atom.read(@pipe)
+      quit = read_atom(@pipe)
       t = Time.now
       sleep([1.5-(t-start), 0].max)
       recv_rate = @stream.recv_rate
-      assert_not_equal 0, recv_rate
+      assert_not_equal 0.to_f, recv_rate.to_f
     end
 
     def test_send_rate
@@ -925,18 +933,18 @@ EOS
       header = read_http_header(@pipe)
       assert_http_header(200, {}, header)
       pcp_handshake(@pipe)
-      channel.content_header = PCSCore::Content.new(0, 'header')
-      channel.contents.add(PCSCore::Content.new( 6, 'content1'))
-      channel.contents.add(PCSCore::Content.new(14, 'content2'))
-      channel.contents.add(PCSCore::Content.new(22, 'content3'))
-      channel.contents.add(PCSCore::Content.new(30, 'content4'))
-      ok = PCP::Atom.read(@pipe)
-      chan = PCP::Atom.read(@pipe)
-      4.times do |i|
-        chan = PCP::Atom.read(@pipe)
+      channel.content_header = PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0), 0, 'header')
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.1),  6, 'content1'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.2), 14, 'content2'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.3), 22, 'content3'))
+      channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.4), 30, 'content4'))
+      ok = read_atom(@pipe)
+      chan = read_atom(@pipe)
+      4.times do
+        chan = read_atom(@pipe)
       end
       @stream.stop
-      quit = PCP::Atom.read(@pipe)
+      quit = read_atom(@pipe)
       t = Time.now
       sleep([1.5-(t-start), 0].max)
       send_rate = @stream.send_rate

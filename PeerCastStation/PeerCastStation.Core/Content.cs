@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 
@@ -26,8 +27,16 @@ namespace PeerCastStation.Core
   public class Content
   {
     /// <summary>
-    /// コンテントの位置を取得します。
-    /// 位置はバイト数や時間とか関係なくソースの出力したパケット番号です
+    /// コンテントのストリーム番号を取得します
+    /// </summary>
+    public int Stream { get; private set; } 
+    /// <summary>
+    /// コンテントのストリーム開始時点からの時刻を取得します。
+    /// 時刻はコンテントストリームの論理時間と一致するとは限りません
+    /// </summary>
+    public TimeSpan Timestamp { get; private set; } 
+    /// <summary>
+    /// コンテントのストリーム開始時点からのバイト位置を取得します
     /// </summary>
     public long Position { get; private set; } 
     /// <summary>
@@ -36,14 +45,18 @@ namespace PeerCastStation.Core
     public byte[] Data   { get; private set; } 
 
     /// <summary>
-    /// コンテントの位置と内容を指定して初期化します
+    /// コンテントのストリーム番号、時刻、位置、内容を指定して初期化します
     /// </summary>
-    /// <param name="pos">位置</param>
+    /// <param name="stream">ストリーム番号</param>
+    /// <param name="timestamp">時刻</param>
+    /// <param name="pos">バイト位置</param>
     /// <param name="data">内容</param>
-    public Content(long pos, byte[] data)
+    public Content(int stream, TimeSpan timestamp, long pos, byte[] data)
     {
-      Position = pos;
-      Data = data;
+      Stream    = stream;
+      Timestamp = timestamp;
+      Position  = pos;
+      Data      = data;
     }
   }
 
@@ -51,7 +64,31 @@ namespace PeerCastStation.Core
     : MarshalByRefObject,
       ICollection<Content>
   {
-    private List<Content> list = new List<Content>();
+    private struct ContentKey
+      : IComparable<ContentKey>
+    {
+      public int      Stream;
+      public TimeSpan Timestamp;
+      public long     Position;
+
+      public ContentKey(int stream, TimeSpan timestamp, long position)
+      {
+        Stream = stream;
+        Timestamp = timestamp;
+        Position = position;
+      }
+
+      public int CompareTo(ContentKey other)
+      {
+        var s = Stream.CompareTo(other.Stream);
+        if (s!=0) return s;
+        var t = Timestamp.CompareTo(other.Timestamp);
+        if (t!=0) return t;
+        return Position.CompareTo(other.Position);
+      }
+    }
+
+    private SortedList<ContentKey, Content> list = new SortedList<ContentKey, Content>();
     public long LimitPackets { get; set; }
     public ContentCollection()
     {
@@ -75,13 +112,20 @@ namespace PeerCastStation.Core
 
     public void Add(Content item)
     {
+      bool added = false;
       lock (list) {
-        list.Add(item);
+        try {
+          list.Add(new ContentKey(item.Stream, item.Timestamp, item.Position), item);
+          added = true;
+        }
+        catch (ArgumentException) {}
         while (list.Count>LimitPackets && list.Count>1) {
           list.RemoveAt(0);
         }
       }
-      OnContentChanged();
+      if (added) {
+        OnContentChanged();
+      }
     }
 
     public void Clear()
@@ -95,14 +139,14 @@ namespace PeerCastStation.Core
     public bool Contains(Content item)
     {
       lock (list) {
-        return list.Contains(item);
+        return list.ContainsKey(new ContentKey(item.Stream, item.Timestamp, item.Position));
       }
     }
 
     public void CopyTo(Content[] array, int arrayIndex)
     {
       lock (list) {
-        list.CopyTo(array, arrayIndex);
+        list.Values.CopyTo(array, arrayIndex);
       }
     }
 
@@ -110,7 +154,7 @@ namespace PeerCastStation.Core
     {
       bool res;
       lock (list) {
-        res = list.Remove(item);
+        res = list.Remove(new ContentKey(item.Stream, item.Timestamp, item.Position));
       }
       if (res) {
         OnContentChanged();
@@ -123,77 +167,71 @@ namespace PeerCastStation.Core
 
     IEnumerator<Content> IEnumerable<Content>.GetEnumerator()
     {
-      return list.GetEnumerator();
+      return list.Values.GetEnumerator();
     }
 
     System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
     {
-      return list.GetEnumerator();
+      return list.Values.GetEnumerator();
     }
 
-    public Content Oldest {
+    public Content GetOldest(int stream)
+    {
+      lock (list) {
+        return list.Values.Where(c => c.Stream>=stream).FirstOrDefault();
+      }
+    }
+
+    public Content GetNewest(int stream)
+    {
+      lock (list) {
+        return list.Values.Where(c => c.Stream>=stream).LastOrDefault();
+      }
+    }
+
+    public Content Newest
+    {
       get {
-        lock (list) {
-          if (list.Count>0) {
-            return list[0];
-          }
-          else {
-            return null;
-          }
-        }
+        return list.Values.LastOrDefault();
       }
     }
 
-    public Content Newest {
+    public Content Oldest
+    {
       get {
-        lock (list) {
-          if (list.Count>0) {
-            return list[list.Count-1];
-          }
-          else {
-            return null;
-          }
-        }
+        return list.Values.FirstOrDefault();
       }
     }
 
-    private int GetNewerPacketIndex(long position)
+    public IList<Content> GetNewerContents(int stream, TimeSpan t, long position)
     {
       lock (list) {
-        for (var i=0; i<list.Count; i++) {
-          if (list[i].Position>position || list[i].Position<position-0x80000000) {
-            return i;
-          }
-        }
-        return list.Count;
+        return list.Values.Where(c =>
+          c.Stream>=stream &&
+          (c.Timestamp>t || (c.Timestamp==t && c.Position>position))).ToArray();
       }
     }
 
-    public IList<Content> GetNewerContents(long position)
+    public Content NextOf(int stream, TimeSpan t, long position)
     {
       lock (list) {
-        int idx = GetNewerPacketIndex(position);
-        var res = new List<Content>(Math.Max(list.Count-idx, 0));
-        for (var i=idx; i<list.Count; i++) {
-          res.Add(list[i]);
-        }
-        return res;
-      }
-    }
-
-    public Content NextOf(long position)
-    {
-      lock (list) {
-        int idx = GetNewerPacketIndex(position);
-        if (idx>=list.Count) return null;
-        else return list[idx];
+        return list.Values.Where(c =>
+          c.Stream>=stream &&
+          (c.Timestamp>t || (c.Timestamp==t && c.Position>position))).FirstOrDefault();
       }
     }
 
     public Content NextOf(Content item)
     {
-      return NextOf(item.Position);
+      return NextOf(item.Stream, item.Timestamp, item.Position);
     }
-  }
 
+    public Content FindNextByPosition(int stream, long pos)
+    {
+      lock (list) {
+        return list.Values.Where(c => c.Stream>=stream && pos<c.Position).FirstOrDefault();
+      }
+    }
+
+  }
 }

@@ -96,8 +96,8 @@ module TestCore
     def test_read_continue
       stream = System::IO::MemoryStream.new
       data = Array.new(10000) {|i| i%256 }.pack('C*')
-      @channel.content_header = PCSCore::Content.new(30000, 'header')
-      @channel.contents.add(PCSCore::Content.new(13093, 'foobar'))
+      @channel.content_header = PCSCore::Content.new(3, System::TimeSpan.from_seconds(0), 30000, 'header')
+      @channel.contents.add(PCSCore::Content.new(3, System::TimeSpan.from_seconds(5), 13093, 'foobar'))
       stream.write(data, 0, data.bytesize)
       stream.position = 0
       content = @reader.read(stream)

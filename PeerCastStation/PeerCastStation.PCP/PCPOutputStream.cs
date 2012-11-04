@@ -398,7 +398,7 @@ namespace PeerCastStation.PCP
       if (lastHeader!=null) {
         Content content;
         if (lastContent!=null) {
-          content = channel.Contents.NextOf(lastContent.Position);
+          content = channel.Contents.NextOf(lastContent.Stream, lastContent.Timestamp, lastContent.Position);
           if (content!=null && lastContent.Position+lastContent.Data.LongLength<content.Position) {
             Logger.Info("Content Skipped {0} expected but was {1}",
               lastContent.Position+lastContent.Data.LongLength,
@@ -406,10 +406,11 @@ namespace PeerCastStation.PCP
           }
         }
         else if (relayRequest.StreamPos.HasValue && relayRequest.StreamPos.Value>lastHeader.Position) {
-          content = channel.Contents.NextOf(relayRequest.StreamPos.Value-1);
+          content = channel.Contents.FindNextByPosition(lastHeader.Stream, relayRequest.StreamPos.Value-1) ??
+                    channel.Contents.GetOldest(lastHeader.Stream);
         }
         else {
-          content = channel.Contents.Oldest;
+          content = channel.Contents.GetOldest(lastHeader.Stream);
         }
         if (content!=null) {
           lastContent = content;

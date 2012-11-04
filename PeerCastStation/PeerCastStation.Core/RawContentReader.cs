@@ -15,13 +15,17 @@ namespace PeerCastStation.Core
       this.Channel = channel;
     }
 
+    private int streamIndex = -1;
+    private DateTime streamOrigin;
     public ParsedContent Read(Stream stream)
     {
       if (stream.Length-stream.Position<=0) throw new EndOfStreamException();
       var res = new ParsedContent();
       var pos = Channel.ContentPosition;
       if (Channel.ContentHeader==null) {
-        res.ContentHeader = new Content(pos, new byte[] { });
+        streamIndex += 1;
+        streamOrigin = DateTime.Now;
+        res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, pos, new byte[] { });
         var channel_info = new AtomCollection(Channel.ChannelInfo.Extra);
         channel_info.SetChanInfoType("RAW");
         channel_info.SetChanInfoStreamType("application/octet-stream");
@@ -34,7 +38,7 @@ namespace PeerCastStation.Core
         var sz = stream.Read(bytes, 0, bytes.Length);
         if (sz>0) {
           Array.Resize(ref bytes, sz);
-          res.Contents.Add(new Content(pos, bytes));
+          res.Contents.Add(new Content(streamIndex, DateTime.Now-streamOrigin, pos, bytes));
           pos += sz;
         }
       }

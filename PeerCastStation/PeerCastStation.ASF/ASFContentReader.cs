@@ -333,6 +333,9 @@ namespace PeerCastStation.ASF
     public string Name { get { return "ASF(WMV or WMA)"; } }
     public Channel Channel { get; private set; }
 
+    private int      streamIndex = -1;
+    private DateTime streamOrigin;
+
     public ParsedContent Read(Stream stream)
     {
       var chunks = 0;
@@ -363,13 +366,15 @@ namespace PeerCastStation.ASF
                 info.SetChanInfoStreamExt(".asf");
               }
               res.ChannelInfo = new ChannelInfo(info);
-              res.ContentHeader = new Content(pos, chunk.ToByteArray());
+              streamIndex += 1;
+              streamOrigin = DateTime.Now;
+              res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, pos, chunk.ToByteArray());
               pos += chunk.TotalLength;
             }
             break;
           case ASFChunk.ChunkType.Data:
             if (res.Contents==null) res.Contents = new System.Collections.Generic.List<Content>();
-            res.Contents.Add(new Content(pos, chunk.ToByteArray()));
+            res.Contents.Add(new Content(streamIndex, DateTime.Now-streamOrigin, pos, chunk.ToByteArray()));
             pos += chunk.TotalLength;
             break;
           case ASFChunk.ChunkType.Unknown:

@@ -315,6 +315,8 @@ namespace PeerCastStation.MKV
     };
     private ReaderState state = ReaderState.EBML;
     private long position = 0;
+    private int streamIndex = -1;
+    private DateTime streamOrigin;
 
     public ParsedContent Read(Stream stream)
     {
@@ -383,7 +385,9 @@ namespace PeerCastStation.MKV
                   c.Write(header);
                 }
               }
-              res.ContentHeader = new Content(0, header.ToArray());
+              streamIndex += 1;
+              streamOrigin = DateTime.Now;
+              res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, 0, header.ToArray());
               if (ebml.DocType=="webm") {
                 info.SetChanInfoType("WEBM");
                 info.SetChanInfoStreamType("video/webm");
@@ -536,7 +540,7 @@ namespace PeerCastStation.MKV
             body.Write(s);
           }
           var data = s.ToArray();
-          res.Contents.Add(new Content(position, data));
+          res.Contents.Add(new Content(streamIndex, DateTime.Now-streamOrigin, position, data));
           position += data.Length;
         }
       }

@@ -129,6 +129,8 @@ namespace PeerCastStation.FLV
     };
     private ReaderState state = ReaderState.Header;
     private long position = 0;
+    private int streamIndex = -1;
+    private DateTime streamOrigin;
     private FileHeader fileHeader;
     private LinkedList<TagDesc> tags = new LinkedList<TagDesc>();
 
@@ -150,7 +152,9 @@ namespace PeerCastStation.FLV
                 Logger.Info("FLV Header found");
                 fileHeader = header;
                 bin = header.Binary;
-                res.ContentHeader = new Content(position, bin);
+                streamIndex += 1;
+                streamOrigin = DateTime.Now;
+                res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, position, bin);
                 res.Contents = null;
                 info.SetChanInfoType("FLV");
                 info.SetChanInfoStreamType("video/x-flv");
@@ -177,7 +181,7 @@ namespace PeerCastStation.FLV
                   read_valid = true;
                   bin = body.Binary;
                   if (res.Contents==null) res.Contents = new List<Content>();
-                  res.Contents.Add(new Content(position, bin));
+                  res.Contents.Add(new Content(streamIndex, DateTime.Now-streamOrigin, position, bin));
                   tags.AddLast(new TagDesc { Timestamp=body.Timestamp/1000.0, DataSize=body.DataSize });
                   var timespan = tags.Last.Value.Timestamp-tags.First.Value.Timestamp;
                   if (timespan>=30.0) {
@@ -197,7 +201,9 @@ namespace PeerCastStation.FLV
                   read_valid = true;
                   fileHeader = header;
                   bin = header.Binary;
-                  res.ContentHeader = new Content(0, bin);
+                  streamIndex += 1;
+                  streamOrigin = DateTime.Now;
+                  res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, 0, bin);
                   res.Contents = null;
                   info.SetChanInfoType("FLV");
                   info.SetChanInfoStreamType("video/x-flv");

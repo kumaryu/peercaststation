@@ -18,11 +18,11 @@ require 'test_core_common'
 module TestCore
   class TC_CoreContent < Test::Unit::TestCase
     def test_construct
-      obj = PeerCastStation::Core::Content.new(10, 'content')
+      obj = PeerCastStation::Core::Content.new(3, System::TimeSpan.from_seconds(5), 10, 'content')
+      assert_equal(3, obj.stream)
+      assert_equal(5, obj.timestamp.total_seconds)
       assert_equal(10, obj.position)
       assert_equal('content'.unpack('C*'), obj.data)
-      assert(obj.GetType.get_custom_attributes(System::SerializableAttribute.to_clr_type, true).length>0)
-      assert(!obj.respond_to?(:create_obj_ref))
     end
   end
 

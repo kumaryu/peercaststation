@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 require 'test_core_common'
+require 'shoulda/context'
 
 module TestCore
   class TC_CoreChannel < Test::Unit::TestCase
@@ -81,8 +82,8 @@ module TestCore
       channel.channel_track = PeerCastStation::Core::ChannelTrack.new(chantrack)
       channel.add_output_stream(MockOutputStream.new)
       channel.add_node(PeerCastStation::Core::HostBuilder.new.to_host)
-      channel.content_header = PeerCastStation::Core::Content.new(0, 'header')
-      channel.contents.add(PeerCastStation::Core::Content.new(1, 'body'))
+      channel.content_header = PeerCastStation::Core::Content.new(0, System::TimeSpan.zero, 0, 'header')
+      channel.contents.add(PeerCastStation::Core::Content.new(0, System::TimeSpan.from_seconds(1), 1, 'body'))
       assert_equal(4, property_log.size)
       assert_equal('ChannelInfo',   property_log[0])
       assert_equal('ChannelTrack',  property_log[1])
@@ -396,118 +397,351 @@ module TestCore
   end
 
   class TC_CoreContentCollection < Test::Unit::TestCase
-    def test_construct
-      contents = PeerCastStation::Core::ContentCollection.new
-      assert_equal(0, contents.count)
-      assert_equal(100, contents.limit_packets)
-      assert(contents.respond_to?(:create_obj_ref))
+    def setup
+      @collection = PeerCastStation::Core::ContentCollection.new
     end
 
-    def test_newest
-      contents = PeerCastStation::Core::ContentCollection.new
-      assert_nil(contents.newest)
-
-      content0 = PeerCastStation::Core::Content.new(10, 'content')
-      content1 = PeerCastStation::Core::Content.new(0, 'content')
-      contents.add(content0)
-      contents.add(content1)
-      assert_equal(content1.position, contents.newest.position)
-    end
-
-    def test_oldest
-      contents = PeerCastStation::Core::ContentCollection.new
-      assert_nil(contents.newest)
-
-      content0 = PeerCastStation::Core::Content.new(10, 'content')
-      content1 = PeerCastStation::Core::Content.new(0, 'content')
-      contents.add(content0)
-      contents.add(content1)
-      assert_equal(content0.position, contents.oldest.position)
-    end
-
-    def test_add
-      contents = PeerCastStation::Core::ContentCollection.new
-      contents.limit_packets = 10
-      30.times do |i|
-        content = PeerCastStation::Core::Content.new(i, "content#{i}")
-        contents.add(content)
+    context 'construct' do
+      should 'be contents empty' do
+        assert_equal 0, @collection.count
       end
-      assert_equal(10,          contents.count)
-      assert_equal(20,          contents.oldest.position)
-      assert_equal('content20', contents.oldest.data.to_a.pack('C*'))
-      assert_equal(29,          contents.newest.position)
-      assert_equal('content29', contents.newest.data.to_a.pack('C*'))
-      assert_nothing_raised do
-        30.times do |i|
-          content = PeerCastStation::Core::Content.new(i, "content#{i+30}")
-          contents.add(content)
+
+      should 'limit_packets is 100' do
+        assert_equal 100, @collection.limit_packets
+      end
+    end
+
+    context 'add' do
+      should 'add contents ordered by stream index, timestamp and position' do
+        1000.times do
+          c = PeerCastStation::Core::Content.new(rand(10000), System::TimeSpan.from_seconds(rand(10000)), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        prev = nil
+        @collection.each do |c|
+          if prev then
+            assert((prev.stream<c.stream) ||
+                   (prev.stream==c.stream && prev.timestamp<c.timestamp) ||
+                   (prev.stream==c.stream && prev.timestamp==c.timestamp && prev.position<c.position))
+          end
+          prev = c
         end
       end
-      assert_equal(10,          contents.count)
-      assert_equal(20,          contents.oldest.position)
-      assert_equal('content50', contents.oldest.data.to_a.pack('C*'))
-      assert_equal(29,          contents.newest.position)
-      assert_equal('content59', contents.newest.data.to_a.pack('C*'))
+
+      should 'ignore content have same stream index, timestamp and position' do
+        100.times do
+          c = PeerCastStation::Core::Content.new(10000, System::TimeSpan.from_seconds(10000), 1000000, '0'*rand(100))
+          @collection.add(c)
+        end
+        assert_equal 1, @collection.count
+      end
+
+      should 'remove old packets if count exceed limit_packets' do
+        @collection.limit_packets = 10
+        5.times do |i|
+          c = PeerCastStation::Core::Content.new(1, System::TimeSpan.from_seconds(10+i), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        10.times do |i|
+          c = PeerCastStation::Core::Content.new(1, System::TimeSpan.from_seconds(i), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        assert_equal 10, @collection.count
+        @collection.each do |c|
+          assert_equal 1, c.stream
+          assert((5..14).include?(c.timestamp.total_seconds))
+        end
+      end
+
+      should 'remove older stream packets if count exceed limit_packets' do
+        @collection.limit_packets = 10
+        5.times do |i|
+          c = PeerCastStation::Core::Content.new(1, System::TimeSpan.from_seconds(10+i), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        5.times do |i|
+          c = PeerCastStation::Core::Content.new(0, System::TimeSpan.from_seconds(20+i), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        5.times do |i|
+          c = PeerCastStation::Core::Content.new(2, System::TimeSpan.from_seconds(i), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        assert_equal 10, @collection.count
+        @collection.each do |c|
+          assert [1, 2].include?(c.stream)
+        end
+      end
+
+      should 'fire ContentChanged event if content added' do
+        fired = 0
+        @collection.content_changed do
+          fired += 1
+        end
+        10.times do
+          c = PeerCastStation::Core::Content.new(rand(10000), System::TimeSpan.from_seconds(rand(10000)), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        10.times do
+          c = PeerCastStation::Core::Content.new(10000, System::TimeSpan.from_seconds(10000), 1000000, 'content')
+          @collection.add(c)
+        end
+        assert_equal 11, fired
+      end
     end
 
-    def test_get_newer_contents
-      contents = PeerCastStation::Core::ContentCollection.new
-      10.times do |i|
-        content = PeerCastStation::Core::Content.new(i*10, "content#{i}")
-        contents.add(content)
+    context 'remove' do
+      should 'remove content have same stream index, timestamp and position' do
+        10.times do |i|
+          @collection.add(PeerCastStation::Core::Content.new(i, System::TimeSpan.from_seconds(5), 5, i.to_s)) if i!=5
+        end
+        10.times do |i|
+          @collection.add(PeerCastStation::Core::Content.new(5, System::TimeSpan.from_seconds(i), 5, i.to_s)) if i!=5
+        end
+        10.times do |i|
+          @collection.add(PeerCastStation::Core::Content.new(5, System::TimeSpan.from_seconds(5), i, i.to_s)) if i!=5
+        end
+        10.times do |i|
+          c = PeerCastStation::Core::Content.new(i, System::TimeSpan.from_seconds(i), i, i.to_s)
+          @collection.add(c)
+        end
+        assert @collection.remove(PeerCastStation::Core::Content.new(5, System::TimeSpan.from_seconds(5), 5, nil))
+        assert_equal 36, @collection.count
+        assert !@collection.any? {|c| c.stream==5 and c.timestamp.total_seconds==5 and c.position==5 }
       end
-      newer = contents.get_newer_contents(-1)
-      assert_equal(10,  newer.count)
-      assert_equal(0,   newer[0].position)
-      assert_equal(90, newer[newer.count-1].position)
 
-      newer = contents.get_newer_contents(0)
-      assert_equal(9,   newer.count)
-      assert_equal(10,  newer[0].position)
-      assert_equal(90, newer[newer.count-1].position)
+      should 'return false if no content is matched' do
+        10.times do |i|
+          c = PeerCastStation::Core::Content.new(i, System::TimeSpan.from_seconds(i), rand(1000000), i.to_s)
+          @collection.add(c)
+        end
+        assert !@collection.remove(PeerCastStation::Core::Content.new(1, System::TimeSpan.from_seconds(3), 0, nil))
+        assert_equal 10, @collection.count
+      end
 
-      newer = contents.get_newer_contents(15)
-      assert_equal(8,   newer.count)
-      assert_equal(20,  newer[0].position)
-      assert_equal(90, newer[newer.count-1].position)
-
-      newer = contents.get_newer_contents(85)
-      assert_equal(1,   newer.count)
-      assert_equal(90, newer[0].position)
-      assert_equal(90, newer[newer.count-1].position)
-
-      newer = contents.get_newer_contents(90)
-      assert_equal(0, newer.count)
-
-      newer = contents.get_newer_contents(100)
-      assert_equal(0, newer.count)
+      should 'fire ContentChanged event if content removed' do
+        10.times do |i|
+          c = PeerCastStation::Core::Content.new(i, System::TimeSpan.from_seconds(i), i, i.to_s)
+          @collection.add(c)
+        end
+        fired = 0
+        @collection.content_changed do
+          fired += 1
+        end
+        (7..12).each do |i|
+          @collection.remove(PeerCastStation::Core::Content.new(i, System::TimeSpan.from_seconds(i), i, nil))
+        end
+        assert_equal 3, fired
+      end
     end
 
-    def test_next_of
-      contents = PeerCastStation::Core::ContentCollection.new
-      [
-        0x00000000, 0x10000000, 0x20000000, 0x30000000,
-        0x40000000, 0x50000000, 0x60000000, 0x70000000,
-        0x80000000, 0x90000000, 0xA0000000, 0xB0000000,
-        0xC0000000, 0xD0000000, 0xE0000000, 0xF0000000,
-      ].each do |i|
-        content = PeerCastStation::Core::Content.new(i, "content#{i}")
-        contents.add(content)
+    context 'clear' do
+      should 'collection be empty' do
+        10.times do |i|
+          @collection.add(PeerCastStation::Core::Content.new(i, System::TimeSpan.from_seconds(5), rand(1000000), i.to_s)) if i!=5
+        end
+        @collection.clear
+        assert_equal 0, @collection.count
       end
-      newer = contents.next_of(-1)
-      assert_equal(0x00000000, newer.position)
 
-      newer = contents.next_of(0x00000000)
-      assert_equal(0x10000000, newer.position)
+      should 'fire ContentChanged event' do
+        10.times do |i|
+          @collection.add(PeerCastStation::Core::Content.new(i, System::TimeSpan.from_seconds(5), rand(1000000), i.to_s)) if i!=5
+        end
+        fired = 0
+        @collection.content_changed do
+          fired += 1
+        end
+        @collection.clear
+        @collection.clear
+        @collection.clear
+        assert_equal 3, fired
+      end
+    end
 
-      newer = contents.next_of(0x70000000)
-      assert_equal(0x80000000, newer.position)
+    context 'contains' do
+      should 'return true if collection have same stream index, timestamp and position' do
+        10.times do |i|
+          @collection.add(PeerCastStation::Core::Content.new(i, System::TimeSpan.from_seconds(5), rand(1000000), i.to_s)) if i!=5
+        end
+        10.times do |i|
+          @collection.add(PeerCastStation::Core::Content.new(5, System::TimeSpan.from_seconds(i), rand(1000000), i.to_s)) if i!=5
+        end
+        10.times do |i|
+          c = PeerCastStation::Core::Content.new(i, System::TimeSpan.from_seconds(i), i, i.to_s)
+          @collection.add(c)
+        end
+        assert @collection.contains(PeerCastStation::Core::Content.new(5, System::TimeSpan.from_seconds(5), 5, nil))
+      end
 
-      newer = contents.next_of(0x80000000)
-      assert_equal(0x90000000, newer.position)
+      should 'return false if no content is matched' do
+        10.times do |i|
+          c = PeerCastStation::Core::Content.new(i, System::TimeSpan.from_seconds(i), rand(1000000), i.to_s)
+          @collection.add(c)
+        end
+        assert !@collection.contains(PeerCastStation::Core::Content.new(1, System::TimeSpan.from_seconds(3), 5, nil))
+      end
+    end
 
-      newer = contents.next_of(0xF0000000)
-      assert_equal(0x00000000, newer.position)
+    context 'newest' do
+      should 'return content has max stream index, timestamp and position' do
+        10000.times do
+          c = PeerCastStation::Core::Content.new(rand(10), System::TimeSpan.from_seconds(rand(10000)), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        n = @collection.newest
+        assert @collection.all? {|c|
+          c.stream<n.stream or
+          (c.stream==n.stream and c.timestamp<n.timestamp) or
+          (c.stream==n.stream and c.timestamp==n.timestamp and c.position<=n.position)
+        }
+      end
+
+      should 'return null if empty' do
+        assert_nil @collection.newest
+      end
+    end
+
+    context 'oldest' do
+      should 'return content has min stream index, timestamp and position' do
+        10000.times do
+          c = PeerCastStation::Core::Content.new(rand(10), System::TimeSpan.from_seconds(rand(10000)), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        n = @collection.oldest
+        assert @collection.all? {|c|
+          c.stream>n.stream or
+          (c.stream==n.stream and c.timestamp>n.timestamp) or
+          (c.stream==n.stream and c.timestamp==n.timestamp and c.position>=n.position)
+        }
+      end
+
+      should 'return null if empty' do
+        assert_nil @collection.newest
+      end
+    end
+
+    context 'get_newest' do
+      should 'return content has max timestamp, position and newer stream index' do
+        10000.times do
+          c = PeerCastStation::Core::Content.new(rand(10), System::TimeSpan.from_seconds(rand(10000)), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        n = @collection.get_newest(5)
+        assert @collection.select {|c| c.stream>=n.stream }.all? {|c|
+          c.timestamp<n.timestamp or
+          (c.timestamp==n.timestamp and c.position<=n.position)
+        }
+      end
+
+      should 'return null if not found' do
+        100.times do |i|
+          c = PeerCastStation::Core::Content.new(i%5, System::TimeSpan.from_seconds(rand(10000)), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        assert_nil @collection.get_newest(5)
+      end
+    end
+
+    context 'get_oldest' do
+      should 'return content has min timestamp, position and newer stream index' do
+        10000.times do
+          c = PeerCastStation::Core::Content.new(rand(10), System::TimeSpan.from_seconds(rand(10000)), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        n = @collection.get_oldest(5)
+        assert @collection.select {|c| c.stream>=n.stream }.all? {|c|
+          c.timestamp>n.timestamp or
+          (c.timestamp==n.timestamp and c.position>=n.position)
+        }
+      end
+
+      should 'return null if not found' do
+        100.times do |i|
+          c = PeerCastStation::Core::Content.new(i%5, System::TimeSpan.from_seconds(rand(10000)), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        assert_nil @collection.get_oldest(5)
+      end
+    end
+
+    context 'get_newer_contents' do
+      should 'return contents has newer timestamp, stream index and position' do
+        10000.times do
+          c = PeerCastStation::Core::Content.new(rand(10), System::TimeSpan.from_seconds(rand(10000)), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        newer = @collection.get_newer_contents(3, System::TimeSpan.from_seconds(5000.0), 40000)
+        older = @collection.select {|c| not newer.include?(c) }
+        newer.each do |n|
+          assert older.all? {|c|
+            c.stream<n.stream or
+            (c.stream==n.stream and c.timestamp<n.timestamp) or
+            (c.stream==n.stream and c.timestamp==n.timestamp and c.position<n.position)
+          }
+        end
+      end
+    end
+
+    context 'next_of' do
+      should 'return content has newer timestamp, stream index and position' do
+        10000.times do
+          c = PeerCastStation::Core::Content.new(rand(10), System::TimeSpan.from_seconds(rand(10000)), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        n = @collection.next_of(3, System::TimeSpan.from_seconds(5000.0), 40000)
+        assert_equal @collection.get_newer_contents(3, System::TimeSpan.from_seconds(5000.0), 40000).first, n
+      end
+
+      should 'return content has newer timestamp, stream index and position specified by content' do
+        10000.times do
+          c = PeerCastStation::Core::Content.new(rand(10), System::TimeSpan.from_seconds(rand(10000)), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        old = PeerCastStation::Core::Content.new(3, System::TimeSpan.from_seconds(5000.0), 40000, 'hoge')
+        n = @collection.next_of(old)
+        assert_equal @collection.get_newer_contents(3, System::TimeSpan.from_seconds(5000.0), 40000).first, n
+      end
+
+      should 'return null if nothing is matched' do
+        10000.times do |i|
+          c = PeerCastStation::Core::Content.new(i%10, System::TimeSpan.from_seconds(i), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        [
+          [10, System::TimeSpan.from_seconds(10.0),    100],
+          [5,  System::TimeSpan.from_seconds(10000.0), 0],
+          [9,  System::TimeSpan.from_seconds(9999),    1000000],
+        ].each do |stream, timestamp, position|
+          n = @collection.next_of(stream, timestamp, position)
+          assert_nil n
+        end
+      end
+    end
+
+    context 'find_next_by_position' do
+      should 'return content has newer position and stream index' do
+        10000.times do
+          c = PeerCastStation::Core::Content.new(rand(10), System::TimeSpan.from_seconds(rand(10000)), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        n = @collection.find_next_by_position(3, 500000)
+        assert((3==n.stream and 500000<n.position) || (3<n.stream))
+      end
+
+      should 'return null if nothing is matched' do
+        10000.times do
+          c = PeerCastStation::Core::Content.new(rand(10), System::TimeSpan.from_seconds(rand(10000)), rand(1000000), 'content')
+          @collection.add(c)
+        end
+        [
+          [10, 10],
+          [ 5, 1000000],
+        ].each do |stream, position|
+          n = @collection.find_next_by_position(stream, position)
+          assert_nil n
+        end
+      end
     end
   end
 end

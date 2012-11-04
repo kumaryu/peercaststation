@@ -382,6 +382,11 @@ module TestHTTP
     end
 
     def test_get_stream_wmv
+      @channel.content_header = PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0), 0, 'header')
+      @channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.1),  6, 'content1'))
+      @channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.2), 14, 'content2'))
+      @channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.3), 22, 'content3'))
+      @channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.4), 30, 'content4'))
       endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
       req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
         'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
@@ -394,11 +399,6 @@ module TestHTTP
       stream.stopped.add(proc { stopped = true })
 
       stream.start
-      @channel.content_header = PCSCore::Content.new(0, 'header')
-      @channel.contents.add(PCSCore::Content.new( 6, 'content1'))
-      @channel.contents.add(PCSCore::Content.new(14, 'content2'))
-      @channel.contents.add(PCSCore::Content.new(22, 'content3'))
-      @channel.contents.add(PCSCore::Content.new(30, 'content4'))
       sleep(1)
       res = output.to_array.to_a.pack('C*')
       assert_http_header(
@@ -410,8 +410,11 @@ module TestHTTP
         res
       )
       assert_equal('headercontent1content2content3content4', get_body(res))
-      stream.stop
-      sleep(0.1) until stopped
+    ensure
+      if stream then
+        stream.stop
+        sleep(0.1) until stopped
+      end
     end
 
     def test_post
@@ -451,6 +454,11 @@ module TestHTTP
     end
 
     def test_recv_rate
+      @channel.content_header = PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0), 0, 'header')
+      @channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0),  6, 'content1'))
+      @channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0), 14, 'content2'))
+      @channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0), 22, 'content3'))
+      @channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0), 30, 'content4'))
       endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
       req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
         'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
@@ -464,11 +472,6 @@ module TestHTTP
 
       start = Time.now
       stream.start
-      @channel.content_header = PCSCore::Content.new(0, 'header')
-      @channel.contents.add(PCSCore::Content.new( 6, 'content1'))
-      @channel.contents.add(PCSCore::Content.new(14, 'content2'))
-      @channel.contents.add(PCSCore::Content.new(22, 'content3'))
-      @channel.contents.add(PCSCore::Content.new(30, 'content4'))
       sleep(1)
       res = output.to_array.to_a.pack('C*')
       get_body(res)
@@ -481,6 +484,11 @@ module TestHTTP
     end
 
     def test_send_rate
+      @channel.content_header = PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0), 0, 'header')
+      @channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.1),  6, 'content1'))
+      @channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.2), 14, 'content2'))
+      @channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.3), 22, 'content3'))
+      @channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.4), 30, 'content4'))
       endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('219.117.192.180'), 7144)
       req = PCSHTTP::HTTPRequest.new(System::Array[System::String].new([
         'GET /stream/9778E62BDC59DF56F9216D0387F80BF2.wmv HTTP/1.1',
@@ -494,11 +502,6 @@ module TestHTTP
 
       start = Time.now
       stream.start
-      @channel.content_header = PCSCore::Content.new(0, 'header')
-      @channel.contents.add(PCSCore::Content.new( 6, 'content1'))
-      @channel.contents.add(PCSCore::Content.new(14, 'content2'))
-      @channel.contents.add(PCSCore::Content.new(22, 'content3'))
-      @channel.contents.add(PCSCore::Content.new(30, 'content4'))
       sleep(1)
       res = output.to_array.to_a.pack('C*')
       get_body(res)

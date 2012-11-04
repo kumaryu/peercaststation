@@ -600,6 +600,8 @@ namespace PeerCastStation.PCP
       }
     }
 
+    private int      streamIndex = -1;
+    private DateTime streamOrigin;
     protected void OnPCPChanPkt(Atom atom)
     {
       var pkt_type = atom.Children.GetChanPktType();
@@ -607,13 +609,14 @@ namespace PeerCastStation.PCP
       if (pkt_type!=null && pkt_data!=null) {
         if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_HEAD) {
           long pkt_pos = atom.Children.GetChanPktPos() ?? 0;
-          Channel.ContentHeader = new Content(pkt_pos, pkt_data);
-          Channel.Contents.Clear();
+          streamIndex += 1;
+          streamOrigin = DateTime.Now;
+          Channel.ContentHeader = new Content(streamIndex, TimeSpan.Zero, pkt_pos, pkt_data);
         }
         else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_DATA) {
           if (atom.Children.GetChanPktPos()!=null) {
             long pkt_pos = atom.Children.GetChanPktPos().Value;
-            Channel.Contents.Add(new Content(pkt_pos, pkt_data));
+            Channel.Contents.Add(new Content(streamIndex, DateTime.Now-streamOrigin, pkt_pos, pkt_data));
           }
         }
         else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_META) {

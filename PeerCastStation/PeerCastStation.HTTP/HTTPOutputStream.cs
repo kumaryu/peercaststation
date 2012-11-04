@@ -243,7 +243,7 @@ namespace PeerCastStation.HTTP
     private HTTPRequest request;
     private Content headerPacket = null;
     private List<Content> contentPacketQueue = new List<Content>();
-    private long sentPosition = -1;
+    private Content sentPacket;
 
     /// <summary>
     /// 元になるストリーム、チャンネル、リクエストからHTTPOutputStreamを初期化します
@@ -275,11 +275,16 @@ namespace PeerCastStation.HTTP
     {
       lock (contentPacketQueue) {
         headerPacket = Channel.ContentHeader;
+        if (headerPacket==null) return;
         if (contentPacketQueue.Count>0) {
-          contentPacketQueue.AddRange(Channel.Contents.GetNewerContents(contentPacketQueue[contentPacketQueue.Count-1].Position));
+          var last_packet = contentPacketQueue[contentPacketQueue.Count-1];
+          contentPacketQueue.AddRange(Channel.Contents.GetNewerContents(headerPacket.Stream, last_packet.Timestamp, last_packet.Position));
+        }
+        else if (sentPacket!=null) {
+          contentPacketQueue.AddRange(Channel.Contents.GetNewerContents(headerPacket.Stream, sentPacket.Timestamp, sentPacket.Position));
         }
         else {
-          contentPacketQueue.AddRange(Channel.Contents.GetNewerContents(sentPosition));
+          contentPacketQueue.AddRange(Channel.Contents.GetNewerContents(headerPacket.Stream, headerPacket.Timestamp, headerPacket.Position));
         }
       }
     }
@@ -440,7 +445,6 @@ namespace PeerCastStation.HTTP
     {
       Logger.Debug("Sending Contents");
       Content sentHeader = null;
-      sentPosition = -1;
       SetState(() => {
         switch (GetBodyType()) {
         case BodyType.None:
@@ -450,15 +454,16 @@ namespace PeerCastStation.HTTP
           if (sentHeader!=headerPacket) {
             Send(headerPacket.Data);
             sentHeader = headerPacket;
-            sentPosition = sentHeader.Position;
+            sentPacket = sentHeader;
             Logger.Debug("Sent ContentHeader pos {0}", sentHeader.Position);
           }
           if (sentHeader!=null) {
             lock (contentPacketQueue) {
               foreach (var c in contentPacketQueue) {
-                if (c.Position>sentPosition) {
+                if (c.Timestamp>sentPacket.Timestamp ||
+                    (c.Timestamp==sentPacket.Timestamp && c.Position>sentPacket.Position)) {
                   Send(c.Data);
-                  sentPosition = c.Position;
+                  sentPacket = c;
                 }
               }
               contentPacketQueue.Clear();
@@ -553,6 +558,7 @@ namespace PeerCastStation.HTTP
       Logger.Debug("Starting");
       if (this.Channel!=null) {
         this.Channel.ContentChanged += OnContentChanged;
+        OnContentChanged(this, new EventArgs());
       }
       WaitChannel();
     }
