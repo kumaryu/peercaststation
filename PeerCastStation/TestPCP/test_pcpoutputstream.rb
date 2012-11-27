@@ -412,16 +412,16 @@ EOS
       channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
       channel.status = PCSCore::SourceStreamStatus.receiving
       channel.is_relay_full = false
-      @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
-      @stream.start
-      header = read_http_header(@pipe)
-      assert_http_header(200, {}, header)
-      pcp_handshake(@pipe)
       channel.content_header = PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.0), 0, 'header')
       channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.1),  6, 'content1'))
       channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.2), 14, 'content2'))
       channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.3), 22, 'content3'))
       channel.contents.add(PCSCore::Content.new(0, System::TimeSpan.from_seconds(0.4), 30, 'content4'))
+      @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
+      @stream.start
+      header = read_http_header(@pipe)
+      assert_http_header(200, {}, header)
+      pcp_handshake(@pipe)
       ok = read_atom(@pipe)
       assert_equal(PCP::OK, ok.name)
       assert_equal(1, ok.value)
@@ -434,17 +434,15 @@ EOS
       assert_equal(PCP::CHAN_PKT_HEAD, pkt[PCP::CHAN_PKT_TYPE])
       assert_equal(0,                 pkt[PCP::CHAN_PKT_POS])
       assert_equal('header',          pkt[PCP::CHAN_PKT_DATA])
-      4.times do |i|
-        chan = read_atom(@pipe)
-        assert_equal(PCP::CHAN, chan.name)
-        assert_nil(chan[PCP::CHAN_INFO])
-        assert_nil(chan[PCP::CHAN_TRACK])
-        assert_not_nil(chan[PCP::CHAN_PKT])
-        pkt = chan[PCP::CHAN_PKT]
-        assert_equal(PCP::CHAN_PKT_DATA, pkt[PCP::CHAN_PKT_TYPE])
-        assert_equal(6+i*8,             pkt[PCP::CHAN_PKT_POS])
-        assert_equal("content#{i+1}",   pkt[PCP::CHAN_PKT_DATA])
-      end
+      chan = read_atom(@pipe)
+      assert_equal(PCP::CHAN, chan.name)
+      assert_nil(chan[PCP::CHAN_INFO])
+      assert_nil(chan[PCP::CHAN_TRACK])
+      assert_not_nil(chan[PCP::CHAN_PKT])
+      pkt = chan[PCP::CHAN_PKT]
+      assert_equal(PCP::CHAN_PKT_DATA, pkt[PCP::CHAN_PKT_TYPE])
+      assert_equal(30,         pkt[PCP::CHAN_PKT_POS])
+      assert_equal("content4", pkt[PCP::CHAN_PKT_DATA])
       @stream.stop
       assert_pcp_quit(PCP::ERROR_QUIT, read_atom(@pipe))
     end
@@ -453,6 +451,14 @@ EOS
       channel = TestChannel.new(@peercast, @channel_id, System::Uri.new('mock://localhost'))
       channel.status = PCSCore::SourceStreamStatus.receiving
       channel.is_relay_full = false
+      @request = PCSPCP::RelayRequest.new(
+        System::Array[System::String].new([
+          'GET /channel/531dc8dfc7fb42928ac2c0a626517a87 HTTP/1.1',
+          'x-peercast-pcp:1',
+          'User-Agent: PeerCastStation/1.0',
+          'x-peercast-pos:0',
+        ])
+      )
       @stream = PCSPCP::PCPOutputStream.new(@peercast, @input, @output, @endpoint, channel, @request)
       @stream.start
       header = read_http_header(@pipe)

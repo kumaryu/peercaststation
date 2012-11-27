@@ -407,10 +407,10 @@ namespace PeerCastStation.PCP
         }
         else if (relayRequest.StreamPos.HasValue && relayRequest.StreamPos.Value>lastHeader.Position) {
           content = channel.Contents.FindNextByPosition(lastHeader.Stream, relayRequest.StreamPos.Value-1) ??
-                    channel.Contents.GetOldest(lastHeader.Stream);
+                    channel.Contents.GetNewest(lastHeader.Stream);
         }
         else {
-          content = channel.Contents.GetOldest(lastHeader.Stream);
+          content = channel.Contents.GetNewest(lastHeader.Stream);
         }
         if (content!=null) {
           lastContent = content;
