@@ -242,13 +242,31 @@ namespace PeerCastStation.PCP
     public override string ToString()
     {
       if (Downhost!=null) {
+        var relay_status = "　";
+        if (Downhost.IsReceiving) {
+          if (Downhost.IsRelayFull) {
+            if (Downhost.RelayCount>0) {
+              relay_status = "○";
+            }
+            else if (Downhost.IsFirewalled) {
+              relay_status = "×";
+            }
+            else {
+              relay_status = "△";
+            }
+          }
+          else {
+            relay_status = "◎";
+          }
+        }
+        else {
+          relay_status = "－";
+        }
         var nodeinfo = String.Format(
-          "[{0}/{1}] {2}{3}{4}",
+          "[{0}/{1}] {2}",
           Downhost.DirectCount,
           Downhost.RelayCount,
-          Downhost.IsFirewalled ? "0" : "",
-          Downhost.IsRelayFull  ? "-" : "",
-          Downhost.IsReceiving  ? "" : "B");
+          relay_status);
         return String.Format("PCP Relay {0}({1}) {2} {3}kbps",
           RemoteEndPoint,
           UserAgent,

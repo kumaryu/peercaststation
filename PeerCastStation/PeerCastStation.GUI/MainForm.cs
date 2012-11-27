@@ -227,8 +227,24 @@ namespace PeerCastStation.GUI
         case SourceStreamStatus.Receiving:  status = "RECEIVE"; break;
         case SourceStreamStatus.Error:      status = "ERROR";   break;
         }
+        var relay_status = "　";
+        if (Channel.IsRelayFull) {
+          if (Channel.LocalRelays>0) {
+            relay_status = "○";
+          }
+          else if (!Channel.PeerCast.IsFirewalled.HasValue || Channel.PeerCast.IsFirewalled.Value) {
+            relay_status = "×";
+          }
+          else {
+            relay_status = "△";
+          }
+        }
+        else {
+          relay_status = "◎";
+        }
         return String.Format(
-          "{0} {1}kbps ({2}/{3}) [{4}/{5}] {6}",
+          "{0} {1} {2}kbps ({3}/{4}) [{5}/{6}] {7}",
+          relay_status,
           Channel.ChannelInfo.Name,
           Channel.ChannelInfo.Bitrate,
           Channel.TotalDirects,
