@@ -260,17 +260,14 @@ namespace PeerCastStation.PCP
           }
         }
         else {
-          relay_status = "－";
+          relay_status = "■";
         }
-        var nodeinfo = String.Format(
-          "[{0}/{1}] {2}",
-          Downhost.DirectCount,
-          Downhost.RelayCount,
-          relay_status);
-        return String.Format("PCP Relay {0}({1}) {2} {3}kbps",
+        return String.Format("PCP Relay {4}{0}({1}) [{2}/{3}] {5}kbps",
           RemoteEndPoint,
           UserAgent,
-          nodeinfo,
+          Downhost.DirectCount,
+          Downhost.RelayCount,
+          relay_status,
           (int)(RecvRate+SendRate)*8/1000);
       }
       else {
