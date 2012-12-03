@@ -349,6 +349,9 @@ namespace PeerCastStation.GUI
     {
       Settings.Default.Save();
       Logger.RemoveWriter(guiWriter);
+      Settings.Default.PropertyChanged -= SettingsPropertyChanged;
+      peerCast.ChannelAdded   -= ChannelAdded;
+      peerCast.ChannelRemoved -= ChannelRemoved;
     }
 
     private void channelList_SelectedIndexChanged(object sender, EventArgs e)
