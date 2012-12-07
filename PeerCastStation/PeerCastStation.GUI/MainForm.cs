@@ -31,6 +31,7 @@ namespace PeerCastStation.GUI
 
     private class TextBoxWriter : System.IO.TextWriter
     {
+      public static readonly int LinesLimit = 10000;
       private TextBox textBox;
       public TextBoxWriter(TextBox textbox)
       {
@@ -62,10 +63,18 @@ namespace PeerCastStation.GUI
         if (textBox.InvokeRequired) {
           textBox.BeginInvoke(new Action(() => {
             textBox.AppendText(buffer);
+            var lines = textBox.Lines;
+            if (lines.Length>LinesLimit) {
+              textBox.Lines = lines.Skip(lines.Length-LinesLimit).ToArray();
+            }
           }));
         }
         else {
           textBox.AppendText(buffer);
+          var lines = textBox.Lines;
+          if (lines.Length>LinesLimit) {
+            textBox.Lines = lines.Skip(lines.Length-LinesLimit).ToArray();
+          }
         }
       }
     }
