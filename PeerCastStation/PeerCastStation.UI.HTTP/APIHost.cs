@@ -15,13 +15,15 @@ namespace PeerCastStation.UI.HTTP
       IUserInterface
   {
     public string Name { get { return "HTTP API Host UI"; } }
-    public StringWriter LogWriter { get { return logWriter; } }
+    public LogWriter LogWriter { get { return logWriter; } }
 
-    StringWriter logWriter = new StringWriter();
-    APIHostOutputStreamFactory factory;
-    PeerCastApplication application;
+    private LogWriter logWriter;
+    private APIHostOutputStreamFactory factory;
+    private PeerCastApplication application;
+
     public void Start(PeerCastApplication app)
     {
+      logWriter = new LogWriter(1000);
       Logger.AddWriter(logWriter);
       application = app;
       factory = new APIHostOutputStreamFactory(this, app.PeerCast);
@@ -172,8 +174,8 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("getLog")]
       private JToken GetLog(int? from, int? maxLines)
       {
-        var lines = owner.LogWriter.ToString().Split('\n');
-        var logs  = lines.Skip(from ?? 0).Take(maxLines ?? lines.Length).ToArray();
+        var lines = owner.LogWriter.Lines;
+        var logs  = lines.Skip(from ?? 0).Take(maxLines ?? lines.Count()).ToArray();
         var res = new JObject();
         res["from"]  = from ?? 0;
         res["lines"] = logs.Length;
@@ -185,7 +187,7 @@ namespace PeerCastStation.UI.HTTP
       private void ClearLog()
       {
         owner.LogWriter.Flush();
-        owner.LogWriter.GetStringBuilder().Length = 0;
+        owner.LogWriter.Clear();
       }
 
       [RPCMethod("getChannels")]
