@@ -34,9 +34,11 @@ namespace PeerCastStation.GUI
 
     public void Stop()
     {
-      if (mainForm!=null) {
+      if (mainForm!=null && !mainForm.IsDisposed) {
         mainForm.Invoke(new Action(() => {
-          System.Windows.Forms.Application.ExitThread();
+          if (!mainForm.IsDisposed) {
+            System.Windows.Forms.Application.ExitThread();
+          }
         }));
       }
       mainThread.Join();

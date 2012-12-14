@@ -28,60 +28,8 @@ namespace PeerCastStation.GUI
   public partial class MainForm : Form
   {
     private PeerCastStation.Core.PeerCast peerCast;
-
-    private class TextBoxWriter : System.IO.TextWriter
-    {
-      public static readonly int LinesLimit = 10000;
-      private TextBox textBox;
-      public TextBoxWriter(TextBox textbox)
-      {
-        this.textBox = textbox;
-      }
-
-      public override System.Text.Encoding Encoding
-      {
-        get { return System.Text.Encoding.Unicode; }
-      }
-
-      public override void Write(char[] buffer)
-      {
-        Write(new String(buffer));
-      }
-
-      public override void Write(char[] buffer, int index, int count)
-      {
-        Write(new String(buffer, index, count));
-      }
-
-      public override void Write(char buffer)
-      {
-        Write(buffer.ToString());
-      }
-
-      public override void Write(string buffer)
-      {
-        if (textBox.InvokeRequired) {
-          textBox.BeginInvoke(new Action(() => {
-            textBox.AppendText(buffer);
-            var lines = textBox.Lines;
-            if (lines.Length>LinesLimit) {
-              textBox.Lines = lines.Skip(lines.Length-LinesLimit).ToArray();
-            }
-          }));
-        }
-        else {
-          textBox.AppendText(buffer);
-          var lines = textBox.Lines;
-          if (lines.Length>LinesLimit) {
-            textBox.Lines = lines.Skip(lines.Length-LinesLimit).ToArray();
-          }
-        }
-      }
-    }
-
-    private Timer timer = new Timer();
-    private TextBoxWriter guiWriter = null;
-
+    private LogWriter  guiWriter = new LogWriter(1000);
+    private Timer      timer = new Timer();
     private Uri        balloonURL = null;
     private NotifyIcon notifyIcon;
     private AppCastReader versionChecker;
@@ -90,7 +38,6 @@ namespace PeerCastStation.GUI
     {
       InitializeComponent();
       Settings.Default.PropertyChanged += SettingsPropertyChanged;
-      guiWriter = new TextBoxWriter(logText);
       if (PlatformID.Win32NT==Environment.OSVersion.Platform) {
         notifyIcon = new NotifyIcon(this.components);
         notifyIcon.Icon = this.Icon;
@@ -156,6 +103,12 @@ namespace PeerCastStation.GUI
           port => port.ToString()
         ).ToArray());
       UpdateChannelList();
+      UpdateLogText();
+    }
+
+    void UpdateLogText()
+    {
+      logText.Text = guiWriter.ToString();
     }
 
     private void OnUpdateSettings(string property_name)
@@ -745,6 +698,7 @@ namespace PeerCastStation.GUI
 
     private void logClearButton_Click(object sender, EventArgs e)
     {
+      guiWriter.Clear();
       logText.ResetText();
     }
 

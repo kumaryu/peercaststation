@@ -1343,6 +1343,7 @@ namespace PeerCastStation.GUI
       this.logText.ScrollBars = System.Windows.Forms.ScrollBars.Both;
       this.logText.Size = new System.Drawing.Size(419, 340);
       this.logText.TabIndex = 5;
+      this.logText.WordWrap = false;
       // 
       // logFileNameText
       // 
