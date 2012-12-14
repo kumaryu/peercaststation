@@ -232,13 +232,13 @@ namespace PeerCastStation.PCP
       announcing = new AnnouncingChannel { Channel=channel, Owner=this, IsStopped=false };
       lock (announcingChannels) {
         announcingChannels.Add(announcing);
-      }
-      if (announceThread==null || !announceThread.IsAlive) {
-        isStopped = false;
-        restartEvent.Reset();
-        announceThread = new Thread(AnnounceThreadProc);
-        announceThread.Name = String.Format("PCPYP {0} Announce", Uri);
-        announceThread.Start();
+        if (announceThread==null || !announceThread.IsAlive) {
+          isStopped = false;
+          restartEvent.Reset();
+          announceThread = new Thread(AnnounceThreadProc);
+          announceThread.Name = String.Format("PCPYP {0} Announce", Uri);
+          announceThread.Start();
+        }
       }
       return announcing;
     }
@@ -278,12 +278,14 @@ namespace PeerCastStation.PCP
     public void RestartAnnounce()
     {
       if (announceThread==null || !announceThread.IsAlive) {
-        if (announcingChannels.Count>0) {
-          isStopped = false;
-          restartEvent.Reset();
-          announceThread = new Thread(AnnounceThreadProc);
-          announceThread.Name = String.Format("PCPYP {0} Announce", Uri);
-          announceThread.Start();
+        lock (announcingChannels) {
+          if (announcingChannels.Count>0) {
+            isStopped = false;
+            restartEvent.Reset();
+            announceThread = new Thread(AnnounceThreadProc);
+            announceThread.Name = String.Format("PCPYP {0} Announce", Uri);
+            announceThread.Start();
+          }
         }
       }
       else {
@@ -325,7 +327,13 @@ namespace PeerCastStation.PCP
     }
 
     private bool isStopped;
-    private bool IsStopped { get { return isStopped || announcingChannels.Count==0; } }
+    private bool IsStopped {
+      get {
+        lock (announcingChannels) {
+          return isStopped || announcingChannels.Count==0;
+        }
+      }
+    }
     private List<Atom> posts = new List<Atom>();
     private AutoResetEvent restartEvent = new AutoResetEvent(false);
     private class RestartException : Exception {}
@@ -550,15 +558,15 @@ namespace PeerCastStation.PCP
     private void OnChannelClosed(object sender, EventArgs e)
     {
       var channel = sender as Channel;
-      if (channel!=null) {
-        channel.Closed              -= OnChannelClosed;
-        channel.ChannelInfoChanged  -= OnChannelPropertyChanged;
-        channel.ChannelTrackChanged -= OnChannelPropertyChanged;
-        lock (announcingChannels) {
-          var announcing = announcingChannels.FirstOrDefault(a => a.Channel==channel);
-          if (announcing!=null) {
-            announcingChannels.Remove(announcing);
-          }
+      if (channel==null) return;
+      channel.Closed              -= OnChannelClosed;
+      channel.ChannelInfoChanged  -= OnChannelPropertyChanged;
+      channel.ChannelTrackChanged -= OnChannelPropertyChanged;
+      lock (announcingChannels) {
+        var announcing = announcingChannels.FirstOrDefault(a => a.Channel==channel);
+        if (announcing!=null) {
+          announcing.IsStopped = true;
+          announcingChannels.Remove(announcing);
         }
         PostChannelBcst(channel, false);
       }
