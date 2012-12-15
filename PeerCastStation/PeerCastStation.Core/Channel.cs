@@ -14,11 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
-using System.ComponentModel;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
-using System.Threading;
-using System.Net;
 using System.Linq;
 using System.Net.Sockets;
 
@@ -304,7 +301,6 @@ namespace PeerCastStation.Core
     private List<Host> nodes = new List<Host>();
     private Content contentHeader = null;
     private ContentCollection contents = new ContentCollection();
-    private SynchronizationContext syncContext = SynchronizationContext.Current ?? new SynchronizationContext();
     private int? startTickCount = null;
     /// <summary>
     /// 所属するPeerCastオブジェクトを取得します
@@ -695,15 +691,13 @@ namespace PeerCastStation.Core
 
     private void SourceStream_Stopped(object sender, EventArgs args)
     {
-      syncContext.Post(dummy => {
-        foreach (var os in outputStreams) {
-          os.Stop();
-        }
-        outputStreams = new OutputStreamCollection();
-        startTickCount = null;
-        IsClosed = true;
-        OnClosed();
-      }, null);
+      foreach (var os in outputStreams) {
+        os.Stop();
+      }
+      outputStreams = new OutputStreamCollection();
+      startTickCount = null;
+      IsClosed = true;
+      OnClosed();
     }
 
     public void Start(ISourceStream source_stream)
