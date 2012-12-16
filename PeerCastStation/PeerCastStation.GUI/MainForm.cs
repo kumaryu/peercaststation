@@ -30,7 +30,7 @@ namespace PeerCastStation.GUI
     private PeerCastStation.Core.PeerCast peerCast;
     private LogWriter  guiWriter = new LogWriter(1000);
     private Timer      timer = new Timer();
-    private Uri        balloonURL = null;
+    private VersionDescription newVersionInfo = null;
     private NotifyIcon notifyIcon;
     private AppCastReader versionChecker;
 
@@ -70,16 +70,22 @@ namespace PeerCastStation.GUI
 
     private void notifyIcon_BalloonTipClicked(object sender, EventArgs args)
     {
-      if (balloonURL!=null) {
-        System.Diagnostics.Process.Start(balloonURL.ToString());
+      if (newVersionInfo!=null) {
+        var dlg = new UpdaterDialog(newVersionInfo);
+        dlg.Show();
       }
+    }
+
+    private void versionCheckMenuItem_Click(object sender, EventArgs e)
+    {
+      versionChecker.CheckVersion();
     }
 
     private void versionChecker_Found(object sender, NewVersionFoundEventArgs args)
     {
-      balloonURL = args.VersionDescription.Link;
+      newVersionInfo = args.VersionDescription;
       notifyIcon.ShowBalloonTip(
-        30000,
+        60000,
         "新しいバージョンがあります",
         args.VersionDescription.Title,
         ToolTipIcon.Info);

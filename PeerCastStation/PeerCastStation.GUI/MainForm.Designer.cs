@@ -153,6 +153,8 @@ namespace PeerCastStation.GUI
       this.statusBar = new System.Windows.Forms.StatusStrip();
       this.portLabel = new System.Windows.Forms.ToolStripStatusLabel();
       this.portOpenedLabel = new System.Windows.Forms.ToolStripStatusLabel();
+      this.versionCheckMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
       showGUIMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       quitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       label21 = new System.Windows.Forms.Label();
@@ -217,7 +219,7 @@ namespace PeerCastStation.GUI
       // 
       showGUIMenuItem.AutoToolTip = true;
       showGUIMenuItem.Name = "showGUIMenuItem";
-      showGUIMenuItem.Size = new System.Drawing.Size(158, 22);
+      showGUIMenuItem.Size = new System.Drawing.Size(202, 22);
       showGUIMenuItem.Text = "GUIを表示(&G)";
       showGUIMenuItem.ToolTipText = "PeerCastStationのGUIを表示します";
       showGUIMenuItem.Click += new System.EventHandler(this.showGUIMenuItem_Click);
@@ -226,7 +228,7 @@ namespace PeerCastStation.GUI
       // 
       quitMenuItem.AutoToolTip = true;
       quitMenuItem.Name = "quitMenuItem";
-      quitMenuItem.Size = new System.Drawing.Size(158, 22);
+      quitMenuItem.Size = new System.Drawing.Size(202, 22);
       quitMenuItem.Text = "終了(&Q)";
       quitMenuItem.ToolTipText = "PeerCastStationを終了します";
       quitMenuItem.Click += new System.EventHandler(this.quitMenuItem_Click);
@@ -474,7 +476,7 @@ namespace PeerCastStation.GUI
       // showHTMLUIMenuItem
       // 
       showHTMLUIMenuItem.Name = "showHTMLUIMenuItem";
-      showHTMLUIMenuItem.Size = new System.Drawing.Size(158, 22);
+      showHTMLUIMenuItem.Size = new System.Drawing.Size(202, 22);
       showHTMLUIMenuItem.Text = "HTML UIを表示(&H)";
       showHTMLUIMenuItem.Click += new System.EventHandler(this.showHTMLUIMenuItem_Click);
       // 
@@ -524,18 +526,20 @@ namespace PeerCastStation.GUI
       // notifyIconMenu
       // 
       this.notifyIconMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.versionCheckMenuItem,
+            this.toolStripSeparator1,
             showHTMLUIMenuItem,
             showGUIMenuItem,
             this.toolStripMenuItem1,
             quitMenuItem});
       this.notifyIconMenu.Name = "notifyIconMenu";
       this.notifyIconMenu.ShowImageMargin = false;
-      this.notifyIconMenu.Size = new System.Drawing.Size(159, 76);
+      this.notifyIconMenu.Size = new System.Drawing.Size(203, 126);
       // 
       // toolStripMenuItem1
       // 
       this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-      this.toolStripMenuItem1.Size = new System.Drawing.Size(155, 6);
+      this.toolStripMenuItem1.Size = new System.Drawing.Size(199, 6);
       // 
       // mainTab
       // 
@@ -1411,6 +1415,18 @@ namespace PeerCastStation.GUI
       this.portOpenedLabel.Size = new System.Drawing.Size(134, 18);
       this.portOpenedLabel.Text = "toolStripStatusLabel1";
       // 
+      // versionCheckMenuItem
+      // 
+      this.versionCheckMenuItem.Name = "versionCheckMenuItem";
+      this.versionCheckMenuItem.Size = new System.Drawing.Size(202, 22);
+      this.versionCheckMenuItem.Text = "アップデートのチェック(&U)";
+      this.versionCheckMenuItem.Click += new System.EventHandler(this.versionCheckMenuItem_Click);
+      // 
+      // toolStripSeparator1
+      // 
+      this.toolStripSeparator1.Name = "toolStripSeparator1";
+      this.toolStripSeparator1.Size = new System.Drawing.Size(199, 6);
+      // 
       // MainForm
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -1541,6 +1557,8 @@ namespace PeerCastStation.GUI
     private System.Windows.Forms.ContextMenuStrip channelListMenu;
     private System.Windows.Forms.Button connectionReconnect;
     private System.Windows.Forms.TextBox chanTrackGenre;
+    private System.Windows.Forms.ToolStripMenuItem versionCheckMenuItem;
+    private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
 
   }
 }
