@@ -21,7 +21,7 @@
       <Value Profile="(Default)">http://www.pecastation.org/files/appcast.xml</Value>
     </Setting>
     <Setting Name="CurrentVersion" Type="System.DateTime" Scope="Application">
-      <Value Profile="(Default)">2012-11-30</Value>
+      <Value Profile="(Default)">2012-12-31</Value>
     </Setting>
   </Settings>
 </SettingsFile>
