@@ -35,13 +35,15 @@ namespace PeerCastStation.UI.HTTP
     };
 
     public string Name { get { return "HTTP HTML Host UI"; } }
-    public string PhysicalPath { get; set; }
-    public string VirtualPath  { get; set; }
+    public SortedList<string, string> VirtualPhysicalPathMap { get { return virtualPhysicalPathMap; } }
+    private SortedList<string, string> virtualPhysicalPathMap = new SortedList<string,string>();
 
     public HTMLHost()
     {
-      this.PhysicalPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(HTMLHost).Assembly.Location), "html"));
-      this.VirtualPath  = "/html/";
+      var basepath = Path.GetFullPath(Path.GetDirectoryName(typeof(HTMLHost).Assembly.Location));
+      virtualPhysicalPathMap.Add("/html/", Path.Combine(basepath, "html"));
+      virtualPhysicalPathMap.Add("/Content/", Path.Combine(basepath, "Content"));
+      virtualPhysicalPathMap.Add("/Scripts/", Path.Combine(basepath, "Scripts"));
     }
 
     HTMLHostOutputStreamFactory factory;
@@ -109,8 +111,9 @@ namespace PeerCastStation.UI.HTTP
       private string GetPhysicalPath(Uri uri)
       {
         var virtualpath = uri.AbsolutePath;
-        if (virtualpath.StartsWith(this.owner.VirtualPath)) {
-          return Path.GetFullPath(Path.Combine(this.owner.PhysicalPath, virtualpath.Substring(this.owner.VirtualPath.Length)));
+        var map = this.owner.VirtualPhysicalPathMap.Reverse().FirstOrDefault(kv => virtualpath.StartsWith(kv.Key));
+        if (map.Key!=null && map.Value!=null) {
+          return Path.GetFullPath(Path.Combine(map.Value, virtualpath.Substring(map.Key.Length)));
         }
         else {
           return null;
@@ -250,7 +253,9 @@ namespace PeerCastStation.UI.HTTP
           catch (EndOfStreamException) {
           }
         }
-        if (res!=null && res.Uri.AbsolutePath.StartsWith(this.owner.VirtualPath)) {
+        if (res!=null &&
+            this.owner.VirtualPhysicalPathMap.Any(kv =>
+              res.Uri.AbsolutePath.StartsWith(kv.Key))) {
           return Guid.Empty;
         }
         else {
