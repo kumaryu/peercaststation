@@ -243,8 +243,8 @@ var ChannelViewModel = function(initial_value) {
   }));
   self.uptimeReadable  = ko.computed(function() {
     var seconds = self.uptime();
-    var minutes = Math.floor(seconds /  60) % 60;
-    var hours   = Math.floor(seconds / 360);
+    var minutes = Math.floor(seconds /   60) % 60;
+    var hours   = Math.floor(seconds / 3600);
     return hours + ":" + (minutes<10 ? ("0"+minutes) : minutes);
   });
   self.isFirewalled = ko.computed(function() {
