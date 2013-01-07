@@ -216,8 +216,13 @@ namespace PeerCastStation.Core
     {
       lock (list) {
         return list.Values.Where(c =>
-          c.Stream>=stream &&
-          (c.Timestamp>t || (c.Timestamp==t && c.Position>position))).FirstOrDefault();
+          c.Stream>stream ||
+          (c.Stream==stream &&
+           (c.Timestamp>t ||
+            (c.Timestamp==t && c.Position>position)
+           )
+          )
+        ).FirstOrDefault();
       }
     }
 
