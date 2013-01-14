@@ -1,3 +1,4 @@
+# coding:utf-8
 # PeerCastStation, a P2P streaming servent.
 # Copyright (C) 2011 Ryuichi Sakamoto (kumaryu@kumaryu.net)
 # 
@@ -106,6 +107,20 @@ module TestCore
       assert(!obj.has_value)
       assert(obj.has_children)
       assert_equal(children, obj.children)
+    end
+
+    def test_get_string_utf8
+      str = 'ほげ'.encode('utf-8')
+      obj = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Array[System::Byte]).call(id4('peer'), str+"\0")
+      assert_equal(id4('peer'), obj.name)
+      assert_equal('ほげ', obj.get_string)
+    end
+    
+    def test_get_string_sjis
+      str = 'ほげ'.encode('cp932')
+      obj = PeerCastStation::Core::Atom.clr_ctor.overload(PeerCastStation::Core::ID4, System::Array[System::Byte]).call(id4('peer'), str+"\0")
+      assert_equal(id4('peer'), obj.name)
+      assert_equal('ほげ', obj.get_string)
     end
   end
 

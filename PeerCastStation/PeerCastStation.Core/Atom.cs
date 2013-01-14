@@ -19,6 +19,7 @@ using System.Net;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace PeerCastStation.Core
 {
@@ -489,8 +490,24 @@ namespace PeerCastStation.Core
     /// <returns>値が文字列として解析できた場合はtrue、そうでない場合はfalse</returns>
     public bool TryGetString(out string res)
     {
-      if (value != null && value[value.Length - 1] == 0) {
-        res = System.Text.Encoding.UTF8.GetString(value, 0, value.Length - 1);
+      if (value!=null && value[value.Length-1]==0) {
+        var utf8 = new UTF8Encoding(false, true);
+        try {
+          res = utf8.GetString(value, 0, value.Length-1);
+        }
+        catch (DecoderFallbackException) {
+          var acp = Encoding.GetEncoding(
+            0,
+            new EncoderExceptionFallback(),
+            new DecoderExceptionFallback());
+          try {
+            res = acp.GetString(value, 0, value.Length-1);
+          }
+          catch (DecoderFallbackException) {
+            res = "";
+            return false;
+          }
+        }
         return true;
       }
       else {
