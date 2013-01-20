@@ -375,6 +375,7 @@ namespace PeerCastStation.PCP
       Channel.ChannelInfoChanged += Channel_HostInfoUpdated;
       Channel.ChannelTrackChanged += Channel_HostInfoUpdated;
       Channel.StatusChanged += Channel_HostInfoUpdated;
+      ClearIgnored();
       Status = SourceStreamStatus.Searching;
       state = State.Connecting;
     }
