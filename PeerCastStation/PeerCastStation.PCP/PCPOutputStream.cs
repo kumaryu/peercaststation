@@ -571,7 +571,7 @@ namespace PeerCastStation.PCP
     private IEnumerable<Host> SelectSourceHosts(IPEndPoint endpoint)
     {
       var rnd = new Random();
-      return Channel.GetConnectableNodes().OrderByDescending(n =>
+      return Channel.Nodes.OrderByDescending(n =>
         ( n.GlobalEndPoint.Address.Equals(endpoint.Address) ? 8000 : 0) +
         (!n.IsRelayFull ? 4000 : 0) +
         ( n.IsReceiving ? 2000 : 0) +

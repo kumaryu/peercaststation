@@ -115,6 +115,83 @@ namespace PeerCastStation.PCP
     private const int PCP_VERSION    = 1218;
     private const int PCP_VERSION_VP = 27;
 
+    private class IgnoredNodeCollection
+    {
+      private Dictionary<Guid, int> ignoredNodes = new Dictionary<Guid, int>();
+      private int threshold;
+      public IgnoredNodeCollection(int threshold)
+      {
+        this.threshold = threshold;
+      }
+
+      public void Add(Guid session_id)
+      {
+        ignoredNodes[session_id] = Environment.TickCount;
+      }
+
+      public bool Contains(Guid session_id)
+      {
+        if (ignoredNodes.ContainsKey(session_id)) {
+          int tick = Environment.TickCount;
+          if (tick - ignoredNodes[session_id] <= threshold) {
+            return true;
+          }
+          else {
+            ignoredNodes.Remove(session_id);
+            return false;
+          }
+        }
+        else {
+          return false;
+        }
+      }
+
+      public void Clear()
+      {
+        ignoredNodes.Clear();
+      }
+
+      public ICollection<Guid> Nodes { get { return ignoredNodes.Keys; } }
+    }
+    private static readonly int ignoredTime = 180000; //ms
+    private IgnoredNodeCollection ignoredNodes = new IgnoredNodeCollection(ignoredTime);
+
+    private bool IsIgnored(Guid session_id)
+    {
+      lock (ignoredNodes) { 
+        return ignoredNodes.Contains(session_id);
+      }
+    }
+
+    private IEnumerable<Host> GetConnectableNodes()
+    {
+      lock (ignoredNodes) { 
+        return Channel.Nodes.Where(h => !ignoredNodes.Contains(h.SessionID));
+      }
+    }
+
+    /// <summary>
+    /// 指定したノードが接続先として選択されないように保持します。
+    /// 一度無視されたノードは一定時間経過した後、再度選択されるようになります
+    /// </summary>
+    /// <param name="session_id">接続先として選択されないようにするノードのセッションID</param>
+    private void IgnoreNode(Guid session_id)
+    {
+      lock (ignoredNodes) {
+        ignoredNodes.Add(session_id);
+      }
+    }
+
+    /// <summary>
+    /// 全てのノードを接続先として選択可能にします
+    /// </summary>
+    private void ClearIgnored()
+    {
+      lock (ignoredNodes) {
+        ignoredNodes.Clear();
+      }
+    }
+
     public Host Uphost      { get; private set; }
     public Host TrackerHost { get; private set; }
     public IPEndPoint RemoteEndPoint { get; private set; }
@@ -187,7 +264,7 @@ namespace PeerCastStation.PCP
     {
       if (host!=null) {
         Logger.Debug("Host {0}({1}) is ignored", host.GlobalEndPoint, host.SessionID.ToString("N"));
-        Channel.IgnoreNode(host.SessionID);
+        IgnoreNode(host.SessionID);
       }
     }
 
@@ -406,7 +483,7 @@ namespace PeerCastStation.PCP
     private Host SelectSourceHost()
     {
       var rnd = new Random();
-      var res = Channel.GetConnectableNodes().OrderByDescending(n =>
+      var res = GetConnectableNodes().OrderByDescending(n =>
         (IsSiteLocal(n) ? 8000 : 0) +
         ( n.IsReceiving ? 4000 : 0) +
         (!n.IsRelayFull ? 2000 : 0) +
@@ -417,7 +494,7 @@ namespace PeerCastStation.PCP
       if (res!=null) {
         return res;
       }
-      else if (TrackerHost!=null && !Channel.IsIgnored(TrackerHost.SessionID)) {
+      else if (TrackerHost!=null && !IsIgnored(TrackerHost.SessionID)) {
         return TrackerHost;
       }
       else {

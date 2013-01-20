@@ -551,56 +551,6 @@ namespace PeerCastStation.Core
       }
     }
 
-    private class IgnoredNodeCollection
-    {
-      private Dictionary<Guid, int> ignoredNodes = new Dictionary<Guid, int>();
-      private int threshold;
-      public IgnoredNodeCollection(int threshold)
-      {
-        this.threshold = threshold;
-      }
-
-      public void Add(Guid session_id)
-      {
-        ignoredNodes[session_id] = Environment.TickCount;
-      }
-
-      public bool Contains(Guid session_id)
-      {
-        if (ignoredNodes.ContainsKey(session_id)) {
-          int tick = Environment.TickCount;
-          if (tick - ignoredNodes[session_id] <= threshold) {
-            return true;
-          }
-          else {
-            ignoredNodes.Remove(session_id);
-            return false;
-          }
-        }
-        else {
-          return false;
-        }
-      }
-
-      public void Clear()
-      {
-        ignoredNodes.Clear();
-      }
-
-      public ICollection<Guid> Nodes { get { return ignoredNodes.Keys; } }
-    }
-    private IgnoredNodeCollection ignoredNodes = new IgnoredNodeCollection(NodeLimit);
-
-    public bool IsIgnored(Guid session_id)
-    {
-      return ignoredNodes.Contains(session_id);
-    }
-
-    public IEnumerable<Host> GetConnectableNodes()
-    {
-      return nodes.Where(h => !ignoredNodes.Contains(h.SessionID));
-    }
-
     /// <summary>
     /// このチャンネルに関連付けられたノードの読み取り専用リストを取得します
     /// </summary>
@@ -642,28 +592,6 @@ namespace PeerCastStation.Core
       });
       if (removed) {
         if (NodesChanged!=null) NodesChanged(this, new EventArgs());
-      }
-    }
-
-    /// <summary>
-    /// 指定したノードが接続先として選択されないように保持します。
-    /// 一度無視されたノードは一定時間経過した後、再度選択されるようになります
-    /// </summary>
-    /// <param name="session_id">接続先として選択されないようにするノードのセッションID</param>
-    public void IgnoreNode(Guid session_id)
-    {
-      lock (ignoredNodes) {
-        ignoredNodes.Add(session_id);
-      }
-    }
-
-    /// <summary>
-    /// 全てのノードを接続先として選択可能にします
-    /// </summary>
-    public void ClearIgnored()
-    {
-      lock (ignoredNodes) {
-        ignoredNodes.Clear();
       }
     }
 
