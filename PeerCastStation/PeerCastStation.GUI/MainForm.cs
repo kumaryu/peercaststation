@@ -37,6 +37,7 @@ namespace PeerCastStation.GUI
     public MainForm(PeerCast peercast)
     {
       InitializeComponent();
+      new SplashLogo().Show();
       Settings.Default.PropertyChanged += SettingsPropertyChanged;
       if (PlatformID.Win32NT==Environment.OSVersion.Platform) {
         notifyIcon = new NotifyIcon(this.components);
