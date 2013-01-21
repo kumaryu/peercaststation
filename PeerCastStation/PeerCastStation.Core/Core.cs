@@ -210,6 +210,10 @@ namespace PeerCastStation.Core
     /// </summary>
     void Reconnect();
     /// <summary>
+    /// 現在の接続を切って指定した新しいソースへの接続を試みます。
+    /// </summary>
+    void Reconnect(Uri source_uri);
+    /// <summary>
     /// ストリームへパケットを送信します
     /// </summary>
     /// <param name="from">ブロードキャストパケットの送信元。無い場合はnull</param>

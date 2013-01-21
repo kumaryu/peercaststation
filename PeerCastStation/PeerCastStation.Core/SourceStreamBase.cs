@@ -160,7 +160,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    protected virtual void DoReconnect()
+    protected virtual void DoReconnect(Uri source_uri)
     {
     }
 
@@ -245,10 +245,28 @@ namespace PeerCastStation.Core
     {
       if (!IsStopped) {
         PostAction(() => {
-          DoReconnect();
+          DoReconnect(null);
         });
       }
       else {
+        Start();
+      }
+    }
+
+    public void Reconnect(Uri source_uri)
+    {
+      if (!IsStopped) {
+        PostAction(() => {
+          if (source_uri!=null) {
+            SourceUri = source_uri;
+          }
+          DoReconnect(source_uri);
+        });
+      }
+      else {
+        if (source_uri!=null) {
+          SourceUri = source_uri;
+        }
         Start();
       }
     }

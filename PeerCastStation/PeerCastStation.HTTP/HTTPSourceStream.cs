@@ -259,9 +259,9 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    protected override void DoReconnect()
+    protected override void DoReconnect(Uri source_uri)
     {
-      base.DoReconnect();
+      base.DoReconnect(source_uri);
       if (state!=State.Retrying) {
         EndConnection();
         state = State.Retrying;

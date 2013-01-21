@@ -184,16 +184,24 @@ namespace PeerCastStation.Core
     /// </returns>
     public virtual Channel RequestChannel(Guid channel_id, Uri tracker, bool request_relay)
     {
-      Channel res = channels.FirstOrDefault(c => c.ChannelID==channel_id);
-      if (res==null && request_relay) {
-        if (tracker!=null) {
-          res = RelayChannel(channel_id, tracker);
+      Channel channel = channels.FirstOrDefault(c => c.ChannelID==channel_id);
+      if (request_relay) {
+        if (channel!=null) {
+          if (channel.Status==SourceStreamStatus.Error ||
+              channel.Status==SourceStreamStatus.Idle) {
+            channel.Reconnect(tracker);
+          }
         }
         else {
-          res = RelayChannel(channel_id);
+          if (tracker!=null) {
+            channel = RelayChannel(channel_id, tracker);
+          }
+          else {
+            channel = RelayChannel(channel_id);
+          }
         }
       }
-      return res;
+      return channel;
     }
 
     /// <summary>

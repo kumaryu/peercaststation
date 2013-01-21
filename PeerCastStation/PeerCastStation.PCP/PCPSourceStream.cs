@@ -376,6 +376,7 @@ namespace PeerCastStation.PCP
       Channel.ChannelTrackChanged += Channel_HostInfoUpdated;
       Channel.StatusChanged += Channel_HostInfoUpdated;
       ClearIgnored();
+      TrackerHost = null;
       Status = SourceStreamStatus.Searching;
       state = State.Connecting;
     }
@@ -780,9 +781,12 @@ namespace PeerCastStation.PCP
       }
     }
 
-    protected override void DoReconnect()
+    protected override void DoReconnect(Uri source_uri)
     {
-      base.DoReconnect();
+      base.DoReconnect(source_uri);
+      if (source_uri!=null) {
+        TrackerHost = null;
+      }
       Stop(StopReason.UserReconnect);
     }
 

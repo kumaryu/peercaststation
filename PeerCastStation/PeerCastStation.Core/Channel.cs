@@ -649,6 +649,13 @@ namespace PeerCastStation.Core
       }
     }
 
+    public void Reconnect(Uri source_uri)
+    {
+      if (sourceStream!=null) {
+        sourceStream.Reconnect(source_uri);
+      }
+    }
+
     /// <summary>
     /// 接続されている各ストリームへパケットを送信します
     /// </summary>
