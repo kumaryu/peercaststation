@@ -98,6 +98,10 @@
       <Project>{BF5E0B6D-961A-4216-BACF-01D80AB3D6BB}</Project>
       <Name>PeerCastStation.UI.HTTP</Name>
     </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.WPF\PeerCastStation.WPF.csproj">
+      <Project>{5ea68141-ac06-428b-9526-a6835e0cc2b2}</Project>
+      <Name>PeerCastStation.WPF</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config">
