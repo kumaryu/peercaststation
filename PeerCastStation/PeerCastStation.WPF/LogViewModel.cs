@@ -97,7 +97,7 @@ namespace PeerCastStation.WPF
           logFileWriter = null;
         }
         logFileWriter = GetLogFileWriter(value);
-        if (logFileWriter != null)
+        if (logFileWriter != null && IsOutputToFile)
           Logger.AddWriter(logFileWriter);
         OnPropertyChanged("OutputFileName");
       }
