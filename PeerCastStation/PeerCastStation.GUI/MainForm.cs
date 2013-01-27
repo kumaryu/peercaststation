@@ -197,7 +197,11 @@ namespace PeerCastStation.GUI
         case SourceStreamStatus.Error:      status = "ERROR";   break;
         }
         var relay_status = "　";
-        if (Channel.IsRelayFull) {
+        if (Channel.Status==SourceStreamStatus.Idle || 
+            Channel.Status==SourceStreamStatus.Error) {
+          relay_status = "　";
+        }
+        else if (Channel.IsRelayFull) {
           if (Channel.LocalRelays>0) {
             relay_status = "○";
           }
