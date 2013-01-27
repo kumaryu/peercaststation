@@ -15,10 +15,10 @@ var PeercastViewModel = new function() {
   self.firewalledStatus = ko.computed(function() {
     var firewalled = self.isFirewalled();
     if (firewalled==true) {
-      return 'OK';
+      return 'NG';
     }
     else if (firewalled==false) {
-      return 'NG';
+      return 'OK';
     }
     else {
       return '不明';
