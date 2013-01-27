@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows;
 using System.Windows.Controls;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.CoreSettings;
@@ -44,14 +40,27 @@ namespace PeerCastStation.WPF
         dialog.ShowDialog();
       };
 
-      var setting = window.Setting;
+      Initialize(window.Setting, application.PeerCast);
+    }
+
+    private void Initialize(Setting setting, PeerCast peerCast)
+    {
       setting.Ports.AddItemButton.Click += (sender, e) =>
       {
         var dialog = new ListenerEditWindow();
         dialog.Owner = window;
-        dialog.DataContext = new ListenerEditViewModel(application.PeerCast);
+        dialog.DataContext = new ListenerEditViewModel(peerCast);
         dialog.ShowDialog();
         setting.Ports.GetBindingExpression(UserControl.DataContextProperty).UpdateTarget();
+      };
+
+      setting.YellowPagesList.AddItemButton.Click += (sender, e) =>
+      {
+        var dialog = new YellowPagesEditWindow();
+        dialog.Owner = window;
+        dialog.DataContext = new YellowPagesEditViewModel(peerCast);
+        dialog.ShowDialog();
+        setting.YellowPagesList.GetBindingExpression(UserControl.DataContextProperty).UpdateTarget();
       };
     }
 

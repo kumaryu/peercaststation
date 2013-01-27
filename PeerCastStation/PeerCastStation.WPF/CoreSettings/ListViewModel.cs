@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using PeerCastStation.Core;
@@ -13,23 +14,25 @@ namespace PeerCastStation.WPF.CoreSettings
     public T[] Items
     {
       get { return items; }
-      set { SetProperty("Items", ref items, value); }
-    }
-
-    private int selectedIndex;
-    public int SelectedIndex
-    {
-      get { return selectedIndex; }
       set
       {
-        SetProperty("SelectedIndex", ref selectedIndex, value, () =>
+        SetProperty("Items", ref items, value);
+      }
+    }
+
+    private T selectedItem;
+    public T SelectedItem
+    {
+      get { return selectedItem; }
+      set
+      {
+        SetProperty("SelectedItem", ref selectedItem, value, () =>
         {
           removeItem.OnCanExecuteChanged();
-          SelectedItemChanged(this, new ItemEventArgs<T> { Item = SelectedItem });
+          SelectedItemChanged(this, new ItemEventArgs<T> { Item = value });
         });
       }
     }
-    internal T SelectedItem { get { return Items[SelectedIndex]; } }
 
     private readonly Command addItem;
     public Command AddItem { get { return addItem; } }

@@ -65,6 +65,7 @@
     <Compile Include="CoreSettings\RelaySettingControl.xaml.cs">
       <DependentUpon>RelaySettingControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="CoreSettings\YellowPagesEditViewModel.cs" />
     <Compile Include="CoreSettings\YellowPagesEditWindow.xaml.cs">
       <DependentUpon>YellowPagesEditWindow.xaml</DependentUpon>
     </Compile>

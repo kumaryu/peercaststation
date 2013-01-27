@@ -22,6 +22,6 @@
             <Button Name="RemoveItemButton" Content="削除" Command="{Binding RemoveItem}"/>
         </StackPanel>
         <ListBox Name="Items" ItemsSource="{Binding Items}"
-                             SelectedIndex="{Binding SelectedIndex}"/>
+                 SelectedItem="{Binding SelectedItem}"/>
     </DockPanel>
 </UserControl>

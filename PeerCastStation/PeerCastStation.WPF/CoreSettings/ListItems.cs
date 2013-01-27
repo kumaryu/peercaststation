@@ -43,6 +43,14 @@ namespace PeerCastStation.WPF.CoreSettings
         local_accepts,
         global_accepts);
     }
+
+    public override bool Equals(object obj)
+    {
+      var other = obj as PortListItem;
+      if (other == null)
+        return false;
+      return Listener == other.Listener;
+    }
   }
 
   class YellowPageItem

@@ -6,12 +6,11 @@
         Title="PeerCastStation" Height="600" Width="460">
     <Window.Resources>
         <Style TargetType="TabItem">
-            <Setter Property="Padding" Value="10,3"/>
+            <Setter Property="Padding" Value="10,2"/>
         </Style>
     </Window.Resources>
     <DockPanel>
         <StatusBar DockPanel.Dock="Bottom">
-            <Label Content="ポート: "/>
             <TextBlock Text="{Binding PortStatus}"/>
         </StatusBar>
         <TabControl>
