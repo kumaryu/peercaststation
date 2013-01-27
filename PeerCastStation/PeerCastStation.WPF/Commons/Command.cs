@@ -40,7 +40,7 @@ namespace PeerCastStation.WPF.Commons
     }
   }
 
-  public sealed class Command<T> : ICommand
+  public class Command<T> : ICommand
   {
     private Action<T> execute;
     private Func<T, bool> canExecute;

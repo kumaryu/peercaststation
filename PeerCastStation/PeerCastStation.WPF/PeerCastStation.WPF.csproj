@@ -51,12 +51,33 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commons\Command.cs" />
+    <Compile Include="CoreSettings\Extensions.cs" />
+    <Compile Include="CoreSettings\ListControl.xaml.cs">
+      <DependentUpon>ListControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CoreSettings\ListenerEditViewModel.cs" />
+    <Compile Include="CoreSettings\ListenerEditWindow.xaml.cs">
+      <DependentUpon>ListenerEditWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CoreSettings\ListItems.cs" />
+    <Compile Include="CoreSettings\ListViewModel.cs" />
+    <Compile Include="CoreSettings\OtherSettingViewModel.cs" />
+    <Compile Include="CoreSettings\RelaySettingControl.xaml.cs">
+      <DependentUpon>RelaySettingControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CoreSettings\YellowPagesEditWindow.xaml.cs">
+      <DependentUpon>YellowPagesEditWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Log.xaml.cs">
       <DependentUpon>Log.xaml</DependentUpon>
     </Compile>
     <Compile Include="LogViewModel.cs" />
     <Compile Include="MainWindowViewModel.cs" />
+    <Compile Include="CoreSettings\SettingViewModel.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="CoreSettings\Setting.xaml.cs">
+      <DependentUpon>Setting.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UserControl1.xaml.cs">
       <DependentUpon>UserControl1.xaml</DependentUpon>
     </Compile>
@@ -66,6 +87,23 @@
     <Compile Include="VersionInfoWindow.xaml.cs">
       <DependentUpon>VersionInfoWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="WindowManager.cs" />
+    <Page Include="CoreSettings\ListControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CoreSettings\ListenerEditWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CoreSettings\RelaySettingControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CoreSettings\YellowPagesEditWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Log.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -78,6 +116,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="CoreSettings\Setting.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="UserControl1.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

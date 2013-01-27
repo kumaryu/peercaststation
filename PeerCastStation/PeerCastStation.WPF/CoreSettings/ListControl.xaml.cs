@@ -9,23 +9,19 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace PeerCastStation.WPF
+namespace PeerCastStation.WPF.CoreSettings
 {
   /// <summary>
-  /// VersionInfoWindow.xaml の相互作用ロジック
+  /// ListControl.xaml の相互作用ロジック
   /// </summary>
-  public partial class VersionInfoWindow : Window
+  public partial class ListControl : UserControl
   {
-    public VersionInfoWindow()
+    public ListControl()
     {
       InitializeComponent();
-    }
-
-    private void Button_Click(object sender, RoutedEventArgs e)
-    {
-      Close();
     }
   }
 }

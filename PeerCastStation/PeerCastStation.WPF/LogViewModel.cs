@@ -23,12 +23,8 @@ namespace PeerCastStation.WPF
       get { return logLevel; }
       set
       {
-        if (logLevel == value)
-          return;
-        logLevel = value;
-
-        Logger.Level = GetLogLevel(value);
-        OnPropertyChanged("LogLevel");
+        SetProperty("LogLevel", ref logLevel, value,
+          () => Logger.Level = GetLogLevel(value));
       }
     }
 
@@ -38,12 +34,8 @@ namespace PeerCastStation.WPF
       get { return isOutputToGui; }
       set
       {
-        if (isOutputToGui == value)
-          return;
-        isOutputToGui = value;
-
-        RefreshWriter(guiWriter, value);
-        OnPropertyChanged("IsOutputToGui");
+        SetProperty("IsOutputToGui", ref isOutputToGui, value,
+          () => RefreshWriter(guiWriter, value));
       }
     }
 
@@ -53,12 +45,8 @@ namespace PeerCastStation.WPF
       get { return isOutputToConsole; }
       set
       {
-        if (isOutputToConsole == value)
-          return;
-        isOutputToConsole = value;
-
-        RefreshWriter(Console.Error, value);
-        OnPropertyChanged("IsOutputToConsole");
+        SetProperty("IsOutputToConsole", ref isOutputToConsole, value,
+          () => RefreshWriter(Console.Error, value));
       }
     }
 
@@ -68,15 +56,13 @@ namespace PeerCastStation.WPF
       get { return isOutputToFile; }
       set
       {
-        if (isOutputToFile == value)
-          return;
-        isOutputToFile = value;
-
-        if (logFileWriter != null)
+        SetProperty("IsOutputToFile", ref isOutputToFile, value, () =>
         {
-          RefreshWriter(logFileWriter, value);
-        }
-        OnPropertyChanged("IsOutputToFile");
+          if (logFileWriter != null)
+          {
+            RefreshWriter(logFileWriter, value);
+          }
+        });
       }
     }
 
@@ -86,20 +72,18 @@ namespace PeerCastStation.WPF
       get { return outputFileName; }
       set
       {
-        if (outputFileName == value)
-          return;
-        outputFileName = value;
-
-        if (logFileWriter != null)
+        SetProperty("OutputFileName", ref outputFileName, value, () =>
         {
-          Logger.RemoveWriter(logFileWriter);
-          logFileWriter.Close();
-          logFileWriter = null;
-        }
-        logFileWriter = GetLogFileWriter(value);
-        if (logFileWriter != null && IsOutputToFile)
-          Logger.AddWriter(logFileWriter);
-        OnPropertyChanged("OutputFileName");
+          if (logFileWriter != null)
+          {
+            Logger.RemoveWriter(logFileWriter);
+            logFileWriter.Close();
+            logFileWriter = null;
+          }
+          logFileWriter = GetLogFileWriter(value);
+          if (logFileWriter != null && IsOutputToFile)
+            Logger.AddWriter(logFileWriter);
+        });
       }
     }
 

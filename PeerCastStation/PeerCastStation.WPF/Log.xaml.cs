@@ -13,7 +13,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Microsoft.Win32;
 
-namespace PeerCastStation.Gui
+namespace PeerCastStation.WPF
 {
   /// <summary>
   /// Log.xaml の相互作用ロジック

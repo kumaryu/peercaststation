@@ -24,14 +24,5 @@ namespace PeerCastStation.WPF
     {
       InitializeComponent();
     }
-
-    private void Button_Click(object sender, RoutedEventArgs e)
-    {
-      var window = new VersionInfoWindow();
-      window.DataContext = new VersionInfoViewModel(PeerCastApplication.Current);
-      window.Owner = this;
-      window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-      window.ShowDialog();
-    }
   }
 }

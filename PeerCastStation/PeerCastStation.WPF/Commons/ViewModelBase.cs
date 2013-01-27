@@ -30,5 +30,15 @@ namespace PeerCastStation.WPF.Commons
       OnPropertyChanged(propertyName);
       return true;
     }
+
+    protected bool SetProperty<T>(string propertyName, ref T obj, T value, Action onSuccess)
+    {
+      if (obj != null && obj.Equals(value))
+        return false;
+      obj = value;
+      onSuccess();
+      OnPropertyChanged(propertyName);
+      return true;
+    }
   }
 }

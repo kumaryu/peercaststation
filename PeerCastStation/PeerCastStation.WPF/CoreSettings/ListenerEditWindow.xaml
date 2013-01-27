@@ -1,0 +1,49 @@
+﻿<Window x:Class="PeerCastStation.WPF.CoreSettings.ListenerEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:PeerCastStation.WPF.CoreSettings"
+        Title="ListenerEditWindow" Height="210" Width="340"
+        WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <Style TargetType="DockPanel">
+            <Setter Property="Margin" Value="3"/>
+        </Style>
+        <Style TargetType="l:RelaySettingControl">
+            <Setter Property="Margin" Value="3"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Height" Value="26"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Height" Value="24"/>
+        </Style>
+        <Style TargetType="Label">
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Right"/>
+            <Setter Property="Width" Value="140"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Width" Value="80"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Margin" Value="5"/>
+        </Style>
+    </Window.Resources>
+    <StackPanel Margin="8">
+        <DockPanel>
+            <Label Content="アドレス:"/>
+            <ComboBox IsEditable="True" Text="{Binding Address}">
+                <ComboBoxItem Content="IPv4 Any" IsSelected="True"/>
+                <ComboBoxItem Content="IPv6 Any"/>
+            </ComboBox>
+        </DockPanel>
+        <DockPanel>
+            <Label Content="ポート番号:"/>
+            <TextBox Text="{Binding Port}"/>
+        </DockPanel>
+        <l:RelaySettingControl/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="追加" Command="{Binding Add}" Click="Button_Click"/>
+            <Button Content="キャンセル" Click="Button_Click"/>
+        </StackPanel>
+    </StackPanel>
+</Window>
