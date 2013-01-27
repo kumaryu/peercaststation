@@ -18,7 +18,7 @@ namespace PeerCastStation.WPF.CoreSettings
       get
       {
         ports.Items = peerCast.OutputListeners
-          .Select(listener => new PortListItem(listener));
+          .Select(listener => new PortListItem(listener)).ToArray();
         return ports;
       }
     }
@@ -26,6 +26,7 @@ namespace PeerCastStation.WPF.CoreSettings
     {
       get { return ports.SelectedItem.Listener; }
     }
+    public bool IsPortSelected { get { return ports.SelectedItem != null; } }
 
     public bool? IsLocalRelay
     {
@@ -37,6 +38,7 @@ namespace PeerCastStation.WPF.CoreSettings
       {
         SelectedListener.SetToLocalOutputAccepts(OutputStreamType.Relay, value);
         OnPropertyChanged("IsLocalRelay");
+        OnPropertyChanged("Ports");
       }
     }
 
@@ -50,6 +52,7 @@ namespace PeerCastStation.WPF.CoreSettings
       {
         SelectedListener.SetToLocalOutputAccepts(OutputStreamType.Play, value);
         OnPropertyChanged("IsLocalDirect");
+        OnPropertyChanged("Ports");
       }
     }
 
@@ -63,6 +66,7 @@ namespace PeerCastStation.WPF.CoreSettings
       {
         SelectedListener.SetToLocalOutputAccepts(OutputStreamType.Interface, value);
         OnPropertyChanged("IsLocalInterface");
+        OnPropertyChanged("Ports");
       }
     }
 
@@ -76,6 +80,7 @@ namespace PeerCastStation.WPF.CoreSettings
       {
         SelectedListener.SetToGlobalOutputAccepts(OutputStreamType.Relay, value);
         OnPropertyChanged("IsGlobalRelay");
+        OnPropertyChanged("Ports");
       }
     }
 
@@ -89,6 +94,7 @@ namespace PeerCastStation.WPF.CoreSettings
       {
         SelectedListener.SetToGlobalOutputAccepts(OutputStreamType.Play, value);
         OnPropertyChanged("IsGlobalDirect");
+        OnPropertyChanged("Ports");
       }
     }
 
@@ -102,6 +108,7 @@ namespace PeerCastStation.WPF.CoreSettings
       {
         SelectedListener.SetToGlobalOutputAccepts(OutputStreamType.Interface, value);
         OnPropertyChanged("IsGlobalInterface");
+        OnPropertyChanged("Ports");
       }
     }
 
@@ -111,10 +118,16 @@ namespace PeerCastStation.WPF.CoreSettings
       get { return otherSetting; }
     }
 
-    private readonly ObservableCollection<YellowPageItem> yellowPagesList;
-    public ObservableCollection<YellowPageItem> YellowPagesList
+    private readonly ListViewModel<YellowPageItem> yellowPagesList
+      = new ListViewModel<YellowPageItem>();
+    public ListViewModel<YellowPageItem> YellowPagesList
     {
-      get { return yellowPagesList; }
+      get
+      {
+        yellowPagesList.Items = peerCast.YellowPages
+          .Select(yp => new YellowPageItem(yp)).ToArray();
+        return yellowPagesList;
+      }
     }
 
     public SettingViewModel(PeerCast peerCast)
@@ -139,8 +152,11 @@ namespace PeerCastStation.WPF.CoreSettings
 
       otherSetting = new OtherSettingViewModel(peerCast.AccessController);
 
-      yellowPagesList = new ObservableCollection<YellowPageItem>(
-        peerCast.YellowPages.Select(yp => new YellowPageItem(yp)));
+      yellowPagesList.ItemRemoving += (sender, e) =>
+      {
+        peerCast.RemoveYellowPage(e.Item.YellowPageClient);
+        OnPropertyChanged("YellowPagesList");
+      };
     }
   }
 }

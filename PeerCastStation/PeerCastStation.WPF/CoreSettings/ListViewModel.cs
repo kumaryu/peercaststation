@@ -9,31 +9,27 @@ namespace PeerCastStation.WPF.CoreSettings
 {
   class ListViewModel<T> : ViewModelBase
   {
-    private IEnumerable<T> items;
-    public IEnumerable<T> Items
+    private T[] items;
+    public T[] Items
     {
       get { return items; }
       set { SetProperty("Items", ref items, value); }
     }
 
-    private T selectedItem;
-    public T SelectedItem
+    private int selectedIndex;
+    public int SelectedIndex
     {
-      get { return selectedItem; }
+      get { return selectedIndex; }
       set
       {
-        SetProperty("SelectedItem", ref selectedItem, value, () =>
+        SetProperty("SelectedIndex", ref selectedIndex, value, () =>
         {
           removeItem.OnCanExecuteChanged();
-          SelectedItemChanged(this, new ItemEventArgs<T> { Item = value });
+          SelectedItemChanged(this, new ItemEventArgs<T> { Item = SelectedItem });
         });
       }
     }
-
-    public bool IsItemSelected
-    {
-      get { return SelectedItem != null; }
-    }
+    internal T SelectedItem { get { return Items[SelectedIndex]; } }
 
     private readonly Command addItem;
     public Command AddItem { get { return addItem; } }
@@ -46,7 +42,7 @@ namespace PeerCastStation.WPF.CoreSettings
         () => ItemAdding(this, new EventArgs()));
       removeItem = new Command(
         () => ItemRemoving(this, new ItemEventArgs<T> { Item = SelectedItem }),
-        () => IsItemSelected);
+        () => SelectedItem != null);
     }
 
     public event ItemEventHandler<T> SelectedItemChanged = (sender, e) => { };

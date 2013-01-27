@@ -58,14 +58,7 @@
             </StackPanel>
         </GroupBox>
         <GroupBox Header="YP一覧">
-            <DockPanel>
-                <StackPanel DockPanel.Dock="Right">
-                    <Button Content="追加..." Click="AddYellowPagesButton_Click"/>
-                    <Button Content="削除" Command="{Binding RemoveYellowPages}"
-                        CommandParameter="{Binding SelectedItem, ElementName=yellowPagesList}"/>
-                </StackPanel>
-                <ListBox x:Name="yellowPagesList" ItemsSource="{Binding YellowPagesList}"/>
-            </DockPanel>
+            <l:ListControl x:Name="YellowPagesList" DataContext="{Binding YellowPagesList}"/>
         </GroupBox>
     </StackPanel>
 </UserControl>

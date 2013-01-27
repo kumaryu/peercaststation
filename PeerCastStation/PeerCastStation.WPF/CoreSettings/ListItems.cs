@@ -65,4 +65,17 @@ namespace PeerCastStation.WPF.CoreSettings
       return this.Name;
     }
   }
+
+  class YellowPageFactoryItem
+  {
+    public IYellowPageClientFactory Factory { get; private set; }
+    public YellowPageFactoryItem(IYellowPageClientFactory factory)
+    {
+      this.Factory = factory;
+    }
+    public override string ToString()
+    {
+      return this.Factory.Name;
+    }
+  }
 }
