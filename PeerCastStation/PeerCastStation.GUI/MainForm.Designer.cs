@@ -80,6 +80,8 @@ namespace PeerCastStation.GUI
       System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
       this.chanInfoUpdateButton = new System.Windows.Forms.Button();
       this.notifyIconMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+      this.versionCheckMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
       this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
       this.mainTab = new System.Windows.Forms.TabControl();
       this.tabChannels = new System.Windows.Forms.TabPage();
@@ -116,6 +118,8 @@ namespace PeerCastStation.GUI
       this.relayTree = new System.Windows.Forms.TreeView();
       this.tabSettings = new System.Windows.Forms.TabPage();
       this.panel2 = new System.Windows.Forms.Panel();
+      this.groupBox6 = new System.Windows.Forms.GroupBox();
+      this.showWindowOnStartup = new System.Windows.Forms.CheckBox();
       this.groupBox3 = new System.Windows.Forms.GroupBox();
       this.button1 = new System.Windows.Forms.Button();
       this.button2 = new System.Windows.Forms.Button();
@@ -153,8 +157,6 @@ namespace PeerCastStation.GUI
       this.statusBar = new System.Windows.Forms.StatusStrip();
       this.portLabel = new System.Windows.Forms.ToolStripStatusLabel();
       this.portOpenedLabel = new System.Windows.Forms.ToolStripStatusLabel();
-      this.versionCheckMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-      this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
       showGUIMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       quitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       label21 = new System.Windows.Forms.Label();
@@ -202,6 +204,7 @@ namespace PeerCastStation.GUI
       this.tabPage2.SuspendLayout();
       this.tabSettings.SuspendLayout();
       this.panel2.SuspendLayout();
+      this.groupBox6.SuspendLayout();
       this.groupBox3.SuspendLayout();
       this.groupBox5.SuspendLayout();
       this.tableLayoutPanel3.SuspendLayout();
@@ -534,7 +537,19 @@ namespace PeerCastStation.GUI
             quitMenuItem});
       this.notifyIconMenu.Name = "notifyIconMenu";
       this.notifyIconMenu.ShowImageMargin = false;
-      this.notifyIconMenu.Size = new System.Drawing.Size(203, 126);
+      this.notifyIconMenu.Size = new System.Drawing.Size(203, 104);
+      // 
+      // versionCheckMenuItem
+      // 
+      this.versionCheckMenuItem.Name = "versionCheckMenuItem";
+      this.versionCheckMenuItem.Size = new System.Drawing.Size(202, 22);
+      this.versionCheckMenuItem.Text = "アップデートのチェック(&U)";
+      this.versionCheckMenuItem.Click += new System.EventHandler(this.versionCheckMenuItem_Click);
+      // 
+      // toolStripSeparator1
+      // 
+      this.toolStripSeparator1.Name = "toolStripSeparator1";
+      this.toolStripSeparator1.Size = new System.Drawing.Size(199, 6);
       // 
       // toolStripMenuItem1
       // 
@@ -552,7 +567,7 @@ namespace PeerCastStation.GUI
       this.mainTab.Location = new System.Drawing.Point(0, 0);
       this.mainTab.Name = "mainTab";
       this.mainTab.SelectedIndex = 0;
-      this.mainTab.Size = new System.Drawing.Size(445, 461);
+      this.mainTab.Size = new System.Drawing.Size(445, 496);
       this.mainTab.TabIndex = 0;
       this.mainTab.SelectedIndexChanged += new System.EventHandler(this.mainTab_SelectedIndexChanged);
       // 
@@ -953,7 +968,7 @@ namespace PeerCastStation.GUI
       this.tabSettings.Controls.Add(this.panel2);
       this.tabSettings.Location = new System.Drawing.Point(4, 22);
       this.tabSettings.Name = "tabSettings";
-      this.tabSettings.Size = new System.Drawing.Size(437, 435);
+      this.tabSettings.Size = new System.Drawing.Size(437, 470);
       this.tabSettings.TabIndex = 2;
       this.tabSettings.Text = "設定";
       this.tabSettings.UseVisualStyleBackColor = true;
@@ -961,6 +976,7 @@ namespace PeerCastStation.GUI
       // panel2
       // 
       this.panel2.AutoScroll = true;
+      this.panel2.Controls.Add(this.groupBox6);
       this.panel2.Controls.Add(this.groupBox3);
       this.panel2.Controls.Add(this.groupBox5);
       this.panel2.Controls.Add(this.groupBox4);
@@ -968,8 +984,34 @@ namespace PeerCastStation.GUI
       this.panel2.Location = new System.Drawing.Point(0, 0);
       this.panel2.Name = "panel2";
       this.panel2.Padding = new System.Windows.Forms.Padding(4);
-      this.panel2.Size = new System.Drawing.Size(437, 435);
+      this.panel2.Size = new System.Drawing.Size(437, 470);
       this.panel2.TabIndex = 1;
+      // 
+      // groupBox6
+      // 
+      this.groupBox6.AutoSize = true;
+      this.groupBox6.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+      this.groupBox6.Controls.Add(this.showWindowOnStartup);
+      this.groupBox6.Dock = System.Windows.Forms.DockStyle.Top;
+      this.groupBox6.Location = new System.Drawing.Point(4, 410);
+      this.groupBox6.Name = "groupBox6";
+      this.groupBox6.Size = new System.Drawing.Size(429, 52);
+      this.groupBox6.TabIndex = 4;
+      this.groupBox6.TabStop = false;
+      this.groupBox6.Text = "UI設定";
+      // 
+      // showWindowOnStartup
+      // 
+      this.showWindowOnStartup.AutoSize = true;
+      this.showWindowOnStartup.Checked = global::PeerCastStation.GUI.Properties.Settings.Default.ShowWindowOnStartup;
+      this.showWindowOnStartup.CheckState = System.Windows.Forms.CheckState.Checked;
+      this.showWindowOnStartup.DataBindings.Add(new System.Windows.Forms.Binding("Checked", global::PeerCastStation.GUI.Properties.Settings.Default, "ShowWindowOnStartup", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+      this.showWindowOnStartup.Location = new System.Drawing.Point(8, 18);
+      this.showWindowOnStartup.Name = "showWindowOnStartup";
+      this.showWindowOnStartup.Size = new System.Drawing.Size(164, 16);
+      this.showWindowOnStartup.TabIndex = 10;
+      this.showWindowOnStartup.Text = "起動時にウィンドウを表示する";
+      this.showWindowOnStartup.UseVisualStyleBackColor = true;
       // 
       // groupBox3
       // 
@@ -1031,7 +1073,7 @@ namespace PeerCastStation.GUI
       this.groupBox5.Size = new System.Drawing.Size(429, 137);
       this.groupBox5.TabIndex = 2;
       this.groupBox5.TabStop = false;
-      this.groupBox5.Text = "その他";
+      this.groupBox5.Text = "接続数設定";
       // 
       // applySettings
       // 
@@ -1398,7 +1440,7 @@ namespace PeerCastStation.GUI
       this.statusBar.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.portLabel,
             this.portOpenedLabel});
-      this.statusBar.Location = new System.Drawing.Point(0, 459);
+      this.statusBar.Location = new System.Drawing.Point(0, 494);
       this.statusBar.Name = "statusBar";
       this.statusBar.Size = new System.Drawing.Size(443, 23);
       this.statusBar.TabIndex = 1;
@@ -1415,23 +1457,11 @@ namespace PeerCastStation.GUI
       this.portOpenedLabel.Size = new System.Drawing.Size(134, 18);
       this.portOpenedLabel.Text = "toolStripStatusLabel1";
       // 
-      // versionCheckMenuItem
-      // 
-      this.versionCheckMenuItem.Name = "versionCheckMenuItem";
-      this.versionCheckMenuItem.Size = new System.Drawing.Size(202, 22);
-      this.versionCheckMenuItem.Text = "アップデートのチェック(&U)";
-      this.versionCheckMenuItem.Click += new System.EventHandler(this.versionCheckMenuItem_Click);
-      // 
-      // toolStripSeparator1
-      // 
-      this.toolStripSeparator1.Name = "toolStripSeparator1";
-      this.toolStripSeparator1.Size = new System.Drawing.Size(199, 6);
-      // 
       // MainForm
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-      this.ClientSize = new System.Drawing.Size(443, 482);
+      this.ClientSize = new System.Drawing.Size(443, 517);
       this.Controls.Add(this.statusBar);
       this.Controls.Add(this.mainTab);
       this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -1459,6 +1489,8 @@ namespace PeerCastStation.GUI
       this.tabSettings.ResumeLayout(false);
       this.panel2.ResumeLayout(false);
       this.panel2.PerformLayout();
+      this.groupBox6.ResumeLayout(false);
+      this.groupBox6.PerformLayout();
       this.groupBox3.ResumeLayout(false);
       this.groupBox5.ResumeLayout(false);
       this.groupBox5.PerformLayout();
@@ -1559,6 +1591,8 @@ namespace PeerCastStation.GUI
     private System.Windows.Forms.TextBox chanTrackGenre;
     private System.Windows.Forms.ToolStripMenuItem versionCheckMenuItem;
     private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
+    private System.Windows.Forms.GroupBox groupBox6;
+    private System.Windows.Forms.CheckBox showWindowOnStartup;
 
   }
 }

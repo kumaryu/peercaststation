@@ -66,6 +66,7 @@ namespace PeerCastStation.GUI
         UpdateStatus();
       };
       UpdateStatus();
+      this.Visible = Settings.Default.ShowWindowOnStartup;
     }
 
     private void notifyIcon_BalloonTipClicked(object sender, EventArgs args)
@@ -320,6 +321,7 @@ namespace PeerCastStation.GUI
       Settings.Default.PropertyChanged -= SettingsPropertyChanged;
       peerCast.ChannelAdded   -= ChannelAdded;
       peerCast.ChannelRemoved -= ChannelRemoved;
+      Application.ExitThread();
     }
 
     private void channelList_SelectedIndexChanged(object sender, EventArgs e)

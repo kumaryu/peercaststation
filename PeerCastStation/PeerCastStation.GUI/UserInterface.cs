@@ -25,7 +25,7 @@ namespace PeerCastStation.GUI
         System.Windows.Forms.Application.ApplicationExit += (sender, args) => {
           app.Stop();
         };
-        System.Windows.Forms.Application.Run(mainForm);
+        System.Windows.Forms.Application.Run();
         mainForm = null;
       });
       mainThread.SetApartmentState(ApartmentState.STA);
