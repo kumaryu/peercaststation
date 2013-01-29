@@ -262,7 +262,7 @@ namespace PeerCastStation.PCP
         else {
           relay_status = "■";
         }
-        return String.Format("PCP Relay {4}{0}({1}) [{2}/{3}] {5}kbps",
+        return String.Format("{4} PCP Relay {0}({1}) [{2}/{3}] {5}kbps",
           RemoteEndPoint,
           UserAgent,
           Downhost.DirectCount,
