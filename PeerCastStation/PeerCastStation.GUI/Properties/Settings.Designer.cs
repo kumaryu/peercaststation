@@ -94,7 +94,7 @@ namespace PeerCastStation.GUI.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("2012-12-31")]
+        [global::System.Configuration.DefaultSettingValueAttribute("2013-01-29")]
         public global::System.DateTime CurrentVersion {
             get {
                 return ((global::System.DateTime)(this["CurrentVersion"]));
