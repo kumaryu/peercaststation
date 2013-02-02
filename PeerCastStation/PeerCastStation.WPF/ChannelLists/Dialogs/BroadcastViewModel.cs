@@ -2,10 +2,11 @@
 using System.Linq;
 using System.Windows.Input;
 using PeerCastStation.Core;
+using PeerCastStation.WPF.ChannelLists.Channels;
 using PeerCastStation.WPF.Commons;
 using PeerCastStation.WPF.CoreSettings;
 
-namespace PeerCastStation.WPF.Channels
+namespace PeerCastStation.WPF.ChannelLists.Dialogs
 {
   class BroadcastViewModel : ViewModelBase
   {

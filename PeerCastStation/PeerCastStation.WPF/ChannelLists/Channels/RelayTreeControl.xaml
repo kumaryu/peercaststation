@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="PeerCastStation.WPF.Channels.Connections"
+﻿<UserControl x:Class="PeerCastStation.WPF.ChannelLists.Channels.RelayTreeControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -15,10 +15,15 @@
     </UserControl.Resources>
     <DockPanel>
         <StackPanel DockPanel.Dock="Right">
-            <Button Content="切断" Command="{Binding Close}"/>
-            <Button Content="再接続" Command="{Binding Reconnect}"/>
+            <Button Content="更新" Command="{Binding Update}"/>
         </StackPanel>
-        <ListBox ItemsSource="{Binding Connections}"
-                 SelectedIndex="{Binding Connection}"/>
+        <TreeView ItemsSource="{Binding RelayTree}">
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="TreeViewItem">
+                    <Setter Property="Header" Value="{Binding Text}"/>
+                    <Setter Property="ItemsSource" Value="{Binding Children}"/>
+                </Style>
+            </TreeView.ItemContainerStyle>
+        </TreeView>
     </DockPanel>
 </UserControl>

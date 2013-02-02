@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Windows.Controls;
 using PeerCastStation.Core;
-using PeerCastStation.WPF.Channels;
+using PeerCastStation.WPF.ChannelLists;
+using PeerCastStation.WPF.ChannelLists.Dialogs;
 using PeerCastStation.WPF.CoreSettings;
+using PeerCastStation.WPF.CoreSettings.Dialogs;
 using PeerCastStation.WPF.Properties;
 
 namespace PeerCastStation.WPF

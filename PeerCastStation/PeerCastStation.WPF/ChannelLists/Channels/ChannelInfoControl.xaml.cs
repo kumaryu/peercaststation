@@ -9,23 +9,19 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace PeerCastStation.WPF.CoreSettings
+namespace PeerCastStation.WPF.ChannelLists.Channels
 {
   /// <summary>
-  /// YellowPagesEditWindow.xaml の相互作用ロジック
+  /// ChannelInfoControl.xaml の相互作用ロジック
   /// </summary>
-  public partial class YellowPagesEditWindow : Window
+  public partial class ChannelInfoControl : UserControl
   {
-    public YellowPagesEditWindow()
+    public ChannelInfoControl()
     {
       InitializeComponent();
-    }
-
-    private void Button_Click(object sender, RoutedEventArgs e)
-    {
-      Close();
     }
   }
 }

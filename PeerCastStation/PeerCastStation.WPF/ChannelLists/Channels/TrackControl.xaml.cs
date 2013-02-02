@@ -9,24 +9,19 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
 using System.Windows.Shapes;
-using PeerCastStation.WPF.Commons;
 
-namespace PeerCastStation.WPF.CoreSettings
+namespace PeerCastStation.WPF.ChannelLists.Channels
 {
   /// <summary>
-  /// ListenerEditWindow.xaml の相互作用ロジック
+  /// TrackControl.xaml の相互作用ロジック
   /// </summary>
-  public partial class ListenerEditWindow : Window
+  public partial class TrackControl : UserControl
   {
-    public ListenerEditWindow()
+    public TrackControl()
     {
       InitializeComponent();
-    }
-
-    private void Button_Click(object sender, RoutedEventArgs e)
-    {
-      Close();
     }
   }
 }

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using PeerCastStation.Core;
-using PeerCastStation.WPF.Channels;
+using PeerCastStation.WPF.ChannelLists;
 using PeerCastStation.WPF.Commons;
 using PeerCastStation.WPF.CoreSettings;
 

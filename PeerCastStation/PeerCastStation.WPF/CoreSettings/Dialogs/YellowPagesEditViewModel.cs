@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.Commons;
 
-namespace PeerCastStation.WPF.CoreSettings
+namespace PeerCastStation.WPF.CoreSettings.Dialogs
 {
   class YellowPagesEditViewModel
   {

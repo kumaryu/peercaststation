@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:l="clr-namespace:PeerCastStation.WPF"
         xmlns:lc="clr-namespace:PeerCastStation.WPF.CoreSettings"
-        xmlns:lb="clr-namespace:PeerCastStation.WPF.Channels"
+        xmlns:lb="clr-namespace:PeerCastStation.WPF.ChannelLists"
         Title="PeerCastStation" Height="600" Width="460">
     <Window.Resources>
         <Style TargetType="TabItem">
@@ -16,7 +16,7 @@
         </StatusBar>
         <TabControl>
             <TabItem Header="チャンネル一覧">
-                <lb:Channels x:Name="Channels" DataContext="{Binding AllChannels}"/>
+                <lb:ChannelList x:Name="Channels" DataContext="{Binding AllChannels}"/>
             </TabItem>
             <TabItem Header="設定">
                 <lc:Setting x:Name="Setting" DataContext="{Binding Setting}"/>

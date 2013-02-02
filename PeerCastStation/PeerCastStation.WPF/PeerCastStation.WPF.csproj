@@ -50,39 +50,39 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Channels\BroadcastViewModel.cs" />
-    <Compile Include="Channels\ChannelInfoControl.xaml.cs">
+    <Compile Include="ChannelLists\Dialogs\BroadcastViewModel.cs" />
+    <Compile Include="ChannelLists\Channels\ChannelInfoControl.xaml.cs">
       <DependentUpon>ChannelInfoControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Channels\Channels.xaml.cs">
-      <DependentUpon>Channels.xaml</DependentUpon>
+    <Compile Include="ChannelLists\ChannelList.xaml.cs">
+      <DependentUpon>ChannelList.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Channels\ChannelInfoViewModel.cs" />
-    <Compile Include="Channels\ChannelsViewModel.cs" />
-    <Compile Include="Channels\BroadcastWindow.xaml.cs">
+    <Compile Include="ChannelLists\Channels\ChannelInfoViewModel.cs" />
+    <Compile Include="ChannelLists\ChannelsViewModel.cs" />
+    <Compile Include="ChannelLists\Dialogs\BroadcastWindow.xaml.cs">
       <DependentUpon>BroadcastWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Channels\Connections.xaml.cs">
+    <Compile Include="ChannelLists\Channels\Connections.xaml.cs">
       <DependentUpon>Connections.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Channels\ListItems.cs" />
-    <Compile Include="Channels\RelayTreeViewModel.cs" />
-    <Compile Include="Channels\TrackControl.xaml.cs">
+    <Compile Include="ChannelLists\ListItems.cs" />
+    <Compile Include="ChannelLists\Channels\RelayTreeViewModel.cs" />
+    <Compile Include="ChannelLists\Channels\TrackControl.xaml.cs">
       <DependentUpon>TrackControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Channels\TrackViewModel.cs" />
-    <Compile Include="Channels\RelayTreeControl.xaml.cs">
+    <Compile Include="ChannelLists\Channels\TrackViewModel.cs" />
+    <Compile Include="ChannelLists\Channels\RelayTreeControl.xaml.cs">
       <DependentUpon>RelayTreeControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Channels\TreeViewModel.cs" />
+    <Compile Include="ChannelLists\Channels\TreeViewModel.cs" />
     <Compile Include="Commons\Command.cs" />
     <Compile Include="Commons\NotConverter.cs" />
     <Compile Include="CoreSettings\Extensions.cs" />
     <Compile Include="CoreSettings\ListControl.xaml.cs">
       <DependentUpon>ListControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="CoreSettings\ListenerEditViewModel.cs" />
-    <Compile Include="CoreSettings\ListenerEditWindow.xaml.cs">
+    <Compile Include="CoreSettings\Dialogs\ListenerEditViewModel.cs" />
+    <Compile Include="CoreSettings\Dialogs\ListenerEditWindow.xaml.cs">
       <DependentUpon>ListenerEditWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="CoreSettings\ListItems.cs" />
@@ -91,8 +91,8 @@
     <Compile Include="CoreSettings\RelaySettingControl.xaml.cs">
       <DependentUpon>RelaySettingControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="CoreSettings\YellowPagesEditViewModel.cs" />
-    <Compile Include="CoreSettings\YellowPagesEditWindow.xaml.cs">
+    <Compile Include="CoreSettings\Dialogs\YellowPagesEditViewModel.cs" />
+    <Compile Include="CoreSettings\Dialogs\YellowPagesEditWindow.xaml.cs">
       <DependentUpon>YellowPagesEditWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Log.xaml.cs">
@@ -115,27 +115,27 @@
       <DependentUpon>VersionInfoWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="WindowManager.cs" />
-    <Page Include="Channels\ChannelInfoControl.xaml">
+    <Page Include="ChannelLists\Channels\ChannelInfoControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Channels\Channels.xaml">
+    <Page Include="ChannelLists\ChannelList.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Channels\BroadcastWindow.xaml">
+    <Page Include="ChannelLists\Dialogs\BroadcastWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Channels\Connections.xaml">
+    <Page Include="ChannelLists\Channels\Connections.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Channels\RelayTreeControl.xaml">
+    <Page Include="ChannelLists\Channels\RelayTreeControl.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Channels\TrackControl.xaml">
+    <Page Include="ChannelLists\Channels\TrackControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -143,7 +143,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="CoreSettings\ListenerEditWindow.xaml">
+    <Page Include="CoreSettings\Dialogs\ListenerEditWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -151,7 +151,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="CoreSettings\YellowPagesEditWindow.xaml">
+    <Page Include="CoreSettings\Dialogs\YellowPagesEditWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -213,6 +213,7 @@
       <Name>PeerCastStation.Core</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

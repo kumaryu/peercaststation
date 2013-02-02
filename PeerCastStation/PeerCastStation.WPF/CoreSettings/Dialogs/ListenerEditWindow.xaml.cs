@@ -9,19 +9,24 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
+using PeerCastStation.WPF.Commons;
 
-namespace PeerCastStation.WPF.Channels
+namespace PeerCastStation.WPF.CoreSettings.Dialogs
 {
   /// <summary>
-  /// AllChannels.xaml の相互作用ロジック
+  /// ListenerEditWindow.xaml の相互作用ロジック
   /// </summary>
-  public partial class Channels : UserControl
+  public partial class ListenerEditWindow : Window
   {
-    public Channels()
+    public ListenerEditWindow()
     {
       InitializeComponent();
+    }
+
+    private void Button_Click(object sender, RoutedEventArgs e)
+    {
+      Close();
     }
   }
 }

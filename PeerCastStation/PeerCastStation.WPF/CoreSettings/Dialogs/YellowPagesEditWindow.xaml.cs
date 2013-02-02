@@ -9,19 +9,23 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace PeerCastStation.WPF.Channels
+namespace PeerCastStation.WPF.CoreSettings.Dialogs
 {
   /// <summary>
-  /// TrackControl.xaml の相互作用ロジック
+  /// YellowPagesEditWindow.xaml の相互作用ロジック
   /// </summary>
-  public partial class TrackControl : UserControl
+  public partial class YellowPagesEditWindow : Window
   {
-    public TrackControl()
+    public YellowPagesEditWindow()
     {
       InitializeComponent();
+    }
+
+    private void Button_Click(object sender, RoutedEventArgs e)
+    {
+      Close();
     }
   }
 }

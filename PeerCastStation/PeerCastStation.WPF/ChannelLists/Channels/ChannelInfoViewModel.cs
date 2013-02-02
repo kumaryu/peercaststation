@@ -5,7 +5,7 @@ using System.Text;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.Commons;
 
-namespace PeerCastStation.WPF.Channels
+namespace PeerCastStation.WPF.ChannelLists.Channels
 {
   class ChannelInfoViewModel : ViewModelBase
   {

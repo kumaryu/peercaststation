@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using PeerCastStation.WPF.Commons;
 
-namespace PeerCastStation.WPF.Channels
+namespace PeerCastStation.WPF.ChannelLists.Channels
 {
   class TrackViewModel : ViewModelBase
   {
