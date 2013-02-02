@@ -59,7 +59,7 @@ namespace PeerCastStation.WPF
       Initialize(window.Setting, application.PeerCast);
     }
 
-    private void Initialize(Setting setting, PeerCast peerCast)
+    private void Initialize(SettingControl setting, PeerCast peerCast)
     {
       setting.Ports.AddItemButton.Click += (sender, e) =>
         {

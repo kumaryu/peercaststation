@@ -1,7 +1,7 @@
 ﻿<Window x:Class="PeerCastStation.WPF.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:l="clr-namespace:PeerCastStation.WPF"
+        xmlns:l="clr-namespace:PeerCastStation.WPF.Logs"
         xmlns:lc="clr-namespace:PeerCastStation.WPF.CoreSettings"
         xmlns:lb="clr-namespace:PeerCastStation.WPF.ChannelLists"
         Title="PeerCastStation" Height="600" Width="460">
@@ -19,11 +19,11 @@
                 <lb:ChannelList x:Name="Channels" DataContext="{Binding AllChannels}"/>
             </TabItem>
             <TabItem Header="設定">
-                <lc:Setting x:Name="Setting" DataContext="{Binding Setting}"/>
+                <lc:SettingControl x:Name="Setting" DataContext="{Binding Setting}"/>
             </TabItem>
             <TabItem Header="ログ">
                 <Grid>
-                    <l:Log DataContext="{Binding Log}"/>
+                    <l:LogControl DataContext="{Binding Log}"/>
                     <Button Name="VersionInfoButton"
                             HorizontalAlignment="Left" VerticalAlignment="Bottom"
                             Margin="3" Width="100" Height="23"

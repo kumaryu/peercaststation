@@ -58,12 +58,12 @@
       <DependentUpon>ChannelList.xaml</DependentUpon>
     </Compile>
     <Compile Include="ChannelLists\Channels\ChannelInfoViewModel.cs" />
-    <Compile Include="ChannelLists\ChannelsViewModel.cs" />
+    <Compile Include="ChannelLists\ChannelListViewModel.cs" />
     <Compile Include="ChannelLists\Dialogs\BroadcastWindow.xaml.cs">
       <DependentUpon>BroadcastWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ChannelLists\Channels\Connections.xaml.cs">
-      <DependentUpon>Connections.xaml</DependentUpon>
+    <Compile Include="ChannelLists\Channels\ConnectionsControl.xaml.cs">
+      <DependentUpon>ConnectionsControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="ChannelLists\ListItems.cs" />
     <Compile Include="ChannelLists\Channels\RelayTreeViewModel.cs" />
@@ -95,15 +95,15 @@
     <Compile Include="CoreSettings\Dialogs\YellowPagesEditWindow.xaml.cs">
       <DependentUpon>YellowPagesEditWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Logs\Log.xaml.cs">
-      <DependentUpon>Log.xaml</DependentUpon>
+    <Compile Include="Logs\LogControl.xaml.cs">
+      <DependentUpon>LogControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="Logs\LogViewModel.cs" />
     <Compile Include="MainWindowViewModel.cs" />
     <Compile Include="CoreSettings\SettingViewModel.cs" />
     <Compile Include="Settings.cs" />
-    <Compile Include="CoreSettings\Setting.xaml.cs">
-      <DependentUpon>Setting.xaml</DependentUpon>
+    <Compile Include="CoreSettings\SettingControl.xaml.cs">
+      <DependentUpon>SettingControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="UserInterface.cs" />
     <Compile Include="Commons\ViewModelBase.cs" />
@@ -124,7 +124,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="ChannelLists\Channels\Connections.xaml">
+    <Page Include="ChannelLists\Channels\ConnectionsControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -152,7 +152,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Logs\Log.xaml">
+    <Page Include="Logs\LogControl.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -164,7 +164,7 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="CoreSettings\Setting.xaml">
+    <Page Include="CoreSettings\SettingControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

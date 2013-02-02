@@ -34,8 +34,8 @@ namespace PeerCastStation.WPF
       }
     }
 
-    private readonly ChannelsViewModel allChannels;
-    public ChannelsViewModel AllChannels { get { return allChannels; } }
+    private readonly ChannelListViewModel allChannels;
+    public ChannelListViewModel AllChannels { get { return allChannels; } }
 
     private readonly SettingViewModel setting;
     public SettingViewModel Setting { get { return setting; } }
@@ -46,7 +46,7 @@ namespace PeerCastStation.WPF
     internal MainWindowViewModel(PeerCast peerCast)
     {
       this.peerCast = peerCast;
-      allChannels = new ChannelsViewModel(peerCast);
+      allChannels = new ChannelListViewModel(peerCast);
       setting = new SettingViewModel(peerCast);
 
       var sc = SynchronizationContext.Current;

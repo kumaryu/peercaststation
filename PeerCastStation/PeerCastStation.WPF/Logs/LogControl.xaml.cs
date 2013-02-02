@@ -18,9 +18,9 @@ namespace PeerCastStation.WPF.Logs
   /// <summary>
   /// Log.xaml の相互作用ロジック
   /// </summary>
-  public partial class Log : UserControl
+  public partial class LogControl : UserControl
   {
-    public Log()
+    public LogControl()
     {
       InitializeComponent();
     }

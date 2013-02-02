@@ -49,7 +49,7 @@
                       HorizontalAlignment="Stretch" Background="Transparent"/>
         <TabControl Grid.Row="2">
             <TabItem Header="接続一覧">
-                <l:Connections/>
+                <l:ConnectionsControl/>
             </TabItem>
             <TabItem Header="チャンネル情報">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
