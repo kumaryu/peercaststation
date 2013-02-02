@@ -110,8 +110,8 @@
     </Compile>
     <Compile Include="UserInterface.cs" />
     <Compile Include="Commons\ViewModelBase.cs" />
-    <Compile Include="VersionInfoViewModel.cs" />
-    <Compile Include="VersionInfoWindow.xaml.cs">
+    <Compile Include="Dialogs\VersionInfoViewModel.cs" />
+    <Compile Include="Dialogs\VersionInfoWindow.xaml.cs">
       <DependentUpon>VersionInfoWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="WindowManager.cs" />
@@ -175,7 +175,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="VersionInfoWindow.xaml">
+    <Page Include="Dialogs\VersionInfoWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

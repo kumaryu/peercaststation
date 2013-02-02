@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using PeerCastStation.Core;
 
-namespace PeerCastStation.WPF
+namespace PeerCastStation.WPF.Dialogs
 {
   public class VersionInfoViewModel
   {

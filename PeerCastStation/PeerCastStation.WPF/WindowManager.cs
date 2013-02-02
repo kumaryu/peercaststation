@@ -5,6 +5,7 @@ using PeerCastStation.WPF.ChannelLists;
 using PeerCastStation.WPF.ChannelLists.Dialogs;
 using PeerCastStation.WPF.CoreSettings;
 using PeerCastStation.WPF.CoreSettings.Dialogs;
+using PeerCastStation.WPF.Dialogs;
 using PeerCastStation.WPF.Properties;
 
 namespace PeerCastStation.WPF
