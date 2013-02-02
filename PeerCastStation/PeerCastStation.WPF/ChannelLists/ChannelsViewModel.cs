@@ -1,23 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Windows;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.ChannelLists.Channels;
 using PeerCastStation.WPF.Commons;
-using PeerCastStation.WPF.CoreSettings;
 
 namespace PeerCastStation.WPF.ChannelLists
 {
   class ChannelsViewModel : ViewModelBase
   {
     private readonly PeerCast peerCast;
-
-    private volatile bool updating;
 
     private readonly ObservableCollection<ChannelListItem> channels
       = new ObservableCollection<ChannelListItem>();
@@ -157,7 +152,6 @@ namespace PeerCastStation.WPF.ChannelLists
     {
       var new_list = peerCast.Channels;
       var old_list = channels.Select(item => item.Channel);
-      updating = true;
       foreach (var channel in old_list.Intersect(new_list).ToArray())
       {
         for (var i = 0; i < channels.Count; i++)
@@ -191,7 +185,6 @@ namespace PeerCastStation.WPF.ChannelLists
           }
         }
       }
-      updating = false;
     }
 
     private void OnButtonsCanExecuteChanged()

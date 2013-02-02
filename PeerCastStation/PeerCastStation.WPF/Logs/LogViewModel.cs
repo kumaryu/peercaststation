@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Windows.Input;
 using PeerCastStation.Core;
@@ -56,12 +52,12 @@ namespace PeerCastStation.WPF.Logs
       set
       {
         SetProperty("IsOutputToFile", ref isOutputToFile, value, () =>
-        {
-          if (logFileWriter != null)
           {
-            RefreshWriter(logFileWriter, value);
-          }
-        });
+            if (logFileWriter != null)
+            {
+              RefreshWriter(logFileWriter, value);
+            }
+          });
       }
     }
 
@@ -72,40 +68,32 @@ namespace PeerCastStation.WPF.Logs
       set
       {
         SetProperty("OutputFileName", ref outputFileName, value, () =>
-        {
-          if (logFileWriter != null)
           {
-            Logger.RemoveWriter(logFileWriter);
-            logFileWriter.Close();
-            logFileWriter = null;
-          }
-          logFileWriter = GetLogFileWriter(value);
-          if (logFileWriter != null && IsOutputToFile)
-            Logger.AddWriter(logFileWriter);
-        });
+            if (logFileWriter != null)
+            {
+              Logger.RemoveWriter(logFileWriter);
+              logFileWriter.Close();
+              logFileWriter = null;
+            }
+            logFileWriter = GetLogFileWriter(value);
+            if (logFileWriter != null && IsOutputToFile)
+              Logger.AddWriter(logFileWriter);
+          });
       }
     }
 
-    public string Log
-    {
-      get { return guiWriter.ToString(); }
-    }
+    public string Log { get { return guiWriter.ToString(); } }
 
     private readonly ICommand clear;
-    public ICommand Clear
-    {
-      get { return clear; }
-    }
+    public ICommand Clear { get { return clear; } }
 
     internal LogViewModel()
     {
       clear = new Command(() =>
-      {
-        guiWriter.Clear();
-        OnPropertyChanged("Log");
-      });
-
-      var sc = SynchronizationContext.Current;
+        {
+          guiWriter.Clear();
+          OnPropertyChanged("Log");
+        });
     }
 
     internal void UpdateLog()

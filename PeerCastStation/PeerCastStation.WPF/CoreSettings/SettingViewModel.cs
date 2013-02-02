@@ -133,30 +133,29 @@ namespace PeerCastStation.WPF.CoreSettings
     internal SettingViewModel(PeerCast peerCast)
     {
       this.peerCast = peerCast;
-
-      ports.SelectedItemChanged += (sender, e) =>
-      {
-        OnPropertyChanged("IsPortSelected");
-        OnPropertyChanged("IsLocalRelay");
-        OnPropertyChanged("IsLocalDirect");
-        OnPropertyChanged("IsLocalInterface");
-        OnPropertyChanged("IsGlobalRelay");
-        OnPropertyChanged("IsGlobalDirect");
-        OnPropertyChanged("IsGlobalInterface");
-      };
-      ports.ItemRemoving += (sender, e) =>
-      {
-        peerCast.StopListen(e.Item.Listener);
-        OnPropertyChanged("Ports");
-      };
-
       otherSetting = new OtherSettingViewModel(peerCast.AccessController);
 
+      ports.SelectedItemChanged += (sender, e) =>
+        {
+          OnPropertyChanged("IsPortSelected");
+          OnPropertyChanged("IsLocalRelay");
+          OnPropertyChanged("IsLocalDirect");
+          OnPropertyChanged("IsLocalInterface");
+          OnPropertyChanged("IsGlobalRelay");
+          OnPropertyChanged("IsGlobalDirect");
+          OnPropertyChanged("IsGlobalInterface");
+        };
+      ports.ItemRemoving += (sender, e) =>
+        {
+          peerCast.StopListen(e.Item.Listener);
+          OnPropertyChanged("Ports");
+        };
+
       yellowPagesList.ItemRemoving += (sender, e) =>
-      {
-        peerCast.RemoveYellowPage(e.Item.YellowPageClient);
-        OnPropertyChanged("YellowPagesList");
-      };
+        {
+          peerCast.RemoveYellowPage(e.Item.YellowPageClient);
+          OnPropertyChanged("YellowPagesList");
+        };
     }
   }
 }

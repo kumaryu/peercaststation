@@ -44,6 +44,11 @@ namespace PeerCastStation.WPF.CoreSettings
         global_accepts);
     }
 
+    public override int GetHashCode()
+    {
+      return Listener.GetHashCode();
+    }
+
     public override bool Equals(object obj)
     {
       var other = obj as PortListItem;

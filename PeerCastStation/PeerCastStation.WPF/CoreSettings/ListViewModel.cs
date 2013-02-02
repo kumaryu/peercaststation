@@ -1,9 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using PeerCastStation.Core;
 using PeerCastStation.WPF.Commons;
 
 namespace PeerCastStation.WPF.CoreSettings
@@ -14,10 +9,7 @@ namespace PeerCastStation.WPF.CoreSettings
     public T[] Items
     {
       get { return items; }
-      set
-      {
-        SetProperty("Items", ref items, value);
-      }
+      set { SetProperty("Items", ref items, value); }
     }
 
     private T selectedItem;
@@ -27,10 +19,10 @@ namespace PeerCastStation.WPF.CoreSettings
       set
       {
         SetProperty("SelectedItem", ref selectedItem, value, () =>
-        {
-          removeItem.OnCanExecuteChanged();
-          SelectedItemChanged(this, new ItemEventArgs<T> { Item = value });
-        });
+          {
+            removeItem.OnCanExecuteChanged();
+            SelectedItemChanged(this, new ItemEventArgs<T> { Item = value });
+          });
       }
     }
 
