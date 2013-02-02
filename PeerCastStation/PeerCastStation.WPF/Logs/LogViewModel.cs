@@ -9,7 +9,7 @@ using System.Windows.Input;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.Commons;
 
-namespace PeerCastStation.WPF
+namespace PeerCastStation.WPF.Logs
 {
   class LogViewModel : ViewModelBase
   {

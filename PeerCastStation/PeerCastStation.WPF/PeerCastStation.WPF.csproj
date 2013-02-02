@@ -95,10 +95,10 @@
     <Compile Include="CoreSettings\Dialogs\YellowPagesEditWindow.xaml.cs">
       <DependentUpon>YellowPagesEditWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Log.xaml.cs">
+    <Compile Include="Logs\Log.xaml.cs">
       <DependentUpon>Log.xaml</DependentUpon>
     </Compile>
-    <Compile Include="LogViewModel.cs" />
+    <Compile Include="Logs\LogViewModel.cs" />
     <Compile Include="MainWindowViewModel.cs" />
     <Compile Include="CoreSettings\SettingViewModel.cs" />
     <Compile Include="Settings.cs" />
@@ -155,7 +155,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Log.xaml">
+    <Page Include="Logs\Log.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

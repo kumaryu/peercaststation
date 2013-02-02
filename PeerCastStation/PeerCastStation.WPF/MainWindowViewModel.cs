@@ -7,6 +7,7 @@ using PeerCastStation.Core;
 using PeerCastStation.WPF.ChannelLists;
 using PeerCastStation.WPF.Commons;
 using PeerCastStation.WPF.CoreSettings;
+using PeerCastStation.WPF.Logs;
 
 namespace PeerCastStation.WPF
 {
