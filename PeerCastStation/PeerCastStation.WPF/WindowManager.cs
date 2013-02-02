@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows.Controls;
 using PeerCastStation.Core;
+using PeerCastStation.WPF.Channels;
 using PeerCastStation.WPF.CoreSettings;
 using PeerCastStation.WPF.Properties;
 
@@ -27,18 +28,30 @@ namespace PeerCastStation.WPF
       MainWindow window, PeerCastApplication application, Settings settings)
     {
       var viewModel = new MainWindowViewModel(application.PeerCast);
-      Load(settings, viewModel);
       window.DataContext = viewModel;
+      Load(settings, viewModel);
       window.Closing += (sender, e) => Save(viewModel, settings);
       window.Closed += (sender, e) => application.Stop();
 
       window.VersionInfoButton.Click += (sender, e) =>
-      {
-        var dialog = new VersionInfoWindow();
-        dialog.Owner = window;
-        dialog.DataContext = new VersionInfoViewModel(application);
-        dialog.ShowDialog();
-      };
+        {
+          var dialog = new VersionInfoWindow
+          {
+            Owner = window,
+            DataContext = new VersionInfoViewModel(application)
+          };
+          dialog.ShowDialog();
+        };
+
+      window.Channels.BroadcastButton.Click += (sender, e) =>
+        {
+          var dialog = new BroadcastWindow
+          {
+            Owner = window,
+            DataContext = new BroadcastViewModel(application.PeerCast)
+          };
+          dialog.ShowDialog();
+        };
 
       Initialize(window.Setting, application.PeerCast);
     }
@@ -46,22 +59,26 @@ namespace PeerCastStation.WPF
     private void Initialize(Setting setting, PeerCast peerCast)
     {
       setting.Ports.AddItemButton.Click += (sender, e) =>
-      {
-        var dialog = new ListenerEditWindow();
-        dialog.Owner = window;
-        dialog.DataContext = new ListenerEditViewModel(peerCast);
-        dialog.ShowDialog();
-        setting.Ports.GetBindingExpression(UserControl.DataContextProperty).UpdateTarget();
-      };
+        {
+          var dialog = new ListenerEditWindow
+          {
+            Owner = window,
+            DataContext = new ListenerEditViewModel(peerCast)
+          };
+          dialog.ShowDialog();
+          setting.Ports.GetBindingExpression(UserControl.DataContextProperty).UpdateTarget();
+        };
 
       setting.YellowPagesList.AddItemButton.Click += (sender, e) =>
-      {
-        var dialog = new YellowPagesEditWindow();
-        dialog.Owner = window;
-        dialog.DataContext = new YellowPagesEditViewModel(peerCast);
-        dialog.ShowDialog();
-        setting.YellowPagesList.GetBindingExpression(UserControl.DataContextProperty).UpdateTarget();
-      };
+        {
+          var dialog = new YellowPagesEditWindow
+          {
+            Owner = window,
+            DataContext = new YellowPagesEditViewModel(peerCast)
+          };
+          dialog.ShowDialog();
+          setting.YellowPagesList.GetBindingExpression(UserControl.DataContextProperty).UpdateTarget();
+        };
     }
 
     private void Load(Settings settings, MainWindowViewModel mainWindow)

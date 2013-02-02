@@ -6,9 +6,9 @@ namespace PeerCastStation.WPF.CoreSettings
 {
   class PortListItem
   {
-    public OutputListener Listener { get; set; }
+    internal OutputListener Listener { get; set; }
 
-    public PortListItem(OutputListener listener)
+    internal PortListItem(OutputListener listener)
     {
       Listener = listener;
     }
@@ -55,15 +55,15 @@ namespace PeerCastStation.WPF.CoreSettings
 
   class YellowPageItem
   {
-    public string Name { get; private set; }
-    public IYellowPageClient YellowPageClient { get; private set; }
-    public YellowPageItem(string name, IYellowPageClient yellowpage)
+    internal string Name { get; private set; }
+    internal IYellowPageClient YellowPageClient { get; private set; }
+    internal YellowPageItem(string name, IYellowPageClient yellowpage)
     {
       this.Name = name;
       this.YellowPageClient = yellowpage;
     }
 
-    public YellowPageItem(IYellowPageClient yellowpage)
+    internal YellowPageItem(IYellowPageClient yellowpage)
       : this(String.Format("{0} ({1})", yellowpage.Name, yellowpage.Uri), yellowpage)
     {
     }
@@ -76,8 +76,8 @@ namespace PeerCastStation.WPF.CoreSettings
 
   class YellowPageFactoryItem
   {
-    public IYellowPageClientFactory Factory { get; private set; }
-    public YellowPageFactoryItem(IYellowPageClientFactory factory)
+    internal IYellowPageClientFactory Factory { get; private set; }
+    internal YellowPageFactoryItem(IYellowPageClientFactory factory)
     {
       this.Factory = factory;
     }

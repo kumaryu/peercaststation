@@ -39,7 +39,7 @@ namespace PeerCastStation.WPF.CoreSettings
     private readonly Command removeItem;
     public Command RemoveItem { get { return removeItem; } }
 
-    public ListViewModel()
+    internal ListViewModel()
     {
       addItem = new Command(
         () => ItemAdding(this, new EventArgs()));
@@ -48,9 +48,9 @@ namespace PeerCastStation.WPF.CoreSettings
         () => SelectedItem != null);
     }
 
-    public event ItemEventHandler<T> SelectedItemChanged = (sender, e) => { };
-    public event EventHandler ItemAdding = (sender, e) => { };
-    public event ItemEventHandler<T> ItemRemoving = (sender, e) => { };
+    internal event ItemEventHandler<T> SelectedItemChanged = (sender, e) => { };
+    internal event EventHandler ItemAdding = (sender, e) => { };
+    internal event ItemEventHandler<T> ItemRemoving = (sender, e) => { };
   }
 
   delegate void ItemEventHandler<T>(object sender, ItemEventArgs<T> e);

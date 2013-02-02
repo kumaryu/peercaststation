@@ -22,7 +22,7 @@ namespace PeerCastStation.WPF.CoreSettings
         return ports;
       }
     }
-    public OutputListener SelectedListener
+    internal OutputListener SelectedListener
     {
       get { return ports.SelectedItem.Listener; }
     }
@@ -130,7 +130,7 @@ namespace PeerCastStation.WPF.CoreSettings
       }
     }
 
-    public SettingViewModel(PeerCast peerCast)
+    internal SettingViewModel(PeerCast peerCast)
     {
       this.peerCast = peerCast;
 

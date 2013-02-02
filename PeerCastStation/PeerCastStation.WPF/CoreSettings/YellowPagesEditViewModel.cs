@@ -19,7 +19,7 @@ namespace PeerCastStation.WPF.CoreSettings
     public YellowPageFactoryItem SelectedProtocol { get; set; }
     public string Address { get; set; }
 
-    public YellowPagesEditViewModel(PeerCast peerCast)
+    internal YellowPagesEditViewModel(PeerCast peerCast)
     {
       protocols = peerCast.YellowPageFactories
         .Select(factory => new YellowPageFactoryItem(factory)).ToArray();

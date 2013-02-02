@@ -24,7 +24,7 @@ namespace PeerCastStation.WPF.CoreSettings
     private readonly Command add;
     public Command Add { get { return add; } }
 
-    public ListenerEditViewModel(PeerCast peerCast)
+    internal ListenerEditViewModel(PeerCast peerCast)
     {
       Address = "IPv4 Any";
       Port = 7144;

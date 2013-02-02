@@ -4,7 +4,7 @@ namespace PeerCastStation.WPF.CoreSettings
 {
   static class OutputListenerExtensions
   {
-    public static bool? GetFromLocalOutputAccepts(
+    internal static bool? GetFromLocalOutputAccepts(
       this OutputListener self, OutputStreamType target)
     {
       if (self == null)
@@ -12,7 +12,7 @@ namespace PeerCastStation.WPF.CoreSettings
       return self.LocalOutputAccepts.Contains(target);
     }
 
-    public static void SetToLocalOutputAccepts(
+    internal static void SetToLocalOutputAccepts(
       this OutputListener self, OutputStreamType target, bool? value)
     {
       if (self == null)
@@ -23,7 +23,7 @@ namespace PeerCastStation.WPF.CoreSettings
         self.LocalOutputAccepts &= ~target;
     }
 
-    public static bool? GetFromGlobalOutputAccepts(
+    internal static bool? GetFromGlobalOutputAccepts(
       this OutputListener self, OutputStreamType target)
     {
       if (self == null)
@@ -31,7 +31,7 @@ namespace PeerCastStation.WPF.CoreSettings
       return self.GlobalOutputAccepts.Contains(target);
     }
 
-    public static void SetToGlobalOutputAccepts(
+    internal static void SetToGlobalOutputAccepts(
       this OutputListener self, OutputStreamType target, bool? value)
     {
       if (self == null)

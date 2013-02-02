@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using PeerCastStation.Core;
+using PeerCastStation.WPF.Channels;
 using PeerCastStation.WPF.Commons;
 using PeerCastStation.WPF.CoreSettings;
 
@@ -32,21 +33,32 @@ namespace PeerCastStation.WPF
       }
     }
 
+    private readonly ChannelsViewModel allChannels;
+    public ChannelsViewModel AllChannels { get { return allChannels; } }
+
     private readonly SettingViewModel setting;
     public SettingViewModel Setting { get { return setting; } }
 
     private readonly LogViewModel log = new LogViewModel();
     public LogViewModel Log { get { return log; } }
 
-    public MainWindowViewModel(PeerCast peerCast)
+    internal MainWindowViewModel(PeerCast peerCast)
     {
       this.peerCast = peerCast;
+      allChannels = new ChannelsViewModel(peerCast);
       setting = new SettingViewModel(peerCast);
 
       var sc = SynchronizationContext.Current;
       timer = new Timer(
-        o => sc.Send(p => OnPropertyChanged("PortStatus"), null), null,
+        o => sc.Post(p => UpdateStatus(), null), null,
         1000, 1000);
+    }
+
+    private void UpdateStatus()
+    {
+      OnPropertyChanged("PortStatus");
+      allChannels.UpdateChannelList();
+      log.UpdateLog();
     }
   }
 }

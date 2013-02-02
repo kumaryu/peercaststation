@@ -14,7 +14,6 @@ namespace PeerCastStation.WPF
   class LogViewModel : ViewModelBase
   {
     private readonly LogWriter guiWriter = new LogWriter(1000);
-    private readonly Timer timer;
     private TextWriter logFileWriter;
 
     private int logLevel;
@@ -87,11 +86,9 @@ namespace PeerCastStation.WPF
       }
     }
 
-    private string log;
     public string Log
     {
-      get { return log; }
-      private set { SetProperty("Log", ref log, value); }
+      get { return guiWriter.ToString(); }
     }
 
     private readonly ICommand clear;
@@ -100,19 +97,20 @@ namespace PeerCastStation.WPF
       get { return clear; }
     }
 
-    public LogViewModel()
+    internal LogViewModel()
     {
       clear = new Command(() =>
       {
         guiWriter.Clear();
-        Log = "";
+        OnPropertyChanged("Log");
       });
 
       var sc = SynchronizationContext.Current;
-      timer = new Timer(o => sc.Send(p =>
-      {
-        Log = guiWriter.ToString();
-      }, null), null, 1000, 1000);
+    }
+
+    internal void UpdateLog()
+    {
+      OnPropertyChanged("Log");
     }
 
     private LogLevel GetLogLevel(int value)

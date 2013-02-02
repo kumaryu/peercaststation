@@ -63,7 +63,7 @@ namespace PeerCastStation.WPF.CoreSettings
     private readonly Command applyOthers;
     public Command ApplyOthers { get { return applyOthers; } }
 
-    public OtherSettingViewModel(AccessController accessController)
+    internal OtherSettingViewModel(AccessController accessController)
     {
       applyOthers = new Command(
         () => WriteTo(accessController),
@@ -72,7 +72,7 @@ namespace PeerCastStation.WPF.CoreSettings
       ReadFrom(accessController);
     }
 
-    public void ReadFrom(AccessController from)
+    internal void ReadFrom(AccessController from)
     {
       MaxRelays = from.MaxRelays;
       MaxRelaysPerChannel = from.MaxRelaysPerChannel;
@@ -81,7 +81,7 @@ namespace PeerCastStation.WPF.CoreSettings
       MaxUpstreamRate = from.MaxUpstreamRate;
     }
 
-    public bool IsChanged(AccessController ctrler)
+    internal bool IsChanged(AccessController ctrler)
     {
       if (ctrler.MaxRelays != MaxRelays ||
           ctrler.MaxPlays != MaxDirects ||
@@ -93,7 +93,7 @@ namespace PeerCastStation.WPF.CoreSettings
         return false;
     }
 
-    public void WriteTo(AccessController to)
+    internal void WriteTo(AccessController to)
     {
       to.MaxRelays = MaxRelays;
       to.MaxPlays = MaxDirects;

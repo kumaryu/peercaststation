@@ -50,7 +50,33 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Channels\BroadcastViewModel.cs" />
+    <Compile Include="Channels\ChannelInfoControl.xaml.cs">
+      <DependentUpon>ChannelInfoControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Channels\Channels.xaml.cs">
+      <DependentUpon>Channels.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Channels\ChannelInfoViewModel.cs" />
+    <Compile Include="Channels\ChannelsViewModel.cs" />
+    <Compile Include="Channels\BroadcastWindow.xaml.cs">
+      <DependentUpon>BroadcastWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Channels\Connections.xaml.cs">
+      <DependentUpon>Connections.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Channels\ListItems.cs" />
+    <Compile Include="Channels\RelayTreeViewModel.cs" />
+    <Compile Include="Channels\TrackControl.xaml.cs">
+      <DependentUpon>TrackControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Channels\TrackViewModel.cs" />
+    <Compile Include="Channels\RelayTreeControl.xaml.cs">
+      <DependentUpon>RelayTreeControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Channels\TreeViewModel.cs" />
     <Compile Include="Commons\Command.cs" />
+    <Compile Include="Commons\NotConverter.cs" />
     <Compile Include="CoreSettings\Extensions.cs" />
     <Compile Include="CoreSettings\ListControl.xaml.cs">
       <DependentUpon>ListControl.xaml</DependentUpon>
@@ -89,6 +115,30 @@
       <DependentUpon>VersionInfoWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="WindowManager.cs" />
+    <Page Include="Channels\ChannelInfoControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Channels\Channels.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Channels\BroadcastWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Channels\Connections.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Channels\RelayTreeControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Channels\TrackControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="CoreSettings\ListControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
