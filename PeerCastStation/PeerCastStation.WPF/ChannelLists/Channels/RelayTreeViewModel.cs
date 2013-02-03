@@ -16,13 +16,15 @@ namespace PeerCastStation.WPF.ChannelLists.Channels
     {
       set
       {
+        relayTree.Clear();
         var roots = value.CreateHostTree()
           .Where(node => node.Host.SessionID == peerCast.SessionID);
-        AddRelayTreeNode(RelayTree, roots, new HashSet<Guid>());
+        AddRelayTreeNode(relayTree, roots, new HashSet<Guid>());
       }
     }
 
-    private readonly ObservableCollection<TreeViewModel> relayTree;
+    private readonly ObservableCollection<TreeViewModel> relayTree
+      = new ObservableCollection<TreeViewModel>();
     public ObservableCollection<TreeViewModel> RelayTree
     {
       get { return relayTree; }

@@ -50,6 +50,8 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ChannelLists\Channels\ChannelConnectionItems.cs" />
+    <Compile Include="ChannelLists\Channels\ConnectionsViewModel.cs" />
     <Compile Include="ChannelLists\Dialogs\BroadcastViewModel.cs" />
     <Compile Include="ChannelLists\Channels\ChannelInfoControl.xaml.cs">
       <DependentUpon>ChannelInfoControl.xaml</DependentUpon>

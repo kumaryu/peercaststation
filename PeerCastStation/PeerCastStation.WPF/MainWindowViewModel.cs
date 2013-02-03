@@ -36,8 +36,8 @@ namespace PeerCastStation.WPF
       }
     }
 
-    private readonly ChannelListViewModel allChannels;
-    public ChannelListViewModel AllChannels { get { return allChannels; } }
+    private readonly ChannelListViewModel channelList;
+    public ChannelListViewModel ChannelList { get { return channelList; } }
 
     private readonly SettingViewModel setting;
     public SettingViewModel Setting { get { return setting; } }
@@ -54,7 +54,7 @@ namespace PeerCastStation.WPF
     {
       this.application = application;
       var peerCast = application.PeerCast;
-      allChannels = new ChannelListViewModel(peerCast);
+      channelList = new ChannelListViewModel(peerCast);
       setting = new SettingViewModel(peerCast);
 
       var sc = SynchronizationContext.Current;
@@ -66,7 +66,7 @@ namespace PeerCastStation.WPF
     private void UpdateStatus()
     {
       OnPropertyChanged("PortStatus");
-      allChannels.UpdateChannelList();
+      channelList.UpdateChannelList();
       log.UpdateLog();
     }
   }

@@ -21,32 +21,29 @@ namespace PeerCastStation.WPF.ChannelLists
     {
       get { return channels; }
     }
-    private int selectedChannelsIndex = -1;
-    public int SelectedChannelsIndex
+    private ChannelListItem channel;
+    public ChannelListItem Channel
     {
-      get { return selectedChannelsIndex; }
+      get { return channel; }
       set
       {
-        SetProperty("SelectedChannelsIndex", ref selectedChannelsIndex, value, () =>
+        SetProperty("Channel", ref channel, value, () =>
           {
             if (IsChannelSelected)
             {
+              Connections.Channel = value.Channel;
               ChannelInfo.From(
-                SelectedChannel.Channel,
-                peerCast.BroadcastID == SelectedChannel.Channel.BroadcastID);
-              RelayTree.Channel = SelectedChannel.Channel;
+                value.Channel,
+                peerCast.BroadcastID == value.Channel.BroadcastID);
+              RelayTree.Channel = value.Channel;
             }
             OnButtonsCanExecuteChanged();
           });
       }
     }
-    private ChannelListItem SelectedChannel
-    {
-      get { return channels[selectedChannelsIndex]; }
-    }
     private bool IsChannelSelected
     {
-      get { return selectedChannelsIndex >= 0; }
+      get { return channel != null; }
     }
 
     private readonly Command play;
@@ -67,17 +64,17 @@ namespace PeerCastStation.WPF.ChannelLists
     private readonly Command copyContactUrl;
     public Command CopyContactUrl { get { return copyContactUrl; } }
 
+    private readonly ConnectionsViewModel connections;
+    public ConnectionsViewModel Connections { get { return connections; } }
     private readonly ChannelInfoViewModel channelInfo = new ChannelInfoViewModel();
-    public ChannelInfoViewModel ChannelInfo
-    {
-      get { return channelInfo; }
-    }
+    public ChannelInfoViewModel ChannelInfo { get { return channelInfo; } }
     private readonly RelayTreeViewModel relayTree;
     public RelayTreeViewModel RelayTree { get { return relayTree; } }
 
     internal ChannelListViewModel(PeerCast peerCast)
     {
       this.peerCast = peerCast;
+      connections = new ConnectionsViewModel(peerCast);
       relayTree = new RelayTreeViewModel(peerCast);
 
       play = new Command(() =>
@@ -85,7 +82,7 @@ namespace PeerCastStation.WPF.ChannelLists
           if (peerCast.OutputListeners.Count <= 0)
             return;
 
-          var channel = SelectedChannel.Channel;
+          var channel = Channel.Channel;
           var channel_id = channel.ChannelID;
           var ext = (channel.ChannelInfo.ContentType == "WMV" ||
                       channel.ChannelInfo.ContentType == "WMA" ||
@@ -104,14 +101,14 @@ namespace PeerCastStation.WPF.ChannelLists
         },
         () => IsChannelSelected);
       close = new Command(
-        () => peerCast.CloseChannel(SelectedChannel.Channel),
+        () => peerCast.CloseChannel(Channel.Channel),
         () => IsChannelSelected);
       bump = new Command(
-        () => SelectedChannel.Channel.Reconnect(),
+        () => Channel.Channel.Reconnect(),
         () => IsChannelSelected);
       openContactUrl = new Command(() =>
         {
-          var url = SelectedChannel.Channel.ChannelInfo.URL;
+          var url = Channel.Channel.ChannelInfo.URL;
           Uri uri;
           if (!String.IsNullOrEmpty(url) && Uri.TryCreate(url, UriKind.Absolute, out uri))
           {
@@ -121,9 +118,9 @@ namespace PeerCastStation.WPF.ChannelLists
         () => IsChannelSelected);
       copyStreamUrl = new Command(() =>
         {
-          var channel_id = SelectedChannel.Channel.ChannelID;
+          var channel_id = Channel.Channel.ChannelID;
           var endpoint = peerCast.OutputListeners[0].LocalEndPoint;
-          var ext = SelectedChannel.Channel.ChannelInfo.ContentExtension;
+          var ext = Channel.Channel.ChannelInfo.ContentExtension;
           string url;
           if (endpoint.Address.Equals(System.Net.IPAddress.Any))
           {
@@ -138,7 +135,7 @@ namespace PeerCastStation.WPF.ChannelLists
         () => IsChannelSelected && peerCast.OutputListeners.Count > 0);
       copyContactUrl = new Command(() =>
         {
-          var url = SelectedChannel.Channel.ChannelInfo.URL;
+          var url = Channel.Channel.ChannelInfo.URL;
           Uri uri;
           if (!String.IsNullOrEmpty(url) && Uri.TryCreate(url, UriKind.Absolute, out uri))
           {
@@ -162,15 +159,13 @@ namespace PeerCastStation.WPF.ChannelLists
       {
         for (var i = 0; i < channels.Count; i++)
         {
-          if ((channels[i] as ChannelListItem).Channel == channel)
+          if (channels[i].Channel == channel)
           {
+            var selected = this.channel == null ? false : this.channel.Channel == channel;
             channels[i] = new ChannelListItem(channel);
-            if (selectedChannelsIndex == i)
+            if (selected)
             {
-              // 選択してた項目が更新された時の処理？
-
-              //UpdateChannelInfo(channel);
-              //UpdateOutputList(channel);
+              Channel = channels[i];
             }
             break;
           }

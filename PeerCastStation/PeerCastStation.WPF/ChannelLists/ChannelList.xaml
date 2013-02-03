@@ -27,9 +27,8 @@
                 <Button Content="再接続" Command="{Binding Bump}"/>
                 <Button Content="配信..." Click="BroadcastButton_Click"/>
             </StackPanel>
-            <ListBox IsSynchronizedWithCurrentItem="True"
-                     ItemsSource="{Binding Channels}"
-                     SelectedIndex="{Binding SelectedChannelsIndex}">
+            <ListBox ItemsSource="{Binding Channels}"
+                     SelectedItem="{Binding Channel}">
                 <ListBox.ContextMenu>
                     <ContextMenu>
                         <MenuItem Header="再生"
@@ -49,7 +48,7 @@
                       HorizontalAlignment="Stretch" Background="Transparent"/>
         <TabControl Grid.Row="2">
             <TabItem Header="接続一覧">
-                <l:ConnectionsControl/>
+                <l:ConnectionsControl DataContext="{Binding Connections}"/>
             </TabItem>
             <TabItem Header="チャンネル情報">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">

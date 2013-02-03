@@ -19,6 +19,6 @@
             <Button Content="再接続" Command="{Binding Reconnect}"/>
         </StackPanel>
         <ListBox ItemsSource="{Binding Connections}"
-                 SelectedIndex="{Binding Connection}"/>
+                 SelectedItem="{Binding Connection}"/>
     </DockPanel>
 </UserControl>
