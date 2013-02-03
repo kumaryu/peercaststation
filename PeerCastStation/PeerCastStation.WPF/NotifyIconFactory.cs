@@ -12,34 +12,28 @@ namespace PeerCastStation.WPF
 {
   class NotifyIconFactory
   {
-    public NotifyIcon Create(PeerCast peerCast, Wpf.Window window)
+    public NotifyIcon Create(
+      PeerCast peerCast, Wpf.Window window, MainWindowViewModel viewModel)
     {
       var notifyIcon = new NotifyIcon();
       notifyIcon.Icon = Resources.peercaststation_small;
-      notifyIcon.ContextMenuStrip = GetNotifyIconMenu(peerCast, window);
+      notifyIcon.ContextMenuStrip = GetNotifyIconMenu(peerCast, window, viewModel);
       notifyIcon.Visible = true;
       notifyIcon.DoubleClick += (sender1, e1) =>
       {
         window.Show();
         window.Activate();
       };
-      notifyIcon.BalloonTipClicked += (sender1, e1) =>
-      {
-        //if (newVersionInfo != null)
-        //{
-        //  var dlg = new UpdaterDialog(newVersionInfo);
-        //  dlg.Show();
-        //}
-      };
       return notifyIcon;
     }
 
-    private ContextMenuStrip GetNotifyIconMenu(PeerCast peerCast, Wpf.Window window)
+    private ContextMenuStrip GetNotifyIconMenu(
+      PeerCast peerCast, Wpf.Window window, MainWindowViewModel viewModel)
     {
       var notifyIconMenu = new System.Windows.Forms.ContextMenuStrip();
       notifyIconMenu.SuspendLayout();
       notifyIconMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-          VersionCheck,
+          GetVersionCheck(viewModel),
           ToolStripSeparator,
           GetShowHTMLUI(peerCast),
           GetShowGUI(window),
@@ -52,17 +46,14 @@ namespace PeerCastStation.WPF
       return notifyIconMenu;
     }
 
-    private ToolStripItem VersionCheck
+    private ToolStripItem GetVersionCheck(MainWindowViewModel viewModel)
     {
-      get
-      {
-        var versionCheckMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-        versionCheckMenuItem.Name = "versionCheckMenuItem";
-        versionCheckMenuItem.Size = new System.Drawing.Size(162, 22);
-        versionCheckMenuItem.Text = "アップデートのチェック(&U)";
-        //versionCheckMenuItem.Click += (sender, e) => versionChecker.CheckVersion();
-        return versionCheckMenuItem;
-      }
+      var versionCheckMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      versionCheckMenuItem.Name = "versionCheckMenuItem";
+      versionCheckMenuItem.Size = new System.Drawing.Size(162, 22);
+      versionCheckMenuItem.Text = "アップデートのチェック(&U)";
+      versionCheckMenuItem.Click += (sender, e) => viewModel.CheckVersion();
+      return versionCheckMenuItem;
     }
 
     private ToolStripSeparator ToolStripSeparator
@@ -123,7 +114,7 @@ namespace PeerCastStation.WPF
         quitMenuItem.Size = new System.Drawing.Size(162, 22);
         quitMenuItem.Text = "終了(&Q)";
         quitMenuItem.ToolTipText = "PeerCastStationを終了します";
-        quitMenuItem.Click += (sender, e) => Application.Exit();
+        quitMenuItem.Click += (sender, e) => System.Windows.Application.Current.Shutdown();
         return quitMenuItem;
       }
     }

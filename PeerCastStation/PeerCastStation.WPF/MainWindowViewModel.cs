@@ -18,6 +18,7 @@ namespace PeerCastStation.WPF
 
     private readonly Timer timer;
     private readonly PeerCastApplication application;
+    private readonly AppCastReader versionChecker;
 
     public string PortStatus
     {
@@ -52,7 +53,14 @@ namespace PeerCastStation.WPF
       get { return new VersionInfoViewModel(application); }
     }
 
-    internal MainWindowViewModel(PeerCastApplication application)
+    internal event NewVersionFoundEventHandler NewVersionFound
+    {
+      add { versionChecker.NewVersionFound += value; }
+      remove { versionChecker.NewVersionFound -= value; }
+    }
+
+    internal MainWindowViewModel(
+      PeerCastApplication application, string updateUrl, DateTime currentVersion)
     {
       this.application = application;
       var peerCast = application.PeerCast;
@@ -63,6 +71,10 @@ namespace PeerCastStation.WPF
       timer = new Timer(
         o => sc.Post(p => UpdateStatus(), null), null,
         1000, 1000);
+
+      versionChecker = new AppCastReader(
+        new Uri(updateUrl, UriKind.Absolute), currentVersion);
+      versionChecker.CheckVersion();
     }
 
     ~MainWindowViewModel()
@@ -90,6 +102,11 @@ namespace PeerCastStation.WPF
       // アンマネージリソースの解放処理
       channelList.Dispose();
       log.Dispose();
+    }
+
+    internal void CheckVersion()
+    {
+      versionChecker.CheckVersion();
     }
 
     private void UpdateStatus()

@@ -54,8 +54,10 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AppCastReader.cs" />
     <Compile Include="ChannelLists\ConnectionLists\ChannelConnectionItems.cs" />
     <Compile Include="ChannelLists\ConnectionLists\ConnectionListViewModel.cs" />
     <Compile Include="ChannelLists\Dialogs\BroadcastViewModel.cs" />
@@ -102,6 +104,10 @@
     <Compile Include="CoreSettings\Dialogs\YellowPagesEditViewModel.cs" />
     <Compile Include="CoreSettings\Dialogs\YellowPagesEditWindow.xaml.cs">
       <DependentUpon>YellowPagesEditWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Dialogs\UpdaterViewModel.cs" />
+    <Compile Include="Dialogs\UpdaterWindow.xaml.cs">
+      <DependentUpon>UpdaterWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Logs\LogControl.xaml.cs">
       <DependentUpon>LogControl.xaml</DependentUpon>
@@ -158,6 +164,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="CoreSettings\Dialogs\YellowPagesEditWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Dialogs\UpdaterWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

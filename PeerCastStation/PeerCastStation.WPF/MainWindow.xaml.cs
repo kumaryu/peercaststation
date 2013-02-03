@@ -29,14 +29,18 @@ namespace PeerCastStation.WPF
     {
       InitializeComponent();
 
+      Closing += (sender, e) =>
+      {
+        //System.Threading.Thread.Sleep(1000);
+      };
     }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-      e.Cancel = true;
-      this.Hide();
-
       base.OnClosing(e);
+      e.Cancel = true;
+      Visibility = Visibility.Hidden;
+      //this.Show();
     }
 
     private void VersionInfoButton_Click(object sender, RoutedEventArgs e)
