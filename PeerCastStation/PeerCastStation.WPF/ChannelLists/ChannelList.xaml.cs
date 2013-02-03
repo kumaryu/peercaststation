@@ -11,6 +11,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using PeerCastStation.WPF.ChannelLists.Dialogs;
 
 namespace PeerCastStation.WPF.ChannelLists
 {
@@ -22,6 +23,16 @@ namespace PeerCastStation.WPF.ChannelLists
     public ChannelList()
     {
       InitializeComponent();
+    }
+
+    private void BroadcastButton_Click(object sender, RoutedEventArgs e)
+    {
+      var dialog = new BroadcastWindow
+      {
+        Owner = Window.GetWindow(this),
+        DataContext = ((ChannelListViewModel)DataContext).Broadcast
+      };
+      dialog.ShowDialog();
     }
   }
 }

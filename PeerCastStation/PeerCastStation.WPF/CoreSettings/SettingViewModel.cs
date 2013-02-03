@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.Commons;
+using PeerCastStation.WPF.CoreSettings.Dialogs;
 
 namespace PeerCastStation.WPF.CoreSettings
 {
@@ -27,6 +28,11 @@ namespace PeerCastStation.WPF.CoreSettings
       get { return ports.SelectedItem.Listener; }
     }
     public bool IsPortSelected { get { return ports.SelectedItem != null; } }
+
+    internal ListenerEditViewModel ListenerEdit
+    {
+      get { return new ListenerEditViewModel(peerCast); }
+    }
 
     public bool? IsLocalRelay
     {
@@ -128,6 +134,11 @@ namespace PeerCastStation.WPF.CoreSettings
           .Select(yp => new YellowPageItem(yp)).ToArray();
         return yellowPagesList;
       }
+    }
+
+    internal YellowPagesEditViewModel YellowPagesEdit
+    {
+      get { return new YellowPagesEditViewModel(peerCast); }
     }
 
     internal SettingViewModel(PeerCast peerCast)

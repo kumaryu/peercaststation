@@ -25,7 +25,7 @@
                 <Button Content="再生" Command="{Binding Play}"/>
                 <Button Content="切断" Command="{Binding Close}"/>
                 <Button Content="再接続" Command="{Binding Bump}"/>
-                <Button Name="BroadcastButton" Content="配信..."/>
+                <Button Content="配信..." Click="BroadcastButton_Click"/>
             </StackPanel>
             <ListBox IsSynchronizedWithCurrentItem="True"
                      ItemsSource="{Binding Channels}"

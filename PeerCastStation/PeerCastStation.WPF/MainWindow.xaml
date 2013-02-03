@@ -16,18 +16,17 @@
         </StatusBar>
         <TabControl>
             <TabItem Header="チャンネル一覧">
-                <lb:ChannelList x:Name="Channels" DataContext="{Binding AllChannels}"/>
+                <lb:ChannelList DataContext="{Binding AllChannels}"/>
             </TabItem>
             <TabItem Header="設定">
-                <lc:SettingControl x:Name="Setting" DataContext="{Binding Setting}"/>
+                <lc:SettingControl DataContext="{Binding Setting}"/>
             </TabItem>
             <TabItem Header="ログ">
                 <Grid>
                     <l:LogControl DataContext="{Binding Log}"/>
-                    <Button Name="VersionInfoButton"
-                            HorizontalAlignment="Left" VerticalAlignment="Bottom"
-                            Margin="3" Width="100" Height="23"
-                            Content="バージョン情報..."/>
+                    <Button HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                            Margin="3" Width="100" Height="23" Content="バージョン情報..."
+                            Click="VersionInfoButton_Click"/>
                 </Grid>
             </TabItem>
         </TabControl>

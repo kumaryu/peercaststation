@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Windows.Controls;
+using System.Windows;
 using PeerCastStation.Core;
-using PeerCastStation.WPF.ChannelLists;
-using PeerCastStation.WPF.ChannelLists.Dialogs;
-using PeerCastStation.WPF.CoreSettings;
-using PeerCastStation.WPF.CoreSettings.Dialogs;
-using PeerCastStation.WPF.Dialogs;
 using PeerCastStation.WPF.Properties;
 
 namespace PeerCastStation.WPF
@@ -13,75 +8,28 @@ namespace PeerCastStation.WPF
   class WindowManager : IDisposable
   {
     private bool disposed;
-    private MainWindow window;
+    private Window window;
     private volatile bool isShow;
     public bool IsShow { get { return isShow; } }
 
     public void ShowMainWindow(PeerCastApplication application, Settings settings)
     {
-      window = new MainWindow();
-      Initialize(window, application, settings);
+      window = CreateWindow(application, settings);
 
       isShow = true;
       window.ShowDialog();
       isShow = false;
     }
 
-    private void Initialize(
-      MainWindow window, PeerCastApplication application, Settings settings)
+    private MainWindow CreateWindow(PeerCastApplication application, Settings settings)
     {
-      var viewModel = new MainWindowViewModel(application.PeerCast);
-      window.DataContext = viewModel;
+      var window = new MainWindow();
+      var viewModel = new MainWindowViewModel(application);
       Load(settings, viewModel);
+      window.DataContext = viewModel;
       window.Closing += (sender, e) => Save(viewModel, settings);
       window.Closed += (sender, e) => application.Stop();
-
-      window.VersionInfoButton.Click += (sender, e) =>
-        {
-          var dialog = new VersionInfoWindow
-          {
-            Owner = window,
-            DataContext = new VersionInfoViewModel(application)
-          };
-          dialog.ShowDialog();
-        };
-
-      window.Channels.BroadcastButton.Click += (sender, e) =>
-        {
-          var dialog = new BroadcastWindow
-          {
-            Owner = window,
-            DataContext = new BroadcastViewModel(application.PeerCast)
-          };
-          dialog.ShowDialog();
-        };
-
-      Initialize(window.Setting, application.PeerCast);
-    }
-
-    private void Initialize(SettingControl setting, PeerCast peerCast)
-    {
-      setting.Ports.AddItemButton.Click += (sender, e) =>
-        {
-          var dialog = new ListenerEditWindow
-          {
-            Owner = window,
-            DataContext = new ListenerEditViewModel(peerCast)
-          };
-          dialog.ShowDialog();
-          setting.Ports.GetBindingExpression(UserControl.DataContextProperty).UpdateTarget();
-        };
-
-      setting.YellowPagesList.AddItemButton.Click += (sender, e) =>
-        {
-          var dialog = new YellowPagesEditWindow
-          {
-            Owner = window,
-            DataContext = new YellowPagesEditViewModel(peerCast)
-          };
-          dialog.ShowDialog();
-          setting.YellowPagesList.GetBindingExpression(UserControl.DataContextProperty).UpdateTarget();
-        };
+      return window;
     }
 
     private void Load(Settings settings, MainWindowViewModel mainWindow)

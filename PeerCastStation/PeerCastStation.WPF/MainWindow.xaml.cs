@@ -12,6 +12,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using PeerCastStation.Core;
+using PeerCastStation.WPF.Dialogs;
 
 namespace PeerCastStation.WPF
 {
@@ -23,6 +24,16 @@ namespace PeerCastStation.WPF
     public MainWindow()
     {
       InitializeComponent();
+    }
+
+    private void VersionInfoButton_Click(object sender, RoutedEventArgs e)
+    {
+      var dialog = new VersionInfoWindow
+      {
+        Owner = Window.GetWindow(this),
+        DataContext = ((MainWindowViewModel)DataContext).VersionInfo
+      };
+      dialog.ShowDialog();
     }
   }
 }

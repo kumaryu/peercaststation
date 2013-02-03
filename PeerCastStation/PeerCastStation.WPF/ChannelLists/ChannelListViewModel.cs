@@ -6,6 +6,7 @@ using System.Threading;
 using System.Windows;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.ChannelLists.Channels;
+using PeerCastStation.WPF.ChannelLists.Dialogs;
 using PeerCastStation.WPF.Commons;
 
 namespace PeerCastStation.WPF.ChannelLists
@@ -54,6 +55,11 @@ namespace PeerCastStation.WPF.ChannelLists
     public Command Close { get { return close; } }
     private readonly Command bump;
     public Command Bump { get { return bump; } }
+    internal BroadcastViewModel Broadcast
+    {
+      get { return new BroadcastViewModel(peerCast); }
+    }
+
     private readonly Command openContactUrl;
     public Command OpenContactUrl { get { return openContactUrl; } }
     private readonly Command copyStreamUrl;
