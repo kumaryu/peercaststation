@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using PeerCastStation.Core;
 
-namespace PeerCastStation.WPF.ChannelLists.Channels
+namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
 {
   interface IChannelConnectionItem
   {

@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Windows.Input;
 using PeerCastStation.Core;
-using PeerCastStation.WPF.ChannelLists.Channels;
+using PeerCastStation.WPF.ChannelLists.ChannelInfos;
 using PeerCastStation.WPF.Commons;
 using PeerCastStation.WPF.CoreSettings;
 

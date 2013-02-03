@@ -5,8 +5,10 @@ using System.Linq;
 using System.Threading;
 using System.Windows;
 using PeerCastStation.Core;
-using PeerCastStation.WPF.ChannelLists.Channels;
+using PeerCastStation.WPF.ChannelLists.ChannelInfos;
+using PeerCastStation.WPF.ChannelLists.ConnectionLists;
 using PeerCastStation.WPF.ChannelLists.Dialogs;
+using PeerCastStation.WPF.ChannelLists.RelayTrees;
 using PeerCastStation.WPF.Commons;
 
 namespace PeerCastStation.WPF.ChannelLists
@@ -64,8 +66,8 @@ namespace PeerCastStation.WPF.ChannelLists
     private readonly Command copyContactUrl;
     public Command CopyContactUrl { get { return copyContactUrl; } }
 
-    private readonly ConnectionsViewModel connections;
-    public ConnectionsViewModel Connections { get { return connections; } }
+    private readonly ConnectionListViewModel connections;
+    public ConnectionListViewModel Connections { get { return connections; } }
     private readonly ChannelInfoViewModel channelInfo = new ChannelInfoViewModel();
     public ChannelInfoViewModel ChannelInfo { get { return channelInfo; } }
     private readonly RelayTreeViewModel relayTree;
@@ -74,7 +76,7 @@ namespace PeerCastStation.WPF.ChannelLists
     internal ChannelListViewModel(PeerCast peerCast)
     {
       this.peerCast = peerCast;
-      connections = new ConnectionsViewModel(peerCast);
+      connections = new ConnectionListViewModel(peerCast);
       relayTree = new RelayTreeViewModel(peerCast);
 
       play = new Command(() =>

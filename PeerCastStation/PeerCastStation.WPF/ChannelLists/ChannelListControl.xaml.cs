@@ -18,9 +18,9 @@ namespace PeerCastStation.WPF.ChannelLists
   /// <summary>
   /// AllChannels.xaml の相互作用ロジック
   /// </summary>
-  public partial class ChannelList : UserControl
+  public partial class ChannelListControl : UserControl
   {
-    public ChannelList()
+    public ChannelListControl()
     {
       InitializeComponent();
     }

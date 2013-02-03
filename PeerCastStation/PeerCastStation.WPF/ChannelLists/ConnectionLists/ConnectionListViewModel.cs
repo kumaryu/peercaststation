@@ -6,9 +6,9 @@ using System.Text;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.Commons;
 
-namespace PeerCastStation.WPF.ChannelLists.Channels
+namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
 {
-  class ConnectionsViewModel : ViewModelBase
+  class ConnectionListViewModel : ViewModelBase
   {
     private readonly PeerCast peerCast;
 
@@ -61,7 +61,7 @@ namespace PeerCastStation.WPF.ChannelLists.Channels
       }
     }
 
-    public ConnectionsViewModel(PeerCast peerCast)
+    public ConnectionListViewModel(PeerCast peerCast)
     {
       this.peerCast = peerCast;
 

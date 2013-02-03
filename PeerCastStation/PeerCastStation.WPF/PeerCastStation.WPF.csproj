@@ -50,33 +50,33 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ChannelLists\Channels\ChannelConnectionItems.cs" />
-    <Compile Include="ChannelLists\Channels\ConnectionsViewModel.cs" />
+    <Compile Include="ChannelLists\ConnectionLists\ChannelConnectionItems.cs" />
+    <Compile Include="ChannelLists\ConnectionLists\ConnectionListViewModel.cs" />
     <Compile Include="ChannelLists\Dialogs\BroadcastViewModel.cs" />
-    <Compile Include="ChannelLists\Channels\ChannelInfoControl.xaml.cs">
+    <Compile Include="ChannelLists\ChannelInfos\ChannelInfoControl.xaml.cs">
       <DependentUpon>ChannelInfoControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ChannelLists\ChannelList.xaml.cs">
-      <DependentUpon>ChannelList.xaml</DependentUpon>
+    <Compile Include="ChannelLists\ChannelListControl.xaml.cs">
+      <DependentUpon>ChannelListControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ChannelLists\Channels\ChannelInfoViewModel.cs" />
+    <Compile Include="ChannelLists\ChannelInfos\ChannelInfoViewModel.cs" />
     <Compile Include="ChannelLists\ChannelListViewModel.cs" />
     <Compile Include="ChannelLists\Dialogs\BroadcastWindow.xaml.cs">
       <DependentUpon>BroadcastWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ChannelLists\Channels\ConnectionsControl.xaml.cs">
-      <DependentUpon>ConnectionsControl.xaml</DependentUpon>
+    <Compile Include="ChannelLists\ConnectionLists\ConnectionListControl.xaml.cs">
+      <DependentUpon>ConnectionListControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="ChannelLists\ListItems.cs" />
-    <Compile Include="ChannelLists\Channels\RelayTreeViewModel.cs" />
-    <Compile Include="ChannelLists\Channels\TrackControl.xaml.cs">
+    <Compile Include="ChannelLists\RelayTrees\RelayTreeViewModel.cs" />
+    <Compile Include="ChannelLists\ChannelInfos\TrackControl.xaml.cs">
       <DependentUpon>TrackControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ChannelLists\Channels\TrackViewModel.cs" />
-    <Compile Include="ChannelLists\Channels\RelayTreeControl.xaml.cs">
+    <Compile Include="ChannelLists\ChannelInfos\TrackViewModel.cs" />
+    <Compile Include="ChannelLists\RelayTrees\RelayTreeControl.xaml.cs">
       <DependentUpon>RelayTreeControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ChannelLists\Channels\TreeViewModel.cs" />
+    <Compile Include="Commons\TreeViewModel.cs" />
     <Compile Include="Commons\Command.cs" />
     <Compile Include="Commons\NotConverter.cs" />
     <Compile Include="CoreSettings\Extensions.cs" />
@@ -114,11 +114,11 @@
       <DependentUpon>VersionInfoWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="WindowManager.cs" />
-    <Page Include="ChannelLists\Channels\ChannelInfoControl.xaml">
+    <Page Include="ChannelLists\ChannelInfos\ChannelInfoControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="ChannelLists\ChannelList.xaml">
+    <Page Include="ChannelLists\ChannelListControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -126,15 +126,15 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="ChannelLists\Channels\ConnectionsControl.xaml">
+    <Page Include="ChannelLists\ConnectionLists\ConnectionListControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="ChannelLists\Channels\RelayTreeControl.xaml">
+    <Page Include="ChannelLists\RelayTrees\RelayTreeControl.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="ChannelLists\Channels\TrackControl.xaml">
+    <Page Include="ChannelLists\ChannelInfos\TrackControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

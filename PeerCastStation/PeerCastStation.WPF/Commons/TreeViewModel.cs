@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using PeerCastStation.WPF.Commons;
 
-namespace PeerCastStation.WPF.ChannelLists.Channels
+namespace PeerCastStation.WPF.Commons
 {
   class TreeViewModel : ViewModelBase
   {

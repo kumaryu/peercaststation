@@ -12,7 +12,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace PeerCastStation.WPF.ChannelLists.Channels
+namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
 {
   /// <summary>
   /// TrackControl.xaml の相互作用ロジック

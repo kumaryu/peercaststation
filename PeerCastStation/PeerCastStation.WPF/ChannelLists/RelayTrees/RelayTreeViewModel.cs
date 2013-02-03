@@ -6,7 +6,7 @@ using System.Text;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.Commons;
 
-namespace PeerCastStation.WPF.ChannelLists.Channels
+namespace PeerCastStation.WPF.ChannelLists.RelayTrees
 {
   class RelayTreeViewModel : ViewModelBase
   {

@@ -16,7 +16,7 @@
         </StatusBar>
         <TabControl>
             <TabItem Header="チャンネル一覧">
-                <lb:ChannelList DataContext="{Binding ChannelList}"/>
+                <lb:ChannelListControl DataContext="{Binding ChannelList}"/>
             </TabItem>
             <TabItem Header="設定">
                 <lc:SettingControl DataContext="{Binding Setting}"/>

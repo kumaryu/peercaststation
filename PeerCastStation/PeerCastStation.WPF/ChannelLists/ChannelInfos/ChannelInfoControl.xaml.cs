@@ -12,14 +12,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace PeerCastStation.WPF.ChannelLists.Channels
+namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
 {
   /// <summary>
-  /// ConnectionList.xaml の相互作用ロジック
+  /// ChannelInfoControl.xaml の相互作用ロジック
   /// </summary>
-  public partial class RelayTreeControl : UserControl
+  public partial class ChannelInfoControl : UserControl
   {
-    public RelayTreeControl()
+    public ChannelInfoControl()
     {
       InitializeComponent();
     }

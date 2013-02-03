@@ -1,9 +1,11 @@
-﻿<UserControl x:Class="PeerCastStation.WPF.ChannelLists.ChannelList"
+﻿<UserControl x:Class="PeerCastStation.WPF.ChannelLists.ChannelListControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:l="clr-namespace:PeerCastStation.WPF.ChannelLists.Channels"
+             xmlns:lch="clr-namespace:PeerCastStation.WPF.ChannelLists.ChannelInfos"
+             xmlns:lco="clr-namespace:PeerCastStation.WPF.ChannelLists.ConnectionLists"
+             xmlns:lr="clr-namespace:PeerCastStation.WPF.ChannelLists.RelayTrees"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="400"
              Background="White">
@@ -48,15 +50,15 @@
                       HorizontalAlignment="Stretch" Background="Transparent"/>
         <TabControl Grid.Row="2">
             <TabItem Header="接続一覧">
-                <l:ConnectionsControl DataContext="{Binding Connections}"/>
+                <lco:ConnectionListControl DataContext="{Binding Connections}"/>
             </TabItem>
             <TabItem Header="チャンネル情報">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <l:ChannelInfoControl DataContext="{Binding ChannelInfo}"/>
+                    <lch:ChannelInfoControl DataContext="{Binding ChannelInfo}"/>
                 </ScrollViewer>
             </TabItem>
             <TabItem Header="リレーツリー">
-                <l:RelayTreeControl DataContext="{Binding RelayTree}"/>
+                <lr:RelayTreeControl DataContext="{Binding RelayTree}"/>
             </TabItem>
         </TabControl>
     </Grid>
