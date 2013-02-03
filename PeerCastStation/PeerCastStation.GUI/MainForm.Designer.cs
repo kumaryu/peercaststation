@@ -577,7 +577,7 @@ namespace PeerCastStation.GUI
       this.tabChannels.Location = new System.Drawing.Point(4, 22);
       this.tabChannels.Name = "tabChannels";
       this.tabChannels.Padding = new System.Windows.Forms.Padding(3);
-      this.tabChannels.Size = new System.Drawing.Size(437, 435);
+      this.tabChannels.Size = new System.Drawing.Size(437, 470);
       this.tabChannels.TabIndex = 1;
       this.tabChannels.Text = "チャンネル一覧";
       this.tabChannels.UseVisualStyleBackColor = true;
@@ -600,8 +600,8 @@ namespace PeerCastStation.GUI
       // splitContainer1.Panel2
       // 
       this.splitContainer1.Panel2.Controls.Add(this.tabControl2);
-      this.splitContainer1.Size = new System.Drawing.Size(431, 429);
-      this.splitContainer1.SplitterDistance = 153;
+      this.splitContainer1.Size = new System.Drawing.Size(431, 464);
+      this.splitContainer1.SplitterDistance = 165;
       this.splitContainer1.TabIndex = 9;
       // 
       // channelStart
@@ -658,7 +658,7 @@ namespace PeerCastStation.GUI
       this.channelList.ItemHeight = 12;
       this.channelList.Location = new System.Drawing.Point(0, 0);
       this.channelList.Name = "channelList";
-      this.channelList.Size = new System.Drawing.Size(361, 153);
+      this.channelList.Size = new System.Drawing.Size(361, 165);
       this.channelList.TabIndex = 0;
       this.channelList.SelectedIndexChanged += new System.EventHandler(this.channelList_SelectedIndexChanged);
       // 
@@ -682,7 +682,7 @@ namespace PeerCastStation.GUI
       this.tabControl2.Location = new System.Drawing.Point(0, 0);
       this.tabControl2.Name = "tabControl2";
       this.tabControl2.SelectedIndex = 0;
-      this.tabControl2.Size = new System.Drawing.Size(431, 272);
+      this.tabControl2.Size = new System.Drawing.Size(431, 295);
       this.tabControl2.TabIndex = 0;
       this.tabControl2.SelectedIndexChanged += new System.EventHandler(this.channelList_SelectedIndexChanged);
       // 
@@ -694,7 +694,7 @@ namespace PeerCastStation.GUI
       this.tabPage1.Location = new System.Drawing.Point(4, 22);
       this.tabPage1.Name = "tabPage1";
       this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-      this.tabPage1.Size = new System.Drawing.Size(423, 246);
+      this.tabPage1.Size = new System.Drawing.Size(423, 269);
       this.tabPage1.TabIndex = 0;
       this.tabPage1.Text = "接続一覧";
       this.tabPage1.UseVisualStyleBackColor = true;
@@ -733,7 +733,7 @@ namespace PeerCastStation.GUI
       this.connectionList.ItemHeight = 12;
       this.connectionList.Location = new System.Drawing.Point(6, 6);
       this.connectionList.Name = "connectionList";
-      this.connectionList.Size = new System.Drawing.Size(351, 234);
+      this.connectionList.Size = new System.Drawing.Size(351, 257);
       this.connectionList.TabIndex = 2;
       this.connectionList.SelectedIndexChanged += new System.EventHandler(this.connectionList_SelectedIndexChanged);
       // 
@@ -1304,7 +1304,7 @@ namespace PeerCastStation.GUI
       this.tabLog.Location = new System.Drawing.Point(4, 22);
       this.tabLog.Name = "tabLog";
       this.tabLog.Padding = new System.Windows.Forms.Padding(3);
-      this.tabLog.Size = new System.Drawing.Size(437, 435);
+      this.tabLog.Size = new System.Drawing.Size(437, 470);
       this.tabLog.TabIndex = 3;
       this.tabLog.Text = "ログ";
       this.tabLog.UseVisualStyleBackColor = true;
@@ -1469,6 +1469,7 @@ namespace PeerCastStation.GUI
       this.Text = "PeerCastStation";
       this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
       this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
+      this.Load += new System.EventHandler(this.MainForm_Load);
       panel1.ResumeLayout(false);
       this.notifyIconMenu.ResumeLayout(false);
       this.mainTab.ResumeLayout(false);

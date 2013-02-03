@@ -37,7 +37,7 @@ namespace PeerCastStation.GUI
     public MainForm(PeerCast peercast)
     {
       InitializeComponent();
-      Settings.Default.PropertyChanged += SettingsPropertyChanged;
+      peerCast = peercast;
       if (PlatformID.Win32NT==Environment.OSVersion.Platform) {
         notifyIcon = new NotifyIcon(this.components);
         notifyIcon.Icon = this.Icon;
@@ -51,7 +51,12 @@ namespace PeerCastStation.GUI
         versionChecker.NewVersionFound += versionChecker_Found;
         versionChecker.CheckVersion();
       }
-      peerCast = peercast;
+      this.Visible = Settings.Default.ShowWindowOnStartup;
+    }
+
+    private void MainForm_Load(object sender, EventArgs e)
+    {
+      Settings.Default.PropertyChanged += SettingsPropertyChanged;
       peerCast.ChannelAdded      += ChannelAdded;
       peerCast.ChannelRemoved    += ChannelRemoved;
       logLevelList.SelectedIndex = Settings.Default.LogLevel;
@@ -62,11 +67,10 @@ namespace PeerCastStation.GUI
       OnUpdateSettings(null);
       timer.Interval = 1000;
       timer.Enabled = true;
-      timer.Tick += (sender, args) => {
+      timer.Tick += (s, args) => {
         UpdateStatus();
       };
       UpdateStatus();
-      this.Visible = Settings.Default.ShowWindowOnStartup;
     }
 
     private void notifyIcon_BalloonTipClicked(object sender, EventArgs args)
