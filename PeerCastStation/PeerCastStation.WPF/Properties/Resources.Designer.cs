@@ -59,5 +59,15 @@ namespace PeerCastStation.WPF.Properties {
                 resourceCulture = value;
             }
         }
+        
+        /// <summary>
+        ///   (アイコン) に類似した型 System.Drawing.Icon のローカライズされたリソースを検索します。
+        /// </summary>
+        internal static System.Drawing.Icon peercaststation_small {
+            get {
+                object obj = ResourceManager.GetObject("peercaststation_small", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
     }
 }

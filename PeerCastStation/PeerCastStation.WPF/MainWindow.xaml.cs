@@ -6,13 +6,17 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
+using System.Windows.Forms;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.Dialogs;
+using Forms = System.Windows.Forms;
+using Drawing = System.Drawing;
 
 namespace PeerCastStation.WPF
 {
@@ -24,6 +28,15 @@ namespace PeerCastStation.WPF
     public MainWindow()
     {
       InitializeComponent();
+
+    }
+
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+      e.Cancel = true;
+      this.Hide();
+
+      base.OnClosing(e);
     }
 
     private void VersionInfoButton_Click(object sender, RoutedEventArgs e)

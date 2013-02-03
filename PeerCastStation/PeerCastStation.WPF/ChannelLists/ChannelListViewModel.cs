@@ -13,9 +13,12 @@ using PeerCastStation.WPF.Commons;
 
 namespace PeerCastStation.WPF.ChannelLists
 {
-  class ChannelListViewModel : ViewModelBase
+  class ChannelListViewModel : ViewModelBase, IDisposable
   {
+    private bool disposed;
+
     private readonly PeerCast peerCast;
+    private readonly ChannelChangedEventHandler onChannelChanged;
 
     private readonly ObservableCollection<ChannelListItem> channels
       = new ObservableCollection<ChannelListItem>();
@@ -147,10 +150,36 @@ namespace PeerCastStation.WPF.ChannelLists
         () => IsChannelSelected);
 
       var sc = SynchronizationContext.Current;
-      ChannelChangedEventHandler onChannelChanged
-        = (sender, e) => sc.Post(o => UpdateChannelList(), null);
+      onChannelChanged = (sender, e) => sc.Post(o => UpdateChannelList(), null);
       peerCast.ChannelAdded += onChannelChanged;
       peerCast.ChannelRemoved += onChannelChanged;
+    }
+
+    ~ChannelListViewModel()
+    {
+      this.Dispose(false);
+    }
+
+    public void Dispose()
+    {
+      GC.SuppressFinalize(this);
+      this.Dispose(true);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+      if (this.disposed)
+      {
+        return;
+      }
+      this.disposed = true;
+      if (disposing)
+      {
+        // マネージリソースの解放処理
+      }
+      // アンマネージリソースの解放処理
+      peerCast.ChannelAdded -= onChannelChanged;
+      peerCast.ChannelRemoved -= onChannelChanged;
     }
 
     internal void UpdateChannelList()

@@ -9,12 +9,14 @@ namespace PeerCastStation.WPF
   {
     private bool disposed;
     private Window window;
+    private System.Windows.Forms.NotifyIcon notifyIcon;
     private volatile bool isShow;
     public bool IsShow { get { return isShow; } }
 
     public void ShowMainWindow(PeerCastApplication application, Settings settings)
     {
       window = CreateWindow(application, settings);
+      notifyIcon = new NotifyIconFactory().Create(application.PeerCast, window);
 
       isShow = true;
       window.ShowDialog();

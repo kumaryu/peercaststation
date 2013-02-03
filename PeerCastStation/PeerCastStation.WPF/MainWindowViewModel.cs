@@ -12,8 +12,10 @@ using PeerCastStation.WPF.Logs;
 
 namespace PeerCastStation.WPF
 {
-  class MainWindowViewModel : ViewModelBase
+  class MainWindowViewModel : ViewModelBase, IDisposable
   {
+    private bool disposed;
+
     private readonly Timer timer;
     private readonly PeerCastApplication application;
 
@@ -61,6 +63,33 @@ namespace PeerCastStation.WPF
       timer = new Timer(
         o => sc.Post(p => UpdateStatus(), null), null,
         1000, 1000);
+    }
+
+    ~MainWindowViewModel()
+    {
+      this.Dispose(false);
+    }
+
+    public void Dispose()
+    {
+      GC.SuppressFinalize(this);
+      this.Dispose(true);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+      if (this.disposed)
+      {
+        return;
+      }
+      this.disposed = true;
+      if (disposing)
+      {
+        // マネージリソースの解放処理
+      }
+      // アンマネージリソースの解放処理
+      channelList.Dispose();
+      log.Dispose();
     }
 
     private void UpdateStatus()

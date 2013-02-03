@@ -7,8 +7,10 @@ using PeerCastStation.WPF.Commons;
 
 namespace PeerCastStation.WPF.Logs
 {
-  class LogViewModel : ViewModelBase
+  class LogViewModel : ViewModelBase, IDisposable
   {
+    private bool disposed;
+
     private readonly LogWriter guiWriter = new LogWriter(1000);
     private TextWriter logFileWriter;
 
@@ -94,6 +96,32 @@ namespace PeerCastStation.WPF.Logs
           guiWriter.Clear();
           OnPropertyChanged("Log");
         });
+    }
+
+    ~LogViewModel()
+    {
+      this.Dispose(false);
+    }
+
+    public void Dispose()
+    {
+      GC.SuppressFinalize(this);
+      this.Dispose(true);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+      if (this.disposed)
+      {
+        return;
+      }
+      this.disposed = true;
+      if (disposing)
+      {
+        // マネージリソースの解放処理
+      }
+      // アンマネージリソースの解放処理
+      Logger.RemoveWriter(guiWriter);
     }
 
     internal void UpdateLog()
