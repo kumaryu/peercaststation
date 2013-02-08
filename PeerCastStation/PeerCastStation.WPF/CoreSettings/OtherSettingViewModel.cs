@@ -63,6 +63,16 @@ namespace PeerCastStation.WPF.CoreSettings
     private readonly Command applyOthers;
     public Command ApplyOthers { get { return applyOthers; } }
 
+    private bool isShowWindowOnStartup;
+    public bool IsShowWindowOnStartup
+    {
+      get { return isShowWindowOnStartup; }
+      set
+      {
+        SetProperty("IsShowWindowOnStartup", ref isShowWindowOnStartup, value);
+      }
+    }
+
     internal OtherSettingViewModel(AccessController accessController)
     {
       applyOthers = new Command(
@@ -81,7 +91,7 @@ namespace PeerCastStation.WPF.CoreSettings
       MaxUpstreamRate = from.MaxUpstreamRate;
     }
 
-    internal bool IsChanged(AccessController ctrler)
+    private bool IsChanged(AccessController ctrler)
     {
       if (ctrler.MaxRelays != MaxRelays ||
           ctrler.MaxPlays != MaxDirects ||
@@ -93,7 +103,7 @@ namespace PeerCastStation.WPF.CoreSettings
         return false;
     }
 
-    internal void WriteTo(AccessController to)
+    private void WriteTo(AccessController to)
     {
       to.MaxRelays = MaxRelays;
       to.MaxPlays = MaxDirects;

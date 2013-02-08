@@ -28,11 +28,6 @@ namespace PeerCastStation.WPF
     public MainWindow()
     {
       InitializeComponent();
-
-      Closing += (sender, e) =>
-      {
-        //System.Threading.Thread.Sleep(1000);
-      };
     }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
@@ -40,7 +35,6 @@ namespace PeerCastStation.WPF
       base.OnClosing(e);
       e.Cancel = true;
       Visibility = Visibility.Hidden;
-      //this.Show();
     }
 
     private void VersionInfoButton_Click(object sender, RoutedEventArgs e)

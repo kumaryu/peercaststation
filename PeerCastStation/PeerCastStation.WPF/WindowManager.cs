@@ -49,7 +49,6 @@ namespace PeerCastStation.WPF
             dlg.Show();
           }
         };
-
       isShow = true;
       new System.Windows.Application().Run(window);
       isShow = false;
@@ -63,6 +62,7 @@ namespace PeerCastStation.WPF
       log.IsOutputToConsole = settings.LogToConsole;
       log.IsOutputToFile = settings.LogToFile;
       log.OutputFileName = settings.LogFileName;
+      mainWindow.Setting.OtherSetting.IsShowWindowOnStartup = settings.ShowWindowOnStartup;
     }
 
     private void Save(MainWindowViewModel mainWindow, Settings settings)
@@ -73,6 +73,7 @@ namespace PeerCastStation.WPF
       settings.LogToConsole = log.IsOutputToConsole;
       settings.LogToFile = log.IsOutputToFile;
       settings.LogFileName = log.OutputFileName;
+      settings.ShowWindowOnStartup = mainWindow.Setting.OtherSetting.IsShowWindowOnStartup;
       settings.Save();
     }
 

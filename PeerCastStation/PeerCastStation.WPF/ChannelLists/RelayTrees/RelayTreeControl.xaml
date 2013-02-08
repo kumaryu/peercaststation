@@ -20,6 +20,7 @@
         <TreeView ItemsSource="{Binding RelayTree}">
             <TreeView.ItemContainerStyle>
                 <Style TargetType="TreeViewItem">
+                    <Setter Property="IsExpanded" Value="True"/>
                     <Setter Property="Focusable" Value="False"/>
                     <Setter Property="Header" Value="{Binding Text}"/>
                     <Setter Property="ItemsSource" Value="{Binding Children}"/>

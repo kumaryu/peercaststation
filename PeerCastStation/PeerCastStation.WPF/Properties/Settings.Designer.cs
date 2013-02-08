@@ -100,5 +100,17 @@ namespace PeerCastStation.WPF.Properties {
                 return ((global::System.DateTime)(this["CurrentVersion"]));
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ShowWindowOnStartup {
+            get {
+                return ((bool)(this["ShowWindowOnStartup"]));
+            }
+            set {
+                this["ShowWindowOnStartup"] = value;
+            }
+        }
     }
 }
