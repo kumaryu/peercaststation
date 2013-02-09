@@ -1,44 +1,132 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Wpf = System.Windows;
+using System.Diagnostics;
 using System.Windows.Forms;
-using System.Windows.Interop;
 using PeerCastStation.Core;
+using PeerCastStation.WPF.Dialogs;
 using PeerCastStation.WPF.Properties;
 
 namespace PeerCastStation.WPF
 {
-  class NotifyIconFactory
+  class NotifyIconManager
   {
-    public NotifyIcon Create(
-      PeerCast peerCast, Wpf.Window window, MainWindowViewModel viewModel)
+    private readonly Control control;
+    private readonly NotifyIcon notifyIcon;
+    private readonly ToolStripItem versionCheck;
+    private readonly ToolStripItem showGUI;
+    private readonly ToolStripItem quit;
+    private bool disposed;
+    private VersionDescription newVersionInfo;
+
+    public VersionDescription NewVersionInfo
+    {
+      set
+      {
+        newVersionInfo = value;
+        notifyIcon.ShowBalloonTip(
+          60000,
+          "新しいバージョンがあります",
+          newVersionInfo.Title,
+          ToolTipIcon.Info);
+      }
+    }
+
+    public event EventHandler CheckVersionClicked
+    {
+      add { versionCheck.Click += value; }
+      remove { versionCheck.Click -= value; }
+    }
+    public event EventHandler ShowWindowClicked
+    {
+      add
+      {
+        showGUI.Click += value;
+        notifyIcon.DoubleClick += value;
+      }
+      remove
+      {
+        showGUI.Click -= value;
+        notifyIcon.DoubleClick -= value;
+      }
+    }
+    public event EventHandler QuitClicked
+    {
+      add { quit.Click += value; }
+      remove { quit.Click -= value; }
+    }
+
+    public NotifyIconManager(PeerCast peerCast)
+    {
+      control = new Control();
+      versionCheck = VersionCheck;
+      showGUI = ShowGUI;
+      quit = Quit;
+      notifyIcon = CreateNotifyIcon(peerCast);
+      notifyIcon.BalloonTipClicked += (sender, e) =>
+      {
+        if (newVersionInfo != null)
+          return;
+
+        new UpdaterWindow()
+        {
+          DataContext = new UpdaterViewModel(newVersionInfo)
+        }.Show();
+      };
+    }
+
+    public void Run()
+    {
+      Application.Run();
+    }
+
+    ~NotifyIconManager()
+    {
+      Dispose(false);
+    }
+
+    public void Dispose()
+    {
+      GC.SuppressFinalize(this);
+      Dispose(true);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+      if (disposed)
+      {
+        return;
+      }
+      disposed = true;
+      if (disposing)
+      {
+        // マネージリソースの解放処理
+        Application.Exit();
+        notifyIcon.Dispose();
+      }
+      // アンマネージリソースの解放処理
+    }
+
+    private NotifyIcon CreateNotifyIcon(
+      PeerCast peerCast)
     {
       var notifyIcon = new NotifyIcon();
       notifyIcon.Icon = Resources.peercaststation_small;
-      notifyIcon.ContextMenuStrip = GetNotifyIconMenu(peerCast, window, viewModel);
+      notifyIcon.ContextMenuStrip = GetNotifyIconMenu(peerCast);
       notifyIcon.Visible = true;
-      notifyIcon.DoubleClick += (sender1, e1) =>
-      {
-        window.Show();
-        window.Activate();
-      };
       return notifyIcon;
     }
 
     private ContextMenuStrip GetNotifyIconMenu(
-      PeerCast peerCast, Wpf.Window window, MainWindowViewModel viewModel)
+      PeerCast peerCast)
     {
       var notifyIconMenu = new System.Windows.Forms.ContextMenuStrip();
       notifyIconMenu.SuspendLayout();
       notifyIconMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-          GetVersionCheck(viewModel),
+          versionCheck,
           ToolStripSeparator,
           GetShowHTMLUI(peerCast),
-          GetShowGUI(window),
+          showGUI,
           ToolStripSeparator,
-          Quit});
+          quit});
       notifyIconMenu.Name = "notifyIconMenu";
       notifyIconMenu.ShowImageMargin = false;
       notifyIconMenu.Size = new System.Drawing.Size(163, 104);
@@ -46,14 +134,16 @@ namespace PeerCastStation.WPF
       return notifyIconMenu;
     }
 
-    private ToolStripItem GetVersionCheck(MainWindowViewModel viewModel)
+    private ToolStripItem VersionCheck
     {
-      var versionCheckMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-      versionCheckMenuItem.Name = "versionCheckMenuItem";
-      versionCheckMenuItem.Size = new System.Drawing.Size(162, 22);
-      versionCheckMenuItem.Text = "アップデートのチェック(&U)";
-      versionCheckMenuItem.Click += (sender, e) => viewModel.CheckVersion();
-      return versionCheckMenuItem;
+      get
+      {
+        var versionCheckMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+        versionCheckMenuItem.Name = "versionCheckMenuItem";
+        versionCheckMenuItem.Size = new System.Drawing.Size(162, 22);
+        versionCheckMenuItem.Text = "アップデートのチェック(&U)";
+        return versionCheckMenuItem;
+      }
     }
 
     private ToolStripSeparator ToolStripSeparator
@@ -74,34 +164,32 @@ namespace PeerCastStation.WPF
       showHTMLUIMenuItem.Size = new System.Drawing.Size(162, 22);
       showHTMLUIMenuItem.Text = "HTML UIを表示(&H)";
       showHTMLUIMenuItem.Click += (sender, e) =>
+      {
+        var listener = peerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.Interface);
+        if (listener != null)
         {
-          var listener = peerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.Interface);
-          if (listener != null)
-          {
-            var endpoint = listener.LocalEndPoint;
-            var host = endpoint.Address.Equals(System.Net.IPAddress.Any) ?
-              String.Format("localhost:{0}", endpoint.Port) :
-              endpoint.ToString();
-            System.Diagnostics.Process.Start(String.Format("http://{0}/html/index.html", host));
-          }
-        };
+          var endpoint = listener.LocalEndPoint;
+          var host = endpoint.Address.Equals(System.Net.IPAddress.Any) ?
+            String.Format("localhost:{0}", endpoint.Port) :
+            endpoint.ToString();
+          Process.Start(String.Format("http://{0}/html/index.html", host));
+        }
+      };
       return showHTMLUIMenuItem;
     }
 
-    private ToolStripItem GetShowGUI(Wpf.Window window)
+    private ToolStripItem ShowGUI
     {
-      var showGUIMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-      showGUIMenuItem.AutoToolTip = true;
-      showGUIMenuItem.Name = "showGUIMenuItem";
-      showGUIMenuItem.Size = new System.Drawing.Size(162, 22);
-      showGUIMenuItem.Text = "GUIを表示(&G)";
-      showGUIMenuItem.ToolTipText = "PeerCastStationのGUIを表示します";
-      showGUIMenuItem.Click += (sender, e) =>
-        {
-          window.Show();
-          window.Activate();
-        };
-      return showGUIMenuItem;
+      get
+      {
+        var showGUIMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+        showGUIMenuItem.AutoToolTip = true;
+        showGUIMenuItem.Name = "showGUIMenuItem";
+        showGUIMenuItem.Size = new System.Drawing.Size(162, 22);
+        showGUIMenuItem.Text = "GUIを表示(&G)";
+        showGUIMenuItem.ToolTipText = "PeerCastStationのGUIを表示します";
+        return showGUIMenuItem;
+      }
     }
 
     private ToolStripItem Quit
@@ -114,7 +202,6 @@ namespace PeerCastStation.WPF
         quitMenuItem.Size = new System.Drawing.Size(162, 22);
         quitMenuItem.Text = "終了(&Q)";
         quitMenuItem.ToolTipText = "PeerCastStationを終了します";
-        quitMenuItem.Click += (sender, e) => System.Windows.Application.Current.Shutdown();
         return quitMenuItem;
       }
     }

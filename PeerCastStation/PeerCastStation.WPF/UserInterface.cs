@@ -14,15 +14,40 @@ namespace PeerCastStation.WPF
       get { return "PeerCastStation.WPF"; }
     }
 
-    WindowManager windowManager = new WindowManager();
+    MainWindowViewModel viewModel;
+    Thread notifyIconThread;
+    NotifyIconManager notifyIconManager;
     Thread mainThread;
+    WindowManager windowManager;
     public void Start(PeerCastApplication application)
     {
+      DispatcherSynchronizationContext.SetSynchronizationContext(
+          new DispatcherSynchronizationContext());
+
+      var settings = Settings.Default;
+      viewModel = new MainWindowViewModel(
+        application, settings.UpdateURL, settings.CurrentVersion);
+      viewModel.NewVersionFound += (sender, e)
+        => notifyIconManager.NewVersionInfo = e.VersionDescription;
+      Load(settings, viewModel);
+      notifyIconThread = new Thread(() =>
+      {
+        notifyIconManager = new NotifyIconManager(application.PeerCast);
+        notifyIconManager.CheckVersionClicked += (sender, e)
+          => viewModel.CheckVersion();
+        notifyIconManager.QuitClicked += (sender, e) => application.Stop();
+        notifyIconManager.ShowWindowClicked += (sender, e)
+          => windowManager.ShowMainWindow();
+        viewModel.CheckVersion();
+        notifyIconManager.Run();
+      });
+      notifyIconThread.SetApartmentState(ApartmentState.STA);
+      notifyIconThread.Start();
+
       mainThread = new Thread(() =>
       {
-        DispatcherSynchronizationContext.SetSynchronizationContext(
-            new DispatcherSynchronizationContext());
-        windowManager.ShowMainWindow(application, Settings.Default);
+        windowManager = new WindowManager(viewModel);
+        windowManager.Run(settings.ShowWindowOnStartup);
       });
       mainThread.SetApartmentState(ApartmentState.STA);
       mainThread.Start();
@@ -30,8 +55,35 @@ namespace PeerCastStation.WPF
 
     public void Stop()
     {
+      Save(viewModel, Settings.Default);
+      viewModel.Dispose();
+      notifyIconManager.Dispose();
       windowManager.Dispose();
+      notifyIconThread.Join();
       mainThread.Join();
+    }
+
+    private void Load(Settings settings, MainWindowViewModel mainWindow)
+    {
+      var log = mainWindow.Log;
+      log.LogLevel = settings.LogLevel;
+      log.IsOutputToGui = settings.LogToGUI;
+      log.IsOutputToConsole = settings.LogToConsole;
+      log.IsOutputToFile = settings.LogToFile;
+      log.OutputFileName = settings.LogFileName;
+      mainWindow.Setting.OtherSetting.IsShowWindowOnStartup = settings.ShowWindowOnStartup;
+    }
+
+    private void Save(MainWindowViewModel mainWindow, Settings settings)
+    {
+      var log = mainWindow.Log;
+      settings.LogLevel = log.LogLevel;
+      settings.LogToGUI = log.IsOutputToGui;
+      settings.LogToConsole = log.IsOutputToConsole;
+      settings.LogToFile = log.IsOutputToFile;
+      settings.LogFileName = log.OutputFileName;
+      settings.ShowWindowOnStartup = mainWindow.Setting.OtherSetting.IsShowWindowOnStartup;
+      settings.Save();
     }
   }
 

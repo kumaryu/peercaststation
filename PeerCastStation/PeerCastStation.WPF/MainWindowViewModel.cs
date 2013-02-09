@@ -74,7 +74,6 @@ namespace PeerCastStation.WPF
 
       versionChecker = new AppCastReader(
         new Uri(updateUrl, UriKind.Absolute), currentVersion);
-      versionChecker.CheckVersion();
     }
 
     ~MainWindowViewModel()
