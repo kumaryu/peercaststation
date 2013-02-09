@@ -9,7 +9,6 @@ namespace PeerCastStation.WPF
 {
   class NotifyIconManager
   {
-    private readonly Control control;
     private readonly NotifyIcon notifyIcon;
     private readonly ToolStripItem versionCheck;
     private readonly ToolStripItem showGUI;
@@ -56,14 +55,13 @@ namespace PeerCastStation.WPF
 
     public NotifyIconManager(PeerCast peerCast)
     {
-      control = new Control();
       versionCheck = VersionCheck;
       showGUI = ShowGUI;
       quit = Quit;
       notifyIcon = CreateNotifyIcon(peerCast);
       notifyIcon.BalloonTipClicked += (sender, e) =>
       {
-        if (newVersionInfo != null)
+        if (newVersionInfo == null)
           return;
 
         new UpdaterWindow()

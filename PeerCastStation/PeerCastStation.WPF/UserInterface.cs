@@ -14,7 +14,7 @@ namespace PeerCastStation.WPF
       get { return "PeerCastStation.WPF"; }
     }
 
-    MainWindowViewModel viewModel;
+    MainViewModel viewModel;
     Thread notifyIconThread;
     NotifyIconManager notifyIconManager;
     Thread mainThread;
@@ -25,7 +25,7 @@ namespace PeerCastStation.WPF
           new DispatcherSynchronizationContext());
 
       var settings = Settings.Default;
-      viewModel = new MainWindowViewModel(
+      viewModel = new MainViewModel(
         application, settings.UpdateURL, settings.CurrentVersion);
       viewModel.NewVersionFound += (sender, e)
         => notifyIconManager.NewVersionInfo = e.VersionDescription;
@@ -63,7 +63,7 @@ namespace PeerCastStation.WPF
       mainThread.Join();
     }
 
-    private void Load(Settings settings, MainWindowViewModel mainWindow)
+    private void Load(Settings settings, MainViewModel mainWindow)
     {
       var log = mainWindow.Log;
       log.LogLevel = settings.LogLevel;
@@ -74,7 +74,7 @@ namespace PeerCastStation.WPF
       mainWindow.Setting.OtherSetting.IsShowWindowOnStartup = settings.ShowWindowOnStartup;
     }
 
-    private void Save(MainWindowViewModel mainWindow, Settings settings)
+    private void Save(MainViewModel mainWindow, Settings settings)
     {
       var log = mainWindow.Log;
       settings.LogLevel = log.LogLevel;

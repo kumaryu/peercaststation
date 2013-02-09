@@ -113,9 +113,9 @@
       <DependentUpon>LogControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="Logs\LogViewModel.cs" />
-    <Compile Include="MainWindowViewModel.cs" />
+    <Compile Include="MainViewModel.cs" />
     <Compile Include="CoreSettings\SettingViewModel.cs" />
-    <Compile Include="NotifyIconFactory.cs" />
+    <Compile Include="NotifyIconManager.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="CoreSettings\SettingControl.xaml.cs">
       <DependentUpon>SettingControl.xaml</DependentUpon>

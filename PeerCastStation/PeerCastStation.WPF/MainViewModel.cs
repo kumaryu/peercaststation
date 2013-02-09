@@ -12,7 +12,7 @@ using PeerCastStation.WPF.Logs;
 
 namespace PeerCastStation.WPF
 {
-  class MainWindowViewModel : ViewModelBase, IDisposable
+  class MainViewModel : ViewModelBase, IDisposable
   {
     private bool disposed;
 
@@ -59,7 +59,7 @@ namespace PeerCastStation.WPF
       remove { versionChecker.NewVersionFound -= value; }
     }
 
-    internal MainWindowViewModel(
+    internal MainViewModel(
       PeerCastApplication application, string updateUrl, DateTime currentVersion)
     {
       this.application = application;
@@ -76,7 +76,7 @@ namespace PeerCastStation.WPF
         new Uri(updateUrl, UriKind.Absolute), currentVersion);
     }
 
-    ~MainWindowViewModel()
+    ~MainViewModel()
     {
       this.Dispose(false);
     }

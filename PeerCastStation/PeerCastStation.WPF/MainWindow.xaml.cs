@@ -42,7 +42,7 @@ namespace PeerCastStation.WPF
       var dialog = new VersionInfoWindow
       {
         Owner = Window.GetWindow(this),
-        DataContext = ((MainWindowViewModel)DataContext).VersionInfo
+        DataContext = ((MainViewModel)DataContext).VersionInfo
       };
       dialog.ShowDialog();
     }

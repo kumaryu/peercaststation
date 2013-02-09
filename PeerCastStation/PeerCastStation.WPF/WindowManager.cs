@@ -20,7 +20,7 @@ namespace PeerCastStation.WPF
       remove { window.Closed -= value; }
     }
 
-    public WindowManager(MainWindowViewModel viewModel)
+    public WindowManager(MainViewModel viewModel)
     {
       application = new Application();
       window = new MainWindow() { DataContext = viewModel };
@@ -45,6 +45,9 @@ namespace PeerCastStation.WPF
       if (!isShow)
       {
         windowEvent.Set();
+        window.Dispatcher.BeginInvoke(new Action(
+          () => window.Activate()
+        ), null);
         return;
       }
       window.Dispatcher.BeginInvoke(new Action(() =>
