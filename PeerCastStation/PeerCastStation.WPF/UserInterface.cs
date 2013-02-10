@@ -21,9 +21,6 @@ namespace PeerCastStation.WPF
     WindowManager windowManager;
     public void Start(PeerCastApplication application)
     {
-      DispatcherSynchronizationContext.SetSynchronizationContext(
-          new DispatcherSynchronizationContext());
-
       var settings = Settings.Default;
       viewModel = new MainViewModel(
         application, settings.UpdateURL, settings.CurrentVersion);

@@ -20,6 +20,8 @@ namespace PeerCastStation.WPF
     private readonly PeerCastApplication application;
     private readonly AppCastReader versionChecker;
 
+    internal SynchronizationContext SynchronizationContext { private get; set; }
+
     public string PortStatus
     {
       get
@@ -67,13 +69,18 @@ namespace PeerCastStation.WPF
       channelList = new ChannelListViewModel(peerCast);
       setting = new SettingViewModel(peerCast);
 
-      var sc = SynchronizationContext.Current;
-      timer = new Timer(
-        o => sc.Post(p => UpdateStatus(), null), null,
-        1000, 1000);
+      timer = new Timer(o =>
+      {
+        if (SynchronizationContext == null)
+          return;
+        SynchronizationContext.Post(p => UpdateStatus(), null);
+      }, null, 1000, 1000);
 
       versionChecker = new AppCastReader(
         new Uri(updateUrl, UriKind.Absolute), currentVersion);
+
+      peerCast.ChannelAdded += OnChannelChanged;
+      peerCast.ChannelRemoved += OnChannelChanged;
     }
 
     ~MainViewModel()
@@ -99,7 +106,8 @@ namespace PeerCastStation.WPF
         // マネージリソースの解放処理
       }
       // アンマネージリソースの解放処理
-      channelList.Dispose();
+      application.PeerCast.ChannelAdded -= OnChannelChanged;
+      application.PeerCast.ChannelRemoved -= OnChannelChanged;
       log.Dispose();
     }
 
@@ -113,6 +121,13 @@ namespace PeerCastStation.WPF
       OnPropertyChanged("PortStatus");
       channelList.UpdateChannelList();
       log.UpdateLog();
+    }
+
+    private void OnChannelChanged(object sender, EventArgs e)
+    {
+      if (SynchronizationContext == null)
+        return;
+      SynchronizationContext.Post(o => channelList.UpdateChannelList(), null);
     }
   }
 }

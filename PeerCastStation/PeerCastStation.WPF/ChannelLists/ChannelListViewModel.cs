@@ -2,7 +2,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Windows;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.ChannelLists.ChannelInfos;
@@ -13,12 +12,9 @@ using PeerCastStation.WPF.Commons;
 
 namespace PeerCastStation.WPF.ChannelLists
 {
-  class ChannelListViewModel : ViewModelBase, IDisposable
+  class ChannelListViewModel : ViewModelBase
   {
-    private bool disposed;
-
     private readonly PeerCast peerCast;
-    private readonly ChannelChangedEventHandler onChannelChanged;
 
     private readonly ObservableCollection<ChannelListItem> channels
       = new ObservableCollection<ChannelListItem>();
@@ -33,17 +29,17 @@ namespace PeerCastStation.WPF.ChannelLists
       set
       {
         SetProperty("Channel", ref channel, value, () =>
+        {
+          if (IsChannelSelected)
           {
-            if (IsChannelSelected)
-            {
-              Connections.Channel = value.Channel;
-              ChannelInfo.From(
-                value.Channel,
-                peerCast.BroadcastID == value.Channel.BroadcastID);
-              RelayTree.Channel = value.Channel;
-            }
-            OnButtonsCanExecuteChanged();
-          });
+            Connections.Channel = value.Channel;
+            ChannelInfo.From(
+              value.Channel,
+              peerCast.BroadcastID == value.Channel.BroadcastID);
+            RelayTree.Channel = value.Channel;
+          }
+          OnButtonsCanExecuteChanged();
+        });
       }
     }
     private bool IsChannelSelected
@@ -83,27 +79,27 @@ namespace PeerCastStation.WPF.ChannelLists
       relayTree = new RelayTreeViewModel(peerCast);
 
       play = new Command(() =>
-        {
-          if (peerCast.OutputListeners.Count <= 0)
-            return;
+      {
+        if (peerCast.OutputListeners.Count <= 0)
+          return;
 
-          var channel = Channel.Channel;
-          var channel_id = channel.ChannelID;
-          var ext = (channel.ChannelInfo.ContentType == "WMV" ||
-                      channel.ChannelInfo.ContentType == "WMA" ||
-                      channel.ChannelInfo.ContentType == "ASX") ? ".asx" : ".m3u";
-          var endpoint = peerCast.OutputListeners[0].LocalEndPoint;
-          string pls;
-          if (endpoint.Address.Equals(System.Net.IPAddress.Any))
-          {
-            pls = String.Format("http://localhost:{0}/pls/{1}{2}", endpoint.Port, channel_id.ToString("N"), ext);
-          }
-          else
-          {
-            pls = String.Format("http://{0}/pls/{1}{2}", endpoint.ToString(), channel_id.ToString("N"), ext);
-          }
-          System.Diagnostics.Process.Start(pls);
-        },
+        var channel = Channel.Channel;
+        var channel_id = channel.ChannelID;
+        var ext = (channel.ChannelInfo.ContentType == "WMV" ||
+                    channel.ChannelInfo.ContentType == "WMA" ||
+                    channel.ChannelInfo.ContentType == "ASX") ? ".asx" : ".m3u";
+        var endpoint = peerCast.OutputListeners[0].LocalEndPoint;
+        string pls;
+        if (endpoint.Address.Equals(System.Net.IPAddress.Any))
+        {
+          pls = String.Format("http://localhost:{0}/pls/{1}{2}", endpoint.Port, channel_id.ToString("N"), ext);
+        }
+        else
+        {
+          pls = String.Format("http://{0}/pls/{1}{2}", endpoint.ToString(), channel_id.ToString("N"), ext);
+        }
+        System.Diagnostics.Process.Start(pls);
+      },
         () => IsChannelSelected);
       close = new Command(
         () => peerCast.CloseChannel(Channel.Channel),
@@ -112,74 +108,42 @@ namespace PeerCastStation.WPF.ChannelLists
         () => Channel.Channel.Reconnect(),
         () => IsChannelSelected);
       openContactUrl = new Command(() =>
+      {
+        var url = Channel.Channel.ChannelInfo.URL;
+        Uri uri;
+        if (!String.IsNullOrEmpty(url) && Uri.TryCreate(url, UriKind.Absolute, out uri))
         {
-          var url = Channel.Channel.ChannelInfo.URL;
-          Uri uri;
-          if (!String.IsNullOrEmpty(url) && Uri.TryCreate(url, UriKind.Absolute, out uri))
-          {
-            Process.Start(uri.ToString());
-          }
-        },
+          Process.Start(uri.ToString());
+        }
+      },
         () => IsChannelSelected);
       copyStreamUrl = new Command(() =>
+      {
+        var channel_id = Channel.Channel.ChannelID;
+        var endpoint = peerCast.OutputListeners[0].LocalEndPoint;
+        var ext = Channel.Channel.ChannelInfo.ContentExtension;
+        string url;
+        if (endpoint.Address.Equals(System.Net.IPAddress.Any))
         {
-          var channel_id = Channel.Channel.ChannelID;
-          var endpoint = peerCast.OutputListeners[0].LocalEndPoint;
-          var ext = Channel.Channel.ChannelInfo.ContentExtension;
-          string url;
-          if (endpoint.Address.Equals(System.Net.IPAddress.Any))
-          {
-            url = String.Format("http://localhost:{0}/stream/{1}{2}", endpoint.Port, channel_id.ToString("N"), ext);
-          }
-          else
-          {
-            url = String.Format("http://{0}/pls/{1}{2}", endpoint.ToString(), channel_id.ToString("N"), ext);
-          }
-          Clipboard.SetText(url);
-        },
+          url = String.Format("http://localhost:{0}/stream/{1}{2}", endpoint.Port, channel_id.ToString("N"), ext);
+        }
+        else
+        {
+          url = String.Format("http://{0}/pls/{1}{2}", endpoint.ToString(), channel_id.ToString("N"), ext);
+        }
+        Clipboard.SetText(url);
+      },
         () => IsChannelSelected && peerCast.OutputListeners.Count > 0);
       copyContactUrl = new Command(() =>
+      {
+        var url = Channel.Channel.ChannelInfo.URL;
+        Uri uri;
+        if (!String.IsNullOrEmpty(url) && Uri.TryCreate(url, UriKind.Absolute, out uri))
         {
-          var url = Channel.Channel.ChannelInfo.URL;
-          Uri uri;
-          if (!String.IsNullOrEmpty(url) && Uri.TryCreate(url, UriKind.Absolute, out uri))
-          {
-            Clipboard.SetText(uri.ToString());
-          }
-        },
+          Clipboard.SetText(uri.ToString());
+        }
+      },
         () => IsChannelSelected);
-
-      var sc = SynchronizationContext.Current;
-      onChannelChanged = (sender, e) => sc.Post(o => UpdateChannelList(), null);
-      peerCast.ChannelAdded += onChannelChanged;
-      peerCast.ChannelRemoved += onChannelChanged;
-    }
-
-    ~ChannelListViewModel()
-    {
-      this.Dispose(false);
-    }
-
-    public void Dispose()
-    {
-      GC.SuppressFinalize(this);
-      this.Dispose(true);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-      if (this.disposed)
-      {
-        return;
-      }
-      this.disposed = true;
-      if (disposing)
-      {
-        // マネージリソースの解放処理
-      }
-      // アンマネージリソースの解放処理
-      peerCast.ChannelAdded -= onChannelChanged;
-      peerCast.ChannelRemoved -= onChannelChanged;
     }
 
     internal void UpdateChannelList()

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Windows;
+using System.Windows.Threading;
 using PeerCastStation.Core;
 
 namespace PeerCastStation.WPF
@@ -24,6 +25,7 @@ namespace PeerCastStation.WPF
     {
       application = new Application();
       window = new MainWindow() { DataContext = viewModel };
+      viewModel.SynchronizationContext = new DispatcherSynchronizationContext();
     }
 
     public void Run(bool isShowWindow)
