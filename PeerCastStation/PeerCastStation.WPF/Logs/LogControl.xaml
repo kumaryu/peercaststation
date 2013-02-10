@@ -37,13 +37,16 @@
             <DockPanel>
                 <Button DockPanel.Dock="Right" Click="Button_Click" Content="..."/>
                 <FrameworkElement DockPanel.Dock="Right" Width="5"/>
-                <TextBox Name="outputFileName" Height="24" VerticalContentAlignment="Center"
+                <TextBox Name="outputFileName" Height="24"
+                         VerticalContentAlignment="Center"
                          Text="{Binding OutputFileName}"/>
             </DockPanel>
         </DockPanel>
-        <Button DockPanel.Dock="Bottom" Margin="3" Width="100" HorizontalAlignment="Right" Command="{Binding Clear}" Content="クリア"/>
+        <Button DockPanel.Dock="Bottom" Margin="3" Width="100" HorizontalAlignment="Right"
+                Content="クリア" Command="{Binding Clear}"/>
         <TextBox ScrollViewer.HorizontalScrollBarVisibility="Visible"
-                 Margin="3"
-                 AcceptsReturn="True" IsReadOnly="True" Text="{Binding Log, Mode=OneWay}"/>
+                 ScrollViewer.VerticalScrollBarVisibility="Visible"
+                 Margin="3" AcceptsReturn="True" IsReadOnly="True"
+                 Text="{Binding Log, Mode=OneWay}"/>
     </DockPanel>
 </UserControl>
