@@ -69,12 +69,7 @@ namespace PeerCastStation.WPF
       channelList = new ChannelListViewModel(peerCast);
       setting = new SettingViewModel(peerCast);
 
-      timer = new Timer(o =>
-      {
-        if (SynchronizationContext == null)
-          return;
-        SynchronizationContext.Post(p => UpdateStatus(), null);
-      }, null, 1000, 1000);
+      timer = new Timer(o => UpdateStatus(), null, 1000, 1000);
 
       versionChecker = new AppCastReader(
         new Uri(updateUrl, UriKind.Absolute), currentVersion);
@@ -119,14 +114,12 @@ namespace PeerCastStation.WPF
     private void UpdateStatus()
     {
       OnPropertyChanged("PortStatus");
-      channelList.UpdateChannelList();
+      SynchronizationContext.Post(o => channelList.UpdateChannelList(), null);
       log.UpdateLog();
     }
 
     private void OnChannelChanged(object sender, EventArgs e)
     {
-      if (SynchronizationContext == null)
-        return;
       SynchronizationContext.Post(o => channelList.UpdateChannelList(), null);
     }
   }

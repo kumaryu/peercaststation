@@ -57,7 +57,7 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
           connections.Add(new ChannelConnectionOutputItem(os));
         }
         if (conn != null)
-          Connection = connections.First(x => x.Equals(conn));
+          Connection = connections.FirstOrDefault(x => x.Equals(conn));
       }
     }
 
