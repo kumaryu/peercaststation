@@ -64,6 +64,7 @@ namespace PeerCastStation.GUI
       logFileNameText.Text       = Settings.Default.LogFileName;
       logToConsoleCheck.Checked  = Settings.Default.LogToConsole;
       logToGUICheck.Checked      = Settings.Default.LogToGUI;
+      channelCleanerLimit.Value = ChannelCleaner.InactiveLimit / 60000;
       OnUpdateSettings(null);
       timer.Interval = 1000;
       timer.Enabled = true;
@@ -305,6 +306,7 @@ namespace PeerCastStation.GUI
       peerCast.AccessController.MaxRelaysPerChannel = (int)maxRelaysPerChannel.Value;
       peerCast.AccessController.MaxPlaysPerChannel  = (int)maxDirectsPerChannel.Value;
       peerCast.AccessController.MaxUpstreamRate     = (int)maxUpstreamRate.Value;
+      ChannelCleaner.InactiveLimit = (int)(channelCleanerLimit.Value * 60000);
       if (peerCast.IsFirewalled.HasValue) {
         portOpenedLabel.Text = peerCast.IsFirewalled.Value ? "未開放" : "開放";
       }
