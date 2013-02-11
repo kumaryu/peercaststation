@@ -42,6 +42,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
@@ -64,6 +65,7 @@
     <Compile Include="RawContentReader.cs" />
     <Compile Include="Ringbuffer.cs" />
     <Compile Include="RingbufferStream.cs" />
+    <Compile Include="PecaSettings.cs" />
     <Compile Include="SourceStreamBase.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
