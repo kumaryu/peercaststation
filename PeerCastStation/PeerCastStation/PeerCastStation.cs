@@ -36,6 +36,7 @@ namespace PeerCastStation.Main
     public void Run()
     {
       LoadSettings();
+      peerCast.ChannelMonitors.Add(new ChannelCleaner(peerCast));
       var uis = userInterfaceFactories.Select(factory => factory.CreateUserInterface()).ToArray();
       foreach (var ui in uis) {
         ui.Start(this);
@@ -190,6 +191,7 @@ namespace PeerCastStation.Main
             }
           }
         }
+        ChannelCleaner.InactiveLimit = settings.ChannelCleanerInactiveLimit;
       }
       catch (FormatException)
       {
@@ -221,6 +223,7 @@ namespace PeerCastStation.Main
           Uri      = yellowpage.Uri,
         }
       ).ToArray();
+      settings.ChannelCleanerInactiveLimit = ChannelCleaner.InactiveLimit;
       settings.Save();
     }
 

@@ -50,6 +50,7 @@
     <Compile Include="Atom.cs" />
     <Compile Include="AtomCollectionExtensions.cs" />
     <Compile Include="Channel.cs" />
+    <Compile Include="ChannelCleaner.cs" />
     <Compile Include="Content.cs" />
     <Compile Include="Core.cs" />
     <Compile Include="Host.cs" />

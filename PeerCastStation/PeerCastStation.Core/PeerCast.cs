@@ -110,6 +110,11 @@ namespace PeerCastStation.Core
     private List<Channel> channels = new List<Channel>();
 
     /// <summary>
+    /// チャンネル管理オブジェクトのリストを取得します
+    /// </summary>
+    public IList<IChannelMonitor> ChannelMonitors { get; private set; }
+
+    /// <summary>
     /// チャンネルが追加された時に呼び出されます。
     /// </summary>
     public event ChannelChangedEventHandler ChannelAdded;
@@ -320,7 +325,7 @@ namespace PeerCastStation.Core
       var filever = System.Diagnostics.FileVersionInfo.GetVersionInfo(
         System.Reflection.Assembly.GetExecutingAssembly().Location);
       this.AgentName = String.Format("{0}/{1}", filever.ProductName, filever.ProductVersion);
-      this.SessionID   = Guid.NewGuid();
+      this.SessionID = Guid.NewGuid();
       var bcid = AtomCollectionExtensions.IDToByteArray(Guid.NewGuid());
       bcid[0] = 0x00;
       this.BroadcastID = AtomCollectionExtensions.ByteArrayToID(bcid);
@@ -333,6 +338,7 @@ namespace PeerCastStation.Core
       this.SourceStreamFactories = new List<ISourceStreamFactory>();
       this.OutputStreamFactories = new List<IOutputStreamFactory>();
       this.ContentReaderFactories = new List<IContentReaderFactory>();
+      this.ChannelMonitors = new List<IChannelMonitor>();
       foreach (var addr in Dns.GetHostAddresses(Dns.GetHostName())) {
         switch (addr.AddressFamily) {
         case AddressFamily.InterNetwork:
@@ -360,6 +366,25 @@ namespace PeerCastStation.Core
       }
       if (this.LocalAddress==null)  this.LocalAddress  = IPAddress.Loopback;
       if (this.LocalAddress6==null) this.LocalAddress6 = IPAddress.IPv6Loopback;
+      StartMonitor();
+    }
+
+    private AutoResetEvent stoppedEvent = new AutoResetEvent(false);
+    private RegisteredWaitHandle monitorThreadPool = null;
+    private void StartMonitor()
+    {
+      monitorThreadPool = ThreadPool.RegisterWaitForSingleObject(stoppedEvent, (state,timed_out) => {
+        if (!timed_out) {
+          monitorThreadPool.Unregister(stoppedEvent);
+        }
+        else {
+          lock (ChannelMonitors) {
+            foreach (var monitor in ChannelMonitors) {
+              monitor.OnTimer();
+            }
+          }
+        }
+      }, null, 5000, false);
     }
 
     public bool? IsFirewalled { get; set; }
@@ -477,6 +502,7 @@ namespace PeerCastStation.Core
     public void Stop()
     {
       logger.Info("Stopping PeerCast");
+      stoppedEvent.Set();
       foreach (var listener in outputListeners) {
         listener.Stop();
       }
