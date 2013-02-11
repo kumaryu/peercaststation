@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.IO;
+using System.Xml;
 
 namespace PeerCastStation.Core
 {
@@ -12,6 +13,7 @@ namespace PeerCastStation.Core
 
     static public IEnumerable<object> Values {
       get { return values.ToArray(); }
+      set { values = new List<object>(value); }
     }
 
     static public T Get<T>() where T:class, new()
@@ -55,8 +57,8 @@ namespace PeerCastStation.Core
     {
       System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(file));
       var serializer = new NetDataContractSerializer();
-      using (var fd=System.IO.File.Create(file)) {
-        serializer.Serialize(fd, values.ToArray());
+      using (var writer=XmlWriter.Create(System.IO.File.Create(file), new XmlWriterSettings { Indent = true, })) {
+        serializer.WriteObject(writer, values.ToArray());
       }
     }
 

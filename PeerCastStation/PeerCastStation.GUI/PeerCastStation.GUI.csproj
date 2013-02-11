@@ -68,6 +68,7 @@
     <Compile Include="BroadcastDialog.Designer.cs">
       <DependentUpon>BroadcastDialog.cs</DependentUpon>
     </Compile>
+    <Compile Include="GUISettings.cs" />
     <Compile Include="ListenerEditDialog.cs">
       <SubType>Form</SubType>
     </Compile>

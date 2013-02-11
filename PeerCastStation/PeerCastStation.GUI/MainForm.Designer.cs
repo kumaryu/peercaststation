@@ -132,6 +132,8 @@ namespace PeerCastStation.GUI
       this.maxDirects = new System.Windows.Forms.NumericUpDown();
       this.maxRelaysPerChannel = new System.Windows.Forms.NumericUpDown();
       this.maxRelays = new System.Windows.Forms.NumericUpDown();
+      this.channelCleanerLimit = new System.Windows.Forms.NumericUpDown();
+      this.label7 = new System.Windows.Forms.Label();
       this.groupBox4 = new System.Windows.Forms.GroupBox();
       this.portRemoveButton = new System.Windows.Forms.Button();
       this.portAddButton = new System.Windows.Forms.Button();
@@ -157,8 +159,6 @@ namespace PeerCastStation.GUI
       this.statusBar = new System.Windows.Forms.StatusStrip();
       this.portLabel = new System.Windows.Forms.ToolStripStatusLabel();
       this.portOpenedLabel = new System.Windows.Forms.ToolStripStatusLabel();
-      this.label7 = new System.Windows.Forms.Label();
-      this.channelCleanerLimit = new System.Windows.Forms.NumericUpDown();
       showGUIMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       quitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       label21 = new System.Windows.Forms.Label();
@@ -215,10 +215,10 @@ namespace PeerCastStation.GUI
       ((System.ComponentModel.ISupportInitialize)(this.maxDirects)).BeginInit();
       ((System.ComponentModel.ISupportInitialize)(this.maxRelaysPerChannel)).BeginInit();
       ((System.ComponentModel.ISupportInitialize)(this.maxRelays)).BeginInit();
+      ((System.ComponentModel.ISupportInitialize)(this.channelCleanerLimit)).BeginInit();
       this.groupBox4.SuspendLayout();
       this.tabLog.SuspendLayout();
       this.statusBar.SuspendLayout();
-      ((System.ComponentModel.ISupportInitialize)(this.channelCleanerLimit)).BeginInit();
       this.SuspendLayout();
       // 
       // showGUIMenuItem
@@ -580,7 +580,7 @@ namespace PeerCastStation.GUI
       this.tabChannels.Location = new System.Drawing.Point(4, 22);
       this.tabChannels.Name = "tabChannels";
       this.tabChannels.Padding = new System.Windows.Forms.Padding(3);
-      this.tabChannels.Size = new System.Drawing.Size(437, 470);
+      this.tabChannels.Size = new System.Drawing.Size(437, 490);
       this.tabChannels.TabIndex = 1;
       this.tabChannels.Text = "チャンネル一覧";
       this.tabChannels.UseVisualStyleBackColor = true;
@@ -603,8 +603,8 @@ namespace PeerCastStation.GUI
       // splitContainer1.Panel2
       // 
       this.splitContainer1.Panel2.Controls.Add(this.tabControl2);
-      this.splitContainer1.Size = new System.Drawing.Size(431, 464);
-      this.splitContainer1.SplitterDistance = 165;
+      this.splitContainer1.Size = new System.Drawing.Size(431, 484);
+      this.splitContainer1.SplitterDistance = 172;
       this.splitContainer1.TabIndex = 9;
       // 
       // channelStart
@@ -661,7 +661,7 @@ namespace PeerCastStation.GUI
       this.channelList.ItemHeight = 12;
       this.channelList.Location = new System.Drawing.Point(0, 0);
       this.channelList.Name = "channelList";
-      this.channelList.Size = new System.Drawing.Size(361, 165);
+      this.channelList.Size = new System.Drawing.Size(361, 172);
       this.channelList.TabIndex = 0;
       this.channelList.SelectedIndexChanged += new System.EventHandler(this.channelList_SelectedIndexChanged);
       // 
@@ -685,7 +685,7 @@ namespace PeerCastStation.GUI
       this.tabControl2.Location = new System.Drawing.Point(0, 0);
       this.tabControl2.Name = "tabControl2";
       this.tabControl2.SelectedIndex = 0;
-      this.tabControl2.Size = new System.Drawing.Size(431, 295);
+      this.tabControl2.Size = new System.Drawing.Size(431, 308);
       this.tabControl2.TabIndex = 0;
       this.tabControl2.SelectedIndexChanged += new System.EventHandler(this.channelList_SelectedIndexChanged);
       // 
@@ -697,7 +697,7 @@ namespace PeerCastStation.GUI
       this.tabPage1.Location = new System.Drawing.Point(4, 22);
       this.tabPage1.Name = "tabPage1";
       this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-      this.tabPage1.Size = new System.Drawing.Size(423, 269);
+      this.tabPage1.Size = new System.Drawing.Size(423, 282);
       this.tabPage1.TabIndex = 0;
       this.tabPage1.Text = "接続一覧";
       this.tabPage1.UseVisualStyleBackColor = true;
@@ -736,7 +736,7 @@ namespace PeerCastStation.GUI
       this.connectionList.ItemHeight = 12;
       this.connectionList.Location = new System.Drawing.Point(6, 6);
       this.connectionList.Name = "connectionList";
-      this.connectionList.Size = new System.Drawing.Size(351, 257);
+      this.connectionList.Size = new System.Drawing.Size(351, 270);
       this.connectionList.TabIndex = 2;
       this.connectionList.SelectedIndexChanged += new System.EventHandler(this.connectionList_SelectedIndexChanged);
       // 
@@ -748,7 +748,7 @@ namespace PeerCastStation.GUI
       this.tabPage3.Controls.Add(this.groupBox1);
       this.tabPage3.Location = new System.Drawing.Point(4, 22);
       this.tabPage3.Name = "tabPage3";
-      this.tabPage3.Size = new System.Drawing.Size(423, 269);
+      this.tabPage3.Size = new System.Drawing.Size(423, 282);
       this.tabPage3.TabIndex = 2;
       this.tabPage3.Text = "チャンネル情報";
       this.tabPage3.UseVisualStyleBackColor = true;
@@ -940,7 +940,7 @@ namespace PeerCastStation.GUI
       this.tabPage2.Location = new System.Drawing.Point(4, 22);
       this.tabPage2.Name = "tabPage2";
       this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-      this.tabPage2.Size = new System.Drawing.Size(423, 269);
+      this.tabPage2.Size = new System.Drawing.Size(423, 282);
       this.tabPage2.TabIndex = 1;
       this.tabPage2.Text = "リレーツリー";
       this.tabPage2.UseVisualStyleBackColor = true;
@@ -963,7 +963,7 @@ namespace PeerCastStation.GUI
             | System.Windows.Forms.AnchorStyles.Right)));
       this.relayTree.Location = new System.Drawing.Point(6, 6);
       this.relayTree.Name = "relayTree";
-      this.relayTree.Size = new System.Drawing.Size(351, 257);
+      this.relayTree.Size = new System.Drawing.Size(351, 270);
       this.relayTree.TabIndex = 5;
       // 
       // tabSettings
@@ -1006,9 +1006,8 @@ namespace PeerCastStation.GUI
       // showWindowOnStartup
       // 
       this.showWindowOnStartup.AutoSize = true;
-      this.showWindowOnStartup.Checked = global::PeerCastStation.GUI.Properties.Settings.Default.ShowWindowOnStartup;
+      this.showWindowOnStartup.Checked = true;
       this.showWindowOnStartup.CheckState = System.Windows.Forms.CheckState.Checked;
-      this.showWindowOnStartup.DataBindings.Add(new System.Windows.Forms.Binding("Checked", global::PeerCastStation.GUI.Properties.Settings.Default, "ShowWindowOnStartup", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
       this.showWindowOnStartup.Location = new System.Drawing.Point(8, 18);
       this.showWindowOnStartup.Name = "showWindowOnStartup";
       this.showWindowOnStartup.Size = new System.Drawing.Size(164, 16);
@@ -1172,6 +1171,26 @@ namespace PeerCastStation.GUI
       this.maxRelays.Size = new System.Drawing.Size(62, 19);
       this.maxRelays.TabIndex = 2;
       // 
+      // channelCleanerLimit
+      // 
+      this.tableLayoutPanel3.SetColumnSpan(this.channelCleanerLimit, 4);
+      this.channelCleanerLimit.Dock = System.Windows.Forms.DockStyle.Fill;
+      this.channelCleanerLimit.Location = new System.Drawing.Point(181, 73);
+      this.channelCleanerLimit.Name = "channelCleanerLimit";
+      this.channelCleanerLimit.Size = new System.Drawing.Size(239, 19);
+      this.channelCleanerLimit.TabIndex = 55;
+      // 
+      // label7
+      // 
+      this.label7.AutoSize = true;
+      this.label7.Dock = System.Windows.Forms.DockStyle.Fill;
+      this.label7.Location = new System.Drawing.Point(3, 70);
+      this.label7.Name = "label7";
+      this.label7.Size = new System.Drawing.Size(172, 20);
+      this.label7.TabIndex = 56;
+      this.label7.Text = "チャンネル自動切断までの時間(分)";
+      this.label7.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+      // 
       // groupBox4
       // 
       this.groupBox4.AutoSize = true;
@@ -1310,7 +1329,7 @@ namespace PeerCastStation.GUI
       this.tabLog.Location = new System.Drawing.Point(4, 22);
       this.tabLog.Name = "tabLog";
       this.tabLog.Padding = new System.Windows.Forms.Padding(3);
-      this.tabLog.Size = new System.Drawing.Size(437, 470);
+      this.tabLog.Size = new System.Drawing.Size(437, 490);
       this.tabLog.TabIndex = 3;
       this.tabLog.Text = "ログ";
       this.tabLog.UseVisualStyleBackColor = true;
@@ -1463,26 +1482,6 @@ namespace PeerCastStation.GUI
       this.portOpenedLabel.Size = new System.Drawing.Size(134, 18);
       this.portOpenedLabel.Text = "toolStripStatusLabel1";
       // 
-      // label7
-      // 
-      this.label7.AutoSize = true;
-      this.label7.Dock = System.Windows.Forms.DockStyle.Fill;
-      this.label7.Location = new System.Drawing.Point(3, 70);
-      this.label7.Name = "label7";
-      this.label7.Size = new System.Drawing.Size(172, 20);
-      this.label7.TabIndex = 56;
-      this.label7.Text = "チャンネル自動切断までの時間(分)";
-      this.label7.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-      // 
-      // channelCleanerLimit
-      // 
-      this.tableLayoutPanel3.SetColumnSpan(this.channelCleanerLimit, 4);
-      this.channelCleanerLimit.Dock = System.Windows.Forms.DockStyle.Fill;
-      this.channelCleanerLimit.Location = new System.Drawing.Point(181, 73);
-      this.channelCleanerLimit.Name = "channelCleanerLimit";
-      this.channelCleanerLimit.Size = new System.Drawing.Size(239, 19);
-      this.channelCleanerLimit.TabIndex = 55;
-      // 
       // MainForm
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -1528,13 +1527,13 @@ namespace PeerCastStation.GUI
       ((System.ComponentModel.ISupportInitialize)(this.maxDirects)).EndInit();
       ((System.ComponentModel.ISupportInitialize)(this.maxRelaysPerChannel)).EndInit();
       ((System.ComponentModel.ISupportInitialize)(this.maxRelays)).EndInit();
+      ((System.ComponentModel.ISupportInitialize)(this.channelCleanerLimit)).EndInit();
       this.groupBox4.ResumeLayout(false);
       this.groupBox4.PerformLayout();
       this.tabLog.ResumeLayout(false);
       this.tabLog.PerformLayout();
       this.statusBar.ResumeLayout(false);
       this.statusBar.PerformLayout();
-      ((System.ComponentModel.ISupportInitialize)(this.channelCleanerLimit)).EndInit();
       this.ResumeLayout(false);
       this.PerformLayout();
 
