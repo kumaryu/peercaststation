@@ -27,17 +27,19 @@ namespace PeerCastStation.GUI
 {
   public partial class MainForm : Form
   {
-    private PeerCastStation.Core.PeerCast peerCast;
+    private PeerCastApplication application;
+    private PeerCast peerCast;
     private LogWriter  guiWriter = new LogWriter(1000);
     private Timer      timer = new Timer();
     private VersionDescription newVersionInfo = null;
     private NotifyIcon notifyIcon;
     private AppCastReader versionChecker;
 
-    public MainForm(PeerCast peercast)
+    public MainForm(PeerCastApplication app)
     {
       InitializeComponent();
-      peerCast = peercast;
+      application = app;
+      peerCast = app.PeerCast;
       if (PlatformID.Win32NT==Environment.OSVersion.Platform) {
         notifyIcon = new NotifyIcon(this.components);
         notifyIcon.Icon = this.Icon;
@@ -51,7 +53,7 @@ namespace PeerCastStation.GUI
         versionChecker.NewVersionFound += versionChecker_Found;
         versionChecker.CheckVersion();
       }
-      this.Visible = PecaSettings.Get<GUISettings>().ShowWindowOnStartup;
+      this.Visible = application.Settings.Get<GUISettings>().ShowWindowOnStartup;
     }
 
     private void MainForm_Load(object sender, EventArgs e)
@@ -65,7 +67,7 @@ namespace PeerCastStation.GUI
       logToConsoleCheck.Checked  = Settings.Default.LogToConsole;
       logToGUICheck.Checked      = Settings.Default.LogToGUI;
       channelCleanerLimit.Value = ChannelCleaner.InactiveLimit / 60000;
-      showWindowOnStartup.Checked = PecaSettings.Get<GUISettings>().ShowWindowOnStartup;
+      showWindowOnStartup.Checked = application.Settings.Get<GUISettings>().ShowWindowOnStartup;
       OnUpdateSettings(null);
       timer.Interval = 1000;
       timer.Enabled = true;
@@ -327,7 +329,7 @@ namespace PeerCastStation.GUI
 
     private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
     {
-      PecaSettings.Get<GUISettings>().ShowWindowOnStartup = showWindowOnStartup.Checked;
+      application.Settings.Get<GUISettings>().ShowWindowOnStartup = showWindowOnStartup.Checked;
       Settings.Default.Save();
       Logger.RemoveWriter(guiWriter);
       Settings.Default.PropertyChanged -= SettingsPropertyChanged;

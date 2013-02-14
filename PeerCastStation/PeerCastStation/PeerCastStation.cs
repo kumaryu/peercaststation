@@ -20,6 +20,12 @@ namespace PeerCastStation.Main
       get { return plugins; }
     }
 
+    private PecaSettings settings = new PecaSettings(PecaSettings.DefaultFileName);
+    public override PecaSettings Settings
+    {
+      get { return settings; }
+    }
+
     public Application()
     {
       LoadPlugins();
@@ -143,28 +149,29 @@ namespace PeerCastStation.Main
 
     void LoadSettings()
     {
-      PeerCastStationSettings settings;
-      if (!PecaSettings.Load()) {
-        settings = PecaSettings.Get<PeerCastStationSettings>();
-        settings.Import(PeerCastStation.Properties.Settings.Default);
+      settings.Load();
+      PeerCastStationSettings s;
+      if (settings.Contains(typeof(PeerCastStationSettings))) {
+        s = settings.Get<PeerCastStationSettings>();
       }
       else {
-        settings = PecaSettings.Get<PeerCastStationSettings>();
+        s = settings.Get<PeerCastStationSettings>();
+        s.Import(PeerCastStation.Properties.Settings.Default);
       }
       try {
-        if (settings.AccessController!=null) {
-          peerCast.AccessController.MaxPlays  = settings.AccessController.MaxDirects;
-          peerCast.AccessController.MaxRelays = settings.AccessController.MaxRelays;
-          peerCast.AccessController.MaxPlaysPerChannel  = settings.AccessController.MaxDirectsPerChannel;
-          peerCast.AccessController.MaxRelaysPerChannel = settings.AccessController.MaxRelaysPerChannel;
-          peerCast.AccessController.MaxUpstreamRate     = settings.AccessController.MaxUpstreamRate;
+        if (s.AccessController!=null) {
+          peerCast.AccessController.MaxPlays  = s.AccessController.MaxDirects;
+          peerCast.AccessController.MaxRelays = s.AccessController.MaxRelays;
+          peerCast.AccessController.MaxPlaysPerChannel  = s.AccessController.MaxDirectsPerChannel;
+          peerCast.AccessController.MaxRelaysPerChannel = s.AccessController.MaxRelaysPerChannel;
+          peerCast.AccessController.MaxUpstreamRate     = s.AccessController.MaxUpstreamRate;
         }
-        if ( settings.BroadcastID!=Guid.Empty &&
-            (AtomCollectionExtensions.IDToByteArray(settings.BroadcastID)[0] & 0x01)==0) {
-          peerCast.BroadcastID = settings.BroadcastID;
+        if ( s.BroadcastID!=Guid.Empty &&
+            (AtomCollectionExtensions.IDToByteArray(s.BroadcastID)[0] & 0x01)==0) {
+          peerCast.BroadcastID = s.BroadcastID;
         }
-        if (settings.Listeners!=null) {
-          foreach (var listener in settings.Listeners) {
+        if (s.Listeners!=null) {
+          foreach (var listener in s.Listeners) {
             try {
               peerCast.StartListen(listener.EndPoint, listener.LocalAccepts, listener.GlobalAccepts);
             }
@@ -188,8 +195,8 @@ namespace PeerCastStation.Main
             logger.Error(e);
           }
         }
-        if (settings.YellowPages!=null) {
-          foreach (var yellowpage in settings.YellowPages) {
+        if (s.YellowPages!=null) {
+          foreach (var yellowpage in s.YellowPages) {
             try {
               peerCast.AddYellowPage(yellowpage.Protocol, yellowpage.Name, yellowpage.Uri);
             }
@@ -198,40 +205,40 @@ namespace PeerCastStation.Main
             }
           }
         }
-        ChannelCleaner.InactiveLimit = PecaSettings.Get<ChannelCleanerSettings>().InactiveLimit;
       }
       catch (FormatException)
       {
       }
+      ChannelCleaner.InactiveLimit = settings.Get<ChannelCleanerSettings>().InactiveLimit;
     }
 
     void SaveSettings()
     {
-      var settings = PecaSettings.Get<PeerCastStationSettings>();
-      settings.AccessController = new PeerCastStationSettings.AccessControllerSettings {
+      var s = settings.Get<PeerCastStationSettings>();
+      s.AccessController = new PeerCastStationSettings.AccessControllerSettings {
         MaxDirects           = peerCast.AccessController.MaxPlays,
         MaxRelays            = peerCast.AccessController.MaxRelays,
         MaxDirectsPerChannel = peerCast.AccessController.MaxPlaysPerChannel,
         MaxRelaysPerChannel  = peerCast.AccessController.MaxRelaysPerChannel,
         MaxUpstreamRate      = peerCast.AccessController.MaxUpstreamRate,
       };
-      settings.BroadcastID = peerCast.BroadcastID;
-      settings.Listeners = peerCast.OutputListeners.Select(listener => 
+      s.BroadcastID = peerCast.BroadcastID;
+      s.Listeners = peerCast.OutputListeners.Select(listener => 
         new PeerCastStationSettings.ListenerSettings {
           EndPoint      = listener.LocalEndPoint,
           GlobalAccepts = listener.GlobalOutputAccepts,
           LocalAccepts  = listener.LocalOutputAccepts,
         }
       ).ToArray();
-      settings.YellowPages = peerCast.YellowPages.Select(yellowpage =>
+      s.YellowPages = peerCast.YellowPages.Select(yellowpage =>
         new PeerCastStationSettings.YellowPageSettings {
           Protocol = yellowpage.Protocol,
           Name     = yellowpage.Name,
           Uri      = yellowpage.Uri,
         }
       ).ToArray();
-      PecaSettings.Get<ChannelCleanerSettings>().InactiveLimit = ChannelCleaner.InactiveLimit;
-      PecaSettings.Save();
+      settings.Get<ChannelCleanerSettings>().InactiveLimit = ChannelCleaner.InactiveLimit;
+      settings.Save();
     }
 
     static Mutex sharedMutex;

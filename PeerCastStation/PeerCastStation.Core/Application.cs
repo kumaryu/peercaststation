@@ -50,6 +50,7 @@ namespace PeerCastStation.Core
       get { return current; }
       set { current = value; }
     }
+    public abstract PecaSettings Settings { get; }
     public abstract IEnumerable<Type> Plugins { get; }
     public abstract PeerCast PeerCast { get; }
     public abstract void Stop();
