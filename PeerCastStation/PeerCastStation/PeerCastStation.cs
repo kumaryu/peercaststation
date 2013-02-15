@@ -54,6 +54,7 @@ namespace PeerCastStation.Main
       SaveSettings();
 
       peerCast.Stop();
+      Logger.Close();
     }
 
     public static readonly string PluginPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);

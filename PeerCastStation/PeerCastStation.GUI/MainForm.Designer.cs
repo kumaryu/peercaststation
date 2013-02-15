@@ -31,9 +31,6 @@ namespace PeerCastStation.GUI
       if (disposing && (components != null)) {
         components.Dispose();
       }
-      if (disposing && (logFileWriter != null)) {
-        logFileWriter.Close();
-      }
       base.Dispose(disposing);
     }
 

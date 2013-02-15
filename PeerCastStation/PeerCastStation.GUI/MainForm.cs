@@ -58,17 +58,11 @@ namespace PeerCastStation.GUI
 
     private void MainForm_Load(object sender, EventArgs e)
     {
-      Settings.Default.PropertyChanged += SettingsPropertyChanged;
+      Logger.AddWriter(guiWriter);
       peerCast.ChannelAdded      += ChannelAdded;
       peerCast.ChannelRemoved    += ChannelRemoved;
-      logLevelList.SelectedIndex = Settings.Default.LogLevel;
-      logToFileCheck.Checked     = Settings.Default.LogToFile;
-      logFileNameText.Text       = Settings.Default.LogFileName;
-      logToConsoleCheck.Checked  = Settings.Default.LogToConsole;
-      logToGUICheck.Checked      = Settings.Default.LogToGUI;
       channelCleanerLimit.Value = ChannelCleaner.InactiveLimit / 60000;
       showWindowOnStartup.Checked = application.Settings.Get<GUISettings>().ShowWindowOnStartup;
-      OnUpdateSettings(null);
       timer.Interval = 1000;
       timer.Enabled = true;
       timer.Tick += (s, args) => {
@@ -124,66 +118,6 @@ namespace PeerCastStation.GUI
     void UpdateLogText()
     {
       logText.Text = guiWriter.ToString();
-    }
-
-    private void OnUpdateSettings(string property_name)
-    {
-      if (property_name==null || property_name=="LogLevel") {
-        switch (Settings.Default.LogLevel) {
-        case 0: Logger.Level = LogLevel.None;  break;
-        case 1: Logger.Level = LogLevel.Fatal; break;
-        case 2: Logger.Level = LogLevel.Error; break;
-        case 3: Logger.Level = LogLevel.Warn;  break;
-        case 4: Logger.Level = LogLevel.Info;  break;
-        case 5: Logger.Level = LogLevel.Debug; break;
-        }
-      }
-      if (property_name==null || property_name=="LogToFile") {
-        if (logFileWriter!=null) {
-          Logger.RemoveWriter(logFileWriter);
-          if (Settings.Default.LogToFile) {
-            Logger.AddWriter(logFileWriter);
-          }
-        }
-      }
-      if (property_name==null || property_name=="LogFileName") {
-        if (logFileWriter!=null) {
-          Logger.RemoveWriter(logFileWriter);
-          logFileWriter.Close();
-          logFileWriter = null;
-        }
-        if (Settings.Default.LogFileName!=null && Settings.Default.LogFileName!="") {
-          try {
-            logFileWriter = System.IO.File.AppendText(Settings.Default.LogFileName);
-          }
-          catch (UnauthorizedAccessException)          { logFileWriter = null; }
-          catch (ArgumentException)                    { logFileWriter = null; }
-          catch (System.IO.PathTooLongException)       { logFileWriter = null; }
-          catch (System.IO.DirectoryNotFoundException) { logFileWriter = null; }
-          catch (NotSupportedException)                { logFileWriter = null; }
-          catch (System.IO.IOException)                { logFileWriter = null; }
-        }
-        if (logFileWriter!=null && Settings.Default.LogToFile) {
-          Logger.AddWriter(logFileWriter);
-        }
-      }
-      if (property_name==null || property_name=="LogToConsole") {
-        Logger.RemoveWriter(System.Console.Error);
-        if (Settings.Default.LogToConsole) {
-          Logger.AddWriter(System.Console.Error);
-        }
-      }
-      if (property_name==null || property_name=="LogToGUI") {
-        Logger.RemoveWriter(guiWriter);
-        if (Settings.Default.LogToGUI) {
-          Logger.AddWriter(guiWriter);
-        }
-      }
-    }
-
-    private void SettingsPropertyChanged(object sender, PropertyChangedEventArgs e)
-    {
-      OnUpdateSettings(e.PropertyName);
     }
 
     private class ChannelListItem
@@ -330,9 +264,7 @@ namespace PeerCastStation.GUI
     private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
     {
       application.Settings.Get<GUISettings>().ShowWindowOnStartup = showWindowOnStartup.Checked;
-      Settings.Default.Save();
       Logger.RemoveWriter(guiWriter);
-      Settings.Default.PropertyChanged -= SettingsPropertyChanged;
       peerCast.ChannelAdded   -= ChannelAdded;
       peerCast.ChannelRemoved -= ChannelRemoved;
       Application.ExitThread();
@@ -689,32 +621,58 @@ namespace PeerCastStation.GUI
       connectionList.EndUpdate();
     }
 
-    private System.IO.TextWriter logFileWriter = null;
+    private void logLevelList_SelectedIndexChanged(object sender, EventArgs e)
+    {
+      switch (logLevelList.SelectedIndex) {
+      case 0: Logger.Level = LogLevel.None;  break;
+      case 1: Logger.Level = LogLevel.Fatal; break;
+      case 2: Logger.Level = LogLevel.Error; break;
+      case 3: Logger.Level = LogLevel.Warn;  break;
+      case 4: Logger.Level = LogLevel.Info;  break;
+      case 5: Logger.Level = LogLevel.Debug; break;
+      }
+    }
+
     private void logToFileCheck_CheckedChanged(object sender, EventArgs e)
     {
-      Settings.Default.LogToFile = logToFileCheck.Checked;
+      if (logToFileCheck.Checked) {
+        Logger.OutputTarget |= LoggerOutputTarget.File;
+      }
+      else {
+        Logger.OutputTarget &= ~LoggerOutputTarget.File;
+      }
     }
 
     private void logToConsoleCheck_CheckedChanged(object sender, EventArgs e)
     {
-      Settings.Default.LogToConsole = logToConsoleCheck.Checked;
+      if (logToConsoleCheck.Checked) {
+        Logger.OutputTarget |= LoggerOutputTarget.Console;
+      }
+      else {
+        Logger.OutputTarget &= ~LoggerOutputTarget.Console;
+      }
     }
 
     private void logToGUICheck_CheckedChanged(object sender, EventArgs e)
     {
-      Settings.Default.LogToGUI = logToGUICheck.Checked;
+      if (logToGUICheck.Checked) {
+        Logger.OutputTarget |= LoggerOutputTarget.UserInterface;
+      }
+      else {
+        Logger.OutputTarget &= ~LoggerOutputTarget.UserInterface;
+      }
     }
 
     private void logFileNameText_Validated(object sender, EventArgs e)
     {
-      Settings.Default.LogFileName = logFileNameText.Text;
+      Logger.LogFileName = logFileNameText.Text;
     }
 
     private void selectLogFileName_Click(object sender, EventArgs e)
     {
       if (logSaveFileDialog.ShowDialog(this)==DialogResult.OK) {
         logFileNameText.Text = logSaveFileDialog.FileName;
-        Settings.Default.LogFileName = logSaveFileDialog.FileName;
+        Logger.LogFileName = logFileNameText.Text;
       }
     }
 
@@ -722,11 +680,6 @@ namespace PeerCastStation.GUI
     {
       guiWriter.Clear();
       logText.ResetText();
-    }
-
-    private void logLevelList_SelectedIndexChanged(object sender, EventArgs e)
-    {
-      Settings.Default.LogLevel = logLevelList.SelectedIndex;
     }
 
     private void channelBump_Click(object sender, EventArgs e)
@@ -848,6 +801,13 @@ namespace PeerCastStation.GUI
         portLocalInterface.Enabled  = false;
         yellowPagesList.Items.Clear();
         yellowPagesList.Items.AddRange(peerCast.YellowPages.Select(yp => new YellowPageItem(yp)).ToArray());
+      }
+      if (mainTab.SelectedTab==tabLog) {
+        logFileNameText.Text = Logger.LogFileName;
+        logLevelList.SelectedIndex = (int)Logger.Level;
+        logToConsoleCheck.Checked = (Logger.OutputTarget & LoggerOutputTarget.Console)!=0;
+        logToGUICheck.Checked     = (Logger.OutputTarget & LoggerOutputTarget.UserInterface)!=0;
+        logToFileCheck.Checked    = (Logger.OutputTarget & LoggerOutputTarget.File)!=0;
       }
     }
 

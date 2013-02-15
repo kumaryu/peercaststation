@@ -1,16 +1,23 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.ComponentModel;
 
 namespace PeerCastStation.GUI
 {
   public class GUISettings
+    : INotifyPropertyChanged
   {
-    public bool ShowWindowOnStartup { get; set; }
-    public GUISettings()
+    private bool showWindowOnStartup = true;
+
+    public bool ShowWindowOnStartup {
+      get { return showWindowOnStartup; }
+      set { showWindowOnStartup = value; OnPropertyChanged("ShowWindowOnStartup"); }
+    }
+
+    public event PropertyChangedEventHandler PropertyChanged;
+    private void OnPropertyChanged(string name)
     {
-      this.ShowWindowOnStartup = true;
+      if (this.PropertyChanged==null) return;
+      this.PropertyChanged(this, new PropertyChangedEventArgs(name));
     }
   }
 }
