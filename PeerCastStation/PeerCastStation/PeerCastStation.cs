@@ -160,6 +160,11 @@ namespace PeerCastStation.Main
         s.Import(PeerCastStation.Properties.Settings.Default);
       }
       try {
+        if (s.Logger!=null) {
+          Logger.Level        = s.Logger.Level;
+          Logger.LogFileName  = s.Logger.LogFileName;
+          Logger.OutputTarget = s.Logger.OutputTarget;
+        }
         if (s.AccessController!=null) {
           peerCast.AccessController.MaxPlays  = s.AccessController.MaxDirects;
           peerCast.AccessController.MaxRelays = s.AccessController.MaxRelays;
@@ -216,6 +221,11 @@ namespace PeerCastStation.Main
     void SaveSettings()
     {
       var s = settings.Get<PeerCastStationSettings>();
+      s.Logger = new PeerCastStationSettings.LoggerSettings {
+        Level        = Logger.Level,
+        LogFileName  = Logger.LogFileName,
+        OutputTarget = Logger.OutputTarget,
+      };
       s.AccessController = new PeerCastStationSettings.AccessControllerSettings {
         MaxDirects           = peerCast.AccessController.MaxPlays,
         MaxRelays            = peerCast.AccessController.MaxRelays,

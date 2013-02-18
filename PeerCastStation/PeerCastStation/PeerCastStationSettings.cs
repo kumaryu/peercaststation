@@ -17,6 +17,22 @@ namespace PeerCastStation
 
   public class PeerCastStationSettings
   {
+    public class LoggerSettings
+    {
+      public LogLevel           Level        { get; set; }
+      public LoggerOutputTarget OutputTarget { get; set; }
+      public string             LogFileName  { get; set; }
+
+      public LoggerSettings()
+      {
+        this.Level = LogLevel.Warn;
+        this.OutputTarget =
+          LoggerOutputTarget.Debug |
+          LoggerOutputTarget.Console |
+          LoggerOutputTarget.UserInterface;
+      }
+    }
+
     public class ListenerSettings
     {
       public System.Net.IPEndPoint EndPoint { get; set; }
@@ -76,12 +92,14 @@ namespace PeerCastStation
     }
 
     public Guid BroadcastID { get; set; }
+    public LoggerSettings           Logger           { get; set; }
     public ListenerSettings[]       Listeners        { get; set; }
     public AccessControllerSettings AccessController { get; set; }
     public YellowPageSettings[]     YellowPages      { get; set; }
 
     public PeerCastStationSettings()
     {
+      Logger           = new LoggerSettings();
       Listeners        = new ListenerSettings[0];
       AccessController = new AccessControllerSettings();
       YellowPages      = new YellowPageSettings[0];
