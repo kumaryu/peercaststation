@@ -1427,6 +1427,7 @@ namespace PeerCastStation.GUI
       // 
       this.logLevelList.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+      this.logLevelList.DisplayMember = "Text";
       this.logLevelList.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
       this.logLevelList.FormattingEnabled = true;
       this.logLevelList.Items.AddRange(new object[] {
@@ -1440,7 +1441,8 @@ namespace PeerCastStation.GUI
       this.logLevelList.Name = "logLevelList";
       this.logLevelList.Size = new System.Drawing.Size(322, 20);
       this.logLevelList.TabIndex = 2;
-      this.logLevelList.SelectedIndexChanged += new System.EventHandler(this.logLevelList_SelectedIndexChanged);
+      this.logLevelList.ValueMember = "Level";
+      this.logLevelList.SelectedValueChanged += new System.EventHandler(this.logLevelList_SelectedValueChanged);
       // 
       // label5
       // 

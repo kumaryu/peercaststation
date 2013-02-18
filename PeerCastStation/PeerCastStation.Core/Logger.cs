@@ -186,6 +186,7 @@ namespace PeerCastStation.Core
         TraceLevel level = generalSwitch.Level;
         switch (value) {
         case LogLevel.None:  level = TraceLevel.Off; break;
+        case LogLevel.Fatal: level = TraceLevel.Error; break;
         case LogLevel.Error: level = TraceLevel.Error; break;
         case LogLevel.Warn:  level = TraceLevel.Warning; break;
         case LogLevel.Info:  level = TraceLevel.Info; break;

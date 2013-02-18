@@ -56,6 +56,12 @@ namespace PeerCastStation.GUI
       this.Visible = application.Settings.Get<GUISettings>().ShowWindowOnStartup;
     }
 
+    public class LogLevelItem
+    {
+      public string Text { get; set; }
+      public LogLevel Level { get; set; }
+    }
+
     private void MainForm_Load(object sender, EventArgs e)
     {
       Logger.AddWriter(guiWriter);
@@ -63,6 +69,13 @@ namespace PeerCastStation.GUI
       peerCast.ChannelRemoved    += ChannelRemoved;
       channelCleanerLimit.Value = ChannelCleaner.InactiveLimit / 60000;
       showWindowOnStartup.Checked = application.Settings.Get<GUISettings>().ShowWindowOnStartup;
+      logLevelList.DataSource = new LogLevelItem[] {
+        new LogLevelItem { Level=LogLevel.None,  Text="なし" },
+        new LogLevelItem { Level=LogLevel.Error, Text="エラー" },
+        new LogLevelItem { Level=LogLevel.Warn,  Text="エラーと警告" },
+        new LogLevelItem { Level=LogLevel.Info,  Text="通知メッセージも含む" },
+        new LogLevelItem { Level=LogLevel.Debug, Text="デバッグメッセージも含む" },
+      };
       timer.Interval = 1000;
       timer.Enabled = true;
       timer.Tick += (s, args) => {
@@ -621,15 +634,10 @@ namespace PeerCastStation.GUI
       connectionList.EndUpdate();
     }
 
-    private void logLevelList_SelectedIndexChanged(object sender, EventArgs e)
+    private void logLevelList_SelectedValueChanged(object sender, EventArgs e)
     {
-      switch (logLevelList.SelectedIndex) {
-      case 0: Logger.Level = LogLevel.None;  break;
-      case 1: Logger.Level = LogLevel.Fatal; break;
-      case 2: Logger.Level = LogLevel.Error; break;
-      case 3: Logger.Level = LogLevel.Warn;  break;
-      case 4: Logger.Level = LogLevel.Info;  break;
-      case 5: Logger.Level = LogLevel.Debug; break;
+      if (logLevelList.SelectedValue!=null) {
+        Logger.Level = (LogLevel)logLevelList.SelectedValue;
       }
     }
 
@@ -804,7 +812,7 @@ namespace PeerCastStation.GUI
       }
       if (mainTab.SelectedTab==tabLog) {
         logFileNameText.Text = Logger.LogFileName;
-        logLevelList.SelectedIndex = (int)Logger.Level;
+        logLevelList.SelectedValue = Logger.Level;
         logToConsoleCheck.Checked = (Logger.OutputTarget & LoggerOutputTarget.Console)!=0;
         logToGUICheck.Checked     = (Logger.OutputTarget & LoggerOutputTarget.UserInterface)!=0;
         logToFileCheck.Checked    = (Logger.OutputTarget & LoggerOutputTarget.File)!=0;
