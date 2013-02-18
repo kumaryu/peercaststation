@@ -76,6 +76,7 @@ namespace PeerCastStation.GUI
         new LogLevelItem { Level=LogLevel.Info,  Text="通知メッセージも含む" },
         new LogLevelItem { Level=LogLevel.Debug, Text="デバッグメッセージも含む" },
       };
+      logLevelList.SelectedValueChanged += logLevelList_SelectedValueChanged;
       timer.Interval = 1000;
       timer.Enabled = true;
       timer.Tick += (s, args) => {
@@ -636,9 +637,7 @@ namespace PeerCastStation.GUI
 
     private void logLevelList_SelectedValueChanged(object sender, EventArgs e)
     {
-      if (logLevelList.SelectedValue!=null) {
-        Logger.Level = (LogLevel)logLevelList.SelectedValue;
-      }
+
     }
 
     private void logToFileCheck_CheckedChanged(object sender, EventArgs e)

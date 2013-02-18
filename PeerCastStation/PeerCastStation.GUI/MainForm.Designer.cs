@@ -1442,7 +1442,6 @@ namespace PeerCastStation.GUI
       this.logLevelList.Size = new System.Drawing.Size(322, 20);
       this.logLevelList.TabIndex = 2;
       this.logLevelList.ValueMember = "Level";
-      this.logLevelList.SelectedValueChanged += new System.EventHandler(this.logLevelList_SelectedValueChanged);
       // 
       // label5
       // 
