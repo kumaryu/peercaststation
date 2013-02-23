@@ -20,6 +20,12 @@ namespace PeerCastStation.Main
       get { return plugins; }
     }
 
+    private PecaSettings settings = new PecaSettings(PecaSettings.DefaultFileName);
+    public override PecaSettings Settings
+    {
+      get { return settings; }
+    }
+
     public Application()
     {
       LoadPlugins();
@@ -36,6 +42,7 @@ namespace PeerCastStation.Main
     public void Run()
     {
       LoadSettings();
+      peerCast.ChannelMonitors.Add(new ChannelCleaner(peerCast));
       var uis = userInterfaceFactories.Select(factory => factory.CreateUserInterface()).ToArray();
       foreach (var ui in uis) {
         ui.Start(this);
@@ -47,6 +54,7 @@ namespace PeerCastStation.Main
       SaveSettings();
 
       peerCast.Stop();
+      Logger.Close();
     }
 
     public static readonly string PluginPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
@@ -142,21 +150,34 @@ namespace PeerCastStation.Main
 
     void LoadSettings()
     {
-      var settings = PeerCastStation.Properties.Settings.Default;
+      settings.Load();
+      PeerCastStationSettings s;
+      if (settings.Contains(typeof(PeerCastStationSettings))) {
+        s = settings.Get<PeerCastStationSettings>();
+      }
+      else {
+        s = settings.Get<PeerCastStationSettings>();
+        s.Import(PeerCastStation.Properties.Settings.Default);
+      }
       try {
-        if (settings.AccessController!=null) {
-          peerCast.AccessController.MaxPlays  = settings.AccessController.MaxDirects;
-          peerCast.AccessController.MaxRelays = settings.AccessController.MaxRelays;
-          peerCast.AccessController.MaxPlaysPerChannel  = settings.AccessController.MaxDirectsPerChannel;
-          peerCast.AccessController.MaxRelaysPerChannel = settings.AccessController.MaxRelaysPerChannel;
-          peerCast.AccessController.MaxUpstreamRate     = settings.AccessController.MaxUpstreamRate;
+        if (s.Logger!=null) {
+          Logger.Level        = s.Logger.Level;
+          Logger.LogFileName  = s.Logger.LogFileName;
+          Logger.OutputTarget = s.Logger.OutputTarget;
         }
-        if ( settings.BroadcastID!=Guid.Empty &&
-            (AtomCollectionExtensions.IDToByteArray(settings.BroadcastID)[0] & 0x01)==0) {
-          peerCast.BroadcastID = settings.BroadcastID;
+        if (s.AccessController!=null) {
+          peerCast.AccessController.MaxPlays  = s.AccessController.MaxDirects;
+          peerCast.AccessController.MaxRelays = s.AccessController.MaxRelays;
+          peerCast.AccessController.MaxPlaysPerChannel  = s.AccessController.MaxDirectsPerChannel;
+          peerCast.AccessController.MaxRelaysPerChannel = s.AccessController.MaxRelaysPerChannel;
+          peerCast.AccessController.MaxUpstreamRate     = s.AccessController.MaxUpstreamRate;
         }
-        if (settings.Listeners!=null) {
-          foreach (var listener in settings.Listeners) {
+        if ( s.BroadcastID!=Guid.Empty &&
+            (AtomCollectionExtensions.IDToByteArray(s.BroadcastID)[0] & 0x01)==0) {
+          peerCast.BroadcastID = s.BroadcastID;
+        }
+        if (s.Listeners!=null) {
+          foreach (var listener in s.Listeners) {
             try {
               peerCast.StartListen(listener.EndPoint, listener.LocalAccepts, listener.GlobalAccepts);
             }
@@ -167,12 +188,12 @@ namespace PeerCastStation.Main
         }
         if (peerCast.OutputListeners.Count==0) {
           System.Net.IPAddress listen_addr;
-          if (!System.Net.IPAddress.TryParse(settings.DefaultListenAddress, out listen_addr)) {
+          if (!System.Net.IPAddress.TryParse(PeerCastStation.Properties.Settings.Default.DefaultListenAddress, out listen_addr)) {
             listen_addr = System.Net.IPAddress.Any;
           }
           try {
             peerCast.StartListen(
-              new System.Net.IPEndPoint(listen_addr, settings.DefaultListenPort),
+              new System.Net.IPEndPoint(listen_addr, PeerCastStation.Properties.Settings.Default.DefaultListenPort),
               OutputStreamType.All,
               OutputStreamType.Metadata | OutputStreamType.Relay);
           }
@@ -180,8 +201,8 @@ namespace PeerCastStation.Main
             logger.Error(e);
           }
         }
-        if (settings.YellowPages!=null) {
-          foreach (var yellowpage in settings.YellowPages) {
+        if (s.YellowPages!=null) {
+          foreach (var yellowpage in s.YellowPages) {
             try {
               peerCast.AddYellowPage(yellowpage.Protocol, yellowpage.Name, yellowpage.Uri);
             }
@@ -194,33 +215,40 @@ namespace PeerCastStation.Main
       catch (FormatException)
       {
       }
+      ChannelCleaner.InactiveLimit = settings.Get<ChannelCleanerSettings>().InactiveLimit;
     }
 
     void SaveSettings()
     {
-      var settings = PeerCastStation.Properties.Settings.Default;
-      settings.AccessController = new PeerCastStation.Properties.AccessControllerSettings {
+      var s = settings.Get<PeerCastStationSettings>();
+      s.Logger = new PeerCastStationSettings.LoggerSettings {
+        Level        = Logger.Level,
+        LogFileName  = Logger.LogFileName,
+        OutputTarget = Logger.OutputTarget,
+      };
+      s.AccessController = new PeerCastStationSettings.AccessControllerSettings {
         MaxDirects           = peerCast.AccessController.MaxPlays,
         MaxRelays            = peerCast.AccessController.MaxRelays,
         MaxDirectsPerChannel = peerCast.AccessController.MaxPlaysPerChannel,
         MaxRelaysPerChannel  = peerCast.AccessController.MaxRelaysPerChannel,
         MaxUpstreamRate      = peerCast.AccessController.MaxUpstreamRate,
       };
-      settings.BroadcastID = peerCast.BroadcastID;
-      settings.Listeners = peerCast.OutputListeners.Select(listener => 
-        new PeerCastStation.Properties.ListenerSettings {
+      s.BroadcastID = peerCast.BroadcastID;
+      s.Listeners = peerCast.OutputListeners.Select(listener => 
+        new PeerCastStationSettings.ListenerSettings {
           EndPoint      = listener.LocalEndPoint,
           GlobalAccepts = listener.GlobalOutputAccepts,
           LocalAccepts  = listener.LocalOutputAccepts,
         }
       ).ToArray();
-      settings.YellowPages = peerCast.YellowPages.Select(yellowpage =>
-        new PeerCastStation.Properties.YellowPageSettings {
+      s.YellowPages = peerCast.YellowPages.Select(yellowpage =>
+        new PeerCastStationSettings.YellowPageSettings {
           Protocol = yellowpage.Protocol,
           Name     = yellowpage.Name,
           Uri      = yellowpage.Uri,
         }
       ).ToArray();
+      settings.Get<ChannelCleanerSettings>().InactiveLimit = ChannelCleaner.InactiveLimit;
       settings.Save();
     }
 

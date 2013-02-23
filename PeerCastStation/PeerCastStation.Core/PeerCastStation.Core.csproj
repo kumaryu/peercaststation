@@ -42,6 +42,8 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.XML" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
@@ -50,6 +52,7 @@
     <Compile Include="Atom.cs" />
     <Compile Include="AtomCollectionExtensions.cs" />
     <Compile Include="Channel.cs" />
+    <Compile Include="ChannelCleaner.cs" />
     <Compile Include="Content.cs" />
     <Compile Include="Core.cs" />
     <Compile Include="Host.cs" />
@@ -63,6 +66,7 @@
     <Compile Include="RawContentReader.cs" />
     <Compile Include="Ringbuffer.cs" />
     <Compile Include="RingbufferStream.cs" />
+    <Compile Include="PecaSettings.cs" />
     <Compile Include="SourceStreamBase.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>

@@ -51,10 +51,26 @@ namespace PeerCastStation.Core
     Debug,
   }
 
+  [Flags]
+  public enum LoggerOutputTarget {
+    None          = 0,
+    Debug         = 1,
+    Console       = 2,
+    File          = 4,
+    UserInterface = 8,
+  };
+
   public class Logger
   {
-    private static TraceSwitch generalSwitch = new TraceSwitch("General", "Entire of PeerCastStation");
+    static Logger()
+    {
+      debugListener = Trace.Listeners.OfType<TraceListener>().FirstOrDefault(listener => listener is DefaultTraceListener);
+      if (debugListener!=null) {
+        outputTarget |= LoggerOutputTarget.Debug;
+      }
+    }
 
+    private static TraceSwitch generalSwitch = new TraceSwitch("General", "Entire of PeerCastStation");
     /// <summary>
     /// ログ出力用の全体スイッチを取得します
     /// </summary>
@@ -65,10 +81,90 @@ namespace PeerCastStation.Core
     /// </summary>
     public static IList<System.IO.TextWriter> Writers {
       get {
-        return Trace.Listeners.OfType<TraceListener>()
-          .Select(listener => listener as TextWriterTraceListener)
-          .Where(listener => listener!=null)
-          .Select(listener => listener.Writer).ToList().AsReadOnly();
+        return uiListeners.Select(listener => listener.Writer).ToArray();
+      }
+    }
+
+    private static TextWriterTraceListener consoleListener;
+    private static TextWriterTraceListener fileListener;
+    private static List<TextWriterTraceListener> uiListeners = new List<TextWriterTraceListener>();
+    private static TraceListener debugListener;
+
+    private static string logFileName = null;
+    public static string LogFileName {
+      get { return logFileName; }
+      set {
+        if (logFileName==value) return;
+        if (fileListener!=null) {
+          Trace.Listeners.Remove(fileListener);
+          fileListener.Close();
+          fileListener = null;
+        }
+        logFileName = value;
+        if (!String.IsNullOrEmpty(logFileName) && (outputTarget & LoggerOutputTarget.File)!=0) {
+          fileListener = new TextWriterTraceListener(logFileName);
+          Trace.Listeners.Add(fileListener);
+        }
+      }
+    }
+
+    private static LoggerOutputTarget outputTarget = LoggerOutputTarget.None;
+    public static LoggerOutputTarget OutputTarget {
+      get { return outputTarget; }
+      set {
+        SetOutputListeners(value, outputTarget);
+        outputTarget = value;
+      }
+    }
+
+    private static void SetOutputListeners(LoggerOutputTarget targets, LoggerOutputTarget old)
+    {
+      if ((targets & LoggerOutputTarget.Console)!=0 &&
+          (old     & LoggerOutputTarget.Console)==0) {
+        if (consoleListener==null) {
+          consoleListener = new ConsoleTraceListener(true);
+        }
+        Trace.Listeners.Add(consoleListener);
+      }
+      if ((targets & LoggerOutputTarget.Console)==0 &&
+          (old     & LoggerOutputTarget.Console)!=0) {
+        Trace.Listeners.Remove(consoleListener);
+      }
+      if ((targets & LoggerOutputTarget.Debug)!=0 &&
+          (old     & LoggerOutputTarget.Debug)==0) {
+        if (debugListener==null) {
+          debugListener = new DefaultTraceListener();
+        }
+        Trace.Listeners.Add(debugListener);
+      }
+      if ((targets & LoggerOutputTarget.Debug)==0 &&
+          (old     & LoggerOutputTarget.Debug)!=0) {
+        Trace.Listeners.Remove(debugListener);
+      }
+      if ((targets & LoggerOutputTarget.File)!=0 &&
+          (old     & LoggerOutputTarget.File)==0) {
+        if (fileListener==null && !String.IsNullOrEmpty(LogFileName)) {
+          fileListener = new TextWriterTraceListener(LogFileName);
+        }
+        if (fileListener!=null) {
+          Trace.Listeners.Add(fileListener);
+        }
+      }
+      if ((targets & LoggerOutputTarget.File)==0 &&
+          (old     & LoggerOutputTarget.File)!=0) {
+        Trace.Listeners.Remove(fileListener);
+      }
+      if ((targets & LoggerOutputTarget.UserInterface)!=0 &&
+          (old     & LoggerOutputTarget.UserInterface)==0) {
+        foreach (var listener in uiListeners) {
+          Trace.Listeners.Add(listener);
+        }
+      }
+      if ((targets & LoggerOutputTarget.UserInterface)==0 &&
+          (old     & LoggerOutputTarget.UserInterface)!=0) {
+        foreach (var listener in uiListeners) {
+          Trace.Listeners.Remove(listener);
+        }
       }
     }
 
@@ -90,6 +186,7 @@ namespace PeerCastStation.Core
         TraceLevel level = generalSwitch.Level;
         switch (value) {
         case LogLevel.None:  level = TraceLevel.Off; break;
+        case LogLevel.Fatal: level = TraceLevel.Error; break;
         case LogLevel.Error: level = TraceLevel.Error; break;
         case LogLevel.Warn:  level = TraceLevel.Warning; break;
         case LogLevel.Info:  level = TraceLevel.Info; break;
@@ -105,7 +202,11 @@ namespace PeerCastStation.Core
     /// <param name="writer">出力先として追加するTextWriter</param>
     public static void AddWriter(System.IO.TextWriter writer)
     {
-      Trace.Listeners.Add(new TextWriterTraceListener(writer));
+      var listener = new TextWriterTraceListener(writer);
+      uiListeners.Add(listener);
+      if ((outputTarget & LoggerOutputTarget.UserInterface)!=0) {
+        Trace.Listeners.Add(listener);
+      }
     }
  
     /// <summary>
@@ -113,12 +214,10 @@ namespace PeerCastStation.Core
     /// </summary>
     public static void RemoveWriter(System.IO.TextWriter writer)
     {
-      var listeners = Trace.Listeners.OfType<TraceListener>()
-        .Select(listener => listener as TextWriterTraceListener)
-        .Where(listener => listener!=null && listener.Writer==writer).ToArray();
-      foreach (var listener in listeners) {
+      foreach (var listener in uiListeners.Where(listener => listener.Writer==writer)) {
         Trace.Listeners.Remove(listener);
       }
+      uiListeners.RemoveAll(listener => listener.Writer==writer);
     }
 
     /// <summary>
@@ -127,6 +226,16 @@ namespace PeerCastStation.Core
     public static void ClearWriter()
     {
       Trace.Listeners.Clear();
+    }
+
+    static public void Flush()
+    {
+      Trace.Flush();
+    }
+
+    static public void Close()
+    {
+      Trace.Close();
     }
 
     static private void Output(LogLevel level, string source, string format, params object[] args)

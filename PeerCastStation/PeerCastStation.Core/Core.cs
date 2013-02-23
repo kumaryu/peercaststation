@@ -473,5 +473,17 @@ namespace PeerCastStation.Core
     /// <returns>IContentReaderを実装するオブジェクト</returns>
     IContentReader Create(Channel channel);
   }
+
+  /// <summary>
+  /// チャンネルを監視して管理するためのオブジェクトのインターフェースです
+  /// </summary>
+  public interface IChannelMonitor
+  {
+    /// <summary>
+    /// 定期的に呼び出されるメソッドです
+    /// </summary>
+    void OnTimer();
+  }
+
 }
 

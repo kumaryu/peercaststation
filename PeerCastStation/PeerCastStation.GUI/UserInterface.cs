@@ -21,7 +21,7 @@ namespace PeerCastStation.GUI
     {
       System.Windows.Forms.Application.EnableVisualStyles();
       mainThread = new Thread(() => {
-        mainForm = new MainForm(app.PeerCast);
+        mainForm = new MainForm(app);
         System.Windows.Forms.Application.ApplicationExit += (sender, args) => {
           app.Stop();
         };
