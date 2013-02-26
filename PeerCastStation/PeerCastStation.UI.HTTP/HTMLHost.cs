@@ -42,6 +42,7 @@ namespace PeerCastStation.UI.HTTP
     {
       var basepath = Path.GetFullPath(Path.GetDirectoryName(typeof(HTMLHost).Assembly.Location));
       virtualPhysicalPathMap.Add("/html/", Path.Combine(basepath, "html"));
+      virtualPhysicalPathMap.Add("/help/", Path.Combine(basepath, "help"));
       virtualPhysicalPathMap.Add("/Content/", Path.Combine(basepath, "Content"));
       virtualPhysicalPathMap.Add("/Scripts/", Path.Combine(basepath, "Scripts"));
     }

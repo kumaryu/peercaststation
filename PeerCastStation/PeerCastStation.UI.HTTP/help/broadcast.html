@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>PeerCastStation - 配信</title>
+    <link type="text/css" href="bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
+  </head>
+  <body>
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <a class="brand" href="#">PeerCastStation</a>
+          <ul class="nav">
+            <li><a href="/html/index.html">情報</a></li>
+            <li><a href="/html/relays.html">リレー</a></li>
+            <li><a href="/html/settings.html">設定</a></li>
+            <li><a href="/html/logs.html">ログ</a></li>
+            <li class="active"><a href="/help/index.html">ヘルプ</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span10 offset1">
+          <ul class="nav nav-tabs">
+            <li ><a href="index.html"    >PeerCastStationについて</a></li>
+            <li ><a href="usage.html"    >使い方</a></li>
+            <li  class="active" ><a href="broadcast.html">配信</a></li>
+            <li ><a href="settings.html" >設定</a></li>
+            <li ><a href="misc.html"     >その他</a></li>
+          </ul>
+          <h1 id="section">配信</h1>
+
+<h2 id="gui">配信方法 - GUI編</h2>
+<p>配信してYPに掲載するにはまずYPの設定を追加しましょう。YPの追加は<a href="settings.html">設定のヘルプ</a>を参照してください。</p>
+
+<p>配信するにはGUIのチャンネル一覧隣の配信…ボタンを押します。</p>
+
+<p><img src="images/gui_broadcast.png" alt="配信開始ウィンドウ" /></p>
+
+<table class="table">
+  <tbody>
+    <tr>
+      <td>ストリームURL</td>
+      <td>配信する動画のURLを指定します。http://localhost:8080/など入れておきます。</td>
+    </tr>
+    <tr>
+      <td>ビットレート</td>
+      <td>通常は動画から取得されるので指定する必要はありません。数値を指定すると(kbps単位で)動画の公称ビットレートと別な値を指定することができます。</td>
+    </tr>
+    <tr>
+      <td>タイプ</td>
+      <td>ストリームURLで取得する動画のタイプを指定します。RAWは通常使用しないので、適切な物を選択してください。</td>
+    </tr>
+    <tr>
+      <td>掲載YP</td>
+      <td>掲載先のYPを指定します。どのYPにも載せない場合は掲載無しを選択してください。載せたいYPがリストに無い場合は設定で追加してください。</td>
+    </tr>
+    <tr>
+      <td>チャンネル名</td>
+      <td>チャンネル名を指定します。他のチャンネル情報は記入しなくても配信開始できますが、チャンネル名は必ず入力する必要があります。</td>
+    </tr>
+    <tr>
+      <td>ジャンル</td>
+      <td>チャンネルのジャンルを指定します。YPによってはここに適切な文字列を入れないと載らない場合があります。YPごとの掲載方法を参照してください。</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>チャンネル情報・トラック情報のうち、チャンネル名以外は配信中の変更が可能です。</p>
+
+<p>適切な値を入力したら配信開始ボタンを押してください。チャンネル一覧に配信開始したチャンネルが追加されます。配信開始ウィンドウが閉じられない場合は何か設定を間違っている可能性があります。ストリームURLが正しいか、チャンネル名が入力されているかを確認してください。</p>
+
+<p>配信開始後は通常のリレーと同じく切断などが行えます。</p>
+
+<p>チャンネル情報は通常のリレーと違って編集することができます。編集したあとに一番下の更新ボタンを押してください。</p>
+
+<p><img src="images/gui_channelinfo.png" alt="チャンネル情報" /></p>
+
+<p>接続一覧では接続している先とリレー接続してきたクライアントの情報を見ることができます。</p>
+
+<p><img src="images/gui_connectionlist.png" alt="接続一覧" /></p>
+
+<table class="table">
+  <tbody>
+    <tr>
+      <td>HTTP * Source</td>
+      <td>ストリームURLへの接続状態をあらわします。接続されている場合は受信ビットレートが表示されます。</td>
+    </tr>
+    <tr>
+      <td>COUT</td>
+      <td>YPへの接続状態をあらわします。掲載していない場合は表示されません。</td>
+    </tr>
+    <tr>
+      <td>PCP Relay</td>
+      <td>リレー接続をあらわします。チャンネル一覧と同じく接続先に状態が記号で表示されます。また、正常に接続されている場合は送信ビットレートが表示されます。</td>
+    </tr>
+    <tr>
+      <td>HTTP Direct</td>
+      <td>直接の視聴接続をあらわします。正常に接続されている場合は送信ビットレートが表示されます。</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>COUTへの接続を選択すると右のボタンで再接続が行えます。通常は接続が切れた場合は自動的に再接続されるので手動で押す必要はありません。</p>
+
+<p>HTTP DirectやPCP Relayの接続を選択すると右のボタンで切断することができます。</p>
+
+<h2 id="html-ui">配信方法 - HTML UI編</h2>
+<p>配信してYPに掲載するにはまずYPの設定を追加しましょう。YPの追加は<a href="settings.html">設定のヘルプ</a>を参照してください。</p>
+
+<p>配信するにはチャンネル一覧ページ右上の配信ボタンを押します。</p>
+
+<p><img src="images/htmlui_broadcast.png" alt="配信開始ウィンドウ" /></p>
+
+<table class="table">
+  <tbody>
+    <tr>
+      <td>ストリームURL</td>
+      <td>配信する動画のURLを指定します。http://localhost:8080/など入れておきます。</td>
+    </tr>
+    <tr>
+      <td>ビットレート</td>
+      <td>通常は動画から取得されるので指定する必要はありません。数値を指定すると(kbps単位で)動画の公称ビットレートと別な値を指定することができます。</td>
+    </tr>
+    <tr>
+      <td>タイプ</td>
+      <td>ストリームURLで取得する動画のタイプを指定します。RAWは通常使用しないので、適切な物を選択してください。</td>
+    </tr>
+    <tr>
+      <td>掲載YP</td>
+      <td>掲載先のYPを指定します。どのYPにも載せない場合は掲載無しを選択してください。載せたいYPがリストに無い場合は設定で追加してください。</td>
+    </tr>
+    <tr>
+      <td>チャンネル名</td>
+      <td>チャンネル名を指定します。他のチャンネル情報は記入しなくても配信開始できますが、チャンネル名は必ず入力する必要があります。</td>
+    </tr>
+    <tr>
+      <td>ジャンル</td>
+      <td>チャンネルのジャンルを指定します。YPによってはここに適切な文字列を入れないと載らない場合があります。YPごとの掲載方法を参照してください。</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>チャンネル情報・トラック情報のうち、チャンネル名以外は配信中の変更が可能です。</p>
+
+<p>適切な値を入力したら配信開始ボタンを押してください。チャンネル一覧に配信開始したチャンネルが追加されます。チャンネルが追加されない場合は何か設定を間違っている可能性があります。ストリームURLが正しいか、チャンネル名が入力されているかを確認してください。</p>
+
+<p>配信開始後は通常のリレーと同じく切断などが行えます。</p>
+
+<p>チャンネル情報は通常のリレーと違って編集することができます。チャンネル情報を表示させて一番下の編集ボタンを押してください。</p>
+
+<p><img src="images/htmlui_channelinfo.png" alt="チャンネル情報" /></p>
+
+<p>接続一覧では接続している先とリレー接続してきたクライアントの情報を見ることができます。</p>
+
+<p><img src="images/htmlui_connectionlist.png" alt="接続一覧" /></p>
+
+<table class="table">
+  <tbody>
+    <tr>
+      <td>Source</td>
+      <td>ストリームURLへの接続状態をあらわします。接続されている場合は受信ビットレートが表示されます。</td>
+    </tr>
+    <tr>
+      <td>Announce</td>
+      <td>YPへの接続状態をあらわします。掲載していない場合は表示されません。</td>
+    </tr>
+    <tr>
+      <td>Relay</td>
+      <td>リレー接続をあらわします。GUIのチャンネル一覧と同じく接続先に状態が記号で表示されます。また、正常に接続されている場合は送信ビットレートが表示されます。</td>
+    </tr>
+    <tr>
+      <td>Direct</td>
+      <td>直接の視聴接続をあらわします。正常に接続されている場合は送信ビットレートが表示されます。</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>各接続の左のボタンで切断・再接続が行えます。ただし、再接続はAnnounceのみ、切断はRelayとDirectのみで有効です。それ以外の接続に対して実行しても何も起きません。</p>
+
+
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

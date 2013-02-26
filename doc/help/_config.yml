@@ -1,5 +1,6 @@
 
-source:   ../src
-markdown: kramdown
-target:   help
+source:      ../src
+destination: ../../PeerCastStation/PeerCastStation.UI.HTTP/help
+markdown:    kramdown
+target:      help
 

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>PeerCastStation - PeerCastStationについて</title>
+    <link type="text/css" href="bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
+  </head>
+  <body>
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <a class="brand" href="#">PeerCastStation</a>
+          <ul class="nav">
+            <li><a href="/html/index.html">情報</a></li>
+            <li><a href="/html/relays.html">リレー</a></li>
+            <li><a href="/html/settings.html">設定</a></li>
+            <li><a href="/html/logs.html">ログ</a></li>
+            <li class="active"><a href="/help/index.html">ヘルプ</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span10 offset1">
+          <ul class="nav nav-tabs">
+            <li  class="active" ><a href="index.html"    >PeerCastStationについて</a></li>
+            <li ><a href="usage.html"    >使い方</a></li>
+            <li ><a href="broadcast.html">配信</a></li>
+            <li ><a href="settings.html" >設定</a></li>
+            <li ><a href="misc.html"     >その他</a></li>
+          </ul>
+          <h1 id="peercaststation">PeerCastStationについて</h1>
+<p>PeerCastStationはリメイク版PeerCastです。PeerCast.exeのかわりとして使えます。</p>
+
+<h2 id="section">動作環境</h2>
+<p>WindowsではWindows XP SP3以降 + .NET Framework 3.5以降が必要です。</p>
+
+<p>Windows以外ではmono 2.6.7以降があれば動くと思います。ただしGUIに制限があります。</p>
+
+<h2 id="section-1">インストール方法</h2>
+<p>インストーラなどは無いので適当な場所にzipを展開してPeerCastStation.exeを起動してください。
+起動時にエラーが起きた場合は.NET Framework 3.5以降が入ってない可能性が高いです。<a href="http://www.microsoft.com/downloads/ja-jp/details.aspx?FamilyID=AB99342F-5D1A-413D-8319-81DA479AB0D7">先にダウンロードしてインストールしてください。</a>
+Windows7だと最初っから入ってます。Windows8では.NET Framework 4.5がインストール済みなため、.NET Framework 3.5が入ってなくても動きます。</p>
+
+<p>Windows以外の場合はmonoをインストールしてください。
+Linuxなどではパッケージマネージャから入れれば大丈夫なはずです。
+Macなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mono-projectからダウンロードして</a>インストールします(2.6.7以降ならどれでも)。あとはPeerCastStationのzipを適当な場所に展開して、ターミナルから</p>
+
+<pre><code>mono PeerCastStation.exe
+</code></pre>
+
+<p>で実行してください。</p>
+
+<p>monoで上手く動かない場合はPeerCastStation.GUI.dllを削除すると起動できます。
+この場合はGUIが出ないですが、ポートが開ければWebブラウザから<a href="http://localhost:7144/html/index.html">http://localhost:7144/html/index.html</a>にアクセスして操作できます。</p>
+
+<h2 id="section-2">更新履歴</h2>
+
+<h3 id="section-3">1.1.0 (2013年1月29日版)</h3>
+<ul>
+  <li>再接続後に下流へのリレーが止まってしまうことがあるのを修正しました</li>
+  <li>チャンネル再接続時に再接続をせずにすぐにERRORになってしまうことがあったのを修正しました</li>
+  <li>ERRORやIDLEになってるチャンネルを視聴しようとした時に再接続を行うようにしました</li>
+  <li>GUIで起動時にウィンドウを表示するかどうかを設定できるようにしました。設定タブの下の方にあるチェックを外すとウィンドウ非表示で起動するようになります</li>
+  <li>GUIのチャンネル一覧において状況表示記号を接続してないチャンネルでは空白にするようにしました</li>
+  <li>依存しているライブラリを更新しました。HTML UIの見た目がちょっと変わっています</li>
+  <li>HTML UIでチャンネル一覧のストリームURLとプレイリストURLがおかしくなっていたのを修正しました</li>
+  <li>HTML UIでポート開放状況の表示が逆だった(ポート開いてる時にNGになってる)のを修正しました</li>
+  <li>viewxmlで取得できるxmlでチャンネル毎のuptimeとageの文字列がおかしかったのを修正しました</li>
+  <li>一部のチャンネルでチャンネル情報が文字化けすることがあるのを仕方なく対処してやりました。本来はShift-JISなんかでチャンネル情報を流す方が悪い</li>
+</ul>
+
+<h3 id="section-4">1.0.0 (2012年12月31日版)</h3>
+<p>主にバグ修正です。PeerCast互換という意味ではだいたい足りてきたのでVersion 1.0になりました。
+今後はPeerCastになかった新機能の追加も積極的に行う予定です。</p>
+
+<p>12月23日に一度1.0.0を出しましたが、細かいバグをちょっと直して31日版として出し直しました。</p>
+
+<ul>
+  <li>ついにバージョン1.0になりました。今後は新機能の追加を積極的に行う予定です</li>
+  <li>新バージョン通知時にリリースノートを表示するようにしました</li>
+  <li>HTML UIから配信開始した場合、チャンネル終了後にYPへの掲載が終了しないのを修正しました</li>
+  <li>稀に配信終了後にYPへの掲載が終了しないのを修正しました</li>
+  <li>ログの表示を1000行までに制限してメモリを食いすぎないようにしました</li>
+  <li>チャンネルが残っている間に終了するとエラーが出ていたのを終了しました</li>
+  <li>.NET4/4.5のみが入っている環境(つまり.NET3.5を入れていないWindows8)でも起動できるようにしました。たぶん</li>
+  <li>31日版:新バージョンチェック用の日付が11月のままだったのを修正しました&lt;</li>
+  <li>31日版:HTML UIで起動時間・チャンネルリレー時間の計算が間違っていたのを修正しました</li>
+</ul>
+
+<h3 id="section-5">0.9.0 (2012年11月29日版)</h3>
+<ul>
+  <li>リレー要求を受け付けた際に新しく接続されたリレー先に多量のデータを集中して送ってしまっていたのを修正しました</li>
+  <li>GUIでチャンネル一覧と接続一覧にリレー可否状況を記号で表示するようにしました</li>
+  <li>エンコードが停止再開されたあとやチャンネルの位置が4GBを越えた場合も安定して視聴やリレーができるように改善しました</li>
+</ul>
+
+<h3 id="section-6">0.8.1 (2012年10月29日版)</h3>
+<ul>
+  <li>リレーの再接続時に正しく再接続できずにERRORになることがあったのを修正しました</li>
+  <li>UIで現在の各接続における送受信ビットレートを表示するようにしました</li>
+  <li>http://～/admin?cmd=stopとhttp://～/admin?cmd=bumpでチャンネルの停止と再接続ができるように対応しました</li>
+  <li>接続一覧に接続相手のUserAgentが正しく表示されるようにしました</li>
+  <li>リレーがいっぱいの時でもリレー要求先に余計なデータを送っていたのを修正しました。リレー要求が来た時に他のリレーが不安定になっていた問題の修正です</li>
+  <li>GUIでYPのアドレス入力をしても追加できないことがあったのを修正しました</li>
+  <li>リレーや視聴してるチャンネルの位置が4GBを越えると止まってしまっていたのを修正しました</li>
+  <li>その他細かいバグ修正やコードの整理を行ないました</li>
+</ul>
+
+<h3 id="section-7">0.8.0 きゃすけっと2012秋版</h3>
+<ul>
+  <li>リレー・配信ともに安定性を向上しました</li>
+  <li>FLVとMKVの配信に対応しました。ただし視聴側のPeerCast本体も対応している必要があります</li>
+  <li>配信時にYPへの掲載状況を接続先リストに表示できるようにしました。再接続もできます</li>
+  <li>おはおはが終わってしまったので対応を外しました</li>
+  <li>簡易的なバージョンアップチェックを追加しました</li>
+</ul>
+
+<h3 id="section-8">0.7.0 きゃすけっと2012春版</h3>
+<ul>
+  <li>なんかいろいろ修正した。主にHTML UIを追加した</li>
+</ul>
+
+<h3 id="section-9">0.6.1</h3>
+<ul>
+  <li>HTTP出力でメモリリークしていたのを修正した。YP接続部分のログを出力するようにした。</li>
+</ul>
+
+<h3 id="section-10">0.6.0</h3>
+<ul>
+  <li>初期配布バージョン</li>
+</ul>
+
+
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
