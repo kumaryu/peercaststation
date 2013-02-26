@@ -1,0 +1,5 @@
+
+source:   ../src
+markdown: kramdown
+target:   help
+
