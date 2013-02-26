@@ -156,6 +156,7 @@ namespace PeerCastStation.GUI
       this.statusBar = new System.Windows.Forms.StatusStrip();
       this.portLabel = new System.Windows.Forms.ToolStripStatusLabel();
       this.portOpenedLabel = new System.Windows.Forms.ToolStripStatusLabel();
+      this.HelpMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       showGUIMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       quitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       label21 = new System.Windows.Forms.Label();
@@ -529,6 +530,7 @@ namespace PeerCastStation.GUI
       // notifyIconMenu
       // 
       this.notifyIconMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.HelpMenuItem,
             this.versionCheckMenuItem,
             this.toolStripSeparator1,
             showHTMLUIMenuItem,
@@ -537,7 +539,7 @@ namespace PeerCastStation.GUI
             quitMenuItem});
       this.notifyIconMenu.Name = "notifyIconMenu";
       this.notifyIconMenu.ShowImageMargin = false;
-      this.notifyIconMenu.Size = new System.Drawing.Size(203, 104);
+      this.notifyIconMenu.Size = new System.Drawing.Size(203, 148);
       // 
       // versionCheckMenuItem
       // 
@@ -1480,6 +1482,13 @@ namespace PeerCastStation.GUI
       this.portOpenedLabel.Size = new System.Drawing.Size(134, 18);
       this.portOpenedLabel.Text = "toolStripStatusLabel1";
       // 
+      // HelpMenuItem
+      // 
+      this.HelpMenuItem.Name = "HelpMenuItem";
+      this.HelpMenuItem.Size = new System.Drawing.Size(202, 22);
+      this.HelpMenuItem.Text = "ヘルプ(&H)";
+      this.HelpMenuItem.Click += new System.EventHandler(this.HelpMenuItem_Click);
+      // 
       // MainForm
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -1620,6 +1629,7 @@ namespace PeerCastStation.GUI
     private System.Windows.Forms.CheckBox showWindowOnStartup;
     private System.Windows.Forms.NumericUpDown channelCleanerLimit;
     private System.Windows.Forms.Label label7;
+    private System.Windows.Forms.ToolStripMenuItem HelpMenuItem;
 
   }
 }

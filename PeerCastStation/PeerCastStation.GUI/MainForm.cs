@@ -1002,6 +1002,18 @@ namespace PeerCastStation.GUI
       }
     }
 
+    private void HelpMenuItem_Click(object sender, EventArgs e)
+    {
+      var listener = peerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.Interface);
+      if (listener!=null) {
+        var endpoint = listener.LocalEndPoint;
+        var host = endpoint.Address.Equals(System.Net.IPAddress.Any) ?
+          String.Format("localhost:{0}", endpoint.Port) :
+          endpoint.ToString();
+        System.Diagnostics.Process.Start(String.Format("http://{0}/help/index.html", host));
+      }
+    }
+
     private void openContactURLMenu_Click(object sender, EventArgs e)
     {
       var item = channelList.SelectedItem as ChannelListItem;
