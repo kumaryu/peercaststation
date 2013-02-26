@@ -151,6 +151,45 @@ namespace PeerCastStation.UI.HTTP
         return res;
       }
 
+      private void SendResponseMoveToIndex()
+      {
+        var content = "Moving...";
+        var parameters = new Dictionary<string, string> {
+          {"Content-Type",   "text/plain" },
+          {"Content-Length", content.Length.ToString() },
+          {"Location",       "/html/index.html" },
+        };
+        Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.Moved, parameters));
+        if (this.request.Method=="GET") {
+          Send(content);
+        }
+      }
+
+      private void SendResponseFileContent()
+      {
+        var localpath = GetPhysicalPath(this.request.Uri);
+        if (localpath==null) throw new HTTPError(HttpStatusCode.Forbidden);
+        if (Directory.Exists(localpath)) {
+          localpath = Path.Combine(localpath, "index.html");
+          if (!File.Exists(localpath)) throw new HTTPError(HttpStatusCode.Forbidden);
+        }
+        if (File.Exists(localpath)) {
+          var contents = File.ReadAllBytes(localpath);
+          var content_desc = GetFileDesc(Path.GetExtension(localpath));
+          var parameters = new Dictionary<string, string> {
+            {"Content-Type",   content_desc.MimeType },
+            {"Content-Length", contents.Length.ToString() },
+          };
+          Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.OK, parameters));
+          if (this.request.Method=="GET") {
+            Send(contents);
+          }
+        }
+        else {
+          throw new HTTPError(HttpStatusCode.NotFound);
+        }
+      }
+
       protected override void OnStarted()
       {
         base.OnStarted();
@@ -159,26 +198,11 @@ namespace PeerCastStation.UI.HTTP
           if (this.request.Method!="HEAD" && this.request.Method!="GET") {
             throw new HTTPError(HttpStatusCode.MethodNotAllowed);
           }
-          var localpath = GetPhysicalPath(this.request.Uri);
-          if (localpath==null) throw new HTTPError(HttpStatusCode.Forbidden);
-          if (Directory.Exists(localpath)) {
-            localpath = Path.Combine(localpath, "index.html");
-            if (!File.Exists(localpath)) throw new HTTPError(HttpStatusCode.Forbidden);
-          }
-          if (File.Exists(localpath)) {
-            var contents = File.ReadAllBytes(localpath);
-            var content_desc = GetFileDesc(Path.GetExtension(localpath));
-            var parameters = new Dictionary<string, string> {
-              {"Content-Type",   content_desc.MimeType },
-              {"Content-Length", contents.Length.ToString() },
-            };
-            Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.OK, parameters));
-            if (this.request.Method=="GET") {
-              Send(contents);
-            }
+          if (this.request.Uri.AbsolutePath=="/") {
+            SendResponseMoveToIndex();
           }
           else {
-            throw new HTTPError(HttpStatusCode.NotFound);
+            SendResponseFileContent();
           }
         }
         catch (HTTPError err) {
@@ -255,8 +279,8 @@ namespace PeerCastStation.UI.HTTP
           }
         }
         if (res!=null &&
-            this.owner.VirtualPhysicalPathMap.Any(kv =>
-              res.Uri.AbsolutePath.StartsWith(kv.Key))) {
+            this.owner.VirtualPhysicalPathMap.Any(kv => res.Uri.AbsolutePath.StartsWith(kv.Key)) ||
+            res.Uri.AbsolutePath=="/") {
           return Guid.Empty;
         }
         else {
