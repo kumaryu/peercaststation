@@ -1335,7 +1335,7 @@ namespace PeerCastStation.GUI
       // 
       this.versionInfoButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
       this.versionInfoButton.AutoSize = true;
-      this.versionInfoButton.Location = new System.Drawing.Point(8, 403);
+      this.versionInfoButton.Location = new System.Drawing.Point(8, 458);
       this.versionInfoButton.Name = "versionInfoButton";
       this.versionInfoButton.Size = new System.Drawing.Size(90, 26);
       this.versionInfoButton.TabIndex = 13;
@@ -1369,7 +1369,7 @@ namespace PeerCastStation.GUI
       // 
       this.logClearButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
       this.logClearButton.AutoSize = true;
-      this.logClearButton.Location = new System.Drawing.Point(337, 403);
+      this.logClearButton.Location = new System.Drawing.Point(337, 458);
       this.logClearButton.Name = "logClearButton";
       this.logClearButton.Size = new System.Drawing.Size(90, 26);
       this.logClearButton.TabIndex = 8;
@@ -1409,7 +1409,7 @@ namespace PeerCastStation.GUI
       this.logText.Name = "logText";
       this.logText.ReadOnly = true;
       this.logText.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-      this.logText.Size = new System.Drawing.Size(419, 340);
+      this.logText.Size = new System.Drawing.Size(419, 392);
       this.logText.TabIndex = 5;
       this.logText.WordWrap = false;
       // 
