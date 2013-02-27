@@ -279,8 +279,8 @@ namespace PeerCastStation.UI.HTTP
           }
         }
         if (res!=null &&
-            this.owner.VirtualPhysicalPathMap.Any(kv => res.Uri.AbsolutePath.StartsWith(kv.Key)) ||
-            res.Uri.AbsolutePath=="/") {
+            (this.owner.VirtualPhysicalPathMap.Any(kv => res.Uri.AbsolutePath.StartsWith(kv.Key)) ||
+             res.Uri.AbsolutePath=="/")) {
           return Guid.Empty;
         }
         else {
