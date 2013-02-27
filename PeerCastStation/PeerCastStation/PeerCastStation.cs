@@ -41,13 +41,17 @@ namespace PeerCastStation.Main
     override public PeerCast PeerCast { get { return peerCast; } }
     public void Run()
     {
+			Console.CancelKeyPress += (sender, args) => {
+				args.Cancel = true;
+				Stop();
+			};
       LoadSettings();
       peerCast.ChannelMonitors.Add(new ChannelCleaner(peerCast));
       var uis = userInterfaceFactories.Select(factory => factory.CreateUserInterface()).ToArray();
       foreach (var ui in uis) {
         ui.Start(this);
       }
-      stoppedEvent.WaitOne();
+			stoppedEvent.WaitOne();
       foreach (var ui in uis) {
         ui.Stop();
       }
