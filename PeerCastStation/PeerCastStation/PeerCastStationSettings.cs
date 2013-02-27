@@ -45,8 +45,8 @@ namespace PeerCastStation
 
       internal ListenerSettings(PeerCastStation.Properties.ListenerSettings settings)
       {
-        this.EndPoint = settings.EndPoint;
-        this.LocalAccepts = settings.LocalAccepts;
+        this.EndPoint      = settings.EndPoint;
+        this.LocalAccepts  = settings.LocalAccepts;
         this.GlobalAccepts = settings.GlobalAccepts;
       }
     }
@@ -107,10 +107,24 @@ namespace PeerCastStation
 
     internal void Import(PeerCastStation.Properties.Settings settings)
     {
-      this.BroadcastID = settings.BroadcastID;
-      this.AccessController = new AccessControllerSettings(settings.AccessController);
-      this.Listeners   = settings.Listeners.Select(s => new ListenerSettings(s)).ToArray();
-      this.YellowPages = settings.YellowPages.Select(s => new YellowPageSettings(s)).ToArray();
+      if (settings==null) return;
+      try {
+        if (settings.BroadcastID!=Guid.Empty) {
+          this.BroadcastID = settings.BroadcastID;
+        }
+        settings.BroadcastID = Guid.NewGuid();
+        if (settings.AccessController!=null) {
+          this.AccessController = new AccessControllerSettings(settings.AccessController);
+        }
+        if (settings.Listeners!=null) {
+          this.Listeners = settings.Listeners.Where(s => s!=null).Select(s => new ListenerSettings(s)).ToArray();
+        }
+        if (settings.YellowPages!=null) {
+          this.YellowPages = settings.YellowPages.Where(s => s!=null).Select(s => new YellowPageSettings(s)).ToArray();
+        }
+      }
+      catch (System.Configuration.ConfigurationErrorsException) {
+      }
     }
   }
 }
