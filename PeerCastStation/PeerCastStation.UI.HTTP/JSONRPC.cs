@@ -14,7 +14,8 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
     public RPCMethodInfo(MethodInfo method)
     {
       this.method = method;
-      this.Name = ((RPCMethodAttribute)Attribute.GetCustomAttribute(method, typeof(RPCMethodAttribute), true)).Name;
+      var attr = Attribute.GetCustomAttributes(method).First(a => a.GetType()==typeof(RPCMethodAttribute));
+      this.Name = ((RPCMethodAttribute)attr).Name;
     }
 
     private string JsonType(Type type)
