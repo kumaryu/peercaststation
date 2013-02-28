@@ -3,6 +3,7 @@ using System.ComponentModel;
 
 namespace PeerCastStation.GUI
 {
+  [PeerCastStation.Core.PecaSettings]
   public class GUISettings
     : INotifyPropertyChanged
   {

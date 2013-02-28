@@ -5,6 +5,7 @@ using PeerCastStation.Core;
 
 namespace PeerCastStation
 {
+  [PecaSettings]
   public class ChannelCleanerSettings
   {
     public int InactiveLimit { get; set; }
@@ -15,8 +16,10 @@ namespace PeerCastStation
     }
   }
 
+  [PecaSettings]
   public class PeerCastStationSettings
   {
+    [PecaSettings]
     public class LoggerSettings
     {
       public LogLevel           Level        { get; set; }
@@ -33,6 +36,7 @@ namespace PeerCastStation
       }
     }
 
+    [PecaSettings]
     public class ListenerSettings
     {
       public System.Net.IPEndPoint EndPoint { get; set; }
@@ -51,6 +55,7 @@ namespace PeerCastStation
       }
     }
 
+    [PecaSettings]
     public class AccessControllerSettings
     {
       public int MaxRelays            { get; set; }
@@ -73,6 +78,7 @@ namespace PeerCastStation
       }
     }
 
+    [PecaSettings]
     public class YellowPageSettings
     {
       public string Protocol { get; set; }

@@ -7,8 +7,27 @@ using System.Xml;
 
 namespace PeerCastStation.Core
 {
+  [AttributeUsage(AttributeTargets.Class)]
+  public class PecaSettingsAttribute
+    : Attribute
+  {
+  }
+
   public class PecaSettings
   {
+    private static List<Type> settingTypes = new List<Type>();
+    public static IEnumerable<Type> SettingTypes { get; private set; }
+    public static void RegisterType(Type type)
+    {
+      settingTypes.Add(type);
+    }
+
+    public static void UnregisterType(Type type)
+    {
+      settingTypes.Remove(type);
+    }
+
+
     public static string DefaultFileName {
       get {
         var path = Path.Combine(
@@ -72,7 +91,7 @@ namespace PeerCastStation.Core
     public void Save()
     {
       System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(FileName));
-      var serializer = new NetDataContractSerializer();
+      var serializer = new DataContractSerializer(typeof(object[]), settingTypes);
       using (var writer=XmlWriter.Create(System.IO.File.Create(FileName), new XmlWriterSettings { Indent = true, })) {
         object[] ary;
         lock (values) {
@@ -84,11 +103,16 @@ namespace PeerCastStation.Core
 
     public bool Load()
     {
-      var serializer = new NetDataContractSerializer();
+      var serializer = new DataContractSerializer(typeof(object[]), settingTypes);
       if (!System.IO.File.Exists(FileName)) return false;
-      using (var fd=System.IO.File.OpenRead(FileName)) {
-        values = new List<object>((object[])serializer.Deserialize(fd));
+      try {
+        using (var fd=System.IO.File.OpenRead(FileName)) {
+          values = new List<object>((object[])serializer.ReadObject(fd));
+        }
       }
+      catch (SerializationException) { return false; }
+      catch (XmlException) { return false; }
+      catch (IOException)  { return false; }
       return true;
     }
   }
