@@ -7,6 +7,7 @@
     <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
   </head>
   <body>
+    
     <div class="navbar">
       <div class="navbar-inner">
         <div class="container-fluid">
@@ -58,7 +59,23 @@ Macなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
 
 <h2 id="section-2">更新履歴</h2>
 
-<h3 id="section-3">1.1.0 (2013年1月29日版)</h3>
+<h3 id="section-3">1.2.0 (2013年2月28日版)</h3>
+
+<p>設定ファイルの保存場所および内容が変わりました。
+以前からの設定は引き継がれるはずですが、念のため起動後に設定を確認してください。</p>
+
+<ul>
+  <li>一定時間接続されていないチャンネル(ERRORやIDLEのチャンネル)を自動的に切断するようにしました。既定値は30分ですがGUIの設定で変更できます。HTML UIからの設定はまだできてません</li>
+  <li>HTML UIにドキュメントを統合しました。一番上にあるナビゲーションからヘルプを選ぶと見ることができます</li>
+  <li>ステータスアイコンを右クリックしたメニューからヘルプを開けるようにしました</li>
+  <li>HTTPで/を取得しようとした時(http://localhost:7144/などにアクセスした時)に/html/index.htmlに転送するようにしました</li>
+  <li>ウィンドウを起動時に開かない設定にするとリレー開始した時に落ちることがあったのを修正しました</li>
+  <li>monoの一部バージョンでHTML UIが動かないことがあるのに対処しました</li>
+  <li>機能追加をやりやすくするために設定ファイルの保存場所および内容を変更しました。新旧の設定保存先はヘルプの<a href="misc.html">その他</a>を参照してください</li>
+</ul>
+
+<h3 id="section-4">1.1.0 (2013年1月29日版)</h3>
+
 <ul>
   <li>再接続後に下流へのリレーが止まってしまうことがあるのを修正しました</li>
   <li>チャンネル再接続時に再接続をせずにすぐにERRORになってしまうことがあったのを修正しました</li>
@@ -72,7 +89,8 @@ Macなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>一部のチャンネルでチャンネル情報が文字化けすることがあるのを仕方なく対処してやりました。本来はShift-JISなんかでチャンネル情報を流す方が悪い</li>
 </ul>
 
-<h3 id="section-4">1.0.0 (2012年12月31日版)</h3>
+<h3 id="section-5">1.0.0 (2012年12月31日版)</h3>
+
 <p>主にバグ修正です。PeerCast互換という意味ではだいたい足りてきたのでVersion 1.0になりました。
 今後はPeerCastになかった新機能の追加も積極的に行う予定です。</p>
 
@@ -90,14 +108,16 @@ Macなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>31日版:HTML UIで起動時間・チャンネルリレー時間の計算が間違っていたのを修正しました</li>
 </ul>
 
-<h3 id="section-5">0.9.0 (2012年11月29日版)</h3>
+<h3 id="section-6">0.9.0 (2012年11月29日版)</h3>
+
 <ul>
   <li>リレー要求を受け付けた際に新しく接続されたリレー先に多量のデータを集中して送ってしまっていたのを修正しました</li>
   <li>GUIでチャンネル一覧と接続一覧にリレー可否状況を記号で表示するようにしました</li>
   <li>エンコードが停止再開されたあとやチャンネルの位置が4GBを越えた場合も安定して視聴やリレーができるように改善しました</li>
 </ul>
 
-<h3 id="section-6">0.8.1 (2012年10月29日版)</h3>
+<h3 id="section-7">0.8.1 (2012年10月29日版)</h3>
+
 <ul>
   <li>リレーの再接続時に正しく再接続できずにERRORになることがあったのを修正しました</li>
   <li>UIで現在の各接続における送受信ビットレートを表示するようにしました</li>
@@ -109,7 +129,8 @@ Macなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>その他細かいバグ修正やコードの整理を行ないました</li>
 </ul>
 
-<h3 id="section-7">0.8.0 きゃすけっと2012秋版</h3>
+<h3 id="section-8">0.8.0 きゃすけっと2012秋版</h3>
+
 <ul>
   <li>リレー・配信ともに安定性を向上しました</li>
   <li>FLVとMKVの配信に対応しました。ただし視聴側のPeerCast本体も対応している必要があります</li>
@@ -118,17 +139,20 @@ Macなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>簡易的なバージョンアップチェックを追加しました</li>
 </ul>
 
-<h3 id="section-8">0.7.0 きゃすけっと2012春版</h3>
+<h3 id="section-9">0.7.0 きゃすけっと2012春版</h3>
+
 <ul>
   <li>なんかいろいろ修正した。主にHTML UIを追加した</li>
 </ul>
 
-<h3 id="section-9">0.6.1</h3>
+<h3 id="section-10">0.6.1</h3>
+
 <ul>
   <li>HTTP出力でメモリリークしていたのを修正した。YP接続部分のログを出力するようにした。</li>
 </ul>
 
-<h3 id="section-10">0.6.0</h3>
+<h3 id="section-11">0.6.0</h3>
+
 <ul>
   <li>初期配布バージョン</li>
 </ul>
@@ -137,5 +161,7 @@ Macなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
         </div>
       </div>
     </div>
+    
+    
   </body>
 </html>

@@ -31,10 +31,36 @@ Macなどでは[mono-projectからダウンロードして](http://www.go-mono.c
 monoで上手く動かない場合はPeerCastStation.GUI.dllを削除すると起動できます。
 この場合はGUIが出ないですが、ポートが開ければWebブラウザから[http://localhost:7144/html/index.html](http://localhost:7144/html/index.html)にアクセスして操作できます。
 
+{% case site.target %}
+{% when 'site' %}
+ダウンロード
+------------
+{% else %}
 更新履歴
 --------
+{% endcase %}
+
+### 1.2.0 (2013年2月28日版)
+{% if site.target == 'site' %}
+[ダウンロード](http://www.pecastation.org/files/PeerCastStation-1.2.0.zip)
+{% endif %}
+
+設定ファイルの保存場所および内容が変わりました。
+以前からの設定は引き継がれるはずですが、念のため起動後に設定を確認してください。
+
+* 一定時間接続されていないチャンネル(ERRORやIDLEのチャンネル)を自動的に切断するようにしました。既定値は30分ですがGUIの設定で変更できます。HTML UIからの設定はまだできてません
+* HTML UIにドキュメントを統合しました。一番上にあるナビゲーションからヘルプを選ぶと見ることができます
+* ステータスアイコンを右クリックしたメニューからヘルプを開けるようにしました
+* HTTPで/を取得しようとした時(http://localhost:7144/などにアクセスした時)に/html/index.htmlに転送するようにしました
+* ウィンドウを起動時に開かない設定にするとリレー開始した時に落ちることがあったのを修正しました
+* monoの一部バージョンでHTML UIが動かないことがあるのに対処しました
+* 機能追加をやりやすくするために設定ファイルの保存場所および内容を変更しました。新旧の設定保存先はヘルプの[その他](misc.html)を参照してください
 
 ### 1.1.0 (2013年1月29日版)
+{% if site.target == 'site' %}
+[ダウンロード](http://www.pecastation.org/files/PeerCastStation-1.1.0.zip)
+{% endif %}
+
 * 再接続後に下流へのリレーが止まってしまうことがあるのを修正しました
 * チャンネル再接続時に再接続をせずにすぐにERRORになってしまうことがあったのを修正しました
 * ERRORやIDLEになってるチャンネルを視聴しようとした時に再接続を行うようにしました
@@ -47,6 +73,10 @@ monoで上手く動かない場合はPeerCastStation.GUI.dllを削除すると�
 * 一部のチャンネルでチャンネル情報が文字化けすることがあるのを仕方なく対処してやりました。本来はShift-JISなんかでチャンネル情報を流す方が悪い
 
 ### 1.0.0 (2012年12月31日版)
+{% if site.target == 'site' %}
+[ダウンロード](http://www.pecastation.org/files/PeerCastStation-1.0.0.zip)
+{% endif %}
+
 主にバグ修正です。PeerCast互換という意味ではだいたい足りてきたのでVersion 1.0になりました。
 今後はPeerCastになかった新機能の追加も積極的に行う予定です。
 
@@ -63,11 +93,19 @@ monoで上手く動かない場合はPeerCastStation.GUI.dllを削除すると�
 * 31日版:HTML UIで起動時間・チャンネルリレー時間の計算が間違っていたのを修正しました
 
 ### 0.9.0 (2012年11月29日版)
+{% if site.target == 'site' %}
+[ダウンロード](http://www.pecastation.org/files/PeerCastStation-0.9.0.zip)
+{% endif %}
+
 * リレー要求を受け付けた際に新しく接続されたリレー先に多量のデータを集中して送ってしまっていたのを修正しました
 * GUIでチャンネル一覧と接続一覧にリレー可否状況を記号で表示するようにしました
 * エンコードが停止再開されたあとやチャンネルの位置が4GBを越えた場合も安定して視聴やリレーができるように改善しました
 
 ### 0.8.1 (2012年10月29日版)
+{% if site.target == 'site' %}
+[ダウンロード](http://www.pecastation.org/files/PeerCastStation-0.8.1.zip)
+{% endif %}
+
 * リレーの再接続時に正しく再接続できずにERRORになることがあったのを修正しました
 * UIで現在の各接続における送受信ビットレートを表示するようにしました
 * http://～/admin?cmd=stopとhttp://～/admin?cmd=bumpでチャンネルの停止と再接続ができるように対応しました
@@ -78,6 +116,10 @@ monoで上手く動かない場合はPeerCastStation.GUI.dllを削除すると�
 * その他細かいバグ修正やコードの整理を行ないました
 
 ### 0.8.0 きゃすけっと2012秋版
+{% if site.target == 'site' %}
+[ダウンロード](http://www.pecastation.org/files/PeerCastStation-0.8.0.zip)
+{% endif %}
+
 * リレー・配信ともに安定性を向上しました
 * FLVとMKVの配信に対応しました。ただし視聴側のPeerCast本体も対応している必要があります
 * 配信時にYPへの掲載状況を接続先リストに表示できるようにしました。再接続もできます
@@ -85,11 +127,17 @@ monoで上手く動かない場合はPeerCastStation.GUI.dllを削除すると�
 * 簡易的なバージョンアップチェックを追加しました
 
 ### 0.7.0 きゃすけっと2012春版
+{% if site.target == 'site' %}
+[ダウンロード](http://www.pecastation.org/files/PeerCastStation-0.7.0.zip)
+{% endif %}
+
 * なんかいろいろ修正した。主にHTML UIを追加した
 
 ### 0.6.1
+
 * HTTP出力でメモリリークしていたのを修正した。YP接続部分のログを出力するようにした。
 
 ### 0.6.0
+
 * 初期配布バージョン
 

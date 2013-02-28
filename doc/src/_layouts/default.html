@@ -7,6 +7,7 @@
     <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
   </head>
   <body>
+    {% if site.target == 'help' %}
     <div class="navbar">
       <div class="navbar-inner">
         <div class="container-fluid">
@@ -35,5 +36,29 @@
         </div>
       </div>
     </div>
+    {% endif %}
+    {% if site.target == 'site' %}
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <a class="brand" href="#">PeerCastStation</a>
+          <ul class="nav">
+            <li {%if page.name == 'index'    %} class="active" {%endif%}><a href="index.html"    >PeerCastStationについて＆ダウンロード</a></li>
+            <li {%if page.name == 'usage'    %} class="active" {%endif%}><a href="usage.html"    >使い方</a></li>
+            <li {%if page.name == 'broadcast'%} class="active" {%endif%}><a href="broadcast.html">配信</a></li>
+            <li {%if page.name == 'settings' %} class="active" {%endif%}><a href="settings.html" >設定</a></li>
+            <li {%if page.name == 'misc'     %} class="active" {%endif%}><a href="misc.html"     >その他</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span10 offset1">
+          {{ content }}
+        </div>
+      </div>
+    </div>
+    {% endif %}
   </body>
 </html>

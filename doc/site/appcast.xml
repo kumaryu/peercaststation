@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"  xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>PeerCastStation更新情報</title>
+    <link>http://www.pecastation.org/</link>
+    <description>PeerCastStationの更新情報です。</description>
+    <language>ja</language>      
+    <item>
+      <title>Version 1.2.0 (2013年2月28日版)</title>
+      <description>
+        <h3>1.2.0 (2013年2月28日版)</h3>
+        <p>設定ファイルの保存場所および内容が変わりました。以前からの設定は引き継がれるはずですが、念のため起動後に設定を確認してください。</p>
+        <ul>
+          <li>一定時間接続されていないチャンネル(ERRORやIDLEのチャンネル)を自動的に切断するようにしました。既定値は30分ですがGUIの設定で変更できます。HTML UIからの設定はまだできてません</li>
+          <li>HTML UIにドキュメントを統合しました。一番上にあるナビゲーションからヘルプを選ぶと見ることができます</li>
+          <li>ステータスアイコンを右クリックしたメニューからヘルプを開けるようにしました</li>
+          <li>HTTPで/を取得しようとした時(http://localhost:7144/などにアクセスした時)に/html/index.htmlに転送するようにしました</li>
+          <li>ウィンドウを起動時に開かない設定にするとリレー開始した時に落ちることがあったのを修正しました</li>
+          <li>monoの一部バージョンでHTML UIが動かないことがあるのに対処しました</li>
+          <li>機能追加をやりやすくするために設定ファイルの保存場所および内容を変更しました。新旧の設定保存先はヘルプのその他を参照してください</li>
+        </ul>
+      </description>
+      <pubDate>Thu, 28 Feb 2013 23:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-1.2.0.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-1.2.0.zip" sparkle:version="1.2.0" length="1419469" type="application/octet-stream" />
+    </item>
+    <item>
+      <title>Version 1.1.0 (2013年1月29日版)</title>
+      <description>
+        <h3>1.1.0 (2013年1月29日版)</h3>
+        <ul>
+          <li>再接続後に下流へのリレーが止まってしまうことがあるのを修正しました</li>
+          <li>チャンネル再接続時に再接続をせずにすぐにERRORになってしまうことがあったのを修正しました</li>
+          <li>ERRORやIDLEになってるチャンネルを視聴しようとした時に再接続を行うようにしました</li>
+          <li>GUIで起動時にウィンドウを表示するかどうかを設定できるようにしました。設定タブの下の方にあるチェックを外すとウィンドウ非表示で起動するようになります</li>
+          <li>GUIのチャンネル一覧において状況表示記号を接続してないチャンネルでは空白にするようにしました</li>
+          <li>依存しているライブラリを更新しました。HTML UIの見た目がちょっと変わっています</li>
+          <li>HTML UIでチャンネル一覧のストリームURLとプレイリストURLがおかしくなっていたのを修正しました</li>
+          <li>HTML UIでポート開放状況の表示が逆だった(ポート開いてる時にNGになってる)のを修正しました</li>
+          <li>viewxmlで取得できるxmlでチャンネル毎のuptimeとageの文字列がおかしかったのを修正しました</li>
+          <li>一部のチャンネルでチャンネル情報が文字化けすることがあるのを仕方なく対処してやりました。本来はShift-JISなんかでチャンネル情報を流す方が悪い</li>
+        </ul>
+      </description>
+      <pubDate>Mon, 28 Jan 2013 23:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-1.1.0.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-1.1.0.zip" sparkle:version="1.1.0" length="1419469" type="application/octet-stream" />
+    </item>
+    <item>
+      <title>Version 1.0.0 (2012年12月31日版)</title>
+      <description>
+        <h3>1.0.0 (2012年12月31日版)</h3>
+        <p>主にバグ修正です。PeerCast互換という意味ではだいたい足りてきたのでVersion 1.0になりました。</p>
+        <p>今後はPeerCastになかった新機能の追加も積極的に行う予定です。</p>
+        <p>12月23日に一度1.0.0を出しましたが、細かいバグをちょっと直して31日版として出し直しました。</p>
+        <ul>
+          <li>ついにバージョン1.0になりました。今後は新機能の追加を積極的に行う予定です</li>
+          <li>新バージョン通知時にリリースノートを表示するようにしました</li>
+          <li>HTML UIから配信開始した場合、チャンネル終了後にYPへの掲載が終了しないのを修正しました</li>
+          <li>稀に配信終了後にYPへの掲載が終了しないのを修正しました</li>
+          <li>ログの表示を1000行までに制限してメモリを食いすぎないようにしました</li>
+          <li>チャンネルが残っている間に終了するとエラーが出ていたのを終了しました</li>
+          <li>.NET4/4.5のみが入っている環境(つまり.NET3.5を入れていないWindows8)でも起動できるようにしました。たぶん</li>
+          <li>31日版:新バージョンチェック用の日付が11月のままだったのを修正しました</li>
+          <li>31日版:HTML UIで起動時間・チャンネルリレー時間の計算が間違っていたのを修正しました</li>
+        </ul>
+      </description>
+      <pubDate>Sun, 30 Dec 2012 2:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-1.0.0.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-1.0.0.zip" sparkle:version="1.0.0" length="1250498" type="application/octet-stream" />
+    </item>
+    <item>
+      <title>Version 0.9.0 (2012年11月29日版)</title>
+      <description>
+        0.9.0 (2012年11月29日版)
+        * リレー要求を受け付けた際に新しく接続されたリレー先に多量のデータを集中して送ってしまっていたのを修正しました
+        * GUIでチャンネル一覧と接続一覧にリレー可否状況を記号で表示するようにしました
+        * エンコードが停止再開されたあとやチャンネルの位置が4GBを越えた場合も安定して視聴やリレーができるように改善しました
+      </description>
+      <pubDate>Thu, 29 Nov 2012 23:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-0.9.0.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-0.9.0.zip" sparkle:version="0.9.0" length="1264693" type="application/octet-stream" />
+    </item>
+    <item>
+      <title>Version 0.8.1 (2012年10月29日版)</title>
+      <description>
+        0.8.1 (2012年10月29日版)
+        * リレーの再接続時に正しく再接続できずにERRORになることがあったのを修正しました
+        * UIで現在の各接続における送受信ビットレートを表示するようにしました
+        * http://～/admin?cmd=stopとhttp://～/admin?cmd=bumpでチャンネルの停止と再接続ができるように対応しました
+        * 接続一覧に接続相手のUserAgentが正しく表示されるようにしました
+        * リレーがいっぱいのでもリレー要求先に余計なデータを送っていたのを修正しました。リレー要求が来た時に他のリレーが不安定になっていた問題の修正です
+        * GUIでYPのアドレス入力をしても追加できないことがあったのを修正しました
+        * リレーや視聴してるチャンネルの位置が4GBを越えると止まってしまっていたのを修正しました
+        * その他細かいバグ修正やコードの整理を行ないました
+      </description>
+      <pubDate>Mon, 29 Oct 2012 23:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-0.8.1.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-0.8.1.zip" sparkle:version="0.8.1" length="1262544" type="application/octet-stream" />
+    </item>
+    <item>
+      <title>Version 0.8.0 (きゃすけっと2012秋版)</title>
+      <description>
+        きゃすけっと2012秋バージョン
+        * リレー・配信ともに安定性を向上しました
+        * FLVとMKVの配信に対応しました。ただし視聴側のPeerCast本体も対応している必要があります
+        * 配信時にYPへの掲載状況を接続先リストに表示できるようにしました。再接続もできます
+        * おはおはが終わってしまったので対応を外しました
+      </description>
+      <pubDate>Mon, 17 Sep 2012 16:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-0.8.0.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-0.8.0.zip" sparkle:version="0.8.0" length="1222903" type="application/octet-stream" />
+    </item>
+  </channel>
+</rss>

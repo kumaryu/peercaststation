@@ -7,6 +7,7 @@
     <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
   </head>
   <body>
+    
     <div class="navbar">
       <div class="navbar-inner">
         <div class="container-fluid">
@@ -43,14 +44,21 @@
 
 <p>に入っています。(ユーザ名)のところはログインしているユーザ名で置き換えてください。削除する場合はPeerCastStationフォルダごと削除してしまってください。</p>
 
-<p>Windows以外(mono)では</p>
+<p>古い設定ファイルは</p>
 
-<pre><code>~/.config/Documents/PeerCastStation
+<pre><code>C:\Users\(ユーザ名)\AppData\Local\PeerCastStation
 </code></pre>
 
-<p>に入っています。こちらもPeerCastStationディレクトリごと削除してください。</p>
+<p>に入っています。起動しない場合はこちらのファイルに不具合がある可能性があるのでフォルダごと削除してみてください。</p>
 
-<p>設定ファイルを削除すると当然次回起動時には各種設定が初期値に戻っています。上り帯域など適切に設定しなおすようにしてください。</p>
+<p>Windows以外(mono)では</p>
+
+<pre><code>~/.config/PeerCastStation
+</code></pre>
+
+<p>に入っています。こちらも削除する時はPeerCastStationディレクトリごと削除してください。</p>
+
+<p>設定ファイルを削除すると当然次回起動時には各種設定が初期値に戻っています。上り帯域などを適切に設定しなおすようにしてください。</p>
 
 <h2 id="section-2">ログ</h2>
 <p>GUIのログタブおよびHTML UIのログページではPeerCastStationが出力したログを見ることができます。
@@ -112,5 +120,7 @@
         </div>
       </div>
     </div>
+    
+    
   </body>
 </html>
