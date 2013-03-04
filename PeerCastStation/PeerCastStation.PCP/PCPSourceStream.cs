@@ -231,6 +231,8 @@ namespace PeerCastStation.PCP
           endpoint = new IPEndPoint(addr, port);
         }
       }
+      catch (ArgumentException) {
+      }
       catch (SocketException) {
       }
       return StartConnection(endpoint);
