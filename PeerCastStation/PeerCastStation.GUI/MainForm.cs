@@ -637,7 +637,7 @@ namespace PeerCastStation.GUI
 
     private void logLevelList_SelectedValueChanged(object sender, EventArgs e)
     {
-
+      Logger.Level = (LogLevel)logLevelList.SelectedValue;
     }
 
     private void logToFileCheck_CheckedChanged(object sender, EventArgs e)
