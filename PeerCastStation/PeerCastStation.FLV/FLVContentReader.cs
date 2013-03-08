@@ -52,15 +52,20 @@ namespace PeerCastStation.FLV
 
     private class FLVTag
     {
-      public byte[] Header    { get; private set; }
-      public byte[] Body      { get; private set; }
-      public byte[] Footer    { get; private set; }
-      public bool   Filter    { get; private set; }
-      public int    Type      { get; private set; }
-      public int    DataSize  { get; private set; }
-      public long   Timestamp { get; private set; }
-      public int    StreamID  { get; private set; }
-      public long   TagSize   {
+      public enum TagType {
+        Audio  = 8,
+        Video  = 9,
+        Script = 18,
+      }
+      public byte[]  Header    { get; private set; }
+      public byte[]  Body      { get; private set; }
+      public byte[]  Footer    { get; private set; }
+      public bool    Filter    { get; private set; }
+      public TagType Type      { get; private set; }
+      public int     DataSize  { get; private set; }
+      public long    Timestamp { get; private set; }
+      public int     StreamID  { get; private set; }
+      public long    TagSize   {
         get { return FLVContentReader.GetUInt32(this.Footer); }
       }
       public byte[] Binary {
@@ -71,7 +76,7 @@ namespace PeerCastStation.FLV
       {
         this.Header    = binary;
         this.Filter    = (binary[0] & 0x20)!=0;
-        this.Type      = binary[0] & 0x1F;
+        this.Type      = (TagType)(binary[0] & 0x1F);
         this.DataSize  =                   (binary[1]<<16) | (binary[2]<<8) | (binary[3]);
         this.Timestamp = (binary[7]<<24) | (binary[4]<<16) | (binary[5]<<8) | (binary[6]);
         this.StreamID  =                   (binary[8]<<16) | (binary[9]<<8) | (binary[10]);
@@ -83,7 +88,7 @@ namespace PeerCastStation.FLV
         get {
           return
             (Header[0] & 0xC0)==0 &&
-            (Type==8 || Type==9 || Type==19) &&
+            (Type==TagType.Audio || Type==TagType.Video || Type==TagType.Script) &&
             StreamID==0;
         }
       }
@@ -132,7 +137,6 @@ namespace PeerCastStation.FLV
     private int streamIndex = -1;
     private DateTime streamOrigin;
     private FileHeader fileHeader;
-    private LinkedList<TagDesc> tags = new LinkedList<TagDesc>();
 
     public ParsedContent Read(Stream stream)
     {
@@ -161,7 +165,6 @@ namespace PeerCastStation.FLV
                 info.SetChanInfoStreamExt(".flv");
                 res.ChannelInfo = new ChannelInfo(info);
                 position = bin.Length;
-                tags.Clear();
                 state = ReaderState.Body;
               }
               else {
@@ -182,13 +185,8 @@ namespace PeerCastStation.FLV
                   bin = body.Binary;
                   if (res.Contents==null) res.Contents = new List<Content>();
                   res.Contents.Add(new Content(streamIndex, DateTime.Now-streamOrigin, position, bin));
-                  tags.AddLast(new TagDesc { Timestamp=body.Timestamp/1000.0, DataSize=body.DataSize });
-                  var timespan = tags.Last.Value.Timestamp-tags.First.Value.Timestamp;
-                  if (timespan>=30.0) {
-                    var sz = tags.Take(tags.Count-1).Sum(t => t.DataSize);
-                    info.SetChanInfoBitrate((int)(sz*8/timespan+900)/1000);
+                  if (body.Type==FLVTag.TagType.Script && OnScriptTag(body, info)) {
                     res.ChannelInfo = new ChannelInfo(info);
-                    while (tags.Count>1) tags.RemoveFirst();
                   }
                   position += bin.Length;
                 }
@@ -209,7 +207,6 @@ namespace PeerCastStation.FLV
                   info.SetChanInfoStreamType("video/x-flv");
                   info.SetChanInfoStreamExt(".flv");
                   res.ChannelInfo = new ChannelInfo(info);
-                  tags.Clear();
                   position = bin.Length;
                 }
               }
@@ -229,6 +226,217 @@ namespace PeerCastStation.FLV
         }
       }
       return res;
+    }
+
+    private class AMF0Reader
+      : IDisposable
+    {
+      public Stream BaseStream { get; private set; }
+      public AMF0Reader(Stream base_stream)
+      {
+        BaseStream = base_stream;
+      }
+
+      private enum DataType {
+        Number          = 0,
+        Boolean         = 1,
+        String          = 2,
+        Object          = 3,
+        MovieClip       = 4,
+        Null            = 5,
+        Undefined       = 6,
+        Reference       = 7,
+        Array           = 8,
+        ObjectEndMarker = 9,
+        StrictArray     = 10,
+        Date            = 11,
+        LongString      = 12,
+      }
+
+      public class ScriptDataObjectEnd {}
+      public class ScriptDataObject : Dictionary<string, object> { }
+      public class ScriptDataEcmaArray : Dictionary<string, object> { }
+
+      public object ReadValue()
+      {
+        switch ((DataType)ReadUI8()) {
+        case DataType.Number:
+          return ReadDouble();
+        case DataType.Boolean:
+          return ReadUI8()!=0;
+        case DataType.String:
+          return ReadString();
+        case DataType.Object:
+          return ReadObject();
+        case DataType.MovieClip:
+          return null; //Not supported
+        case DataType.Null:
+          return null;
+        case DataType.Undefined:
+          return null;
+        case DataType.Reference:
+          return ReadUI16(); //???
+        case DataType.Array:
+          return ReadEcmaArray();
+        case DataType.ObjectEndMarker:
+          return new ScriptDataObjectEnd();
+        case DataType.StrictArray:
+          return ReadStrictArray();
+        case DataType.Date:
+          return ReadDate();
+        case DataType.LongString:
+          return ReadLongString();
+        }
+        return null;
+      }
+
+      public string ReadString()
+      {
+        var len = ReadUI16();
+        var buf = new byte[len];
+        BaseStream.Read(buf, 0, len);
+        return System.Text.Encoding.UTF8.GetString(buf);
+      }
+
+      public string ReadLongString()
+      {
+        var len = ReadUI32();
+        var buf = new byte[len];
+        var pos = 0;
+        while (len>0) {
+          var read = BaseStream.Read(buf, pos, (int)Math.Min(len, Int32.MaxValue));
+          pos += read;
+          len -= read;
+        }
+        return System.Text.Encoding.UTF8.GetString(buf);
+      }
+
+      public long ReadUI32()
+      {
+        var buf = new byte[4];
+        BaseStream.Read(buf, 0, 4);
+        if (BitConverter.IsLittleEndian) Array.Reverse(buf);
+        return BitConverter.ToUInt32(buf, 0);
+      }
+
+      public int ReadUI16()
+      {
+        var buf = new byte[2];
+        BaseStream.Read(buf, 0, 2);
+        if (BitConverter.IsLittleEndian) Array.Reverse(buf);
+        return BitConverter.ToUInt16(buf, 0);
+      }
+
+      public int ReadSI16()
+      {
+        var buf = new byte[2];
+        BaseStream.Read(buf, 0, 2);
+        if (BitConverter.IsLittleEndian) Array.Reverse(buf);
+        return BitConverter.ToInt16(buf, 0);
+      }
+
+      public int ReadUI8()
+      {
+        var b = BaseStream.ReadByte();
+        if (b<0) throw new EndOfStreamException();
+        return b;
+      }
+
+      public double ReadDouble()
+      {
+        var buf = new byte[8];
+        BaseStream.Read(buf, 0, 8);
+        if (BitConverter.IsLittleEndian) Array.Reverse(buf);
+        return BitConverter.ToDouble(buf, 0);
+      }
+
+      private KeyValuePair<string, object>? ReadProperty()
+      {
+        var name = ReadString();
+        var value = ReadValue();
+        if (name=="" && value is ScriptDataObjectEnd) {
+          return null;
+        }
+        else {
+          return new KeyValuePair<string, object>(name, value);
+        }
+      }
+
+      public ScriptDataObject ReadObject()
+      {
+        var obj = new ScriptDataObject();
+        var prop = ReadProperty();
+        while (prop.HasValue) {
+          obj.Add(prop.Value.Key, prop.Value.Value);
+          prop = ReadProperty();
+        }
+        return obj;
+      }
+
+      public ScriptDataEcmaArray ReadEcmaArray()
+      {
+        var len = ReadUI32();
+        var obj = new ScriptDataEcmaArray();
+        var prop = ReadProperty();
+        while (prop.HasValue) {
+          obj.Add(prop.Value.Key, prop.Value.Value);
+          prop = ReadProperty();
+        }
+        return obj;
+      }
+
+      public object[] ReadStrictArray()
+      {
+        var ary = new object[ReadUI32()];
+        for (long i=0; i<ary.LongLength; i++) {
+          ary[i] = ReadValue();
+        }
+        return ary;
+      }
+
+      public DateTimeOffset ReadDate()
+      {
+        var time = ReadDouble();
+        var tz   = ReadSI16();
+        var utc = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(time);
+        return new DateTimeOffset(utc).ToOffset(TimeSpan.FromMinutes(tz));
+      }
+
+      public void Dispose()
+      {
+        BaseStream.Dispose();
+      }
+    }
+
+    private bool OnScriptTag(FLVTag tag, AtomCollection channel_info)
+    {
+      bool modified = false;
+      using (var reader=new AMF0Reader(new MemoryStream(tag.Body))) {
+        var name  = reader.ReadValue();
+        var value = reader.ReadValue();
+        if (!(name is string)) return false;
+        double bitrate = 0;
+        switch ((string)name) {
+        case "onMetaData":
+          {
+            var args = value as AMF0Reader.ScriptDataEcmaArray;
+            if (args==null) break;
+            object val;
+            if (args.TryGetValue("videodatarate", out val)) {
+              bitrate += (double)val;
+            }
+            if (args.TryGetValue("audiodatarate", out val)) {
+              bitrate += (double)val;
+            }
+          }
+          break;
+        }
+        if (bitrate!=0) {
+          channel_info.SetChanInfoBitrate((int)bitrate);
+          modified = true;
+        }
+      }
+      return modified;
     }
   }
 

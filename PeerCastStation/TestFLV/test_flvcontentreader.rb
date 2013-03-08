@@ -269,22 +269,7 @@ module TestFLV
           assert_equal 'video/x-flv', res.ChannelInfo.MIMEType
           assert_equal '.flv', res.ChannelInfo.ContentExtension
           assert_equal 'FLV',  res.ChannelInfo.ContentType
-          assert_equal 0,      res.ChannelInfo.Bitrate
-        end
-
-        should '少しづつ読んでいくとChannelInfo.Bitrateが更新される' do
-          header = read_slow
-
-          infos = []
-          while @file.position<@file.length do 
-            read_slow do |res|
-              infos << res.ChannelInfo if res.ChannelInfo
-            end
-          end
-          assert_not_empty infos
-          infos.each do |info|
-            assert_not_equal 0, info.Bitrate
-          end
+          assert_equal 248,    res.ChannelInfo.Bitrate
         end
       end
     end
