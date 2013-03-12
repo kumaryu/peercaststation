@@ -1,0 +1,49 @@
+﻿<!-- PeerCastStation, a P2P streaming servent.
+Copyright (C) 2013 PROGRE (djyayutto@gmail.com)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
+<Window x:Class="PeerCastStation.WPF.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:PeerCastStation.WPF.Logs"
+        xmlns:lc="clr-namespace:PeerCastStation.WPF.CoreSettings"
+        xmlns:lb="clr-namespace:PeerCastStation.WPF.ChannelLists"
+        Title="PeerCastStation" Height="600" Width="460">
+    <Window.Resources>
+        <Style TargetType="TabItem">
+            <Setter Property="Padding" Value="10,2"/>
+        </Style>
+    </Window.Resources>
+    <DockPanel>
+        <StatusBar DockPanel.Dock="Bottom">
+            <TextBlock Text="{Binding PortStatus}"/>
+        </StatusBar>
+        <TabControl>
+            <TabItem Header="チャンネル一覧">
+                <lb:ChannelListControl DataContext="{Binding ChannelList}"/>
+            </TabItem>
+            <TabItem Header="設定">
+                <lc:SettingControl DataContext="{Binding Setting}"/>
+            </TabItem>
+            <TabItem Header="ログ">
+                <Grid>
+                    <l:LogControl DataContext="{Binding Log}"/>
+                    <Button HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                            Margin="3" Width="100" Height="23" Content="バージョン情報..."
+                            Click="VersionInfoButton_Click"/>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>
