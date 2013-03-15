@@ -27,28 +27,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         </Style>
     </Window.Resources>
     <DockPanel>
-    <Menu DockPanel.Dock="Top">
-      <MenuItem Header="チャンネル(_C)">
-        <MenuItem Header="再生(_P)" />
-        <MenuItem Header="切断(_S)" />
-        <MenuItem Header="再接続(_R)" />
-        <Separator />
-        <MenuItem Header="配信(_B)..." />
-      </MenuItem>
-      <MenuItem Header="オプション(_O)">
-        <MenuItem Header="設定(_S)..." />
-        <MenuItem Header="ログ(_L)..." />
-        <Separator />
-        <MenuItem Header="HTML UIの表示(_H)..." />
-        <MenuItem Header="新しいバージョンの確認(_U)..." />
-        <Separator />
-        <MenuItem Header="終了(_Q)" />
-      </MenuItem>
-      <MenuItem Header="ヘルプ(_H)">
-        <MenuItem Header="ヘルプの表示(_H)..." />
-        <MenuItem Header="バージョン情報(_A)..." />
-      </MenuItem>
-    </Menu>
         <StatusBar DockPanel.Dock="Bottom">
             <TextBlock Text="{Binding PortStatus}"/>
         </StatusBar>
