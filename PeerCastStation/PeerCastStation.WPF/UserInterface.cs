@@ -86,29 +86,6 @@ namespace PeerCastStation.WPF
       mainThread.Join();
       notifyIconThread.Join();
     }
-
-    private void Load(Settings settings, MainViewModel mainWindow)
-    {
-      var log = mainWindow.Log;
-      log.LogLevel = settings.LogLevel;
-      log.IsOutputToGui = settings.LogToGUI;
-      log.IsOutputToConsole = settings.LogToConsole;
-      log.IsOutputToFile = settings.LogToFile;
-      log.OutputFileName = settings.LogFileName;
-      mainWindow.Setting.OtherSetting.IsShowWindowOnStartup = settings.ShowWindowOnStartup;
-    }
-
-    private void Save(MainViewModel mainWindow, Settings settings)
-    {
-      var log = mainWindow.Log;
-      settings.LogLevel = log.LogLevel;
-      settings.LogToGUI = log.IsOutputToGui;
-      settings.LogToConsole = log.IsOutputToConsole;
-      settings.LogToFile = log.IsOutputToFile;
-      settings.LogFileName = log.OutputFileName;
-      settings.ShowWindowOnStartup = mainWindow.Setting.OtherSetting.IsShowWindowOnStartup;
-      settings.Save();
-    }
   }
 
   [Plugin]

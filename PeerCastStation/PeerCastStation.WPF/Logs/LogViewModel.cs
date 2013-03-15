@@ -15,10 +15,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
 using System.IO;
-using System.Threading;
 using System.Windows.Input;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.Commons;
+using System.Collections.Generic;
 
 namespace PeerCastStation.WPF.Logs
 {
@@ -27,73 +27,84 @@ namespace PeerCastStation.WPF.Logs
     private readonly LogWriter guiWriter = new LogWriter(1000);
     private TextWriter logFileWriter;
 
-    private int logLevel;
-    public int LogLevel
+    private static readonly KeyValuePair<string,LogLevel>[] logLevelItems = new KeyValuePair<string,LogLevel>[] {
+      new KeyValuePair<string,LogLevel>("なし", LogLevel.None),
+      new KeyValuePair<string,LogLevel>("エラー全般", LogLevel.Error),
+      new KeyValuePair<string,LogLevel>("エラーと警告", LogLevel.Warn),
+      new KeyValuePair<string,LogLevel>("通知メッセージも含む", LogLevel.Info),
+      new KeyValuePair<string,LogLevel>("デバッグメッセージも含む", LogLevel.Debug),
+    };
+    public IEnumerable<KeyValuePair<string,LogLevel>> LogLevelItems {
+      get { return logLevelItems; }
+    }
+
+    public LogLevel LogLevel
     {
-      get { return logLevel; }
+      get { return Logger.Level; }
       set
       {
-        SetProperty("LogLevel", ref logLevel, value,
-          () => Logger.Level = GetLogLevel(value));
+        if (Logger.Level==value) return;
+        Logger.Level = value;
+        OnPropertyChanged("LogLevel");
       }
     }
 
-    private bool isOutputToGui;
+    private bool GetLoggerOutputTarget(LoggerOutputTarget target)
+    {
+      return (Logger.OutputTarget & target)!=0;
+    }
+
+    private void SetLoggerOutputTarget(LoggerOutputTarget target, bool value)
+    {
+      if (value) {
+        Logger.OutputTarget |= target;
+      }
+      else {
+        Logger.OutputTarget &= ~target;
+      }
+    }
+
     public bool IsOutputToGui
     {
-      get { return isOutputToGui; }
+      get { return GetLoggerOutputTarget(LoggerOutputTarget.UserInterface); }
       set
       {
-        SetProperty("IsOutputToGui", ref isOutputToGui, value,
-          () => RefreshWriter(guiWriter, value));
+        if (GetLoggerOutputTarget(LoggerOutputTarget.UserInterface)==value) return;
+        SetLoggerOutputTarget(LoggerOutputTarget.UserInterface, value);
+        OnPropertyChanged("IsOutputToGui");
       }
     }
 
-    private bool isOutputToConsole;
     public bool IsOutputToConsole
     {
-      get { return isOutputToConsole; }
+      get { return GetLoggerOutputTarget(LoggerOutputTarget.Console); }
       set
       {
-        SetProperty("IsOutputToConsole", ref isOutputToConsole, value,
-          () => RefreshWriter(Console.Error, value));
+        if (GetLoggerOutputTarget(LoggerOutputTarget.Console)==value) return;
+        SetLoggerOutputTarget(LoggerOutputTarget.Console, value);
+        OnPropertyChanged("IsOutputToConsole");
       }
     }
 
-    private bool isOutputToFile;
     public bool IsOutputToFile
     {
-      get { return isOutputToFile; }
+      get { return GetLoggerOutputTarget(LoggerOutputTarget.File); }
       set
       {
-        SetProperty("IsOutputToFile", ref isOutputToFile, value, () =>
-          {
-            if (logFileWriter != null)
-            {
-              RefreshWriter(logFileWriter, value);
-            }
-          });
+        if (GetLoggerOutputTarget(LoggerOutputTarget.File)==value) return;
+        SetLoggerOutputTarget(LoggerOutputTarget.File, value);
+        OnPropertyChanged("IsOutputToFile");
       }
     }
 
-    private string outputFileName;
     public string OutputFileName
     {
-      get { return outputFileName; }
+      get { return Logger.LogFileName; }
       set
       {
-        SetProperty("OutputFileName", ref outputFileName, value, () =>
-          {
-            if (logFileWriter != null)
-            {
-              Logger.RemoveWriter(logFileWriter);
-              logFileWriter.Close();
-              logFileWriter = null;
-            }
-            logFileWriter = GetLogFileWriter(value);
-            if (logFileWriter != null && IsOutputToFile)
-              Logger.AddWriter(logFileWriter);
-          });
+        if (Logger.LogFileName==value) return;
+        Logger.LogFileName = value;
+        OnPropertyChanged("OutputFileName");
       }
     }
 
@@ -104,6 +115,7 @@ namespace PeerCastStation.WPF.Logs
 
     internal LogViewModel()
     {
+      Logger.AddWriter(guiWriter);
       clear = new Command(() =>
         {
           guiWriter.Clear();
@@ -121,43 +133,5 @@ namespace PeerCastStation.WPF.Logs
       OnPropertyChanged("Log");
     }
 
-    private LogLevel GetLogLevel(int value)
-    {
-      switch (value)
-      {
-        case 0: return Core.LogLevel.None;
-        case 1: return Core.LogLevel.Fatal;
-        case 2: return Core.LogLevel.Error;
-        case 3: return Core.LogLevel.Warn;
-        case 4: return Core.LogLevel.Info;
-        case 5: return Core.LogLevel.Debug;
-        default: return Core.LogLevel.None;
-      }
-    }
-
-    private void RefreshWriter(TextWriter writer, bool active)
-    {
-      Logger.RemoveWriter(writer);
-      if (active)
-      {
-        Logger.AddWriter(writer);
-      }
-    }
-
-    private StreamWriter GetLogFileWriter(string fileName)
-    {
-      if (string.IsNullOrEmpty(fileName))
-        return null;
-      try
-      {
-        return File.AppendText(fileName);
-      }
-      catch (UnauthorizedAccessException) { return null; }
-      catch (ArgumentException) { return null; }
-      catch (PathTooLongException) { return null; }
-      catch (DirectoryNotFoundException) { return null; }
-      catch (NotSupportedException) { return null; }
-      catch (IOException) { return null; }
-    }
   }
 }

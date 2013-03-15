@@ -35,14 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
     <DockPanel>
         <DockPanel DockPanel.Dock="Top" Margin="3">
             <Label Margin="0,0,25,0" Content="ログ出力レベル"/>
-            <ComboBox SelectedIndex="{Binding LogLevel}">
-                <ComboBoxItem Content="なし"/>
-                <ComboBoxItem Content="致命的エラーのみ"/>
-                <ComboBoxItem Content="エラー全般"/>
-                <ComboBoxItem Content="エラーと警告"/>
-                <ComboBoxItem Content="通知メッセージも含む"/>
-                <ComboBoxItem Content="デバッグメッセージも含む"/>
-            </ComboBox>
+            <ComboBox ItemsSource="{Binding LogLevelItems}" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding LogLevel}"/>
         </DockPanel>
         <DockPanel DockPanel.Dock="Top" Margin="3">
             <CheckBox IsChecked="{Binding IsOutputToGui}" Content="GUIに出力"/>
