@@ -37,7 +37,6 @@ namespace PeerCastStation.WPF
     private AppCastReader versionChecker;
     public void Start(PeerCastApplication application)
     {
-      var settings = Settings.Default;
       notifyIconThread = new Thread(() =>
       {
         notifyIconManager = new NotifyIconManager(application.PeerCast);
@@ -51,8 +50,8 @@ namespace PeerCastStation.WPF
           }
         };
         versionChecker = new AppCastReader(
-          new Uri(settings.UpdateURL, UriKind.Absolute),
-          settings.CurrentVersion);
+          new Uri(Settings.Default.UpdateURL, UriKind.Absolute),
+          Settings.Default.CurrentVersion);
         versionChecker.NewVersionFound += (sender, e) => {
           notifyIconManager.NewVersionInfo = e.VersionDescription;
         };
@@ -66,11 +65,10 @@ namespace PeerCastStation.WPF
       {
         var app = new Application();
         viewModel = new MainViewModel(application);
-        Load(settings, viewModel);
+        var settings = application.Settings.Get<WPFSettings>();
         mainWindow = new MainWindow(viewModel);
         if (settings.ShowWindowOnStartup) mainWindow.Show();
         app.Run();
-        Save(viewModel, Settings.Default);
         viewModel.Dispose();
       });
       mainThread.SetApartmentState(ApartmentState.STA);

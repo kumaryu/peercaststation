@@ -78,18 +78,22 @@ namespace PeerCastStation.WPF.CoreSettings
     private readonly Command applyOthers;
     public Command ApplyOthers { get { return applyOthers; } }
 
-    private bool isShowWindowOnStartup;
     public bool IsShowWindowOnStartup
     {
-      get { return isShowWindowOnStartup; }
-      set
-      {
-        SetProperty("IsShowWindowOnStartup", ref isShowWindowOnStartup, value);
+      get { return pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup; }
+      set {
+        if (pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup!=value) {
+          pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup = value;
+          OnPropertyChanged("IsShowWindowOnStartup");
+        }
       }
     }
 
-    internal OtherSettingViewModel(AccessController accessController)
+    PeerCastApplication pecaApp;
+    internal OtherSettingViewModel(PeerCastApplication peca_app)
     {
+      pecaApp = peca_app;
+      var accessController = pecaApp.PeerCast.AccessController;
       applyOthers = new Command(
         () => WriteTo(accessController),
         () => IsChanged(accessController));

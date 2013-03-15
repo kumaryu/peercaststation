@@ -156,10 +156,10 @@ namespace PeerCastStation.WPF.CoreSettings
       get { return new YellowPagesEditViewModel(peerCast); }
     }
 
-    internal SettingViewModel(PeerCast peerCast)
+    internal SettingViewModel(PeerCastApplication peca_app)
     {
-      this.peerCast = peerCast;
-      otherSetting = new OtherSettingViewModel(peerCast.AccessController);
+      this.peerCast = peca_app.PeerCast;
+      otherSetting = new OtherSettingViewModel(peca_app);
 
       ports.SelectedItemChanged += (sender, e) =>
         {

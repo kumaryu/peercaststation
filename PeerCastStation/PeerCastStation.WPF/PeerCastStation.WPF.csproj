@@ -126,6 +126,7 @@
     <Compile Include="Dialogs\VersionInfoWindow.xaml.cs">
       <DependentUpon>VersionInfoWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="WPFSettings.cs" />
     <Page Include="ChannelLists\ChannelInfos\ChannelInfoControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

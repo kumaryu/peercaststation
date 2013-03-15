@@ -69,7 +69,7 @@ namespace PeerCastStation.WPF
       this.application = application;
       var peerCast = application.PeerCast;
       channelList = new ChannelListViewModel(peerCast);
-      setting = new SettingViewModel(peerCast);
+      setting = new SettingViewModel(application);
 
       timer = new DispatcherTimer(
         TimeSpan.FromSeconds(1),
