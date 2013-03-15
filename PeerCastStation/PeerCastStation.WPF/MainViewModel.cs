@@ -28,7 +28,6 @@ namespace PeerCastStation.WPF
 {
   class MainViewModel : ViewModelBase, IDisposable
   {
-    private bool disposed;
     private DispatcherTimer timer;
     private readonly PeerCastApplication application;
 
@@ -81,30 +80,9 @@ namespace PeerCastStation.WPF
       peerCast.ChannelRemoved += OnChannelChanged;
     }
 
-    ~MainViewModel()
-    {
-      this.Dispose(false);
-    }
-
     public void Dispose()
     {
-      GC.SuppressFinalize(this);
-      this.Dispose(true);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-      if (this.disposed)
-      {
-        return;
-      }
-      this.disposed = true;
-      if (disposing)
-      {
-        // マネージリソースの解放処理
-      }
-      // アンマネージリソースの解放処理
-      application.PeerCast.ChannelAdded -= OnChannelChanged;
+      application.PeerCast.ChannelAdded   -= OnChannelChanged;
       application.PeerCast.ChannelRemoved -= OnChannelChanged;
       log.Dispose();
     }
