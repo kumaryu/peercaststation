@@ -15,7 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
 using System.Threading;
-using System.Windows.Threading;
+using System.Windows;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.Properties;
 
@@ -29,28 +29,34 @@ namespace PeerCastStation.WPF
       get { return "PeerCastStation.WPF"; }
     }
 
+    MainWindow mainWindow;
     MainViewModel viewModel;
     Thread notifyIconThread;
     NotifyIconManager notifyIconManager;
     Thread mainThread;
-    WindowManager windowManager;
+    private AppCastReader versionChecker;
     public void Start(PeerCastApplication application)
     {
       var settings = Settings.Default;
-      viewModel = new MainViewModel(
-        application, settings.UpdateURL, settings.CurrentVersion);
-      viewModel.NewVersionFound += (sender, e)
-        => notifyIconManager.NewVersionInfo = e.VersionDescription;
-      Load(settings, viewModel);
       notifyIconThread = new Thread(() =>
       {
         notifyIconManager = new NotifyIconManager(application.PeerCast);
-        notifyIconManager.CheckVersionClicked += (sender, e)
-          => viewModel.CheckVersion();
-        notifyIconManager.QuitClicked += (sender, e) => application.Stop();
-        notifyIconManager.ShowWindowClicked += (sender, e)
-          => windowManager.ShowMainWindow();
-        viewModel.CheckVersion();
+        notifyIconManager.CheckVersionClicked += (sender, e) => versionChecker.CheckVersion();
+        notifyIconManager.QuitClicked         += (sender, e) => application.Stop();
+        notifyIconManager.ShowWindowClicked   += (sender, e) => {
+          if (mainWindow!=null) {
+            mainWindow.Dispatcher.Invoke(new Action(() => {
+              mainWindow.Show();
+            }));
+          }
+        };
+        versionChecker = new AppCastReader(
+          new Uri(settings.UpdateURL, UriKind.Absolute),
+          settings.CurrentVersion);
+        versionChecker.NewVersionFound += (sender, e) => {
+          notifyIconManager.NewVersionInfo = e.VersionDescription;
+        };
+        versionChecker.CheckVersion();
         notifyIconManager.Run();
       });
       notifyIconThread.SetApartmentState(ApartmentState.STA);
@@ -58,8 +64,14 @@ namespace PeerCastStation.WPF
 
       mainThread = new Thread(() =>
       {
-        windowManager = new WindowManager(viewModel);
-        windowManager.Run(settings.ShowWindowOnStartup);
+        var app = new Application();
+        viewModel = new MainViewModel(application);
+        Load(settings, viewModel);
+        mainWindow = new MainWindow(viewModel);
+        if (settings.ShowWindowOnStartup) mainWindow.Show();
+        app.Run();
+        Save(viewModel, Settings.Default);
+        viewModel.Dispose();
       });
       mainThread.SetApartmentState(ApartmentState.STA);
       mainThread.Start();
@@ -67,12 +79,14 @@ namespace PeerCastStation.WPF
 
     public void Stop()
     {
-      Save(viewModel, Settings.Default);
-      viewModel.Dispose();
+      if (mainWindow!=null) {
+        mainWindow.Dispatcher.Invoke(new Action(() => {
+          Application.Current.Shutdown();
+        }));
+      }
       notifyIconManager.Dispose();
-      windowManager.Dispose();
-      notifyIconThread.Join();
       mainThread.Join();
+      notifyIconThread.Join();
     }
 
     private void Load(Settings settings, MainViewModel mainWindow)

@@ -14,28 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.ChannelLists;
 using PeerCastStation.WPF.Commons;
 using PeerCastStation.WPF.CoreSettings;
 using PeerCastStation.WPF.Dialogs;
 using PeerCastStation.WPF.Logs;
+using System.Windows.Threading;
+using System.Windows;
 
 namespace PeerCastStation.WPF
 {
   class MainViewModel : ViewModelBase, IDisposable
   {
     private bool disposed;
-
-    private readonly Timer timer;
+    private DispatcherTimer timer;
     private readonly PeerCastApplication application;
-    private readonly AppCastReader versionChecker;
-
-    internal SynchronizationContext SynchronizationContext { private get; set; }
 
     public string PortStatus
     {
@@ -70,24 +65,17 @@ namespace PeerCastStation.WPF
       get { return new VersionInfoViewModel(application); }
     }
 
-    internal event NewVersionFoundEventHandler NewVersionFound
-    {
-      add { versionChecker.NewVersionFound += value; }
-      remove { versionChecker.NewVersionFound -= value; }
-    }
-
-    internal MainViewModel(
-      PeerCastApplication application, string updateUrl, DateTime currentVersion)
+    internal MainViewModel(PeerCastApplication application)
     {
       this.application = application;
       var peerCast = application.PeerCast;
       channelList = new ChannelListViewModel(peerCast);
       setting = new SettingViewModel(peerCast);
 
-      timer = new Timer(o => UpdateStatus(), null, 1000, 1000);
-
-      versionChecker = new AppCastReader(
-        new Uri(updateUrl, UriKind.Absolute), currentVersion);
+      timer = new DispatcherTimer(
+        TimeSpan.FromSeconds(1),
+        DispatcherPriority.Normal, (sender, e) => UpdateStatus(),
+        Application.Current.Dispatcher);
 
       peerCast.ChannelAdded += OnChannelChanged;
       peerCast.ChannelRemoved += OnChannelChanged;
@@ -121,21 +109,18 @@ namespace PeerCastStation.WPF
       log.Dispose();
     }
 
-    internal void CheckVersion()
-    {
-      versionChecker.CheckVersion();
-    }
-
-    private void UpdateStatus()
+    public void UpdateStatus()
     {
       OnPropertyChanged("PortStatus");
-      SynchronizationContext.Post(o => channelList.UpdateChannelList(), null);
+      channelList.UpdateChannelList();
       log.UpdateLog();
     }
 
     private void OnChannelChanged(object sender, EventArgs e)
     {
-      SynchronizationContext.Post(o => channelList.UpdateChannelList(), null);
+      Application.Current.Dispatcher.BeginInvoke(new Action(() => {
+        channelList.UpdateChannelList();
+      }));
     }
   }
 }

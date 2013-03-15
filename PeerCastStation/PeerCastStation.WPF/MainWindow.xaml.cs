@@ -13,36 +13,20 @@
 // 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Forms;
-using System.Windows.Input;
-using System.Windows.Interop;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using PeerCastStation.Core;
 using PeerCastStation.WPF.Dialogs;
-using Forms = System.Windows.Forms;
-using Drawing = System.Drawing;
 
 namespace PeerCastStation.WPF
 {
   /// <summary>
   /// MainWindow.xaml の相互作用ロジック
   /// </summary>
-  public partial class MainWindow : Window
+  internal partial class MainWindow : Window
   {
-    public MainWindow()
+    public MainWindow(MainViewModel viewmodel)
     {
       InitializeComponent();
+      this.DataContext = viewmodel;
     }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
