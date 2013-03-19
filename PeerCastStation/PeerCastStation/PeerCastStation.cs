@@ -207,6 +207,15 @@ namespace PeerCastStation.Main
           }
           catch (System.Net.Sockets.SocketException e) {
             logger.Error(e);
+            try {
+              peerCast.StartListen(
+                new System.Net.IPEndPoint(listen_addr, 0),
+                OutputStreamType.All,
+                OutputStreamType.None);
+            }
+            catch (System.Net.Sockets.SocketException e2) {
+              logger.Error(e2);
+            }
           }
         }
         if (s.YellowPages!=null) {
