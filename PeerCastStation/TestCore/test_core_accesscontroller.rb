@@ -56,7 +56,6 @@ module TestCore
       assert_equal(0, ac.max_plays)
       assert_equal(0, ac.max_plays_per_channel)
       assert_equal(0, ac.max_upstream_rate)
-      assert(ac.respond_to?(:create_obj_ref))
     end
 
     def test_is_channel_relayable_empty

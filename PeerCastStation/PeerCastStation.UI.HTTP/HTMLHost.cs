@@ -9,8 +9,7 @@ using System.Collections.Generic;
 namespace PeerCastStation.UI.HTTP
 {
   public class HTMLHost
-    : MarshalByRefObject,
-      IUserInterface
+    : IUserInterface
   {
     class FileDesc
     {

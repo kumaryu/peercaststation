@@ -61,8 +61,7 @@ namespace PeerCastStation.Core
   }
 
   public class ContentCollection
-    : MarshalByRefObject,
-      ICollection<Content>
+    : ICollection<Content>
   {
     private struct ContentKey
       : IComparable<ContentKey>

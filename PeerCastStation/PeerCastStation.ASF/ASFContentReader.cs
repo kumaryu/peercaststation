@@ -322,8 +322,7 @@ namespace PeerCastStation.ASF
   };
 
   public class ASFContentReader
-    : MarshalByRefObject,
-      IContentReader
+    : IContentReader
   {
     public ASFContentReader(Channel channel)
     {

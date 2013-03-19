@@ -7,8 +7,7 @@ using PeerCastStation.Core;
 namespace PeerCastStation.GUI
 {
   public class UserInterface
-    : MarshalByRefObject,
-      IUserInterface
+    : IUserInterface
   {
     public string Name
     {
@@ -47,8 +46,7 @@ namespace PeerCastStation.GUI
 
   [Plugin]
   public class UserInterfaceFactory
-    : MarshalByRefObject,
-      IUserInterfaceFactory
+    : IUserInterfaceFactory
   {
     public string Name
     {

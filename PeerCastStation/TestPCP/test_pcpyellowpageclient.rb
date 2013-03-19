@@ -41,7 +41,6 @@ module TestPCP
       factory = PCSPCP::PCPYellowPageClientFactory.new(@peercast)
       assert_equal(factory.Name, 'PCP')
       assert_equal(factory.Protocol, 'pcp')
-      assert(factory.respond_to?(:create_obj_ref))
     end
 
     def test_create

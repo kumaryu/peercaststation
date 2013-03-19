@@ -21,8 +21,7 @@ using System.Threading;
 namespace PeerCastStation.Core
 {
   public abstract class SourceStreamFactoryBase
-    : MarshalByRefObject,
-      ISourceStreamFactory
+    : ISourceStreamFactory
   {
     public PeerCast PeerCast { get; private set; }
     public SourceStreamFactoryBase(PeerCast peercast)
@@ -44,8 +43,7 @@ namespace PeerCastStation.Core
   }
 
   public abstract class SourceStreamBase
-    : MarshalByRefObject,
-      ISourceStream
+    : ISourceStream
   {
     public PeerCast PeerCast { get; private set; }
     public Channel Channel { get; private set; }

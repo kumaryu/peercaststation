@@ -91,7 +91,6 @@ module TestHTTP
       factory = PCSHTTP::HTTPOutputStreamFactory.new(@peercast)
       assert_equal('HTTP', factory.Name)
       assert(factory.priority==0)
-      assert(factory.respond_to?(:create_obj_ref))
     end
 
     def test_parse_channel_id
@@ -238,7 +237,6 @@ module TestHTTP
       assert_equal(PCSCore::OutputStreamType.play, stream.output_stream_type)
       assert(!stream.is_stopped)
       assert(!stream.is_local)
-      assert(stream.respond_to?(:create_obj_ref))
     end
 
     def test_upstream_rate

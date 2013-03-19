@@ -23,7 +23,6 @@ namespace PeerCastStation.Core
   /// チャンネルへの接続制御を行なうクラスです
   /// </summary>
   public class AccessController
-    : MarshalByRefObject
   {
     /// <summary>
     /// 所属するPeerCastオブジェクトを取得します

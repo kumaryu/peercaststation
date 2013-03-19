@@ -11,8 +11,7 @@ using Newtonsoft.Json.Linq;
 namespace PeerCastStation.UI.HTTP
 {
   public class APIHost
-    : MarshalByRefObject,
-      IUserInterface
+    : IUserInterface
   {
     public string Name { get { return "HTTP API Host UI"; } }
     public LogWriter LogWriter { get { return logWriter; } }

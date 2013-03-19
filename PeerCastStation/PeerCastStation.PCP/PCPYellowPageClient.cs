@@ -11,8 +11,7 @@ namespace PeerCastStation.PCP
 {
   [Plugin]
   public class PCPYellowPageClientFactory
-    : MarshalByRefObject,
-      IYellowPageClientFactory
+    : IYellowPageClientFactory
   {
     public PeerCast PeerCast { get; private set; }
     public string Name { get { return "PCP"; } }
@@ -35,8 +34,7 @@ namespace PeerCastStation.PCP
   }
 
   public class PCPYellowPageClient
-    : MarshalByRefObject,
-      IYellowPageClient
+    : IYellowPageClient
   {
     private const int PCP_VERSION    = 1218;
     private const int PCP_VERSION_VP = 27;

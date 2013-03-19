@@ -44,7 +44,6 @@ module TestCore
       assert_equal(0, channel.nodes.count)
       assert_nil(channel.content_header)
       assert_equal(0, channel.contents.count)
-      assert(channel.respond_to?(:create_obj_ref))
     end
 
     def test_construct_bcid

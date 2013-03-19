@@ -43,7 +43,6 @@ namespace PeerCastStation.Core
   }
 
   public abstract class PeerCastApplication
-    : MarshalByRefObject
   {
     private static PeerCastApplication current;
     public static PeerCastApplication Current {

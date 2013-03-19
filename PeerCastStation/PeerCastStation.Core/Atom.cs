@@ -702,8 +702,7 @@ namespace PeerCastStation.Core
   /// ストリームにAtomを書き込むためのアダプタクラスです
   /// </summary>
   public class AtomWriter
-    : MarshalByRefObject,
-      IDisposable
+    : IDisposable
   {
     private bool disposed = false;
     private Stream stream;
@@ -811,8 +810,7 @@ namespace PeerCastStation.Core
   /// ストリームからAtomを読み取るアダプタクラスです
   /// </summary>
   public class AtomReader
-    : MarshalByRefObject,
-      IDisposable
+    : IDisposable
   {
     private bool disposed = false;
     private Stream stream;

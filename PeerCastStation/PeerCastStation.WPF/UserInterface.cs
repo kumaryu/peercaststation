@@ -22,7 +22,7 @@ using PeerCastStation.WPF.Properties;
 namespace PeerCastStation.WPF
 {
   public class UserInterface
-    : MarshalByRefObject, IUserInterface
+    : IUserInterface
   {
     public string Name
     {
@@ -90,8 +90,7 @@ namespace PeerCastStation.WPF
 
   [Plugin]
   public class UserInterfaceFactory
-    : MarshalByRefObject,
-      IUserInterfaceFactory
+    : IUserInterfaceFactory
   {
     public string Name
     {

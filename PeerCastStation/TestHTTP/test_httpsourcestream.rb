@@ -88,7 +88,6 @@ module TestHTTP
       factory = PCSHTTP::HTTPSourceStreamFactory.new(@peercast)
       assert_equal('http', factory.Name)
       assert_equal('http', factory.scheme)
-      assert(factory.respond_to?(:create_obj_ref))
     end
 
     def test_create_relay
@@ -231,7 +230,6 @@ module TestHTTP
       assert_equal(@channel, source.channel)
       assert_equal(@source_uri, source.source_uri)
       assert_equal(@reader, source.content_reader)
-      assert(source.respond_to?(:create_obj_ref))
     end
 
     def test_start_not_found

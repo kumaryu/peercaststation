@@ -102,7 +102,6 @@ EOS
       factory = PCSPCP::PCPOutputStreamFactory.new(@peercast)
       assert_equal(factory.Name, 'PCP')
       assert(factory.priority==0)
-      assert(factory.respond_to?(:create_obj_ref))
     end
 
     def test_create
@@ -257,7 +256,6 @@ EOS
       assert_equal(@channel,  stream.Channel)
       assert_equal(PCSCore::OutputStreamType.relay, stream.output_stream_type)
       assert(!stream.is_stopped)
-      assert(stream.respond_to?(:create_obj_ref))
     end
 
     def test_upstream_rate

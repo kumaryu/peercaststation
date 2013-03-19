@@ -25,7 +25,6 @@ namespace PeerCastStation.Core
   /// チャンネルのメタデータを保持するクラスです
   /// </summary>
   public class ChannelInfo
-    : MarshalByRefObject
   {
     /// <summary>
     /// チャンネル名を取得します
@@ -167,7 +166,6 @@ namespace PeerCastStation.Core
   /// チャンネルのトラック情報を保持するクラスです
   /// </summary>
   public class ChannelTrack
-    : MarshalByRefObject
   {
     /// <summary>
     /// タイトルを取得します
@@ -293,7 +291,6 @@ namespace PeerCastStation.Core
   /// チャンネル接続を管理するクラスです
   /// </summary>
   public class Channel
-    : MarshalByRefObject
   {
     private const int NodeLimit = 180000; //ms
     private ISourceStream sourceStream = null;

@@ -26,8 +26,6 @@ module TestCore
       end
       assert(ctx.is_empty)
       assert(!ctx.event_handle.wait_one(0))
-      assert(ctx.GetType.get_custom_attributes(System::SerializableAttribute.to_clr_type, true).length==0)
-      assert(!ctx.respond_to?(:create_obj_ref))
     end
     
     def test_post

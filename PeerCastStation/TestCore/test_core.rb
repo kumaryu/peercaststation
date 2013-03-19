@@ -38,7 +38,6 @@ module TestCore
       assert_nil(obj.URL)
       assert_equal(0, obj.bitrate)
       assert_equal(0, obj.extra.count)
-      assert(obj.respond_to?(:create_obj_ref))
     end
 
     def test_name
@@ -143,7 +142,6 @@ module TestCore
       assert_nil(obj.creator)
       assert_nil(obj.URL)
       assert_equal(0, obj.extra.count)
-      assert(obj.respond_to?(:create_obj_ref))
     end
 
     def test_name

@@ -32,7 +32,6 @@ module TestCore
       assert_equal('naga'.unpack('C*'), id4.get_bytes)
 
       assert(id4.GetType.get_custom_attributes(System::SerializableAttribute.to_clr_type, true).length>0)
-      assert(!id4.respond_to?(:create_obj_ref))
     end
     
     def test_name_length
@@ -59,9 +58,6 @@ module TestCore
       assert(obj.has_value)
       assert(!obj.has_children)
       assert_equal('cast', obj.get_string)
-
-      assert(obj.GetType.get_custom_attributes(System::SerializableAttribute.to_clr_type, true).length>0)
-      assert(!obj.respond_to?(:create_obj_ref))
     end
     
     def test_construct_byte
@@ -132,9 +128,6 @@ module TestCore
     def test_construct
       obj = PeerCastStation::Core::AtomCollection.new
       assert_equal(0, obj.count)
-
-      assert(obj.GetType.get_custom_attributes(System::SerializableAttribute.to_clr_type, true).length>0)
-      assert(!obj.respond_to?(:create_obj_ref))
     end
 
     def test_copy_construct
@@ -189,9 +182,6 @@ module TestCore
       assert_equal(0, obj.count)
       assert(!base.clr_member(System::Collections::IList, :IsReadOnly).call)
       assert(obj.clr_member(System::Collections::IList, :IsReadOnly).call)
-
-      assert(obj.GetType.get_custom_attributes(System::SerializableAttribute.to_clr_type, true).length>0)
-      assert(!obj.respond_to?(:create_obj_ref))
     end
 
     def test_update
@@ -229,7 +219,6 @@ module TestCore
       stream = System::IO::MemoryStream.new
       writer = PeerCastStation::Core::AtomWriter.new(stream)
       assert_equal(stream, writer.base_stream)
-      assert(writer.respond_to?(:create_obj_ref))
       writer.close
     end
     
@@ -664,7 +653,6 @@ EOS
       stream = System::IO::MemoryStream.new
       reader = PeerCastStation::Core::AtomReader.new(stream)
       assert_equal(stream, reader.base_stream)
-      assert(reader.respond_to?(:create_obj_ref))
       reader.close
     end
     

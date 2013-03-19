@@ -10,8 +10,7 @@ using PeerCastStation.HTTP;
 namespace PeerCastStation.UI.HTTP
 {
   public class AdminHost
-    : MarshalByRefObject,
-      IUserInterface
+    : IUserInterface
   {
     public string Name { get { return "HTTP Admin Host UI"; } }
 
