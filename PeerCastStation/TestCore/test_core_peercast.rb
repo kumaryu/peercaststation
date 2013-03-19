@@ -525,6 +525,36 @@ module TestCore
       assert(listener.is_closed)
       assert_nil(@peercast.get_local_end_point(System::Net::Sockets::AddressFamily.inter_network, PeerCastStation::Core::OutputStreamType.relay))
     end
+
+    def test_is_firewalled
+      @peercast = PeerCastStation::Core::PeerCast.new
+      assert_nil @peercast.is_firewalled
+      @peercast.is_firewalled = true
+      listener = @peercast.StartListen(
+        System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
+        PeerCastStation::Core::OutputStreamType.interface |
+        PeerCastStation::Core::OutputStreamType.metadata |
+        PeerCastStation::Core::OutputStreamType.relay |
+        PeerCastStation::Core::OutputStreamType.play,
+        PeerCastStation::Core::OutputStreamType.metadata |
+        PeerCastStation::Core::OutputStreamType.relay)
+      assert_nil nil, @peercast.is_firewalled
+      @peercast.is_firewalled = true
+      @peercast.StopListen(listener)
+      assert_equal true, @peercast.is_firewalled
+      @peercast.is_firewalled = false
+      listener = @peercast.StartListen(
+        System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
+        PeerCastStation::Core::OutputStreamType.interface |
+        PeerCastStation::Core::OutputStreamType.metadata |
+        PeerCastStation::Core::OutputStreamType.relay |
+        PeerCastStation::Core::OutputStreamType.play,
+        PeerCastStation::Core::OutputStreamType.metadata |
+        PeerCastStation::Core::OutputStreamType.relay)
+      assert_equal false, @peercast.is_firewalled
+      @peercast.StopListen(listener)
+      assert_nil @peercast.is_firewalled
+    end
   end
 end
 

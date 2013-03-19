@@ -408,6 +408,7 @@ namespace PeerCastStation.Core
     /// <param name="global_accepts">リンクグローバルな接続相手に許可する出力ストリームタイプ</param>
     /// <returns>接続待ち受け</returns>
     /// <exception cref="System.Net.Sockets.SocketException">待ち受けが開始できませんでした</exception>
+    /// <remarks>IsFirewalledがtrueだった場合にはnullにリセットします</remarks>
     public OutputListener StartListen(IPEndPoint ip, OutputStreamType local_accepts, OutputStreamType global_accepts)
     {
       OutputListener res = null;
@@ -419,6 +420,9 @@ namespace PeerCastStation.Core
           new_collection.Add(res);
           return new_collection;
         });
+        if (IsFirewalled.HasValue && IsFirewalled.Value==true) {
+          IsFirewalled = null;
+        }
       }
       catch (System.Net.Sockets.SocketException e) {
         logger.Error("Listen failed: {0}", ip);
@@ -433,6 +437,7 @@ namespace PeerCastStation.Core
     /// 既に接続されているクライアント接続には影響ありません
     /// </summary>
     /// <param name="listener">待ち受けを終了するリスナ</param>
+    /// <remarks>IsFirewalledがfalseだった場合にはnullにリセットします</remarks>
     public void StopListen(OutputListener listener)
     {
       listener.Stop();
@@ -441,6 +446,9 @@ namespace PeerCastStation.Core
         new_collection.Remove(listener);
         return new_collection;
       });
+      if (IsFirewalled.HasValue && IsFirewalled.Value==false) {
+        IsFirewalled = null;
+      }
     }
 
     public IPEndPoint GetGlobalEndPoint(AddressFamily addr_family, OutputStreamType connection_type)
