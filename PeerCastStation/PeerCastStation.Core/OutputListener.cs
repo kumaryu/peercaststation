@@ -40,14 +40,30 @@ namespace PeerCastStation.Core
     /// 接続待ち受けをしているエンドポイントを取得します
     /// </summary>
     public IPEndPoint LocalEndPoint { get { return (IPEndPoint)server.LocalEndpoint; } }
+
     /// <summary>
     /// リンクローカルな接続先に許可する出力ストリームタイプを取得および設定します。
     /// </summary>
-    public OutputStreamType LocalOutputAccepts  { get; set; }
+    public OutputStreamType LocalOutputAccepts  {
+      get { return localOutputAccepts;  }
+      set { localOutputAccepts = value; }
+    }
+    private OutputStreamType localOutputAccepts;
+
     /// <summary>
     /// リンクグローバルな接続先に許可する出力ストリームタイプを取得および設定します。
     /// </summary>
-    public OutputStreamType GlobalOutputAccepts { get; set; }
+    public OutputStreamType GlobalOutputAccepts {
+      get { return globalOutputAccepts; }
+      set {
+        if ((globalOutputAccepts & OutputStreamType.Relay)!=(value & OutputStreamType.Relay)) {
+          if ((value & OutputStreamType.Relay)!=0) PeerCast.OnListenPortOpened();
+          else                                     PeerCast.OnListenPortClosed();
+        }
+        globalOutputAccepts = value;
+      }
+    }
+    private OutputStreamType globalOutputAccepts;
 
     private TcpListener server;
     /// <summary>
@@ -64,8 +80,8 @@ namespace PeerCastStation.Core
       OutputStreamType global_accepts)
     {
       this.PeerCast = peercast;
-      this.LocalOutputAccepts  = local_accepts;
-      this.GlobalOutputAccepts = global_accepts;
+      localOutputAccepts  = local_accepts;
+      globalOutputAccepts = global_accepts;
       server = new TcpListener(ip);
       server.Start();
       listenerThread = new Thread(ListenerThreadFunc);

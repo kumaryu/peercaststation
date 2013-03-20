@@ -408,7 +408,7 @@ namespace PeerCastStation.Core
     /// <param name="global_accepts">リンクグローバルな接続相手に許可する出力ストリームタイプ</param>
     /// <returns>接続待ち受け</returns>
     /// <exception cref="System.Net.Sockets.SocketException">待ち受けが開始できませんでした</exception>
-    /// <remarks>IsFirewalledがtrueだった場合にはnullにリセットします</remarks>
+    /// <remarks>WANへのリレーが許可されておりIsFirewalledがtrueだった場合にはnullにリセットします</remarks>
     public OutputListener StartListen(IPEndPoint ip, OutputStreamType local_accepts, OutputStreamType global_accepts)
     {
       OutputListener res = null;
@@ -420,8 +420,8 @@ namespace PeerCastStation.Core
           new_collection.Add(res);
           return new_collection;
         });
-        if (IsFirewalled.HasValue && IsFirewalled.Value==true) {
-          IsFirewalled = null;
+        if ((global_accepts & OutputStreamType.Relay)!=0) {
+          OnListenPortOpened();
         }
       }
       catch (System.Net.Sockets.SocketException e) {
@@ -437,7 +437,7 @@ namespace PeerCastStation.Core
     /// 既に接続されているクライアント接続には影響ありません
     /// </summary>
     /// <param name="listener">待ち受けを終了するリスナ</param>
-    /// <remarks>IsFirewalledがfalseだった場合にはnullにリセットします</remarks>
+    /// <remarks>指定したリスナのWANへのリレーが許可されておりIsFirewalledがfalseだった場合にはnullにリセットします</remarks>
     public void StopListen(OutputListener listener)
     {
       listener.Stop();
@@ -446,6 +446,20 @@ namespace PeerCastStation.Core
         new_collection.Remove(listener);
         return new_collection;
       });
+      if ((listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0) {
+        OnListenPortClosed();
+      }
+    }
+
+    internal void OnListenPortOpened()
+    {
+      if (IsFirewalled.HasValue && IsFirewalled.Value==true) {
+        IsFirewalled = null;
+      }
+    }
+
+    internal void OnListenPortClosed()
+    {
       if (IsFirewalled.HasValue && IsFirewalled.Value==false) {
         IsFirewalled = null;
       }

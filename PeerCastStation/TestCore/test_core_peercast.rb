@@ -1,3 +1,5 @@
+# coding:utf-8
+#
 # PeerCastStation, a P2P streaming servent.
 # Copyright (C) 2011 Ryuichi Sakamoto (kumaryu@kumaryu.net)
 # 
@@ -14,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 require 'test_core_common'
+require 'shoulda/context'
 require 'socket'
 
 module TestCore
@@ -526,34 +529,100 @@ module TestCore
       assert_nil(@peercast.get_local_end_point(System::Net::Sockets::AddressFamily.inter_network, PeerCastStation::Core::OutputStreamType.relay))
     end
 
-    def test_is_firewalled
-      @peercast = PeerCastStation::Core::PeerCast.new
-      assert_nil @peercast.is_firewalled
-      @peercast.is_firewalled = true
-      listener = @peercast.StartListen(
-        System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
-        PeerCastStation::Core::OutputStreamType.interface |
-        PeerCastStation::Core::OutputStreamType.metadata |
-        PeerCastStation::Core::OutputStreamType.relay |
-        PeerCastStation::Core::OutputStreamType.play,
-        PeerCastStation::Core::OutputStreamType.metadata |
-        PeerCastStation::Core::OutputStreamType.relay)
-      assert_nil nil, @peercast.is_firewalled
-      @peercast.is_firewalled = true
-      @peercast.StopListen(listener)
-      assert_equal true, @peercast.is_firewalled
-      @peercast.is_firewalled = false
-      listener = @peercast.StartListen(
-        System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
-        PeerCastStation::Core::OutputStreamType.interface |
-        PeerCastStation::Core::OutputStreamType.metadata |
-        PeerCastStation::Core::OutputStreamType.relay |
-        PeerCastStation::Core::OutputStreamType.play,
-        PeerCastStation::Core::OutputStreamType.metadata |
-        PeerCastStation::Core::OutputStreamType.relay)
-      assert_equal false, @peercast.is_firewalled
-      @peercast.StopListen(listener)
-      assert_nil @peercast.is_firewalled
+    context 'is_firewalled' do
+      setup do
+        @peercast = PeerCastStation::Core::PeerCast.new
+      end
+
+      teardown do
+        @peercast.stop
+      end
+
+      should '起動時はnil' do
+        assert_nil @peercast.is_firewalled
+      end
+
+      context 'trueのとき' do
+        should 'start_listenでWANのリレー待ち受けを開始するとnilになる' do
+          @peercast.is_firewalled = true
+          listener = @peercast.start_listen(
+            System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
+            PeerCastStation::Core::OutputStreamType.all,
+            PeerCastStation::Core::OutputStreamType.relay)
+          assert_nil @peercast.is_firewalled
+        end
+
+        should 'stop_listenでWANのリレー待ち受けを停止してもかわらない' do
+          listener = @peercast.start_listen(
+            System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
+            PeerCastStation::Core::OutputStreamType.all,
+            PeerCastStation::Core::OutputStreamType.relay)
+          @peercast.is_firewalled = true
+          @peercast.stop_listen(listener)
+          assert_equal true, @peercast.is_firewalled
+        end
+
+        should '既に待ち受けているリスナーのWANのリレー待ち受けを許可するとnilになる' do
+          listener = @peercast.start_listen(
+            System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
+            PeerCastStation::Core::OutputStreamType.all,
+            PeerCastStation::Core::OutputStreamType.none)
+          @peercast.is_firewalled = true
+          listener.global_output_accepts = PeerCastStation::Core::OutputStreamType.relay
+          assert_nil @peercast.is_firewalled
+        end
+
+        should '既に待ち受けているリスナーのWANのリレー待ち受けを不許可にしてもかわらない' do
+          listener = @peercast.start_listen(
+            System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
+            PeerCastStation::Core::OutputStreamType.all,
+            PeerCastStation::Core::OutputStreamType.all)
+          @peercast.is_firewalled = true
+          listener.global_output_accepts = PeerCastStation::Core::OutputStreamType.none
+          assert_equal true, @peercast.is_firewalled
+        end
+      end
+
+      context 'falseのとき' do
+        should 'start_listenでWANのリレー待ち受けを開始してもかわらない' do
+          @peercast.is_firewalled = false
+          listener = @peercast.start_listen(
+            System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
+            PeerCastStation::Core::OutputStreamType.all,
+            PeerCastStation::Core::OutputStreamType.relay)
+          assert_equal false, @peercast.is_firewalled
+        end
+
+        should 'stop_listenでWANのリレー待ち受けを停止するとnilになる' do
+          listener = @peercast.start_listen(
+            System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
+            PeerCastStation::Core::OutputStreamType.all,
+            PeerCastStation::Core::OutputStreamType.relay)
+          @peercast.is_firewalled = false
+          @peercast.stop_listen(listener)
+          assert_nil @peercast.is_firewalled
+        end
+
+        should '既に待ち受けているリスナーのWANのリレー待ち受けを許可してもかわらない' do
+          listener = @peercast.start_listen(
+            System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
+            PeerCastStation::Core::OutputStreamType.all,
+            PeerCastStation::Core::OutputStreamType.none)
+          @peercast.is_firewalled = false
+          listener.global_output_accepts = PeerCastStation::Core::OutputStreamType.relay
+          assert_equal false, @peercast.is_firewalled
+        end
+
+        should '既に待ち受けているリスナーのWANのリレー待ち受けを不許可にするとnilになる' do
+          listener = @peercast.start_listen(
+            System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7147),
+            PeerCastStation::Core::OutputStreamType.all,
+            PeerCastStation::Core::OutputStreamType.all)
+          @peercast.is_firewalled = false
+          listener.global_output_accepts = PeerCastStation::Core::OutputStreamType.none
+          assert_nil @peercast.is_firewalled
+        end
+      end
     end
   end
 end
