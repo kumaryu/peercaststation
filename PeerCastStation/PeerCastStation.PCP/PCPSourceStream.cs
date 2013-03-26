@@ -522,6 +522,7 @@ namespace PeerCastStation.PCP
       else {
         var host = SelectSourceHost();
         if (host!=null) {
+          Uphost = host;
           Logger.Debug("{0} is selected as source", host.GlobalEndPoint);
           if (StartConnection(host)) {
             SendRelayRequest();
