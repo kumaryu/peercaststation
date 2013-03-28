@@ -198,6 +198,7 @@ var SettingsViewModel = new function() {
   self.maxRelaysPerChannel  = ko.observable(null);
   self.maxDirectsPerChannel = ko.observable(null);
   self.maxUpstreamRate      = ko.observable(null);
+  self.channelCleanerLimit  = ko.observable(null);
   self.listeners            = ko.observableArray();
   self.yellowPages          = ko.observableArray();
 
@@ -206,7 +207,8 @@ var SettingsViewModel = new function() {
     self.maxDirects,
     self.maxRelaysPerChannel,
     self.maxDirectsPerChannel,
-    self.maxUpstreamRate
+    self.maxUpstreamRate,
+    self.channelCleanerLimit
   ], function (i, o) {
     o.subscribe(function (new_value) { if (!updating) self.submit(); });
   });
@@ -216,7 +218,10 @@ var SettingsViewModel = new function() {
       maxDirects:           Number(self.maxDirects()),
       maxRelaysPerChannel:  Number(self.maxRelaysPerChannel()),
       maxDirectsPerChannel: Number(self.maxDirectsPerChannel()),
-      maxUpstreamRate:      Number(self.maxUpstreamRate())
+      maxUpstreamRate:      Number(self.maxUpstreamRate()),
+      channelCleaner: {
+        inactiveLimit: Number(self.channelCleanerLimit()) * 60000
+      }
     };
     PeerCast.setSettings(settings);
   };
@@ -268,6 +273,7 @@ var SettingsViewModel = new function() {
         self.maxRelaysPerChannel(result.maxRelaysPerChannel);
         self.maxDirectsPerChannel(result.maxDirectsPerChannel);
         self.maxUpstreamRate(result.maxUpstreamRate);
+        self.channelCleanerLimit(result.channelCleaner.inactiveLimit/60000);
         updating = false;
       }
     });

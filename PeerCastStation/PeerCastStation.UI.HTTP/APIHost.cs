@@ -131,6 +131,9 @@ namespace PeerCastStation.UI.HTTP
         res["maxRelaysPerChannel"]  = PeerCast.AccessController.MaxRelaysPerChannel;
         res["maxDirectsPerChannel"] = PeerCast.AccessController.MaxPlaysPerChannel;
         res["maxUpstreamRate"]      = PeerCast.AccessController.MaxUpstreamRate;
+        var channelCleaner = new JObject();
+        channelCleaner["inactiveLimit"] = ChannelCleaner.InactiveLimit;
+        res["channelCleaner"] = channelCleaner;
         return res;
       }
 
@@ -151,6 +154,12 @@ namespace PeerCastStation.UI.HTTP
         }
         if (settings["maxUpstreamRate"]!=null) {
           PeerCast.AccessController.MaxUpstreamRate = (int)settings["maxUpstreamRate"];
+        }
+        if (settings["channelCleaner"]!=null) {
+          var channelCleaner = settings["channelCleaner"];
+          if (channelCleaner["inactiveLimit"]!=null) {
+            ChannelCleaner.InactiveLimit = (int)channelCleaner["inactiveLimit"];
+          }
         }
       }
 
