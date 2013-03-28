@@ -373,12 +373,16 @@ namespace PeerCastStation.Core
     protected Atom RecvAtom()
     {
       Atom res = null;
-      if (recvStream.Length>=8 && Recv(s => { res = AtomReader.Read(s); })) {
-        return res;
+      try {
+        if (recvStream.Length>=8 && Recv(s => { res = AtomReader.Read(s); })) {
+          return res;
+        }
       }
-      else {
-        return null;
+      catch (InvalidDataException e) {
+        Logger.Error(e);
+        OnError();
       }
+      return null;
     }
 
     protected bool Recv(Action<Stream> proc)

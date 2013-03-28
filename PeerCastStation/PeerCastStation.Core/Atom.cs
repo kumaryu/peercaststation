@@ -923,6 +923,9 @@ namespace PeerCastStation.Core
       if (!BitConverter.IsLittleEndian) Array.Reverse(header, 4, 4);
       uint len = BitConverter.ToUInt32(header, 4);
       if ((len & 0x80000000U)!=0) {
+        if ((len&0x7FFFFFFF)>1024) {
+          throw new InvalidDataException("Atom has too many children");
+        }
         var children = new AtomCollection();
         for (var i=0; i<(len&0x7FFFFFFF); i++) {
           children.Add(Read(stream));
@@ -930,6 +933,9 @@ namespace PeerCastStation.Core
         return new Atom(name, children);
       }
       else {
+        if (len>1024*1024) {
+          throw new InvalidDataException("Atom length too long");
+        }
         var value = new byte[len];
         pos = 0;
         while (pos<len) {
