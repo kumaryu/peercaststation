@@ -70,7 +70,7 @@ namespace PeerCastStation.GUI
             desc = xdesc.ToString();
           }
           if (xdate!=null && xdate.Value!=null && DateTime.TryParse(xdate.Value, out date)) {
-            if (cur<date) {
+            if (cur.Date<date.Date) {
               cur = date;
               new_version = new VersionDescription {
                 Title       = title,
