@@ -6,6 +6,26 @@
     <description>PeerCastStationの更新情報です。</description>
     <language>ja</language>      
     <item>
+      <title>Version 1.2.1 (2013年3月29日版)</title>
+      <description>
+        <h3>1.2.1 (2013年3月29日版)</h3>
+        <p>バグ修正と細かい部分の追加・修正が主です。</p>
+        <ul>
+          <li>HTML UIでも未接続チャンネルの自動切断までの時間を設定できるようにしました</li>
+          <li>リレー状態が不安定なチャンネルに接続できなかったのを修正しました</li>
+          <li>一旦確定したポートの開放状態をポート設定の変更に応じて未確定にリセットするようにしました</li>
+          <li>設定されているポート全てで接続待ち受けができなかった場合は適当なポートで接続待ち受けを開始するようにしました</li>
+          <li>FLV配信時のビットレート自動設定がFLVファイル内のメタデータを参照するようにしました</li>
+          <li>リレー接続で不正なデータを受信すると落ちることがあったのに(少し)対策しました</li>
+          <li>視聴できないチャンネルへの視聴リクエストを受けつけると落ちるのを修正しました</li>
+          <li>GUIでログ表示の設定を変更しても反映されていなかったのを修正しました</li>
+        </ul>
+      </description>
+      <pubDate>Fri, 29 Mar 2013 23:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-1.2.1.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-1.2.1.zip" sparkle:version="1.2.1" length="1097430" type="application/octet-stream" />
+    </item>
+    <item>
       <title>Version 1.2.0 (2013年2月28日版)</title>
       <description>
         <h3>1.2.0 (2013年2月28日版)</h3>
