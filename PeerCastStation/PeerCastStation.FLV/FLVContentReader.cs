@@ -440,7 +440,6 @@ namespace PeerCastStation.FLV
     }
   }
 
-  [Plugin]
   public class FLVContentReaderFactory
     : IContentReaderFactory
   {
@@ -449,6 +448,28 @@ namespace PeerCastStation.FLV
     public IContentReader Create(Channel channel)
     {
       return new FLVContentReader(channel);
+    }
+  }
+
+  [Plugin]
+  public class FLVContentReaderPlugin
+    : IPlugin
+  {
+    public string Name { get { return "FLV Content Reader"; } }
+    public bool IsUsable { get { return true; } }
+
+    private PeerCastApplication application;
+    private FLVContentReaderFactory factory;
+    public void Start(PeerCastApplication app)
+    {
+      application = app;
+      if (factory==null) factory = new FLVContentReaderFactory();
+      application.PeerCast.ContentReaderFactories.Add(factory);
+    }
+
+    public void Stop()
+    {
+      application.PeerCast.ContentReaderFactories.Remove(factory);
     }
   }
 }

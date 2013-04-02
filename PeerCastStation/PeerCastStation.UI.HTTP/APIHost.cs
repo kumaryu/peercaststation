@@ -10,10 +10,12 @@ using Newtonsoft.Json.Linq;
 
 namespace PeerCastStation.UI.HTTP
 {
+  [Plugin]
   public class APIHost
-    : IUserInterface
+    : IPlugin
   {
     public string Name { get { return "HTTP API Host UI"; } }
+    public bool IsUsable { get { return true; } }
     public LogWriter LogWriter { get { return logWriter; } }
 
     private LogWriter logWriter;
@@ -72,10 +74,10 @@ namespace PeerCastStation.UI.HTTP
       {
         var res = new JArray(owner.application.Plugins.Select(plugin => {
           var jplugin = new JObject();
-          jplugin["name"] = plugin.FullName;
-          jplugin["interfaces"] = new JArray(plugin.GetInterfaces().Select(intf => intf.Name));
+          jplugin["name"]     = plugin.Name;
+          jplugin["isUsable"] = plugin.IsUsable;
           var jassembly = new JObject();
-          var asm = plugin.Assembly;
+          var asm = plugin.GetType().Assembly;
           jassembly["name"] = asm.FullName;
           jassembly["path"] = asm.Location;
           if (File.Exists(asm.Location)) {
@@ -884,18 +886,6 @@ namespace PeerCastStation.UI.HTTP
       {
         this.owner = owner;
       }
-    }
-  }
-
-  [Plugin]
-  public class APIHostFactory
-    : IUserInterfaceFactory
-  {
-    public string Name { get { return "HTTP API Host UI"; } }
-
-    public IUserInterface CreateUserInterface()
-    {
-      return new APIHost();
     }
   }
 }

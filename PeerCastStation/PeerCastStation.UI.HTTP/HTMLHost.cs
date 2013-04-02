@@ -8,8 +8,9 @@ using System.Collections.Generic;
 
 namespace PeerCastStation.UI.HTTP
 {
+  [Plugin]
   public class HTMLHost
-    : IUserInterface
+    : IPlugin
   {
     class FileDesc
     {
@@ -33,7 +34,8 @@ namespace PeerCastStation.UI.HTTP
       { "",      new FileDesc { MimeType="application/octet-stream" } },
     };
 
-    public string Name { get { return "HTTP HTML Host UI"; } }
+    public string Name { get { return "HTTP File Host UI"; } }
+    public bool IsUsable { get { return true; } }
     public SortedList<string, string> VirtualPhysicalPathMap { get { return virtualPhysicalPathMap; } }
     private SortedList<string, string> virtualPhysicalPathMap = new SortedList<string,string>();
 
@@ -292,18 +294,6 @@ namespace PeerCastStation.UI.HTTP
       {
         this.owner = owner;
       }
-    }
-  }
-
-  [Plugin]
-  public class HTMLHostFactory
-    : IUserInterfaceFactory
-  {
-    public string Name { get { return "HTTP HTML Host UI"; } }
-
-    public IUserInterface CreateUserInterface()
-    {
-      return new HTMLHost();
     }
   }
 }

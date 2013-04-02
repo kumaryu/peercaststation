@@ -116,7 +116,6 @@ namespace PeerCastStation.PCP
   /// <summary>
   /// PCPでリレー出力をするPCPOutputStreamを作成するクラスです
   /// </summary>
-  [Plugin]
   public class PCPOutputStreamFactory
     : OutputStreamFactoryBase
   {
@@ -798,6 +797,28 @@ namespace PeerCastStation.PCP
         break;
       }
       base.DoStop(reason);
+    }
+  }
+
+  [Plugin]
+  class PCPOutputStreamPlugin
+    : IPlugin
+  {
+    public string Name { get { return "PCP Output"; } }
+    public bool IsUsable { get { return true; } }
+
+    private PeerCastApplication application;
+    private PCPOutputStreamFactory factory;
+    public void Start(PeerCastApplication app)
+    {
+      application = app;
+      if (factory==null) factory = new PCPOutputStreamFactory(app.PeerCast);
+      application.PeerCast.OutputStreamFactories.Add(factory);
+    }
+
+    public void Stop()
+    {
+      application.PeerCast.OutputStreamFactories.Remove(factory);
     }
   }
 }

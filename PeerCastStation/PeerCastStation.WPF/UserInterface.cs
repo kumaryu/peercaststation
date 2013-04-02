@@ -21,13 +21,12 @@ using PeerCastStation.WPF.Properties;
 
 namespace PeerCastStation.WPF
 {
+  [Plugin]
   public class UserInterface
-    : IUserInterface
+    : IPlugin
   {
-    public string Name
-    {
-      get { return "PeerCastStation.WPF"; }
-    }
+    public string Name { get { return "GUI by WPF"; } }
+    public bool IsUsable { get { return true; } }
 
     MainWindow mainWindow;
     MainViewModel viewModel;
@@ -85,21 +84,6 @@ namespace PeerCastStation.WPF
       notifyIconManager.Dispose();
       mainThread.Join();
       notifyIconThread.Join();
-    }
-  }
-
-  [Plugin]
-  public class UserInterfaceFactory
-    : IUserInterfaceFactory
-  {
-    public string Name
-    {
-      get { return "PeerCastStation.WPF"; }
-    }
-
-    public IUserInterface CreateUserInterface()
-    {
-      return new UserInterface();
     }
   }
 }

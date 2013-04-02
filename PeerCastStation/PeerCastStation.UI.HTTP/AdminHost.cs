@@ -9,10 +9,12 @@ using PeerCastStation.HTTP;
 
 namespace PeerCastStation.UI.HTTP
 {
+  [Plugin]
   public class AdminHost
-    : IUserInterface
+    : IPlugin
   {
     public string Name { get { return "HTTP Admin Host UI"; } }
+    public bool IsUsable { get { return true; } }
 
     AdminHostOutputStreamFactory factory;
     PeerCastApplication application;
@@ -325,18 +327,6 @@ namespace PeerCastStation.UI.HTTP
       {
         this.owner = owner;
       }
-    }
-  }
-
-  [Plugin]
-  public class AdminHostFactory
-    : IUserInterfaceFactory
-  {
-    public string Name { get { return "HTTP Admin Host UI"; } }
-
-    public IUserInterface CreateUserInterface()
-    {
-      return new AdminHost();
     }
   }
 }

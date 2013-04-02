@@ -10,13 +10,8 @@ namespace PeerCastStation.Main
     : PeerCastApplication
   {
     private static Logger logger = new Logger(typeof(Application));
-    private List<IUserInterfaceFactory> userInterfaceFactories = new List<IUserInterfaceFactory>();
-    public IList<IUserInterfaceFactory> UserInterfaceFactories {
-      get { return userInterfaceFactories; }
-    }
-
-    private IEnumerable<Type> plugins;
-    override public IEnumerable<Type> Plugins {
+    private IEnumerable<IPlugin> plugins;
+    override public IEnumerable<IPlugin> Plugins {
       get { return plugins; }
     }
 
@@ -47,13 +42,12 @@ namespace PeerCastStation.Main
       };
       LoadSettings();
       peerCast.ChannelMonitors.Add(new ChannelCleaner(peerCast));
-      var uis = userInterfaceFactories.Select(factory => factory.CreateUserInterface()).ToArray();
-      foreach (var ui in uis) {
-        ui.Start(this);
+      foreach (var plugin in plugins) {
+        plugin.Start(this);
       }
       stoppedEvent.WaitOne();
-      foreach (var ui in uis) {
-        ui.Stop();
+      foreach (var plugin in plugins) {
+        plugin.Stop();
       }
       SaveSettings();
 
@@ -75,6 +69,7 @@ namespace PeerCastStation.Main
     {
       var res = asm.GetTypes()
           .Where(type => type.GetCustomAttributes(typeof(PluginAttribute), true).Length>0)
+          .Where(type => type.GetInterfaces().Contains(typeof(IPlugin)))
           .OrderBy(type => ((PluginAttribute)(type.GetCustomAttributes(typeof(PluginAttribute), true)[0])).Priority);
       foreach (var settingtype in asm.GetTypes().Where(type => type.GetCustomAttributes(typeof(PecaSettingsAttribute), true).Length>0)) {
         PecaSettings.RegisterType(settingtype);
@@ -82,78 +77,19 @@ namespace PeerCastStation.Main
       return res;
     }
 
-    private void AddUserInterfaceFactory(Type type)
-    {
-      var constructor = type.GetConstructor(Type.EmptyTypes);
-      if (constructor!=null) {
-        var obj = constructor.Invoke(null) as IUserInterfaceFactory;
-        if (obj!=null) userInterfaceFactories.Add(obj);
-      }
-    }
-
-    private void AddSourceStreamFactory(Type type)
-    {
-      ISourceStreamFactory factory = null;
-      var constructor = type.GetConstructor(Type.EmptyTypes);
-      if (constructor!=null) {
-        factory = constructor.Invoke(null) as ISourceStreamFactory;
-      }
-      else if ((constructor=type.GetConstructor(new Type[] { typeof(PeerCast) }))!=null) {
-        factory = constructor.Invoke(new object[] { peerCast }) as ISourceStreamFactory;
-      }
-      if (factory!=null) peerCast.SourceStreamFactories.Add(factory);
-    }
-
-    private void AddOutputStreamFactory(Type type)
-    {
-      IOutputStreamFactory factory = null;
-      var constructor = type.GetConstructor(Type.EmptyTypes);
-      if (constructor!=null) {
-        factory = constructor.Invoke(null) as IOutputStreamFactory;
-      }
-      else if ((constructor=type.GetConstructor(new Type[] { typeof(PeerCast) }))!=null) {
-        factory = constructor.Invoke(new object[] { peerCast }) as IOutputStreamFactory;
-      }
-      if (factory!=null) peerCast.OutputStreamFactories.Add(factory);
-    }
-
-    private void AddYellowPageClientFactory(Type type)
-    {
-      IYellowPageClientFactory factory = null;
-      var constructor = type.GetConstructor(Type.EmptyTypes);
-      if (constructor!=null) {
-        factory = constructor.Invoke(null) as IYellowPageClientFactory;
-      }
-      else if ((constructor=type.GetConstructor(new Type[] { typeof(PeerCast) }))!=null) {
-        factory = constructor.Invoke(new object[] { peerCast }) as IYellowPageClientFactory;
-      }
-      if (factory!=null) peerCast.YellowPageFactories.Add(factory);
-    }
-
-    private void AddContentReaderFactory(Type type)
-    {
-      IContentReaderFactory factory = null;
-      var constructor = type.GetConstructor(Type.EmptyTypes);
-      if (constructor!=null) {
-        factory = constructor.Invoke(null) as IContentReaderFactory;
-      }
-      else if ((constructor=type.GetConstructor(new Type[] { typeof(PeerCast) }))!=null) {
-        factory = constructor.Invoke(new object[] { peerCast }) as IContentReaderFactory;
-      }
-      if (factory!=null) peerCast.ContentReaderFactories.Add(factory);
-    }
-
     void LoadPlugins()
     {
-      plugins = LoadPluginAssemblies();
-      foreach (var type in plugins) {
-        var interfaces = type.GetInterfaces();
-        if (interfaces.Contains(typeof(IUserInterfaceFactory)))    AddUserInterfaceFactory(type);
-        if (interfaces.Contains(typeof(ISourceStreamFactory)))     AddSourceStreamFactory(type);
-        if (interfaces.Contains(typeof(IOutputStreamFactory)))     AddOutputStreamFactory(type);
-        if (interfaces.Contains(typeof(IYellowPageClientFactory))) AddYellowPageClientFactory(type);
-        if (interfaces.Contains(typeof(IContentReaderFactory)))    AddContentReaderFactory(type);
-      }
+      plugins = LoadPluginAssemblies().Select(type => {
+        var constructor = type.GetConstructor(Type.EmptyTypes);
+        if (constructor!=null) {
+          return constructor.Invoke(null) as IPlugin;
+        }
+        else {
+          return null;
+        }
+      })
+      .Where(plugin => plugin!=null)
+      .ToArray();
     }
 
     void LoadSettings()

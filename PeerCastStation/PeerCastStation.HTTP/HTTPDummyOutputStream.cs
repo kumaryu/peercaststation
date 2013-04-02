@@ -21,7 +21,6 @@ using PeerCastStation.Core;
 
 namespace PeerCastStation.HTTP
 {
-  [Plugin]
   public class HTTPDummyOutputStreamFactory
     : OutputStreamFactoryBase
   {
@@ -102,13 +101,34 @@ namespace PeerCastStation.HTTP
 
     protected override void OnStopped()
     {
-      Logger.Debug("Finished");
-     	base.OnStopped();
+      Logger.Debug("Finished"); base.OnStopped();
     }
 
     public override OutputStreamType OutputStreamType
     {
       get { return OutputStreamType.Metadata; }
+    }
+  }
+
+  [Plugin]
+  class HTTPDummyOutputStreamPlugin
+    : IPlugin
+  {
+    public string Name { get { return "HTTP Dummy Output"; } }
+    public bool IsUsable { get { return true; } }
+
+    private PeerCastApplication application;
+    private HTTPDummyOutputStreamFactory factory;
+    public void Start(PeerCastApplication app)
+    {
+      application = app;
+      if (factory==null) factory = new HTTPDummyOutputStreamFactory(app.PeerCast);
+      application.PeerCast.OutputStreamFactories.Add(factory);
+    }
+
+    public void Stop()
+    {
+      application.PeerCast.OutputStreamFactories.Remove(factory);
     }
   }
 }

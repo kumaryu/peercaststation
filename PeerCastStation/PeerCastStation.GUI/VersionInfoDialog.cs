@@ -11,15 +11,21 @@ namespace PeerCastStation.GUI
     public VersionInfoDialog(PeerCastStation.Core.PeerCastApplication app)
     {
       InitializeComponent();
-      foreach (var asm in app.Plugins.Select(type => type.Assembly).Distinct()) {
+      foreach (var plugin in app.Plugins) {
+        var asm = plugin.GetType().Assembly;
         var info = FileVersionInfo.GetVersionInfo(asm.Location);
         versionsList.Items.Add(
           new ListViewItem(
             new string[] {
-            Path.GetFileName(info.FileName),
-            info.FileVersion,
-            asm.FullName,
-            info.LegalCopyright}));
+              plugin.Name,
+              plugin.IsUsable.ToString(),
+              Path.GetFileName(info.FileName),
+              info.FileVersion,
+              asm.FullName,
+              info.LegalCopyright,
+            }
+          )
+        );
       }
     }
   }

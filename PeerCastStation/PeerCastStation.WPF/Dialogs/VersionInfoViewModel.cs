@@ -33,7 +33,7 @@ namespace PeerCastStation.WPF.Dialogs
     {
       items = app
         .Plugins
-        .Select(type => type.Assembly)
+        .Select(plugin => plugin.GetType().Assembly)
         .Distinct()
         .Select(x =>
       {

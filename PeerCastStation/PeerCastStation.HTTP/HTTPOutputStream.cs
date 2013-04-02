@@ -111,7 +111,6 @@ namespace PeerCastStation.HTTP
   /// <summary>
   /// HTTPで視聴出力をするHTTPOutputStreamを作成するクラスです
   /// </summary>
-  [Plugin]
   public class HTTPOutputStreamFactory
     : OutputStreamFactoryBase
   {
@@ -578,6 +577,28 @@ namespace PeerCastStation.HTTP
     public override OutputStreamType OutputStreamType
     {
       get { return OutputStreamType.Play; }
+    }
+  }
+
+  [Plugin]
+  class HTTPOutputStreamPlugin
+    : IPlugin
+  {
+    public string Name { get { return "HTTP Output"; } }
+    public bool IsUsable { get { return true; } }
+
+    private PeerCastApplication application;
+    private HTTPOutputStreamFactory factory;
+    public void Start(PeerCastApplication app)
+    {
+      application = app;
+      if (factory==null) factory = new HTTPOutputStreamFactory(app.PeerCast);
+      application.PeerCast.OutputStreamFactories.Add(factory);
+    }
+
+    public void Stop()
+    {
+      application.PeerCast.OutputStreamFactories.Remove(factory);
     }
   }
 }

@@ -3,19 +3,6 @@ using System.Collections.Generic;
 
 namespace PeerCastStation.Core
 {
-  public interface IUserInterface
-  {
-    string Name { get; }
-    void Start(PeerCastApplication app);
-    void Stop();
-  }
-
-  public interface IUserInterfaceFactory
-  {
-    string Name { get; }
-    IUserInterface CreateUserInterface();
-  }
-
   public enum PluginPriority
   {
     Highest = -200,
@@ -42,6 +29,14 @@ namespace PeerCastStation.Core
     }
   }
 
+  public interface IPlugin
+  {
+    string Name   { get; }
+    bool IsUsable { get; }
+    void Start(PeerCastApplication app);
+    void Stop();
+  }
+
   public abstract class PeerCastApplication
   {
     private static PeerCastApplication current;
@@ -50,7 +45,7 @@ namespace PeerCastStation.Core
       set { current = value; }
     }
     public abstract PecaSettings Settings { get; }
-    public abstract IEnumerable<Type> Plugins { get; }
+    public abstract IEnumerable<IPlugin> Plugins { get; }
     public abstract PeerCast PeerCast { get; }
     public abstract void Stop();
     public PeerCastApplication()

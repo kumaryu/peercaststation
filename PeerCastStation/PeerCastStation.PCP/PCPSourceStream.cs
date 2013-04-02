@@ -25,7 +25,6 @@ using System.Text.RegularExpressions;
 
 namespace PeerCastStation.PCP
 {
-  [Plugin]
   public class PCPSourceStreamFactory
     : SourceStreamFactoryBase
   {
@@ -828,6 +827,28 @@ namespace PeerCastStation.PCP
           "PCP {0} NotConnected",
           Status);
       }
+    }
+  }
+
+  [Plugin]
+  class PCPSourceStreamPlugin
+    : IPlugin
+  {
+    public string Name { get { return "PCP Source"; } }
+    public bool IsUsable { get { return true; } }
+
+    private PeerCastApplication application;
+    private PCPSourceStreamFactory factory;
+    public void Start(PeerCastApplication app)
+    {
+      application = app;
+      if (factory==null) factory = new PCPSourceStreamFactory(app.PeerCast);
+      application.PeerCast.SourceStreamFactories.Add(factory);
+    }
+
+    public void Stop()
+    {
+      application.PeerCast.SourceStreamFactories.Remove(factory);
     }
   }
 }

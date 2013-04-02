@@ -33,6 +33,8 @@
       System.Windows.Forms.ColumnHeader assemblyName;
       System.Windows.Forms.ColumnHeader copyrightColumn;
       this.versionsList = new System.Windows.Forms.ListView();
+      this.pluginNameColumn = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+      this.pluginIsUsableColumn = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
       button1 = new System.Windows.Forms.Button();
       versionColumn = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
       fileColumn = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -44,7 +46,7 @@
       // 
       button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
       button1.DialogResult = System.Windows.Forms.DialogResult.OK;
-      button1.Location = new System.Drawing.Point(317, 257);
+      button1.Location = new System.Drawing.Point(488, 257);
       button1.Name = "button1";
       button1.Size = new System.Drawing.Size(75, 23);
       button1.TabIndex = 1;
@@ -74,6 +76,8 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
       this.versionsList.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.pluginNameColumn,
+            this.pluginIsUsableColumn,
             fileColumn,
             versionColumn,
             assemblyName,
@@ -83,16 +87,25 @@
       this.versionsList.Location = new System.Drawing.Point(12, 12);
       this.versionsList.MultiSelect = false;
       this.versionsList.Name = "versionsList";
-      this.versionsList.Size = new System.Drawing.Size(380, 239);
+      this.versionsList.Size = new System.Drawing.Size(551, 239);
       this.versionsList.TabIndex = 2;
       this.versionsList.UseCompatibleStateImageBehavior = false;
       this.versionsList.View = System.Windows.Forms.View.Details;
+      // 
+      // pluginNameColumn
+      // 
+      this.pluginNameColumn.Text = "名前";
+      this.pluginNameColumn.Width = 120;
+      // 
+      // pluginIsUsableColumn
+      // 
+      this.pluginIsUsableColumn.Text = "利用可能";
       // 
       // VersionInfoDialog
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-      this.ClientSize = new System.Drawing.Size(404, 292);
+      this.ClientSize = new System.Drawing.Size(575, 292);
       this.Controls.Add(this.versionsList);
       this.Controls.Add(button1);
       this.MaximizeBox = false;
@@ -109,5 +122,7 @@
     #endregion
 
     private System.Windows.Forms.ListView versionsList;
+    private System.Windows.Forms.ColumnHeader pluginNameColumn;
+    private System.Windows.Forms.ColumnHeader pluginIsUsableColumn;
   }
 }

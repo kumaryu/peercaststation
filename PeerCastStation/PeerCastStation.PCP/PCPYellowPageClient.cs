@@ -9,7 +9,6 @@ using System.Net;
 
 namespace PeerCastStation.PCP
 {
-  [Plugin]
   public class PCPYellowPageClientFactory
     : IYellowPageClientFactory
   {
@@ -568,6 +567,28 @@ namespace PeerCastStation.PCP
         }
         PostChannelBcst(channel, false);
       }
+    }
+  }
+
+  [Plugin]
+  class PCPYellowPageClientPlugin
+    : IPlugin
+  {
+    public string Name { get { return "PCP YellowPage Client"; } }
+    public bool IsUsable { get { return true; } }
+
+    private PeerCastApplication application;
+    private PCPYellowPageClientFactory factory;
+    public void Start(PeerCastApplication app)
+    {
+      application = app;
+      if (factory==null) factory = new PCPYellowPageClientFactory(app.PeerCast);
+      application.PeerCast.YellowPageFactories.Add(factory);
+    }
+
+    public void Stop()
+    {
+      application.PeerCast.YellowPageFactories.Remove(factory);
     }
   }
 }

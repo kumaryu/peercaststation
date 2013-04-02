@@ -52,7 +52,6 @@ namespace PeerCastStation.Core
   /// <summary>
   /// 読み取ったデータをそのままコンテントとして流すRawContentReaderのファクトリクラスです
   /// </summary>
-  [Plugin(PluginPriority.Lower)]
   public class RawContentReaderFactory
     : IContentReaderFactory
   {
@@ -64,6 +63,28 @@ namespace PeerCastStation.Core
     public IContentReader Create(Channel channel)
     {
       return new RawContentReader(channel);
+    }
+  }
+
+  [Plugin(PluginPriority.Lower)]
+  public class RawContentReaderPlugin
+    : IPlugin
+  {
+    public string Name { get { return "Raw Content Reader"; } }
+    public bool IsUsable { get { return true; } }
+
+    private PeerCastApplication application;
+    private RawContentReaderFactory factory;
+    public void Start(PeerCastApplication app)
+    {
+      application = app;
+      if (factory==null) factory = new RawContentReaderFactory();
+      application.PeerCast.ContentReaderFactories.Add(factory);
+    }
+
+    public void Stop()
+    {
+      application.PeerCast.ContentReaderFactories.Remove(factory);
     }
   }
 }

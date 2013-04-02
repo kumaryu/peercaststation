@@ -22,7 +22,6 @@ using PeerCastStation.Core;
 
 namespace PeerCastStation.PCP
 {
-  [Plugin]
   public class PCPPongOutputStreamFactory
     : OutputStreamFactoryBase
   {
@@ -144,6 +143,28 @@ namespace PeerCastStation.PCP
     public override OutputStreamType OutputStreamType
     {
       get { return OutputStreamType.Metadata;  }
+    }
+  }
+
+  [Plugin]
+  class PCPPongOutputStreamPlugin
+    : IPlugin
+  {
+    public string Name { get { return "PCP Pong"; } }
+    public bool IsUsable { get { return true; } }
+
+    private PeerCastApplication application;
+    private PCPPongOutputStreamFactory factory;
+    public void Start(PeerCastApplication app)
+    {
+      application = app;
+      if (factory==null) factory = new PCPPongOutputStreamFactory(app.PeerCast);
+      application.PeerCast.OutputStreamFactories.Add(factory);
+    }
+
+    public void Stop()
+    {
+      application.PeerCast.OutputStreamFactories.Remove(factory);
     }
   }
 }

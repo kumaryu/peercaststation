@@ -6,13 +6,12 @@ using PeerCastStation.Core;
 
 namespace PeerCastStation.GUI
 {
+  [Plugin]
   public class UserInterface
-    : IUserInterface
+    : IPlugin
   {
-    public string Name
-    {
-      get { return "PeerCastStation.GUI"; }
-    }
+    public string Name { get { return "GUI by Windows.Forms"; } }
+    public bool IsUsable { get { return true; } }
 
     MainForm mainForm;
     Thread mainThread;
@@ -41,21 +40,6 @@ namespace PeerCastStation.GUI
         }));
       }
       mainThread.Join();
-    }
-  }
-
-  [Plugin]
-  public class UserInterfaceFactory
-    : IUserInterfaceFactory
-  {
-    public string Name
-    {
-      get { return "PeerCastStation.GUI"; }
-    }
-
-    public IUserInterface CreateUserInterface()
-    {
-      return new UserInterface();
     }
   }
 }

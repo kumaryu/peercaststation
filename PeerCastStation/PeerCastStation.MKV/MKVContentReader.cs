@@ -548,7 +548,6 @@ namespace PeerCastStation.MKV
     }
   }
 
-  [Plugin]
   public class MKVContentReaderFactory
     : IContentReaderFactory
   {
@@ -557,6 +556,28 @@ namespace PeerCastStation.MKV
     public IContentReader Create(Channel channel)
     {
       return new MKVContentReader(channel);
+    }
+  }
+
+  [Plugin]
+  public class MKVContentReaderPlugin
+    : IPlugin
+  {
+    public string Name { get { return "Matroska Content Reader"; } }
+    public bool IsUsable { get { return true; } }
+
+    private PeerCastApplication application;
+    private MKVContentReaderFactory factory;
+    public void Start(PeerCastApplication app)
+    {
+      application = app;
+      if (factory==null) factory = new MKVContentReaderFactory();
+      application.PeerCast.ContentReaderFactories.Add(factory);
+    }
+
+    public void Stop()
+    {
+      application.PeerCast.ContentReaderFactories.Remove(factory);
     }
   }
 }

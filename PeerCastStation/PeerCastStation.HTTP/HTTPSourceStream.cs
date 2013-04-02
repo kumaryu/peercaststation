@@ -81,7 +81,6 @@ namespace PeerCastStation.HTTP
     }
   }
 
-  [Plugin]
   public class HTTPSourceStreamFactory
     : SourceStreamFactoryBase
   {
@@ -275,6 +274,28 @@ namespace PeerCastStation.HTTP
         Status,
         SourceUri,
         (int)(RecvRate+SendRate)*8/1000);
+    }
+  }
+
+  [Plugin]
+  class HTTPSourceStreamPlugin
+    : IPlugin
+  {
+    public string Name { get { return "HTTP Source"; } }
+    public bool IsUsable { get { return true; } }
+
+    private PeerCastApplication application;
+    private HTTPSourceStreamFactory factory;
+    public void Start(PeerCastApplication app)
+    {
+      application = app;
+      if (factory==null) factory = new HTTPSourceStreamFactory(app.PeerCast);
+      application.PeerCast.SourceStreamFactories.Add(factory);
+    }
+
+    public void Stop()
+    {
+      application.PeerCast.SourceStreamFactories.Remove(factory);
     }
   }
 }

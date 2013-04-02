@@ -388,7 +388,6 @@ namespace PeerCastStation.ASF
     }
   }
 
-  [Plugin]
   public class ASFContentReaderFactory
     : IContentReaderFactory
   {
@@ -397,6 +396,28 @@ namespace PeerCastStation.ASF
     public IContentReader Create(Channel channel)
     {
       return new ASFContentReader(channel);
+    }
+  }
+
+  [Plugin]
+  public class ASFContentReaderPlugin
+    : IPlugin
+  {
+    public string Name { get { return "ASF Content Reader"; } }
+    public bool IsUsable { get { return true; } }
+
+    private PeerCastApplication application;
+    private ASFContentReaderFactory factory;
+    public void Start(PeerCastApplication app)
+    {
+      application = app;
+      if (factory==null) factory = new ASFContentReaderFactory();
+      application.PeerCast.ContentReaderFactories.Add(factory);
+    }
+
+    public void Stop()
+    {
+      application.PeerCast.ContentReaderFactories.Remove(factory);
     }
   }
 }
