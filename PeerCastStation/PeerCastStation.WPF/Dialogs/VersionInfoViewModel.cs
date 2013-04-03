@@ -33,17 +33,18 @@ namespace PeerCastStation.WPF.Dialogs
     {
       items = app
         .Plugins
-        .Select(plugin => plugin.GetType().Assembly)
-        .Distinct()
-        .Select(x =>
+        .Select(plugin => 
       {
-        var info = FileVersionInfo.GetVersionInfo(x.Location);
+        var asm  = plugin.GetType().Assembly;
+        var info = FileVersionInfo.GetVersionInfo(asm.Location);
         return new
         {
-          FileName = Path.GetFileName(info.FileName),
-          Version = info.FileVersion,
-          AssemblyName = x.FullName,
-          Copyright = info.LegalCopyright
+          Name         = plugin.Name,
+          IsUsable     = plugin.IsUsable,
+          FileName     = Path.GetFileName(info.FileName),
+          Version      = info.FileVersion,
+          AssemblyName = asm.FullName,
+          Copyright    = info.LegalCopyright
         };
       }).ToArray();
     }

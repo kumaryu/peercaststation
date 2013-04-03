@@ -85,8 +85,10 @@ var PeercastViewModel = new function() {
             version: plugin.assembly.version
           };
           plugins.push({
-            name:    plugin.name,
-            dll:     dllname,
+            name:     plugin.name,
+            isUsable: plugin.isUsable,
+            dll:      dllname,
+            version:  plugin.assembly.version
           });
         });
         for (var dllname in pluginDLLs) {

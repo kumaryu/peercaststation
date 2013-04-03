@@ -68,12 +68,16 @@
           <table class="table">
             <thead>
               <tr>
-                <th>DLL</th>
+                <th>名前</th>
+                <th>使用可能</th>
+                <th>ファイル名</th>
                 <th>バージョン</th>
               </tr>
             </thead>
-            <tbody data-bind="foreach:pluginDLLs">
+            <tbody data-bind="foreach:plugins">
               <tr>
+                <td data-bind="text:name"></td>
+                <td data-bind="text:isUsable"></td>
                 <td data-bind="text:dll"></td>
                 <td data-bind="text:version"></td>
               </tr>

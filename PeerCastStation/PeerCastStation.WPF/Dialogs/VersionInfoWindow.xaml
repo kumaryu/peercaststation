@@ -24,14 +24,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <ListView ItemsSource="{Binding Items}">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="ファイル" Width="200"
-                                DisplayMemberBinding="{Binding FileName}"/>
-                    <GridViewColumn Header="バージョン"  Width="60"
-                                DisplayMemberBinding="{Binding Version}"/>
-                    <GridViewColumn Header="アセンブリ名" Width="60"
-                                DisplayMemberBinding="{Binding AssemblyName}"/>
-                    <GridViewColumn Header="著作権" Width="60"
-                                DisplayMemberBinding="{Binding Copyright}"/>
+                    <GridViewColumn Header="プラグイン名" Width="200" DisplayMemberBinding="{Binding Name}"/>
+                    <GridViewColumn Header="使用可能"     Width="60"  DisplayMemberBinding="{Binding IsUsable}"/>
+                    <GridViewColumn Header="ファイル"     Width="200" DisplayMemberBinding="{Binding FileName}"/>
+                    <GridViewColumn Header="バージョン"   Width="60"  DisplayMemberBinding="{Binding Version}"/>
+                    <GridViewColumn Header="アセンブリ名" Width="60"  DisplayMemberBinding="{Binding AssemblyName}"/>
+                    <GridViewColumn Header="著作権"       Width="60"  DisplayMemberBinding="{Binding Copyright}"/>
                 </GridView>
             </ListView.View>
         </ListView>
