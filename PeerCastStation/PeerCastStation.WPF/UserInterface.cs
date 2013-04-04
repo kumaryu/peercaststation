@@ -23,7 +23,7 @@ namespace PeerCastStation.WPF
 {
   [Plugin]
   public class UserInterface
-    : IPlugin
+    : IUserInterfacePlugin
   {
     public string Name { get { return "GUI by WPF"; } }
     public bool IsUsable { get { return true; } }
@@ -84,6 +84,12 @@ namespace PeerCastStation.WPF
       notifyIconManager.Dispose();
       mainThread.Join();
       notifyIconThread.Join();
+    }
+
+    public void ShowNotificationMessage(NotificationMessage msg)
+    {
+      if (notifyIconManager==null) return;
+      notifyIconManager.ShowNotificationMessage(msg);
     }
   }
 }

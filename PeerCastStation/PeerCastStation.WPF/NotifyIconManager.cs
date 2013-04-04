@@ -118,6 +118,24 @@ namespace PeerCastStation.WPF
       // アンマネージリソースの解放処理
     }
 
+    public void ShowNotificationMessage(NotificationMessage msg)
+    {
+      if (notifyIcon==null) return;
+      var timeout = 60000;
+      var icon = ToolTipIcon.Info;
+      switch (msg.Type) {
+      case NotificationMessageType.None:    icon = ToolTipIcon.None; timeout = 30000; break;
+      case NotificationMessageType.Info:    icon = ToolTipIcon.Info; break;
+      case NotificationMessageType.Warning: icon = ToolTipIcon.Warning; break;
+      case NotificationMessageType.Error:   icon = ToolTipIcon.Error; break;
+      }
+      notifyIcon.ShowBalloonTip(
+        timeout,
+        msg.Title,
+        msg.Message,
+        icon);
+    }
+
     private NotifyIcon CreateNotifyIcon(
       PeerCast peerCast)
     {
