@@ -8,7 +8,7 @@ namespace PeerCastStation.GUI
 {
   [Plugin]
   public class UserInterface
-    : IPlugin
+    : IUserInterfacePlugin
   {
     public string Name { get { return "GUI by Windows.Forms"; } }
     public bool IsUsable { get { return true; } }
@@ -40,6 +40,16 @@ namespace PeerCastStation.GUI
         }));
       }
       mainThread.Join();
+    }
+
+    public void ShowNotificationMessage(NotificationMessage msg)
+    {
+      if (mainForm==null || mainForm.IsDisposed) return;
+      mainForm.Invoke(new Action(() => {
+        if (!mainForm.IsDisposed) {
+          mainForm.ShowNotificationMessage(msg);
+        }
+      }));
     }
   }
 }

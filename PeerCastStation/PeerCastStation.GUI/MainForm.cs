@@ -56,6 +56,24 @@ namespace PeerCastStation.GUI
       this.Visible = application.Settings.Get<GUISettings>().ShowWindowOnStartup;
     }
 
+    public void ShowNotificationMessage(NotificationMessage message)
+    {
+      if (notifyIcon==null) return;
+      var timeout = 60000;
+      var icon = ToolTipIcon.Info;
+      switch (message.Type) {
+      case NotificationMessageType.None:    icon = ToolTipIcon.None; timeout = 30000; break;
+      case NotificationMessageType.Info:    icon = ToolTipIcon.Info; break;
+      case NotificationMessageType.Warning: icon = ToolTipIcon.Warning; break;
+      case NotificationMessageType.Error:   icon = ToolTipIcon.Error; break;
+      }
+      notifyIcon.ShowBalloonTip(
+        timeout,
+        message.Title,
+        message.Message,
+        icon);
+    }
+
     public class LogLevelItem
     {
       public string Text { get; set; }
