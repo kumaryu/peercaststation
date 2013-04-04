@@ -35,4 +35,33 @@ namespace PeerCastStation.Core
     void Start(PeerCastApplication app);
     void Stop();
   }
+
+  public enum NotificationMessageType
+  {
+    None,
+    Info,
+    Warning,
+    Error,
+  }
+
+  public class NotificationMessage
+  {
+    public string Title   { get; private set; }
+    public string Message { get; private set; }
+    public NotificationMessageType Type { get; private set; }
+    public object Data    { get; private set; }
+    public NotificationMessage(string title, string message, NotificationMessageType type, object data=null)
+    {
+      this.Title   = title;
+      this.Message = message;
+      this.Type    = type;
+      this.Data    = data;
+    }
+  }
+
+  public interface IUserInterfacePlugin
+    : IPlugin
+  {
+    void ShowNotificationMessage(NotificationMessage msg);
+  }
 }
