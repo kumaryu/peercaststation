@@ -38,7 +38,7 @@ namespace PeerCastStation.Core
 
   public enum NotificationMessageType
   {
-    None,
+    Normal,
     Info,
     Warning,
     Error,

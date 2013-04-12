@@ -62,7 +62,7 @@ namespace PeerCastStation.GUI
       var timeout = 60000;
       var icon = ToolTipIcon.Info;
       switch (message.Type) {
-      case NotificationMessageType.None:    icon = ToolTipIcon.None; timeout = 30000; break;
+      case NotificationMessageType.Normal:  icon = ToolTipIcon.None; timeout = 30000; break;
       case NotificationMessageType.Info:    icon = ToolTipIcon.Info; break;
       case NotificationMessageType.Warning: icon = ToolTipIcon.Warning; break;
       case NotificationMessageType.Error:   icon = ToolTipIcon.Error; break;
