@@ -23,10 +23,10 @@ namespace PeerCastStation.WPF
 {
   [Plugin]
   public class UserInterface
-    : IUserInterfacePlugin
+    : PluginBase,
+      IUserInterfacePlugin
   {
-    public string Name { get { return "GUI by WPF"; } }
-    public bool IsUsable { get { return true; } }
+    override public string Name { get { return "GUI by WPF"; } }
 
     MainWindow mainWindow;
     MainViewModel viewModel;
@@ -34,13 +34,13 @@ namespace PeerCastStation.WPF
     NotifyIconManager notifyIconManager;
     Thread mainThread;
     private AppCastReader versionChecker;
-    public void Start(PeerCastApplication application)
+    override protected void OnStart()
     {
       notifyIconThread = new Thread(() =>
       {
-        notifyIconManager = new NotifyIconManager(application.PeerCast);
+        notifyIconManager = new NotifyIconManager(Application.PeerCast);
         notifyIconManager.CheckVersionClicked += (sender, e) => versionChecker.CheckVersion();
-        notifyIconManager.QuitClicked         += (sender, e) => application.Stop();
+        notifyIconManager.QuitClicked         += (sender, e) => Application.Stop();
         notifyIconManager.ShowWindowClicked   += (sender, e) => {
           if (mainWindow!=null) {
             mainWindow.Dispatcher.Invoke(new Action(() => {
@@ -63,8 +63,8 @@ namespace PeerCastStation.WPF
       mainThread = new Thread(() =>
       {
         var app = new Application();
-        viewModel = new MainViewModel(application);
-        var settings = application.Settings.Get<WPFSettings>();
+        viewModel = new MainViewModel(Application);
+        var settings = Application.Settings.Get<WPFSettings>();
         mainWindow = new MainWindow(viewModel);
         if (settings.ShowWindowOnStartup) mainWindow.Show();
         app.Run();
@@ -74,11 +74,11 @@ namespace PeerCastStation.WPF
       mainThread.Start();
     }
 
-    public void Stop()
+    override protected void OnStop()
     {
       if (mainWindow!=null) {
         mainWindow.Dispatcher.Invoke(new Action(() => {
-          Application.Current.Shutdown();
+          System.Windows.Application.Current.Shutdown();
         }));
       }
       notifyIconManager.Dispose();

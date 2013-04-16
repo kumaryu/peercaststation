@@ -572,23 +572,20 @@ namespace PeerCastStation.PCP
 
   [Plugin]
   class PCPYellowPageClientPlugin
-    : IPlugin
+    : PluginBase
   {
-    public string Name { get { return "PCP YellowPage Client"; } }
-    public bool IsUsable { get { return true; } }
+    override public string Name { get { return "PCP YellowPage Client"; } }
 
-    private PeerCastApplication application;
     private PCPYellowPageClientFactory factory;
-    public void Start(PeerCastApplication app)
+    override protected void OnAttach()
     {
-      application = app;
-      if (factory==null) factory = new PCPYellowPageClientFactory(app.PeerCast);
-      application.PeerCast.YellowPageFactories.Add(factory);
+      if (factory==null) factory = new PCPYellowPageClientFactory(Application.PeerCast);
+      Application.PeerCast.YellowPageFactories.Add(factory);
     }
 
-    public void Stop()
+    override protected void OnDetach()
     {
-      application.PeerCast.YellowPageFactories.Remove(factory);
+      Application.PeerCast.YellowPageFactories.Remove(factory);
     }
   }
 }

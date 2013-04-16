@@ -148,23 +148,20 @@ namespace PeerCastStation.PCP
 
   [Plugin]
   class PCPPongOutputStreamPlugin
-    : IPlugin
+    : PluginBase
   {
-    public string Name { get { return "PCP Pong"; } }
-    public bool IsUsable { get { return true; } }
+    override public string Name { get { return "PCP Pong"; } }
 
-    private PeerCastApplication application;
     private PCPPongOutputStreamFactory factory;
-    public void Start(PeerCastApplication app)
+    override protected void OnAttach()
     {
-      application = app;
-      if (factory==null) factory = new PCPPongOutputStreamFactory(app.PeerCast);
-      application.PeerCast.OutputStreamFactories.Add(factory);
+      if (factory==null) factory = new PCPPongOutputStreamFactory(Application.PeerCast);
+      Application.PeerCast.OutputStreamFactories.Add(factory);
     }
 
-    public void Stop()
+    override protected void OnDetach()
     {
-      application.PeerCast.OutputStreamFactories.Remove(factory);
+      Application.PeerCast.OutputStreamFactories.Remove(factory);
     }
   }
 }

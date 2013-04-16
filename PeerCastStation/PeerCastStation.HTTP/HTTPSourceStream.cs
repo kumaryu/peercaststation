@@ -279,23 +279,20 @@ namespace PeerCastStation.HTTP
 
   [Plugin]
   class HTTPSourceStreamPlugin
-    : IPlugin
+    : PluginBase
   {
-    public string Name { get { return "HTTP Source"; } }
-    public bool IsUsable { get { return true; } }
+    override public string Name { get { return "HTTP Source"; } }
 
-    private PeerCastApplication application;
     private HTTPSourceStreamFactory factory;
-    public void Start(PeerCastApplication app)
+    override protected void OnAttach()
     {
-      application = app;
-      if (factory==null) factory = new HTTPSourceStreamFactory(app.PeerCast);
-      application.PeerCast.SourceStreamFactories.Add(factory);
+      if (factory==null) factory = new HTTPSourceStreamFactory(Application.PeerCast);
+      Application.PeerCast.SourceStreamFactories.Add(factory);
     }
 
-    public void Stop()
+    override protected void OnDetach()
     {
-      application.PeerCast.SourceStreamFactories.Remove(factory);
+      Application.PeerCast.SourceStreamFactories.Remove(factory);
     }
   }
 }

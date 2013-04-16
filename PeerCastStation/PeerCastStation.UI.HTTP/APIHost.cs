@@ -12,29 +12,33 @@ namespace PeerCastStation.UI.HTTP
 {
   [Plugin]
   public class APIHost
-    : IUserInterfacePlugin
+    : PluginBase,
+      IUserInterfacePlugin
   {
-    public string Name { get { return "HTTP API Host UI"; } }
-    public bool IsUsable { get { return true; } }
+    override public string Name { get { return "HTTP API Host UI"; } }
     public LogWriter LogWriter { get { return logWriter; } }
 
-    private LogWriter logWriter;
+    private LogWriter logWriter = new LogWriter(1000);
     private APIHostOutputStreamFactory factory;
-    private PeerCastApplication application;
-
-    public void Start(PeerCastApplication app)
+    override protected void OnAttach()
     {
-      logWriter = new LogWriter(1000);
-      Logger.AddWriter(logWriter);
-      application = app;
-      factory = new APIHostOutputStreamFactory(this, app.PeerCast);
-      application.PeerCast.OutputStreamFactories.Add(factory);
+      factory = new APIHostOutputStreamFactory(this, Application.PeerCast);
+      Application.PeerCast.OutputStreamFactories.Add(factory);
     }
 
-    public void Stop()
+    protected override void OnStart()
     {
-      application.PeerCast.OutputStreamFactories.Remove(factory);
+      Logger.AddWriter(logWriter);
+    }
+
+    protected override void OnStop()
+    {
       Logger.RemoveWriter(logWriter);
+    }
+
+    protected override void OnDetach()
+    {
+      Application.PeerCast.OutputStreamFactories.Remove(factory);
     }
 
     private List<NotificationMessage> notificationMessages = new List<NotificationMessage>();
@@ -89,7 +93,7 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("getPlugins")]
       private JArray GetPlugins()
       {
-        var res = new JArray(owner.application.Plugins.Select(plugin => {
+        var res = new JArray(owner.Application.Plugins.Select(plugin => {
           var jplugin = new JObject();
           jplugin["name"]     = plugin.Name;
           jplugin["isUsable"] = plugin.IsUsable;

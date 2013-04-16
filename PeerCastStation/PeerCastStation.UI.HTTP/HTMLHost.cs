@@ -10,7 +10,7 @@ namespace PeerCastStation.UI.HTTP
 {
   [Plugin]
   public class HTMLHost
-    : IPlugin
+    : PluginBase
   {
     class FileDesc
     {
@@ -34,8 +34,7 @@ namespace PeerCastStation.UI.HTTP
       { "",      new FileDesc { MimeType="application/octet-stream" } },
     };
 
-    public string Name { get { return "HTTP File Host UI"; } }
-    public bool IsUsable { get { return true; } }
+    override public string Name { get { return "HTTP File Host UI"; } }
     public SortedList<string, string> VirtualPhysicalPathMap { get { return virtualPhysicalPathMap; } }
     private SortedList<string, string> virtualPhysicalPathMap = new SortedList<string,string>();
 
@@ -49,18 +48,16 @@ namespace PeerCastStation.UI.HTTP
     }
 
     HTMLHostOutputStreamFactory factory;
-    PeerCastApplication application;
-    public void Start(PeerCastApplication app)
+    override protected void OnAttach()
     {
-      application = app;
-      factory = new HTMLHostOutputStreamFactory(this, application.PeerCast);
-      application.PeerCast.OutputStreamFactories.Add(factory);
+      factory = new HTMLHostOutputStreamFactory(this, Application.PeerCast);
+      Application.PeerCast.OutputStreamFactories.Add(factory);
     }
 
-    public void Stop()
+    override protected void OnDetach()
     {
       if (factory!=null) {
-        application.PeerCast.OutputStreamFactories.Remove(factory);
+        Application.PeerCast.OutputStreamFactories.Remove(factory);
         factory = null;
       }
     }

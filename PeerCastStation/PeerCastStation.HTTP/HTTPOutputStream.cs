@@ -582,23 +582,20 @@ namespace PeerCastStation.HTTP
 
   [Plugin]
   class HTTPOutputStreamPlugin
-    : IPlugin
+    : PluginBase
   {
-    public string Name { get { return "HTTP Output"; } }
-    public bool IsUsable { get { return true; } }
+    override public string Name { get { return "HTTP Output"; } }
 
-    private PeerCastApplication application;
     private HTTPOutputStreamFactory factory;
-    public void Start(PeerCastApplication app)
+    override protected void OnAttach()
     {
-      application = app;
-      if (factory==null) factory = new HTTPOutputStreamFactory(app.PeerCast);
-      application.PeerCast.OutputStreamFactories.Add(factory);
+      if (factory==null) factory = new HTTPOutputStreamFactory(Application.PeerCast);
+      Application.PeerCast.OutputStreamFactories.Add(factory);
     }
 
-    public void Stop()
+    override protected void OnDetach()
     {
-      application.PeerCast.OutputStreamFactories.Remove(factory);
+      Application.PeerCast.OutputStreamFactories.Remove(factory);
     }
   }
 }

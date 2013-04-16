@@ -401,23 +401,20 @@ namespace PeerCastStation.ASF
 
   [Plugin]
   public class ASFContentReaderPlugin
-    : IPlugin
+    : PluginBase
   {
-    public string Name { get { return "ASF Content Reader"; } }
-    public bool IsUsable { get { return true; } }
+    override public string Name { get { return "ASF Content Reader"; } }
 
-    private PeerCastApplication application;
     private ASFContentReaderFactory factory;
-    public void Start(PeerCastApplication app)
+    override protected void OnAttach()
     {
-      application = app;
       if (factory==null) factory = new ASFContentReaderFactory();
-      application.PeerCast.ContentReaderFactories.Add(factory);
+      Application.PeerCast.ContentReaderFactories.Add(factory);
     }
 
-    public void Stop()
+    override protected void OnDetach()
     {
-      application.PeerCast.ContentReaderFactories.Remove(factory);
+      Application.PeerCast.ContentReaderFactories.Remove(factory);
     }
   }
 }

@@ -40,18 +40,23 @@ namespace PeerCastStation.Main
         args.Cancel = true;
         Stop();
       };
-      LoadSettings();
-      peerCast.ChannelMonitors.Add(new ChannelCleaner(peerCast));
       foreach (var plugin in plugins) {
-        plugin.Start(this);
+        plugin.Attach(this);
+      }
+      peerCast.ChannelMonitors.Add(new ChannelCleaner(peerCast));
+      LoadSettings();
+      foreach (var plugin in plugins) {
+        plugin.Start();
       }
       stoppedEvent.WaitOne();
       foreach (var plugin in plugins) {
         plugin.Stop();
       }
       SaveSettings();
-
       peerCast.Stop();
+      foreach (var plugin in plugins) {
+        plugin.Detach();
+      }
       Logger.Close();
     }
 

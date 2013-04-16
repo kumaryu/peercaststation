@@ -453,23 +453,20 @@ namespace PeerCastStation.FLV
 
   [Plugin]
   public class FLVContentReaderPlugin
-    : IPlugin
+    : PluginBase
   {
-    public string Name { get { return "FLV Content Reader"; } }
-    public bool IsUsable { get { return true; } }
+    override public string Name { get { return "FLV Content Reader"; } }
 
-    private PeerCastApplication application;
     private FLVContentReaderFactory factory;
-    public void Start(PeerCastApplication app)
+    override protected void OnAttach()
     {
-      application = app;
       if (factory==null) factory = new FLVContentReaderFactory();
-      application.PeerCast.ContentReaderFactories.Add(factory);
+      Application.PeerCast.ContentReaderFactories.Add(factory);
     }
 
-    public void Stop()
+    override protected void OnDetach()
     {
-      application.PeerCast.ContentReaderFactories.Remove(factory);
+      Application.PeerCast.ContentReaderFactories.Remove(factory);
     }
   }
 }

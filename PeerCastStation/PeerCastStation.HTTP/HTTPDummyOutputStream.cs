@@ -112,23 +112,20 @@ namespace PeerCastStation.HTTP
 
   [Plugin]
   class HTTPDummyOutputStreamPlugin
-    : IPlugin
+    : PluginBase
   {
-    public string Name { get { return "HTTP Dummy Output"; } }
-    public bool IsUsable { get { return true; } }
+    override public string Name { get { return "HTTP Dummy Output"; } }
 
-    private PeerCastApplication application;
     private HTTPDummyOutputStreamFactory factory;
-    public void Start(PeerCastApplication app)
+    override protected void OnAttach()
     {
-      application = app;
-      if (factory==null) factory = new HTTPDummyOutputStreamFactory(app.PeerCast);
-      application.PeerCast.OutputStreamFactories.Add(factory);
+      if (factory==null) factory = new HTTPDummyOutputStreamFactory(Application.PeerCast);
+      Application.PeerCast.OutputStreamFactories.Add(factory);
     }
 
-    public void Stop()
+    override protected void OnDetach()
     {
-      application.PeerCast.OutputStreamFactories.Remove(factory);
+      Application.PeerCast.OutputStreamFactories.Remove(factory);
     }
   }
 }

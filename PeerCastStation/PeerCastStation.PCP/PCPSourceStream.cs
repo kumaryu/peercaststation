@@ -832,23 +832,20 @@ namespace PeerCastStation.PCP
 
   [Plugin]
   class PCPSourceStreamPlugin
-    : IPlugin
+    : PluginBase
   {
-    public string Name { get { return "PCP Source"; } }
-    public bool IsUsable { get { return true; } }
+    override public string Name { get { return "PCP Source"; } }
 
-    private PeerCastApplication application;
     private PCPSourceStreamFactory factory;
-    public void Start(PeerCastApplication app)
+    override protected void OnAttach()
     {
-      application = app;
-      if (factory==null) factory = new PCPSourceStreamFactory(app.PeerCast);
-      application.PeerCast.SourceStreamFactories.Add(factory);
+      if (factory==null) factory = new PCPSourceStreamFactory(Application.PeerCast);
+      Application.PeerCast.SourceStreamFactories.Add(factory);
     }
 
-    public void Stop()
+    override protected void OnDetach()
     {
-      application.PeerCast.SourceStreamFactories.Remove(factory);
+      Application.PeerCast.SourceStreamFactories.Remove(factory);
     }
   }
 }

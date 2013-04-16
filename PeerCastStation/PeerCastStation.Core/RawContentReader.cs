@@ -68,23 +68,20 @@ namespace PeerCastStation.Core
 
   [Plugin(PluginPriority.Lower)]
   public class RawContentReaderPlugin
-    : IPlugin
+    : PluginBase
   {
-    public string Name { get { return "Raw Content Reader"; } }
-    public bool IsUsable { get { return true; } }
+    override public string Name { get { return "Raw Content Reader"; } }
 
-    private PeerCastApplication application;
     private RawContentReaderFactory factory;
-    public void Start(PeerCastApplication app)
+    override protected void OnAttach()
     {
-      application = app;
       if (factory==null) factory = new RawContentReaderFactory();
-      application.PeerCast.ContentReaderFactories.Add(factory);
+      Application.PeerCast.ContentReaderFactories.Add(factory);
     }
 
-    public void Stop()
+    override protected void OnDetach()
     {
-      application.PeerCast.ContentReaderFactories.Remove(factory);
+      Application.PeerCast.ContentReaderFactories.Remove(factory);
     }
   }
 }

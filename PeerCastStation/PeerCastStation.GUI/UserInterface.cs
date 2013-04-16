@@ -8,20 +8,20 @@ namespace PeerCastStation.GUI
 {
   [Plugin]
   public class UserInterface
-    : IUserInterfacePlugin
+    : PluginBase,
+      IUserInterfacePlugin
   {
-    public string Name { get { return "GUI by Windows.Forms"; } }
-    public bool IsUsable { get { return true; } }
+    override public string Name { get { return "GUI by Windows.Forms"; } }
 
     MainForm mainForm;
     Thread mainThread;
-    public void Start(PeerCastApplication app)
+    override protected void OnStart()
     {
       System.Windows.Forms.Application.EnableVisualStyles();
       mainThread = new Thread(() => {
-        mainForm = new MainForm(app);
+        mainForm = new MainForm(Application);
         System.Windows.Forms.Application.ApplicationExit += (sender, args) => {
-          app.Stop();
+          Application.Stop();
         };
         System.Windows.Forms.Application.Run();
         mainForm = null;
@@ -30,7 +30,7 @@ namespace PeerCastStation.GUI
       mainThread.Start();
     }
 
-    public void Stop()
+    override protected void OnStop()
     {
       if (mainForm!=null && !mainForm.IsDisposed) {
         mainForm.Invoke(new Action(() => {

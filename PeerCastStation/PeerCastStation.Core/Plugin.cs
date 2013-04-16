@@ -32,8 +32,47 @@ namespace PeerCastStation.Core
   {
     string Name   { get; }
     bool IsUsable { get; }
-    void Start(PeerCastApplication app);
+    void Attach(PeerCastApplication app);
+    void Detach();
+    void Start();
     void Stop();
+  }
+
+  public abstract class PluginBase
+    : IPlugin
+  {
+    public abstract string Name { get; }
+    public virtual bool IsUsable { get { return true; } }
+
+    private PeerCastApplication application;
+    public PeerCastApplication Application { get { return application; } }
+
+    public void Attach(PeerCastApplication app)
+    {
+      application = app;
+      OnAttach();
+    }
+
+    public void Detach()
+    {
+      OnDetach();
+      application = null;
+    }
+
+    public void Start()
+    {
+      OnStart();
+    }
+
+    public void Stop()
+    {
+      OnStop();
+    }
+
+    protected virtual void OnAttach() {}
+    protected virtual void OnDetach() {}
+    protected virtual void OnStart() {}
+    protected virtual void OnStop() {}
   }
 
   public enum NotificationMessageType

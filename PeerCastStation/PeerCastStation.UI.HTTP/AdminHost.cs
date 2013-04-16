@@ -11,23 +11,20 @@ namespace PeerCastStation.UI.HTTP
 {
   [Plugin]
   public class AdminHost
-    : IPlugin
+    : PluginBase
   {
-    public string Name { get { return "HTTP Admin Host UI"; } }
-    public bool IsUsable { get { return true; } }
+    override public string Name { get { return "HTTP Admin Host UI"; } }
 
     AdminHostOutputStreamFactory factory;
-    PeerCastApplication application;
-    public void Start(PeerCastApplication app)
+    override protected void OnAttach()
     {
-      application = app;
-      factory = new AdminHostOutputStreamFactory(this, app.PeerCast);
-      application.PeerCast.OutputStreamFactories.Add(factory);
+      factory = new AdminHostOutputStreamFactory(this, Application.PeerCast);
+      Application.PeerCast.OutputStreamFactories.Add(factory);
     }
 
-    public void Stop()
+    override protected void OnDetach()
     {
-      application.PeerCast.OutputStreamFactories.Remove(factory);
+      Application.PeerCast.OutputStreamFactories.Remove(factory);
     }
 
     public class AdminHostOutputStream
