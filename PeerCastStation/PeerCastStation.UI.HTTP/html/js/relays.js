@@ -421,21 +421,10 @@ var channelsViewModel = new function() {
     });
     self.channels.splice.apply(self.channels, [0, self.channels().length].concat(new_channels));
   };
+
+  self.bind = function(target) {
+    ko.applyBindings(channelsViewModel, target);
+    channelsViewModel.update();
+    setInterval(channelsViewModel.update, 1000);
+  };
 };
-$(document).ready(function() {
-  $('#channels').tooltip({selector: "a[rel=tooltip]"});
-  ko.applyBindings(channelsViewModel, $('#channels').get(0));
-  channelsViewModel.update();
-  setInterval(refresh, 1000);
-});
-
-function refresh()
-{
-  channelsViewModel.update();
-}
-
-function broadcastChannel()
-{
-  BroadcastDialog.show();
-}
-

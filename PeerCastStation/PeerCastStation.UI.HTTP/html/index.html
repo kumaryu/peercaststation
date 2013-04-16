@@ -10,9 +10,25 @@
     <script type="text/javascript" src="/Scripts/knockout-2.2.0.js"></script>
     <script type="text/javascript" src="/Scripts/bootstrap.min.js"></script>
     <script type="text/javascript" src="js/peercaststation.1.0.0.js"></script>
+    <script type="text/javascript" src="js/common.js"></script>
     <script type="text/javascript" src="js/index.js"></script>
+    <script type="text/javascript">
+      $(function () {
+        $('.alert').alert();
+        IndexViewModel.bind($('#status').get(0));
+        UIViewModel.bind($('.alerts').get(0));
+      });
+    </script>
+    <script type="text/html" id='alert'>
+      <div class="alert alert-block fade in" data-bind="css: 'alert-'+type">
+        <a class="close" data-dismiss="alert" href="#">&times;</a>
+        <h4 data-bind="text: title"></h4>
+        <p data-bind="text: message"></p>
+      </div>
+    </script>
   </head>
   <body>
+    <div class="alerts" data-bind="template: { name: 'alert', foreach: alerts }"></div>
     <div class="navbar">
       <div class="navbar-inner">
         <div class="container-fluid">

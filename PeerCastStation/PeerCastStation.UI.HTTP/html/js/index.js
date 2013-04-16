@@ -1,5 +1,5 @@
 
-var PeercastViewModel = new function() {
+var IndexViewModel = new function() {
   var self = this;
   self.apiVersion           = ko.observable(null);
   self.agentName            = ko.observable(null);
@@ -98,10 +98,10 @@ var PeercastViewModel = new function() {
       }
     });
   });
-};
 
-$(document).ready(function() {
-  PeercastViewModel.update();
-  ko.applyBindings(PeercastViewModel, $('#status').get(0));
-});
+  self.bind = function (target) {
+    self.update();
+    ko.applyBindings(self, target);
+  };
+};
 

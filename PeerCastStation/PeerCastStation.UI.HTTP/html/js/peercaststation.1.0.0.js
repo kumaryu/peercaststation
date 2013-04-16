@@ -28,7 +28,7 @@ PeerCast = {
     var request = {
       jsonrpc: '2.0',
       id: this.genId(),
-      method: method,
+      method: method
     };
     if (params!=undefined && params!=null) {
       request.params = params;
@@ -131,6 +131,10 @@ PeerCast = {
   },
   clearLog: function(completed) {
     this.postRequest('clearLog', null, completed);
+  },
+
+  getNotificationMessages: function(completed) {
+    this.postRequest('getNotificationMessages', null, completed);
   }
 };
 

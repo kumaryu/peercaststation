@@ -303,15 +303,9 @@ var SettingsViewModel = new function() {
     });
   };
 
-  self.update();
+  self.bind = function(target) {
+    self.update();
+    ko.applyBindings(self, target);
+  };
 };
-
-$(document).ready(function() {
-  ko.applyBindings(SettingsViewModel, $('#settings').get(0));
-});
-
-function refresh()
-{
-  SettingsViewModel.update();
-}
 

@@ -12,7 +12,7 @@ namespace PeerCastStation.UI.HTTP
 {
   [Plugin]
   public class APIHost
-    : IPlugin
+    : IUserInterfacePlugin
   {
     public string Name { get { return "HTTP API Host UI"; } }
     public bool IsUsable { get { return true; } }
@@ -35,6 +35,23 @@ namespace PeerCastStation.UI.HTTP
     {
       application.PeerCast.OutputStreamFactories.Remove(factory);
       Logger.RemoveWriter(logWriter);
+    }
+
+    private List<NotificationMessage> notificationMessages = new List<NotificationMessage>();
+    public void ShowNotificationMessage(NotificationMessage msg)
+    {
+      lock (notificationMessages) {
+        notificationMessages.Add(msg);
+      }
+    }
+
+    public IEnumerable<NotificationMessage> GetNotificationMessages()
+    {
+      lock (notificationMessages) {
+        var result = notificationMessages.ToArray();
+        notificationMessages.Clear();
+        return result;
+      }
     }
 
     public class APIHostOutputStream
@@ -713,6 +730,20 @@ namespace PeerCastStation.UI.HTTP
           channel.ChannelTrack = new ChannelTrack(new_track);
         }
         return channel.ChannelID.ToString("N").ToUpper();
+      }
+
+      [RPCMethod("getNotificationMessages")]
+      public JArray GetNotificationMessages()
+      {
+        return new JArray(
+          owner.GetNotificationMessages().Select(msg => {
+            var obj = new JObject();
+            obj["type"]    = msg.Type.ToString().ToLowerInvariant();
+            obj["title"]   = msg.Title;
+            obj["message"] = msg.Message;
+            return obj;
+          })
+        );
       }
 
       public static readonly int RequestLimit = 64*1024;

@@ -37,11 +37,11 @@ var LogsViewModel = new function() {
       self.logs('');
     });
   };
-};
 
-$(document).ready(function() {
-  LogsViewModel.update();
-  setInterval(function() { LogsViewModel.update(); }, 1000);
-  ko.applyBindings(LogsViewModel, $('#logs').get(0));
-});
+  self.bind = function(target) {
+    self.update();
+    ko.applyBindings(self, target);
+    setInterval(self.update(), 1000);
+  };
+};
 

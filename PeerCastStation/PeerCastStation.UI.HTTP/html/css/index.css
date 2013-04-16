@@ -1,4 +1,12 @@
 
+.alerts {
+  position: fixed;
+  top: 60px;
+  right: 30px;
+  left: auto;
+  min-width: 100px;
+}
+
 .close-inline {
   font-size: 20px;
   font-weight: bold;
