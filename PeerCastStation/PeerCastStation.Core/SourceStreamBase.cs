@@ -58,6 +58,8 @@ namespace PeerCastStation.Core
     protected Logger Logger { get; private set; }
     protected AutoResetEvent RecvEvent { get; private set; }
 
+    public abstract ConnectionInfo GetConnectionInfo();
+
     private Thread mainThread;
     public SourceStreamBase(
       PeerCast peercast,

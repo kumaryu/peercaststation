@@ -43,10 +43,11 @@ namespace PeerCastStation.PCP
 
   public class RelayRequestResponse
   {
-    public int StatusCode     { get; set; }
-    public int? PCPVersion    { get; set; }
+    public int    StatusCode  { get; set; }
+    public int?   PCPVersion  { get; set; }
     public string ContentType { get; set; }
-    public long? StreamPos    { get; set; }
+    public long?  StreamPos   { get; set; }
+    public string Server      { get; set; }
     public RelayRequestResponse(IEnumerable<string> responses)
     {
       this.PCPVersion = null;
@@ -65,6 +66,9 @@ namespace PeerCastStation.PCP
         }
         if ((match = Regex.Match(res, @"x-peercast-pos:\s*(\d+)\s*$")).Success) {
           this.StreamPos = Convert.ToInt64(match.Groups[1].Value);
+        }
+        if ((match = Regex.Match(res, @"Server:\s*(.*)\s*$")).Success) {
+          this.Server = match.Groups[1].Value;
         }
       }
     }
@@ -110,6 +114,7 @@ namespace PeerCastStation.PCP
     private bool hostInfoUpdated = true;
     private int nextHostInfoUpdate = Environment.TickCount;
     private System.Threading.AutoResetEvent changedEvent = new System.Threading.AutoResetEvent(true);
+    private string serverName;
 
     private const int PCP_VERSION    = 1218;
     private const int PCP_VERSION_VP = 27;
@@ -543,6 +548,7 @@ namespace PeerCastStation.PCP
       RecvEvent.WaitOne(1);
       var res = RecvRelayRequestResponse();
       if (res!=null) {
+        serverName = res.Server;
         if (res.StatusCode==200 || res.StatusCode==503) {
           SendPCPHelo();
           state = State.Handshaking;
@@ -683,6 +689,7 @@ namespace PeerCastStation.PCP
 
     private int      streamIndex = -1;
     private DateTime streamOrigin;
+    private long     lastPosition = 0;
     protected void OnPCPChanPkt(Atom atom)
     {
       var pkt_type = atom.Children.GetChanPktType();
@@ -693,11 +700,13 @@ namespace PeerCastStation.PCP
           streamIndex += 1;
           streamOrigin = DateTime.Now;
           Channel.ContentHeader = new Content(streamIndex, TimeSpan.Zero, pkt_pos, pkt_data);
+          lastPosition = pkt_pos;
         }
         else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_DATA) {
           if (atom.Children.GetChanPktPos()!=null) {
             long pkt_pos = atom.Children.GetChanPktPos().Value;
             Channel.Contents.Add(new Content(streamIndex, DateTime.Now-streamOrigin, pkt_pos, pkt_data));
+            lastPosition = pkt_pos;
           }
         }
         else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_META) {
@@ -827,6 +836,49 @@ namespace PeerCastStation.PCP
           "PCP {0} NotConnected",
           Status);
       }
+    }
+
+    public override ConnectionInfo GetConnectionInfo()
+    {
+      ConnectionStatus status = ConnectionStatus.Idle;
+      switch (state) {
+      case State.Connecting:
+      case State.Handshaking:
+      case State.RelayRequesting:
+      case State.Retrying:
+      case State.WaitRequestResponse:
+        status = ConnectionStatus.Connecting;
+        break;
+      case State.Receiving:
+        status = ConnectionStatus.Connected;
+        break;
+      case State.None:
+        status = HasError ? ConnectionStatus.Error : ConnectionStatus.Idle;
+        break;
+      }
+      IPEndPoint endpoint = null;
+      if (client!=null && client.Connected) {
+        endpoint = (IPEndPoint)client.Client.RemoteEndPoint;
+      }
+      var host_status = RemoteHostStatus.None;
+      if (endpoint!=null && Utils.IsSiteLocal(endpoint.Address)) {
+        host_status |= RemoteHostStatus.Local;
+      }
+      if (TrackerHost==null || Uphost.SessionID==TrackerHost.SessionID) {
+        host_status |= RemoteHostStatus.Tracker;
+      }
+      return new ConnectionInfo(
+        "PCP Source",
+        ConnectionType.Source,
+        status,
+        endpoint,
+        host_status,
+        lastPosition,
+        RecvRate,
+        SendRate,
+        null,
+        null,
+        serverName);
     }
   }
 

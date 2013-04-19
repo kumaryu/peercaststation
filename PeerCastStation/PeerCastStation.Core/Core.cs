@@ -118,6 +118,12 @@ namespace PeerCastStation.Core
     /// YellowPageに掲載しようとしているチャンネルの一覧を取得します
     /// </summary>
     IList<IAnnouncingChannel> AnnouncingChannels { get; }
+
+    /// <summary>
+    /// 現在の接続情報を取得します
+    /// </summary>
+    /// <returns>呼び出した時点の接続先情報</returns>
+    ConnectionInfo GetConnectionInfo();
   }
 
   /// <summary>
@@ -146,6 +152,111 @@ namespace PeerCastStation.Core
     /// <param name="uri">チェックするURI</param>
     /// <returns>扱えるURIの場合はtrue、それ以外はfalse</returns>
     bool CheckURI(Uri uri);
+  }
+
+  [Flags]
+  public enum ConnectionType
+  {
+    /// <summary>
+    /// 指定無し
+    /// </summary>
+    None = 0x00,
+    /// <summary>
+    /// 視聴出力用接続
+    /// </summary>
+    Direct = 0x01,
+    /// <summary>
+    /// リレー出力用接続
+    /// </summary>
+    Relay = 0x02,
+    /// <summary>
+    /// メタデータ出力用接続
+    /// </summary>
+    Metadata = 0x04,
+    /// <summary>
+    /// ユーザインターフェース出力用接続
+    /// </summary>
+    Interface = 0x08,
+    /// <summary>
+    /// YellowPageへの掲載用接続
+    /// </summary>
+    Announce = 0x10,
+    /// <summary>
+    /// リレー・コンテンツ受信接続
+    /// </summary>
+    Source = 0x20,
+  }
+
+  public enum ConnectionStatus
+  {
+    /// <summary>
+    /// 接続されていません
+    /// </summary>
+    Idle,
+    /// <summary>
+    /// 接続先の探索および接続を試みています
+    /// </summary>
+    Connecting,
+    /// <summary>
+    /// 接続しています
+    /// </summary>
+    Connected,
+    /// <summary>
+    /// エラー発生のため切断しました
+    /// </summary>
+    Error,
+  }
+
+  [Flags]
+  public enum RemoteHostStatus
+  {
+    None       = 0x00,
+    Local      = 0x01,
+    Firewalled = 0x02,
+    RelayFull  = 0x04,
+    Receiving  = 0x08,
+    Root       = 0x10,
+    Tracker    = 0x20,
+  }
+
+  public class ConnectionInfo
+  {
+    public string     ProtocolName    { get; private set; }
+    public ConnectionType   Type      { get; private set; }
+    public ConnectionStatus Status    { get; private set; }
+    public IPEndPoint RemoteEndPoint  { get; private set; }
+    public RemoteHostStatus RemoteHostStatus { get; private set; }
+    public long?      ContentPosition { get; private set; }
+    public float?     RecvRate        { get; private set; }
+    public float?     SendRate        { get; private set; }
+    public int?       LocalRelays     { get; private set; }
+    public int?       LocalDirects    { get; private set; }
+    public string     AgentName       { get; private set; }
+    public ConnectionInfo(
+      string           protocol_name,
+      ConnectionType   type,
+      ConnectionStatus status,
+      IPEndPoint remote_endpoint,
+      RemoteHostStatus remote_host_status,
+      long?      content_position,
+      float?     recv_rate,
+      float?     send_rate,
+      int?       local_relays,
+      int?       local_directs,
+      string     agent_name)
+    {
+      ProtocolName     = protocol_name;
+      Type             = type;
+      Status           = status;
+      RemoteEndPoint   = remote_endpoint;
+      RemoteHostStatus = remote_host_status;
+      ContentPosition  = content_position;
+      RecvRate         = recv_rate;
+      SendRate         = send_rate;
+      LocalRelays      = local_relays;
+      LocalDirects     = local_directs;
+      AgentName        = agent_name;
+    }
   }
 
   /// <summary>
@@ -235,6 +346,12 @@ namespace PeerCastStation.Core
     /// 現在の秒間受信バイト数を取得します
     /// </summary>
     float RecvRate { get; }
+    /// <summary>
+    /// 現在の接続情報を取得します
+    /// </summary>
+    /// <returns>呼び出した時点の接続先情報</returns>
+    ConnectionInfo GetConnectionInfo();
+
     /// <summary>
     /// ストリームの状態が変更された時に呼ばれるイベントです
     /// </summary>
@@ -341,6 +458,11 @@ namespace PeerCastStation.Core
     /// 出力ストリームの種類を取得します
     /// </summary>
     OutputStreamType OutputStreamType { get; }
+    /// <summary>
+    /// 現在の接続情報を取得します
+    /// </summary>
+    /// <returns>呼び出した時点の接続先情報</returns>
+    ConnectionInfo GetConnectionInfo();
     /// <summary>
     /// 現在の秒間送信バイト数を取得します
     /// </summary>

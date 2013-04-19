@@ -336,6 +336,7 @@ namespace PeerCastStation.PCP
     private class RestartException : Exception {}
     private class QuitException : Exception {}
     private class BannedException : Exception {}
+    private IPEndPoint remoteEndPoint;
     private void AnnounceThreadProc()
     {
       Logger.Debug("Thread started");
@@ -349,6 +350,7 @@ namespace PeerCastStation.PCP
           Logger.Debug("Connecting to YP");
           AnnouncingStatus = AnnouncingStatus.Connecting;
           using (var client = new TcpClient(host, port)) {
+            remoteEndPoint = (IPEndPoint)client.Client.RemoteEndPoint;
             using (var stream = client.GetStream()) {
               AtomWriter.Write(stream, new Atom(new ID4("pcp\n"), (int)1));
               var helo = new AtomCollection();
@@ -445,6 +447,9 @@ namespace PeerCastStation.PCP
         catch (IOException e) {
           AnnouncingStatus = AnnouncingStatus.Error;
           Logger.Info(e);
+        }
+        finally {
+          remoteEndPoint = null;
         }
         Logger.Debug("Connection closed");
         if (!IsStopped) {
@@ -567,6 +572,35 @@ namespace PeerCastStation.PCP
         }
         PostChannelBcst(channel, false);
       }
+    }
+
+    public ConnectionInfo GetConnectionInfo()
+    {
+      ConnectionStatus status = ConnectionStatus.Idle;
+      switch (AnnouncingStatus) {
+      case Core.AnnouncingStatus.Connected:  status = ConnectionStatus.Connected; break;
+      case Core.AnnouncingStatus.Connecting: status = ConnectionStatus.Connecting; break;
+      case Core.AnnouncingStatus.Error:      status = ConnectionStatus.Error; break;
+      case Core.AnnouncingStatus.Idle:       status = ConnectionStatus.Idle; break;
+      }
+      var host_status = RemoteHostStatus.None;
+      var rhost = remoteEndPoint;
+      if (rhost!=null) {
+        host_status |= RemoteHostStatus.Root;
+        if (Utils.IsSiteLocal(rhost.Address)) host_status |= RemoteHostStatus.Local;
+      }
+      return new ConnectionInfo(
+        "PCP COUT",
+        ConnectionType.Announce,
+        status,
+        rhost,
+        host_status,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null);
     }
   }
 

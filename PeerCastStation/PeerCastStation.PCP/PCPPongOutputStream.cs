@@ -144,6 +144,26 @@ namespace PeerCastStation.PCP
     {
       get { return OutputStreamType.Metadata;  }
     }
+
+    public override ConnectionInfo GetConnectionInfo()
+    {
+      ConnectionStatus status = ConnectionStatus.Connected;
+      if (IsStopped) {
+        status = HasError ? ConnectionStatus.Error : ConnectionStatus.Idle;
+      }
+      return new ConnectionInfo(
+        "PCP Pong",
+        ConnectionType.Metadata,
+        status,
+        (IPEndPoint)RemoteEndPoint,
+        IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
+        null,
+        RecvRate,
+        SendRate,
+        null,
+        null,
+        null);
+    }
   }
 
   [Plugin]

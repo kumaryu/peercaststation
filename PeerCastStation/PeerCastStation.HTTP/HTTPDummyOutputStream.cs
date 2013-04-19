@@ -48,7 +48,19 @@ namespace PeerCastStation.HTTP
       Guid channel_id,
       byte[] header)
     {
-      return new HTTPDummyOutputStream(PeerCast, input_stream, output_stream, remote_endpoint);
+      HTTPRequest req = null;
+      var stream = new MemoryStream(header);
+      try {
+        req = HTTPRequestReader.Read(stream);
+      }
+      catch (EndOfStreamException) {
+      }
+      return new HTTPDummyOutputStream(
+        PeerCast,
+        input_stream,
+        output_stream,
+        remote_endpoint,
+        req);
     }
 
     public override Guid? ParseChannelID(byte[] header)
@@ -79,14 +91,17 @@ namespace PeerCastStation.HTTP
   public class HTTPDummyOutputStream
     : OutputStreamBase
   {
+    private HTTPRequest request;
     public HTTPDummyOutputStream(
       PeerCast peercast,
       Stream input_stream,
       Stream output_stream,
-      EndPoint remote_endpoint)
+      EndPoint remote_endpoint,
+      HTTPRequest req)
       : base(peercast, input_stream, output_stream, remote_endpoint, null, null)
     {
       Logger.Debug("Initialized: Remote {0}", remote_endpoint);
+      this.request = req;
     }
 
     protected override void OnStarted()
@@ -107,6 +122,22 @@ namespace PeerCastStation.HTTP
     public override OutputStreamType OutputStreamType
     {
       get { return OutputStreamType.Metadata; }
+    }
+
+    public override ConnectionInfo GetConnectionInfo()
+    {
+      return new ConnectionInfo(
+        "No Protocol Matched",
+        ConnectionType.Metadata,
+        ConnectionStatus.Connected,
+        (IPEndPoint)RemoteEndPoint,
+        IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
+        null,
+        RecvRate,
+        SendRate,
+        null,
+        null,
+        request.Headers["USER-AGENT"]);
     }
   }
 
