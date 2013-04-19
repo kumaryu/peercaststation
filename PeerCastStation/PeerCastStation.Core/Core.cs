@@ -339,14 +339,6 @@ namespace PeerCastStation.Core
     /// </summary>
     SourceStreamStatus Status { get; }
     /// <summary>
-    /// 現在の秒間送信バイト数を取得します
-    /// </summary>
-    float SendRate { get; }
-    /// <summary>
-    /// 現在の秒間受信バイト数を取得します
-    /// </summary>
-    float RecvRate { get; }
-    /// <summary>
     /// 現在の接続情報を取得します
     /// </summary>
     /// <returns>呼び出した時点の接続先情報</returns>
@@ -463,14 +455,6 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <returns>呼び出した時点の接続先情報</returns>
     ConnectionInfo GetConnectionInfo();
-    /// <summary>
-    /// 現在の秒間送信バイト数を取得します
-    /// </summary>
-    float SendRate { get; }
-    /// <summary>
-    /// 現在の秒間受信バイト数を取得します
-    /// </summary>
-    float RecvRate { get; }
     /// <summary>
     /// 出力ストリームの動作が終了した際に呼ばれるイベントです
     /// </summary>
