@@ -56,6 +56,7 @@ namespace PeerCastStation.UI.HTTP
           "Admin Host",
           ConnectionType.Interface,
           status,
+          RemoteEndPoint.ToString(),
           (IPEndPoint)RemoteEndPoint,
           IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
           null,

@@ -589,6 +589,7 @@ namespace PeerCastStation.HTTP
         "HTTP Direct",
         ConnectionType.Direct,
         status,
+        RemoteEndPoint.ToString(),
         (IPEndPoint)RemoteEndPoint,
         IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
         sentPacket!=null ? sentPacket.Position : 0,

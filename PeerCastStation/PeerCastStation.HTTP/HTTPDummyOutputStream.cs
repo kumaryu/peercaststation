@@ -130,6 +130,7 @@ namespace PeerCastStation.HTTP
         "No Protocol Matched",
         ConnectionType.Metadata,
         ConnectionStatus.Connected,
+        RemoteEndPoint.ToString(),
         (IPEndPoint)RemoteEndPoint,
         IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
         null,

@@ -297,6 +297,7 @@ namespace PeerCastStation.PCP
         "PCP Relay",
         ConnectionType.Relay,
         status,
+        RemoteEndPoint.ToString(),
         (IPEndPoint)RemoteEndPoint,
         host_status,
         lastContent!=null ? lastContent.Position : 0,

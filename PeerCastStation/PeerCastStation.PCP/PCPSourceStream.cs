@@ -871,6 +871,7 @@ namespace PeerCastStation.PCP
         "PCP Source",
         ConnectionType.Source,
         status,
+        endpoint!=null ? endpoint.ToString() : null,
         endpoint,
         host_status,
         lastPosition,

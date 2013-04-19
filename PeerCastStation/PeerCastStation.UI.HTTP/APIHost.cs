@@ -90,6 +90,7 @@ namespace PeerCastStation.UI.HTTP
           "API Host",
           ConnectionType.Interface,
           status,
+          RemoteEndPoint.ToString(),
           (IPEndPoint)RemoteEndPoint,
           IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
           null,

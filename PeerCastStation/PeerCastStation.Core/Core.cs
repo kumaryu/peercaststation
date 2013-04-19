@@ -232,11 +232,13 @@ namespace PeerCastStation.Core
     public int?       LocalRelays     { get; private set; }
     public int?       LocalDirects    { get; private set; }
     public string     AgentName       { get; private set; }
+    public string     RemoteName      { get; private set; }
     public ConnectionInfo(
       string           protocol_name,
       ConnectionType   type,
       ConnectionStatus status,
-      IPEndPoint remote_endpoint,
+      string           remote_name,
+      IPEndPoint       remote_endpoint,
       RemoteHostStatus remote_host_status,
       long?      content_position,
       float?     recv_rate,
@@ -248,6 +250,7 @@ namespace PeerCastStation.Core
       ProtocolName     = protocol_name;
       Type             = type;
       Status           = status;
+      RemoteName       = remote_name;
       RemoteEndPoint   = remote_endpoint;
       RemoteHostStatus = remote_host_status;
       ContentPosition  = content_position;

@@ -593,6 +593,7 @@ namespace PeerCastStation.PCP
         "PCP COUT",
         ConnectionType.Announce,
         status,
+        Name,
         rhost,
         host_status,
         null,

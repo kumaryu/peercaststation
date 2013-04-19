@@ -294,6 +294,7 @@ namespace PeerCastStation.HTTP
         "HTTP Source",
         ConnectionType.Source,
         status,
+        SourceUri.ToString(),
         endpoint,
         (endpoint!=null && Utils.IsSiteLocal(endpoint.Address)) ? RemoteHostStatus.Local : RemoteHostStatus.None,
         lastPosition,

@@ -155,6 +155,7 @@ namespace PeerCastStation.PCP
         "PCP Pong",
         ConnectionType.Metadata,
         status,
+        RemoteEndPoint.ToString(),
         (IPEndPoint)RemoteEndPoint,
         IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
         null,
