@@ -139,7 +139,14 @@
             <div class="control-group">
               <span class="control-label">未接続チャンネル自動切断までの時間</span>
               <div class="controls">
-                <input type="text" class="input-small" data-bind="value:channelCleanerLimit">
+                <input type="text" class="input-small" data-bind="value:inactiveChannelLimit">
+                <span class="help-inline">分</span>
+              </div>
+            </div>
+            <div class="control-group">
+              <span class="control-label">未視聴チャンネル自動切断までの時間</span>
+              <div class="controls">
+                <input type="text" class="input-small" data-bind="value:noPlayingChannelLimit">
                 <span class="help-inline">分</span>
               </div>
             </div>

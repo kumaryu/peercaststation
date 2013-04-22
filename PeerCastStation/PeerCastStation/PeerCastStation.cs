@@ -173,7 +173,8 @@ namespace PeerCastStation.Main
       catch (FormatException)
       {
       }
-      ChannelCleaner.InactiveLimit = settings.Get<ChannelCleanerSettings>().InactiveLimit;
+      ChannelCleaner.InactiveLimit  = settings.Get<ChannelCleanerSettings>().InactiveLimit;
+      ChannelCleaner.NoPlayingLimit = settings.Get<ChannelCleanerSettings>().NoPlayingLimit;
     }
 
     void SaveSettings()
@@ -206,7 +207,8 @@ namespace PeerCastStation.Main
           Uri      = yellowpage.Uri,
         }
       ).ToArray();
-      settings.Get<ChannelCleanerSettings>().InactiveLimit = ChannelCleaner.InactiveLimit;
+      settings.Get<ChannelCleanerSettings>().InactiveLimit  = ChannelCleaner.InactiveLimit;
+      settings.Get<ChannelCleanerSettings>().NoPlayingLimit = ChannelCleaner.NoPlayingLimit;
       settings.Save();
     }
 

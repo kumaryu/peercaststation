@@ -8,7 +8,8 @@ namespace PeerCastStation
   public class ChannelCleaner
     : IChannelMonitor
   {
-    private Dictionary<Channel, int> inactiveChannels = new Dictionary<Channel,int>();
+    private Dictionary<Channel, int> inactiveChannels  = new Dictionary<Channel,int>();
+    private Dictionary<Channel, int> noPlayingChannels = new Dictionary<Channel,int>();
     private PeerCast peerCast;
     public ChannelCleaner(PeerCast peercast)
     {
@@ -21,33 +22,50 @@ namespace PeerCastStation
       set { inactiveLimit = value; }
     }
 
-    public void OnTimer()
+    static private int noPlayingLimit = 0;
+    static public int NoPlayingLimit {
+      get { return noPlayingLimit; }
+      set { noPlayingLimit = value; }
+    }
+
+    private void CleanupChannels(Dictionary<Channel,int> times, int limit, Func<Channel, bool> predicate)
     {
-      if (InactiveLimit<1) return;
+      if (limit<1) return;
       var channels = peerCast.Channels;
       foreach (var channel in channels) {
-        if (channel.Status==SourceStreamStatus.Idle ||
-            channel.Status==SourceStreamStatus.Error) {
-          int inactivetime;
-          if (inactiveChannels.TryGetValue(channel, out inactivetime)) {
-            if (Environment.TickCount-inactivetime>InactiveLimit) {
+        if (predicate(channel)) {
+          int time;
+          if (times.TryGetValue(channel, out time)) {
+            if (Environment.TickCount-time>limit) {
               peerCast.CloseChannel(channel);
-              inactiveChannels.Remove(channel);
+              times.Remove(channel);
             }
           }
           else {
-            inactiveChannels.Add(channel, Environment.TickCount);
+            times.Add(channel, Environment.TickCount);
           }
         }
         else {
-          inactiveChannels.Remove(channel);
+          times.Remove(channel);
         }
       }
-      foreach (var channel in inactiveChannels.Keys.ToArray()) {
+      foreach (var channel in times.Keys.ToArray()) {
         if (!channels.Contains(channel)) {
-          inactiveChannels.Remove(channel);
+          times.Remove(channel);
         }
       }
+    }
+
+    public void OnTimer()
+    {
+      CleanupChannels(inactiveChannels, InactiveLimit, channel => {
+        return channel.Status==SourceStreamStatus.Idle ||
+               channel.Status==SourceStreamStatus.Error;
+      });
+      CleanupChannels(noPlayingChannels, NoPlayingLimit, channel => {
+        return channel.LocalDirects==0 &&
+               channel.BroadcastID!=Guid.Empty;
+      });
     }
   }
 

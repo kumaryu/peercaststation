@@ -8,11 +8,13 @@ namespace PeerCastStation
   [PecaSettings]
   public class ChannelCleanerSettings
   {
-    public int InactiveLimit { get; set; }
+    public int InactiveLimit  { get; set; }
+    public int NoPlayingLimit { get; set; }
 
     public ChannelCleanerSettings()
     {
-      this.InactiveLimit = 1800000;
+      this.InactiveLimit  = 1800000;
+      this.NoPlayingLimit = 0;
     }
   }
 

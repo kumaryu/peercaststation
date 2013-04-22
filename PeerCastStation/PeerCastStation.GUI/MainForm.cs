@@ -85,7 +85,8 @@ namespace PeerCastStation.GUI
       Logger.AddWriter(guiWriter);
       peerCast.ChannelAdded      += ChannelAdded;
       peerCast.ChannelRemoved    += ChannelRemoved;
-      channelCleanerLimit.Value = ChannelCleaner.InactiveLimit / 60000;
+      inactiveChannelLimit.Value  = ChannelCleaner.InactiveLimit / 60000;
+      noPlayingChannelLimit.Value = ChannelCleaner.NoPlayingLimit / 60000;
       showWindowOnStartup.Checked = application.Settings.Get<GUISettings>().ShowWindowOnStartup;
       logLevelList.DataSource = new LogLevelItem[] {
         new LogLevelItem { Level=LogLevel.None,  Text="なし" },
@@ -275,7 +276,8 @@ namespace PeerCastStation.GUI
       peerCast.AccessController.MaxRelaysPerChannel = (int)maxRelaysPerChannel.Value;
       peerCast.AccessController.MaxPlaysPerChannel  = (int)maxDirectsPerChannel.Value;
       peerCast.AccessController.MaxUpstreamRate     = (int)maxUpstreamRate.Value;
-      ChannelCleaner.InactiveLimit = (int)(channelCleanerLimit.Value * 60000);
+      ChannelCleaner.InactiveLimit  = (int)(inactiveChannelLimit.Value * 60000);
+      ChannelCleaner.NoPlayingLimit = (int)(noPlayingChannelLimit.Value * 60000);
       if (peerCast.IsFirewalled.HasValue) {
         portOpenedLabel.Text = peerCast.IsFirewalled.Value ? "未開放" : "開放";
       }

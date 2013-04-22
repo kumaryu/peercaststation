@@ -193,14 +193,15 @@ var SettingsViewModel = new function() {
   var self = this;
   var updating = false;
 
-  self.maxRelays            = ko.observable(null);
-  self.maxDirects           = ko.observable(null);
-  self.maxRelaysPerChannel  = ko.observable(null);
-  self.maxDirectsPerChannel = ko.observable(null);
-  self.maxUpstreamRate      = ko.observable(null);
-  self.channelCleanerLimit  = ko.observable(null);
-  self.listeners            = ko.observableArray();
-  self.yellowPages          = ko.observableArray();
+  self.maxRelays             = ko.observable(null);
+  self.maxDirects            = ko.observable(null);
+  self.maxRelaysPerChannel   = ko.observable(null);
+  self.maxDirectsPerChannel  = ko.observable(null);
+  self.maxUpstreamRate       = ko.observable(null);
+  self.inactiveChannelLimit  = ko.observable(null);
+  self.noPlayingChannelLimit = ko.observable(null);
+  self.listeners             = ko.observableArray();
+  self.yellowPages           = ko.observableArray();
 
   $.each([
     self.maxRelays,
@@ -208,7 +209,8 @@ var SettingsViewModel = new function() {
     self.maxRelaysPerChannel,
     self.maxDirectsPerChannel,
     self.maxUpstreamRate,
-    self.channelCleanerLimit
+    self.inactiveChannelLimit,
+    self.noPlayingChannelLimit
   ], function (i, o) {
     o.subscribe(function (new_value) { if (!updating) self.submit(); });
   });
@@ -220,7 +222,8 @@ var SettingsViewModel = new function() {
       maxDirectsPerChannel: Number(self.maxDirectsPerChannel()),
       maxUpstreamRate:      Number(self.maxUpstreamRate()),
       channelCleaner: {
-        inactiveLimit: Number(self.channelCleanerLimit()) * 60000
+        inactiveLimit:  Number(self.inactiveChannelLimit()) * 60000,
+        noPlayingLimit: Number(self.noPlayingChannelLimit()) * 60000
       }
     };
     PeerCast.setSettings(settings);
@@ -273,7 +276,8 @@ var SettingsViewModel = new function() {
         self.maxRelaysPerChannel(result.maxRelaysPerChannel);
         self.maxDirectsPerChannel(result.maxDirectsPerChannel);
         self.maxUpstreamRate(result.maxUpstreamRate);
-        self.channelCleanerLimit(result.channelCleaner.inactiveLimit/60000);
+        self.inactiveChannelLimit(result.channelCleaner.inactiveLimit/60000);
+        self.noPlayingChannelLimit(result.channelCleaner.noPlayingLimit/60000);
         updating = false;
       }
     });
