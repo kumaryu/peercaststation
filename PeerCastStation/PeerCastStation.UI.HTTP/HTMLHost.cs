@@ -81,6 +81,27 @@ namespace PeerCastStation.UI.HTTP
         Logger.Debug("Initialized: Remote {0}", remote_endpoint);
       }
 
+      public override ConnectionInfo GetConnectionInfo()
+      {
+        ConnectionStatus status = ConnectionStatus.Connected;
+        if (IsStopped) {
+          status = HasError ? ConnectionStatus.Error : ConnectionStatus.Idle;
+        }
+        return new ConnectionInfo(
+          "HTML Host",
+          ConnectionType.Interface,
+          status,
+          RemoteEndPoint.ToString(),
+          (IPEndPoint)RemoteEndPoint,
+          IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
+          null,
+          RecvRate,
+          SendRate,
+          null,
+          null,
+          request.Headers["USER-AGENT"]);
+      }
+
       class HTTPError : ApplicationException
       {
         public HttpStatusCode StatusCode { get; private set; }

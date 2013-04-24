@@ -563,7 +563,24 @@ namespace PeerCastStation.GUI
 
       public override string ToString()
       {
-        return sourceStream.ToString();
+        var info = sourceStream.GetConnectionInfo();
+        var status = "　";
+        if ((info.RemoteHostStatus & RemoteHostStatus.Root)!=0) {
+          status = "Ｒ";
+        }
+        if ((info.RemoteHostStatus & RemoteHostStatus.Tracker)!=0) {
+          status = "Ｔ";
+        }
+        var bitrate = (int)(((info.RecvRate ?? 0) + (info.SendRate ?? 0))*8/1000);
+        return String.Format(
+          "{0}{1} {2} {3} {4}kbps pos:{5} {6}",
+          status,
+          info.ProtocolName,
+          info.Status,
+          info.RemoteName,
+          bitrate,
+          info.ContentPosition,
+          info.AgentName);
       }
     }
 
@@ -597,7 +614,60 @@ namespace PeerCastStation.GUI
 
       public override string ToString()
       {
-        return outputStream.ToString();
+        var info = outputStream.GetConnectionInfo();
+        var status = "　";
+        var bitrate = (int)(((info.RecvRate ?? 0) + (info.SendRate ?? 0))*8/1000);
+        switch (info.Type) {
+        case ConnectionType.Relay:
+          if ((info.RemoteHostStatus & RemoteHostStatus.Receiving)!=0) {
+            if ((info.RemoteHostStatus & RemoteHostStatus.Firewalled)!=0 &&
+                (info.RemoteHostStatus & RemoteHostStatus.Local)==0) {
+              status = "×";
+            }
+            else if ((info.RemoteHostStatus & RemoteHostStatus.RelayFull)!=0) {
+              if ((info.LocalRelays ?? 0)>0) {
+                status = "○";
+              }
+              else {
+                status = "△";
+              }
+            }
+            else {
+              status = "◎";
+            }
+          }
+          else {
+            status = "■";
+          }
+          return String.Format(
+            "{0}{1} {2} {3} {4}kbps pos:{5} {6}",
+            status,
+            info.ProtocolName,
+            info.Status,
+            info.RemoteEndPoint,
+            bitrate,
+            info.ContentPosition,
+            info.AgentName);
+        case ConnectionType.Direct:
+          return String.Format(
+            "{0}{1} {2} {3} {4}kbps pos:{5} {6}",
+            status,
+            info.ProtocolName,
+            info.Status,
+            info.RemoteEndPoint,
+            bitrate,
+            info.ContentPosition,
+            info.AgentName);
+        default:
+          return String.Format(
+            "{0}{1} {2} {3} {4}kbps {5}",
+            status,
+            info.ProtocolName,
+            info.Status,
+            info.RemoteEndPoint,
+            bitrate,
+            info.AgentName);
+        }
       }
     }
 
@@ -632,7 +702,23 @@ namespace PeerCastStation.GUI
       public override string ToString()
       {
         var yp = announcingChannel.YellowPage;
-        return String.Format("COUT {0}({1}) {2}", yp.Name, yp.Protocol, announcingChannel.Status);
+        var info = yp.GetConnectionInfo();
+        var status = "　";
+        if ((info.RemoteHostStatus & RemoteHostStatus.Root)!=0) {
+          status = "Ｒ";
+        }
+        if ((info.RemoteHostStatus & RemoteHostStatus.Tracker)!=0) {
+          status = "Ｔ";
+        }
+        var bitrate = (int)(((info.RecvRate ?? 0) + (info.SendRate ?? 0))*8/1000);
+        return String.Format(
+          "{0}{1} {2} {3} {4}kbps {5}",
+          status,
+          info.ProtocolName,
+          info.RemoteName,
+          info.Status,
+          bitrate,
+          info.AgentName);
       }
     }
 

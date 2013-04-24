@@ -276,6 +276,38 @@ namespace PeerCastStation.PCP
           (int)(RecvRate+SendRate)*8/1000);
       }
     }
+
+    public override ConnectionInfo GetConnectionInfo()
+    {
+      ConnectionStatus status = ConnectionStatus.Connected;
+      if (IsStopped) {
+        status = HasError ? ConnectionStatus.Error : ConnectionStatus.Idle;
+      }
+      var host_status = RemoteHostStatus.None;
+      if (IsLocal) host_status |= RemoteHostStatus.Local;
+      var relay_count  = 0;
+      var direct_count = 0;
+      if (Downhost!=null) {
+        if (Downhost.IsFirewalled) host_status |= RemoteHostStatus.Firewalled;
+        if (Downhost.IsRelayFull)  host_status |= RemoteHostStatus.RelayFull;
+        relay_count  = Downhost.RelayCount;
+        direct_count = Downhost.DirectCount;
+      }
+      return new ConnectionInfo(
+        "PCP Relay",
+        ConnectionType.Relay,
+        status,
+        RemoteEndPoint.ToString(),
+        (IPEndPoint)RemoteEndPoint,
+        host_status,
+        lastContent!=null ? lastContent.Position : 0,
+        RecvRate,
+        SendRate,
+        relay_count,
+        direct_count,
+        relayRequest.UserAgent);
+    }
+
     private RelayRequest relayRequest;
 
     public PCPOutputStream(

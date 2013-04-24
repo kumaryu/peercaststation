@@ -206,6 +206,7 @@ namespace PeerCastStation.HTTP
     }
 
     int lastReceived;
+    long lastPosition = 0;
     private void OnStateReceiving()
     {
       Status = SourceStreamStatus.Receiving;
@@ -221,10 +222,12 @@ namespace PeerCastStation.HTTP
           if (data.ContentHeader!=null) {
             Channel.ContentHeader = data.ContentHeader;
             Channel.Contents.Clear();
+            lastPosition = data.ContentHeader.Position;
           }
           if (data.Contents!=null) {
             foreach (var content in data.Contents) {
               Channel.Contents.Add(content);
+              lastPosition = content.Position;
             }
           }
           lastReceived = Environment.TickCount;
@@ -265,6 +268,41 @@ namespace PeerCastStation.HTTP
         EndConnection();
         state = State.Retrying;
       }
+    }
+
+    public override ConnectionInfo GetConnectionInfo()
+    {
+      ConnectionStatus status = ConnectionStatus.Idle;
+      switch (state) {
+      case State.Connecting:
+      case State.WaitResponse:
+      case State.Retrying:
+        status = ConnectionStatus.Connecting;
+        break;
+      case State.Receiving:
+        status = ConnectionStatus.Connected;
+        break;
+      }
+      if (IsStopped) {
+        status = HasError ? ConnectionStatus.Error : ConnectionStatus.Idle;
+      }
+      IPEndPoint endpoint = null;
+      if (client!=null && client.Connected) {
+        endpoint = (IPEndPoint)client.Client.RemoteEndPoint;
+      }
+      return new ConnectionInfo(
+        "HTTP Source",
+        ConnectionType.Source,
+        status,
+        SourceUri.ToString(),
+        endpoint,
+        (endpoint!=null && Utils.IsSiteLocal(endpoint.Address)) ? RemoteHostStatus.Local : RemoteHostStatus.None,
+        lastPosition,
+        RecvRate,
+        SendRate,
+        null,
+        null,
+        null);
     }
 
     public override string ToString()

@@ -65,6 +65,8 @@ namespace PeerCastStation.Core
     protected QueuedSynchronizationContext SyncContext { get; private set; }
     protected Logger Logger { get; private set; }
 
+    public abstract ConnectionInfo GetConnectionInfo();
+
     private Thread mainThread;
     public OutputStreamBase(
       PeerCast peercast,

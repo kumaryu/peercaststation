@@ -578,6 +578,27 @@ namespace PeerCastStation.HTTP
     {
       get { return OutputStreamType.Play; }
     }
+
+    public override ConnectionInfo GetConnectionInfo()
+    {
+      ConnectionStatus status = ConnectionStatus.Connected;
+      if (IsStopped) {
+        status = HasError ? ConnectionStatus.Error : ConnectionStatus.Idle;
+      }
+      return new ConnectionInfo(
+        "HTTP Direct",
+        ConnectionType.Direct,
+        status,
+        RemoteEndPoint.ToString(),
+        (IPEndPoint)RemoteEndPoint,
+        IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
+        sentPacket!=null ? sentPacket.Position : 0,
+        RecvRate,
+        SendRate,
+        null,
+        null,
+        request.Headers["USER-AGENT"]);
+    }
   }
 
   [Plugin]
