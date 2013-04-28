@@ -137,16 +137,20 @@
               </div>
             </div>
             <div class="control-group">
-              <span class="control-label">未接続チャンネル自動切断までの時間</span>
+              <span class="control-label">自動切断するチャンネル</span>
               <div class="controls">
-                <input type="text" class="input-small" data-bind="value:inactiveChannelLimit">
-                <span class="help-inline">分</span>
+                <select data-bind="value:channelCleanupMode">
+                  <option value="0">自動切断しない</option>
+                  <option value="1">接続していないチャンネル</option>
+                  <option value="2">視聴・リレーをしていないチャンネル</option>
+                  <option value="3">視聴していないチャンネル</option>
+                </select>
               </div>
             </div>
             <div class="control-group">
-              <span class="control-label">未視聴チャンネル自動切断までの時間</span>
+              <span class="control-label">チャンネル自動切断までの時間</span>
               <div class="controls">
-                <input type="text" class="input-small" data-bind="value:noPlayingChannelLimit">
+                <input type="text" class="input-small" data-bind="value:inactiveChannelLimit">
                 <span class="help-inline">分</span>
               </div>
             </div>

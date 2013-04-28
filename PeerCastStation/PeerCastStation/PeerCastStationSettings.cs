@@ -9,12 +9,12 @@ namespace PeerCastStation
   public class ChannelCleanerSettings
   {
     public int InactiveLimit  { get; set; }
-    public int NoPlayingLimit { get; set; }
+    public ChannelCleaner.CleanupMode Mode { get; set; }
 
     public ChannelCleanerSettings()
     {
-      this.InactiveLimit  = 1800000;
-      this.NoPlayingLimit = 0;
+      this.InactiveLimit = 1800000;
+      this.Mode          = ChannelCleaner.CleanupMode.Disconnected;
     }
   }
 

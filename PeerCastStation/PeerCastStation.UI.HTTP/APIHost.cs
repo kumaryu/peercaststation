@@ -176,8 +176,8 @@ namespace PeerCastStation.UI.HTTP
         res["maxDirectsPerChannel"] = PeerCast.AccessController.MaxPlaysPerChannel;
         res["maxUpstreamRate"]      = PeerCast.AccessController.MaxUpstreamRate;
         var channelCleaner = new JObject();
+        channelCleaner["mode"]          = (int)ChannelCleaner.Mode;
         channelCleaner["inactiveLimit"] = ChannelCleaner.InactiveLimit;
-        channelCleaner["noPlayingLimit"] = ChannelCleaner.NoPlayingLimit;
         res["channelCleaner"] = channelCleaner;
         return res;
       }
@@ -185,28 +185,28 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("setSettings")]
       private void SetSettings(JObject settings)
       {
-        if (settings["maxRelays"]!=null) {
+        if (settings["maxRelays"]!=null && settings["maxRelays"].HasValues) {
           PeerCast.AccessController.MaxRelays = (int)settings["maxRelays"];
         }
-        if (settings["maxRelaysPerChannel"]!=null) {
+        if (settings["maxRelaysPerChannel"]!=null && settings["maxRelaysPerChannel"].HasValues) {
           PeerCast.AccessController.MaxRelaysPerChannel = (int)settings["maxRelaysPerChannel"];
         }
-        if (settings["maxDirects"]!=null) {
+        if (settings["maxDirects"]!=null && settings["maxDirects"].HasValues) {
           PeerCast.AccessController.MaxPlays = (int)settings["maxDirects"];
         }
-        if (settings["maxDirectsPerChannel"]!=null) {
+        if (settings["maxDirectsPerChannel"]!=null && settings["maxDirectsPerChannel"].HasValues) {
           PeerCast.AccessController.MaxPlaysPerChannel = (int)settings["maxDirectsPerChannel"];
         }
-        if (settings["maxUpstreamRate"]!=null) {
+        if (settings["maxUpstreamRate"]!=null && settings["maxUpstreamRate"].HasValues) {
           PeerCast.AccessController.MaxUpstreamRate = (int)settings["maxUpstreamRate"];
         }
-        if (settings["channelCleaner"]!=null) {
+        if (settings["channelCleaner"]!=null && settings["channelCleaner"].HasValues) {
           var channelCleaner = settings["channelCleaner"];
-          if (channelCleaner["inactiveLimit"]!=null) {
+          if (channelCleaner["inactiveLimit"]!=null && channelCleaner["inactiveLimit"].HasValues) {
             ChannelCleaner.InactiveLimit = (int)channelCleaner["inactiveLimit"];
           }
-          if (channelCleaner["noPlayingLimit"]!=null) {
-            ChannelCleaner.NoPlayingLimit = (int)channelCleaner["noPlayingLimit"];
+          if (channelCleaner["mode"]!=null && channelCleaner["mode"].HasValues) {
+            ChannelCleaner.Mode = (ChannelCleaner.CleanupMode)(int)channelCleaner["mode"];
           }
         }
       }

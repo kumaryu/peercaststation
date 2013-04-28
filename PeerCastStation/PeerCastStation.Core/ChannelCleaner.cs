@@ -9,63 +9,81 @@ namespace PeerCastStation
     : IChannelMonitor
   {
     private Dictionary<Channel, int> inactiveChannels  = new Dictionary<Channel,int>();
-    private Dictionary<Channel, int> noPlayingChannels = new Dictionary<Channel,int>();
     private PeerCast peerCast;
     public ChannelCleaner(PeerCast peercast)
     {
       this.peerCast = peercast;
     }
 
+    public enum CleanupMode {
+      None         = 0,
+      Disconnected = 1,
+      NotRelaying  = 2,
+      NotPlaying   = 3,
+    }
+    static private CleanupMode mode = CleanupMode.Disconnected;
+    static public CleanupMode Mode {
+      get { return mode; }
+      set { mode = value; }
+    }
     static private int inactiveLimit = 1800000;
     static public int InactiveLimit {
       get { return inactiveLimit; }
       set { inactiveLimit = value; }
     }
 
-    static private int noPlayingLimit = 0;
-    static public int NoPlayingLimit {
-      get { return noPlayingLimit; }
-      set { noPlayingLimit = value; }
-    }
-
-    private void CleanupChannels(Dictionary<Channel,int> times, int limit, Func<Channel, bool> predicate)
+    private void CleanupChannels(Func<Channel, bool> predicate)
     {
-      if (limit<1) return;
+      if (inactiveLimit<1) return;
       var channels = peerCast.Channels;
       foreach (var channel in channels) {
+        if (channel.BroadcastID!=Guid.Empty) continue;
         if (predicate(channel)) {
           int time;
-          if (times.TryGetValue(channel, out time)) {
-            if (Environment.TickCount-time>limit) {
+          if (inactiveChannels.TryGetValue(channel, out time)) {
+            if (Environment.TickCount-time>inactiveLimit) {
               peerCast.CloseChannel(channel);
-              times.Remove(channel);
+              inactiveChannels.Remove(channel);
             }
           }
           else {
-            times.Add(channel, Environment.TickCount);
+            inactiveChannels.Add(channel, Environment.TickCount);
           }
         }
         else {
-          times.Remove(channel);
+          inactiveChannels.Remove(channel);
         }
       }
-      foreach (var channel in times.Keys.ToArray()) {
+      foreach (var channel in inactiveChannels.Keys.ToArray()) {
         if (!channels.Contains(channel)) {
-          times.Remove(channel);
+          inactiveChannels.Remove(channel);
         }
       }
     }
 
     public void OnTimer()
     {
-      CleanupChannels(inactiveChannels, InactiveLimit, channel => {
-        return channel.Status==SourceStreamStatus.Idle ||
-               channel.Status==SourceStreamStatus.Error;
-      });
-      CleanupChannels(noPlayingChannels, NoPlayingLimit, channel => {
-        return channel.LocalDirects==0 &&
-               channel.BroadcastID!=Guid.Empty;
-      });
+      switch (mode) {
+      case CleanupMode.None:
+        break;
+      case CleanupMode.Disconnected:
+        CleanupChannels(channel => {
+          return channel.Status==SourceStreamStatus.Idle ||
+                 channel.Status==SourceStreamStatus.Error;
+        });
+        break;
+      case CleanupMode.NotRelaying:
+        CleanupChannels(channel => {
+          return channel.LocalDirects==0 &&
+                 channel.LocalRelays==0;
+        });
+        break;
+      case CleanupMode.NotPlaying:
+        CleanupChannels(channel => {
+          return channel.LocalDirects==0;
+        });
+        break;
+      }
     }
   }
 

@@ -199,7 +199,7 @@ var SettingsViewModel = new function() {
   self.maxDirectsPerChannel  = ko.observable(null);
   self.maxUpstreamRate       = ko.observable(null);
   self.inactiveChannelLimit  = ko.observable(null);
-  self.noPlayingChannelLimit = ko.observable(null);
+  self.channelCleanupMode    = ko.observable(null);
   self.listeners             = ko.observableArray();
   self.yellowPages           = ko.observableArray();
 
@@ -210,20 +210,20 @@ var SettingsViewModel = new function() {
     self.maxDirectsPerChannel,
     self.maxUpstreamRate,
     self.inactiveChannelLimit,
-    self.noPlayingChannelLimit
+    self.channelCleanupMode
   ], function (i, o) {
     o.subscribe(function (new_value) { if (!updating) self.submit(); });
   });
   self.submit = function() {
     var settings = {
-      maxRelays:            Number(self.maxRelays()),
-      maxDirects:           Number(self.maxDirects()),
-      maxRelaysPerChannel:  Number(self.maxRelaysPerChannel()),
-      maxDirectsPerChannel: Number(self.maxDirectsPerChannel()),
-      maxUpstreamRate:      Number(self.maxUpstreamRate()),
+      maxRelays:            self.maxRelays()!=null            ? Number(self.maxRelays()) : null,
+      maxDirects:           self.maxDirects()!=null           ? Number(self.maxDirects()) : null,
+      maxRelaysPerChannel:  self.maxRelaysPerChannel()!=null  ? Number(self.maxRelaysPerChannel()) : null,
+      maxDirectsPerChannel: self.maxDirectsPerChannel()!=null ? Number(self.maxDirectsPerChannel()) : null,
+      maxUpstreamRate:      self.maxUpstreamRate()!=null      ? Number(self.maxUpstreamRate()) : null,
       channelCleaner: {
-        inactiveLimit:  Number(self.inactiveChannelLimit()) * 60000,
-        noPlayingLimit: Number(self.noPlayingChannelLimit()) * 60000
+        inactiveLimit: self.inactiveChannelLimit()!=null ? Number(self.inactiveChannelLimit())*60000 : null,
+        mode:          self.channelCleanupMode()!=null   ? Number(self.channelCleanupMode()) : null
       }
     };
     PeerCast.setSettings(settings);
@@ -276,8 +276,10 @@ var SettingsViewModel = new function() {
         self.maxRelaysPerChannel(result.maxRelaysPerChannel);
         self.maxDirectsPerChannel(result.maxDirectsPerChannel);
         self.maxUpstreamRate(result.maxUpstreamRate);
-        self.inactiveChannelLimit(result.channelCleaner.inactiveLimit/60000);
-        self.noPlayingChannelLimit(result.channelCleaner.noPlayingLimit/60000);
+        if (result.channelCleaner) {
+          self.inactiveChannelLimit(result.channelCleaner.inactiveLimit/60000);
+          self.channelCleanupMode(result.channelCleaner.mode);
+        }
         updating = false;
       }
     });
@@ -309,7 +311,9 @@ var SettingsViewModel = new function() {
 
   self.bind = function(target) {
     self.update();
+    updating = true;
     ko.applyBindings(self, target);
+    updating = false;
   };
 };
 
