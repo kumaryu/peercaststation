@@ -290,6 +290,7 @@ namespace PeerCastStation.PCP
       if (Downhost!=null) {
         if (Downhost.IsFirewalled) host_status |= RemoteHostStatus.Firewalled;
         if (Downhost.IsRelayFull)  host_status |= RemoteHostStatus.RelayFull;
+        if (Downhost.IsReceiving)  host_status |= RemoteHostStatus.Receiving;
         relay_count  = Downhost.RelayCount;
         direct_count = Downhost.DirectCount;
       }

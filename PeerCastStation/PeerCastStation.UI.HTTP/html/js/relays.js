@@ -174,12 +174,12 @@ var ChannelConnectionViewModel = function(owner, initial_value) {
     var result = "　";
     switch (self.type()) {
     case "relay":
-      if ($.inArray("receiving", self.remoteHostStatus())) {
-        if ( $.inArray("firewalled", self.remoteHostStatus()) &&
-            !$.inArray("local", self.remoteHostStatus())) {
+      if ($.inArray("receiving", self.remoteHostStatus())>=0) {
+        if ( $.inArray("firewalled", self.remoteHostStatus())>=0 &&
+            !$.inArray("local", self.remoteHostStatus())>=0) {
           result = "×";
         }
-        else if ($.inArray("relayfull", self.remoteHostStatus())) {
+        else if ($.inArray("relayfull", self.remoteHostStatus())>=0) {
           if (self.localRelays() && self.localRelays()>0) {
             result = "○";
           }
@@ -200,8 +200,8 @@ var ChannelConnectionViewModel = function(owner, initial_value) {
     case "announce":
     case "source":
     default:
-      if ($.inArray("root", self.remoteHostStatus()))    result = "Ｒ";
-      if ($.inArray("tracker", self.remoteHostStatus())) result = "Ｔ";
+      if ($.inArray("root", self.remoteHostStatus())>=0)    result = "Ｒ";
+      if ($.inArray("tracker", self.remoteHostStatus())>=0) result = "Ｔ";
       break;
     }
     return result;

@@ -864,7 +864,7 @@ namespace PeerCastStation.PCP
       if (endpoint!=null && Utils.IsSiteLocal(endpoint.Address)) {
         host_status |= RemoteHostStatus.Local;
       }
-      if (TrackerHost==null || Uphost.SessionID==TrackerHost.SessionID) {
+      if (TrackerHost==null || (Uphost!=null && Uphost.SessionID==TrackerHost.SessionID)) {
         host_status |= RemoteHostStatus.Tracker;
       }
       return new ConnectionInfo(
