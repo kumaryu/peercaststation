@@ -156,17 +156,74 @@ var BroadcastDialog = new function() {
 var ChannelConnectionViewModel = function(owner, initial_value) {
   var self = this;
   self.channel = owner;
-  self.connectionId = ko.observable(initial_value.connectionId);
-  self.name         = ko.observable(initial_value.name);
-  self.desc         = ko.observable(initial_value.desc);
-  self.type         = ko.observable(initial_value.type);
-  self.status       = ko.observable(initial_value.status);
+  self.connectionId     = ko.observable(initial_value.connectionId);
+  self.type             = ko.observable(initial_value.type);
+  self.status           = ko.observable(initial_value.status);
+  self.sendRate         = ko.observable(initial_value.sendRate);
+  self.recvRate         = ko.observable(initial_value.recvRate);
+  self.protocolName     = ko.observable(initial_value.protocolName);
+  self.localRelays      = ko.observable(initial_value.localRelays);
+  self.localDirects     = ko.observable(initial_value.localDirects);
+  self.contentPosition  = ko.observable(initial_value.contentPosition);
+  self.agentName        = ko.observable(initial_value.agentName);
+  self.remoteEndpoint   = ko.observable(initial_value.remoteEndpoint);
+  self.remoteHostStatus = ko.observable(initial_value.remoteHostStatus);
+  self.remoteName       = ko.observable(initial_value.remoteName);
+
+  self.note = ko.computed(function () {
+    var result = "　";
+    switch (self.type()) {
+    case "relay":
+      if ($.inArray("receiving", self.remoteHostStatus())) {
+        if ( $.inArray("firewalled", self.remoteHostStatus()) &&
+            !$.inArray("local", self.remoteHostStatus())) {
+          result = "×";
+        }
+        else if ($.inArray("relayfull", self.remoteHostStatus())) {
+          if (self.localRelays() && self.localRelays()>0) {
+            result = "○";
+          }
+          else {
+            result = "△";
+          }
+        }
+        else {
+          result = "◎";
+        }
+      }
+      else {
+        result = "■";
+      }
+      break;
+    case "play":
+      break;
+    case "announce":
+    case "source":
+    default:
+      if ($.inArray("root", self.remoteHostStatus()))    result = "Ｒ";
+      if ($.inArray("tracker", self.remoteHostStatus())) result = "Ｔ";
+      break;
+    }
+    return result;
+  });
+
+  self.bitrate = ko.computed(function () {
+    return Math.floor(((self.recvRate() ? self.recvRate() : 0) + (self.sendRate() ? self.sendRate() : 0))*8/1000);
+  });
 
   self.update = function(value) {
-    self.name(value.name);
-    self.desc(value.desc);
     self.type(value.type);
     self.status(value.status);
+    self.sendRate(value.sendRate);
+    self.recvRate(value.recvRate);
+    self.protocolName(value.protocolName);
+    self.localRelays(value.localRelays);
+    self.localDirects(value.localDirects);
+    self.contentPosition(value.contentPosition);
+    self.agentName(value.agentName);
+    self.remoteEndpoint(value.remoteEndpoint);
+    self.remoteHostStatus(value.remoteHostStatus);
+    self.remoteName(value.remoteName);
     return self;
   };
 

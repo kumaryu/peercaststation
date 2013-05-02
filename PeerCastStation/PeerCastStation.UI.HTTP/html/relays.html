@@ -159,15 +159,24 @@
             </div>
           </div>
           <div data-bind="attr: { id: 'channelConnections-'+channelId()}" class="row-fluid" style="display:none">
-            <ul class="span12 unstyled" data-bind="foreach: connections">
-              <li>
-                <a class="btn btn-mini" href="#" data-bind="click:stop"><i class="icon-remove"></i></a>
-                <a class="btn btn-mini" href="#" data-bind="click:restart"><i class="icon-repeat"></i></a>
-                <span class="label" data-bind="text:type"></span>
-                <span data-bind="text:name"></span>
-                <span data-bind="text:status"></span>
-              </li>
-            </ul>
+            <table class="table-striped table-condensed">
+              <tbody data-bind="foreach: connections">
+                <tr>
+                  <td>
+                    <a class="btn btn-mini" href="#" data-bind="click:stop"><i class="icon-remove"></i></a>
+                    <a class="btn btn-mini" href="#" data-bind="click:restart"><i class="icon-repeat"></i></a>
+                    <span class="label" data-bind="text:type"></span>
+                  </td>
+                  <td><span data-bind="text:note"></span></td>
+                  <td><span data-bind="text:protocolName"></span></td>
+                  <td><span data-bind="text:status"></span></td>
+                  <td><span data-bind="text:remoteName"></span></td>
+                  <td><span data-bind="text:bitrate"></span>kbps</td>
+                  <td><span data-bind="text:contentPosition"></span></td>
+                  <td><span data-bind="text:agentName"></span></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
           <div data-bind="attr: { id: 'channelRelayTree-'+channelId()}" class="row-fluid" style="display:none">
             <ul data-bind="template: { name:'relayTreeTemplate', foreach:nodes }">

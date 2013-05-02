@@ -411,37 +411,42 @@ namespace PeerCastStation.UI.HTTP
 
       private JObject GetChannelConnection(ISourceStream ss)
       {
-        var res = new JObject();
-        res["type"]         = "Source";
-        res["connectionId"] = ss.GetHashCode();
-        res["name"]         = ss.ToString();
-        res["desc"]         = ss.ToString();
-        res["status"]       = ss.Status.ToString();
-        return res;
+        return GetChannelConnection(ss.GetHashCode(), ss.GetConnectionInfo());
       }
 
       private JObject GetChannelConnection(IOutputStream os)
       {
-        var res = new JObject();
-        res["type"]         = "Output";
-        res["connectionId"] = os.GetHashCode();
-        res["name"]         = os.ToString();
-        res["desc"]         = os.ToString();
-        res["status"]       = "Connected";
-        if ((os.OutputStreamType & OutputStreamType.Interface)!=0) res["type"] = "Interface";
-        if ((os.OutputStreamType & OutputStreamType.Play)!=0)      res["type"] = "Play";
-        if ((os.OutputStreamType & OutputStreamType.Relay)!=0)     res["type"] = "Relay";
-        return res;
+        return GetChannelConnection(os.GetHashCode(), os.GetConnectionInfo());
       }
 
       private JObject GetChannelConnection(IAnnouncingChannel ac)
       {
+        return GetChannelConnection(ac.GetHashCode(), ac.YellowPage.GetConnectionInfo());
+      }
+
+      private JObject GetChannelConnection(int connection_id, ConnectionInfo info)
+      {
         var res = new JObject();
-        res["type"]         = "Announce";
-        res["connectionId"] = ac.YellowPage.GetHashCode();
-        res["name"]         = ac.YellowPage.Name;
-        res["desc"]         = ac.YellowPage.Name;
-        res["status"]       = ac.Status.ToString();
+        res["connectionId"]     = connection_id;
+        res["type"]             = info.Type.ToString().ToLowerInvariant();
+        res["status"]           = info.Status.ToString();
+        res["sendRate"]         = info.SendRate;
+        res["recvRate"]         = info.RecvRate;
+        res["protocolName"]     = info.ProtocolName;
+        res["localRelays"]      = info.LocalRelays;
+        res["localDirects"]     = info.LocalDirects;
+        res["contentPosition"]  = info.ContentPosition;
+        res["agentName"]        = info.AgentName;
+        res["remoteEndPoint"]   = info.RemoteEndPoint.ToString();
+        var remote_host_status = new JArray();
+        if ((info.RemoteHostStatus & RemoteHostStatus.Local)!=0)      remote_host_status.Add("local");
+        if ((info.RemoteHostStatus & RemoteHostStatus.Firewalled)!=0) remote_host_status.Add("firewalled");
+        if ((info.RemoteHostStatus & RemoteHostStatus.RelayFull)!=0)  remote_host_status.Add("relayFull");
+        if ((info.RemoteHostStatus & RemoteHostStatus.Receiving)!=0)  remote_host_status.Add("receiving");
+        if ((info.RemoteHostStatus & RemoteHostStatus.Root)!=0)       remote_host_status.Add("root");
+        if ((info.RemoteHostStatus & RemoteHostStatus.Tracker)!=0)    remote_host_status.Add("tracker");
+        res["remoteHostStatus"] = remote_host_status;
+        res["remoteName"]       = info.RemoteName;
         return res;
       }
 
