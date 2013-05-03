@@ -30,7 +30,7 @@
   </head>
   <body>
     <div class="alerts" data-bind="template: { name: 'alert', foreach: alerts }"></div>
-    <script type="text/x-jquery-tmpl" id="relayTreeTemplate">
+    <script type="text/html" id="relayTreeTemplate">
       <li>
         <span data-bind="text:title"></span>
         <ul data-bind="template: { name:'relayTreeTemplate', foreach:children }"></ul>
@@ -171,6 +171,7 @@
                   <td><span data-bind="text:protocolName"></span></td>
                   <td><span data-bind="text:status"></span></td>
                   <td><span data-bind="text:remoteName"></span></td>
+                  <td><span data-bind="text:connections"></span></td>
                   <td><span data-bind="text:bitrate"></span>kbps</td>
                   <td><span data-bind="text:contentPosition"></span></td>
                   <td><span data-bind="text:agentName"></span></td>

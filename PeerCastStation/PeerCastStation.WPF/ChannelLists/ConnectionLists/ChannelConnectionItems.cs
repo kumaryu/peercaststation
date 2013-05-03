@@ -149,11 +149,13 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
           status = "■";
         }
         return String.Format(
-          "{0}{1} {2} {3} {4}kbps pos:{5} {6}",
+          "{0}{1} {2} {3} [{4}/{5}] {6}kbps pos:{7} {8}",
           status,
           info.ProtocolName,
           info.Status,
           info.RemoteEndPoint,
+          info.LocalDirects,
+          info.LocalRelays,
           bitrate,
           info.ContentPosition,
           info.AgentName);

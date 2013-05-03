@@ -207,6 +207,15 @@ var ChannelConnectionViewModel = function(owner, initial_value) {
     return result;
   });
 
+  self.connections = ko.computed(function () {
+    if (self.localRelays() && self.localDirects()) {
+      return "[" + self.localRelays() + "/" + self.localDirects() + "]";
+    }
+    else {
+      return "";
+    }
+  });
+
   self.bitrate = ko.computed(function () {
     return Math.floor(((self.recvRate() ? self.recvRate() : 0) + (self.sendRate() ? self.sendRate() : 0))*8/1000);
   });
