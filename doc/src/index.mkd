@@ -40,6 +40,22 @@ monoで上手く動かない場合はPeerCastStation.GUI.dllを削除すると�
 --------
 {% endcase %}
 
+### 1.3.0 (2013年5月4日版)
+{% if site.target == 'site' %}
+[ダウンロード](http://www.pecastation.org/files/PeerCastStation-1.3.0.zip)
+{% endif %}
+
+チャンネル自動切断のモード選択ができるようになりました。
+
+* チャンネル自動切断のモードを選択できるようになりました。次のいずれかを選べます。詳しくは[設定のページ](settings.html)を見てください
+  * 自動切断しない
+  * 一定時間未接続(ERRORやIDLE)のチャンネルを自動切断
+  * 一定時間リレー・視聴がないチャンネルを自動切断
+  * 一定時間視聴がないチャンネルを(リレーしてても)自動切断
+* 接続一覧での表示が少し変更されました。詳しくは[使い方のページ](usage.html)を見てください
+* 設定ファイルの内容が変更されました。ファイルの場所などは変更ありません
+* プラグインシステムの実装を変更しました。バージョン表示が少し変わりますが動作には何の影響もありません
+
 ### 1.2.1 (2013年3月29日版)
 {% if site.target == 'site' %}
 [ダウンロード](http://www.pecastation.org/files/PeerCastStation-1.2.1.zip)
@@ -156,4 +172,14 @@ monoで上手く動かない場合はPeerCastStation.GUI.dllを削除すると�
 ### 0.6.0
 
 * 初期配布バージョン
+
+ソース・ライセンス
+------------------
+[githubにてソース公開しています。](https://github.com/kumaryu/peercaststation)
+
+ライセンスはGPLv3です。
+
+問題の報告・要望の連絡先について
+--------------------------------
+[githubのIssueに追加してください。](https://github.com/kumaryu/peercaststation)
 

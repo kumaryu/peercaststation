@@ -6,6 +6,29 @@
     <description>PeerCastStationの更新情報です。</description>
     <language>ja</language>      
     <item>
+      <title>Version 1.3.0 (2013年5月4日版)</title>
+      <description>
+        <h3>1.3.0 (2013年5月4日版)</h3>
+        <p>チャンネル自動切断のモード選択ができるようになりました。</p>
+        <ul>
+          <li>チャンネル自動切断のモードを選択できるようになりました。次のいずれかを選べます。詳しくはヘルプの設定のページを見てください
+            <ul>
+              <li>自動切断しない</li>
+              <li>一定時間未接続(ERRORやIDLE)のチャンネルを自動切断</li>
+              <li>一定時間リレー・視聴がないチャンネルを自動切断</li>
+              <li>一定時間視聴がないチャンネルを(リレーしてても)自動切断</li>
+            </ul>
+          </li>
+          <li>接続一覧での表示が少し変更されました。詳しくはヘルプの使い方のページを見てください</li>
+          <li>設定ファイルの内容が変更されました。ファイルの場所などは変更ありません</li>
+          <li>プラグインシステムの実装を変更しました。バージョン表示が少し変わりますが動作には何の影響もありません</li>
+        </ul>
+      </description>
+      <pubDate>Sat, 04 May 2013 00:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-1.3.0.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-1.3.0.zip" sparkle:version="1.3.0" length="1076766" type="application/octet-stream" />
+    </item>
+    <item>
       <title>Version 1.2.1 (2013年3月29日版)</title>
       <description>
         <h3>1.2.1 (2013年3月29日版)</h3>
