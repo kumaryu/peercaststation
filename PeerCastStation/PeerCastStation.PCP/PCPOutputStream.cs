@@ -330,8 +330,8 @@ namespace PeerCastStation.PCP
       this.Downhost = null;
       this.UserAgent = request.UserAgent;
       this.IsChannelFound = channel!=null && channel.Status==SourceStreamStatus.Receiving;
-      this.IsRelayFull = channel!=null ? !channel.IsRelayable(this) : false;
-      this.relayRequest = request;
+      this.IsRelayFull    = channel!=null ? !channel.MakeRelayable(this) : false;
+      this.relayRequest   = request;
     }
 
     protected string CreateRelayResponse()

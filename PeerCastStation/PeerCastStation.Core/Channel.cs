@@ -461,6 +461,33 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
+    ///  新しいOutputStreamがリレー可能になるようにリレー不可のOutputStreamを切断します
+    /// </summary>
+    /// <param name="newoutput_stream">新しくリレーしようとするOutputStream</param>
+    /// <returns>リレー可能になった場合はtrue、それ以外はfalse</returns>
+    public bool MakeRelayable(IOutputStream newoutput_stream)
+    {
+      if (IsRelayable(newoutput_stream)) return true;
+      var disconnects = new List<IOutputStream>();
+      foreach (var os in OutputStreams
+          .Where(os => os!=newoutput_stream)
+          .Where(os => !os.IsLocal)
+          .Where(os => (os.OutputStreamType & OutputStreamType.Relay)!=0)) {
+        var info = os.GetConnectionInfo();
+        var disconnect = false;
+        if ((info.RemoteHostStatus & RemoteHostStatus.Firewalled)!=0) disconnect = true;
+        if ((info.RemoteHostStatus & RemoteHostStatus.RelayFull)!=0 &&
+            (!info.LocalRelays.HasValue || info.LocalRelays.Value<1)) disconnect = true;
+        if (disconnect) disconnects.Add(os);
+      }
+      foreach (var os in disconnects) {
+        os.Stop();
+        RemoveOutputStream(os);
+      }
+      return IsRelayable(newoutput_stream);
+    }
+
+    /// <summary>
     /// 視聴接続がいっぱいかどうかを取得します
     /// </summary>
     public virtual bool IsDirectFull
