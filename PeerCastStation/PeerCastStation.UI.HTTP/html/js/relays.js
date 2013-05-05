@@ -494,3 +494,9 @@ var channelsViewModel = new function() {
     setInterval(channelsViewModel.update, 1000);
   };
 };
+
+function refresh()
+{
+  channelsViewModel.update();
+}
+
