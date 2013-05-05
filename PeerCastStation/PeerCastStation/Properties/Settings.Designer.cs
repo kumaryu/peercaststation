@@ -67,7 +67,7 @@ namespace PeerCastStation.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("PeerCastStation/1.3.0.0")]
+        [global::System.Configuration.DefaultSettingValueAttribute("PeerCastStation/1.3.1.0")]
         public string AgentName {
             get {
                 return ((string)(this["AgentName"]));

@@ -6,6 +6,20 @@
     <description>PeerCastStationの更新情報です。</description>
     <language>ja</language>      
     <item>
+      <title>Version 1.3.1 (2013年5月5日版)</title>
+      <description>
+        <h3>1.3.1 (2013年5月5日版)</h3>
+        <p>1.3.0で入れてしまったHTML UIの不具合を修正しました。</p>
+        <ul>
+          <li>HTML UIのチャンネル一覧ページで多くの操作がエラーになって動かなかったのを修正しました</li>
+          <li>User-AgentやServerをPeerCastStation/1.3.1.0のようなバージョンに即した値を出力するようにしました</li>
+        </ul>
+      </description>
+      <pubDate>Sun, 05 May 2013 18:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-1.3.1.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-1.3.1.zip" sparkle:version="1.3.1" length="1107524" type="application/octet-stream" />
+    </item>
+    <item>
       <title>Version 1.3.0 (2013年5月4日版)</title>
       <description>
         <h3>1.3.0 (2013年5月4日版)</h3>
