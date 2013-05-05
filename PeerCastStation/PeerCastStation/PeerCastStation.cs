@@ -23,6 +23,7 @@ namespace PeerCastStation.Main
 
     public Application()
     {
+      peerCast.AgentName = PeerCastStation.Properties.Settings.Default.AgentName;
       LoadPlugins();
     }
 

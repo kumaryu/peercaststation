@@ -14,5 +14,8 @@
     <Setting Name="ChannelCleanerInactiveLimit" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">1800000</Value>
     </Setting>
+    <Setting Name="AgentName" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">PeerCastStation/1.3.0.0</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
