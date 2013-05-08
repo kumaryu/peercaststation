@@ -182,32 +182,32 @@ namespace PeerCastStation.UI.HTTP
         return res;
       }
 
+      private int? ParseInt(JToken token)
+      {
+        if (token==null) return null;
+        switch (token.Type) {
+        case JTokenType.Boolean:
+        case JTokenType.Float:
+        case JTokenType.Integer:
+          return (int)token;
+        default:
+          return null;
+        }
+      }
+
       [RPCMethod("setSettings")]
       private void SetSettings(JObject settings)
       {
-        if (settings["maxRelays"]!=null && settings["maxRelays"].HasValues) {
-          PeerCast.AccessController.MaxRelays = (int)settings["maxRelays"];
-        }
-        if (settings["maxRelaysPerChannel"]!=null && settings["maxRelaysPerChannel"].HasValues) {
-          PeerCast.AccessController.MaxRelaysPerChannel = (int)settings["maxRelaysPerChannel"];
-        }
-        if (settings["maxDirects"]!=null && settings["maxDirects"].HasValues) {
-          PeerCast.AccessController.MaxPlays = (int)settings["maxDirects"];
-        }
-        if (settings["maxDirectsPerChannel"]!=null && settings["maxDirectsPerChannel"].HasValues) {
-          PeerCast.AccessController.MaxPlaysPerChannel = (int)settings["maxDirectsPerChannel"];
-        }
-        if (settings["maxUpstreamRate"]!=null && settings["maxUpstreamRate"].HasValues) {
-          PeerCast.AccessController.MaxUpstreamRate = (int)settings["maxUpstreamRate"];
-        }
+        var acc = PeerCast.AccessController;
+        acc.MaxRelays           = ParseInt(settings["maxRelays"])            ?? acc.MaxRelays;
+        acc.MaxRelaysPerChannel = ParseInt(settings["maxRelaysPerChannel"])  ?? acc.MaxRelaysPerChannel;
+        acc.MaxPlays            = ParseInt(settings["maxDirects"])           ?? acc.MaxPlays;
+        acc.MaxPlaysPerChannel  = ParseInt(settings["maxDirectsPerChannel"]) ?? acc.MaxPlaysPerChannel;
+        acc.MaxUpstreamRate     = ParseInt(settings["maxUpstreamRate"])      ?? acc.MaxUpstreamRate;
         if (settings["channelCleaner"]!=null && settings["channelCleaner"].HasValues) {
           var channelCleaner = settings["channelCleaner"];
-          if (channelCleaner["inactiveLimit"]!=null && channelCleaner["inactiveLimit"].HasValues) {
-            ChannelCleaner.InactiveLimit = (int)channelCleaner["inactiveLimit"];
-          }
-          if (channelCleaner["mode"]!=null && channelCleaner["mode"].HasValues) {
-            ChannelCleaner.Mode = (ChannelCleaner.CleanupMode)(int)channelCleaner["mode"];
-          }
+          ChannelCleaner.InactiveLimit = ParseInt(channelCleaner["inactiveLimit"]) ?? ChannelCleaner.InactiveLimit;
+          ChannelCleaner.Mode = (ChannelCleaner.CleanupMode)(ParseInt(channelCleaner["mode"]) ?? (int)ChannelCleaner.Mode);
         }
       }
 
@@ -223,7 +223,7 @@ namespace PeerCastStation.UI.HTTP
       private void setLogSettings(JObject settings)
       {
         if (settings["level"]!=null) {
-          Logger.Level = (LogLevel)(int)settings["level"];
+          Logger.Level = (LogLevel)(ParseInt(settings["level"]) ?? (int)Logger.Level);
         }
       }
 
