@@ -218,18 +218,6 @@ namespace PeerCastStation.Core
       }
     }
 
-    protected enum StopReason
-    {
-      None,
-      Any,
-      UserShutdown,
-      OffAir,
-      ConnectionError,
-      NotIdentifiedError,
-      BadAgentError,
-      UnavailableError,
-    }
-
     protected virtual void DoStop(StopReason reason)
     {
       IsStopped = true;
@@ -284,7 +272,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    protected void Stop(StopReason reason)
+    public void Stop(StopReason reason)
     {
       if (!IsStopped) {
         PostAction(() => {

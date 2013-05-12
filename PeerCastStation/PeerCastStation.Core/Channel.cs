@@ -481,7 +481,7 @@ namespace PeerCastStation.Core
         if (disconnect) disconnects.Add(os);
       }
       foreach (var os in disconnects) {
-        os.Stop();
+        os.Stop(StopReason.UnavailableError);
         RemoveOutputStream(os);
       }
       return IsRelayable(newoutput_stream);

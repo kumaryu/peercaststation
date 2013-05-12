@@ -671,39 +671,6 @@ namespace PeerCastStation.PCP
       }
       else if (IsRelayFull) {
         Logger.Debug("Handshake succeeded {0}({1}) but relay is full", Downhost.GlobalEndPoint, Downhost.SessionID.ToString("N"));
-        //次に接続するホストを送ってQUIT
-        foreach (var node in SelectSourceHosts((IPEndPoint)RemoteEndPoint)) {
-          var host_atom = new AtomCollection(node.Extra);
-          Atom ip = host_atom.FindByName(Atom.PCP_HOST_IP);
-          while (ip!=null) {
-            host_atom.Remove(ip);
-            ip = host_atom.FindByName(Atom.PCP_HOST_IP);
-          }
-          Atom port = host_atom.FindByName(Atom.PCP_HOST_PORT);
-          while (port!=null) {
-            host_atom.Remove(port);
-            port = host_atom.FindByName(Atom.PCP_HOST_PORT);
-          }
-          host_atom.SetHostSessionID(node.SessionID);
-          var globalendpoint = node.GlobalEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
-          host_atom.AddHostIP(globalendpoint.Address);
-          host_atom.AddHostPort(globalendpoint.Port);
-          var localendpoint  = node.LocalEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
-          host_atom.AddHostIP(localendpoint.Address);
-          host_atom.AddHostPort(localendpoint.Port);
-          host_atom.SetHostNumRelays(node.RelayCount);
-          host_atom.SetHostNumListeners(node.DirectCount);
-          host_atom.SetHostChannelID(Channel.ChannelID);
-          host_atom.SetHostFlags1(
-            (node.IsFirewalled ? PCPHostFlags1.Firewalled : PCPHostFlags1.None) |
-            (node.IsTracker ? PCPHostFlags1.Tracker : PCPHostFlags1.None) |
-            (node.IsRelayFull ? PCPHostFlags1.None : PCPHostFlags1.Relay) |
-            (node.IsDirectFull ? PCPHostFlags1.None : PCPHostFlags1.Direct) |
-            (node.IsReceiving ? PCPHostFlags1.Receiving : PCPHostFlags1.None) |
-            (node.IsControlFull ? PCPHostFlags1.None : PCPHostFlags1.ControlIn));
-          Send(new Atom(Atom.PCP_HOST, host_atom));
-          Logger.Debug("Sending Node: {0}({1})", globalendpoint, node.SessionID.ToString("N"));
-        }
         Stop(StopReason.UnavailableError);
       }
       else {
@@ -802,7 +769,7 @@ namespace PeerCastStation.PCP
       Stop(StopReason.None);
     }
 
-    protected override void DoStop(OutputStreamBase.StopReason reason)
+    protected override void DoStop(StopReason reason)
     {
       switch (reason) {
       case StopReason.None:
@@ -820,6 +787,42 @@ namespace PeerCastStation.PCP
         Send(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT + Atom.PCP_ERROR_NOTIDENTIFIED));
         break;
       case StopReason.UnavailableError:
+        {
+          //次に接続するホストを送ってQUIT
+          foreach (var node in SelectSourceHosts((IPEndPoint)RemoteEndPoint)) {
+            if (Downhost!=null && Downhost.SessionID==node.SessionID) continue;
+            var host_atom = new AtomCollection(node.Extra);
+            Atom ip = host_atom.FindByName(Atom.PCP_HOST_IP);
+            while (ip!=null) {
+              host_atom.Remove(ip);
+              ip = host_atom.FindByName(Atom.PCP_HOST_IP);
+            }
+            Atom port = host_atom.FindByName(Atom.PCP_HOST_PORT);
+            while (port!=null) {
+              host_atom.Remove(port);
+              port = host_atom.FindByName(Atom.PCP_HOST_PORT);
+            }
+            host_atom.SetHostSessionID(node.SessionID);
+            var globalendpoint = node.GlobalEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
+            host_atom.AddHostIP(globalendpoint.Address);
+            host_atom.AddHostPort(globalendpoint.Port);
+            var localendpoint  = node.LocalEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
+            host_atom.AddHostIP(localendpoint.Address);
+            host_atom.AddHostPort(localendpoint.Port);
+            host_atom.SetHostNumRelays(node.RelayCount);
+            host_atom.SetHostNumListeners(node.DirectCount);
+            host_atom.SetHostChannelID(Channel.ChannelID);
+            host_atom.SetHostFlags1(
+              (node.IsFirewalled ? PCPHostFlags1.Firewalled : PCPHostFlags1.None) |
+              (node.IsTracker ? PCPHostFlags1.Tracker : PCPHostFlags1.None) |
+              (node.IsRelayFull ? PCPHostFlags1.None : PCPHostFlags1.Relay) |
+              (node.IsDirectFull ? PCPHostFlags1.None : PCPHostFlags1.Direct) |
+              (node.IsReceiving ? PCPHostFlags1.Receiving : PCPHostFlags1.None) |
+              (node.IsControlFull ? PCPHostFlags1.None : PCPHostFlags1.ControlIn));
+            Send(new Atom(Atom.PCP_HOST, host_atom));
+            Logger.Debug("Sending Node: {0}({1})", globalendpoint, node.SessionID.ToString("N"));
+          }
+        }
         Send(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT + Atom.PCP_ERROR_UNAVAILABLE));
         break;
       case StopReason.OffAir:

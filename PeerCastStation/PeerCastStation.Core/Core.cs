@@ -421,6 +421,18 @@ namespace PeerCastStation.Core
     All = 0x7FFFFFFF,
   }
 
+  public enum StopReason
+  {
+    None,
+    Any,
+    UserShutdown,
+    OffAir,
+    ConnectionError,
+    NotIdentifiedError,
+    BadAgentError,
+    UnavailableError,
+  }
+
   /// <summary>
   /// 下流にチャンネルのContentを流すストリームを表わすインターフェースです
   /// </summary>
@@ -449,6 +461,11 @@ namespace PeerCastStation.Core
     /// ストリームへの書き込みを終了します
     /// </summary>
     void Stop();
+    /// <summary>
+    /// ストリームへの書き込みを終了します
+    /// </summary>
+    /// <param name="reason">書き込み終了の理由</param>
+    void Stop(StopReason reason);
     /// <summary>
     /// 出力ストリームの種類を取得します
     /// </summary>
