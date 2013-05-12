@@ -126,7 +126,7 @@ namespace PeerCastStation.Core
 
   public class RateCounter
   {
-    private int count;
+    private long count;
     private int begin;
     private float rate;
     public int Duration { get; private set; }
