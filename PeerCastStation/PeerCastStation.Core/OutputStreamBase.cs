@@ -65,6 +65,8 @@ namespace PeerCastStation.Core
     protected QueuedSynchronizationContext SyncContext { get; private set; }
     protected Logger Logger { get; private set; }
 
+    public int SendTimeout    { get; set; }
+
     public abstract ConnectionInfo GetConnectionInfo();
 
     private Thread mainThread;
@@ -91,6 +93,7 @@ namespace PeerCastStation.Core
       if (header!=null) {
         this.recvStream.Write(header, 0, header.Length);
       }
+      this.SendTimeout = 3000;
     }
 
     protected virtual int GetUpstreamRate()
@@ -128,13 +131,26 @@ namespace PeerCastStation.Core
         }
       }
       if (sendResult!=null) {
-        try {
-          OutputStream.EndWrite(sendResult);
-          sendBytesCounter.Add((int)sendResult.AsyncState);
+        if (!sendResult.IsCompleted) {
+          var wait = TimeSpan.FromMilliseconds(SendTimeout) - sendTimer.Elapsed;
+          if (wait.Ticks<0 ||
+              WaitHandle.WaitAny(new WaitHandle[] { sendResult.AsyncWaitHandle }, wait)==WaitHandle.WaitTimeout) {
+            Logger.Error("Send timeout");
+            OnError();
+            sendTimer.Stop();
+          }
         }
-        catch (ObjectDisposedException) {}
-        catch (IOException) {
-          OnError();
+        if (!HasError) {
+          try {
+            sendTimer.Stop();
+            OutputStream.EndWrite(sendResult);
+            sendBytesCounter.Add((int)sendResult.AsyncState);
+            sendResult = null;
+          }
+          catch (ObjectDisposedException) {}
+          catch (IOException) {
+            OnError();
+          }
         }
       }
       if (!HasError && sendStream.Length>0) {
@@ -147,14 +163,24 @@ namespace PeerCastStation.Core
           OnError();
         }
       }
-      recvResult = null;
-      sendResult = null;
       sendStream.SetLength(0);
       sendStream.Position = 0;
       recvStream.SetLength(0);
       recvStream.Position = 0;
       this.InputStream.Close();
       this.OutputStream.Close();
+      if (sendResult!=null) {
+        try {
+          sendTimer.Stop();
+          OutputStream.EndWrite(sendResult);
+          sendBytesCounter.Add((int)sendResult.AsyncState);
+          sendResult = null;
+        }
+        catch (ObjectDisposedException) {}
+        catch (IOException) {}
+      }
+      recvResult = null;
+      sendResult = null;
     }
 
     protected virtual void WaitEventAny()
@@ -321,19 +347,28 @@ namespace PeerCastStation.Core
     private RateCounter sendBytesCounter = new RateCounter(1000);
     MemoryStream sendStream = new MemoryStream(8192);
     IAsyncResult sendResult = null;
+    System.Diagnostics.Stopwatch sendTimer = new System.Diagnostics.Stopwatch();
     private void ProcessSend()
     {
-      if (sendResult!=null && sendResult.IsCompleted) {
-        try {
-          OutputStream.EndWrite(sendResult);
-          sendBytesCounter.Add((int)sendResult.AsyncState);
+      if (sendResult!=null) {
+        if (sendResult.IsCompleted) {
+          try {
+            sendTimer.Stop();
+            OutputStream.EndWrite(sendResult);
+            sendBytesCounter.Add((int)sendResult.AsyncState);
+            sendResult = null;
+          }
+          catch (ObjectDisposedException) {
+          }
+          catch (IOException) {
+            OnError();
+          }
         }
-        catch (ObjectDisposedException) {
-        }
-        catch (IOException) {
+        else if (sendTimer.ElapsedMilliseconds>SendTimeout) {
+          Logger.Error("Send timeout");
           OnError();
+          sendTimer.Stop();
         }
-        sendResult = null;
       }
       if (!HasError && sendResult==null && sendStream.Length>0) {
         var buf = sendStream.ToArray();
@@ -341,6 +376,8 @@ namespace PeerCastStation.Core
         sendStream.Position = 0;
         try {
           sendResult = OutputStream.BeginWrite(buf, 0, buf.Length, null, buf.Length);
+          sendTimer.Reset();
+          sendTimer.Start();
         }
         catch (ObjectDisposedException) {
         }
