@@ -545,7 +545,6 @@ namespace PeerCastStation.PCP
 
     private void OnWaitRequestResponse()
     {
-      RecvEvent.WaitOne(1);
       var res = RecvRelayRequestResponse();
       if (res!=null) {
         serverName = res.Server;
@@ -564,7 +563,6 @@ namespace PeerCastStation.PCP
 
     private void OnHandshaking()
     {
-      RecvEvent.WaitOne(1);
       var atom = RecvAtom();
       if (atom==null) return;
       else if (atom.Name==Atom.PCP_OLEH) {
@@ -585,13 +583,16 @@ namespace PeerCastStation.PCP
     private void OnReceiving()
     {
       Status = SourceStreamStatus.Receiving;
-      WaitHandle.WaitAny(new WaitHandle[] { RecvEvent, changedEvent }, 1);
       if ((nextHostInfoUpdate-Environment.TickCount<=110000 && hostInfoUpdated) ||
            nextHostInfoUpdate-Environment.TickCount<=0) {
         BroadcastHostInfo();
         nextHostInfoUpdate = Environment.TickCount+120000;
       }
-      ProcessAtom(RecvAtom());
+      var atom = RecvAtom();
+      while (atom!=null) {
+        ProcessAtom(atom);
+        atom = RecvAtom();
+      }
     }
 
     protected override void OnIdle()
