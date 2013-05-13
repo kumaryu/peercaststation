@@ -183,6 +183,8 @@ namespace PeerCastStation.Core
     {
       logger.Debug("Output thread started");
       var client = (TcpClient)arg;
+      client.ReceiveBufferSize = 64*1024;
+      client.SendBufferSize    = 64*1024;
       var stream = client.GetStream();
       stream.WriteTimeout = 3000;
       stream.ReadTimeout = 3000;

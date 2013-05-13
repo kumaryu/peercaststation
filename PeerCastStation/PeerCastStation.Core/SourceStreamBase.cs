@@ -96,30 +96,30 @@ namespace PeerCastStation.Core
 
     protected virtual void WaitEventAny()
     {
-			if (recvResult!=null) {
-				if (sendResult!=null) {
-					WaitHandle.WaitAny(new WaitHandle[] {
-			      SyncContext.EventHandle,
-						recvResult.AsyncWaitHandle,
-						sendResult.AsyncWaitHandle,
-					}, 10);
-				}
-				else {
-					WaitHandle.WaitAny(new WaitHandle[] {
-			      SyncContext.EventHandle,
-						recvResult.AsyncWaitHandle,
-					}, 10);
-				}
-			}
-			else if (sendResult!=null) {
-				WaitHandle.WaitAny(new WaitHandle[] {
-		      SyncContext.EventHandle,
-					sendResult.AsyncWaitHandle,
-				}, 10);
-			}
-			else {
-				SyncContext.EventHandle.WaitOne(10);
-			}
+      if (recvResult!=null) {
+        if (sendResult!=null) {
+          WaitHandle.WaitAny(new WaitHandle[] {
+            SyncContext.EventHandle,
+            recvResult.AsyncWaitHandle,
+            sendResult.AsyncWaitHandle,
+          }, 10);
+        }
+        else {
+          WaitHandle.WaitAny(new WaitHandle[] {
+            SyncContext.EventHandle,
+            recvResult.AsyncWaitHandle,
+          }, 10);
+        }
+      }
+      else if (sendResult!=null) {
+        WaitHandle.WaitAny(new WaitHandle[] {
+          SyncContext.EventHandle,
+          sendResult.AsyncWaitHandle,
+        }, 10);
+      }
+      else {
+        SyncContext.EventHandle.WaitOne(10);
+      }
     }
 
     protected virtual void OnStarted()
@@ -343,7 +343,7 @@ namespace PeerCastStation.Core
 
     RateCounter recvBytesCounter = new RateCounter(1000);
     MemoryStream recvStream = new MemoryStream();
-    byte[] recvBuffer = new byte[8192];
+    byte[] recvBuffer = new byte[64*1024];
     IAsyncResult recvResult = null;
     bool recvError = false;
     protected void ProcessRecv()

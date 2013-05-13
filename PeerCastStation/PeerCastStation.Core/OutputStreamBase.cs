@@ -309,7 +309,7 @@ namespace PeerCastStation.Core
 
     RateCounter recvBytesCounter = new RateCounter(1000);
     MemoryStream recvStream = new MemoryStream();
-    byte[] recvBuffer = new byte[8192];
+    byte[] recvBuffer = new byte[64*1024];
     IAsyncResult recvResult = null;
     private void ProcessRecv()
     {
