@@ -83,6 +83,7 @@ namespace PeerCastStation.Core
       localOutputAccepts  = local_accepts;
       globalOutputAccepts = global_accepts;
       server = new TcpListener(ip);
+      server.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
       server.Start();
       listenerThread = new Thread(ListenerThreadFunc);
       listenerThread.Name = String.Format("OutputListenerThread:{0}", ip);
