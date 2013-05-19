@@ -49,7 +49,7 @@ namespace PeerCastStation.Main
       foreach (var plugin in plugins) {
         plugin.Start();
       }
-      stoppedEvent.WaitOne();
+      WaitHandle.WaitAny(new WaitHandle[] { killWaitHandle, stoppedEvent });
       foreach (var plugin in plugins) {
         plugin.Stop();
       }
@@ -213,18 +213,35 @@ namespace PeerCastStation.Main
       settings.Save();
     }
 
-    static Mutex sharedMutex;
+    static EventWaitHandle killWaitHandle;
+    static private bool CheckIsFirstInstance(ref EventWaitHandle wait_handle)
+    {
+      bool is_first_instance;
+      var event_name = System.Reflection.Assembly.GetEntryAssembly().Location
+        .Replace('\\', '/')+".kill";
+      try {
+        wait_handle = EventWaitHandle.OpenExisting(event_name);
+        is_first_instance = false;
+      }
+      catch (WaitHandleCannotBeOpenedException) {
+        wait_handle = new EventWaitHandle(false, EventResetMode.ManualReset, event_name);
+        is_first_instance = true;
+      }
+      return is_first_instance;
+    }
+
     [STAThread]
     static void Main(string[] args)
     {
-      bool is_first_instance;
-      sharedMutex = new Mutex(
-        false,
-        System.Reflection.Assembly.GetEntryAssembly().Location.Replace('\\', '/')+".mutex",
-        out is_first_instance);
-      if (is_first_instance) {
-        (new Application()).Run();
+      var first_instance = CheckIsFirstInstance(ref killWaitHandle);
+      if (args.Contains("-kill")) {
+        killWaitHandle.Set();
+        return;
       }
+      if (!first_instance && !args.Contains("-multi")) {
+        return;
+      }
+      (new Application()).Run();
     }
   }
 }
