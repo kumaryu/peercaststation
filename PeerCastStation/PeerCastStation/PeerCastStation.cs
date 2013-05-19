@@ -45,6 +45,7 @@ namespace PeerCastStation.Main
         plugin.Attach(this);
       }
       peerCast.ChannelMonitors.Add(new ChannelCleaner(peerCast));
+      peerCast.ChannelMonitors.Add(new ChannelNotifier(this));
       LoadSettings();
       foreach (var plugin in plugins) {
         plugin.Start();
