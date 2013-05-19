@@ -567,11 +567,11 @@ namespace PeerCastStation.Core
     /// <summary>
     /// チャンネル接続が終了する時に発生するイベントです
     /// </summary>
-    public event EventHandler Closed;
-    private void OnClosed()
+    public event StreamStoppedEventHandler Closed;
+    private void OnClosed(StopReason reason)
     {
       if (Closed != null) {
-        Closed(this, new EventArgs());
+        Closed(this, new StreamStoppedEventArgs(reason));
       }
     }
 
@@ -641,7 +641,7 @@ namespace PeerCastStation.Core
       if (StatusChanged!=null) StatusChanged(this, new EventArgs());
     }
 
-    private void SourceStream_Stopped(object sender, EventArgs args)
+    private void SourceStream_Stopped(object sender, StreamStoppedEventArgs args)
     {
       foreach (var os in outputStreams) {
         os.Stop();
@@ -649,7 +649,7 @@ namespace PeerCastStation.Core
       outputStreams = new OutputStreamCollection();
       startTickCount = null;
       IsClosed = true;
-      OnClosed();
+      OnClosed(args.StopReason);
     }
 
     public void Start(ISourceStream source_stream)

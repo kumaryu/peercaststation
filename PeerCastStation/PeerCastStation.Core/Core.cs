@@ -219,6 +219,45 @@ namespace PeerCastStation.Core
     Tracker    = 0x20,
   }
 
+  /// <summary>
+  /// ストリームが終了された原因を表します
+  /// </summary>
+  public enum StopReason
+  {
+    None,
+    Any,
+    UserShutdown,
+    UserReconnect,
+    NoHost,
+    OffAir,
+    ConnectionError,
+    NotIdentifiedError,
+    BadAgentError,
+    UnavailableError,
+  }
+
+  /// <summary>
+  /// ストリームが終了した時に呼ばれるイベントの引数です
+  /// </summary>
+  public class StreamStoppedEventArgs
+    : EventArgs
+  {
+    /// <summary>
+    /// ストリームが終了された原因を取得します
+    /// </summary>
+    public StopReason StopReason { get; private set; }
+    public StreamStoppedEventArgs(StopReason reason)
+    {
+      this.StopReason = reason;
+    }
+  }
+  /// <summary>
+  /// ストリームが終了した時に呼ばれるイベントを表します
+  /// </summary>
+  /// <param name="sender">終了したストリーム</param>
+  /// <param name="args">終了した原因を含む引数</param>
+  public delegate void StreamStoppedEventHandler(object sender, StreamStoppedEventArgs args);
+
   public class ConnectionInfo
   {
     public string     ProtocolName    { get; private set; }
@@ -354,7 +393,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// ストリームの動作が終了した際に呼ばれるイベントです
     /// </summary>
-    event EventHandler Stopped;
+    event StreamStoppedEventHandler Stopped;
   }
 
   /// <summary>
@@ -421,18 +460,6 @@ namespace PeerCastStation.Core
     All = 0x7FFFFFFF,
   }
 
-  public enum StopReason
-  {
-    None,
-    Any,
-    UserShutdown,
-    OffAir,
-    ConnectionError,
-    NotIdentifiedError,
-    BadAgentError,
-    UnavailableError,
-  }
-
   /// <summary>
   /// 下流にチャンネルのContentを流すストリームを表わすインターフェースです
   /// </summary>
@@ -478,7 +505,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 出力ストリームの動作が終了した際に呼ばれるイベントです
     /// </summary>
-    event EventHandler Stopped;
+    event StreamStoppedEventHandler Stopped;
   }
 
   /// <summary>

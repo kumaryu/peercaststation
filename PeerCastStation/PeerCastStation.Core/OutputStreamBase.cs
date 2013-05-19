@@ -58,7 +58,8 @@ namespace PeerCastStation.Core
     }
     volatile bool isStopped;
     public bool IsStopped { get { return isStopped; } private set { isStopped = value; } }
-    public event EventHandler Stopped;
+    public StopReason StoppedReason { get; private set; }
+    public event StreamStoppedEventHandler Stopped;
     public bool HasError { get; private set; }
     public float SendRate { get { return sendBytesCounter.Rate; } }
     public float RecvRate { get { return recvBytesCounter.Rate; } }
@@ -216,7 +217,7 @@ namespace PeerCastStation.Core
     protected virtual void OnStopped()
     {
       if (Stopped!=null) {
-        Stopped(this, new EventArgs());
+        Stopped(this, new StreamStoppedEventArgs(this.StoppedReason));
       }
     }
 
@@ -246,6 +247,7 @@ namespace PeerCastStation.Core
 
     protected virtual void DoStop(StopReason reason)
     {
+      StoppedReason = reason;
       IsStopped = true;
     }
 

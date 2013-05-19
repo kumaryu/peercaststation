@@ -274,7 +274,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    protected override void DoStop(SourceStreamBase.StopReason reason)
+    protected override void DoStop(StopReason reason)
     {
       EndConnection();
       Logger.Info("Channel Stopped by {0}", reason);
