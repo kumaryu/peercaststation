@@ -209,6 +209,7 @@ namespace PeerCastStation.UI.HTTP
           ChannelCleaner.InactiveLimit = ParseInt(channelCleaner["inactiveLimit"]) ?? ChannelCleaner.InactiveLimit;
           ChannelCleaner.Mode = (ChannelCleaner.CleanupMode)(ParseInt(channelCleaner["mode"]) ?? (int)ChannelCleaner.Mode);
         }
+        owner.Application.SaveSettings();
       }
 
       [RPCMethod("getLogSettings")]
@@ -224,6 +225,7 @@ namespace PeerCastStation.UI.HTTP
       {
         if (settings["level"]!=null) {
           Logger.Level = (LogLevel)(ParseInt(settings["level"]) ?? (int)Logger.Level);
+          owner.Application.SaveSettings();
         }
       }
 
@@ -608,6 +610,7 @@ namespace PeerCastStation.UI.HTTP
           throw new RPCError(RPCErrorCode.InvalidParams, String.Format("Not suitable uri for {0}", protocol));
         }
         var yp = PeerCast.AddYellowPage(factory.Protocol, name, yp_uri);
+        owner.Application.SaveSettings();
         var res = new JObject();
         res["yellowPageId"] = yp.GetHashCode();
         res["name"]         = yp.Name;
@@ -622,6 +625,7 @@ namespace PeerCastStation.UI.HTTP
         var yp = PeerCast.YellowPages.FirstOrDefault(p => p.GetHashCode()==yellowPageId);
         if (yp!=null) {
           PeerCast.RemoveYellowPage(yp);
+          owner.Application.SaveSettings();
         }
       }
 
@@ -691,6 +695,7 @@ namespace PeerCastStation.UI.HTTP
           throw new RPCError(RPCErrorCode.InvalidParams, "Invalid ip address");
         }
         listener = PeerCast.StartListen(endpoint, (OutputStreamType)localAccepts, (OutputStreamType)globalAccepts);
+        owner.Application.SaveSettings();
         var res = new JObject();
         res["listenerId"]    = listener.GetHashCode();
         res["address"]       = listener.LocalEndPoint.Address.ToString();
@@ -706,6 +711,7 @@ namespace PeerCastStation.UI.HTTP
         foreach (var listener in PeerCast.OutputListeners.Where(ol => ol.GetHashCode()==listenerId)) {
           PeerCast.StopListen(listener);
         }
+        owner.Application.SaveSettings();
       }
 
       [RPCMethod("setListenerAccepts")]
@@ -715,6 +721,7 @@ namespace PeerCastStation.UI.HTTP
           listener.LocalOutputAccepts = (OutputStreamType)localAccepts;
           listener.GlobalOutputAccepts = (OutputStreamType)globalAccepts;
         }
+        owner.Application.SaveSettings();
       }
 
       [RPCMethod("broadcastChannel")]
