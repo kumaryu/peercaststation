@@ -14,6 +14,7 @@ namespace PeerCastStation.Core
     public abstract IEnumerable<IPlugin> Plugins { get; }
     public abstract PeerCast PeerCast { get; }
     public abstract void Stop();
+    public abstract void SaveSettings();
     public PeerCastApplication()
     {
       if (current==null) current = this;

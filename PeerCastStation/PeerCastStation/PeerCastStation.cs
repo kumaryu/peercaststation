@@ -179,7 +179,7 @@ namespace PeerCastStation.Main
       ChannelCleaner.InactiveLimit = settings.Get<ChannelCleanerSettings>().InactiveLimit;
     }
 
-    void SaveSettings()
+    public override void SaveSettings()
     {
       var s = settings.Get<PeerCastStationSettings>();
       s.Logger = new PeerCastStationSettings.LoggerSettings {
