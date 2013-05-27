@@ -282,6 +282,7 @@ namespace PeerCastStation.GUI
       else {
         portOpenedLabel.Text = "開放状態不明";
       }
+      application.SaveSettings();
     }
 
     private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -743,42 +744,45 @@ namespace PeerCastStation.GUI
 
     private void logLevelList_SelectedValueChanged(object sender, EventArgs e)
     {
-      Logger.Level = (LogLevel)logLevelList.SelectedValue;
+      var value = (LogLevel)logLevelList.SelectedValue;
+      if (Logger.Level==value) return;
+      Logger.Level = value;
+      application.SaveSettings();
     }
 
     private void logToFileCheck_CheckedChanged(object sender, EventArgs e)
     {
-      if (logToFileCheck.Checked) {
-        Logger.OutputTarget |= LoggerOutputTarget.File;
-      }
-      else {
-        Logger.OutputTarget &= ~LoggerOutputTarget.File;
-      }
+      var value = logToFileCheck.Checked;
+      if (((Logger.OutputTarget & LoggerOutputTarget.File)!=0)==value) return;
+      if (value) Logger.OutputTarget |= LoggerOutputTarget.File;
+      else       Logger.OutputTarget &= ~LoggerOutputTarget.File;
+      application.SaveSettings();
     }
 
     private void logToConsoleCheck_CheckedChanged(object sender, EventArgs e)
     {
-      if (logToConsoleCheck.Checked) {
-        Logger.OutputTarget |= LoggerOutputTarget.Console;
-      }
-      else {
-        Logger.OutputTarget &= ~LoggerOutputTarget.Console;
-      }
+      var value = logToConsoleCheck.Checked;
+      if (((Logger.OutputTarget & LoggerOutputTarget.Console)!=0)==value) return;
+      if (value) Logger.OutputTarget |= LoggerOutputTarget.Console;
+      else       Logger.OutputTarget &= ~LoggerOutputTarget.Console;
+      application.SaveSettings();
     }
 
     private void logToGUICheck_CheckedChanged(object sender, EventArgs e)
     {
-      if (logToGUICheck.Checked) {
-        Logger.OutputTarget |= LoggerOutputTarget.UserInterface;
-      }
-      else {
-        Logger.OutputTarget &= ~LoggerOutputTarget.UserInterface;
-      }
+      var value = logToGUICheck.Checked;
+      if (((Logger.OutputTarget & LoggerOutputTarget.UserInterface)!=0)==value) return;
+      if (value) Logger.OutputTarget |= LoggerOutputTarget.UserInterface;
+      else       Logger.OutputTarget &= ~LoggerOutputTarget.UserInterface;
+      application.SaveSettings();
     }
 
     private void logFileNameText_Validated(object sender, EventArgs e)
     {
-      Logger.LogFileName = logFileNameText.Text;
+      var value = logFileNameText.Text;
+      if (Logger.LogFileName==value) return;
+      Logger.LogFileName = value;
+      application.SaveSettings();
     }
 
     private void selectLogFileName_Click(object sender, EventArgs e)
@@ -786,6 +790,7 @@ namespace PeerCastStation.GUI
       if (logSaveFileDialog.ShowDialog(this)==DialogResult.OK) {
         logFileNameText.Text = logSaveFileDialog.FileName;
         Logger.LogFileName = logFileNameText.Text;
+        application.SaveSettings();
       }
     }
 
@@ -959,12 +964,11 @@ namespace PeerCastStation.GUI
       var item = portsList.SelectedItem as PortListItem;
       if (item!=null) {
         var listener = item.Listener;
-        if (portLocalRelay.Checked) {
-          listener.LocalOutputAccepts |= OutputStreamType.Relay;
-        }
-        else {
-          listener.LocalOutputAccepts &= ~OutputStreamType.Relay;
-        }
+        var value = portLocalRelay.Checked;
+        if (((listener.LocalOutputAccepts & OutputStreamType.Relay)!=0)==value) return;
+        if (value) listener.LocalOutputAccepts |= OutputStreamType.Relay;
+        else       listener.LocalOutputAccepts &= ~OutputStreamType.Relay;
+        application.SaveSettings();
         portsList.Items[portsList.Items.IndexOf(item)] = item;
       }
     }
@@ -974,12 +978,11 @@ namespace PeerCastStation.GUI
       var item = portsList.SelectedItem as PortListItem;
       if (item!=null) {
         var listener = item.Listener;
-        if (portGlobalRelay.Checked) {
-          listener.GlobalOutputAccepts |= OutputStreamType.Relay;
-        }
-        else {
-          listener.GlobalOutputAccepts &= ~OutputStreamType.Relay;
-        }
+        var value = portGlobalRelay.Checked;
+        if (((listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0)==value) return;
+        if (value) listener.GlobalOutputAccepts |= OutputStreamType.Relay;
+        else       listener.GlobalOutputAccepts &= ~OutputStreamType.Relay;
+        application.SaveSettings();
         portsList.Items[portsList.Items.IndexOf(item)] = item;
       }
     }
@@ -989,12 +992,11 @@ namespace PeerCastStation.GUI
       var item = portsList.SelectedItem as PortListItem;
       if (item!=null) {
         var listener = item.Listener;
-        if (portLocalDirect.Checked) {
-          listener.LocalOutputAccepts |= OutputStreamType.Play;
-        }
-        else {
-          listener.LocalOutputAccepts &= ~OutputStreamType.Play;
-        }
+        var value = portLocalDirect.Checked;
+        if (((listener.LocalOutputAccepts & OutputStreamType.Play)!=0)==value) return;
+        if (value) listener.LocalOutputAccepts |= OutputStreamType.Play;
+        else       listener.LocalOutputAccepts &= ~OutputStreamType.Play;
+        application.SaveSettings();
         portsList.Items[portsList.Items.IndexOf(item)] = item;
       }
     }
@@ -1004,12 +1006,11 @@ namespace PeerCastStation.GUI
       var item = portsList.SelectedItem as PortListItem;
       if (item!=null) {
         var listener = item.Listener;
-        if (portGlobalDirect.Checked) {
-          listener.GlobalOutputAccepts |= OutputStreamType.Play;
-        }
-        else {
-          listener.GlobalOutputAccepts &= ~OutputStreamType.Play;
-        }
+        var value = portGlobalDirect.Checked;
+        if (((listener.GlobalOutputAccepts & OutputStreamType.Play)!=0)==value) return;
+        if (value) listener.GlobalOutputAccepts |= OutputStreamType.Play;
+        else       listener.GlobalOutputAccepts &= ~OutputStreamType.Play;
+        application.SaveSettings();
         portsList.Items[portsList.Items.IndexOf(item)] = item;
       }
     }
@@ -1019,12 +1020,11 @@ namespace PeerCastStation.GUI
       var item = portsList.SelectedItem as PortListItem;
       if (item!=null) {
         var listener = item.Listener;
-        if (portLocalInterface.Checked) {
-          listener.LocalOutputAccepts |= OutputStreamType.Interface;
-        }
-        else {
-          listener.LocalOutputAccepts &= ~OutputStreamType.Interface;
-        }
+        var value = portLocalInterface.Checked;
+        if (((listener.LocalOutputAccepts & OutputStreamType.Interface)!=0)==value) return;
+        if (value) listener.LocalOutputAccepts |= OutputStreamType.Interface;
+        else       listener.LocalOutputAccepts &= ~OutputStreamType.Interface;
+        application.SaveSettings();
         portsList.Items[portsList.Items.IndexOf(item)] = item;
       }
     }
@@ -1034,12 +1034,11 @@ namespace PeerCastStation.GUI
       var item = portsList.SelectedItem as PortListItem;
       if (item!=null) {
         var listener = item.Listener;
-        if (portGlobalInterface.Checked) {
-          listener.GlobalOutputAccepts |= OutputStreamType.Interface;
-        }
-        else {
-          listener.GlobalOutputAccepts &= ~OutputStreamType.Interface;
-        }
+        var value = portGlobalInterface.Checked;
+        if (((listener.GlobalOutputAccepts & OutputStreamType.Interface)!=0)==value) return;
+        if (value) listener.GlobalOutputAccepts |= OutputStreamType.Interface;
+        else       listener.GlobalOutputAccepts &= ~OutputStreamType.Interface;
+        application.SaveSettings();
         portsList.Items[portsList.Items.IndexOf(item)] = item;
       }
     }
@@ -1050,6 +1049,7 @@ namespace PeerCastStation.GUI
       if (dlg.ShowDialog(this)==System.Windows.Forms.DialogResult.OK) {
         try {
           var listener = peerCast.StartListen(new System.Net.IPEndPoint(dlg.Address, dlg.Port), dlg.LocalAccepts, dlg.GlobalAccepts);
+          application.SaveSettings();
           portsList.Items.Add(new PortListItem(listener));
         }
         catch (System.Net.Sockets.SocketException) {
@@ -1062,6 +1062,7 @@ namespace PeerCastStation.GUI
       var item = portsList.SelectedItem as PortListItem;
       if (item!=null) {
         peerCast.StopListen(item.Listener);
+        application.SaveSettings();
         portsList.Items.Clear();
         portsList.Items.AddRange(peerCast.OutputListeners.Select(listener => new PortListItem(listener)).ToArray());
       }
@@ -1072,6 +1073,7 @@ namespace PeerCastStation.GUI
       var dlg = new YellowPagesEditDialog(peerCast);
       if (dlg.ShowDialog(this)==System.Windows.Forms.DialogResult.OK) {
         peerCast.AddYellowPage(dlg.Protocol, dlg.YPName, dlg.Uri);
+        application.SaveSettings();
         yellowPagesList.Items.Clear();
         yellowPagesList.Items.AddRange(peerCast.YellowPages.Select(yp => new YellowPageItem(yp)).ToArray());
       }
@@ -1082,6 +1084,7 @@ namespace PeerCastStation.GUI
       var item = yellowPagesList.SelectedItem as YellowPageItem;
       if (item!=null) {
         peerCast.RemoveYellowPage(item.YellowPageClient);
+        application.SaveSettings();
         yellowPagesList.Items.Clear();
         yellowPagesList.Items.AddRange(peerCast.YellowPages.Select(yp => new YellowPageItem(yp)).ToArray());
       }
