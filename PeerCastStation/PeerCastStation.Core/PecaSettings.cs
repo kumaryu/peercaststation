@@ -546,7 +546,7 @@ namespace PeerCastStation.Core
     public void Save()
     {
       System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(FileName));
-      using (var writer=XmlWriter.Create(System.IO.File.Create(FileName), new XmlWriterSettings { Indent = true, })) {
+      using (var writer=XmlWriter.Create(FileName, new XmlWriterSettings { Indent = true, })) {
         var serializer = new PecaSerializer();
         lock (values) {
           serializer.Serialize(writer, values.ToArray());
