@@ -22,7 +22,7 @@ Windows7だと最初っから入ってます。Windows8では.NET Framework 4.5�
 
 Windows以外の場合はmonoをインストールしてください。
 Linuxなどではパッケージマネージャから入れれば大丈夫なはずです。
-Macなどでは[mono-projectからダウンロードして](http://www.go-mono.com/mono-downloads/download.html)インストールします(2.6.7以降ならどれでも)。あとはPeerCastStationのzipを適当な場所に展開して、ターミナルから
+OSXなどでは[mono-projectからダウンロードして](http://www.go-mono.com/mono-downloads/download.html)インストールします(2.6.7以降ならどれでも)。あとはPeerCastStationのzipを適当な場所に展開して、ターミナルから
 
     mono PeerCastStation.exe
 
@@ -39,6 +39,20 @@ monoで上手く動かない場合はPeerCastStation.GUI.dllを削除すると�
 更新履歴
 --------
 {% endcase %}
+
+### 1.4.0 (2013年5月29日版)
+{% if site.target == 'site' %}
+[ダウンロード](http://www.pecastation.org/files/PeerCastStation-1.4.0.zip)
+{% endif %}
+
+自動でリレー管理するようになりました。
+
+* 自動リレー管理をするようにしました。リレーがいっぱいの状態でリレー要求があると、リレー不可の接続(ポート空いていない・帯域が足りない)を自動的に切断して新しいリレーを優先して接続するようにしました。詳しくは[使い方ページの下の方](usage.html)を見てください
+* 通信データの処理効率が悪かったのを修正しました。高ビットレートチャンネルのリレーでメモリやCPUの使用率が下がり通信が安定します
+* HTML UIで接続先の状態表示(記号)が間違っていたのを修正しました
+* -killと-multiの起動オプションに対応しました。pcypLiteの「終了(完全)」で正しく終了するようになります
+* リレーしていたチャンネルが終了した時や接続失敗した時に通知が出るようにしました
+* 設定保存がPeerCastStation正常終了時のみ行われていたのを、設定変更時にすぐ保存するようにしました
 
 ### 1.3.2 (2013年5月8日版)
 {% if site.target == 'site' %}
@@ -197,6 +211,7 @@ monoで上手く動かない場合はPeerCastStation.GUI.dllを削除すると�
 [githubにてソース公開しています。](https://github.com/kumaryu/peercaststation)
 
 ライセンスはGPLv3です。
+使用しているライブラリ等のライセンスに関しては同梱のLICENSE.txtを見てください。
 
 問題の報告・要望の連絡先について
 --------------------------------

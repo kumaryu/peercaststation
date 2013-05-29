@@ -1,3 +1,5 @@
+PeerCastStation Copyright (C) 2010 Ryuichi Sakamoto.
+
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
@@ -672,3 +674,61 @@ may consider it more useful to permit linking proprietary applications with
 the library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.  But first, please read
 <http://www.gnu.org/philosophy/why-not-lgpl.html>.
+
+
+Json.NET (Newtonsoft.Json.dll)
+
+Copyright (c) 2007 James Newton-King
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this
+software and associated documentation files (the "Software"), to deal in the Software
+without restriction, including without limitation the rights to use, copy, modify,
+merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice shall be included in all copies
+or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Knockout.js
+// Knockout JavaScript library v2.2.0
+// (c) Steven Sanderson - http://knockoutjs.com/
+// License: MIT (http://www.opensource.org/licenses/mit-license.php)
+
+jQuery
+/*!
+ * jQuery JavaScript Library v1.8.3
+ * http://jquery.com/
+ *
+ * Includes Sizzle.js
+ * http://sizzlejs.com/
+ *
+ * Copyright 2012 jQuery Foundation and other contributors
+ * Released under the MIT license
+ * http://jquery.org/license
+ *
+ * Date: Tue Nov 13 2012 08:20:33 GMT-0500 (Eastern Standard Time)
+ */
+
+jQuery-json
+/**
+ * jQuery JSON plugin 2.4.0
+ *
+ * @author Brantley Harris, 2009-2011
+ * @author Timo Tijhof, 2011-2012
+ * @source This plugin is heavily influenced by MochiKit's serializeJSON, which is
+ *         copyrighted 2005 by Bob Ippolito.
+ * @source Brantley Harris wrote this plugin. It is based somewhat on the JSON.org
+ *         website's http://www.json.org/json2.js, which proclaims:
+ *         "NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.", a sentiment that
+ *         I uphold.
+ * @license MIT License <http://www.opensource.org/licenses/mit-license.php>
+ */
+
