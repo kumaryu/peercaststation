@@ -133,7 +133,8 @@ namespace PeerCastStation.Core
       }
       if (sendResult!=null) {
         if (!sendResult.IsCompleted) {
-          var wait = TimeSpan.FromMilliseconds(SendTimeout) - sendTimer.Elapsed;
+          var timeout = Math.Max(SendTimeout, 10000);
+          var wait = TimeSpan.FromMilliseconds(timeout) - sendTimer.Elapsed;
           if (wait.Ticks<0 ||
               WaitHandle.WaitAny(new WaitHandle[] { sendResult.AsyncWaitHandle }, wait)==WaitHandle.WaitTimeout) {
             Logger.Error("Send timeout");
@@ -366,7 +367,7 @@ namespace PeerCastStation.Core
             OnError();
           }
         }
-        else if (sendTimer.ElapsedMilliseconds>SendTimeout) {
+        else if (SendTimeout>0 && sendTimer.ElapsedMilliseconds>SendTimeout) {
           Logger.Error("Send timeout");
           OnError();
           sendTimer.Stop();

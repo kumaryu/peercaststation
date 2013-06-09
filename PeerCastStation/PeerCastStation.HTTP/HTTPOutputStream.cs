@@ -262,6 +262,7 @@ namespace PeerCastStation.HTTP
       HTTPRequest request)
       : base(peercast, input_stream, output_stream, remote_endpoint, channel, null)
     {
+      SendTimeout = 0;
       Logger.Debug("Initialized: Channel {0}, Remote {1}, Request {2} {3}",
         channel!=null ? channel.ChannelID.ToString("N") : "(null)",
         remote_endpoint,
