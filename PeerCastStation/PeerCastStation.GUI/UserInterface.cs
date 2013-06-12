@@ -20,6 +20,10 @@ namespace PeerCastStation.GUI
       System.Windows.Forms.Application.EnableVisualStyles();
       mainThread = new Thread(() => {
         mainForm = new MainForm(Application);
+        if (!mainForm.IsHandleCreated) {
+          //ハンドルを強制的に作らせる
+          var handle = mainForm.Handle;
+        }
         System.Windows.Forms.Application.ApplicationExit += (sender, args) => {
           Application.Stop();
         };
