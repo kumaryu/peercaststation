@@ -127,6 +127,47 @@ namespace PeerCastStation.HTTP
       get { return OutputStreamType.Play; }
     }
 
+    private string ParseEndPoint(string text)
+    {
+      var ipv4port = Regex.Match(text, @"\A(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})\z");
+      var ipv6port = Regex.Match(text, @"\A\[([a-fA-F0-9:.]+)\]:(\d{1,5})\z");
+      var ipv4addr = Regex.Match(text, @"\A(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\z");
+      var ipv6addr = Regex.Match(text, @"\A([a-fA-F0-9:.]+)\z");
+      if (ipv4port.Success) {
+        IPAddress addr;
+        int port;
+        if (IPAddress.TryParse(ipv4port.Groups[1].Value, out addr) &&
+            addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork &&
+            Int32.TryParse(ipv4port.Groups[2].Value, out port)) {
+          return new IPEndPoint(addr, port).ToString();
+        }
+      }
+      if (ipv6port.Success) {
+        IPAddress addr;
+        int port;
+        if (IPAddress.TryParse(ipv6port.Groups[1].Value, out addr) &&
+            addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6 &&
+            Int32.TryParse(ipv6port.Groups[2].Value, out port)) {
+          return new IPEndPoint(addr, port).ToString();
+        }
+      }
+      if (ipv4addr.Success) {
+        IPAddress addr;
+        if (IPAddress.TryParse(ipv4addr.Groups[1].Value, out addr) &&
+            addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork) {
+          return addr.ToString();
+        }
+      }
+      if (ipv6addr.Success) {
+        IPAddress addr;
+        if (IPAddress.TryParse(ipv6addr.Groups[1].Value, out addr) &&
+            addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6) {
+          return addr.ToString();
+        }
+      }
+      return null;
+    }
+
     private Uri CreateTrackerUri(Guid channel_id, Uri request_uri)
     {
       string tip = null;
@@ -137,7 +178,13 @@ namespace PeerCastStation.HTTP
         }
       }
       if (tip!=null) {
-        return new Uri(String.Format("pcp://{0}/{1}", tip, channel_id));
+        var endpoint = ParseEndPoint(tip);
+        if (endpoint!=null) {
+          return new Uri(String.Format("pcp://{0}/{1}", endpoint, channel_id));
+        }
+        else {
+          return null;
+        }
       }
       else {
         return null;
