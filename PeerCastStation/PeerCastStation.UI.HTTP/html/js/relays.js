@@ -180,7 +180,7 @@ var ChannelConnectionViewModel = function(owner, initial_value) {
           result = "×";
         }
         else if ($.inArray("relayFull", self.remoteHostStatus())>=0) {
-          if (self.localRelays() && self.localRelays()>0) {
+          if (self.localRelays()!=null && self.localRelays()>0) {
             result = "○";
           }
           else {
@@ -208,7 +208,7 @@ var ChannelConnectionViewModel = function(owner, initial_value) {
   });
 
   self.connections = ko.computed(function () {
-    if (self.localRelays() && self.localDirects()) {
+    if (self.localRelays()!=null && self.localDirects()!=null) {
       return "[" + self.localDirects() + "/" + self.localRelays() + "]";
     }
     else {
