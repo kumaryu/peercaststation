@@ -64,9 +64,10 @@ namespace PeerCastStation.Core
   {
     static Logger()
     {
-      debugListener = Trace.Listeners.OfType<TraceListener>().FirstOrDefault(listener => listener is DefaultTraceListener);
-      if (debugListener!=null) {
-        outputTarget |= LoggerOutputTarget.Debug;
+      defaultListener = Trace.Listeners.OfType<TraceListener>().FirstOrDefault(listener => listener is DefaultTraceListener) as DefaultTraceListener;
+      if (defaultListener==null) {
+        defaultListener = new DefaultTraceListener();
+        Trace.Listeners.Add(defaultListener);
       }
     }
 
@@ -86,24 +87,21 @@ namespace PeerCastStation.Core
     }
 
     private static TextWriterTraceListener consoleListener;
-    private static TextWriterTraceListener fileListener;
     private static List<TextWriterTraceListener> uiListeners = new List<TextWriterTraceListener>();
-    private static TraceListener debugListener;
+    private static DefaultTraceListener defaultListener;
 
     private static string logFileName = null;
     public static string LogFileName {
       get { return logFileName; }
       set {
         if (logFileName==value) return;
-        if (fileListener!=null) {
-          Trace.Listeners.Remove(fileListener);
-          fileListener.Close();
-          fileListener = null;
-        }
         logFileName = value;
-        if (!String.IsNullOrEmpty(logFileName) && (outputTarget & LoggerOutputTarget.File)!=0) {
-          fileListener = new TextWriterTraceListener(logFileName);
-          Trace.Listeners.Add(fileListener);
+
+        if ((outputTarget & LoggerOutputTarget.File)!=0) {
+          defaultListener.LogFileName = LogFileName ?? "";
+        }
+        else {
+          defaultListener.LogFileName = "";
         }
       }
     }
@@ -130,29 +128,13 @@ namespace PeerCastStation.Core
           (old     & LoggerOutputTarget.Console)!=0) {
         Trace.Listeners.Remove(consoleListener);
       }
-      if ((targets & LoggerOutputTarget.Debug)!=0 &&
-          (old     & LoggerOutputTarget.Debug)==0) {
-        if (debugListener==null) {
-          debugListener = new DefaultTraceListener();
-        }
-        Trace.Listeners.Add(debugListener);
-      }
-      if ((targets & LoggerOutputTarget.Debug)==0 &&
-          (old     & LoggerOutputTarget.Debug)!=0) {
-        Trace.Listeners.Remove(debugListener);
-      }
       if ((targets & LoggerOutputTarget.File)!=0 &&
           (old     & LoggerOutputTarget.File)==0) {
-        if (fileListener==null && !String.IsNullOrEmpty(LogFileName)) {
-          fileListener = new TextWriterTraceListener(LogFileName);
-        }
-        if (fileListener!=null) {
-          Trace.Listeners.Add(fileListener);
-        }
+        defaultListener.LogFileName = LogFileName ?? "";
       }
       if ((targets & LoggerOutputTarget.File)==0 &&
           (old     & LoggerOutputTarget.File)!=0) {
-        Trace.Listeners.Remove(fileListener);
+        defaultListener.LogFileName = "";
       }
       if ((targets & LoggerOutputTarget.UserInterface)!=0 &&
           (old     & LoggerOutputTarget.UserInterface)==0) {
