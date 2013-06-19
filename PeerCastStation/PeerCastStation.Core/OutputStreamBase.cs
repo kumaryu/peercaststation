@@ -325,7 +325,7 @@ namespace PeerCastStation.Core
             recvStream.Write(recvBuffer, 0, bytes);
             recvStream.Seek(0, SeekOrigin.Begin);
           }
-          else if (bytes<0) {
+          else if (bytes<=0) {
             OnError();
           }
         }
