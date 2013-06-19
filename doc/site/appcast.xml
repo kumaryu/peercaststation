@@ -6,6 +6,24 @@
     <description>PeerCastStationの更新情報です。</description>
     <language>ja</language>      
     <item>
+      <title>Version 1.4.1 (2013年6月19日版)</title>
+      <description>
+        <h3>1.4.1 (2013年6月19日版)</h3>
+        <p>バグ修正のリリースです。CPUを食いつぶすバグとGUIが落ちるバグを修正しました。</p>
+        <ul>
+          <li>リレー出力および視聴接続が切れた時にチャンネルを切断するまでCPU使用率が非常に高くなる場合があるのを修正しました</li>
+          <li>GUI非表示設定で起動した場合に度々落ちるようになっていたのを修正しました</li>
+          <li>視聴時にプレイヤーの種類および設定によっては接続が切れやすくなっていたのを修正しました</li>
+          <li>リレー接続時に接続可能にもかかわらず接続失敗で終了してしまう場合があったのを修正しました</li>
+          <li>視聴リクエストにつくtipパラメータに不正な値が設定されていた場合に落ちるのを修正しました</li>
+          <li>ログファイルがずっとロックされていたのを実際の書き込み中のみロックされるように変更しました</li>
+        </ul>
+      </description>
+      <pubDate>Wed, 19 Jun 2013 23:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-1.4.1.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-1.4.1.zip" sparkle:version="1.4.1" length="1080443" type="application/octet-stream" />
+    </item>
+    <item>
       <title>Version 1.4.0 (2013年5月29日版)</title>
       <description>
         <h3>1.4.0 (2013年5月29日版)</h3>
