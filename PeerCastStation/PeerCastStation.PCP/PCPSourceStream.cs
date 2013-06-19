@@ -119,6 +119,10 @@ namespace PeerCastStation.PCP
     private const int PCP_VERSION    = 1218;
     private const int PCP_VERSION_VP = 27;
 
+    public bool IsConnected {
+      get { return client!=null && client.Connected; }
+    }
+
     private class IgnoredNodeCollection
     {
       private Dictionary<Guid, int> ignoredNodes = new Dictionary<Guid, int>();
@@ -246,7 +250,6 @@ namespace PeerCastStation.PCP
     {
       IPEndPoint endpoint = null;
       if (host!=null && host.GlobalEndPoint!=null) {
-        client = new TcpClient();
         if (PeerCast.GlobalAddress!=null &&
             PeerCast.GlobalAddress.Equals(host.GlobalEndPoint.Address) &&
             host.LocalEndPoint!=null) {
@@ -262,7 +265,7 @@ namespace PeerCastStation.PCP
     protected override void EndConnection()
     {
       base.EndConnection();
-      if (client!=null) client.Close();
+      if (IsConnected) client.Close();
       client = null;
     }
 
@@ -590,7 +593,7 @@ namespace PeerCastStation.PCP
       }
       var atom = RecvAtom();
       while (atom!=null) {
-        ProcessAtom(atom);
+        if (!ProcessAtom(atom)) break;
         atom = RecvAtom();
       }
     }
@@ -630,17 +633,18 @@ namespace PeerCastStation.PCP
       }
     }
 
-    protected void ProcessAtom(Atom atom)
+    protected bool ProcessAtom(Atom atom)
     {
-      if (atom==null) return;
-      else if (atom.Name==Atom.PCP_OK)         OnPCPOk(atom);
-      else if (atom.Name==Atom.PCP_CHAN)       OnPCPChan(atom);
-      else if (atom.Name==Atom.PCP_CHAN_PKT)   OnPCPChanPkt(atom);
-      else if (atom.Name==Atom.PCP_CHAN_INFO)  OnPCPChanInfo(atom);
-      else if (atom.Name==Atom.PCP_CHAN_TRACK) OnPCPChanTrack(atom);
-      else if (atom.Name==Atom.PCP_BCST)       OnPCPBcst(atom);
-      else if (atom.Name==Atom.PCP_HOST)       OnPCPHost(atom);
-      else if (atom.Name==Atom.PCP_QUIT)       OnPCPQuit(atom);
+      if (atom==null) return true;
+      else if (atom.Name==Atom.PCP_OK)         { OnPCPOk(atom);        return true; }
+      else if (atom.Name==Atom.PCP_CHAN)       { OnPCPChan(atom);      return true; }
+      else if (atom.Name==Atom.PCP_CHAN_PKT)   { OnPCPChanPkt(atom);   return true; }
+      else if (atom.Name==Atom.PCP_CHAN_INFO)  { OnPCPChanInfo(atom);  return true; }
+      else if (atom.Name==Atom.PCP_CHAN_TRACK) { OnPCPChanTrack(atom); return true; }
+      else if (atom.Name==Atom.PCP_BCST)       { OnPCPBcst(atom);      return true; }
+      else if (atom.Name==Atom.PCP_HOST)       { OnPCPHost(atom);      return true; }
+      else if (atom.Name==Atom.PCP_QUIT)       { OnPCPQuit(atom);      return false; }
+      return true;
     }
 
     protected void OnPCPOleh(Atom atom)
@@ -858,7 +862,7 @@ namespace PeerCastStation.PCP
         break;
       }
       IPEndPoint endpoint = null;
-      if (client!=null && client.Connected) {
+      if (IsConnected) {
         endpoint = (IPEndPoint)client.Client.RemoteEndPoint;
       }
       var host_status = RemoteHostStatus.None;
