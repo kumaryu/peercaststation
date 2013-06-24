@@ -190,9 +190,12 @@ namespace PeerCastStation.Core
       Stop(StopReason.ConnectionError);
     }
 
+    protected object startLock = new object();
     public void Start()
     {
-      DoStart();
+      lock (startLock) {
+        DoStart();
+      }
     }
 
     public void Post(Host from, Atom packet)
