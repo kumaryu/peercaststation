@@ -504,8 +504,8 @@ namespace PeerCastStation.Core
             res = acp.GetString(value, 0, value.Length-1);
           }
           catch (DecoderFallbackException) {
-            res = "";
-            return false;
+            res = Encoding.UTF8.GetString(value, 0, value.Length-1);
+            return true;
           }
         }
         return true;
