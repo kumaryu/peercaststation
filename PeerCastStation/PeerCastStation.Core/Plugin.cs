@@ -96,6 +96,18 @@ namespace PeerCastStation.Core
       this.Type    = type;
       this.Data    = data;
     }
+
+    public override bool Equals(object obj)
+    {
+      if (this==obj) return true;
+      if (this.GetType()!=obj.GetType()) return false;
+      var x = (NotificationMessage)obj;
+      return
+        Object.Equals(this.Title, x.Title) &&
+        Object.Equals(this.Message, x.Message) &&
+        Object.Equals(this.Type, x.Type) &&
+        Object.Equals(this.Data, x.Data);
+    }
   }
 
   public interface IUserInterfacePlugin

@@ -8,11 +8,18 @@ namespace PeerCastStation
   public class ChannelNotifier
     : IChannelMonitor
   {
-    private Dictionary<Channel, int> inactiveChannels  = new Dictionary<Channel,int>();
+    private static TimeSpan messageExpires = TimeSpan.FromMinutes(1);
+    public static TimeSpan MessageExpires {
+      get { return messageExpires; }
+      set { messageExpires = value; }
+    }
+    private System.Diagnostics.Stopwatch messageExpireTimer = new System.Diagnostics.Stopwatch();
+    private NotificationMessage lastMessage;
     private PeerCastApplication app;
     public ChannelNotifier(PeerCastApplication app)
     {
       this.app = app;
+      this.messageExpireTimer.Start();
       this.app.PeerCast.ChannelAdded   += (sender, args) => {
         args.Channel.Closed += OnChannelClosed;
       };
@@ -30,9 +37,7 @@ namespace PeerCastStation
             channel.ChannelInfo.Name,
             "チャンネルが終了しました",
             NotificationMessageType.Info);
-          foreach (var ui in this.app.Plugins.Where(p => p is IUserInterfacePlugin)) {
-            ((IUserInterfacePlugin)ui).ShowNotificationMessage(msg);
-          }
+          NotifyMessage(msg);
         }
         break;
       case StopReason.NoHost:
@@ -41,11 +46,26 @@ namespace PeerCastStation
             channel.ChannelInfo.Name,
             "チャンネルに接続できませんでした",
             NotificationMessageType.Error);
+          NotifyMessage(msg);
+        }
+        break;
+      }
+    }
+
+    private void NotifyMessage(NotificationMessage msg)
+    {
+      lock (messageExpireTimer) {
+        if (messageExpireTimer.Elapsed>=MessageExpires) {
+          lastMessage = null;
+          messageExpireTimer.Reset();
+          messageExpireTimer.Start();
+        }
+        if (lastMessage==null || !lastMessage.Equals(msg)) {
           foreach (var ui in this.app.Plugins.Where(p => p is IUserInterfacePlugin)) {
             ((IUserInterfacePlugin)ui).ShowNotificationMessage(msg);
           }
+          lastMessage = msg;
         }
-        break;
       }
     }
 
