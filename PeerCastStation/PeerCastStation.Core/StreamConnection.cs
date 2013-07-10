@@ -34,6 +34,7 @@ namespace PeerCastStation.Core
     public int        SendTimeout       { get { return sendTimeout; } set { sendTimeout = value; } }
     public float      SendRate          { get { return sendBytesCounter.Rate; } }
     public Exception  SendError         { get { return sendException; } }
+    public bool       IsDisposed        { get { return closing; } }
 
     public StreamConnection(Stream input_stream, Stream output_stream)
     {
@@ -65,14 +66,14 @@ namespace PeerCastStation.Core
             recvStream.Seek(0, SeekOrigin.Begin);
           }
           else {
-            recvException = new EndOfStreamException();
+            if (!closing) recvException = new EndOfStreamException();
           }
         }
         catch (ObjectDisposedException e) {
-          recvException = e;
+          if (!closing) recvException = e;
         }
         catch (IOException e) {
-          recvException = e;
+          if (!closing) recvException = e;
         }
         recvResult = null;
         recvEvent.Set();
@@ -98,7 +99,7 @@ namespace PeerCastStation.Core
     private void OnReceiveTimeout(object ar, bool timedout)
     {
       lock (recvLock) {
-        if (!timedout) return;
+        if (!timedout || closing) return;
         if (((IAsyncResult)ar).IsCompleted) return;
         recvException = new TimeoutException();
         recvEvent.Set();
@@ -108,18 +109,21 @@ namespace PeerCastStation.Core
     private void OnSend(IAsyncResult ar)
     {
       lock (sendLock) {
+        bool err = false;
         try {
           outputStream.EndWrite(ar);
           sendBytesCounter.Add((int)sendResult.AsyncState);
         }
         catch (ObjectDisposedException e) {
-          sendException = e;
+          err = true;
+          if (!closing) sendException = e;
         }
         catch (IOException e) {
-          sendException = e;
+          err = true;
+          if (!closing) sendException = e;
         }
         sendResult = null;
-        if (sendException==null && sendStream.Length>0) {
+        if (sendException==null && !err && sendStream.Length>0) {
           var buf = sendStream.ToArray();
           sendStream.SetLength(0);
           sendStream.Position = 0;
@@ -130,10 +134,10 @@ namespace PeerCastStation.Core
             }
           }
           catch (ObjectDisposedException e) {
-            sendException = e;
+            if (!closing) sendException = e;
           }
           catch (IOException e) {
-            sendException = e;
+            if (!closing) sendException = e;
           }
         }
       }
@@ -142,7 +146,7 @@ namespace PeerCastStation.Core
     private void OnSendTimeout(object ar, bool timedout)
     {
       lock (sendLock) {
-        if (!timedout) return;
+        if (!timedout || closing) return;
         if (((IAsyncResult)ar).IsCompleted) return;
         sendException = new TimeoutException();
       }
