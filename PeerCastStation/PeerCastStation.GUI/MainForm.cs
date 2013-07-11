@@ -211,6 +211,7 @@ namespace PeerCastStation.GUI
           if ((channelList.Items[i] as ChannelListItem).Channel==channel) {
             channelList.Items[i] = new ChannelListItem(channel);
             if (channelList.SelectedIndex==i) {
+              UpdateTree(channel);
               UpdateChannelInfo(channel);
               UpdateOutputList(channel);
             }
@@ -228,6 +229,11 @@ namespace PeerCastStation.GUI
             break;
           }
         }
+      }
+      if (channelList.SelectedIndex<0) {
+        ClearTree();
+        ClearChannelInfo();
+        ClearOutputList();
       }
       updating = false;
     }
@@ -313,8 +319,47 @@ namespace PeerCastStation.GUI
         UpdateOutputList(item.Channel);
       }
       else {
-        relayTree.Nodes.Clear();
+        ClearTree();
+        ClearChannelInfo();
+        ClearOutputList();
       }
+    }
+
+    private void ClearOutputList()
+    {
+      connectionList.Items.Clear();
+    }
+
+    private void ClearChannelInfo()
+    {
+      chanInfoChannelID.Clear();
+      chanInfoChannelName.Clear();
+      chanInfoGenre.Clear();
+      chanInfoDesc.Clear();
+      chanInfoContactURL.Clear();
+      chanInfoComment.Clear();
+      chanInfoContentType.Clear();
+      chanInfoBitrate.Clear();
+      chanTrackAlbum.Clear();
+      chanTrackArtist.Clear();
+      chanTrackTitle.Clear();
+      chanTrackGenre.Clear();
+      chanTrackContactURL.Clear();
+      chanInfoGenre.ReadOnly       = true;
+      chanInfoDesc.ReadOnly        = true;
+      chanInfoContactURL.ReadOnly  = true;
+      chanInfoComment.ReadOnly     = true;
+      chanTrackAlbum.ReadOnly      = true;
+      chanTrackArtist.ReadOnly     = true;
+      chanTrackTitle.ReadOnly      = true;
+      chanTrackContactURL.ReadOnly = true;
+      chanInfoUpdateButton.Enabled = false;
+      channelInfo = new ChannelInfoContainer(null, null);
+    }
+
+    private void ClearTree()
+    {
+      relayTree.Nodes.Clear();
     }
 
     private void channelClose_Click(object sender, EventArgs e)
