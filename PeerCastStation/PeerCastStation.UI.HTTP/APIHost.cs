@@ -515,9 +515,10 @@ namespace PeerCastStation.UI.HTTP
       {
         var res = new JObject();
         var host = node.Host;
+        var endpoint = (host.GlobalEndPoint!=null && host.GlobalEndPoint.Port!=0) ? host.GlobalEndPoint : host.LocalEndPoint;
         res["sessionId"]    = host.SessionID.ToString("N").ToUpper();
-        res["address"]      = host.LocalEndPoint.Address.ToString();
-        res["port"]         = host.LocalEndPoint.Port;
+        res["address"]      = endpoint.Address.ToString();
+        res["port"]         = endpoint.Port;
         res["isFirewalled"] = host.IsFirewalled;
         res["localRelays"]  = host.RelayCount;
         res["localDirects"] = host.DirectCount;
