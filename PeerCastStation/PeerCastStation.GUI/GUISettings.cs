@@ -5,20 +5,24 @@ namespace PeerCastStation.GUI
 {
   [PeerCastStation.Core.PecaSettings]
   public class GUISettings
-    : INotifyPropertyChanged
   {
     private bool showWindowOnStartup = true;
 
     public bool ShowWindowOnStartup {
       get { return showWindowOnStartup; }
-      set { showWindowOnStartup = value; OnPropertyChanged("ShowWindowOnStartup"); }
+      set { showWindowOnStartup = value; }
     }
+    public int WindowTop { get; set; }
+    public int WindowLeft   { get; set; }
+    public int WindowWidth  { get; set; }
+    public int WindowHeight { get; set; }
 
-    public event PropertyChangedEventHandler PropertyChanged;
-    private void OnPropertyChanged(string name)
+    public GUISettings()
     {
-      if (this.PropertyChanged==null) return;
-      this.PropertyChanged(this, new PropertyChangedEventArgs(name));
+      this.WindowTop    = -1;
+      this.WindowLeft   = -1;
+      this.WindowWidth  = -1;
+      this.WindowHeight = -1;
     }
   }
 }

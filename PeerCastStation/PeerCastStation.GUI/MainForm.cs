@@ -53,7 +53,8 @@ namespace PeerCastStation.GUI
         versionChecker.NewVersionFound += versionChecker_Found;
         versionChecker.CheckVersion();
       }
-      this.Visible = application.Settings.Get<GUISettings>().ShowWindowOnStartup;
+      var settings = application.Settings.Get<GUISettings>();
+      this.Visible = settings.ShowWindowOnStartup;
     }
 
     public void ShowNotificationMessage(NotificationMessage message)
@@ -82,6 +83,20 @@ namespace PeerCastStation.GUI
 
     private void MainForm_Load(object sender, EventArgs e)
     {
+      var settings = application.Settings.Get<GUISettings>();
+      if (settings.WindowLeft>=0)  this.Left   = settings.WindowLeft;
+      if (settings.WindowTop>=0)   this.Top    = settings.WindowTop;
+      if (settings.WindowWidth>0)  this.Width  = settings.WindowWidth;
+      if (settings.WindowHeight>0) this.Height = settings.WindowHeight;
+      Rectangle rect = new Rectangle(
+        settings.WindowLeft>=0 ? settings.WindowLeft : this.Left,
+        settings.WindowTop>=0 ? settings.WindowTop : this.Top,
+        settings.WindowWidth>=0 ? settings.WindowWidth : this.Width,
+        settings.WindowHeight>=0 ? settings.WindowHeight : this.Height);
+      if (Screen.AllScreens.Any(screen => rect.IntersectsWith(screen.WorkingArea))) {
+        this.Bounds = rect;
+      }
+
       Logger.AddWriter(guiWriter);
       peerCast.ChannelAdded      += ChannelAdded;
       peerCast.ChannelRemoved    += ChannelRemoved;
@@ -302,7 +317,13 @@ namespace PeerCastStation.GUI
 
     private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
     {
-      application.Settings.Get<GUISettings>().ShowWindowOnStartup = showWindowOnStartup.Checked;
+      var settings = application.Settings.Get<GUISettings>();
+      settings.ShowWindowOnStartup = showWindowOnStartup.Checked;
+      var bounds = this.WindowState!=FormWindowState.Normal ? this.RestoreBounds : this.Bounds;
+      settings.WindowLeft   = bounds.Left;
+      settings.WindowTop    = bounds.Top;
+      settings.WindowWidth  = bounds.Width;
+      settings.WindowHeight = bounds.Height;
       Logger.RemoveWriter(guiWriter);
       peerCast.ChannelAdded   -= ChannelAdded;
       peerCast.ChannelRemoved -= ChannelRemoved;
