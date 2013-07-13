@@ -6,6 +6,24 @@
     <description>PeerCastStationの更新情報です。</description>
     <language>ja</language>      
     <item>
+      <title>Version 1.4.2 (2013年7月13日版)</title>
+      <description>
+        <h3>1.4.2 (2013年7月13日版)</h3>
+        <p>主にバグ修正のリリースです。</p>
+        <ul>
+          <li>同じチャンネルの終了通知は連続で何度も出ないようにしました</li>
+          <li>チャンネル情報が途中で切れているなどで文字化けしている場合に空なっていたのを、壊れたままでも表示するようにしました</li>
+          <li>GUIで選択しているチャンネルが無くなったら、表示しているチャンネル情報・接続一覧・リレーツリーをクリアするようにしました</li>
+          <li>HTML UIでのリレーツリー表示で常にローカルアドレスを表示するようになっていたのを修正しました</li>
+          <li>GUIのウィンドウの位置とサイズを保存するようにしました</li>
+          <li>接続が切れているチャンネルに同時に複数の視聴要求がくると落ちることがあったのを修正しました</li>
+        </ul>
+      </description>
+      <pubDate>Sat, 13 Jul 2013 23:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-1.4.2.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-1.4.2.zip" sparkle:version="1.4.2" length="1114113" type="application/octet-stream" />
+    </item>
+    <item>
       <title>Version 1.4.1 (2013年6月19日版)</title>
       <description>
         <h3>1.4.1 (2013年6月19日版)</h3>
