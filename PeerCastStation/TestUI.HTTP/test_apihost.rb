@@ -10,18 +10,6 @@ module TestUI_HTTP
   PCSCore   = PeerCastStation::Core     unless defined?(PCSCore)
   PCSHTTPUI = PeerCastStation::UI::HTTP unless defined?(PCSHTTPUI)
 
-  class TC_APIHostFactory < Test::Unit::TestCase
-    def test_name
-      factory = PCSHTTPUI::APIHostFactory.new
-      assert_kind_of(System::String, factory.name)
-    end
-
-    def test_create_user_interface
-      factory = PCSHTTPUI::APIHostFactory.new
-      assert_kind_of(PCSHTTPUI::APIHost, factory.create_user_interface)
-    end
-  end
-
   class TestApplication < PCSCore::PeerCastApplication
     def self.new
       instance = super
@@ -40,16 +28,21 @@ module TestUI_HTTP
     def stop
       @peercast.stop
     end
+
+    def save_settings
+    end
   end
 
   class TC_APIHost < Test::Unit::TestCase
     def test_start_stop
       app = TestApplication.new
       host = PCSHTTPUI::APIHost.new
-      host.start(app)
+      host.attach(app)
+      host.start
       assert_equal(1, app.peercast.output_stream_factories.count)
       assert_kind_of(PCSHTTPUI::APIHost::APIHostOutputStreamFactory, app.peercast.output_stream_factories[0])
       host.stop
+      host.detach()
       assert_equal(0, app.peercast.output_stream_factories.count)
     end
   end
@@ -97,11 +90,13 @@ module TestUI_HTTP
       @output_stream   = System::IO::MemoryStream.new
       @remote_endpoint = System::Net::IPEndPoint.new(System::Net::IPAddress.any, 7144)
       @factory = PCSHTTPUI::APIHost::APIHostOutputStreamFactory.new(@host, @app.peercast)
-      @host.start(@app)
+      @host.attach(@app)
+      @host.start
     end
 
     def teardown
       @host.stop
+      @host.detach
       @app.stop
     end
 
@@ -236,7 +231,9 @@ JSON
         "POST /api/1 HTTP/1.0",
         "Content-Length: 10",
       ].join("\r\n") + "\r\n\r\n"
-      os = @factory.create(System::IO::MemoryStream.new, @output_stream, @remote_endpoint, System::Guid.empty, req)
+      input = MockStream.new
+      input.read_delay = -1
+      os = @factory.create(input, @output_stream, @remote_endpoint, System::Guid.empty, req)
       os.start
       os.join
       res = parse_response(@output_stream.to_array.to_a.pack('C*'))
@@ -437,21 +434,20 @@ JSON
 
     def test_get_plugins
       PeerCastStation::Core::PeerCastApplication.current = @app
-      @app.plugins = System::Array[System::Type].new([
-        PeerCastStation::Core::RawContentReaderFactory.to_clr_type,
+      @app.plugins = System::Array[PeerCastStation::Core::IPlugin].new([
+        PeerCastStation::Core::RawContentReaderPlugin.new,
       ])
       res = invoke_method('getPlugins')
       assert_equal(1, res.body.id)
       assert_nil(res.body.error)
       assert_equal(@app.plugins.size, res.body.result.size)
       res.body.result.size.times do |i|
-        type = @app.plugins[i]
+        plugin = @app.plugins[i]
         result = res.body.result[i]
-        assert_equal type.full_name, result['name']
-        assert result['interfaces'].include?('IContentReaderFactory')
+        assert_equal plugin.name, result['name']
         resasm = result['assembly']
         assert_not_nil resasm
-        asm  = type.assembly
+        asm  = plugin.class.to_clr_type.assembly
         info = System::Diagnostics::FileVersionInfo.get_version_info(asm.location)
         assert_equal asm.full_name,        resasm['name']
         assert_equal asm.location,         resasm['path']
@@ -579,6 +575,7 @@ JSON
 
     def test_getLog_without_args
       PCSCore::Logger.level = PCSCore::LogLevel.debug
+      PCSCore::Logger.output_target = PCSCore::LoggerOutputTarget.user_interface
       logger = PCSCore::Logger.new('test')
       10.times do 
         logger.debug('hello')
@@ -597,6 +594,7 @@ JSON
 
     def test_getLog_with_args
       PCSCore::Logger.level = PCSCore::LogLevel.debug
+      PCSCore::Logger.output_target = PCSCore::LoggerOutputTarget.user_interface
       logger = PCSCore::Logger.new('test')
       20.times do 
         logger.debug('hello')
@@ -1130,9 +1128,28 @@ JSON
       
       def stop
         @log << [:stop]
+        args = PeerCastStation::Core::StreamStoppedEventArgs.new(PeerCastStation::Core::StopReason.user_shutdown)
         @stopped.each do |event|
-          event.invoke(self, System::EventArgs.new)
+          event.invoke(self, args)
         end
+      end
+
+      def get_connection_info
+        PeerCastStation::Core::ConnectionInfo.new(
+          'TestOutputStream',
+          @type,
+          PeerCastStation::Core::ConnectionStatus.connected,
+          @name,
+          @remote_endpoint || System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7144),
+          PeerCastStation::Core::RemoteHostStatus.local |
+          PeerCastStation::Core::RemoteHostStatus.firewalled |
+          PeerCastStation::Core::RemoteHostStatus.receiving,
+          System::Nullable[System::Int64].new(12345),
+          System::Nullable[System::Single].new(123.4),
+          System::Nullable[System::Single].new(@upstream_rate),
+          System::Nullable[System::Int32].new(4),
+          System::Nullable[System::Int32].new(5),
+          'TestOutputStreamStream/1.0.0')
       end
     end
 
@@ -1239,7 +1256,7 @@ JSON
     def create_node(endpoint, uphost, hops, version)
       host = PCSCore::HostBuilder.new
       host.SessionID = System::Guid.new_guid
-      host.local_end_point  = System::Net::IPEndPoint.new(System::Net::IPAddress.parse(endpoint[0]), endpoint[1])
+      host.local_end_point  = System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 7144)
       host.global_end_point = System::Net::IPEndPoint.new(System::Net::IPAddress.parse(endpoint[0]), endpoint[1])
       host.is_firewalled   = false
       host.relay_count     = rand(50)
@@ -1388,6 +1405,24 @@ JSON
 
       def announcing_channels
         System::Array[PCSCore::IAnnouncingChannel].new(@announcing_channels)
+      end
+
+      def get_connection_info
+        PeerCastStation::Core::ConnectionInfo.new(
+          'TestYPClient',
+          PeerCastStation::Core::ConnectionType.announce,
+          PeerCastStation::Core::ConnectionStatus.connected,
+          'Test',
+          System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 1234),
+          PeerCastStation::Core::RemoteHostStatus.local |
+          PeerCastStation::Core::RemoteHostStatus.firewalled |
+          PeerCastStation::Core::RemoteHostStatus.root,
+          System::Nullable[System::Int64].new(12345),
+          System::Nullable[System::Single].new(123.4),
+          System::Nullable[System::Single].new(456.7),
+          System::Nullable[System::Int32].new(4),
+          System::Nullable[System::Int32].new(5),
+          'TestSourceStream/1.0.0')
       end
     end
 
@@ -1862,7 +1897,7 @@ JSON
       def start
         @log << [:start]
         @start_proc.call if @start_proc
-        args = System::EventArgs.new
+        args = PeerCastStation::Core::StreamStoppedEventArgs.new(PeerCastStation::Core::StopReason.user_shutdown)
         @stopped.each do |handler|
           handler.invoke(self, args)
         end
@@ -1874,6 +1909,25 @@ JSON
       
       def stop
         @log << [:stop]
+      end
+
+      def get_connection_info
+        PeerCastStation::Core::ConnectionInfo.new(
+          'TestSourceStream',
+          PeerCastStation::Core::ConnectionType.source | PeerCastStation::Core::ConnectionType.relay,
+          PeerCastStation::Core::ConnectionStatus.connected,
+          'Test',
+          System::Net::IPEndPoint.new(System::Net::IPAddress.parse('127.0.0.1'), 1234),
+          PeerCastStation::Core::RemoteHostStatus.local |
+          PeerCastStation::Core::RemoteHostStatus.firewalled |
+          PeerCastStation::Core::RemoteHostStatus.tracker |
+          PeerCastStation::Core::RemoteHostStatus.receiving,
+          System::Nullable[System::Int64].new(12345),
+          System::Nullable[System::Single].new(123.4),
+          System::Nullable[System::Single].new(456.7),
+          System::Nullable[System::Int32].new(4),
+          System::Nullable[System::Int32].new(5),
+          'TestSourceStream/1.0.0')
       end
     end
 

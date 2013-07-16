@@ -15,6 +15,92 @@ class System::IO::MemoryStream
   end
 end
 
+class MockStream < System::IO::Stream
+  def initialize
+    @disposed       = System::Threading::ManualResetEvent.new(false)
+    @reading        = System::Threading::Mutex.new(false)
+    @writing        = System::Threading::Mutex.new(false)
+    @read_data      = ''
+    @read_delay     = 100
+    @read_exception = nil
+    @write_data     = ''
+    @write_delay    = 100
+    @witr_exception = nil
+  end
+  attr_accessor :read_data
+  attr_accessor :read_delay
+  attr_accessor :read_exception
+  attr_accessor :write_data
+  attr_accessor :write_delay
+  attr_accessor :write_exception
+
+  def Dispose(disposing)
+    @disposed.Set
+    @reading.WaitOne
+    @writing.WaitOne
+    super
+  end
+
+  def disposed?
+    @disposed.WaitOne(0)
+  end
+
+  def CanRead
+    !@disposed.WaitOne(0)
+  end
+
+  def CanWrite
+    !@disposed.WaitOne(0)
+  end
+
+  def CanSeek
+    false
+  end
+
+  def Read(buffer, offset, count)
+    @reading.WaitOne
+    return 0 if @disposed.WaitOne(@read_delay)
+    raise @read_exception if @read_exception
+    len = [@read_data.bytesize, count].min
+    System::Array.copy(System::Array[System::Byte].new(@read_data.bytes.to_a), 0, buffer, offset, len)
+    len
+  ensure
+    @reading.ReleaseMutex
+  end
+
+  def Write(buffer, offset, count)
+    @writing.WaitOne
+    return if @disposed.WaitOne(@write_delay)
+    raise @write_exception if @write_exception
+    @write_data += buffer.to_a[offset, count].pack('C*')
+  ensure
+    @writing.ReleaseMutex
+  end
+
+  def Flush
+  end
+
+  def Length
+    raise System::NotSupportedException.new
+  end
+
+  def SetLength(value)
+    raise System::NotSupportedException.new
+  end
+
+  def Position
+    raise System::NotSupportedException.new
+  end
+
+  def Position=(value)
+    raise System::NotSupportedException.new
+  end
+
+  def Seek(offset, origin)
+    raise System::NotSupportedException.new
+  end
+end
+
 module TestUtils
   module_function
   def show_log(&block)
