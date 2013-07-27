@@ -36,6 +36,18 @@ namespace PeerCastStation.Core
     public Exception  SendError         { get { return sendException; } }
     public bool       IsDisposed        { get { return closing; } }
 
+    class SendState
+    {
+      public int  Length { get; private set; }
+      public long Id     { get; private set; }
+      private static long serialNumber = 0;
+      public SendState(int len)
+      {
+        this.Length = len;
+        this.Id = serialNumber++;
+      }
+    }
+
     public StreamConnection(Stream input_stream, Stream output_stream)
     {
       inputStream  = input_stream;
@@ -112,7 +124,7 @@ namespace PeerCastStation.Core
         bool err = false;
         try {
           outputStream.EndWrite(ar);
-          sendBytesCounter.Add((int)sendResult.AsyncState);
+          sendBytesCounter.Add(((SendState)ar.AsyncState).Length);
         }
         catch (ObjectDisposedException e) {
           err = true;
@@ -128,10 +140,9 @@ namespace PeerCastStation.Core
           sendStream.SetLength(0);
           sendStream.Position = 0;
           try {
-            sendResult = outputStream.BeginWrite(buf, 0, buf.Length, OnSend, buf.Length);
-            if (sendTimeout>=0) {
-              ThreadPool.RegisterWaitForSingleObject(sendResult.AsyncWaitHandle, OnSendTimeout, sendResult, sendTimeout, true);
-            }
+            var state = new SendState(buf.Length);
+            sendResult = outputStream.BeginWrite(buf, 0, buf.Length, null, state);
+            ThreadPool.RegisterWaitForSingleObject(sendResult.AsyncWaitHandle, OnSendTimeout, sendResult, sendTimeout, true);
           }
           catch (ObjectDisposedException e) {
             if (!closing) sendException = e;
@@ -146,9 +157,13 @@ namespace PeerCastStation.Core
     private void OnSendTimeout(object ar, bool timedout)
     {
       lock (sendLock) {
-        if (!timedout || closing) return;
-        if (((IAsyncResult)ar).IsCompleted) return;
-        sendException = new TimeoutException();
+        if (timedout && !((IAsyncResult)ar).IsCompleted) {
+          if (closing) return;
+          sendException = new TimeoutException();
+        }
+        else {
+          OnSend((IAsyncResult)ar);
+        }
       }
     }
 
@@ -244,10 +259,9 @@ namespace PeerCastStation.Core
         sendStream.SetLength(0);
         sendStream.Position = 0;
         try {
-          sendResult = outputStream.BeginWrite(buf, 0, buf.Length, OnSend, buf.Length);
-          if (sendTimeout>=0) {
-            ThreadPool.RegisterWaitForSingleObject(sendResult.AsyncWaitHandle, OnSendTimeout, sendResult, sendTimeout, true);
-          }
+          var state = new SendState(buf.Length);
+          sendResult = outputStream.BeginWrite(buf, 0, buf.Length, null, state);
+          ThreadPool.RegisterWaitForSingleObject(sendResult.AsyncWaitHandle, OnSendTimeout, sendResult, sendTimeout, true);
         }
         catch (ObjectDisposedException e) {
           sendException = e;
@@ -271,7 +285,9 @@ namespace PeerCastStation.Core
           sending_result = sendResult;
         }
         if (sending_result!=null) {
-          sending_result.AsyncWaitHandle.WaitOne();
+          if (!sending_result.AsyncWaitHandle.WaitOne(sendTimeout)) {
+            break;
+          }
         }
       } while (sending_result!=null);
     }
@@ -283,8 +299,6 @@ namespace PeerCastStation.Core
       CleanupSend();
       if (outputStream!=null) outputStream.Close();
       if (inputStream!=null)  inputStream.Close();
-      sendResult = null;
-      recvResult = null;
     }
 
   }

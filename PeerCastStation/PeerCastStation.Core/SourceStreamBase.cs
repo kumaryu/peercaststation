@@ -42,89 +42,67 @@ namespace PeerCastStation.Core
     }
   }
 
-  public abstract class SourceStreamBase
-    : ISourceStream
+  public abstract class SourceConnectionBase
   {
-    public PeerCast PeerCast { get; private set; }
-    public Channel Channel { get; private set; }
-    public Uri SourceUri { get; private set; }
-    volatile bool isStopped;
-    public bool IsStopped { get { return isStopped; } private set { isStopped = value; } }
+    public PeerCast   PeerCast { get; private set; }
+    public Channel    Channel { get; private set; }
+    public Uri        SourceUri { get; private set; }
     public StopReason StoppedReason { get; private set; }
+    public bool       IsStopped { get { return StoppedReason!=StopReason.None; } }
+    public float      SendRate { get { return connection!=null ? connection.SendRate    : 0; } }
+    public float      RecvRate { get { return connection!=null ? connection.ReceiveRate : 0; } }
+
     public event StreamStoppedEventHandler Stopped;
-    public bool HasError { get; protected set; }
-    public float SendRate { get { return sendBytesCounter.Rate; } }
-    public float RecvRate { get { return recvBytesCounter.Rate; } }
+
     protected QueuedSynchronizationContext SyncContext { get; private set; }
     protected Logger Logger { get; private set; }
-    protected AutoResetEvent RecvEvent { get; private set; }
+    protected StreamConnection connection;
 
-    public abstract ConnectionInfo GetConnectionInfo();
+    public abstract ConnectionInfo      GetConnectionInfo();
+    protected abstract void             DoProcess();
+    protected abstract StreamConnection DoConnect(Uri source);
+    protected abstract void             DoClose(StreamConnection connection);
+    protected abstract void             DoPost(Host from, Atom packet);
 
-    private Thread mainThread;
-    public SourceStreamBase(
+    public SourceConnectionBase(
       PeerCast peercast,
       Channel channel,
       Uri source_uri)
     {
-      this.PeerCast = peercast;
-      this.Channel = channel;
-      this.SourceUri = source_uri;
-      this.IsStopped = false;
-      this.RecvEvent = new AutoResetEvent(false);
-      this.mainThread = new Thread(MainProc);
-      this.mainThread.Name = this.GetType().Name;
-      this.SyncContext = new QueuedSynchronizationContext();
-      this.Logger = new Logger(this.GetType());
+      this.PeerCast      = peercast;
+      this.Channel       = channel;
+      this.SourceUri     = source_uri;
+      this.StoppedReason = StopReason.None;
+      this.SyncContext   = new QueuedSynchronizationContext();
+      this.Logger        = new Logger(this.GetType());
     }
 
-    protected virtual void MainProc()
+    public virtual void Run()
     {
       SynchronizationContext.SetSynchronizationContext(this.SyncContext);
       OnStarted();
       while (!IsStopped) {
         WaitEventAny();
         DoProcess();
+        SyncContext.ProcessAll();
       }
       OnStopped();
-      Cleanup();
-    }
-
-    protected virtual void Cleanup()
-    {
-      EndConnection();
     }
 
     protected virtual void WaitEventAny()
     {
-      if (recvResult!=null) {
-        if (sendResult!=null) {
-          WaitHandle.WaitAny(new WaitHandle[] {
-            SyncContext.EventHandle,
-            recvResult.AsyncWaitHandle,
-            sendResult.AsyncWaitHandle,
-          }, 10);
-        }
-        else {
-          WaitHandle.WaitAny(new WaitHandle[] {
-            SyncContext.EventHandle,
-            recvResult.AsyncWaitHandle,
-          }, 10);
-        }
-      }
-      else if (sendResult!=null) {
-        WaitHandle.WaitAny(new WaitHandle[] {
-          SyncContext.EventHandle,
-          sendResult.AsyncWaitHandle,
-        }, 10);
-      }
-      else {
-        SyncContext.EventHandle.WaitOne(10);
-      }
+      WaitHandle.WaitAny(new WaitHandle[] {
+        SyncContext.EventHandle,
+        connection.ReceiveWaitHandle,
+      }, 10);
     }
 
     protected virtual void OnStarted()
     {
+      connection = DoConnect(SourceUri);
+      if (connection==null) {
+        DoStop(StopReason.ConnectionError);
+      }
     }
 
     protected virtual void OnStopped()
@@ -132,335 +110,269 @@ namespace PeerCastStation.Core
       if (Stopped!=null) {
         Stopped(this, new StreamStoppedEventArgs(this.StoppedReason));
       }
-    }
-
-    protected virtual void DoProcess()
-    {
-      ProcessRecv();
-      OnIdle();
-      ProcessSend();
-      SyncContext.ProcessAll();
-    }
-
-    protected virtual void DoStart()
-    {
-      try {
-        if (mainThread.IsAlive) {
-          Stop(StopReason.UserShutdown);
-          mainThread.Join();
-        }
-        if ((mainThread.ThreadState & ThreadState.Unstarted)==0) {
-          mainThread = new Thread(MainProc);
-          mainThread.Name = this.GetType().Name;
-        }
-        IsStopped = false;
-        mainThread.Start();
+      if (connection!=null) {
+        DoClose(connection);
       }
-      catch (ThreadStateException) {
-        throw new InvalidOperationException("Source Streams is already started");
-      }
-    }
-
-    protected virtual void DoReconnect(Uri source_uri)
-    {
     }
 
     protected virtual void DoStop(StopReason reason)
     {
-      StoppedReason = reason;
-      IsStopped = true;
-    }
-
-    protected virtual void DoPost(Host from, Atom packet)
-    {
-    }
-
-    protected virtual void PostAction(Action proc)
-    {
-      SyncContext.Post(dummy => { proc(); }, null);
-    }
-
-    protected virtual void OnIdle()
-    {
-    }
-
-    protected virtual void OnError()
-    {
-      HasError = true;
-      Stop(StopReason.ConnectionError);
-    }
-
-    protected object startLock = new object();
-    public void Start()
-    {
-      lock (startLock) {
-        DoStart();
+      if (reason==StopReason.None) throw new ArgumentException("Invalid value", "reason");
+      if (!IsStopped) {
+        StoppedReason = reason;
       }
     }
 
     public void Post(Host from, Atom packet)
     {
       if (!IsStopped) {
-        PostAction(() => {
+        SyncContext.Post(dummy => {
           DoPost(from, packet);
-        });
+        }, null);
       }
     }
 
     public void Stop()
     {
+      Stop(StopReason.UserShutdown);
+    }
+
+    public void Stop(StopReason reason)
+    {
       if (!IsStopped) {
-        PostAction(() => {
-          DoStop(StopReason.UserShutdown);
-        });
+        SyncContext.Post(dummy => {
+          DoStop(reason);
+        }, null);
       }
+    }
+  }
+
+  public abstract class SourceStreamBase
+    : ISourceStream
+  {
+    public PeerCast PeerCast { get; private set; }
+    public Channel  Channel { get; private set; }
+    public Uri      SourceUri { get; private set; }
+    public StopReason StoppedReason { get; private set; }
+    public bool       IsStopped { get { return StoppedReason!=StopReason.None; } }
+    public event StreamStoppedEventHandler Stopped;
+    public float SendRate { get { return sourceConnection!=null ? sourceConnection.SendRate : 0.0f; } }
+    public float RecvRate { get { return sourceConnection!=null ? sourceConnection.RecvRate : 0.0f; } }
+
+    protected enum SourceStreamEventType {
+      None,
+      Start,
+      Stop,
+      Post,
+      ConnectionStopped,
+    }
+    protected class SourceStreamEvent 
+    {
+      public SourceStreamEventType Type { get; private set; }
+      public SourceStreamEvent(SourceStreamEventType type)
+      {
+        this.Type = type;
+      }
+    }
+
+    protected class StartEvent
+      : SourceStreamEvent
+    {
+      public Uri SourceUri { get; private set; }
+      public StartEvent(Uri source_uri)
+        : base(SourceStreamEventType.Start)
+      {
+        this.SourceUri = source_uri;
+      }
+    }
+
+    protected class StopEvent
+      : SourceStreamEvent
+    {
+      public StopReason StopReason { get; private set; }
+      public StopEvent(StopReason reason)
+        : base(SourceStreamEventType.Stop)
+      {
+        this.StopReason = reason;
+      }
+    }
+
+    protected class PostEvent
+      : SourceStreamEvent
+    {
+      public Host From    { get; private set; }
+      public Atom Message { get; private set; }
+      public PostEvent(Host from, Atom message)
+        : base(SourceStreamEventType.Post)
+      {
+        this.From    = from;
+        this.Message = message;
+      }
+    }
+
+    protected class ConnectionStoppedEvent
+      : SourceStreamEvent
+    {
+      public SourceConnectionBase Connection { get; private set; }
+      public StopReason           StopReason { get; private set; }
+      public ConnectionStoppedEvent(SourceConnectionBase connection, StopReason reason)
+        : base(SourceStreamEventType.ConnectionStopped)
+      {
+        this.Connection = connection;
+        this.StopReason = reason;
+      }
+    }
+
+    protected EventQueue<SourceStreamEvent> EventQueue { get; private set; }
+
+    protected Logger Logger { get; private set; }
+    protected SourceConnectionBase sourceConnection;
+    protected Thread               sourceConnectionThread;
+
+    public abstract ConnectionInfo GetConnectionInfo();
+    protected abstract SourceConnectionBase CreateConnection(Uri source_uri);
+    protected abstract void OnConnectionStopped(ConnectionStoppedEvent msg);
+
+    public SourceStreamBase(
+      PeerCast peercast,
+      Channel  channel,
+      Uri      source_uri)
+    {
+      this.PeerCast  = peercast;
+      this.Channel   = channel;
+      this.SourceUri = source_uri;
+      this.StoppedReason = StopReason.None;
+      this.EventQueue = new EventQueue<SourceStreamEvent>();
+      this.Logger = new Logger(this.GetType());
+      ThreadPool.RegisterWaitForSingleObject(this.EventQueue.WaitHandle, OnEvent, null, Timeout.Infinite, true);
+    }
+
+    protected virtual void OnEvent(object state, bool timedout)
+    {
+      SourceStreamEvent msg;
+      while (this.EventQueue.TryDequeue(0, out msg)) {
+        ProcessEvent(msg);
+      }
+      if (!IsStopped) {
+        ThreadPool.RegisterWaitForSingleObject(this.EventQueue.WaitHandle, OnEvent, null, Timeout.Infinite, true);
+      }
+    }
+
+    protected virtual void OnSourceConnectionStopped(object sender, StreamStoppedEventArgs args)
+    {
+      EventQueue.Enqueue(new ConnectionStoppedEvent(sender as SourceConnectionBase, args.StopReason));
+    }
+
+    protected void StartConnection(Uri source_uri)
+    {
+      if (sourceConnection!=null) {
+        sourceConnection.Stopped -= OnSourceConnectionStopped;
+        StopConnection(StopReason.UserReconnect);
+      }
+      sourceConnection = CreateConnection(source_uri);
+      sourceConnection.Stopped += OnSourceConnectionStopped;
+      sourceConnectionThread = new Thread(state => {
+        sourceConnection.Run();
+      });
+      sourceConnectionThread.Start();
+    }
+
+    protected void StopConnection(StopReason reason)
+    {
+      if (sourceConnection!=null) {
+        sourceConnection.Stop(reason);
+        sourceConnectionThread.Join();
+      }
+    }
+
+    protected virtual void ProcessEvent(SourceStreamEvent msg)
+    {
+      switch (msg.Type) {
+      case SourceStreamEventType.None:
+        break;
+      case SourceStreamEventType.Start:
+        OnStarted(msg as StartEvent);
+        break;
+      case SourceStreamEventType.Stop:
+        OnStopped(msg as StopEvent);
+        break;
+      case SourceStreamEventType.Post:
+        OnPosted(msg as PostEvent);
+        break;
+      case SourceStreamEventType.ConnectionStopped:
+        OnConnectionStopped(msg as ConnectionStoppedEvent);
+        break;
+      }
+    }
+
+    protected virtual void OnStarted(StartEvent msg)
+    {
+      if (msg.SourceUri!=null) {
+        this.SourceUri = msg.SourceUri;
+        StartConnection(msg.SourceUri);
+      }
+      else {
+        Stop(StopReason.NoHost);
+      }
+    }
+
+    protected virtual void OnStopped(StopEvent msg)
+    {
+      StoppedReason = msg.StopReason;
+      StopConnection(msg.StopReason);
+      if (Stopped!=null) {
+        Stopped(this, new StreamStoppedEventArgs(msg.StopReason));
+      }
+    }
+
+    protected virtual void OnPosted(PostEvent msg)
+    {
+      if (sourceConnection!=null && !sourceConnection.IsStopped) {
+        sourceConnection.Post(msg.From, msg.Message);
+      }
+    }
+
+    public void Start()
+    {
+      EventQueue.Enqueue(new StartEvent(this.SourceUri));
+    }
+
+    public void Post(Host from, Atom packet)
+    {
+      EventQueue.Enqueue(new PostEvent(from, packet));
+    }
+
+    public void Stop()
+    {
+      EventQueue.Enqueue(new StopEvent(StopReason.UserShutdown));
     }
 
     protected void Stop(StopReason reason)
     {
-      if (!IsStopped) {
-        PostAction(() => {
-          DoStop(reason);
-        });
-      }
-    }
-
-    public void Join()
-    {
-      if (mainThread!=null && mainThread.IsAlive) {
-        mainThread.Join();
-      }
+      EventQueue.Enqueue(new StopEvent(reason));
     }
 
     public void Reconnect()
     {
-      if (!IsStopped) {
-        PostAction(() => {
-          DoReconnect(null);
-        });
-      }
-      else {
-        Start();
-      }
+      EventQueue.Enqueue(new StartEvent(this.SourceUri));
     }
 
     public void Reconnect(Uri source_uri)
     {
-      if (!IsStopped) {
-        PostAction(() => {
-          if (source_uri!=null) {
-            SourceUri = source_uri;
-          }
-          DoReconnect(source_uri);
-        });
-      }
-      else {
-        if (source_uri!=null) {
-          SourceUri = source_uri;
-        }
-        Start();
-      }
+      EventQueue.Enqueue(new StartEvent(source_uri));
     }
 
-    Stream inputStream = null;
-    Stream outputStream = null;
-    protected virtual void StartConnection(Stream input_stream, Stream output_stream)
-    {
-      if (inputStream!=null || outputStream!=null) {
-        EndConnection();
-      }
-      else {
-      }
-      inputStream = input_stream;
-      outputStream = output_stream;
-      HasError = false;
-      ProcessRecv();
-      ProcessSend();
-    }
-
-    protected virtual void EndConnection()
-    {
-      if (inputStream!=null) {
-        if (recvResult!=null && recvResult.IsCompleted) {
-          try {
-            int bytes = inputStream.EndRead(recvResult);
-            if (bytes < 0) {
-              OnError();
-            }
-            else {
-              recvBytesCounter.Add(bytes);
-            }
-          }
-          catch (ObjectDisposedException) { }
-          catch (IOException) {
-            OnError();
-          }
-        }
-      }
-      if (outputStream!=null) {
-        if (sendResult!=null) {
-          try {
-            outputStream.EndWrite(sendResult);
-            sendBytesCounter.Add((int)sendResult.AsyncState);
-          }
-          catch (ObjectDisposedException) { }
-          catch (IOException) {
-            OnError();
-          }
-        }
-        if (!HasError && sendStream.Length>0) {
-          var buf = sendStream.ToArray();
-          try {
-            outputStream.Write(buf, 0, buf.Length);
-          }
-          catch (ObjectDisposedException) { }
-          catch (IOException) {
-            OnError();
-          }
-        }
-      }
-      sendResult = null;
-      recvResult = null;
-      sendStream.SetLength(0);
-      sendStream.Position = 0;
-      recvStream.SetLength(0);
-      recvStream.Position = 0;
-      recvError = false;
-      if (outputStream!=null) outputStream.Close();
-      if (inputStream!=null) inputStream.Close();
-      outputStream = null;
-      inputStream = null;
-    }
-
-    RateCounter recvBytesCounter = new RateCounter(1000);
-    MemoryStream recvStream = new MemoryStream();
-    byte[] recvBuffer = new byte[64*1024];
-    IAsyncResult recvResult = null;
-    bool recvError = false;
-    protected void ProcessRecv()
-    {
-      if (inputStream==null) return;
-      if (recvResult!=null && recvResult.IsCompleted) {
-        try {
-          int bytes = inputStream.EndRead(recvResult);
-          if (bytes>0) {
-            recvBytesCounter.Add(bytes);
-            recvStream.Seek(0, SeekOrigin.End);
-            recvStream.Write(recvBuffer, 0, bytes);
-            recvStream.Seek(0, SeekOrigin.Begin);
-            RecvEvent.Set();
-          }
-          else if (bytes<0) {
-            recvError = true;
-          }
-          else {
-            recvError = true;
-          }
-        }
-        catch (ObjectDisposedException) {}
-        catch (IOException) {
-          recvError = true;
-        }
-        recvResult = null;
-      }
-      if (!recvError && !HasError && recvResult==null) {
-        try {
-          recvResult = inputStream.BeginRead(recvBuffer, 0, recvBuffer.Length, null, null);
-        }
-        catch (ObjectDisposedException) {
-        }
-        catch (IOException) {
-          recvError = true;
-        }
-      }
-    }
-
-    private RateCounter sendBytesCounter = new RateCounter(1000);
-    MemoryStream sendStream = new MemoryStream(8192);
-    IAsyncResult sendResult = null;
-    protected void ProcessSend()
-    {
-      if (outputStream==null) return;
-      if (sendResult!=null && sendResult.IsCompleted) {
-        try {
-          outputStream.EndWrite(sendResult);
-          sendBytesCounter.Add((int)sendResult.AsyncState);
-        }
-        catch (ObjectDisposedException) {
-        }
-        catch (IOException) {
-          OnError();
-        }
-        sendResult = null;
-      }
-      if (!HasError && sendResult==null && sendStream.Length>0) {
-        var buf = sendStream.ToArray();
-        sendStream.SetLength(0);
-        sendStream.Position = 0;
-        try {
-          sendResult = outputStream.BeginWrite(buf, 0, buf.Length, null, buf.Length);
-        }
-        catch (ObjectDisposedException) {
-        }
-        catch (IOException) {
-          OnError();
-        }
-      }
-    }
-
-    protected void Send(byte[] bytes)
-    {
-      if (outputStream==null) throw new InvalidOperationException();
-      sendStream.Write(bytes, 0, bytes.Length);
-    }
-
-    protected void Send(Atom atom)
-    {
-      if (outputStream==null) throw new InvalidOperationException();
-      AtomWriter.Write(sendStream, atom);
-    }
-
-    protected bool Recv(Action<Stream> proc)
-    {
-      if (inputStream==null) throw new InvalidOperationException();
-      bool res = false;
-      recvStream.Seek(0, SeekOrigin.Begin);
-      try {
-        proc(recvStream);
-        if (recvStream.Length>recvStream.Position) {
-          var new_stream = new MemoryStream((int)Math.Max(8192, recvStream.Length - recvStream.Position));
-          new_stream.Write(recvStream.GetBuffer(), (int)recvStream.Position, (int)(recvStream.Length - recvStream.Position));
-          new_stream.Position = 0;
-          recvStream = new_stream;
-          if (recvStream.Length==0 && recvError) {
-            OnError();
-          }
-        }
-        else {
-          recvStream.Position = 0;
-          recvStream.SetLength(0);
-        }
-        res = true;
-      }
-      catch (EndOfStreamException) {
-        if (recvError) {
-          OnError();
-        }
-      }
-      return res;
-    }
-
-    private SourceStreamStatus status = SourceStreamStatus.Idle;
     public SourceStreamStatus Status
     {
-      get { return status; }
-      protected set {
-        if (status!=value) {
-          status = value;
-          if (StatusChanged!=null) StatusChanged(this, new SourceStreamStatusChangedEventArgs(status));
+      get {
+        switch (GetConnectionInfo().Status) {
+        case ConnectionStatus.Connected:  return SourceStreamStatus.Receiving;
+        case ConnectionStatus.Connecting: return SourceStreamStatus.Searching;
+        case ConnectionStatus.Error:      return SourceStreamStatus.Error;
+        case ConnectionStatus.Idle:       return SourceStreamStatus.Idle;
         }
+        return SourceStreamStatus.Idle;
       }
     }
-    public event EventHandler<SourceStreamStatusChangedEventArgs> StatusChanged;
   }
 }

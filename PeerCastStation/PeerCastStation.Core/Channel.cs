@@ -635,12 +635,6 @@ namespace PeerCastStation.Core
       }
     }
 
-    public event EventHandler StatusChanged;
-    private void SourceStream_StatusChanged(object sender, SourceStreamStatusChangedEventArgs args)
-    {
-      if (StatusChanged!=null) StatusChanged(this, new EventArgs());
-    }
-
     private void SourceStream_Stopped(object sender, StreamStoppedEventArgs args)
     {
       foreach (var os in outputStreams) {
@@ -656,11 +650,9 @@ namespace PeerCastStation.Core
     {
       IsClosed = false;
       if (sourceStream!=null) {
-        sourceStream.StatusChanged -= SourceStream_StatusChanged;
         sourceStream.Stopped -= SourceStream_Stopped;
       }
       sourceStream = source_stream;
-      sourceStream.StatusChanged += SourceStream_StatusChanged;
       sourceStream.Stopped += SourceStream_Stopped;
       startTickCount = Environment.TickCount;
       sourceStream.Start();

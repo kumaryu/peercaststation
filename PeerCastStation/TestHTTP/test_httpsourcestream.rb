@@ -34,8 +34,8 @@ module TestHTTP
       req = PCSHTTP::HTTPResponse.new(value)
       assert_equal('1.1', req.Version)
       assert_equal(200, req.Status)
-      assert_equal('hoge hoge', req.Headers['Server'])
-      assert_equal('application/octet-stream', req.Headers['Content-Type'])
+      assert_equal('hoge hoge', req.Headers['SERVER'])
+      assert_equal('application/octet-stream', req.Headers['CONTENT-TYPE'])
     end
   end
 
@@ -54,8 +54,8 @@ module TestHTTP
       assert_kind_of(PCSHTTP::HTTPResponse, req)
       assert_equal('1.1', req.Version)
       assert_equal(200, req.Status)
-      assert_equal('hoge hoge', req.Headers['Server'])
-      assert_equal('application/octet-stream', req.Headers['Content-Type'])
+      assert_equal('hoge hoge', req.Headers['SERVER'])
+      assert_equal('application/octet-stream', req.Headers['CONTENT-TYPE'])
     end
 
     def test_read_failed
@@ -252,7 +252,6 @@ module TestHTTP
       assert(!source.is_stopped)
     ensure
       source.stop
-      source.join
     end
 
     def test_start_found
@@ -284,7 +283,6 @@ module TestHTTP
       assert(!source.is_stopped)
     ensure
       source.stop
-      source.join
     end
 
     def test_start_retry
@@ -298,15 +296,14 @@ module TestHTTP
         requested << Time.now
       end
       source.start
-     600.times do
+      600.times do
         break if requested.size>=3
         sleep(0.1)
       end
-      assert(requested[1]-requested[0]>=10)
-      assert(requested[2]-requested[1]>=10)
+      assert(requested[1]-requested[0]>=3)
+      assert(requested[2]-requested[1]>=3)
     ensure
       source.stop
-      source.join
     end
 
     def read_header(stream)
@@ -353,7 +350,6 @@ module TestHTTP
       assert_equal(2, requested)
     ensure
       source.stop
-      source.join
     end
 
     def test_post
@@ -368,7 +364,6 @@ module TestHTTP
       assert(!source.is_stopped)
     ensure
       source.stop
-      source.join
     end
 
     def test_recv_rate
@@ -395,7 +390,6 @@ module TestHTTP
         sleep(0.1)
       end
       source.stop
-      source.join
       t = Time.now
       sleep([1.5-(t-start), 0].max)
       recv_rate = source.recv_rate

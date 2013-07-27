@@ -17,6 +17,8 @@ require 'test_pcp_common'
 require 'pcp'
 require 'uri'
 require 'timeout'
+#PeerCastStation::Core::Logger.level = PeerCastStation::Core::LogLevel.debug
+#PeerCastStation::Core::Logger.output_target = PeerCastStation::Core::LoggerOutputTarget.console
 
 module TestPCP
   class MockOutputStream
@@ -320,7 +322,7 @@ EOS
             ""
           ].join("\r\n")+"\r\n")
           helo = PCP::Atom.read(sock)
-          raise RuntimeError, "Handshake failed" unless helo.name==PCP::HELO
+          raise RuntimeError, "Handshake failed" if helo.nil? or helo.name!=PCP::HELO
           on_helo(sock, helo)
           PCP::Atom.new(PCP::OK, nil, [0].pack('V')).write(sock)
           chan = PCP::Atom.new(PCP::CHAN, [], nil)
@@ -365,7 +367,7 @@ EOS
             ""
           ].join("\r\n")+"\r\n")
           helo = PCP::Atom.read(sock)
-          raise RuntimeError, "Handshake failed" unless helo.name==PCP::HELO
+          raise RuntimeError, "Handshake failed" if helo.nil? or helo.name!=PCP::HELO
           on_helo(sock, helo)
           hosts[0,8].each do |host|
             host.write(sock)

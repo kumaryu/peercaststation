@@ -55,6 +55,7 @@
     <Compile Include="ChannelCleaner.cs" />
     <Compile Include="Content.cs" />
     <Compile Include="Core.cs" />
+    <Compile Include="EventQueue.cs" />
     <Compile Include="Host.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="LogWriter.cs" />
