@@ -655,7 +655,7 @@ namespace PeerCastStation.PCP
       var remote = remoteType;
       if (RemoteEndPoint!=null && Utils.IsSiteLocal(RemoteEndPoint.Address)) remote |= RemoteHostStatus.Local;
       return new ConnectionInfo(
-        "HTTP Source",
+        "PCP Source",
         ConnectionType.Source,
         status,
         SourceUri.ToString(),
