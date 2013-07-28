@@ -70,8 +70,9 @@ namespace PeerCastStation.Core
         }
       }
     }
-    public Guid ChannelID { get; private set; }
+    public Guid ChannelID   { get; private set; }
     public Guid BroadcastID { get; private set; }
+    public Uri  SourceUri   { get; private set; }
 
     /// <summary>
     /// ソースストリームを取得します
@@ -415,6 +416,7 @@ namespace PeerCastStation.Core
           throw new ArgumentException(String.Format("Protocol `{0}' is not found", source_uri.Scheme));
         }
         var source_stream = source_factory.Create(this, source_uri);
+        this.SourceUri = source_uri;
         this.Start(source_stream);
       }
     }
@@ -429,15 +431,38 @@ namespace PeerCastStation.Core
         }
         var content_reader = content_reader_factory.Create(this);
         var source_stream = source_factory.Create(this, source_uri, content_reader);
+        this.SourceUri = source_uri;
         this.Start(source_stream);
+      }
+    }
+
+    private bool IsSourceConnected()
+    {
+      lock (syncRoot) {
+        if (sourceStream!=null) {
+          var status = sourceStream.Status;
+          switch (status) {
+          case SourceStreamStatus.Idle:
+          case SourceStreamStatus.Error:
+            return false;
+          default:
+            return true;
+          }
+        }
+        else {
+          return false;
+        }
       }
     }
 
     public void Reconnect()
     {
       lock (syncRoot) {
-        if (sourceStream!=null) {
+        if (IsSourceConnected()) {
           sourceStream.Reconnect();
+        }
+        else if (this.SourceUri!=null) {
+          Start(this.SourceUri);
         }
       }
     }
