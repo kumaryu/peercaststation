@@ -214,9 +214,15 @@ namespace PeerCastStation.PCP
     protected override void DoPost(Host from, Atom packet)
     {
       if (uphost!=from) {
-        connection.Send(stream => {
-          AtomWriter.Write(stream, packet);
-        });
+        try {
+          connection.Send(stream => {
+            AtomWriter.Write(stream, packet);
+          });
+        }
+        catch (IOException e) {
+          Logger.Info(e);
+          Stop(StopReason.ConnectionError);
+        }
       }
     }
 
@@ -239,7 +245,14 @@ namespace PeerCastStation.PCP
         "GET /channel/{0} HTTP/1.0\r\n" +
         "x-peercast-pcp:1\r\n" +
         "\r\n", Channel.ChannelID.ToString("N"));
-      connection.Send(System.Text.Encoding.UTF8.GetBytes(req));
+      try {
+        connection.Send(System.Text.Encoding.UTF8.GetBytes(req));
+      }
+      catch (IOException e) {
+        Logger.Info(e);
+        Stop(StopReason.ConnectionError);
+        return State.Disconnected;
+      }
       return State.WaitingRelayResponse;
     }
 
@@ -280,8 +293,12 @@ namespace PeerCastStation.PCP
     private State SendHandshakeRequest()
     {
       Logger.Debug("Handshake Started");
-      SendPCPHelo();
-      return State.WaitingHandshakeResponse;
+      if (SendPCPHelo()) {
+        return State.WaitingHandshakeResponse;
+      }
+      else {
+        return State.Disconnected;
+      }
     }
 
     private State WaitHandshakeResponse()
@@ -335,7 +352,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    private void SendPCPHelo()
+    private bool SendPCPHelo()
     {
       var helo = new AtomCollection();
       helo.SetHeloAgent(PeerCast.AgentName);
@@ -360,9 +377,17 @@ namespace PeerCastStation.PCP
         }
       }
       helo.SetHeloVersion(PCP_VERSION);
-      connection.Send(stream => {
-        AtomWriter.Write(stream, new Atom(Atom.PCP_HELO, helo));
-      });
+      try {
+        connection.Send(stream => {
+          AtomWriter.Write(stream, new Atom(Atom.PCP_HELO, helo));
+        });
+      }
+      catch (IOException e) {
+        Logger.Info(e);
+        Stop(StopReason.ConnectionError);
+        return false;
+      }
+      return true;
     }
 
     /// <summary>
