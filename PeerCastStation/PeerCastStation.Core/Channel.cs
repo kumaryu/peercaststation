@@ -54,6 +54,8 @@ namespace PeerCastStation.Core
     private Content contentHeader = null;
     private ContentCollection contents = new ContentCollection();
     private System.Diagnostics.Stopwatch uptimeTimer = new System.Diagnostics.Stopwatch();
+    private Object syncRoot = new Object();
+
     /// <summary>
     /// 所属するPeerCastオブジェクトを取得します
     /// </summary>
@@ -62,7 +64,11 @@ namespace PeerCastStation.Core
     /// チャンネルの状態を取得します
     /// </summary>
     public virtual SourceStreamStatus Status {
-      get { return sourceStream!=null ? sourceStream.Status : SourceStreamStatus.Idle; }
+      get {
+        lock (syncRoot) {
+          return sourceStream!=null ? sourceStream.Status : SourceStreamStatus.Idle;
+        }
+      }
     }
     public Guid ChannelID { get; private set; }
     public Guid BroadcastID { get; private set; }
@@ -71,7 +77,11 @@ namespace PeerCastStation.Core
     /// ソースストリームを取得します
     /// </summary>
     public ISourceStream SourceStream {
-      get { return sourceStream; }
+      get {
+        lock (syncRoot) {
+          return sourceStream;
+        }
+      }
     }
 
     /// <summary>
@@ -148,12 +158,16 @@ namespace PeerCastStation.Core
     /// </summary>
     public ChannelInfo ChannelInfo {
       get {
-        return channelInfo;
+        lock (syncRoot) {
+          return channelInfo;
+        }
       }
       set {
-        if (channelInfo!=value) {
-          channelInfo = value;
-          if (ChannelInfoChanged!=null) ChannelInfoChanged(this, new EventArgs());
+        lock (syncRoot) {
+          if (channelInfo!=value) {
+            channelInfo = value;
+            if (ChannelInfoChanged!=null) ChannelInfoChanged(this, new EventArgs());
+          }
         }
       }
     }
@@ -165,12 +179,16 @@ namespace PeerCastStation.Core
     /// </summary>
     public ChannelTrack ChannelTrack {
       get {
-        return channelTrack;
+        lock (syncRoot) {
+          return channelTrack;
+        }
       }
       set {
-        if (channelTrack!=value) {
-          channelTrack = value;
-          if (ChannelTrackChanged!=null) ChannelTrackChanged(this, new EventArgs());
+        lock (syncRoot) {
+          if (channelTrack!=value) {
+            channelTrack = value;
+            if (ChannelTrackChanged!=null) ChannelTrackChanged(this, new EventArgs());
+          }
         }
       }
     }
@@ -233,12 +251,17 @@ namespace PeerCastStation.Core
     /// </summary>
     public Content ContentHeader
     {
-      get { return contentHeader; }
-      set
-      {
-        if (contentHeader != value) {
-          contentHeader = value;
-          OnContentChanged();
+      get {
+        lock (syncRoot) {
+          return contentHeader;
+        }
+      }
+      set {
+        lock (syncRoot) {
+          if (contentHeader!=value) {
+            contentHeader = value;
+            OnContentChanged();
+          }
         }
       }
     }
@@ -250,8 +273,10 @@ namespace PeerCastStation.Core
 
     private void OnContentChanged()
     {
-      if (ContentChanged != null) {
-        ContentChanged(this, new EventArgs());
+      lock (syncRoot) {
+        if (ContentChanged!=null) {
+          ContentChanged(this, new EventArgs());
+        }
       }
     }
 
@@ -265,15 +290,17 @@ namespace PeerCastStation.Core
     /// </summary>
     public long ContentPosition {
       get {
-        var content = contents.Newest;
-        if (contentHeader==null) {
-          return 0;
-        }
-        else if (content==null || contentHeader.Position>content.Position) {
-          return contentHeader.Position + contentHeader.Data.Length;
-        }
-        else {
-          return content.Position + content.Data.Length;
+        lock (syncRoot) {
+          var content = contents.Newest;
+          if (contentHeader==null) {
+            return 0;
+          }
+          else if (content==null || contentHeader.Position>content.Position) {
+            return contentHeader.Position + contentHeader.Data.Length;
+          }
+          else {
+            return content.Position + content.Data.Length;
+          }
         }
       }
     }
@@ -335,69 +362,83 @@ namespace PeerCastStation.Core
 
     public Host SelfNode {
       get {
-        var host = new HostBuilder();
-        host.SessionID      = this.PeerCast.SessionID;
-        host.LocalEndPoint  = this.PeerCast.GetLocalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
-        host.GlobalEndPoint = this.PeerCast.GetGlobalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
-        host.IsFirewalled   = this.PeerCast.IsFirewalled ?? true;
-        host.DirectCount    = this.LocalDirects;
-        host.RelayCount     = this.LocalRelays;
-        host.IsDirectFull   = !this.PeerCast.AccessController.IsChannelPlayable(this);
-        host.IsRelayFull    = !this.PeerCast.AccessController.IsChannelRelayable(this);
-        host.IsReceiving    = true;
-        return host.ToHost();
+        lock (syncRoot) {
+          var host = new HostBuilder();
+          host.SessionID      = this.PeerCast.SessionID;
+          host.LocalEndPoint  = this.PeerCast.GetLocalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
+          host.GlobalEndPoint = this.PeerCast.GetGlobalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
+          host.IsFirewalled   = this.PeerCast.IsFirewalled ?? true;
+          host.DirectCount    = this.LocalDirects;
+          host.RelayCount     = this.LocalRelays;
+          host.IsDirectFull   = !this.PeerCast.AccessController.IsChannelPlayable(this);
+          host.IsRelayFull    = !this.PeerCast.AccessController.IsChannelRelayable(this);
+          host.IsReceiving    = true;
+          return host.ToHost();
+        }
       }
     }
 
     private void SourceStream_Stopped(object sender, StreamStoppedEventArgs args)
     {
-      foreach (var os in outputStreams) {
-        os.Stop();
+      lock (syncRoot) {
+        if (!Object.ReferenceEquals(sender, sourceStream)) return;
+        foreach (var os in outputStreams) {
+          os.Stop();
+        }
+        outputStreams = new List<IOutputStream>();
+        uptimeTimer.Stop();
+        OnClosed(args.StopReason);
       }
-      outputStreams = new List<IOutputStream>();
-      uptimeTimer.Stop();
-      OnClosed(args.StopReason);
     }
 
     private void Start(ISourceStream source_stream)
     {
-      if (sourceStream!=null) {
-        sourceStream.Stopped -= SourceStream_Stopped;
+      lock (syncRoot) {
+        if (sourceStream!=null) {
+          sourceStream.Stopped -= SourceStream_Stopped;
+          sourceStream.Stop();
+        }
+        sourceStream = source_stream;
+        sourceStream.Stopped += SourceStream_Stopped;
+        uptimeTimer.Reset();
+        uptimeTimer.Start();
+        sourceStream.Start();
       }
-      sourceStream = source_stream;
-      sourceStream.Stopped += SourceStream_Stopped;
-      uptimeTimer.Reset();
-      uptimeTimer.Start();
-      sourceStream.Start();
     }
 
     public void Start(Uri source_uri)
     {
-      var source_factory = PeerCast.SourceStreamFactories.FirstOrDefault(factory => source_uri.Scheme==factory.Scheme);
-      if (source_factory==null) {
-        logger.Error("Protocol `{0}' is not found", source_uri.Scheme);
-        throw new ArgumentException(String.Format("Protocol `{0}' is not found", source_uri.Scheme));
+      lock (syncRoot) {
+        var source_factory = PeerCast.SourceStreamFactories.FirstOrDefault(factory => source_uri.Scheme==factory.Scheme);
+        if (source_factory==null) {
+          logger.Error("Protocol `{0}' is not found", source_uri.Scheme);
+          throw new ArgumentException(String.Format("Protocol `{0}' is not found", source_uri.Scheme));
+        }
+        var source_stream = source_factory.Create(this, source_uri);
+        this.Start(source_stream);
       }
-      var source_stream = source_factory.Create(this, source_uri);
-      this.Start(source_stream);
     }
 
     public void Start(Uri source_uri, IContentReaderFactory content_reader_factory)
     {
-      var source_factory = PeerCast.SourceStreamFactories.FirstOrDefault(factory => source_uri.Scheme==factory.Scheme);
-      if (source_factory==null) {
-        logger.Error("Protocol `{0}' is not found", source_uri.Scheme);
-        throw new ArgumentException(String.Format("Protocol `{0}' is not found", source_uri.Scheme));
+      lock (syncRoot) {
+        var source_factory = PeerCast.SourceStreamFactories.FirstOrDefault(factory => source_uri.Scheme==factory.Scheme);
+        if (source_factory==null) {
+          logger.Error("Protocol `{0}' is not found", source_uri.Scheme);
+          throw new ArgumentException(String.Format("Protocol `{0}' is not found", source_uri.Scheme));
+        }
+        var content_reader = content_reader_factory.Create(this);
+        var source_stream = source_factory.Create(this, source_uri, content_reader);
+        this.Start(source_stream);
       }
-      var content_reader = content_reader_factory.Create(this);
-      var source_stream = source_factory.Create(this, source_uri, content_reader);
-      this.Start(source_stream);
     }
 
     public void Reconnect()
     {
-      if (sourceStream!=null) {
-        sourceStream.Reconnect();
+      lock (syncRoot) {
+        if (sourceStream!=null) {
+          sourceStream.Reconnect();
+        }
       }
     }
 
@@ -414,14 +455,16 @@ namespace PeerCastStation.Core
     /// <param name="group">送信先グループ</param>
     public virtual void Broadcast(Host from, Atom packet, BroadcastGroup group)
     {
-      if ((group & (BroadcastGroup.Trackers | BroadcastGroup.Relays))!=0) {
-        if (sourceStream!=null) {
-          sourceStream.Post(from, packet);
+      lock (syncRoot) {
+        if ((group & (BroadcastGroup.Trackers | BroadcastGroup.Relays))!=0) {
+          if (sourceStream!=null) {
+            sourceStream.Post(from, packet);
+          }
         }
-      }
-      if ((group & (BroadcastGroup.Relays))!=0) {
-        foreach (var outputStream in outputStreams) {
-          outputStream.Post(from, packet);
+        if ((group & (BroadcastGroup.Relays))!=0) {
+          foreach (var outputStream in outputStreams) {
+            outputStream.Post(from, packet);
+          }
         }
       }
     }
@@ -431,13 +474,15 @@ namespace PeerCastStation.Core
     /// </summary>
     public void Close()
     {
-      if (sourceStream!=null) {
-        sourceStream.Stop();
+      lock (syncRoot) {
+        if (sourceStream!=null) {
+          sourceStream.Stop();
+        }
+        foreach (var outputStream in outputStreams) {
+          outputStream.Stop();
+        }
+        outputStreams = new List<IOutputStream>();
       }
-      foreach (var outputStream in outputStreams) {
-        outputStream.Stop();
-      }
-      outputStreams = new List<IOutputStream>();
     }
 
     /// <summary>
