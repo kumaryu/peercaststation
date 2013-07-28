@@ -861,7 +861,6 @@ namespace PeerCastStation.PCP
 
     protected override void OnConnectionStopped(SourceStreamBase.ConnectionStoppedEvent msg)
     {
-      
       switch (msg.StopReason) {
       case StopReason.UnavailableError:
         IgnoreNode(msg.Connection.SourceUri);

@@ -46,6 +46,7 @@ namespace PeerCastStation.Core
   /// </summary>
   public class Channel
   {
+    private static Logger logger = new Logger(typeof(Channel));
     private const int NodeLimit = 180000; //ms
     private ISourceStream sourceStream = null;
     private List<IOutputStream> outputStreams = new List<IOutputStream>();
@@ -60,34 +61,16 @@ namespace PeerCastStation.Core
     /// <summary>
     /// チャンネルの状態を取得します
     /// </summary>
-    public virtual SourceStreamStatus Status
-    {
-      get {
-        if (sourceStream!=null) {
-          return sourceStream.Status;
-        }
-        else {
-          return SourceStreamStatus.Idle;
-        }
-      }
+    public virtual SourceStreamStatus Status {
+      get { return sourceStream!=null ? sourceStream.Status : SourceStreamStatus.Idle; }
     }
-    /// <summary>
-    /// チャンネルが閉じられたかどうかを取得します
-    /// </summary>
-    public bool IsClosed { get; private set; }
     public Guid ChannelID { get; private set; }
     public Guid BroadcastID { get; private set; }
 
     /// <summary>
-    /// コンテント取得元のUriを取得します
-    /// </summary>
-    public Uri SourceUri { get; private set; }
-
-    /// <summary>
     /// ソースストリームを取得します
     /// </summary>
-    public ISourceStream SourceStream
-    {
+    public ISourceStream SourceStream {
       get { return sourceStream; }
     }
 
@@ -390,13 +373,11 @@ namespace PeerCastStation.Core
       }
       outputStreams = new List<IOutputStream>();
       startTickCount = null;
-      IsClosed = true;
       OnClosed(args.StopReason);
     }
 
-    public void Start(ISourceStream source_stream)
+    private void Start(ISourceStream source_stream)
     {
-      IsClosed = false;
       if (sourceStream!=null) {
         sourceStream.Stopped -= SourceStream_Stopped;
       }
@@ -404,6 +385,29 @@ namespace PeerCastStation.Core
       sourceStream.Stopped += SourceStream_Stopped;
       startTickCount = Environment.TickCount;
       sourceStream.Start();
+    }
+
+    public void Start(Uri source_uri)
+    {
+      var source_factory = PeerCast.SourceStreamFactories.FirstOrDefault(factory => source_uri.Scheme==factory.Scheme);
+      if (source_factory==null) {
+        logger.Error("Protocol `{0}' is not found", source_uri.Scheme);
+        throw new ArgumentException(String.Format("Protocol `{0}' is not found", source_uri.Scheme));
+      }
+      var source_stream = source_factory.Create(this, source_uri);
+      this.Start(source_stream);
+    }
+
+    public void Start(Uri source_uri, IContentReaderFactory content_reader_factory)
+    {
+      var source_factory = PeerCast.SourceStreamFactories.FirstOrDefault(factory => source_uri.Scheme==factory.Scheme);
+      if (source_factory==null) {
+        logger.Error("Protocol `{0}' is not found", source_uri.Scheme);
+        throw new ArgumentException(String.Format("Protocol `{0}' is not found", source_uri.Scheme));
+      }
+      var content_reader = content_reader_factory.Create(this);
+      var source_stream = source_factory.Create(this, source_uri, content_reader);
+      this.Start(source_stream);
     }
 
     public void Reconnect()
@@ -415,9 +419,7 @@ namespace PeerCastStation.Core
 
     public void Reconnect(Uri source_uri)
     {
-      if (sourceStream!=null) {
-        sourceStream.Reconnect(source_uri);
-      }
+      Start(source_uri);
     }
 
     /// <summary>
@@ -445,41 +447,35 @@ namespace PeerCastStation.Core
     /// </summary>
     public void Close()
     {
-      if (!IsClosed) {
-        if (sourceStream!=null) {
-          sourceStream.Stop();
-        }
-        foreach (var outputStream in outputStreams) {
-          outputStream.Stop();
-        }
-        outputStreams = new List<IOutputStream>();
+      if (sourceStream!=null) {
+        sourceStream.Stop();
       }
+      foreach (var outputStream in outputStreams) {
+        outputStream.Stop();
+      }
+      outputStreams = new List<IOutputStream>();
     }
 
     /// <summary>
-    /// チャンネルIDとソースストリームを指定してチャンネルを初期化します
+    /// チャンネルIDを指定してチャンネルを初期化します
     /// </summary>
     /// <param name="peercast">所属するPeerCastオブジェクト</param>
     /// <param name="channel_id">チャンネルID</param>
-    /// <param name="source_uri">ソースURI</param>
-    public Channel(PeerCast peercast, Guid channel_id, Uri source_uri)
-      : this(peercast, channel_id, Guid.Empty, source_uri)
+    public Channel(PeerCast peercast, Guid channel_id)
+      : this(peercast, channel_id, Guid.Empty)
     {
     }
 
     /// <summary>
-    /// チャンネルIDとブロードキャストID、ソースストリームを指定してチャンネルを初期化します
+    /// チャンネルIDとブロードキャストIDを指定してチャンネルを初期化します
     /// </summary>
     /// <param name="peercast">所属するPeerCastオブジェクト</param>
     /// <param name="channel_id">チャンネルID</param>
     /// <param name="broadcast_id">ブロードキャストID</param>
-    /// <param name="source_uri">ソースURI</param>
-    public Channel(PeerCast peercast, Guid channel_id, Guid broadcast_id, Uri source_uri)
+    public Channel(PeerCast peercast, Guid channel_id, Guid broadcast_id)
     {
-      this.IsClosed = true;
-      this.PeerCast = peercast;
-      this.SourceUri = source_uri;
-      this.ChannelID = channel_id;
+      this.PeerCast    = peercast;
+      this.ChannelID   = channel_id;
       this.BroadcastID = broadcast_id;
       contents.ContentChanged += (sender, e) => {
         OnContentChanged();

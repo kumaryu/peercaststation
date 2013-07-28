@@ -156,21 +156,14 @@ namespace PeerCastStation.Core
     /// <returns>Channelのインスタンス</returns>
     public Channel RelayChannel(Guid channel_id, Uri tracker)
     {
-      Channel channel = null;
       logger.Debug("Requesting channel {0} from {1}", channel_id.ToString("N"), tracker);
-      ISourceStreamFactory source_factory = SourceStreamFactories.FirstOrDefault(factory => tracker.Scheme==factory.Scheme);
-      if (source_factory==null) {
-        logger.Error("Protocol `{0}' is not found", tracker.Scheme);
-        throw new ArgumentException(String.Format("Protocol `{0}' is not found", tracker.Scheme));
-      }
-      channel = new Channel(this, channel_id, tracker);
+      var channel = new Channel(this, channel_id);
       Utils.ReplaceCollection(ref channels, orig => {
         var new_collection = new List<Channel>(orig);
         new_collection.Add(channel);
         return new_collection;
       });
-      var source_stream = source_factory.Create(channel, tracker);
-      channel.Start(source_stream);
+      channel.Start(tracker);
       if (ChannelAdded!=null) ChannelAdded(this, new ChannelChangedEventArgs(channel));
       return channel;
     }
@@ -219,23 +212,15 @@ namespace PeerCastStation.Core
     /// <returns>Channelのインスタンス</returns>
     public Channel BroadcastChannel(IYellowPageClient yp, Guid channel_id, ChannelInfo channel_info, Uri source, IContentReaderFactory content_reader_factory)
     {
-      Channel channel = null;
       logger.Debug("Broadcasting channel {0} from {1}", channel_id.ToString("N"), source);
-      ISourceStreamFactory source_factory = SourceStreamFactories.FirstOrDefault(factory => source.Scheme==factory.Scheme);
-      if (source_factory==null) {
-        logger.Error("Protocol `{0}' is not found", source.Scheme);
-        throw new ArgumentException(String.Format("Protocol `{0}' is not found", source.Scheme));
-      }
-      channel = new Channel(this, channel_id, this.BroadcastID, source);
+      var channel = new Channel(this, channel_id, this.BroadcastID);
+      channel.ChannelInfo = channel_info;
       Utils.ReplaceCollection(ref channels, orig => {
         var new_collection = new List<Channel>(orig);
         new_collection.Add(channel);
         return new_collection;
       });
-      channel.ChannelInfo = channel_info;
-      var content_reader = content_reader_factory.Create(channel);
-      var source_stream = source_factory.Create(channel, source, content_reader);
-      channel.Start(source_stream);
+      channel.Start(source, content_reader_factory);
       if (ChannelAdded!=null) ChannelAdded(this, new ChannelChangedEventArgs(channel));
       if (yp!=null) yp.Announce(channel);
       return channel;
