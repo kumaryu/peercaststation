@@ -53,7 +53,7 @@ namespace PeerCastStation.Core
     private List<Host> nodes = new List<Host>();
     private Content contentHeader = null;
     private ContentCollection contents = new ContentCollection();
-    private int? startTickCount = null;
+    private System.Diagnostics.Stopwatch uptimeTimer = new System.Diagnostics.Stopwatch();
     /// <summary>
     /// 所属するPeerCastオブジェクトを取得します
     /// </summary>
@@ -178,12 +178,8 @@ namespace PeerCastStation.Core
     /// <summary>
     /// リレー接続がいっぱいかどうかを取得します
     /// </summary>
-    public virtual bool IsRelayFull
-    {
-      get
-      {
-        return !this.PeerCast.AccessController.IsChannelRelayable(this);
-      }
+    public virtual bool IsRelayFull {
+      get { return !this.PeerCast.AccessController.IsChannelRelayable(this); }
     }
 
     public virtual bool IsRelayable(IOutputStream sink)
@@ -221,28 +217,15 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 視聴接続がいっぱいかどうかを取得します
     /// </summary>
-    public virtual bool IsDirectFull
-    {
-      get
-      {
-        return !this.PeerCast.AccessController.IsChannelPlayable(this);
-      }
+    public virtual bool IsDirectFull {
+      get { return !this.PeerCast.AccessController.IsChannelPlayable(this); }
     }
 
     /// <summary>
     /// チャンネルの連続接続時間を取得します
     /// </summary>
-    public TimeSpan Uptime
-    {
-      get
-      {
-        if (startTickCount!=null) {
-          return new TimeSpan((Environment.TickCount-startTickCount.Value)*10000L);
-        }
-        else {
-          return TimeSpan.Zero;
-        }
-      }
+    public TimeSpan Uptime {
+      get { return uptimeTimer.Elapsed; }
     }
 
     /// <summary>
@@ -372,7 +355,7 @@ namespace PeerCastStation.Core
         os.Stop();
       }
       outputStreams = new List<IOutputStream>();
-      startTickCount = null;
+      uptimeTimer.Stop();
       OnClosed(args.StopReason);
     }
 
@@ -383,7 +366,8 @@ namespace PeerCastStation.Core
       }
       sourceStream = source_stream;
       sourceStream.Stopped += SourceStream_Stopped;
-      startTickCount = Environment.TickCount;
+      uptimeTimer.Reset();
+      uptimeTimer.Start();
       sourceStream.Start();
     }
 
