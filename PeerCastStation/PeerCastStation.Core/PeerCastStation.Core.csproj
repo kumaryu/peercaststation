@@ -69,6 +69,7 @@
     <Compile Include="Ringbuffer.cs" />
     <Compile Include="RingbufferStream.cs" />
     <Compile Include="PecaSettings.cs" />
+    <Compile Include="SourceConnectionBase.cs" />
     <Compile Include="SourceStreamBase.cs" />
     <Compile Include="StreamConnection.cs" />
     <Compile Include="Utils.cs" />
