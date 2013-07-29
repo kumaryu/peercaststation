@@ -48,6 +48,7 @@
     <Compile Include="PCPOutputStream.cs" />
     <Compile Include="PCPPongOutputStream.cs" />
     <Compile Include="PCPSourceStream.cs" />
+    <Compile Include="PCPVersion.cs" />
     <Compile Include="PCPYellowPageClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

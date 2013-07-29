@@ -35,10 +35,7 @@ namespace PeerCastStation.PCP
   public class PCPYellowPageClient
     : IYellowPageClient
   {
-    private const int PCP_VERSION    = 1218;
-    private const int PCP_VERSION_VP = 27;
     protected Logger Logger { get; private set; }
-    public const int DefaultPort = 7144;
     public PeerCast PeerCast { get; private set; }
     public string Name { get; private set; }
     public string Protocol { get { return "pcp"; } }
@@ -162,7 +159,7 @@ namespace PeerCastStation.PCP
       var host = Uri.DnsSafeHost;
       var port = Uri.Port;
       Uri res = null;
-      if (port<0) port = DefaultPort;
+      if (port<0) port = PCPVersion.DefaultPort;
       try {
         var client = new TcpClient(host, port);
         var stream = client.GetStream();
@@ -342,7 +339,7 @@ namespace PeerCastStation.PCP
       Logger.Debug("Thread started");
       var host = Uri.DnsSafeHost;
       var port = Uri.Port;
-      if (port<0) port = DefaultPort;
+      if (port<0) port = PCPVersion.DefaultPort;
       while (!IsStopped) {
         int next_update = Environment.TickCount;
         posts.Clear();
@@ -513,8 +510,7 @@ namespace PeerCastStation.PCP
         hostinfo.SetHostOldPos((uint)(channel.Contents.Oldest.Position & 0xFFFFFFFFU));
         hostinfo.SetHostNewPos((uint)(channel.Contents.Newest.Position & 0xFFFFFFFFU));
       }
-      hostinfo.SetHostVersion(PCP_VERSION);
-      hostinfo.SetHostVersionVP(PCP_VERSION_VP);
+      PCPVersion.SetHostVersion(hostinfo);
       hostinfo.SetHostFlags1(
         (PeerCast.AccessController.IsChannelRelayable(channel) ? PCPHostFlags1.Relay : 0) |
         (PeerCast.AccessController.IsChannelPlayable(channel) ? PCPHostFlags1.Direct : 0) |
@@ -540,8 +536,7 @@ namespace PeerCastStation.PCP
       bcst.SetBcstTTL(1);
       bcst.SetBcstHops(0);
       bcst.SetBcstFrom(PeerCast.SessionID);
-      bcst.SetBcstVersion(PCP_VERSION);
-      bcst.SetBcstVersionVP(PCP_VERSION_VP);
+      PCPVersion.SetBcstVersion(bcst);
       bcst.SetBcstChannelID(channel.ChannelID);
       bcst.SetBcstGroup(BroadcastGroup.Root);
       PostChannelInfo(bcst, channel);

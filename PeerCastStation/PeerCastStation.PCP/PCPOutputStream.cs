@@ -225,8 +225,6 @@ namespace PeerCastStation.PCP
       get { return OutputStreamType.Relay; }
     }
 
-    public const int PCP_VERSION = 1218;
-
     public Host Downhost       { get; protected set; }
     public string UserAgent    { get; protected set; }
     public bool IsRelayFull    { get; protected set; }
@@ -657,7 +655,7 @@ namespace PeerCastStation.PCP
       oleh.SetHeloAgent(PeerCast.AgentName);
       oleh.SetHeloSessionID(PeerCast.SessionID);
       oleh.SetHeloRemotePort(remote_port);
-      oleh.SetHeloVersion(PCP_VERSION);
+      PCPVersion.SetHeloVersion(oleh);
       Send(new Atom(Atom.PCP_OLEH, oleh));
       if (Downhost==null) {
         Logger.Info("Helo has no SessionID");

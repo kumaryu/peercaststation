@@ -101,9 +101,6 @@ namespace PeerCastStation.PCP
   public class PCPSourceConnection
     : SourceConnectionBase
   {
-    private const int PCP_VERSION    = 1218;
-    private const int PCP_VERSION_VP = 27;
-
     private TcpClient client = null;
     private enum State {
       SendingRelayRequest,
@@ -181,7 +178,7 @@ namespace PeerCastStation.PCP
 
     protected override StreamConnection DoConnect(Uri source)
     {
-      var port = source.Port<0 ? 7144 : source.Port;
+      var port = source.Port<0 ? PCPVersion.DefaultPort : source.Port;
       IPEndPoint endpoint = null;
       try {
         var addresses = Dns.GetHostAddresses(source.DnsSafeHost);
@@ -376,7 +373,7 @@ namespace PeerCastStation.PCP
           helo.SetHeloPing(listener.LocalEndPoint.Port);
         }
       }
-      helo.SetHeloVersion(PCP_VERSION);
+      PCPVersion.SetHeloVersion(helo);
       try {
         connection.Send(stream => {
           AtomWriter.Write(stream, new Atom(Atom.PCP_HELO, helo));
@@ -422,8 +419,7 @@ namespace PeerCastStation.PCP
         host.SetHostOldPos((uint)(Channel.Contents.Oldest.Position & 0xFFFFFFFFU));
         host.SetHostNewPos((uint)(Channel.Contents.Newest.Position & 0xFFFFFFFFU));
       }
-      host.SetHostVersion(PCP_VERSION);
-      host.SetHostVersionVP(PCP_VERSION_VP);
+      PCPVersion.SetHostVersion(host);
       host.SetHostFlags1(
         (PeerCast.AccessController.IsChannelRelayable(Channel) ? PCPHostFlags1.Relay : 0) |
         (PeerCast.AccessController.IsChannelPlayable(Channel) ? PCPHostFlags1.Direct : 0) |
@@ -447,8 +443,7 @@ namespace PeerCastStation.PCP
       bcst.SetBcstGroup(group);
       bcst.SetBcstHops(0);
       bcst.SetBcstTTL(11);
-      bcst.SetBcstVersion(PCP_VERSION);
-      bcst.SetBcstVersionVP(PCP_VERSION_VP);
+      PCPVersion.SetBcstVersion(bcst);
       bcst.SetBcstChannelID(Channel.ChannelID);
       bcst.Add(packet);
       return new Atom(Atom.PCP_BCST, bcst);
