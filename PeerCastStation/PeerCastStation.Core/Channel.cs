@@ -44,9 +44,9 @@ namespace PeerCastStation.Core
   /// <summary>
   /// チャンネル接続を管理するクラスです
   /// </summary>
-  public class Channel
+  public abstract class Channel
   {
-    private static Logger logger = new Logger(typeof(Channel));
+    protected static Logger logger = new Logger(typeof(Channel));
     private const int NodeLimit = 180000; //ms
     private ISourceStream sourceStream = null;
     private List<IOutputStream> outputStreams = new List<IOutputStream>();
@@ -54,7 +54,7 @@ namespace PeerCastStation.Core
     private Content contentHeader = null;
     private ContentCollection contents = new ContentCollection();
     private System.Diagnostics.Stopwatch uptimeTimer = new System.Diagnostics.Stopwatch();
-    private Object syncRoot = new Object();
+    protected Object syncRoot = new Object();
 
     /// <summary>
     /// 所属するPeerCastオブジェクトを取得します
@@ -71,8 +71,8 @@ namespace PeerCastStation.Core
       }
     }
     public Guid ChannelID   { get; private set; }
-    public Guid BroadcastID { get; private set; }
     public Uri  SourceUri   { get; private set; }
+    public abstract bool IsBroadcasting { get; }
 
     /// <summary>
     /// ソースストリームを取得します
@@ -392,13 +392,14 @@ namespace PeerCastStation.Core
       }
     }
 
-    private void Start(ISourceStream source_stream)
+    protected void Start(Uri source_uri, ISourceStream source_stream)
     {
       lock (syncRoot) {
         if (sourceStream!=null) {
           sourceStream.Stopped -= SourceStream_Stopped;
           sourceStream.Stop();
         }
+        this.SourceUri = source_uri;
         sourceStream = source_stream;
         sourceStream.Stopped += SourceStream_Stopped;
         uptimeTimer.Reset();
@@ -407,34 +408,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    public void Start(Uri source_uri)
-    {
-      lock (syncRoot) {
-        var source_factory = PeerCast.SourceStreamFactories.FirstOrDefault(factory => source_uri.Scheme==factory.Scheme);
-        if (source_factory==null) {
-          logger.Error("Protocol `{0}' is not found", source_uri.Scheme);
-          throw new ArgumentException(String.Format("Protocol `{0}' is not found", source_uri.Scheme));
-        }
-        var source_stream = source_factory.Create(this, source_uri);
-        this.SourceUri = source_uri;
-        this.Start(source_stream);
-      }
-    }
-
-    public void Start(Uri source_uri, IContentReaderFactory content_reader_factory)
-    {
-      lock (syncRoot) {
-        var source_factory = PeerCast.SourceStreamFactories.FirstOrDefault(factory => source_uri.Scheme==factory.Scheme);
-        if (source_factory==null) {
-          logger.Error("Protocol `{0}' is not found", source_uri.Scheme);
-          throw new ArgumentException(String.Format("Protocol `{0}' is not found", source_uri.Scheme));
-        }
-        var content_reader = content_reader_factory.Create(this);
-        var source_stream = source_factory.Create(this, source_uri, content_reader);
-        this.SourceUri = source_uri;
-        this.Start(source_stream);
-      }
-    }
+    public abstract void Start(Uri source_uri);
 
     private bool IsSourceConnected()
     {
@@ -515,25 +489,14 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="peercast">所属するPeerCastオブジェクト</param>
     /// <param name="channel_id">チャンネルID</param>
-    public Channel(PeerCast peercast, Guid channel_id)
-      : this(peercast, channel_id, Guid.Empty)
-    {
-    }
-
-    /// <summary>
-    /// チャンネルIDとブロードキャストIDを指定してチャンネルを初期化します
-    /// </summary>
-    /// <param name="peercast">所属するPeerCastオブジェクト</param>
-    /// <param name="channel_id">チャンネルID</param>
-    /// <param name="broadcast_id">ブロードキャストID</param>
-    public Channel(PeerCast peercast, Guid channel_id, Guid broadcast_id)
+    protected Channel(PeerCast peercast, Guid channel_id)
     {
       this.PeerCast    = peercast;
       this.ChannelID   = channel_id;
-      this.BroadcastID = broadcast_id;
       contents.ContentChanged += (sender, e) => {
         OnContentChanged();
       };
     }
   }
+
 }

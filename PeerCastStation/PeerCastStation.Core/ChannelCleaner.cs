@@ -37,7 +37,7 @@ namespace PeerCastStation
       if (inactiveLimit<1) return;
       var channels = peerCast.Channels;
       foreach (var channel in channels) {
-        if (channel.BroadcastID!=Guid.Empty) continue;
+        if (channel.IsBroadcasting) continue;
         if (predicate(channel)) {
           int time;
           if (inactiveChannels.TryGetValue(channel, out time)) {

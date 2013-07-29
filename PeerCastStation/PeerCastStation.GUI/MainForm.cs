@@ -535,7 +535,7 @@ namespace PeerCastStation.GUI
     private ChannelInfoContainer channelInfo = new ChannelInfoContainer(null, null);
     private void UpdateChannelInfo(Channel channel)
     {
-      var is_tracker = peerCast.BroadcastID==channel.BroadcastID;
+      var is_tracker = channel.IsBroadcasting;
       var info = new ChannelInfoContainer(channel.ChannelInfo, channel.ChannelTrack);
       chanInfoChannelID.Text = channel.ChannelID.ToString("N").ToUpper();
       if (info.InfoChannelName!=channelInfo.InfoChannelName) chanInfoChannelName.Text = info.InfoChannelName;
@@ -567,8 +567,7 @@ namespace PeerCastStation.GUI
       var item = channelList.SelectedItem as ChannelListItem;
       if (item!=null) {
         var channel = item.Channel;
-        var is_tracker = peerCast.BroadcastID==channel.BroadcastID;
-        if (!is_tracker) return;
+        if (!channel.IsBroadcasting) return;
         var info = new AtomCollection(channel.ChannelInfo.Extra);
         if (info!=null) {
           info.SetChanInfoComment(chanInfoComment.Text);

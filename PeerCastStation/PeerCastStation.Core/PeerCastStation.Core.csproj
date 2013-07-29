@@ -51,6 +51,7 @@
     <Compile Include="Application.cs" />
     <Compile Include="Atom.cs" />
     <Compile Include="AtomCollectionExtensions.cs" />
+    <Compile Include="BroadcastChannel.cs" />
     <Compile Include="Channel.cs" />
     <Compile Include="ChannelCleaner.cs" />
     <Compile Include="ChannelInfo.cs" />
@@ -67,6 +68,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueuedSynchronizationContext.cs" />
     <Compile Include="RawContentReader.cs" />
+    <Compile Include="RelayChannel.cs" />
     <Compile Include="Ringbuffer.cs" />
     <Compile Include="RingbufferStream.cs" />
     <Compile Include="PecaSettings.cs" />

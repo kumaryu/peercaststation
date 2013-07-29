@@ -50,7 +50,7 @@ namespace PeerCastStation.WPF.ChannelLists
             Connections.Channel = value.Channel;
             ChannelInfo.From(
               value.Channel,
-              peerCast.BroadcastID == value.Channel.BroadcastID);
+              value.Channel.IsBroadcasting);
             RelayTree.Channel = value.Channel;
           }
           OnButtonsCanExecuteChanged();

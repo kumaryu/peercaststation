@@ -296,7 +296,7 @@ namespace PeerCastStation.UI.HTTP
         res["localDirects"]   = channel.LocalDirects;
         res["totalRelays"]    = channel.TotalRelays;
         res["totalDirects"]   = channel.TotalDirects;
-        res["isBroadcasting"] = channel.BroadcastID==PeerCast.BroadcastID;
+        res["isBroadcasting"] = channel.IsBroadcasting;
         res["isRelayFull"]    = channel.IsRelayFull;
         res["isDirectFull"]   = channel.IsDirectFull;
         return res;
@@ -351,7 +351,7 @@ namespace PeerCastStation.UI.HTTP
       private void SetChannelInfo(string channelId, JObject info, JObject track)
       {
         var channel = GetChannel(channelId);
-        if (channel!=null && channel.BroadcastID==PeerCast.BroadcastID) {
+        if (channel!=null && channel.IsBroadcasting) {
           if (info!=null) {
             var new_info = new AtomCollection(channel.ChannelInfo.Extra);
             if (info["name"]!=null)    new_info.SetChanInfoName((string)info["name"]);

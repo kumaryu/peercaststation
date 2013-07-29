@@ -157,7 +157,7 @@ namespace PeerCastStation.Core
     public Channel RelayChannel(Guid channel_id, Uri tracker)
     {
       logger.Debug("Requesting channel {0} from {1}", channel_id.ToString("N"), tracker);
-      var channel = new Channel(this, channel_id);
+      var channel = new RelayChannel(this, channel_id);
       Utils.ReplaceCollection(ref channels, orig => {
         var new_collection = new List<Channel>(orig);
         new_collection.Add(channel);
@@ -213,14 +213,14 @@ namespace PeerCastStation.Core
     public Channel BroadcastChannel(IYellowPageClient yp, Guid channel_id, ChannelInfo channel_info, Uri source, IContentReaderFactory content_reader_factory)
     {
       logger.Debug("Broadcasting channel {0} from {1}", channel_id.ToString("N"), source);
-      var channel = new Channel(this, channel_id, this.BroadcastID);
+      var channel = new BroadcastChannel(this, channel_id, content_reader_factory);
       channel.ChannelInfo = channel_info;
       Utils.ReplaceCollection(ref channels, orig => {
         var new_collection = new List<Channel>(orig);
         new_collection.Add(channel);
         return new_collection;
       });
-      channel.Start(source, content_reader_factory);
+      channel.Start(source);
       if (ChannelAdded!=null) ChannelAdded(this, new ChannelChangedEventArgs(channel));
       if (yp!=null) yp.Announce(channel);
       return channel;
