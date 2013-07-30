@@ -649,11 +649,15 @@ namespace PeerCastStation.PCP
       }
       var remote = remoteType;
       if (RemoteEndPoint!=null && Utils.IsSiteLocal(RemoteEndPoint.Address)) remote |= RemoteHostStatus.Local;
+      var remote_name = String.Format(
+        "{0}:{1}",
+        SourceUri.Host,
+        SourceUri.IsDefaultPort ? PCPVersion.DefaultPort : SourceUri.Port);
       return new ConnectionInfo(
         "PCP Source",
         ConnectionType.Source,
         status,
-        SourceUri.ToString(),
+        remote_name,
         RemoteEndPoint,
         remote,
         lastPosition,

@@ -637,13 +637,12 @@ namespace PeerCastStation.GUI
         }
         var bitrate = (int)(((info.RecvRate ?? 0) + (info.SendRate ?? 0))*8/1000);
         return String.Format(
-          "{0}{1} {2} {3} {4}kbps pos:{5} {6}",
+          "{0} {1} {2} {3} {4}kbps {5}",
           status,
           info.ProtocolName,
           info.Status,
           info.RemoteName,
           bitrate,
-          info.ContentPosition,
           info.AgentName);
       }
     }
@@ -704,7 +703,7 @@ namespace PeerCastStation.GUI
             status = "■";
           }
           return String.Format(
-            "{0}{1} {2} {3} [{4}/{5}] {6}kbps pos:{7} {8}",
+            "{0} {1} {2} {3} [{4}/{5}] {6}kbps {7}",
             status,
             info.ProtocolName,
             info.Status,
@@ -712,25 +711,17 @@ namespace PeerCastStation.GUI
             info.LocalDirects,
             info.LocalRelays,
             bitrate,
-            info.ContentPosition,
             info.AgentName);
         case ConnectionType.Direct:
-          return String.Format(
-            "{0}{1} {2} {3} {4}kbps pos:{5} {6}",
-            status,
-            info.ProtocolName,
-            info.Status,
-            info.RemoteEndPoint,
-            bitrate,
-            info.ContentPosition,
-            info.AgentName);
         default:
           return String.Format(
-            "{0}{1} {2} {3} {4}kbps {5}",
+            "{0} {1} {2} {3} {6}kbps {7}",
             status,
             info.ProtocolName,
             info.Status,
             info.RemoteEndPoint,
+            info.LocalDirects,
+            info.LocalRelays,
             bitrate,
             info.AgentName);
         }
@@ -778,11 +769,11 @@ namespace PeerCastStation.GUI
         }
         var bitrate = (int)(((info.RecvRate ?? 0) + (info.SendRate ?? 0))*8/1000);
         return String.Format(
-          "{0}{1} {2} {3} {4}kbps {5}",
+          "{0} {1} {2} {3} {4}kbps {5}",
           status,
           info.ProtocolName,
-          info.RemoteName,
           info.Status,
+          info.RemoteName,
           bitrate,
           info.AgentName);
       }
