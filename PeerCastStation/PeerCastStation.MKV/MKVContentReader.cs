@@ -385,7 +385,7 @@ namespace PeerCastStation.MKV
                   c.Write(header);
                 }
               }
-              streamIndex += 1;
+              streamIndex = Channel.GenerateStreamID();
               streamOrigin = DateTime.Now;
               res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, 0, header.ToArray());
               if (ebml.DocType=="webm") {

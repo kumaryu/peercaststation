@@ -54,6 +54,7 @@ namespace PeerCastStation.Core
     private Content contentHeader = null;
     private ContentCollection contents = new ContentCollection();
     private System.Diagnostics.Stopwatch uptimeTimer = new System.Diagnostics.Stopwatch();
+    private int streamID = 0;
     protected Object syncRoot = new Object();
 
     /// <summary>
@@ -149,6 +150,13 @@ namespace PeerCastStation.Core
       });
       if (removed) {
         if (OutputStreamsChanged!=null) OutputStreamsChanged(this, new EventArgs());
+      }
+    }
+
+    public int GenerateStreamID()
+    {
+      lock (syncRoot) {
+        return streamID++;
       }
     }
 

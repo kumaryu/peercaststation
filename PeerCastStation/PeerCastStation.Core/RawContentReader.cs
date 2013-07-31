@@ -23,7 +23,7 @@ namespace PeerCastStation.Core
       var res = new ParsedContent();
       var pos = Channel.ContentPosition;
       if (Channel.ContentHeader==null) {
-        streamIndex += 1;
+        streamIndex = Channel.GenerateStreamID();
         streamOrigin = DateTime.Now;
         res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, pos, new byte[] { });
         var channel_info = new AtomCollection(Channel.ChannelInfo.Extra);

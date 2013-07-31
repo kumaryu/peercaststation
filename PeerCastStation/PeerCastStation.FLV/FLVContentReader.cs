@@ -156,7 +156,7 @@ namespace PeerCastStation.FLV
                 Logger.Info("FLV Header found");
                 fileHeader = header;
                 bin = header.Binary;
-                streamIndex += 1;
+                streamIndex = Channel.GenerateStreamID();
                 streamOrigin = DateTime.Now;
                 res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, position, bin);
                 res.Contents = null;
@@ -199,7 +199,7 @@ namespace PeerCastStation.FLV
                   read_valid = true;
                   fileHeader = header;
                   bin = header.Binary;
-                  streamIndex += 1;
+                  streamIndex = Channel.GenerateStreamID();
                   streamOrigin = DateTime.Now;
                   res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, 0, bin);
                   res.Contents = null;

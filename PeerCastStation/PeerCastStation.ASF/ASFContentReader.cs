@@ -365,7 +365,7 @@ namespace PeerCastStation.ASF
                 info.SetChanInfoStreamExt(".asf");
               }
               res.ChannelInfo = new ChannelInfo(info);
-              streamIndex += 1;
+              streamIndex = Channel.GenerateStreamID();
               streamOrigin = DateTime.Now;
               res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, pos, chunk.ToByteArray());
               pos += chunk.TotalLength;

@@ -527,7 +527,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    private int      streamIndex = -1;
+    private int streamIndex = -1;
     private DateTime streamOrigin;
     private long     lastPosition = 0;
     protected void OnPCPChanPkt(Atom atom)
@@ -537,7 +537,7 @@ namespace PeerCastStation.PCP
       if (pkt_type!=null && pkt_data!=null) {
         if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_HEAD) {
           long pkt_pos = atom.Children.GetChanPktPos() ?? 0;
-          streamIndex += 1;
+          streamIndex = Channel.GenerateStreamID();
           streamOrigin = DateTime.Now;
           Channel.ContentHeader = new Content(streamIndex, TimeSpan.Zero, pkt_pos, pkt_data);
           lastPosition = pkt_pos;
