@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:l="clr-namespace:PeerCastStation.WPF.CoreSettings"
+             xmlns:extToolkit="http://schemas.xceed.com/wpf/xaml/toolkit"
              mc:Ignorable="d"
              d:DesignHeight="500" d:DesignWidth="400">
   <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -47,20 +48,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           </Grid.RowDefinitions>
           <Label    Grid.Column="0" Grid.Row="0" Content="最大リレー数:"/>
           <Label    Grid.Column="1" Grid.Row="0" Content="合計:"/>
-          <TextBox  Grid.Column="2" Grid.Row="0" Text="{Binding MaxRelays, UpdateSourceTrigger=PropertyChanged}"/>
+          <extToolkit:IntegerUpDown Grid.Column="2" Grid.Row="0" Minimum="0" Value="{Binding MaxRelays, UpdateSourceTrigger=PropertyChanged}"/>
           <Label    Grid.Column="3" Grid.Row="0" Content="チャンネル毎:"/>
-          <TextBox  Grid.Column="4" Grid.Row="0" Text="{Binding MaxRelaysPerChannel, UpdateSourceTrigger=PropertyChanged}"/>
+          <extToolkit:IntegerUpDown Grid.Column="4" Grid.Row="0" Minimum="0" Value="{Binding MaxRelaysPerChannel, UpdateSourceTrigger=PropertyChanged}"/>
           <Label    Grid.Column="0" Grid.Row="1" Content="視聴数:"/>
           <Label    Grid.Column="1" Grid.Row="1" Content="合計:"/>
-          <TextBox  Grid.Column="2" Grid.Row="1" Text="{Binding MaxDirects, UpdateSourceTrigger=PropertyChanged}"/>
+          <extToolkit:IntegerUpDown Grid.Column="2" Grid.Row="1" Minimum="0" Value="{Binding MaxDirects, UpdateSourceTrigger=PropertyChanged}"/>
           <Label    Grid.Column="3" Grid.Row="1" Content="チャンネル毎:"/>
-          <TextBox  Grid.Column="4" Grid.Row="1" Text="{Binding MaxDirectsPerChannel, UpdateSourceTrigger=PropertyChanged}"/>
+          <extToolkit:IntegerUpDown Grid.Column="4" Grid.Row="1" Minimum="0" Value="{Binding MaxDirectsPerChannel, UpdateSourceTrigger=PropertyChanged}"/>
           <Label    Grid.Column="0" Grid.Row="2" Content="最大上り帯域(kbps):"/>
-          <TextBox  Grid.Column="1" Grid.Row="2" Grid.ColumnSpan="4" Text="{Binding MaxUpstreamRate, UpdateSourceTrigger=PropertyChanged}"/>
+          <extToolkit:IntegerUpDown Grid.Column="1" Grid.Row="2" Grid.ColumnSpan="4" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRate, UpdateSourceTrigger=PropertyChanged}"/>
           <Label    Grid.Column="0" Grid.Row="3" Content="自動切断するチャンネル:"/>
           <ComboBox Grid.Column="1" Grid.Row="3" Grid.ColumnSpan="4" ItemsSource="{Binding ChannelCleanupModeItems}" DisplayMemberPath="Name" SelectedValuePath="Mode" IsEditable="False" SelectedValue="{Binding ChannelCleanupMode}"/>
           <Label    Grid.Column="0" Grid.Row="4" Content="チャンネル自動切断までの時間(分):"/>
-          <TextBox  Grid.Column="1" Grid.Row="4" Grid.ColumnSpan="4" Text="{Binding ChannelCleanupInactiveLimit}"/>
+          <extToolkit:IntegerUpDown Grid.Column="1" Grid.Row="4" Grid.ColumnSpan="4" Minimum="0" Value="{Binding ChannelCleanupInactiveLimit}"/>
         </Grid>
       </GroupBox>
       <GroupBox Header="YP一覧">
