@@ -15,68 +15,95 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using PeerCastStation.Core;
 using PeerCastStation.WPF.Commons;
+using System.Collections.Generic;
 
 namespace PeerCastStation.WPF.CoreSettings
 {
   class OtherSettingViewModel : ViewModelBase
   {
-    private int maxRelays;
-    public int MaxRelays
-    {
-      get { return maxRelays; }
-      set
-      {
-        SetProperty("MaxRelays", ref maxRelays, value,
-          applyOthers.OnCanExecuteChanged);
+    public class ChannelCleanupModeItem {
+      public string Name { get; set; }
+      public PeerCastStation.ChannelCleaner.CleanupMode Mode { get; set; }
+    }
+    private static ChannelCleanupModeItem[] channelCleanupModeItems = new ChannelCleanupModeItem[] {
+      new ChannelCleanupModeItem { Name="自動切断しない",                   Mode=ChannelCleaner.CleanupMode.None },
+      new ChannelCleanupModeItem { Name="接続していないチャンネル",          Mode=ChannelCleaner.CleanupMode.Disconnected },
+      new ChannelCleanupModeItem { Name="視聴・リレーをしていないチャンネル", Mode=ChannelCleaner.CleanupMode.NotRelaying },
+      new ChannelCleanupModeItem { Name="視聴をしていないチャンネル",        Mode=ChannelCleaner.CleanupMode.NotPlaying },
+    };
+    public IEnumerable<ChannelCleanupModeItem> ChannelCleanupModeItems {
+      get { return channelCleanupModeItems; }
+    }
+
+    public PeerCastStation.ChannelCleaner.CleanupMode ChannelCleanupMode {
+      get { return ChannelCleaner.Mode; }
+      set {
+        var old = ChannelCleaner.Mode;
+        if (SetProperty("ChannelCleanupMode", ref old, value)) {
+          ChannelCleaner.Mode = value;
+        }
       }
     }
 
-    private int maxRelaysPerChannel;
-    public int MaxRelaysPerChannel
-    {
-      get { return maxRelaysPerChannel; }
-      set
-      {
-        SetProperty("MaxRelaysPerChannel", ref maxRelaysPerChannel, value,
-          applyOthers.OnCanExecuteChanged);
+    public int ChannelCleanupInactiveLimit {
+      get { return ChannelCleaner.InactiveLimit/60000; }
+      set {
+        var old = ChannelCleaner.InactiveLimit/60000;
+        if (SetProperty("ChannelCleanupInactiveLimit", ref old, value)) {
+          ChannelCleaner.InactiveLimit = value * 60000;
+        }
       }
     }
 
-    private int maxDirects;
-    public int MaxDirects
-    {
-      get { return maxDirects; }
-      set
-      {
-        SetProperty("MaxDirects", ref maxDirects, value,
-          applyOthers.OnCanExecuteChanged);
+    public int MaxRelays {
+      get { return pecaApp.PeerCast.AccessController.MaxRelays; }
+      set {
+        if (pecaApp.PeerCast.AccessController.MaxRelays!=value) {
+          pecaApp.PeerCast.AccessController.MaxRelays = value;
+          OnPropertyChanged("MaxRelays");
+        }
       }
     }
 
-    private int maxDirectsPerChannel;
-    public int MaxDirectsPerChannel
-    {
-      get { return maxDirectsPerChannel; }
-      set
-      {
-        SetProperty("MaxDirectsPerChannel", ref maxDirectsPerChannel, value,
-          applyOthers.OnCanExecuteChanged);
+    public int MaxRelaysPerChannel {
+      get { return pecaApp.PeerCast.AccessController.MaxRelaysPerChannel; }
+      set {
+        if (pecaApp.PeerCast.AccessController.MaxRelaysPerChannel!=value) {
+          pecaApp.PeerCast.AccessController.MaxRelaysPerChannel = value;
+          OnPropertyChanged("MaxRelaysPerChannel");
+        }
       }
     }
 
-    private int maxUpstreamRate;
-    public int MaxUpstreamRate
-    {
-      get { return maxUpstreamRate; }
-      set
-      {
-        SetProperty("MaxUpstreamRate", ref maxUpstreamRate, value,
-          applyOthers.OnCanExecuteChanged);
+    public int MaxDirects {
+      get { return pecaApp.PeerCast.AccessController.MaxPlays; }
+      set {
+        if (pecaApp.PeerCast.AccessController.MaxPlays!=value) {
+          pecaApp.PeerCast.AccessController.MaxPlays = value;
+          OnPropertyChanged("MaxPlays");
+        }
       }
     }
 
-    private readonly Command applyOthers;
-    public Command ApplyOthers { get { return applyOthers; } }
+    public int MaxDirectsPerChannel {
+      get { return pecaApp.PeerCast.AccessController.MaxPlaysPerChannel; }
+      set {
+        if (pecaApp.PeerCast.AccessController.MaxPlaysPerChannel!=value) {
+          pecaApp.PeerCast.AccessController.MaxPlaysPerChannel = value;
+          OnPropertyChanged("MaxPlaysPerChannel");
+        }
+      }
+    }
+
+    public int MaxUpstreamRate {
+      get { return pecaApp.PeerCast.AccessController.MaxUpstreamRate; }
+      set {
+        if (pecaApp.PeerCast.AccessController.MaxUpstreamRate!=value) {
+          pecaApp.PeerCast.AccessController.MaxUpstreamRate = value;
+          OnPropertyChanged("MaxUpstreamRate");
+        }
+      }
+    }
 
     public bool IsShowWindowOnStartup
     {
@@ -93,43 +120,6 @@ namespace PeerCastStation.WPF.CoreSettings
     internal OtherSettingViewModel(PeerCastApplication peca_app)
     {
       pecaApp = peca_app;
-      var accessController = pecaApp.PeerCast.AccessController;
-      applyOthers = new Command(
-        () => WriteTo(accessController),
-        () => IsChanged(accessController));
-
-      ReadFrom(accessController);
-    }
-
-    internal void ReadFrom(AccessController from)
-    {
-      MaxRelays = from.MaxRelays;
-      MaxRelaysPerChannel = from.MaxRelaysPerChannel;
-      MaxDirects = from.MaxPlays;
-      MaxDirectsPerChannel = from.MaxPlaysPerChannel;
-      MaxUpstreamRate = from.MaxUpstreamRate;
-    }
-
-    private bool IsChanged(AccessController ctrler)
-    {
-      if (ctrler.MaxRelays != MaxRelays ||
-          ctrler.MaxPlays != MaxDirects ||
-          ctrler.MaxRelaysPerChannel != MaxRelaysPerChannel ||
-          ctrler.MaxPlaysPerChannel != MaxDirectsPerChannel ||
-          ctrler.MaxUpstreamRate != MaxUpstreamRate)
-        return true;
-      else
-        return false;
-    }
-
-    private void WriteTo(AccessController to)
-    {
-      to.MaxRelays = MaxRelays;
-      to.MaxPlays = MaxDirects;
-      to.MaxRelaysPerChannel = MaxRelaysPerChannel;
-      to.MaxPlaysPerChannel = MaxDirectsPerChannel;
-      to.MaxUpstreamRate = MaxUpstreamRate;
-      applyOthers.OnCanExecuteChanged();
     }
   }
 }
