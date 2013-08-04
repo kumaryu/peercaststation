@@ -114,17 +114,9 @@ namespace PeerCastStation.PCP
     private RelayRequestResponse relayResponse = null;
     private Host uphost;
     private RemoteHostStatus remoteType = RemoteHostStatus.None;
+    private IPEndPoint remoteEndPoint;
 
-    private IPEndPoint RemoteEndPoint {
-      get {
-        if (client!=null && client.Connected) {
-          return (IPEndPoint)client.Client.RemoteEndPoint;
-        }
-        else {
-          return null;
-        }
-      }
-    }
+    private IPEndPoint RemoteEndPoint { get { return remoteEndPoint; } }
 
     public PCPSourceConnection(
         PeerCast peercast,
@@ -162,6 +154,7 @@ namespace PeerCastStation.PCP
       try {
         client = new TcpClient();
         client.Connect(endpoint);
+        remoteEndPoint = (IPEndPoint)client.Client.RemoteEndPoint;
         var stream = client.GetStream();
         var connection = new StreamConnection(stream, stream);
         connection.ReceiveTimeout = 3000;
