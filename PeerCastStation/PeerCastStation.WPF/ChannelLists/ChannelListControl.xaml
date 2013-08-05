@@ -24,57 +24,60 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="400"
              Background="White">
-    <UserControl.Resources>
-        <Style TargetType="Button">
-            <Setter Property="Width" Value="64"/>
-            <Setter Property="Height" Value="32"/>
-            <Setter Property="Margin" Value="5"/>
-        </Style>
-    </UserControl.Resources>
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="1*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="2*"/>
-        </Grid.RowDefinitions>
-        <DockPanel Grid.Row="0">
-            <StackPanel DockPanel.Dock="Right">
-                <Button Content="再生" Command="{Binding Play}"/>
-                <Button Content="切断" Command="{Binding Close}"/>
-                <Button Content="再接続" Command="{Binding Bump}"/>
-                <Button Content="配信..." Click="BroadcastButton_Click"/>
-            </StackPanel>
-            <ListBox ItemsSource="{Binding Channels}"
-                     SelectedItem="{Binding Channel}">
-                <ListBox.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem Header="再生"
-                                  Command="{Binding Play}"/>
-                        <MenuItem Header="コンタクトURLを開く(_U)"
-                                  Command="{Binding OpenContactUrl}"/>
-                        <Separator/>
-                        <MenuItem Header="ストリームURLをコピー(_S)"
-                                  Command="{Binding CopyStreamUrl}"/>
-                        <MenuItem Header="コンタクトURLをコピー(_C)"
-                                  Command="{Binding CopyContactUrl}"/>
-                    </ContextMenu>
-                </ListBox.ContextMenu>
-            </ListBox>
-        </DockPanel>
-        <GridSplitter Grid.Row="1" Height="5"
-                      HorizontalAlignment="Stretch" Background="Transparent"/>
-        <TabControl Grid.Row="2">
-            <TabItem Header="接続一覧">
-                <lco:ConnectionListControl DataContext="{Binding Connections}"/>
-            </TabItem>
-            <TabItem Header="チャンネル情報">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <lch:ChannelInfoControl DataContext="{Binding ChannelInfo}"/>
-                </ScrollViewer>
-            </TabItem>
-            <TabItem Header="リレーツリー">
-                <lr:RelayTreeControl DataContext="{Binding RelayTree}"/>
-            </TabItem>
-        </TabControl>
+  <UserControl.Resources>
+    <Style TargetType="Button">
+      <Setter Property="Width" Value="64"/>
+      <Setter Property="Height" Value="32"/>
+      <Setter Property="Margin" Value="5"/>
+    </Style>
+  </UserControl.Resources>
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="1*"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="2*"/>
+    </Grid.RowDefinitions>
+    <Grid Grid.Row="0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+      <ListBox Grid.Row="0" Grid.Column="0" Grid.RowSpan="5" ItemsSource="{Binding Channels}" SelectedItem="{Binding Channel}">
+        <ListBox.ContextMenu>
+          <ContextMenu>
+            <MenuItem Header="再生" Command="{Binding Play}"/>
+            <MenuItem Header="コンタクトURLを開く(_U)" Command="{Binding OpenContactUrl}"/>
+            <Separator/>
+            <MenuItem Header="ストリームURLをコピー(_S)" Command="{Binding CopyStreamUrl}"/>
+            <MenuItem Header="コンタクトURLをコピー(_C)" Command="{Binding CopyContactUrl}"/>
+          </ContextMenu>
+        </ListBox.ContextMenu>
+      </ListBox>
+      <Button Grid.Row="0" Grid.Column="1" Content="再生" Command="{Binding Play}"/>
+      <Button Grid.Row="1" Grid.Column="1" Content="切断" Command="{Binding Close}"/>
+      <Button Grid.Row="2" Grid.Column="1" Content="再接続" Command="{Binding Bump}"/>
+      <Button Grid.Row="3" Grid.Column="1" Content="配信..." Click="BroadcastButton_Click"/>
     </Grid>
+    <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="Transparent" />
+    <TabControl Grid.Row="2">
+      <TabItem Header="接続一覧">
+        <lco:ConnectionListControl DataContext="{Binding Connections}"/>
+      </TabItem>
+      <TabItem Header="チャンネル情報">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <lch:ChannelInfoControl DataContext="{Binding ChannelInfo}"/>
+        </ScrollViewer>
+      </TabItem>
+      <TabItem Header="リレーツリー">
+        <lr:RelayTreeControl DataContext="{Binding RelayTree}"/>
+      </TabItem>
+    </TabControl>
+  </Grid>
 </UserControl>

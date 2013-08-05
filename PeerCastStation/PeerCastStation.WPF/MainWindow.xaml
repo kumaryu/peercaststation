@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         xmlns:l="clr-namespace:PeerCastStation.WPF.Logs"
         xmlns:lc="clr-namespace:PeerCastStation.WPF.CoreSettings"
         xmlns:lb="clr-namespace:PeerCastStation.WPF.ChannelLists"
-        Title="PeerCastStation" Height="600" Width="460">
+        Title="PeerCastStation" Height="600" Width="460" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
     <Window.Resources>
         <Style TargetType="TabItem">
             <Setter Property="Padding" Value="10,2"/>

@@ -60,11 +60,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           <extToolkit:IntegerUpDown Grid.Column="1" Grid.Row="2" Grid.ColumnSpan="4" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRate, UpdateSourceTrigger=PropertyChanged}"/>
           <Label    Grid.Column="0" Grid.Row="3" Content="自動切断するチャンネル:"/>
           <ComboBox Grid.Column="1" Grid.Row="3" Grid.ColumnSpan="4" ItemsSource="{Binding ChannelCleanupModeItems}" DisplayMemberPath="Name" SelectedValuePath="Mode" IsEditable="False" SelectedValue="{Binding ChannelCleanupMode}"/>
-          <Label    Grid.Column="0" Grid.Row="4" Content="チャンネル自動切断までの時間(分):"/>
+          <Label    Grid.Column="0" Grid.Row="4" Content="自動切断までの時間(分):"/>
           <extToolkit:IntegerUpDown Grid.Column="1" Grid.Row="4" Grid.ColumnSpan="4" Minimum="0" Value="{Binding ChannelCleanupInactiveLimit}"/>
         </Grid>
       </GroupBox>
-      <GroupBox Header="YP一覧">
+      <GroupBox Header="配信掲載用YP">
         <l:ListControl x:Name="YellowPagesList" DataContext="{Binding YellowPagesList}"/>
       </GroupBox>
       <GroupBox Header="UI設定" DataContext="{Binding OtherSetting}">
