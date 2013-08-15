@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Windows.Media.Imaging;
 using PeerCastStation.Core;
 
 namespace PeerCastStation.WPF.ChannelLists
@@ -37,53 +38,82 @@ namespace PeerCastStation.WPF.ChannelLists
 
   class ChannelListItem
   {
+    private static BitmapImage[] StatusIcons = new BitmapImage[] {
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_0.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_1.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_2.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_3.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_4.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_5.png")),
+    };
     public Channel Channel { get; private set; }
     public ChannelListItem(Channel channel)
     {
       this.Channel = channel;
     }
 
-    public override string ToString()
-    {
-      var status = "UNKNOWN";
-      switch (Channel.Status)
-      {
-        case SourceStreamStatus.Idle: status = "IDLE"; break;
+    public string ChannelStatus {
+      get { 
+        var status = "UNKNOWN";
+        switch (Channel.Status) {
+        case SourceStreamStatus.Idle:       status = "IDLE";    break;
         case SourceStreamStatus.Connecting: status = "CONNECT"; break;
-        case SourceStreamStatus.Searching: status = "SEARCH"; break;
-        case SourceStreamStatus.Receiving: status = "RECEIVE"; break;
-        case SourceStreamStatus.Error: status = "ERROR"; break;
-      }
-      var relay_status = "　";
-      if (Channel.IsRelayFull)
-      {
-        if (Channel.LocalRelays > 0)
-        {
-          relay_status = "○";
+        case SourceStreamStatus.Searching:  status = "SEARCH";  break;
+        case SourceStreamStatus.Receiving:  status = "RECEIVE"; break;
+        case SourceStreamStatus.Error:      status = "ERROR";   break;
         }
-        else if (!Channel.PeerCast.IsFirewalled.HasValue || Channel.PeerCast.IsFirewalled.Value)
-        {
-          relay_status = "×";
-        }
-        else
-        {
-          relay_status = "△";
-        }
+        return status;
       }
-      else
-      {
-        relay_status = "◎";
-      }
-      return String.Format(
-        "{0} {1} {2}kbps ({3}/{4}) [{5}/{6}] {7}",
-        relay_status,
-        Channel.ChannelInfo.Name,
-        Channel.ChannelInfo.Bitrate,
-        Channel.TotalDirects,
-        Channel.TotalRelays,
-        Channel.LocalDirects,
-        Channel.LocalRelays,
-        status);
     }
+    public string RelayStatus {
+      get {
+        var relay_status = "　";
+        if (Channel.IsRelayFull) {
+          if (Channel.LocalRelays > 0) {
+            relay_status = "○";
+          }
+          else if (!Channel.PeerCast.IsFirewalled.HasValue || Channel.PeerCast.IsFirewalled.Value) {
+            if (Channel.LocalRelays > 0) {
+              relay_status = "？";
+            }
+            else {
+              relay_status = "×";
+            }
+          }
+          else {
+            relay_status = "△";
+          }
+        }
+        else {
+          relay_status = "◎";
+        }
+        return relay_status;
+      }
+    }
+    public BitmapImage RelayStatusIcon {
+      get {
+        switch (RelayStatus) {
+        case "◎": return StatusIcons[0];
+        case "○": return StatusIcons[1];
+        case "△": return StatusIcons[2];
+        case "×": return StatusIcons[3];
+        case "？": return StatusIcons[4];
+        default: return StatusIcons[5];
+        }
+      }
+    }
+    public string Name    { get { return Channel.ChannelInfo.Name; } }
+    public string Bitrate { get { return String.Format("{0}kbps", Channel.ChannelInfo.Bitrate); } }
+    public string Connections {
+      get {
+        return String.Format(
+          "({0}/{1}) [{2}/{3}]",
+          Channel.TotalDirects,
+          Channel.TotalRelays,
+          Channel.LocalDirects,
+          Channel.LocalRelays);
+      }
+    }
+
   }
 }
