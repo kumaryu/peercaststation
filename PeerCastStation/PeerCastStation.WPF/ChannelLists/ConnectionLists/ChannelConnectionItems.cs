@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Windows.Media.Imaging;
 using PeerCastStation.Core;
 
 namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
@@ -25,8 +26,46 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
   {
     void Disconnect();
     void Reconnect();
-    bool IsDisconnectable { get; }
-    bool IsReconnectable { get; }
+    bool IsDisconnectable     { get; }
+    bool IsReconnectable      { get; }
+    BitmapImage AttributeIcon { get; }
+    string Protocol           { get; }
+    string Status             { get; }
+    string RemoteName         { get; }
+    string Bitrate            { get; }
+    string ContentPosition    { get; }
+    string Connections        { get; }
+    string AgentName          { get; }
+  }
+
+  internal static class AttributeIcons
+  {
+    private static BitmapImage[] icons = new BitmapImage[] {
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_0.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_1.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_2.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_3.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_4.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_5.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_6.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_7.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_8.png")),
+    };
+    public static BitmapImage StatusToIcon(string status)
+    {
+      switch (status) {
+      case "◎": return icons[0];
+      case "○": return icons[1];
+      case "△": return icons[2];
+      case "×": return icons[3];
+      case "？": return icons[4];
+      case "　": return icons[5];
+      case "■": return icons[6];
+      case "Ｒ": return icons[7];
+      case "Ｔ": return icons[8];
+      default: return null;
+      }
+    }
   }
 
   class ChannelConnectionSourceItem : IChannelConnectionItem
@@ -57,26 +96,67 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
       get { return false; }
     }
 
-    public override string ToString()
+    public BitmapImage AttributeIcon {
+      get {
+        var info = sourceStream.GetConnectionInfo();
+        var status = "";
+        if ((info.RemoteHostStatus & RemoteHostStatus.Root)!=0) {
+          status = "Ｒ";
+        }
+        if ((info.RemoteHostStatus & RemoteHostStatus.Tracker)!=0) {
+          status = "Ｔ";
+        }
+        return AttributeIcons.StatusToIcon(status);
+      }
+    }
+
+    public string Protocol {
+      get {
+        var info = sourceStream.GetConnectionInfo();
+        return info.ProtocolName;
+      }
+    }
+
+    public string Status {
+      get {
+        var info = sourceStream.GetConnectionInfo();
+        return info.Status.ToString();
+      }
+    }
+
+    public string RemoteName
     {
-      var info = sourceStream.GetConnectionInfo();
-      var status = "　";
-      if ((info.RemoteHostStatus & RemoteHostStatus.Root)!=0) {
-        status = "Ｒ";
+      get {
+        var info = sourceStream.GetConnectionInfo();
+        return info.RemoteName;
       }
-      if ((info.RemoteHostStatus & RemoteHostStatus.Tracker)!=0) {
-        status = "Ｔ";
+    }
+
+    public string Bitrate
+    {
+      get {
+        var info = sourceStream.GetConnectionInfo();
+        var bitrate = (int)(((info.RecvRate ?? 0) + (info.SendRate ?? 0))*8/1000);
+        return String.Format("{0}kbps", bitrate);
       }
-      var bitrate = (int)(((info.RecvRate ?? 0) + (info.SendRate ?? 0))*8/1000);
-      return String.Format(
-        "{0}{1} {2} {3} {4}kbps pos:{5} {6}",
-        status,
-        info.ProtocolName,
-        info.Status,
-        info.RemoteName,
-        bitrate,
-        info.ContentPosition,
-        info.AgentName);
+    }
+
+    public string ContentPosition
+    {
+      get { return ""; }
+    }
+
+    public string Connections
+    {
+      get { return ""; }
+    }
+
+    public string AgentName
+    {
+      get {
+        var info = sourceStream.GetConnectionInfo();
+        return info.AgentName;
+      }
     }
 
     public override bool Equals(object obj)
@@ -121,63 +201,93 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
       get { return false; }
     }
 
-    public override string ToString()
-    {
-      var info = outputStream.GetConnectionInfo();
-      var status = "　";
-      var bitrate = (int)(((info.RecvRate ?? 0) + (info.SendRate ?? 0))*8/1000);
-      switch (info.Type) {
-      case ConnectionType.Relay:
-        if ((info.RemoteHostStatus & RemoteHostStatus.Receiving)!=0) {
-          if ((info.RemoteHostStatus & RemoteHostStatus.Firewalled)!=0 &&
-              (info.RemoteHostStatus & RemoteHostStatus.Local)==0) {
-            status = "×";
-          }
-          else if ((info.RemoteHostStatus & RemoteHostStatus.RelayFull)!=0) {
-            if ((info.LocalRelays ?? 0)>0) {
-              status = "○";
+    public BitmapImage AttributeIcon {
+      get {
+        var info = outputStream.GetConnectionInfo();
+        var status = "";
+        if (info.Type==ConnectionType.Relay) {
+          if ((info.RemoteHostStatus & RemoteHostStatus.Receiving)!=0) {
+            if ((info.RemoteHostStatus & RemoteHostStatus.Firewalled)!=0 &&
+                (info.RemoteHostStatus & RemoteHostStatus.Local)==0) {
+              if ((info.LocalRelays ?? 0)>0) {
+                status = "？";
+              }
+              else {
+                status = "×";
+              }
+            }
+            else if ((info.RemoteHostStatus & RemoteHostStatus.RelayFull)!=0) {
+              if ((info.LocalRelays ?? 0)>0) {
+                status = "○";
+              }
+              else {
+                status = "△";
+              }
             }
             else {
-              status = "△";
+              status = "◎";
             }
           }
           else {
-            status = "◎";
+            status = "■";
           }
         }
-        else {
-          status = "■";
+        return AttributeIcons.StatusToIcon(status);
+      }
+    }
+
+    public string Protocol {
+      get {
+        var info = outputStream.GetConnectionInfo();
+        return info.ProtocolName;
+      }
+    }
+
+    public string Status {
+      get {
+        var info = outputStream.GetConnectionInfo();
+        return info.Status.ToString();
+      }
+    }
+
+    public string RemoteName {
+      get {
+        var info = outputStream.GetConnectionInfo();
+        return info.RemoteName;
+      }
+    }
+
+    public string Bitrate {
+      get {
+        var info = outputStream.GetConnectionInfo();
+        var bitrate = (int)(((info.RecvRate ?? 0) + (info.SendRate ?? 0))*8/1000);
+        return String.Format("{0}kbps", bitrate);
+      }
+    }
+
+    public string ContentPosition {
+      get {
+        var info = outputStream.GetConnectionInfo();
+        return (info.ContentPosition ?? 0).ToString();
+      }
+    }
+
+    public string Connections {
+      get {
+        var info = outputStream.GetConnectionInfo();
+        if (info.Type==ConnectionType.Relay) {
+          return String.Format("[{0}/{1}]", info.LocalDirects ?? 0, info.LocalRelays ?? 0);
         }
-        return String.Format(
-          "{0}{1} {2} {3} [{4}/{5}] {6}kbps pos:{7} {8}",
-          status,
-          info.ProtocolName,
-          info.Status,
-          info.RemoteEndPoint,
-          info.LocalDirects,
-          info.LocalRelays,
-          bitrate,
-          info.ContentPosition,
-          info.AgentName);
-      case ConnectionType.Direct:
-        return String.Format(
-          "{0}{1} {2} {3} {4}kbps pos:{5} {6}",
-          status,
-          info.ProtocolName,
-          info.Status,
-          info.RemoteEndPoint,
-          bitrate,
-          info.ContentPosition,
-          info.AgentName);
-      default:
-        return String.Format(
-          "{0}{1} {2} {3} {4}kbps {5}",
-          status,
-          info.ProtocolName,
-          info.Status,
-          info.RemoteEndPoint,
-          bitrate,
-          info.AgentName);
+        else {
+          return "";
+        }
+      }
+    }
+
+    public string AgentName {
+      get {
+        var info = outputStream.GetConnectionInfo();
+        return info.AgentName;
       }
     }
 
@@ -223,26 +333,62 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
       get { return true; }
     }
 
-    public override string ToString()
-    {
-      var yp = announcingChannel.YellowPage;
-      var info = yp.GetConnectionInfo();
-      var status = "　";
-      if ((info.RemoteHostStatus & RemoteHostStatus.Root)!=0) {
-        status = "Ｒ";
+    public BitmapImage AttributeIcon {
+      get {
+        var info = announcingChannel.YellowPage.GetConnectionInfo();
+        var status = "";
+        if ((info.RemoteHostStatus & RemoteHostStatus.Root)!=0) {
+          status = "Ｒ";
+        }
+        if ((info.RemoteHostStatus & RemoteHostStatus.Tracker)!=0) {
+          status = "Ｔ";
+        }
+        return AttributeIcons.StatusToIcon(status);
       }
-      if ((info.RemoteHostStatus & RemoteHostStatus.Tracker)!=0) {
-        status = "Ｔ";
+    }
+
+    public string Protocol {
+      get {
+        var info = announcingChannel.YellowPage.GetConnectionInfo();
+        return info.ProtocolName;
       }
-      var bitrate = (int)(((info.RecvRate ?? 0) + (info.SendRate ?? 0))*8/1000);
-      return String.Format(
-        "{0}{1} {2} {3} {4}kbps {5}",
-        status,
-        info.ProtocolName,
-        info.RemoteName,
-        info.Status,
-        bitrate,
-        info.AgentName);
+    }
+
+    public string Status {
+      get {
+        var info = announcingChannel.YellowPage.GetConnectionInfo();
+        return info.Status.ToString();
+      }
+    }
+
+    public string RemoteName {
+      get {
+        var info = announcingChannel.YellowPage.GetConnectionInfo();
+        return info.RemoteName;
+      }
+    }
+
+    public string Bitrate {
+      get {
+        var info = announcingChannel.YellowPage.GetConnectionInfo();
+        var bitrate = (int)(((info.RecvRate ?? 0) + (info.SendRate ?? 0))*8/1000);
+        return String.Format("{0}kbps", bitrate);
+      }
+    }
+
+    public string ContentPosition {
+      get { return ""; }
+    }
+
+    public string Connections {
+      get { return ""; }
+    }
+
+    public string AgentName {
+      get {
+        var info = announcingChannel.YellowPage.GetConnectionInfo();
+        return info.AgentName;
+      }
     }
 
     public override bool Equals(object obj)

@@ -245,6 +245,13 @@
   <ItemGroup>
     <Resource Include="relay_icon_5.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="relay_icon_6.png" />
+    <Resource Include="relay_icon_7.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="relay_icon_8.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
