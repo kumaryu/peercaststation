@@ -82,6 +82,13 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
       private set { SetProperty("Bitrate", ref bitrate, value); }
     }
 
+    private string uptime;
+    public string Uptime
+    {
+      get { return uptime; }
+      private set { SetProperty("Uptime", ref uptime, value); }
+    }
+
     private readonly TrackViewModel track = new TrackViewModel();
     public TrackViewModel Track
     {
@@ -137,6 +144,11 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
         Comment = info.Comment;
         ContentType = info.ContentType;
         Bitrate = String.Format("{0} kbps", info.Bitrate);
+        Uptime = String.Format(
+          "{0:D}:{1:D2}:{2:D2}",
+          (int)channel.Uptime.TotalHours,
+          channel.Uptime.Minutes,
+          channel.Uptime.Seconds);
       }
       else
       {
@@ -147,6 +159,7 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
         Comment = "";
         ContentType = "";
         Bitrate = "";
+        Uptime = "";
       }
       var track = channel.ChannelTrack;
       if (track != null)

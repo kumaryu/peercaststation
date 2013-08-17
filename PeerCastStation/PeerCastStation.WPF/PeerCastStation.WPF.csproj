@@ -83,9 +83,6 @@
     </Compile>
     <Compile Include="ChannelLists\ListItems.cs" />
     <Compile Include="ChannelLists\RelayTrees\RelayTreeViewModel.cs" />
-    <Compile Include="ChannelLists\ChannelInfos\TrackControl.xaml.cs">
-      <DependentUpon>TrackControl.xaml</DependentUpon>
-    </Compile>
     <Compile Include="ChannelLists\ChannelInfos\TrackViewModel.cs" />
     <Compile Include="ChannelLists\RelayTrees\RelayTreeControl.xaml.cs">
       <DependentUpon>RelayTreeControl.xaml</DependentUpon>
@@ -152,10 +149,6 @@
     <Page Include="ChannelLists\RelayTrees\RelayTreeControl.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
-    </Page>
-    <Page Include="ChannelLists\ChannelInfos\TrackControl.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="CoreSettings\ListControl.xaml">
       <SubType>Designer</SubType>

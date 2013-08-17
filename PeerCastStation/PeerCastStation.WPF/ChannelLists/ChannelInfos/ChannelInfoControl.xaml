@@ -18,74 +18,90 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:l="clr-namespace:PeerCastStation.WPF.ChannelLists.ChannelInfos"
              xmlns:c="clr-namespace:PeerCastStation.WPF.Commons"
              mc:Ignorable="d" 
              d:DesignWidth="300"
              Background="White">
-    <UserControl.Resources>
-        <Style TargetType="Label">
-            <Setter Property="Width" Value="85"/>
-            <Setter Property="HorizontalContentAlignment" Value="Right"/>
-        </Style>
-        <Style TargetType="TextBox">
-            <Setter Property="Height" Value="22"/>
-        </Style>
-        <Style TargetType="GroupBox">
-            <Setter Property="Margin" Value="5"/>
-        </Style>
-        <Style TargetType="DockPanel">
-            <Setter Property="Margin" Value="0,2"/>
-        </Style>
-        <Style TargetType="Button">
-            <Setter Property="Width" Value="80"/>
-            <Setter Property="Height" Value="24"/>
-            <Setter Property="Margin" Value="5"/>
-        </Style>
-        <c:NotConverter x:Key="notConverter"/>
-    </UserControl.Resources>
-    <StackPanel>
-        <GroupBox Header="チャンネル情報">
-            <StackPanel>
-                <DockPanel>
-                    <Label Content="チャンネル名:"/>
-                    <TextBox IsReadOnly="True" Text="{Binding ChannelName, Mode=OneWay}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="ジャンル:"/>
-                    <TextBox Text="{Binding Genre}"
-                        IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="概要:"/>
-                    <TextBox Text="{Binding Description}"
-                        IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="コンタクトURL:"/>
-                    <TextBox Text="{Binding ContactUrl}"
-                        IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="配信者コメント:"/>
-                    <TextBox Text="{Binding Comment}"
-                        IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="チャンネルID:"/>
-                    <TextBox IsReadOnly="True" Text="{Binding ChannelId, Mode=OneWay}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="形式:"/>
-                    <TextBox IsReadOnly="True" Text="{Binding ContentType, Mode=OneWay}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="ビットレート:"/>
-                    <TextBox IsReadOnly="True" Text="{Binding Bitrate, Mode=OneWay}"/>
-                </DockPanel>
-            </StackPanel>
-        </GroupBox>
-        <l:TrackControl DataContext="{Binding Track}"/>
-        <Button HorizontalAlignment="Right" Content="更新" Command="{Binding Update}"/>
-    </StackPanel>
+  <UserControl.Resources>
+    <Style TargetType="GroupBox">
+      <Setter Property="Margin" Value="5"/>
+    </Style>
+    <Style TargetType="Button">
+      <Setter Property="Width" Value="80"/>
+      <Setter Property="Height" Value="24"/>
+      <Setter Property="Margin" Value="5"/>
+    </Style>
+    <Style TargetType="TextBox">
+      <Setter Property="Margin" Value="2"/>
+    </Style>
+    <Style TargetType="Label">
+      <Setter Property="HorizontalAlignment" Value="Right"/>
+    </Style>
+    <c:NotConverter x:Key="notConverter"/>
+  </UserControl.Resources>
+  <StackPanel Grid.IsSharedSizeScope="True">
+    <GroupBox Header="チャンネル情報">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" SharedSizeGroup="Label"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Label   Grid.Row="0" Grid.Column="0" Content="チャンネル名:"/>
+        <TextBox Grid.Row="0" Grid.Column="1" IsReadOnly="True" Text="{Binding ChannelName, Mode=OneWay}"/>
+        <Label   Grid.Row="1" Grid.Column="0" Content="ジャンル:"/>
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Genre}" IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
+        <Label   Grid.Row="2" Grid.Column="0" Content="概要:"/>
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Description}" IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
+        <Label   Grid.Row="3" Grid.Column="0" Content="コンタクトURL:"/>
+        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding ContactUrl}" IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
+        <Label   Grid.Row="4" Grid.Column="0" Content="配信者コメント:"/>
+        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Comment}" IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
+        <Label   Grid.Row="5" Grid.Column="0" Content="チャンネルID:"/>
+        <TextBox Grid.Row="5" Grid.Column="1" IsReadOnly="True" Text="{Binding ChannelId, Mode=OneWay}"/>
+        <Label   Grid.Row="6" Grid.Column="0" Content="形式:"/>
+        <TextBox Grid.Row="6" Grid.Column="1" IsReadOnly="True" Text="{Binding ContentType, Mode=OneWay}"/>
+        <Label   Grid.Row="7" Grid.Column="0" Content="ビットレート:"/>
+        <TextBox Grid.Row="7" Grid.Column="1" IsReadOnly="True" Text="{Binding Bitrate, Mode=OneWay}"/>
+        <Label   Grid.Row="8" Grid.Column="0" Content="配信・リレー時間:"/>
+        <TextBox Grid.Row="8" Grid.Column="1" IsReadOnly="True" Text="{Binding Uptime, Mode=OneWay}"/>
+      </Grid>
+    </GroupBox>
+    <GroupBox DataContext="{Binding Track}" Header="トラック情報">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" SharedSizeGroup="Label"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Label   Grid.Row="0" Grid.Column="0" Content="タイトル:"/>
+        <TextBox Grid.Row="0" Grid.Column="1" IsReadOnly="{Binding IsTracker}" Text="{Binding Title}"/>
+        <Label   Grid.Row="1" Grid.Column="0" Content="アルバム:"/>
+        <TextBox Grid.Row="1" Grid.Column="1" IsReadOnly="{Binding IsTracker}" Text="{Binding Album}"/>
+        <Label   Grid.Row="2" Grid.Column="0" Content="アーティスト:"/>
+        <TextBox Grid.Row="2" Grid.Column="1" IsReadOnly="{Binding IsTracker}" Text="{Binding Artist}"/>
+        <Label   Grid.Row="3" Grid.Column="0" Content="ジャンル:"/>
+        <TextBox Grid.Row="3" Grid.Column="1" IsReadOnly="{Binding IsTracker}" Text="{Binding Genre}"/>
+        <Label   Grid.Row="4" Grid.Column="0" Content="URL:"/>
+        <TextBox Grid.Row="5" Grid.Column="1" IsReadOnly="{Binding IsTracker}" Text="{Binding Url}"/>
+      </Grid>
+    </GroupBox>
+    <Button HorizontalAlignment="Right" Content="更新" Command="{Binding Update}"/>
+  </StackPanel>
 </UserControl>
