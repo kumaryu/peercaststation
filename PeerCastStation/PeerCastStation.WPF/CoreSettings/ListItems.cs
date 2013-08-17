@@ -75,8 +75,8 @@ namespace PeerCastStation.WPF.CoreSettings
 
   class YellowPageItem
   {
-    internal string Name { get; private set; }
-    internal IYellowPageClient YellowPageClient { get; private set; }
+    public string Name { get; private set; }
+    public IYellowPageClient YellowPageClient { get; private set; }
     internal YellowPageItem(string name, IYellowPageClient yellowpage)
     {
       this.Name = name;

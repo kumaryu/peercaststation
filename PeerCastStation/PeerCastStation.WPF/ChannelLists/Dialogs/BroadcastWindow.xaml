@@ -60,7 +60,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                 <DockPanel>
                     <Label Content="掲載YP:"/>
                     <ComboBox ItemsSource="{Binding YellowPages}"
-                              SelectedItem="{Binding YellowPage}"/>
+                              SelectedValue="{Binding YellowPage}"
+                              SelectedValuePath="YellowPageClient"
+                              DisplayMemberPath="Name"/>
                 </DockPanel>
             </StackPanel>
         </GroupBox>

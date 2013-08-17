@@ -60,8 +60,8 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       }
     }
 
-    private YellowPageItem yellowPage;
-    public YellowPageItem YellowPage
+    private IYellowPageClient yellowPage;
+    public IYellowPageClient YellowPage
     {
       get { return yellowPage; }
       set { SetProperty("YellowPage", ref yellowPage, value); }
@@ -135,8 +135,8 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       contentTypes = peerCast.ContentReaderFactories
         .Select(reader => new ContentReaderItem(reader)).ToArray();
 
-      yellowPages = peerCast.YellowPages
-        .Select(yp => new YellowPageItem(yp)).ToArray();
+      yellowPages = new YellowPageItem[] { new YellowPageItem("掲載なし", null) }
+        .Concat(peerCast.YellowPages.Select(yp => new YellowPageItem(yp))).ToArray();
       if (contentTypes.Length > 0) contentType = contentTypes[0];
 
       start = new Command(() =>
@@ -147,8 +147,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
           {
             return;
           }
-          IYellowPageClient yellowPage = null;
-          if (this.yellowPage != null) yellowPage = this.yellowPage.YellowPageClient;
+          IYellowPageClient yellowPage = this.yellowPage;
           var channelInfo = CreateChannelInfo(this);
           var channelTrack = CreateChannelTrack(track);
 
