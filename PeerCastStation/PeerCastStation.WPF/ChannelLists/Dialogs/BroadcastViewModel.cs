@@ -106,8 +106,40 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       set { SetProperty("ContactUrl", ref contactUrl, value); }
     }
 
-    private readonly TrackViewModel track = new TrackViewModel();
-    public TrackViewModel Track { get { return track; } }
+    private string trackTitle = "";
+    public string TrackTitle
+    {
+      get { return trackTitle; }
+      set { SetProperty("TrackTitle", ref trackTitle, value); }
+    }
+
+    private string trackAlbum = "";
+    public string TrackAlbum
+    {
+      get { return trackAlbum; }
+      set { SetProperty("TrackAlbum", ref trackAlbum, value); }
+    }
+
+    private string trackArtist = "";
+    public string TrackArtist
+    {
+      get { return trackArtist; }
+      set { SetProperty("TrackArtist", ref trackArtist, value); }
+    }
+
+    private string trackGenre = "";
+    public string TrackGenre
+    {
+      get { return trackGenre; }
+      set { SetProperty("TrackGenre", ref trackGenre, value); }
+    }
+
+    private string trackUrl = "";
+    public string TrackUrl
+    {
+      get { return trackUrl; }
+      set { SetProperty("TrackUrl", ref trackUrl, value); }
+    }
 
     private readonly Command start;
     public ICommand Start { get { return start; } }
@@ -149,7 +181,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
           }
           IYellowPageClient yellowPage = this.yellowPage;
           var channelInfo = CreateChannelInfo(this);
-          var channelTrack = CreateChannelTrack(track);
+          var channelTrack = CreateChannelTrack(this);
 
           var channel_id = Utils.CreateChannelID(
             peerCast.BroadcastID,
@@ -189,14 +221,14 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       return new ChannelInfo(info);
     }
 
-    private ChannelTrack CreateChannelTrack(TrackViewModel track)
+    private ChannelTrack CreateChannelTrack(BroadcastViewModel viewModel)
     {
       var collection = new AtomCollection();
-      collection.SetChanTrackTitle(track.Title);
-      collection.SetChanTrackGenre(track.Genre);
-      collection.SetChanTrackAlbum(track.Album);
-      collection.SetChanTrackCreator(track.Artist);
-      collection.SetChanTrackURL(track.Url);
+      collection.SetChanTrackTitle(viewModel.TrackTitle);
+      collection.SetChanTrackGenre(viewModel.TrackGenre);
+      collection.SetChanTrackAlbum(viewModel.TrackAlbum);
+      collection.SetChanTrackCreator(viewModel.TrackArtist);
+      collection.SetChanTrackURL(viewModel.TrackUrl);
       return new ChannelTrack(collection);
     }
   }

@@ -77,7 +77,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <TextBox Grid.Row="8" Grid.Column="1" IsReadOnly="True" Text="{Binding Uptime, Mode=OneWay}"/>
       </Grid>
     </GroupBox>
-    <GroupBox DataContext="{Binding Track}" Header="トラック情報">
+    <GroupBox Header="トラック情報">
       <Grid>
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="Auto" SharedSizeGroup="Label"/>
@@ -91,17 +91,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Label   Grid.Row="0" Grid.Column="0" Content="タイトル:"/>
-        <TextBox Grid.Row="0" Grid.Column="1" IsReadOnly="{Binding IsTracker}" Text="{Binding Title}"/>
+        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding TrackTitle}" IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
         <Label   Grid.Row="1" Grid.Column="0" Content="アルバム:"/>
-        <TextBox Grid.Row="1" Grid.Column="1" IsReadOnly="{Binding IsTracker}" Text="{Binding Album}"/>
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding TrackAlbum}" IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
         <Label   Grid.Row="2" Grid.Column="0" Content="アーティスト:"/>
-        <TextBox Grid.Row="2" Grid.Column="1" IsReadOnly="{Binding IsTracker}" Text="{Binding Artist}"/>
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding TrackArtist}" IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
         <Label   Grid.Row="3" Grid.Column="0" Content="ジャンル:"/>
-        <TextBox Grid.Row="3" Grid.Column="1" IsReadOnly="{Binding IsTracker}" Text="{Binding Genre}"/>
+        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding TrackGenre}" IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
         <Label   Grid.Row="4" Grid.Column="0" Content="URL:"/>
-        <TextBox Grid.Row="5" Grid.Column="1" IsReadOnly="{Binding IsTracker}" Text="{Binding Url}"/>
+        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding TrackUrl}" IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
       </Grid>
     </GroupBox>
-    <Button HorizontalAlignment="Right" Content="更新" Command="{Binding Update}"/>
+    <Button HorizontalAlignment="Right" Content="適用" Command="{Binding Update}"/>
   </StackPanel>
 </UserControl>

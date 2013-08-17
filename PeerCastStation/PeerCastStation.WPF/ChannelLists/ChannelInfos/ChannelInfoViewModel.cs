@@ -37,28 +37,44 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
     public string Genre
     {
       get { return genre; }
-      set { SetProperty("Genre", ref genre, value); }
+      set {
+        if (SetProperty("Genre", ref genre, value)) {
+          IsModified = true;
+        }
+      }
     }
 
     private string description;
     public string Description
     {
       get { return description; }
-      set { SetProperty("Description", ref description, value); }
+      set {
+        if (SetProperty("Description", ref description, value)) {
+          IsModified = true;
+        }
+      }
     }
 
     private string contactUrl;
     public string ContactUrl
     {
       get { return contactUrl; }
-      set { SetProperty("ContactUrl", ref contactUrl, value); }
+      set {
+        if (SetProperty("ContactUrl", ref contactUrl, value)) {
+          IsModified = true;
+        }
+      }
     }
 
     private string comment;
     public string Comment
     {
       get { return comment; }
-      set { SetProperty("Comment", ref comment, value); }
+      set {
+        if (SetProperty("Comment", ref comment, value)) {
+          IsModified = true;
+        }
+      }
     }
 
     private string channelId;
@@ -89,10 +105,59 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
       private set { SetProperty("Uptime", ref uptime, value); }
     }
 
-    private readonly TrackViewModel track = new TrackViewModel();
-    public TrackViewModel Track
+    private string trackTitle = "";
+    public string TrackTitle
     {
-      get { return track; }
+      get { return trackTitle; }
+      set {
+        if (SetProperty("TrackTitle", ref trackTitle, value)) {
+          IsModified = true;
+        }
+      }
+    }
+
+    private string trackAlbum = "";
+    public string TrackAlbum
+    {
+      get { return trackAlbum; }
+      set {
+        if (SetProperty("TrackAlbum", ref trackAlbum, value)) {
+          IsModified = true;
+        }
+      }
+    }
+
+    private string trackArtist = "";
+    public string TrackArtist
+    {
+      get { return trackArtist; }
+      set {
+        if (SetProperty("TrackArtist", ref trackArtist, value)) {
+          IsModified = true;
+        }
+      }
+    }
+
+    private string trackGenre = "";
+    public string TrackGenre
+    {
+      get { return trackGenre; }
+      set {
+        if (SetProperty("TrackGenre", ref trackGenre, value)) {
+          IsModified = true;
+        }
+      }
+    }
+
+    private string trackUrl = "";
+    public string TrackUrl
+    {
+      get { return trackUrl; }
+      set {
+        if (SetProperty("TrackUrl", ref trackUrl, value)) {
+          IsModified = true;
+        }
+      }
     }
 
     private bool isTracker;
@@ -100,6 +165,18 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
     {
       get { return isTracker; }
       set { SetProperty("IsTracker", ref isTracker, value); }
+    }
+
+    private bool isModified = false;
+    public bool IsModified {
+      get {
+        return isModified;
+      }
+      private set {
+        if (isModified==value) return;
+        isModified = value;
+        update.OnCanExecuteChanged();
+      }
     }
 
     private readonly Command update;
@@ -117,67 +194,70 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
           channel.ChannelInfo = new ChannelInfo(info);
 
           var track = new AtomCollection(channel.ChannelTrack.Extra);
-          track.SetChanTrackAlbum(this.track.Album);
-          track.SetChanTrackCreator(this.track.Artist);
-          track.SetChanTrackTitle(this.track.Title);
-          track.SetChanTrackGenre(this.track.Genre);
-          track.SetChanTrackURL(this.track.Url);
+          track.SetChanTrackAlbum(trackAlbum);
+          track.SetChanTrackCreator(trackArtist);
+          track.SetChanTrackTitle(trackTitle);
+          track.SetChanTrackGenre(trackGenre);
+          track.SetChanTrackURL(trackUrl);
           channel.ChannelTrack = new ChannelTrack(track);
+          IsModified = false;
         },
-        () => channel != null && IsTracker);
+        () => channel!=null && IsTracker && IsModified);
     }
 
     public void From(Channel channel, bool isTracker)
     {
       this.channel = channel;
       IsTracker = isTracker;
-      this.track.IsReadOnly = !isTracker;
 
       ChannelId = channel.ChannelID.ToString("N").ToUpper();
       var info = channel.ChannelInfo;
-      if (info != null)
-      {
+      if (info != null) {
         ChannelName = info.Name;
-        Genre = info.Genre;
-        Description = info.Desc;
-        ContactUrl = info.URL;
-        Comment = info.Comment;
         ContentType = info.ContentType;
         Bitrate = String.Format("{0} kbps", info.Bitrate);
-        Uptime = String.Format(
+        Uptime  = String.Format(
           "{0:D}:{1:D2}:{2:D2}",
           (int)channel.Uptime.TotalHours,
           channel.Uptime.Minutes,
           channel.Uptime.Seconds);
       }
-      else
-      {
+      else {
         ChannelName = "";
+        ContentType = "";
+        Bitrate     = "";
+        Uptime      = "";
+      }
+      if (IsTracker && IsModified) return;
+
+      if (info != null) {
+        Genre = info.Genre;
+        Description = info.Desc;
+        ContactUrl = info.URL;
+        Comment = info.Comment;
+      }
+      else {
         Genre = "";
         Description = "";
         ContactUrl = "";
         Comment = "";
-        ContentType = "";
-        Bitrate = "";
-        Uptime = "";
       }
       var track = channel.ChannelTrack;
-      if (track != null)
-      {
-        this.track.Album = track.Album;
-        this.track.Artist = track.Creator;
-        this.track.Title = track.Name;
-        this.track.Genre = track.Genre;
-        this.track.Url = track.URL;
+      if (track != null) {
+        TrackAlbum = track.Album;
+        TrackArtist = track.Creator;
+        TrackTitle = track.Name;
+        TrackGenre = track.Genre;
+        TrackUrl = track.URL;
       }
-      else
-      {
-        this.track.Album = "";
-        this.track.Artist = "";
-        this.track.Title = "";
-        this.track.Genre = "";
-        this.track.Url = "";
+      else {
+        TrackAlbum = "";
+        TrackArtist = "";
+        TrackTitle = "";
+        TrackGenre = "";
+        TrackUrl = "";
       }
+      IsModified = false;
 
       update.OnCanExecuteChanged();
     }

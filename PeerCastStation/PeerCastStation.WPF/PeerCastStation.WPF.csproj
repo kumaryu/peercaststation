@@ -83,7 +83,6 @@
     </Compile>
     <Compile Include="ChannelLists\ListItems.cs" />
     <Compile Include="ChannelLists\RelayTrees\RelayTreeViewModel.cs" />
-    <Compile Include="ChannelLists\ChannelInfos\TrackViewModel.cs" />
     <Compile Include="ChannelLists\RelayTrees\RelayTreeControl.xaml.cs">
       <DependentUpon>RelayTreeControl.xaml</DependentUpon>
     </Compile>
