@@ -97,6 +97,18 @@ namespace PeerCastStation.FLV
         get { return this.DataSize+11==this.TagSize; }
       }
 
+      public bool IsAVCHeader {
+        get {
+          return (Body[0] == 0x17 && Body[1] == 0x00 && Body[2] == 0x00 && Body[3] == 0x00);
+        }
+      }
+
+      public bool IsAACHeader {
+        get {
+          return (Body[0] == 0xAF && Body[1] == 0x00);
+        }
+      }
+
       public void ReadBody(Stream stream)
       {
         this.Body = FLVContentReader.ReadBytes(stream, this.DataSize);
@@ -184,9 +196,17 @@ namespace PeerCastStation.FLV
                   read_valid = true;
                   bin = body.Binary;
                   if (res.Contents==null) res.Contents = new List<Content>();
-                  res.Contents.Add(new Content(streamIndex, DateTime.Now-streamOrigin, position, bin));
+                  var isMetaData = false;
                   if (body.Type==FLVTag.TagType.Script && OnScriptTag(body, info)) {
+                    isMetaData = true;
                     res.ChannelInfo = new ChannelInfo(info);
+                  }
+                  if ((isMetaData || body.IsAVCHeader || body.IsAACHeader) && res.ContentHeader != null) {
+                    var conbin = res.ContentHeader.Data.Concat(bin).ToArray();
+                    res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, position, conbin);
+                  }
+                  else {
+                    res.Contents.Add(new Content(streamIndex, DateTime.Now - streamOrigin, position, bin));
                   }
                   position += bin.Length;
                 }
