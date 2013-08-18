@@ -16,108 +16,123 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
 <Window x:Class="PeerCastStation.WPF.ChannelLists.Dialogs.BroadcastWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="BroadcastWindow" Width="480" Height="640"
-        WindowStartupLocation="CenterOwner">
-    <Window.Resources>
-        <Style TargetType="Label">
-            <Setter Property="Width" Value="85"/>
-            <Setter Property="HorizontalContentAlignment" Value="Right"/>
-        </Style>
-        <Style TargetType="TextBox">
-            <Setter Property="Height" Value="22"/>
-        </Style>
-        <Style TargetType="ComboBox">
-            <Setter Property="Height" Value="24"/>
-        </Style>
-        <Style TargetType="GroupBox">
-            <Setter Property="Margin" Value="5"/>
-        </Style>
-        <Style TargetType="DockPanel">
-            <Setter Property="Margin" Value="0,2"/>
-        </Style>
-        <Style TargetType="Button">
-            <Setter Property="Width" Value="80"/>
-            <Setter Property="Height" Value="24"/>
-            <Setter Property="Margin" Value="5"/>
-        </Style>
-    </Window.Resources>
-    <StackPanel Margin="10">
-        <GroupBox Header="ストリーム情報">
-            <StackPanel>
-                <DockPanel>
-                    <Label Content="ストリームURL:"/>
-                    <TextBox Text="{Binding StreamUrl, UpdateSourceTrigger=PropertyChanged}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="ビットレート:"/>
-                    <TextBox Text="{Binding Bitrate}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="タイプ:"/>
-                    <ComboBox ItemsSource="{Binding ContentTypes}"
-                              SelectedItem="{Binding ContentType}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="掲載YP:"/>
-                    <ComboBox ItemsSource="{Binding YellowPages}"
-                              SelectedValue="{Binding YellowPage}"
-                              SelectedValuePath="YellowPageClient"
-                              DisplayMemberPath="Name"/>
-                </DockPanel>
-            </StackPanel>
-        </GroupBox>
-        <GroupBox Header="チャンネル情報">
-            <StackPanel>
-                <DockPanel>
-                    <Label Content="チャンネル名"/>
-                    <TextBox Text="{Binding ChannelName, UpdateSourceTrigger=PropertyChanged}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="ジャンル:"/>
-                    <TextBox Text="{Binding Genre}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="概要:"/>
-                    <TextBox Text="{Binding Description}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="配信者コメント:"/>
-                    <TextBox Text="{Binding Comment}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="コンタクトURL:"/>
-                    <TextBox Text="{Binding ContactUrl}"/>
-                </DockPanel>
-            </StackPanel>
-        </GroupBox>
-        <GroupBox Header="トラック情報">
-            <StackPanel DataContext="{Binding Track}">
-                <DockPanel>
-                    <Label Content="タイトル:"/>
-                    <TextBox Text="{Binding Title}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="アルバム:"/>
-                    <TextBox Text="{Binding Album}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="アーティスト:"/>
-                    <TextBox Text="{Binding Artist}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="ジャンル:"/>
-                    <TextBox Text="{Binding Genre}"/>
-                </DockPanel>
-                <DockPanel>
-                    <Label Content="URL:"/>
-                    <TextBox Text="{Binding Url}"/>
-                </DockPanel>
-            </StackPanel>
-        </GroupBox>
-        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-            <Button Content="配信開始" Click="Button_Click"
-                    Command="{Binding Start}"/>
-            <Button Content="キャンセル" Click="Button_Click"/>
-        </StackPanel>
-    </StackPanel>
+        xmlns:extToolkit="http://schemas.xceed.com/wpf/xaml/toolkit"
+        Title="配信設定" Width="480" Height="Auto"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        SizeToContent="Height"
+        ShowInTaskbar="False"
+        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+  <Window.Resources>
+    <Style TargetType="Label">
+      <Setter Property="HorizontalContentAlignment" Value="Right"/>
+    </Style>
+    <Style TargetType="TextBox">
+      <Setter Property="Margin" Value="2"/>
+    </Style>
+    <Style TargetType="ComboBox">
+      <Setter Property="Margin" Value="2"/>
+    </Style>
+    <Style TargetType="GroupBox">
+      <Setter Property="Margin" Value="2"/>
+    </Style>
+    <Style TargetType="Button">
+      <Setter Property="Margin" Value="2"/>
+    </Style>
+  </Window.Resources>
+  <StackPanel Grid.IsSharedSizeScope="True" Margin="4">
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" SharedSizeGroup="Label"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+      <Label Grid.Column="0" Content="履歴:"/>
+      <ComboBox Grid.Column="1" ItemsSource="{Binding BroadcastHistory}" SelectedItem="{Binding SelectedBroadcastHistory}" DisplayMemberPath="Name"/>
+    </Grid>
+    <GroupBox Header="ストリーム情報">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" SharedSizeGroup="Label"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Label    Grid.Column="0" Grid.Row="0" Content="ストリームURL:"/>
+        <TextBox  Grid.Column="1" Grid.Row="0" Text="{Binding StreamUrl, UpdateSourceTrigger=PropertyChanged}"/>
+        <Label    Grid.Column="0" Grid.Row="1" Content="ビットレート:"/>
+        <TextBox  Grid.Column="1" Grid.Row="1" Text="{Binding Bitrate}"/>
+        <Label    Grid.Column="0" Grid.Row="2" Content="タイプ:"/>
+        <ComboBox Grid.Column="1" Grid.Row="2" ItemsSource="{Binding ContentTypes}" SelectedItem="{Binding ContentType}"/>
+        <Label    Grid.Column="0" Grid.Row="3" Content="掲載YP:"/>
+        <ComboBox Grid.Column="1" Grid.Row="3"
+                  ItemsSource="{Binding YellowPages}"
+                  SelectedValue="{Binding YellowPage}"
+                  SelectedValuePath="YellowPageClient"
+                  DisplayMemberPath="Name"/>
+      </Grid>
+    </GroupBox>
+    <GroupBox Header="チャンネル情報">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" SharedSizeGroup="Label"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Label   Grid.Row="0" Grid.Column="0" Content="チャンネル名:"/>
+        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ChannelName, UpdateSourceTrigger=PropertyChanged}"/>
+        <Label   Grid.Row="1" Grid.Column="0" Content="ジャンル:"/>
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Genre}"/>
+        <Label   Grid.Row="2" Grid.Column="0" Content="概要:"/>
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Description}"/>
+        <Label   Grid.Row="3" Grid.Column="0" Content="配信者コメント:"/>
+        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Comment}"/>
+        <Label   Grid.Row="4" Grid.Column="0" Content="コンタクトURL:"/>
+        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding ContactUrl}"/>
+      </Grid>
+    </GroupBox>
+    <GroupBox Header="トラック情報">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" SharedSizeGroup="Label"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Label   Grid.Row="0" Grid.Column="0" Content="タイトル:"/>
+        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding TrackTitle}"/>
+        <Label   Grid.Row="1" Grid.Column="0" Content="アルバム:"/>
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding TrackAlbum}"/>
+        <Label   Grid.Row="2" Grid.Column="0" Content="アーティスト:"/>
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding TrackArtist}"/>
+        <Label   Grid.Row="3" Grid.Column="0" Content="ジャンル:"/>
+        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding TrackGenre}"/>
+        <Label   Grid.Row="4" Grid.Column="0" Content="URL:"/>
+        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding TrackUrl}"/>
+      </Grid>
+    </GroupBox>
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="6*"/>
+        <ColumnDefinition Width="2*"/>
+        <ColumnDefinition Width="2*"/>
+      </Grid.ColumnDefinitions>
+      <Button Grid.Column="1" Content="配信開始" Click="Button_Click" Command="{Binding Start}" IsDefault="True"/>
+      <Button Grid.Column="2" Content="キャンセル" Click="Button_Click" IsCancel="True"/>
+    </Grid>
+  </StackPanel>
 </Window>

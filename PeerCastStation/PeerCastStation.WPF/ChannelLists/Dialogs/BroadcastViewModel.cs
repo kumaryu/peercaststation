@@ -31,6 +31,38 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
     private readonly YellowPageItem[] yellowPages;
     public YellowPageItem[] YellowPages { get { return yellowPages; } }
 
+    public BroadcastInfo[] BroadcastHistory {
+      get {
+        var settings = PeerCastApplication.Current.Settings.Get<WPFSettings>();
+        return settings.BroadcastHistory;
+      }
+    }
+
+    private BroadcastInfo selectedBroadcastHistory;
+    public BroadcastInfo SelectedBroadcastHistory {
+      get { return selectedBroadcastHistory; }
+      set {
+        if (value!=null) {
+          StreamUrl   = value.StreamUrl;
+          Bitrate     = value.Bitrate==0 ? null : (int?)value.Bitrate;
+          ContentType = contentTypes.FirstOrDefault(t => t.ContentReaderFactory.Name==value.ContentType);
+          var yp = yellowPages.FirstOrDefault(y => y.Name==value.YellowPage);
+          YellowPage  = yp!=null ? yp.YellowPageClient : null;
+          ChannelName = value.ChannelName;
+          Genre       = value.Genre;
+          Description = value.Description;
+          Comment     = value.Comment;
+          ContactUrl  = value.ContactUrl;
+          TrackTitle  = value.TrackTitle;
+          TrackAlbum  = value.TrackAlbum;
+          TrackArtist = value.TrackArtist;
+          TrackGenre  = value.TrackGenre;
+          TrackUrl    = value.TrackUrl;
+          selectedBroadcastHistory = value;
+        }
+      }
+    }
+
     private string streamUrl = "";
     public string StreamUrl
     {
@@ -162,8 +194,10 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       }
     }
 
+    private PeerCast peerCast;
     public BroadcastViewModel(PeerCast peerCast)
     {
+      this.peerCast = peerCast;
       contentTypes = peerCast.ContentReaderFactories
         .Select(reader => new ContentReaderItem(reader)).ToArray();
 
@@ -171,35 +205,58 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
         .Concat(peerCast.YellowPages.Select(yp => new YellowPageItem(yp))).ToArray();
       if (contentTypes.Length > 0) contentType = contentTypes[0];
 
-      start = new Command(() =>
-        {
-          var source = StreamSource;
-          var contentReaderFactory = ContentReaderFactory;
-          if (!CanBroadcast(source, contentReaderFactory, channelName))
-          {
-            return;
-          }
-          IYellowPageClient yellowPage = this.yellowPage;
-          var channelInfo = CreateChannelInfo(this);
-          var channelTrack = CreateChannelTrack(this);
-
-          var channel_id = Utils.CreateChannelID(
-            peerCast.BroadcastID,
-            channelName,
-            genre,
-            source.ToString());
-          var channel = peerCast.BroadcastChannel(
-            yellowPage,
-            channel_id,
-            channelInfo,
-            source,
-            contentReaderFactory);
-          if (channel != null)
-          {
-            channel.ChannelTrack = channelTrack;
-          }
-        },
+      start = new Command(OnBroadcast,
         () => CanBroadcast(StreamSource, ContentReaderFactory, channelName));
+    }
+
+    private void OnBroadcast()
+    {
+      var source = StreamSource;
+      var contentReaderFactory = ContentReaderFactory;
+      if (!CanBroadcast(source, contentReaderFactory, channelName)) return;
+      IYellowPageClient yellowPage = this.yellowPage;
+      var channelInfo = CreateChannelInfo(this);
+      var channelTrack = CreateChannelTrack(this);
+
+      var channel_id = Utils.CreateChannelID(
+        peerCast.BroadcastID,
+        channelName,
+        genre,
+        source.ToString());
+      var channel = peerCast.BroadcastChannel(
+        yellowPage,
+        channel_id,
+        channelInfo,
+        source,
+        contentReaderFactory);
+      if (channel!=null) {
+        channel.ChannelTrack = channelTrack;
+      }
+
+      var info = new BroadcastInfo {
+        StreamUrl   = this.StreamUrl,
+        Bitrate     = this.Bitrate.HasValue ? this.Bitrate.Value : 0,
+        ContentType = this.ContentType.ContentReaderFactory.Name,
+        YellowPage  = this.YellowPage!=null ? this.YellowPage.Name : null,
+        ChannelName = this.ChannelName,
+        Genre       = this.Genre,
+        Description = this.Description,
+        Comment     = this.Comment,
+        ContactUrl  = this.ContactUrl,
+        TrackTitle  = this.TrackTitle,
+        TrackAlbum  = this.TrackAlbum,
+        TrackArtist = this.TrackArtist,
+        TrackGenre  = this.TrackGenre,
+        TrackUrl    = this.TrackUrl,
+      };
+      var settings = PeerCastApplication.Current.Settings.Get<WPFSettings>();
+      if (!settings.BroadcastHistory.Any(i => i.Equals(info))) {
+        settings.BroadcastHistory =
+          Enumerable.Repeat(info, 1)
+                    .Concat(settings.BroadcastHistory)
+                    .Take(20)
+                    .ToArray();
+      }
     }
 
     private bool CanBroadcast(Uri streamSource, IContentReaderFactory contentReaderFactory, string channelName)
