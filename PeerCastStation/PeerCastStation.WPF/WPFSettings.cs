@@ -13,11 +13,24 @@ namespace PeerCastStation.WPF
       get { return showWindowOnStartup; }
       set { showWindowOnStartup = value; }
     }
-    
+
+    public double WindowLeft   { get; set; }
+    public double WindowTop    { get; set; }
+    public double WindowWidth  { get; set; }
+    public double WindowHeight { get; set; }
+
     private BroadcastInfo[] broadcastHistory = new BroadcastInfo[0];
     public BroadcastInfo[] BroadcastHistory {
       get { return broadcastHistory; }
       set { broadcastHistory = value; }
+    }
+
+    public WPFSettings()
+    {
+      WindowLeft   = Double.NaN;
+      WindowTop    = Double.NaN;
+      WindowWidth  = Double.NaN;
+      WindowHeight = Double.NaN;
     }
   }
 
