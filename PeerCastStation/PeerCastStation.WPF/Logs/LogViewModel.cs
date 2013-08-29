@@ -25,7 +25,6 @@ namespace PeerCastStation.WPF.Logs
   class LogViewModel : ViewModelBase, IDisposable
   {
     private readonly LogWriter guiWriter = new LogWriter(1000);
-    private TextWriter logFileWriter;
 
     private static readonly KeyValuePair<string,LogLevel>[] logLevelItems = new KeyValuePair<string,LogLevel>[] {
       new KeyValuePair<string,LogLevel>("なし", LogLevel.None),
