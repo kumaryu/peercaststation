@@ -27,6 +27,16 @@ namespace PeerCastStation.WPF
       IUserInterfacePlugin
   {
     override public string Name { get { return "GUI by WPF"; } }
+    public override bool IsUsable {
+      get {
+        switch (Environment.OSVersion.Platform) {
+        case PlatformID.Win32NT:
+          return true;
+        default:
+          return false;
+        }
+      }
+    }
 
     MainWindow mainWindow;
     MainViewModel viewModel;
