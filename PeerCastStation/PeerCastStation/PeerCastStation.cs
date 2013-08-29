@@ -12,7 +12,7 @@ namespace PeerCastStation.Main
     private static Logger logger = new Logger(typeof(Application));
     private IEnumerable<IPlugin> plugins;
     override public IEnumerable<IPlugin> Plugins {
-      get { return plugins; }
+      get { return plugins.Where(p => p.IsUsable); }
     }
 
     private PecaSettings settings = new PecaSettings(PecaSettings.DefaultFileName);
@@ -41,22 +41,22 @@ namespace PeerCastStation.Main
         args.Cancel = true;
         Stop();
       };
-      foreach (var plugin in plugins) {
+      foreach (var plugin in Plugins) {
         plugin.Attach(this);
       }
       peerCast.ChannelMonitors.Add(new ChannelCleaner(peerCast));
       peerCast.ChannelMonitors.Add(new ChannelNotifier(this));
       LoadSettings();
-      foreach (var plugin in plugins) {
+      foreach (var plugin in Plugins) {
         plugin.Start();
       }
       WaitHandle.WaitAny(new WaitHandle[] { killWaitHandle, stoppedEvent });
-      foreach (var plugin in plugins) {
+      foreach (var plugin in Plugins) {
         plugin.Stop();
       }
       SaveSettings();
       peerCast.Stop();
-      foreach (var plugin in plugins) {
+      foreach (var plugin in Plugins) {
         plugin.Detach();
       }
       Logger.Close();
