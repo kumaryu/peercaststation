@@ -119,18 +119,11 @@ namespace PeerCastStation.UI.HTTP
           jplugin["name"]     = plugin.Name;
           jplugin["isUsable"] = plugin.IsUsable;
           var jassembly = new JObject();
-          var asm = plugin.GetType().Assembly;
-          jassembly["name"] = asm.FullName;
-          jassembly["path"] = asm.Location;
-          if (File.Exists(asm.Location)) {
-            var info = System.Diagnostics.FileVersionInfo.GetVersionInfo(asm.Location);
-            jassembly["version"] = info.FileVersion;
-            jassembly["copyright"] = info.LegalCopyright;
-          }
-          else {
-            jassembly["version"] = "";
-            jassembly["copyright"] = "";
-          }
+          var info = plugin.GetVersionInfo();
+          jassembly["name"]      = info.AssemblyName;
+          jassembly["path"]      = info.FileName;
+          jassembly["version"]   = info.Version;
+          jassembly["copyright"] = info.Copyright;
           jplugin["assembly"] = jassembly;
           return jplugin;
         }));

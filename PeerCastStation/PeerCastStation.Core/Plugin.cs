@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Diagnostics;
 
 namespace PeerCastStation.Core
 {
@@ -28,10 +30,31 @@ namespace PeerCastStation.Core
     }
   }
 
+  public class PluginVersionInfo
+  {
+    public string FileName     { get; private set; }
+    public string AssemblyName { get; private set; }
+    public string Version      { get; private set; }
+    public string Copyright    { get; private set; }
+
+    public PluginVersionInfo(
+      string filename,
+      string assembly_name,
+      string version,
+      string copyright)
+    {
+      this.FileName     = filename;
+      this.AssemblyName = assembly_name;
+      this.Version      = version;
+      this.Copyright    = copyright;
+    }
+  }
+
   public interface IPlugin
   {
     string Name   { get; }
     bool IsUsable { get; }
+    PluginVersionInfo GetVersionInfo();
     void Attach(PeerCastApplication app);
     void Detach();
     void Start();
@@ -43,6 +66,18 @@ namespace PeerCastStation.Core
   {
     public abstract string Name { get; }
     public virtual bool IsUsable { get { return true; } }
+    public virtual PluginVersionInfo GetVersionInfo()
+    {
+      var asm = this.GetType().Assembly;
+      var file_version = FileVersionInfo.GetVersionInfo(asm.Location);
+      var info_version = asm.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false).FirstOrDefault() as System.Reflection.AssemblyInformationalVersionAttribute;
+      var version = info_version!=null ? info_version.InformationalVersion : file_version.FileVersion;
+      return new PluginVersionInfo(
+        System.IO.Path.GetFileName(asm.Location),
+        asm.FullName,
+        version,
+        file_version.LegalCopyright);
+    }
 
     private PeerCastApplication application;
     public PeerCastApplication Application { get { return application; } }

@@ -31,20 +31,15 @@ namespace PeerCastStation.WPF.Dialogs
 
     public VersionInfoViewModel(PeerCastApplication app)
     {
-      items = app
-        .Plugins
-        .Select(plugin => 
-      {
-        var asm  = plugin.GetType().Assembly;
-        var info = FileVersionInfo.GetVersionInfo(asm.Location);
-        return new
-        {
+      items = app.Plugins.Select(plugin => {
+        var info = plugin.GetVersionInfo();
+        return new {
           Name         = plugin.Name,
           IsUsable     = plugin.IsUsable,
-          FileName     = Path.GetFileName(info.FileName),
-          Version      = info.FileVersion,
-          AssemblyName = asm.FullName,
-          Copyright    = info.LegalCopyright
+          FileName     = info.FileName,
+          Version      = info.Version,
+          AssemblyName = info.AssemblyName,
+          Copyright    = info.Copyright,
         };
       }).ToArray();
     }

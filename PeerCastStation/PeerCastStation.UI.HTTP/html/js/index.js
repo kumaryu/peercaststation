@@ -77,7 +77,7 @@ var IndexViewModel = new function() {
         var pluginDLLs = {};
         var plugins = [];
         $.each(result, function(i, plugin) {
-          var dllname = plugin.assembly.path.match(/^.*[\/\\](.*)$/)[1];
+          var dllname = plugin.assembly.path;
           pluginDLLs[dllname] = {
             name:    plugin.assembly.name,
             path:    plugin.assembly.path,
