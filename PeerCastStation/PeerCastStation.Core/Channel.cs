@@ -407,12 +407,15 @@ namespace PeerCastStation.Core
           sourceStream.Stopped -= SourceStream_Stopped;
           sourceStream.Stop();
         }
+        this.contentHeader = null;
+        this.contents.Clear();
         this.SourceUri = source_uri;
         sourceStream = source_stream;
         sourceStream.Stopped += SourceStream_Stopped;
         uptimeTimer.Reset();
         uptimeTimer.Start();
         sourceStream.Start();
+        OnContentChanged();
       }
     }
 
