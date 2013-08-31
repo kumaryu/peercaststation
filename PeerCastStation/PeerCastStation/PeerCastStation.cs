@@ -74,14 +74,19 @@ namespace PeerCastStation.Main
 
     IEnumerable<Type> LoadPluginAssembly(System.Reflection.Assembly asm)
     {
-      var res = asm.GetTypes()
-          .Where(type => type.GetCustomAttributes(typeof(PluginAttribute), true).Length>0)
-          .Where(type => type.GetInterfaces().Contains(typeof(IPlugin)))
-          .OrderBy(type => ((PluginAttribute)(type.GetCustomAttributes(typeof(PluginAttribute), true)[0])).Priority);
-      foreach (var settingtype in asm.GetTypes().Where(type => type.GetCustomAttributes(typeof(PecaSettingsAttribute), true).Length>0)) {
-        PecaSettings.RegisterType(settingtype);
+      try {
+        var res = asm.GetTypes()
+            .Where(type => type.GetCustomAttributes(typeof(PluginAttribute), true).Length>0)
+            .Where(type => type.GetInterfaces().Contains(typeof(IPlugin)))
+            .OrderBy(type => ((PluginAttribute)(type.GetCustomAttributes(typeof(PluginAttribute), true)[0])).Priority);
+        foreach (var settingtype in asm.GetTypes().Where(type => type.GetCustomAttributes(typeof(PecaSettingsAttribute), true).Length>0)) {
+          PecaSettings.RegisterType(settingtype);
+        }
+        return res;
       }
-      return res;
+      catch (System.Reflection.ReflectionTypeLoadException) {
+        return Enumerable.Empty<Type>();
+      }
     }
 
     void LoadPlugins()
