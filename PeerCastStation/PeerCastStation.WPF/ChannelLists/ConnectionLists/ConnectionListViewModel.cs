@@ -53,29 +53,6 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
     private readonly Command reconnect;
     public Command Reconnect { get { return reconnect; } }
 
-    internal Channel Channel
-    {
-      set
-      {
-        var conn = connection;
-        connections.Clear();
-        connections.Add(new ChannelConnectionSourceItem(value.SourceStream));
-        var announcings = peerCast.YellowPages
-          .Select(yp => yp.AnnouncingChannels.FirstOrDefault(c => c.Channel.ChannelID == value.ChannelID))
-          .Where(c => c != null);
-        foreach (var announcing in announcings.ToArray())
-        {
-          connections.Add(new ChannelConnectionAnnouncingItem(announcing));
-        }
-        foreach (var os in value.OutputStreams.ToArray())
-        {
-          connections.Add(new ChannelConnectionOutputItem(os));
-        }
-        if (conn != null)
-          Connection = connections.FirstOrDefault(x => x.Equals(conn));
-      }
-    }
-
     public ConnectionListViewModel(PeerCast peerCast)
     {
       this.peerCast = peerCast;
@@ -87,5 +64,34 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
         () => connection.Reconnect(),
         () => connection != null && connection.IsReconnectable);
     }
+
+    internal void Update(Channel channel)
+    {
+      if (channel==null) {
+        connections.Clear();
+        return;
+      }
+      var new_list = new List<IChannelConnectionItem>();
+      new_list.Add(new ChannelConnectionSourceItem(channel.SourceStream));
+      var announcings = peerCast.YellowPages
+        .Select(yp => yp.AnnouncingChannels.FirstOrDefault(c => c.Channel.ChannelID==channel.ChannelID))
+        .Where(c => c != null);
+      foreach (var announcing in announcings) {
+        new_list.Add(new ChannelConnectionAnnouncingItem(announcing));
+      }
+      foreach (var os in channel.OutputStreams) {
+        new_list.Add(new ChannelConnectionOutputItem(os));
+      }
+      foreach (var item in connections.Except(new_list).ToArray()) {
+        connections.Remove(item);
+      }
+      foreach (var item in connections) {
+        item.Update();
+      }
+      foreach (var item in new_list.Except(connections).ToArray()) {
+        connections.Add(item);
+      }
+    }
+
   }
 }

@@ -41,17 +41,13 @@ namespace PeerCastStation.WPF.ChannelLists
     public ChannelListItem Channel
     {
       get { return channel; }
-      set
-      {
-        SetProperty("Channel", ref channel, value, () =>
-        {
-          if (IsChannelSelected)
-          {
-            Connections.Channel = value.Channel;
-            ChannelInfo.From(
-              value.Channel,
-              value.Channel.IsBroadcasting);
-            RelayTree.Channel = value.Channel;
+      set {
+        SetProperty("Channel", ref channel, value, () => {
+          if (channel!=null) {
+            UpdateSelectedChannel(channel.Channel);
+          }
+          else {
+            UpdateSelectedChannel(null);
           }
           OnButtonsCanExecuteChanged();
         });
@@ -164,38 +160,31 @@ namespace PeerCastStation.WPF.ChannelLists
     internal void UpdateChannelList()
     {
       var new_list = peerCast.Channels;
-      var old_list = channels.Select(item => item.Channel);
-      foreach (var channel in old_list.Intersect(new_list).ToArray())
-      {
-        for (var i = 0; i < channels.Count; i++)
-        {
-          if (channels[i].Channel == channel)
-          {
-            var selected = this.channel == null ? false : this.channel.Channel == channel;
-            channels[i] = new ChannelListItem(channel);
-            if (selected)
-            {
-              Channel = channels[i];
-            }
-            break;
-          }
-        }
+      foreach (var item in channels.Where(item => !new_list.Contains(item.Channel)).ToArray()) {
+        channels.Remove(item);
       }
-      foreach (var channel in new_list.Except(old_list).ToArray())
-      {
+      foreach (var item in channels) {
+        item.Update();
+      }
+      foreach (var channel in new_list.Except(channels.Select(item => item.Channel))) {
         channels.Add(new ChannelListItem(channel));
       }
-      foreach (var channel in old_list.Except(new_list).ToArray())
-      {
-        for (var i = 0; i < channels.Count; i++)
-        {
-          if ((channels[i] as ChannelListItem).Channel == channel)
-          {
-            channels.RemoveAt(i);
-            break;
-          }
-        }
+      if (!channels.Contains(this.channel)) {
+        this.Channel = null;
       }
+      if (this.Channel!=null) {
+        UpdateSelectedChannel(this.Channel.Channel);
+      }
+      else {
+        UpdateSelectedChannel(null);
+      }
+    }
+
+    private void UpdateSelectedChannel(Channel channel)
+    {
+      Connections.Update(channel);
+      ChannelInfo.UpdateChannelInfo(channel);
+      RelayTree.Update(channel);
     }
 
     private void OnButtonsCanExecuteChanged()

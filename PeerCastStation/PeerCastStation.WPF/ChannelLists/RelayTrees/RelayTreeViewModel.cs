@@ -27,17 +27,6 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
   {
     private readonly PeerCast peerCast;
 
-    internal Channel Channel
-    {
-      set
-      {
-        relayTree.Clear();
-        var roots = value.CreateHostTree()
-          .Where(node => node.Host.SessionID == peerCast.SessionID);
-        AddRelayTreeNode(relayTree, roots, new HashSet<Guid>());
-      }
-    }
-
     private readonly ObservableCollection<TreeViewModel> relayTree
       = new ObservableCollection<TreeViewModel>();
     public ObservableCollection<TreeViewModel> RelayTree
@@ -96,6 +85,16 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
         var tree_node = new TreeViewModel { Text = nodeinfo };
         tree_nodes.Add(tree_node);
         AddRelayTreeNode(tree_node.Children, node.Children, added);
+      }
+    }
+
+    internal void Update(PeerCastStation.Core.Channel channel)
+    {
+      relayTree.Clear();
+      if (channel!=null) {
+        var roots = channel.CreateHostTree()
+          .Where(node => node.Host.SessionID==peerCast.SessionID);
+        AddRelayTreeNode(relayTree, roots, new HashSet<Guid>());
       }
     }
   }

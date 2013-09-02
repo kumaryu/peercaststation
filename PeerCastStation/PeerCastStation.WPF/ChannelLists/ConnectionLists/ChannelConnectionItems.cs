@@ -19,13 +19,16 @@ using System.Linq;
 using System.Text;
 using System.Windows.Media.Imaging;
 using PeerCastStation.Core;
+using System.ComponentModel;
 
 namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
 {
   interface IChannelConnectionItem
+    : INotifyPropertyChanged
   {
     void Disconnect();
     void Reconnect();
+    void Update();
     bool IsDisconnectable     { get; }
     bool IsReconnectable      { get; }
     BitmapImage AttributeIcon { get; }
@@ -36,6 +39,7 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
     string ContentPosition    { get; }
     string Connections        { get; }
     string AgentName          { get; }
+    object Connection         { get; }
   }
 
   internal static class AttributeIcons
@@ -159,6 +163,8 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
       }
     }
 
+    public object Connection { get { return sourceStream; } }
+
     public override bool Equals(object obj)
     {
       var other = obj as ChannelConnectionSourceItem;
@@ -171,6 +177,20 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
     {
       return sourceStream.GetHashCode();
     }
+
+    public void Update()
+    {
+      if (PropertyChanged!=null) {
+        PropertyChanged(this, new PropertyChangedEventArgs("AttributeIcon"));
+        PropertyChanged(this, new PropertyChangedEventArgs("Status"));
+        PropertyChanged(this, new PropertyChangedEventArgs("RemoteName"));
+        PropertyChanged(this, new PropertyChangedEventArgs("Bitrate"));
+        PropertyChanged(this, new PropertyChangedEventArgs("ContentPosition"));
+        PropertyChanged(this, new PropertyChangedEventArgs("Connections"));
+        PropertyChanged(this, new PropertyChangedEventArgs("AgentName"));
+      }
+    }
+    public event PropertyChangedEventHandler PropertyChanged;
   }
 
   class ChannelConnectionOutputItem : IChannelConnectionItem
@@ -291,6 +311,8 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
       }
     }
 
+    public object Connection { get { return outputStream; } }
+
     public override bool Equals(object obj)
     {
       var other = obj as ChannelConnectionOutputItem;
@@ -303,6 +325,20 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
     {
       return outputStream.GetHashCode();
     }
+
+    public void Update()
+    {
+      if (PropertyChanged!=null) {
+        PropertyChanged(this, new PropertyChangedEventArgs("AttributeIcon"));
+        PropertyChanged(this, new PropertyChangedEventArgs("Status"));
+        PropertyChanged(this, new PropertyChangedEventArgs("RemoteName"));
+        PropertyChanged(this, new PropertyChangedEventArgs("Bitrate"));
+        PropertyChanged(this, new PropertyChangedEventArgs("ContentPosition"));
+        PropertyChanged(this, new PropertyChangedEventArgs("Connections"));
+        PropertyChanged(this, new PropertyChangedEventArgs("AgentName"));
+      }
+    }
+    public event PropertyChangedEventHandler PropertyChanged;
   }
 
   class ChannelConnectionAnnouncingItem : IChannelConnectionItem
@@ -391,6 +427,8 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
       }
     }
 
+    public object Connection { get { return announcingChannel; } }
+
     public override bool Equals(object obj)
     {
       var other = obj as ChannelConnectionAnnouncingItem;
@@ -403,5 +441,19 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
     {
       return announcingChannel.GetHashCode();
     }
+
+    public void Update()
+    {
+      if (PropertyChanged!=null) {
+        PropertyChanged(this, new PropertyChangedEventArgs("AttributeIcon"));
+        PropertyChanged(this, new PropertyChangedEventArgs("Status"));
+        PropertyChanged(this, new PropertyChangedEventArgs("RemoteName"));
+        PropertyChanged(this, new PropertyChangedEventArgs("Bitrate"));
+        PropertyChanged(this, new PropertyChangedEventArgs("ContentPosition"));
+        PropertyChanged(this, new PropertyChangedEventArgs("Connections"));
+        PropertyChanged(this, new PropertyChangedEventArgs("AgentName"));
+      }
+    }
+    public event PropertyChangedEventHandler PropertyChanged;
   }
 }

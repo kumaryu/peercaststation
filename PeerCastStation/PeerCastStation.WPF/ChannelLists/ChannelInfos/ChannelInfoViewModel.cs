@@ -164,7 +164,11 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
     public bool IsTracker
     {
       get { return isTracker; }
-      set { SetProperty("IsTracker", ref isTracker, value); }
+      set {
+        SetProperty("IsTracker", ref isTracker, value, () => {
+          isModified = false;
+        });
+      }
     }
 
     private bool isModified = false;
@@ -205,11 +209,31 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
         () => channel!=null && IsTracker && IsModified);
     }
 
-    public void From(Channel channel, bool isTracker)
+    internal void UpdateChannelInfo(Channel channel)
     {
       this.channel = channel;
-      IsTracker = isTracker;
+      if (channel==null) {
+        ChannelName = "";
+        ContentType = "";
+        Bitrate     = "";
+        Uptime      = "";
+        Genre       = "";
+        Description = "";
+        ContactUrl  = "";
+        Comment     = "";
+        TrackAlbum  = "";
+        TrackArtist = "";
+        TrackTitle  = "";
+        TrackGenre  = "";
+        TrackUrl    = "";
+        ChannelId   = "";
+        IsModified  = false;
+        IsTracker = false;
+        update.OnCanExecuteChanged();
+        return;
+      }
 
+      IsTracker = channel.IsBroadcasting;
       ChannelId = channel.ChannelID.ToString("N").ToUpper();
       var info = channel.ChannelInfo;
       if (info != null) {
@@ -261,5 +285,6 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
 
       update.OnCanExecuteChanged();
     }
+
   }
 }

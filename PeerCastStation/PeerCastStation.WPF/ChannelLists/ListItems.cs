@@ -19,6 +19,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Media.Imaging;
 using PeerCastStation.Core;
+using System.ComponentModel;
 
 namespace PeerCastStation.WPF.ChannelLists
 {
@@ -37,6 +38,7 @@ namespace PeerCastStation.WPF.ChannelLists
   }
 
   class ChannelListItem
+    : INotifyPropertyChanged
   {
     private static BitmapImage[] StatusIcons = new BitmapImage[] {
       new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_0.png")),
@@ -115,5 +117,22 @@ namespace PeerCastStation.WPF.ChannelLists
       }
     }
 
+    internal void Update()
+    {
+      OnPropertyChanged("ChannelStatus");
+      OnPropertyChanged("RelayStatus");
+      OnPropertyChanged("RelayStatusIcon");
+      OnPropertyChanged("Name");
+      OnPropertyChanged("Bitrate");
+      OnPropertyChanged("Connections");
+    }
+
+    void OnPropertyChanged(string name)
+    {
+      if (PropertyChanged!=null) {
+        PropertyChanged(this, new PropertyChangedEventArgs(name));
+      }
+    }
+    public event PropertyChangedEventHandler PropertyChanged;
   }
 }
