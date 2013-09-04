@@ -12,7 +12,7 @@ PeerCastStationはリメイク版PeerCastです。PeerCast.exeのかわりとし
 ---------
 WindowsではWindows XP SP3以降 + .NET Framework 3.5以降が必要です。
 
-Windows以外ではmono 2.6.7以降があれば動くと思います。ただしGUIに制限があります。
+Windows以外ではmono 2.6.7以降があれば動くと思います。ただしGUIは使えません。
 
 インストール方法
 ----------------
@@ -28,8 +28,7 @@ OSXなどでは[mono-projectからダウンロードして](http://www.go-mono.c
 
 で実行してください。
 
-monoで上手く動かない場合はPeerCastStation.GUI.dllを削除すると起動できます。
-この場合はGUIが出ないですが、ポートが開ければWebブラウザから[http://localhost:7144/html/index.html](http://localhost:7144/html/index.html)にアクセスして操作できます。
+Windows以外ではUIが出ないですが、ポートが開ければWebブラウザから[http://localhost:7144/html/index.html](http://localhost:7144/html/index.html)にアクセスして操作できます。
 
 {% case site.target %}
 {% when 'site' %}
@@ -39,6 +38,21 @@ monoで上手く動かない場合はPeerCastStation.GUI.dllを削除すると�
 更新履歴
 --------
 {% endcase %}
+
+### 1.5.0 (2013年9月4日版)
+{% if site.target == 'site' %}
+[ダウンロード](http://www.pecastation.org/files/PeerCastStation-1.5.0.zip)
+{% endif %}
+
+GUIの作り直しと内部の大幅な整理を行いました。
+
+* GUIをWPFで作り直しました(thanks progre)。Windows以外ではGUIが動かなくなりました
+* GUIのチャンネル・接続一覧の記号に色が付くようになりました
+* GUIの配信開始ダイアログで履歴の呼び出しができるようになりました
+* H.264を入れたFLV配信が上手くできていなかったのを修正しました(thanks niwakazoider)
+* 読み込めないプラグインがあった場合に起動しないのを修正しました。Monoでもファイルを消さずにGUI無しで起動します
+* PCP通信時に拡張バージョンとしてST150を出力するようにしました
+* 受信部を大幅に整理し、リレーの再接続などの安定化をしました
 
 ### 1.4.2 (2013年7月13日版)
 {% if site.target == 'site' %}
