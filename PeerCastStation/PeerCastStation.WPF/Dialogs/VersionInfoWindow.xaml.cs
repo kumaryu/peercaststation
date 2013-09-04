@@ -40,6 +40,7 @@ namespace PeerCastStation.WPF.Dialogs
 
     private void Button_Click(object sender, RoutedEventArgs e)
     {
+      GC.Collect();
       Close();
     }
   }
