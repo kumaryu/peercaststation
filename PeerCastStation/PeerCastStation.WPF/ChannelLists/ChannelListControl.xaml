@@ -33,9 +33,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
   </UserControl.Resources>
   <Grid>
     <Grid.RowDefinitions>
-      <RowDefinition Height="1*"/>
       <RowDefinition Height="Auto"/>
-      <RowDefinition Height="2*"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="1*"/>
     </Grid.RowDefinitions>
     <Grid Grid.Row="0">
       <Grid.ColumnDefinitions>
