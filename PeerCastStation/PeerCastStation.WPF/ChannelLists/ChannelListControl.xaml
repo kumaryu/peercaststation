@@ -22,8 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
              xmlns:lco="clr-namespace:PeerCastStation.WPF.ChannelLists.ConnectionLists"
              xmlns:lr="clr-namespace:PeerCastStation.WPF.ChannelLists.RelayTrees"
              mc:Ignorable="d"
-             d:DesignHeight="600" d:DesignWidth="400"
-             Background="White">
+             d:DesignHeight="600" d:DesignWidth="400">
   <UserControl.Resources>
     <Style TargetType="Button">
       <Setter Property="Width" Value="64"/>

@@ -20,8 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:c="clr-namespace:PeerCastStation.WPF.Commons"
              mc:Ignorable="d" 
-             d:DesignWidth="300"
-             Background="White">
+             d:DesignWidth="300">
   <UserControl.Resources>
     <Style TargetType="GroupBox">
       <Setter Property="Margin" Value="5"/>

@@ -41,7 +41,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
       <ComboBoxItem Content="IPv6 Any"/>
     </ComboBox>
     <Label Grid.Row="1" Grid.Column="0" Content="ポート番号:"/>
-    <extToolkit:IntegerUpDown Grid.Row="1" Grid.Column="1" Minimum="1024" Maximum="65535" Value="{Binding Port}"/>
+    <extToolkit:IntegerUpDown Grid.Row="1" Grid.Column="1" Minimum="1024" Maximum="65535" Value="{Binding Port}" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
     <l:RelaySettingControl Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"/>
     <Grid Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2">
       <Grid.ColumnDefinitions>
