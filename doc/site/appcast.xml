@@ -6,6 +6,25 @@
     <description>PeerCastStationの更新情報です。</description>
     <language>ja</language>      
     <item>
+      <title>Version 1.5.0 (2013年9月4日版)</title>
+      <description>
+        <h3>1.5.0 (2013年9月4日版)</h3>
+        <p>GUIの作り直しと内部の大幅な整理を行いました。</p>
+        <ul>
+          <li>GUIをWPFで作り直しました(thanks progre)。Windows以外ではGUIが動かなくなりました</li>
+          <li>GUIのチャンネル・接続一覧の記号に色が付くようになりました</li>
+          <li>GUIの配信開始ダイアログで履歴の呼び出しができるようになりました</li>
+          <li>H.264を入れたFLV配信が上手くできていなかったのを修正しました(thanks niwakazoider)</li>
+          <li>読み込めないプラグインがあった場合に起動しないのを修正しました。Monoでもファイルを消さずにGUI無しで起動します</li>
+          <li>PCP通信時に拡張バージョンとしてST150を出力するようにしました</li>
+          <li>受信部を大幅に整理し、リレーの再接続などの安定化をしました</li>
+        </ul>
+      </description>
+      <pubDate>Wed, 4 Sep 2013 23:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-1.5.0.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-1.5.0.zip" sparkle:version="1.5.9" length="1647929" type="application/octet-stream" />
+    </item>
+    <item>
       <title>Version 1.4.2 (2013年7月13日版)</title>
       <description>
         <h3>1.4.2 (2013年7月13日版)</h3>
