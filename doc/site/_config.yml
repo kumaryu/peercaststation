@@ -1,5 +1,6 @@
 
 source:   ../src
+plugins:  ../plugins
 markdown: kramdown
 target:   site
 

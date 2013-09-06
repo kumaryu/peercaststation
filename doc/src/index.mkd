@@ -30,6 +30,17 @@ OSXなどでは[mono-projectからダウンロードして](http://www.go-mono.c
 
 Windows以外ではUIが出ないですが、ポートが開ければWebブラウザから[http://localhost:7144/html/index.html](http://localhost:7144/html/index.html)にアクセスして操作できます。
 
+ソース・ライセンス
+------------------
+[githubにてソース公開しています。](https://github.com/kumaryu/peercaststation)
+
+ライセンスはGPLv3です。
+使用しているライブラリ等のライセンスに関しては同梱のLICENSE.txtを見てください。
+
+問題の報告・要望の連絡先について
+--------------------------------
+[githubのIssueに追加してください。](https://github.com/kumaryu/peercaststation)
+
 {% case site.target %}
 {% when 'site' %}
 ダウンロード
@@ -247,15 +258,4 @@ GUIの作り直しと内部の大幅な整理を行いました。
 ### 0.6.0
 
 * 初期配布バージョン
-
-ソース・ライセンス
-------------------
-[githubにてソース公開しています。](https://github.com/kumaryu/peercaststation)
-
-ライセンスはGPLv3です。
-使用しているライブラリ等のライセンスに関しては同梱のLICENSE.txtを見てください。
-
-問題の報告・要望の連絡先について
---------------------------------
-[githubのIssueに追加してください。](https://github.com/kumaryu/peercaststation)
 
