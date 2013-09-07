@@ -80,6 +80,7 @@ namespace PeerCastStation.WPF
         app.Run();
         viewModel.Dispose();
       });
+      mainThread.Name = "WPF UI Thread";
       mainThread.SetApartmentState(ApartmentState.STA);
       mainThread.Start();
     }
