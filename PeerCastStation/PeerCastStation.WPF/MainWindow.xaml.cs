@@ -24,15 +24,20 @@ namespace PeerCastStation.WPF
   /// </summary>
   internal partial class MainWindow : Window
   {
+    private bool IsFinite(double value)
+    {
+      return !Double.IsNaN(value) && !Double.IsInfinity(value);
+    }
+
     public MainWindow(MainViewModel viewmodel)
     {
       InitializeComponent();
       var settings = PeerCastStation.Core.PeerCastApplication.Current.Settings.Get<WPFSettings>();
-      if (!Double.IsNaN(settings.WindowLeft))   this.Left   = settings.WindowLeft;
-      if (!Double.IsNaN(settings.WindowTop))    this.Top    = settings.WindowTop;
-      if (!Double.IsNaN(settings.WindowWidth))  this.Width  = settings.WindowWidth;
-      if (!Double.IsNaN(settings.WindowHeight)) this.Height = settings.WindowHeight;
-      if (!Double.IsNaN(this.Left) && !Double.IsNaN(this.Width)) {
+      if (IsFinite(settings.WindowLeft))   this.Left   = settings.WindowLeft;
+      if (IsFinite(settings.WindowTop))    this.Top    = settings.WindowTop;
+      if (IsFinite(settings.WindowWidth))  this.Width  = settings.WindowWidth;
+      if (IsFinite(settings.WindowHeight)) this.Height = settings.WindowHeight;
+      if (IsFinite(this.Left) && IsFinite(this.Width)) {
         if (this.Width>SystemParameters.VirtualScreenWidth) {
           this.Width = SystemParameters.VirtualScreenWidth;
         }
@@ -43,7 +48,7 @@ namespace PeerCastStation.WPF
           this.Left = SystemParameters.VirtualScreenWidth+SystemParameters.VirtualScreenLeft - this.Width;
         }
       }
-      if (!Double.IsNaN(this.Top) && !Double.IsNaN(this.Height)) {
+      if (IsFinite(this.Top) && IsFinite(this.Height)) {
         if (this.Height>SystemParameters.VirtualScreenHeight) {
           this.Height = SystemParameters.VirtualScreenHeight;
         }
@@ -66,10 +71,12 @@ namespace PeerCastStation.WPF
     {
       var settings = PeerCastStation.Core.PeerCastApplication.Current.Settings.Get<WPFSettings>();
       var bounds = RestoreBounds;
-      settings.WindowLeft   = bounds.Left;
-      settings.WindowTop    = bounds.Top;
-      settings.WindowWidth  = bounds.Width;
-      settings.WindowHeight = bounds.Height;
+      if (!bounds.IsEmpty) {
+        settings.WindowLeft   = bounds.Left;
+        settings.WindowTop    = bounds.Top;
+        settings.WindowWidth  = bounds.Width;
+        settings.WindowHeight = bounds.Height;
+      }
       base.OnClosing(e);
       e.Cancel = true;
       Visibility = Visibility.Hidden;
