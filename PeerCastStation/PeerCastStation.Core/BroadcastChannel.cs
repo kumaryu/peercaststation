@@ -20,16 +20,14 @@ namespace PeerCastStation.Core
 
     public override void Start(Uri source_uri)
     {
-      lock (syncRoot) {
-        var source_factory = PeerCast.SourceStreamFactories.FirstOrDefault(factory => source_uri.Scheme==factory.Scheme);
-        if (source_factory==null) {
-          logger.Error("Protocol `{0}' is not found", source_uri.Scheme);
-          throw new ArgumentException(String.Format("Protocol `{0}' is not found", source_uri.Scheme));
-        }
-        var content_reader = ContentReaderFactory.Create(this);
-        var source_stream = source_factory.Create(this, source_uri, content_reader);
-        this.Start(source_uri, source_stream);
+      var source_factory = PeerCast.SourceStreamFactories.FirstOrDefault(factory => source_uri.Scheme==factory.Scheme);
+      if (source_factory==null) {
+        logger.Error("Protocol `{0}' is not found", source_uri.Scheme);
+        throw new ArgumentException(String.Format("Protocol `{0}' is not found", source_uri.Scheme));
       }
+      var content_reader = ContentReaderFactory.Create(this);
+      var source_stream = source_factory.Create(this, source_uri, content_reader);
+      this.Start(source_uri, source_stream);
     }
 
   }
