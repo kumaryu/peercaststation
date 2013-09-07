@@ -8,7 +8,7 @@ PeerCastStationについて
 =======================
 PeerCastStationはリメイク版PeerCastです。PeerCast.exeのかわりとして使えます。
 
-動作環とインストール方法
+動作環境とインストール方法
 ------------------------
 WindowsではWindows XP SP3以降 + .NET Framework 3.5以降が必要です。
 
