@@ -4,7 +4,14 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>PeerCastStation - その他</title>
     <link type="text/css" href="bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <script type="text/javascript" src="jquery/jquery-1.8.3.min.js"></script>
     <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
+
+    <script type="text/javascript">
+      $(function() {
+        $('.dropdown-toggle').dropdown();
+      });
+    </script>
   </head>
   <body>
     
@@ -17,21 +24,37 @@
             <li><a href="/html/relays.html">リレー</a></li>
             <li><a href="/html/settings.html">設定</a></li>
             <li><a href="/html/logs.html">ログ</a></li>
-            <li class="active"><a href="/help/index.html">ヘルプ</a></li>
+            <li class="active"><a href="index.html">ヘルプ</a></li>
           </ul>
         </div>
       </div>
     </div>
     <div class="container-fluid">
       <div class="row-fluid">
-        <div class="span10 offset1">
-          <ul class="nav nav-tabs">
-            <li ><a href="index.html"    >PeerCastStationについて</a></li>
-            <li ><a href="usage.html"    >使い方</a></li>
-            <li ><a href="broadcast.html">配信</a></li>
-            <li ><a href="settings.html" >設定</a></li>
-            <li  class="active" ><a href="misc.html"     >その他</a></li>
+        <ul class="span12 nav nav-tabs">
+          <li ><a href="index.html"    >PeerCastStationについて</a></li>
+          <li ><a href="usage.html"    >使い方</a></li>
+          <li ><a href="broadcast.html">配信</a></li>
+          <li ><a href="settings.html" >設定</a></li>
+          <li  class="active" ><a href="misc.html"     >その他</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span3">
+          <ul class="nav nav-tabs nav-stacked">
+            <li><a href='#section'>その他</a></li>
+<li><a href='#section-1'>設定の保存先</a></li>
+<li><a href='#section-2'>ログ</a></li>
+<li><a href='#section-3'>ソース・ライセンス</a></li>
+<li><a href='#section-4'>問題の報告・要望の連絡先について</a></li>
+<li><a href='#section-5'>開発に参加したい場合</a></li>
           </ul>
+        </div>
+        <div class="span9">
           <h1 id="section">その他</h1>
 
 <h2 id="section-1">設定の保存先</h2>
@@ -121,7 +144,5 @@
         </div>
       </div>
     </div>
-    
-    
   </body>
 </html>

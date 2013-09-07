@@ -8,14 +8,12 @@ PeerCastStationについて
 =======================
 PeerCastStationはリメイク版PeerCastです。PeerCast.exeのかわりとして使えます。
 
-動作環境
----------
+動作環とインストール方法
+------------------------
 WindowsではWindows XP SP3以降 + .NET Framework 3.5以降が必要です。
 
 Windows以外ではmono 2.6.7以降があれば動くと思います。ただしGUIは使えません。
 
-インストール方法
-----------------
 インストーラなどは無いので適当な場所にzipを展開してPeerCastStation.exeを起動してください。
 起動時にエラーが起きた場合は.NET Framework 3.5以降が入ってない可能性が高いです。[先にダウンロードしてインストールしてください。](http://www.microsoft.com/downloads/ja-jp/details.aspx?FamilyID=AB99342F-5D1A-413D-8319-81DA479AB0D7)
 Windows7だと最初っから入ってます。Windows8では.NET Framework 4.5がインストール済みなため、.NET Framework 3.5が入ってなくても動きます。
@@ -30,13 +28,6 @@ OSXなどでは[mono-projectからダウンロードして](http://www.go-mono.c
 
 Windows以外ではUIが出ないですが、ポートが開ければWebブラウザから[http://localhost:7144/html/index.html](http://localhost:7144/html/index.html)にアクセスして操作できます。
 
-ソース・ライセンス
-------------------
-[githubにてソース公開しています。](https://github.com/kumaryu/peercaststation)
-
-ライセンスはGPLv3です。
-使用しているライブラリ等のライセンスに関しては同梱のLICENSE.txtを見てください。
-
 問題の報告・要望の連絡先について
 --------------------------------
 [githubのIssueに追加してください。](https://github.com/kumaryu/peercaststation)
@@ -49,6 +40,17 @@ Windows以外ではUIが出ないですが、ポートが開ければWebブラ�
 更新履歴
 --------
 {% endcase %}
+
+### 1.5.1 (2013年9月7日版)
+{% if site.target == 'site' %}
+[ダウンロード](http://www.pecastation.org/files/PeerCastStation-1.5.1.zip)
+{% endif %}
+
+落ちる不具合を修正しました。
+
+* 再接続時に落ちることがあったのを修正しました
+* GUIを非表示のまま終了すると次回起動時に落ちることがあったのを修正しました
+* ヘルプページの表示がちょっとかわりました。目次がつきました
 
 ### 1.5.0 (2013年9月4日版)
 {% if site.target == 'site' %}
@@ -258,4 +260,11 @@ GUIの作り直しと内部の大幅な整理を行いました。
 ### 0.6.0
 
 * 初期配布バージョン
+
+ソース・ライセンス
+------------------
+[githubにてソース公開しています。](https://github.com/kumaryu/peercaststation)
+
+ライセンスはGPLv3です。
+使用しているライブラリ等のライセンスに関しては同梱のLICENSE.txtを見てください。
 

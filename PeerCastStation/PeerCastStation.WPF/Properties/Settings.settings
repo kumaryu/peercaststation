@@ -21,7 +21,7 @@
       <Value Profile="(Default)">http://www.pecastation.org/files/appcast.xml</Value>
     </Setting>
     <Setting Name="CurrentVersion" Type="System.DateTime" Scope="Application">
-      <Value Profile="(Default)">2013-09-04</Value>
+      <Value Profile="(Default)">2013-09-07</Value>
     </Setting>
     <Setting Name="ShowWindowOnStartup" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
