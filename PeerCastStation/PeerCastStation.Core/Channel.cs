@@ -454,7 +454,10 @@ namespace PeerCastStation.Core
 
     public void Reconnect(Uri source_uri)
     {
-      Start(source_uri);
+      var uri = source_uri ?? this.SourceUri;
+      if (uri!=null) {
+        Start(source_uri);
+      }
     }
 
     /// <summary>
