@@ -60,6 +60,10 @@ namespace PeerCastStation.WPF
             if (mainWindow!=null) {
               mainWindow.Dispatcher.Invoke(new Action(() => {
                 mainWindow.Show();
+                if (mainWindow.WindowState==WindowState.Minimized) {
+                  mainWindow.WindowState = WindowState.Normal;
+                }
+                mainWindow.Activate();
               }));
             }
           };
