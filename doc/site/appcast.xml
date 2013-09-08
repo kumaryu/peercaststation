@@ -5,6 +5,25 @@
     <link>http://www.pecastation.org/</link>
     <description>PeerCastStationの更新情報です。</description>
     <language>ja</language>      
+
+    <item>
+      <title>Version 1.5.2 (2013年9月8日版)</title>
+      <description>
+        <h3>1.5.2 (2013年9月8日版)</h3>
+        <p>落ちる不具合が修正できていなかったのを再修正しました。</p>
+
+        <ul>
+          <li>再接続時に落ちることがあったのが直せてなかったので再修正しました</li>
+          <li>配信履歴の呼び出し時に掲載YPが復旧されなかったのを修正しました</li>
+          <li>処理されない例外があった場合に落ちる前にログに例外情報を吐くようにしました</li>
+          <li>GUIの表示を実行した時になるべく前面にウィンドウを持ってきて最小化も解除するようにしました</li>
+          <li>外部ツールでウィンドウを表示させた時に真っ黒になるのに対処しました</li>
+        </ul>
+      </description>
+      <pubDate>Sun, 8 Sep 2013 23:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-1.5.2.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-1.5.2.zip" sparkle:version="1.5.2" length="1679049" type="application/octet-stream" />
+    </item>
     <item>
       <title>Version 1.5.1 (2013年9月7日版)</title>
       <description>
