@@ -493,7 +493,7 @@ namespace PeerCastStation.Core
     {
       var uri = source_uri ?? this.SourceUri;
       if (uri!=null) {
-        Start(source_uri);
+        Start(uri);
       }
     }
 
