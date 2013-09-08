@@ -88,7 +88,10 @@ namespace PeerCastStation.WPF
       notifyIconThread.Start();
 
       mainThread = new Thread(() => {
-        try {
+#if !DEBUG
+        try
+#endif
+        {
           var app = new Application();
           viewModel = new MainViewModel(Application);
           var settings = Application.Settings.Get<WPFSettings>();
@@ -97,11 +100,13 @@ namespace PeerCastStation.WPF
           app.Run();
           viewModel.Dispose();
         }
+#if !DEBUG
         catch (Exception e) {
           logger.Fatal("Unhandled exception");
           logger.Fatal(e);
           throw;
         }
+#endif
       });
       mainThread.Name = "WPF UI Thread";
       mainThread.SetApartmentState(ApartmentState.STA);
