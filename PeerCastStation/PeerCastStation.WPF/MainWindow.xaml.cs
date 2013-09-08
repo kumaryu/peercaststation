@@ -29,6 +29,8 @@ namespace PeerCastStation.WPF
       return !Double.IsNaN(value) && !Double.IsInfinity(value);
     }
 
+    private System.Windows.Interop.WindowInteropHelper hwnd;
+    private System.Windows.Interop.HwndSource nativeSource;
     public MainWindow(MainViewModel viewmodel)
     {
       InitializeComponent();
@@ -62,9 +64,14 @@ namespace PeerCastStation.WPF
       this.DataContext = viewmodel;
     }
 
-    protected override void OnLocationChanged(System.EventArgs e)
+    protected override void OnActivated(EventArgs e)
     {
-      base.OnLocationChanged(e);
+      base.OnActivated(e);
+      hwnd = new System.Windows.Interop.WindowInteropHelper(this);
+      if (hwnd.Handle!=null && hwnd.Handle!=IntPtr.Zero) {
+        nativeSource = System.Windows.Interop.HwndSource.FromHwnd(hwnd.Handle);
+        nativeSource.AddHook(OnWindowMessage);
+      }
     }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
@@ -91,5 +98,20 @@ namespace PeerCastStation.WPF
       };
       dialog.ShowDialog();
     }
+
+    private IntPtr OnWindowMessage(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+      handled = false;
+      if (msg==0x0018) { //WM_SHOWWINDOW
+        if (wParam.ToInt64()!=0) {
+          this.Show();
+          this.Activate();
+          handled = true;
+        }
+      }
+      return new IntPtr(0);
+    }
+
+
   }
 }
