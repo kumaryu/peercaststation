@@ -46,8 +46,13 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
           StreamUrl   = value.StreamUrl;
           Bitrate     = value.Bitrate==0 ? null : (int?)value.Bitrate;
           ContentType = contentTypes.FirstOrDefault(t => t.ContentReaderFactory.Name==value.ContentType);
-          var yp = yellowPages.FirstOrDefault(y => y.Name==value.YellowPage);
-          YellowPage  = yp!=null ? yp.YellowPageClient : null;
+          if (value.YellowPage!=null) {
+            var yp = yellowPages.Where(y => y.YellowPageClient!=null).FirstOrDefault(y => y.YellowPageClient.Name==value.YellowPage);
+            YellowPage  = yp!=null ? yp.YellowPageClient : null;
+          }
+          else {
+            YellowPage = null;
+          }
           ChannelName = value.ChannelName;
           Genre       = value.Genre;
           Description = value.Description;
