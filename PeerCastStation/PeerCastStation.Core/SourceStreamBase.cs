@@ -167,7 +167,19 @@ namespace PeerCastStation.Core
       sourceConnection = CreateConnection(source_uri);
       sourceConnection.Stopped += OnSourceConnectionStopped;
       sourceConnectionThread = new Thread(state => {
-        sourceConnection.Run();
+#if !DEBUG
+        try
+#endif
+        {
+          sourceConnection.Run();
+        }
+#if !DEBUG
+        catch (Exception e) {
+          Logger.Fatal("Unhandled exception");
+          Logger.Fatal(e);
+          throw;
+        }
+#endif
       });
       sourceConnectionThread.Start();
     }

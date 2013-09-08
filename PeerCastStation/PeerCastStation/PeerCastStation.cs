@@ -247,7 +247,19 @@ namespace PeerCastStation.Main
       if (!first_instance && !args.Contains("-multi")) {
         return;
       }
-      (new Application()).Run();
+#if !DEBUG
+      try
+#endif
+      {
+        (new Application()).Run();
+      }
+#if !DEBUG
+      catch (Exception e) {
+        logger.Fatal("Unhandled exception");
+        logger.Fatal(e);
+        throw;
+      }
+#endif
     }
   }
 }
