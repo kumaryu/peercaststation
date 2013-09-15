@@ -12,9 +12,11 @@ namespace PeerCastStation.Core
     public BroadcastChannel(
         PeerCast peercast,
         Guid channel_id,
+        ChannelInfo channel_info,
         IContentReaderFactory content_reader_factory)
       : base(peercast, channel_id)
     {
+      this.ChannelInfo = channel_info;
       this.ContentReaderFactory = content_reader_factory;
     }
 

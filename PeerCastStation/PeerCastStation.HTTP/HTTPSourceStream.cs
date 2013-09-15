@@ -104,6 +104,7 @@ namespace PeerCastStation.HTTP
     private IContentReader contentReader;
     private TcpClient    client = null;
     private HTTPResponse response = null;
+    bool useContentBitrate = true;
     private enum State {
       SendingRequest,
       WaitingResponse,
@@ -120,6 +121,9 @@ namespace PeerCastStation.HTTP
       : base(peercast, channel, source_uri)
     {
       contentReader = content_reader;
+      if (channel.ChannelInfo!=null && channel.ChannelInfo.Bitrate!=0) {
+        useContentBitrate = false;
+      }
     }
 
     protected override StreamConnection DoConnect(Uri source)
@@ -212,6 +216,25 @@ namespace PeerCastStation.HTTP
       }
     }
 
+
+    private ChannelInfo UpdateChannelInfo(ChannelInfo a, ChannelInfo b)
+    {
+      var base_atoms = new AtomCollection(a.Extra);
+      var new_atoms  = new AtomCollection(b.Extra);
+      if (!useContentBitrate) {
+        new_atoms.RemoveByName(Atom.PCP_CHAN_INFO_BITRATE);
+      }
+      base_atoms.Update(new_atoms);
+      return new ChannelInfo(base_atoms);
+    }
+
+    private ChannelTrack UpdateChannelTrack(ChannelTrack a, ChannelTrack b)
+    {
+      var base_atoms = new AtomCollection(a.Extra);
+      base_atoms.Update(b.Extra);
+      return new ChannelTrack(base_atoms);
+    }
+
     long lastPosition = 0;
     System.Diagnostics.Stopwatch receiveTimeout = null;
     private State ReceiveBody()
@@ -225,10 +248,10 @@ namespace PeerCastStation.HTTP
           if (stream.Length>0) {
             var data = contentReader.Read(stream);
             if (data.ChannelInfo!=null) {
-              Channel.ChannelInfo = data.ChannelInfo;
+              Channel.ChannelInfo = UpdateChannelInfo(Channel.ChannelInfo, data.ChannelInfo);
             }
             if (data.ChannelTrack!=null) {
-              Channel.ChannelTrack = data.ChannelTrack;
+              Channel.ChannelTrack = UpdateChannelTrack(Channel.ChannelTrack, data.ChannelTrack);
             }
             if (data.ContentHeader!=null) {
               Channel.ContentHeader = data.ContentHeader;

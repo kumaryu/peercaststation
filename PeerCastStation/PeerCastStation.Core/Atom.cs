@@ -1024,6 +1024,18 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
+    /// コレクションから指定した名前を持つAtomを一つ取り除きます
+    /// </summary>
+    /// <param name="name">取り除くAtomの名前</param>
+    /// <returns>取り除いたAtom、無ければnull</returns>
+    public Atom RemoveByName(ID4 name)
+    {
+      var atom = this.FirstOrDefault((x) => { return x.Name==name; });
+      if (atom!=null) this.Remove(atom);
+      return atom;
+    }
+
+    /// <summary>
     /// 読み取り専用のラッパオブジェクトを取得します
     /// </summary>
     /// <returns>このコレクションの読み取り専用のラッパ</returns>

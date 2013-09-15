@@ -213,8 +213,7 @@ namespace PeerCastStation.Core
     public Channel BroadcastChannel(IYellowPageClient yp, Guid channel_id, ChannelInfo channel_info, Uri source, IContentReaderFactory content_reader_factory)
     {
       logger.Debug("Broadcasting channel {0} from {1}", channel_id.ToString("N"), source);
-      var channel = new BroadcastChannel(this, channel_id, content_reader_factory);
-      channel.ChannelInfo = channel_info;
+      var channel = new BroadcastChannel(this, channel_id, channel_info, content_reader_factory);
       Utils.ReplaceCollection(ref channels, orig => {
         var new_collection = new List<Channel>(orig);
         new_collection.Add(channel);
