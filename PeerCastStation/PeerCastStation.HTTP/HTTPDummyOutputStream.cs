@@ -31,8 +31,7 @@ namespace PeerCastStation.HTTP
 
     public override OutputStreamType OutputStreamType
     {
-      get
-      {
+      get {
         return
           OutputStreamType.Interface |
           OutputStreamType.Metadata |
@@ -45,6 +44,7 @@ namespace PeerCastStation.HTTP
       Stream input_stream,
       Stream output_stream,
       EndPoint remote_endpoint,
+      AccessControlInfo access_control,
       Guid channel_id,
       byte[] header)
     {
@@ -60,6 +60,7 @@ namespace PeerCastStation.HTTP
         input_stream,
         output_stream,
         remote_endpoint,
+        access_control,
         req);
     }
 
@@ -97,8 +98,9 @@ namespace PeerCastStation.HTTP
       Stream input_stream,
       Stream output_stream,
       EndPoint remote_endpoint,
+      AccessControlInfo access_control,
       HTTPRequest req)
-      : base(peercast, input_stream, output_stream, remote_endpoint, null, null)
+      : base(peercast, input_stream, output_stream, remote_endpoint, access_control, null, null)
     {
       Logger.Debug("Initialized: Remote {0}", remote_endpoint);
       this.request = req;

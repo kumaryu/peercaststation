@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
-using System.ComponentModel;
 using System.Linq;
 
 namespace PeerCastStation.Core
@@ -142,6 +141,56 @@ namespace PeerCastStation.Core
     public AccessController(PeerCast peercast)
     {
       this.PeerCast = peercast;
+    }
+  }
+
+  public class AuthenticationKey
+  {
+    private static char[] KeyCharTable = new char[] {
+      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+      '-', '.', '_', '~', '!', '$', '&', '\'', '(', ')', '*', '+', ',', ';', '=',
+    };
+    private static Random random = new Random();
+
+    public string Id       { get; private set; }
+    public string Password { get; private set; }
+
+    public AuthenticationKey()
+    {
+    }
+
+    public AuthenticationKey(string id, string password)
+    {
+      this.Id = id;
+      this.Password = password;
+    }
+
+    public static AuthenticationKey Generate()
+    {
+      return new AuthenticationKey(
+        new String(Enumerable.Range(0, 16).Select(i => KeyCharTable[random.Next(KeyCharTable.Length)]).ToArray()),
+        new String(Enumerable.Range(0, 16).Select(i => KeyCharTable[random.Next(KeyCharTable.Length)]).ToArray())
+      );
+    }
+  }
+
+  /// <summary>
+  /// アクセス可否を判断するための情報を保持します
+  /// </summary>
+  public class AccessControlInfo
+  {
+    public AuthenticationKey AuthenticationKey { get; private set; }
+    public AccessControlInfo(AuthenticationKey key)
+    {
+      this.AuthenticationKey = key;
+    }
+
+    public bool CheckAuthorization(string id, string pass)
+    {
+      if (AuthenticationKey==null) return true;
+      return AuthenticationKey.Id==id && AuthenticationKey.Password==pass;
     }
   }
 

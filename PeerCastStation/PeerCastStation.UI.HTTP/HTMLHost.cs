@@ -73,8 +73,9 @@ namespace PeerCastStation.UI.HTTP
         Stream input_stream,
         Stream output_stream,
         EndPoint remote_endpoint,
+        AccessControlInfo access_control,
         HTTPRequest request)
-        : base(peercast, input_stream, output_stream, remote_endpoint, null, null)
+        : base(peercast, input_stream, output_stream, remote_endpoint, access_control, null, null)
       {
         this.owner   = owner;
         this.request = request;
@@ -214,6 +215,9 @@ namespace PeerCastStation.UI.HTTP
         base.OnStarted();
         Logger.Debug("Started");
         try {
+          if (!HTTPUtils.CheckAuthorization(this.request, AccessControl.AuthenticationKey)) {
+            throw new HTTPError(HttpStatusCode.Unauthorized);
+          }
           if (this.request.Method!="HEAD" && this.request.Method!="GET") {
             throw new HTTPError(HttpStatusCode.MethodNotAllowed);
           }
@@ -273,6 +277,7 @@ namespace PeerCastStation.UI.HTTP
         Stream input_stream,
         Stream output_stream,
         EndPoint remote_endpoint,
+        AccessControlInfo access_control,
         Guid channel_id,
         byte[] header)
       {
@@ -284,7 +289,7 @@ namespace PeerCastStation.UI.HTTP
           catch (EndOfStreamException) {
           }
         }
-        return new HTMLHostOutputStream(owner, PeerCast, input_stream, output_stream, remote_endpoint, request);
+        return new HTMLHostOutputStream(owner, PeerCast, input_stream, output_stream, remote_endpoint, access_control, request);
       }
 
       public override Guid? ParseChannelID(byte[] header)

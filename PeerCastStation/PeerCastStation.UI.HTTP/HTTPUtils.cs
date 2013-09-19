@@ -29,11 +29,45 @@ namespace PeerCastStation.UI.HTTP
 
   class HTTPUtils
   {
+    public static bool CheckAuthorization(PeerCastStation.HTTP.HTTPRequest request, PeerCastStation.Core.AuthenticationKey key)
+    {
+      if (key==null) return true;
+      if (!request.Headers.ContainsKey("AUTHORIZATION")) {
+        return false;
+      }
+      else {
+        var authorized = false;
+        var md = System.Text.RegularExpressions.Regex.Match(
+          request.Headers["AUTHORIZATION"],
+          @"\s*BASIC (\S+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (md.Success) {
+          try {
+            var authorization = System.Text.Encoding.ASCII.GetString(Convert.FromBase64String(md.Groups[1].Value)).Split(':');
+            if (authorization.Length>=2) {
+              var user = authorization[0];
+              var pass = String.Join(":", authorization.Skip(1).ToArray());
+              if (key.Id==user && key.Password==pass) {
+                authorized = true;
+              }
+            }
+          }
+          catch (FormatException) {
+          }
+          catch (ArgumentException) {
+          }
+        }
+        return authorized;
+      }
+    }
+
     public static string CreateResponseHeader(HttpStatusCode code, Dictionary<string, string> parameters)
     {
       var header = new System.Text.StringBuilder(String.Format("HTTP/1.0 {0} {1}\r\n", (int)code, code.ToString()));
       foreach (var param in parameters) {
         header.AppendFormat("{0}: {1}\r\n", param.Key, param.Value);
+      }
+      if (code==HttpStatusCode.Unauthorized && !parameters.ContainsKey("WWW-Authenticate")) {
+        header.AppendFormat("{0}: {1}\r\n", "WWW-Authenticate", "Basic realm=\"PeerCastStation\"");
       }
       header.Append("\r\n");
       return header.ToString();
@@ -81,5 +115,6 @@ namespace PeerCastStation.UI.HTTP
       }
       return res;
     }
+
   }
 }

@@ -70,9 +70,10 @@ namespace PeerCastStation.UI.HTTP
         Stream input_stream,
         Stream output_stream,
         EndPoint remote_endpoint,
+        AccessControlInfo access_control,
         HTTPRequest request,
         byte[] header)
-        : base(peercast, input_stream, output_stream, remote_endpoint, null, header)
+        : base(peercast, input_stream, output_stream, remote_endpoint, access_control, null, header)
       {
         this.owner   = owner;
         this.request = request;
@@ -659,22 +660,35 @@ namespace PeerCastStation.UI.HTTP
         }
       }
 
+      private JObject GetListener(OutputListener listener)
+      {
+        var res = new JObject();
+        res["listenerId"]    = listener.GetHashCode();
+        res["address"]       = listener.LocalEndPoint.Address.ToString();
+        res["port"]          = listener.LocalEndPoint.Port;
+        res["localAccepts"]  = (int)listener.LocalOutputAccepts;
+        res["globalAccepts"] = (int)listener.GlobalOutputAccepts;
+        res["localAuthorizationRequired"]  = listener.LocalAuthorizationRequired;
+        res["globalAuthorizationRequired"] = listener.GlobalAuthorizationRequired;
+        res["authenticationId"]       = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Id : null;
+        res["authenticationPassword"] = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Password : null;
+        return res;
+      }
+
       [RPCMethod("getListeners")]
       private JArray GetListeners()
       {
-        return new JArray(PeerCast.OutputListeners.Select(ol => {
-          var res = new JObject();
-          res["listenerId"]    = ol.GetHashCode();
-          res["address"]       = ol.LocalEndPoint.Address.ToString();
-          res["port"]          = ol.LocalEndPoint.Port;
-          res["localAccepts"]  = (int)ol.LocalOutputAccepts;
-          res["globalAccepts"] = (int)ol.GlobalOutputAccepts;
-          return res;
-        }).ToArray());
+        return new JArray(PeerCast.OutputListeners.Select(ol => GetListener(ol)).ToArray());
       }
 
       [RPCMethod("addListener")]
-      private JObject AddListener(string address, int port, int localAccepts, int globalAccepts)
+      private JObject AddListener(
+          string address,
+          int port,
+          int localAccepts,
+          int globalAccepts,
+          bool localAuthorizationRequired=false,
+          bool globalAuthorizationRequired=true)
       {
         IPAddress addr;
         OutputListener listener;
@@ -689,14 +703,24 @@ namespace PeerCastStation.UI.HTTP
           throw new RPCError(RPCErrorCode.InvalidParams, "Invalid ip address");
         }
         listener = PeerCast.StartListen(endpoint, (OutputStreamType)localAccepts, (OutputStreamType)globalAccepts);
+        listener.LocalAuthorizationRequired  = localAuthorizationRequired;
+        listener.GlobalAuthorizationRequired = globalAuthorizationRequired;
         owner.Application.SaveSettings();
-        var res = new JObject();
-        res["listenerId"]    = listener.GetHashCode();
-        res["address"]       = listener.LocalEndPoint.Address.ToString();
-        res["port"]          = listener.LocalEndPoint.Port;
-        res["localAccepts"]  = (int)listener.LocalOutputAccepts;
-        res["globalAccepts"] = (int)listener.GlobalOutputAccepts;
-        return res;
+        return GetListener(listener);
+      }
+
+      [RPCMethod("resetListenerAuthenticationKey")]
+      private JObject resetListenerAuthenticationKey(int listenerId)
+      {
+        var listener = PeerCast.OutputListeners.Where(ol => ol.GetHashCode()==listenerId).FirstOrDefault();
+        if (listener!=null) {
+          owner.Application.SaveSettings();
+          listener.ResetAuthenticationKey();
+          return GetListener(listener);
+        }
+        else {
+          return null;
+        }
       }
 
       [RPCMethod("removeListener")]
@@ -714,6 +738,16 @@ namespace PeerCastStation.UI.HTTP
         foreach (var listener in PeerCast.OutputListeners.Where(ol => ol.GetHashCode()==listenerId)) {
           listener.LocalOutputAccepts = (OutputStreamType)localAccepts;
           listener.GlobalOutputAccepts = (OutputStreamType)globalAccepts;
+        }
+        owner.Application.SaveSettings();
+      }
+
+      [RPCMethod("setListenerAuthorizationRequired")]
+      private void setListenerAuthorizationRequired(int listenerId, bool localAuthorizationRequired, bool globalAuthorizationRequired)
+      {
+        foreach (var listener in PeerCast.OutputListeners.Where(ol => ol.GetHashCode()==listenerId)) {
+          listener.LocalAuthorizationRequired = localAuthorizationRequired;
+          listener.GlobalAuthorizationRequired = globalAuthorizationRequired;
         }
         owner.Application.SaveSettings();
       }
@@ -790,6 +824,9 @@ namespace PeerCastStation.UI.HTTP
         base.OnStarted();
         Logger.Debug("Started");
         try {
+          if (!HTTPUtils.CheckAuthorization(this.request, AccessControl.AuthenticationKey)) {
+            throw new HTTPError(HttpStatusCode.Unauthorized);
+          }
           if (this.request.Method=="HEAD" || this.request.Method=="GET") {
             var token = GetVersionInfo();
             var body = System.Text.Encoding.UTF8.GetBytes(token.ToString());
@@ -905,6 +942,7 @@ namespace PeerCastStation.UI.HTTP
         Stream input_stream,
         Stream output_stream,
         EndPoint remote_endpoint,
+        AccessControlInfo access_control,
         Guid channel_id,
         byte[] header)
       {
@@ -924,6 +962,7 @@ namespace PeerCastStation.UI.HTTP
           input_stream,
           output_stream,
           remote_endpoint,
+          access_control,
           request,
           header.Skip((int)bytes).ToArray());
       }

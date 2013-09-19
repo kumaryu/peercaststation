@@ -51,18 +51,21 @@
           <table class="table table-condensed">
             <thead>
               <tr>
-                <th>削除</th>
+                <th>選択</th>
                 <th>アドレス</th>
                 <th>ポート</th>
                 <th>LAN接続許可</th>
                 <th>WAN接続許可</th>
+                <th>認証ID</th>
+                <th>認証パスワード</th>
               </tr>
             </thead>
             <tfoot>
               <tr>
-                <td class="form-actions" colspan="5">
+                <td class="form-actions" colspan="7">
                   <button class="btn" data-bind="click:addListener">追加</button>
                   <button class="btn" data-bind="click:removeListener">削除</button>
+                  <button class="btn" data-bind="click:resetListenerAuthenticationKey">ID・パスワード再生成</button>
                 </td>
               </tr>
             </tfoot>
@@ -75,12 +78,16 @@
                   <label class="checkbox"><input type="checkbox" data-bind="checked:lanPlayAccept">視聴</label>
                   <label class="checkbox"><input type="checkbox" data-bind="checked:lanRelayAccept">リレー</label>
                   <label class="checkbox"><input type="checkbox" data-bind="checked:lanInterfaceAccept">操作</label>
+                  <label class="checkbox"><input type="checkbox" data-bind="checked:localAuthRequired">要認証</label>
                 </td>
                 <td>
                   <label class="checkbox"><input type="checkbox" data-bind="checked:wanPlayAccept">視聴</label>
                   <label class="checkbox"><input type="checkbox" data-bind="checked:wanRelayAccept">リレー</label>
                   <label class="checkbox"><input type="checkbox" data-bind="checked:wanInterfaceAccept">操作</label>
+                  <label class="checkbox"><input type="checkbox" data-bind="checked:globalAuthRequired">要認証</label>
                 </td>
+                <td><span data-bind="text:authenticationId"></span></td>
+                <td><span data-bind="text:authenticationPassword"></span></td>
               </tr>
             </tbody>
           </table>
@@ -159,7 +166,7 @@
       </div>
     </div>
 
-    <div id="yellowPageEditDialog" class="modal" style="display: none; max-height: none">
+    <div id="yellowPageEditDialog" class="modal" style="display: none; max-height: inherit">
       <div class="modal-header">
         <a class="close" data-dismiss="modal">×</a>
         <h3>YP追加</h3>
@@ -192,7 +199,7 @@
       </div>
     </div>
 
-    <div id="listenerEditDialog" class="modal" style="display: none; max-height: none">
+    <div id="listenerEditDialog" class="modal" style="display: none; max-height: inherit">
       <div class="modal-header">
         <a class="close" data-dismiss="modal">×</a>
         <h3>ポート追加</h3>
