@@ -41,12 +41,19 @@ namespace PeerCastStation
     [PecaSettings]
     public class ListenerSettings
     {
-      public System.Net.IPEndPoint EndPoint { get; set; }
-      public OutputStreamType LocalAccepts  { get; set; }
-      public OutputStreamType GlobalAccepts { get; set; }
+      public System.Net.IPEndPoint EndPoint      { get; set; }
+      public OutputStreamType LocalAccepts       { get; set; }
+      public bool             LocalAuthRequired  { get; set; }
+      public OutputStreamType GlobalAccepts      { get; set; }
+      public bool             GlobalAuthRequired { get; set; }
+      public string           AuthId             { get; set; }
+      public string           AuthPassword       { get; set; }
 
       public ListenerSettings()
       {
+        var newkey = AuthenticationKey.Generate();
+        this.AuthId       = newkey.Id;
+        this.AuthPassword = newkey.Password;
       }
 
       internal ListenerSettings(PeerCastStation.Properties.ListenerSettings settings)
