@@ -25,10 +25,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
   <ScrollViewer VerticalScrollBarVisibility="Auto">
     <StackPanel>
       <GroupBox Header="ポート">
-        <StackPanel>
-          <l:ListControl x:Name="Ports" DataContext="{Binding Ports}"/>
-          <l:RelaySettingControl IsEnabled="{Binding IsPortSelected}"/>
-        </StackPanel>
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+          <l:ListControl         Grid.Row="0" Grid.Column="0" x:Name="Ports" DataContext="{Binding Ports}"/>
+          <l:RelaySettingControl Grid.Row="1" Grid.Column="0" DataContext="{Binding Ports.SelectedItem}"/>
+        </Grid>
       </GroupBox>
       <GroupBox Header="その他">
         <Grid DataContext="{Binding OtherSetting}">

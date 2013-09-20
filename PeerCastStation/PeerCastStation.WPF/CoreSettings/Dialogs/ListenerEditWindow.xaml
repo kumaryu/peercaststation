@@ -18,12 +18,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:l="clr-namespace:PeerCastStation.WPF.CoreSettings"
         xmlns:extToolkit="http://schemas.xceed.com/wpf/xaml/toolkit"
-        Title="ポートの追加" Height="210" Width="360"
+        Title="ポートの追加" Height="240" Width="480"
         WindowStartupLocation="CenterOwner"
-        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-        SizeToContent="Height"
-        ResizeMode="NoResize"
-        ShowInTaskbar="False">
+        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" ResizeMode="NoResize"
+        ShowInTaskbar="False" SizeToContent="Height">
   <Grid Margin="8">
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="Auto"/>
