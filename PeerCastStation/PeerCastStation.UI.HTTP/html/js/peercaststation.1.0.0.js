@@ -96,16 +96,28 @@ PeerCast = {
   getListeners: function(completed) {
     this.postRequest('getListeners', null, completed);
   },
-  addListener: function(address, port, localAccepts, globalAccepts, completed) {
+  addListener: function(address, port, localAccepts, globalAccepts, localAuthRequired, globalAuthRequired, completed) {
     this.postRequest('addListener', {
       address: address,
       port: port,
       localAccepts: localAccepts,
-      globalAccepts: globalAccepts
+      globalAccepts: globalAccepts,
+      localAuthorizationRequired: localAuthRequired,
+      globalAuthorizationRequired: globalAuthRequired
     }, completed);
   },
   setListenerAccepts: function(id, localAccepts, globalAccepts, completed) {
     this.postRequest('setListenerAccepts', { listenerId: id, localAccepts: localAccepts, globalAccepts: globalAccepts }, completed);
+  },
+  setListenerAuthorizationRequired: function(id, localAuthorizationRequired, globalAuthorizationRequired, completed) {
+    this.postRequest('setListenerAuthorizationRequired', {
+      listenerId: id,
+      localAuthorizationRequired: localAuthorizationRequired,
+      globalAuthorizationRequired: globalAuthorizationRequired
+    }, completed);
+  },
+  resetListenerAuthenticationKey: function(id, completed) {
+    this.postRequest('resetListenerAuthenticationKey', { listenerId: id }, completed);
   },
   removeListener: function(id, completed) {
     this.postRequest('removeListener', { listenerId: id }, completed);

@@ -135,7 +135,10 @@ namespace PeerCastStation.Main
         if (s.Listeners!=null) {
           foreach (var listener in s.Listeners) {
             try {
-              peerCast.StartListen(listener.EndPoint, listener.LocalAccepts, listener.GlobalAccepts);
+              var ol = peerCast.StartListen(listener.EndPoint, listener.LocalAccepts, listener.GlobalAccepts);
+              ol.GlobalAuthorizationRequired = listener.GlobalAuthRequired;
+              ol.LocalAuthorizationRequired  = listener.LocalAuthRequired;
+              ol.AuthenticationKey = new AuthenticationKey(listener.AuthId, listener.AuthPassword);
             }
             catch (System.Net.Sockets.SocketException e) {
               logger.Error(e);
@@ -202,9 +205,13 @@ namespace PeerCastStation.Main
       s.BroadcastID = peerCast.BroadcastID;
       s.Listeners = peerCast.OutputListeners.Select(listener => 
         new PeerCastStationSettings.ListenerSettings {
-          EndPoint      = listener.LocalEndPoint,
-          GlobalAccepts = listener.GlobalOutputAccepts,
-          LocalAccepts  = listener.LocalOutputAccepts,
+          EndPoint           = listener.LocalEndPoint,
+          GlobalAccepts      = listener.GlobalOutputAccepts,
+          GlobalAuthRequired = listener.GlobalAuthorizationRequired,
+          LocalAccepts       = listener.LocalOutputAccepts,
+          LocalAuthRequired  = listener.LocalAuthorizationRequired,
+          AuthId             = listener.AuthenticationKey.Id,
+          AuthPassword       = listener.AuthenticationKey.Password,
         }
       ).ToArray();
       s.YellowPages = peerCast.YellowPages.Select(yellowpage =>

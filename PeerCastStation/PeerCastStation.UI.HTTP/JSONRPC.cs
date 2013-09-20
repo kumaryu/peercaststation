@@ -151,7 +151,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
           var obj = (JObject)args;
           for (var i=0; i<param_infos.Length; i++) {
             JToken value;
-            if (obj.TryGetValue(param_infos[i].Name, out value)) {
+            if (obj.TryGetValue(param_infos[i].Name, out value) && value.Type!=JTokenType.Undefined) {
               try {
                 arguments[i] = ToObject(param_infos[i].ParameterType, value);
               }

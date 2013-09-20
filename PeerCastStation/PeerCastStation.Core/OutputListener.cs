@@ -51,6 +51,11 @@ namespace PeerCastStation.Core
     private OutputStreamType localOutputAccepts;
 
     /// <summary>
+    /// リンクローカルな接続先に対して認証が必要かどうかを取得および設定します。
+    /// </summary>
+    public bool LocalAuthorizationRequired { get; set; }
+
+    /// <summary>
     /// リンクグローバルな接続先に許可する出力ストリームタイプを取得および設定します。
     /// </summary>
     public OutputStreamType GlobalOutputAccepts {
@@ -64,6 +69,16 @@ namespace PeerCastStation.Core
       }
     }
     private OutputStreamType globalOutputAccepts;
+
+    /// <summary>
+    /// リンクグローバルな接続先に対して認証が必要かどうかを取得および設定します。
+    /// </summary>
+    public bool GlobalAuthorizationRequired { get; set; }
+
+    /// <summary>
+    /// 認証用IDとパスワードの組を取得および設定します
+    /// </summary>
+    public AuthenticationKey AuthenticationKey { get; set; }
 
     private TcpListener server;
     /// <summary>
@@ -80,14 +95,22 @@ namespace PeerCastStation.Core
       OutputStreamType global_accepts)
     {
       this.PeerCast = peercast;
-      localOutputAccepts  = local_accepts;
-      globalOutputAccepts = global_accepts;
+      this.localOutputAccepts  = local_accepts;
+      this.globalOutputAccepts = global_accepts;
+      this.LocalAuthorizationRequired  = false;
+      this.GlobalAuthorizationRequired = true;
+      this.AuthenticationKey = AuthenticationKey.Generate();
       server = new TcpListener(ip);
       server.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
       server.Start();
       listenerThread = new Thread(ListenerThreadFunc);
       listenerThread.Name = String.Format("OutputListenerThread:{0}", ip);
       listenerThread.Start(server);
+    }
+
+    public void ResetAuthenticationKey()
+    {
+      this.AuthenticationKey = AuthenticationKey.Generate();
     }
 
     private Thread listenerThread = null;
@@ -151,11 +174,17 @@ namespace PeerCastStation.Core
         }
     }
 
-    private IOutputStreamFactory FindMatchedFactory(RemoteType remote_type, NetworkStream stream, out List<byte> header, out Guid channel_id)
+    private IOutputStreamFactory FindMatchedFactory(
+        RemoteType remote_type,
+        NetworkStream stream,
+        out List<byte> header,
+        out Guid channel_id,
+        out AuthenticationKey auth_key)
     {
       var output_factories = PeerCast.OutputStreamFactories.OrderBy(factory => factory.Priority);
       header = new List<byte>();
       channel_id = Guid.Empty;
+      auth_key = null;
       bool eos = false;
       while (!eos && header.Count<=4096) {
         try {
@@ -174,11 +203,16 @@ namespace PeerCastStation.Core
         }
         var header_ary = header.ToArray();
         foreach (var factory in output_factories) {
-          if (remote_type==RemoteType.SiteLocal && (factory.OutputStreamType & this.LocalOutputAccepts)==0) continue;
+          if (remote_type==RemoteType.SiteLocal && (factory.OutputStreamType & this.LocalOutputAccepts )==0) continue;
           if (remote_type==RemoteType.Global    && (factory.OutputStreamType & this.GlobalOutputAccepts)==0) continue;
           var cid = factory.ParseChannelID(header_ary);
           if (cid.HasValue) {
             channel_id = cid.Value;
+            switch (remote_type) {
+            case RemoteType.Loopback:  auth_key = null; break;
+            case RemoteType.SiteLocal: auth_key = LocalAuthorizationRequired  ? AuthenticationKey : null; break;
+            case RemoteType.Global:    auth_key = GlobalAuthorizationRequired ? AuthenticationKey : null; break;
+            }
             return factory;
           }
         }
@@ -206,9 +240,11 @@ namespace PeerCastStation.Core
           var remote_endpoint = (IPEndPoint)client.Client.RemoteEndPoint;
           List<byte> header;
           Guid channel_id;
-          var factory = FindMatchedFactory(GetRemoteType(remote_endpoint), stream, out header, out channel_id);
+          AuthenticationKey auth_key;
+          var factory = FindMatchedFactory(GetRemoteType(remote_endpoint), stream, out header, out channel_id, out auth_key);
           if (factory!=null) {
-            output_stream = factory.Create(stream, stream, remote_endpoint, channel_id, header.ToArray());
+            var access_control = new AccessControlInfo(auth_key);
+            output_stream = factory.Create(stream, stream, remote_endpoint, access_control, channel_id, header.ToArray());
             channel = PeerCast.Channels.FirstOrDefault(c => c.ChannelID==channel_id);
             if (channel!=null) {
               channel.AddOutputStream(output_stream);

@@ -207,6 +207,7 @@ namespace PeerCastStation.HTTP
       Stream input_stream,
       Stream output_stream,
       EndPoint remote_endpoint,
+      AccessControlInfo access_control,
       Guid channel_id,
       byte[] header)
     {
@@ -215,7 +216,7 @@ namespace PeerCastStation.HTTP
         Channel channel = null;
         Uri tracker = CreateTrackerUri(channel_id, request.Uri);
         channel = PeerCast.RequestChannel(channel_id, tracker, true);
-        return new HTTPOutputStream(PeerCast, input_stream, output_stream, remote_endpoint, channel, request);
+        return new HTTPOutputStream(PeerCast, input_stream, output_stream, remote_endpoint, access_control, channel, request);
       }
       else {
         return null;
@@ -297,7 +298,8 @@ namespace PeerCastStation.HTTP
     /// <param name="peercast">所属するPeerCast</param>
     /// <param name="input_stream">元になる受信ストリーム</param>
     /// <param name="output_stream">元になる送信ストリーム</param>
-    /// <param name="is_local">接続先がローカルネットワーク内かどうか</param>
+    /// <param name="remote_endpoint">接続先のアドレス</param>
+    /// <param name="access_control">接続可否および認証の情報</param>
     /// <param name="channel">所属するチャンネル。無い場合はnull</param>
     /// <param name="request">クライアントからのリクエスト</param>
     public HTTPOutputStream(
@@ -305,9 +307,10 @@ namespace PeerCastStation.HTTP
       Stream input_stream,
       Stream output_stream,
       EndPoint remote_endpoint,
+      AccessControlInfo access_control,
       Channel channel,
       HTTPRequest request)
-      : base(peercast, input_stream, output_stream, remote_endpoint, channel, null)
+      : base(peercast, input_stream, output_stream, remote_endpoint, access_control, channel, null)
     {
       SendTimeout = 0;
       Logger.Debug("Initialized: Channel {0}, Remote {1}, Request {2} {3}",

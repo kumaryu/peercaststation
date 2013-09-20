@@ -19,28 +19,60 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d">
-    <UserControl.Resources>
-        <Style TargetType="CheckBox">
-            <Setter Property="Width" Value="60"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
-        <Style TargetType="Label">
-            <Setter Property="HorizontalContentAlignment" Value="Right"/>
-            <Setter Property="Width" Value="140"/>
-        </Style>
-    </UserControl.Resources>
-    <StackPanel IsEnabled="{Binding IsPortSelected}">
-        <StackPanel Orientation="Horizontal">
-            <Label Content="LAN内からの接続を許可:"/>
-            <CheckBox Content="リレー" IsChecked="{Binding IsLocalRelay}"/>
-            <CheckBox Content="視聴" IsChecked="{Binding IsLocalDirect}"/>
-            <CheckBox Content="操作" IsChecked="{Binding IsLocalInterface}"/>
-        </StackPanel>
-        <StackPanel Orientation="Horizontal">
-            <Label Content="WANからの接続を許可:"/>
-            <CheckBox Content="リレー" IsChecked="{Binding IsGlobalRelay}"/>
-            <CheckBox Content="視聴" IsChecked="{Binding IsGlobalDirect}"/>
-            <CheckBox Content="操作" IsChecked="{Binding IsGlobalInterface}"/>
-        </StackPanel>
-    </StackPanel>
+  <UserControl.Resources>
+    <Style TargetType="CheckBox">
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="Margin" Value="2"/>
+    </Style>
+    <Style TargetType="Label">
+      <Setter Property="HorizontalContentAlignment" Value="Right"/>
+    </Style>
+  </UserControl.Resources>
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+    <Grid Grid.Row="0" Grid.Column="0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+      <Label    Grid.Row="0" Grid.Column="0" Content="LAN内からの接続を許可:"/>
+      <CheckBox Grid.Row="0" Grid.Column="1" Content="リレー" IsChecked="{Binding LocalRelay}"/>
+      <CheckBox Grid.Row="0" Grid.Column="2" Content="視聴"   IsChecked="{Binding LocalPlay}"/>
+      <CheckBox Grid.Row="0" Grid.Column="3" Content="操作"   IsChecked="{Binding LocalInterface}"/>
+      <CheckBox Grid.Row="0" Grid.Column="4" Content="要認証" IsChecked="{Binding LocalAuthRequired}"/>
+      <Label    Grid.Row="1" Grid.Column="0" Content="WANからの接続を許可:"/>
+      <CheckBox Grid.Row="1" Grid.Column="1" Content="リレー" IsChecked="{Binding GlobalRelay}"/>
+      <CheckBox Grid.Row="1" Grid.Column="2" Content="視聴"   IsChecked="{Binding GlobalPlay}"/>
+      <CheckBox Grid.Row="1" Grid.Column="3" Content="操作"   IsChecked="{Binding GlobalInterface}"/>
+      <CheckBox Grid.Row="1" Grid.Column="4" Content="要認証" IsChecked="{Binding GlobalAuthRequired}"/>
+    </Grid>
+
+    <Grid Grid.Row="1" Grid.Column="0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <Label    Grid.Column="0" Content="認証ID:"/>
+      <TextBox  Grid.Column="1" IsReadOnly="True" Text="{Binding Path=AuthId, Mode=OneWay}"/>
+      <Label    Grid.Column="2" Content="認証パスワード:"/>
+      <TextBox  Grid.Column="3" IsReadOnly="True" Text="{Binding Path=AuthPassword, Mode=OneWay}"/>
+      <Button   Grid.Column="4" Content="再生成" Command="{Binding RegenerateAuthKey}"/>
+    </Grid>
+  </Grid>
 </UserControl>

@@ -41,10 +41,12 @@ var ListenerEditDialog = new function() {
     dialog.on('hide', self.onHide);
     ko.applyBindings(self, dialog.get(0));
   });
-  self.address       = ko.observable('0.0.0.0');
-  self.port          = ko.observable(7144);
-  self.localAccepts  = ko.observable(15);
-  self.globalAccepts = ko.observable(PeerCast.OutputStreamType.Relay | PeerCast.OutputStreamType.Metadata);
+  self.address            = ko.observable('0.0.0.0');
+  self.port               = ko.observable(7144);
+  self.localAccepts       = ko.observable(15);
+  self.localAuthRequired  = ko.observable(false);
+  self.globalAccepts      = ko.observable(PeerCast.OutputStreamType.Relay | PeerCast.OutputStreamType.Metadata);
+  self.globalAuthRequired = ko.observable(true);
   self.onOK          = null;
 
   self.lanPlayAccept = ko.computed({
@@ -108,14 +110,39 @@ var ListenerEditDialog = new function() {
 
 var ListenerViewModel = function(value) {
   var self = this;
-  self.id            = ko.observable(value.listenerId);
-  self.address       = ko.observable(value.address);
-  self.port          = ko.observable(value.port);
-  self.localAccepts  = ko.observable(value.localAccepts);
-  self.globalAccepts = ko.observable(value.globalAccepts);
-  self.checked       = ko.observable(false);
+  self.id                     = ko.observable(value.listenerId);
+  self.address                = ko.observable(value.address);
+  self.port                   = ko.observable(value.port);
+  self.localAccepts           = ko.observable(value.localAccepts);
+  self.globalAccepts          = ko.observable(value.globalAccepts);
+  self.localAuthRequired      = ko.observable(value.localAuthorizationRequired);
+  self.globalAuthRequired     = ko.observable(value.globalAuthorizationRequired);
+  self.authenticationId       = ko.observable(value.authenticationId);
+  self.authenticationPassword = ko.observable(value.authenticationPassword);
+  self.checked                = ko.observable(false);
   self.setAccepts = function() {
     PeerCast.setListenerAccepts(self.id(), self.localAccepts(), self.globalAccepts());
+  };
+  self.setAuthorizationRequired = function() {
+    PeerCast.setListenerAuthorizationRequired(self.id(), self.localAuthRequired(), self.globalAuthRequired());
+  };
+  self.localAuthRequired.subscribe(function (value) {
+    self.setAuthorizationRequired();
+  });
+  self.globalAuthRequired.subscribe(function (value) {
+    self.setAuthorizationRequired();
+  });
+
+  self.update = function(data) {
+    self.id(data.listenerId);
+    self.address(data.address);
+    self.port(data.port);
+    self.localAccepts(data.localAccepts);
+    self.globalAccepts(data.globalAccepts);
+    self.localAuthRequired(data.localAuthorizationRequired);
+    self.globalAuthRequired(data.globalAuthorizationRequired);
+    self.authenticationId(data.authenticationId);
+    self.authenticationPassword(data.authenticationPassword);
   };
 
   self.addressLabel = ko.computed(function() {
@@ -178,6 +205,12 @@ var ListenerViewModel = function(value) {
       self.setAccepts();
     }
   });
+
+  self.resetAuthenticationKey = function() {
+    PeerCast.resetListenerAuthenticationKey(self.id(), function (data) {
+      self.update(data);
+    });
+  };
 };
 
 var YellowPageViewModel = function(value) {
@@ -254,18 +287,29 @@ var SettingsViewModel = new function() {
           listener.address(),
           Number(listener.port()),
           listener.localAccepts(),
-          listener.globalAccepts(), function() {
+          listener.globalAccepts(),
+          listener.localAuthRequired(),
+          listener.globalAuthRequired(),
+          function() {
         self.update();
       });
     });
-  }
+  };
 
   self.removeListener = function() {
     var removed = self.listeners.remove(function(listener) { return listener.checked(); });
     $.each(removed, function(i, listener) {
       PeerCast.removeListener(listener.id(), function() { self.update(); });
     });
-  }
+  };
+
+  self.resetListenerAuthenticationKey = function() {
+    $.each(self.listeners(), function(i, listener) {
+      if (listener.checked()) {
+        listener.resetAuthenticationKey();
+      }
+    });
+  };
 
   self.update = function() {
     PeerCast.getSettings(function(result) {

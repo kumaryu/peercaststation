@@ -32,7 +32,7 @@ namespace PeerCastStation.Core
     public abstract string Name { get; }
     public abstract OutputStreamType OutputStreamType { get; }
     public virtual int Priority { get { return 0; } }
-    public abstract IOutputStream Create(Stream input_stream, Stream output_stream, EndPoint remote_endpoint, Guid channel_id, byte[] header);
+    public abstract IOutputStream Create(Stream input_stream, Stream output_stream, EndPoint remote_endpoint, AccessControlInfo access_control, Guid channel_id, byte[] header);
     public abstract Guid? ParseChannelID(byte[] header);
   }
 
@@ -42,6 +42,7 @@ namespace PeerCastStation.Core
     public PeerCast PeerCast { get; private set; }
     public Stream InputStream { get; private set; }
     public Stream OutputStream { get; private set; }
+    public AccessControlInfo AccessControl { get; private set; }
     public EndPoint RemoteEndPoint { get; private set; }
     public Channel Channel { get; private set; }
     public bool IsLocal { get; private set; }
@@ -76,6 +77,7 @@ namespace PeerCastStation.Core
       Stream input_stream,
       Stream output_stream,
       EndPoint remote_endpoint,
+      AccessControlInfo access_control,
       Channel channel,
       byte[] header)
     {
@@ -83,6 +85,7 @@ namespace PeerCastStation.Core
       this.InputStream = input_stream;
       this.OutputStream = output_stream;
       this.RemoteEndPoint = remote_endpoint;
+      this.AccessControl = access_control;
       this.Channel = channel;
       var ip = remote_endpoint as IPEndPoint;
       this.IsLocal = ip!=null ? Utils.IsSiteLocal(ip.Address) : true;

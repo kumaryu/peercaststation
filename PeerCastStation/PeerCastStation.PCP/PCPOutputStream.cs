@@ -148,13 +148,14 @@ namespace PeerCastStation.PCP
       Stream input_stream,
       Stream output_stream,
       EndPoint remote_endpoint,
+      AccessControlInfo access_control,
       Guid channel_id,
       byte[] header)
     {
       var request = ParseRequest(header);
       if (request!=null) {
         var channel = this.PeerCast.RequestChannel(channel_id, null, false);
-        return new PCPOutputStream(this.PeerCast, input_stream, output_stream, remote_endpoint, channel, request);
+        return new PCPOutputStream(this.PeerCast, input_stream, output_stream, remote_endpoint, access_control, channel, request);
       }
       else {
         return null;
@@ -314,9 +315,10 @@ namespace PeerCastStation.PCP
       Stream input_stream,
       Stream output_stream,
       EndPoint remote_endpoint,
+      AccessControlInfo access_control,
       Channel channel,
       RelayRequest request)
-      : base(peercast, input_stream, output_stream, remote_endpoint, channel, null)
+      : base(peercast, input_stream, output_stream, remote_endpoint, access_control, channel, null)
     {
       Logger.Debug("Initialized: Channel {0}, Remote {1}, Request {2} {3} ({4} {5})",
         channel!=null ? channel.ChannelID.ToString("N") : "(null)",
