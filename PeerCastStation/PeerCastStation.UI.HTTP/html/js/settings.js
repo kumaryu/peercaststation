@@ -41,10 +41,12 @@ var ListenerEditDialog = new function() {
     dialog.on('hide', self.onHide);
     ko.applyBindings(self, dialog.get(0));
   });
-  self.address       = ko.observable('0.0.0.0');
-  self.port          = ko.observable(7144);
-  self.localAccepts  = ko.observable(15);
-  self.globalAccepts = ko.observable(PeerCast.OutputStreamType.Relay | PeerCast.OutputStreamType.Metadata);
+  self.address            = ko.observable('0.0.0.0');
+  self.port               = ko.observable(7144);
+  self.localAccepts       = ko.observable(15);
+  self.localAuthRequired  = ko.observable(false);
+  self.globalAccepts      = ko.observable(PeerCast.OutputStreamType.Relay | PeerCast.OutputStreamType.Metadata);
+  self.globalAuthRequired = ko.observable(true);
   self.onOK          = null;
 
   self.lanPlayAccept = ko.computed({
@@ -285,7 +287,10 @@ var SettingsViewModel = new function() {
           listener.address(),
           Number(listener.port()),
           listener.localAccepts(),
-          listener.globalAccepts(), function() {
+          listener.globalAccepts(),
+          listener.localAuthRequired(),
+          listener.globalAuthRequired(),
+          function() {
         self.update();
       });
     });
