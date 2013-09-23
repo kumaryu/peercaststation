@@ -585,7 +585,7 @@ namespace PeerCastStation.PCP
     {
       var session_id = atom.Children.GetHostSessionID();
       if (session_id!=null) {
-        var node = Channel.Nodes.FirstOrDefault(x => x.SessionID.Equals(session_id));
+        var node = Channel.SourceNodes.FirstOrDefault(x => x.SessionID.Equals(session_id));
         var host = new HostBuilder(node);
         if (node==null) {
           host.SessionID = (Guid)session_id;
@@ -610,7 +610,7 @@ namespace PeerCastStation.PCP
         if (endpoints.Length>1 && (host.LocalEndPoint==null || !host.LocalEndPoint.Equals(endpoints[1]))) {
           host.LocalEndPoint = endpoints[1];
         }
-        Channel.AddNode(host.ToHost());
+        Channel.AddSourceNode(host.ToHost());
       }
     }
 
@@ -717,7 +717,7 @@ namespace PeerCastStation.PCP
     private IEnumerable<Host> GetConnectableNodes()
     {
       lock (ignoredNodes) { 
-        return Channel.Nodes
+        return Channel.SourceNodes
           .Where(h => !ignoredNodes.Contains(CreateHostUri(h)));
       }
     }
