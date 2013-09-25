@@ -51,6 +51,7 @@ namespace PeerCastStation.Core
     private const int NodeLimit = 180000; //ms
     private ISourceStream sourceStream = null;
     private List<IOutputStream> outputStreams = new List<IOutputStream>();
+    private List<Host> sourceNodes = new List<Host>();
     private List<Host> nodes = new List<Host>();
     private Content contentHeader = null;
     private ContentCollection contents = new ContentCollection();
@@ -362,6 +363,19 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
+    /// 接続先として選択できるノードの読み取り専用リストを取得します
+    /// </summary>
+    public ReadOnlyCollection<Host> SourceNodes {
+      get {
+        var cur_time = Environment.TickCount;
+        Utils.ReplaceCollection(ref sourceNodes, orig => {
+          return new List<Host>(orig.Where(n => cur_time-n.LastUpdated<=NodeLimit));
+        });
+        return new ReadOnlyCollection<Host>(sourceNodes);
+      }
+    }
+
+    /// <summary>
     /// このチャンネルに関連付けられたノードの読み取り専用リストを取得します
     /// </summary>
     public ReadOnlyCollection<Host> Nodes
@@ -403,6 +417,30 @@ namespace PeerCastStation.Core
       if (removed) {
         if (NodesChanged!=null) NodesChanged(this, new EventArgs());
       }
+    }
+
+    public void AddSourceNode(Host host)
+    {
+      Utils.ReplaceCollection(ref sourceNodes, orig => {
+        var new_collection = new List<Host>(orig);
+        var idx = new_collection.FindIndex(h => h.SessionID==host.SessionID);
+        if (idx>=0) {
+          new_collection[idx] = host;
+        }
+        else {
+          new_collection.Add(host);
+        }
+        return new_collection;
+      });
+    }
+
+    public void RemoveSourceNode(Host host)
+    {
+      Utils.ReplaceCollection(ref sourceNodes, orig => {
+        var new_collection = new List<Host>(orig);
+        new_collection.Remove(host);
+        return new_collection;
+      });
     }
 
     public Host SelfNode {
