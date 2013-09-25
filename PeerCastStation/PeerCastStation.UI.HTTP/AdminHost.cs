@@ -141,6 +141,17 @@ namespace PeerCastStation.UI.HTTP
             new XAttribute("furthest",   0),
             new XAttribute("newest",     0));
         }
+        var status = "";
+        switch (c.Status) {
+        case SourceStreamStatus.Connecting: status = "CONNECT"; break;
+        case SourceStreamStatus.Error:      status = "ERROR";   break;
+        case SourceStreamStatus.Idle:       status = "IDLE";    break;
+        case SourceStreamStatus.Searching:  status = "SEARCH";  break;
+        case SourceStreamStatus.Receiving:
+          if (c.IsBroadcasting) status = "BROADCAST";
+          else                  status = "RECEIVE";
+          break;
+        }
         return new XElement("channel",
           new XAttribute("id",      c.ChannelID.ToString("N").ToUpper()),
           new XAttribute("name",    c.ChannelInfo.Name ?? ""),
@@ -159,7 +170,7 @@ namespace PeerCastStation.UI.HTTP
             new XAttribute("listeners", c.LocalDirects),
             new XAttribute("relays",    c.LocalRelays),
             new XAttribute("hosts",     c.Nodes.Count),
-            new XAttribute("status",    c.Status.ToString())),
+            new XAttribute("status",    status)),
           new XElement("track", 
             new XAttribute("title",   c.ChannelTrack.Name ?? ""),
             new XAttribute("album",   c.ChannelTrack.Album ?? ""),
