@@ -94,7 +94,7 @@ namespace PeerCastStation.Core
       if (header!=null) {
         this.recvStream.Write(header, 0, header.Length);
       }
-      this.SendTimeout = 3000;
+      this.SendTimeout = 10000;
     }
 
     protected virtual int GetUpstreamRate()

@@ -1,10 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"  xmlns:dc="http://purl.org/dc/elements/1.1/">
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
     <title>PeerCastStation更新情報</title>
     <link>http://www.pecastation.org/</link>
-    <description>PeerCastStationの更新情報です。</description>
+    <description>PeerCastStationの更新情報です</description>
     <language>ja</language>      
+
+    <item>
+      <title>Version 1.5.3 (2013年9月25日版)</title>
+      <description>
+        <h3>1.5.3 (2013年9月25日版)</h3>
+        <p>リレーが不安定になる不具合に対処しました。</p>
+        <ul>
+          <li>再接続時に下流のノードに接続してしまい送受信が止まってしまうことがあったのを修正しました</li>
+          <li>総視聴/リレー数の表示がよくわからない値になることがあるのがついでに解消されました</li>
+          <li>リレーツリーの表示がよくわからないつながりになることがあるのもついでに解消されました</li>
+          <li>下流へデータを送りきれないと判断して切断をする条件を3秒から10秒に緩和しました</li>
+        </ul>
+      </description>
+      <pubDate>Wed, 25 Sep 2013 23:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-1.5.3.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-1.5.3.zip" sparkle:version="1.5.3" length="1775782" type="application/octet-stream" />
+    </item>
 
     <item>
       <title>Version 1.5.2 (2013年9月8日版)</title>
