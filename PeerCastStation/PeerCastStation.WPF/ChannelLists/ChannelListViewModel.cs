@@ -44,10 +44,12 @@ namespace PeerCastStation.WPF.ChannelLists
       set {
         SetProperty("Channel", ref channel, value, () => {
           if (channel!=null) {
-            UpdateSelectedChannel(channel.Channel);
+            UpdateChannel(channel.Channel);
+            UpdateRelayTree(channel.Channel);
           }
           else {
-            UpdateSelectedChannel(null);
+            UpdateChannel(null);
+            UpdateRelayTree(null);
           }
           OnButtonsCanExecuteChanged();
         });
@@ -173,18 +175,42 @@ namespace PeerCastStation.WPF.ChannelLists
         this.Channel = null;
       }
       if (this.Channel!=null) {
-        UpdateSelectedChannel(this.Channel.Channel);
+        UpdateChannel(this.Channel.Channel);
       }
       else {
-        UpdateSelectedChannel(null);
+        UpdateChannel(null);
       }
     }
 
-    private void UpdateSelectedChannel(Channel channel)
+    private void UpdateChannel(Channel channel)
     {
       Connections.Update(channel);
       ChannelInfo.UpdateChannelInfo(channel);
+    }
+
+    private void UpdateRelayTree(Channel channel)
+    {
       RelayTree.Update(channel);
+    }
+
+    public void UpdateSelectedChannel()
+    {
+      if (this.Channel!=null) {
+        UpdateChannel(this.Channel.Channel);
+      }
+      else {
+        UpdateChannel(null);
+      }
+    }
+
+    public void UpdateSelectedChannelRelayTree()
+    {
+      if (this.Channel!=null) {
+        RelayTree.Update(this.Channel.Channel);
+      }
+      else {
+        RelayTree.Update(null);
+      }
     }
 
     private void OnButtonsCanExecuteChanged()

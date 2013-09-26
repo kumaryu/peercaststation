@@ -88,7 +88,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
       <Button Grid.Row="3" Grid.Column="1" Content="配信..." Click="BroadcastButton_Click"/>
     </Grid>
     <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="Transparent" />
-    <TabControl Grid.Row="2">
+    <TabControl Grid.Row="2" SelectionChanged="TabControl_SelectionChanged">
       <TabItem Header="接続一覧">
         <lco:ConnectionListControl DataContext="{Binding Connections}"/>
       </TabItem>

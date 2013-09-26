@@ -21,26 +21,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300"
              >
-    <UserControl.Resources>
-        <Style TargetType="Button">
-            <Setter Property="Width" Value="64"/>
-            <Setter Property="Height" Value="32"/>
-            <Setter Property="Margin" Value="5"/>
+  <UserControl.Resources>
+    <Style TargetType="Button">
+      <Setter Property="Width" Value="64"/>
+      <Setter Property="Height" Value="32"/>
+      <Setter Property="Margin" Value="5"/>
+    </Style>
+  </UserControl.Resources>
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*"/>
+      <ColumnDefinition Width="Auto"/>
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+    <TreeView Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" ItemsSource="{Binding RelayTree}">
+      <TreeView.ItemContainerStyle>
+        <Style TargetType="TreeViewItem">
+          <Setter Property="IsExpanded" Value="True"/>
+          <Setter Property="Focusable" Value="False"/>
+          <Setter Property="Header" Value="{Binding Text}"/>
+          <Setter Property="ItemsSource" Value="{Binding Children}"/>
         </Style>
-    </UserControl.Resources>
-    <DockPanel>
-        <StackPanel DockPanel.Dock="Right">
-            <Button Content="更新" Command="{Binding Update}"/>
-        </StackPanel>
-        <TreeView ItemsSource="{Binding RelayTree}">
-            <TreeView.ItemContainerStyle>
-                <Style TargetType="TreeViewItem">
-                    <Setter Property="IsExpanded" Value="True"/>
-                    <Setter Property="Focusable" Value="False"/>
-                    <Setter Property="Header" Value="{Binding Text}"/>
-                    <Setter Property="ItemsSource" Value="{Binding Children}"/>
-                </Style>
-            </TreeView.ItemContainerStyle>
-        </TreeView>
-    </DockPanel>
+      </TreeView.ItemContainerStyle>
+    </TreeView>
+    <Button Grid.Row="0" Grid.Column="1" Content="更新" Command="{Binding Refresh}"/>
+  </Grid>
 </UserControl>

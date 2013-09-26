@@ -34,9 +34,18 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
       get { return relayTree; }
     }
 
+    private Channel channel;
+    private Command refresh;
+    public System.Windows.Input.ICommand Refresh {
+      get { return refresh;}
+    }
+
     public RelayTreeViewModel(PeerCast peerCast)
     {
       this.peerCast = peerCast;
+      refresh = new Command(
+        () => Update(this.channel),
+        () => channel!=null);
     }
 
     private void AddRelayTreeNode(
@@ -96,6 +105,11 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
           .Where(node => node.Host.SessionID==peerCast.SessionID);
         AddRelayTreeNode(relayTree, roots, new HashSet<Guid>());
       }
+      if (this.channel!=channel) {
+        this.channel = channel;
+        this.refresh.OnCanExecuteChanged();
+      }
     }
   }
 }
+
