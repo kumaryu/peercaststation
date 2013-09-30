@@ -44,7 +44,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       set {
         if (value!=null) {
           StreamUrl   = value.StreamUrl;
-          Bitrate     = value.Bitrate==0 ? null : (int?)value.Bitrate;
+          Bitrate     = value.Bitrate==0 ? "" : value.Bitrate.ToString();
           ContentType = contentTypes.FirstOrDefault(t => t.ContentReaderFactory.Name==value.ContentType);
           if (value.YellowPage!=null) {
             var yp = yellowPages.Where(y => y.YellowPageClient!=null).FirstOrDefault(y => y.YellowPageClient.Name==value.YellowPage);
@@ -80,10 +80,18 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
     }
 
     private int? bitrate;
-    public int? Bitrate
+    public string Bitrate
     {
-      get { return bitrate; }
-      set { SetProperty("Bitrate", ref bitrate, value); }
+      get { return bitrate.ToString(); }
+      set {
+        int result;
+        if (!String.IsNullOrEmpty(value) && Int32.TryParse(value, out result)) {
+          SetProperty("Bitrate", ref bitrate, result);
+        }
+        else if (bitrate.HasValue) {
+          SetProperty("Bitrate", ref bitrate, null);
+        }
+      }
     }
 
     private ContentReaderItem contentType;
@@ -240,7 +248,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
 
       var info = new BroadcastInfo {
         StreamUrl   = this.StreamUrl,
-        Bitrate     = this.Bitrate.HasValue ? this.Bitrate.Value : 0,
+        Bitrate     = this.bitrate.HasValue ? this.bitrate.Value : 0,
         ContentType = this.ContentType.ContentReaderFactory.Name,
         YellowPage  = this.YellowPage!=null ? this.YellowPage.Name : null,
         ChannelName = this.ChannelName,
