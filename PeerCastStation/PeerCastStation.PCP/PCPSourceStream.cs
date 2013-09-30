@@ -234,7 +234,10 @@ namespace PeerCastStation.PCP
       var req = String.Format(
         "GET /channel/{0} HTTP/1.0\r\n" +
         "x-peercast-pcp:1\r\n" +
-        "\r\n", Channel.ChannelID.ToString("N"));
+        "x-peercast-pos:{1}\r\n" +
+        "\r\n",
+        Channel.ChannelID.ToString("N"),
+        Channel.ContentPosition);
       try {
         connection.Send(System.Text.Encoding.UTF8.GetBytes(req));
       }
