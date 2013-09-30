@@ -44,7 +44,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       set {
         if (value!=null) {
           StreamUrl   = value.StreamUrl;
-          Bitrate     = value.Bitrate==0 ? "" : value.Bitrate.ToString();
+          Bitrate     = value.Bitrate==0 ? null : value.Bitrate.ToString();
           ContentType = contentTypes.FirstOrDefault(t => t.ContentReaderFactory.Name==value.ContentType);
           if (value.YellowPage!=null) {
             var yp = yellowPages.Where(y => y.YellowPageClient!=null).FirstOrDefault(y => y.YellowPageClient.Name==value.YellowPage);
@@ -82,7 +82,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
     private int? bitrate;
     public string Bitrate
     {
-      get { return bitrate.ToString(); }
+      get { return bitrate.HasValue ? bitrate.ToString() : "自動"; }
       set {
         int result;
         if (!String.IsNullOrEmpty(value) && Int32.TryParse(value, out result)) {

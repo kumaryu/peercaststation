@@ -64,7 +64,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <Label    Grid.Column="0" Grid.Row="0" Content="ストリームURL:"/>
         <TextBox  Grid.Column="1" Grid.Row="0" Text="{Binding StreamUrl, UpdateSourceTrigger=PropertyChanged}"/>
         <Label    Grid.Column="0" Grid.Row="1" Content="ビットレート:"/>
-        <TextBox  Grid.Column="1" Grid.Row="1" Text="{Binding Bitrate}"/>
+        <Grid Grid.Column="1" Grid.Row="1">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <ComboBox Grid.Column="0" IsEditable="True" Text="{Binding Bitrate}">
+            <ComboBoxItem>自動</ComboBoxItem>
+          </ComboBox>
+          <TextBlock Grid.Column="1" Text="kbps" VerticalAlignment="Center"/>
+        </Grid>
         <Label    Grid.Column="0" Grid.Row="2" Content="タイプ:"/>
         <ComboBox Grid.Column="1" Grid.Row="2" ItemsSource="{Binding ContentTypes}" SelectedItem="{Binding ContentType}"/>
         <Label    Grid.Column="0" Grid.Row="3" Content="掲載YP:"/>
