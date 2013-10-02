@@ -284,15 +284,16 @@ namespace PeerCastStation.UI.HTTP
       {
         var channel = GetChannel(channelId);
         var res = new JObject();
-        res["status"]         = channel.Status.ToString();
-        res["uptime"]         = (int)channel.Uptime.TotalSeconds;
-        res["localRelays"]    = channel.LocalRelays;
-        res["localDirects"]   = channel.LocalDirects;
-        res["totalRelays"]    = channel.TotalRelays;
-        res["totalDirects"]   = channel.TotalDirects;
-        res["isBroadcasting"] = channel.IsBroadcasting;
-        res["isRelayFull"]    = channel.IsRelayFull;
-        res["isDirectFull"]   = channel.IsDirectFull;
+        res["status"]          = channel.Status.ToString();
+        res["source"]          = channel.SourceUri.ToString();
+        res["uptime"]          = (int)channel.Uptime.TotalSeconds;
+        res["localRelays"]     = channel.LocalRelays;
+        res["localDirects"]    = channel.LocalDirects;
+        res["totalRelays"]     = channel.TotalRelays;
+        res["totalDirects"]    = channel.TotalDirects;
+        res["isBroadcasting"]  = channel.IsBroadcasting;
+        res["isRelayFull"]     = channel.IsRelayFull;
+        res["isDirectFull"]    = channel.IsDirectFull;
         return res;
       }
 
@@ -433,7 +434,9 @@ namespace PeerCastStation.UI.HTTP
         res["localDirects"]     = info.LocalDirects;
         res["contentPosition"]  = info.ContentPosition;
         res["agentName"]        = info.AgentName;
-        res["remoteEndPoint"]   = info.RemoteEndPoint.ToString();
+        if (info.RemoteEndPoint!=null) {
+          res["remoteEndPoint"] = info.RemoteEndPoint.ToString();
+        }
         var remote_host_status = new JArray();
         if ((info.RemoteHostStatus & RemoteHostStatus.Local)!=0)      remote_host_status.Add("local");
         if ((info.RemoteHostStatus & RemoteHostStatus.Firewalled)!=0) remote_host_status.Add("firewalled");
