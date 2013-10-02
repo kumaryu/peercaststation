@@ -54,6 +54,14 @@ namespace PeerCastStation.WPF.ChannelLists
       this.Channel = channel;
     }
 
+    public bool IsTrackerSource {
+      get {
+        if (this.Channel.SourceStream==null) return false;
+        var info = this.Channel.SourceStream.GetConnectionInfo();
+        return (info.RemoteHostStatus & RemoteHostStatus.Tracker)!=0;
+      }
+    }
+
     public string ChannelStatus {
       get { 
         var status = "UNKNOWN";
