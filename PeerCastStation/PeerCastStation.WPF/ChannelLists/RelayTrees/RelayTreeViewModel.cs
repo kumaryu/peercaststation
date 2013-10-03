@@ -26,13 +26,7 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
   class RelayTreeViewModel : ViewModelBase
   {
     private readonly PeerCast peerCast;
-
-    private readonly ObservableCollection<TreeViewModel> relayTree
-      = new ObservableCollection<TreeViewModel>();
-    public ObservableCollection<TreeViewModel> RelayTree
-    {
-      get { return relayTree; }
-    }
+    public IEnumerable<RelayTreeNodeViewModel> RelayTree { get; private set; }
 
     private Channel channel;
     private Command refresh;
@@ -43,73 +37,120 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
     public RelayTreeViewModel(PeerCast peerCast)
     {
       this.peerCast = peerCast;
+      this.RelayTree = new RelayTreeNodeViewModel[0];
       refresh = new Command(
         () => Update(this.channel),
         () => channel!=null);
     }
 
-    private void AddRelayTreeNode(
-      ObservableCollection<TreeViewModel> tree_nodes,
-      IEnumerable<Utils.HostTreeNode> nodes,
-      HashSet<Guid> added)
-    {
-      foreach (var node in nodes)
-      {
-        if (added.Contains(node.Host.SessionID)) continue;
-        added.Add(node.Host.SessionID);
-        var endpoint = (node.Host.GlobalEndPoint != null && node.Host.GlobalEndPoint.Port != 0) ? node.Host.GlobalEndPoint : node.Host.LocalEndPoint;
-        string version = "";
-        var pcp = node.Host.Extra.GetHostVersion();
-        if (pcp.HasValue)
-        {
-          version += pcp.Value.ToString();
-        }
-        var vp = node.Host.Extra.GetHostVersionVP();
-        if (vp.HasValue)
-        {
-          version += " VP" + vp.Value.ToString();
-        }
-        var ex = node.Host.Extra.GetHostVersionEXPrefix();
-        var exnum = node.Host.Extra.GetHostVersionEXNumber();
-        if (ex != null && exnum.HasValue)
-        {
-          try
-          {
-            version += " " + System.Text.Encoding.UTF8.GetString(ex) + exnum.ToString();
-          }
-          catch (ArgumentException)
-          {
-            //ignore
-          }
-        }
-        var nodeinfo = String.Format(
-          "{0} ({1}/{2}) {3}{4}{5} {6}",
-          endpoint,
-          node.Host.DirectCount,
-          node.Host.RelayCount,
-          node.Host.IsFirewalled ? "0" : "",
-          node.Host.IsRelayFull ? "-" : "",
-          node.Host.IsReceiving ? "" : "B",
-          version);
-        var tree_node = new TreeViewModel { Text = nodeinfo };
-        tree_nodes.Add(tree_node);
-        AddRelayTreeNode(tree_node.Children, node.Children, added);
-      }
-    }
-
     internal void Update(PeerCastStation.Core.Channel channel)
     {
-      relayTree.Clear();
       if (channel!=null) {
-        var roots = channel.CreateHostTree()
-          .Where(node => node.Host.SessionID==peerCast.SessionID);
-        AddRelayTreeNode(relayTree, roots, new HashSet<Guid>());
+        this.RelayTree =
+          channel.CreateHostTree()
+            .Where(node => node.Host.SessionID==peerCast.SessionID)
+            .Select(node => new RelayTreeNodeViewModel(node)).ToArray();
       }
+      else {
+        this.RelayTree = new RelayTreeNodeViewModel[0];
+      }
+      OnPropertyChanged("RelayTree");
       if (this.channel!=channel) {
         this.channel = channel;
         this.refresh.OnCanExecuteChanged();
       }
     }
   }
+
+  public enum ConnectionStatus {
+    Unknown,
+    Relayable,
+    RelayFull,
+    NotRelayable,
+    Firewalled,
+    FirewalledRelaying,
+    NotReceiving,
+    ConnectionToRoot,
+    ConnectionToTracker,
+  }
+
+  public class RelayTreeNodeViewModel
+  {
+    public PeerCastStation.Core.Utils.HostTreeNode Node { get; private set; }
+    public IEnumerable<RelayTreeNodeViewModel> Children { get; private set; }
+
+    public ConnectionStatus ConnectionStatus {
+      get {
+        var info = Node.Host;
+        if (!info.IsReceiving) return ConnectionStatus.NotReceiving;
+        if (info.IsFirewalled) {
+          if (info.RelayCount>0) {
+            return ConnectionStatus.FirewalledRelaying;
+          }
+          else {
+            return ConnectionStatus.Firewalled;
+          }
+        }
+        if (!info.IsRelayFull) return ConnectionStatus.Relayable;
+        if (info.RelayCount>0) {
+          return ConnectionStatus.RelayFull;
+        }
+        else {
+          return ConnectionStatus.NotRelayable;
+        }
+      }
+    }
+
+    public string RemoteName {
+      get {
+        if (Node.Host.GlobalEndPoint!=null && Node.Host.GlobalEndPoint.Port!=0) {
+          return Node.Host.GlobalEndPoint.ToString();
+        }
+        else {
+          return Node.Host.LocalEndPoint.ToString();
+        }
+      }
+    }
+
+    public string Connections {
+      get {
+        return String.Format("[{0}/{1}]",
+          Node.Host.DirectCount,
+          Node.Host.RelayCount);
+      }
+    }
+
+    public string AgentVersion {
+      get {
+        string version = "";
+        var pcp = Node.Host.Extra.GetHostVersion();
+        if (pcp.HasValue) {
+          version += pcp.Value.ToString();
+        }
+        var vp = Node.Host.Extra.GetHostVersionVP();
+        if (vp.HasValue) {
+          version += " VP" + vp.Value.ToString();
+        }
+        var ex = Node.Host.Extra.GetHostVersionEXPrefix();
+        var exnum = Node.Host.Extra.GetHostVersionEXNumber();
+        if (ex!=null && exnum.HasValue) {
+          try {
+            version += " " + System.Text.Encoding.UTF8.GetString(ex) + exnum.ToString();
+          }
+          catch (ArgumentException) {
+            //ignore
+          }
+        }
+        return version;
+      }
+    }
+
+    public RelayTreeNodeViewModel(PeerCastStation.Core.Utils.HostTreeNode node)
+    {
+      this.Node = node;
+      this.Children = node.Children.Select(c => new RelayTreeNodeViewModel(c)).ToArray();
+    }
+  }
+
 }
 

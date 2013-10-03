@@ -42,10 +42,59 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <Style TargetType="TreeViewItem">
           <Setter Property="IsExpanded" Value="True"/>
           <Setter Property="Focusable" Value="False"/>
-          <Setter Property="Header" Value="{Binding Text}"/>
           <Setter Property="ItemsSource" Value="{Binding Children}"/>
         </Style>
       </TreeView.ItemContainerStyle>
+      <TreeView.ItemTemplate>
+        <DataTemplate>
+          <Grid>
+            <Grid.Resources>
+              <BitmapImage x:Key="IconRelayable"          UriSource="../../images/relay_icon_0.png"/>
+              <BitmapImage x:Key="IconRelayFull"          UriSource="../../images/relay_icon_1.png"/>
+              <BitmapImage x:Key="IconNotRelayable"       UriSource="../../images/relay_icon_2.png"/>
+              <BitmapImage x:Key="IconFirewalled"         UriSource="../../images/relay_icon_3.png"/>
+              <BitmapImage x:Key="IconFirewalledRelaying" UriSource="../../images/relay_icon_4.png"/>
+              <BitmapImage x:Key="IconUnknown"            UriSource="../../images/relay_icon_5.png"/>
+              <BitmapImage x:Key="IconNotReceiving"       UriSource="../../images/relay_icon_6.png"/>
+              <Style TargetType="Image">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding ConnectionStatus}" Value="Relayable">
+                    <Setter Property="Source" Value="{StaticResource ResourceKey=IconRelayable}"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding ConnectionStatus}" Value="RelayFull">
+                    <Setter Property="Source" Value="{StaticResource ResourceKey=IconRelayFull}"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding ConnectionStatus}" Value="NotRelayable">
+                    <Setter Property="Source" Value="{StaticResource ResourceKey=IconNotRelayable}"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding ConnectionStatus}" Value="Firewalled">
+                    <Setter Property="Source" Value="{StaticResource ResourceKey=IconFirewalled}"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding ConnectionStatus}" Value="FirewalledRelaying">
+                    <Setter Property="Source" Value="{StaticResource ResourceKey=IconFirewalledRelaying}"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding ConnectionStatus}" Value="Unknown">
+                    <Setter Property="Source" Value="{StaticResource ResourceKey=IconUnknown}"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding ConnectionStatus}" Value="NotReceiving">
+                    <Setter Property="Source" Value="{StaticResource ResourceKey=IconNotReceiving}"/>
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </Grid.Resources>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" SharedSizeGroup="StatusIcon"/>
+              <ColumnDefinition Width="Auto" SharedSizeGroup="RemoteName"/>
+              <ColumnDefinition Width="Auto" SharedSizeGroup="Connections"/>
+              <ColumnDefinition Width="Auto" SharedSizeGroup="AgentVersion"/>
+            </Grid.ColumnDefinitions>
+            <Image     Grid.Column="0" Margin="2,0,0,0" Width="16" Height="16"/>
+            <TextBlock Grid.Column="1" Margin="4,0,0,0" Text="{Binding RemoteName}" />
+            <TextBlock Grid.Column="2" Margin="4,0,0,0" Text="{Binding Connections}" />
+            <TextBlock Grid.Column="3" Margin="4,0,0,0" Text="{Binding AgentVersion}" />
+          </Grid>
+        </DataTemplate>
+      </TreeView.ItemTemplate>
     </TreeView>
     <Button Grid.Row="0" Grid.Column="1" Content="更新" Command="{Binding Refresh}"/>
   </Grid>

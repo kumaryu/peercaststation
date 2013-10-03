@@ -86,7 +86,6 @@
     <Compile Include="ChannelLists\RelayTrees\RelayTreeControl.xaml.cs">
       <DependentUpon>RelayTreeControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Commons\TreeViewModel.cs" />
     <Compile Include="Commons\Command.cs" />
     <Compile Include="Commons\NotConverter.cs" />
     <Compile Include="CoreSettings\Extensions.cs" />
