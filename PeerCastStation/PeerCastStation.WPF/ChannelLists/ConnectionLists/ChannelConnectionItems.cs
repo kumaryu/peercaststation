@@ -45,15 +45,15 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
   internal static class AttributeIcons
   {
     private static BitmapImage[] icons = new BitmapImage[] {
-      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_0.png")),
-      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_1.png")),
-      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_2.png")),
-      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_3.png")),
-      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_4.png")),
-      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_5.png")),
-      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_6.png")),
-      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_7.png")),
-      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_8.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/images/relay_icon_0.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/images/relay_icon_1.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/images/relay_icon_2.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/images/relay_icon_3.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/images/relay_icon_4.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/images/relay_icon_5.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/images/relay_icon_6.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/images/relay_icon_7.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/images/relay_icon_8.png")),
     };
     public static BitmapImage StatusToIcon(string status)
     {
