@@ -41,12 +41,12 @@ namespace PeerCastStation.WPF.ChannelLists
     : INotifyPropertyChanged
   {
     private static BitmapImage[] StatusIcons = new BitmapImage[] {
-      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_0.png")),
-      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_1.png")),
-      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_2.png")),
-      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_3.png")),
-      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_4.png")),
-      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/relay_icon_5.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/images/relay_icon_0.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/images/relay_icon_1.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/images/relay_icon_2.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/images/relay_icon_3.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/images/relay_icon_4.png")),
+      new BitmapImage(new Uri("pack://application:,,,/PeerCastStation.WPF;component/images/relay_icon_5.png")),
     };
     public Channel Channel { get; private set; }
     public ChannelListItem(Channel channel)
