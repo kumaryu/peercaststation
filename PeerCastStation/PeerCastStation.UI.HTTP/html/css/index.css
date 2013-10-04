@@ -33,3 +33,55 @@
   background-color: #c60576;
 }
 
+ul.relayTree {
+  list-style: none;
+}
+
+.relayable {
+  display: inline-block;
+  vertical-align: text-top;
+  width: 16px;
+  height: 16px;
+  background-repeat: no-repeat;
+  background-image: url("../images/relay_icon_0.png");
+}
+.relayFull {
+  display: inline-block;
+  vertical-align: text-top;
+  width: 16px;
+  height: 16px;
+  background-repeat: no-repeat;
+  background-image: url("../images/relay_icon_1.png");
+}
+.notRelayable {
+  display: inline-block;
+  vertical-align: text-top;
+  width: 16px;
+  height: 16px;
+  background-repeat: no-repeat;
+  background-image: url("../images/relay_icon_2.png");
+}
+.firewalled {
+  display: inline-block;
+  vertical-align: text-top;
+  width: 16px;
+  height: 16px;
+  background-repeat: no-repeat;
+  background-image: url("../images/relay_icon_3.png");
+}
+.firewalledRelaying {
+  display: inline-block;
+  vertical-align: text-top;
+  width: 16px;
+  height: 16px;
+  background-repeat: no-repeat;
+  background-image: url("../images/relay_icon_4.png");
+}
+.notReceiving {
+  display: inline-block;
+  vertical-align: text-top;
+  width: 16px;
+  height: 16px;
+  background-repeat: no-repeat;
+  background-image: url("../images/relay_icon_5.png");
+}

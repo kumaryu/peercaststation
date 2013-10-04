@@ -32,8 +32,11 @@
     <div class="alerts" data-bind="template: { name: 'alert', foreach: alerts }"></div>
     <script type="text/html" id="relayTreeTemplate">
       <li>
-        <span data-bind="text:title"></span>
-        <ul data-bind="template: { name:'relayTreeTemplate', foreach:children }"></ul>
+        <i data-bind="attr:{ class: connectionStatus }"></i>
+        <span data-bind="text:remoteName"></span>
+        <span data-bind="text:connections"></span>
+        <span data-bind="text:agentVersion"></span>
+        <ul class="relayTree" data-bind="template: { name:'relayTreeTemplate', foreach:children }"></ul>
       </li>
     </script>
 
@@ -180,12 +183,12 @@
             </table>
           </div>
           <div data-bind="attr: { id: 'channelRelayTree-'+channelId()}" class="row-fluid" style="display:none">
-            <ul data-bind="template: { name:'relayTreeTemplate', foreach:nodes }">
+            <ul class="relayTree" data-bind="template: { name:'relayTreeTemplate', foreach:nodes }">
             </ul>
           </div>
         </div>
       </div>
-		</div>
+    </div>
 
     <div id="channelEditDialog" class="modal" style="display: none">
       <div class="modal-header">

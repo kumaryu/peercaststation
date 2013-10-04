@@ -359,29 +359,29 @@ var ChannelViewModel = function(initial_value) {
     if (node.version)   version += node.version;
     if (node.versionVP) version += " VP" + node.versionVP;
     if (node.versionEX) version += " "   + node.versionEX;
-    var title =
-      node.address + ":" + node.port +
-      " (" + node.localDirects + "/" + node.localRelays + ") " +
-      (node.isFirewalled ? "0" : "") +
-      (node.isRelayFull ? "-" : "") +
-      (node.isReceiving ? "" : "B") + " " +
-      version;
+    var status = "";
+    if (!node.isReceiving) status = "notReceiving";
+    else if (node.isFirewalled) {
+      if (node.localRelays>0) {
+        status = "firewalledRelaying";
+      }
+      else {
+        status = "firewalled";
+      }
+    }
+    else if (!node.isRelayFull) status = "relayable";
+    else if (node.localRelays>0) {
+      status = "relayFull";
+    }
+    else {
+      status = "notRelayable";
+    }
+    var connections = "[" + node.localDirects + "/" + node.localRelays + "]";
     return {
-      title:         title,
-      sessionId:     node.sessionId,
-      address:       node.address,
-      port:          node.port,
-      isFirewalled:  node.isFirewalled,
-      localRelays:   node.localRelays,
-      localDirects:  node.localDirects,
-      isTracker:     node.isTracker,
-      isRelayFull:   node.isRelayFull,
-      isDirectFull:  node.isDirectFull,
-      isReceiving:   node.isReceiving,
-      isControlFull: node.isControlFull,
-      version:       node.version,
-      versionVP:     node.versionVP,
-      versionEX:     node.versionEX,
+      connectionStatus: status,
+      remoteName:   node.address + ":" + node.port,
+      connections:  connections,
+      agentVersion: version,
       children: $.map(node.children, createTreeNode)
     };
   };
