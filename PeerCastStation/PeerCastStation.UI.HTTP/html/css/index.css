@@ -77,6 +77,14 @@ ul.relayTree {
   background-repeat: no-repeat;
   background-image: url("../images/relay_icon_4.png");
 }
+.unknown {
+  display: inline-block;
+  vertical-align: text-top;
+  width: 16px;
+  height: 16px;
+  background-repeat: no-repeat;
+  background-image: url("../images/relay_icon_5.png");
+}
 .notReceiving {
   display: inline-block;
   vertical-align: text-top;

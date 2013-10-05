@@ -171,7 +171,7 @@ var ChannelConnectionViewModel = function(owner, initial_value) {
   self.remoteName       = ko.observable(initial_value.remoteName);
 
   self.connectionStatus = ko.computed(function () {
-    var result = "";
+    var result = "unknown";
     switch (self.type()) {
     case "relay":
       if ($.inArray("receiving", self.remoteHostStatus())>=0) {
