@@ -69,6 +69,7 @@
           <div class="row-fluid">
             <div class="span3">
               <div>
+                <i data-bind="attr:{class:connectionStatus}"></i>
                 <span data-bind="if: infoUrl"><a data-bind="attr: { href: infoUrl }, text:infoName"></a></span>
                 <span data-bind="ifnot: infoUrl"><span data-bind="text:infoName"></span></span>
                 -
@@ -170,7 +171,7 @@
                     <a class="btn btn-mini" href="#" data-bind="click:restart"><i class="icon-repeat"></i></a>
                     <span class="label" data-bind="text:type"></span>
                   </td>
-                  <td><span data-bind="text:note"></span></td>
+                  <td><i data-bind="attr:{class:connectionStatus}"></i></td>
                   <td><span data-bind="text:protocolName"></span></td>
                   <td><span data-bind="text:status"></span></td>
                   <td><span data-bind="text:remoteName"></span></td>

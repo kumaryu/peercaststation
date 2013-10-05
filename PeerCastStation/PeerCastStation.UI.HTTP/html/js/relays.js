@@ -170,29 +170,34 @@ var ChannelConnectionViewModel = function(owner, initial_value) {
   self.remoteHostStatus = ko.observable(initial_value.remoteHostStatus);
   self.remoteName       = ko.observable(initial_value.remoteName);
 
-  self.note = ko.computed(function () {
-    var result = "　";
+  self.connectionStatus = ko.computed(function () {
+    var result = "";
     switch (self.type()) {
     case "relay":
       if ($.inArray("receiving", self.remoteHostStatus())>=0) {
         if ( $.inArray("firewalled", self.remoteHostStatus())>=0 &&
             !$.inArray("local", self.remoteHostStatus())>=0) {
-          result = "×";
+          if (self.localRelays()!=null && self.localRelays()>0) {
+            result = "firewalledRelaying";
+          }
+          else {
+            result = "firewalled";
+          }
         }
         else if ($.inArray("relayFull", self.remoteHostStatus())>=0) {
           if (self.localRelays()!=null && self.localRelays()>0) {
-            result = "○";
+            result = "relayFull";
           }
           else {
-            result = "△";
+            result = "notRelayable";
           }
         }
         else {
-          result = "◎";
+          result = "relayable";
         }
       }
       else {
-        result = "■";
+        result = "notReceiving";
       }
       break;
     case "play":
@@ -200,8 +205,8 @@ var ChannelConnectionViewModel = function(owner, initial_value) {
     case "announce":
     case "source":
     default:
-      if ($.inArray("root", self.remoteHostStatus())>=0)    result = "Ｒ";
-      if ($.inArray("tracker", self.remoteHostStatus())>=0) result = "Ｔ";
+      if ($.inArray("root", self.remoteHostStatus())>=0)    result = "connectionToRoot";
+      if ($.inArray("tracker", self.remoteHostStatus())>=0) result = "connectionToTracker";
       break;
     }
     return result;
@@ -302,6 +307,7 @@ var ChannelViewModel = function(initial_value) {
   self.isBroadcasting  = ko.observable(initial_value.status.isBroadcasting);
   self.isRelayFull     = ko.observable(initial_value.status.isRelayFull);
   self.isDirectFull    = ko.observable(initial_value.status.isDirectFull);
+  self.isReceiving     = ko.observable(initial_value.status.isReceiving);
   self.connections     = ko.observableArray();
   self.nodes           = ko.observableArray();
   self.yellowPages     = ko.observableArray($.map(initial_value.yellowPages, function(yp) {
@@ -315,6 +321,34 @@ var ChannelViewModel = function(initial_value) {
   });
   self.isFirewalled = ko.computed(function() {
     return channelsViewModel.isFirewalled();
+  });
+  self.connectionStatus = ko.computed(function () {
+    var result = "";
+    if (self.isReceiving()) {
+      if (self.isFirewalled()) {
+        if (self.localRelays()!=null && self.localRelays()>0) {
+          result = "firewalledRelaying";
+        }
+        else {
+          result = "firewalled";
+        }
+      }
+      else if (self.isRelayFull()) {
+        if (self.localRelays()!=null && self.localRelays()>0) {
+          result = "relayFull";
+        }
+        else {
+          result = "notRelayable";
+        }
+      }
+      else {
+        result = "relayable";
+      }
+    }
+    else {
+      result = "notReceiving";
+    }
+    return result;
   });
 
   PeerCast.getChannelConnections(self.channelId(), function(result) {
@@ -449,6 +483,7 @@ var ChannelViewModel = function(initial_value) {
     self.isBroadcasting(c.status.isBroadcasting);
     self.isRelayFull(c.status.isRelayFull);
     self.isDirectFull(c.status.isDirectFull);
+    self.isReceiving(c.status.isReceiving);
     updateYellowPages(c.yellowPages);
     if (connectionsVisible) updateConnections();
     if (relayTreeVisible) updateRelayTree();

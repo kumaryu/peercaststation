@@ -85,3 +85,19 @@ ul.relayTree {
   background-repeat: no-repeat;
   background-image: url("../images/relay_icon_5.png");
 }
+.connectionToRoot {
+  display: inline-block;
+  vertical-align: text-top;
+  width: 16px;
+  height: 16px;
+  background-repeat: no-repeat;
+  background-image: url("../images/relay_icon_7.png");
+}
+.connectionToTracker {
+  display: inline-block;
+  vertical-align: text-top;
+  width: 16px;
+  height: 16px;
+  background-repeat: no-repeat;
+  background-image: url("../images/relay_icon_8.png");
+}

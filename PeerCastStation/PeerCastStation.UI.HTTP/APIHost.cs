@@ -294,6 +294,7 @@ namespace PeerCastStation.UI.HTTP
         res["isBroadcasting"]  = channel.IsBroadcasting;
         res["isRelayFull"]     = channel.IsRelayFull;
         res["isDirectFull"]    = channel.IsDirectFull;
+        res["isReceiving"]     = channel.SelfNode.IsReceiving;
         return res;
       }
 

@@ -455,7 +455,7 @@ namespace PeerCastStation.Core
           host.RelayCount     = this.LocalRelays;
           host.IsDirectFull   = !this.PeerCast.AccessController.IsChannelPlayable(this);
           host.IsRelayFull    = !this.PeerCast.AccessController.IsChannelRelayable(this);
-          host.IsReceiving    = true;
+          host.IsReceiving    = this.SourceStream!=null && (this.SourceStream.GetConnectionInfo().RecvRate ?? 0.0f)>0;
           return host.ToHost();
         });
       }
