@@ -872,6 +872,9 @@ namespace PeerCastStation.PCP
         }
         break;
       case StopReason.UserReconnect:
+        if (msg.Connection.SourceUri!=trackerUri) {
+          IgnoreNode(msg.Connection.SourceUri);
+        }
         break;
       case StopReason.UserShutdown:
       default:
