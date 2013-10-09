@@ -86,7 +86,7 @@ namespace PeerCastStation.Core
       return
         (this.MaxRelays<=0 || this.MaxRelays>PeerCast.Channels.Sum(c => c.LocalRelays)) &&
         (this.MaxRelaysPerChannel<=0 || this.MaxRelaysPerChannel>channel.LocalRelays) &&
-        (this.MaxUpstreamRate<=0 || this.MaxUpstreamRate>=upstream_rate+channel_bitrate);
+        (this.MaxUpstreamRate<0 || this.MaxUpstreamRate>=upstream_rate+channel_bitrate);
     }
 
     /// <summary>
@@ -101,7 +101,7 @@ namespace PeerCastStation.Core
       return
         (this.MaxRelays<=0 || this.MaxRelays>PeerCast.Channels.Sum(c => c.LocalRelays)) &&
         (this.MaxRelaysPerChannel<=0 || this.MaxRelaysPerChannel>channel.LocalRelays) &&
-        (this.MaxUpstreamRate<=0 || this.MaxUpstreamRate>=upstream_rate+(output_stream.IsLocal ? 0 : output_stream.UpstreamRate));
+        (this.MaxUpstreamRate<0 || this.MaxUpstreamRate>=upstream_rate+(output_stream.IsLocal ? 0 : output_stream.UpstreamRate));
     }
 
     /// <summary>
@@ -116,7 +116,7 @@ namespace PeerCastStation.Core
       return
         (this.MaxPlays<=0 || this.MaxPlays>PeerCast.Channels.Sum(c => c.LocalDirects)) &&
         (this.MaxPlaysPerChannel<=0 || this.MaxPlaysPerChannel>channel.LocalDirects) &&
-        (this.MaxUpstreamRate<=0 || this.MaxUpstreamRate>=upstream_rate+channel_bitrate);
+        (this.MaxUpstreamRate<0 || this.MaxUpstreamRate>=upstream_rate+channel_bitrate);
     }
 
     /// <summary>
@@ -131,7 +131,7 @@ namespace PeerCastStation.Core
       return
         (this.MaxPlays<=0 || this.MaxPlays>PeerCast.Channels.Sum(c => c.LocalDirects)) &&
         (this.MaxPlaysPerChannel<=0 || this.MaxPlaysPerChannel>channel.LocalDirects) &&
-        (this.MaxUpstreamRate<=0 || this.MaxUpstreamRate>=upstream_rate+(output_stream.IsLocal ? 0 : output_stream.UpstreamRate));
+        (this.MaxUpstreamRate<0 || this.MaxUpstreamRate>=upstream_rate+(output_stream.IsLocal ? 0 : output_stream.UpstreamRate));
     }
 
     /// <summary>
