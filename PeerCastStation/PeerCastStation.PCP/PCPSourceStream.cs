@@ -801,9 +801,12 @@ namespace PeerCastStation.PCP
         rnd.NextDouble()
       ).DefaultIfEmpty().First();
       if (res!=null) {
-        return CreateHostUri(res);
+        var uri = CreateHostUri(res);
+        Logger.Debug("{0} is selected to source.", uri);
+        return uri;
       }
       else if (!IsIgnored(trackerUri)) {
+        Logger.Debug("Tracker {0} is selected to source.", trackerUri);
         return trackerUri;
       }
       else {
@@ -872,9 +875,6 @@ namespace PeerCastStation.PCP
         }
         break;
       case StopReason.UserReconnect:
-        if (msg.Connection.SourceUri!=trackerUri) {
-          IgnoreNode(msg.Connection.SourceUri);
-        }
         break;
       case StopReason.UserShutdown:
       default:
@@ -882,6 +882,15 @@ namespace PeerCastStation.PCP
         break;
       }
     }
+
+    protected override void OnReconnected(SourceStreamBase.ReconnectEvent msg)
+    {
+      if (this.sourceConnection.SourceUri!=trackerUri) {
+        IgnoreNode(this.sourceConnection.SourceUri);
+      }
+      Reconnect(SelectSourceHost());
+    }
+
   }
 
   [Plugin]

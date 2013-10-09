@@ -59,6 +59,7 @@ namespace PeerCastStation.Core
       Start,
       Stop,
       Post,
+      Reconnect,
       ConnectionStopped,
     }
     protected class SourceStreamEvent 
@@ -102,6 +103,15 @@ namespace PeerCastStation.Core
       {
         this.From    = from;
         this.Message = message;
+      }
+    }
+
+    protected class ReconnectEvent
+      : SourceStreamEvent
+    {
+      public ReconnectEvent()
+        : base(SourceStreamEventType.Reconnect)
+      {
       }
     }
 
@@ -206,6 +216,9 @@ namespace PeerCastStation.Core
       case SourceStreamEventType.Post:
         OnPosted(msg as PostEvent);
         break;
+      case SourceStreamEventType.Reconnect:
+        OnReconnected(msg as ReconnectEvent);
+        break;
       case SourceStreamEventType.ConnectionStopped:
         OnConnectionStopped(msg as ConnectionStoppedEvent);
         break;
@@ -239,6 +252,11 @@ namespace PeerCastStation.Core
       }
     }
 
+    protected virtual void OnReconnected(ReconnectEvent msg)
+    {
+      OnStarted(new StartEvent(this.SourceUri));
+    }
+
     public void Start()
     {
       EventQueue.Enqueue(new StartEvent(this.SourceUri));
@@ -261,7 +279,7 @@ namespace PeerCastStation.Core
 
     public void Reconnect()
     {
-      EventQueue.Enqueue(new StartEvent(this.SourceUri));
+      EventQueue.Enqueue(new ReconnectEvent());
     }
 
     public void Reconnect(Uri source_uri)
