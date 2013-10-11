@@ -97,15 +97,25 @@ namespace PeerCastStation.FLV
         get { return this.DataSize+11==this.TagSize; }
       }
 
+      public bool IsMetaData {
+        get {
+          return Type == TagType.Script && Body.Length > 12 &&
+            Body[0] == 0x02 && Body[1] == 0x00 && Body[2] == 0x0A &&
+            System.Text.Encoding.ASCII.GetString(Body, 3, 10) == "onMetaData";
+        }
+      }
+
       public bool IsAVCHeader {
         get {
-          return (Body[0] == 0x17 && Body[1] == 0x00 && Body[2] == 0x00 && Body[3] == 0x00);
+          return Type==TagType.Video && Body.Length>3 &&
+            (Body[0] == 0x17 && Body[1] == 0x00 && Body[2] == 0x00 && Body[3] == 0x00);
         }
       }
 
       public bool IsAACHeader {
         get {
-          return (Body[0] == 0xAF && Body[1] == 0x00);
+          return Type==TagType.Audio && Body.Length>1 &&
+            (Body[0] == 0xAF && Body[1] == 0x00);
         }
       }
 
@@ -196,17 +206,15 @@ namespace PeerCastStation.FLV
                   read_valid = true;
                   bin = body.Binary;
                   if (res.Contents==null) res.Contents = new List<Content>();
-                  var isMetaData = false;
-                  if (body.Type==FLVTag.TagType.Script && OnScriptTag(body, info)) {
-                    isMetaData = true;
-                    res.ChannelInfo = new ChannelInfo(info);
-                  }
-                  if ((isMetaData || body.IsAVCHeader || body.IsAACHeader) && res.ContentHeader != null) {
+                  if ((body.IsMetaData || body.IsAVCHeader || body.IsAACHeader) && res.ContentHeader != null) {
                     var conbin = res.ContentHeader.Data.Concat(bin).ToArray();
                     res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, position, conbin);
                   }
                   else {
                     res.Contents.Add(new Content(streamIndex, DateTime.Now - streamOrigin, position, bin));
+                  }
+                  if (body.Type == FLVTag.TagType.Script && OnScriptTag(body, info)) {
+                    res.ChannelInfo = new ChannelInfo(info);
                   }
                   position += bin.Length;
                 }
@@ -439,11 +447,24 @@ namespace PeerCastStation.FLV
         switch ((string)name) {
         case "onMetaData":
           {
-            var args = value as AMF0Reader.ScriptDataEcmaArray;
-            if (args==null) break;
+            Dictionary<string, object> args;
+            if ((args = value as AMF0Reader.ScriptDataEcmaArray) == null) {
+              if ((args = value as AMF0Reader.ScriptDataObject) == null) {
+                break;
+              }
+            }
             object val;
-            if (args.TryGetValue("videodatarate", out val)) {
-              bitrate += (double)val;
+            if (args.TryGetValue("maxBitrate", out val)) {
+              double maxBitrate;
+              string maxBitrateStr = System.Text.RegularExpressions.Regex.Replace(val.ToString(), @"([\d]+)k", "$1");
+              if (double.TryParse(maxBitrateStr, out maxBitrate)) {
+                bitrate += maxBitrate;
+              }
+            }
+            else {
+              if (args.TryGetValue("videodatarate", out val)) {
+                bitrate += (double)val;
+              }
             }
             if (args.TryGetValue("audiodatarate", out val)) {
               bitrate += (double)val;
