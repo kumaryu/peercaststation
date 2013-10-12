@@ -28,7 +28,7 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
     private readonly PeerCast peerCast;
     public IEnumerable<RelayTreeNodeViewModel> RelayTree { get; private set; }
 
-    private Channel channel;
+    private ChannelViewModel channel;
     private Command refresh;
     public System.Windows.Input.ICommand Refresh {
       get { return refresh;}
@@ -43,7 +43,7 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
         () => channel!=null);
     }
 
-    internal void Update(PeerCastStation.Core.Channel channel)
+    internal void Update(ChannelViewModel channel)
     {
       if (channel!=null) {
         this.RelayTree =
@@ -60,18 +60,6 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
         this.refresh.OnCanExecuteChanged();
       }
     }
-  }
-
-  public enum ConnectionStatus {
-    Unknown,
-    Relayable,
-    RelayFull,
-    NotRelayable,
-    Firewalled,
-    FirewalledRelaying,
-    NotReceiving,
-    ConnectionToRoot,
-    ConnectionToTracker,
   }
 
   public class RelayTreeNodeViewModel

@@ -25,8 +25,8 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
 {
   class BroadcastViewModel : ViewModelBase
   {
-    private readonly ContentReaderItem[] contentTypes;
-    public ContentReaderItem[] ContentTypes { get { return contentTypes; } }
+    private readonly IContentReaderFactory[] contentTypes;
+    public IContentReaderFactory[] ContentTypes { get { return contentTypes; } }
 
     private readonly YellowPageItem[] yellowPages;
     public YellowPageItem[] YellowPages { get { return yellowPages; } }
@@ -45,7 +45,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
         if (value!=null) {
           StreamUrl   = value.StreamUrl;
           Bitrate     = value.Bitrate==0 ? null : value.Bitrate.ToString();
-          ContentType = contentTypes.FirstOrDefault(t => t.ContentReaderFactory.Name==value.ContentType);
+          ContentType = contentTypes.FirstOrDefault(t => t.Name==value.ContentType);
           if (value.YellowPage!=null) {
             var yp = yellowPages.Where(y => y.YellowPageClient!=null).FirstOrDefault(y => y.YellowPageClient.Name==value.YellowPage);
             YellowPage  = yp!=null ? yp.YellowPageClient : null;
@@ -94,8 +94,8 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       }
     }
 
-    private ContentReaderItem contentType;
-    public ContentReaderItem ContentType
+    private IContentReaderFactory contentType;
+    public IContentReaderFactory ContentType
     {
       get { return contentType; }
       set
@@ -189,11 +189,6 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
     private readonly Command start;
     public ICommand Start { get { return start; } }
 
-    private IContentReaderFactory ContentReaderFactory
-    {
-      get { return contentType == null ? null : contentType.ContentReaderFactory; }
-    }
-
     private Uri StreamSource
     {
       get
@@ -211,21 +206,20 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
     public BroadcastViewModel(PeerCast peerCast)
     {
       this.peerCast = peerCast;
-      contentTypes = peerCast.ContentReaderFactories
-        .Select(reader => new ContentReaderItem(reader)).ToArray();
+      contentTypes = peerCast.ContentReaderFactories.ToArray();
 
       yellowPages = new YellowPageItem[] { new YellowPageItem("掲載なし", null) }
         .Concat(peerCast.YellowPages.Select(yp => new YellowPageItem(yp))).ToArray();
       if (contentTypes.Length > 0) contentType = contentTypes[0];
 
       start = new Command(OnBroadcast,
-        () => CanBroadcast(StreamSource, ContentReaderFactory, channelName));
+        () => CanBroadcast(StreamSource, ContentType, channelName));
     }
 
     private void OnBroadcast()
     {
       var source = StreamSource;
-      var contentReaderFactory = ContentReaderFactory;
+      var contentReaderFactory = ContentType;
       if (!CanBroadcast(source, contentReaderFactory, channelName)) return;
       IYellowPageClient yellowPage = this.yellowPage;
       var channelInfo = CreateChannelInfo(this);
@@ -249,7 +243,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       var info = new BroadcastInfo {
         StreamUrl   = this.StreamUrl,
         Bitrate     = this.bitrate.HasValue ? this.bitrate.Value : 0,
-        ContentType = this.ContentType.ContentReaderFactory.Name,
+        ContentType = this.ContentType.Name,
         YellowPage  = this.YellowPage!=null ? this.YellowPage.Name : null,
         ChannelName = this.ChannelName,
         Genre       = this.Genre,

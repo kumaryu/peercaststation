@@ -75,7 +75,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           <TextBlock Grid.Column="1" Text="kbps" VerticalAlignment="Center"/>
         </Grid>
         <Label    Grid.Column="0" Grid.Row="2" Content="タイプ:"/>
-        <ComboBox Grid.Column="1" Grid.Row="2" ItemsSource="{Binding ContentTypes}" SelectedItem="{Binding ContentType}"/>
+        <ComboBox Grid.Column="1" Grid.Row="2"
+                  ItemsSource="{Binding ContentTypes}"
+                  SelectedItem="{Binding ContentType}"
+                  DisplayMemberPath="Name"/>
         <Label    Grid.Column="0" Grid.Row="3" Content="掲載YP:"/>
         <ComboBox Grid.Column="1" Grid.Row="3"
                   ItemsSource="{Binding YellowPages}"

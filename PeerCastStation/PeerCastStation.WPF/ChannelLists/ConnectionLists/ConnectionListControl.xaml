@@ -40,13 +40,55 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
     </Grid.RowDefinitions>
     <ListBox Grid.Column="0" Grid.Row="0" Grid.RowSpan="3"
              ItemsSource="{Binding Connections}"
-             SelectedItem="{Binding Connection}"
+             SelectedItem="{Binding SelectedConnection}"
              Grid.IsSharedSizeScope="True">
       <ListBox.ItemTemplate>
         <DataTemplate>
           <Grid>
+            <Grid.Resources>
+              <BitmapImage x:Key="IconRelayable"           UriSource="../../images/relay_icon_0.png"/>
+              <BitmapImage x:Key="IconRelayFull"           UriSource="../../images/relay_icon_1.png"/>
+              <BitmapImage x:Key="IconNotRelayable"        UriSource="../../images/relay_icon_2.png"/>
+              <BitmapImage x:Key="IconFirewalled"          UriSource="../../images/relay_icon_3.png"/>
+              <BitmapImage x:Key="IconFirewalledRelaying"  UriSource="../../images/relay_icon_4.png"/>
+              <BitmapImage x:Key="IconUnknown"             UriSource="../../images/relay_icon_5.png"/>
+              <BitmapImage x:Key="IconNotReceiving"        UriSource="../../images/relay_icon_6.png"/>
+              <BitmapImage x:Key="IconConnectionToRoot"    UriSource="../../images/relay_icon_7.png"/>
+              <BitmapImage x:Key="IconConnectionToTracker" UriSource="../../images/relay_icon_8.png"/>
+              <Style TargetType="Image">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding ConnectionStatus}" Value="Relayable">
+                    <Setter Property="Source" Value="{StaticResource ResourceKey=IconRelayable}"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding ConnectionStatus}" Value="RelayFull">
+                    <Setter Property="Source" Value="{StaticResource ResourceKey=IconRelayFull}"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding ConnectionStatus}" Value="NotRelayable">
+                    <Setter Property="Source" Value="{StaticResource ResourceKey=IconNotRelayable}"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding ConnectionStatus}" Value="Firewalled">
+                    <Setter Property="Source" Value="{StaticResource ResourceKey=IconFirewalled}"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding ConnectionStatus}" Value="FirewalledRelaying">
+                    <Setter Property="Source" Value="{StaticResource ResourceKey=IconFirewalledRelaying}"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding ConnectionStatus}" Value="Unknown">
+                    <Setter Property="Source" Value="{StaticResource ResourceKey=IconUnknown}"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding ConnectionStatus}" Value="NotReceiving">
+                    <Setter Property="Source" Value="{StaticResource ResourceKey=IconNotReceiving}"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding ConnectionStatus}" Value="ConnectionToRoot">
+                    <Setter Property="Source" Value="{StaticResource ResourceKey=IconConnectionToRoot}"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding ConnectionStatus}" Value="ConnectionToTracker">
+                    <Setter Property="Source" Value="{StaticResource ResourceKey=IconConnectionToTracker}"/>
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </Grid.Resources>
             <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="Auto" SharedSizeGroup="AttributeIcon"/>
+              <ColumnDefinition Width="Auto" SharedSizeGroup="ConnectionStatus"/>
               <ColumnDefinition Width="Auto" SharedSizeGroup="Protocol"/>
               <ColumnDefinition Width="Auto" SharedSizeGroup="Status"/>
               <ColumnDefinition Width="Auto" SharedSizeGroup="RemoteName"/>
@@ -54,7 +96,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
               <ColumnDefinition Width="Auto" SharedSizeGroup="Connections"/>
               <ColumnDefinition Width="Auto" SharedSizeGroup="AgentName"/>
             </Grid.ColumnDefinitions>
-            <Image Grid.Column="0" Margin="2,0,0,0" Source="{Binding AttributeIcon}" />
+            <Image     Grid.Column="0" Margin="2,0,0,0" Width="16" Height="16" />
             <TextBlock Grid.Column="1" Margin="4,0,0,0" Text="{Binding Protocol}" />
             <TextBlock Grid.Column="2" Margin="4,0,0,0" Text="{Binding Status}" />
             <TextBlock Grid.Column="3" Margin="4,0,0,0" Text="{Binding RemoteName}" />

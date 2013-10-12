@@ -64,7 +64,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppCastReader.cs" />
-    <Compile Include="ChannelLists\ConnectionLists\ChannelConnectionItems.cs" />
+    <Compile Include="ChannelConnectionViewModel.cs" />
     <Compile Include="ChannelLists\ConnectionLists\ConnectionListViewModel.cs" />
     <Compile Include="ChannelLists\Dialogs\BroadcastViewModel.cs" />
     <Compile Include="ChannelLists\ChannelInfos\ChannelInfoControl.xaml.cs">
@@ -81,11 +81,11 @@
     <Compile Include="ChannelLists\ConnectionLists\ConnectionListControl.xaml.cs">
       <DependentUpon>ConnectionListControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ChannelLists\ListItems.cs" />
     <Compile Include="ChannelLists\RelayTrees\RelayTreeViewModel.cs" />
     <Compile Include="ChannelLists\RelayTrees\RelayTreeControl.xaml.cs">
       <DependentUpon>RelayTreeControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ChannelViewModel.cs" />
     <Compile Include="Commons\Command.cs" />
     <Compile Include="Commons\NotConverter.cs" />
     <Compile Include="CoreSettings\Extensions.cs" />

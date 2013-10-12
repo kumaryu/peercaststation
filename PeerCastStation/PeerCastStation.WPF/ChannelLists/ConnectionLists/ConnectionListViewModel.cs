@@ -25,71 +25,48 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
 {
   class ConnectionListViewModel : ViewModelBase
   {
-    private readonly PeerCast peerCast;
+    public ObservableCollection<ChannelConnectionViewModel> Connections { get; private set; }
 
-    private readonly ObservableCollection<IChannelConnectionItem> connections
-      = new ObservableCollection<IChannelConnectionItem>();
-    public ObservableCollection<IChannelConnectionItem> Connections
-    {
-      get { return connections; }
-    }
-
-    private IChannelConnectionItem connection;
-    public IChannelConnectionItem Connection
-    {
-      get { return connection; }
-      set
-      {
-        SetProperty("Connection", ref connection, value, () =>
-          {
-            close.OnCanExecuteChanged();
-            reconnect.OnCanExecuteChanged();
-          });
+    private ChannelConnectionViewModel selectedConnection;
+    public ChannelConnectionViewModel SelectedConnection {
+      get { return selectedConnection; }
+      set {
+        SetProperty("SelectedConnection", ref selectedConnection, value, () => {
+          Close.OnCanExecuteChanged();
+          Reconnect.OnCanExecuteChanged();
+        });
       }
     }
 
-    private readonly Command close;
-    public Command Close { get { return close; } }
-    private readonly Command reconnect;
-    public Command Reconnect { get { return reconnect; } }
+    public Command Close     { get; private set; }
+    public Command Reconnect { get; private set; }
 
-    public ConnectionListViewModel(PeerCast peerCast)
+    public ConnectionListViewModel()
     {
-      this.peerCast = peerCast;
-
-      close = new Command(
-        () => connection.Disconnect(),
-        () => connection != null && connection.IsDisconnectable);
-      reconnect = new Command(
-        () => connection.Reconnect(),
-        () => connection != null && connection.IsReconnectable);
+      this.Connections = new ObservableCollection<ChannelConnectionViewModel>();
+      this.Close = new Command(
+        () => selectedConnection.Disconnect(),
+        () => selectedConnection!=null && selectedConnection.IsDisconnectable);
+      this.Reconnect = new Command(
+        () => selectedConnection.Reconnect(),
+        () => selectedConnection != null && selectedConnection.IsReconnectable);
     }
 
-    internal void Update(Channel channel)
+    public void UpdateConnections(ChannelViewModel channel)
     {
       if (channel==null) {
-        connections.Clear();
+        Connections.Clear();
         return;
       }
-      var new_list = new List<IChannelConnectionItem>();
-      new_list.Add(new ChannelConnectionSourceItem(channel.SourceStream));
-      var announcings = peerCast.YellowPages
-        .Select(yp => yp.AnnouncingChannels.FirstOrDefault(c => c.Channel.ChannelID==channel.ChannelID))
-        .Where(c => c != null);
-      foreach (var announcing in announcings) {
-        new_list.Add(new ChannelConnectionAnnouncingItem(announcing));
+      var new_list = channel.Connections.ToArray();
+      foreach (var item in Connections.Except(new_list).ToArray()) {
+        Connections.Remove(item);
       }
-      foreach (var os in channel.OutputStreams) {
-        new_list.Add(new ChannelConnectionOutputItem(os));
-      }
-      foreach (var item in connections.Except(new_list).ToArray()) {
-        connections.Remove(item);
-      }
-      foreach (var item in connections) {
+      foreach (var item in Connections) {
         item.Update();
       }
-      foreach (var item in new_list.Except(connections).ToArray()) {
-        connections.Add(item);
+      foreach (var item in new_list.Except(Connections).ToArray()) {
+        Connections.Add(item);
       }
     }
 

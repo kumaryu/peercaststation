@@ -48,7 +48,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="*"/>
       </Grid.RowDefinitions>
-      <ListBox Grid.Row="0" Grid.Column="0" Grid.RowSpan="5" ItemsSource="{Binding Channels}" SelectedItem="{Binding Channel}">
+      <ListBox Grid.Row="0" Grid.Column="0" Grid.RowSpan="5" ItemsSource="{Binding Channels}" SelectedItem="{Binding SelectedChannel}">
         <ListBox.ItemsPanel>
           <ItemsPanelTemplate>
             <StackPanel Grid.IsSharedSizeScope="True" Orientation="Vertical" />
@@ -57,24 +57,58 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <ListBox.ItemTemplate>
           <DataTemplate>
             <Grid>
+              <Grid.Resources>
+                <BitmapImage x:Key="IconRelayable"          UriSource="../images/relay_icon_0.png"/>
+                <BitmapImage x:Key="IconRelayFull"          UriSource="../images/relay_icon_1.png"/>
+                <BitmapImage x:Key="IconNotRelayable"       UriSource="../images/relay_icon_2.png"/>
+                <BitmapImage x:Key="IconFirewalled"         UriSource="../images/relay_icon_3.png"/>
+                <BitmapImage x:Key="IconFirewalledRelaying" UriSource="../images/relay_icon_4.png"/>
+                <BitmapImage x:Key="IconUnknown"            UriSource="../images/relay_icon_5.png"/>
+                <BitmapImage x:Key="IconNotReceiving"       UriSource="../images/relay_icon_6.png"/>
+                <Style TargetType="Image">
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding ConnectionStatus}" Value="Relayable">
+                      <Setter Property="Source" Value="{StaticResource ResourceKey=IconRelayable}"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding ConnectionStatus}" Value="RelayFull">
+                      <Setter Property="Source" Value="{StaticResource ResourceKey=IconRelayFull}"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding ConnectionStatus}" Value="NotRelayable">
+                      <Setter Property="Source" Value="{StaticResource ResourceKey=IconNotRelayable}"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding ConnectionStatus}" Value="Firewalled">
+                      <Setter Property="Source" Value="{StaticResource ResourceKey=IconFirewalled}"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding ConnectionStatus}" Value="FirewalledRelaying">
+                      <Setter Property="Source" Value="{StaticResource ResourceKey=IconFirewalledRelaying}"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding ConnectionStatus}" Value="Unknown">
+                      <Setter Property="Source" Value="{StaticResource ResourceKey=IconUnknown}"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding ConnectionStatus}" Value="NotReceiving">
+                      <Setter Property="Source" Value="{StaticResource ResourceKey=IconNotReceiving}"/>
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </Grid.Resources>
               <Grid.ColumnDefinitions>
-                <ColumnDefinition SharedSizeGroup="RelayStatus"   Width="Auto"/>
-                <ColumnDefinition SharedSizeGroup="Name"          Width="Auto"/>
-                <ColumnDefinition SharedSizeGroup="Bitrate"       Width="Auto"/>
-                <ColumnDefinition SharedSizeGroup="Connections"   Width="Auto"/>
-                <ColumnDefinition SharedSizeGroup="ChannelStatus" Width="Auto"/>
+                <ColumnDefinition SharedSizeGroup="ConnectionStatus" Width="Auto"/>
+                <ColumnDefinition SharedSizeGroup="Name"             Width="Auto"/>
+                <ColumnDefinition SharedSizeGroup="Bitrate"          Width="Auto"/>
+                <ColumnDefinition SharedSizeGroup="ConnectionCount"  Width="Auto"/>
+                <ColumnDefinition SharedSizeGroup="ChannelStatus"    Width="Auto"/>
               </Grid.ColumnDefinitions>
-              <Image Grid.Column="0" Margin="2,0,0,0" Source="{Binding RelayStatusIcon}" />
+              <Image     Grid.Column="0" Margin="2,0,0,0" Width="16" Height="16" />
               <TextBlock Grid.Column="1" Margin="2,0,0,0" Text="{Binding Name}"/>
               <TextBlock Grid.Column="2" Margin="2,0,0,0" Text="{Binding Bitrate}"/>
-              <TextBlock Grid.Column="3" Margin="2,0,0,0" Text="{Binding Connections}"/>
+              <TextBlock Grid.Column="3" Margin="2,0,0,0" Text="{Binding ConnectionCount}"/>
               <TextBlock Grid.Column="4" Margin="2,0,0,0" Text="{Binding ChannelStatus}"/>
             </Grid>
           </DataTemplate>
         </ListBox.ItemTemplate>
         <ListBox.ContextMenu>
           <ContextMenu>
-            <MenuItem Header="再生" Command="{Binding Play}"/>
+            <MenuItem Header="再生(_P)"               Command="{Binding Play}"/>
             <MenuItem Header="コンタクトURLを開く(_U)" Command="{Binding OpenContactUrl}"/>
             <Separator/>
             <MenuItem Header="切断(_C)"   Command="{Binding Close}"/>

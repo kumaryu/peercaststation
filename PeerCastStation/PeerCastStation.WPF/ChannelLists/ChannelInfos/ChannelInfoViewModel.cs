@@ -24,7 +24,7 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
 {
   class ChannelInfoViewModel : ViewModelBase
   {
-    private Channel channel;
+    private ChannelViewModel channel;
 
     private string channelName;
     public string ChannelName
@@ -209,7 +209,7 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
         () => channel!=null && IsTracker && IsModified);
     }
 
-    internal void UpdateChannelInfo(Channel channel)
+    public void UpdateChannelInfo(ChannelViewModel channel)
     {
       this.channel = channel;
       if (channel==null) {
