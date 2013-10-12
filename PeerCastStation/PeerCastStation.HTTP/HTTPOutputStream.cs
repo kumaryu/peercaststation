@@ -65,7 +65,8 @@ namespace PeerCastStation.HTTP
         }
       }
       Uri uri;
-      if (Uri.TryCreate("http://" + host + path, UriKind.Absolute, out uri)) {
+      if (Uri.TryCreate("http://" + host + path, UriKind.Absolute, out uri) ||
+          Uri.TryCreate("http://localhost" + path, UriKind.Absolute, out uri)) {
         this.Uri = uri;
       }
       else {
