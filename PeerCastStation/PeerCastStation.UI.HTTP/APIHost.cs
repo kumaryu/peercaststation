@@ -961,6 +961,8 @@ namespace PeerCastStation.UI.HTTP
           }
           catch (EndOfStreamException) {
           }
+          catch (InvalidDataException) {
+          }
         }
         return new APIHostOutputStream(
           owner,
@@ -981,6 +983,8 @@ namespace PeerCastStation.UI.HTTP
             res = HTTPRequestReader.Read(stream);
           }
           catch (EndOfStreamException) {
+          }
+          catch (InvalidDataException) {
           }
         }
         if (res!=null && res.Uri.AbsolutePath=="/api/1") {

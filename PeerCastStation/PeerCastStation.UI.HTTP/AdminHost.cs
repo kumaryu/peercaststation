@@ -333,6 +333,8 @@ namespace PeerCastStation.UI.HTTP
           }
           catch (EndOfStreamException) {
           }
+          catch (InvalidDataException) {
+          }
         }
         return new AdminHostOutputStream(owner, PeerCast, input_stream, output_stream, remote_endpoint, access_control, request);
       }
@@ -345,6 +347,8 @@ namespace PeerCastStation.UI.HTTP
             res = HTTPRequestReader.Read(stream);
           }
           catch (EndOfStreamException) {
+          }
+          catch (InvalidDataException) {
           }
         }
         if (res!=null && res.Uri.AbsolutePath=="/admin") {

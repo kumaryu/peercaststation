@@ -73,6 +73,8 @@ namespace PeerCastStation.HTTP
       }
       catch (EndOfStreamException) {
       }
+      catch (InvalidDataException) {
+      }
       stream.Close();
       if (res!=null) return Guid.Empty;
       else           return null;

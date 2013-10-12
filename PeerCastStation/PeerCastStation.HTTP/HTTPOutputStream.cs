@@ -65,8 +65,7 @@ namespace PeerCastStation.HTTP
         }
       }
       Uri uri;
-      if (Uri.TryCreate("http://" + host + path, UriKind.Absolute, out uri) ||
-          Uri.TryCreate("http://localhost" + path, UriKind.Absolute, out uri)) {
+      if (Uri.TryCreate("http://" + host + path, UriKind.Absolute, out uri)) {
         this.Uri = uri;
       }
       else {
@@ -88,6 +87,9 @@ namespace PeerCastStation.HTTP
     /// <exception cref="EndOfStreamException">
     /// HTTPリクエストの終端より前に解析ストリームの末尾に到達した
     /// </exception>
+    /// <exception cref="InvalidDataException">
+    /// HTTPリクエストが不正な形式であった
+    /// </exception>
     public static HTTPRequest Read(Stream stream)
     {
       string line = null;
@@ -105,7 +107,9 @@ namespace PeerCastStation.HTTP
           buf.Clear();
         }
       }
-      return new HTTPRequest(requests);
+      var req = new HTTPRequest(requests);
+      if (req.Uri==null) throw new InvalidDataException();
+      return req;
     }
   }
 
@@ -276,6 +280,8 @@ namespace PeerCastStation.HTTP
         res = HTTPRequestReader.Read(stream);
       }
       catch (EndOfStreamException) {
+      }
+      catch (InvalidDataException) {
       }
       stream.Close();
       return res;
