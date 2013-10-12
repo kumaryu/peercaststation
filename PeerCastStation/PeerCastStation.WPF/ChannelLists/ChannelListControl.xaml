@@ -77,6 +77,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
             <MenuItem Header="再生" Command="{Binding Play}"/>
             <MenuItem Header="コンタクトURLを開く(_U)" Command="{Binding OpenContactUrl}"/>
             <Separator/>
+            <MenuItem Header="切断(_C)"   Command="{Binding Close}"/>
+            <MenuItem Header="再接続(_B)" Command="{Binding Bump}"/>
+            <Separator/>
             <MenuItem Header="ストリームURLをコピー(_S)" Command="{Binding CopyStreamUrl}"/>
             <MenuItem Header="コンタクトURLをコピー(_C)" Command="{Binding CopyContactUrl}"/>
           </ContextMenu>
