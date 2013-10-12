@@ -105,6 +105,16 @@ namespace PeerCastStation.WPF.CoreSettings
       }
     }
 
+    public int MaxUpstreamRatePerChannel {
+      get { return pecaApp.PeerCast.AccessController.MaxUpstreamRatePerChannel; }
+      set {
+        if (pecaApp.PeerCast.AccessController.MaxUpstreamRatePerChannel!=value) {
+          pecaApp.PeerCast.AccessController.MaxUpstreamRatePerChannel = value;
+          OnPropertyChanged("MaxUpstreamRatePerChannel");
+        }
+      }
+    }
+
     public bool IsShowWindowOnStartup
     {
       get { return pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup; }

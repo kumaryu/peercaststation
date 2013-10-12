@@ -67,11 +67,12 @@ namespace PeerCastStation
     [PecaSettings]
     public class AccessControllerSettings
     {
-      public int MaxRelays            { get; set; }
-      public int MaxDirects           { get; set; }
-      public int MaxRelaysPerChannel  { get; set; }
-      public int MaxDirectsPerChannel { get; set; }
-      public int MaxUpstreamRate      { get; set; }
+      public int MaxRelays                 { get; set; }
+      public int MaxDirects                { get; set; }
+      public int MaxRelaysPerChannel       { get; set; }
+      public int MaxDirectsPerChannel      { get; set; }
+      public int MaxUpstreamRate           { get; set; }
+      public int MaxUpstreamRatePerChannel { get; set; }
 
       public AccessControllerSettings()
       {
@@ -79,11 +80,11 @@ namespace PeerCastStation
 
       internal AccessControllerSettings(PeerCastStation.Properties.AccessControllerSettings settings)
       {
-        this.MaxRelays            = settings.MaxRelays;
-        this.MaxDirects           = settings.MaxDirects;
-        this.MaxRelaysPerChannel  = settings.MaxRelaysPerChannel;
-        this.MaxDirectsPerChannel = settings.MaxDirectsPerChannel;
-        this.MaxUpstreamRate      = settings.MaxUpstreamRate;
+        this.MaxRelays                 = settings.MaxRelays;
+        this.MaxDirects                = settings.MaxDirects;
+        this.MaxRelaysPerChannel       = settings.MaxRelaysPerChannel;
+        this.MaxDirectsPerChannel      = settings.MaxDirectsPerChannel;
+        this.MaxUpstreamRate           = settings.MaxUpstreamRate;
       }
     }
 

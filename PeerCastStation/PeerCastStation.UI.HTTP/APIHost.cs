@@ -164,11 +164,12 @@ namespace PeerCastStation.UI.HTTP
       private JToken GetSettings()
       {
         var res = new JObject();
-        res["maxRelays"]            = PeerCast.AccessController.MaxRelays;
-        res["maxDirects"]           = PeerCast.AccessController.MaxPlays;
-        res["maxRelaysPerChannel"]  = PeerCast.AccessController.MaxRelaysPerChannel;
-        res["maxDirectsPerChannel"] = PeerCast.AccessController.MaxPlaysPerChannel;
-        res["maxUpstreamRate"]      = PeerCast.AccessController.MaxUpstreamRate;
+        res["maxRelays"]                 = PeerCast.AccessController.MaxRelays;
+        res["maxRelaysPerChannel"]       = PeerCast.AccessController.MaxRelaysPerChannel;
+        res["maxDirects"]                = PeerCast.AccessController.MaxPlays;
+        res["maxDirectsPerChannel"]      = PeerCast.AccessController.MaxPlaysPerChannel;
+        res["maxUpstreamRate"]           = PeerCast.AccessController.MaxUpstreamRate;
+        res["maxUpstreamRatePerChannel"] = PeerCast.AccessController.MaxUpstreamRatePerChannel;
         var channelCleaner = new JObject();
         channelCleaner["mode"]          = (int)ChannelCleaner.Mode;
         channelCleaner["inactiveLimit"] = ChannelCleaner.InactiveLimit;
@@ -193,11 +194,12 @@ namespace PeerCastStation.UI.HTTP
       private void SetSettings(JObject settings)
       {
         var acc = PeerCast.AccessController;
-        acc.MaxRelays           = ParseInt(settings["maxRelays"])            ?? acc.MaxRelays;
-        acc.MaxRelaysPerChannel = ParseInt(settings["maxRelaysPerChannel"])  ?? acc.MaxRelaysPerChannel;
-        acc.MaxPlays            = ParseInt(settings["maxDirects"])           ?? acc.MaxPlays;
-        acc.MaxPlaysPerChannel  = ParseInt(settings["maxDirectsPerChannel"]) ?? acc.MaxPlaysPerChannel;
-        acc.MaxUpstreamRate     = ParseInt(settings["maxUpstreamRate"])      ?? acc.MaxUpstreamRate;
+        acc.MaxRelays                 = ParseInt(settings["maxRelays"])                 ?? acc.MaxRelays;
+        acc.MaxRelaysPerChannel       = ParseInt(settings["maxRelaysPerChannel"])       ?? acc.MaxRelaysPerChannel;
+        acc.MaxPlays                  = ParseInt(settings["maxDirects"])                ?? acc.MaxPlays;
+        acc.MaxPlaysPerChannel        = ParseInt(settings["maxDirectsPerChannel"])      ?? acc.MaxPlaysPerChannel;
+        acc.MaxUpstreamRate           = ParseInt(settings["maxUpstreamRate"])           ?? acc.MaxUpstreamRate;
+        acc.MaxUpstreamRatePerChannel = ParseInt(settings["maxUpstreamRatePerChannel"]) ?? acc.MaxUpstreamRatePerChannel;
         if (settings["channelCleaner"]!=null && settings["channelCleaner"].HasValues) {
           var channelCleaner = settings["channelCleaner"];
           ChannelCleaner.InactiveLimit = ParseInt(channelCleaner["inactiveLimit"]) ?? ChannelCleaner.InactiveLimit;

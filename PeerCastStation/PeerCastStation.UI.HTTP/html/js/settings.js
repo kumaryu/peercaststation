@@ -226,15 +226,16 @@ var SettingsViewModel = new function() {
   var self = this;
   var updating = false;
 
-  self.maxRelays             = ko.observable(null);
-  self.maxDirects            = ko.observable(null);
-  self.maxRelaysPerChannel   = ko.observable(null);
-  self.maxDirectsPerChannel  = ko.observable(null);
-  self.maxUpstreamRate       = ko.observable(null);
-  self.inactiveChannelLimit  = ko.observable(null);
-  self.channelCleanupMode    = ko.observable(null);
-  self.listeners             = ko.observableArray();
-  self.yellowPages           = ko.observableArray();
+  self.maxRelays                 = ko.observable(null);
+  self.maxDirects                = ko.observable(null);
+  self.maxRelaysPerChannel       = ko.observable(null);
+  self.maxDirectsPerChannel      = ko.observable(null);
+  self.maxUpstreamRate           = ko.observable(null);
+  self.maxUpstreamRatePerChannel = ko.observable(null);
+  self.inactiveChannelLimit      = ko.observable(null);
+  self.channelCleanupMode        = ko.observable(null);
+  self.listeners                 = ko.observableArray();
+  self.yellowPages               = ko.observableArray();
 
   $.each([
     self.maxRelays,
@@ -242,6 +243,7 @@ var SettingsViewModel = new function() {
     self.maxRelaysPerChannel,
     self.maxDirectsPerChannel,
     self.maxUpstreamRate,
+    self.maxUpstreamRatePerChannel,
     self.inactiveChannelLimit,
     self.channelCleanupMode
   ], function (i, o) {
@@ -249,11 +251,12 @@ var SettingsViewModel = new function() {
   });
   self.submit = function() {
     var settings = {
-      maxRelays:            self.maxRelays()!=null            ? Number(self.maxRelays()) : null,
-      maxDirects:           self.maxDirects()!=null           ? Number(self.maxDirects()) : null,
-      maxRelaysPerChannel:  self.maxRelaysPerChannel()!=null  ? Number(self.maxRelaysPerChannel()) : null,
-      maxDirectsPerChannel: self.maxDirectsPerChannel()!=null ? Number(self.maxDirectsPerChannel()) : null,
-      maxUpstreamRate:      self.maxUpstreamRate()!=null      ? Number(self.maxUpstreamRate()) : null,
+      maxRelays:                 self.maxRelays()!=null                 ? Number(self.maxRelays()) : null,
+      maxDirects:                self.maxDirects()!=null                ? Number(self.maxDirects()) : null,
+      maxRelaysPerChannel:       self.maxRelaysPerChannel()!=null       ? Number(self.maxRelaysPerChannel()) : null,
+      maxDirectsPerChannel:      self.maxDirectsPerChannel()!=null      ? Number(self.maxDirectsPerChannel()) : null,
+      maxUpstreamRate:           self.maxUpstreamRate()!=null           ? Number(self.maxUpstreamRate()) : null,
+      maxUpstreamRatePerChannel: self.maxUpstreamRatePerChannel()!=null ? Number(self.maxUpstreamRatePerChannel()) : null,
       channelCleaner: {
         inactiveLimit: self.inactiveChannelLimit()!=null ? Number(self.inactiveChannelLimit())*60000 : null,
         mode:          self.channelCleanupMode()!=null   ? Number(self.channelCleanupMode()) : null
@@ -320,6 +323,7 @@ var SettingsViewModel = new function() {
         self.maxRelaysPerChannel(result.maxRelaysPerChannel);
         self.maxDirectsPerChannel(result.maxDirectsPerChannel);
         self.maxUpstreamRate(result.maxUpstreamRate);
+        self.maxUpstreamRatePerChannel(result.maxUpstreamRatePerChannel);
         if (result.channelCleaner) {
           self.inactiveChannelLimit(result.channelCleaner.inactiveLimit/60000);
           self.channelCleanupMode(result.channelCleaner.mode);

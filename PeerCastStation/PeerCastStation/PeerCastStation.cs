@@ -122,11 +122,12 @@ namespace PeerCastStation.Main
           Logger.OutputTarget = s.Logger.OutputTarget;
         }
         if (s.AccessController!=null) {
-          peerCast.AccessController.MaxPlays  = s.AccessController.MaxDirects;
-          peerCast.AccessController.MaxRelays = s.AccessController.MaxRelays;
-          peerCast.AccessController.MaxPlaysPerChannel  = s.AccessController.MaxDirectsPerChannel;
-          peerCast.AccessController.MaxRelaysPerChannel = s.AccessController.MaxRelaysPerChannel;
-          peerCast.AccessController.MaxUpstreamRate     = s.AccessController.MaxUpstreamRate;
+          peerCast.AccessController.MaxPlays                  = s.AccessController.MaxDirects;
+          peerCast.AccessController.MaxRelays                 = s.AccessController.MaxRelays;
+          peerCast.AccessController.MaxPlaysPerChannel        = s.AccessController.MaxDirectsPerChannel;
+          peerCast.AccessController.MaxRelaysPerChannel       = s.AccessController.MaxRelaysPerChannel;
+          peerCast.AccessController.MaxUpstreamRate           = s.AccessController.MaxUpstreamRate;
+          peerCast.AccessController.MaxUpstreamRatePerChannel = s.AccessController.MaxUpstreamRatePerChannel;
         }
         if ( s.BroadcastID!=Guid.Empty &&
             (AtomCollectionExtensions.IDToByteArray(s.BroadcastID)[0] & 0x01)==0) {
@@ -196,11 +197,12 @@ namespace PeerCastStation.Main
         OutputTarget = Logger.OutputTarget,
       };
       s.AccessController = new PeerCastStationSettings.AccessControllerSettings {
-        MaxDirects           = peerCast.AccessController.MaxPlays,
-        MaxRelays            = peerCast.AccessController.MaxRelays,
-        MaxDirectsPerChannel = peerCast.AccessController.MaxPlaysPerChannel,
-        MaxRelaysPerChannel  = peerCast.AccessController.MaxRelaysPerChannel,
-        MaxUpstreamRate      = peerCast.AccessController.MaxUpstreamRate,
+        MaxDirects                = peerCast.AccessController.MaxPlays,
+        MaxDirectsPerChannel      = peerCast.AccessController.MaxPlaysPerChannel,
+        MaxRelays                 = peerCast.AccessController.MaxRelays,
+        MaxRelaysPerChannel       = peerCast.AccessController.MaxRelaysPerChannel,
+        MaxUpstreamRate           = peerCast.AccessController.MaxUpstreamRate,
+        MaxUpstreamRatePerChannel = peerCast.AccessController.MaxUpstreamRatePerChannel,
       };
       s.BroadcastID = peerCast.BroadcastID;
       s.Listeners = peerCast.OutputListeners.Select(listener => 

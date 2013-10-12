@@ -63,8 +63,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           <extToolkit:IntegerUpDown Grid.Column="2" Grid.Row="1" Minimum="0" Value="{Binding MaxDirects, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
           <Label    Grid.Column="3" Grid.Row="1" Content="チャンネル毎:"/>
           <extToolkit:IntegerUpDown Grid.Column="4" Grid.Row="1" Minimum="0" Value="{Binding MaxDirectsPerChannel, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
-          <Label    Grid.Column="0" Grid.Row="2" Content="最大上り帯域(kbps):"/>
-          <extToolkit:IntegerUpDown Grid.Column="1" Grid.Row="2" Grid.ColumnSpan="4" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRate, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
+          <Label                    Grid.Column="0" Grid.Row="2" Content="最大上り帯域(kbps):"/>
+          <Label                    Grid.Column="1" Grid.Row="2" Content="合計:"/>
+          <extToolkit:IntegerUpDown Grid.Column="2" Grid.Row="2" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRate, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
+          <Label                    Grid.Column="3" Grid.Row="2" Content="チャンネル毎:"/>
+          <extToolkit:IntegerUpDown Grid.Column="4" Grid.Row="2" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerChannel, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
           <Label    Grid.Column="0" Grid.Row="3" Content="自動切断するチャンネル:"/>
           <ComboBox Grid.Column="1" Grid.Row="3" Grid.ColumnSpan="4" ItemsSource="{Binding ChannelCleanupModeItems}" DisplayMemberPath="Name" SelectedValuePath="Mode" IsEditable="False" SelectedValue="{Binding ChannelCleanupMode}"/>
           <Label    Grid.Column="0" Grid.Row="4" Content="自動切断までの時間(分):"/>
