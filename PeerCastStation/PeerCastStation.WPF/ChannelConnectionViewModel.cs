@@ -35,7 +35,7 @@ namespace PeerCastStation.WPF
     public virtual void Update()
     {
       if (PropertyChanged!=null) {
-        PropertyChanged(this, new PropertyChangedEventArgs("AttributeIcon"));
+        PropertyChanged(this, new PropertyChangedEventArgs("ConnectionStatus"));
         PropertyChanged(this, new PropertyChangedEventArgs("Status"));
         PropertyChanged(this, new PropertyChangedEventArgs("RemoteName"));
         PropertyChanged(this, new PropertyChangedEventArgs("Bitrate"));
@@ -135,34 +135,32 @@ namespace PeerCastStation.WPF
     public override ConnectionStatus ConnectionStatus {
       get {
         var info = outputStream.GetConnectionInfo();
-        if (info.Type==ConnectionType.Relay) {
-          if ((info.RemoteHostStatus & RemoteHostStatus.Receiving)!=0) {
-            if ((info.RemoteHostStatus & RemoteHostStatus.Firewalled)!=0 &&
-                (info.RemoteHostStatus & RemoteHostStatus.Local)==0) {
-              if ((info.LocalRelays ?? 0)>0) {
-                return ConnectionStatus.FirewalledRelaying;
-              }
-              else {
-                return ConnectionStatus.Firewalled;
-              }
-            }
-            else if ((info.RemoteHostStatus & RemoteHostStatus.RelayFull)!=0) {
-              if ((info.LocalRelays ?? 0)>0) {
-                return ConnectionStatus.RelayFull;
-              }
-              else {
-                return ConnectionStatus.NotRelayable;
-              }
-            }
-            else {
-              return ConnectionStatus.Relayable;
-            }
+        if (info.Type!=ConnectionType.Relay) {
+          return ConnectionStatus.Unknown;
+        }
+        if ((info.RemoteHostStatus & RemoteHostStatus.Receiving)==0) {
+          return ConnectionStatus.NotReceiving;
+        }
+        if ((info.RemoteHostStatus & RemoteHostStatus.Firewalled)!=0 &&
+            (info.RemoteHostStatus & RemoteHostStatus.Local)==0) {
+          if ((info.LocalRelays ?? 0)>0) {
+            return ConnectionStatus.FirewalledRelaying;
           }
           else {
-            return ConnectionStatus.NotReceiving;
+            return ConnectionStatus.Firewalled;
           }
         }
-        return ConnectionStatus.Unknown;
+        else if ((info.RemoteHostStatus & RemoteHostStatus.RelayFull)!=0) {
+          if ((info.LocalRelays ?? 0)>0) {
+            return ConnectionStatus.RelayFull;
+          }
+          else {
+            return ConnectionStatus.NotRelayable;
+          }
+        }
+        else {
+          return ConnectionStatus.Relayable;
+        }
       }
     }
 
