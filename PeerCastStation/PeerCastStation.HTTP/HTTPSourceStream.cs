@@ -104,7 +104,7 @@ namespace PeerCastStation.HTTP
     private IContentReader contentReader;
     private TcpClient    client = null;
     private HTTPResponse response = null;
-    bool useContentBitrate = true;
+    bool useContentBitrate;
     private enum State {
       SendingRequest,
       WaitingResponse,
@@ -117,13 +117,12 @@ namespace PeerCastStation.HTTP
         PeerCast peercast,
         Channel  channel,
         Uri      source_uri,
-        IContentReader content_reader)
+        IContentReader content_reader,
+        bool use_content_bitrate)
       : base(peercast, channel, source_uri)
     {
       contentReader = content_reader;
-      if (channel.ChannelInfo!=null && channel.ChannelInfo.Bitrate!=0) {
-        useContentBitrate = false;
-      }
+      useContentBitrate = use_content_bitrate;
     }
 
     protected override StreamConnection DoConnect(Uri source)
@@ -319,11 +318,13 @@ namespace PeerCastStation.HTTP
     : SourceStreamBase
   {
     public IContentReader ContentReader { get; private set; }
+    public bool UseContentBitrate { get; private set; }
 
     public HTTPSourceStream(PeerCast peercast, Channel channel, Uri source_uri, IContentReader reader)
       : base(peercast, channel, source_uri)
     {
       this.ContentReader = reader;
+      this.UseContentBitrate = channel.ChannelInfo==null || channel.ChannelInfo.Bitrate==0;
     }
 
     public override ConnectionInfo GetConnectionInfo()
@@ -358,7 +359,7 @@ namespace PeerCastStation.HTTP
 
     protected override SourceConnectionBase CreateConnection(Uri source_uri)
     {
-      return new HTTPSourceConnection(PeerCast, Channel, source_uri, ContentReader);
+      return new HTTPSourceConnection(PeerCast, Channel, source_uri, ContentReader, UseContentBitrate);
     }
 
     protected override void OnConnectionStopped(ConnectionStoppedEvent msg)
