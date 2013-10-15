@@ -114,6 +114,14 @@ namespace PeerCastStation.WPF
       get { return Model.Uptime; }
     }
 
+    public bool IsTrackerSource {
+      get {
+        if (Model.SourceStream==null) return false;
+        var info = Model.SourceStream.GetConnectionInfo();
+        return (info.RemoteHostStatus & RemoteHostStatus.Tracker)!=0;
+      }
+    }
+
     public string ChannelStatus {
       get { 
         var status = "UNKNOWN";
