@@ -184,8 +184,9 @@ namespace PeerCastStation.Core
       Channel channel = channels.FirstOrDefault(c => c.ChannelID==channel_id);
       if (request_relay) {
         if (channel!=null) {
-          if (channel.Status==SourceStreamStatus.Error ||
-              channel.Status==SourceStreamStatus.Idle) {
+          if (!channel.IsBroadcasting &&
+              (channel.Status==SourceStreamStatus.Error ||
+               channel.Status==SourceStreamStatus.Idle)) {
             channel.Reconnect(tracker);
           }
         }
