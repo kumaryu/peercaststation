@@ -114,3 +114,29 @@ ul.relayTree {
   font-weight: 800;
 }
 
+.ui-grid {
+  display:table;
+  table-layout:auto;
+}
+
+.ui-header {
+  padding:0px 2px 0px 4px;
+  display:table-cell;
+  font-weight:800;
+}
+
+.ui-label {
+  padding:0px 2px 0px 4px;
+  display:table-cell;
+  text-align:right;
+}
+
+.ui-control {
+  width:auto;
+  display:table-cell;
+}
+
+.ui-row {
+  display:table-row;
+}
+

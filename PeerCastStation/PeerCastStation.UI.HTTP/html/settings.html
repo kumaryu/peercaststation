@@ -46,7 +46,7 @@
 
     <div class="container-fluid" id="settings">
       <div class="row-fluid">
-        <div class="span8">
+        <div class="span12">
           <h2>ポート一覧</h2>
           <table class="table table-condensed">
             <thead>
@@ -91,6 +91,59 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+      <div class="row-fluid">
+        <div class="span12">
+          <h2>接続設定</h2>
+          <div class="ui-grid">
+            <div class="ui-row">
+              <div class="ui-header">最大リレー数</div>
+              <div class="ui-label">合計</div>
+              <div class="ui-control"><input class="input-small" type="text" data-bind="value:maxRelays"></div>
+              <div class="ui-label">チャンネル毎</div>
+              <div class="ui-control"><input class="input-small" type="text" data-bind="value:maxRelaysPerChannel"></div>
+            </div>
+            <div class="ui-row">
+              <div class="ui-header">最大視聴数</div>
+              <div class="ui-label">合計</div>
+              <div class="ui-control"><input class="input-small" type="text" data-bind="value:maxDirects"></div>
+              <div class="ui-label">チャンネル毎</div>
+              <div class="ui-control"><input class="input-small" type="text" data-bind="value:maxDirectsPerChannel"></div>
+            </div>
+            <div class="ui-row">
+              <div class="ui-header">最大上り帯域</div>
+              <div class="ui-label">合計</div>
+              <div class="ui-control">
+                <input class="input-small" type="text" data-bind="value:maxUpstreamRate">
+                <span class="help-inline">kbps</span>
+              </div>
+              <div class="ui-label">チャンネル毎</div>
+              <div class="ui-control">
+                <input class="input-small" type="text" data-bind="value:maxUpstreamRatePerChannel">
+                <span class="help-inline">kbps</span>
+              </div>
+            </div>
+            <div class="ui-row">
+              <div class="ui-header">自動切断</div>
+              <div class="ui-label">チャンネル状態</div>
+              <select class="ui-control" data-bind="value:channelCleanupMode">
+                <option value="0">自動切断しない</option>
+                <option value="1">接続していないチャンネル</option>
+                <option value="2">視聴・リレーをしていないチャンネル</option>
+                <option value="3">視聴していないチャンネル</option>
+              </select>
+              <div class="ui-label">切断までの時間</div>
+              <div class="ui-control">
+                <input class="input-small" type="text" data-bind="value:inactiveChannelLimit">
+                <span class="help-inline">分</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row-fluid">
+        <div class="span12">
           <h2>YP一覧</h2>
           <table class="table table-condensed">
             <thead>
@@ -118,50 +171,6 @@
               </tr>
             </tbody>
           </table>
-        </div>
-        <div class="span4">
-          <h2>その他設定</h2>
-          <div class="form-horizontal">
-            <div class="control-group">
-              <span class="control-label">最大リレー数</span>
-              <div class="controls">
-                <label>合計        </label><input type="text" class="input-small" data-bind="value:maxRelays">
-                <label>チャンネル毎</label><input type="text" class="input-small" data-bind="value:maxRelaysPerChannel">
-              </div>
-            </div>
-            <div class="control-group">
-              <span class="control-label">最大視聴数</span>
-              <div class="controls">
-                <label>合計        </label><input type="text" class="input-small" data-bind="value:maxDirects">
-                <label>チャンネル毎</label><input type="text" class="input-small" data-bind="value:maxDirectsPerChannel">
-              </div>
-            </div>
-            <div class="control-group">
-              <span class="control-label">最大上り帯域(kbps)</span>
-              <div class="controls">
-                <label>合計        </label><input type="text" class="input-small" data-bind="value:maxUpstreamRate">
-                <label>チャンネル毎</label><input type="text" class="input-small" data-bind="value:maxUpstreamRatePerChannel">
-              </div>
-            </div>
-            <div class="control-group">
-              <span class="control-label">自動切断するチャンネル</span>
-              <div class="controls">
-                <select data-bind="value:channelCleanupMode">
-                  <option value="0">自動切断しない</option>
-                  <option value="1">接続していないチャンネル</option>
-                  <option value="2">視聴・リレーをしていないチャンネル</option>
-                  <option value="3">視聴していないチャンネル</option>
-                </select>
-              </div>
-            </div>
-            <div class="control-group">
-              <span class="control-label">チャンネル自動切断までの時間</span>
-              <div class="controls">
-                <input type="text" class="input-small" data-bind="value:inactiveChannelLimit">
-                <span class="help-inline">分</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
