@@ -3865,23 +3865,6 @@
 		<col def="S255">ISBuildSourcePath</col>
 		<col def="I2">ISIconIndex</col>
 		<row><td>ARPPRODUCTICON.exe</td><td/><td>&lt;ISProjectFolder&gt;\..\peercaststation.ico</td><td>0</td></row>
-		<row><td>_20945DB2CB054750AB54DEED8B90F137.exe</td><td/><td>C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\PeerCastStation\bin\Debug\PeerCastStation.exe</td><td>0</td></row>
-		<row><td>_4310145ED84E472D99C5D6220908DB48.exe</td><td/><td>C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\PeerCastStation\bin\Debug\PeerCastStation.exe</td><td>0</td></row>
-		<row><td>_447CEE73054F4EE6AC8C0D9BB91002E7.exe</td><td/><td>C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\PeerCastStation\bin\Release\PeerCastStation.exe</td><td>0</td></row>
-		<row><td>_47D6C3016837441CA787130EFC2264E8.exe</td><td/><td>C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\PeerCastStation\bin\Debug\PeerCastStation.exe</td><td>0</td></row>
-		<row><td>_47EC9E55A5E8452F8F0BCD3ACCCD26DC.exe</td><td/><td>C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\PeerCastStation\bin\Release\PeerCastStation.exe</td><td>0</td></row>
-		<row><td>_48A4AA681D91437686642F21EED6ACB8.exe</td><td/><td>C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\PeerCastStation\bin\Release\PeerCastStation.exe</td><td>0</td></row>
-		<row><td>_4B76D269A94C4B70B5F7F0CCF6623C6E.exe</td><td/><td>C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\PeerCastStation\bin\Debug\PeerCastStation.exe</td><td>0</td></row>
-		<row><td>_4D1C2DCB32D5451B875E05AE389A7E67.exe</td><td/><td>C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\PeerCastStation\bin\Release\PeerCastStation.exe</td><td>0</td></row>
-		<row><td>_5DCCF46DC93A454E95F6D9EF6A4DBE8B.exe</td><td/><td>C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\PeerCastStation\bin\Release\PeerCastStation.exe</td><td>0</td></row>
-		<row><td>_61D3D4D7C5774505A610B8B9B111549B.exe</td><td/><td>C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\PeerCastStation\bin\Debug\PeerCastStation.exe</td><td>0</td></row>
-		<row><td>_92F6011023804423A551F4A98C39EBBA.exe</td><td/><td>C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\PeerCastStation\bin\Release\PeerCastStation.exe</td><td>0</td></row>
-		<row><td>_A42D471B78144DFEBB157E24769FE9B7.exe</td><td/><td>C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\PeerCastStation\bin\Release\PeerCastStation.exe</td><td>0</td></row>
-		<row><td>_AA69E5312717424585D1705049E500CF.exe</td><td/><td>C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\PeerCastStation\bin\Debug\PeerCastStation.exe</td><td>0</td></row>
-		<row><td>_B42C857270514CD4A171A33E3D59FB83.exe</td><td/><td>C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\PeerCastStation\bin\Debug\PeerCastStation.exe</td><td>0</td></row>
-		<row><td>_C9A4B7B82CC24B9D88A6884B4999B8C3.exe</td><td/><td>C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\PeerCastStation\bin\Debug\PeerCastStation.exe</td><td>0</td></row>
-		<row><td>_D7BDC35470BE426D917A1EB7C8FB842D.exe</td><td/><td>C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\PeerCastStation\bin\Release\PeerCastStation.exe</td><td>0</td></row>
-		<row><td>_F2C155FD2378425FA0FCA1645AE2507B.exe</td><td/><td>C:\Users\kumaryu\Dropbox\peercaststation\PeerCastStation\PeerCastStation\bin\Debug\PeerCastStation.exe</td><td>0</td></row>
 	</table>
 
 	<table name="IniFile">
