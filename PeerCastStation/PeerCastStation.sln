@@ -125,7 +125,6 @@ Global
 		{5EA68141-AC06-428B-9526-A6835E0CC2B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5EA68141-AC06-428B-9526-A6835E0CC2B2}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AE7F292B-5A30-4944-81B9-BBB4EB2FF6B5}.Debug|Any CPU.ActiveCfg = SingleImage
-		{AE7F292B-5A30-4944-81B9-BBB4EB2FF6B5}.Debug|Any CPU.Build.0 = SingleImage
 		{AE7F292B-5A30-4944-81B9-BBB4EB2FF6B5}.Release|Any CPU.ActiveCfg = SingleImage
 		{AE7F292B-5A30-4944-81B9-BBB4EB2FF6B5}.Release|Any CPU.Build.0 = SingleImage
 	EndGlobalSection
