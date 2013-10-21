@@ -159,6 +159,33 @@ namespace PeerCastStation.FLV
     private int streamIndex = -1;
     private DateTime streamOrigin;
     private FileHeader fileHeader;
+    private Queue<Content> contentsQueue = new Queue<Content>();
+
+    private IList<Content> FlushContents(IList<Content> prev)
+    {
+      if (contentsQueue.Count==0) return prev;
+      var list = new List<Content>();
+      var last = contentsQueue.Dequeue();
+      while (contentsQueue.Count>0) {
+        var cur = contentsQueue.Dequeue();
+        if (last.Stream!=cur.Stream ||
+            last.Position+last.Data.Length!=cur.Position ||
+            last.Data.Length+cur.Data.Length>12*1024) {
+          list.Add(last);
+          last = cur;
+        }
+        else {
+          last = new Content(last.Stream, last.Timestamp, last.Position, last.Data.Concat(cur.Data).ToArray());
+        }
+      }
+      list.Add(last);
+      return prev!=null ? prev.Concat(list).ToArray() : list.ToArray();
+    }
+
+    private bool CheckContentsQueueIsFull()
+    {
+      return contentsQueue.Sum(c => c.Data.Length)>7500;
+    }
 
     public ParsedContent Read(Stream stream)
     {
@@ -205,13 +232,16 @@ namespace PeerCastStation.FLV
                 if (body.IsValidFooter) {
                   read_valid = true;
                   bin = body.Binary;
-                  if (res.Contents==null) res.Contents = new List<Content>();
                   if ((body.IsMetaData || body.IsAVCHeader || body.IsAACHeader) && res.ContentHeader != null) {
                     var conbin = res.ContentHeader.Data.Concat(bin).ToArray();
                     res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, position, conbin);
+                    res.Contents = FlushContents(res.Contents);
                   }
                   else {
-                    res.Contents.Add(new Content(streamIndex, DateTime.Now - streamOrigin, position, bin));
+                    contentsQueue.Enqueue(new Content(streamIndex, DateTime.Now - streamOrigin, position, bin));
+                    if (CheckContentsQueueIsFull()) {
+                      res.Contents = FlushContents(res.Contents);
+                    }
                   }
                   if (body.Type == FLVTag.TagType.Script && OnScriptTag(body, info)) {
                     res.ChannelInfo = new ChannelInfo(info);
@@ -230,7 +260,7 @@ namespace PeerCastStation.FLV
                   streamIndex = Channel.GenerateStreamID();
                   streamOrigin = DateTime.Now;
                   res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, 0, bin);
-                  res.Contents = null;
+                  res.Contents = FlushContents(res.Contents);
                   info.SetChanInfoType("FLV");
                   info.SetChanInfoStreamType("video/x-flv");
                   info.SetChanInfoStreamExt(".flv");
