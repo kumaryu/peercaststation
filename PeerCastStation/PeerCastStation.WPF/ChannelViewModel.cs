@@ -202,6 +202,7 @@ namespace PeerCastStation.WPF
       OnPropertyChanged("Name");
       OnPropertyChanged("Bitrate");
       OnPropertyChanged("ConnectionCount");
+      OnPropertyChanged("IsTrackerSource");
     }
 
     void OnPropertyChanged(string name)
