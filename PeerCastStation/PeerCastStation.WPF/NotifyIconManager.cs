@@ -96,6 +96,7 @@ namespace PeerCastStation.WPF
       var notifyIcon = new NotifyIcon();
       notifyIcon.Icon = Resources.peercaststation_small;
       notifyIcon.ContextMenuStrip = CreateNotifyIconMenu(peerCast);
+      notifyIcon.Text = peerCast.AgentName;
       notifyIcon.Visible = true;
       notifyIcon.DoubleClick += (sender, args) => {
         if (ShowWindowClicked!=null) {
