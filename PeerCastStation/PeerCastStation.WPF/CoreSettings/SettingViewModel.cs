@@ -183,7 +183,14 @@ namespace PeerCastStation.WPF.CoreSettings
     public ListViewModel<OutputListenerViewModel> Ports {
       get {
         ports.Items = peerCast.OutputListeners
-          .Select(listener => new OutputListenerViewModel(listener)).ToArray();
+          .Select(listener => {
+            var viewmodel = new OutputListenerViewModel(listener);
+            viewmodel.PropertyChanged += (sender, args) => {
+              pecaApp.SaveSettings();
+            };
+            return viewmodel;
+          })
+          .ToArray();
         return ports;
       }
     }
@@ -216,16 +223,30 @@ namespace PeerCastStation.WPF.CoreSettings
       get { return new YellowPagesEditViewModel(peerCast); }
     }
 
+    protected override void OnPropertyChanged(string propertyName)
+    {
+      pecaApp.SaveSettings();
+      base.OnPropertyChanged(propertyName);
+    }
+
+    PeerCastApplication pecaApp;
     internal SettingViewModel(PeerCastApplication peca_app)
     {
+      this.pecaApp = peca_app;
       this.peerCast = peca_app.PeerCast;
       otherSetting = new OtherSettingViewModel(peca_app);
 
+      ports.ItemAdding += (sender, e) => {
+        OnPropertyChanged("Ports");
+      };
       ports.ItemRemoving += (sender, e) => {
         peerCast.StopListen(e.Item.Model);
         OnPropertyChanged("Ports");
       };
 
+      yellowPagesList.ItemAdding += (sender, e) => {
+        OnPropertyChanged("YellowPagesList");
+      };
       yellowPagesList.ItemRemoving += (sender, e) => {
         peerCast.RemoveYellowPage(e.Item.YellowPageClient);
         OnPropertyChanged("YellowPagesList");

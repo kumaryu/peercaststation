@@ -29,7 +29,7 @@ namespace PeerCastStation.WPF.Commons
 
     #endregion
 
-    protected void OnPropertyChanged(string propertyName)
+    protected virtual void OnPropertyChanged(string propertyName)
     {
       if (PropertyChanged == null)
         return;

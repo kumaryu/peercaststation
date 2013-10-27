@@ -38,9 +38,9 @@ namespace PeerCastStation.WPF.CoreSettings
     public PeerCastStation.ChannelCleaner.CleanupMode ChannelCleanupMode {
       get { return ChannelCleaner.Mode; }
       set {
-        var old = ChannelCleaner.Mode;
-        if (SetProperty("ChannelCleanupMode", ref old, value)) {
+        if (ChannelCleaner.Mode!=value) {
           ChannelCleaner.Mode = value;
+          OnPropertyChanged("ChannelCleanupMode");
         }
       }
     }
@@ -48,9 +48,9 @@ namespace PeerCastStation.WPF.CoreSettings
     public int ChannelCleanupInactiveLimit {
       get { return ChannelCleaner.InactiveLimit/60000; }
       set {
-        var old = ChannelCleaner.InactiveLimit/60000;
-        if (SetProperty("ChannelCleanupInactiveLimit", ref old, value)) {
+        if (ChannelCleaner.InactiveLimit/60000!=value) {
           ChannelCleaner.InactiveLimit = value * 60000;
+          OnPropertyChanged("ChannelCleanupInactiveLimit");
         }
       }
     }
@@ -124,6 +124,12 @@ namespace PeerCastStation.WPF.CoreSettings
           OnPropertyChanged("IsShowWindowOnStartup");
         }
       }
+    }
+
+    protected override void OnPropertyChanged(string propertyName)
+    {
+      pecaApp.SaveSettings();
+      base.OnPropertyChanged(propertyName);
     }
 
     PeerCastApplication pecaApp;
