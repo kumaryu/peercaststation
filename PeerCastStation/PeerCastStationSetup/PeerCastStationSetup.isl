@@ -2367,8 +2367,8 @@
 		<col key="yes" def="s72">ISProductConfiguration_</col>
 		<col key="yes" def="s72">Property</col>
 		<col def="L255">Value</col>
-		<row><td>Express</td><td>MSIPackageFileName</td><td>PeerCastStation-1.7.0</td></row>
-		<row><td>Express</td><td>SetupFileName</td><td>PeerCastStation-1.7.0</td></row>
+		<row><td>Express</td><td>MSIPackageFileName</td><td>PeerCastStation-1.7.1.0</td></row>
+		<row><td>Express</td><td>SetupFileName</td><td>PeerCastStation-1.7.1.0</td></row>
 	</table>
 
 	<table name="ISRelease">
@@ -4375,7 +4375,7 @@ UwBpAG4AZwBsAGUASQBtAGEAZwBlAAEARQB4AHAAcgBlAHMAcwA=
 		<row><td>PROGRAMFILETOLAUNCHATEND</td><td>[INSTALLDIR]PeerCastStation.プライマリ出力</td><td/></row>
 		<row><td>ProductCode</td><td>{24ED1EEA-3A42-4661-82F0-D0B769B18DD2}</td><td/></row>
 		<row><td>ProductName</td><td>PeerCastStation</td><td/></row>
-		<row><td>ProductVersion</td><td>1.7.0</td><td/></row>
+		<row><td>ProductVersion</td><td>1.7.1.0</td><td/></row>
 		<row><td>ProgressType0</td><td>install</td><td/></row>
 		<row><td>ProgressType1</td><td>Installing</td><td/></row>
 		<row><td>ProgressType2</td><td>installed</td><td/></row>

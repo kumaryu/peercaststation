@@ -7,6 +7,24 @@
     <language>ja</language>      
 
     <item>
+      <title>Version 1.7.1 (2013年10月27日開発版)</title>
+      <description>
+        <h3>1.7.1 (2013年10月27日開発版)</h3>
+        <ul>
+          <li>GUIでトラッカー直下でなくてもチャンネルが太字で表示されてしまうのを修正しました</li>
+          <li>GUIでポート未開放でもチャンネル一覧の状態が×にならなかったのを修正しました</li>
+          <li>GUIで設定を変更した際に即座に保存するようにしました</li>
+          <li>チャンネル切断時などの通知表示を5秒に短縮しました</li>
+          <li>タスクトレイのアイコンにカーソルを合わせた時に名前が出るようにしました</li>
+          <li>LANの操作可能ポートがない時にタスクトレイからHTML UIやヘルプが表示できなかったのを修正しました</li>
+        </ul>
+      </description>
+      <pubDate>Sun, 27 Oct 2013 23:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-1.7.1.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-1.7.1.zip" sparkle:version="1.7.1" length="1700062" type="application/octet-stream" />
+    </item>
+
+    <item>
       <title>Version 1.7.0 (2013年10月21日開発版)</title>
       <description>
         <h3>1.7.0 (2013年10月21日開発版)</h3>
