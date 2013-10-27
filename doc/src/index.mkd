@@ -41,6 +41,17 @@ Windows以外ではUIが出ないですが、ポートが開ければWebブラ�
 --------
 {% endcase %}
 
+### 1.6.1 (2013年10月27日版)
+{% if site.target == 'site' %}
+[ダウンロード](http://www.pecastation.org/files/PeerCastStation-1.6.1.zip)
+{% endif %}
+
+FLV配信がPeerCastのVPやIMでもうまく視聴・リレーできるように調整してみました。
+
+* FLV配信をしたときにPeerCastStationでないと視聴・リレーがぷちぷち切れがちになるのを対策しました。FLV配信をする場合は1.6.1以降で行なってください
+* GUIで設定を変更した際に即座に保存するようにしました
+* 自分で配信しているチャンネルに対してリレーリクエストを出すと落ちるのを修正しました
+
 ### 1.6.0 (2013年10月14日版)
 {% if site.target == 'site' %}
 [ダウンロード](http://www.pecastation.org/files/PeerCastStation-1.6.0.zip)

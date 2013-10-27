@@ -7,6 +7,22 @@
     <language>ja</language>      
 
     <item>
+      <title>Version 1.6.1 (2013年10月27日版)</title>
+      <description>
+        <h3>1.6.1 (2013年10月27日版)</h3>
+        <p>FLV配信がPeerCastのVPやIMでもうまく視聴・リレーできるように調整してみました。</p>
+        <ul>
+          <li>FLV配信をしたときにPeerCastStationでないと視聴・リレーがぷちぷち切れがちになるのを対策しました。FLV配信をする場合は1.6.1以降で行なってください</li>
+          <li>GUIで設定を変更した際に即座に保存するようにしました</li>
+          <li>自分で配信しているチャンネルに対してリレーリクエストを出すと落ちるのを修正しました</li>
+        </ul>
+      </description>
+      <pubDate>Sun, 27 Oct 2013 23:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-1.6.1.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-1.6.1.zip" sparkle:version="1.6.0" length="1698449" type="application/octet-stream" />
+    </item>
+
+    <item>
       <title>Version 1.6.0 (2013年10月14日版)</title>
       <description>
         <h3>1.6.0 (2013年10月14日版)</h3>
