@@ -138,17 +138,18 @@ namespace PeerCastStation.WPF
 
     public ConnectionStatus ConnectionStatus {
       get {
-        if (Model.IsRelayFull) {
+        if (!Model.PeerCast.IsFirewalled.HasValue ||
+             Model.PeerCast.IsFirewalled.Value) {
+          if (Model.LocalRelays>0) {
+            return ConnectionStatus.FirewalledRelaying;
+          }
+          else {
+            return ConnectionStatus.Firewalled;
+          }
+        }
+        else if (Model.IsRelayFull) {
           if (Model.LocalRelays>0) {
             return ConnectionStatus.RelayFull;
-          }
-          else if (!Model.PeerCast.IsFirewalled.HasValue || Model.PeerCast.IsFirewalled.Value) {
-            if (Model.LocalRelays>0) {
-              return ConnectionStatus.FirewalledRelaying;
-            }
-            else {
-              return ConnectionStatus.Firewalled;
-            }
           }
           else {
             return ConnectionStatus.NotRelayable;
