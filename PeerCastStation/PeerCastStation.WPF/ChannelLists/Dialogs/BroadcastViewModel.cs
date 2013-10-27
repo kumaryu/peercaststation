@@ -263,6 +263,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
                     .Concat(settings.BroadcastHistory)
                     .Take(20)
                     .ToArray();
+        PeerCastApplication.Current.SaveSettings();
       }
     }
 

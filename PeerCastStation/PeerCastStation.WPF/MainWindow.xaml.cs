@@ -76,6 +76,13 @@ namespace PeerCastStation.WPF
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
+      base.OnClosing(e);
+      e.Cancel = true;
+      Visibility = Visibility.Hidden;
+    }
+
+    protected override void OnLocationChanged(EventArgs e)
+    {
       var settings = PeerCastStation.Core.PeerCastApplication.Current.Settings.Get<WPFSettings>();
       var bounds = RestoreBounds;
       if (!bounds.IsEmpty) {
@@ -84,9 +91,22 @@ namespace PeerCastStation.WPF
         settings.WindowWidth  = bounds.Width;
         settings.WindowHeight = bounds.Height;
       }
-      base.OnClosing(e);
-      e.Cancel = true;
-      Visibility = Visibility.Hidden;
+      PeerCastStation.Core.PeerCastApplication.Current.SaveSettings();
+      base.OnLocationChanged(e);
+    }
+
+    protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
+    {
+      var settings = PeerCastStation.Core.PeerCastApplication.Current.Settings.Get<WPFSettings>();
+      var bounds = RestoreBounds;
+      if (!bounds.IsEmpty) {
+        settings.WindowLeft   = bounds.Left;
+        settings.WindowTop    = bounds.Top;
+        settings.WindowWidth  = bounds.Width;
+        settings.WindowHeight = bounds.Height;
+      }
+      PeerCastStation.Core.PeerCastApplication.Current.SaveSettings();
+      base.OnRenderSizeChanged(sizeInfo);
     }
 
     private void VersionInfoButton_Click(object sender, RoutedEventArgs e)
