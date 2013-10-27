@@ -147,7 +147,9 @@ namespace PeerCastStation.WPF
       item.Text = "ヘルプ(&H)";
       item.ToolTipText = "PeerCastStationのヘルプを表示します";
       item.Click += (sender, e) => {
-        var listener = peerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.Interface);
+        var listener =
+          peerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.Interface) ??
+          peerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.All);
         if (listener != null) {
           var endpoint = listener.LocalEndPoint;
           var host = endpoint.Address.Equals(System.Net.IPAddress.Any) ?
@@ -165,7 +167,9 @@ namespace PeerCastStation.WPF
       item.Text = "HTML UIを表示(&U)";
       item.ToolTipText = "PeerCastStationのブラウザインターフェースを表示します";
       item.Click += (sender, e) => {
-        var listener = peerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.Interface);
+        var listener = 
+          peerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.Interface) ??
+          peerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.All);
         if (listener != null) {
           var endpoint = listener.LocalEndPoint;
           var host = endpoint.Address.Equals(System.Net.IPAddress.Any) ?
