@@ -209,12 +209,19 @@ namespace PeerCastStation.Core
     /// <param name="channel_id">チャンネルID</param>
     /// <param name="channel_info">チャンネル情報</param>
     /// <param name="source">配信ソース</param>
+    /// <param name="source_stream_factory">配信ソースからコンテンツを取得するISourceStreamFactory</param>
     /// <param name="content_reader_factory">配信ソースのコンテンツを解析するIContentReaderFactory</param>
     /// <returns>Channelのインスタンス</returns>
-    public Channel BroadcastChannel(IYellowPageClient yp, Guid channel_id, ChannelInfo channel_info, Uri source, IContentReaderFactory content_reader_factory)
+    public Channel BroadcastChannel(
+      IYellowPageClient     yp,
+      Guid                  channel_id,
+      ChannelInfo           channel_info,
+      Uri                   source,
+      ISourceStreamFactory  source_stream_factory,
+      IContentReaderFactory content_reader_factory)
     {
       logger.Debug("Broadcasting channel {0} from {1}", channel_id.ToString("N"), source);
-      var channel = new BroadcastChannel(this, channel_id, channel_info, content_reader_factory);
+      var channel = new BroadcastChannel(this, channel_id, channel_info, source_stream_factory, content_reader_factory);
       Utils.ReplaceCollection(ref channels, orig => {
         var new_collection = new List<Channel>(orig);
         new_collection.Add(channel);

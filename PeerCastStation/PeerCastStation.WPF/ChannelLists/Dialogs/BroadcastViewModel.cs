@@ -230,11 +230,15 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
         channelName,
         genre,
         source.ToString());
+      var source_stream = peerCast.SourceStreamFactories
+        .Where(sstream => (sstream.Type & SourceStreamType.Broadcast)!=0)
+        .FirstOrDefault(sstream => sstream.Scheme==source.Scheme);
       var channel = peerCast.BroadcastChannel(
         yellowPage,
         channel_id,
         channelInfo,
         source,
+        source_stream,
         contentReaderFactory);
       if (channel!=null) {
         channel.ChannelTrack = channelTrack;

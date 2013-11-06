@@ -29,8 +29,10 @@ namespace PeerCastStation.Core
       this.PeerCast = peercast;
     }
 
-    public abstract string Name { get; }
-    public abstract string Scheme { get; }
+    public abstract string           Name { get; }
+    public abstract string           Scheme { get; }
+    public abstract SourceStreamType Type { get; }
+    public abstract Uri              DefaultUri { get; }
     public virtual ISourceStream Create(Channel channel, Uri tracker)
     {
       throw new NotImplementedException();
@@ -286,6 +288,8 @@ namespace PeerCastStation.Core
     {
       EventQueue.Enqueue(new StartEvent(source_uri));
     }
+
+    public abstract SourceStreamType Type { get; }
 
     public SourceStreamStatus Status
     {

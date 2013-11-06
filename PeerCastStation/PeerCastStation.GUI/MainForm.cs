@@ -889,14 +889,20 @@ namespace PeerCastStation.GUI
           dlg.ChannelInfo.Name,
           dlg.ChannelInfo.Genre,
           dlg.StreamSource.ToString());
-        var channel = peerCast.BroadcastChannel(
-          dlg.YellowPage,
-          channel_id,
-          dlg.ChannelInfo,
-          dlg.StreamSource,
-          dlg.ContentReaderFactory);
-        if (channel!=null) {
-          channel.ChannelTrack = dlg.ChannelTrack;
+        var source_stream_factory = peerCast.SourceStreamFactories
+          .Where(sstream => (sstream.Type & SourceStreamType.Broadcast)!=0)
+          .FirstOrDefault(factory => factory.Scheme==dlg.StreamSource.Scheme);
+        if (source_stream_factory!=null) {
+          var channel = peerCast.BroadcastChannel(
+            dlg.YellowPage,
+            channel_id,
+            dlg.ChannelInfo,
+            dlg.StreamSource,
+            source_stream_factory,
+            dlg.ContentReaderFactory);
+          if (channel!=null) {
+            channel.ChannelTrack = dlg.ChannelTrack;
+          }
         }
       }
     }

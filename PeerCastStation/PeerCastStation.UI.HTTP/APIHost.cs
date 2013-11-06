@@ -567,6 +567,20 @@ namespace PeerCastStation.UI.HTTP
         }).ToArray());
       }
 
+      [RPCMethod("getSourceStreams")]
+      private JArray GetSourceStreams()
+      {
+        return new JArray(PeerCast.SourceStreamFactories.Select(sstream => {
+          var res = new JObject();
+          res["name"]       = sstream.Name;
+          res["desc"]       = sstream.Name;
+          res["scheme"]     = sstream.Scheme;
+          res["type"]       = (int)sstream.Type;
+          res["defaultUri"] = sstream.DefaultUri!=null ? sstream.DefaultUri.ToString() : "";
+          return res;
+        }).ToArray());
+      }
+
       [RPCMethod("getYellowPageProtocols")]
       private JArray GetYellowPageProtocols()
       {
@@ -765,7 +779,13 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("broadcastChannel")]
-      private string BroadcastChannel(int? yellowPageId, string sourceUri, string contentReader, JObject info, JObject track)
+      private string BroadcastChannel(
+        int?    yellowPageId,
+        string  sourceUri,
+        string  contentReader,
+        JObject info,
+        JObject track,
+        string  sourceStream=null)
       {
         IYellowPageClient yp = null;
         if (yellowPageId.HasValue) {
@@ -782,6 +802,15 @@ namespace PeerCastStation.UI.HTTP
         }
         var content_reader = PeerCast.ContentReaderFactories.FirstOrDefault(reader => reader.Name==contentReader);
         if (content_reader==null) throw new RPCError(RPCErrorCode.InvalidParams, "Content reader not found");
+        var source_stream = PeerCast.SourceStreamFactories
+          .Where(sstream => (sstream.Type & SourceStreamType.Broadcast)!=0)
+          .FirstOrDefault(sstream => sstream.Name==sourceStream);
+        if (source_stream==null) {
+          source_stream = PeerCast.SourceStreamFactories
+            .Where(sstream => (sstream.Type & SourceStreamType.Broadcast)!=0)
+            .FirstOrDefault(sstream => sstream.Scheme==source.Scheme);
+        }
+        if (source_stream==null) throw new RPCError(RPCErrorCode.InvalidParams, "Source stream not found");
 
         var new_info = new AtomCollection();
         if (info!=null) {
@@ -800,7 +829,7 @@ namespace PeerCastStation.UI.HTTP
           channel_info.Name,
           channel_info.Genre ?? "",
           source.ToString());
-        var channel = PeerCast.BroadcastChannel(yp, channel_id, channel_info, source, content_reader);
+        var channel = PeerCast.BroadcastChannel(yp, channel_id, channel_info, source, source_stream, content_reader);
         if (track!=null) {
           var new_track = new AtomCollection(channel.ChannelTrack.Extra);
           if (track["name"]!=null)    new_track.SetChanTrackTitle((string)track["name"]);
