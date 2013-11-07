@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Input;
 using PeerCastStation.Core;
@@ -43,6 +44,10 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       get { return selectedBroadcastHistory; }
       set {
         if (value!=null) {
+          if (value.StreamType!=null) {
+            SelectedSourceStream = SourceStreams.FirstOrDefault(t => t.Name==value.StreamType);
+          }
+          ContentType = contentTypes.FirstOrDefault(t => t.Name==value.ContentType);
           StreamUrl   = value.StreamUrl;
           Bitrate     = value.Bitrate==0 ? null : value.Bitrate.ToString();
           ContentType = contentTypes.FirstOrDefault(t => t.Name==value.ContentType);
@@ -64,6 +69,21 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
           TrackGenre  = value.TrackGenre;
           TrackUrl    = value.TrackUrl;
           selectedBroadcastHistory = value;
+        }
+      }
+    }
+
+    public IEnumerable<ISourceStreamFactory> SourceStreams {
+      get { return peerCast.SourceStreamFactories.Where(sstream => (sstream.Type & SourceStreamType.Broadcast)!=0); }
+    }
+    private ISourceStreamFactory selectedSourceStream;
+    public ISourceStreamFactory SelectedSourceStream {
+      get { return selectedSourceStream; }
+      set {
+        if (SetProperty("SelectedSourceStream", ref selectedSourceStream, value) &&
+            value!=null &&
+            value.DefaultUri!=null) {
+          StreamUrl = value.DefaultUri.ToString();
         }
       }
     }
@@ -206,14 +226,14 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
     public BroadcastViewModel(PeerCast peerCast)
     {
       this.peerCast = peerCast;
+      start = new Command(OnBroadcast, () => CanBroadcast(StreamSource, ContentType, channelName));
       contentTypes = peerCast.ContentReaderFactories.ToArray();
 
       yellowPages = new YellowPageItem[] { new YellowPageItem("掲載なし", null) }
         .Concat(peerCast.YellowPages.Select(yp => new YellowPageItem(yp))).ToArray();
       if (contentTypes.Length > 0) contentType = contentTypes[0];
 
-      start = new Command(OnBroadcast,
-        () => CanBroadcast(StreamSource, ContentType, channelName));
+      this.SelectedSourceStream = SourceStreams.FirstOrDefault();
     }
 
     private void OnBroadcast()
@@ -230,9 +250,11 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
         channelName,
         genre,
         source.ToString());
-      var source_stream = peerCast.SourceStreamFactories
-        .Where(sstream => (sstream.Type & SourceStreamType.Broadcast)!=0)
-        .FirstOrDefault(sstream => sstream.Scheme==source.Scheme);
+      var source_stream =
+        selectedSourceStream ??
+        peerCast.SourceStreamFactories
+          .Where(sstream => (sstream.Type & SourceStreamType.Broadcast)!=0)
+          .FirstOrDefault(sstream => sstream.Scheme==source.Scheme);
       var channel = peerCast.BroadcastChannel(
         yellowPage,
         channel_id,
@@ -246,6 +268,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
 
       var info = new BroadcastInfo {
         StreamUrl   = this.StreamUrl,
+        StreamType  = this.SelectedSourceStream!=null ? this.SelectedSourceStream.Name : null,
         Bitrate     = this.bitrate.HasValue ? this.bitrate.Value : 0,
         ContentType = this.ContentType.Name,
         YellowPage  = this.YellowPage!=null ? this.YellowPage.Name : null,

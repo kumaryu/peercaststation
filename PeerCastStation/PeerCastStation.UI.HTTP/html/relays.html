@@ -225,52 +225,11 @@
       </div>
       <div class="modal-body">
         <table>
-          <tr><th>ソースURL</th>          <td><input type="text" name="sourceUrl"       data-bind="value:source          "></td></tr>
+          <tr><th>ソース</th>            <td><select data-bind="options:sourceStreams, optionsText: 'desc', value:sourceStream"></select></td></tr>
+          <tr><th>ストリームURL</th>      <td><input type="text" name="sourceUrl"       data-bind="value:source          "></td></tr>
           <tr><th>ビットレート</th>       <td><input type="text" name="infoBitrate"     data-bind="value:infoBitrate     "></td></tr>
-          <tr><th>ストリームタイプ</th>   <td>
-            <select name="infoContentType" data-bind="options:contentTypes, optionsText: 'desc', value:contentType">
-            </select>
-          </td></tr>
-          <tr><th>掲載YP</th>             <td>
-            <select name="yellowPage" data-bind="options: yellowPages, optionsText: 'name', value:yellowPage">
-            </select>
-          </td></tr>
-          <tr><th>チャンネル名</th>       <td><input type="text" name="infoName"        data-bind="value:infoName        "></td></tr>
-          <tr><th>ジャンル</th>           <td><input type="text" name="infoGenre"       data-bind="value:infoGenre       "></td></tr>
-          <tr><th>概要</th>               <td><input type="text" name="infoDesc"        data-bind="value:infoDesc        "></td></tr>
-          <tr><th>配信者コメント</th>     <td><input type="text" name="infoComment"     data-bind="value:infoComment     "></td></tr>
-          <tr><th>コンタクトURL</th>      <td><input type="text" name="infoUrl"         data-bind="value:infoUrl         "></td></tr>
-          <tr><th colspan='2'>配信中のトラック情報</th></tr>
-          <tr><th>タイトル</th>           <td><input type="text" name="trackName"       data-bind="value:trackName       "></td></tr>
-          <tr><th>アルバム</th>           <td><input type="text" name="trackAlbum"      data-bind="value:trackAlbum      "></td></tr>
-          <tr><th>アーティスト</th>       <td><input type="text" name="trackCreator"    data-bind="value:trackCreator    "></td></tr>
-          <tr><th>ジャンル</th>           <td><input type="text" name="trackGenre"      data-bind="value:trackGenre      "></td></tr>
-          <tr><th>URL</th>                <td><input type="text" name="trackUrl"        data-bind="value:trackUrl        "></td></tr>
-        </table>
-      </div>
-      <div class="modal-footer">
-        <a data-dismiss="modal" class="btn">閉じる</a>
-        <a href="#" data-bind="click:onBroadcast" class="btn btn-primary">配信開始</a>
-      </div>
-    </div>
-
-    <div id="broadcastDialog" class="modal" style="display: none">
-      <div class="modal-header">
-        <a class="close" data-dismiss="modal">×</a>
-        <h3>配信</h3>
-      </div>
-      <div class="modal-body">
-        <table>
-          <tr><th>ソースURL</th>          <td><input type="text" name="sourceUrl"       data-bind="value:source          "></td></tr>
-          <tr><th>ビットレート</th>       <td><input type="text" name="infoBitrate"     data-bind="value:infoBitrate     "></td></tr>
-          <tr><th>ストリームタイプ</th>   <td>
-            <select name="infoContentType" data-bind="options:contentTypes, optionsText: 'desc', value:contentType">
-            </select>
-          </td></tr>
-          <tr><th>掲載YP</th>             <td>
-            <select name="yellowPage" data-bind="options: yellowPages, optionsText: 'name', value:yellowPage">
-            </select>
-          </td></tr>
+          <tr><th>ストリームタイプ</th>   <td><select data-bind="options:contentTypes, optionsText: 'desc', value:contentType"></select></td></tr>
+          <tr><th>掲載YP</th>            <td><select data-bind="options: yellowPages, optionsText: 'name', value:yellowPage"></select></td></tr>
           <tr><th>チャンネル名</th>       <td><input type="text" name="infoName"        data-bind="value:infoName        "></td></tr>
           <tr><th>ジャンル</th>           <td><input type="text" name="infoGenre"       data-bind="value:infoGenre       "></td></tr>
           <tr><th>概要</th>               <td><input type="text" name="infoDesc"        data-bind="value:infoDesc        "></td></tr>

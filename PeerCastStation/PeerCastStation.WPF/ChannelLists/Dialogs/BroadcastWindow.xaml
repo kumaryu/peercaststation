@@ -60,11 +60,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Label    Grid.Column="0" Grid.Row="0" Content="ストリームURL:"/>
-        <TextBox  Grid.Column="1" Grid.Row="0" Text="{Binding StreamUrl, UpdateSourceTrigger=PropertyChanged}"/>
-        <Label    Grid.Column="0" Grid.Row="1" Content="ビットレート:"/>
-        <Grid Grid.Column="1" Grid.Row="1">
+        <Label    Grid.Column="0" Grid.Row="0" Content="ソース:"/>
+        <ComboBox Grid.Column="1" Grid.Row="0"
+                  ItemsSource="{Binding SourceStreams}"
+                  SelectedItem="{Binding SelectedSourceStream}"
+                  DisplayMemberPath="Name"/>
+        <Label    Grid.Column="0" Grid.Row="1" Content="ストリームURL:"/>
+        <TextBox  Grid.Column="1" Grid.Row="1" Text="{Binding StreamUrl, UpdateSourceTrigger=PropertyChanged}"/>
+        <Label    Grid.Column="0" Grid.Row="2" Content="ビットレート:"/>
+        <Grid Grid.Column="1" Grid.Row="2">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
@@ -74,13 +80,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           </ComboBox>
           <TextBlock Grid.Column="1" Text="kbps" VerticalAlignment="Center"/>
         </Grid>
-        <Label    Grid.Column="0" Grid.Row="2" Content="タイプ:"/>
-        <ComboBox Grid.Column="1" Grid.Row="2"
+        <Label    Grid.Column="0" Grid.Row="3" Content="タイプ:"/>
+        <ComboBox Grid.Column="1" Grid.Row="3"
                   ItemsSource="{Binding ContentTypes}"
                   SelectedItem="{Binding ContentType}"
                   DisplayMemberPath="Name"/>
-        <Label    Grid.Column="0" Grid.Row="3" Content="掲載YP:"/>
-        <ComboBox Grid.Column="1" Grid.Row="3"
+        <Label    Grid.Column="0" Grid.Row="4" Content="掲載YP:"/>
+        <ComboBox Grid.Column="1" Grid.Row="4"
                   ItemsSource="{Binding YellowPages}"
                   SelectedValue="{Binding YellowPage}"
                   SelectedValuePath="YellowPageClient"

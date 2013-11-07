@@ -1,5 +1,11 @@
 ﻿
 PeerCast = {
+  SourceStreamType: {
+    None: 0,
+    Broadcast: 1,
+    Relay: 2,
+    All: 0x7FFFFFFF
+  },
   OutputStreamType: {
     None: 0,
     Play: 1,
@@ -75,6 +81,7 @@ PeerCast = {
     this.postRequest('getChannelRelayTree', { channelId: channelId }, completed);
   },
   getContentReaders:      function(completed) { this.postRequest('getContentReaders',      null, completed); },
+  getSourceStreams:       function(completed) { this.postRequest('getSourceStreams',       null, completed); },
   getYellowPageProtocols: function(completed) { this.postRequest('getYellowPageProtocols', null, completed); },
   getYellowPages:         function(completed) { this.postRequest('getYellowPages',         null, completed); },
   addYellowPage: function(protocol, name, uri, completed) {
@@ -122,10 +129,11 @@ PeerCast = {
   removeListener: function(id, completed) {
     this.postRequest('removeListener', { listenerId: id }, completed);
   },
-  broadcastChannel: function(yellowPageId, sourceUri, contentReader, info, track, completed) {
+  broadcastChannel: function(yellowPageId, sourceUri, sourceStream, contentReader, info, track, completed) {
     this.postRequest('broadcastChannel', {
       yellowPageId: yellowPageId,
       sourceUri: sourceUri,
+      sourceStream: sourceStream,
       contentReader: contentReader,
       info: info,
       track: track

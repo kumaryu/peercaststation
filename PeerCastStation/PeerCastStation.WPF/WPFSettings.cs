@@ -49,6 +49,7 @@ namespace PeerCastStation.WPF
       }
     }
 
+    public string StreamType  { get; set; }
     public string StreamUrl   { get; set; }
     public int    Bitrate     { get; set; }
     public string ContentType { get; set; }
@@ -68,7 +69,8 @@ namespace PeerCastStation.WPF
     {
       if (obj==null || GetType()!=obj.GetType()) return false;
       var x = (BroadcastInfo)obj;
-      return StreamUrl   == x.StreamUrl &&
+      return StreamUrl   == x.StreamUrl   &&
+             StreamType  == x.StreamType  &&
              Bitrate     == x.Bitrate     &&
              ContentType == x.ContentType &&
              YellowPage  == x.YellowPage  &&
@@ -87,6 +89,7 @@ namespace PeerCastStation.WPF
     public override int GetHashCode()
     {
       return (int)(new object[] {
+        StreamType,
         StreamUrl,
         Bitrate,
         ContentType,

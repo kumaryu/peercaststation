@@ -82,6 +82,7 @@ var BroadcastDialog = new function() {
     ko.applyBindings(self, dialog.get(0));
   });
 
+  self.sourceStream    = ko.observable(null);
   self.source          = ko.observable("");
   self.yellowPage      = ko.observable(null);
   self.contentType     = ko.observable(null);
@@ -98,6 +99,12 @@ var BroadcastDialog = new function() {
   self.trackAlbum      = ko.observable("");
   self.trackUrl        = ko.observable("");
 
+  self.sourceStream.subscribe(function (value) {
+    if (value!=null) {
+      self.source(value.defaultUri);
+    }
+  });
+
   self.yellowPages     = ko.observableArray([
     {
       yellowPageId: null,
@@ -106,15 +113,25 @@ var BroadcastDialog = new function() {
       protocol:     null
     }
   ]);
-  self.contentTypes    = ko.observableArray();
   PeerCast.getYellowPages(function(result, error) {
     if (!error) {
       self.yellowPages.push.apply(self.yellowPages, result);
     }
   });
+  self.contentTypes    = ko.observableArray();
   PeerCast.getContentReaders(function(result, error) {
     if (!error) {
       self.contentTypes.push.apply(self.contentTypes, result);
+    }
+  });
+  self.sourceStreams  = ko.observableArray();
+  PeerCast.getSourceStreams(function(result, error) {
+    if (!error) {
+      for (var i in result) {
+        if ((result[i].type & PeerCast.SourceStreamType.Broadcast)!=0) {
+          self.sourceStreams.push(result[i]);
+        }
+      }
     }
   });
 
@@ -139,10 +156,12 @@ var BroadcastDialog = new function() {
       url:         self.trackUrl()
     };
     var yellowPageId  = self.yellowPage()  ? self.yellowPage().yellowPageId : null;
+    var sourceStream = self.sourceStream() ? self.sourceStream().name       : null;
     var contentReader = self.contentType() ? self.contentType().name        : null;
     PeerCast.broadcastChannel(
         yellowPageId,
         self.source(),
+        sourceStream,
         contentReader,
         info,
         track,
