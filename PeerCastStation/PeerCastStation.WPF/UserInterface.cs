@@ -47,66 +47,41 @@ namespace PeerCastStation.WPF
     private AppCastReader versionChecker;
     override protected void OnStart()
     {
-      notifyIconThread = new Thread(() =>
-      {
-#if !DEBUG
-        try
-#endif
-        {
-          notifyIconManager = new NotifyIconManager(Application.PeerCast);
-          notifyIconManager.CheckVersionClicked += (sender, e) => versionChecker.CheckVersion();
-          notifyIconManager.QuitClicked         += (sender, e) => Application.Stop();
-          notifyIconManager.ShowWindowClicked   += (sender, e) => {
-            if (mainWindow!=null) {
-              mainWindow.Dispatcher.Invoke(new Action(() => {
-                mainWindow.Show();
-                if (mainWindow.WindowState==WindowState.Minimized) {
-                  mainWindow.WindowState = WindowState.Normal;
-                }
-                mainWindow.Activate();
-              }));
-            }
-          };
-          versionChecker = new AppCastReader(
-            new Uri(Settings.Default.UpdateURL, UriKind.Absolute),
-            Settings.Default.CurrentVersion);
-          versionChecker.NewVersionFound += (sender, e) => {
-            notifyIconManager.NewVersionInfo = e.VersionDescription;
-          };
-          versionChecker.CheckVersion();
-          notifyIconManager.Run();
-        }
-#if !DEBUG
-        catch (Exception e) {
-          logger.Fatal("Unhandled exception");
-          logger.Fatal(e);
-          throw;
-        }
-#endif
+      notifyIconThread = new Thread(() => {
+        notifyIconManager = new NotifyIconManager(Application.PeerCast);
+        notifyIconManager.CheckVersionClicked += (sender, e) => versionChecker.CheckVersion();
+        notifyIconManager.QuitClicked         += (sender, e) => Application.Stop();
+        notifyIconManager.ShowWindowClicked   += (sender, e) => {
+          if (mainWindow!=null) {
+            mainWindow.Dispatcher.Invoke(new Action(() => {
+              mainWindow.Show();
+              if (mainWindow.WindowState==WindowState.Minimized) {
+                mainWindow.WindowState = WindowState.Normal;
+              }
+              mainWindow.Activate();
+            }));
+          }
+        };
+        versionChecker = new AppCastReader(
+          new Uri(Settings.Default.UpdateURL, UriKind.Absolute),
+          Settings.Default.CurrentVersion);
+        versionChecker.NewVersionFound += (sender, e) => {
+          notifyIconManager.NewVersionInfo = e.VersionDescription;
+        };
+        versionChecker.CheckVersion();
+        notifyIconManager.Run();
       });
       notifyIconThread.SetApartmentState(ApartmentState.STA);
       notifyIconThread.Start();
 
       mainThread = new Thread(() => {
-#if !DEBUG
-        try
-#endif
-        {
-          var app = new Application();
-          viewModel = new MainViewModel(Application);
-          var settings = Application.Settings.Get<WPFSettings>();
-          mainWindow = new MainWindow(viewModel);
-          if (settings.ShowWindowOnStartup) mainWindow.Show();
-          app.Run();
-          viewModel.Dispose();
-        }
-#if !DEBUG
-        catch (Exception e) {
-          logger.Fatal("Unhandled exception");
-          logger.Fatal(e);
-          throw;
-        }
-#endif
+        var app = new Application();
+        viewModel = new MainViewModel(Application);
+        var settings = Application.Settings.Get<WPFSettings>();
+        mainWindow = new MainWindow(viewModel);
+        if (settings.ShowWindowOnStartup) mainWindow.Show();
+        app.Run();
+        viewModel.Dispose();
       });
       mainThread.Name = "WPF UI Thread";
       mainThread.SetApartmentState(ApartmentState.STA);
