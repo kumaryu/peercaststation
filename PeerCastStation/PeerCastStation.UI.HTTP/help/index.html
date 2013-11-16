@@ -50,29 +50,30 @@
 <li><a href='#section'>動作環境とインストール方法</a></li>
 <li><a href='#section-1'>問題の報告・要望の連絡先について</a></li>
 <li><a href='#section-2'>更新履歴</a></li>
-<li><a href='#section-3'>1.7.1 (2013年10月27日開発版)</a></li>
-<li><a href='#section-6'>1.6.0 (2013年10月14日版)</a></li>
-<li><a href='#section-7'>1.5.3 (2013年9月25日版)</a></li>
-<li><a href='#section-8'>1.5.2 (2013年9月8日版)</a></li>
-<li><a href='#section-9'>1.5.1 (2013年9月7日版)</a></li>
-<li><a href='#section-10'>1.5.0 (2013年9月4日版)</a></li>
-<li><a href='#section-11'>1.4.2 (2013年7月13日版)</a></li>
-<li><a href='#section-12'>1.4.1 (2013年6月19日版)</a></li>
-<li><a href='#section-13'>1.4.0 (2013年5月29日版)</a></li>
-<li><a href='#section-14'>1.3.2 (2013年5月8日版)</a></li>
-<li><a href='#section-15'>1.3.1 (2013年5月5日版)</a></li>
-<li><a href='#section-16'>1.3.0 (2013年5月4日版)</a></li>
-<li><a href='#section-17'>1.2.1 (2013年3月29日版)</a></li>
-<li><a href='#section-18'>1.2.0 (2013年2月28日版)</a></li>
-<li><a href='#section-19'>1.1.0 (2013年1月29日版)</a></li>
-<li><a href='#section-20'>1.0.0 (2012年12月31日版)</a></li>
-<li><a href='#section-21'>0.9.0 (2012年11月29日版)</a></li>
-<li><a href='#section-22'>0.8.1 (2012年10月29日版)</a></li>
-<li><a href='#section-23'>0.8.0 きゃすけっと2012秋版</a></li>
-<li><a href='#section-24'>0.7.0 きゃすけっと2012春版</a></li>
-<li><a href='#section-25'>0.6.1</a></li>
-<li><a href='#section-26'>0.6.0</a></li>
-<li><a href='#section-27'>ソース・ライセンス</a></li>
+<li><a href='#section-3'>1.7.2 (2013年11月17日開発版)</a></li>
+<li><a href='#section-6'>1.6.1 (2013年10月27日版)</a></li>
+<li><a href='#section-7'>1.6.0 (2013年10月14日版)</a></li>
+<li><a href='#section-8'>1.5.3 (2013年9月25日版)</a></li>
+<li><a href='#section-9'>1.5.2 (2013年9月8日版)</a></li>
+<li><a href='#section-10'>1.5.1 (2013年9月7日版)</a></li>
+<li><a href='#section-11'>1.5.0 (2013年9月4日版)</a></li>
+<li><a href='#section-12'>1.4.2 (2013年7月13日版)</a></li>
+<li><a href='#section-13'>1.4.1 (2013年6月19日版)</a></li>
+<li><a href='#section-14'>1.4.0 (2013年5月29日版)</a></li>
+<li><a href='#section-15'>1.3.2 (2013年5月8日版)</a></li>
+<li><a href='#section-16'>1.3.1 (2013年5月5日版)</a></li>
+<li><a href='#section-17'>1.3.0 (2013年5月4日版)</a></li>
+<li><a href='#section-18'>1.2.1 (2013年3月29日版)</a></li>
+<li><a href='#section-19'>1.2.0 (2013年2月28日版)</a></li>
+<li><a href='#section-20'>1.1.0 (2013年1月29日版)</a></li>
+<li><a href='#section-21'>1.0.0 (2012年12月31日版)</a></li>
+<li><a href='#section-22'>0.9.0 (2012年11月29日版)</a></li>
+<li><a href='#section-23'>0.8.1 (2012年10月29日版)</a></li>
+<li><a href='#section-24'>0.8.0 きゃすけっと2012秋版</a></li>
+<li><a href='#section-25'>0.7.0 きゃすけっと2012春版</a></li>
+<li><a href='#section-26'>0.6.1</a></li>
+<li><a href='#section-27'>0.6.0</a></li>
+<li><a href='#section-28'>ソース・ライセンス</a></li>
           </ul>
         </div>
         <div class="span9">
@@ -104,31 +105,39 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
 
 <h2 id="section-2">更新履歴</h2>
 
-<h3 id="section-3">1.7.1 (2013年10月27日開発版)</h3>
+<h3 id="section-3">1.7.2 (2013年11月17日開発版)</h3>
 
-<h4 id="section-4">1.7.0から1.7.1への変更点</h4>
+<h4 id="section-4">1.7.1から1.7.2への変更点</h4>
 <ul>
-  <li>GUIでトラッカー直下でなくてもチャンネルが太字で表示されてしまうのを修正しました</li>
+  <li>落ちた際に例外のログを書き出すようにしました。
+通常はC:\Users\(ユーザー名)\AppData\Roaming\PeerCastStation\exception.logに書き出されます。
+落ちた場合の報告にはこのファイルの内容を記載してもらうと解析が進みますのでお願いします</li>
+</ul>
+
+<h4 id="section-5">1.6.1から1.7.1への変更点</h4>
+<ul>
+  <li>リレーしているチャンネルがトラッカー直下の場合に太字で表示されるようにしました</li>
   <li>GUIでポート未開放でもチャンネル一覧の状態が×にならなかったのを修正しました</li>
-  <li>GUIで設定を変更した際に即座に保存するようにしました</li>
+  <li>自分で配信しているチャンネルに対してリレーリクエストを出すと落ちるのを修正しました</li>
+  <li>HTML UIの設定ページをレイアウト変更しました</li>
   <li>チャンネル切断時などの通知表示を5秒に短縮しました</li>
   <li>タスクトレイのアイコンにカーソルを合わせた時に名前が出るようにしました</li>
   <li>LANの操作可能ポートがない時にタスクトレイからHTML UIやヘルプが表示できなかったのを修正しました</li>
-</ul>
-
-<h4 id="section-5">1.6.0から1.7.0への変更点</h4>
-<p>FLV配信がPeerCastでもうまく視聴・リレーできるように調整してみました。</p>
-
-<ul>
-  <li>FLV配信をしたときにPeerCastStationでないと視聴・リレーがぷちぷち切れがちになるのを対策しました。配信側だけ新しいPeerCastStationになっていれば大丈夫なはずです</li>
-  <li>リレーしているチャンネルがトラッカー直下の場合に太字で表示されるようにしました</li>
-  <li>HTML UIの設定ページをレイアウト変更しました</li>
-  <li>自分で配信しているチャンネルに対してリレーリクエストを出すと落ちるのを修正しました</li>
   <li>swpcでチャンネルのbumpや切断が動いていなかったのを対策しました</li>
   <li>JSON RPCのオブジェクトIDがおかしくなる可能性があるのを修正しました</li>
 </ul>
 
-<h3 id="section-6">1.6.0 (2013年10月14日版)</h3>
+<h3 id="section-6">1.6.1 (2013年10月27日版)</h3>
+
+<p>FLV配信がPeerCastのVPやIMでもうまく視聴・リレーできるように調整してみました。</p>
+
+<ul>
+  <li>FLV配信をしたときにPeerCastStationでないと視聴・リレーがぷちぷち切れがちになるのを対策しました。FLV配信をする場合は1.6.1以降で行なってください</li>
+  <li>GUIで設定を変更した際に即座に保存するようにしました</li>
+  <li>自分で配信しているチャンネルに対してリレーリクエストを出すと落ちるのを修正しました</li>
+</ul>
+
+<h3 id="section-7">1.6.0 (2013年10月14日版)</h3>
 
 <p>機能追加やらバグ修正やらいろいろ入りました。</p>
 
@@ -152,7 +161,7 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>外部からの視聴・操作にHTTPのBasic認証を設定できるようにしました。ポートの設定で「要認証」を有効にすると視聴と操作にのみBasic認証がかかります。今のところIDとパスワードは手動で設定できず自動生成のみになっています</li>
 </ul>
 
-<h3 id="section-7">1.5.3 (2013年9月25日版)</h3>
+<h3 id="section-8">1.5.3 (2013年9月25日版)</h3>
 
 <p>リレーが不安定になる不具合に対処しました。</p>
 
@@ -163,7 +172,7 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>下流へデータを送りきれないと判断して切断をする条件を3秒から10秒に緩和しました</li>
 </ul>
 
-<h3 id="section-8">1.5.2 (2013年9月8日版)</h3>
+<h3 id="section-9">1.5.2 (2013年9月8日版)</h3>
 
 <p>落ちる不具合が修正できていなかったのを再修正しました。</p>
 
@@ -175,7 +184,7 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>外部ツールでウィンドウを表示させた時に真っ黒になるのに対処しました</li>
 </ul>
 
-<h3 id="section-9">1.5.1 (2013年9月7日版)</h3>
+<h3 id="section-10">1.5.1 (2013年9月7日版)</h3>
 
 <p>落ちる不具合を修正しました。</p>
 
@@ -185,7 +194,7 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>ヘルプページの表示がちょっとかわりました。目次がつきました</li>
 </ul>
 
-<h3 id="section-10">1.5.0 (2013年9月4日版)</h3>
+<h3 id="section-11">1.5.0 (2013年9月4日版)</h3>
 
 <p>GUIの作り直しと内部の大幅な整理を行いました。</p>
 
@@ -199,7 +208,7 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>受信部を大幅に整理し、リレーの再接続などの安定化をしました</li>
 </ul>
 
-<h3 id="section-11">1.4.2 (2013年7月13日版)</h3>
+<h3 id="section-12">1.4.2 (2013年7月13日版)</h3>
 
 <p>主にバグ修正のリリースです。</p>
 
@@ -212,7 +221,7 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>接続が切れているチャンネルに同時に複数の視聴要求がくると落ちることがあったのを修正しました</li>
 </ul>
 
-<h3 id="section-12">1.4.1 (2013年6月19日版)</h3>
+<h3 id="section-13">1.4.1 (2013年6月19日版)</h3>
 
 <p>バグ修正のリリースです。CPUを食いつぶすバグとGUIが落ちるバグを修正しました。</p>
 
@@ -225,7 +234,7 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>ログファイルがずっとロックされていたのを実際の書き込み中のみロックされるように変更しました</li>
 </ul>
 
-<h3 id="section-13">1.4.0 (2013年5月29日版)</h3>
+<h3 id="section-14">1.4.0 (2013年5月29日版)</h3>
 
 <p>自動でリレー管理するようになりました。</p>
 
@@ -238,7 +247,7 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>設定保存がPeerCastStation正常終了時のみ行われていたのを、設定変更時にすぐ保存するようにしました</li>
 </ul>
 
-<h3 id="section-14">1.3.2 (2013年5月8日版)</h3>
+<h3 id="section-15">1.3.2 (2013年5月8日版)</h3>
 
 <p>まだあったHTML UIの不具合を修正しました。</p>
 
@@ -246,7 +255,7 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>HTML UIの設定ページでその他の設定を変更しても全く反映されないのを修正しました</li>
 </ul>
 
-<h3 id="section-15">1.3.1 (2013年5月5日版)</h3>
+<h3 id="section-16">1.3.1 (2013年5月5日版)</h3>
 
 <p>1.3.0で入れてしまったHTML UIの不具合を修正しました。</p>
 
@@ -255,7 +264,7 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>User-AgentやServerをPeerCastStation/1.3.1.0のようなバージョンに即した値を出力するようにしました</li>
 </ul>
 
-<h3 id="section-16">1.3.0 (2013年5月4日版)</h3>
+<h3 id="section-17">1.3.0 (2013年5月4日版)</h3>
 
 <p>チャンネル自動切断のモード選択ができるようになりました。</p>
 
@@ -273,7 +282,7 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>プラグインシステムの実装を変更しました。バージョン表示が少し変わりますが動作には何の影響もありません</li>
 </ul>
 
-<h3 id="section-17">1.2.1 (2013年3月29日版)</h3>
+<h3 id="section-18">1.2.1 (2013年3月29日版)</h3>
 
 <p>バグ修正と細かい部分の追加・修正が主です。</p>
 
@@ -288,7 +297,7 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>GUIでログ表示の設定を変更しても反映されていなかったのを修正しました</li>
 </ul>
 
-<h3 id="section-18">1.2.0 (2013年2月28日版)</h3>
+<h3 id="section-19">1.2.0 (2013年2月28日版)</h3>
 
 <p>設定ファイルの保存場所および内容が変わりました。
 以前からの設定は引き継がれるはずですが、念のため起動後に設定を確認してください。</p>
@@ -303,7 +312,7 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>機能追加をやりやすくするために設定ファイルの保存場所および内容を変更しました。新旧の設定保存先はヘルプの<a href="misc.html">その他</a>を参照してください</li>
 </ul>
 
-<h3 id="section-19">1.1.0 (2013年1月29日版)</h3>
+<h3 id="section-20">1.1.0 (2013年1月29日版)</h3>
 
 <ul>
   <li>再接続後に下流へのリレーが止まってしまうことがあるのを修正しました</li>
@@ -318,7 +327,7 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>一部のチャンネルでチャンネル情報が文字化けすることがあるのを仕方なく対処してやりました。本来はShift-JISなんかでチャンネル情報を流す方が悪い</li>
 </ul>
 
-<h3 id="section-20">1.0.0 (2012年12月31日版)</h3>
+<h3 id="section-21">1.0.0 (2012年12月31日版)</h3>
 
 <p>主にバグ修正です。PeerCast互換という意味ではだいたい足りてきたのでVersion 1.0になりました。
 今後はPeerCastになかった新機能の追加も積極的に行う予定です。</p>
@@ -337,7 +346,7 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>31日版:HTML UIで起動時間・チャンネルリレー時間の計算が間違っていたのを修正しました</li>
 </ul>
 
-<h3 id="section-21">0.9.0 (2012年11月29日版)</h3>
+<h3 id="section-22">0.9.0 (2012年11月29日版)</h3>
 
 <ul>
   <li>リレー要求を受け付けた際に新しく接続されたリレー先に多量のデータを集中して送ってしまっていたのを修正しました</li>
@@ -345,7 +354,7 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>エンコードが停止再開されたあとやチャンネルの位置が4GBを越えた場合も安定して視聴やリレーができるように改善しました</li>
 </ul>
 
-<h3 id="section-22">0.8.1 (2012年10月29日版)</h3>
+<h3 id="section-23">0.8.1 (2012年10月29日版)</h3>
 
 <ul>
   <li>リレーの再接続時に正しく再接続できずにERRORになることがあったのを修正しました</li>
@@ -358,7 +367,7 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>その他細かいバグ修正やコードの整理を行ないました</li>
 </ul>
 
-<h3 id="section-23">0.8.0 きゃすけっと2012秋版</h3>
+<h3 id="section-24">0.8.0 きゃすけっと2012秋版</h3>
 
 <ul>
   <li>リレー・配信ともに安定性を向上しました</li>
@@ -368,25 +377,25 @@ OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mon
   <li>簡易的なバージョンアップチェックを追加しました</li>
 </ul>
 
-<h3 id="section-24">0.7.0 きゃすけっと2012春版</h3>
+<h3 id="section-25">0.7.0 きゃすけっと2012春版</h3>
 
 <ul>
   <li>なんかいろいろ修正した。主にHTML UIを追加した</li>
 </ul>
 
-<h3 id="section-25">0.6.1</h3>
+<h3 id="section-26">0.6.1</h3>
 
 <ul>
   <li>HTTP出力でメモリリークしていたのを修正した。YP接続部分のログを出力するようにした。</li>
 </ul>
 
-<h3 id="section-26">0.6.0</h3>
+<h3 id="section-27">0.6.0</h3>
 
 <ul>
   <li>初期配布バージョン</li>
 </ul>
 
-<h2 id="section-27">ソース・ライセンス</h2>
+<h2 id="section-28">ソース・ライセンス</h2>
 <p><a href="https://github.com/kumaryu/peercaststation">githubにてソース公開しています。</a></p>
 
 <p>ライセンスはGPLv3です。

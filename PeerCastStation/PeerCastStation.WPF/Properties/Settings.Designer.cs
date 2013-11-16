@@ -94,7 +94,7 @@ namespace PeerCastStation.WPF.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("2013-10-27")]
+        [global::System.Configuration.DefaultSettingValueAttribute("2013-11-17")]
         public global::System.DateTime CurrentVersion {
             get {
                 return ((global::System.DateTime)(this["CurrentVersion"]));
