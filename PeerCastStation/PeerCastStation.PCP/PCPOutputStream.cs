@@ -604,7 +604,9 @@ namespace PeerCastStation.PCP
     {
       var rnd = new Random();
       return Channel.Nodes.OrderByDescending(n =>
-        ( n.GlobalEndPoint.Address.Equals(endpoint.Address) ? 8000 : 0) +
+        ( n.GlobalEndPoint!=null ? 16000 : 0) +
+        ( n.GlobalEndPoint!=null &&
+          n.GlobalEndPoint.Address.Equals(endpoint.Address) ? 8000 : 0) +
         (!n.IsRelayFull ? 4000 : 0) +
         ( n.IsReceiving ? 2000 : 0) +
         (Math.Max(10-n.Hops, 0)*100) +
