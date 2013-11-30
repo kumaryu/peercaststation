@@ -88,10 +88,10 @@ namespace PeerCastStation.Core
     }
 
     private SortedList<ContentKey, Content> list = new SortedList<ContentKey, Content>();
-    public long LimitPackets { get; set; }
+    public TimeSpan PacketTimeLimit { get; set; }
     public ContentCollection()
     {
-      LimitPackets = 100;
+      PacketTimeLimit = TimeSpan.FromSeconds(5);
     }
 
     public event EventHandler ContentChanged;
@@ -118,7 +118,14 @@ namespace PeerCastStation.Core
           added = true;
         }
         catch (ArgumentException) {}
-        while (list.Count>LimitPackets && list.Count>1) {
+        while (
+          list.Count>1 &&
+          (
+           (list.First().Key.Stream<item.Stream) ||
+           (list.First().Key.Stream==item.Stream &&
+            item.Timestamp-list.First().Key.Timestamp>PacketTimeLimit)
+          )
+        ) {
           list.RemoveAt(0);
         }
       }
@@ -206,8 +213,13 @@ namespace PeerCastStation.Core
     {
       lock (list) {
         return list.Values.Where(c =>
-          c.Stream>=stream &&
-          (c.Timestamp>t || (c.Timestamp==t && c.Position>position))).ToArray();
+          c.Stream>stream ||
+          (c.Stream==stream &&
+           (c.Timestamp>t ||
+            (c.Timestamp==t && c.Position>position)
+           )
+          )
+        ).ToArray();
       }
     }
 
