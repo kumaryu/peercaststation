@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace PeerCastStation.Core
@@ -7,17 +8,19 @@ namespace PeerCastStation.Core
   public class StreamConnection
     : IDisposable
   {
+    public static readonly int RecvWindowSize = 64*1024;
+    public static readonly int SendWindowSize = 16*1024;
     private ManualResetEvent recvEvent        = new ManualResetEvent(false);
     private RateCounter      recvBytesCounter = new RateCounter(1000);
     private int              recvTimeout      = Timeout.Infinite;
     private MemoryStream     recvStream       = new MemoryStream();
-    private byte[]           recvBuffer       = new byte[64*1024];
+    private byte[]           recvBuffer       = new byte[RecvWindowSize];
     private IAsyncResult     recvResult       = null;
     private Exception        recvException    = null;
     private object           recvLock         = new Object();
     private RateCounter      sendBytesCounter = new RateCounter(1000);
     private int              sendTimeout      = Timeout.Infinite;
-    private MemoryStream     sendStream       = new MemoryStream(8192);
+    private Queue<byte[]>    sendPackets      = new Queue<byte[]>();
     private IAsyncResult     sendResult       = null;
     private Exception        sendException    = null;
     private object           sendLock         = new Object();
@@ -49,15 +52,18 @@ namespace PeerCastStation.Core
     }
 
     public StreamConnection(Stream input_stream, Stream output_stream)
+      : this(input_stream, output_stream, null)
+    {
+    }
+
+    public StreamConnection(Stream input_stream, Stream output_stream, byte[] header)
     {
       inputStream  = input_stream;
       outputStream = output_stream;
-      sendStream.SetLength(0);
-      sendStream.Position = 0;
-      recvStream.SetLength(0);
-      recvStream.Position = 0;
-      recvException = null;
-      sendException = null;
+      if (header!=null && header.Length>0) {
+        recvStream.Write(header, 0, header.Length);
+        recvEvent.Set();
+      }
       StartReceive();
     }
 
@@ -135,10 +141,8 @@ namespace PeerCastStation.Core
           if (!closing) sendException = e;
         }
         sendResult = null;
-        if (sendException==null && !err && sendStream.Length>0) {
-          var buf = sendStream.ToArray();
-          sendStream.SetLength(0);
-          sendStream.Position = 0;
+        if (sendException==null && !err && sendPackets.Count>0) {
+          var buf = sendPackets.Dequeue();
           try {
             var state = new SendState(buf.Length);
             sendResult = outputStream.BeginWrite(buf, 0, buf.Length, null, state);
@@ -172,19 +176,28 @@ namespace PeerCastStation.Core
       if (outputStream==null) throw new InvalidOperationException();
       RethrowExceptions();
       lock (sendLock) {
-        sendStream.Write(bytes, 0, bytes.Length);
+        if (bytes.Length<SendWindowSize) {
+          sendPackets.Enqueue(bytes);
+        }
+        else {
+          int pos = 0;
+          while (pos<bytes.Length) {
+            var len = Math.Min(bytes.Length-pos, SendWindowSize);
+            var packet = new byte[len];
+            Array.Copy(bytes, pos, packet, 0, len);
+            sendPackets.Enqueue(packet);
+            pos += len;
+          }
+        }
       }
       StartSend();
     }
 
     public void Send(Action<Stream> proc)
     {
-      if (outputStream==null) throw new InvalidOperationException();
-      RethrowExceptions();
-      lock (sendLock) {
-        proc(sendStream);
-      }
-      StartSend();
+      var stream = new MemoryStream();
+      proc(stream);
+      Send(stream.ToArray());
     }
 
     public bool Recv(Action<Stream> proc)
@@ -254,10 +267,8 @@ namespace PeerCastStation.Core
     {
       if (outputStream==null) return;
       lock (sendLock) {
-        if (sendResult!=null || sendException!=null || closing || sendStream.Length==0) return;
-        var buf = sendStream.ToArray();
-        sendStream.SetLength(0);
-        sendStream.Position = 0;
+        if (sendResult!=null || sendException!=null || closing || sendPackets.Count==0) return;
+        var buf = sendPackets.Dequeue();
         try {
           var state = new SendState(buf.Length);
           sendResult = outputStream.BeginWrite(buf, 0, buf.Length, null, state);
