@@ -43,6 +43,10 @@ namespace PeerCastStation.Core
     /// コンテントの内容を取得します
     /// </summary>
     public byte[] Data   { get; private set; } 
+    /// <summary>
+    /// コンテントのContentCollectionへ追加された順番を取得および設定します
+    /// </summary>
+    public long Serial { get; set; } 
 
     /// <summary>
     /// コンテントのストリーム番号、時刻、位置、内容を指定して初期化します
@@ -57,6 +61,7 @@ namespace PeerCastStation.Core
       Timestamp = timestamp;
       Position  = pos;
       Data      = data;
+      Serial    = -1;
     }
   }
 
@@ -87,6 +92,7 @@ namespace PeerCastStation.Core
       }
     }
 
+    private long serial = 0;
     private SortedList<ContentKey, Content> list = new SortedList<ContentKey, Content>();
     public TimeSpan PacketTimeLimit { get; set; }
     public ContentCollection()
@@ -114,7 +120,9 @@ namespace PeerCastStation.Core
       bool added = false;
       lock (list) {
         try {
+          item.Serial = serial;
           list.Add(new ContentKey(item.Stream, item.Timestamp, item.Position), item);
+          serial += 1;
           added = true;
         }
         catch (ArgumentException) {}
