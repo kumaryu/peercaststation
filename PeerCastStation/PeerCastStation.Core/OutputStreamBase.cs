@@ -42,6 +42,7 @@ namespace PeerCastStation.Core
     public PeerCast PeerCast { get; private set; }
     public Stream InputStream { get; private set; }
     public Stream OutputStream { get; private set; }
+    public StreamConnection Connection { get; private set; }
     public AccessControlInfo AccessControl { get; private set; }
     public EndPoint RemoteEndPoint { get; private set; }
     public Channel Channel { get; private set; }
@@ -62,12 +63,10 @@ namespace PeerCastStation.Core
     public StopReason StoppedReason { get; private set; }
     public event StreamStoppedEventHandler Stopped;
     public bool HasError { get; private set; }
-    public float SendRate { get { return sendBytesCounter.Rate; } }
-    public float RecvRate { get { return recvBytesCounter.Rate; } }
+    public float SendRate { get { return Connection.SendRate; } }
+    public float RecvRate { get { return Connection.ReceiveRate; } }
     protected QueuedSynchronizationContext SyncContext { get; private set; }
     protected Logger Logger { get; private set; }
-
-    public int SendTimeout    { get; set; }
 
     public abstract ConnectionInfo GetConnectionInfo();
 
@@ -82,8 +81,8 @@ namespace PeerCastStation.Core
       byte[] header)
     {
       this.PeerCast = peercast;
-      this.InputStream = input_stream;
-      this.OutputStream = output_stream;
+      this.Connection = new StreamConnection(input_stream, output_stream, header);
+      this.Connection.SendTimeout = 10000;
       this.RemoteEndPoint = remote_endpoint;
       this.AccessControl = access_control;
       this.Channel = channel;
@@ -94,10 +93,6 @@ namespace PeerCastStation.Core
       this.mainThread.Name = String.Format("{0}:{1}", this.GetType().Name, remote_endpoint);
       this.SyncContext = new QueuedSynchronizationContext();
       this.Logger = new Logger(this.GetType());
-      if (header!=null) {
-        this.recvStream.Write(header, 0, header.Length);
-      }
-      this.SendTimeout = 10000;
     }
 
     protected virtual int GetUpstreamRate()
@@ -119,99 +114,15 @@ namespace PeerCastStation.Core
 
     protected virtual void Cleanup()
     {
-      if (recvResult!=null && recvResult.IsCompleted) {
-        try {
-          int bytes = InputStream.EndRead(recvResult);
-          if (bytes < 0) {
-            OnError();
-          }
-          else {
-            recvBytesCounter.Add(bytes);
-          }
-        }
-        catch (ObjectDisposedException) {}
-        catch (IOException) {
-          OnError();
-        }
-      }
-      if (sendResult!=null) {
-        if (!sendResult.IsCompleted) {
-          var timeout = Math.Max(SendTimeout, 10000);
-          var wait = TimeSpan.FromMilliseconds(timeout) - sendTimer.Elapsed;
-          if (wait.Ticks<0 ||
-              WaitHandle.WaitAny(new WaitHandle[] { sendResult.AsyncWaitHandle }, wait)==WaitHandle.WaitTimeout) {
-            Logger.Error("Send timeout");
-            OnError();
-            sendTimer.Stop();
-          }
-        }
-        if (!HasError) {
-          try {
-            sendTimer.Stop();
-            OutputStream.EndWrite(sendResult);
-            sendBytesCounter.Add((int)sendResult.AsyncState);
-            sendResult = null;
-          }
-          catch (ObjectDisposedException) {}
-          catch (IOException) {
-            OnError();
-          }
-        }
-      }
-      if (!HasError && sendStream.Length>0) {
-        var buf = sendStream.ToArray();
-        try {
-          OutputStream.Write(buf, 0, buf.Length);
-        }
-        catch (ObjectDisposedException) {}
-        catch (IOException) {
-          OnError();
-        }
-      }
-      sendStream.SetLength(0);
-      sendStream.Position = 0;
-      recvStream.SetLength(0);
-      recvStream.Position = 0;
-      this.InputStream.Close();
-      this.OutputStream.Close();
-      if (sendResult!=null) {
-        try {
-          sendTimer.Stop();
-          OutputStream.EndWrite(sendResult);
-          sendBytesCounter.Add((int)sendResult.AsyncState);
-          sendResult = null;
-        }
-        catch (ObjectDisposedException) {}
-        catch (IOException) {}
-      }
-      recvResult = null;
-      sendResult = null;
+      Connection.Close();
     }
 
     protected virtual void WaitEventAny()
     {
-      if (recvResult!=null && sendResult!=null) {
-        WaitHandle.WaitAny(new WaitHandle[] {
-          recvResult.AsyncWaitHandle,
-          sendResult.AsyncWaitHandle,
-          SyncContext.EventHandle
-        }, 10);
-      }
-      else if (recvResult!=null) {
-        WaitHandle.WaitAny(new WaitHandle[] {
-          recvResult.AsyncWaitHandle,
-          SyncContext.EventHandle
-        }, 10);
-      }
-      else if (sendResult!=null) {
-        WaitHandle.WaitAny(new WaitHandle[] {
-          sendResult.AsyncWaitHandle,
-          SyncContext.EventHandle
-        }, 10);
-      }
-      else {
-        SyncContext.EventHandle.WaitOne(10);
-      }
+      WaitHandle.WaitAny(new WaitHandle[] {
+        Connection.ReceiveWaitHandle,
+        SyncContext.EventHandle,
+      }, 10);
     }
 
     protected virtual void OnStarted()
@@ -227,9 +138,7 @@ namespace PeerCastStation.Core
 
     protected virtual void DoProcess()
     {
-      ProcessRecv();
       OnIdle();
-      ProcessSend();
       SyncContext.ProcessAll();
     }
 
@@ -313,132 +222,57 @@ namespace PeerCastStation.Core
       }
     }
 
-    RateCounter recvBytesCounter = new RateCounter(1000);
-    MemoryStream recvStream = new MemoryStream();
-    byte[] recvBuffer = new byte[64*1024];
-    IAsyncResult recvResult = null;
-    private void ProcessRecv()
-    {
-      if (recvResult!=null && recvResult.IsCompleted) {
-        try {
-          int bytes = InputStream.EndRead(recvResult);
-          if (bytes>0) {
-            recvBytesCounter.Add(bytes);
-            recvStream.Seek(0, SeekOrigin.End);
-            recvStream.Write(recvBuffer, 0, bytes);
-            recvStream.Seek(0, SeekOrigin.Begin);
-          }
-          else if (bytes<=0) {
-            OnError();
-          }
-        }
-        catch (ObjectDisposedException) {}
-        catch (IOException) {
-          OnError();
-        }
-        recvResult = null;
-      }
-      if (!HasError && recvResult==null) {
-        try {
-          recvResult = InputStream.BeginRead(recvBuffer, 0, recvBuffer.Length, null, null);
-        }
-        catch (ObjectDisposedException) {
-        }
-        catch (IOException) {
-          OnError();
-        }
-      }
-    }
-
-    private RateCounter sendBytesCounter = new RateCounter(1000);
-    MemoryStream sendStream = new MemoryStream(8192);
-    IAsyncResult sendResult = null;
-    System.Diagnostics.Stopwatch sendTimer = new System.Diagnostics.Stopwatch();
-    private void ProcessSend()
-    {
-      if (sendResult!=null) {
-        if (sendResult.IsCompleted) {
-          try {
-            sendTimer.Stop();
-            OutputStream.EndWrite(sendResult);
-            sendBytesCounter.Add((int)sendResult.AsyncState);
-            sendResult = null;
-          }
-          catch (ObjectDisposedException) {
-          }
-          catch (IOException) {
-            OnError();
-          }
-        }
-        else if (SendTimeout>0 && sendTimer.ElapsedMilliseconds>SendTimeout) {
-          Logger.Error("Send timeout");
-          OnError();
-          sendTimer.Stop();
-        }
-      }
-      if (!HasError && sendResult==null && sendStream.Length>0) {
-        var buf = sendStream.ToArray();
-        sendStream.SetLength(0);
-        sendStream.Position = 0;
-        try {
-          sendResult = OutputStream.BeginWrite(buf, 0, buf.Length, null, buf.Length);
-          sendTimer.Reset();
-          sendTimer.Start();
-        }
-        catch (ObjectDisposedException) {
-        }
-        catch (IOException) {
-          OnError();
-        }
-      }
-    }
-
     protected void Send(byte[] bytes)
     {
-      sendStream.Write(bytes, 0, bytes.Length);
+      try {
+        Connection.Send(bytes);
+      }
+      catch (IOException e) {
+        Logger.Error(e);
+        OnError();
+      }
     }
 
     protected void Send(Atom atom)
     {
-      AtomWriter.Write(sendStream, atom);
+      try {
+        Connection.Send(stream => AtomWriter.Write(stream, atom));
+      }
+      catch (IOException e) {
+        Logger.Error(e);
+        OnError();
+      }
+    }
+
+    protected bool Recv(Action<Stream> proc)
+    {
+      try {
+        return Connection.Recv(proc);
+      }
+      catch (IOException e) {
+        Logger.Error(e);
+        OnError();
+        return false;
+      }
     }
 
     protected Atom RecvAtom()
     {
       Atom res = null;
       try {
-        if (recvStream.Length>=8 && Recv(s => { res = AtomReader.Read(s); })) {
+        if (Connection.Recv(stream => { res = AtomReader.Read(stream); })) {
           return res;
         }
+      }
+      catch (IOException e) {
+        Logger.Error(e);
+        OnError();
       }
       catch (InvalidDataException e) {
         Logger.Error(e);
         OnError();
       }
       return null;
-    }
-
-    protected bool Recv(Action<Stream> proc)
-    {
-      bool res = false;
-      recvStream.Seek(0, SeekOrigin.Begin);
-      try {
-        proc(recvStream);
-        if (recvStream.Length>recvStream.Position) {
-          var new_stream = new MemoryStream((int)Math.Max(8192, recvStream.Length - recvStream.Position));
-          new_stream.Write(recvStream.GetBuffer(), (int)recvStream.Position, (int)(recvStream.Length - recvStream.Position));
-          new_stream.Position = 0;
-          recvStream = new_stream;
-        }
-        else {
-          recvStream.Position = 0;
-          recvStream.SetLength(0);
-        }
-        res = true;
-      }
-      catch (EndOfStreamException) {
-      }
-      return res;
     }
 
     public abstract OutputStreamType OutputStreamType { get; }
