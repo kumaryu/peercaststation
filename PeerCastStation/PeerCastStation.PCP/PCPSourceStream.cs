@@ -166,8 +166,8 @@ namespace PeerCastStation.PCP
         remoteEndPoint = (IPEndPoint)client.Client.RemoteEndPoint;
         var stream = client.GetStream();
         var connection = new StreamConnection(stream, stream);
-        connection.ReceiveTimeout = 3000;
-        connection.SendTimeout    = 3000;
+        connection.ReceiveTimeout = 10000;
+        connection.SendTimeout    = 8000;
         Logger.Debug("Connected: {0}", endpoint);
         return connection;
       }
