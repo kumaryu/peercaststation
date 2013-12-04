@@ -231,23 +231,21 @@ namespace PeerCastStation.Core
       }
     }
 
-    public Content NextOf(int stream, TimeSpan t, long position)
+    public Content GetNewerContent(Content content, out bool skipped)
     {
+      Content res;
       lock (list) {
-        return list.Values.Where(c =>
-          c.Stream>stream ||
-          (c.Stream==stream &&
-           (c.Timestamp>t ||
-            (c.Timestamp==t && c.Position>position)
+        res = list.Values.Where(c =>
+          c.Stream>content.Stream ||
+          (c.Stream==content.Stream &&
+           (c.Timestamp>content.Timestamp ||
+            (c.Timestamp==content.Timestamp && c.Position>content.Position)
            )
           )
         ).FirstOrDefault();
       }
-    }
-
-    public Content NextOf(Content item)
-    {
-      return NextOf(item.Stream, item.Timestamp, item.Position);
+      skipped = res!=null && content.Serial>=0 && res.Serial>content.Serial+1;
+      return res;
     }
 
     public Content FindNextByPosition(int stream, long pos)

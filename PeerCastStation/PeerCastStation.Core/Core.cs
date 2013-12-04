@@ -234,6 +234,7 @@ namespace PeerCastStation.Core
     NotIdentifiedError,
     BadAgentError,
     UnavailableError,
+    SendTimeoutError,
   }
 
   /// <summary>
