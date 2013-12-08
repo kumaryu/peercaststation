@@ -169,26 +169,25 @@ namespace PeerCastStation.Core
       }
     }
 
-    public void Send(byte[] bytes)
+    public void Send(byte[] bytes, int offset, int len)
     {
       if (outputStream==null) throw new InvalidOperationException();
       RethrowExceptions();
       lock (sendLock) {
-        if (bytes.Length<SendWindowSize) {
-          sendPackets.Enqueue(bytes);
-        }
-        else {
-          int pos = 0;
-          while (pos<bytes.Length) {
-            var len = Math.Min(bytes.Length-pos, SendWindowSize);
-            var packet = new byte[len];
-            Array.Copy(bytes, pos, packet, 0, len);
-            sendPackets.Enqueue(packet);
-            pos += len;
-          }
+        int pos = 0;
+        while (pos<len) {
+          var packet = new byte[Math.Min(len-pos, SendWindowSize)];
+          Array.Copy(bytes, pos+offset, packet, 0, packet.Length);
+          sendPackets.Enqueue(packet);
+          pos += packet.Length;
         }
       }
       StartSend();
+    }
+
+    public void Send(byte[] bytes)
+    {
+      Send(bytes, 0, bytes.Length);
     }
 
     public void Send(Action<Stream> proc)
@@ -200,26 +199,36 @@ namespace PeerCastStation.Core
 
     public bool Recv(Action<Stream> proc)
     {
+      return Recv(stream => { proc(stream); return true; });
+    }
+
+    public bool Recv(Func<Stream,bool> proc)
+    {
       lock (recvLock) {
         if (inputStream==null) throw new InvalidOperationException();
-        bool res = false;
+        var res = false;
         recvStream.Seek(0, SeekOrigin.Begin);
         try {
           if (recvStream.Length==0) throw new EndOfStreamException();
-          proc(recvStream);
-          if (recvStream.Length>recvStream.Position) {
-            var new_stream = new MemoryStream((int)Math.Max(8192, recvStream.Length - recvStream.Position));
-            new_stream.Write(recvStream.GetBuffer(), (int)recvStream.Position, (int)(recvStream.Length - recvStream.Position));
-            new_stream.Position = 0;
-            recvStream = new_stream;
+          res = proc(recvStream);
+          if (res) {
+            if (recvStream.Length>recvStream.Position) {
+              var new_stream = new MemoryStream((int)Math.Max(8192, recvStream.Length - recvStream.Position));
+              new_stream.Write(recvStream.GetBuffer(), (int)recvStream.Position, (int)(recvStream.Length - recvStream.Position));
+              new_stream.Position = 0;
+              recvStream = new_stream;
+            }
+            else {
+              recvStream.Position = 0;
+              recvStream.SetLength(0);
+              recvEvent.Reset();
+            }
+            if (recvException!=null) recvEvent.Set();
           }
           else {
-            recvStream.Position = 0;
-            recvStream.SetLength(0);
             recvEvent.Reset();
+            RethrowExceptions();
           }
-          res = true;
-          if (recvException!=null) recvEvent.Set();
         }
         catch (EndOfStreamException) {
           recvEvent.Reset();
