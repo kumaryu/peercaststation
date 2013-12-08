@@ -165,9 +165,7 @@ namespace PeerCastStation.Core
           if (closing) return;
           sendException = new TimeoutException();
         }
-        else {
-          OnSend((IAsyncResult)ar);
-        }
+        OnSend((IAsyncResult)ar);
       }
     }
 
