@@ -23,7 +23,7 @@ namespace PeerCastStation.Main
 
     public Application()
     {
-      peerCast.AgentName = PeerCastStation.Properties.Settings.Default.AgentName;
+      peerCast.AgentName = AppSettingsReader.GetString("AgentName", "PeerCastStation");
       LoadPlugins();
     }
 
@@ -147,13 +147,14 @@ namespace PeerCastStation.Main
           }
         }
         if (peerCast.OutputListeners.Count==0) {
-          System.Net.IPAddress listen_addr;
-          if (!System.Net.IPAddress.TryParse(PeerCastStation.Properties.Settings.Default.DefaultListenAddress, out listen_addr)) {
-            listen_addr = System.Net.IPAddress.Any;
-          }
+          var endpoint =
+            new System.Net.IPEndPoint(
+              AppSettingsReader.GetIPAddress("DefaultListenAddress", System.Net.IPAddress.Any),
+              AppSettingsReader.GetInt("DefaultListenPort", 7144)
+            );
           try {
             peerCast.StartListen(
-              new System.Net.IPEndPoint(listen_addr, PeerCastStation.Properties.Settings.Default.DefaultListenPort),
+              endpoint,
               OutputStreamType.All,
               OutputStreamType.Metadata | OutputStreamType.Relay);
           }
@@ -161,7 +162,7 @@ namespace PeerCastStation.Main
             logger.Error(e);
             try {
               peerCast.StartListen(
-                new System.Net.IPEndPoint(listen_addr, 0),
+                new System.Net.IPEndPoint(endpoint.Address, 0),
                 OutputStreamType.All,
                 OutputStreamType.None);
             }
@@ -267,9 +268,9 @@ namespace PeerCastStation.Main
       using (var file=System.IO.File.AppendText(System.IO.Path.Combine(dir, "exception.log"))) {
         file.WriteLine("{0}: {1} (OS:{2}, CLR:{3})",
           DateTime.Now,
-        	PeerCastStation.Properties.Settings.Default.AgentName,
-        	Environment.OSVersion,
-        	Environment.Version);
+          AppSettingsReader.GetString("AgentName", "PeerCastStation"),
+          Environment.OSVersion,
+          Environment.Version);
         file.WriteLine(args.ExceptionObject);
       }
     }

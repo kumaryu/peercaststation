@@ -61,6 +61,46 @@ namespace PeerCastStation.Core
       if (TryGetUri(key, out res)) return res;
       else                         return default_value;
     }
+
+    static public bool TryGetIPAddress(string key, out System.Net.IPAddress value)
+    {
+      try {
+        var v = System.Configuration.ConfigurationManager.AppSettings[key];
+        return System.Net.IPAddress.TryParse(v, out value);
+      }
+      catch (System.Configuration.ConfigurationException) {
+        value = null;
+        return false;
+      }
+    }
+
+    static public System.Net.IPAddress GetIPAddress(string key, System.Net.IPAddress default_value)
+    {
+      System.Net.IPAddress res;
+      if (TryGetIPAddress(key, out res)) return res;
+      else                               return default_value;
+    }
+
+
+    static public bool TryGetInt(string key, out int value)
+    {
+      try {
+        var v = System.Configuration.ConfigurationManager.AppSettings[key];
+        return Int32.TryParse(v, out value);
+      }
+      catch (System.Configuration.ConfigurationException) {
+        value = 0;
+        return false;
+      }
+    }
+
+    static public int GetInt(string key, int default_value)
+    {
+      int res;
+      if (TryGetInt(key, out res)) return res;
+      else                         return default_value;
+    }
+
   }
 
 }

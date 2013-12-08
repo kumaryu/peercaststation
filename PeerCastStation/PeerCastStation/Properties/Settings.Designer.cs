@@ -35,24 +35,6 @@ namespace PeerCastStation.Properties {
             }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0.0.0.0")]
-        public string DefaultListenAddress {
-            get {
-                return ((string)(this["DefaultListenAddress"]));
-            }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("7144")]
-        public int DefaultListenPort {
-            get {
-                return ((int)(this["DefaultListenPort"]));
-            }
-        }
-        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("1800000")]
@@ -62,15 +44,6 @@ namespace PeerCastStation.Properties {
             }
             set {
                 this["ChannelCleanerInactiveLimit"] = value;
-            }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("PeerCastStation/1.7.3.0")]
-        public string AgentName {
-            get {
-                return ((string)(this["AgentName"]));
             }
         }
     }

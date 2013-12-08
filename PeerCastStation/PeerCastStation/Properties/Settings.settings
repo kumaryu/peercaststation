@@ -5,17 +5,8 @@
     <Setting Name="BroadcastID" Type="System.Guid" Scope="User">
       <Value Profile="(Default)">00000000-0000-0000-0000-000000000000</Value>
     </Setting>
-    <Setting Name="DefaultListenAddress" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">0.0.0.0</Value>
-    </Setting>
-    <Setting Name="DefaultListenPort" Type="System.Int32" Scope="Application">
-      <Value Profile="(Default)">7144</Value>
-    </Setting>
     <Setting Name="ChannelCleanerInactiveLimit" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">1800000</Value>
-    </Setting>
-    <Setting Name="AgentName" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">PeerCastStation/1.7.3.0</Value>
     </Setting>
   </Settings>
 </SettingsFile>
