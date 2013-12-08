@@ -62,9 +62,7 @@ namespace PeerCastStation.WPF
             }));
           }
         };
-        versionChecker = new AppCastReader(
-          new Uri(Settings.Default.UpdateURL, UriKind.Absolute),
-          Settings.Default.CurrentVersion);
+        versionChecker = new AppCastReader();
         versionChecker.NewVersionFound += (sender, e) => {
           notifyIconManager.NewVersionInfo = e.VersionDescription;
         };
