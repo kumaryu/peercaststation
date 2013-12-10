@@ -9,7 +9,7 @@ namespace PeerCastStation.PCP
     public static readonly int    ServantVersion         = 1218;
     public static readonly int    ServantVersionVP       = 27;
     public static readonly byte[] ServantVersionEXPrefix = new byte[] { (byte)'S', (byte)'T' };
-    public static readonly short  ServantVersionEXNumber = 173;
+    public static readonly short  ServantVersionEXNumber = 174;
 
     public static void SetHeloVersion(IAtomCollection helo)
     {
