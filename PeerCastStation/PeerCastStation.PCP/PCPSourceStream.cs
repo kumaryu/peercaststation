@@ -306,21 +306,30 @@ namespace PeerCastStation.PCP
     private State WaitHandshakeResponse()
     {
       try {
+        bool handshake_finished = false;
         foreach (var atom in RecvAtoms()) {
           if (atom.Name==Atom.PCP_OLEH) {
             OnPCPOleh(atom);
             Logger.Debug("Handshake Finished: {0}", PeerCast.GlobalAddress);
-            return State.Receiving;
+            handshake_finished = true;
           }
           if (atom.Name==Atom.PCP_QUIT) {
             OnPCPQuit(atom);
             return State.Disconnected;
           }
+          else if (handshake_finished) {
+            ProcessAtom(atom);
+          }
           else {
             //Ignore packet
           }
         }
-        return State.WaitingHandshakeResponse;
+        if (handshake_finished) {
+          return State.Receiving;
+        }
+        else {
+          return State.WaitingHandshakeResponse;
+        }
       }
       catch (IOException) {
         Stop(StopReason.ConnectionError);
