@@ -307,7 +307,7 @@ namespace PeerCastStation.PCP
     {
       try {
         bool handshake_finished = false;
-        foreach (var atom in RecvAtoms()) {
+        foreach (var atom in connection.RecvAtoms()) {
           if (atom.Name==Atom.PCP_OLEH) {
             OnPCPOleh(atom);
             Logger.Debug("Handshake Finished: {0}", PeerCast.GlobalAddress);
@@ -348,7 +348,7 @@ namespace PeerCastStation.PCP
         BroadcastHostInfo();
       }
       try {
-        foreach (var atom in RecvAtoms()) {
+        foreach (var atom in connection.RecvAtoms()) {
           if (!ProcessAtom(atom)) break;
         }
         return State.Receiving;
@@ -467,25 +467,6 @@ namespace PeerCastStation.PCP
       }, null);
       hostInfoUpdateTimer.Reset();
       hostInfoUpdateTimer.Start();
-    }
-
-    private IEnumerable<Atom> RecvAtoms()
-    {
-      var res = new Queue<Atom>();
-      connection.Recv(s => {
-        while (s.Position<s.Length) {
-          var pos = s.Position;
-          try {
-            var atom = AtomReader.Read(s);
-            res.Enqueue(atom);
-          }
-          catch (EndOfStreamException) {
-            s.Position = pos;
-            break;
-          }
-        }
-      });
-      return res;
     }
 
     protected bool ProcessAtom(Atom atom)

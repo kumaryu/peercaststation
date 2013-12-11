@@ -103,8 +103,7 @@ namespace PeerCastStation.PCP
     protected override void OnIdle()
     {
       base.OnIdle();
-      Atom atom = null;
-      while ((atom = RecvAtom())!=null) {
+      foreach (var atom in Connection.RecvAtoms()) {
         ProcessAtom(atom);
       }
     }

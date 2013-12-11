@@ -513,8 +513,7 @@ namespace PeerCastStation.PCP
     {
       base.OnIdle();
       if (IsChannelFound) {
-        Atom atom = null;
-        while ((atom = RecvAtom())!=null) {
+        foreach (var atom in Connection.RecvAtoms()) {
           ProcessAtom(atom);
         }
         if (Downhost!=null && !IsRelayFull) {

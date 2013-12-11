@@ -256,25 +256,6 @@ namespace PeerCastStation.Core
       }
     }
 
-    protected Atom RecvAtom()
-    {
-      Atom res = null;
-      try {
-        if (Connection.Recv(stream => { res = AtomReader.Read(stream); })) {
-          return res;
-        }
-      }
-      catch (IOException e) {
-        Logger.Error(e);
-        OnError();
-      }
-      catch (InvalidDataException e) {
-        Logger.Error(e);
-        OnError();
-      }
-      return null;
-    }
-
     public abstract OutputStreamType OutputStreamType { get; }
   }
 }
