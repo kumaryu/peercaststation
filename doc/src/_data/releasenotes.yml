@@ -1,5 +1,12 @@
 ---
-- name: Version 1.7.5 (2013年12月10日開発版)
+- name: Version 1.7.6 (2013年12月12日開発版)
+  version: 1.7.6
+  channel: dev
+  notes: |
+    * 1.7.5でリレー先が切れた時に落ちることがあったのを修正しました
+  date: Thu, 12 Dec 2013 23:00:00 +0900
+
+- name: Version 1.7.5 (2013年12月11日開発版)
   version: 1.7.5
   channel: dev
   notes: |
