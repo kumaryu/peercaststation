@@ -331,7 +331,8 @@ namespace PeerCastStation.PCP
           return State.WaitingHandshakeResponse;
         }
       }
-      catch (IOException) {
+      catch (IOException e) {
+        Logger.Error(e);
         Stop(StopReason.ConnectionError);
         return State.Disconnected;
       }
@@ -353,7 +354,8 @@ namespace PeerCastStation.PCP
         }
         return State.Receiving;
       }
-      catch (IOException) {
+      catch (IOException e) {
+        Logger.Error(e);
         Stop(StopReason.ConnectionError);
         return State.Disconnected;
       }

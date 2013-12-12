@@ -103,8 +103,14 @@ namespace PeerCastStation.PCP
     protected override void OnIdle()
     {
       base.OnIdle();
-      foreach (var atom in Connection.RecvAtoms()) {
-        ProcessAtom(atom);
+      try {
+        foreach (var atom in Connection.RecvAtoms()) {
+          ProcessAtom(atom);
+        }
+      }
+      catch (IOException e) {
+        Logger.Error(e);
+        OnError();
       }
     }
 
