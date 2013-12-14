@@ -57,6 +57,7 @@ namespace PeerCastStation.WPF
 
     public void CheckVersion()
     {
+      if (this.client.IsBusy) return;
       this.client.DownloadDataAsync(url);
     }
 

@@ -45,8 +45,10 @@ namespace PeerCastStation.WPF
     NotifyIconManager notifyIconManager;
     Thread mainThread;
     private AppCastReader versionChecker;
+    private Timer versionCheckTimer;
     override protected void OnStart()
     {
+      versionChecker = new AppCastReader();
       notifyIconThread = new Thread(() => {
         notifyIconManager = new NotifyIconManager(Application.PeerCast);
         notifyIconManager.CheckVersionClicked += (sender, e) => versionChecker.CheckVersion();
@@ -62,15 +64,14 @@ namespace PeerCastStation.WPF
             }));
           }
         };
-        versionChecker = new AppCastReader();
         versionChecker.NewVersionFound += (sender, e) => {
           notifyIconManager.NewVersionInfo = e.VersionDescription;
         };
-        versionChecker.CheckVersion();
         notifyIconManager.Run();
       });
       notifyIconThread.SetApartmentState(ApartmentState.STA);
       notifyIconThread.Start();
+      versionCheckTimer = new Timer(OnVersionCheckTimer, null, 1000, 1000*7200);
 
       mainThread = new Thread(() => {
         var app = new Application();
@@ -86,8 +87,16 @@ namespace PeerCastStation.WPF
       mainThread.Start();
     }
 
+    private void OnVersionCheckTimer(object state)
+    {
+      versionChecker.CheckVersion();
+    }
+
     override protected void OnStop()
     {
+      var timer_wait = new AutoResetEvent(false);
+      versionCheckTimer.Dispose(timer_wait);
+      timer_wait.WaitOne();
       if (mainWindow!=null) {
         mainWindow.Dispatcher.Invoke(new Action(() => {
           System.Windows.Application.Current.Shutdown();
