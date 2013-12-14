@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>PeerCastStation by kumaryu</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">PeerCastStation</h1>
+        <p class="header">PeerCastのリメイク</p>
+
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/kumaryu/peercaststation/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/kumaryu/peercaststation/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/kumaryu/peercaststation">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/kumaryu">kumaryu</a></p>
+
+
+      </header>
+      <section>
+        <h1>
+<a name="peercaststation" class="anchor" href="#peercaststation"><span class="octicon octicon-link"></span></a>PeerCastStation</h1>
+
+<p>PeerCastStationはPeerCastクローンです。</p>
+
+<ul>
+<li><a href="http://www.pecastation.org/">http://www.pecastation.org/</a></li>
+<li><a href="http://github.com/kumaryu/peercaststation/">http://github.com/kumaryu/peercaststation/</a></li>
+</ul><h1>
+<a name="%E3%83%93%E3%83%AB%E3%83%89%E6%96%B9%E6%B3%95" class="anchor" href="#%E3%83%93%E3%83%AB%E3%83%89%E6%96%B9%E6%B3%95"><span class="octicon octicon-link"></span></a>ビルド方法</h1>
+
+<p>PeerCastStation/PeerCastStation.slnをVisualStudio 2010以降で開いて普通にビルドしてください。
+VisualStudioにNuGet拡張が入ってた方がいいかもしれませんが無くてもたぶんいけます。</p>
+
+<p>Test～プロジェクト群が開けないと言われますが気にしなくて大丈夫です。</p>
+
+<p>WPF GUIのプロジェクトをなんとか外せばMonoでもxbuildでビルドできます。
+MonoDevelopは試してないのでわかりません。</p>
+
+<p>ドキュメントはruby(2.0以降がよさげ)とjekyllを入れてdoc/siteやdoc/helpで<code>jekyll build</code>を実行してください。
+RUBYOPT環境変数に<code>-Eutf-8</code>を付けておかないとエラーが出るかもしれません。</p>
+
+<p>gem install bundler
+  cd doc
+  bundle install
+  cd help
+  RUBYOPT=-Eutf-8 jekyll build</p>
+
+<p>こんな感じ</p>
+
+<h1>
+<a name="%E9%96%8B%E7%99%BA%E3%81%AB%E5%8F%82%E5%8A%A0%E3%81%99%E3%82%8B%E3%81%AB%E3%81%AF" class="anchor" href="#%E9%96%8B%E7%99%BA%E3%81%AB%E5%8F%82%E5%8A%A0%E3%81%99%E3%82%8B%E3%81%AB%E3%81%AF"><span class="octicon octicon-link"></span></a>開発に参加するには</h1>
+
+<p>開発はGitHubでやってるので何か要望や問題があればGitHubのIssueにつっこんでください。</p>
+
+<p>ソースいじったらpull requestを送ってください。
+pull requestの作法なんかはよくわかってないので適当でいいです。</p>
+
+<p>自分で書き起こしたソースにはライセンスをつけてくれると助かります(ちょっとしたパッチには必要ないです)。
+ライセンスはGPLv3互換であればなんでもいいですが、特に考えがなければGPLv3にしてください。</p>
+
+<p>今のところ.NET Frameworkは3.5でやってください。
+Monoで使えなさそうなクラスの使用はご遠慮ください(PeerCastStation.WPF.dllのように特定のアセンブリで閉じている場合には可)。
+といってもやたら変なクラスを使わない限り動くのであんまり気にしなくてもいいです。</p>
+      </section>
+      <footer>
+        <p><small>Hosted on <a href="http://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		
+  </body>
+</html>
