@@ -42,8 +42,17 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AMF0.cs" />
+    <Compile Include="AMF0Reader.cs" />
+    <Compile Include="AMF0Writer.cs" />
+    <Compile Include="AMF3.cs" />
+    <Compile Include="AMF3Reader.cs" />
+    <Compile Include="AMF3Writer.cs" />
+    <Compile Include="AMFObject.cs" />
+    <Compile Include="AMFValue.cs" />
     <Compile Include="FLVContentReader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RTMPSourceStream.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj">
