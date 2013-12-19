@@ -120,9 +120,9 @@ namespace PeerCastStation.Core
     protected class ConnectionStoppedEvent
       : SourceStreamEvent
     {
-      public SourceConnectionBase Connection { get; private set; }
-      public StopReason           StopReason { get; private set; }
-      public ConnectionStoppedEvent(SourceConnectionBase connection, StopReason reason)
+      public ISourceConnection Connection { get; private set; }
+      public StopReason        StopReason { get; private set; }
+      public ConnectionStoppedEvent(ISourceConnection connection, StopReason reason)
         : base(SourceStreamEventType.ConnectionStopped)
       {
         this.Connection = connection;
@@ -133,11 +133,11 @@ namespace PeerCastStation.Core
     protected EventQueue<SourceStreamEvent> EventQueue { get; private set; }
 
     protected Logger Logger { get; private set; }
-    protected SourceConnectionBase sourceConnection;
-    protected Thread               sourceConnectionThread;
+    protected ISourceConnection sourceConnection;
+    protected Thread            sourceConnectionThread;
 
     public abstract ConnectionInfo GetConnectionInfo();
-    protected abstract SourceConnectionBase CreateConnection(Uri source_uri);
+    protected abstract ISourceConnection CreateConnection(Uri source_uri);
     protected abstract void OnConnectionStopped(ConnectionStoppedEvent msg);
 
     public SourceStreamBase(
@@ -167,7 +167,7 @@ namespace PeerCastStation.Core
 
     protected virtual void OnSourceConnectionStopped(object sender, StreamStoppedEventArgs args)
     {
-      EventQueue.Enqueue(new ConnectionStoppedEvent(sender as SourceConnectionBase, args.StopReason));
+      EventQueue.Enqueue(new ConnectionStoppedEvent(sender as ISourceConnection, args.StopReason));
     }
 
     protected void StartConnection(Uri source_uri)

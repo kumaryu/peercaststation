@@ -365,7 +365,7 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    protected override SourceConnectionBase CreateConnection(Uri source_uri)
+    protected override ISourceConnection CreateConnection(Uri source_uri)
     {
       return new HTTPSourceConnection(PeerCast, Channel, source_uri, ContentReader, UseContentBitrate);
     }
