@@ -1,0 +1,27 @@
+---
+layout: default
+title: 開発版のダウンロード - PeerCastStation
+---
+
+開発版のダウンロード
+====================
+開発版は以下からダウンロードできます。
+
+開発版は新しい機能を積極的に入れるかわりに、不安定だったりする可能性があります。
+不具合があれば報告して貰えると調べたり直したりしますが、そういうのがよくわからない人は安定版を使ってください。
+
+動作環境とインストール方法
+==========================
+Windowsの場合はWindows XP SP3以降と.NET Framework 3.5以降、
+Windows以外の場合はMono 2.6以降が必要です。
+
+今のところインストーラは無いので、ダウンロードしたzipを展開して適当な場所に置いてPeerCastStation.exeを起動してください。詳しい使い方はzip内のhelp\\index.htmlを開いてヘルプを見てください。
+
+{% for release in site.data.releasenotes %}{% if release.channel contains 'dev' %}
+### {{ release.name }}
+[ダウンロード](http://www.pecastation.org/files/PeerCastStation-{{ release.version }}.zip)
+
+{{ release.notes }}
+
+{% endif %}{% endfor %}
+

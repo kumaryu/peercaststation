@@ -5,14 +5,52 @@ title: PeerCastStationについて
 
 PeerCastStationについて
 =======================
-PeerCastStationはリメイク版PeerCastです。PeerCast.exeのかわりとして使えます。
+PeerCastStationはP2P形式の動画ストリーミングサーバ兼クライアントソフトウェアです。
+同様のソフトウェアであるPeerCastをリメイクした物です。PeerCast.exeと互換性があるので置き換えて使えます。
 
-てすと
-=======================
+[PeerCastについて詳しく知りたければ調べろ](http://ja.wikipedia.org/wiki/PeerCast)。
 
-aaaaa
+![メインGUI](images/screenshot00.png)
 
-あああああ
+PeerCastStationの特徴
+=====================
+PeerCastStationは従来のPeerCastを一から作り直したものですが既存のPeerCastと互換性があり、
+PeerCastの配信をPeerCastStationで視聴・リレーしたり、PeerCastStationの配信もPeerCastで視聴・リレーすることができます。
 
+従来のPeerCastやPeerCast改造版との違いは次のようなところです
+
+* C#で一から作り直されています(.NET Framework 3.5以降が必要です)
+* Monoを使えばWindowsでなくとも動きます
+* FLVやMKVなど新しいフォーマットでの配信に対応しています
+* 逆にShoutcastなどには(今のところ)対応していません
+* 自動リレー管理機能がついています(リレー可能なノードを優先して接続します)
+* GUIからでもHTML UIからでもほぼ同等の操作ができ、どちらでも全ての操作ができます(Windows以外ではHTML UIのみになります)
+* PUSH配信とPUSH配信の視聴には今のところ対応していません
+* 配信設定の履歴呼び出しや掲載YPを配信時に選択することができます
+* 既存のPeerCastと互換性があります(新しいフォーマットは一部制限あり)
+* 既存のPeerCast向けのツールも多くは使用可能です(一部動作しない物もあります)
+
+詳しい使い方はダウンロードしたzip内のhelp\\index.htmlを開いてヘルプを見てください。
+
+PeerCastStationのダウンロード
+=============================
+[安定版ダウンロードのページ](download-stable.html)か[開発版ダウンロードのページ](download-dev.html)から落とすことができます。
+
+どれを落としたらよくわからない場合は[安定版の最新を使いましょう](download-stable.html)。
+
+とにかく新しい機能を使いたい場合は[開発版を使うことができます](download-dev.html)。
+ただし人柱向けなので、よく落ちたり上手く動かなかったり動作が重かったりすることもあります。
+そういった場合は報告してもらえると調査したり直したりしますが、
+報告とかよくわからない人はおとなしく安定版を使っておきましょう。
+
+要望・不具合の報告について
+==========================
+[GithubのIssueページで報告してください](https://github.com/kumaryu/peercaststation/issues)。
+
+Githubへの登録が必要になりますが、
+匿名掲示板等では詳細を聞いたり対応済みの報告をするのが難しいため、
+Issueを使ってもらうようにしています。ご協力お願いします。
+
+[Issueを登録する場合にはIssueの書き方にも目を通してください](https://github.com/kumaryu/peercaststation/issues/75)。
 
 
