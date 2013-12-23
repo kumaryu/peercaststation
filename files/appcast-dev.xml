@@ -7,7 +7,7 @@ description: PeerCastStationの更新情報です
 ---
 {% for release in site.data.releasenotes %}{% if release.channel contains 'dev' %}<item>
   <title>{{ release.name }}</title>
-  <description>{{ release.notes | markdownify }}</description>
+  <description><h1>{{ release.name }}</h1>{{ release.notes | markdownify }}</description>
   <pubDate>{{ release.date }}</pubDate>
   <link>{{ release.url }}</link>
   <enclosure url="{{ release.url }}" length="{{ release.length }}" type="application/octet-stream" />
