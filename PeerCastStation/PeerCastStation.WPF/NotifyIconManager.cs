@@ -74,10 +74,10 @@ namespace PeerCastStation.WPF
     public void ShowNotificationMessage(NotificationMessage msg)
     {
       if (notifyIcon==null) return;
-      var timeout = 60000;
+      var timeout = 5000;
       var icon = ToolTipIcon.Info;
       switch (msg.Type) {
-      case NotificationMessageType.Normal:  icon = ToolTipIcon.None; timeout = 30000; break;
+      case NotificationMessageType.Normal:  icon = ToolTipIcon.None; break;
       case NotificationMessageType.Info:    icon = ToolTipIcon.Info; break;
       case NotificationMessageType.Warning: icon = ToolTipIcon.Warning; break;
       case NotificationMessageType.Error:   icon = ToolTipIcon.Error; break;
@@ -96,6 +96,7 @@ namespace PeerCastStation.WPF
       var notifyIcon = new NotifyIcon();
       notifyIcon.Icon = Resources.peercaststation_small;
       notifyIcon.ContextMenuStrip = CreateNotifyIconMenu(peerCast);
+      notifyIcon.Text = peerCast.AgentName;
       notifyIcon.Visible = true;
       notifyIcon.DoubleClick += (sender, args) => {
         if (ShowWindowClicked!=null) {
@@ -147,7 +148,9 @@ namespace PeerCastStation.WPF
       item.Text = "ヘルプ(&H)";
       item.ToolTipText = "PeerCastStationのヘルプを表示します";
       item.Click += (sender, e) => {
-        var listener = peerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.Interface);
+        var listener =
+          peerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.Interface) ??
+          peerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.All);
         if (listener != null) {
           var endpoint = listener.LocalEndPoint;
           var host = endpoint.Address.Equals(System.Net.IPAddress.Any) ?
@@ -165,7 +168,9 @@ namespace PeerCastStation.WPF
       item.Text = "HTML UIを表示(&U)";
       item.ToolTipText = "PeerCastStationのブラウザインターフェースを表示します";
       item.Click += (sender, e) => {
-        var listener = peerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.Interface);
+        var listener = 
+          peerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.Interface) ??
+          peerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.All);
         if (listener != null) {
           var endpoint = listener.LocalEndPoint;
           var host = endpoint.Address.Equals(System.Net.IPAddress.Any) ?

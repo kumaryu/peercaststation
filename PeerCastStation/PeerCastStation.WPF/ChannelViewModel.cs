@@ -114,6 +114,14 @@ namespace PeerCastStation.WPF
       get { return Model.Uptime; }
     }
 
+    public bool IsTrackerSource {
+      get {
+        if (Model.SourceStream==null) return false;
+        var info = Model.SourceStream.GetConnectionInfo();
+        return (info.RemoteHostStatus & RemoteHostStatus.Tracker)!=0;
+      }
+    }
+
     public string ChannelStatus {
       get { 
         var status = "UNKNOWN";
@@ -130,17 +138,18 @@ namespace PeerCastStation.WPF
 
     public ConnectionStatus ConnectionStatus {
       get {
-        if (Model.IsRelayFull) {
+        if (!Model.PeerCast.IsFirewalled.HasValue ||
+             Model.PeerCast.IsFirewalled.Value) {
+          if (Model.LocalRelays>0) {
+            return ConnectionStatus.FirewalledRelaying;
+          }
+          else {
+            return ConnectionStatus.Firewalled;
+          }
+        }
+        else if (Model.IsRelayFull) {
           if (Model.LocalRelays>0) {
             return ConnectionStatus.RelayFull;
-          }
-          else if (!Model.PeerCast.IsFirewalled.HasValue || Model.PeerCast.IsFirewalled.Value) {
-            if (Model.LocalRelays>0) {
-              return ConnectionStatus.FirewalledRelaying;
-            }
-            else {
-              return ConnectionStatus.Firewalled;
-            }
           }
           else {
             return ConnectionStatus.NotRelayable;
@@ -194,6 +203,7 @@ namespace PeerCastStation.WPF
       OnPropertyChanged("Name");
       OnPropertyChanged("Bitrate");
       OnPropertyChanged("ConnectionCount");
+      OnPropertyChanged("IsTrackerSource");
     }
 
     void OnPropertyChanged(string name)

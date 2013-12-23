@@ -143,6 +143,15 @@ namespace PeerCastStation.Core
         Object.Equals(this.Type, x.Type) &&
         Object.Equals(this.Data, x.Data);
     }
+
+    public override int GetHashCode()
+    {
+      return
+        (this.Title==null   ? 0 : this.Title.GetHashCode()) +
+        (this.Message==null ? 0 : this.Message.GetHashCode()) +
+        (this.Type.GetHashCode()) +
+        (this.Data==null    ? 0 : this.Data.GetHashCode());
+    }
   }
 
   public interface IUserInterfacePlugin

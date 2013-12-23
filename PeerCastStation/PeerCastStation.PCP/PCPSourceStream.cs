@@ -36,6 +36,15 @@ namespace PeerCastStation.PCP
 
     public override string Name { get { return "pcp"; } }
     public override string Scheme { get { return "pcp"; } }
+
+    public override SourceStreamType Type {
+      get { return SourceStreamType.Relay; }
+    }
+
+    public override Uri DefaultUri {
+      get { return null; }
+    }
+
     public override ISourceStream Create(Channel channel, Uri tracker)
     {
       return new PCPSourceStream(PeerCast, channel, tracker);
@@ -665,7 +674,8 @@ namespace PeerCastStation.PCP
     }
   }
 
-  public class PCPSourceStream : SourceStreamBase
+  public class PCPSourceStream
+    : SourceStreamBase
   {
     private class IgnoredNodeCollection
     {
@@ -891,6 +901,9 @@ namespace PeerCastStation.PCP
       Reconnect(SelectSourceHost());
     }
 
+    public override SourceStreamType Type {
+      get { return SourceStreamType.Relay; }
+    }
   }
 
   [Plugin]

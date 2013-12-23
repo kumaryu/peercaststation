@@ -52,7 +52,7 @@ namespace PeerCastStation.HTTP
       string path = "/";
       foreach (var req in requests) {
         Match match = null;
-        if ((match = Regex.Match(req, @"^(\w+) (\S+) HTTP/1.\d$", RegexOptions.IgnoreCase)).Success) {
+        if ((match = Regex.Match(req, @"^(\w+) +(\S+) +HTTP/1.\d$", RegexOptions.IgnoreCase)).Success) {
           this.Method = match.Groups[1].Value.ToUpper();
           path = match.Groups[2].Value;
         }

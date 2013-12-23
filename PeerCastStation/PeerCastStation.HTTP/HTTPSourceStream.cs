@@ -87,6 +87,13 @@ namespace PeerCastStation.HTTP
   {
     public override string Name { get { return "http"; } }
     public override string Scheme { get { return "http"; } }
+    public override SourceStreamType Type {
+      get { return SourceStreamType.Broadcast; }
+    }
+    public override Uri DefaultUri {
+      get { return new Uri("http://localhost:8080/"); }
+    }
+
     public override ISourceStream Create(Channel channel, Uri source, IContentReader reader)
     {
       return new HTTPSourceStream(this.PeerCast, channel, source, reader);
@@ -379,6 +386,10 @@ namespace PeerCastStation.HTTP
       }
     }
 
+    public override SourceStreamType Type
+    {
+      get { return SourceStreamType.Broadcast; }
+    }
   }
 
   [Plugin]

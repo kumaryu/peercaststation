@@ -116,31 +116,24 @@ namespace PeerCastStation.Core
     private Thread listenerThread = null;
     private void ListenerThreadFunc(object arg)
     {
-      try {
-        logger.Debug("Listener thread started");
-        var server = (TcpListener)arg;
-        while (!IsClosed) {
-          try {
-            var client = server.AcceptTcpClient();
-            logger.Info("Client connected {0}", client.Client.RemoteEndPoint);
-            var output_thread = new Thread(OutputThreadFunc);
-            lock (outputThreads) {
-              outputThreads.Add(output_thread);
-            }
-            output_thread.Name = String.Format("OutputThread:{0}", client.Client.RemoteEndPoint);
-            output_thread.Start(client);
+      logger.Debug("Listener thread started");
+      var server = (TcpListener)arg;
+      while (!IsClosed) {
+        try {
+          var client = server.AcceptTcpClient();
+          logger.Info("Client connected {0}", client.Client.RemoteEndPoint);
+          var output_thread = new Thread(OutputThreadFunc);
+          lock (outputThreads) {
+            outputThreads.Add(output_thread);
           }
-          catch (SocketException e) {
-            if (!IsClosed) logger.Error(e);
-          }
+          output_thread.Name = String.Format("OutputThread:{0}", client.Client.RemoteEndPoint);
+          output_thread.Start(client);
         }
-        logger.Debug("Listener thread finished");
+        catch (SocketException e) {
+          if (!IsClosed) logger.Error(e);
+        }
       }
-      catch (Exception e) {
-        logger.Fatal("Unhandled exception");
-        logger.Fatal(e);
-        throw;
-      }
+      logger.Debug("Listener thread finished");
     }
 
     /// <summary>
@@ -223,62 +216,50 @@ namespace PeerCastStation.Core
     private static List<Thread> outputThreads = new List<Thread>();
     private void OutputThreadFunc(object arg)
     {
-#if !DEBUG
-      try
-#endif
-      {
-        logger.Debug("Output thread started");
-        var client = (TcpClient)arg;
-        client.ReceiveBufferSize = 64*1024;
-        client.SendBufferSize    = 64*1024;
-        var stream = client.GetStream();
-        stream.WriteTimeout = 3000;
-        stream.ReadTimeout = 3000;
-        IOutputStream output_stream = null;
-        Channel channel = null;
-        try {
-          var remote_endpoint = (IPEndPoint)client.Client.RemoteEndPoint;
-          List<byte> header;
-          Guid channel_id;
-          AuthenticationKey auth_key;
-          var factory = FindMatchedFactory(GetRemoteType(remote_endpoint), stream, out header, out channel_id, out auth_key);
-          if (factory!=null) {
-            var access_control = new AccessControlInfo(auth_key);
-            output_stream = factory.Create(stream, stream, remote_endpoint, access_control, channel_id, header.ToArray());
-            channel = PeerCast.Channels.FirstOrDefault(c => c.ChannelID==channel_id);
-            if (channel!=null) {
-              channel.AddOutputStream(output_stream);
-            }
-            logger.Debug("Output stream started");
-            var wait_stopped = new EventWaitHandle(false, EventResetMode.ManualReset);
-            output_stream.Stopped += (sender, args) => { wait_stopped.Set(); };
-            output_stream.Start();
-            wait_stopped.WaitOne();
+      logger.Debug("Output thread started");
+      var client = (TcpClient)arg;
+      client.ReceiveBufferSize = 64*1024;
+      client.SendBufferSize    = 64*1024;
+      var stream = client.GetStream();
+      stream.WriteTimeout = 3000;
+      stream.ReadTimeout = 3000;
+      IOutputStream output_stream = null;
+      Channel channel = null;
+      try {
+        var remote_endpoint = (IPEndPoint)client.Client.RemoteEndPoint;
+        List<byte> header;
+        Guid channel_id;
+        AuthenticationKey auth_key;
+        var factory = FindMatchedFactory(GetRemoteType(remote_endpoint), stream, out header, out channel_id, out auth_key);
+        if (factory!=null) {
+          var access_control = new AccessControlInfo(auth_key);
+          output_stream = factory.Create(stream, stream, remote_endpoint, access_control, channel_id, header.ToArray());
+          channel = PeerCast.Channels.FirstOrDefault(c => c.ChannelID==channel_id);
+          if (channel!=null) {
+            channel.AddOutputStream(output_stream);
           }
-          else {
-            logger.Debug("No protocol matched");
-          }
+          logger.Debug("Output stream started");
+          var wait_stopped = new EventWaitHandle(false, EventResetMode.ManualReset);
+          output_stream.Stopped += (sender, args) => { wait_stopped.Set(); };
+          output_stream.Start();
+          wait_stopped.WaitOne();
         }
-        finally {
-          logger.Debug("Closing client connection");
-          if (output_stream!=null && channel!=null) {
-            channel.RemoveOutputStream(output_stream);
-          }
-          stream.Close();
-          client.Close();
-          lock (outputThreads) {
-            outputThreads.Remove(Thread.CurrentThread);
-          }
-          logger.Debug("Output thread finished");
+        else {
+          logger.Debug("No protocol matched");
         }
       }
-#if !DEBUG
-      catch (Exception e) {
-        logger.Fatal("Unhandled exception");
-        logger.Fatal(e);
-        throw;
+      finally {
+        logger.Debug("Closing client connection");
+        if (output_stream!=null && channel!=null) {
+          channel.RemoveOutputStream(output_stream);
+        }
+        stream.Close();
+        client.Close();
+        lock (outputThreads) {
+          outputThreads.Remove(Thread.CurrentThread);
+        }
+        logger.Debug("Output thread finished");
       }
-#endif
     }
 
   }

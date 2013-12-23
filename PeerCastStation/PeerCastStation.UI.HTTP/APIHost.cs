@@ -17,8 +17,9 @@ namespace PeerCastStation.UI.HTTP
   {
     override public string Name { get { return "HTTP API Host UI"; } }
     public LogWriter LogWriter { get { return logWriter; } }
-
     private LogWriter logWriter = new LogWriter(1000);
+
+    private ObjectIdRegistry idRegistry = new ObjectIdRegistry();
     private APIHostOutputStreamFactory factory;
     override protected void OnAttach()
     {
@@ -79,6 +80,11 @@ namespace PeerCastStation.UI.HTTP
         this.request = request;
         this.rpcHost = new JSONRPCHost(this);
         Logger.Debug("Initialized: Remote {0}", remote_endpoint);
+      }
+
+      private int GetObjectId(object obj)
+      {
+        return owner.idRegistry.GetId(obj);
       }
 
       public override ConnectionInfo GetConnectionInfo()
@@ -309,7 +315,7 @@ namespace PeerCastStation.UI.HTTP
         }
         return new JArray(announcings.Select(ac => {
           var acinfo = new JObject();
-          acinfo["yellowPageId"] = ac.YellowPage.GetHashCode();
+          acinfo["yellowPageId"] = GetObjectId(ac.YellowPage);
           acinfo["name"]         = ac.YellowPage.Name;
           acinfo["protocol"]     = ac.YellowPage.Protocol;
           acinfo["uri"]          = ac.YellowPage.Uri.ToString();
@@ -391,7 +397,7 @@ namespace PeerCastStation.UI.HTTP
         var channel = GetChannel(channelId);
         return new JArray(channel.OutputStreams.Select(os => {
           var res = new JObject();
-          res["outputId"] = os.GetHashCode();
+          res["outputId"] = GetObjectId(os);
           res["name"]     = os.ToString();
           res["type"]     = (int)os.OutputStreamType;
           return res;
@@ -402,7 +408,7 @@ namespace PeerCastStation.UI.HTTP
       private void StopChannelOutput(string channelId, int outputId)
       {
         var channel = GetChannel(channelId);
-        var output_stream = channel.OutputStreams.FirstOrDefault(os => os.GetHashCode()==outputId);
+        var output_stream = channel.OutputStreams.FirstOrDefault(os => GetObjectId(os)==outputId);
         if (output_stream!=null) {
           channel.RemoveOutputStream(output_stream);
           output_stream.Stop();
@@ -411,23 +417,23 @@ namespace PeerCastStation.UI.HTTP
 
       private JObject GetChannelConnection(ISourceStream ss)
       {
-        return GetChannelConnection(ss.GetHashCode(), ss.GetConnectionInfo());
+        return GetChannelConnection(ss, ss.GetConnectionInfo());
       }
 
       private JObject GetChannelConnection(IOutputStream os)
       {
-        return GetChannelConnection(os.GetHashCode(), os.GetConnectionInfo());
+        return GetChannelConnection(os, os.GetConnectionInfo());
       }
 
       private JObject GetChannelConnection(IAnnouncingChannel ac)
       {
-        return GetChannelConnection(ac.GetHashCode(), ac.YellowPage.GetConnectionInfo());
+        return GetChannelConnection(ac, ac.YellowPage.GetConnectionInfo());
       }
 
-      private JObject GetChannelConnection(int connection_id, ConnectionInfo info)
+      private JObject GetChannelConnection(object connection, ConnectionInfo info)
       {
         var res = new JObject();
-        res["connectionId"]     = connection_id;
+        res["connectionId"]     = GetObjectId(connection);
         res["type"]             = info.Type.ToString().ToLowerInvariant();
         res["status"]           = info.Status.ToString();
         res["sendRate"]         = info.SendRate;
@@ -473,19 +479,19 @@ namespace PeerCastStation.UI.HTTP
       private bool StopChannelConnection(string channelId, int connectionId)
       {
         var channel = GetChannel(channelId);
-        var os = channel.OutputStreams.FirstOrDefault(s => s.GetHashCode()==connectionId);
+        var os = channel.OutputStreams.FirstOrDefault(s => GetObjectId(s)==connectionId);
         if (os!=null) {
           channel.RemoveOutputStream(os);
           os.Stop();
           return true;
         }
         foreach (var yp in PeerCast.YellowPages) {
-          if (connectionId==yp.GetHashCode()) {
-            var ac = yp.AnnouncingChannels.Where(s => s.Channel.ChannelID==channel.ChannelID).FirstOrDefault();
-            if (ac!=null) {
-              yp.StopAnnounce(ac);
-              return true;
-            }
+          var ac = yp.AnnouncingChannels
+            .Where(s => GetObjectId(s)==connectionId)
+            .Where(s => s.Channel.ChannelID==channel.ChannelID).FirstOrDefault();
+          if (ac!=null) {
+            yp.StopAnnounce(ac);
+            return true;
           }
         }
         return false;
@@ -495,17 +501,17 @@ namespace PeerCastStation.UI.HTTP
       private bool RestartChannelConnection(string channelId, int connectionId)
       {
         var channel = GetChannel(channelId);
-        if (channel.SourceStream!=null && channel.SourceStream.GetHashCode()==connectionId) {
+        if (channel.SourceStream!=null && GetObjectId(channel.SourceStream)==connectionId) {
           channel.SourceStream.Reconnect();
           return true;
         }
         foreach (var yp in PeerCast.YellowPages) {
-          if (connectionId==yp.GetHashCode()) {
-            var ac = yp.AnnouncingChannels.Where(s => s.Channel.ChannelID==channel.ChannelID).FirstOrDefault();
-            if (ac!=null) {
-              yp.RestartAnnounce(ac);
-              return true;
-            }
+          var ac = yp.AnnouncingChannels
+            .Where(s => GetObjectId(s)==connectionId)
+            .Where(s => s.Channel.ChannelID==channel.ChannelID).FirstOrDefault();
+          if (ac!=null) {
+            yp.RestartAnnounce(ac);
+            return true;
           }
         }
         return false;
@@ -561,6 +567,20 @@ namespace PeerCastStation.UI.HTTP
         }).ToArray());
       }
 
+      [RPCMethod("getSourceStreams")]
+      private JArray GetSourceStreams()
+      {
+        return new JArray(PeerCast.SourceStreamFactories.Select(sstream => {
+          var res = new JObject();
+          res["name"]       = sstream.Name;
+          res["desc"]       = sstream.Name;
+          res["scheme"]     = sstream.Scheme;
+          res["type"]       = (int)sstream.Type;
+          res["defaultUri"] = sstream.DefaultUri!=null ? sstream.DefaultUri.ToString() : "";
+          return res;
+        }).ToArray());
+      }
+
       [RPCMethod("getYellowPageProtocols")]
       private JArray GetYellowPageProtocols()
       {
@@ -577,7 +597,7 @@ namespace PeerCastStation.UI.HTTP
       {
         return new JArray(PeerCast.YellowPages.Select(yp => {
           var res = new JObject();
-          res["yellowPageId"] = yp.GetHashCode();
+          res["yellowPageId"] = GetObjectId(yp);
           res["name"]         = yp.Name;
           res["uri"]          = yp.Uri.ToString();
           res["protocol"]     = yp.Protocol;
@@ -613,7 +633,7 @@ namespace PeerCastStation.UI.HTTP
         var yp = PeerCast.AddYellowPage(factory.Protocol, name, yp_uri);
         owner.Application.SaveSettings();
         var res = new JObject();
-        res["yellowPageId"] = yp.GetHashCode();
+        res["yellowPageId"] = GetObjectId(yp);
         res["name"]         = yp.Name;
         res["uri"]          = yp.Uri.ToString();
         res["protocol"]     = yp.Protocol;
@@ -623,7 +643,7 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("removeYellowPage")]
       private void RemoveYellowPage(int yellowPageId)
       {
-        var yp = PeerCast.YellowPages.FirstOrDefault(p => p.GetHashCode()==yellowPageId);
+        var yp = PeerCast.YellowPages.FirstOrDefault(p => GetObjectId(p)==yellowPageId);
         if (yp!=null) {
           PeerCast.RemoveYellowPage(yp);
           owner.Application.SaveSettings();
@@ -633,7 +653,7 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("stopAnnounce")]
       private void StopAnnounce(int yellowPageId, string channelId=null)
       {
-        var yp = PeerCast.YellowPages.FirstOrDefault(p => p.GetHashCode()==yellowPageId);
+        var yp = PeerCast.YellowPages.FirstOrDefault(p => GetObjectId(p)==yellowPageId);
         if (yp!=null) {
           if (channelId!=null) {
             var channel = GetChannel(channelId);
@@ -651,7 +671,7 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("restartAnnounce")]
       private void RestartAnnounce(int yellowPageId, string channelId=null)
       {
-        var yp = PeerCast.YellowPages.FirstOrDefault(p => p.GetHashCode()==yellowPageId);
+        var yp = PeerCast.YellowPages.FirstOrDefault(p => GetObjectId(p)==yellowPageId);
         if (yp!=null) {
           if (channelId!=null) {
             var channel = GetChannel(channelId);
@@ -669,7 +689,7 @@ namespace PeerCastStation.UI.HTTP
       private JObject GetListener(OutputListener listener)
       {
         var res = new JObject();
-        res["listenerId"]    = listener.GetHashCode();
+        res["listenerId"]    = GetObjectId(listener);
         res["address"]       = listener.LocalEndPoint.Address.ToString();
         res["port"]          = listener.LocalEndPoint.Port;
         res["localAccepts"]  = (int)listener.LocalOutputAccepts;
@@ -718,7 +738,7 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("resetListenerAuthenticationKey")]
       private JObject resetListenerAuthenticationKey(int listenerId)
       {
-        var listener = PeerCast.OutputListeners.Where(ol => ol.GetHashCode()==listenerId).FirstOrDefault();
+        var listener = PeerCast.OutputListeners.Where(ol => GetObjectId(ol)==listenerId).FirstOrDefault();
         if (listener!=null) {
           owner.Application.SaveSettings();
           listener.ResetAuthenticationKey();
@@ -732,7 +752,7 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("removeListener")]
       private void RemoveListener(int listenerId)
       {
-        foreach (var listener in PeerCast.OutputListeners.Where(ol => ol.GetHashCode()==listenerId)) {
+        foreach (var listener in PeerCast.OutputListeners.Where(ol => GetObjectId(ol)==listenerId)) {
           PeerCast.StopListen(listener);
         }
         owner.Application.SaveSettings();
@@ -741,7 +761,7 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("setListenerAccepts")]
       private void setListenerAccepts(int listenerId, int localAccepts, int globalAccepts)
       {
-        foreach (var listener in PeerCast.OutputListeners.Where(ol => ol.GetHashCode()==listenerId)) {
+        foreach (var listener in PeerCast.OutputListeners.Where(ol => GetObjectId(ol)==listenerId)) {
           listener.LocalOutputAccepts = (OutputStreamType)localAccepts;
           listener.GlobalOutputAccepts = (OutputStreamType)globalAccepts;
         }
@@ -751,7 +771,7 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("setListenerAuthorizationRequired")]
       private void setListenerAuthorizationRequired(int listenerId, bool localAuthorizationRequired, bool globalAuthorizationRequired)
       {
-        foreach (var listener in PeerCast.OutputListeners.Where(ol => ol.GetHashCode()==listenerId)) {
+        foreach (var listener in PeerCast.OutputListeners.Where(ol => GetObjectId(ol)==listenerId)) {
           listener.LocalAuthorizationRequired = localAuthorizationRequired;
           listener.GlobalAuthorizationRequired = globalAuthorizationRequired;
         }
@@ -759,11 +779,17 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("broadcastChannel")]
-      private string BroadcastChannel(int? yellowPageId, string sourceUri, string contentReader, JObject info, JObject track)
+      private string BroadcastChannel(
+        int?    yellowPageId,
+        string  sourceUri,
+        string  contentReader,
+        JObject info,
+        JObject track,
+        string  sourceStream=null)
       {
         IYellowPageClient yp = null;
         if (yellowPageId.HasValue) {
-          yp = PeerCast.YellowPages.FirstOrDefault(y => y.GetHashCode()==yellowPageId.Value);
+          yp = PeerCast.YellowPages.FirstOrDefault(y => GetObjectId(y)==yellowPageId.Value);
           if (yp==null) throw new RPCError(RPCErrorCode.InvalidParams, "Yellow page not found");
         }
         if (sourceUri==null) throw new RPCError(RPCErrorCode.InvalidParams, "source uri required");
@@ -776,6 +802,15 @@ namespace PeerCastStation.UI.HTTP
         }
         var content_reader = PeerCast.ContentReaderFactories.FirstOrDefault(reader => reader.Name==contentReader);
         if (content_reader==null) throw new RPCError(RPCErrorCode.InvalidParams, "Content reader not found");
+        var source_stream = PeerCast.SourceStreamFactories
+          .Where(sstream => (sstream.Type & SourceStreamType.Broadcast)!=0)
+          .FirstOrDefault(sstream => sstream.Name==sourceStream);
+        if (source_stream==null) {
+          source_stream = PeerCast.SourceStreamFactories
+            .Where(sstream => (sstream.Type & SourceStreamType.Broadcast)!=0)
+            .FirstOrDefault(sstream => sstream.Scheme==source.Scheme);
+        }
+        if (source_stream==null) throw new RPCError(RPCErrorCode.InvalidParams, "Source stream not found");
 
         var new_info = new AtomCollection();
         if (info!=null) {
@@ -794,7 +829,7 @@ namespace PeerCastStation.UI.HTTP
           channel_info.Name,
           channel_info.Genre ?? "",
           source.ToString());
-        var channel = PeerCast.BroadcastChannel(yp, channel_id, channel_info, source, content_reader);
+        var channel = PeerCast.BroadcastChannel(yp, channel_id, channel_info, source, source_stream, content_reader);
         if (track!=null) {
           var new_track = new AtomCollection(channel.ChannelTrack.Extra);
           if (track["name"]!=null)    new_track.SetChanTrackTitle((string)track["name"]);

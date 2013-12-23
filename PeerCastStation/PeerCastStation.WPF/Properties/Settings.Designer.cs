@@ -85,7 +85,7 @@ namespace PeerCastStation.WPF.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("http://www.pecastation.org/files/appcast.xml")]
+        [global::System.Configuration.DefaultSettingValueAttribute("http://www.pecastation.org/files/appcast-dev.xml")]
         public string UpdateURL {
             get {
                 return ((string)(this["UpdateURL"]));

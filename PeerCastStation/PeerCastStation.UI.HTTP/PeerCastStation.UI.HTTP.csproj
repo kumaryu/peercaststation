@@ -54,6 +54,7 @@
     <Compile Include="APIHost.cs" />
     <Compile Include="HTTPUtils.cs" />
     <Compile Include="JSONRPC.cs" />
+    <Compile Include="ObjectIdRegistry.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

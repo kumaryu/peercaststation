@@ -29,8 +29,10 @@ namespace PeerCastStation.Core
       this.PeerCast = peercast;
     }
 
-    public abstract string Name { get; }
-    public abstract string Scheme { get; }
+    public abstract string           Name { get; }
+    public abstract string           Scheme { get; }
+    public abstract SourceStreamType Type { get; }
+    public abstract Uri              DefaultUri { get; }
     public virtual ISourceStream Create(Channel channel, Uri tracker)
     {
       throw new NotImplementedException();
@@ -177,19 +179,7 @@ namespace PeerCastStation.Core
       sourceConnection = CreateConnection(source_uri);
       sourceConnection.Stopped += OnSourceConnectionStopped;
       sourceConnectionThread = new Thread(state => {
-#if !DEBUG
-        try
-#endif
-        {
-          sourceConnection.Run();
-        }
-#if !DEBUG
-        catch (Exception e) {
-          Logger.Fatal("Unhandled exception");
-          Logger.Fatal(e);
-          throw;
-        }
-#endif
+        sourceConnection.Run();
       });
       sourceConnectionThread.Start();
     }
@@ -286,6 +276,8 @@ namespace PeerCastStation.Core
     {
       EventQueue.Enqueue(new StartEvent(source_uri));
     }
+
+    public abstract SourceStreamType Type { get; }
 
     public SourceStreamStatus Status
     {

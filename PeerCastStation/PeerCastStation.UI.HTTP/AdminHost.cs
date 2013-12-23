@@ -237,11 +237,14 @@ namespace PeerCastStation.UI.HTTP
       {
         string idstr;
         if (query.TryGetValue("id", out idstr)) {
+          var md = System.Text.RegularExpressions.Regex.Match(idstr, @"([A-Fa-f0-9]{32})(\.\S+)?");
           var channel_id = Guid.Empty;
-          try {
-            channel_id = new Guid(idstr);
-          }
-          catch (Exception) {
+          if (md.Success) {
+            try {
+              channel_id = new Guid(md.Groups[1].Value);
+            }
+            catch (Exception) {
+            }
           }
           return PeerCast.Channels.FirstOrDefault(c => c.ChannelID==channel_id);
         }

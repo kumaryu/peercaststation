@@ -56,6 +56,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         </ListBox.ItemsPanel>
         <ListBox.ItemTemplate>
           <DataTemplate>
+            <DataTemplate.Resources>
+              <Style TargetType="TextBlock">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding IsTrackerSource}" Value="true">
+                    <Setter Property="FontWeight" Value="Black"/>
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </DataTemplate.Resources>
             <Grid>
               <Grid.Resources>
                 <BitmapImage x:Key="IconRelayable"          UriSource="../images/relay_icon_0.png"/>

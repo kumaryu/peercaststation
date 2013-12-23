@@ -7,16 +7,19 @@ namespace PeerCastStation.Core
     : Channel
   {
     public override bool IsBroadcasting { get { return true; } }
+    public ISourceStreamFactory SourceStreamFactory { get; private set; }
     public IContentReaderFactory ContentReaderFactory { get; private set; }
 
     public BroadcastChannel(
         PeerCast peercast,
         Guid channel_id,
         ChannelInfo channel_info,
+        ISourceStreamFactory source_stream_factory,
         IContentReaderFactory content_reader_factory)
       : base(peercast, channel_id)
     {
       this.ChannelInfo = channel_info;
+      this.SourceStreamFactory = source_stream_factory;
       this.ContentReaderFactory = content_reader_factory;
     }
 

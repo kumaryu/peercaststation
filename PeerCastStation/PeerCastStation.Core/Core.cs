@@ -348,6 +348,31 @@ namespace PeerCastStation.Core
       Status = status;
     }
   }
+
+  /// <summary>
+  /// SourceStreamの種類を表します
+  /// </summary>
+  [Flags]
+  public enum SourceStreamType
+  {
+    /// <summary>
+    /// 指定無し
+    /// </summary>
+    None = 0,
+    /// <summary>
+    /// 配信用入力ストリーム
+    /// </summary>
+    Broadcast = 1,
+    /// <summary>
+    /// リレー用入力ストリーム
+    /// </summary>
+    Relay = 2,
+    /// <summary>
+    /// 全て
+    /// </summary>
+    All = 0x7FFFFFFF,
+  }
+
   /// <summary>
   /// 上流からチャンネルにContentを追加するストリームを表すインターフェースです
   /// </summary>
@@ -377,6 +402,10 @@ namespace PeerCastStation.Core
     /// </summary>
     void Stop();
     /// <summary>
+    /// ストリームの種類を取得します
+    /// </summary>
+    SourceStreamType Type { get; }
+    /// <summary>
     /// ストリームの現在の状態を取得します
     /// </summary>
     SourceStreamStatus Status { get; }
@@ -405,6 +434,14 @@ namespace PeerCastStation.Core
     /// このSourceStreamFactoryが扱うプロトコルのURIスキームを取得します
     /// </summary>
     string Scheme { get; }
+    /// <summary>
+    /// このSourceStreamFactoryが扱うプロトコルの用途を取得します
+    /// </summary>
+    SourceStreamType Type { get; }
+    /// <summary>
+    /// 配信時に使われるURIのデフォルト値を取得します
+    /// </summary>
+    Uri DefaultUri { get; }
     /// <summary>
     /// URIからプロトコルを判別しSourceStreamのインスタンスを作成します。
     /// </summary>

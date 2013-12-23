@@ -15,7 +15,9 @@ namespace PeerCastStation.Core
 
     public override void Start(Uri source_uri)
     {
-      var source_factory = PeerCast.SourceStreamFactories.FirstOrDefault(factory => source_uri.Scheme==factory.Scheme);
+      var source_factory = PeerCast.SourceStreamFactories
+        .Where(factory => (factory.Type & SourceStreamType.Relay)!=0)
+        .FirstOrDefault(factory => source_uri.Scheme==factory.Scheme);
       if (source_factory==null) {
         logger.Error("Protocol `{0}' is not found", source_uri.Scheme);
         throw new ArgumentException(String.Format("Protocol `{0}' is not found", source_uri.Scheme));

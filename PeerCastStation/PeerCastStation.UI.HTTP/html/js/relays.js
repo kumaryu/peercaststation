@@ -322,6 +322,7 @@ var ChannelViewModel = function(initial_value) {
   self.isFirewalled = ko.computed(function() {
     return channelsViewModel.isFirewalled();
   });
+
   self.connectionStatus = ko.computed(function () {
     var result = "";
     if (self.isReceiving()) {
@@ -349,6 +350,14 @@ var ChannelViewModel = function(initial_value) {
       result = "notReceiving";
     }
     return result;
+  });
+
+  self.isSourceTracker = ko.computed(function() {
+    for (var i in self.connections()) {
+      var conn = self.connections()[i];
+      if ($.inArray("tracker", conn.remoteHostStatus())>=0) return true;
+    }
+    return false;
   });
 
   PeerCast.getChannelConnections(self.channelId(), function(result) {
