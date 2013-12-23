@@ -15,7 +15,7 @@
       <Value Profile="(Default)">1800000</Value>
     </Setting>
     <Setting Name="AgentName" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">PeerCastStation/1.7.3.0</Value>
+      <Value Profile="(Default)">PeerCastStation/1.6.3.0</Value>
     </Setting>
   </Settings>
 </SettingsFile>
