@@ -1,10 +1,33 @@
 ---
+- name: Version 1.6.3 (2013年12月23日安定版)
+  version: 1.6.3
+  channel: stable
+  notes: |
+    ユーザーインターフェース周りの細かい変更いくらか入れました。
+
+    * GUIでポート未開放でもチャンネル一覧の状態が×にならなかったのを修正しました
+    * チャンネル切断時などの通知表示を5秒に短縮しました
+    * タスクトレイのアイコンにカーソルを合わせた時に名前が出るようにしました
+    * LANの操作可能ポートがない時にタスクトレイからHTML UIやヘルプが表示できなかったのを修正しました
+    * リレーしているチャンネルがトラッカー直下の場合に太字で表示されるようにしました
+    * HTML UIの設定ページをレイアウト変更しました
+    * SWPCでチャンネルのbumpや切断が動いていなかったのを対策しました
+    * JSON RPCのオブジェクトIDがおかしくなる可能性があるのを修正しました
+    * 落ちた際に例外のログを書き出すようにしました。
+      通常はC:\Users\(ユーザー名)\AppData\Roaming\PeerCastStation\exception.logに書き出されます。
+      落ちた場合の報告にはこのファイルの内容を記載してもらうと解析が進みますのでお願いします
+  date: Mon, 23 Dec 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.6.3.zip
+  length: 1715969
+
 - name: Version 1.7.6 (2013年12月12日開発版)
   version: 1.7.6
   channel: dev
   notes: |
     * 1.7.5でリレー先が切れた時に落ちることがあったのを修正しました
   date: Thu, 12 Dec 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.7.6.zip
+  length: 1730740
 
 - name: Version 1.7.5 (2013年12月11日開発版)
   version: 1.7.5
@@ -13,6 +36,8 @@
     * 1.7.4でリレー開始時にいくらかのデータを受信し損ねて正しく視聴できないことがあったのを修正しました
     * 受信処理の効率化をもうちょっと進めました
   date: Wed, 11 Dec 2013 18:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.7.5.zip
+  length: 1710476
 
 - name: Version 1.7.4 (2013年12月10日開発版)
   version: 1.7.4
@@ -24,6 +49,8 @@
     * 動画パケットの保持量を100パケットから5秒に変更しました
     * リレー時のパケット受信処理を効率化しました。パケット数が多いチャンネルでも処理が滞らなくなりました
   date: Tue, 10 Dec 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.7.4.zip
+  length: 1730688
 
 - name: Version 1.7.3 (2013年11月30日開発版)
   version: 1.7.3
@@ -31,6 +58,8 @@
   notes: |
     * リレー可能なアドレスが無いノードが接続してきた場合に落ちる場合があったのを修正しました
   date: Sat, 30 Nov 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.7.3.zip
+  length: 1701959
 
 - name: Version 1.7.2 (2013年11月17日開発版)
   version: 1.7.2
@@ -40,6 +69,8 @@
       通常はC:\Users\(ユーザー名)\AppData\Roaming\PeerCastStation\exception.logに書き出されます。
       落ちた場合の報告にはこのファイルの内容を記載してもらうと解析が進みますのでお願いします
   date: Sun, 17 Nov 2013 3:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.7.2.zip
+  length: 1701952
 
 - name: Version 1.7.1 (2013年10月27日開発版)
   version: 1.7.1
@@ -52,6 +83,8 @@
     * タスクトレイのアイコンにカーソルを合わせた時に名前が出るようにしました
     * LANの操作可能ポートがない時にタスクトレイからHTML UIやヘルプが表示できなかったのを修正しました
   date: Sun, 27 Oct 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.7.1.zip
+  length: 1700062
 
 - name: Version 1.7.0 (2013年10月21日開発版)
   version: 1.7.0
@@ -66,6 +99,8 @@
     * swpcでチャンネルのbumpや切断が動いていなかったのを対策しました
     * JSON RPCのオブジェクトIDがおかしくなる可能性があるのを修正しました
   date: Mon, 21 Oct 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.7.0.zip
+  length: 1699645
 
 - name: Version 1.6.2 (2013年11月30日版)
   version: 1.6.2
@@ -73,6 +108,8 @@
   notes: |
     * リレー可能なアドレスが無いノードが接続してきた場合に落ちる場合があったのを修正しました
   date: Sat, 30 Nov 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.6.2.zip
+  length: 1698548
 
 - name: Version 1.6.0 (2013年10月14日版)
   version: 1.6.0
@@ -98,6 +135,8 @@
     * 異常なHTTPリクエストを受け取った際に落ちることがあったのを修正しました
     * 外部からの視聴・操作にHTTPのBasic認証を設定できるようにしました。ポートの設定で「要認証」を有効にすると視聴と操作にのみBasic認証がかかります。今のところIDとパスワードは手動で設定できず自動生成のみになっています
   date: Mon, 14 Oct 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.6.0.zip
+  length: 1697942
 
 - name: Version 1.5.3 (2013年9月25日版)
   version: 1.5.3
@@ -110,6 +149,8 @@
     * リレーツリーの表示がよくわからないつながりになることがあるのもついでに解消されました
     * 下流へデータを送りきれないと判断して切断をする条件を3秒から10秒に緩和しました
   date: Wed, 25 Sep 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.5.3.zip
+  length: 1775782
 
 - name: Version 1.5.2 (2013年9月8日版)
   version: 1.5.2
@@ -123,6 +164,8 @@
     * GUIの表示を実行した時になるべく前面にウィンドウを持ってきて最小化も解除するようにしました
     * 外部ツールでウィンドウを表示させた時に真っ黒になるのに対処しました
   date: Sun, 8 Sep 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.5.2.zip
+  length: 1679049
 
 - name: Version 1.5.1 (2013年9月7日版)
   version: 1.5.1
@@ -134,6 +177,8 @@
     * GUIを非表示のまま終了すると次回起動時に落ちることがあったのを修正しました
     * ヘルプページの表示がちょっとかわりました。目次がつきました
   date: Sat, 7 Sep 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.5.1.zip
+  length: 1678158
 
 - name: Version 1.5.0 (2013年9月4日版)
   version: 1.5.0
@@ -149,6 +194,8 @@
     * PCP通信時に拡張バージョンとしてST150を出力するようにしました
     * 受信部を大幅に整理し、リレーの再接続などの安定化をしました
   date: Wed, 4 Sep 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.5.0.zip
+  length: 1647929
 
 - name: Version 1.4.2 (2013年7月13日版)
   version: 1.4.2
@@ -163,6 +210,8 @@
     * GUIのウィンドウの位置とサイズを保存するようにしました
     * 接続が切れているチャンネルに同時に複数の視聴要求がくると落ちることがあったのを修正しました
   date: Sat, 13 Jul 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.4.2.zip
+  length: 1114113
 
 - name: Version 1.4.1 (2013年6月19日版)
   version: 1.4.1
@@ -177,6 +226,8 @@
     * 視聴リクエストにつくtipパラメータに不正な値が設定されていた場合に落ちるのを修正しました
     * ログファイルがずっとロックされていたのを実際の書き込み中のみロックされるように変更しました
   date: Wed, 19 Jun 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.4.1.zip
+  length: 1080443
 
 - name: Version 1.4.0 (2013年5月29日版)
   version: 1.4.0
@@ -191,6 +242,8 @@
     * リレーしていたチャンネルが終了した時や接続失敗した時に通知が出るようにしました
     * 設定保存がPeerCastStation正常終了時のみ行われていたのを、設定変更時にすぐ保存するようにしました
   date: Wed, 29 May 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.4.0.zip
+  length: 1079867
 
 - name: Version 1.3.2 (2013年5月8日版)
   version: 1.3.2
@@ -200,6 +253,8 @@
 
     * HTML UIの設定ページでその他の設定を変更しても全く反映されないのを修正しました
   date: Wed, 08 May 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.3.2.zip
+  length: 1107730
 
 - name: Version 1.3.1 (2013年5月5日版)
   version: 1.3.1
@@ -210,18 +265,22 @@
     * HTML UIのチャンネル一覧ページで多くの操作がエラーになって動かなかったのを修正しました
     * User-AgentやServerをPeerCastStation/1.3.1.0のようなバージョンに即した値を出力するようにしました
   date: Sun, 05 May 2013 18:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.3.1.zip
+  length: 1107524
 
 - name: Version 1.3.0 (2013年5月4日版)
   version: 1.3.0
   channel: stable
   notes: |
     チャンネル自動切断のモード選択ができるようになりました。
-    
+
     * チャンネル自動切断のモードを選択できるようになりました。次のいずれかを選べます。詳しくはヘルプの設定のページを見てください
     * 接続一覧での表示が少し変更されました。詳しくはヘルプの使い方のページを見てください
     * 設定ファイルの内容が変更されました。ファイルの場所などは変更ありません
     * プラグインシステムの実装を変更しました。バージョン表示が少し変わりますが動作には何の影響もありません
   date: Sat, 04 May 2013 00:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.3.0.zip
+  length: 1076766
 
 - name: Version 1.2.1 (2013年3月29日版)
   version: 1.2.1
@@ -238,6 +297,8 @@
     * 視聴できないチャンネルへの視聴リクエストを受けつけると落ちるのを修正しました
     * GUIでログ表示の設定を変更しても反映されていなかったのを修正しました
   date: Fri, 29 Mar 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.2.1.zip
+  length: 1097430
 
 - name: Version 1.2.0 (2013年2月28日版)
   version: 1.2.0
@@ -253,6 +314,8 @@
     * monoの一部バージョンでHTML UIが動かないことがあるのに対処しました
     * 機能追加をやりやすくするために設定ファイルの保存場所および内容を変更しました。新旧の設定保存先はヘルプのその他を参照してください
   date: Thu, 28 Feb 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.2.0.zip
+  length: 1061682
 
 - name: Version 1.1.0 (2013年1月29日版)
   version: 1.1.0
@@ -269,6 +332,8 @@
     * viewxmlで取得できるxmlでチャンネル毎のuptimeとageの文字列がおかしかったのを修正しました
     * 一部のチャンネルでチャンネル情報が文字化けすることがあるのを仕方なく対処してやりました。本来はShift-JISなんかでチャンネル情報を流す方が悪い
   date: Mon, 28 Jan 2013 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.1.0.zip
+  length: 1419469
 
 - name: Version 1.0.0 (2012年12月31日版)
   version: 1.0.0
@@ -290,6 +355,8 @@
     * 31日版:新バージョンチェック用の日付が11月のままだったのを修正しました
     * 31日版:HTML UIで起動時間・チャンネルリレー時間の計算が間違っていたのを修正しました
   date: Sun, 30 Dec 2012 2:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.0.0.zip
+  length: 1250498
 
 - name: Version 0.9.0 (2012年11月29日版)
   version: 0.9.0
@@ -299,6 +366,8 @@
     * GUIでチャンネル一覧と接続一覧にリレー可否状況を記号で表示するようにしました
     * エンコードが停止再開されたあとやチャンネルの位置が4GBを越えた場合も安定して視聴やリレーができるように改善しました
   date: Thu, 29 Nov 2012 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-0.9.0.zip
+  length: 1264693
 
 - name: Version 0.8.1 (2012年10月29日版)
   version: 0.8.1
@@ -313,15 +382,19 @@
     * リレーや視聴してるチャンネルの位置が4GBを越えると止まってしまっていたのを修正しました
     * その他細かいバグ修正やコードの整理を行ないました
   date: Mon, 29 Oct 2012 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-0.8.1.zip
+  length: 1262544
 
 - name: Version 0.8.0 (きゃすけっと2012秋版)
   version: 0.8.0
   channel: stable
   notes: |
     きゃすけっと2012秋バージョン
-    
+
     * リレー・配信ともに安定性を向上しました
     * FLVとMKVの配信に対応しました。ただし視聴側のPeerCast本体も対応している必要があります
     * 配信時にYPへの掲載状況を接続先リストに表示できるようにしました。再接続もできます
     * おはおはが終わってしまったので対応を外しました
   date: Mon, 17 Sep 2012 16:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-0.8.0.zip
+  length: 1222903
