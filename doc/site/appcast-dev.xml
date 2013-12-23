@@ -7,6 +7,34 @@
     <language>ja</language>      
 
     <item>
+      <title>Version 1.7.3 (2013年11月30日開発版)</title>
+      <description>
+        <h3>1.7.3 (2013年11月30日開発版)</h3>
+        <ul>
+          <li>リレー可能なアドレスが無いノードが接続してきた場合に落ちる場合があったのを修正しました</li>
+        </ul>
+      </description>
+      <pubDate>Sat, 30 Nov 2013 23:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-1.7.3.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-1.7.3.zip" sparkle:version="1.7.3" length="1701959" type="application/octet-stream" />
+    </item>
+
+    <item>
+      <title>Version 1.7.2 (2013年11月17日開発版)</title>
+      <description>
+        <h3>1.7.2 (2013年11月17日開発版)</h3>
+        <ul>
+          <li>落ちた際に例外のログを書き出すようにしました。
+            通常はC:\Users\(ユーザー名)\AppData\Roaming\PeerCastStation\exception.logに書き出されます。
+            落ちた場合の報告にはこのファイルの内容を記載してもらうと解析が進みますのでお願いします</li>
+        </ul>
+      </description>
+      <pubDate>Sun, 17 Nov 2013 3:00:00 +0900</pubDate>
+      <link>http://www.pecastation.org/files/PeerCastStation-1.7.2.zip</link>
+      <enclosure url="http://www.pecastation.org/files/PeerCastStation-1.7.2.zip" sparkle:version="1.7.2" length="1701952" type="application/octet-stream" />
+    </item>
+
+    <item>
       <title>Version 1.7.1 (2013年10月27日開発版)</title>
       <description>
         <h3>1.7.1 (2013年10月27日開発版)</h3>

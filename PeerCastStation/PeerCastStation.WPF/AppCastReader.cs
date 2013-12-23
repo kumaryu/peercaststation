@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
+using PeerCastStation.Core;
 
 namespace PeerCastStation.WPF
 {
@@ -46,16 +47,17 @@ namespace PeerCastStation.WPF
     WebClient client;
     DateTime currentVersion;
     public event NewVersionFoundEventHandler NewVersionFound;
-    public AppCastReader(Uri url, DateTime current_version)
+    public AppCastReader()
     {
-      this.url = url;
+      this.url            = AppSettingsReader.GetUri("UpdateUrl", new Uri("http://www.pecastation.org/files/appcast.xml"));
+      this.currentVersion = AppSettingsReader.GetDate("CurrentVersion", DateTime.Today);
       this.client = new WebClient();
       this.client.DownloadDataCompleted += OnDownloadDataCompleted;
-      this.currentVersion = current_version;
     }
 
     public void CheckVersion()
     {
+      if (this.client.IsBusy) return;
       this.client.DownloadDataAsync(url);
     }
 

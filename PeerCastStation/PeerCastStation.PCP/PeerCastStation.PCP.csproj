@@ -51,6 +51,7 @@
     <Compile Include="PCPVersion.cs" />
     <Compile Include="PCPYellowPageClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StreamConnectionExtension.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj">

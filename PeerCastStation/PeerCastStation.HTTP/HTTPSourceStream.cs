@@ -139,8 +139,8 @@ namespace PeerCastStation.HTTP
         client.Connect(source.DnsSafeHost, source.Port);
         var stream = client.GetStream();
         var connection = new StreamConnection(stream, stream);
-        connection.ReceiveTimeout = 3000;
-        connection.SendTimeout    = 3000;
+        connection.ReceiveTimeout = 10000;
+        connection.SendTimeout    = 8000;
         return connection;
       }
       catch (SocketException e) {
@@ -186,6 +186,7 @@ namespace PeerCastStation.HTTP
           host,
           PeerCast.AgentName);
       connection.Send(System.Text.Encoding.UTF8.GetBytes(request));
+      Logger.Debug("Sending request:\n" + request);
       return State.WaitingResponse;
     }
 

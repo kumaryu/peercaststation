@@ -43,6 +43,10 @@ namespace PeerCastStation.Core
     /// コンテントの内容を取得します
     /// </summary>
     public byte[] Data   { get; private set; } 
+    /// <summary>
+    /// コンテントのContentCollectionへ追加された順番を取得および設定します
+    /// </summary>
+    public long Serial { get; set; } 
 
     /// <summary>
     /// コンテントのストリーム番号、時刻、位置、内容を指定して初期化します
@@ -57,6 +61,7 @@ namespace PeerCastStation.Core
       Timestamp = timestamp;
       Position  = pos;
       Data      = data;
+      Serial    = -1;
     }
   }
 
@@ -87,11 +92,12 @@ namespace PeerCastStation.Core
       }
     }
 
+    private long serial = 0;
     private SortedList<ContentKey, Content> list = new SortedList<ContentKey, Content>();
-    public long LimitPackets { get; set; }
+    public TimeSpan PacketTimeLimit { get; set; }
     public ContentCollection()
     {
-      LimitPackets = 100;
+      PacketTimeLimit = TimeSpan.FromSeconds(5);
     }
 
     public event EventHandler ContentChanged;
@@ -114,11 +120,20 @@ namespace PeerCastStation.Core
       bool added = false;
       lock (list) {
         try {
+          item.Serial = serial;
           list.Add(new ContentKey(item.Stream, item.Timestamp, item.Position), item);
+          serial += 1;
           added = true;
         }
         catch (ArgumentException) {}
-        while (list.Count>LimitPackets && list.Count>1) {
+        while (
+          list.Count>1 &&
+          (
+           (list.First().Key.Stream<item.Stream) ||
+           (list.First().Key.Stream==item.Stream &&
+            item.Timestamp-list.First().Key.Timestamp>PacketTimeLimit)
+          )
+        ) {
           list.RemoveAt(0);
         }
       }
@@ -206,28 +221,31 @@ namespace PeerCastStation.Core
     {
       lock (list) {
         return list.Values.Where(c =>
-          c.Stream>=stream &&
-          (c.Timestamp>t || (c.Timestamp==t && c.Position>position))).ToArray();
-      }
-    }
-
-    public Content NextOf(int stream, TimeSpan t, long position)
-    {
-      lock (list) {
-        return list.Values.Where(c =>
           c.Stream>stream ||
           (c.Stream==stream &&
            (c.Timestamp>t ||
             (c.Timestamp==t && c.Position>position)
            )
           )
-        ).FirstOrDefault();
+        ).ToArray();
       }
     }
 
-    public Content NextOf(Content item)
+    public Content GetNewerContent(Content content, out bool skipped)
     {
-      return NextOf(item.Stream, item.Timestamp, item.Position);
+      Content res;
+      lock (list) {
+        res = list.Values.Where(c =>
+          c.Stream>content.Stream ||
+          (c.Stream==content.Stream &&
+           (c.Timestamp>content.Timestamp ||
+            (c.Timestamp==content.Timestamp && c.Position>content.Position)
+           )
+          )
+        ).FirstOrDefault();
+      }
+      skipped = res!=null && content.Serial>=0 && res.Serial>content.Serial+1;
+      return res;
     }
 
     public Content FindNextByPosition(int stream, long pos)

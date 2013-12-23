@@ -119,20 +119,23 @@ namespace PeerCastStation.UI.HTTP
             new XAttribute("furthest",   c.Nodes.Max(n => n.Hops)),
             new XAttribute("newest",     Environment.TickCount-c.Nodes.Max(n => n.LastUpdated)));
           foreach (var n in c.Nodes) {
-            hits.Add(new XElement("host",
-              new XAttribute("ip",        n.GlobalEndPoint.Address.ToString()),
-              new XAttribute("hops",      n.Hops),
-              new XAttribute("listeners", n.DirectCount),
-              new XAttribute("relays",    n.RelayCount),
-              new XAttribute("uptime",    (int)n.Uptime.TotalSeconds),
-              new XAttribute("push",      n.IsFirewalled  ? 1 : 0),
-              new XAttribute("relay",     n.IsRelayFull   ? 0 : 1),
-              new XAttribute("direct",    n.IsDirectFull  ? 0 : 1),
-              new XAttribute("cin",       n.IsControlFull ? 0 : 1),
-              new XAttribute("stable",    0),
-              new XAttribute("version",   n.Version),
-              new XAttribute("update",    (Environment.TickCount-n.LastUpdated)/1000),
-              new XAttribute("tracker",   n.IsTracker ? 1 : 0)));
+            var host = new XElement("host");
+            if (n.GlobalEndPoint!=null || n.LocalEndPoint!=null) {
+              host.Add(new XAttribute("ip", (n.GlobalEndPoint ?? n.LocalEndPoint).ToString()));
+            }
+            host.Add(new XAttribute("hops",      n.Hops));
+            host.Add(new XAttribute("listeners", n.DirectCount));
+            host.Add(new XAttribute("relays",    n.RelayCount));
+            host.Add(new XAttribute("uptime",    (int)n.Uptime.TotalSeconds));
+            host.Add(new XAttribute("push",      n.IsFirewalled  ? 1 : 0));
+            host.Add(new XAttribute("relay",     n.IsRelayFull   ? 0 : 1));
+            host.Add(new XAttribute("direct",    n.IsDirectFull  ? 0 : 1));
+            host.Add(new XAttribute("cin",       n.IsControlFull ? 0 : 1));
+            host.Add(new XAttribute("stable",    0));
+            host.Add(new XAttribute("version",   n.Version));
+            host.Add(new XAttribute("update",    (Environment.TickCount-n.LastUpdated)/1000));
+            host.Add(new XAttribute("tracker",   n.IsTracker ? 1 : 0));
+            hits.Add(host);
           }
         }
         else {

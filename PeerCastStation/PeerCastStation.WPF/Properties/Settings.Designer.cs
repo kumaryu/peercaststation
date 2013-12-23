@@ -83,24 +83,6 @@ namespace PeerCastStation.WPF.Properties {
             }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("http://www.pecastation.org/files/appcast-dev.xml")]
-        public string UpdateURL {
-            get {
-                return ((string)(this["UpdateURL"]));
-            }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("2013-10-27")]
-        public global::System.DateTime CurrentVersion {
-            get {
-                return ((global::System.DateTime)(this["CurrentVersion"]));
-            }
-        }
-        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]

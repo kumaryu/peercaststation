@@ -45,76 +45,58 @@ namespace PeerCastStation.WPF
     NotifyIconManager notifyIconManager;
     Thread mainThread;
     private AppCastReader versionChecker;
+    private Timer versionCheckTimer;
     override protected void OnStart()
     {
-      notifyIconThread = new Thread(() =>
-      {
-#if !DEBUG
-        try
-#endif
-        {
-          notifyIconManager = new NotifyIconManager(Application.PeerCast);
-          notifyIconManager.CheckVersionClicked += (sender, e) => versionChecker.CheckVersion();
-          notifyIconManager.QuitClicked         += (sender, e) => Application.Stop();
-          notifyIconManager.ShowWindowClicked   += (sender, e) => {
-            if (mainWindow!=null) {
-              mainWindow.Dispatcher.Invoke(new Action(() => {
-                mainWindow.Show();
-                if (mainWindow.WindowState==WindowState.Minimized) {
-                  mainWindow.WindowState = WindowState.Normal;
-                }
-                mainWindow.Activate();
-              }));
-            }
-          };
-          versionChecker = new AppCastReader(
-            new Uri(Settings.Default.UpdateURL, UriKind.Absolute),
-            Settings.Default.CurrentVersion);
-          versionChecker.NewVersionFound += (sender, e) => {
-            notifyIconManager.NewVersionInfo = e.VersionDescription;
-          };
-          versionChecker.CheckVersion();
-          notifyIconManager.Run();
-        }
-#if !DEBUG
-        catch (Exception e) {
-          logger.Fatal("Unhandled exception");
-          logger.Fatal(e);
-          throw;
-        }
-#endif
+      versionChecker = new AppCastReader();
+      notifyIconThread = new Thread(() => {
+        notifyIconManager = new NotifyIconManager(Application.PeerCast);
+        notifyIconManager.CheckVersionClicked += (sender, e) => versionChecker.CheckVersion();
+        notifyIconManager.QuitClicked         += (sender, e) => Application.Stop();
+        notifyIconManager.ShowWindowClicked   += (sender, e) => {
+          if (mainWindow!=null) {
+            mainWindow.Dispatcher.Invoke(new Action(() => {
+              mainWindow.Show();
+              if (mainWindow.WindowState==WindowState.Minimized) {
+                mainWindow.WindowState = WindowState.Normal;
+              }
+              mainWindow.Activate();
+            }));
+          }
+        };
+        versionChecker.NewVersionFound += (sender, e) => {
+          notifyIconManager.NewVersionInfo = e.VersionDescription;
+        };
+        notifyIconManager.Run();
       });
       notifyIconThread.SetApartmentState(ApartmentState.STA);
       notifyIconThread.Start();
+      versionCheckTimer = new Timer(OnVersionCheckTimer, null, 1000, 1000*7200);
 
       mainThread = new Thread(() => {
-#if !DEBUG
-        try
-#endif
-        {
-          var app = new Application();
-          viewModel = new MainViewModel(Application);
-          var settings = Application.Settings.Get<WPFSettings>();
-          mainWindow = new MainWindow(viewModel);
-          if (settings.ShowWindowOnStartup) mainWindow.Show();
-          app.Run();
-          viewModel.Dispose();
-        }
-#if !DEBUG
-        catch (Exception e) {
-          logger.Fatal("Unhandled exception");
-          logger.Fatal(e);
-          throw;
-        }
-#endif
+        var app = new Application();
+        viewModel = new MainViewModel(Application);
+        var settings = Application.Settings.Get<WPFSettings>();
+        mainWindow = new MainWindow(viewModel);
+        if (settings.ShowWindowOnStartup) mainWindow.Show();
+        app.Run();
+        viewModel.Dispose();
       });
       mainThread.Name = "WPF UI Thread";
       mainThread.SetApartmentState(ApartmentState.STA);
       mainThread.Start();
     }
 
+    private void OnVersionCheckTimer(object state)
+    {
+      versionChecker.CheckVersion();
+    }
+
     override protected void OnStop()
     {
+      var timer_wait = new AutoResetEvent(false);
+      versionCheckTimer.Dispose(timer_wait);
+      timer_wait.WaitOne();
       if (mainWindow!=null) {
         mainWindow.Dispatcher.Invoke(new Action(() => {
           System.Windows.Application.Current.Shutdown();

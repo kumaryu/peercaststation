@@ -166,8 +166,8 @@ namespace PeerCastStation.PCP
         remoteEndPoint = (IPEndPoint)client.Client.RemoteEndPoint;
         var stream = client.GetStream();
         var connection = new StreamConnection(stream, stream);
-        connection.ReceiveTimeout = 3000;
-        connection.SendTimeout    = 3000;
+        connection.ReceiveTimeout = 10000;
+        connection.SendTimeout    = 8000;
         Logger.Debug("Connected: {0}", endpoint);
         return connection;
       }
@@ -306,25 +306,33 @@ namespace PeerCastStation.PCP
     private State WaitHandshakeResponse()
     {
       try {
-        var atom = RecvAtom();
-        while (atom!=null) {
+        bool handshake_finished = false;
+        foreach (var atom in connection.RecvAtoms()) {
           if (atom.Name==Atom.PCP_OLEH) {
             OnPCPOleh(atom);
             Logger.Debug("Handshake Finished: {0}", PeerCast.GlobalAddress);
-            return State.Receiving;
+            handshake_finished = true;
           }
           if (atom.Name==Atom.PCP_QUIT) {
             OnPCPQuit(atom);
             return State.Disconnected;
           }
+          else if (handshake_finished) {
+            ProcessAtom(atom);
+          }
           else {
             //Ignore packet
           }
-          atom = RecvAtom();
         }
-        return State.WaitingHandshakeResponse;
+        if (handshake_finished) {
+          return State.Receiving;
+        }
+        else {
+          return State.WaitingHandshakeResponse;
+        }
       }
-      catch (IOException) {
+      catch (IOException e) {
+        Logger.Error(e);
         Stop(StopReason.ConnectionError);
         return State.Disconnected;
       }
@@ -341,14 +349,13 @@ namespace PeerCastStation.PCP
         BroadcastHostInfo();
       }
       try {
-        var atom = RecvAtom();
-        while (atom!=null) {
+        foreach (var atom in connection.RecvAtoms()) {
           if (!ProcessAtom(atom)) break;
-          atom = RecvAtom();
         }
         return State.Receiving;
       }
-      catch (IOException) {
+      catch (IOException e) {
+        Logger.Error(e);
         Stop(StopReason.ConnectionError);
         return State.Disconnected;
       }
@@ -462,17 +469,6 @@ namespace PeerCastStation.PCP
       }, null);
       hostInfoUpdateTimer.Reset();
       hostInfoUpdateTimer.Start();
-    }
-
-    private Atom RecvAtom()
-    {
-      Atom res = null;
-      if (connection.Recv(s => { res = AtomReader.Read(s); })) {
-        return res;
-      }
-      else {
-        return null;
-      }
     }
 
     protected bool ProcessAtom(Atom atom)
