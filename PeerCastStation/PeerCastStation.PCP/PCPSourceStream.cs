@@ -331,6 +331,11 @@ namespace PeerCastStation.PCP
           return State.WaitingHandshakeResponse;
         }
       }
+      catch (InvalidDataException e) {
+        Logger.Error(e);
+        Stop(StopReason.ConnectionError);
+        return State.Disconnected;
+      }
       catch (IOException e) {
         Logger.Error(e);
         Stop(StopReason.ConnectionError);
@@ -353,6 +358,11 @@ namespace PeerCastStation.PCP
           if (!ProcessAtom(atom)) break;
         }
         return State.Receiving;
+      }
+      catch (InvalidDataException e) {
+        Logger.Error(e);
+        Stop(StopReason.ConnectionError);
+        return State.Disconnected;
       }
       catch (IOException e) {
         Logger.Error(e);

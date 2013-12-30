@@ -99,32 +99,37 @@ namespace PeerCastStation.PCP
     {
       var res = new List<Host>();
       bool quit = false;
-      while (!quit) {
-        var atom = AtomReader.Read(s);
-        if (atom.Name==Atom.PCP_HOST) {
-          if (atom.Children.GetHostChannelID()==channel_id) {
-            var host = new HostBuilder();
-            var endpoints = atom.Children.GetHostEndPoints();
-            if (endpoints.Length>0) host.GlobalEndPoint = endpoints[0];
-            if (endpoints.Length>1) host.LocalEndPoint = endpoints[1];
-            host.DirectCount = atom.Children.GetHostNumListeners() ?? 0;
-            host.RelayCount = atom.Children.GetHostNumRelays() ?? 0;
-            host.SessionID = atom.Children.GetHostSessionID() ?? Guid.Empty;
-            if (atom.Children.GetHostFlags1().HasValue) {
-              var flags = atom.Children.GetHostFlags1().Value;
-              host.IsControlFull = (flags & PCPHostFlags1.ControlIn)!=0;
-              host.IsFirewalled = (flags & PCPHostFlags1.Firewalled)!=0;
-              host.IsDirectFull = (flags & PCPHostFlags1.Direct)==0;
-              host.IsRelayFull = (flags & PCPHostFlags1.Relay)==0;
-              host.IsReceiving = (flags & PCPHostFlags1.Receiving)!=0;
-              host.IsTracker = (flags & PCPHostFlags1.Tracker)!=0;
+      try {
+        while (!quit) {
+          var atom = AtomReader.Read(s);
+          if (atom.Name==Atom.PCP_HOST) {
+            if (atom.Children.GetHostChannelID()==channel_id) {
+              var host = new HostBuilder();
+              var endpoints = atom.Children.GetHostEndPoints();
+              if (endpoints.Length>0) host.GlobalEndPoint = endpoints[0];
+              if (endpoints.Length>1) host.LocalEndPoint = endpoints[1];
+              host.DirectCount = atom.Children.GetHostNumListeners() ?? 0;
+              host.RelayCount = atom.Children.GetHostNumRelays() ?? 0;
+              host.SessionID = atom.Children.GetHostSessionID() ?? Guid.Empty;
+              if (atom.Children.GetHostFlags1().HasValue) {
+                var flags = atom.Children.GetHostFlags1().Value;
+                host.IsControlFull = (flags & PCPHostFlags1.ControlIn)!=0;
+                host.IsFirewalled = (flags & PCPHostFlags1.Firewalled)!=0;
+                host.IsDirectFull = (flags & PCPHostFlags1.Direct)==0;
+                host.IsRelayFull = (flags & PCPHostFlags1.Relay)==0;
+                host.IsReceiving = (flags & PCPHostFlags1.Receiving)!=0;
+                host.IsTracker = (flags & PCPHostFlags1.Tracker)!=0;
+              }
+              res.Add(host.ToHost());
             }
-            res.Add(host.ToHost());
+          }
+          if (atom.Name==Atom.PCP_QUIT) {
+            quit = true;
           }
         }
-        if (atom.Name==Atom.PCP_QUIT) {
-          quit = true;
-        }
+      }
+      catch (InvalidCastException e) {
+        Logger.Error(e);
       }
       return res;
     }
@@ -436,6 +441,11 @@ namespace PeerCastStation.PCP
         }
         catch (QuitException) {
           AnnouncingStatus = AnnouncingStatus.Error;
+        }
+        catch (InvalidDataException e) {
+          AnnouncingStatus = AnnouncingStatus.Error;
+          Logger.Error(e);
+          break;
         }
         catch (SocketException e) {
           AnnouncingStatus = AnnouncingStatus.Error;

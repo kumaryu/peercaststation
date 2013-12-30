@@ -521,6 +521,10 @@ namespace PeerCastStation.PCP
             SendRelayBody(ref lastHeader, ref lastContent);
           }
         }
+        catch (InvalidDataException e) {
+          Logger.Error(e);
+          OnError();
+        }
         catch (IOException e) {
           Logger.Error(e);
           OnError();
@@ -595,6 +599,10 @@ namespace PeerCastStation.PCP
         AtomWriter.Write(stream, new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT));
         stream.Close();
         client.Close();
+      }
+      catch (InvalidDataException e) {
+        Logger.Debug("Ping failed");
+        Logger.Debug(e);
       }
       catch (System.Net.Sockets.SocketException e) {
         Logger.Debug("Ping failed");

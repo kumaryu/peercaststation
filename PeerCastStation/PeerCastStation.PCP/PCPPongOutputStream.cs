@@ -108,6 +108,10 @@ namespace PeerCastStation.PCP
           ProcessAtom(atom);
         }
       }
+      catch (InvalidDataException e) {
+        Logger.Error(e);
+        OnError();
+      }
       catch (IOException e) {
         Logger.Error(e);
         OnError();
