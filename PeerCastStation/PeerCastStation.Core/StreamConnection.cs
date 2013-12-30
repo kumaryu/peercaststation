@@ -161,8 +161,7 @@ namespace PeerCastStation.Core
     private void OnSendTimeout(object ar, bool timedout)
     {
       lock (sendLock) {
-        if (timedout && !((IAsyncResult)ar).IsCompleted) {
-          if (closing) return;
+        if (timedout && !((IAsyncResult)ar).IsCompleted && !closing) {
           sendException = new TimeoutException();
         }
         OnSend((IAsyncResult)ar);
