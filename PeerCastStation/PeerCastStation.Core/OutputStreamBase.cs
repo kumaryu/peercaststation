@@ -228,7 +228,7 @@ namespace PeerCastStation.Core
         Connection.Send(bytes);
       }
       catch (IOException e) {
-        Logger.Error(e);
+        Logger.Info(e);
         OnError();
       }
     }
@@ -239,7 +239,7 @@ namespace PeerCastStation.Core
         Connection.Send(stream => AtomWriter.Write(stream, atom));
       }
       catch (IOException e) {
-        Logger.Error(e);
+        Logger.Info(e);
         OnError();
       }
     }
@@ -250,7 +250,7 @@ namespace PeerCastStation.Core
         return Connection.Recv(proc);
       }
       catch (IOException e) {
-        Logger.Error(e);
+        Logger.Info(e);
         OnError();
         return false;
       }

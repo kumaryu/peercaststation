@@ -337,7 +337,7 @@ namespace PeerCastStation.PCP
         return State.Disconnected;
       }
       catch (IOException e) {
-        Logger.Error(e);
+        Logger.Info(e);
         Stop(StopReason.ConnectionError);
         return State.Disconnected;
       }
@@ -365,7 +365,7 @@ namespace PeerCastStation.PCP
         return State.Disconnected;
       }
       catch (IOException e) {
-        Logger.Error(e);
+        Logger.Info(e);
         Stop(StopReason.ConnectionError);
         return State.Disconnected;
       }

@@ -526,7 +526,7 @@ namespace PeerCastStation.PCP
           OnError();
         }
         catch (IOException e) {
-          Logger.Error(e);
+          Logger.Info(e);
           OnError();
         }
       }
