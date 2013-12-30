@@ -516,6 +516,7 @@ namespace PeerCastStation.HTTP
           if (sentHeader!=null) {
             lock (contentPacketQueue) {
               foreach (var c in contentPacketQueue) {
+                if (HasError) break;
                 if (c.Timestamp>sentPacket.Timestamp ||
                     (c.Timestamp==sentPacket.Timestamp && c.Position>sentPacket.Position)) {
                   Send(c.Data);
