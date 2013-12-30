@@ -18,7 +18,8 @@ Windows以外の場合はMono 2.6以降が必要です。
 今のところインストーラは無いので、ダウンロードしたzipを展開して適当な場所に置いてPeerCastStation.exeを起動してください。詳しい使い方はzip内のhelp\\index.htmlを開いてヘルプを見てください。
 
 {% for release in site.data.releasenotes %}{% if release.channel contains 'dev' %}
-### {{ release.name }}
+{{ release.name }}
+------------------
 [ダウンロード](http://www.pecastation.org/files/PeerCastStation-{{ release.version }}.zip)
 
 {{ release.notes }}
