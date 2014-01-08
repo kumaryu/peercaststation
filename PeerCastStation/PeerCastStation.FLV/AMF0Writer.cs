@@ -60,12 +60,12 @@ namespace PeerCastStation.FLV
       BaseStream.Write(buf, 0, 2);
     }
 
-    public void WriteUI8(int value)
+    private void WriteUI8(int value)
     {
       BaseStream.WriteByte((byte)value);
     }
 
-    public void WriteDouble(double value)
+    private void WriteDouble(double value)
     {
       var buf = BitConverter.GetBytes(value);
       if (BitConverter.IsLittleEndian) Array.Reverse(buf);

@@ -63,19 +63,19 @@ namespace PeerCastStation.FLV
       }
     }
 
-    public void WriteUI8(int value)
+    private void WriteUI8(int value)
     {
       BaseStream.WriteByte((byte)value);
     }
 
-    public void WriteDouble(double value)
+    private void WriteDouble(double value)
     {
       var buf = BitConverter.GetBytes(value);
       if (BitConverter.IsLittleEndian) Array.Reverse(buf);
       BaseStream.Write(buf, 0, 8);
     }
 
-    public void WriteUI29(int value)
+    private void WriteUI29(int value)
     {
       if (0x00<=value && value<=0x7F) {
         BaseStream.WriteByte((byte)value);
@@ -100,7 +100,7 @@ namespace PeerCastStation.FLV
       }
     }
 
-    private void WriteString(string value)
+    public void WriteString(string value)
     {
       WriteMarker(AMF3Marker.String);
       WriteStringValue(value);
