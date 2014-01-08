@@ -6,6 +6,7 @@ using System.IO;
 namespace PeerCastStation.FLV
 {
   public class AMF3Reader
+    : IDisposable
   {
     public Stream BaseStream { get; private set; }
     private bool leaveOpen;
