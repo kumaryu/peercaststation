@@ -155,6 +155,11 @@ namespace PeerCastStation.FLV
       }
     }
 
+    public static bool IsNull(AMFValue value)
+    {
+      return value==null || value.Type==AMFValueType.Null;
+    }
+
     public static explicit operator int(AMFValue value)
     {
       switch (value.Type) {
