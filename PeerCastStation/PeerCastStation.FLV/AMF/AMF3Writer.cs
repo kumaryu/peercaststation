@@ -6,10 +6,8 @@ using System.IO;
 namespace PeerCastStation.FLV.AMF
 {
   public class AMF3Writer
-    : IDisposable
+    : AMFWriter
   {
-    public Stream BaseStream { get; private set; }
-    private bool leaveOpen;
     private Dictionary<string,int> strings = new Dictionary<string,int>();
     private Dictionary<object,int> objects = new Dictionary<object,int>();
     private Dictionary<AMFClass,int> classes = new Dictionary<AMFClass,int>();
@@ -19,21 +17,13 @@ namespace PeerCastStation.FLV.AMF
     }
 
     public AMF3Writer(Stream output, bool leave_open)
+      : base(output, leave_open)
     {
-      this.BaseStream = output;
-      this.leaveOpen = leave_open;
     }
 
-    public void Dispose()
+    public override void Close()
     {
-      Close();
-    }
-
-    public void Close()
-    {
-      if (!leaveOpen) {
-        BaseStream.Close();
-      }
+      base.Close();
       strings.Clear();
       objects.Clear();
       classes.Clear();
@@ -100,7 +90,7 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
-    public void WriteString(string value)
+    public override void WriteString(string value)
     {
       WriteMarker(AMF3Marker.String);
       WriteStringValue(value);
@@ -141,18 +131,23 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
-    public void WriteMarker(AMF3Marker value)
+    private void WriteMarker(AMF3Marker value)
     {
       WriteUI8((int)value);
     }
 
-    public void WriteNumber(double value)
+    public override void WriteNull()
+    {
+      WriteMarker(AMF3Marker.Null);
+    }
+
+    public override void WriteNumber(double value)
     {
       WriteMarker(AMF3Marker.Double);
       WriteDouble(value);
     }
 
-    public void WriteNumber(int value)
+    public override void WriteNumber(int value)
     {
       if (value<0 || 0x1FFFFFFF<value) {
         WriteNumber((double)value);
@@ -163,7 +158,7 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
-    public void WriteDate(DateTime value)
+    public override void WriteDate(DateTime value)
     {
       var org = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Local);
       var span = new TimeSpan(value.Ticks-org.Ticks);
@@ -178,13 +173,13 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
-    public void WriteBool(bool value)
+    public override void WriteBool(bool value)
     {
       if (value) WriteMarker(AMF3Marker.True);
       else       WriteMarker(AMF3Marker.False);
     }
 
-    public void WriteObject(AMFObject value)
+    public override void WriteObject(AMFObject value)
     {
       WriteMarker(AMF3Marker.Object);
       var idx = ObjectIndex(value);
@@ -219,7 +214,7 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
-    public void WriteEcmaArray(IDictionary<string,AMFValue> dic)
+    public override void WriteEcmaArray(IDictionary<string,AMFValue> dic)
     {
       WriteMarker(AMF3Marker.Array);
       var idx = ObjectIndex(dic);
@@ -235,7 +230,7 @@ namespace PeerCastStation.FLV.AMF
       WriteStringValue("");
     }
 
-    public void WriteStrictArray(ICollection<AMFValue> ary)
+    public override void WriteStrictArray(ICollection<AMFValue> ary)
     {
       WriteMarker(AMF3Marker.Array);
       var idx = ObjectIndex(ary);
@@ -250,7 +245,7 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
-    public void WriteByteArray(byte[] value)
+    public override void WriteByteArray(byte[] value)
     {
       if (value.Length==0) {
         WriteUI29(1);
@@ -266,22 +261,22 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
-    public void WriteXML(string value)
+    public override void WriteXML(string value)
     {
       WriteMarker(AMF3Marker.XML);
       WriteStringValue(value);
     }
 
-    public void WriteXMLDocument(string value)
+    public override void WriteXMLDocument(string value)
     {
       WriteMarker(AMF3Marker.XMLDocument);
       WriteStringValue(value);
     }
 
-    public void WriteValue(AMFValue value)
+    public override void WriteValue(AMFValue value)
     {
       if (value==null) {
-        WriteMarker(AMF3Marker.Null);
+        WriteNull();
         return;
       }
       switch (value.Type) {
@@ -304,7 +299,7 @@ namespace PeerCastStation.FLV.AMF
         WriteNumber((int)value);
         break;
       case AMFValueType.Null:
-        WriteMarker(AMF3Marker.Null);
+        WriteNull();
         break;
       case AMFValueType.Object:
         WriteObject((AMFObject)value);
