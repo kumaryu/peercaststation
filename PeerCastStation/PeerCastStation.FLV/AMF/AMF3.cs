@@ -1,5 +1,5 @@
 ﻿
-namespace PeerCastStation.FLV
+namespace PeerCastStation.FLV.AMF
 {
   public enum AMF3Marker {
     Undefined   = 0x00,

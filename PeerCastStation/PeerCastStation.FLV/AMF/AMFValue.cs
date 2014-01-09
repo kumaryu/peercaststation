@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace PeerCastStation.FLV
+namespace PeerCastStation.FLV.AMF
 {
   public enum AMFValueType
   {

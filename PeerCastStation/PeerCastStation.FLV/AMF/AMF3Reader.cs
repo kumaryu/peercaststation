@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 
-namespace PeerCastStation.FLV
+namespace PeerCastStation.FLV.AMF
 {
   public class AMF3Reader
     : IDisposable

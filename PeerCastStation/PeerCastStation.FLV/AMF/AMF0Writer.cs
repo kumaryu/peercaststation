@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace PeerCastStation.FLV
+namespace PeerCastStation.FLV.AMF
 {
   public class AMF0Writer
     : IDisposable
