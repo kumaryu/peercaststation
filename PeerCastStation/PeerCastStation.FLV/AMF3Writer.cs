@@ -280,6 +280,10 @@ namespace PeerCastStation.FLV
 
     public void WriteValue(AMFValue value)
     {
+      if (value==null) {
+        WriteMarker(AMF3Marker.Null);
+        return;
+      }
       switch (value.Type) {
       case AMFValueType.Boolean:
         WriteBool((bool)value);
