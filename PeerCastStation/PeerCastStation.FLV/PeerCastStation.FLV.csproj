@@ -49,6 +49,7 @@
     <Compile Include="AMF\AMF3Reader.cs" />
     <Compile Include="AMF\AMF3Writer.cs" />
     <Compile Include="AMF\AMFObject.cs" />
+    <Compile Include="AMF\AMFReader.cs" />
     <Compile Include="AMF\AMFValue.cs" />
     <Compile Include="FLVContentReader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

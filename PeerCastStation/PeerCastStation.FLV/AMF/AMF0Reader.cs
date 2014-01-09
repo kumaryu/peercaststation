@@ -5,10 +5,8 @@ using System.IO;
 namespace PeerCastStation.FLV.AMF
 {
   public class AMF0Reader
-    : IDisposable
+    : AMFReader
   {
-    public Stream BaseStream { get; private set; }
-    private bool leaveOpen;
     private List<AMFValue> objects = new List<AMFValue>();
     public AMF0Reader(Stream input)
       : this(input, false)
@@ -16,21 +14,8 @@ namespace PeerCastStation.FLV.AMF
     }
 
     public AMF0Reader(Stream input, bool leave_open)
+      : base(input, leave_open)
     {
-      this.BaseStream = input;
-      this.leaveOpen = leave_open;
-    }
-
-    public void Dispose()
-    {
-      Close();
-    }
-
-    public void Close()
-    {
-      if (!leaveOpen) {
-        BaseStream.Close();
-      }
     }
 
     private AMFValue RegisterObject(AMFValue value)
@@ -39,7 +24,7 @@ namespace PeerCastStation.FLV.AMF
       return value;
     }
 
-    public AMFValue ReadValue()
+    public override AMFValue ReadValue()
     {
       switch (ReadMarker()) {
       case AMF0Marker.Number:
@@ -83,12 +68,12 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
-    public AMF0Marker ReadMarker()
+    private AMF0Marker ReadMarker()
     {
       return (AMF0Marker)ReadUI8();
     }
 
-    public AMFValue ReadReference()
+    private AMFValue ReadReference()
     {
       try {
         var idx = ReadUI16();
@@ -100,7 +85,7 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
-    public string ReadString()
+    private string ReadString()
     {
       var len = ReadUI16();
       var buf = new byte[len];
@@ -108,7 +93,7 @@ namespace PeerCastStation.FLV.AMF
       return System.Text.Encoding.UTF8.GetString(buf);
     }
 
-    public string ReadLongString()
+    private string ReadLongString()
     {
       var len = ReadUI32();
       var buf = new byte[len];
@@ -121,7 +106,7 @@ namespace PeerCastStation.FLV.AMF
       return System.Text.Encoding.UTF8.GetString(buf);
     }
 
-    public long ReadUI32()
+    private long ReadUI32()
     {
       var buf = new byte[4];
       BaseStream.Read(buf, 0, 4);
@@ -129,7 +114,7 @@ namespace PeerCastStation.FLV.AMF
       return BitConverter.ToUInt32(buf, 0);
     }
 
-    public int ReadUI16()
+    private int ReadUI16()
     {
       var buf = new byte[2];
       BaseStream.Read(buf, 0, 2);
@@ -137,14 +122,14 @@ namespace PeerCastStation.FLV.AMF
       return BitConverter.ToUInt16(buf, 0);
     }
 
-    public int ReadUI8()
+    private int ReadUI8()
     {
       var b = BaseStream.ReadByte();
       if (b<0) throw new EndOfStreamException();
       return b;
     }
 
-    public double ReadDouble()
+    private double ReadDouble()
     {
       var buf = new byte[8];
       BaseStream.Read(buf, 0, 8);
@@ -168,18 +153,18 @@ namespace PeerCastStation.FLV.AMF
       return dic;
     }
 
-    public AMFObject ReadObject()
+    private AMFObject ReadObject()
     {
       return new AMFObject(ReadProperties());
     }
 
-    public IDictionary<string,AMFValue> ReadEcmaArray()
+    private IDictionary<string,AMFValue> ReadEcmaArray()
     {
       var len = ReadUI32();
       return ReadProperties();
     }
 
-    public AMFValue[] ReadStrictArray()
+    private AMFValue[] ReadStrictArray()
     {
       var ary = new AMFValue[ReadUI32()];
       for (int i=0; i<ary.Length; i++) {
@@ -188,13 +173,13 @@ namespace PeerCastStation.FLV.AMF
       return ary;
     }
 
-    public DateTime ReadDate()
+    private DateTime ReadDate()
     {
       var time = ReadDouble();
       return (new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Local)).AddMilliseconds(time);
     }
 
-    public AMFObject ReadTypedObject()
+    private AMFObject ReadTypedObject()
     {
       var name = ReadString();
       var properties = ReadProperties();

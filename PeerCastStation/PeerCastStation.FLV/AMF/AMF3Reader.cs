@@ -6,10 +6,8 @@ using System.IO;
 namespace PeerCastStation.FLV.AMF
 {
   public class AMF3Reader
-    : IDisposable
+    : AMFReader
   {
-    public Stream BaseStream { get; private set; }
-    private bool leaveOpen;
     private List<AMFValue> objects = new List<AMFValue>();
     private List<string> strings = new List<string>();
     private List<AMFClass> classes = new List<AMFClass>();
@@ -19,21 +17,8 @@ namespace PeerCastStation.FLV.AMF
     }
 
     public AMF3Reader(Stream input, bool leave_open)
+      : base(input, leave_open)
     {
-      this.BaseStream = input;
-      this.leaveOpen = leave_open;
-    }
-
-    public void Dispose()
-    {
-      Close();
-    }
-
-    public void Close()
-    {
-      if (!leaveOpen) {
-        BaseStream.Close();
-      }
     }
 
     private AMFValue RegisterObject(AMFValue value)
@@ -106,7 +91,7 @@ namespace PeerCastStation.FLV.AMF
       return RegisterObject(new AMFValue(type, System.Text.Encoding.UTF8.GetString(buf)));
     }
 
-    public AMFValue ReadByteArray()
+    private AMFValue ReadByteArray()
     {
       var len = ReadUI29();
       if (len==1) return new AMFValue(new byte[0]);
@@ -117,12 +102,12 @@ namespace PeerCastStation.FLV.AMF
       return RegisterObject(new AMFValue(buf));
     }
 
-    public AMF3Marker ReadMarker()
+    private AMF3Marker ReadMarker()
     {
       return (AMF3Marker)ReadUI8();
     }
 
-    public AMFValue ReadValue()
+    public override AMFValue ReadValue()
     {
       var marker = ReadMarker();
       switch (marker) {
@@ -157,14 +142,14 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
-    public int ReadUI8()
+    private int ReadUI8()
     {
       var b = BaseStream.ReadByte();
       if (b<0) throw new EndOfStreamException();
       return b;
     }
 
-    public double ReadDouble()
+    private double ReadDouble()
     {
       var buf = new byte[8];
       BaseStream.Read(buf, 0, 8);
@@ -172,7 +157,7 @@ namespace PeerCastStation.FLV.AMF
       return BitConverter.ToDouble(buf, 0);
     }
 
-    public AMFValue ReadObject()
+    private AMFValue ReadObject()
     {
       var idx = ReadUI29();
       if ((idx & 0x01)==0) return GetRegisteredObject(idx>>1);
@@ -205,7 +190,7 @@ namespace PeerCastStation.FLV.AMF
       return RegisterObject(new AMFValue(new AMFObject(klass, dic)));
     }
 
-    public AMFValue ReadDate()
+    private AMFValue ReadDate()
     {
       var idx = ReadUI29();
       if ((idx & 0x01)==0) return GetRegisteredObject(idx>>1);
@@ -213,7 +198,7 @@ namespace PeerCastStation.FLV.AMF
       return RegisterObject(new AMFValue(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Local).AddMilliseconds(time)));
     }
 
-    public AMFValue ReadArray()
+    private AMFValue ReadArray()
     {
       var idx = ReadUI29();
       if ((idx & 0x01)==0) return GetRegisteredObject(idx>>1);
