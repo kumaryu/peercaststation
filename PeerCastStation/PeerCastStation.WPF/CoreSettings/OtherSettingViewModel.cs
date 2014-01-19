@@ -16,6 +16,7 @@
 using PeerCastStation.Core;
 using PeerCastStation.WPF.Commons;
 using System.Collections.Generic;
+using System;
 
 namespace PeerCastStation.WPF.CoreSettings
 {
@@ -126,6 +127,63 @@ namespace PeerCastStation.WPF.CoreSettings
       }
     }
 
+    public class CheckBandwidthCommand
+      : System.Windows.Input.ICommand
+    {
+      private OtherSettingViewModel owner;
+      private BandwidthChecker checker;
+      private bool canExecute = true;
+
+      public CheckBandwidthCommand(OtherSettingViewModel owner)
+      {
+        this.owner = owner;
+        Uri target_uri;
+        if (AppSettingsReader.TryGetUri("BandwidthChecker", out target_uri)) {
+          this.checker = new BandwidthChecker(target_uri);
+          this.checker.BandwidthCheckCompleted += checker_BandwidthCheckCompleted;
+        }
+        else {
+          canExecute = false;
+        }
+      }
+
+      private void checker_BandwidthCheckCompleted(
+          object sender,
+          BandwidthCheckCompletedEventArgs args)
+      {
+        if (args.Success) {
+          owner.MaxUpstreamRate = (int)((args.Bitrate / 1000) * 0.8 / 100) * 100;
+        }
+        SetCanExecute(true);
+      }
+
+      public bool CanExecute(object parameter)
+      {
+        return canExecute;
+      }
+
+      private void SetCanExecute(bool value)
+      {
+        if (canExecute!=value) {
+          canExecute = value;
+          if (CanExecuteChanged!=null) {
+            CanExecuteChanged(this, new EventArgs());
+          }
+        }
+      }
+      public event EventHandler CanExecuteChanged;
+
+      public void Execute(object parameter)
+      {
+        if (!canExecute) return;
+        SetCanExecute(false);
+        checker.Run();
+      }
+    }
+
+    public System.Windows.Input.ICommand CheckBandwidth { get; private set; }
+
+
     protected override void OnPropertyChanged(string propertyName)
     {
       pecaApp.SaveSettings();
@@ -136,6 +194,7 @@ namespace PeerCastStation.WPF.CoreSettings
     internal OtherSettingViewModel(PeerCastApplication peca_app)
     {
       pecaApp = peca_app;
+      this.CheckBandwidth = new CheckBandwidthCommand(this);
     }
   }
 }
