@@ -18,11 +18,11 @@ MonoDevelopは試してないのでわかりません。
 ドキュメントはruby(2.0以降がよさげ)とjekyllを入れてdoc/siteやdoc/helpで`jekyll build`を実行してください。
 RUBYOPT環境変数に`-Eutf-8`を付けておかないとエラーが出るかもしれません。
 
-  gem install bundler
-  cd doc
-  bundle install
-  cd help
-  RUBYOPT=-Eutf-8 jekyll build
+    gem install bundler
+    cd doc
+    bundle install
+    cd help
+    RUBYOPT=-Eutf-8 jekyll build
 
 こんな感じ
 
