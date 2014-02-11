@@ -26,7 +26,7 @@ namespace PeerCastStation.Core
 
   public class BandwidthChecker
   {
-    public static readonly int DataSize = 128*1024;
+    public static readonly int DataSize = 256*1024;
     public static readonly int Tries    = 4;
     public Uri Target { get; private set; }
     public BandwidthChecker(Uri target_uri)
