@@ -863,7 +863,7 @@ namespace PeerCastStation.PCP
         null);
     }
 
-    protected override SourceConnectionBase CreateConnection(Uri source_uri)
+    protected override ISourceConnection CreateConnection(Uri source_uri)
     {
       if (source_uri==trackerUri) {
         return new PCPSourceConnection(PeerCast, Channel, source_uri, RemoteHostStatus.Tracker);

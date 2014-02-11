@@ -4,7 +4,24 @@ using System.Threading;
 
 namespace PeerCastStation.Core
 {
+  public interface ISourceConnection
+  {
+    Uri        SourceUri     { get; }
+    StopReason StoppedReason { get; }
+    bool       IsStopped     { get; }
+    float      SendRate      { get; }
+    float      RecvRate      { get; }
+
+    ConnectionInfo GetConnectionInfo();
+    void Run();
+    void Post(Host from, Atom packet);
+    void Stop(StopReason reason);
+
+    event StreamStoppedEventHandler Stopped;
+  }
+
   public abstract class SourceConnectionBase
+    : ISourceConnection
   {
     public PeerCast   PeerCast { get; private set; }
     public Channel    Channel { get; private set; }
