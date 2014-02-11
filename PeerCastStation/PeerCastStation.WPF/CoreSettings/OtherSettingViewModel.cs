@@ -128,11 +128,22 @@ namespace PeerCastStation.WPF.CoreSettings
     }
 
     public class CheckBandwidthCommand
-      : System.Windows.Input.ICommand
+      : System.Windows.Input.ICommand,
+        System.ComponentModel.INotifyPropertyChanged
     {
       private OtherSettingViewModel owner;
       private BandwidthChecker checker;
       private bool canExecute = true;
+      private string status = "";
+
+      public string Status {
+        get { return status; }
+        private set {
+          if (status==value) return;
+          status = value;
+          OnPropertyChanged("Status");
+        }
+      }
 
       public CheckBandwidthCommand(OtherSettingViewModel owner)
       {
@@ -153,6 +164,12 @@ namespace PeerCastStation.WPF.CoreSettings
       {
         if (args.Success) {
           owner.MaxUpstreamRate = (int)((args.Bitrate / 1000) * 0.8 / 100) * 100;
+          Status = String.Format("帯域測定完了: {0}kbps, 設定推奨値: {1}kbps",
+            args.Bitrate/1000,
+            (int)((args.Bitrate / 1000) * 0.8 / 100) * 100);
+        }
+        else {
+          Status = "帯域測定失敗。接続できませんでした";
         }
         SetCanExecute(true);
       }
@@ -178,6 +195,15 @@ namespace PeerCastStation.WPF.CoreSettings
         if (!canExecute) return;
         SetCanExecute(false);
         checker.Run();
+        Status = "帯域測定中";
+      }
+
+      public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+      private void OnPropertyChanged(string name)
+      {
+        if (PropertyChanged!=null) {
+          PropertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(name));
+        }
       }
     }
 
