@@ -128,6 +128,7 @@
     <Content Include="help\images\gui_broadcast.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="help\images\gui_broadcast_rtmp.png" />
     <Content Include="help\images\gui_channelinfo.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

@@ -8,6 +8,9 @@ PeerCastStationについて
 =======================
 PeerCastStationはリメイク版PeerCastです。PeerCast.exeのかわりとして使えます。
 
+公式サイトは[http://www.pecastation.org/](http://www.pecastation.org/)です。
+
+
 動作環境とインストール方法
 ------------------------
 WindowsではWindows XP SP3以降 + .NET Framework 3.5以降が必要です。
@@ -31,48 +34,6 @@ Windows以外ではUIが出ないですが、ポートが開ければWebブラ�
 問題の報告・要望の連絡先について
 --------------------------------
 [githubのIssueに追加してください。](https://github.com/kumaryu/peercaststation)
-
-{% case site.target %}
-{% when 'site' %}
-ダウンロード(開発版)
-------------
-{% else %}
-更新履歴(開発版)
---------
-{% endcase %}
-開発版です。新しい機能が入ってますが上手く動かないかもしれません。
-安定版を使用している場合にはアップデートに出てきません。
-
-開発版と安定板で迷ったら安定版をおすすめします。
-
-{% for release in site.data.releasenotes %}{% if release.channel contains 'dev' %}
-### {{ release.name }}
-{% if site.target == 'site' %}
-[ダウンロード](http://www.pecastation.org/files/PeerCastStation-{{ release.version }}.zip)
-{% endif %}
-
-{{ release.notes }}
-
-{% endif %}{% endfor %}
-
-{% case site.target %}
-{% when 'site' %}
-ダウンロード(安定版)
-------------
-{% else %}
-更新履歴(安定版)
---------
-{% endcase %}
-
-{% for release in site.data.releasenotes %}{% if release.channel contains 'stable' %}
-### {{ release.name }}
-{% if site.target == 'site' %}
-[ダウンロード](http://www.pecastation.org/files/PeerCastStation-{{ release.version }}.zip)
-{% endif %}
-
-{{ release.notes }}
-
-{% endif %}{% endfor %}
 
 ソース・ライセンス
 ------------------
