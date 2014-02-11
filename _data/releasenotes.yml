@@ -1,4 +1,15 @@
 ---
+- name: Version 1.7.8 (2014年2月11日開発版)
+  version: 1.7.8
+  channel: dev
+  notes: |
+    * 配信方法にRTMP Sourceを追加して、RTMP配信に対応したエンコーダからのFLV配信に対応しました
+    * 設定に帯域測定ボタンを追加し、上り帯域の測定と設定を1ボタンで行えるようにしました
+    * .NET3.5と.NET4(または4.5)がインストールされていた場合には.NET4で動作するようにしました
+  date: Tue, 11 Feb 2014 23:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.7.8.zip
+  length: 1742754
+
 - name: Version 1.7.7 (2013年12月31日開発版)
   version: 1.7.7
   channel: dev
