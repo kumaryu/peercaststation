@@ -223,6 +223,7 @@ namespace PeerCastStation.FLV.RTMP
       this.rtmpChannel = new RTMPSourceChannel("livestream", channel);
     }
 
+    private class ConnectionStoppedExcception : ApplicationException {}
     private TcpClient client;
     private RTMPSourceChannel rtmpChannel;
 
@@ -272,8 +273,10 @@ namespace PeerCastStation.FLV.RTMP
       listener.Start(1);
       Logger.Debug("Listening on 0.0.0.0:1935");
       var ar = listener.BeginAcceptTcpClient(null, null);
-      WaitAndProcessEvents(ar.AsyncWaitHandle, () => {
-        client = listener.EndAcceptTcpClient(ar);
+      WaitAndProcessEvents(ar.AsyncWaitHandle, stopped => {
+        if (ar.IsCompleted) {
+          client = listener.EndAcceptTcpClient(ar);
+        }
         return null;
       });
       Logger.Debug("Client accepted");
@@ -299,14 +302,19 @@ namespace PeerCastStation.FLV.RTMP
       this.state = ConnectionState.Waiting;
       OnStarted();
       try {
-        Handshake();
-        DoProcess();
+        if (connection!=null && !IsStopped) {
+          Handshake();
+          DoProcess();
+        }
         this.state = ConnectionState.Closed;
       }
       catch (IOException e) {
         Logger.Error(e);
         DoStop(StopReason.ConnectionError);
         this.state = ConnectionState.Error;
+      }
+      catch (ConnectionStoppedExcception e) {
+        this.state = ConnectionState.Closed;
       }
       SyncContext.ProcessAll();
       OnStopped();
@@ -857,8 +865,11 @@ namespace PeerCastStation.FLV.RTMP
 
     protected void RecvUntil(Func<Stream,bool> proc)
     {
-      WaitAndProcessEvents(connection.ReceiveWaitHandle, () => {
-        if (connection.Recv(proc)) {
+      WaitAndProcessEvents(connection.ReceiveWaitHandle, stopped => {
+        if (stopped) {
+          throw new ConnectionStoppedExcception();
+        }
+        else if (connection.Recv(proc)) {
           return null;
         }
         else {
@@ -889,7 +900,7 @@ namespace PeerCastStation.FLV.RTMP
       Send(data, 0, data.Length);
     }
 
-    protected bool WaitAndProcessEvents(WaitHandle wait_handle, Func<WaitHandle> on_signal)
+    protected bool WaitAndProcessEvents(WaitHandle wait_handle, Func<bool,WaitHandle> on_signal)
     {
       var handles = new WaitHandle[] {
         SyncContext.EventHandle,
@@ -901,10 +912,13 @@ namespace PeerCastStation.FLV.RTMP
         var idx = WaitHandle.WaitAny(handles);
         if (idx==0) {
           SyncContext.ProcessAll();
+          if (IsStopped) {
+            wait_handle = on_signal(IsStopped);
+          }
           event_processed = true;
         }
         else {
-          wait_handle = on_signal();
+          wait_handle = on_signal(IsStopped);
         }
       }
       if (!event_processed) {
@@ -913,14 +927,14 @@ namespace PeerCastStation.FLV.RTMP
       return true;
     }
 
-    protected bool WaitAndProcessEvents(IAsyncResult ar, Func<IAsyncResult,IAsyncResult> on_signal)
+    protected bool WaitAndProcessEvents(IAsyncResult ar, Func<IAsyncResult,bool,IAsyncResult> on_signal)
     {
       if (ar==null) {
         SyncContext.ProcessAll();
         return true;
       }
-      return WaitAndProcessEvents(ar.AsyncWaitHandle, () => {
-        ar = on_signal(ar);
+      return WaitAndProcessEvents(ar.AsyncWaitHandle, stopped => {
+        ar = on_signal(ar, stopped);
         if (ar!=null) return ar.AsyncWaitHandle;
         else          return null;
       });
