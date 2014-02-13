@@ -270,17 +270,25 @@ namespace PeerCastStation.FLV.RTMP
     {
       TcpClient client = null;
       var listener = new TcpListener(IPAddress.Any, 1935);
-      listener.Start(1);
-      Logger.Debug("Listening on 0.0.0.0:1935");
-      var ar = listener.BeginAcceptTcpClient(null, null);
-      WaitAndProcessEvents(ar.AsyncWaitHandle, stopped => {
-        if (ar.IsCompleted) {
-          client = listener.EndAcceptTcpClient(ar);
-        }
-        return null;
-      });
-      Logger.Debug("Client accepted");
-      listener.Stop();
+      try {
+        listener.Start(1);
+        Logger.Debug("Listening on 0.0.0.0:1935");
+        var ar = listener.BeginAcceptTcpClient(null, null);
+        WaitAndProcessEvents(ar.AsyncWaitHandle, stopped => {
+          if (ar.IsCompleted) {
+            client = listener.EndAcceptTcpClient(ar);
+          }
+          return null;
+        });
+        Logger.Debug("Client accepted");
+      }
+      catch (SocketException) {
+        //Runで処理するのでここではスルーする
+        throw;
+      }
+      finally {
+        listener.Stop();
+      }
       if (client!=null) {
         this.client = client;
         return new StreamConnection(client.GetStream(), client.GetStream());
@@ -300,13 +308,18 @@ namespace PeerCastStation.FLV.RTMP
     public override void Run()
     {
       this.state = ConnectionState.Waiting;
-      OnStarted();
       try {
+        OnStarted();
         if (connection!=null && !IsStopped) {
           Handshake();
           DoProcess();
         }
         this.state = ConnectionState.Closed;
+      }
+      catch (SocketException e) {
+        Logger.Error(e);
+        DoStop(StopReason.NoHost);
+        this.state = ConnectionState.Error;
       }
       catch (IOException e) {
         Logger.Error(e);
@@ -995,6 +1008,9 @@ namespace PeerCastStation.FLV.RTMP
       case StopReason.UserReconnect:
         break;
       case StopReason.UserShutdown:
+        Stop(msg.StopReason);
+        break;
+      case StopReason.NoHost:
         Stop(msg.StopReason);
         break;
       default:
