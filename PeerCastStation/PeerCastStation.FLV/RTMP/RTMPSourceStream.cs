@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.IO;
 using System.Collections.Generic;
 using System.Net;
@@ -224,6 +225,14 @@ namespace PeerCastStation.FLV.RTMP
     }
 
     private class ConnectionStoppedExcception : ApplicationException {}
+    private class BindErrorException
+      : ApplicationException
+    {
+      public BindErrorException(string message)
+        : base(message)
+      {
+      }
+    }
     private TcpClient client;
     private RTMPSourceChannel rtmpChannel;
 
@@ -266,13 +275,32 @@ namespace PeerCastStation.FLV.RTMP
     private ConnectionState state = ConnectionState.Waiting;
     private string clientName = "";
 
+    private IPEndPoint GetBindAddress(Uri uri)
+    {
+      try {
+        var address = Dns.GetHostAddresses(uri.DnsSafeHost)
+          .OrderBy(addr => addr.AddressFamily)
+          .FirstOrDefault();
+        var port = uri.Port;
+        if (address==null) return null;
+        return new IPEndPoint(address, port<0 ? 1935 : port);
+      }
+      catch (SocketException) {
+        return null;
+      }
+    }
+
     protected override StreamConnection DoConnect(Uri source)
     {
       TcpClient client = null;
+      var bind_addr = GetBindAddress(source);
+      if (bind_addr==null) {
+        throw new BindErrorException(String.Format("Cannot resolve bind address: {0}", source.DnsSafeHost));
+      }
       var listener = new TcpListener(IPAddress.Any, 1935);
       try {
         listener.Start(1);
-        Logger.Debug("Listening on 0.0.0.0:1935");
+        Logger.Debug("Listening on {0}", bind_addr);
         var ar = listener.BeginAcceptTcpClient(null, null);
         WaitAndProcessEvents(ar.AsyncWaitHandle, stopped => {
           if (ar.IsCompleted) {
@@ -283,8 +311,7 @@ namespace PeerCastStation.FLV.RTMP
         Logger.Debug("Client accepted");
       }
       catch (SocketException) {
-        //Runで処理するのでここではスルーする
-        throw;
+        throw new BindErrorException(String.Format("Cannot bind address: {0}", bind_addr));
       }
       finally {
         listener.Stop();
@@ -316,7 +343,7 @@ namespace PeerCastStation.FLV.RTMP
         }
         this.state = ConnectionState.Closed;
       }
-      catch (SocketException e) {
+      catch (BindErrorException e) {
         Logger.Error(e);
         DoStop(StopReason.NoHost);
         this.state = ConnectionState.Error;
