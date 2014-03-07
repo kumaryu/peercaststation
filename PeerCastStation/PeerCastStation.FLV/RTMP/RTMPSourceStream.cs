@@ -423,9 +423,9 @@ namespace PeerCastStation.FLV.RTMP
     int objectEncoding  = 0;
     int sendChunkSize   = 128;
     int recvChunkSize   = 128;
-    long sendWindowSize = long.MaxValue;
+    long sendWindowSize = 0x7FFFFFFF;
     PeerBandwidthLimitType sendWindowLimitType = PeerBandwidthLimitType.Hard;
-    long recvWindowSize = long.MaxValue;
+    long recvWindowSize = 0x7FFFFFFF;
     long receivedSize   = 0;
     long sequenceNumber = 0;
     int RecvStream(byte[] buf, int offset, int len)
@@ -436,9 +436,9 @@ namespace PeerCastStation.FLV.RTMP
         receivedSize   += len1;
         sequenceNumber += len1;
         SendMessage(2, new AckMessage(this.Now, 0, sequenceNumber));
-        var len2 = len - (int)(recvWindowSize-receivedSize);
+        var len2 = len - len1;
         Recv(buf, offset+len1, len2);
-        receivedSize   += len2;
+        receivedSize    = len2; //reset
         sequenceNumber += len2;
       }
       else {
@@ -738,6 +738,7 @@ namespace PeerCastStation.FLV.RTMP
     void OnSetWindowSize(SetWindowSizeMessage msg)
     {
       recvWindowSize = msg.WindowSize;
+      receivedSize = 0;
    }
 
     void OnSetPeerBandwidth(SetPeerBandwidthMessage msg)
@@ -811,8 +812,8 @@ namespace PeerCastStation.FLV.RTMP
       objectEncoding = ((int)msg.CommandObject["objectEncoding"])==3 ? 3 : 0;
       clientName     = (string)msg.CommandObject["flashVer"];
       Logger.Debug("connect: objectEncoding {0}, flashVer: {1}", objectEncoding, clientName);
-      SendMessage(2, new SetWindowSizeMessage(this.Now, 0, 0xFFFFFFFF));
-      SendMessage(2, new SetPeerBandwidthMessage(this.Now, 0, 0xFFFFFFFF, PeerBandwidthLimitType.Hard));
+      SendMessage(2, new SetWindowSizeMessage(this.Now, 0, recvWindowSize));
+      SendMessage(2, new SetPeerBandwidthMessage(this.Now, 0, sendWindowSize, PeerBandwidthLimitType.Hard));
       SendMessage(2, new UserControlMessage.StreamBeginMessage(this.Now, 0, 0));
       var response = CommandMessage.Create(
         objectEncoding,
@@ -900,6 +901,7 @@ namespace PeerCastStation.FLV.RTMP
 
     protected void Recv(byte[] dst, int offset, int len)
     {
+      if (len==0) return;
       RecvUntil(stream => stream.Read(dst, offset, len)>=len);
     }
 
