@@ -835,7 +835,9 @@ namespace PeerCastStation.FLV.RTMP
           { "objectEncoding", objectEncoding },
         })
       );
-      SendMessage(3, response);
+      if (msg.TransactionId!=0) {
+        SendMessage(3, response);
+      }
     }
 
     void OnCommandCall(CommandMessage msg)
@@ -858,7 +860,9 @@ namespace PeerCastStation.FLV.RTMP
         null,
         new AMF.AMFValue(new_stream_id)
       );
-      SendMessage(3, response);
+      if (msg.TransactionId!=0) {
+        SendMessage(3, response);
+      }
     }
 
     void OnCommandPublish(CommandMessage msg)
@@ -881,7 +885,6 @@ namespace PeerCastStation.FLV.RTMP
         })
       );
       SendMessage(3, status);
-      if (msg.TransactionId==0) return;
       var result = CommandMessage.Create(
         objectEncoding,
         this.Now,
@@ -890,7 +893,9 @@ namespace PeerCastStation.FLV.RTMP
         msg.TransactionId,
         null
       );
-      SendMessage(3, status);
+      if (msg.TransactionId!=0) {
+        SendMessage(3, result);
+      }
       this.state = ConnectionState.Receiving;
     }
 
