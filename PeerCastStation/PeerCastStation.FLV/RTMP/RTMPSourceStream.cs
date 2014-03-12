@@ -52,11 +52,13 @@ namespace PeerCastStation.FLV.RTMP
     private RTMPMessage  audioHeader     = null;
     private RTMPMessage  videoHeader     = null;
     private MemoryStream bodyBuffer      = new MemoryStream();
+    private System.Diagnostics.Stopwatch flushTimer = new System.Diagnostics.Stopwatch();
 
     public RTMPSourceChannel(string name, Channel target_channel)
     {
       this.Name          = name;
       this.TargetChannel = target_channel;
+      this.flushTimer.Start();
     }
 
     private void SetDataFrame(DataMessage msg)
@@ -200,17 +202,21 @@ namespace PeerCastStation.FLV.RTMP
     {
       if (streamIndex<0) OnHeaderChanged(content);
       WriteMessage(bodyBuffer, content, timestampOrigin);
-      if (bodyBuffer.Length>=7500) {
+      if (bodyBuffer.Length>=7500 ||
+          flushTimer.ElapsedMilliseconds>=100) {
         FlushContents();
       }
     }
 
     public void FlushContents()
     {
-      if (bodyBuffer.Length<=0) return;
-      TargetChannel.Contents.Add(new Content(streamIndex, DateTime.Now-streamOrigin, position, bodyBuffer.ToArray()));
-      position += bodyBuffer.Length;
-      bodyBuffer.SetLength(0);
+      if (bodyBuffer.Length>0) {
+        TargetChannel.Contents.Add(new Content(streamIndex, DateTime.Now-streamOrigin, position, bodyBuffer.ToArray()));
+        position += bodyBuffer.Length;
+        bodyBuffer.SetLength(0);
+      }
+      flushTimer.Reset();
+      flushTimer.Start();
     }
 
   }
