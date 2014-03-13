@@ -155,6 +155,18 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
+    public bool ContainsKey(string key)
+    {
+      switch (Type) {
+      case AMFValueType.ECMAArray:
+        return ((IDictionary<string,AMFValue>)Value).ContainsKey(key);
+      case AMFValueType.Object:
+        return ((AMFObject)Value).ContainsKey(key);
+      default:
+        return false;
+      }
+    }
+
     public static bool IsNull(AMFValue value)
     {
       return value==null || value.Type==AMFValueType.Null;

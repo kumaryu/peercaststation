@@ -55,6 +55,11 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
+    public bool ContainsKey(string key)
+    {
+      return Data.ContainsKey(key);
+    }
+
     public void Add(string key, AMFValue value)
     {
       if (!this.Class.IsDynamic)      throw new NotSupportedException("Class is not dynamic");

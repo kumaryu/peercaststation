@@ -286,218 +286,31 @@ namespace PeerCastStation.FLV
       return res;
     }
 
-    private class AMF0Reader
-      : IDisposable
-    {
-      public Stream BaseStream { get; private set; }
-      public AMF0Reader(Stream base_stream)
-      {
-        BaseStream = base_stream;
-      }
-
-      private enum DataType {
-        Number          = 0,
-        Boolean         = 1,
-        String          = 2,
-        Object          = 3,
-        MovieClip       = 4,
-        Null            = 5,
-        Undefined       = 6,
-        Reference       = 7,
-        Array           = 8,
-        ObjectEndMarker = 9,
-        StrictArray     = 10,
-        Date            = 11,
-        LongString      = 12,
-      }
-
-      public class ScriptDataObjectEnd {}
-      public class ScriptDataObject : Dictionary<string, object> { }
-      public class ScriptDataEcmaArray : Dictionary<string, object> { }
-
-      public object ReadValue()
-      {
-        switch ((DataType)ReadUI8()) {
-        case DataType.Number:
-          return ReadDouble();
-        case DataType.Boolean:
-          return ReadUI8()!=0;
-        case DataType.String:
-          return ReadString();
-        case DataType.Object:
-          return ReadObject();
-        case DataType.MovieClip:
-          return null; //Not supported
-        case DataType.Null:
-          return null;
-        case DataType.Undefined:
-          return null;
-        case DataType.Reference:
-          return ReadUI16(); //???
-        case DataType.Array:
-          return ReadEcmaArray();
-        case DataType.ObjectEndMarker:
-          return new ScriptDataObjectEnd();
-        case DataType.StrictArray:
-          return ReadStrictArray();
-        case DataType.Date:
-          return ReadDate();
-        case DataType.LongString:
-          return ReadLongString();
-        }
-        return null;
-      }
-
-      public string ReadString()
-      {
-        var len = ReadUI16();
-        var buf = new byte[len];
-        BaseStream.Read(buf, 0, len);
-        return System.Text.Encoding.UTF8.GetString(buf);
-      }
-
-      public string ReadLongString()
-      {
-        var len = ReadUI32();
-        var buf = new byte[len];
-        var pos = 0;
-        while (len>0) {
-          var read = BaseStream.Read(buf, pos, (int)Math.Min(len, Int32.MaxValue));
-          pos += read;
-          len -= read;
-        }
-        return System.Text.Encoding.UTF8.GetString(buf);
-      }
-
-      public long ReadUI32()
-      {
-        var buf = new byte[4];
-        BaseStream.Read(buf, 0, 4);
-        if (BitConverter.IsLittleEndian) Array.Reverse(buf);
-        return BitConverter.ToUInt32(buf, 0);
-      }
-
-      public int ReadUI16()
-      {
-        var buf = new byte[2];
-        BaseStream.Read(buf, 0, 2);
-        if (BitConverter.IsLittleEndian) Array.Reverse(buf);
-        return BitConverter.ToUInt16(buf, 0);
-      }
-
-      public int ReadSI16()
-      {
-        var buf = new byte[2];
-        BaseStream.Read(buf, 0, 2);
-        if (BitConverter.IsLittleEndian) Array.Reverse(buf);
-        return BitConverter.ToInt16(buf, 0);
-      }
-
-      public int ReadUI8()
-      {
-        var b = BaseStream.ReadByte();
-        if (b<0) throw new EndOfStreamException();
-        return b;
-      }
-
-      public double ReadDouble()
-      {
-        var buf = new byte[8];
-        BaseStream.Read(buf, 0, 8);
-        if (BitConverter.IsLittleEndian) Array.Reverse(buf);
-        return BitConverter.ToDouble(buf, 0);
-      }
-
-      private KeyValuePair<string, object>? ReadProperty()
-      {
-        var name = ReadString();
-        var value = ReadValue();
-        if (name=="" && value is ScriptDataObjectEnd) {
-          return null;
-        }
-        else {
-          return new KeyValuePair<string, object>(name, value);
-        }
-      }
-
-      public ScriptDataObject ReadObject()
-      {
-        var obj = new ScriptDataObject();
-        var prop = ReadProperty();
-        while (prop.HasValue) {
-          obj.Add(prop.Value.Key, prop.Value.Value);
-          prop = ReadProperty();
-        }
-        return obj;
-      }
-
-      public ScriptDataEcmaArray ReadEcmaArray()
-      {
-        var len = ReadUI32();
-        var obj = new ScriptDataEcmaArray();
-        var prop = ReadProperty();
-        while (prop.HasValue) {
-          obj.Add(prop.Value.Key, prop.Value.Value);
-          prop = ReadProperty();
-        }
-        return obj;
-      }
-
-      public object[] ReadStrictArray()
-      {
-        var ary = new object[ReadUI32()];
-        for (long i=0; i<ary.LongLength; i++) {
-          ary[i] = ReadValue();
-        }
-        return ary;
-      }
-
-      public DateTimeOffset ReadDate()
-      {
-        var time = ReadDouble();
-        var tz   = ReadSI16();
-        var utc = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(time);
-        return new DateTimeOffset(utc).ToOffset(TimeSpan.FromMinutes(tz));
-      }
-
-      public void Dispose()
-      {
-        BaseStream.Dispose();
-      }
-    }
-
     private bool OnScriptTag(FLVTag tag, AtomCollection channel_info)
     {
       bool modified = false;
-      using (var reader=new AMF0Reader(new MemoryStream(tag.Body))) {
+      using (var reader=new AMF.AMF0Reader(new MemoryStream(tag.Body))) {
         var name  = reader.ReadValue();
         var value = reader.ReadValue();
-        if (!(name is string)) return false;
+        if (name.Type!=AMF.AMFValueType.String) return false;
         double bitrate = 0;
         switch ((string)name) {
         case "onMetaData":
           {
-            Dictionary<string, object> args;
-            if ((args = value as AMF0Reader.ScriptDataEcmaArray) == null) {
-              if ((args = value as AMF0Reader.ScriptDataObject) == null) {
-                break;
-              }
-            }
-            object val;
-            if (args.TryGetValue("maxBitrate", out val)) {
+            if (value.ContainsKey("maxBitrate")) {
+              string maxBitrateStr = System.Text.RegularExpressions.Regex.Replace(value["maxBitrate"].ToString(), @"([\d]+)k", "$1");
               double maxBitrate;
-              string maxBitrateStr = System.Text.RegularExpressions.Regex.Replace(val.ToString(), @"([\d]+)k", "$1");
               if (double.TryParse(maxBitrateStr, out maxBitrate)) {
                 bitrate += maxBitrate;
               }
             }
             else {
-              if (args.TryGetValue("videodatarate", out val)) {
-                bitrate += (double)val;
+              if (value.ContainsKey("videodatarate")) {
+                bitrate += (double)value["videodatarate"];
               }
             }
-            if (args.TryGetValue("audiodatarate", out val)) {
-              bitrate += (double)val;
+            if (value.ContainsKey("audiodatarate")) {
+              bitrate += (double)value["audiodatarate"];
             }
           }
           break;
