@@ -52,6 +52,7 @@
     <Compile Include="AMF\AMFReader.cs" />
     <Compile Include="AMF\AMFValue.cs" />
     <Compile Include="AMF\AMFWriter.cs" />
+    <Compile Include="FLVContentBuffer.cs" />
     <Compile Include="FLVContentReader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RTMP\RTMPMessage.cs" />

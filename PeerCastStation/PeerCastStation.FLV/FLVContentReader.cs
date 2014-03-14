@@ -17,10 +17,12 @@ namespace PeerCastStation.FLV
     public FLVContentReader(Channel channel)
     {
       this.Channel = channel;
+      this.contentBuffer = new FLVContentBuffer(channel);
     }
 
     public string Name { get { return "Flash Video (FLV)"; } }
     public Channel Channel { get; private set; }
+    private FLVContentBuffer contentBuffer;
 
     private class FileHeader
     {
@@ -97,28 +99,6 @@ namespace PeerCastStation.FLV
         get { return this.DataSize+11==this.TagSize; }
       }
 
-      public bool IsMetaData {
-        get {
-          return Type == TagType.Script && Body.Length > 12 &&
-            Body[0] == 0x02 && Body[1] == 0x00 && Body[2] == 0x0A &&
-            System.Text.Encoding.ASCII.GetString(Body, 3, 10) == "onMetaData";
-        }
-      }
-
-      public bool IsAVCHeader {
-        get {
-          return Type==TagType.Video && Body.Length>3 &&
-            (Body[0] == 0x17 && Body[1] == 0x00 && Body[2] == 0x00 && Body[3] == 0x00);
-        }
-      }
-
-      public bool IsAACHeader {
-        get {
-          return Type==TagType.Audio && Body.Length>1 &&
-            (Body[0] == 0xAF && Body[1] == 0x00);
-        }
-      }
-
       public void ReadBody(Stream stream)
       {
         this.Body = FLVContentReader.ReadBytes(stream, this.DataSize);
@@ -128,12 +108,15 @@ namespace PeerCastStation.FLV
       {
         this.Footer = FLVContentReader.ReadBytes(stream, 4);
       }
-    }
 
-    private class TagDesc
-    {
-      public double Timestamp { get; set; }
-      public int    DataSize  { get; set; }
+      public RTMP.RTMPMessage ToRTMPMessage()
+      {
+        return new RTMP.RTMPMessage(
+          (RTMP.RTMPMessageType)this.Type,
+          this.Timestamp,
+          this.StreamID,
+          this.Body);
+      }
     }
 
     private static byte[] ReadBytes(Stream stream, int len)
@@ -155,42 +138,9 @@ namespace PeerCastStation.FLV
       Body,
     };
     private ReaderState state = ReaderState.Header;
-    private long position = 0;
-    private int streamIndex = -1;
-    private DateTime streamOrigin;
-    private FileHeader fileHeader;
-    private Queue<Content> contentsQueue = new Queue<Content>();
-
-    private IList<Content> FlushContents(IList<Content> prev)
-    {
-      if (contentsQueue.Count==0) return prev;
-      var list = new List<Content>();
-      var last = contentsQueue.Dequeue();
-      while (contentsQueue.Count>0) {
-        var cur = contentsQueue.Dequeue();
-        if (last.Stream!=cur.Stream ||
-            last.Position+last.Data.Length!=cur.Position ||
-            last.Data.Length+cur.Data.Length>12*1024) {
-          list.Add(last);
-          last = cur;
-        }
-        else {
-          last = new Content(last.Stream, last.Timestamp, last.Position, last.Data.Concat(cur.Data).ToArray());
-        }
-      }
-      list.Add(last);
-      return prev!=null ? prev.Concat(list).ToArray() : list.ToArray();
-    }
-
-    private bool CheckContentsQueueIsFull()
-    {
-      return contentsQueue.Sum(c => c.Data.Length)>7500;
-    }
 
     public ParsedContent Read(Stream stream)
     {
-      var res = new ParsedContent();
-      var info = new AtomCollection(Channel.ChannelInfo.Extra);
       var processed = false;
       var eos = false;
       while (!eos) {
@@ -203,17 +153,7 @@ namespace PeerCastStation.FLV
               var header = new FileHeader(bin);
               if (header.IsValid) {
                 Logger.Info("FLV Header found");
-                fileHeader = header;
-                bin = header.Binary;
-                streamIndex = Channel.GenerateStreamID();
-                streamOrigin = DateTime.Now;
-                res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, position, bin);
-                res.Contents = null;
-                info.SetChanInfoType("FLV");
-                info.SetChanInfoStreamType("video/x-flv");
-                info.SetChanInfoStreamExt(".flv");
-                res.ChannelInfo = new ChannelInfo(info);
-                position = bin.Length;
+                contentBuffer.OnStart();
                 state = ReaderState.Body;
               }
               else {
@@ -231,22 +171,17 @@ namespace PeerCastStation.FLV
                 body.ReadFooter(stream);
                 if (body.IsValidFooter) {
                   read_valid = true;
-                  bin = body.Binary;
-                  if ((body.IsMetaData || body.IsAVCHeader || body.IsAACHeader) && res.ContentHeader != null) {
-                    var conbin = res.ContentHeader.Data.Concat(bin).ToArray();
-                    res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, position, conbin);
-                    res.Contents = FlushContents(res.Contents);
+                  switch (body.Type) {
+                  case FLVTag.TagType.Audio:
+                    contentBuffer.OnAudio(body.ToRTMPMessage());
+                    break;
+                  case FLVTag.TagType.Video:
+                    contentBuffer.OnVideo(body.ToRTMPMessage());
+                    break;
+                  case FLVTag.TagType.Script:
+                    contentBuffer.OnData(new RTMP.DataAMF0Message(body.ToRTMPMessage()));
+                    break;
                   }
-                  else {
-                    contentsQueue.Enqueue(new Content(streamIndex, DateTime.Now - streamOrigin, position, bin));
-                    if (CheckContentsQueueIsFull()) {
-                      res.Contents = FlushContents(res.Contents);
-                    }
-                  }
-                  if (body.Type == FLVTag.TagType.Script && OnScriptTag(body, info)) {
-                    res.ChannelInfo = new ChannelInfo(info);
-                  }
-                  position += bin.Length;
                 }
               }
               if (!read_valid) {
@@ -255,17 +190,7 @@ namespace PeerCastStation.FLV
                 if (header.IsValid) {
                   Logger.Info("New FLV Header found");
                   read_valid = true;
-                  fileHeader = header;
-                  bin = header.Binary;
-                  streamIndex = Channel.GenerateStreamID();
-                  streamOrigin = DateTime.Now;
-                  res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, 0, bin);
-                  res.Contents = FlushContents(res.Contents);
-                  info.SetChanInfoType("FLV");
-                  info.SetChanInfoStreamType("video/x-flv");
-                  info.SetChanInfoStreamExt(".flv");
-                  res.ChannelInfo = new ChannelInfo(info);
-                  position = bin.Length;
+                  contentBuffer.OnStart();
                 }
               }
               if (!read_valid) throw new BadDataException();
@@ -283,45 +208,9 @@ namespace PeerCastStation.FLV
           stream.Position = start_pos+1;
         }
       }
-      return res;
+      return contentBuffer.GetContents();
     }
 
-    private bool OnScriptTag(FLVTag tag, AtomCollection channel_info)
-    {
-      bool modified = false;
-      using (var reader=new AMF.AMF0Reader(new MemoryStream(tag.Body))) {
-        var name  = reader.ReadValue();
-        var value = reader.ReadValue();
-        if (name.Type!=AMF.AMFValueType.String) return false;
-        double bitrate = 0;
-        switch ((string)name) {
-        case "onMetaData":
-          {
-            if (value.ContainsKey("maxBitrate")) {
-              string maxBitrateStr = System.Text.RegularExpressions.Regex.Replace(value["maxBitrate"].ToString(), @"([\d]+)k", "$1");
-              double maxBitrate;
-              if (double.TryParse(maxBitrateStr, out maxBitrate)) {
-                bitrate += maxBitrate;
-              }
-            }
-            else {
-              if (value.ContainsKey("videodatarate")) {
-                bitrate += (double)value["videodatarate"];
-              }
-            }
-            if (value.ContainsKey("audiodatarate")) {
-              bitrate += (double)value["audiodatarate"];
-            }
-          }
-          break;
-        }
-        if (bitrate!=0) {
-          channel_info.SetChanInfoBitrate((int)bitrate);
-          modified = true;
-        }
-      }
-      return modified;
-    }
   }
 
   public class FLVContentReaderFactory
