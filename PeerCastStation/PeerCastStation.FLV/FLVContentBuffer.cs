@@ -48,7 +48,7 @@ namespace PeerCastStation.FLV
     private void OnMetaData(DataMessage msg)
     {
       this.metadata = msg;
-      var info = new AtomCollection(TargetChannel.ChannelInfo.Extra);
+      var info = new AtomCollection();
       info.SetChanInfoType("FLV");
       info.SetChanInfoStreamType("video/x-flv");
       info.SetChanInfoStreamExt(".flv");
@@ -77,7 +77,7 @@ namespace PeerCastStation.FLV
 
     public void OnStart()
     {
-      var info = new AtomCollection(TargetChannel.ChannelInfo.Extra);
+      var info = new AtomCollection();
       info.SetChanInfoType("FLV");
       info.SetChanInfoStreamType("video/x-flv");
       info.SetChanInfoStreamExt(".flv");

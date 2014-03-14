@@ -39,195 +39,14 @@ namespace PeerCastStation.FLV.RTMP
     }
   }
 
-  internal class RTMPSourceChannel
-  {
-    public string        Name          { get; private set; }
-    public Channel       TargetChannel { get; private set; }
-    public long          Position      { get { return position; } }
-    private long         position        = 0;
-    private int          streamIndex     = -1;
-    private DateTime     streamOrigin;
-    private long         timestampOrigin = 0;
-    private DataMessage  metadata        = null;
-    private RTMPMessage  audioHeader     = null;
-    private RTMPMessage  videoHeader     = null;
-    private MemoryStream bodyBuffer      = new MemoryStream();
-    private System.Diagnostics.Stopwatch flushTimer = new System.Diagnostics.Stopwatch();
-
-    public RTMPSourceChannel(string name, Channel target_channel)
-    {
-      this.Name          = name;
-      this.TargetChannel = target_channel;
-      this.flushTimer.Start();
-    }
-
-    private void SetDataFrame(DataMessage msg)
-    {
-      var name = (string)msg.Arguments[0];
-      var data_msg = new DataAMF0Message(msg.Timestamp, 0, name, new AMF.AMFValue[] { msg.Arguments[1] });
-      switch (name) {
-      case "onMetaData":
-        metadata = data_msg;
-        var info = new AtomCollection(TargetChannel.ChannelInfo.Extra);
-        info.SetChanInfoType("FLV");
-        info.SetChanInfoStreamType("video/x-flv");
-        info.SetChanInfoStreamExt(".flv");
-        if (metadata.Arguments[0].Type==AMF.AMFValueType.ECMAArray || metadata.Arguments[0].Type==AMF.AMFValueType.Object){
-          var bitrate = 0.0;
-          var val = metadata.Arguments[0]["maxBitrate"];
-          if (!AMF.AMFValue.IsNull(val)) {
-            double maxBitrate;
-            string maxBitrateStr = System.Text.RegularExpressions.Regex.Replace((string)val, @"([\d]+)k", "$1");
-            if (double.TryParse(maxBitrateStr, out maxBitrate)) {
-              bitrate += maxBitrate;
-            }
-          }
-          else if (!AMF.AMFValue.IsNull(val = metadata.Arguments[0]["videodatarate"])) {
-            bitrate += (double)val;
-          }
-          if (!AMF.AMFValue.IsNull(val = metadata.Arguments[0]["audiodatarate"])) {
-            bitrate += (double)val;
-          }
-          info.SetChanInfoBitrate((int)bitrate);
-        }
-        this.TargetChannel.ChannelInfo = new ChannelInfo(info);
-        OnHeaderChanged(data_msg);
-        break;
-      }
-      OnContentChanged(data_msg);
-    }
-
-    private void ClearDataFrame(DataMessage msg)
-    {
-      var name = (string)msg.Arguments[0];
-      switch (name) {
-      case "onMetaData":
-        metadata = null;
-        break;
-      }
-    }
-
-    public void OnData(DataMessage msg)
-    {
-      switch (msg.PropertyName) {
-      case "@setDataFrame":
-        SetDataFrame(msg);
-        break;
-
-      case "@clearDataFrame":
-        ClearDataFrame(msg);
-        break;
-      }
-    }
-
-    public void OnVideo(RTMPMessage msg)
-    {
-      if (IsAVCHeader(msg)) {
-        videoHeader = msg;
-        OnHeaderChanged(msg);
-      }
-      OnContentChanged(msg);
-    }
-
-    public void OnAudio(RTMPMessage msg)
-    {
-      if (IsAACHeader(msg)) {
-        audioHeader = msg;
-        OnHeaderChanged(msg);
-      }
-      OnContentChanged(msg);
-    }
-
-    private bool IsAVCHeader(RTMPMessage msg)
-    {
-      return
-         msg.MessageType==RTMPMessageType.Video &&
-         msg.Body.Length>3 &&
-        (msg.Body[0]==0x17 &&
-         msg.Body[1]==0x00 &&
-         msg.Body[2]==0x00 &&
-         msg.Body[3]==0x00);
-    }
-
-    private bool IsAACHeader(RTMPMessage msg)
-    {
-      return
-         msg.MessageType==RTMPMessageType.Audio &&
-         msg.Body.Length>1 &&
-        (msg.Body[0]==0xAF &&
-         msg.Body[1]==0x00);
-    }
-
-    private void WriteMessage(Stream stream, RTMPMessage msg, long time_origin)
-    {
-      var timestamp = Math.Max(0, msg.Timestamp-time_origin);
-      using (var writer=new RTMPBinaryWriter(stream, true)) {
-        writer.Write((byte)msg.MessageType);
-        writer.WriteUInt24(msg.Body.Length);
-        writer.WriteUInt24((int)timestamp & 0xFFFFFF);
-        writer.Write((byte)((timestamp>>24) & 0xFF));
-        writer.WriteUInt24(0);
-        writer.Write(msg.Body, 0, msg.Body.Length);
-        writer.Write(msg.Body.Length+11);
-      }
-    }
-
-    private void OnHeaderChanged(RTMPMessage msg)
-    {
-      FlushContents();
-      var s = new MemoryStream();
-      using (s) {
-        using (var writer=new RTMPBinaryWriter(s, true)) {
-          writer.Write((byte)'F');
-          writer.Write((byte)'L');
-          writer.Write((byte)'V');
-          writer.Write((byte)1);
-          writer.Write((byte)5);
-          writer.WriteUInt32(9);
-          writer.WriteUInt32(0);
-        }
-        if (metadata!=null)    WriteMessage(s, metadata,    0xFFFFFFFF);
-        if (audioHeader!=null) WriteMessage(s, audioHeader, 0xFFFFFFFF);
-        if (videoHeader!=null) WriteMessage(s, videoHeader, 0xFFFFFFFF);
-      }
-      streamIndex     = TargetChannel.GenerateStreamID();
-      streamOrigin    = DateTime.Now;
-      timestampOrigin = msg.Timestamp;
-      var bytes = s.ToArray();
-      TargetChannel.ContentHeader = new Content(streamIndex, TimeSpan.Zero, position, bytes);
-      position += bytes.Length;
-    }
-
-    private void OnContentChanged(RTMPMessage content)
-    {
-      if (streamIndex<0) OnHeaderChanged(content);
-      WriteMessage(bodyBuffer, content, timestampOrigin);
-      if (bodyBuffer.Length>=7500 ||
-          flushTimer.ElapsedMilliseconds>=100) {
-        FlushContents();
-      }
-    }
-
-    public void FlushContents()
-    {
-      if (bodyBuffer.Length>0) {
-        TargetChannel.Contents.Add(new Content(streamIndex, DateTime.Now-streamOrigin, position, bodyBuffer.ToArray()));
-        position += bodyBuffer.Length;
-        bodyBuffer.SetLength(0);
-      }
-      flushTimer.Reset();
-      flushTimer.Start();
-    }
-
-  }
-
   public class RTMPSourceConnection
     : SourceConnectionBase
   {
-    public RTMPSourceConnection(PeerCast peercast, Channel channel, Uri source_uri)
+    public RTMPSourceConnection(PeerCast peercast, Channel channel, Uri source_uri, bool use_content_bitrate)
       : base(peercast, channel, source_uri)
     {
-      this.rtmpChannel = new RTMPSourceChannel("livestream", channel);
+      this.flvBuffer = new FLVContentBuffer(channel);
+      this.useContentBitrate = use_content_bitrate;
     }
 
     private class ConnectionStoppedExcception : ApplicationException {}
@@ -240,7 +59,8 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
     private TcpClient client;
-    private RTMPSourceChannel rtmpChannel;
+    private FLVContentBuffer flvBuffer;
+    private bool useContentBitrate;
 
     public override ConnectionInfo GetConnectionInfo()
     {
@@ -263,7 +83,7 @@ namespace PeerCastStation.FLV.RTMP
         SourceUri.ToString(),
         endpoint,
         (endpoint!=null && Utils.IsSiteLocal(endpoint.Address)) ? RemoteHostStatus.Local : RemoteHostStatus.None,
-        rtmpChannel.Position,
+        flvBuffer.Position,
         RecvRate,
         SendRate,
         null,
@@ -359,7 +179,7 @@ namespace PeerCastStation.FLV.RTMP
         DoStop(StopReason.ConnectionError);
         this.state = ConnectionState.Error;
       }
-      catch (ConnectionStoppedExcception e) {
+      catch (ConnectionStoppedExcception) {
         this.state = ConnectionState.Closed;
       }
       SyncContext.ProcessAll();
@@ -665,11 +485,49 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
+    private ChannelInfo UpdateChannelInfo(ChannelInfo a, ChannelInfo b)
+    {
+      var base_atoms = new AtomCollection(a.Extra);
+      var new_atoms  = new AtomCollection(b.Extra);
+      if (!useContentBitrate) {
+        new_atoms.RemoveByName(Atom.PCP_CHAN_INFO_BITRATE);
+      }
+      base_atoms.Update(new_atoms);
+      return new ChannelInfo(base_atoms);
+    }
+
+    private ChannelTrack UpdateChannelTrack(ChannelTrack a, ChannelTrack b)
+    {
+      var base_atoms = new AtomCollection(a.Extra);
+      base_atoms.Update(b.Extra);
+      return new ChannelTrack(base_atoms);
+    }
+
+    private void FlushBuffer()
+    {
+      var data = flvBuffer.GetContents();
+      if (data.ChannelInfo!=null) {
+        Channel.ChannelInfo = UpdateChannelInfo(Channel.ChannelInfo, data.ChannelInfo);
+      }
+      if (data.ChannelTrack!=null) {
+        Channel.ChannelTrack = UpdateChannelTrack(Channel.ChannelTrack, data.ChannelTrack);
+      }
+      if (data.ContentHeader!=null) {
+        Channel.ContentHeader = data.ContentHeader;
+      }
+      if (data.Contents!=null) {
+        foreach (var content in data.Contents) {
+          Channel.Contents.Add(content);
+        }
+      }
+    }
+
     private void ProcessMessages(IEnumerable<RTMPMessage> messages)
     {
       foreach (var msg in messages) {
         ProcessMessage(msg);
       }
+      FlushBuffer();
     }
 
     private void ProcessMessage(RTMPMessage msg)
@@ -769,17 +627,17 @@ namespace PeerCastStation.FLV.RTMP
 
     void OnAudio(RTMPMessage msg)
     {
-      rtmpChannel.OnAudio(msg);
+      flvBuffer.OnAudio(msg);
     }
 
     void OnVideo(RTMPMessage msg)
     {
-      rtmpChannel.OnVideo(msg);
+      flvBuffer.OnVideo(msg);
     }
 
     void OnData(DataMessage msg)
     {
-      rtmpChannel.OnData(msg);
+      flvBuffer.OnData(msg);
     }
 
     void OnCommand(CommandMessage msg)
@@ -1001,7 +859,10 @@ namespace PeerCastStation.FLV.RTMP
     public RTMPSourceStream(PeerCast peercast, Channel channel, Uri source_uri)
       : base(peercast, channel, source_uri)
     {
+      this.UseContentBitrate = channel.ChannelInfo==null || channel.ChannelInfo.Bitrate==0;
     }
+
+    public bool UseContentBitrate { get; private set; }
 
     public override SourceStreamType Type {
       get { return SourceStreamType.Broadcast; }
@@ -1039,7 +900,7 @@ namespace PeerCastStation.FLV.RTMP
 
     protected override ISourceConnection CreateConnection(Uri source_uri)
     {
-      return new RTMPSourceConnection(PeerCast, Channel, source_uri);
+      return new RTMPSourceConnection(PeerCast, Channel, source_uri, UseContentBitrate);
     }
 
     protected override void OnConnectionStopped(SourceStreamBase.ConnectionStoppedEvent msg)
