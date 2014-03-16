@@ -15,7 +15,10 @@ title: 安定版のダウンロード - PeerCastStation
 Windowsの場合はWindows XP SP3以降と.NET Framework 3.5以降、
 Windows以外の場合はMono 2.6以降が必要です。
 
-今のところインストーラは無いので、ダウンロードしたzipを展開して適当な場所に置いてPeerCastStation.exeを起動してください。詳しい使い方はzip内のhelp\\index.htmlを開いてヘルプを見てください。
+今のところインストーラはありません。ダウンロードしたzipは展開前にプロパティからブロック解除しておくとあとで便利です。中身を適当な場所に置いてPeerCastStation.exeを起動してください。詳しい使い方はzip内のhelp\\index.htmlを開いてヘルプを見てください。
+
+なぜか起動しない場合は実行ファイルとdllファイルがブロックされている可能性があります。
+PeerCastStation.exeおよび同じディレクトリにある全てのdllファイルのプロパティを表示して、ブロック解除ボタンを押してください。
 
 {% for release in site.data.releasenotes %}{% if release.channel contains 'stable' %}
 {{ release.name }}
