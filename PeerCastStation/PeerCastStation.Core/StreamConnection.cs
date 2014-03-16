@@ -247,6 +247,11 @@ namespace PeerCastStation.Core
       }
     }
 
+    public void CheckErrors()
+    {
+      RethrowExceptions();
+    }
+
     private void StartReceive()
     {
       if (inputStream==null) return;

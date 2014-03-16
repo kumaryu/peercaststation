@@ -138,6 +138,13 @@ namespace PeerCastStation.Core
 
     protected virtual void DoProcess()
     {
+      try {
+        Connection.CheckErrors();
+      }
+      catch (IOException e) {
+        Logger.Info(e);
+        OnError();
+      }
       OnIdle();
       SyncContext.ProcessAll();
     }
