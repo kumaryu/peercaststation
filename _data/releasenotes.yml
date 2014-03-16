@@ -1,4 +1,20 @@
 ---
+- name: Version 1.7.9.1 (2014年3月16日開発版)
+  version: 1.7.9.1
+  channel: dev
+  notes: |
+    RTMP・FLV配信の不具合を修正しました
+
+    * RTMP Sourceでの配信時にエンコーダが接続されていない時にチャンネルを終了させると、正常に終了できていなかったのを修正しました
+    * RTMP Sourceでの配信時にffmpegやFlash Playerベースのエンコーダで配信できなかったのを修正しました
+    * RTMP Sourceでの配信時に接続待ち受けが0.0.0.0:1935固定だったのを、指定したアドレスのホストで接続待ち受けるようにしました。ポート番号省略時は1935(RTMPの標準)です
+    * FLV、RTMP Source配信時に低ビットレートでは遅延がとても大きくなることがあるのを修正しました
+    * 試聴しているチャンネルのデータが取得できていない時にプレイヤーの接続が切れるとCPUを無駄に食い潰すのを修正しました
+    * ファイルの実行ブロックを一括で解除するunblock.batを追加しました
+  date: Sun, 16 Mar 2014 23:30:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.7.9.1.zip
+  length: 1781388
+
 - name: Version 1.7.9 (2014年3月16日開発版)
   version: 1.7.9
   channel: dev
