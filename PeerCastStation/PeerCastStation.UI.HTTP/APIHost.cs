@@ -856,6 +856,23 @@ namespace PeerCastStation.UI.HTTP
         );
       }
 
+      [RPCMethod("checkBandwidth")]
+      public int? CheckBandWidth()
+      {
+        int? result = null;
+        Uri target_uri;
+        if (AppSettingsReader.TryGetUri("BandwidthChecker", out target_uri)) {
+          var checker = new BandwidthChecker(target_uri);
+          checker.BandwidthCheckCompleted += (sender, args) => {
+            if (args.Success) {
+              result = (int)args.Bitrate/1000;
+            }
+          };
+          checker.Run();
+        }
+        return result;
+      }
+
       public static readonly int RequestLimit = 64*1024;
       public static readonly int TimeoutLimit = 5000;
       private int bodyLength = -1;
