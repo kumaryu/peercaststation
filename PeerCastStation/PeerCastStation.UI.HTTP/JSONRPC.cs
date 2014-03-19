@@ -120,7 +120,8 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       var param_infos = method.GetParameters();
       if (param_infos.Length==0) {
         try {
-          return method.Invoke(receiver, new object[] {}) as JToken;
+          var res = method.Invoke(receiver, new object[] {});
+          return FromObject(method.ReturnType, res);
         }
         catch (TargetInvocationException e) {
           throw e.InnerException;
