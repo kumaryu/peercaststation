@@ -155,6 +155,9 @@ PeerCast = {
 
   getNotificationMessages: function(completed) {
     this.postRequest('getNotificationMessages', null, completed);
+  },
+  checkBandwidth: function(completed) {
+    this.postRequest('checkBandwidth', null, completed);
   }
 };
 

@@ -1,4 +1,4 @@
-
+﻿
 var YellowPageEditDialog = new function() {
   var self = this;
   var dialog = null;
@@ -232,6 +232,7 @@ var SettingsViewModel = new function() {
   self.maxDirectsPerChannel      = ko.observable(null);
   self.maxUpstreamRate           = ko.observable(null);
   self.maxUpstreamRatePerChannel = ko.observable(null);
+  self.checkBandwidthStatus      = ko.observable("");
   self.inactiveChannelLimit      = ko.observable(null);
   self.channelCleanupMode        = ko.observable(null);
   self.listeners                 = ko.observableArray();
@@ -310,6 +311,20 @@ var SettingsViewModel = new function() {
     $.each(self.listeners(), function(i, listener) {
       if (listener.checked()) {
         listener.resetAuthenticationKey();
+      }
+    });
+  };
+
+  self.checkBandwidth = function() {
+    self.checkBandwidthStatus("計測中");
+    PeerCast.checkBandwidth(function (result) {
+      if (result) {
+        var rate = Math.floor(result * 0.8 / 100) * 100;
+        self.maxUpstreamRate(rate);
+        self.checkBandwidthStatus("帯域測定完了: " + result + "kbps, 設定推奨値: " + rate + "kbps");
+      }
+      else {
+        self.checkBandwidthStatus("帯域測定失敗。接続できませんでした");
       }
     });
   };

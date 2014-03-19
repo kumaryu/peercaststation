@@ -125,14 +125,24 @@
               </div>
             </div>
             <div class="ui-row">
+              <div class="ui-header"></div>
+              <div class="ui-label"></div>
+              <div class="ui-control">
+                <button class="btn" data-bind="click:checkBandwidth">上り帯域計測</button>
+                <span data-bind="text:checkBandwidthStatus"></span>
+              </div>
+            </div>
+            <div class="ui-row">
               <div class="ui-header">自動切断</div>
               <div class="ui-label">チャンネル状態</div>
-              <select class="ui-control" data-bind="value:channelCleanupMode">
-                <option value="0">自動切断しない</option>
-                <option value="1">接続していないチャンネル</option>
-                <option value="2">視聴・リレーをしていないチャンネル</option>
-                <option value="3">視聴していないチャンネル</option>
-              </select>
+              <div class="ui-control">
+                <select data-bind="value:channelCleanupMode">
+                  <option value="0">自動切断しない</option>
+                  <option value="1">接続していないチャンネル</option>
+                  <option value="2">視聴・リレーをしていないチャンネル</option>
+                  <option value="3">視聴していないチャンネル</option>
+                </select>
+              </div>
               <div class="ui-label">切断までの時間</div>
               <div class="ui-control">
                 <input class="input-small" type="text" data-bind="value:inactiveChannelLimit">

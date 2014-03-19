@@ -136,6 +136,10 @@ ul.relayTree {
   display:table-cell;
 }
 
+.ui-control button {
+  margin-bottom:10px;
+}
+
 .ui-row {
   display:table-row;
 }
