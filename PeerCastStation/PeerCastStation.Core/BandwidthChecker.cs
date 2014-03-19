@@ -40,7 +40,7 @@ namespace PeerCastStation.Core
       public TimeSpan ElapsedTime;
     }
 
-    public void Run()
+    public void RunAsync()
     {
       var ctx = System.Threading.SynchronizationContext.Current;
       System.Threading.ThreadPool.QueueUserWorkItem(state => {
@@ -72,6 +72,33 @@ namespace PeerCastStation.Core
           }, null);
         }
       });
+    }
+
+    public void Run()
+    {
+      var client = new WebClient();
+      var rand   = new Random();
+      var data   = new byte[DataSize];
+      rand.NextBytes(data);
+      var results = new BandwidthCheckResult[Tries];
+      for (var i=0; i<Tries; i++) {
+        try {
+          var stopwatch = new System.Diagnostics.Stopwatch();
+          stopwatch.Start();
+          var response_body = client.UploadData(Target, data);
+          stopwatch.Stop();
+          results[i].ElapsedTime = stopwatch.Elapsed;
+          results[i].Succeeded = true;
+        }
+        catch (WebException) {
+          results[i].Succeeded = false;
+        }
+      }
+      if (BandwidthCheckCompleted!=null) {
+        var success = results.Count(r => r.Succeeded)>0;
+        var average_seconds = results.Average(r => r.ElapsedTime.TotalSeconds);
+        BandwidthCheckCompleted(this, new BandwidthCheckCompletedEventArgs(success, DataSize, TimeSpan.FromSeconds(average_seconds)));
+      }
     }
 
     public event BandwidthCheckCompletedEventHandler BandwidthCheckCompleted;

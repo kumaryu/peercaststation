@@ -194,7 +194,7 @@ namespace PeerCastStation.WPF.CoreSettings
       {
         if (!canExecute) return;
         SetCanExecute(false);
-        checker.Run();
+        checker.RunAsync();
         Status = "帯域測定中";
       }
 
