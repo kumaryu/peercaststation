@@ -9,7 +9,6 @@ namespace PeerCastStation.Utils
 {
   internal class AppCastReader
   {
-    private Uri url;
     private WebClient client;
     private Action<IEnumerable<VersionDescription>> downloaded;
     public AppCastReader()
@@ -22,7 +21,7 @@ namespace PeerCastStation.Utils
     {
       if (this.client.IsBusy) return false;
       this.downloaded = handler;
-      this.client.DownloadDataAsync(url);
+      this.client.DownloadDataAsync(source);
       return true;
     }
 
@@ -58,9 +57,9 @@ namespace PeerCastStation.Utils
             Description = desc,
           });
         }
-        if (downloaded!=null) {
-          downloaded(versions);
-        }
+      }
+      if (downloaded!=null) {
+        downloaded(versions);
       }
     }
 
