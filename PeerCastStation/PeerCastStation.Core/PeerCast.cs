@@ -73,13 +73,24 @@ namespace PeerCastStation.Core
     public IList<IYellowPageClient> YellowPages {
       get { return yellowPages.AsReadOnly(); }
       set {
-        Utils.ReplaceCollection(ref yellowPages, org => {
+        ReplaceCollection(ref yellowPages, org => {
           return new List<IYellowPageClient>(value);
         });
         YellowPagesChanged(this, new EventArgs());
       }
     }
     private List<IYellowPageClient> yellowPages = new List<IYellowPageClient>();
+
+    private void ReplaceCollection<T>(ref T collection, Func<T,T> newcollection_func) where T : class
+    {
+      bool replaced = false;
+      while (!replaced) {
+        var prev = collection;
+        var new_collection = newcollection_func(collection);
+        System.Threading.Interlocked.CompareExchange(ref collection, new_collection, prev);
+        replaced = Object.ReferenceEquals(collection, new_collection);
+      }
+    }
 
     /// <summary>
     /// YPリストが変更された時に呼び出されます。
@@ -158,7 +169,7 @@ namespace PeerCastStation.Core
     {
       logger.Debug("Requesting channel {0} from {1}", channel_id.ToString("N"), tracker);
       var channel = new RelayChannel(this, channel_id);
-      Utils.ReplaceCollection(ref channels, orig => {
+      ReplaceCollection(ref channels, orig => {
         var new_collection = new List<Channel>(orig);
         new_collection.Add(channel);
         return new_collection;
@@ -222,7 +233,7 @@ namespace PeerCastStation.Core
     {
       logger.Debug("Broadcasting channel {0} from {1}", channel_id.ToString("N"), source);
       var channel = new BroadcastChannel(this, channel_id, channel_info, source_stream_factory, content_reader_factory);
-      Utils.ReplaceCollection(ref channels, orig => {
+      ReplaceCollection(ref channels, orig => {
         var new_collection = new List<Channel>(orig);
         new_collection.Add(channel);
         return new_collection;
@@ -239,7 +250,7 @@ namespace PeerCastStation.Core
     /// <param name="channel">追加するチャンネル</param>
     public void AddChannel(Channel channel)
     {
-      Utils.ReplaceCollection(ref channels, orig => {
+      ReplaceCollection(ref channels, orig => {
         var new_channels = new List<Channel>(orig);
         new_channels.Add(channel);
         return new_channels;
@@ -253,7 +264,7 @@ namespace PeerCastStation.Core
     public void CloseChannel(Channel channel)
     {
       channel.Close();
-      Utils.ReplaceCollection(ref channels, orig => {
+      ReplaceCollection(ref channels, orig => {
         var new_channels = new List<Channel>(orig);
         new_channels.Remove(channel);
         return new_channels;
@@ -280,7 +291,7 @@ namespace PeerCastStation.Core
       if (yp==null) {
         throw new ArgumentException(String.Format("Protocol `{0}' is not found", protocol));
       }
-      Utils.ReplaceCollection(ref yellowPages, orig => {
+      ReplaceCollection(ref yellowPages, orig => {
         var new_yps = new List<IYellowPageClient>(orig);
         new_yps.Add(yp);
         return new_yps;
@@ -297,7 +308,7 @@ namespace PeerCastStation.Core
     public void RemoveYellowPage(IYellowPageClient yp)
     {
       yp.StopAnnounce();
-      Utils.ReplaceCollection(ref yellowPages, orig => {
+      ReplaceCollection(ref yellowPages, orig => {
         var new_yps = new List<IYellowPageClient>(orig);
         new_yps.Remove(yp);
         return new_yps;
@@ -407,7 +418,7 @@ namespace PeerCastStation.Core
       logger.Info("starting listen at {0}", ip);
       try {
         res = new OutputListener(this, ip, local_accepts, global_accepts);
-        Utils.ReplaceCollection(ref outputListeners, orig => {
+        ReplaceCollection(ref outputListeners, orig => {
           var new_collection = new List<OutputListener>(orig);
           new_collection.Add(res);
           return new_collection;
@@ -433,7 +444,7 @@ namespace PeerCastStation.Core
     public void StopListen(OutputListener listener)
     {
       listener.Stop();
-      Utils.ReplaceCollection(ref outputListeners, orig => {
+      ReplaceCollection(ref outputListeners, orig => {
         var new_collection = new List<OutputListener>(orig);
         new_collection.Remove(listener);
         return new_collection;

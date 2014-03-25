@@ -150,14 +150,26 @@ namespace PeerCastStation.Core
     }
 
     public event EventHandler OutputStreamsChanged;
+
+    private void ReplaceCollection<T>(ref T collection, Func<T,T> newcollection_func) where T : class
+    {
+      bool replaced = false;
+      while (!replaced) {
+        var prev = collection;
+        var new_collection = newcollection_func(collection);
+        System.Threading.Interlocked.CompareExchange(ref collection, new_collection, prev);
+        replaced = Object.ReferenceEquals(collection, new_collection);
+      }
+    }
+
     /// <summary>
     /// 指定した出力ストリームを出力ストリームリストに追加します
     /// </summary>
     /// <param name="stream">追加する出力ストリーム</param>
     public void AddOutputStream(IOutputStream stream)
     {
-      Utils.ReplaceCollection(ref outputStreams, orig => {
-        var new_collection = new List<IOutputStream>(outputStreams);
+      ReplaceCollection(ref outputStreams, orig => {
+        var new_collection = new List<IOutputStream>(orig);
         new_collection.Add(stream);
         return new_collection;
       });
@@ -171,8 +183,8 @@ namespace PeerCastStation.Core
     public void RemoveOutputStream(IOutputStream stream)
     {
       bool removed = false;
-      Utils.ReplaceCollection(ref outputStreams, orig => {
-        var new_collection = new List<IOutputStream>(outputStreams);
+      ReplaceCollection(ref outputStreams, orig => {
+        var new_collection = new List<IOutputStream>(orig);
         removed = new_collection.Remove(stream);
         return new_collection;
       });
@@ -368,7 +380,7 @@ namespace PeerCastStation.Core
     public ReadOnlyCollection<Host> SourceNodes {
       get {
         var cur_time = Environment.TickCount;
-        Utils.ReplaceCollection(ref sourceNodes, orig => {
+        ReplaceCollection(ref sourceNodes, orig => {
           return new List<Host>(orig.Where(n => cur_time-n.LastUpdated<=NodeLimit));
         });
         return new ReadOnlyCollection<Host>(sourceNodes);
@@ -382,7 +394,7 @@ namespace PeerCastStation.Core
     {
       get {
         var cur_time = Environment.TickCount;
-        Utils.ReplaceCollection(ref nodes, orig => {
+        ReplaceCollection(ref nodes, orig => {
           return new List<Host>(orig.Where(n => cur_time-n.LastUpdated<=NodeLimit));
         });
         return new ReadOnlyCollection<Host>(nodes);
@@ -392,7 +404,7 @@ namespace PeerCastStation.Core
     public event EventHandler NodesChanged;
     public void AddNode(Host host)
     {
-      Utils.ReplaceCollection(ref nodes, orig => {
+      ReplaceCollection(ref nodes, orig => {
         var new_collection = new List<Host>(orig);
         var idx = new_collection.FindIndex(h => h.SessionID==host.SessionID);
         if (idx>=0) {
@@ -409,7 +421,7 @@ namespace PeerCastStation.Core
     public void RemoveNode(Host host)
     {
       bool removed = false;
-      Utils.ReplaceCollection(ref nodes, orig => {
+      ReplaceCollection(ref nodes, orig => {
         var new_collection = new List<Host>(orig);
         removed = new_collection.Remove(host);
         return new_collection;
@@ -421,7 +433,7 @@ namespace PeerCastStation.Core
 
     public void AddSourceNode(Host host)
     {
-      Utils.ReplaceCollection(ref sourceNodes, orig => {
+      ReplaceCollection(ref sourceNodes, orig => {
         var new_collection = new List<Host>(orig);
         var idx = new_collection.FindIndex(h => h.SessionID==host.SessionID);
         if (idx>=0) {
@@ -436,7 +448,7 @@ namespace PeerCastStation.Core
 
     public void RemoveSourceNode(Host host)
     {
-      Utils.ReplaceCollection(ref sourceNodes, orig => {
+      ReplaceCollection(ref sourceNodes, orig => {
         var new_collection = new List<Host>(orig);
         new_collection.Remove(host);
         return new_collection;
