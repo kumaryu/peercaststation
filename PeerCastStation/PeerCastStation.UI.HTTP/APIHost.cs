@@ -824,7 +824,7 @@ namespace PeerCastStation.UI.HTTP
         if (channel_info.Name==null || channel_info.Name=="") {
           throw new RPCError(RPCErrorCode.InvalidParams, "Channel name must not be empty");
         }
-        var channel_id = PeerCastStation.Core.Utils.CreateChannelID(
+        var channel_id = PeerCastStation.Core.BroadcastChannel.CreateChannelID(
           PeerCast.BroadcastID,
           channel_info.Name,
           channel_info.Genre ?? "",

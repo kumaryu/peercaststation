@@ -884,7 +884,7 @@ namespace PeerCastStation.GUI
     {
       var dlg = new BroadcastDialog(peerCast);
       if (dlg.ShowDialog(this)==DialogResult.OK) {
-        var channel_id = Utils.CreateChannelID(
+        var channel_id = BroadcastChannel.CreateChannelID(
           peerCast.BroadcastID,
           dlg.ChannelInfo.Name,
           dlg.ChannelInfo.Genre,

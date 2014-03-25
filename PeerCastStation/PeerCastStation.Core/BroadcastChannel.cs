@@ -38,6 +38,20 @@ namespace PeerCastStation.Core
       this.Start(source_uri, source_stream);
     }
 
+    static public Guid CreateChannelID(Guid bcid, string channel_name, string genre, string source)
+    {
+      var stream = new System.IO.MemoryStream();
+      using (var writer = new System.IO.BinaryWriter(stream)) {
+        var bcid_hash = System.Security.Cryptography.SHA512.Create().ComputeHash(bcid.ToByteArray());
+        writer.Write(bcid_hash);
+        writer.Write(channel_name);
+        writer.Write(genre);
+        writer.Write(source);
+      }
+      var channel_hash = System.Security.Cryptography.MD5.Create().ComputeHash(stream.ToArray());
+      return new Guid(channel_hash);
+    }
+
   }
 
 }
