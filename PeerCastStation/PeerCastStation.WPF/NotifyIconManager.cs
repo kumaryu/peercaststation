@@ -14,9 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Diagnostics;
 using System.Windows.Forms;
 using PeerCastStation.Core;
+using PeerCastStation.Utils;
 using PeerCastStation.WPF.Dialogs;
 using PeerCastStation.WPF.Properties;
 
@@ -26,19 +29,16 @@ namespace PeerCastStation.WPF
   {
     private readonly NotifyIcon notifyIcon;
     private bool disposed;
-    private VersionDescription newVersionInfo;
+    private IEnumerable<VersionDescription> newVersionInfo;
 
-    public VersionDescription NewVersionInfo
+    public void NotifyNewVersions(IEnumerable<VersionDescription> new_versions)
     {
-      set
-      {
-        newVersionInfo = value;
-        notifyIcon.ShowBalloonTip(
-          60000,
-          "新しいバージョンがあります",
-          newVersionInfo.Title,
-          ToolTipIcon.Info);
-      }
+      newVersionInfo = new_versions;
+      notifyIcon.ShowBalloonTip(
+        60000,
+        "新しいバージョンがあります",
+        newVersionInfo.First().Title,
+        ToolTipIcon.Info);
     }
 
     public event EventHandler CheckVersionClicked;

@@ -14,33 +14,34 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using PeerCastStation.WPF;
+using PeerCastStation.Utils;
 using PeerCastStation.WPF.Commons;
 
 namespace PeerCastStation.WPF.Dialogs
 {
   class UpdaterViewModel:ViewModelBase
   {
-    private readonly VersionDescription versionInfo;
+    private readonly IEnumerable<VersionDescription> versionInfo;
 
     private readonly Command download;
     public Command Download { get { return download; } }
 
-    public string Description
+    public string Descriptions
     {
-      get { return versionInfo.Description; }
+      get {
+        return String.Join("\n", versionInfo.Select(v => v.Description).ToArray());
+      }
     }
 
-    public UpdaterViewModel(VersionDescription versionInfo)
+    public UpdaterViewModel(IEnumerable<VersionDescription> versionInfo)
     {
       this.versionInfo = versionInfo;
 
       download = new Command(
-        () => Process.Start(versionInfo.Link.ToString()));
+        () => Process.Start(versionInfo.First().Link.ToString()));
     }
   }
 }

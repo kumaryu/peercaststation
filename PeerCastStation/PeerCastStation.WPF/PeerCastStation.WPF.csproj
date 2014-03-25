@@ -63,7 +63,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AppCastReader.cs" />
     <Compile Include="ChannelConnectionViewModel.cs" />
     <Compile Include="ChannelLists\ConnectionLists\ConnectionListViewModel.cs" />
     <Compile Include="ChannelLists\Dialogs\BroadcastViewModel.cs" />
@@ -221,6 +220,10 @@
     <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj">
       <Project>{387996f5-e31d-4d92-bd86-8983c599f748}</Project>
       <Name>PeerCastStation.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.Utils\PeerCastStation.Utils.csproj">
+      <Project>{5988fbaf-37c4-4997-8389-55f2ebbb9511}</Project>
+      <Name>PeerCastStation.Utils</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

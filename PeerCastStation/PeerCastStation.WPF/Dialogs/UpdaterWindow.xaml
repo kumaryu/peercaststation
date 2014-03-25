@@ -40,6 +40,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
             <Button Content="ダウンロード" Command="{Binding Download}"/>
             <Button Content="閉じる" Click="Button_Click"/>
         </StackPanel>
-        <wf:WindowsFormsHost Name="FormsHost" DataContext="{Binding Description}"/>
+        <wf:WindowsFormsHost Name="FormsHost" DataContext="{Binding Descriptions}"/>
     </DockPanel>
 </Window>

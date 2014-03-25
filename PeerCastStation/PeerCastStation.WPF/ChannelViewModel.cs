@@ -174,7 +174,7 @@ namespace PeerCastStation.WPF
       }
     }
 
-    public IEnumerable<Utils.HostTreeNode> CreateHostTree()
+    public IEnumerable<PeerCastStation.Core.Utils.HostTreeNode> CreateHostTree()
     {
       return Model.CreateHostTree();
     }

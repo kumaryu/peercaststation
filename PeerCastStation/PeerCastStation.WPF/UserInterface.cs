@@ -44,11 +44,11 @@ namespace PeerCastStation.WPF
     Thread notifyIconThread;
     NotifyIconManager notifyIconManager;
     Thread mainThread;
-    private AppCastReader versionChecker;
+    private PeerCastStation.Utils.Updater versionChecker;
     private Timer versionCheckTimer;
     override protected void OnStart()
     {
-      versionChecker = new AppCastReader();
+      versionChecker = new PeerCastStation.Utils.Updater();
       notifyIconThread = new Thread(() => {
         notifyIconManager = new NotifyIconManager(Application.PeerCast);
         notifyIconManager.CheckVersionClicked += (sender, e) => versionChecker.CheckVersion();
@@ -65,7 +65,7 @@ namespace PeerCastStation.WPF
           }
         };
         versionChecker.NewVersionFound += (sender, e) => {
-          notifyIconManager.NewVersionInfo = e.VersionDescription;
+          notifyIconManager.NotifyNewVersions(e.VersionDescriptions);
         };
         notifyIconManager.Run();
       });
