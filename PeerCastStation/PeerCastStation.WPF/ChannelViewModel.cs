@@ -174,9 +174,9 @@ namespace PeerCastStation.WPF
       }
     }
 
-    public IEnumerable<PeerCastStation.Core.Utils.HostTreeNode> CreateHostTree()
+    public HostTree CreateHostTree()
     {
-      return Model.CreateHostTree();
+      return new HostTree(Model);
     }
 
     public IEnumerable<ChannelConnectionViewModel> Connections {

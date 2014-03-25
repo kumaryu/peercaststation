@@ -517,7 +517,7 @@ namespace PeerCastStation.UI.HTTP
         return false;
       }
 
-      private JObject CreateRelayTreeNode(Utils.HostTreeNode node)
+      private JObject CreateRelayTreeNode(HostTreeNode node)
       {
         var res = new JObject();
         var host = node.Host;
@@ -553,7 +553,7 @@ namespace PeerCastStation.UI.HTTP
       private JArray GetChannelRelayTree(string channelId)
       {
         var channel = GetChannel(channelId);
-        return new JArray(channel.CreateHostTree().Select(node => CreateRelayTreeNode(node)));
+        return new JArray(new HostTree(channel).Nodes.Select(node => CreateRelayTreeNode(node)));
       }
 
       [RPCMethod("getContentReaders")]
@@ -824,7 +824,7 @@ namespace PeerCastStation.UI.HTTP
         if (channel_info.Name==null || channel_info.Name=="") {
           throw new RPCError(RPCErrorCode.InvalidParams, "Channel name must not be empty");
         }
-        var channel_id = Utils.CreateChannelID(
+        var channel_id = PeerCastStation.Core.Utils.CreateChannelID(
           PeerCast.BroadcastID,
           channel_info.Name,
           channel_info.Genre ?? "",

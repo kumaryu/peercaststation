@@ -430,7 +430,7 @@ namespace PeerCastStation.GUI
 
     private void AddRelayTreeNode(
       TreeNodeCollection tree_nodes,
-      IEnumerable<Utils.HostTreeNode> nodes,
+      IEnumerable<HostTreeNode> nodes,
       HashSet<Guid> added)
     {
       foreach (var node in nodes) {
@@ -474,7 +474,7 @@ namespace PeerCastStation.GUI
     {
       relayTree.BeginUpdate();
       relayTree.Nodes.Clear();
-      var roots = channel.CreateHostTree().Where(node => node.Host.SessionID==peerCast.SessionID);
+      var roots = new HostTree(channel).Nodes.Where(node => node.Host.SessionID==peerCast.SessionID);
       AddRelayTreeNode(relayTree.Nodes, roots, new HashSet<Guid>());
       relayTree.ExpandAll();
       relayTree.EndUpdate();

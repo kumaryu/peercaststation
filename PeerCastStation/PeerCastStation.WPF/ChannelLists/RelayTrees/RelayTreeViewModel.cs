@@ -47,7 +47,7 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
     {
       if (channel!=null) {
         this.RelayTree =
-          channel.CreateHostTree()
+          channel.CreateHostTree().Nodes
             .Where(node => node.Host.SessionID==peerCast.SessionID)
             .Select(node => new RelayTreeNodeViewModel(node)).ToArray();
       }
@@ -64,7 +64,7 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
 
   public class RelayTreeNodeViewModel
   {
-    public PeerCastStation.Core.Utils.HostTreeNode Node { get; private set; }
+    public HostTreeNode Node { get; private set; }
     public IEnumerable<RelayTreeNodeViewModel> Children { get; private set; }
 
     public ConnectionStatus ConnectionStatus {
@@ -133,7 +133,7 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
       }
     }
 
-    public RelayTreeNodeViewModel(PeerCastStation.Core.Utils.HostTreeNode node)
+    public RelayTreeNodeViewModel(HostTreeNode node)
     {
       this.Node = node;
       this.Children = node.Children.Select(c => new RelayTreeNodeViewModel(c)).ToArray();
