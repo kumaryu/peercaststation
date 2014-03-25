@@ -502,13 +502,13 @@ namespace PeerCastStation.PCP
         switch (rip.AddressFamily) {
         case AddressFamily.InterNetwork:
           if (PeerCast.GlobalAddress==null ||
-              Utils.GetAddressLocality(PeerCast.GlobalAddress)<=Utils.GetAddressLocality(rip)) {
+              PeerCast.GlobalAddress.GetAddressLocality()<=rip.GetAddressLocality()) {
             PeerCast.GlobalAddress = rip;
           }
           break;
         case AddressFamily.InterNetworkV6:
           if (PeerCast.GlobalAddress6==null ||
-              Utils.GetAddressLocality(PeerCast.GlobalAddress6)<=Utils.GetAddressLocality(rip)) {
+              PeerCast.GlobalAddress6.GetAddressLocality()<=rip.GetAddressLocality()) {
             PeerCast.GlobalAddress6 = rip;
           }
           break;
@@ -659,7 +659,7 @@ namespace PeerCastStation.PCP
         server_name = relayResponse.Server;
       }
       var remote = remoteType;
-      if (RemoteEndPoint!=null && Utils.IsSiteLocal(RemoteEndPoint.Address)) remote |= RemoteHostStatus.Local;
+      if (RemoteEndPoint!=null && RemoteEndPoint.Address.IsSiteLocal()) remote |= RemoteHostStatus.Local;
       var remote_name = String.Format(
         "{0}:{1}",
         SourceUri.Host,

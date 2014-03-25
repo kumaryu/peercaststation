@@ -159,7 +159,7 @@ namespace PeerCastStation.Core
             remote_endpoint.Address.Equals(IPAddress.IPv6Loopback)) {
           return RemoteType.Loopback;
         }
-        else if (Utils.IsSiteLocal(remote_endpoint.Address)) {
+        else if (remote_endpoint.Address.IsSiteLocal()) {
           return RemoteType.SiteLocal;
         }
         else {

@@ -87,7 +87,7 @@ namespace PeerCastStation.Core
       this.AccessControl = access_control;
       this.Channel = channel;
       var ip = remote_endpoint as IPEndPoint;
-      this.IsLocal = ip!=null ? Utils.IsSiteLocal(ip.Address) : true;
+      this.IsLocal = ip!=null ? ip.Address.IsSiteLocal() : true;
       this.IsStopped = false;
       this.mainThread = new Thread(MainProc);
       this.mainThread.Name = String.Format("{0}:{1}", this.GetType().Name, remote_endpoint);

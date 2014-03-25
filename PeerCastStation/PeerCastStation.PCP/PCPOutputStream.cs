@@ -624,7 +624,7 @@ namespace PeerCastStation.PCP
 
     public virtual bool IsPingTarget(IPAddress address)
     {
-      return !Utils.IsSiteLocal(address);
+      return !address.IsSiteLocal();
     }
 
     private IEnumerable<Host> SelectSourceHosts(IPEndPoint endpoint)

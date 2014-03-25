@@ -312,7 +312,7 @@ namespace PeerCastStation.HTTP
         status,
         SourceUri.ToString(),
         endpoint,
-        (endpoint!=null && Utils.IsSiteLocal(endpoint.Address)) ? RemoteHostStatus.Local : RemoteHostStatus.None,
+        (endpoint!=null && endpoint.Address.IsSiteLocal()) ? RemoteHostStatus.Local : RemoteHostStatus.None,
         lastPosition,
         RecvRate,
         SendRate,

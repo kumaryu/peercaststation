@@ -479,13 +479,13 @@ namespace PeerCastStation.PCP
         switch (rip.AddressFamily) {
         case AddressFamily.InterNetwork:
           if (PeerCast.GlobalAddress==null ||
-              Utils.GetAddressLocality(PeerCast.GlobalAddress)<=Utils.GetAddressLocality(rip)) {
+              PeerCast.GlobalAddress.GetAddressLocality()<=rip.GetAddressLocality()) {
             PeerCast.GlobalAddress = rip;
           }
           break;
         case AddressFamily.InterNetworkV6:
           if (PeerCast.GlobalAddress6==null ||
-              Utils.GetAddressLocality(PeerCast.GlobalAddress6)<=Utils.GetAddressLocality(rip)) {
+              PeerCast.GlobalAddress6.GetAddressLocality()<=rip.GetAddressLocality()) {
             PeerCast.GlobalAddress6 = rip;
           }
           break;
@@ -592,7 +592,7 @@ namespace PeerCastStation.PCP
       var rhost = remoteEndPoint;
       if (rhost!=null) {
         host_status |= RemoteHostStatus.Root;
-        if (Utils.IsSiteLocal(rhost.Address)) host_status |= RemoteHostStatus.Local;
+        if (rhost.Address.IsSiteLocal()) host_status |= RemoteHostStatus.Local;
       }
       return new ConnectionInfo(
         "PCP COUT",

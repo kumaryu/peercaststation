@@ -63,6 +63,7 @@
     <Compile Include="EventQueue.cs" />
     <Compile Include="Host.cs" />
     <Compile Include="HostTree.cs" />
+    <Compile Include="IPAddressExtension.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="LogWriter.cs" />
     <Compile Include="OutputListener.cs" />

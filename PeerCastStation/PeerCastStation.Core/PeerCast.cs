@@ -495,7 +495,7 @@ namespace PeerCastStation.Core
     public IPEndPoint GetEndPoint(IPAddress remote_addr, OutputStreamType connection_type)
     {
       if (remote_addr==null) throw new ArgumentNullException("remote_addr");
-      if (Utils.IsSiteLocal(remote_addr)) {
+      if (remote_addr.IsSiteLocal()) {
         return GetLocalEndPoint(remote_addr.AddressFamily, connection_type);
       }
       else {
@@ -506,7 +506,7 @@ namespace PeerCastStation.Core
     public OutputListener FindListener(IPAddress remote_addr, OutputStreamType connection_type)
     {
       if (remote_addr==null) throw new ArgumentNullException("remote_addr");
-      if (Utils.IsSiteLocal(remote_addr)) {
+      if (remote_addr.IsSiteLocal()) {
         var listener = outputListeners.FirstOrDefault(
           x =>  x.LocalEndPoint.AddressFamily==remote_addr.AddressFamily &&
                (x.LocalOutputAccepts & connection_type)!=0);
