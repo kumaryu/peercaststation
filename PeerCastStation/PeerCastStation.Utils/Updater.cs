@@ -48,4 +48,27 @@ namespace PeerCastStation.Utils
 
     public event NewVersionFoundEventHandler NewVersionFound;
   }
+
+  public class NewVersionNotificationMessage
+    : NotificationMessage
+  {
+    public NewVersionNotificationMessage(
+        string title,
+        string message,
+        NotificationMessageType type,
+        IEnumerable<VersionDescription> new_versions)
+      : base(title, message, type)
+    {
+      this.VersionDescriptions = new_versions;
+    }
+
+    public NewVersionNotificationMessage(IEnumerable<VersionDescription> new_versions)
+      : this("新しいバージョンがあります", new_versions.First().Title, NotificationMessageType.Info, new_versions)
+    {
+    }
+
+    public IEnumerable<VersionDescription> VersionDescriptions { get; private set; }
+  }
+
+
 }
