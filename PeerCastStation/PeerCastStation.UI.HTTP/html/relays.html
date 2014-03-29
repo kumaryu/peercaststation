@@ -21,10 +21,10 @@
       });
     </script>
     <script type="text/html" id='alert'>
-      <div class="alert alert-block fade in" data-bind="css: 'alert-'+type">
-        <a class="close" data-dismiss="alert" href="#">&times;</a>
-        <h4 data-bind="text: title"></h4>
-        <p data-bind="text: message"></p>
+      <div class="alert alert-block fade in" data-bind="css:'alert-'+type, click:clicked">
+        <a class="close" data-dismiss="alert" data-bind="css:'alert-'+type, click:close" href="#">&times;</a>
+        <h4 data-bind="text:title"></h4>
+        <p data-bind="text:message"></p>
       </div>
     </script>
   </head>

@@ -12,11 +12,23 @@ var UIViewModel = new function() {
           case "warning": alert = "alert-danger"; break;
           case "error":   alert = "alert-error"; break;
           }
+          var closed = false;
           return {
             title:   data.title,
             message: data.message,
             type:    data.type,
-            alert:   alert
+            clicked: function () {
+              if (closed) return;
+              switch (data.class) {
+              case "newversion":
+                window.open("update.html", "_blank");
+                break;
+              }
+            },
+            close: function () {
+              closed = true;
+            },
+            alert: alert
           };
         }));
       }

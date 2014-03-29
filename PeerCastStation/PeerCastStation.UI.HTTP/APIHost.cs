@@ -33,6 +33,8 @@ namespace PeerCastStation.UI.HTTP
     protected override void OnStart()
     {
       Logger.AddWriter(logWriter);
+      updater.NewVersionFound += OnNewVersionFound;
+      updater.CheckVersion();
     }
 
     protected override void OnStop()
@@ -43,8 +45,6 @@ namespace PeerCastStation.UI.HTTP
     protected override void OnDetach()
     {
       Application.PeerCast.OutputStreamFactories.Remove(factory);
-      updater.NewVersionFound += OnNewVersionFound;
-      updater.CheckVersion();
     }
 
     void OnNewVersionFound(object sender, NewVersionFoundEventArgs args)
@@ -876,7 +876,12 @@ namespace PeerCastStation.UI.HTTP
         return new JArray(
           owner.GetNotificationMessages().Select(msg => {
             var obj = new JObject();
-            obj["class"]   = msg.GetType().Name;
+            if (msg is NewVersionNotificationMessage) {
+              obj["class"] = "newversion";
+            }
+            else {
+              obj["class"] = msg.GetType().Name.ToLowerInvariant();
+            }
             obj["type"]    = msg.Type.ToString().ToLowerInvariant();
             obj["title"]   = msg.Title;
             obj["message"] = msg.Message;
