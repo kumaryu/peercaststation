@@ -508,10 +508,12 @@ namespace PeerCastStation.HTTP
           break;
         case BodyType.Content:
           if (sentHeader!=headerPacket) {
-            Send(headerPacket.Data);
             sentHeader = headerPacket;
             sentPacket = sentHeader;
-            Logger.Debug("Sent ContentHeader pos {0}", sentHeader.Position);
+            if (headerPacket!=null) {
+              Send(headerPacket.Data);
+              Logger.Debug("Sent ContentHeader pos {0}", sentHeader.Position);
+            }
           }
           if (sentHeader!=null) {
             lock (contentPacketQueue) {
