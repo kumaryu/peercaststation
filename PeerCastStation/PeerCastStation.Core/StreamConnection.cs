@@ -163,8 +163,11 @@ namespace PeerCastStation.Core
       lock (sendLock) {
         if (timedout && !((IAsyncResult)ar).IsCompleted && !closing) {
           sendException = new TimeoutException();
+          sendResult = null;
         }
-        OnSend((IAsyncResult)ar);
+        else {
+          OnSend((IAsyncResult)ar);
+        }
       }
     }
 
