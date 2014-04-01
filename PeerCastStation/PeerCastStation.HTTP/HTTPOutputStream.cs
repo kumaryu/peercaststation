@@ -645,6 +645,10 @@ namespace PeerCastStation.HTTP
       if (IsStopped) {
         status = HasError ? ConnectionStatus.Error : ConnectionStatus.Idle;
       }
+      string user_agent = "";
+      if (request.Headers.ContainsKey("USER-AGENT")) {
+        user_agent = request.Headers["USER-AGENT"];
+      }
       return new ConnectionInfo(
         "HTTP Direct",
         ConnectionType.Direct,
@@ -657,7 +661,7 @@ namespace PeerCastStation.HTTP
         SendRate,
         null,
         null,
-        request.Headers["USER-AGENT"]);
+        user_agent);
     }
   }
 
