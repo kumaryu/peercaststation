@@ -2,6 +2,7 @@
 var UIViewModel = new function() {
   var self = this;
   self.alerts = ko.observableArray([]);
+  self.newVersionAvailable = ko.observable(false);
   self.refresh = function() {
     PeerCast.getNotificationMessages(function(results) {
       if (results) {
@@ -33,10 +34,14 @@ var UIViewModel = new function() {
         }));
       }
     });
+    PeerCast.getNewVersions(function(results) {
+      if (!results) return;
+      self.newVersionAvailable(results.length>0);
+    });
   };
 
   self.bind = function (target) {
     ko.applyBindings(self, target);
-    setInterval(self.refresh, 1000);
   }
+  $(function() { setInterval(self.refresh, 1000); });
 };

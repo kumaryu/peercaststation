@@ -17,7 +17,7 @@
         $('#channels').tooltip({selector: "a[rel=tooltip]"});
         $('.alert').alert();
         channelsViewModel.bind($('#channels').get(0));
-        UIViewModel.bind($('.alerts').get(0));
+        UIViewModel.bind($('#header').get(0));
       });
     </script>
     <script type="text/html" id='alert'>
@@ -27,9 +27,6 @@
         <p data-bind="text:message"></p>
       </div>
     </script>
-  </head>
-  <body>
-    <div class="alerts" data-bind="template: { name: 'alert', foreach: alerts }"></div>
     <script type="text/html" id="relayTreeTemplate">
       <li>
         <i data-bind="attr:{ class: connectionStatus }"></i>
@@ -39,19 +36,24 @@
         <ul class="relayTree" data-bind="template: { name:'relayTreeTemplate', foreach:children }"></ul>
       </li>
     </script>
-
-    <div class="navbar">
-      <div class="navbar-inner">
-        <div class="container-fluid">
-          <a class="brand" href="#">PeerCastStation</a>
-          <ul class="nav">
-            <li><a href="index.html">情報</a></li>
-            <li class="active"><a href="relays.html">リレー</a></li>
-            <li><a href="settings.html">設定</a></li>
-            <li><a href="logs.html">ログ</a></li>
-            <li><a href="/help/index.html">ヘルプ</a></li>
-          </ul>
-          <a class="btn btn-primary pull-right" href="#" onclick="BroadcastDialog.show()">配信</a>
+  </head>
+  <body>
+    <div id="header">
+      <div class="alerts" data-bind="template: { name: 'alert', foreach: alerts }"></div>
+      <div class="navbar">
+        <div class="navbar-inner">
+          <div class="container-fluid">
+            <a class="brand" href="#">PeerCastStation</a>
+            <ul class="nav">
+              <li><a href="index.html">情報</a></li>
+              <li class="active"><a href="relays.html">リレー</a></li>
+              <li><a href="settings.html">設定</a></li>
+              <li><a href="logs.html">ログ</a></li>
+              <li><a href="/help/index.html">ヘルプ</a></li>
+            </ul>
+            <a class="btn btn-primary pull-right" style="margin-left:4px" href="#" onclick="BroadcastDialog.show()">配信</a>
+            <a class="btn btn-warning pull-right" data-bind="css:{hidden:!newVersionAvailable}" href="update.html" target="_blank">バージョンアップ</a>
+          </div>
         </div>
       </div>
     </div>
