@@ -38,7 +38,7 @@ namespace PeerCastStation.Utils
     {
       return appcastReader.DownloadVersionInfoAsync(url, desc => {
         var new_versions = desc
-          .Where(v => v.PublishDate>currentVersion)
+          .Where(v => v.PublishDate.Date>currentVersion)
           .OrderByDescending(v => v.PublishDate);
         if (new_versions.Count()>0 && NewVersionFound!=null) {
           NewVersionFound(this, new NewVersionFoundEventArgs(new_versions));
