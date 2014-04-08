@@ -19,7 +19,7 @@ using System.Linq;
 using System.Diagnostics;
 using System.Windows.Forms;
 using PeerCastStation.Core;
-using PeerCastStation.Utils;
+using PeerCastStation.UI;
 using PeerCastStation.WPF.Dialogs;
 using PeerCastStation.WPF.Properties;
 

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using PeerCastStation.Core;
 
-namespace PeerCastStation.Utils
+namespace PeerCastStation.UI
 {
   public class VersionDescription
   {
@@ -27,7 +27,7 @@ namespace PeerCastStation.Utils
   {
     private Uri url;
     private DateTime currentVersion;
-    private PeerCastStation.Utils.AppCastReader appcastReader = new AppCastReader();
+    private AppCastReader appcastReader = new AppCastReader();
     public Updater()
     {
       this.url            = AppSettingsReader.GetUri("UpdateUrl", new Uri("http://www.pecastation.org/files/appcast.xml"));

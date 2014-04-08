@@ -7,8 +7,8 @@
     <ProjectGuid>{5988FBAF-37C4-4997-8389-55F2EBBB9511}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PeerCastStation.Utils</RootNamespace>
-    <AssemblyName>PeerCastStation.Utils</AssemblyName>
+    <RootNamespace>PeerCastStation.UI</RootNamespace>
+    <AssemblyName>PeerCastStation.UI</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>

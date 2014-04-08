@@ -64,7 +64,7 @@ Project("{6141683F-8A12-4E36-9623-2EB02B2C2303}") = "PeerCastStationSetup", "Pee
 		{BF5E0B6D-961A-4216-BACF-01D80AB3D6BB} = {BF5E0B6D-961A-4216-BACF-01D80AB3D6BB}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Utils", "PeerCastStation.Utils\PeerCastStation.Utils.csproj", "{5988FBAF-37C4-4997-8389-55F2EBBB9511}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.UI", "PeerCastStation.UI\PeerCastStation.UI.csproj", "{5988FBAF-37C4-4997-8389-55F2EBBB9511}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

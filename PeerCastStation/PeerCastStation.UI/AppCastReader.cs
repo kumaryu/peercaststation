@@ -5,7 +5,7 @@ using System.Xml.Linq;
 using System.Net;
 using PeerCastStation.Core;
 
-namespace PeerCastStation.Utils
+namespace PeerCastStation.UI
 {
   internal class AppCastReader
   {

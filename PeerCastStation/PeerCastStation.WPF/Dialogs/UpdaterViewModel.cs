@@ -17,7 +17,7 @@ using System;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
-using PeerCastStation.Utils;
+using PeerCastStation.UI;
 using PeerCastStation.WPF.Commons;
 
 namespace PeerCastStation.WPF.Dialogs
