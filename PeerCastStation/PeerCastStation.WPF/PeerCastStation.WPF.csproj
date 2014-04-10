@@ -120,6 +120,7 @@
     <Compile Include="CoreSettings\SettingControl.xaml.cs">
       <DependentUpon>SettingControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="UISettingsViewModel.cs" />
     <Compile Include="UserInterface.cs" />
     <Compile Include="Commons\ViewModelBase.cs" />
     <Compile Include="Dialogs\VersionInfoViewModel.cs" />
