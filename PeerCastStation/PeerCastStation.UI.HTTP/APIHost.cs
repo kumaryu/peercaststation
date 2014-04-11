@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using PeerCastStation.Core;
 using PeerCastStation.HTTP;
 using PeerCastStation.UI.HTTP.JSONRPC;
-using PeerCastStation.Utils;
+using PeerCastStation.UI;
 using Newtonsoft.Json.Linq;
 
 namespace PeerCastStation.UI.HTTP

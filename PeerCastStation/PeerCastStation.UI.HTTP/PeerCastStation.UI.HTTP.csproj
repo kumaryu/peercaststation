@@ -66,9 +66,9 @@
       <Project>{DB3BBED9-6F4B-456C-910D-E1801C94A110}</Project>
       <Name>PeerCastStation.HTTP</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.Utils\PeerCastStation.Utils.csproj">
+    <ProjectReference Include="..\PeerCastStation.UI\PeerCastStation.UI.csproj">
       <Project>{5988fbaf-37c4-4997-8389-55f2ebbb9511}</Project>
-      <Name>PeerCastStation.Utils</Name>
+      <Name>PeerCastStation.UI</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
