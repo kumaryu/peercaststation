@@ -158,6 +158,13 @@ PeerCast = {
   },
   checkBandwidth: function(completed) {
     this.postRequest('checkBandwidth', null, completed);
-  }
+  },
+
+  checkUpdate: function(completed) {
+    this.postRequest('checkUpdate', null, completed);
+  },
+  getNewVersions: function(completed) {
+    this.postRequest('getNewVersions', null, completed);
+  },
 };
 

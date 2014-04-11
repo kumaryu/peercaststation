@@ -16,30 +16,33 @@
       $(function() {
         $('.alert').alert();
         SettingsViewModel.bind($('#settings').get(0));
-        UIViewModel.bind($('.alerts').get(0));
+        UIViewModel.bind($('#header').get(0));
       });
     </script>
     <script type="text/html" id='alert'>
-      <div class="alert alert-block fade in" data-bind="css: 'alert-'+type">
-        <a class="close" data-dismiss="alert" href="#">&times;</a>
-        <h4 data-bind="text: title"></h4>
-        <p data-bind="text: message"></p>
+      <div class="alert alert-block fade in" data-bind="css:'alert-'+type, click:clicked">
+        <a class="close" data-dismiss="alert" data-bind="css:'alert-'+type, click:close" href="#">&times;</a>
+        <h4 data-bind="text:title"></h4>
+        <p data-bind="text:message"></p>
       </div>
     </script>
   </head>
   <body>
-    <div class="alerts" data-bind="template: { name: 'alert', foreach: alerts }"></div>
-    <div class="navbar">
-      <div class="navbar-inner">
-        <div class="container-fluid">
-          <a class="brand" href="#">PeerCastStation</a>
-          <ul class="nav">
-            <li><a href="index.html">情報</a></li>
-            <li><a href="relays.html">リレー</a></li>
-            <li class="active"><a href="settings.html">設定</a></li>
-            <li><a href="logs.html">ログ</a></li>
-            <li><a href="/help/index.html">ヘルプ</a></li>
-          </ul>
+    <div id="header">
+      <div class="alerts" data-bind="template: { name: 'alert', foreach: alerts }"></div>
+      <div class="navbar">
+        <div class="navbar-inner">
+          <div class="container-fluid">
+            <a class="brand" href="#">PeerCastStation</a>
+            <ul class="nav">
+              <li><a href="index.html">情報</a></li>
+              <li><a href="relays.html">リレー</a></li>
+              <li class="active"><a href="settings.html">設定</a></li>
+              <li><a href="logs.html">ログ</a></li>
+              <li><a href="/help/index.html">ヘルプ</a></li>
+            </ul>
+            <a class="btn btn-warning pull-right" data-bind="css:{hidden:!newVersionAvailable()}" href="update.html" target="_blank">バージョンアップ</a>
+          </div>
         </div>
       </div>
     </div>

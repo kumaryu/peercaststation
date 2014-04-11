@@ -66,6 +66,10 @@
       <Project>{DB3BBED9-6F4B-456C-910D-E1801C94A110}</Project>
       <Name>PeerCastStation.HTTP</Name>
     </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.Utils\PeerCastStation.Utils.csproj">
+      <Project>{5988fbaf-37c4-4997-8389-55f2ebbb9511}</Project>
+      <Name>PeerCastStation.Utils</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\PeerCastStation.snk">
@@ -263,6 +267,9 @@
     <Content Include="html\js\common.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="html\js\update.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="html\logs.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -288,6 +295,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="html\js\settings.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="html\update.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Scripts\bootstrap.js">

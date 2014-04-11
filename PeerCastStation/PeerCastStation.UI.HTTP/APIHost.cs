@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using PeerCastStation.Core;
 using PeerCastStation.HTTP;
 using PeerCastStation.UI.HTTP.JSONRPC;
+using PeerCastStation.Utils;
 using Newtonsoft.Json.Linq;
 
 namespace PeerCastStation.UI.HTTP
@@ -18,6 +19,8 @@ namespace PeerCastStation.UI.HTTP
     override public string Name { get { return "HTTP API Host UI"; } }
     public LogWriter LogWriter { get { return logWriter; } }
     private LogWriter logWriter = new LogWriter(1000);
+    private Updater updater = new Updater();
+    private IEnumerable<VersionDescription> newVersions = Enumerable.Empty<VersionDescription>();
 
     private ObjectIdRegistry idRegistry = new ObjectIdRegistry();
     private APIHostOutputStreamFactory factory;
@@ -30,6 +33,8 @@ namespace PeerCastStation.UI.HTTP
     protected override void OnStart()
     {
       Logger.AddWriter(logWriter);
+      updater.NewVersionFound += OnNewVersionFound;
+      updater.CheckVersion();
     }
 
     protected override void OnStop()
@@ -42,11 +47,34 @@ namespace PeerCastStation.UI.HTTP
       Application.PeerCast.OutputStreamFactories.Remove(factory);
     }
 
+    void OnNewVersionFound(object sender, NewVersionFoundEventArgs args)
+    {
+      foreach (var plugin in Application.Plugins
+          .Select(p => p as IUserInterfacePlugin)
+          .Where(p => p!=null)) {
+        plugin.ShowNotificationMessage(
+          new NewVersionNotificationMessage(args.VersionDescriptions));
+      }
+    }
+
+    public void CheckVersion()
+    {
+      updater.CheckVersion();
+    }
+
+    public IEnumerable<VersionDescription> GetNewVersions()
+    {
+      return newVersions;
+    }
+
     private List<NotificationMessage> notificationMessages = new List<NotificationMessage>();
     public void ShowNotificationMessage(NotificationMessage msg)
     {
       lock (notificationMessages) {
         notificationMessages.Add(msg);
+        if (msg is NewVersionNotificationMessage) {
+          newVersions = ((NewVersionNotificationMessage)msg).VersionDescriptions;
+        }
       }
     }
 
@@ -848,6 +876,12 @@ namespace PeerCastStation.UI.HTTP
         return new JArray(
           owner.GetNotificationMessages().Select(msg => {
             var obj = new JObject();
+            if (msg is NewVersionNotificationMessage) {
+              obj["class"] = "newversion";
+            }
+            else {
+              obj["class"] = msg.GetType().Name.ToLowerInvariant();
+            }
             obj["type"]    = msg.Type.ToString().ToLowerInvariant();
             obj["title"]   = msg.Title;
             obj["message"] = msg.Message;
@@ -871,6 +905,25 @@ namespace PeerCastStation.UI.HTTP
           checker.Run();
         }
         return result;
+      }
+
+      [RPCMethod("checkUpdate")]
+      public void CheckUpdate()
+      {
+        owner.CheckVersion();
+      }
+
+      [RPCMethod("getNewVersions")]
+      public JArray GetNewVersions()
+      {
+        return new JArray(owner.GetNewVersions().Select(v => {
+          var obj = new JObject();
+          obj["title"]       = v.Title;
+          obj["publishDate"] = v.PublishDate;
+          obj["link"]        = v.Link;
+          obj["description"] = v.Description;
+          return obj;
+        }));
       }
 
       public static readonly int RequestLimit = 64*1024;
