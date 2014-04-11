@@ -42,5 +42,11 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
     {
       Close();
     }
+
+    protected override void OnClosed(EventArgs e)
+    {
+      base.OnClosed(e);
+      ((BroadcastViewModel)DataContext).Save();
+    }
   }
 }

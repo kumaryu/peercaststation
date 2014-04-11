@@ -47,7 +47,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <ColumnDefinition Width="*"/>
       </Grid.ColumnDefinitions>
       <Label Grid.Column="0" Content="履歴:"/>
-      <ComboBox Grid.Column="1" ItemsSource="{Binding BroadcastHistory}" SelectedItem="{Binding SelectedBroadcastHistory}" DisplayMemberPath="Name"/>
+      <ComboBox Grid.Column="1" ItemsSource="{Binding BroadcastHistory}" SelectedItem="{Binding SelectedBroadcastHistory}" HorizontalContentAlignment="Stretch">
+        <ComboBox.ItemTemplate>
+          <DataTemplate>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Grid.Column="0" Text="{Binding Name}"/>
+              <CheckBox Grid.Column="1" IsChecked="{Binding Favorite}"/>
+            </Grid>
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
     </Grid>
     <GroupBox Header="ストリーム情報">
       <Grid>
