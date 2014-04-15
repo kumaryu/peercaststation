@@ -79,10 +79,6 @@ var BroadcastDialog = new function() {
     dialog = $('#broadcastDialog');
     dialog.modal({show: false});
     dialog.on('hide', self.onHide);
-    PeerCast.getYellowPages(function(result) {
-      if (!result) return;
-      self.yellowPages.push.apply(self.yellowPages, result);
-    });
     PeerCast.getContentReaders(function(result) {
       if (!result) return;
       self.contentTypes.push.apply(self.contentTypes, result);
@@ -94,19 +90,6 @@ var BroadcastDialog = new function() {
           self.sourceStreams.push(result[i]);
         }
       }
-    });
-    PeerCast.getBroadcastHistory(function(result) {
-      if (!result) return;
-      for (var i in result) {
-        var item = result[i];
-        item.name =
-            (item.channelName || "") + " " +
-            (item.genre       || "") + " " +
-            (item.description || "") + " - " +
-            (item.comment     || "") +
-            " Playing: " + (item.trackTitle || "");
-      }
-      self.broadcastHistory.push.apply(self.broadcastHistory, result);
     });
     ko.applyBindings(self, dialog.get(0));
   });
@@ -186,6 +169,32 @@ var BroadcastDialog = new function() {
 
   self.show = function() {
     dialog.modal('show');
+    PeerCast.getYellowPages(function(result) {
+      if (!result) return;
+      self.yellowPages(
+        [
+          {
+            yellowPageId: null,
+            name:         '掲載しない',
+            uri:          null,
+            protocol:     null
+          }
+        ].concat(result)
+      );
+    });
+    PeerCast.getBroadcastHistory(function(result) {
+      if (!result) return;
+      for (var i in result) {
+        var item = result[i];
+        item.name =
+            (item.channelName || "") + " " +
+            (item.genre       || "") + " " +
+            (item.description || "") + " - " +
+            (item.comment     || "") +
+            " Playing: " + (item.trackTitle || "");
+      }
+      self.broadcastHistory([{}].concat(result));
+    });
   };
   self.onBroadcast = function() {
     var info = {
