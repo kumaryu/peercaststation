@@ -143,7 +143,7 @@ PeerCast = {
     this.postRequest('getBroadcastHistory', null, completed);
   },
   addBroadcastHistory: function(info, completed) {
-    this.postRequest('getBroadcastHistory', { info: info }, completed);
+    this.postRequest('addBroadcastHistory', { info: info }, completed);
   },
 
   getLogSettings: function(completed) {

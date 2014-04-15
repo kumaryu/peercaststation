@@ -101,9 +101,9 @@ var BroadcastDialog = new function() {
         var item = result[i];
         item.name =
             (item.channelName || "") + " " +
-            (item.genre || "") + " " +
+            (item.genre       || "") + " " +
             (item.description || "") + " - " +
-            (item.comment || "") +
+            (item.comment     || "") +
             " Playing: " + (item.trackTitle || "");
       }
       self.broadcastHistory.push.apply(self.broadcastHistory, result);
@@ -204,9 +204,9 @@ var BroadcastDialog = new function() {
       album:       self.trackAlbum(),
       url:         self.trackUrl()
     };
-    var yellowPageId  = self.yellowPage()  ? self.yellowPage().yellowPageId : null;
-    var sourceStream = self.sourceStream() ? self.sourceStream().name       : null;
-    var contentReader = self.contentType() ? self.contentType().name        : null;
+    var yellowPageId  = self.yellowPage()   ? self.yellowPage().yellowPageId : null;
+    var sourceStream  = self.sourceStream() ? self.sourceStream().name       : null;
+    var contentReader = self.contentType()  ? self.contentType().name        : null;
     PeerCast.broadcastChannel(
         yellowPageId,
         self.source(),
@@ -218,6 +218,23 @@ var BroadcastDialog = new function() {
           refresh();
           dialog.modal('hide');
         });
+    PeerCast.addBroadcastHistory({
+      yellowPage: self.yellowPage() ? self.yellowPage().name : null,
+      streamType: sourceStream,
+      contentType: contentReader,
+      streamUrl: self.source(),
+      bitrate: self.infoBitrate(),
+      channelName: self.infoName(),
+      genre: self.infoGenre(),
+      description: self.infoDesc(),
+      comment: self.infoComment(),
+      contactUrl: self.infoUrl(),
+      trackTitle: self.trackName(),
+      trackAlbum: self.trackAlbum(),
+      trackArtist: self.trackCreator(),
+      trackGenre: self.trackGenre(),
+      trackUrl: self.trackUrl()
+    });
   };
 };
 
