@@ -227,6 +227,7 @@
       </div>
       <div class="modal-body">
         <table>
+          <tr><th>履歴</th>              <td><select data-bind="options:broadcastHistory, optionsText:'name', value:selectedHistory"></select></td></tr>
           <tr><th>ソース</th>            <td><select data-bind="options:sourceStreams, optionsText: 'desc', value:sourceStream"></select></td></tr>
           <tr><th>ストリームURL</th>      <td><input type="text" name="sourceUrl"       data-bind="value:source          "></td></tr>
           <tr><th>ビットレート</th>       <td><input type="text" name="infoBitrate"     data-bind="value:infoBitrate     "></td></tr>

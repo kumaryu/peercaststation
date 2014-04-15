@@ -870,6 +870,59 @@ namespace PeerCastStation.UI.HTTP
         return channel.ChannelID.ToString("N").ToUpper();
       }
 
+      [RPCMethod("getBroadcastHistory")]
+      public JArray GetBroadcastHistory()
+      {
+        var settings = PeerCastApplication.Current.Settings.Get<UISettings>();
+        return new JArray(settings.BroadcastHistory
+          .OrderBy(info => info.Favorite ? 0 : 1)
+          .Select(info => {
+            var obj = new JObject();
+            obj["streamType"]  = info.StreamType;
+            obj["streamUrl"]   = info.StreamUrl;
+            obj["bitrate"]     = info.Bitrate;
+            obj["contentType"] = info.ContentType;
+            obj["yellowPage"]  = info.YellowPage;
+            obj["channelName"] = info.ChannelName;
+            obj["genre"]       = info.Genre;
+            obj["description"] = info.Description;
+            obj["comment"]     = info.Comment;
+            obj["contactUrl"]  = info.ContactUrl;
+            obj["trackTitle"]  = info.TrackTitle;
+            obj["trackAlbum"]  = info.TrackAlbum;
+            obj["trackArtist"] = info.TrackArtist;
+            obj["trackGenre"]  = info.TrackGenre;
+            obj["trackUrl"]    = info.TrackUrl;
+            obj["favorite"]    = info.Favorite;
+            return obj;
+          })
+        );
+      }
+
+      [RPCMethod("addBroadcastHistory")]
+      public void AddBroadcastHistory(JObject info)
+      {
+        var obj = new PeerCastStation.UI.BroadcastInfo();
+        if (info["streamType"]!=null)  obj.StreamType  = (string)info["streamType"];
+        if (info["streamUrl"]!=null)   obj.StreamUrl   = (string)info["streamUrl"];
+        if (info["bitrate"]!=null)     obj.Bitrate     = (int)info["bitrate"];
+        if (info["contentType"]!=null) obj.ContentType = (string)info["contentType"];
+        if (info["yellowPage"]!=null)  obj.YellowPage  = (string)info["yellowPage"];
+        if (info["channelName"]!=null) obj.ChannelName = (string)info["channelName"];
+        if (info["genre"]!=null)       obj.Genre       = (string)info["genre"];
+        if (info["description"]!=null) obj.Description = (string)info["description"];
+        if (info["comment"]!=null)     obj.Comment     = (string)info["comment"];
+        if (info["contactUrl"]!=null)  obj.ContactUrl  = (string)info["contactUrl"];
+        if (info["trackTitle"]!=null)  obj.TrackTitle  = (string)info["trackTitle"];
+        if (info["trackAlbum"]!=null)  obj.TrackAlbum  = (string)info["trackAlbum"];
+        if (info["trackArtist"]!=null) obj.TrackArtist = (string)info["trackArtist"];
+        if (info["trackGenre"]!=null)  obj.TrackGenre  = (string)info["trackGenre"];
+        if (info["trackUrl"]!=null)    obj.TrackUrl    = (string)info["trackUrl"];
+        if (info["favorite"]!=null)    obj.Favorite    = (bool)info["favorite"];
+        var settings = PeerCastApplication.Current.Settings.Get<UISettings>();
+        settings.AddBroadcastHistory(obj);
+      }
+
       [RPCMethod("getNotificationMessages")]
       public JArray GetNotificationMessages()
       {

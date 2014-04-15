@@ -15,6 +15,31 @@ namespace PeerCastStation.UI
     public UISettings()
     {
     }
+
+    public void AddBroadcastHistory(BroadcastInfo info)
+    {
+      if (BroadcastHistory.Any(i =>
+          i.StreamType  == info.StreamType  &&
+          i.StreamUrl   == info.StreamUrl   &&
+          i.Bitrate     == info.Bitrate     &&
+          i.ContentType == info.ContentType &&
+          i.YellowPage  == info.YellowPage  &&
+          i.ChannelName == info.ChannelName &&
+          i.Genre       == info.Genre       &&
+          i.Description == info.Description &&
+          i.Comment     == info.Comment     &&
+          i.ContactUrl  == info.ContactUrl  &&
+          i.TrackTitle  == info.TrackTitle  &&
+          i.TrackAlbum  == info.TrackAlbum  &&
+          i.TrackArtist == info.TrackArtist &&
+          i.TrackGenre  == info.TrackGenre  &&
+          i.TrackUrl    == info.TrackUrl)) {
+        return;
+      }
+      var fav    = BroadcastHistory.Where(i =>  i.Favorite);
+      var others = BroadcastHistory.Where(i => !i.Favorite);
+      BroadcastHistory = fav.Concat(Enumerable.Repeat(info, 1).Concat(others.Take(19))).ToArray();
+    }
   }
 
   [PeerCastStation.Core.PecaSettings]

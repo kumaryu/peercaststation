@@ -79,6 +79,35 @@ var BroadcastDialog = new function() {
     dialog = $('#broadcastDialog');
     dialog.modal({show: false});
     dialog.on('hide', self.onHide);
+    PeerCast.getYellowPages(function(result) {
+      if (!result) return;
+      self.yellowPages.push.apply(self.yellowPages, result);
+    });
+    PeerCast.getContentReaders(function(result) {
+      if (!result) return;
+      self.contentTypes.push.apply(self.contentTypes, result);
+    });
+    PeerCast.getSourceStreams(function(result) {
+      if (!result) return;
+      for (var i in result) {
+        if ((result[i].type & PeerCast.SourceStreamType.Broadcast)!=0) {
+          self.sourceStreams.push(result[i]);
+        }
+      }
+    });
+    PeerCast.getBroadcastHistory(function(result) {
+      if (!result) return;
+      for (var i in result) {
+        var item = result[i];
+        item.name =
+            (item.channelName || "") + " " +
+            (item.genre || "") + " " +
+            (item.description || "") + " - " +
+            (item.comment || "") +
+            " Playing: " + (item.trackTitle || "");
+      }
+      self.broadcastHistory.push.apply(self.broadcastHistory, result);
+    });
     ko.applyBindings(self, dialog.get(0));
   });
 
@@ -105,7 +134,7 @@ var BroadcastDialog = new function() {
     }
   });
 
-  self.yellowPages     = ko.observableArray([
+  self.yellowPages = ko.observableArray([
     {
       yellowPageId: null,
       name:         '掲載しない',
@@ -113,27 +142,47 @@ var BroadcastDialog = new function() {
       protocol:     null
     }
   ]);
-  PeerCast.getYellowPages(function(result, error) {
-    if (!error) {
-      self.yellowPages.push.apply(self.yellowPages, result);
-    }
-  });
-  self.contentTypes    = ko.observableArray();
-  PeerCast.getContentReaders(function(result, error) {
-    if (!error) {
-      self.contentTypes.push.apply(self.contentTypes, result);
-    }
-  });
-  self.sourceStreams  = ko.observableArray();
-  PeerCast.getSourceStreams(function(result, error) {
-    if (!error) {
-      for (var i in result) {
-        if ((result[i].type & PeerCast.SourceStreamType.Broadcast)!=0) {
-          self.sourceStreams.push(result[i]);
-        }
+  self.contentTypes = ko.observableArray();
+  self.sourceStreams = ko.observableArray();
+  self.broadcastHistory = ko.observableArray([{}]);
+  self.selectedHistory = ko.observable();
+  self.selectedHistory.subscribe(function (value) {
+    if (!value) return;
+    for (var i in self.sourceStreams()) {
+      var item = self.sourceStreams()[i];
+      if (item.name===value.streamType) {
+        self.sourceStream(item);
+        break;
       }
     }
+    self.source(value.streamUrl);
+    self.infoBitrate(value.bitrate);
+    for (var i in self.contentTypes()) {
+      var item = self.contentTypes()[i];
+      if (item.name===value.contentType) {
+        self.contentType(item);
+        break;
+      }
+    }
+    for (var i in self.yellowPages()) {
+      var item = self.yellowPages()[i];
+      if (item.name===value.yellowPage) {
+        self.yellowPage(item);
+        break;
+      }
+    }
+    self.infoName(value.channelName);
+    self.infoGenre(value.genre);
+    self.infoDesc(value.description);
+    self.infoComment(value.comment);
+    self.infoUrl(value.contactUrl);
+    self.trackName(value.trackTitle);
+    self.trackAlbum(value.trackAlbum);
+    self.trackCreator(value.trackArtist);
+    self.trackGenre(value.trackGenre);
+    self.trackUrl(value.trackUrl);
   });
+
 
   self.show = function() {
     dialog.modal('show');

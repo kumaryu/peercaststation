@@ -139,6 +139,12 @@ PeerCast = {
       track: track
     }, completed);
   },
+  getBroadcastHistory: function(completed) {
+    this.postRequest('getBroadcastHistory', null, completed);
+  },
+  addBroadcastHistory: function(info, completed) {
+    this.postRequest('getBroadcastHistory', { info: info }, completed);
+  },
 
   getLogSettings: function(completed) {
     this.postRequest('getLogSettings', null, completed);
