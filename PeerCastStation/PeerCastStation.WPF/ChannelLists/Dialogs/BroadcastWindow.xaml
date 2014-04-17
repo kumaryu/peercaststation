@@ -56,7 +56,54 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                 <ColumnDefinition Width="Auto"/>
               </Grid.ColumnDefinitions>
               <TextBlock Grid.Column="0" Text="{Binding Name}"/>
-              <CheckBox Grid.Column="1" IsChecked="{Binding Favorite}"/>
+              <CheckBox Grid.Column="1" IsChecked="{Binding Favorite}">
+                <CheckBox.Template>
+                  <ControlTemplate>
+                    <BulletDecorator>
+                      <BulletDecorator.Bullet>
+                        <Grid Width="13" Height="13">
+                          <Path Data="M5.262,2.018C5.889,0.839 6.515,0.25 7.768,0.25 9.152,0.25 10.274,1.306 10.274,2.607 10.274,4.963 7.768,7.32 5.262,9.676 2.756,7.32 0.25,4.963 0.25,2.607 0.25,1.306 1.373,0.25 2.756,0.25 4.009,0.25 4.636,0.839 5.262,2.018z" Height="10.02" Stroke="#FFF20024" StrokeThickness="0.5" StrokeMiterLimit="22.926" Width="10.525" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                          <Path x:Name="OverMark"    Visibility="Collapsed" Data="F1M5.262,2.017C5.888,0.839 6.515,0.25 7.768,0.25 9.151,0.25 10.274,1.305 10.274,2.606 10.274,4.963 7.768,7.32 5.262,9.676 2.756,7.32 0.25,4.963 0.25,2.606 0.25,1.305 1.372,0.25 2.756,0.25 4.009,0.25 4.635,0.839 5.262,2.017" Fill="#4CF20024" Height="10.02" Stroke="#FFF20024" StrokeThickness="0.5" StrokeMiterLimit="22.926" Width="10.524"/>
+                          <Path x:Name="CheckedMark" Visibility="Collapsed" Data="F1M5.262,2.017C5.889,0.839 6.515,0.25 7.769,0.25 9.152,0.25 10.275,1.305 10.275,2.606 10.275,4.963 7.769,7.32 5.262,9.676 2.756,7.32 0.25,4.963 0.25,2.606 0.25,1.305 1.373,0.25 2.756,0.25 4.01,0.25 4.636,0.839 5.262,2.017" Fill="#FFF20024" Height="10.02" Canvas.Left="36.904" Stroke="#FFF20024" StrokeThickness="0.5" StrokeMiterLimit="22.926" Width="10.524"/>
+                          <Path x:Name="PressedMark" Visibility="Collapsed" Data="F1M5.262,2.017C5.889,0.839 6.515,0.25 7.768,0.25 9.152,0.25 10.274,1.305 10.274,2.606 10.274,4.963 7.768,7.32 5.262,9.676 2.756,7.32 0.25,4.963 0.25,2.606 0.25,1.305 1.373,0.25 2.756,0.25 4.009,0.25 4.636,0.839 5.262,2.017" Fill="#82F20024" Height="10.02" Stroke="#FFF20024" StrokeThickness="0.5" StrokeMiterLimit="22.926" Width="10.525"/>
+                        </Grid>
+                      </BulletDecorator.Bullet>
+                      <VisualStateManager.VisualStateGroups>
+                        <VisualStateGroup x:Name="CommonStates">
+                          <VisualState x:Name="Normal" />
+                          <VisualState x:Name="MouseOver">
+                            <Storyboard>
+                              <ObjectAnimationUsingKeyFrames Storyboard.TargetName="OverMark" Storyboard.TargetProperty="(UIElement.Visibility)">
+                                <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Visible}" />
+                              </ObjectAnimationUsingKeyFrames>
+                            </Storyboard>
+                          </VisualState>
+                          <VisualState x:Name="Pressed">
+                            <Storyboard>
+                              <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PressedMark" Storyboard.TargetProperty="(UIElement.Visibility)">
+                                <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Visible}" />
+                              </ObjectAnimationUsingKeyFrames>
+                            </Storyboard>
+                          </VisualState>
+                          <VisualState x:Name="Disabled" />
+                        </VisualStateGroup>
+                        <VisualStateGroup x:Name="CheckStates">
+                          <VisualState x:Name="Checked">
+                            <Storyboard>
+                              <ObjectAnimationUsingKeyFrames Storyboard.TargetName="CheckedMark" Storyboard.TargetProperty="(UIElement.Visibility)">
+                                <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Visible}" />
+                              </ObjectAnimationUsingKeyFrames>
+                            </Storyboard>
+                          </VisualState>
+                          <VisualState x:Name="Unchecked" />
+                          <VisualState x:Name="Indeterminate" />
+                        </VisualStateGroup>
+                      </VisualStateManager.VisualStateGroups>
+                      <ContentPresenter Margin="4,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" RecognizesAccessKey="True" />
+                    </BulletDecorator>
+                  </ControlTemplate>
+                </CheckBox.Template>
+              </CheckBox>
             </Grid>
           </DataTemplate>
         </ComboBox.ItemTemplate>
