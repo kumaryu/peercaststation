@@ -72,6 +72,62 @@ var ChannelEditDialog = new function() {
   };
 };
 
+var BroadcastHistoryViewModel = function(parent, entry) {
+  var self = this;
+  var updateEntry = function() {
+    PeerCast.addBroadcastHistory({
+      yellowPage: self.yellowPage(),
+      streamType: self.streamType(),
+      contentType: self.contentType(),
+      streamUrl: self.streamUrl(),
+      bitrate: self.bitrate(),
+      channelName: self.channelName(),
+      genre: self.genre(),
+      description: self.description(),
+      comment: self.comment(),
+      contactUrl: self.contactUrl(),
+      trackTitle: self.trackTitle(),
+      trackAlbum: self.trackAlbum(),
+      trackArtist: self.trackArtist(),
+      trackGenre: self.trackGenre(),
+      trackUrl: self.trackUrl(),
+      favorite: self.favorite()
+    });
+  };
+  self.channelName = ko.observable(entry.channelName);
+  self.streamType  = ko.observable(entry.streamType);
+  self.streamUrl   = ko.observable(entry.streamUrl);
+  self.bitrate     = ko.observable(entry.bitrate);
+  self.contentType = ko.observable(entry.contentType);
+  self.yellowPage  = ko.observable(entry.yellowPage);
+  self.channelName = ko.observable(entry.channelName);
+  self.genre       = ko.observable(entry.genre);
+  self.description = ko.observable(entry.description);
+  self.comment     = ko.observable(entry.comment);
+  self.contactUrl  = ko.observable(entry.contactUrl);
+  self.trackTitle  = ko.observable(entry.trackTitle);
+  self.trackAlbum  = ko.observable(entry.trackAlbum);
+  self.trackArtist = ko.observable(entry.trackArtist);
+  self.trackGenre  = ko.observable(entry.trackGenre);
+  self.trackUrl    = ko.observable(entry.trackUrl);
+  self.favorite    = ko.observable(entry.favorite);
+  self.name = ko.observable(
+      (self.channelName() || "") + " " +
+      (self.genre()       || "") + " " +
+      (self.description() || "") + " - " +
+      (self.comment()     || "") +
+      " Playing: " + (self.trackTitle() || ""));
+  self.select = function () {
+    parent.selectedHistory(self);
+  };
+  self.toggleFavorite = function (itm, e) {
+    self.favorite(!self.favorite());
+    updateEntry();
+    e.stopPropagation();
+  };
+};
+
+
 var BroadcastDialog = new function() {
   var self = this;
   var dialog = null;
@@ -94,22 +150,22 @@ var BroadcastDialog = new function() {
     ko.applyBindings(self, dialog.get(0));
   });
 
-  self.sourceStream    = ko.observable(null);
-  self.source          = ko.observable("");
-  self.yellowPage      = ko.observable(null);
-  self.contentType     = ko.observable(null);
-  self.infoName        = ko.observable("");
-  self.infoUrl         = ko.observable("");
-  self.infoBitrate     = ko.observable("");
-  self.infoMimeType    = ko.observable("");
-  self.infoGenre       = ko.observable("");
-  self.infoDesc        = ko.observable("");
-  self.infoComment     = ko.observable("");
-  self.trackName       = ko.observable("");
-  self.trackCreator    = ko.observable("");
-  self.trackGenre      = ko.observable("");
-  self.trackAlbum      = ko.observable("");
-  self.trackUrl        = ko.observable("");
+  self.sourceStream = ko.observable(null);
+  self.source       = ko.observable("");
+  self.yellowPage   = ko.observable(null);
+  self.contentType  = ko.observable(null);
+  self.infoName     = ko.observable("");
+  self.infoUrl      = ko.observable("");
+  self.infoBitrate  = ko.observable("");
+  self.infoMimeType = ko.observable("");
+  self.infoGenre    = ko.observable("");
+  self.infoDesc     = ko.observable("");
+  self.infoComment  = ko.observable("");
+  self.trackName    = ko.observable("");
+  self.trackCreator = ko.observable("");
+  self.trackGenre   = ko.observable("");
+  self.trackAlbum   = ko.observable("");
+  self.trackUrl     = ko.observable("");
 
   self.sourceStream.subscribe(function (value) {
     if (value!=null) {
@@ -125,47 +181,47 @@ var BroadcastDialog = new function() {
       protocol:     null
     }
   ]);
+
   self.contentTypes = ko.observableArray();
   self.sourceStreams = ko.observableArray();
-  self.broadcastHistory = ko.observableArray([{}]);
-  self.selectedHistory = ko.observable();
+  self.broadcastHistory = ko.observableArray();
+  self.selectedHistory = ko.observable({ name: "配信設定履歴" });
   self.selectedHistory.subscribe(function (value) {
     if (!value) return;
     for (var i in self.sourceStreams()) {
       var item = self.sourceStreams()[i];
-      if (item.name===value.streamType) {
+      if (item.name===value.streamType()) {
         self.sourceStream(item);
         break;
       }
     }
-    self.source(value.streamUrl);
-    self.infoBitrate(value.bitrate);
+    self.source(value.streamUrl());
+    self.infoBitrate(value.bitrate());
     for (var i in self.contentTypes()) {
       var item = self.contentTypes()[i];
-      if (item.name===value.contentType) {
+      if (item.name===value.contentType()) {
         self.contentType(item);
         break;
       }
     }
     for (var i in self.yellowPages()) {
       var item = self.yellowPages()[i];
-      if (item.name===value.yellowPage) {
+      if (item.name===value.yellowPage()) {
         self.yellowPage(item);
         break;
       }
     }
-    self.infoName(value.channelName);
-    self.infoGenre(value.genre);
-    self.infoDesc(value.description);
-    self.infoComment(value.comment);
-    self.infoUrl(value.contactUrl);
-    self.trackName(value.trackTitle);
-    self.trackAlbum(value.trackAlbum);
-    self.trackCreator(value.trackArtist);
-    self.trackGenre(value.trackGenre);
-    self.trackUrl(value.trackUrl);
+    self.infoName(value.channelName());
+    self.infoGenre(value.genre());
+    self.infoDesc(value.description());
+    self.infoComment(value.comment());
+    self.infoUrl(value.contactUrl());
+    self.trackName(value.trackTitle());
+    self.trackAlbum(value.trackAlbum());
+    self.trackCreator(value.trackArtist());
+    self.trackGenre(value.trackGenre());
+    self.trackUrl(value.trackUrl());
   });
-
 
   self.show = function() {
     dialog.modal('show');
@@ -184,16 +240,7 @@ var BroadcastDialog = new function() {
     });
     PeerCast.getBroadcastHistory(function(result) {
       if (!result) return;
-      for (var i in result) {
-        var item = result[i];
-        item.name =
-            (item.channelName || "") + " " +
-            (item.genre       || "") + " " +
-            (item.description || "") + " - " +
-            (item.comment     || "") +
-            " Playing: " + (item.trackTitle || "");
-      }
-      self.broadcastHistory([{}].concat(result));
+      self.broadcastHistory($.map(result, function (value) { return new BroadcastHistoryViewModel(self, value); }));
     });
   };
   self.onBroadcast = function() {

@@ -36,6 +36,32 @@
         <ul class="relayTree" data-bind="template: { name:'relayTreeTemplate', foreach:children }"></ul>
       </li>
     </script>
+    <style>
+      .favorite {
+        position:absolute;
+        left:auto;
+        right:0;
+        margin:0 4px;
+      }
+      .fav {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        margin-top: 0px;
+        line-height: 16px;
+        background-image: url('images/heart.png');
+        background-position: -48px 0px;
+        background-repeat: no-repeat;
+      }
+      .fav-off {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        line-height: 16px;
+        background-image: url('images/heart.png');
+        background-repeat: no-repeat;
+      }
+    </style>
   </head>
   <body>
     <div id="header">
@@ -227,7 +253,15 @@
       </div>
       <div class="modal-body">
         <table>
-          <tr><th>履歴</th>              <td><select data-bind="options:broadcastHistory, optionsText:'name', value:selectedHistory"></select></td></tr>
+          <tr><th>履歴</th>              <td>
+            <div class="btn-group">
+              <button class="btn" data-toggle="dropdown" data-bind="text:selectedHistory().name"></button>
+              <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+              <ul class="dropdown-menu" data-bind="foreach:broadcastHistory">
+                <li><a href="#" data-bind="click:select"><span data-bind="text:name"></span><button class="favorite btn btn-mini btn-link" href="#" data-bind="click:toggleFavorite"><i class="fav-off" data-bind="css:{fav:favorite}"></i></button></a></li>
+              </ul>
+            </div>
+          </td></tr>
           <tr><th>ソース</th>            <td><select data-bind="options:sourceStreams, optionsText: 'desc', value:sourceStream"></select></td></tr>
           <tr><th>ストリームURL</th>      <td><input type="text" name="sourceUrl"       data-bind="value:source          "></td></tr>
           <tr><th>ビットレート</th>       <td><input type="text" name="infoBitrate"     data-bind="value:infoBitrate     "></td></tr>
