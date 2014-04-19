@@ -174,28 +174,30 @@ namespace PeerCastStation.PCP
           "\r\n");
         stream.Write(request, 0, request.Length);
         var response = ReadResponse(stream);
-        var md = System.Text.RegularExpressions.Regex.Match(response, @"^HTTP/1.\d (\d+) ");
-        if (md.Success) {
-          var status = md.Groups[1].Value;
-          switch (status) {
-          case "503":
-            var helo = new AtomCollection();
-            helo.SetHeloAgent(PeerCast.AgentName);
-            helo.SetHeloVersion(1218);
-            helo.SetHeloSessionID(PeerCast.SessionID);
-            helo.SetHeloPort(0);
-            AtomWriter.Write(stream, new Atom(Atom.PCP_HELO, helo));
-            var hosts = ReadHosts(stream, channel_id);
-            res = HostToUri(hosts.FirstOrDefault(h => h.IsTracker), channel_id);
-            break;
-          case "200":
-            //なぜかリレー可能だったのでYP自体をトラッカーとみなしてしまうことにする
-            AtomWriter.Write(stream, new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT));
-            res = Uri;
-            break;
-          default:
-            //エラーだったのでトラッカーのアドレスを貰えず終了
-            break;
+        if (response!=null) {
+          var md = System.Text.RegularExpressions.Regex.Match(response, @"^HTTP/1.\d (\d+) ");
+          if (md.Success) {
+            var status = md.Groups[1].Value;
+            switch (status) {
+            case "503":
+              var helo = new AtomCollection();
+              helo.SetHeloAgent(PeerCast.AgentName);
+              helo.SetHeloVersion(1218);
+              helo.SetHeloSessionID(PeerCast.SessionID);
+              helo.SetHeloPort(0);
+              AtomWriter.Write(stream, new Atom(Atom.PCP_HELO, helo));
+              var hosts = ReadHosts(stream, channel_id);
+              res = HostToUri(hosts.FirstOrDefault(h => h.IsTracker), channel_id);
+              break;
+            case "200":
+              //なぜかリレー可能だったのでYP自体をトラッカーとみなしてしまうことにする
+              AtomWriter.Write(stream, new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT));
+              res = Uri;
+              break;
+            default:
+              //エラーだったのでトラッカーのアドレスを貰えず終了
+              break;
+            }
           }
         }
         AtomWriter.Write(stream, new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT));
