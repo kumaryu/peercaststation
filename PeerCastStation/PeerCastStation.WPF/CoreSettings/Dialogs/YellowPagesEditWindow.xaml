@@ -46,7 +46,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
     <Label    Grid.Row="1" Grid.Column="0" Content="プロトコル(_P):"/>
     <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Protocols}" SelectedItem="{Binding SelectedProtocol}"/>
     <Label    Grid.Row="2" Grid.Column="0" Content="アドレス(_D):"/>
-    <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Address}"/>
+    <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Address}">
+      <TextBox.Template>
+        <ControlTemplate TargetType="TextBox">
+          <Border Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
+                  BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                  BorderThickness="1">
+            <Grid>
+              <TextBlock Margin="2" x:Name="watermark" Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+              <ScrollViewer x:Name="PART_ContentHost"/>
+            </Grid>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="Text" Value="">
+              <Setter TargetName="watermark" Property="Text" Value="yp.pecastation.org"/>
+            </Trigger>
+            <Trigger Property="IsFocused" Value="True">
+              <Setter TargetName="watermark" Property="Text" Value=""/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </TextBox.Template>
+    </TextBox>
     <Grid Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="3*" />
