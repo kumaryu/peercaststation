@@ -45,7 +45,6 @@ namespace PeerCastStation.WPF
         fav.Concat(Enumerable.Repeat(info, 1))
            .Concat(others.Take(19))
       );
-      Save();
     }
 
     public event PropertyChangedEventHandler PropertyChanged;

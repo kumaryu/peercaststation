@@ -18,7 +18,15 @@ namespace PeerCastStation.UI
 
     public void AddBroadcastHistory(BroadcastInfo info)
     {
-      if (BroadcastHistory.Any(i =>
+      if (FindBroadcastHistroryItem(info)!=null) return;
+      var fav    = BroadcastHistory.Where(i =>  i.Favorite);
+      var others = BroadcastHistory.Where(i => !i.Favorite);
+      BroadcastHistory = fav.Concat(Enumerable.Repeat(info, 1).Concat(others.Take(19))).ToArray();
+    }
+
+    public BroadcastInfo FindBroadcastHistroryItem(BroadcastInfo info)
+    {
+      return BroadcastHistory.FirstOrDefault(i =>
           i.StreamType  == info.StreamType  &&
           i.StreamUrl   == info.StreamUrl   &&
           i.Bitrate     == info.Bitrate     &&
@@ -33,12 +41,7 @@ namespace PeerCastStation.UI
           i.TrackAlbum  == info.TrackAlbum  &&
           i.TrackArtist == info.TrackArtist &&
           i.TrackGenre  == info.TrackGenre  &&
-          i.TrackUrl    == info.TrackUrl)) {
-        return;
-      }
-      var fav    = BroadcastHistory.Where(i =>  i.Favorite);
-      var others = BroadcastHistory.Where(i => !i.Favorite);
-      BroadcastHistory = fav.Concat(Enumerable.Repeat(info, 1).Concat(others.Take(19))).ToArray();
+          i.TrackUrl    == info.TrackUrl);
     }
   }
 

@@ -920,7 +920,13 @@ namespace PeerCastStation.UI.HTTP
         if (info["trackUrl"]!=null)    obj.TrackUrl    = (string)info["trackUrl"];
         if (info["favorite"]!=null)    obj.Favorite    = (bool)info["favorite"];
         var settings = PeerCastApplication.Current.Settings.Get<UISettings>();
-        settings.AddBroadcastHistory(obj);
+        var item = settings.FindBroadcastHistroryItem(obj);
+        if (item!=null) {
+          if (info["favorite"]!=null) item.Favorite = (bool)info["favorite"];
+        }
+        else {
+          settings.AddBroadcastHistory(obj);
+        }
       }
 
       [RPCMethod("getNotificationMessages")]

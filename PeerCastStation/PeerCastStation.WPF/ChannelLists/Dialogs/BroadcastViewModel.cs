@@ -34,7 +34,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
 
     private UISettingsViewModel uiSettings;
     public IEnumerable<BroadcastInfoViewModel> BroadcastHistory {
-      get { return uiSettings.BroadcastHistory; }
+      get { return uiSettings.BroadcastHistory.OrderBy(i => i.Favorite ? 0 : 1); }
     }
 
     private BroadcastInfoViewModel selectedBroadcastHistory;
@@ -284,6 +284,11 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
         Favorite    = false,
       };
       uiSettings.AddBroadcastHistory(info);
+    }
+
+    public void Save()
+    {
+      uiSettings.Save();
     }
 
     private bool CanBroadcast(Uri streamSource, IContentReaderFactory contentReaderFactory, string channelName)
