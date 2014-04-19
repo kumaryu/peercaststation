@@ -30,9 +30,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
       <Style TargetType="Button">
         <Setter Property="Margin" Value="4" />
       </Style>
-      <Style TargetType="extToolkit:WatermarkTextBox">
-        <Setter Property="Margin" Value="4" />
-      </Style>
     </Grid.Resources>
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="Auto" />
@@ -49,7 +46,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
     <Label    Grid.Row="1" Grid.Column="0" Content="プロトコル(_P):"/>
     <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Protocols}" SelectedItem="{Binding SelectedProtocol}"/>
     <Label    Grid.Row="2" Grid.Column="0" Content="アドレス(_D):"/>
-    <extToolkit:WatermarkTextBox   Grid.Row="2" Grid.Column="1" Text="{Binding Address}" Watermark="yp.pecastation.org"/>
+    <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Address}"/>
     <Grid Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="3*" />
