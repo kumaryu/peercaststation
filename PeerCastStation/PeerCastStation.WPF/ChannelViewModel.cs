@@ -72,12 +72,12 @@ namespace PeerCastStation.WPF
       }
     }
 
-    public void Close()
+    public void Disconnect()
     {
       Model.PeerCast.CloseChannel(Model);
     }
 
-    public void Bump()
+    public void Reconnect()
     {
       Model.Reconnect();
     }
