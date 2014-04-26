@@ -1,0 +1,19 @@
+﻿<Window x:Class="PeerCastStation.WPF.SettingsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:settings="clr-namespace:PeerCastStation.WPF.CoreSettings"
+        Title="設定"
+        ShowInTaskbar="False"
+        SizeToContent="WidthAndHeight"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+  <Grid Margin="4">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <settings:SettingControl Grid.Row="0"/>
+    <Button Grid.Row="1" Margin="4" HorizontalAlignment="Right" Content="閉じる" Padding="4" Click="Button_Click"/>
+  </Grid>
+</Window>
