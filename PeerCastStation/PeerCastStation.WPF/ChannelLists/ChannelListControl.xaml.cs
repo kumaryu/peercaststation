@@ -15,6 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using PeerCastStation.WPF.ChannelLists.Dialogs;
 
 namespace PeerCastStation.WPF.ChannelLists
@@ -27,12 +28,79 @@ namespace PeerCastStation.WPF.ChannelLists
     public ChannelListControl()
     {
       InitializeComponent();
+      CommandBindings.Add(new CommandBinding(PeerCastCommands.Play, OnPlayExecuted, CanExecuteChannelCommand));
+      CommandBindings.Add(new CommandBinding(PeerCastCommands.Disconnect, OnDisconnectExecuted, CanExecuteChannelCommand));
+      CommandBindings.Add(new CommandBinding(PeerCastCommands.Reconnect, OnDisconnectExecuted, CanExecuteChannelCommand));
+      CommandBindings.Add(new CommandBinding(PeerCastCommands.OpenContactUrl, OnOpenContactUrlExecuted, CanExecuteChannelCommand));
+      CommandBindings.Add(new CommandBinding(PeerCastCommands.CopyContactUrl, OnCopyContactUrlExecuted, CanExecuteChannelCommand));
+      CommandBindings.Add(new CommandBinding(PeerCastCommands.CopyStreamUrl, OnCopyStreamUrlExecuted, CanExecuteChannelCommand));
+      CommandBindings.Add(new CommandBinding(PeerCastCommands.Broadcast, OnBroadcastExecuted));
     }
 
-    private void BroadcastButton_Click(object sender, RoutedEventArgs e)
+    private void CanExecuteChannelCommand(object sender, CanExecuteRoutedEventArgs e)
     {
-      var dialog = new BroadcastWindow
-      {
+      e.CanExecute = ((ChannelListViewModel)DataContext).SelectedChannel!=null;
+    }
+
+    private void OnPlayExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+      var channel = ((ChannelListViewModel)DataContext).SelectedChannel;
+      if (channel==null) return;
+      var pls = channel.PlayListUri;
+      if (pls!=null) System.Diagnostics.Process.Start(pls.ToString());
+    }
+
+    private void OnDisconnectExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+      var channel = ((ChannelListViewModel)DataContext).SelectedChannel;
+      if (channel==null) return;
+      channel.Disconnect();
+    }
+
+    private void OnReconnectExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+      var channel = ((ChannelListViewModel)DataContext).SelectedChannel;
+      if (channel==null) return;
+      channel.Reconnect();
+    }
+
+    private void OnOpenContactUrlExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+      var channel = ((ChannelListViewModel)DataContext).SelectedChannel;
+      if (channel==null) return;
+      var uri = channel.ContactUri;
+      if (uri!=null) System.Diagnostics.Process.Start(uri.ToString());
+    }
+
+    private void OnCopyContactUrlExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+      var channel = ((ChannelListViewModel)DataContext).SelectedChannel;
+      if (channel==null) return;
+      var uri = channel.ContactUri;
+      if (uri!=null) {
+        try {
+          Clipboard.SetText(uri.ToString());
+        }
+        catch (System.Runtime.InteropServices.COMException) {}
+      }
+    }
+
+    private void OnCopyStreamUrlExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+      var channel = ((ChannelListViewModel)DataContext).SelectedChannel;
+      if (channel==null) return;
+      var uri = channel.StreamUri;
+      if (uri!=null) {
+        try {
+          Clipboard.SetText(uri.ToString());
+        }
+        catch (System.Runtime.InteropServices.COMException) {}
+      }
+    }
+
+    private void OnBroadcastExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+      var dialog = new BroadcastWindow {
         Owner = Window.GetWindow(this),
         DataContext = ((ChannelListViewModel)DataContext).Broadcast
       };
@@ -47,5 +115,7 @@ namespace PeerCastStation.WPF.ChannelLists
         list.UpdateSelectedChannelRelayTree();
       }
     }
+
   }
+
 }
