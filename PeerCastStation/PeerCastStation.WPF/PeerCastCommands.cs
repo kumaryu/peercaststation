@@ -5,18 +5,20 @@ namespace PeerCastStation.WPF
 {
   internal static class PeerCastCommands
   {
-    private static RoutedUICommand startBroadcasting;
-    private static RoutedUICommand openSettings;
-    private static RoutedUICommand showLogs;
-    public static RoutedUICommand StartBroadcasting { get { return startBroadcasting; } }
-    public static RoutedUICommand OpenSettings      { get { return openSettings; } }
-    public static RoutedUICommand ShowLogs          { get { return showLogs; } }
+    public static RoutedUICommand StartBroadcasting =
+      new RoutedUICommand("配信(_B)...", "StartBroadcasting", typeof(PeerCastCommands));
+    public static RoutedUICommand OpenSettings =
+      new RoutedUICommand("設定(_S)...", "OpenSettings", typeof(PeerCastCommands));
+    public static RoutedUICommand ShowLogs =
+      new RoutedUICommand("ログの表示(_L)", "ShowLogs", typeof(PeerCastCommands));
+    public static RoutedUICommand OpenBrowserUI =
+      new RoutedUICommand("ブラウザで表示(_B)", "OpenBrowserUI", typeof(PeerCastCommands));
+    public static RoutedUICommand OpenHelp =
+      new RoutedUICommand("ヘルプを表示(_H)", "OpenHelp", typeof(PeerCastCommands));
+    public static RoutedUICommand Quit =
+      new RoutedUICommand("終了(_Q)", "Quit", typeof(PeerCastCommands));
+    public static RoutedUICommand About =
+      new RoutedUICommand("バージョン情報(_A)...", "About", typeof(PeerCastCommands));
 
-    static PeerCastCommands()
-    {
-      startBroadcasting = new RoutedUICommand("配信(_B)...", "StartBroadcasting", typeof(PeerCastCommands));
-      openSettings      = new RoutedUICommand("設定(_S)...", "OpenSettings", typeof(PeerCastCommands));
-      showLogs          = new RoutedUICommand("ログの表示(_L)...", "ShowLogs", typeof(PeerCastCommands));
-    }
   }
 }
