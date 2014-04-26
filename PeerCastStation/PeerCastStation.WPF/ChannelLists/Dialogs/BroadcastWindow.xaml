@@ -16,7 +16,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
 <Window x:Class="PeerCastStation.WPF.ChannelLists.Dialogs.BroadcastWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:extToolkit="http://schemas.xceed.com/wpf/xaml/toolkit"
         Title="配信設定" Width="480" Height="Auto"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
@@ -58,7 +57,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
               <TextBlock Grid.Column="0" Text="{Binding Name}"/>
               <CheckBox Grid.Column="1" IsChecked="{Binding Favorite}">
                 <CheckBox.Template>
-                  <ControlTemplate>
+                  <ControlTemplate TargetType="CheckBox">
                     <BulletDecorator>
                       <BulletDecorator.Bullet>
                         <Grid Width="13" Height="13">
@@ -68,39 +67,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                           <Path x:Name="PressedMark" Visibility="Collapsed" Data="F1M5.262,2.017C5.889,0.839 6.515,0.25 7.768,0.25 9.152,0.25 10.274,1.305 10.274,2.606 10.274,4.963 7.768,7.32 5.262,9.676 2.756,7.32 0.25,4.963 0.25,2.606 0.25,1.305 1.373,0.25 2.756,0.25 4.009,0.25 4.636,0.839 5.262,2.017" Fill="#82F20024" Height="10.02" Stroke="#FFF20024" StrokeThickness="0.5" StrokeMiterLimit="22.926" Width="10.525"/>
                         </Grid>
                       </BulletDecorator.Bullet>
-                      <VisualStateManager.VisualStateGroups>
-                        <VisualStateGroup x:Name="CommonStates">
-                          <VisualState x:Name="Normal" />
-                          <VisualState x:Name="MouseOver">
-                            <Storyboard>
-                              <ObjectAnimationUsingKeyFrames Storyboard.TargetName="OverMark" Storyboard.TargetProperty="(UIElement.Visibility)">
-                                <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Visible}" />
-                              </ObjectAnimationUsingKeyFrames>
-                            </Storyboard>
-                          </VisualState>
-                          <VisualState x:Name="Pressed">
-                            <Storyboard>
-                              <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PressedMark" Storyboard.TargetProperty="(UIElement.Visibility)">
-                                <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Visible}" />
-                              </ObjectAnimationUsingKeyFrames>
-                            </Storyboard>
-                          </VisualState>
-                          <VisualState x:Name="Disabled" />
-                        </VisualStateGroup>
-                        <VisualStateGroup x:Name="CheckStates">
-                          <VisualState x:Name="Checked">
-                            <Storyboard>
-                              <ObjectAnimationUsingKeyFrames Storyboard.TargetName="CheckedMark" Storyboard.TargetProperty="(UIElement.Visibility)">
-                                <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Visible}" />
-                              </ObjectAnimationUsingKeyFrames>
-                            </Storyboard>
-                          </VisualState>
-                          <VisualState x:Name="Unchecked" />
-                          <VisualState x:Name="Indeterminate" />
-                        </VisualStateGroup>
-                      </VisualStateManager.VisualStateGroups>
                       <ContentPresenter Margin="4,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" RecognizesAccessKey="True" />
                     </BulletDecorator>
+                    <ControlTemplate.Triggers>
+                      <Trigger Property="IsMouseOver" Value="true">
+                        <Setter TargetName="OverMark" Property="Visibility" Value="{x:Static Visibility.Visible}" />
+                      </Trigger>
+                      <Trigger Property="IsPressed" Value="true">
+                        <Setter TargetName="PressedMark" Property="Visibility" Value="{x:Static Visibility.Visible}" />
+                      </Trigger>
+                      <Trigger Property="IsChecked" Value="true">
+                        <Setter TargetName="CheckedMark" Property="Visibility" Value="{x:Static Visibility.Visible}" />
+                      </Trigger>
+                    </ControlTemplate.Triggers>
                   </ControlTemplate>
                 </CheckBox.Template>
               </CheckBox>
