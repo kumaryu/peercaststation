@@ -31,13 +31,47 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
       <Setter Property="Margin" Value="5"/>
     </Style>
   </UserControl.Resources>
-  <Grid Margin="4">
+  <Grid>
     <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="1*"/>
     </Grid.RowDefinitions>
-    <Grid Grid.Row="0">
+    <Menu Grid.Row="0">
+      <MenuItem Header="ファイル(_F)">
+        <MenuItem Header="ブラウザで表示(_B)"/>
+        <Separator/>
+        <MenuItem Header="終了(_Q)"/>
+      </MenuItem>
+      <MenuItem Header="編集(_E)">
+        <MenuItem Command="Copy"/>
+        <MenuItem Command="Cut"/>
+        <MenuItem Command="Paste"/>
+      </MenuItem>
+      <MenuItem Header="チャンネル(_C)">
+        <MenuItem Header="再生(_P)" Command="{Binding Play}"/>
+        <MenuItem Header="コンタクトURLを開く(_U)" Command="{Binding OpenContactUrl}"/>
+        <Separator/>
+        <MenuItem Header="切断(_C)"   Command="{Binding Close}"/>
+        <MenuItem Header="再接続(_B)" Command="{Binding Bump}"/>
+        <Separator/>
+        <MenuItem Header="ストリームURLをコピー(_S)" Command="{Binding CopyStreamUrl}"/>
+        <MenuItem Header="コンタクトURLをコピー(_C)" Command="{Binding CopyContactUrl}"/>
+        <Separator/>
+        <MenuItem Header="配信(_B)..." Click="BroadcastButton_Click"/>
+      </MenuItem>
+      <MenuItem Header="ツール(_T)">
+        <MenuItem Header="設定(_S)..." Command="{x:Static my:PeerCastCommands.OpenSettings}"/>
+      </MenuItem>
+      <MenuItem Header="ヘルプ(_H)">
+        <MenuItem Header="ヘルプの表示(_H)"/>
+        <MenuItem Header="ログの表示(_L)" Command="{x:Static my:PeerCastCommands.ShowLogs}"/>
+        <Separator/>
+        <MenuItem Header="バージョン情報(_A)"/>
+      </MenuItem>
+    </Menu>
+    <Grid Grid.Row="1" Margin="4">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="*"/>
         <ColumnDefinition Width="Auto"/>
@@ -118,24 +152,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         </ListBox.ItemTemplate>
         <ListBox.ContextMenu>
           <ContextMenu>
-            <MenuItem Header="再生(_P)"              Command="{x:Static my:PeerCastCommands.Play}"/>
-            <MenuItem Header="コンタクトURLを開く(_U)" Command="{x:Static my:PeerCastCommands.OpenContactUrl}"/>
+            <MenuItem Header="再生(_P)"              Command="{Binding Play}"/>
+            <MenuItem Header="コンタクトURLを開く(_U)" Command="{Binding OpenContactUrl}"/>
             <Separator/>
-            <MenuItem Header="切断(_C)"   Command="{x:Static my:PeerCastCommands.Disconnect}"/>
-            <MenuItem Header="再接続(_B)" Command="{x:Static my:PeerCastCommands.Reconnect}"/>
+            <MenuItem Header="切断(_C)"   Command="{Binding Close}"/>
+            <MenuItem Header="再接続(_B)" Command="{Binding Bump}"/>
             <Separator/>
-            <MenuItem Header="ストリームURLをコピー(_S)" Command="{x:Static my:PeerCastCommands.CopyStreamUrl}"/>
-            <MenuItem Header="コンタクトURLをコピー(_C)" Command="{x:Static my:PeerCastCommands.CopyContactUrl}"/>
+            <MenuItem Header="ストリームURLをコピー(_S)" Command="{Binding CopyStreamUrl}"/>
+            <MenuItem Header="コンタクトURLをコピー(_C)" Command="{Binding CopyContactUrl}"/>
           </ContextMenu>
         </ListBox.ContextMenu>
       </ListBox>
-      <Button Grid.Row="0" Grid.Column="1" Content="再生" Command="{x:Static my:PeerCastCommands.Play}"/>
-      <Button Grid.Row="1" Grid.Column="1" Content="切断" Command="{x:Static my:PeerCastCommands.Disconnect}"/>
-      <Button Grid.Row="2" Grid.Column="1" Content="再接続" Command="{x:Static my:PeerCastCommands.Reconnect}"/>
-      <Button Grid.Row="3" Grid.Column="1" Content="配信..." Command="{x:Static my:PeerCastCommands.Broadcast}"/>
+      <Button Grid.Row="0" Grid.Column="1" Content="再生" Command="{Binding Play}"/>
+      <Button Grid.Row="1" Grid.Column="1" Content="切断" Command="{Binding Close}"/>
+      <Button Grid.Row="2" Grid.Column="1" Content="再接続" Command="{Binding Bump}"/>
+      <Button Grid.Row="3" Grid.Column="1" Content="配信..." Click="BroadcastButton_Click"/>
     </Grid>
-    <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="Transparent" />
-    <TabControl Grid.Row="2" SelectionChanged="TabControl_SelectionChanged">
+    <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" Background="Transparent" />
+    <TabControl Grid.Row="3" Margin="4" SelectionChanged="TabControl_SelectionChanged">
       <TabItem Header="接続一覧">
         <lco:ConnectionListControl DataContext="{Binding Connections}"/>
       </TabItem>

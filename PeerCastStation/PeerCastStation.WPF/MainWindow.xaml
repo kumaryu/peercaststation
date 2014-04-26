@@ -23,39 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         xmlns:lb="clr-namespace:PeerCastStation.WPF.ChannelLists"
         Title="PeerCastStation" Height="600" Width="460" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
   <DockPanel>
-    <Menu DockPanel.Dock="Top">
-      <MenuItem Header="ファイル(_F)">
-        <MenuItem Header="ブラウザで表示(_B)" Command="{x:Static my:PeerCastCommands.OpenBrowserUI}"/>
-        <Separator/>
-        <MenuItem Header="終了(_Q)" Command="{x:Static my:PeerCastCommands.Quit}"/>
-      </MenuItem>
-      <MenuItem Header="編集(_E)">
-        <MenuItem Command="Copy"/>
-        <MenuItem Command="Cut"/>
-        <MenuItem Command="Paste"/>
-      </MenuItem>
-      <MenuItem Header="チャンネル(_C)">
-        <MenuItem Header="再生(_P)" Command="{x:Static my:PeerCastCommands.Play}"/>
-        <MenuItem Header="コンタクトURLを開く(_U)" Command="{x:Static my:PeerCastCommands.OpenContactUrl}"/>
-        <Separator/>
-        <MenuItem Header="切断(_C)" Command="{x:Static my:PeerCastCommands.Disconnect}"/>
-        <MenuItem Header="再接続(_B)" Command="{x:Static my:PeerCastCommands.Reconnect}"/>
-        <Separator/>
-        <MenuItem Header="ストリームURLをコピー(_S)" Command="{x:Static my:PeerCastCommands.CopyStreamUrl}"/>
-        <MenuItem Header="コンタクトURLをコピー(_C)" Command="{x:Static my:PeerCastCommands.CopyContactUrl}"/>
-        <Separator/>
-        <MenuItem Header="配信(_B)..." Command="{x:Static my:PeerCastCommands.Broadcast}"/>
-      </MenuItem>
-      <MenuItem Header="ツール(_T)">
-        <MenuItem Header="設定(_S)..." Command="{x:Static my:PeerCastCommands.OpenSettings}"/>
-      </MenuItem>
-      <MenuItem Header="ヘルプ(_H)">
-        <MenuItem Header="ヘルプの表示(_H)" Command="{x:Static my:PeerCastCommands.OpenHelp}"/>
-        <MenuItem Header="ログの表示(_L)" Command="{x:Static my:PeerCastCommands.ShowLogs}"/>
-        <Separator/>
-        <MenuItem Header="バージョン情報(_A)" Command="{x:Static my:PeerCastCommands.About}"/>
-      </MenuItem>
-    </Menu>
     <StatusBar DockPanel.Dock="Bottom">
       <TextBlock Text="{Binding PortStatus}"/>
     </StatusBar>
