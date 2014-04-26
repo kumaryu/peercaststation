@@ -100,5 +100,39 @@ namespace PeerCastStation.WPF
         channelList.UpdateChannelList();
       }));
     }
+
+    public void OpenBrowserUI()
+    {
+      var listener = 
+        application.PeerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.Interface) ??
+        application.PeerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.All);
+      if (listener != null) {
+        var endpoint = listener.LocalEndPoint;
+        var host = endpoint.Address.Equals(System.Net.IPAddress.Any) ?
+          String.Format("localhost:{0}", endpoint.Port) :
+          endpoint.ToString();
+        System.Diagnostics.Process.Start(String.Format("http://{0}/html/index.html", host));
+      }
+    }
+
+    public void OpenHelp()
+    {
+      var listener =
+        application.PeerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.Interface) ??
+        application.PeerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.All);
+      if (listener != null) {
+        var endpoint = listener.LocalEndPoint;
+        var host = endpoint.Address.Equals(System.Net.IPAddress.Any) ?
+          String.Format("localhost:{0}", endpoint.Port) :
+          endpoint.ToString();
+        System.Diagnostics.Process.Start(String.Format("http://{0}/help/index.html", host));
+      }
+    }
+
+    public void Quit()
+    {
+      application.Stop();
+    }
+
   }
 }

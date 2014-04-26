@@ -63,7 +63,35 @@ namespace PeerCastStation.WPF
       }
       this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.OpenSettings, OnOpenSettings));
       this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.ShowLogs, OnShowLogs));
+      this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.About, OnAbout));
+      this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.OpenBrowserUI, OnOpenBrowserUI));
+      this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.OpenHelp, OnOpenHelp));
+      this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.Quit, OnQuit));
       this.DataContext = viewmodel;
+    }
+
+    private void OnOpenBrowserUI(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+      ((MainViewModel)this.DataContext).OpenBrowserUI();
+    }
+
+    private void OnOpenHelp(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+      ((MainViewModel)this.DataContext).OpenHelp();
+    }
+
+    private void OnQuit(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+      ((MainViewModel)this.DataContext).Quit();
+    }
+
+    private void OnAbout(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+      var dialog = new VersionInfoWindow {
+        Owner = this,
+        DataContext = ((MainViewModel)DataContext).VersionInfo
+      };
+      dialog.ShowDialog();
     }
 
     private LogWindow logWindow;
@@ -123,16 +151,6 @@ namespace PeerCastStation.WPF
       }
       PeerCastStation.Core.PeerCastApplication.Current.SaveSettings();
       base.OnRenderSizeChanged(sizeInfo);
-    }
-
-    private void VersionInfoButton_Click(object sender, RoutedEventArgs e)
-    {
-      var dialog = new VersionInfoWindow
-      {
-        Owner = Window.GetWindow(this),
-        DataContext = ((MainViewModel)DataContext).VersionInfo
-      };
-      dialog.ShowDialog();
     }
 
     private IntPtr OnWindowMessage(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)

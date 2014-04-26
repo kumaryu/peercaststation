@@ -40,9 +40,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
     </Grid.RowDefinitions>
     <Menu Grid.Row="0">
       <MenuItem Header="ファイル(_F)">
-        <MenuItem Header="ブラウザで表示(_B)"/>
+        <MenuItem Header="ブラウザで表示(_B)" Command="{x:Static my:PeerCastCommands.OpenBrowserUI}"/>
         <Separator/>
-        <MenuItem Header="終了(_Q)"/>
+        <MenuItem Header="終了(_Q)" Command="{x:Static my:PeerCastCommands.Quit}"/>
       </MenuItem>
       <MenuItem Header="編集(_E)">
         <MenuItem Command="Copy"/>
@@ -65,10 +65,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <MenuItem Header="設定(_S)..." Command="{x:Static my:PeerCastCommands.OpenSettings}"/>
       </MenuItem>
       <MenuItem Header="ヘルプ(_H)">
-        <MenuItem Header="ヘルプの表示(_H)"/>
+        <MenuItem Header="ヘルプの表示(_H)" Command="{x:Static my:PeerCastCommands.OpenHelp}"/>
         <MenuItem Header="ログの表示(_L)" Command="{x:Static my:PeerCastCommands.ShowLogs}"/>
         <Separator/>
-        <MenuItem Header="バージョン情報(_A)"/>
+        <MenuItem Header="バージョン情報(_A)" Command="{x:Static my:PeerCastCommands.About}"/>
       </MenuItem>
     </Menu>
     <Grid Grid.Row="1" Margin="4">
