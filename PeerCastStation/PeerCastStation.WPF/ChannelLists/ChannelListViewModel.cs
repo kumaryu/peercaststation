@@ -45,7 +45,6 @@ namespace PeerCastStation.WPF.ChannelLists
         SetProperty("SelectedChannel", ref selectedChannel, value, () => {
           UpdateChannel(selectedChannel);
           UpdateRelayTree(selectedChannel);
-          OnButtonsCanExecuteChanged();
         });
       }
     }
@@ -54,23 +53,10 @@ namespace PeerCastStation.WPF.ChannelLists
       get { return selectedChannel!=null; }
     }
 
-    private readonly Command play;
-    public Command Play { get { return play; } }
-    private readonly Command close;
-    public Command Close { get { return close; } }
-    private readonly Command bump;
-    public Command Bump { get { return bump; } }
     internal BroadcastViewModel Broadcast
     {
       get { return new BroadcastViewModel(peerCast); }
     }
-
-    private readonly Command openContactUrl;
-    public Command OpenContactUrl { get { return openContactUrl; } }
-    private readonly Command copyStreamUrl;
-    public Command CopyStreamUrl { get { return copyStreamUrl; } }
-    private readonly Command copyContactUrl;
-    public Command CopyContactUrl { get { return copyContactUrl; } }
 
     private readonly ConnectionListViewModel connections;
     public ConnectionListViewModel Connections { get { return connections; } }
@@ -84,41 +70,6 @@ namespace PeerCastStation.WPF.ChannelLists
       this.peerCast = peerCast;
       connections = new ConnectionListViewModel();
       relayTree = new RelayTreeViewModel(peerCast);
-
-      play = new Command(() => {
-          var pls = selectedChannel.PlayListUri;
-          if (pls!=null) {
-            System.Diagnostics.Process.Start(pls.ToString());
-          }
-        },
-        () => IsChannelSelected);
-      close = new Command(
-        () => selectedChannel.Close(),
-        () => IsChannelSelected);
-      bump = new Command(
-        () => selectedChannel.Bump(),
-        () => IsChannelSelected);
-      openContactUrl = new Command(() => {
-          var uri = selectedChannel.ContactUri;
-          if (uri!=null) {
-            Process.Start(uri.ToString());
-          }
-        },
-        () => IsChannelSelected);
-      copyStreamUrl = new Command(() => {
-          var uri = selectedChannel.StreamUri;
-          if (uri!=null) {
-            Clipboard.SetText(uri.ToString());
-          }
-        },
-        () => IsChannelSelected);
-      copyContactUrl = new Command(() => {
-          var uri = selectedChannel.ContactUri;
-          if (uri!=null) {
-            Clipboard.SetText(uri.ToString());
-          }
-        },
-        () => IsChannelSelected);
     }
 
     internal void UpdateChannelList()
@@ -158,16 +109,6 @@ namespace PeerCastStation.WPF.ChannelLists
     public void UpdateSelectedChannelRelayTree()
     {
       UpdateRelayTree(selectedChannel);
-    }
-
-    private void OnButtonsCanExecuteChanged()
-    {
-      play.OnCanExecuteChanged();
-      close.OnCanExecuteChanged();
-      bump.OnCanExecuteChanged();
-      openContactUrl.OnCanExecuteChanged();
-      copyStreamUrl.OnCanExecuteChanged();
-      copyContactUrl.OnCanExecuteChanged();
     }
   }
 }
