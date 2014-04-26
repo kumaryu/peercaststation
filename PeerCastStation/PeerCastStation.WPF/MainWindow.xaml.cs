@@ -61,7 +61,23 @@ namespace PeerCastStation.WPF
           this.Top = SystemParameters.VirtualScreenHeight+SystemParameters.VirtualScreenTop - this.Height;
         }
       }
+      this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.OpenSettings, OnOpenSettings));
+      this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.ShowLogs, OnShowLogs));
       this.DataContext = viewmodel;
+    }
+
+    private LogWindow logWindow;
+    private void OnShowLogs(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+      if (logWindow==null) {
+        logWindow = new LogWindow { DataContext=((MainViewModel)this.DataContext).Log };
+      }
+      logWindow.Show();
+    }
+
+    private void OnOpenSettings(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+      SettingsDialog.ShowDialog(this, (MainViewModel)this.DataContext);
     }
 
     protected override void OnActivated(EventArgs e)
