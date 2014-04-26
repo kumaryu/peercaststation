@@ -4,7 +4,8 @@
         xmlns:settings="clr-namespace:PeerCastStation.WPF.CoreSettings"
         Title="設定"
         ShowInTaskbar="False"
-        SizeToContent="WidthAndHeight"
+        SizeToContent="Height"
+        Width="460"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
