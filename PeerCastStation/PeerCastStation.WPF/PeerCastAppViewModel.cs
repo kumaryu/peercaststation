@@ -54,6 +54,8 @@ namespace PeerCastStation.WPF
     private readonly SettingViewModel setting;
     public SettingViewModel Setting { get { return setting; } }
 
+    public string Version { get { return this.application.PeerCast.AgentName; } }
+
     private readonly LogViewModel log = new LogViewModel();
     public LogViewModel Log { get { return log; } }
 
