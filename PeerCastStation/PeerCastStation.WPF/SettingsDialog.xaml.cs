@@ -12,7 +12,7 @@ namespace PeerCastStation.WPF
       InitializeComponent();
     }
 
-    internal static void ShowDialog(Window owner, MainViewModel vm)
+    internal static void ShowDialog(Window owner, PeerCastAppViewModel vm)
     {
       var window = new SettingsDialog { DataContext=vm.Setting };
       window.Owner = owner;

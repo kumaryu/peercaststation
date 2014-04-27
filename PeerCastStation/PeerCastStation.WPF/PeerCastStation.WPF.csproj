@@ -114,7 +114,7 @@
       <DependentUpon>LogControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="Logs\LogViewModel.cs" />
-    <Compile Include="MainViewModel.cs" />
+    <Compile Include="PeerCastAppViewModel.cs" />
     <Compile Include="CoreSettings\SettingViewModel.cs" />
     <Compile Include="NotifyIconManager.cs" />
     <Compile Include="Settings.cs" />

@@ -31,7 +31,7 @@ namespace PeerCastStation.WPF
 
     private System.Windows.Interop.WindowInteropHelper hwnd;
     private System.Windows.Interop.HwndSource nativeSource;
-    public MainWindow(MainViewModel viewmodel)
+    public MainWindow(PeerCastAppViewModel viewmodel)
     {
       InitializeComponent();
       var settings = PeerCastStation.Core.PeerCastApplication.Current.Settings.Get<WPFSettings>();
@@ -72,24 +72,24 @@ namespace PeerCastStation.WPF
 
     private void OnOpenBrowserUI(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
     {
-      ((MainViewModel)this.DataContext).OpenBrowserUI();
+      ((PeerCastAppViewModel)this.DataContext).OpenBrowserUI();
     }
 
     private void OnOpenHelp(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
     {
-      ((MainViewModel)this.DataContext).OpenHelp();
+      ((PeerCastAppViewModel)this.DataContext).OpenHelp();
     }
 
     private void OnQuit(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
     {
-      ((MainViewModel)this.DataContext).Quit();
+      ((PeerCastAppViewModel)this.DataContext).Quit();
     }
 
     private void OnAbout(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
     {
       var dialog = new VersionInfoWindow {
         Owner = this,
-        DataContext = ((MainViewModel)DataContext).VersionInfo
+        DataContext = ((PeerCastAppViewModel)DataContext).VersionInfo
       };
       dialog.ShowDialog();
     }
@@ -98,14 +98,14 @@ namespace PeerCastStation.WPF
     private void OnShowLogs(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
     {
       if (logWindow==null) {
-        logWindow = new LogWindow { DataContext=((MainViewModel)this.DataContext).Log };
+        logWindow = new LogWindow { DataContext=((PeerCastAppViewModel)this.DataContext).Log };
       }
       logWindow.Show();
     }
 
     private void OnOpenSettings(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
     {
-      SettingsDialog.ShowDialog(this, (MainViewModel)this.DataContext);
+      SettingsDialog.ShowDialog(this, (PeerCastAppViewModel)this.DataContext);
     }
 
     protected override void OnActivated(EventArgs e)
