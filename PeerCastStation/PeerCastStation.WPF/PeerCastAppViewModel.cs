@@ -21,14 +21,12 @@ using PeerCastStation.WPF.Commons;
 using PeerCastStation.WPF.CoreSettings;
 using PeerCastStation.WPF.Dialogs;
 using PeerCastStation.WPF.Logs;
-using System.Windows.Threading;
 using System.Windows;
 
 namespace PeerCastStation.WPF
 {
   class PeerCastAppViewModel : ViewModelBase, IDisposable
   {
-    private DispatcherTimer timer;
     private readonly PeerCastApplication application;
 
     public string PortStatus
@@ -70,11 +68,6 @@ namespace PeerCastStation.WPF
       var peerCast = application.PeerCast;
       channelList = new ChannelListViewModel(peerCast);
       setting = new SettingViewModel(application);
-
-      timer = new DispatcherTimer(
-        TimeSpan.FromSeconds(1),
-        DispatcherPriority.Normal, (sender, e) => UpdateStatus(),
-        Application.Current.Dispatcher);
 
       peerCast.ChannelAdded += OnChannelChanged;
       peerCast.ChannelRemoved += OnChannelChanged;

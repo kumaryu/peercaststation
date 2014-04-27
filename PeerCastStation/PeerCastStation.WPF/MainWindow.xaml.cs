@@ -15,6 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
 using System.Windows;
+using System.Windows.Threading;
 using PeerCastStation.WPF.Dialogs;
 
 namespace PeerCastStation.WPF
@@ -29,6 +30,7 @@ namespace PeerCastStation.WPF
       return !Double.IsNaN(value) && !Double.IsInfinity(value);
     }
 
+    private DispatcherTimer timer;
     private System.Windows.Interop.WindowInteropHelper hwnd;
     private System.Windows.Interop.HwndSource nativeSource;
     public MainWindow(PeerCastAppViewModel viewmodel)
@@ -67,7 +69,13 @@ namespace PeerCastStation.WPF
       this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.OpenBrowserUI, OnOpenBrowserUI));
       this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.OpenHelp, OnOpenHelp));
       this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.Quit, OnQuit));
+      timer = new DispatcherTimer(
+        TimeSpan.FromSeconds(1),
+        DispatcherPriority.Normal,
+        (sender, e) => viewmodel.UpdateStatus(),
+        Application.Current.Dispatcher);
       this.DataContext = viewmodel;
+
     }
 
     private void OnOpenBrowserUI(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
