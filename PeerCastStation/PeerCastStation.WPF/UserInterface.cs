@@ -40,7 +40,7 @@ namespace PeerCastStation.WPF
 
     Logger logger = new Logger(typeof(UserInterface));
     MainWindow mainWindow;
-    MainViewModel viewModel;
+    PeerCastAppViewModel viewModel;
     Thread notifyIconThread;
     NotifyIconManager notifyIconManager;
     Thread mainThread;
@@ -75,7 +75,7 @@ namespace PeerCastStation.WPF
 
       mainThread = new Thread(() => {
         var app = new Application();
-        viewModel = new MainViewModel(Application);
+        viewModel = new PeerCastAppViewModel(Application);
         var settings = Application.Settings.Get<WPFSettings>();
         mainWindow = new MainWindow(viewModel);
         if (settings.ShowWindowOnStartup) mainWindow.Show();
