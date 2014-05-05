@@ -128,8 +128,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <ComboBox Grid.Column="1" Grid.Row="4"
                   ItemsSource="{Binding YellowPages}"
                   SelectedValue="{Binding YellowPage}"
-                  SelectedValuePath="YellowPageClient"
-                  DisplayMemberPath="Name"/>
+                  SelectedValuePath="Value"
+                  DisplayMemberPath="Key"/>
       </Grid>
     </GroupBox>
     <GroupBox Header="チャンネル情報">

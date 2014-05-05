@@ -85,23 +85,8 @@
     <Compile Include="ChannelViewModel.cs" />
     <Compile Include="Commons\Command.cs" />
     <Compile Include="Commons\NotConverter.cs" />
-    <Compile Include="CoreSettings\Extensions.cs" />
-    <Compile Include="CoreSettings\ListControl.xaml.cs">
-      <DependentUpon>ListControl.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="CoreSettings\Dialogs\ListenerEditViewModel.cs" />
-    <Compile Include="CoreSettings\Dialogs\ListenerEditWindow.xaml.cs">
-      <DependentUpon>ListenerEditWindow.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="CoreSettings\ListItems.cs" />
-    <Compile Include="CoreSettings\ListViewModel.cs" />
-    <Compile Include="CoreSettings\OtherSettingViewModel.cs" />
     <Compile Include="CoreSettings\RelaySettingControl.xaml.cs">
       <DependentUpon>RelaySettingControl.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="CoreSettings\Dialogs\YellowPagesEditViewModel.cs" />
-    <Compile Include="CoreSettings\Dialogs\YellowPagesEditWindow.xaml.cs">
-      <DependentUpon>YellowPagesEditWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Dialogs\UpdaterViewModel.cs" />
     <Compile Include="Dialogs\UpdaterWindow.xaml.cs">
@@ -152,19 +137,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="CoreSettings\ListControl.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="CoreSettings\Dialogs\ListenerEditWindow.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="CoreSettings\RelaySettingControl.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="CoreSettings\Dialogs\YellowPagesEditWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
