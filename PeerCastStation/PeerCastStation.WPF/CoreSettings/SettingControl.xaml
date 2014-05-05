@@ -22,17 +22,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
              xmlns:peca="clr-namespace:PeerCastStation.WPF"
              mc:Ignorable="d"
              d:DesignHeight="500" d:DesignWidth="400">
-  <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <ScrollViewer.Resources>
+  <Grid>
+    <Grid.Resources>
       <Style TargetType="Button">
         <Setter Property="Margin" Value="2"/>
         <Setter Property="Padding" Value="16,2,16,2"/>
       </Style>
-    </ScrollViewer.Resources>
-    <StackPanel>
+    </Grid.Resources>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="1*"/>
+      <ColumnDefinition Width="2*"/>
+    </Grid.ColumnDefinitions>
+    <ListBox x:Name="TabList" Grid.Column="0" Margin="4">
+      <ListBox.ItemTemplate>
+        <DataTemplate>
+          <TextBlock Text="{Binding Header}"/>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
       <GroupBox Header="接続待ち受け">
-        <StackPanel Orientation="Vertical">
-          <ListBox Margin="2" ItemsSource="{Binding Ports}" SelectedItem="{Binding SelectedPort}">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <ListBox Grid.Row="0" Margin="2" ItemsSource="{Binding Ports}" SelectedItem="{Binding SelectedPort}">
             <ListBox.ItemTemplate>
               <DataTemplate>
                 <Grid>
@@ -59,11 +72,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
-          <StackPanel Orientation="Horizontal">
+          <StackPanel Grid.Row="1" Orientation="Horizontal">
             <Button Content="追加" Command="{Binding AddPortCommand}"/>
             <Button Content="削除" Command="{Binding RemovePortCommand}"/>
           </StackPanel>
-        </StackPanel>
+        </Grid>
       </GroupBox>
       <GroupBox Header="接続設定">
         <Grid>
@@ -108,8 +121,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         </Grid>
       </GroupBox>
       <GroupBox Header="配信掲載用イエローページ">
-        <StackPanel Orientation="Vertical">
-          <ListBox ItemsSource="{Binding YellowPages}" SelectedItem="{Binding SelectedYellowPage}" Height="100" Margin="2" HorizontalContentAlignment="Stretch">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <ListBox Grid.Row="0" ItemsSource="{Binding YellowPages}" SelectedItem="{Binding SelectedYellowPage}" Margin="2" HorizontalContentAlignment="Stretch">
             <ListBox.ItemTemplate>
               <DataTemplate>
                 <Grid>
@@ -131,15 +148,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
-          <StackPanel Orientation="Horizontal">
+          <StackPanel Grid.Row="1" Orientation="Horizontal">
             <Button Content="追加" Command="{Binding AddYellowPageCommand}"/>
             <Button Content="削除" Command="{Binding RemoveYellowPageCommand}"/>
           </StackPanel>
-        </StackPanel>
+        </Grid>
       </GroupBox>
       <GroupBox Header="UI設定">
         <CheckBox Content="起動時にウィンドウを表示する" IsChecked="{Binding IsShowWindowOnStartup}"/>
       </GroupBox>
-    </StackPanel>
-  </ScrollViewer>
+    </ListBox>
+    <ContentControl Grid.Column="1" Margin="4" Content="{Binding ElementName=TabList, Path=SelectedItem}"/>
+  </Grid>
 </UserControl>
