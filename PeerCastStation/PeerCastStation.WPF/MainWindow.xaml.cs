@@ -113,7 +113,7 @@ namespace PeerCastStation.WPF
 
     private void OnOpenSettings(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
     {
-      SettingsDialog.ShowDialog(this, (PeerCastAppViewModel)this.DataContext);
+      SettingsDialog.ShowDialog(this, ((PeerCastAppViewModel)this.DataContext).Model);
     }
 
     protected override void OnActivated(EventArgs e)

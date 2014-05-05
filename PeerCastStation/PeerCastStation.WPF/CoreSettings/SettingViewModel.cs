@@ -19,238 +19,641 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.Commons;
-using PeerCastStation.WPF.CoreSettings.Dialogs;
 using System.ComponentModel;
 
 namespace PeerCastStation.WPF.CoreSettings
 {
-  public class OutputListenerViewModel
-    : INotifyPropertyChanged
+  class SettingViewModel
+    : ViewModelBase
   {
-    private OutputListener model;
-    public OutputListener Model { get { return model; } }
-
-    public OutputListenerViewModel(OutputListener model)
+    internal class OutputListenerViewModel
+      : INotifyPropertyChanged
     {
-      this.model = model;
-      RegenerateAuthKey = new Command(DoRegenerateAuthKey);
-    }
+      private SettingViewModel owner;
 
-    public System.Net.IPAddress Address {
-      get { return model.LocalEndPoint.Address; }
-    }
-    public int Port {
-      get { return model.LocalEndPoint.Port; }
-    }
-    public bool GlobalRelay {
-      get { return (model.GlobalOutputAccepts & OutputStreamType.Relay)!=0; }
-      set {
-        if (((model.GlobalOutputAccepts & OutputStreamType.Relay)!=0)!=value) {
-          if (value) model.GlobalOutputAccepts |=  OutputStreamType.Relay;
-          else       model.GlobalOutputAccepts &= ~OutputStreamType.Relay;
+      private string address;
+      private int    port;
+      private bool   globalRelay;
+      private bool   globalPlay;
+      private bool   globalInterface;
+      private bool   globalAuthRequired;
+      private bool   localRelay;
+      private bool   localPlay;
+      private bool   localInterface;
+      private bool   localAuthRequired;
+      private string authId;
+      private string authPassword;
+
+      public OutputListenerViewModel(SettingViewModel owner, OutputListener model)
+      {
+        this.owner = owner;
+        if (model.LocalEndPoint.Address.Equals(System.Net.IPAddress.Any)) {
+          address = "IPv4 Any";
+        }
+        else if (model.LocalEndPoint.Address.Equals(System.Net.IPAddress.IPv6Any)) {
+          address = "IPv6 Any";
+        }
+        else {
+          address = model.LocalEndPoint.Address.ToString();
+        }
+        port    = model.LocalEndPoint.Port;
+        globalRelay     = (model.GlobalOutputAccepts & OutputStreamType.Relay)!=0;
+        globalPlay      = (model.GlobalOutputAccepts & OutputStreamType.Play)!=0;
+        globalInterface = (model.GlobalOutputAccepts & OutputStreamType.Interface)!=0;
+        globalAuthRequired = model.GlobalAuthorizationRequired;
+        localRelay      = (model.LocalOutputAccepts & OutputStreamType.Relay)!=0;
+        localPlay       = (model.LocalOutputAccepts & OutputStreamType.Play)!=0;
+        localInterface  = (model.LocalOutputAccepts & OutputStreamType.Interface)!=0;
+        localAuthRequired = model.LocalAuthorizationRequired;
+        authId       = model.AuthenticationKey!=null ? model.AuthenticationKey.Id : null;
+        authPassword = model.AuthenticationKey!=null ? model.AuthenticationKey.Password : null;
+        RegenerateAuthKey = new Command(DoRegenerateAuthKey);
+      }
+
+      public OutputListenerViewModel(SettingViewModel owner, int new_port)
+      {
+        this.owner = owner;
+        address = "IPv4 Any";
+        port    = new_port;
+        globalRelay     = true;
+        globalPlay      = false;
+        globalInterface = false;
+        globalAuthRequired = true;
+        localRelay      = true;
+        localPlay       = true;
+        localInterface  = true;
+        localAuthRequired = false;
+        var authkey = AuthenticationKey.Generate();
+        authId       = authkey.Id;
+        authPassword = authkey.Password;
+        RegenerateAuthKey = new Command(DoRegenerateAuthKey);
+      }
+
+      public string Address {
+        get { return address; }
+        set {
+          if (address==value) return;
+          address = value;
+          OnPropertyChanged("Address");
+        }
+      }
+      public int Port {
+        get { return port; }
+        set {
+          if (port==value) return;
+          port = value;
+          OnPropertyChanged("Port");
+        }
+      }
+
+      public System.Net.IPEndPoint EndPoint {
+        get {
+          System.Net.IPAddress addr;
+          switch (address) {
+          case "IPv4 Any":
+            addr = System.Net.IPAddress.Any;
+            break;
+          case "IPv6 Any":
+            addr = System.Net.IPAddress.IPv6Any;
+            break;
+          default:
+            addr = System.Net.IPAddress.Parse(address);
+            break;
+          }
+          return new System.Net.IPEndPoint(addr, port);
+        }
+      }
+
+      public bool GlobalRelay {
+        get { return globalRelay; }
+        set {
+          if (globalRelay==value) return;
+          globalRelay = value;
           OnPropertyChanged("GlobalRelay");
         }
       }
-    }
-    public bool GlobalPlay {
-      get { return (model.GlobalOutputAccepts & OutputStreamType.Play)!=0; }
-      set {
-        if (((model.GlobalOutputAccepts & OutputStreamType.Play)!=0)!=value) {
-          if (value) model.GlobalOutputAccepts |=  OutputStreamType.Play;
-          else       model.GlobalOutputAccepts &= ~OutputStreamType.Play;
+      public bool GlobalPlay {
+        get { return globalPlay; }
+        set {
+          if (globalPlay==value) return;
+          globalPlay = value;
           OnPropertyChanged("GlobalPlay");
+          OnPropertyChanged("AuthRequired");
         }
       }
-    }
-    public bool GlobalInterface {
-      get { return (model.GlobalOutputAccepts & OutputStreamType.Interface)!=0; }
-      set {
-        if (((model.GlobalOutputAccepts & OutputStreamType.Interface)!=0)!=value) {
-          if (value) model.GlobalOutputAccepts |=  OutputStreamType.Interface;
-          else       model.GlobalOutputAccepts &= ~OutputStreamType.Interface;
+      public bool GlobalInterface {
+        get { return globalInterface; }
+        set {
+          if (globalInterface==value) return;
+          globalInterface = value;
           OnPropertyChanged("GlobalInterface");
+          OnPropertyChanged("AuthRequired");
         }
       }
-    }
-    public bool GlobalAuthRequired {
-      get { return model.GlobalAuthorizationRequired; }
-      set {
-        if (model.GlobalAuthorizationRequired!=value) {
-          model.GlobalAuthorizationRequired = value;
+
+      public OutputStreamType GlobalAccepts {
+        get {
+          var res = OutputStreamType.Metadata;
+          if (globalRelay)     res |= OutputStreamType.Relay;
+          if (globalPlay)      res |= OutputStreamType.Play;
+          if (globalInterface) res |= OutputStreamType.Interface;
+          return res;
+        }
+      }
+
+      public bool GlobalAuthRequired {
+        get { return globalAuthRequired; }
+        set {
+          if (globalAuthRequired==value) return;
+          globalAuthRequired = value;
           OnPropertyChanged("GlobalAuthRequired");
+          OnPropertyChanged("AuthRequired");
         }
       }
-    }
-    public bool LocalRelay {
-      get { return (model.LocalOutputAccepts & OutputStreamType.Relay)!=0; }
-      set {
-        if (((model.LocalOutputAccepts & OutputStreamType.Relay)!=0)!=value) {
-          if (value) model.LocalOutputAccepts |=  OutputStreamType.Relay;
-          else       model.LocalOutputAccepts &= ~OutputStreamType.Relay;
+      public bool LocalRelay {
+        get { return localRelay; }
+        set {
+          if (localRelay==value) return;
+          localRelay = value;
           OnPropertyChanged("LocalRelay");
         }
       }
-    }
-    public bool LocalPlay {
-      get { return (model.LocalOutputAccepts & OutputStreamType.Play)!=0; }
-      set {
-        if (((model.LocalOutputAccepts & OutputStreamType.Play)!=0)!=value) {
-          if (value) model.LocalOutputAccepts |=  OutputStreamType.Play;
-          else       model.LocalOutputAccepts &= ~OutputStreamType.Play;
+      public bool LocalPlay {
+        get { return localPlay; }
+        set {
+          if (localPlay==value) return;
+          localPlay = value;
           OnPropertyChanged("LocalPlay");
+          OnPropertyChanged("AuthRequired");
         }
       }
-    }
-    public bool LocalInterface {
-      get { return (model.LocalOutputAccepts & OutputStreamType.Interface)!=0; }
-      set {
-        if (((model.LocalOutputAccepts & OutputStreamType.Interface)!=0)!=value) {
-          if (value) model.LocalOutputAccepts |=  OutputStreamType.Interface;
-          else       model.LocalOutputAccepts &= ~OutputStreamType.Interface;
+      public bool LocalInterface {
+        get { return localInterface; }
+        set {
+          if (localInterface==value) return;
+          localInterface = value;
           OnPropertyChanged("LocalInterface");
+          OnPropertyChanged("AuthRequired");
         }
       }
-    }
-    public bool LocalAuthRequired {
-      get { return model.LocalAuthorizationRequired; }
-      set {
-        if (model.LocalAuthorizationRequired!=value) {
-          model.LocalAuthorizationRequired = value;
+
+      public OutputStreamType LocalAccepts {
+        get {
+          var res = OutputStreamType.Metadata;
+          if (localRelay)     res |= OutputStreamType.Relay;
+          if (localPlay)      res |= OutputStreamType.Play;
+          if (localInterface) res |= OutputStreamType.Interface;
+          return res;
+        }
+      }
+
+      public bool LocalAuthRequired {
+        get { return localAuthRequired; }
+        set {
+          if (localAuthRequired==value) return;
+          localAuthRequired = value;
           OnPropertyChanged("LocalAuthRequired");
+          OnPropertyChanged("AuthRequired");
+        }
+      }
+      public bool AuthRequired {
+        get {
+          return
+            GlobalAuthRequired && (GlobalInterface || GlobalPlay) ||
+            LocalAuthRequired  && (LocalInterface || LocalPlay);
+        }
+      }
+      public string AuthId {
+        get { return authId; }
+      }
+      public string AuthPassword {
+        get { return authPassword; }
+      }
+
+      public AuthenticationKey AuthenticationKey {
+        get {
+          return new AuthenticationKey(authId, authPassword);
+        }
+      }
+
+      public System.Windows.Input.ICommand RegenerateAuthKey { get; private set; }
+
+      private void DoRegenerateAuthKey()
+      {
+        var authkey = AuthenticationKey.Generate();
+        authId = authkey.Id;
+        authPassword = authkey.Password;
+        OnPropertyChanged("AuthId");
+        OnPropertyChanged("AuthPassword");
+      }
+
+      private void OnPropertyChanged(string name)
+      {
+        if (PropertyChanged!=null) PropertyChanged(this, new PropertyChangedEventArgs(name));
+        owner.IsListenersModified = true;
+      }
+      public event PropertyChangedEventHandler PropertyChanged;
+    }
+
+    internal class YellowPageClientViewModel
+      : INotifyPropertyChanged
+    {
+      private string name;
+      private Uri    uri;
+      private string protocol;
+
+      public string Name {
+        get { return name; }
+        set {
+          if (name==value) return;
+          name = value;
+          OnPropertyChanged("Name");
+        }
+      }
+
+      public Uri Uri {
+        get { return uri; }
+        set {
+          if (uri==value || (uri!=null && uri.Equals(value))) return;
+          uri = value;
+          OnPropertyChanged("Uri");
+        }
+      }
+
+      public string Protocol {
+        get { return protocol; }
+        set {
+          if (protocol==value) return;
+          protocol = value;
+          OnPropertyChanged("Protocol");
+        }
+      }
+
+      public IEnumerable<IYellowPageClientFactory> Protocols {
+        get { return owner.peerCast.YellowPageFactories; }
+      }
+
+      private SettingViewModel owner;
+      internal YellowPageClientViewModel(
+          SettingViewModel owner,
+          IYellowPageClient model)
+      {
+        this.owner = owner;
+        this.name     = model.Name;
+        this.uri      = model.Uri;
+        this.protocol = model.Protocol;
+      }
+
+      internal YellowPageClientViewModel(SettingViewModel owner)
+      {
+        this.owner = owner;
+        var yp_protocol = owner.peerCast.YellowPageFactories.FirstOrDefault();
+        if (yp_protocol!=null) {
+          protocol = yp_protocol.Protocol;
+        }
+      }
+
+      public event PropertyChangedEventHandler PropertyChanged;
+      private void OnPropertyChanged(string name)
+      {
+        if (PropertyChanged!=null) {
+          PropertyChanged(this, new PropertyChangedEventArgs(name));
+        }
+        owner.IsYellowPagesModified = true;
+      }
+    }
+
+    internal class CheckBandwidthCommand
+      : System.Windows.Input.ICommand,
+        System.ComponentModel.INotifyPropertyChanged
+    {
+      private SettingViewModel owner;
+      private BandwidthChecker checker;
+      private bool canExecute = true;
+      private string status = "";
+
+      public string Status {
+        get { return status; }
+        private set {
+          if (status==value) return;
+          status = value;
+          OnPropertyChanged("Status");
+        }
+      }
+
+      public CheckBandwidthCommand(SettingViewModel owner)
+      {
+        this.owner = owner;
+        Uri target_uri;
+        if (AppSettingsReader.TryGetUri("BandwidthChecker", out target_uri)) {
+          this.checker = new BandwidthChecker(target_uri);
+          this.checker.BandwidthCheckCompleted += checker_BandwidthCheckCompleted;
+        }
+        else {
+          canExecute = false;
+        }
+      }
+
+      private void checker_BandwidthCheckCompleted(
+          object sender,
+          BandwidthCheckCompletedEventArgs args)
+      {
+        if (args.Success) {
+          owner.MaxUpstreamRate = (int)((args.Bitrate / 1000) * 0.8 / 100) * 100;
+          Status = String.Format("帯域測定完了: {0}kbps, 設定推奨値: {1}kbps",
+            args.Bitrate/1000,
+            (int)((args.Bitrate / 1000) * 0.8 / 100) * 100);
+        }
+        else {
+          Status = "帯域測定失敗。接続できませんでした";
+        }
+        SetCanExecute(true);
+      }
+
+      public bool CanExecute(object parameter)
+      {
+        return canExecute;
+      }
+
+      private void SetCanExecute(bool value)
+      {
+        if (canExecute!=value) {
+          canExecute = value;
+          if (CanExecuteChanged!=null) {
+            CanExecuteChanged(this, new EventArgs());
+          }
+        }
+      }
+      public event EventHandler CanExecuteChanged;
+
+      public void Execute(object parameter)
+      {
+        if (!canExecute) return;
+        SetCanExecute(false);
+        checker.RunAsync();
+        Status = "帯域測定中";
+      }
+
+      public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+      private void OnPropertyChanged(string name)
+      {
+        if (PropertyChanged!=null) {
+          PropertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(name));
         }
       }
     }
-    public string AuthId {
-      get { return model.AuthenticationKey!=null ? model.AuthenticationKey.Id : null; }
-    }
-    public string AuthPassword {
-      get { return model.AuthenticationKey!=null ? model.AuthenticationKey.Password : null; }
-    }
 
-    public System.Windows.Input.ICommand RegenerateAuthKey { get; private set; }
-
-    private void DoRegenerateAuthKey()
-    {
-      model.AuthenticationKey = AuthenticationKey.Generate();
-      OnPropertyChanged("AuthId");
-      OnPropertyChanged("AuthPassword");
-    }
-
-    private void OnPropertyChanged(string name)
-    {
-      if (PropertyChanged!=null) PropertyChanged(this, new PropertyChangedEventArgs(name));
-    }
-    public event PropertyChangedEventHandler PropertyChanged;
-
-    public override string ToString()
-    {
-      var addr = model.LocalEndPoint.Address.ToString();
-      if (model.LocalEndPoint.Address.Equals(System.Net.IPAddress.Any)) addr = "IPv4 Any";
-      if (model.LocalEndPoint.Address.Equals(System.Net.IPAddress.IPv6Any)) addr = "IPv6 Any";
-      var local_accepts = "無し";
-      if ((model.LocalOutputAccepts & ~OutputStreamType.Metadata) != OutputStreamType.None)
-      {
-        var accepts = new List<string>();
-        if ((model.LocalOutputAccepts & OutputStreamType.Interface) != 0) accepts.Add("操作");
-        if ((model.LocalOutputAccepts & OutputStreamType.Relay) != 0) accepts.Add("リレー");
-        if ((model.LocalOutputAccepts & OutputStreamType.Play) != 0) accepts.Add("視聴");
-        local_accepts = String.Join(",", accepts.ToArray());
-      }
-      var global_accepts = "無し";
-      if ((model.GlobalOutputAccepts & ~OutputStreamType.Metadata) != OutputStreamType.None)
-      {
-        var accepts = new List<string>();
-        if ((model.GlobalOutputAccepts & OutputStreamType.Interface) != 0) accepts.Add("操作");
-        if ((model.GlobalOutputAccepts & OutputStreamType.Relay) != 0) accepts.Add("リレー");
-        if ((model.GlobalOutputAccepts & OutputStreamType.Play) != 0) accepts.Add("視聴");
-        global_accepts = String.Join(",", accepts.ToArray());
-      }
-      return String.Format(
-        "{0}:{1} LAN:{2} WAN:{3}",
-        addr,
-        model.LocalEndPoint.Port,
-        local_accepts,
-        global_accepts);
-    }
-  }
-
-  class SettingViewModel : ViewModelBase
-  {
     private readonly PeerCast peerCast;
 
-    private readonly ListViewModel<OutputListenerViewModel> ports
-      = new ListViewModel<OutputListenerViewModel>();
-    public ListViewModel<OutputListenerViewModel> Ports {
-      get {
-        ports.Items = peerCast.OutputListeners
-          .Select(listener => {
-            var viewmodel = new OutputListenerViewModel(listener);
-            viewmodel.PropertyChanged += (sender, args) => {
-              pecaApp.SaveSettings();
-            };
-            return viewmodel;
-          })
-          .ToArray();
-        return ports;
+    private bool isModified;
+    public bool IsModified {
+      get { return isModified; }
+      private set { SetProperty("IsModified", ref isModified, value); }
+    }
+
+    private bool isListenersModified;
+    public bool IsListenersModified {
+      get { return isListenersModified; }
+      private set {
+        if (SetProperty("IsListenersModified", ref isListenersModified, value) && value) {
+          IsModified = true;
+        }
       }
     }
 
-    internal ListenerEditViewModel ListenerEdit
-    {
-      get { return new ListenerEditViewModel(peerCast); }
-    }
-
-    private readonly OtherSettingViewModel otherSetting;
-    public OtherSettingViewModel OtherSetting
-    {
-      get { return otherSetting; }
-    }
-
-    private readonly ListViewModel<YellowPageItem> yellowPagesList
-      = new ListViewModel<YellowPageItem>();
-    public ListViewModel<YellowPageItem> YellowPagesList
-    {
-      get
-      {
-        yellowPagesList.Items = peerCast.YellowPages
-          .Select(yp => new YellowPageItem(yp)).ToArray();
-        return yellowPagesList;
+    private bool isYellowPagesModified;
+    public bool IsYellowPagesModified {
+      get { return isYellowPagesModified; }
+      private set {
+        if (SetProperty("IsYellowPagesModified", ref isYellowPagesModified, value) && value) {
+          IsModified = true;
+        }
       }
     }
 
-    internal YellowPagesEditViewModel YellowPagesEdit
-    {
-      get { return new YellowPagesEditViewModel(peerCast); }
+    private ObservableCollection<OutputListenerViewModel> ports =
+      new ObservableCollection<OutputListenerViewModel>();
+    public IEnumerable<OutputListenerViewModel> Ports {
+      get { return ports; }
+    }
+    private OutputListenerViewModel selectedPort;
+    public OutputListenerViewModel SelectedPort {
+      get { return selectedPort; }
+      set { 
+        if (SetProperty("SelectedPort", ref selectedPort, value)) {
+          RemovePortCommand.OnCanExecuteChanged();
+        }
+      }
     }
 
-    protected override void OnPropertyChanged(string propertyName)
-    {
-      pecaApp.SaveSettings();
-      base.OnPropertyChanged(propertyName);
+    public Command AddPortCommand { get; private set; }
+    public Command RemovePortCommand { get; private set; }
+
+    private ObservableCollection<YellowPageClientViewModel> yellowPages =
+      new ObservableCollection<YellowPageClientViewModel>();
+    public IEnumerable<YellowPageClientViewModel> YellowPages {
+      get { return yellowPages; }
     }
+
+    private YellowPageClientViewModel selectedYellowPage;
+    public YellowPageClientViewModel SelectedYellowPage {
+      get { return selectedYellowPage; }
+      set {
+        if (SetProperty("SelectedYellowPage", ref selectedYellowPage, value)) {
+          RemoveYellowPageCommand.OnCanExecuteChanged();
+        }
+      }
+    }
+
+    public Command AddYellowPageCommand { get; private set; }
+    public Command RemoveYellowPageCommand { get; private set; }
+
+    public class ChannelCleanupModeItem {
+      public string Name { get; set; }
+      public PeerCastStation.ChannelCleaner.CleanupMode Mode { get; set; }
+    }
+    private static ChannelCleanupModeItem[] channelCleanupModeItems = new ChannelCleanupModeItem[] {
+      new ChannelCleanupModeItem { Name="自動切断しない", Mode=ChannelCleaner.CleanupMode.None },
+      new ChannelCleanupModeItem { Name="接続していないチャンネル", Mode=ChannelCleaner.CleanupMode.Disconnected },
+      new ChannelCleanupModeItem { Name="視聴・リレーをしていないチャンネル", Mode=ChannelCleaner.CleanupMode.NotRelaying },
+      new ChannelCleanupModeItem { Name="視聴をしていないチャンネル", Mode=ChannelCleaner.CleanupMode.NotPlaying },
+    };
+    public IEnumerable<ChannelCleanupModeItem> ChannelCleanupModeItems {
+      get { return channelCleanupModeItems; }
+    }
+
+    private PeerCastStation.ChannelCleaner.CleanupMode channelCleanupMode;
+    public PeerCastStation.ChannelCleaner.CleanupMode ChannelCleanupMode {
+      get { return channelCleanupMode; }
+      set { SetProperty("ChannelCleanupMode", ref channelCleanupMode, value); }
+    }
+
+    public int channelCleanupInactiveLimit;
+    public int ChannelCleanupInactiveLimit {
+      get { return channelCleanupInactiveLimit; }
+      set { SetProperty("ChannelCleanupInactiveLimit", ref channelCleanupInactiveLimit, value); }
+    }
+
+    private int maxRelays;
+    public int MaxRelays {
+      get { return maxRelays; }
+      set { SetProperty("MaxRelays", ref maxRelays, value); }
+    }
+
+    private int maxRelaysPerChannel;
+    public int MaxRelaysPerChannel {
+      get { return maxRelaysPerChannel; }
+      set { SetProperty("MaxRelaysPerChannel", ref maxRelaysPerChannel, value); }
+    }
+
+    private int maxPlays;
+    public int MaxPlays {
+      get { return maxPlays; }
+      set { SetProperty("MaxPlays", ref maxPlays, value); }
+    }
+
+    private int maxPlaysPerChannel;
+    public int MaxPlaysPerChannel {
+      get { return maxPlaysPerChannel; }
+      set { SetProperty("MaxPlaysPerChannel", ref maxPlaysPerChannel, value); }
+    }
+
+    private int maxUpstreamRate;
+    public int MaxUpstreamRate {
+      get { return maxUpstreamRate; }
+      set { SetProperty("MaxUpstreamRate", ref maxUpstreamRate, value); }
+    }
+
+    private int maxUpstreamRatePerChannel;
+    public int MaxUpstreamRatePerChannel {
+      get { return maxUpstreamRatePerChannel; }
+      set { SetProperty("MaxUpstreamRatePerChannel", ref maxUpstreamRatePerChannel, value); }
+    }
+
+    private bool isShowWindowOnStartup;
+    public bool IsShowWindowOnStartup
+    {
+      get { return isShowWindowOnStartup; }
+      set { SetProperty("IsShowWindowOnStartup", ref isShowWindowOnStartup, value); }
+    }
+
+    public System.Windows.Input.ICommand CheckBandwidth { get; private set; }
 
     PeerCastApplication pecaApp;
     internal SettingViewModel(PeerCastApplication peca_app)
     {
       this.pecaApp = peca_app;
       this.peerCast = peca_app.PeerCast;
-      otherSetting = new OtherSettingViewModel(peca_app);
-
-      ports.ItemAdding += (sender, e) => {
-        OnPropertyChanged("Ports");
-      };
-      ports.ItemRemoving += (sender, e) => {
-        peerCast.StopListen(e.Item.Model);
-        OnPropertyChanged("Ports");
-      };
-
-      yellowPagesList.ItemAdding += (sender, e) => {
-        OnPropertyChanged("YellowPagesList");
-      };
-      yellowPagesList.ItemRemoving += (sender, e) => {
-        peerCast.RemoveYellowPage(e.Item.YellowPageClient);
-        OnPropertyChanged("YellowPagesList");
-      };
+      this.AddPortCommand = new Command(() => AddPort());
+      this.RemovePortCommand = new Command(() => RemovePort(), () => SelectedPort!=null);
+      this.AddYellowPageCommand = new Command(() => AddYellowPage());
+      this.RemoveYellowPageCommand = new Command(() => RemoveYellowPage(), () => SelectedYellowPage!=null);
+      this.CheckBandwidth = new CheckBandwidthCommand(this);
+      channelCleanupMode = ChannelCleaner.Mode;
+      channelCleanupInactiveLimit = ChannelCleaner.InactiveLimit/60000;
+      maxRelays           = peerCast.AccessController.MaxRelays;
+      maxRelaysPerChannel = peerCast.AccessController.MaxRelaysPerChannel;
+      maxPlays            = peerCast.AccessController.MaxPlays;
+      maxPlaysPerChannel  = peerCast.AccessController.MaxPlaysPerChannel;
+      maxUpstreamRate           = peerCast.AccessController.MaxUpstreamRate;
+      maxUpstreamRatePerChannel = peerCast.AccessController.MaxUpstreamRatePerChannel;
+      isShowWindowOnStartup = pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup;
+      ports = new ObservableCollection<OutputListenerViewModel>(
+        peerCast.OutputListeners
+        .Select(listener => new OutputListenerViewModel(this, listener))
+      );
+      yellowPages = new ObservableCollection<YellowPageClientViewModel>(
+        peerCast.YellowPages
+        .Select(yp => new YellowPageClientViewModel(this, yp))
+      );
     }
+
+    public void AddPort()
+    {
+      var new_port = 7144;
+      try {
+        new_port = ports.Max(port => port.Port)+1;
+      }
+      catch (InvalidOperationException) {
+      }
+      ports.Add(new OutputListenerViewModel(this, new_port));
+      IsListenersModified = true;
+    }
+
+    public void RemovePort()
+    {
+      if (SelectedPort==null) return;
+      ports.Remove(SelectedPort);
+      IsListenersModified = true;
+    }
+
+    public void AddYellowPage()
+    {
+      yellowPages.Add(new YellowPageClientViewModel(this));
+      IsYellowPagesModified = true;
+    }
+
+    public void RemoveYellowPage()
+    {
+      if (SelectedYellowPage==null) return;
+      yellowPages.Remove(SelectedYellowPage);
+      IsYellowPagesModified = true;
+    }
+
+    protected override void OnPropertyChanged(string propertyName)
+    {
+      switch (propertyName) {
+      case "SelectedPort":
+      case "SelectedYellowPage":
+      case "IsModified":
+      case "IsListenersModified":
+      case "IsYellowPagesModified":
+        break;
+      default:
+        IsModified = true;
+        break;
+      }
+      base.OnPropertyChanged(propertyName);
+    }
+
+    public void Apply()
+    {
+      if (!IsModified) return;
+      IsModified = false;
+
+      ChannelCleaner.Mode = channelCleanupMode;
+      ChannelCleaner.InactiveLimit = channelCleanupInactiveLimit*60000;
+      peerCast.AccessController.MaxRelays = maxRelays;
+      peerCast.AccessController.MaxRelaysPerChannel = maxRelaysPerChannel;
+      peerCast.AccessController.MaxPlays = maxPlays;
+      peerCast.AccessController.MaxPlaysPerChannel = maxPlaysPerChannel;
+      peerCast.AccessController.MaxUpstreamRate = maxUpstreamRate;
+      peerCast.AccessController.MaxUpstreamRatePerChannel = maxUpstreamRatePerChannel;
+      pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup = isShowWindowOnStartup;
+      if (IsListenersModified) {
+        foreach (var listener in peerCast.OutputListeners.ToArray()) {
+          peerCast.StopListen(listener);
+        }
+        foreach (var listener in ports) {
+          var newlistener = peerCast.StartListen(listener.EndPoint, listener.LocalAccepts, listener.GlobalAccepts);
+          newlistener.GlobalAuthorizationRequired = listener.GlobalAuthRequired;
+          newlistener.LocalAuthorizationRequired = listener.LocalAuthRequired;
+          newlistener.AuthenticationKey = listener.AuthenticationKey;
+        }
+        isListenersModified = false;
+      }
+      if (IsYellowPagesModified) {
+        foreach (var yp in peerCast.YellowPages.ToArray()) {
+          peerCast.RemoveYellowPage(yp);
+        }
+        foreach (var yp in yellowPages) {
+          peerCast.AddYellowPage(yp.Protocol, yp.Name, yp.Uri);
+        }
+        isYellowPagesModified = false;
+      }
+      pecaApp.SaveSettings();
+    }
+
   }
+
 }

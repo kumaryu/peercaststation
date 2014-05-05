@@ -28,6 +28,7 @@ namespace PeerCastStation.WPF
   class PeerCastAppViewModel : ViewModelBase, IDisposable
   {
     private readonly PeerCastApplication application;
+    public PeerCastApplication Model { get { return application; } }
 
     public string PortStatus
     {

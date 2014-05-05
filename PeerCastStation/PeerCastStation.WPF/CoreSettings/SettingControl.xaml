@@ -23,23 +23,51 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
              mc:Ignorable="d"
              d:DesignHeight="500" d:DesignWidth="400">
   <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <ScrollViewer.Resources>
+      <Style TargetType="Button">
+        <Setter Property="Margin" Value="2"/>
+        <Setter Property="Padding" Value="16,2,16,2"/>
+      </Style>
+    </ScrollViewer.Resources>
     <StackPanel>
-      <GroupBox Header="ポート">
+      <GroupBox Header="接続待ち受け">
+        <StackPanel Orientation="Vertical">
+          <ListBox Margin="2" ItemsSource="{Binding Ports}" SelectedItem="{Binding SelectedPort}">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                  </Grid.ColumnDefinitions>
+                  <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                  </Grid.RowDefinitions>
+                  <Label    Grid.Row="0" Grid.Column="0" Content="アドレス:"/>
+                  <ComboBox Grid.Row="0" Grid.Column="1" IsEditable="True" Text="{Binding Address}">
+                    <ComboBoxItem Content="IPv4 Any"/>
+                    <ComboBoxItem Content="IPv6 Any"/>
+                  </ComboBox>
+                  <Label Grid.Row="0" Grid.Column="2" Content="ポート:"/>
+                  <peca:IntegerUpDown    Grid.Row="0" Grid.Column="3" Minimum="1024" Maximum="65535" Value="{Binding Port}"/>
+                  <l:RelaySettingControl Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4"/>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <StackPanel Orientation="Horizontal">
+            <Button Content="追加" Command="{Binding AddPortCommand}"/>
+            <Button Content="削除" Command="{Binding RemovePortCommand}"/>
+          </StackPanel>
+        </StackPanel>
+      </GroupBox>
+      <GroupBox Header="接続設定">
         <Grid>
           <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-          </Grid.ColumnDefinitions>
-          <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-          </Grid.RowDefinitions>
-          <l:ListControl         Grid.Row="0" Grid.Column="0" x:Name="Ports" DataContext="{Binding Ports}"/>
-          <l:RelaySettingControl Grid.Row="1" Grid.Column="0" DataContext="{Binding Ports.SelectedItem}"/>
-        </Grid>
-      </GroupBox>
-      <GroupBox Header="その他">
-        <Grid DataContext="{Binding OtherSetting}">
-          <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
@@ -54,35 +82,62 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
           </Grid.RowDefinitions>
-          <Label    Grid.Column="0" Grid.Row="0" Content="最大リレー数:"/>
-          <Label    Grid.Column="1" Grid.Row="0" Content="合計:"/>
-          <peca:IntegerUpDown Grid.Column="2" Grid.Row="0" Minimum="0" Value="{Binding MaxRelays, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
-          <Label    Grid.Column="3" Grid.Row="0" Content="チャンネル毎:"/>
-          <peca:IntegerUpDown Grid.Column="4" Grid.Row="0" Minimum="0" Value="{Binding MaxRelaysPerChannel, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
-          <Label    Grid.Column="0" Grid.Row="1" Content="視聴数:"/>
-          <Label    Grid.Column="1" Grid.Row="1" Content="合計:"/>
-          <peca:IntegerUpDown Grid.Column="2" Grid.Row="1" Minimum="0" Value="{Binding MaxDirects, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
-          <Label    Grid.Column="3" Grid.Row="1" Content="チャンネル毎:"/>
-          <peca:IntegerUpDown Grid.Column="4" Grid.Row="1" Minimum="0" Value="{Binding MaxDirectsPerChannel, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
-          <Label                    Grid.Column="0" Grid.Row="2" Content="最大上り帯域(kbps):"/>
-          <Label                    Grid.Column="1" Grid.Row="2" Content="合計:"/>
-          <peca:IntegerUpDown Grid.Column="2" Grid.Row="2" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRate, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
-          <Label                    Grid.Column="3" Grid.Row="2" Content="チャンネル毎:"/>
-          <peca:IntegerUpDown Grid.Column="4" Grid.Row="2" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerChannel, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
-          <StackPanel               Grid.Column="1" Grid.Row="3" Grid.ColumnSpan="4" Orientation="Horizontal">
+          <Label              Grid.Column="0" Grid.Row="0" Content="最大リレー数:"/>
+          <Label              Grid.Column="1" Grid.Row="0" Content="合計:"/>
+          <peca:IntegerUpDown Grid.Column="2" Grid.Row="0" Minimum="0" Value="{Binding MaxRelays}"/>
+          <Label              Grid.Column="3" Grid.Row="0" Content="チャンネル毎:"/>
+          <peca:IntegerUpDown Grid.Column="4" Grid.Row="0" Minimum="0" Value="{Binding MaxRelaysPerChannel}"/>
+          <Label              Grid.Column="0" Grid.Row="1" Content="視聴数:"/>
+          <Label              Grid.Column="1" Grid.Row="1" Content="合計:"/>
+          <peca:IntegerUpDown Grid.Column="2" Grid.Row="1" Minimum="0" Value="{Binding MaxPlays}"/>
+          <Label              Grid.Column="3" Grid.Row="1" Content="チャンネル毎:"/>
+          <peca:IntegerUpDown Grid.Column="4" Grid.Row="1" Minimum="0" Value="{Binding MaxPlaysPerChannel}"/>
+          <Label              Grid.Column="0" Grid.Row="2" Content="最大上り帯域(kbps):"/>
+          <Label              Grid.Column="1" Grid.Row="2" Content="合計:"/>
+          <peca:IntegerUpDown Grid.Column="2" Grid.Row="2" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRate}"/>
+          <Label              Grid.Column="3" Grid.Row="2" Content="チャンネル毎:"/>
+          <peca:IntegerUpDown Grid.Column="4" Grid.Row="2" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerChannel}"/>
+          <StackPanel         Grid.Column="1" Grid.Row="3" Grid.ColumnSpan="4" Orientation="Horizontal">
             <Button Content="上り帯域計測" Command="{Binding CheckBandwidth}" Margin="2"/>
             <TextBlock Text="{Binding CheckBandwidth.Status}" Margin="2" VerticalAlignment="Center"/>
           </StackPanel>
           <Label    Grid.Column="0" Grid.Row="4" Content="自動切断するチャンネル:"/>
           <ComboBox Grid.Column="1" Grid.Row="4" Grid.ColumnSpan="4" ItemsSource="{Binding ChannelCleanupModeItems}" DisplayMemberPath="Name" SelectedValuePath="Mode" IsEditable="False" SelectedValue="{Binding ChannelCleanupMode}"/>
           <Label    Grid.Column="0" Grid.Row="5" Content="自動切断までの時間(分):"/>
-          <peca:IntegerUpDown Grid.Column="1" Grid.Row="5" Grid.ColumnSpan="4" Minimum="0" Value="{Binding ChannelCleanupInactiveLimit}" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
+          <peca:IntegerUpDown Grid.Column="1" Grid.Row="5" Grid.ColumnSpan="4" Minimum="0" Value="{Binding ChannelCleanupInactiveLimit}"/>
         </Grid>
       </GroupBox>
-      <GroupBox Header="配信掲載用YP">
-        <l:ListControl x:Name="YellowPagesList" DataContext="{Binding YellowPagesList}"/>
+      <GroupBox Header="配信掲載用イエローページ">
+        <StackPanel Orientation="Vertical">
+          <ListBox ItemsSource="{Binding YellowPages}" SelectedItem="{Binding SelectedYellowPage}" Height="100" Margin="2" HorizontalContentAlignment="Stretch">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="70"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="400"/>
+                  </Grid.ColumnDefinitions>
+                  <Label    Grid.Column="0" Content="YP名:"/>
+                  <TextBox  Grid.Column="1" Text="{Binding Name}"/>
+                  <Label    Grid.Column="2" Content="プロトコル:"/>
+                  <ComboBox Grid.Column="3" SelectedValue="{Binding Protocol}" ItemsSource="{Binding Protocols}" DisplayMemberPath="Name" SelectedValuePath="Protocol"/>
+                  <Label    Grid.Column="4" Content="掲載用URL:"/>
+                  <TextBox  Grid.Column="5" Text="{Binding Uri}"/>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <StackPanel Orientation="Horizontal">
+            <Button Content="追加" Command="{Binding AddYellowPageCommand}"/>
+            <Button Content="削除" Command="{Binding RemoveYellowPageCommand}"/>
+          </StackPanel>
+        </StackPanel>
       </GroupBox>
-      <GroupBox Header="UI設定" DataContext="{Binding OtherSetting}">
+      <GroupBox Header="UI設定">
         <CheckBox Content="起動時にウィンドウを表示する" IsChecked="{Binding IsShowWindowOnStartup}"/>
       </GroupBox>
     </StackPanel>

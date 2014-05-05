@@ -1,4 +1,6 @@
 ﻿using System.Windows;
+using PeerCastStation.Core;
+using PeerCastStation.WPF.CoreSettings;
 
 namespace PeerCastStation.WPF
 {
@@ -7,21 +9,36 @@ namespace PeerCastStation.WPF
   /// </summary>
   public partial class SettingsDialog : Window
   {
-    public SettingsDialog()
+    SettingViewModel viewModel;
+    internal SettingsDialog(PeerCastApplication app)
     {
+      var viewmodel = new SettingViewModel(app);
+      this.viewModel = viewmodel;
+      this.DataContext = viewmodel;
       InitializeComponent();
     }
 
-    internal static void ShowDialog(Window owner, PeerCastAppViewModel vm)
+    internal static void ShowDialog(Window owner, PeerCastApplication app)
     {
-      var window = new SettingsDialog { DataContext=vm.Setting };
+      var window = new SettingsDialog(app);
       window.Owner = owner;
       window.ShowDialog();
     }
 
-    private void Button_Click(object sender, RoutedEventArgs e)
+    private void CancelButton_Click(object sender, RoutedEventArgs e)
     {
       this.Close();
+    }
+
+    private void OKButton_Click(object sender, RoutedEventArgs e)
+    {
+      viewModel.Apply();
+      this.Close();
+    }
+
+    private void ApplyButton_Click(object sender, RoutedEventArgs e)
+    {
+      viewModel.Apply();
     }
   }
 }

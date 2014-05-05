@@ -15,6 +15,10 @@
       <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
     <settings:SettingControl Grid.Row="0"/>
-    <Button Grid.Row="1" Margin="4" HorizontalAlignment="Right" Content="閉じる" Padding="4" Click="Button_Click"/>
+    <UniformGrid Grid.Row="1" HorizontalAlignment="Right" Rows="1" Columns="3">
+      <Button Margin="4" Padding="4" Content="OK" Click="OKButton_Click"/>
+      <Button Margin="4" Padding="4" Content="キャンセル" Click="CancelButton_Click"/>
+      <Button Margin="4" Padding="4" Content="適用" IsEnabled="{Binding IsModified}" Click="ApplyButton_Click"/>
+    </UniformGrid>
   </Grid>
 </Window>

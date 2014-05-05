@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
     <Style TargetType="Label">
       <Setter Property="HorizontalContentAlignment" Value="Right"/>
     </Style>
+    <BooleanToVisibilityConverter x:Key="VisibilityConverter"/>
   </UserControl.Resources>
   <Grid>
     <Grid.ColumnDefinitions>
@@ -60,7 +61,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
       <CheckBox Grid.Row="1" Grid.Column="4" Content="要認証" IsChecked="{Binding GlobalAuthRequired}"/>
     </Grid>
 
-    <Grid Grid.Row="1" Grid.Column="0">
+    <Grid Grid.Row="1" Grid.Column="0" Visibility="{Binding Path=AuthRequired, Converter={StaticResource VisibilityConverter}}">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="*" />
