@@ -19,7 +19,7 @@ namespace PeerCastStation.WPF
         "Value",
         typeof(int),
         typeof(IntegerUpDown),
-        new PropertyMetadata(0, OnValuePropertyChanged, CoerceValue));
+        new FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnValuePropertyChanged, CoerceValue));
 
     private static object CoerceValue(DependencyObject d, object value)
     {
