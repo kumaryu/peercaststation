@@ -474,9 +474,9 @@ namespace PeerCastStation.WPF.CoreSettings
     }
     private static ChannelCleanupModeItem[] channelCleanupModeItems = new ChannelCleanupModeItem[] {
       new ChannelCleanupModeItem { Name="自動切断しない", Mode=ChannelCleaner.CleanupMode.None },
-      new ChannelCleanupModeItem { Name="接続していないチャンネル", Mode=ChannelCleaner.CleanupMode.Disconnected },
-      new ChannelCleanupModeItem { Name="視聴・リレーをしていないチャンネル", Mode=ChannelCleaner.CleanupMode.NotRelaying },
-      new ChannelCleanupModeItem { Name="視聴をしていないチャンネル", Mode=ChannelCleaner.CleanupMode.NotPlaying },
+      new ChannelCleanupModeItem { Name="接続していない", Mode=ChannelCleaner.CleanupMode.Disconnected },
+      new ChannelCleanupModeItem { Name="視聴・リレーをしていない", Mode=ChannelCleaner.CleanupMode.NotRelaying },
+      new ChannelCleanupModeItem { Name="視聴をしていない", Mode=ChannelCleaner.CleanupMode.NotPlaying },
     };
     public IEnumerable<ChannelCleanupModeItem> ChannelCleanupModeItems {
       get { return channelCleanupModeItems; }
