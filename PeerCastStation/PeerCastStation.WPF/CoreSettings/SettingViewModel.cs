@@ -431,6 +431,30 @@ namespace PeerCastStation.WPF.CoreSettings
       }
     }
 
+    public int PrimaryPort {
+      get {
+        var listener = ports.FirstOrDefault();
+        if (listener==null) {
+          AddPort();
+          return PrimaryPort;
+        }
+        else {
+          return listener.Port;
+        }
+      }
+      set {
+        var listener = ports.FirstOrDefault();
+        if (listener==null) {
+          AddPort();
+          PrimaryPort = value;
+        }
+        else if ( listener.Port!=value) {
+          listener.Port = value;
+          OnPropertyChanged("PrimaryPort");
+        }
+      }
+    }
+
     private ObservableCollection<OutputListenerViewModel> ports =
       new ObservableCollection<OutputListenerViewModel>();
     public IEnumerable<OutputListenerViewModel> Ports {
