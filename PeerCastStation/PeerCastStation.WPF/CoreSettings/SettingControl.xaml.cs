@@ -13,6 +13,7 @@
 // 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+using System.Windows;
 using System.Windows.Controls;
 
 namespace PeerCastStation.WPF.CoreSettings
@@ -26,5 +27,16 @@ namespace PeerCastStation.WPF.CoreSettings
     {
       InitializeComponent();
     }
+
+    private void BandwidthCheckButton_Click(object sender, RoutedEventArgs args)
+    {
+      var dialog = new BandwidthCheckDialog();
+      dialog.Owner = Window.GetWindow(this);
+      dialog.ShowDialog();
+      if (dialog.Result.HasValue) {
+        ((SettingViewModel)this.DataContext).MaxUpstreamRate = dialog.Result.Value;
+      }
+    }
+
   }
 }

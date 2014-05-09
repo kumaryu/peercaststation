@@ -57,6 +57,9 @@
     <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CoreSettings\BandwidthCheckDialog.xaml.cs">
+      <DependentUpon>BandwidthCheckDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="LogWindow.xaml.cs">
       <DependentUpon>LogWindow.xaml</DependentUpon>
     </Compile>
@@ -136,6 +139,10 @@
     <Page Include="ChannelLists\RelayTrees\RelayTreeControl.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="CoreSettings\BandwidthCheckDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="CoreSettings\RelaySettingControl.xaml">
       <SubType>Designer</SubType>

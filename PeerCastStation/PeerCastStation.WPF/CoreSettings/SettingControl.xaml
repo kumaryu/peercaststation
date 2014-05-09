@@ -67,7 +67,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
               </Grid.RowDefinitions>
               <Label              Grid.Column="0" Grid.Row="0" Content="合計(kbps):"/>
               <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRate}"/>
-              <Button             Grid.Column="2" Grid.Row="0" Content="自動設定" Command="{Binding CheckBandwidth}"/>
+              <Button             Grid.Column="2" Grid.Row="0" Content="自動設定" Click="BandwidthCheckButton_Click"/>
               <Label              Grid.Column="0" Grid.Row="1" Content="チャンネル毎(kbps):"/>
               <peca:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerChannel}"/>
             </Grid>
@@ -160,7 +160,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           <Label              Grid.Column="3" Grid.Row="2" Content="チャンネル毎:"/>
           <peca:IntegerUpDown Grid.Column="4" Grid.Row="2" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerChannel}"/>
           <StackPanel         Grid.Column="1" Grid.Row="3" Grid.ColumnSpan="4" Orientation="Horizontal">
-            <Button Content="上り帯域計測" Command="{Binding CheckBandwidth}"/>
+            <Button Content="上り帯域計測" Click="BandwidthCheckButton_Click"/>
             <TextBlock Text="{Binding CheckBandwidth.Status}" Margin="2" VerticalAlignment="Center"/>
           </StackPanel>
           <Label Grid.Column="0" Grid.Row="4" Content="チャンネルの自動切断:"/>
