@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
              d:DesignHeight="500" d:DesignWidth="400">
   <Grid>
     <Grid.Resources>
+      <BooleanToVisibilityConverter x:Key="visibilityConverter"/>
       <Style TargetType="Button">
         <Setter Property="Margin" Value="2"/>
         <Setter Property="Padding" Value="8,2,8,2"/>
@@ -33,13 +34,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
       <ColumnDefinition Width="1*"/>
       <ColumnDefinition Width="2*"/>
     </Grid.ColumnDefinitions>
-    <ListBox x:Name="TabList" Grid.Column="0" Margin="4" SelectedIndex="0">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <ListBox x:Name="TabList" Grid.Column="0" Grid.Row="0" Margin="4" SelectedIndex="0">
+      <ListBox.Resources>
+        <Style TargetType="ListBoxItem">
+          <Setter Property="Visibility" Value="{Binding Visibility}"/>
+        </Style>
+      </ListBox.Resources>
       <ListBox.ItemTemplate>
         <DataTemplate>
           <TextBlock Text="{Binding Header}"/>
         </DataTemplate>
       </ListBox.ItemTemplate>
-      <GroupBox Header="簡単設定">
+      <GroupBox Header="全般">
         <StackPanel Grid.IsSharedSizeScope="True">
           <GroupBox Header="接続待ち受け">
             <Grid>
@@ -54,22 +64,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
               <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="1" Increment="1" Value="{Binding PrimaryPort}"/>
             </Grid>
           </GroupBox>
-          <GroupBox Header="上り帯域設定">
+          <GroupBox Header="最大上り帯域">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" SharedSizeGroup="Label"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
               </Grid.ColumnDefinitions>
               <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
-              <Label              Grid.Column="0" Grid.Row="0" Content="合計(kbps):"/>
+              <Label              Grid.Column="0" Grid.Row="0" Content="合計:"/>
               <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRate}"/>
-              <Button             Grid.Column="2" Grid.Row="0" Content="自動設定" Click="BandwidthCheckButton_Click"/>
-              <Label              Grid.Column="0" Grid.Row="1" Content="チャンネル毎(kbps):"/>
+              <Label              Grid.Column="2" Grid.Row="0" Content="kbps"/>
+              <Button             Grid.Column="3" Grid.Row="0" Content="自動設定" Click="BandwidthCheckButton_Click"/>
+              <Label              Grid.Column="0" Grid.Row="1" Content="チャンネル毎:"/>
               <peca:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerChannel}" MinimumText="制限無し"/>
+              <Label              Grid.Column="2" Grid.Row="1" Content="kbps"/>
             </Grid>
           </GroupBox>
           <GroupBox Header="チャンネル自動切断">
@@ -88,7 +101,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           </GroupBox>
         </StackPanel>
       </GroupBox>
-      <GroupBox Header="接続待ち受け">
+      <GroupBox Header="接続待ち受け" Visibility="{Binding ElementName=advancedSettings, Path=IsChecked, Converter={StaticResource visibilityConverter}}">
         <Grid>
           <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -127,56 +140,76 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           </StackPanel>
         </Grid>
       </GroupBox>
-      <GroupBox Header="接続設定">
-        <Grid>
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-          </Grid.ColumnDefinitions>
-          <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-          </Grid.RowDefinitions>
-          <Label              Grid.Column="0" Grid.Row="0" Content="最大リレー数:"/>
-          <Label              Grid.Column="1" Grid.Row="0" Content="合計:"/>
-          <peca:IntegerUpDown Grid.Column="2" Grid.Row="0" Minimum="0" Value="{Binding MaxRelays}" MinimumText="制限無し"/>
-          <Label              Grid.Column="3" Grid.Row="0" Content="チャンネル毎:"/>
-          <peca:IntegerUpDown Grid.Column="4" Grid.Row="0" Minimum="0" Value="{Binding MaxRelaysPerChannel}" MinimumText="制限無し"/>
-          <Label              Grid.Column="0" Grid.Row="1" Content="視聴数:"/>
-          <Label              Grid.Column="1" Grid.Row="1" Content="合計:"/>
-          <peca:IntegerUpDown Grid.Column="2" Grid.Row="1" Minimum="0" Value="{Binding MaxPlays}" MinimumText="制限無し"/>
-          <Label              Grid.Column="3" Grid.Row="1" Content="チャンネル毎:"/>
-          <peca:IntegerUpDown Grid.Column="4" Grid.Row="1" Minimum="0" Value="{Binding MaxPlaysPerChannel}" MinimumText="制限無し"/>
-          <Label              Grid.Column="0" Grid.Row="2" Content="最大上り帯域(kbps):"/>
-          <Label              Grid.Column="1" Grid.Row="2" Content="合計:"/>
-          <peca:IntegerUpDown Grid.Column="2" Grid.Row="2" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRate}"/>
-          <Label              Grid.Column="3" Grid.Row="2" Content="チャンネル毎:"/>
-          <peca:IntegerUpDown Grid.Column="4" Grid.Row="2" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerChannel}" MinimumText="制限無し"/>
-          <StackPanel         Grid.Column="1" Grid.Row="3" Grid.ColumnSpan="4" Orientation="Horizontal">
-            <Button Content="上り帯域計測" Click="BandwidthCheckButton_Click"/>
-            <TextBlock Text="{Binding CheckBandwidth.Status}" Margin="2" VerticalAlignment="Center"/>
-          </StackPanel>
-          <Label Grid.Column="0" Grid.Row="4" Content="チャンネルの自動切断:"/>
-          <Grid Grid.Column="1" Grid.Row="4" Grid.ColumnSpan="4">
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="2*"/>
-              <ColumnDefinition Width="Auto"/>
-              <ColumnDefinition Width="1*"/>
-              <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <ComboBox           Grid.Column="0" ItemsSource="{Binding ChannelCleanupModeItems}" DisplayMemberPath="Name" SelectedValuePath="Mode" IsEditable="False" SelectedValue="{Binding ChannelCleanupMode}"/>
-            <TextBlock          Grid.Column="1" Margin="2" Text="が" VerticalAlignment="Center"/>
-            <peca:IntegerUpDown Grid.Column="2" Minimum="0" Value="{Binding ChannelCleanupInactiveLimit}" MinimumText="切断しない"/>
-            <TextBlock          Grid.Column="3" Margin="2" Text="分継続で切断" VerticalAlignment="Center"/>
-          </Grid>
-        </Grid>
+      <GroupBox Header="接続設定" Visibility="{Binding ElementName=advancedSettings, Path=IsChecked, Converter={StaticResource visibilityConverter}}">
+        <StackPanel>
+          <GroupBox Header="最大リレー数">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+              </Grid.RowDefinitions>
+              <Label              Grid.Column="0" Grid.Row="0" Content="合計:"/>
+              <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="0" Value="{Binding MaxRelays}" MinimumText="制限無し"/>
+              <Label              Grid.Column="0" Grid.Row="1" Content="チャンネル毎:"/>
+              <peca:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="0" Value="{Binding MaxRelaysPerChannel}" MinimumText="制限無し"/>
+            </Grid>
+          </GroupBox>
+          <GroupBox Header="最大視聴数">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+              </Grid.RowDefinitions>
+              <Label              Grid.Column="0" Grid.Row="0" Content="合計:"/>
+              <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="0" Value="{Binding MaxPlays}" MinimumText="制限無し"/>
+              <Label              Grid.Column="0" Grid.Row="1" Content="チャンネル毎:"/>
+              <peca:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="0" Value="{Binding MaxPlaysPerChannel}" MinimumText="制限無し"/>
+            </Grid>
+          </GroupBox>
+          <GroupBox Header="最大上り帯域">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+              </Grid.RowDefinitions>
+              <Label              Grid.Column="0" Grid.Row="0" Content="合計:"/>
+              <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRate}"/>
+              <Label              Grid.Column="2" Grid.Row="0" Content="kbps"/>
+              <Button             Grid.Column="3" Grid.Row="0" Content="自動設定" Click="BandwidthCheckButton_Click"/>
+              <Label              Grid.Column="0" Grid.Row="1" Content="チャンネル毎:"/>
+              <peca:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerChannel}" MinimumText="制限無し"/>
+              <Label              Grid.Column="2" Grid.Row="1" Content="kbps"/>
+            </Grid>
+          </GroupBox>
+          <GroupBox Header="チャンネルの自動切断">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <ComboBox           Grid.Column="0" ItemsSource="{Binding ChannelCleanupModeItems}" DisplayMemberPath="Name" SelectedValuePath="Mode" IsEditable="False" SelectedValue="{Binding ChannelCleanupMode}"/>
+              <TextBlock          Grid.Column="1" Margin="2" Text="が" VerticalAlignment="Center"/>
+              <peca:IntegerUpDown Grid.Column="2" Minimum="0" Value="{Binding ChannelCleanupInactiveLimit}" MinimumText="切断しない"/>
+              <TextBlock          Grid.Column="3" Margin="2" Text="分継続すると切断" VerticalAlignment="Center"/>
+            </Grid>
+          </GroupBox>
+        </StackPanel>
       </GroupBox>
       <GroupBox Header="配信掲載用イエローページ">
         <Grid>
@@ -245,6 +278,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <CheckBox Content="起動時にウィンドウを表示する" IsChecked="{Binding IsShowWindowOnStartup}"/>
       </GroupBox>
     </ListBox>
-    <ContentControl Grid.Column="1" Margin="4" Content="{Binding ElementName=TabList, Path=SelectedItem}"/>
+    <StackPanel Orientation="Horizontal" Grid.Column="0" Grid.Row="1">
+      <RadioButton                           Content="簡単設定" Margin="4,2,4,2" IsChecked="True"/>
+      <RadioButton x:Name="advancedSettings" Content="詳細設定" Margin="4,2,4,2"/>
+    </StackPanel>
+    <ContentControl Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Margin="4" Content="{Binding ElementName=TabList, Path=SelectedItem}"/>
   </Grid>
 </UserControl>
