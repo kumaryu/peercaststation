@@ -29,14 +29,27 @@ namespace PeerCastStation.WPF
 
     private static void OnValuePropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs args)
     {
-      ((IntegerUpDown)d).OnValueChanged(args);
+      ((IntegerUpDown)d).OnPropertyChanged((int)args.NewValue);
     }
 
-    private void OnValueChanged(DependencyPropertyChangedEventArgs args)
+    private static void OnPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs args)
     {
-      valueTextBox.Text = args.NewValue.ToString();
-      upButton.IsEnabled   = (int)args.NewValue<this.Maximum;
-      downButton.IsEnabled = (int)args.NewValue>this.Minimum;
+      ((IntegerUpDown)d).OnPropertyChanged(((IntegerUpDown)d).Value);
+    }
+
+    private void OnPropertyChanged(int value)
+    {
+      if (value==Minimum && MinimumText!=null) {
+        valueTextBox.Text = MinimumText;
+      }
+      else if (value==Maximum && MaximumText!=null) {
+        valueTextBox.Text = MaximumText;
+      }
+      else {
+        valueTextBox.Text = value.ToString();
+      }
+      upButton.IsEnabled   = (int)value<this.Maximum;
+      downButton.IsEnabled = (int)value>this.Minimum;
     }
 
     public int Minimum {
@@ -44,14 +57,44 @@ namespace PeerCastStation.WPF
       set { SetValue(MinimumProperty, value); }
     }
     public static readonly DependencyProperty MinimumProperty = 
-      DependencyProperty.Register("Minimum", typeof(int), typeof(IntegerUpDown), new PropertyMetadata(0));
+      DependencyProperty.Register(
+        "Minimum",
+        typeof(int),
+        typeof(IntegerUpDown),
+        new PropertyMetadata(0, OnPropertyChanged));
+
+    public string MinimumText {
+      get { return (string)GetValue(MinimumTextProperty); }
+      set { SetValue(MinimumTextProperty, value); }
+    }
+    public static readonly DependencyProperty MinimumTextProperty = 
+      DependencyProperty.Register(
+        "MinimumText",
+        typeof(string),
+        typeof(IntegerUpDown),
+        new PropertyMetadata(null, OnPropertyChanged));
 
     public int Maximum {
       get { return (int)GetValue(MaximumProperty); }
       set { SetValue(MaximumProperty, value); }
     }
     public static readonly DependencyProperty MaximumProperty = 
-      DependencyProperty.Register("Maximum", typeof(int), typeof(IntegerUpDown), new PropertyMetadata(Int32.MaxValue));
+      DependencyProperty.Register(
+        "Maximum",
+        typeof(int),
+        typeof(IntegerUpDown),
+        new PropertyMetadata(Int32.MaxValue, OnPropertyChanged));
+
+    public string MaximumText {
+      get { return (string)GetValue(MaximumTextProperty); }
+      set { SetValue(MaximumTextProperty, value); }
+    }
+    public static readonly DependencyProperty MaximumTextProperty = 
+      DependencyProperty.Register(
+        "MaximumText",
+        typeof(string),
+        typeof(IntegerUpDown),
+        new PropertyMetadata(null, OnPropertyChanged));
 
     public int Increment {
       get { return (int)GetValue(IncrementProperty); }
@@ -82,6 +125,12 @@ namespace PeerCastStation.WPF
       int value;
       if (Int32.TryParse(valueTextBox.Text, out value)) {
         this.Value = Math.Max(this.Minimum, Math.Min(this.Maximum, value));
+      }
+      else if (MinimumText!=null && valueTextBox.Text==MinimumText) {
+        this.Value = this.Minimum;
+      }
+      else if (MaximumText!=null && valueTextBox.Text==MaximumText) {
+        this.Value = this.Maximum;
       }
       else {
         valueTextBox.Text = this.Value.ToString();
