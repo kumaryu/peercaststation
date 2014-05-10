@@ -44,7 +44,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <MenuItem Header="ストリームURLをコピー(_S)" Command="{x:Static my:PeerCastCommands.CopyStreamUrl}"/>
         <MenuItem Header="コンタクトURLをコピー(_C)" Command="{x:Static my:PeerCastCommands.CopyContactUrl}"/>
         <Separator/>
-        <MenuItem Header="配信(_B)..." Command="{x:Static my:PeerCastCommands.Broadcast}"/>
+        <MenuItem Header="配信(_B)..." Command="{x:Static my:PeerCastCommands.Broadcast}" CommandTarget="{Binding ElementName=ChannelList}"/>
       </MenuItem>
       <MenuItem Header="ツール(_T)">
         <MenuItem Header="設定(_S)..." Command="{x:Static my:PeerCastCommands.OpenSettings}"/>
@@ -59,6 +59,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
     <StatusBar DockPanel.Dock="Bottom">
       <TextBlock Text="{Binding PortStatus}"/>
     </StatusBar>
-    <lb:ChannelListControl DataContext="{Binding ChannelList}"/>
+    <lb:ChannelListControl x:Name="ChannelList" DataContext="{Binding ChannelList}"/>
   </DockPanel>
 </Window>
