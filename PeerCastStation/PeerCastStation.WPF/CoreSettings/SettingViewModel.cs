@@ -23,6 +23,14 @@ using System.ComponentModel;
 
 namespace PeerCastStation.WPF.CoreSettings
 {
+  enum PortCheckStatus {
+    Unknown,
+    Checking,
+    Opened,
+    Closed,
+    Failed,
+  }
+
   class SettingViewModel
     : ViewModelBase
   {
@@ -43,6 +51,7 @@ namespace PeerCastStation.WPF.CoreSettings
       private bool   localAuthRequired;
       private string authId;
       private string authPassword;
+      private bool?  isOpen;
 
       public OutputListenerViewModel(SettingViewModel owner, OutputListener model)
       {
@@ -67,6 +76,7 @@ namespace PeerCastStation.WPF.CoreSettings
         localAuthRequired = model.LocalAuthorizationRequired;
         authId       = model.AuthenticationKey!=null ? model.AuthenticationKey.Id : null;
         authPassword = model.AuthenticationKey!=null ? model.AuthenticationKey.Password : null;
+        isOpen = null;
         RegenerateAuthKey = new Command(DoRegenerateAuthKey);
       }
 
@@ -86,6 +96,7 @@ namespace PeerCastStation.WPF.CoreSettings
         var authkey = AuthenticationKey.Generate();
         authId       = authkey.Id;
         authPassword = authkey.Password;
+        isOpen = null;
         RegenerateAuthKey = new Command(DoRegenerateAuthKey);
       }
 
@@ -233,6 +244,15 @@ namespace PeerCastStation.WPF.CoreSettings
       public AuthenticationKey AuthenticationKey {
         get {
           return new AuthenticationKey(authId, authPassword);
+        }
+      }
+
+      public bool? IsOpen {
+        get { return isOpen; }
+        set {
+          if (isOpen==value) return;
+          isOpen = value;
+          OnPropertyChanged("IsOpen");
         }
       }
 
@@ -622,6 +642,42 @@ namespace PeerCastStation.WPF.CoreSettings
       if (SelectedYellowPage==null) return;
       yellowPages.Remove(SelectedYellowPage);
       IsYellowPagesModified = true;
+    }
+
+    private PortCheckStatus portCheckStatus;
+    public PortCheckStatus PortCheckStatus {
+      get { return portCheckStatus; }
+      set { SetProperty("PortCheckStatus", ref portCheckStatus, value); }
+    }
+
+    public void PortCheck()
+    {
+      var ports = peerCast.OutputListeners
+        .Where( listener => (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0)
+        .Select(listener => listener.LocalEndPoint.Port);
+      Uri target_uri;
+      if (!AppSettingsReader.TryGetUri("PCPPortChecker", out target_uri)) return;
+      var checker = new PeerCastStation.UI.PCPPortChecker(peerCast.SessionID, target_uri, ports);
+      checker.PortCheckCompleted += checker_PortCheckCompleted;
+      checker.RunAsync();
+      PortCheckStatus = PortCheckStatus.Checking;
+    }
+
+    void checker_PortCheckCompleted(object sender, UI.PortCheckCompletedEventArgs args)
+    {
+      if (args.Success) {
+        var status = PortCheckStatus.Closed;
+        foreach (var port in ports) {
+          port.IsOpen = args.Ports.Contains(port.Port);
+          if (port.IsOpen.HasValue && port.IsOpen.Value) {
+            status = PortCheckStatus.Opened;
+          }
+        }
+        PortCheckStatus = status;
+      }
+      else {
+        PortCheckStatus = PortCheckStatus.Failed;
+      }
     }
 
     protected override void OnPropertyChanged(string propertyName)

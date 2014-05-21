@@ -38,5 +38,10 @@ namespace PeerCastStation.WPF.CoreSettings
       }
     }
 
+    private void PortCheckButton_Click(object sender, RoutedEventArgs args)
+    {
+      ((SettingViewModel)this.DataContext).PortCheck();
+    }
+
   }
 }
