@@ -55,9 +55,51 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
               </Grid.ColumnDefinitions>
               <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
               <Label Grid.Column="0" Grid.Row="0" Content="ポート番号:"/>
               <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="1" Increment="1" Value="{Binding PrimaryPort}"/>
+              <Label Grid.Column="0" Grid.Row="1" Content="ポート開放状態:"/>
+              <Grid Grid.Column="1" Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Unknown}">
+                          <Setter Property="Text" Value="未確認"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Checking}">
+                          <Setter Property="Text" Value="確認しています"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Opened}">
+                          <Setter Property="Text" Value="開放されています"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Closed}">
+                          <Setter Property="Text" Value="未開放です"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Failed}">
+                          <Setter Property="Text" Value="確認失敗しました"/>
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </TextBlock.Style>
+                </TextBlock>
+                <Button Grid.Column="1"  Content="開放確認" Click="PortCheckButton_Click">
+                  <Button.Style>
+                    <Style TargetType="Button">
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Checking}">
+                          <Setter Property="IsEnabled" Value="False"/>
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </Button.Style>
+                </Button>
+              </Grid>
             </Grid>
           </GroupBox>
           <GroupBox Header="最大上り帯域">
