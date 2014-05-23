@@ -284,6 +284,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
         Favorite    = false,
       };
       uiSettings.AddBroadcastHistory(info);
+      uiSettings.Save();
     }
 
     public void Save()
