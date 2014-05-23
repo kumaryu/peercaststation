@@ -14,7 +14,7 @@
       <RowDefinition Height="*"/>
       <RowDefinition Height="*"/>
     </Grid.RowDefinitions>
-    <TextBox x:Name="valueTextBox" Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Text="0" KeyDown="valueTextBox_KeyDown" LostFocus="valueTextBox_Validate" MouseWheel="valueTextBox_MouseWheel" PreviewKeyDown="valueTextBox_PreviewKeyDown" HorizontalContentAlignment="Right" VerticalContentAlignment="Center"/>
+    <TextBox x:Name="valueTextBox" Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Text="0" KeyDown="valueTextBox_KeyDown" LostFocus="valueTextBox_Validate" MouseWheel="valueTextBox_MouseWheel" PreviewKeyDown="valueTextBox_PreviewKeyDown" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" InputScope="Digits"/>
     <RepeatButton x:Name="upButton" Grid.Column="1" Grid.Row="0" Focusable="False" Click="upButton_Click">
       <Path Data="M 8,0 L 4,4 L 12,4 Z" Stretch="Uniform" Fill="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
     </RepeatButton>

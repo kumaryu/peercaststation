@@ -68,7 +68,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <Label   Grid.Row="2" Grid.Column="0" Content="概要:"/>
         <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
         <Label   Grid.Row="3" Grid.Column="0" Content="コンタクトURL:"/>
-        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding ContactUrl, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
+        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding ContactUrl, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}" InputScope="Url"/>
         <Label   Grid.Row="4" Grid.Column="0" Content="配信者コメント:"/>
         <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Comment, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
         <Label   Grid.Row="5" Grid.Column="0" Content="チャンネルID:"/>
@@ -103,7 +103,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <Label   Grid.Row="3" Grid.Column="0" Content="ジャンル:"/>
         <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding TrackGenre, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
         <Label   Grid.Row="4" Grid.Column="0" Content="URL:"/>
-        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding TrackUrl, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}"/>
+        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding TrackUrl, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsTracker, Converter={StaticResource notConverter}}" InputScope="Url"/>
       </Grid>
     </GroupBox>
     <Button HorizontalAlignment="Right" Content="適用" Command="{Binding Update}"/>
