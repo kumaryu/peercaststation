@@ -270,6 +270,26 @@ namespace PeerCastStation.Core
     private byte[] value = null;
     private IAtomCollection children = null;
 
+    static Atom()
+    {
+      Encodings = new[] {
+        new UTF8Encoding(false, true),
+        Encoding.GetEncoding(932,
+          new EncoderExceptionFallback(),
+          new DecoderExceptionFallback()),
+        Encoding.GetEncoding(
+          0,
+          new EncoderExceptionFallback(),
+          new DecoderExceptionFallback()),
+        Encoding.UTF8,
+      };
+    }
+
+    /// <summary>
+    /// 文字列を取り出す際に使用するエンコーディングを取得・設定します
+    /// </summary>
+    public static Encoding[] Encodings { get; set; }
+
     /// <summary>
     /// 名前を取得します
     /// </summary>
@@ -491,29 +511,17 @@ namespace PeerCastStation.Core
     public bool TryGetString(out string res)
     {
       if (value!=null && value[value.Length-1]==0) {
-        var utf8 = new UTF8Encoding(false, true);
-        try {
-          res = utf8.GetString(value, 0, value.Length-1);
-        }
-        catch (DecoderFallbackException) {
-          var acp = Encoding.GetEncoding(
-            0,
-            new EncoderExceptionFallback(),
-            new DecoderExceptionFallback());
+        foreach (var encoding in Encodings) {
           try {
-            res = acp.GetString(value, 0, value.Length-1);
-          }
-          catch (DecoderFallbackException) {
-            res = Encoding.UTF8.GetString(value, 0, value.Length-1);
+            res = encoding.GetString(value, 0, value.Length-1);
             return true;
           }
+          catch (DecoderFallbackException) {
+          }
         }
-        return true;
       }
-      else {
-        res = "";
-        return false;
-      }
+      res = "";
+      return false;
     }
 
     /// <summary>
