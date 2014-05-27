@@ -501,16 +501,15 @@ namespace PeerCastStation.PCP
 
     private void PostHostInfo(AtomCollection parent, Channel channel, bool playing)
     {
-      var host = channel.SelfNode;
       var hostinfo = new AtomCollection();
       hostinfo.SetHostChannelID(channel.ChannelID);
       hostinfo.SetHostSessionID(PeerCast.SessionID);
-      var globalendpoint = host.GlobalEndPoint;
+      var globalendpoint = PeerCast.GetGlobalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
       if (globalendpoint!=null) {
         hostinfo.AddHostIP(globalendpoint.Address);
         hostinfo.AddHostPort(globalendpoint.Port);
       }
-      var localendpoint = host.LocalEndPoint;
+      var localendpoint = PeerCast.GetLocalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
       if (localendpoint!=null) {
         hostinfo.AddHostIP(localendpoint.Address);
         hostinfo.AddHostPort(localendpoint.Port);
@@ -523,10 +522,13 @@ namespace PeerCastStation.PCP
         hostinfo.SetHostNewPos((uint)(channel.Contents.Newest.Position & 0xFFFFFFFFU));
       }
       PCPVersion.SetHostVersion(hostinfo);
+      var relayable = PeerCast.AccessController.IsChannelRelayable(channel);
+      var playable  = PeerCast.AccessController.IsChannelPlayable(channel) && PeerCast.FindListener(remoteEndPoint.Address, OutputStreamType.Play)!=null;
+      var firewalled = !PeerCast.IsFirewalled.HasValue || PeerCast.IsFirewalled.Value || PeerCast.FindListener(remoteEndPoint.Address, OutputStreamType.Relay)==null;
       hostinfo.SetHostFlags1(
-        (PeerCast.AccessController.IsChannelRelayable(channel) ? PCPHostFlags1.Relay : 0) |
-        (PeerCast.AccessController.IsChannelPlayable(channel) ? PCPHostFlags1.Direct : 0) |
-        ((!PeerCast.IsFirewalled.HasValue || PeerCast.IsFirewalled.Value) ? PCPHostFlags1.Firewalled : 0) |
+        (relayable ? PCPHostFlags1.Relay : 0) |
+        (playable ? PCPHostFlags1.Direct : 0) |
+        (firewalled ? PCPHostFlags1.Firewalled : 0) |
         PCPHostFlags1.Tracker |
         (playing ? PCPHostFlags1.Receiving : PCPHostFlags1.None));
       parent.SetHost(hostinfo);
