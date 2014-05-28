@@ -107,7 +107,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                   SelectedItem="{Binding SelectedSourceStream}"
                   DisplayMemberPath="Name"/>
         <Label    Grid.Column="0" Grid.Row="1" Content="ストリームURL:"/>
-        <TextBox  Grid.Column="1" Grid.Row="1" Text="{Binding StreamUrl, UpdateSourceTrigger=PropertyChanged}"/>
+        <TextBox  Grid.Column="1" Grid.Row="1" Text="{Binding StreamUrl, UpdateSourceTrigger=PropertyChanged}" InputScope="Url"/>
         <Label    Grid.Column="0" Grid.Row="2" Content="ビットレート:"/>
         <Grid Grid.Column="1" Grid.Row="2">
           <Grid.ColumnDefinitions>
@@ -128,8 +128,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <ComboBox Grid.Column="1" Grid.Row="4"
                   ItemsSource="{Binding YellowPages}"
                   SelectedValue="{Binding YellowPage}"
-                  SelectedValuePath="YellowPageClient"
-                  DisplayMemberPath="Name"/>
+                  SelectedValuePath="Value"
+                  DisplayMemberPath="Key"/>
       </Grid>
     </GroupBox>
     <GroupBox Header="チャンネル情報">
@@ -154,7 +154,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <Label   Grid.Row="3" Grid.Column="0" Content="配信者コメント:"/>
         <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Comment}"/>
         <Label   Grid.Row="4" Grid.Column="0" Content="コンタクトURL:"/>
-        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding ContactUrl}"/>
+        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding ContactUrl}" InputScope="Url"/>
       </Grid>
     </GroupBox>
     <GroupBox Header="トラック情報">
@@ -179,7 +179,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <Label   Grid.Row="3" Grid.Column="0" Content="ジャンル:"/>
         <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding TrackGenre}"/>
         <Label   Grid.Row="4" Grid.Column="0" Content="URL:"/>
-        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding TrackUrl}"/>
+        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding TrackUrl}" InputScope="Url"/>
       </Grid>
     </GroupBox>
     <Grid>

@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:my="clr-namespace:PeerCastStation.WPF"
              xmlns:lch="clr-namespace:PeerCastStation.WPF.ChannelLists.ChannelInfos"
              xmlns:lco="clr-namespace:PeerCastStation.WPF.ChannelLists.ConnectionLists"
              xmlns:lr="clr-namespace:PeerCastStation.WPF.ChannelLists.RelayTrees"
@@ -30,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
       <Setter Property="Margin" Value="5"/>
     </Style>
   </UserControl.Resources>
-  <Grid>
+  <Grid Margin="4">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
@@ -117,21 +118,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         </ListBox.ItemTemplate>
         <ListBox.ContextMenu>
           <ContextMenu>
-            <MenuItem Header="再生(_P)"               Command="{Binding Play}"/>
-            <MenuItem Header="コンタクトURLを開く(_U)" Command="{Binding OpenContactUrl}"/>
+            <MenuItem Header="再生(_P)"              Command="{x:Static my:PeerCastCommands.Play}"/>
+            <MenuItem Header="コンタクトURLを開く(_U)" Command="{x:Static my:PeerCastCommands.OpenContactUrl}"/>
             <Separator/>
-            <MenuItem Header="切断(_C)"   Command="{Binding Close}"/>
-            <MenuItem Header="再接続(_B)" Command="{Binding Bump}"/>
+            <MenuItem Header="切断(_C)"   Command="{x:Static my:PeerCastCommands.Disconnect}"/>
+            <MenuItem Header="再接続(_B)" Command="{x:Static my:PeerCastCommands.Reconnect}"/>
             <Separator/>
-            <MenuItem Header="ストリームURLをコピー(_S)" Command="{Binding CopyStreamUrl}"/>
-            <MenuItem Header="コンタクトURLをコピー(_C)" Command="{Binding CopyContactUrl}"/>
+            <MenuItem Header="ストリームURLをコピー(_S)" Command="{x:Static my:PeerCastCommands.CopyStreamUrl}"/>
+            <MenuItem Header="コンタクトURLをコピー(_C)" Command="{x:Static my:PeerCastCommands.CopyContactUrl}"/>
           </ContextMenu>
         </ListBox.ContextMenu>
       </ListBox>
-      <Button Grid.Row="0" Grid.Column="1" Content="再生" Command="{Binding Play}"/>
-      <Button Grid.Row="1" Grid.Column="1" Content="切断" Command="{Binding Close}"/>
-      <Button Grid.Row="2" Grid.Column="1" Content="再接続" Command="{Binding Bump}"/>
-      <Button Grid.Row="3" Grid.Column="1" Content="配信..." Click="BroadcastButton_Click"/>
+      <Button Grid.Row="0" Grid.Column="1" Content="再生" Command="{x:Static my:PeerCastCommands.Play}"/>
+      <Button Grid.Row="1" Grid.Column="1" Content="切断" Command="{x:Static my:PeerCastCommands.Disconnect}"/>
+      <Button Grid.Row="2" Grid.Column="1" Content="再接続" Command="{x:Static my:PeerCastCommands.Reconnect}"/>
+      <Button Grid.Row="3" Grid.Column="1" Content="配信..." Command="{x:Static my:PeerCastCommands.Broadcast}"/>
     </Grid>
     <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="Transparent" />
     <TabControl Grid.Row="2" SelectionChanged="TabControl_SelectionChanged">

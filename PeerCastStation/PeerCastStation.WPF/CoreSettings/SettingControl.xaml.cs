@@ -13,20 +13,8 @@
 // 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using PeerCastStation.WPF.CoreSettings.Dialogs;
 
 namespace PeerCastStation.WPF.CoreSettings
 {
@@ -38,33 +26,17 @@ namespace PeerCastStation.WPF.CoreSettings
     public SettingControl()
     {
       InitializeComponent();
-
-      Ports.AddItemButton.Click += (sender, e) =>
-        {
-          var dialog = new ListenerEditWindow
-          {
-            Owner = Window.GetWindow(this),
-            DataContext = ((SettingViewModel)DataContext).ListenerEdit
-          };
-          dialog.ShowDialog();
-          Ports.GetBindingExpression(UserControl.DataContextProperty).UpdateTarget();
-        };
-
-      YellowPagesList.AddItemButton.Click += (sender, e) =>
-        {
-          var dialog = new YellowPagesEditWindow
-          {
-            Owner = Window.GetWindow(this),
-            DataContext = ((SettingViewModel)DataContext).YellowPagesEdit
-          };
-          dialog.ShowDialog();
-          YellowPagesList.GetBindingExpression(UserControl.DataContextProperty).UpdateTarget();
-        };
     }
 
-    private void AddYellowPagesButton_Click(object sender, RoutedEventArgs e)
+    private void BandwidthCheckButton_Click(object sender, RoutedEventArgs args)
     {
-      MessageBox.Show("実装ないのねーん");
+      var dialog = new BandwidthCheckDialog();
+      dialog.Owner = Window.GetWindow(this);
+      dialog.ShowDialog();
+      if (dialog.Result.HasValue) {
+        ((SettingViewModel)this.DataContext).MaxUpstreamRate = dialog.Result.Value;
+      }
     }
+
   }
 }

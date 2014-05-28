@@ -15,6 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
 using System.Windows;
+using System.Windows.Threading;
 using PeerCastStation.WPF.Dialogs;
 
 namespace PeerCastStation.WPF
@@ -29,9 +30,10 @@ namespace PeerCastStation.WPF
       return !Double.IsNaN(value) && !Double.IsInfinity(value);
     }
 
+    private DispatcherTimer timer;
     private System.Windows.Interop.WindowInteropHelper hwnd;
     private System.Windows.Interop.HwndSource nativeSource;
-    public MainWindow(MainViewModel viewmodel)
+    public MainWindow(PeerCastAppViewModel viewmodel)
     {
       InitializeComponent();
       var settings = PeerCastStation.Core.PeerCastApplication.Current.Settings.Get<WPFSettings>();
@@ -61,7 +63,57 @@ namespace PeerCastStation.WPF
           this.Top = SystemParameters.VirtualScreenHeight+SystemParameters.VirtualScreenTop - this.Height;
         }
       }
+      this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.OpenSettings, OnOpenSettings));
+      this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.ShowLogs, OnShowLogs));
+      this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.About, OnAbout));
+      this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.OpenBrowserUI, OnOpenBrowserUI));
+      this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.OpenHelp, OnOpenHelp));
+      this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.Quit, OnQuit));
+      timer = new DispatcherTimer(
+        TimeSpan.FromSeconds(1),
+        DispatcherPriority.Normal,
+        (sender, e) => viewmodel.UpdateStatus(),
+        Application.Current.Dispatcher);
       this.DataContext = viewmodel;
+
+    }
+
+    private void OnOpenBrowserUI(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+      ((PeerCastAppViewModel)this.DataContext).OpenBrowserUI();
+    }
+
+    private void OnOpenHelp(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+      ((PeerCastAppViewModel)this.DataContext).OpenHelp();
+    }
+
+    private void OnQuit(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+      ((PeerCastAppViewModel)this.DataContext).Quit();
+    }
+
+    private void OnAbout(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+      var dialog = new VersionInfoWindow {
+        Owner = this,
+        DataContext = ((PeerCastAppViewModel)DataContext).VersionInfo
+      };
+      dialog.ShowDialog();
+    }
+
+    private LogWindow logWindow;
+    private void OnShowLogs(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+      if (logWindow==null) {
+        logWindow = new LogWindow { DataContext=((PeerCastAppViewModel)this.DataContext).Log };
+      }
+      logWindow.Show();
+    }
+
+    private void OnOpenSettings(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+      SettingsDialog.ShowDialog(this, ((PeerCastAppViewModel)this.DataContext).Model);
     }
 
     protected override void OnActivated(EventArgs e)
@@ -107,16 +159,6 @@ namespace PeerCastStation.WPF
       }
       PeerCastStation.Core.PeerCastApplication.Current.SaveSettings();
       base.OnRenderSizeChanged(sizeInfo);
-    }
-
-    private void VersionInfoButton_Click(object sender, RoutedEventArgs e)
-    {
-      var dialog = new VersionInfoWindow
-      {
-        Owner = Window.GetWindow(this),
-        DataContext = ((MainViewModel)DataContext).VersionInfo
-      };
-      dialog.ShowDialog();
     }
 
     private IntPtr OnWindowMessage(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)

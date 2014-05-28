@@ -40,7 +40,7 @@ namespace PeerCastStation.WPF
 
     Logger logger = new Logger(typeof(UserInterface));
     MainWindow mainWindow;
-    MainViewModel viewModel;
+    PeerCastAppViewModel appViewModel;
     Thread notifyIconThread;
     NotifyIconManager notifyIconManager;
     Thread mainThread;
@@ -48,22 +48,10 @@ namespace PeerCastStation.WPF
     private Timer versionCheckTimer;
     override protected void OnStart()
     {
+      appViewModel = new PeerCastAppViewModel(Application);
       versionChecker = new PeerCastStation.UI.Updater();
       notifyIconThread = new Thread(() => {
-        notifyIconManager = new NotifyIconManager(Application.PeerCast);
-        notifyIconManager.CheckVersionClicked += (sender, e) => versionChecker.CheckVersion();
-        notifyIconManager.QuitClicked         += (sender, e) => Application.Stop();
-        notifyIconManager.ShowWindowClicked   += (sender, e) => {
-          if (mainWindow!=null) {
-            mainWindow.Dispatcher.Invoke(new Action(() => {
-              mainWindow.Show();
-              if (mainWindow.WindowState==WindowState.Minimized) {
-                mainWindow.WindowState = WindowState.Normal;
-              }
-              mainWindow.Activate();
-            }));
-          }
-        };
+        notifyIconManager = new NotifyIconManager(appViewModel, this);
         versionChecker.NewVersionFound += (sender, e) => {
           notifyIconManager.NotifyNewVersions(e.VersionDescriptions);
         };
@@ -75,16 +63,32 @@ namespace PeerCastStation.WPF
 
       mainThread = new Thread(() => {
         var app = new Application();
-        viewModel = new MainViewModel(Application);
         var settings = Application.Settings.Get<WPFSettings>();
-        mainWindow = new MainWindow(viewModel);
+        mainWindow = new MainWindow(appViewModel);
         if (settings.ShowWindowOnStartup) mainWindow.Show();
         app.Run();
-        viewModel.Dispose();
       });
       mainThread.Name = "WPF UI Thread";
       mainThread.SetApartmentState(ApartmentState.STA);
       mainThread.Start();
+    }
+
+    public void ShowWindow()
+    {
+      if (mainWindow!=null) {
+        mainWindow.Dispatcher.Invoke(new Action(() => {
+          mainWindow.Show();
+          if (mainWindow.WindowState==WindowState.Minimized) {
+            mainWindow.WindowState = WindowState.Normal;
+          }
+          mainWindow.Activate();
+        }));
+      }
+    }
+
+    public void CheckVersion()
+    {
+      versionChecker.CheckVersion();
     }
 
     private void OnVersionCheckTimer(object state)
@@ -105,6 +109,7 @@ namespace PeerCastStation.WPF
       notifyIconManager.Dispose();
       mainThread.Join();
       notifyIconThread.Join();
+      appViewModel.Dispose();
     }
 
     public void ShowNotificationMessage(NotificationMessage msg)

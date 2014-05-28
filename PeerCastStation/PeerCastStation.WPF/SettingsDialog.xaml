@@ -1,0 +1,24 @@
+﻿<Window x:Class="PeerCastStation.WPF.SettingsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:settings="clr-namespace:PeerCastStation.WPF.CoreSettings"
+        Title="設定"
+        ShowInTaskbar="False"
+        Width="640"
+        Height="480"
+        ResizeMode="CanResizeWithGrip"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+  <Grid Margin="4">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <settings:SettingControl Grid.Row="0"/>
+    <UniformGrid Grid.Row="1" HorizontalAlignment="Right" Rows="1" Columns="3">
+      <Button Margin="4" Padding="4" Content="OK" Click="OKButton_Click"/>
+      <Button Margin="4" Padding="4" Content="キャンセル" Click="CancelButton_Click"/>
+      <Button Margin="4" Padding="4" Content="適用" IsEnabled="{Binding IsModified}" Click="ApplyButton_Click"/>
+    </UniformGrid>
+  </Grid>
+</Window>
