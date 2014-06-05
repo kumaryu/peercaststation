@@ -251,7 +251,7 @@ namespace PeerCastStation.PCP
         lock (announcingChannels) {
           if (announcingChannels.Remove(achan)) {
             achan.IsStopped = true;
-            PostChannelBcst(achan.Channel, false);
+            UpdateChannelInfo(achan.Channel, false);
           }
         }
       }
@@ -262,7 +262,7 @@ namespace PeerCastStation.PCP
       lock (announcingChannels) {
         foreach (var announcing in announcingChannels) {
           announcing.IsStopped = true;
-          PostChannelBcst(announcing.Channel, false);
+          UpdateChannelInfo(announcing.Channel, false);
         }
         announcingChannels.Clear();
       }
@@ -335,7 +335,16 @@ namespace PeerCastStation.PCP
         }
       }
     }
-    private List<Atom> posts = new List<Atom>();
+    private class UpdatedChannel {
+      public Channel Channel { get; private set; }
+      public bool    Playing { get; private set; }
+      public UpdatedChannel(Channel channel, bool playing)
+      {
+        this.Channel = channel;
+        this.Playing = playing;
+      }
+    }
+    private List<UpdatedChannel> updatedChannels = new List<UpdatedChannel>();
     private AutoResetEvent restartEvent = new AutoResetEvent(false);
     private class RestartException : Exception {}
     private class QuitException : Exception {}
@@ -349,7 +358,6 @@ namespace PeerCastStation.PCP
       if (port<0) port = PCPVersion.DefaultPort;
       while (!IsStopped) {
         int next_update = Environment.TickCount;
-        posts.Clear();
         try {
           Logger.Debug("Connecting to YP");
           AnnouncingStatus = AnnouncingStatus.Connecting;
@@ -404,7 +412,7 @@ namespace PeerCastStation.PCP
                   Logger.Debug("Sending channel info");
                   lock (announcingChannels) {
                     foreach (var announcing in announcingChannels) {
-                      PostChannelBcst(announcing.Channel, true);
+                      UpdateChannelInfo(announcing.Channel, true);
                     }
                   }
                   next_update = Environment.TickCount+30000;
@@ -413,19 +421,19 @@ namespace PeerCastStation.PCP
                   Atom atom = AtomReader.Read(stream);
                   ProcessAtom(atom);
                 }
-                lock (posts) {
-                  foreach (var atom in posts) {
-                    AtomWriter.Write(stream, atom);
+                lock (updatedChannels) {
+                  foreach (var updated in updatedChannels) {
+                    AtomWriter.Write(stream, CreateChannelBcst(updated.Channel, updated.Playing));
                   }
-                  posts.Clear();
+                  updatedChannels.Clear();
                 }
                 if (restartEvent.WaitOne(10)) throw new RestartException();
               }
-              lock (posts) {
-                foreach (var atom in posts) {
-                  AtomWriter.Write(stream, atom);
+              lock (updatedChannels) {
+                foreach (var updated in updatedChannels) {
+                  AtomWriter.Write(stream, CreateChannelBcst(updated.Channel, updated.Playing));
                 }
-                posts.Clear();
+                updatedChannels.Clear();
               }
               Logger.Debug("Closing connection");
               AtomWriter.Write(stream, new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT));
@@ -526,8 +534,8 @@ namespace PeerCastStation.PCP
       var playable  = PeerCast.AccessController.IsChannelPlayable(channel) && PeerCast.FindListener(remoteEndPoint.Address, OutputStreamType.Play)!=null;
       var firewalled = !PeerCast.IsFirewalled.HasValue || PeerCast.IsFirewalled.Value || PeerCast.FindListener(remoteEndPoint.Address, OutputStreamType.Relay)==null;
       hostinfo.SetHostFlags1(
-        (relayable ? PCPHostFlags1.Relay : 0) |
-        (playable ? PCPHostFlags1.Direct : 0) |
+        (relayable  ? PCPHostFlags1.Relay      : 0) |
+        (playable   ? PCPHostFlags1.Direct     : 0) |
         (firewalled ? PCPHostFlags1.Firewalled : 0) |
         PCPHostFlags1.Tracker |
         (playing ? PCPHostFlags1.Receiving : PCPHostFlags1.None));
@@ -544,7 +552,7 @@ namespace PeerCastStation.PCP
       parent.SetChan(atom);
     }
 
-    private void PostChannelBcst(Channel channel, bool playing)
+    private Atom CreateChannelBcst(Channel channel, bool playing)
     {
       var bcst = new AtomCollection();
       bcst.SetBcstTTL(1);
@@ -555,14 +563,21 @@ namespace PeerCastStation.PCP
       bcst.SetBcstGroup(BroadcastGroup.Root);
       PostChannelInfo(bcst, channel);
       PostHostInfo(bcst, channel, playing);
-      lock (posts) posts.Add(new Atom(Atom.PCP_BCST, bcst));
+      return new Atom(Atom.PCP_BCST, bcst);
+    }
+
+    private void UpdateChannelInfo(Channel channel, bool playing)
+    {
+      lock (updatedChannels) {
+        updatedChannels.Add(new UpdatedChannel(channel, playing));
+      }
     }
 
     private void OnChannelPropertyChanged(object sender, EventArgs e)
     {
       var channel = sender as Channel;
       if (channel!=null) {
-        PostChannelBcst(channel, true);
+        UpdateChannelInfo(channel, true);
       }
     }
 
@@ -579,7 +594,7 @@ namespace PeerCastStation.PCP
           announcing.IsStopped = true;
           announcingChannels.Remove(announcing);
         }
-        PostChannelBcst(channel, false);
+        UpdateChannelInfo(channel, false);
       }
     }
 
