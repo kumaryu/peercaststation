@@ -260,7 +260,7 @@ namespace PeerCastStation.WPF.CoreSettings
     {
       private string name;
       private Uri    uri;
-      private string protocol;
+      private IYellowPageClientFactory protocol;
 
       public string Name {
         get { return name; }
@@ -271,16 +271,33 @@ namespace PeerCastStation.WPF.CoreSettings
         }
       }
 
-      public Uri Uri {
-        get { return uri; }
+      public string Uri {
+        get { return uri==null ? null : uri.ToString(); }
         set {
-          if (uri==value || (uri!=null && uri.Equals(value))) return;
-          uri = value;
-          OnPropertyChanged("Uri");
+          if (String.IsNullOrEmpty(value)) return;
+          if (protocol==null) new ArgumentException("プロトコルが選択されていません");
+          Uri newvalue;
+          if (System.Uri.TryCreate(value, UriKind.Absolute, out newvalue) && newvalue.Scheme=="pcp") {
+            if (uri==newvalue || (uri!=null && uri.Equals(newvalue))) return;
+            uri = newvalue;
+            OnPropertyChanged("Uri");
+          }
+          if (System.Uri.TryCreate(value, UriKind.Absolute, out newvalue) &&
+              (newvalue.Scheme=="http" || newvalue.Scheme=="file")) {
+            throw new ArgumentException("指定したプロトコルでは使用できないURLです");
+          }
+          else if (System.Uri.TryCreate("pcp://"+value, UriKind.Absolute, out newvalue)) {
+            if (uri==newvalue || (uri!=null && uri.Equals(newvalue))) return;
+            uri = newvalue;
+            OnPropertyChanged("Uri");
+          }
+          else {
+            throw new ArgumentException("正しいURLが指定されていません");
+          }
         }
       }
 
-      public string Protocol {
+      public IYellowPageClientFactory Protocol {
         get { return protocol; }
         set {
           if (protocol==value) return;
@@ -301,16 +318,13 @@ namespace PeerCastStation.WPF.CoreSettings
         this.owner = owner;
         this.name     = model.Name;
         this.uri      = model.Uri;
-        this.protocol = model.Protocol;
+        this.protocol = owner.peerCast.YellowPageFactories.FirstOrDefault(factory => factory.Protocol==model.Protocol);
       }
 
       internal YellowPageClientViewModel(SettingViewModel owner)
       {
         this.owner = owner;
-        var yp_protocol = owner.peerCast.YellowPageFactories.FirstOrDefault();
-        if (yp_protocol!=null) {
-          protocol = yp_protocol.Protocol;
-        }
+        this.protocol = owner.peerCast.YellowPageFactories.FirstOrDefault();
       }
 
       public event PropertyChangedEventHandler PropertyChanged;
@@ -671,7 +685,8 @@ namespace PeerCastStation.WPF.CoreSettings
           peerCast.RemoveYellowPage(yp);
         }
         foreach (var yp in yellowPages) {
-          peerCast.AddYellowPage(yp.Protocol, yp.Name, yp.Uri);
+          if (String.IsNullOrEmpty(yp.Name) || yp.Uri==null) continue;
+          peerCast.AddYellowPage(yp.Protocol.Protocol, yp.Name, new Uri(yp.Uri, UriKind.Absolute));
         }
         isYellowPagesModified = false;
       }

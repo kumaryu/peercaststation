@@ -25,6 +25,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
   <Grid>
     <Grid.Resources>
       <BooleanToVisibilityConverter x:Key="visibilityConverter"/>
+      <Style TargetType="TextBox">
+        <Style.Triggers>
+          <Trigger Property="Validation.HasError" Value="true">
+            <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource Self}, Path=(Validation.Errors)[0].ErrorContent}"/>
+          </Trigger>
+        </Style.Triggers>
+      </Style>
       <Style TargetType="Button">
         <Setter Property="Margin" Value="2"/>
         <Setter Property="Padding" Value="8,2,8,2"/>
@@ -251,8 +258,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                     <ColumnDefinition Width="Auto" SharedSizeGroup="Uri"/>
                   </Grid.ColumnDefinitions>
                   <TextBox  Grid.Column="1" Text="{Binding Name}"/>
-                  <ComboBox Grid.Column="2" SelectedValue="{Binding Protocol}" ItemsSource="{Binding Protocols}" DisplayMemberPath="Name" SelectedValuePath="Protocol"/>
-                  <TextBox  Grid.Column="3" Text="{Binding Uri}" InputScope="Url"/>
+                  <ComboBox Grid.Column="2" SelectedItem="{Binding Protocol}" ItemsSource="{Binding Protocols}" DisplayMemberPath="Name"/>
+                  <TextBox  Grid.Column="3" Text="{Binding Path=Uri,ValidatesOnExceptions=True}" InputScope="Url"/>
                 </Grid>
               </DataTemplate>
             </ListBox.ItemTemplate>
