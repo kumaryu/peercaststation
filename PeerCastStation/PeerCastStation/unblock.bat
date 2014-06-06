@@ -10,7 +10,6 @@ echo. > PeerCastStation.MKV.dll:Zone.Identifier
 echo. > PeerCastStation.PCP.dll:Zone.Identifier
 echo. > PeerCastStation.UI.HTTP.dll:Zone.Identifier
 echo. > PeerCastStation.WPF.dll:Zone.Identifier
-echo. > WPFToolkit.dll:Zone.Identifier
-echo. > Xceed.Wpf.Toolkit.dll:Zone.Identifier
+echo. > PeerCastStation.UI.dll:Zone.Identifier
 pause
 
