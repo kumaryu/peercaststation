@@ -30,7 +30,7 @@ namespace PeerCastStation.WPF.ChannelLists
       InitializeComponent();
       CommandBindings.Add(new CommandBinding(PeerCastCommands.Play, OnPlayExecuted, CanExecuteChannelCommand));
       CommandBindings.Add(new CommandBinding(PeerCastCommands.Disconnect, OnDisconnectExecuted, CanExecuteChannelCommand));
-      CommandBindings.Add(new CommandBinding(PeerCastCommands.Reconnect, OnDisconnectExecuted, CanExecuteChannelCommand));
+      CommandBindings.Add(new CommandBinding(PeerCastCommands.Reconnect, OnReconnectExecuted, CanExecuteChannelCommand));
       CommandBindings.Add(new CommandBinding(PeerCastCommands.OpenContactUrl, OnOpenContactUrlExecuted, CanExecuteChannelCommand));
       CommandBindings.Add(new CommandBinding(PeerCastCommands.CopyContactUrl, OnCopyContactUrlExecuted, CanExecuteChannelCommand));
       CommandBindings.Add(new CommandBinding(PeerCastCommands.CopyStreamUrl, OnCopyStreamUrlExecuted, CanExecuteChannelCommand));
