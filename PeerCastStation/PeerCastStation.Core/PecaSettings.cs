@@ -415,9 +415,16 @@ namespace PeerCastStation.Core
     private object DeserializeUri(XmlReader reader)
     {
       reader.ReadStartElement("uri");
-      var value = new Uri(reader.ReadContentAsString());
-      reader.ReadEndElement();
-      return value;
+      try {
+        var value = new Uri(reader.ReadContentAsString());
+        return value;
+      }
+      catch (UriFormatException) {
+        return null;
+      }
+      finally {
+        reader.ReadEndElement();
+      }
     }
 
     private object DeserializeString(XmlReader reader)
