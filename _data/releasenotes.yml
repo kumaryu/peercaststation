@@ -1,4 +1,20 @@
 ---
+- name: Version 1.7.10.1 (2014年6月7日開発版)
+  version: 1.7.10.1
+  channel: dev
+  notes: |
+    1.7.10のバグを修正しました
+
+    * .NET4.5以外でGUIの設定ダイアログを表示すると落ちていたのを修正しました
+    * 配信時にYPへの接続がされていない状態でチャンネル情報が変更されると落ちていたのを修正しました
+    * GUIの設定ダイアログでYPへの掲載用URLのチェックが甘く不正なURLを設定できていたのを修正しました
+    * GUIの再接続ボタンが切断になっていたのを修正しました
+    * 無用になったdllが入っていたのを入らないようにしました
+    * unblock.batで必要なdll全てのブロックが解除できていなかったのを修正しました
+  date: Sat, 7 Jun 2014 3:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.7.10.1.zip
+  length: 1799033
+
 - name: Version 1.7.10 (2014年5月31日開発版)
   version: 1.7.10
   channel: dev
