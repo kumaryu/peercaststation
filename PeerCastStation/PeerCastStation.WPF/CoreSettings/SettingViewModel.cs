@@ -270,7 +270,13 @@ namespace PeerCastStation.WPF.CoreSettings
       private void OnPropertyChanged(string name)
       {
         if (PropertyChanged!=null) PropertyChanged(this, new PropertyChangedEventArgs(name));
-        owner.IsListenersModified = true;
+        switch (name) {
+        case "IsOpen":
+          break;
+        default:
+          owner.IsListenersModified = true;
+          break;
+        }
       }
       public event PropertyChangedEventHandler PropertyChanged;
     }
@@ -702,6 +708,7 @@ namespace PeerCastStation.WPF.CoreSettings
       case "IsModified":
       case "IsListenersModified":
       case "IsYellowPagesModified":
+      case "PortCheckStatus":
         break;
       default:
         IsModified = true;
