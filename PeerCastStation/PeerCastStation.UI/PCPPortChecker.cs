@@ -91,28 +91,26 @@ namespace PeerCastStation.UI
       data["ports"] = new JArray(Ports);
       var succeeded = false;
       var stopwatch = new System.Diagnostics.Stopwatch();
-      string response_body = null;
+      int[] response_ports = null;
       try {
         stopwatch.Start();
         var body = System.Text.Encoding.UTF8.GetBytes(data.ToString());
-        response_body = System.Text.Encoding.UTF8.GetString(client.UploadData(Target, body));
+        var response_body = System.Text.Encoding.UTF8.GetString(client.UploadData(Target, body));
+        var response = JToken.Parse(response_body);
+        response_ports = response["ports"].Select(token => (int)token).ToArray();
         stopwatch.Stop();
         succeeded = true;
       }
       catch (WebException) {
         succeeded = false;
       }
-      var response = JToken.Parse(response_body);
-      var response_ports = response["ports"].Select(token => (int)token);
       if (PortCheckCompleted!=null) {
-        ctx.Post(s => {
-          PortCheckCompleted(
-            this,
-            new PortCheckCompletedEventArgs(
-              succeeded,
-              response_ports.ToArray(),
-              stopwatch.Elapsed));
-        }, null);
+        PortCheckCompleted(
+          this,
+          new PortCheckCompletedEventArgs(
+            succeeded,
+            response_ports,
+            stopwatch.Elapsed));
       }
     }
 
