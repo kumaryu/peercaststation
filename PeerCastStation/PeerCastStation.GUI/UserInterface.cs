@@ -6,7 +6,7 @@ using PeerCastStation.Core;
 
 namespace PeerCastStation.GUI
 {
-  [Plugin]
+  [Plugin(PluginType.GUI)]
   public class UserInterface
     : PluginBase,
       IUserInterfacePlugin

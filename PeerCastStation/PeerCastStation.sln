@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30110.0
+VisualStudioVersion = 12.0.30501.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Core", "PeerCastStation.Core\PeerCastStation.Core.csproj", "{387996F5-E31D-4D92-BD86-8983C599F748}"
 EndProject
@@ -65,6 +65,17 @@ Project("{6141683F-8A12-4E36-9623-2EB02B2C2303}") = "PeerCastStationSetup", "Pee
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.UI", "PeerCastStation.UI\PeerCastStation.UI.csproj", "{5988FBAF-37C4-4997-8389-55F2EBBB9511}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PecaStationd", "PecaStationd\PecaStationd.csproj", "{6BB358E2-A9EB-453C-AABA-5080DDDB3B86}"
+	ProjectSection(ProjectDependencies) = postProject
+		{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D} = {DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}
+		{BF5E0B6D-961A-4216-BACF-01D80AB3D6BB} = {BF5E0B6D-961A-4216-BACF-01D80AB3D6BB}
+		{5988FBAF-37C4-4997-8389-55F2EBBB9511} = {5988FBAF-37C4-4997-8389-55F2EBBB9511}
+		{F9D126C6-76B7-45E2-B62E-6AC35EE285CD} = {F9D126C6-76B7-45E2-B62E-6AC35EE285CD}
+		{DB3BBED9-6F4B-456C-910D-E1801C94A110} = {DB3BBED9-6F4B-456C-910D-E1801C94A110}
+		{C8F8BAEC-67BC-41F3-A1A4-56308CD2CAB7} = {C8F8BAEC-67BC-41F3-A1A4-56308CD2CAB7}
+		{895D4DF8-A8B2-43A0-85E4-ED74152E73B2} = {895D4DF8-A8B2-43A0-85E4-ED74152E73B2}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -133,6 +144,10 @@ Global
 		{5988FBAF-37C4-4997-8389-55F2EBBB9511}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5988FBAF-37C4-4997-8389-55F2EBBB9511}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5988FBAF-37C4-4997-8389-55F2EBBB9511}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BB358E2-A9EB-453C-AABA-5080DDDB3B86}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BB358E2-A9EB-453C-AABA-5080DDDB3B86}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BB358E2-A9EB-453C-AABA-5080DDDB3B86}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BB358E2-A9EB-453C-AABA-5080DDDB3B86}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
