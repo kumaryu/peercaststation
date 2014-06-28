@@ -165,6 +165,9 @@ PeerCast = {
   checkBandwidth: function(completed) {
     this.postRequest('checkBandwidth', null, completed);
   },
+  checkPorts: function(completed) {
+    this.postRequest('checkPorts', null, completed);
+  },
 
   checkUpdate: function(completed) {
     this.postRequest('checkUpdate', null, completed);

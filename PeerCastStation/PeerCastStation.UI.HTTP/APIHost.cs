@@ -57,6 +57,8 @@ namespace PeerCastStation.UI.HTTP
       }
     }
 
+    public int[] OpenedPorts { get; set; }
+
     public void CheckVersion()
     {
       updater.CheckVersion();
@@ -726,6 +728,13 @@ namespace PeerCastStation.UI.HTTP
         res["globalAuthorizationRequired"] = listener.GlobalAuthorizationRequired;
         res["authenticationId"]       = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Id : null;
         res["authenticationPassword"] = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Password : null;
+        if ((listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 && owner.OpenedPorts!=null) {
+          res["isOpened"] = (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 &&
+                            owner.OpenedPorts.Contains(listener.LocalEndPoint.Port);
+        }
+        else {
+          res["isOpened"] = null;
+        }
         return res;
       }
 
@@ -964,6 +973,32 @@ namespace PeerCastStation.UI.HTTP
           checker.Run();
         }
         return result;
+      }
+
+      [RPCMethod("checkPorts")]
+      public JArray CheckPorts()
+      {
+        int[] result = null;
+        Uri target_uri;
+        if (AppSettingsReader.TryGetUri("PCPPortChecker", out target_uri)) {
+          var ports = PeerCast.OutputListeners
+            .Where( listener => (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0)
+            .Select(listener => listener.LocalEndPoint.Port);
+          var checker = new PeerCastStation.UI.PCPPortChecker(PeerCast.SessionID, target_uri, ports);
+          checker.PortCheckCompleted += (sender, args) => {
+            if (args.Success) {
+              owner.OpenedPorts = args.Ports;
+              result = args.Ports;
+            }
+          };
+          checker.Run();
+        }
+        if (result!=null) {
+          return new JArray(result);
+        }
+        else {
+          return null;
+        }
       }
 
       [RPCMethod("checkUpdate")]
