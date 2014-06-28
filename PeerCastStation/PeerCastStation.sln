@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30110.0
+VisualStudioVersion = 12.0.30501.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Core", "PeerCastStation.Core\PeerCastStation.Core.csproj", "{387996F5-E31D-4D92-BD86-8983C599F748}"
 EndProject
@@ -50,13 +50,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.FLV", "Peer
 EndProject
 Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestFLV", "TestFLV\TestFLV.rbproj", "{A21A8B81-F2C8-4303-962E-FD2B8D528B75}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{162E7CEC-2668-4D57-9DBF-D17A1D4E0E47}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.Config = .nuget\NuGet.Config
-		.nuget\NuGet.exe = .nuget\NuGet.exe
-		.nuget\NuGet.targets = .nuget\NuGet.targets
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.WPF", "PeerCastStation.WPF\PeerCastStation.WPF.csproj", "{5EA68141-AC06-428B-9526-A6835E0CC2B2}"
 EndProject
 Project("{6141683F-8A12-4E36-9623-2EB02B2C2303}") = "PeerCastStationSetup", "PeerCastStationSetup\PeerCastStationSetup.isproj", "{AE7F292B-5A30-4944-81B9-BBB4EB2FF6B5}"
@@ -65,6 +58,13 @@ Project("{6141683F-8A12-4E36-9623-2EB02B2C2303}") = "PeerCastStationSetup", "Pee
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.UI", "PeerCastStation.UI\PeerCastStation.UI.csproj", "{5988FBAF-37C4-4997-8389-55F2EBBB9511}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{B99C2D12-C3D0-4644-978F-22515BF3AEFD}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
