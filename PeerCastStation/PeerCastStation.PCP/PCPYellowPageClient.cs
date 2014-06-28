@@ -533,12 +533,13 @@ namespace PeerCastStation.PCP
       var relayable = PeerCast.AccessController.IsChannelRelayable(channel);
       var playable  = PeerCast.AccessController.IsChannelPlayable(channel) && PeerCast.FindListener(remoteEndPoint.Address, OutputStreamType.Play)!=null;
       var firewalled = !PeerCast.IsFirewalled.HasValue || PeerCast.IsFirewalled.Value || PeerCast.FindListener(remoteEndPoint.Address, OutputStreamType.Relay)==null;
+      var receiving = playing && channel.Status==SourceStreamStatus.Receiving;
       hostinfo.SetHostFlags1(
         (relayable  ? PCPHostFlags1.Relay      : 0) |
         (playable   ? PCPHostFlags1.Direct     : 0) |
         (firewalled ? PCPHostFlags1.Firewalled : 0) |
         PCPHostFlags1.Tracker |
-        (playing ? PCPHostFlags1.Receiving : PCPHostFlags1.None));
+        (receiving ? PCPHostFlags1.Receiving : PCPHostFlags1.None));
       parent.SetHost(hostinfo);
     }
 
