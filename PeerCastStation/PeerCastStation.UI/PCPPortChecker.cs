@@ -78,6 +78,19 @@ namespace PeerCastStation.UI
             }, null);
           }
         }
+        catch (Newtonsoft.Json.JsonReaderException) {
+          succeeded = false;
+          if (PortCheckCompleted!=null) {
+            ctx.Post(s => {
+              PortCheckCompleted(
+                this,
+                new PortCheckCompletedEventArgs(
+                  succeeded,
+                  null,
+                  stopwatch.Elapsed));
+            }, null);
+          }
+        }
 
       });
     }
