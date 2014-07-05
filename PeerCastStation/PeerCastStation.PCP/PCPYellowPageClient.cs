@@ -18,12 +18,13 @@ namespace PeerCastStation.PCP
 
     public IYellowPageClient Create(string name, Uri uri)
     {
+      if (!CheckURI(uri)) throw new ArgumentException("The uri is not suitable", "uri");
       return new PCPYellowPageClient(PeerCast, name, uri);
     }
 
     public bool CheckURI(Uri uri)
     {
-      return uri.Scheme=="pcp";
+      return PCPYellowPageClient.IsValidUri(uri);
     }
 
     public PCPYellowPageClientFactory(PeerCast peercast)
@@ -46,6 +47,10 @@ namespace PeerCastStation.PCP
           return announcingChannels.Cast<IAnnouncingChannel>().ToList();
         }
       }
+    }
+    public static bool IsValidUri(Uri uri)
+    {
+      return uri!=null && uri.IsAbsoluteUri && uri.Scheme=="pcp";
     }
 
     private class AnnouncingChannel
@@ -160,6 +165,7 @@ namespace PeerCastStation.PCP
 
     public Uri FindTracker(Guid channel_id)
     {
+      if (!IsValidUri(Uri)) return null;
       Logger.Debug("Finding tracker {0} from {1}", channel_id.ToString("N"), Uri);
       var host = Uri.DnsSafeHost;
       var port = Uri.Port;
@@ -221,6 +227,7 @@ namespace PeerCastStation.PCP
     private Thread announceThread;
     public IAnnouncingChannel Announce(Channel channel)
     {
+      if (!IsValidUri(Uri)) return null;
       AnnouncingChannel announcing = null;
       lock (announcingChannels) {
         announcing = announcingChannels.FirstOrDefault(a => a.Channel==channel);
