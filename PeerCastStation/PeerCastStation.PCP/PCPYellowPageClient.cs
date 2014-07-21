@@ -18,12 +18,13 @@ namespace PeerCastStation.PCP
 
     public IYellowPageClient Create(string name, Uri uri)
     {
+      if (!CheckURI(uri)) throw new ArgumentException("The uri is not suitable", "uri");
       return new PCPYellowPageClient(PeerCast, name, uri);
     }
 
     public bool CheckURI(Uri uri)
     {
-      return uri.Scheme=="pcp";
+      return PCPYellowPageClient.IsValidUri(uri);
     }
 
     public PCPYellowPageClientFactory(PeerCast peercast)
@@ -46,6 +47,10 @@ namespace PeerCastStation.PCP
           return announcingChannels.Cast<IAnnouncingChannel>().ToList();
         }
       }
+    }
+    public static bool IsValidUri(Uri uri)
+    {
+      return uri!=null && uri.IsAbsoluteUri && uri.Scheme=="pcp";
     }
 
     private class AnnouncingChannel
@@ -160,6 +165,7 @@ namespace PeerCastStation.PCP
 
     public Uri FindTracker(Guid channel_id)
     {
+      if (!IsValidUri(Uri)) return null;
       Logger.Debug("Finding tracker {0} from {1}", channel_id.ToString("N"), Uri);
       var host = Uri.DnsSafeHost;
       var port = Uri.Port;
@@ -221,6 +227,7 @@ namespace PeerCastStation.PCP
     private Thread announceThread;
     public IAnnouncingChannel Announce(Channel channel)
     {
+      if (!IsValidUri(Uri)) return null;
       AnnouncingChannel announcing = null;
       lock (announcingChannels) {
         announcing = announcingChannels.FirstOrDefault(a => a.Channel==channel);
@@ -533,12 +540,13 @@ namespace PeerCastStation.PCP
       var relayable = PeerCast.AccessController.IsChannelRelayable(channel);
       var playable  = PeerCast.AccessController.IsChannelPlayable(channel) && PeerCast.FindListener(remoteEndPoint.Address, OutputStreamType.Play)!=null;
       var firewalled = !PeerCast.IsFirewalled.HasValue || PeerCast.IsFirewalled.Value || PeerCast.FindListener(remoteEndPoint.Address, OutputStreamType.Relay)==null;
+      var receiving = playing && channel.Status==SourceStreamStatus.Receiving;
       hostinfo.SetHostFlags1(
         (relayable  ? PCPHostFlags1.Relay      : 0) |
         (playable   ? PCPHostFlags1.Direct     : 0) |
         (firewalled ? PCPHostFlags1.Firewalled : 0) |
         PCPHostFlags1.Tracker |
-        (playing ? PCPHostFlags1.Receiving : PCPHostFlags1.None));
+        (receiving ? PCPHostFlags1.Receiving : PCPHostFlags1.None));
       parent.SetHost(hostinfo);
     }
 
