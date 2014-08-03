@@ -23,7 +23,7 @@ PeerCastStation.exeおよび同じディレクトリにある全てのdllファ�
 {% for release in site.data.releasenotes %}{% if release.channel contains 'stable' %}
 {{ release.name }}
 ------------------
-[ダウンロード](http://www.pecastation.org/files/PeerCastStation-{{ release.version }}.zip)
+[ダウンロード]({{ release.url }})
 
 {{ release.notes }}
 
