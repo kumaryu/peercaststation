@@ -141,6 +141,7 @@
     <Content Include="help\images\gui_connectionlist.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="help\images\gui_connectionsettings.png" />
     <Content Include="help\images\gui_log.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -156,6 +157,7 @@
     <Content Include="help\images\gui_statusmenu.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="help\images\gui_uisettings.png" />
     <Content Include="help\images\htmlui_broadcast.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
