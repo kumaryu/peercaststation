@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace PeerCastStation.Core
 {
@@ -158,5 +159,14 @@ namespace PeerCastStation.Core
     : IPlugin
   {
     void ShowNotificationMessage(NotificationMessage msg);
+  }
+
+  public static class PluginCollectionExtension
+  {
+    public static T GetPlugin<T>(this IEnumerable<IPlugin> self)
+      where T : class, IPlugin
+    {
+      return self.FirstOrDefault(plugin => plugin is T) as T;
+    }
   }
 }

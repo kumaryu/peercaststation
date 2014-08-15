@@ -519,6 +519,12 @@ namespace PeerCastStation.WPF.CoreSettings
       get { return yellowPages; }
     }
 
+    private bool portMapperEnabled;
+    public bool PortMapperEnabled {
+      get { return portMapperEnabled; }
+      set { SetProperty("PortMapperEnabled", ref portMapperEnabled, value); }
+    }
+
     private YellowPageClientViewModel selectedYellowPage;
     public YellowPageClientViewModel SelectedYellowPage {
       get { return selectedYellowPage; }
@@ -630,6 +636,8 @@ namespace PeerCastStation.WPF.CoreSettings
         peerCast.YellowPages
         .Select(yp => new YellowPageClientViewModel(this, yp))
       );
+      var port_mapper = pecaApp.Plugins.GetPlugin<PeerCastStation.UI.PortMapper>();
+      if (port_mapper!=null) portMapperEnabled = port_mapper.Enabled;
     }
 
     public void AddPort()
@@ -753,6 +761,8 @@ namespace PeerCastStation.WPF.CoreSettings
         }
         isYellowPagesModified = false;
       }
+      var port_mapper = pecaApp.Plugins.GetPlugin<PeerCastStation.UI.PortMapper>();
+      if (port_mapper!=null) port_mapper.Enabled = portMapperEnabled;
       pecaApp.SaveSettings();
     }
 
