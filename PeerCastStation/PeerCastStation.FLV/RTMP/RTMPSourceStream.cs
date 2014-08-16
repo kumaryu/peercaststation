@@ -428,6 +428,7 @@ namespace PeerCastStation.FLV.RTMP
         msg = last_msg;
         if (msg.ReceivedLength>=msg.BodyLength) {
           msg = new RTMPMessageBuilder(last_msg);
+          lastMessages[chunk_stream_id] = msg;
         }
         break;
       }
