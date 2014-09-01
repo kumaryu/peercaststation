@@ -36,6 +36,47 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <Setter Property="Margin" Value="2"/>
         <Setter Property="Padding" Value="8,2,8,2"/>
       </Style>
+      <Style x:Key="PortCheckButton" TargetType="Button">
+        <Style.Triggers>
+          <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Checking}">
+            <Setter Property="IsEnabled" Value="False"/>
+          </DataTrigger>
+        </Style.Triggers>
+        <Setter Property="Margin" Value="2"/>
+        <Setter Property="Padding" Value="8,2,8,2"/>
+      </Style>
+      <Style x:Key="PortCheckStatusText" TargetType="TextBlock">
+        <Style.Triggers>
+          <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Unknown}">
+            <Setter Property="Text" Value="未確認"/>
+          </DataTrigger>
+          <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Checking}">
+            <Setter Property="Text" Value="確認しています"/>
+          </DataTrigger>
+          <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Opened}">
+            <Setter Property="Text" Value="開放されています"/>
+          </DataTrigger>
+          <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Closed}">
+            <Setter Property="Text" Value="未開放です"/>
+          </DataTrigger>
+          <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Failed}">
+            <Setter Property="Text" Value="確認失敗しました"/>
+          </DataTrigger>
+        </Style.Triggers>
+      </Style>
+      <Style x:Key="PortIsOpenText" TargetType="TextBlock">
+        <Style.Triggers>
+          <DataTrigger Binding="{Binding IsOpen}" Value="{x:Null}">
+            <Setter Property="Text" Value="未確認"/>
+          </DataTrigger>
+          <DataTrigger Binding="{Binding IsOpen}" Value="True">
+            <Setter Property="Text" Value="開放されています"/>
+          </DataTrigger>
+          <DataTrigger Binding="{Binding IsOpen}" Value="False">
+            <Setter Property="Text" Value="未開放です"/>
+          </DataTrigger>
+        </Style.Triggers>
+      </Style>
     </Grid.Resources>
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="1*"/>
@@ -55,9 +96,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
               </Grid.ColumnDefinitions>
               <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
               <Label Grid.Column="0" Grid.Row="0" Content="ポート番号:"/>
               <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="1" Increment="1" Value="{Binding PrimaryPort}"/>
+              <Label Grid.Column="0" Grid.Row="1" Content="ポート開放状態:"/>
+              <Grid Grid.Column="1" Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" VerticalAlignment="Center" Style="{StaticResource PortCheckStatusText}"/>
+                <Button Grid.Column="1"  Content="開放確認" Click="PortCheckButton_Click" Style="{StaticResource PortCheckButton}"/>
+              </Grid>
             </Grid>
           </GroupBox>
           <GroupBox Header="最大上り帯域">
@@ -125,15 +176,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                   </ComboBox>
                   <Label Grid.Row="0" Grid.Column="2" Content="ポート:"/>
                   <peca:IntegerUpDown    Grid.Row="0" Grid.Column="3" Minimum="1024" Maximum="65535" Value="{Binding Port}"/>
-                  <l:RelaySettingControl Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4"/>
+                  <l:RelaySettingControl Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4"/>
+                  <Label Grid.Column="0" Grid.Row="2" Content="ポート開放状態:"/>
+                  <TextBlock Grid.Column="1" Grid.Row="2" Grid.ColumnSpan="3" VerticalAlignment="Center" Style="{StaticResource PortIsOpenText}"/>
                 </Grid>
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
-          <StackPanel Grid.Row="1" Orientation="Horizontal">
-            <Button Content="追加" Command="{Binding AddPortCommand}"/>
-            <Button Content="削除" Command="{Binding RemovePortCommand}"/>
-          </StackPanel>
+          <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button    Grid.Column="0" Content="追加" Command="{Binding AddPortCommand}"/>
+            <Button    Grid.Column="1" Content="削除" Command="{Binding RemovePortCommand}"/>
+            <TextBlock Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Style="{StaticResource PortCheckStatusText}"/>
+            <Button    Grid.Column="3" Content="開放確認" Click="PortCheckButton_Click" Style="{StaticResource PortCheckButton}"/>
+          </Grid>
         </Grid>
       </TabItem>
       <TabItem Header="接続設定" Visibility="{Binding ElementName=advancedSettings, Path=IsChecked, Converter={StaticResource visibilityConverter}}">

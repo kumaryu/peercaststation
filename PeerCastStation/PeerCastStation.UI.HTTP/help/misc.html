@@ -48,9 +48,9 @@
           <ul class="nav nav-tabs nav-stacked">
             <li><a href='#section'>その他</a></li>
 <li><a href='#section-1'>設定の保存先</a></li>
-<li><a href='#section-2'>ログ</a></li>
-<li><a href='#section-3'>ソース・ライセンス</a></li>
-<li><a href='#section-4'>問題の報告・要望の連絡先について</a></li>
+<li><a href='#section-2'>落ちた時は</a></li>
+<li><a href='#section-3'>問題の報告・要望の連絡先について</a></li>
+<li><a href='#section-4'>ソース・ライセンス</a></li>
 <li><a href='#section-5'>開発に参加したい場合</a></li>
           </ul>
         </div>
@@ -83,60 +83,28 @@
 
 <p>設定ファイルを削除すると当然次回起動時には各種設定が初期値に戻っています。上り帯域などを適切に設定しなおすようにしてください。</p>
 
-<h2 id="section-2">ログ</h2>
-<p>GUIのログタブおよびHTML UIのログページではPeerCastStationが出力したログを見ることができます。
-基本的にはデバッグ用です。</p>
+<h2 id="section-2">落ちた時は</h2>
+<p>PeerCastStationも所詮人の手によって作られしものなのでたまに落ちます。そんな時は再度起動してください。</p>
 
-<p><img src="images/gui_log.png" alt="ログ表示" /></p>
+<p>落ちると上記の設定ファイルと同じ場所にexceptions.logというファイルが出来ています。
+Issueへ問題の報告(下記参照)をする時にはexceptions.logの内容を貼ってもらえると早く解決できる可能性が高まります。</p>
 
-<p>ログ出力レベルはどのくらい詳しいメッセージを出力するかを選択します。</p>
-
-<table class="table">
-  <tbody>
-    <tr>
-      <td>なし</td>
-      <td>ログを一切出力しません。</td>
-    </tr>
-    <tr>
-      <td>エラー</td>
-      <td>大きなエラーのみを出力します。</td>
-    </tr>
-    <tr>
-      <td>エラーと警告</td>
-      <td>エラーに加えて警告レベルのメッセージも出力します。</td>
-    </tr>
-    <tr>
-      <td>通知メッセージも含む</td>
-      <td>エラー・警告に加えてデバッグに役立つ情報メッセージも出力します。</td>
-    </tr>
-    <tr>
-      <td>デバッグメッセージも含む</td>
-      <td>上記全てに加えてデバッグ用のメッセージを出力します。沢山出ます。</td>
-    </tr>
-  </tbody>
-</table>
-
-<p>GUIに出力のチェックを入れると下のメッセージボックスにログが出力されます。</p>
-
-<p>コンソールに出力のチェックを入れるとコンソールにログが出力されます。外しても出力されそうな気がする上にWindowsでは出ないような気がするんだけど、意味あるのかこれ？</p>
-
-<p>ファイルに出力のチェックを入れると右で指定したファイルにログをひたすら追記します。サイズを気にせず追記しつづけるのでファイルサイズ・容量には気をつけてください。</p>
-
-<h2 id="section-3">ソース・ライセンス</h2>
-<p><a href="https://github.com/kumaryu/peercaststation">githubにてソース公開しています。</a></p>
-
-<p>ライセンスはGPLv3です。
-使用しているライブラリ等のライセンスに関しては同梱のLICENSE.txtを見てください。</p>
-
-<h2 id="section-4">問題の報告・要望の連絡先について</h2>
+<h2 id="section-3">問題の報告・要望の連絡先について</h2>
 <p><a href="https://github.com/kumaryu/peercaststation">githubのIssueに報告してください。</a></p>
 
 <p>報告するにもgithubのアカウントが必要ですがそのくらい取りましょう。
 連絡が取れないと困るので匿名での報告経路は用意していません。</p>
 
+<h2 id="section-4">ソース・ライセンス</h2>
+<p><a href="https://github.com/kumaryu/peercaststation">githubにてソース公開しています。</a></p>
+
+<p>ライセンスはGPLv3です。
+使用しているライブラリ等のライセンスに関しては同梱のLICENSE.txtを見てください。</p>
+
 <h2 id="section-5">開発に参加したい場合</h2>
 <p>PeerCastStationの開発を手伝いたいけど何をしていいかわからない、
-こんな時はまずPeerCastStationを使って、不具合や不満点があればIssueに上げてください。</p>
+こんな時はまずPeerCastStationを使って、不具合や不満点があればgithubのIssueに上げてください。
+要望だけでも歓迎です。</p>
 
 <p>コードの改善をしたい場合はgithubでforkしてpull requestを送ってください。</p>
 

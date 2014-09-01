@@ -135,9 +135,11 @@ namespace PeerCastStation.HTTP
     private string ParseEndPoint(string text)
     {
       var ipv4port = Regex.Match(text, @"\A(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})\z");
-      var ipv6port = Regex.Match(text, @"\A\[([a-fA-F0-9:.]+)\]:(\d{1,5})\z");
+      var ipv6port = Regex.Match(text, @"\A\[([a-fA-F0-9:]+)\]:(\d{1,5})\z");
+      var hostport = Regex.Match(text, @"\A([a-zA-Z](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*):(\d{1,5})\z");
       var ipv4addr = Regex.Match(text, @"\A(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\z");
       var ipv6addr = Regex.Match(text, @"\A([a-fA-F0-9:.]+)\z");
+      var hostaddr = Regex.Match(text, @"\A([a-zA-Z](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*)\z");
       if (ipv4port.Success) {
         IPAddress addr;
         int port;
@@ -158,6 +160,13 @@ namespace PeerCastStation.HTTP
           return new IPEndPoint(addr, port).ToString();
         }
       }
+      if (hostport.Success) {
+        string host = hostport.Groups[1].Value;
+        int port;
+        if (Int32.TryParse(hostport.Groups[2].Value, out port) && 0<port && port<=65535) {
+          return String.Format("{0}:{1}", host, port);
+        }
+      }
       if (ipv4addr.Success) {
         IPAddress addr;
         if (IPAddress.TryParse(ipv4addr.Groups[1].Value, out addr) &&
@@ -171,6 +180,10 @@ namespace PeerCastStation.HTTP
             addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6) {
           return addr.ToString();
         }
+      }
+      if (hostaddr.Success) {
+        string host = hostaddr.Groups[1].Value;
+        return host;
       }
       return null;
     }

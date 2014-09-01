@@ -57,6 +57,7 @@
                 <th>選択</th>
                 <th>アドレス</th>
                 <th>ポート</th>
+                <th>開放状態</th>
                 <th>LAN接続許可</th>
                 <th>WAN接続許可</th>
                 <th>認証ID</th>
@@ -69,6 +70,8 @@
                   <button class="btn" data-bind="click:addListener">追加</button>
                   <button class="btn" data-bind="click:removeListener">削除</button>
                   <button class="btn" data-bind="click:resetListenerAuthenticationKey">ID・パスワード再生成</button>
+                  <button class="btn" data-bind="click:checkPorts">ポート開放確認</button>
+                  <span data-bind="text:checkPortsStatus"></span>
                 </td>
               </tr>
             </tfoot>
@@ -77,6 +80,7 @@
                 <td><input type="checkbox" data-bind="checked:checked" /></td>
                 <td><span data-bind="text:addressLabel"></span></td>
                 <td><span data-bind="text:port"></span></td>
+                <td><span data-bind="text:portStatus"></span></td>
                 <td>
                   <label class="checkbox"><input type="checkbox" data-bind="checked:lanPlayAccept">視聴</label>
                   <label class="checkbox"><input type="checkbox" data-bind="checked:lanRelayAccept">リレー</label>

@@ -47,7 +47,7 @@ var ListenerEditDialog = new function() {
   self.localAuthRequired  = ko.observable(false);
   self.globalAccepts      = ko.observable(PeerCast.OutputStreamType.Relay | PeerCast.OutputStreamType.Metadata);
   self.globalAuthRequired = ko.observable(true);
-  self.onOK          = null;
+  self.onOK = null;
 
   self.lanPlayAccept = ko.computed({
     read: function() { return (self.localAccepts() & PeerCast.OutputStreamType.Play)!=0; },
@@ -119,6 +119,14 @@ var ListenerViewModel = function(value) {
   self.globalAuthRequired     = ko.observable(value.globalAuthorizationRequired);
   self.authenticationId       = ko.observable(value.authenticationId);
   self.authenticationPassword = ko.observable(value.authenticationPassword);
+  self.isOpened               = ko.observable(value.isOpened);
+  self.portStatus = ko.computed(function() {
+    switch (self.isOpened()) {
+    case true:  return "開放";
+    case false: return "未開放";
+    default:    return "";
+    }
+  });
   self.checked                = ko.observable(false);
   self.setAccepts = function() {
     PeerCast.setListenerAccepts(self.id(), self.localAccepts(), self.globalAccepts());
@@ -137,6 +145,7 @@ var ListenerViewModel = function(value) {
     self.id(data.listenerId);
     self.address(data.address);
     self.port(data.port);
+    self.isOpened(data.isOpened);
     self.localAccepts(data.localAccepts);
     self.globalAccepts(data.globalAccepts);
     self.localAuthRequired(data.localAuthorizationRequired);
@@ -233,6 +242,7 @@ var SettingsViewModel = new function() {
   self.maxUpstreamRate           = ko.observable(null);
   self.maxUpstreamRatePerChannel = ko.observable(null);
   self.checkBandwidthStatus      = ko.observable("");
+  self.checkPortsStatus          = ko.observable("");
   self.inactiveChannelLimit      = ko.observable(null);
   self.channelCleanupMode        = ko.observable(null);
   self.listeners                 = ko.observableArray();
@@ -325,6 +335,35 @@ var SettingsViewModel = new function() {
       }
       else {
         self.checkBandwidthStatus("帯域測定失敗。接続できませんでした");
+      }
+    });
+  };
+
+  self.checkPorts = function() {
+    self.checkPortsStatus("確認中");
+    PeerCast.checkPorts(function (result) {
+      if (result) {
+        if (result.length>0) {
+          var listeners = self.listeners();
+          for (var i in listeners) {
+            var port = listeners[i].port();
+            var opened = false;
+            for (var j in result) {
+              if (result[j]===port) {
+                opened = true;
+                break;
+              }
+            }
+            listeners[i].isOpened(opened);
+          }
+          self.checkPortsStatus("開放されています");
+        }
+        else {
+          self.checkPortsStatus("開放されてません");
+        }
+      }
+      else {
+        self.checkPortsStatus("ポート開放確認失敗。接続できませんでした");
       }
     });
   };
