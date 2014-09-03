@@ -121,7 +121,7 @@ namespace PeerCastStation.HTTP
       xml.Close();
       var res = stream.ToString();
       try {
-        return System.Text.Encoding.Default.GetBytes(res);
+        return System.Text.Encoding.GetEncoding(932).GetBytes(res);
       }
       catch (System.Text.EncoderFallbackException) {
         return System.Text.Encoding.UTF8.GetBytes(res);
