@@ -5,7 +5,7 @@
 			Version="!(bind.packageVersion.PeerCastStationInstaller)"
 			Manufacturer="pecastation.org"
 			UpgradeCode="38a3bdd9-0f4d-4051-bba0-13ae6c8f95c6">
-		<Variable Name="InstallFolder" Value="C:\Program Files\PeerCastStation"/>
+		<Variable Name="InstallFolder" Value="[ProgramFilesFolder]PeerCastStation"/>
 		<BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.HyperlinkSidebarLicense">
 			<bal:WixStandardBootstrapperApplication
 				xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
