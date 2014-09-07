@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Fragment>
+        <DirectoryRef Id="INSTALLFOLDER" />
+    </Fragment>
+    <Fragment>
+        <ComponentGroup Id="PeerCastStation.HTTP.Binaries">
+            <ComponentRef Id="cmp48C85A70278E68DCE3CA7754874EC735" />
+        </ComponentGroup>
+    </Fragment>
+    <Fragment>
+        <ComponentGroup Id="PeerCastStation.HTTP.Content" />
+    </Fragment>
+    <Fragment>
+        <ComponentGroup Id="PeerCastStation.HTTP">
+            <Component Id="cmp48C85A70278E68DCE3CA7754874EC735" Directory="INSTALLFOLDER" Guid="*">
+                <File Id="filA8C4B2DCF66CCFD4431A1399BF706BD1" Source="$(var.PeerCastStation.HTTP.TargetDir)\PeerCastStation.HTTP.dll" />
+            </Component>
+        </ComponentGroup>
+    </Fragment>
+</Wix>

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30501.0
+VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Core", "PeerCastStation.Core\PeerCastStation.Core.csproj", "{387996F5-E31D-4D92-BD86-8983C599F748}"
 EndProject
@@ -52,11 +52,6 @@ Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestFLV", "TestFLV\TestFLV.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.WPF", "PeerCastStation.WPF\PeerCastStation.WPF.csproj", "{5EA68141-AC06-428B-9526-A6835E0CC2B2}"
 EndProject
-Project("{6141683F-8A12-4E36-9623-2EB02B2C2303}") = "PeerCastStationSetup", "PeerCastStationSetup\PeerCastStationSetup.isproj", "{AE7F292B-5A30-4944-81B9-BBB4EB2FF6B5}"
-	ProjectSection(ProjectDependencies) = postProject
-		{BF5E0B6D-961A-4216-BACF-01D80AB3D6BB} = {BF5E0B6D-961A-4216-BACF-01D80AB3D6BB}
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.UI", "PeerCastStation.UI\PeerCastStation.UI.csproj", "{5988FBAF-37C4-4997-8389-55F2EBBB9511}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{B99C2D12-C3D0-4644-978F-22515BF3AEFD}"
@@ -65,6 +60,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{B99C2D
 		.nuget\NuGet.exe = .nuget\NuGet.exe
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
+EndProject
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "PeerCastStationInstaller", "PeerCastStationInstaller\PeerCastStationInstaller.wixproj", "{5F06EDA6-38C8-4BB7-8683-1EF94EE10290}"
+EndProject
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "PeerCastStationSetupBundle", "SetupBundle\PeerCastStationSetupBundle.wixproj", "{8887893D-66AA-4B0C-B222-FBAC46D94455}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -126,13 +125,16 @@ Global
 		{5EA68141-AC06-428B-9526-A6835E0CC2B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5EA68141-AC06-428B-9526-A6835E0CC2B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5EA68141-AC06-428B-9526-A6835E0CC2B2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AE7F292B-5A30-4944-81B9-BBB4EB2FF6B5}.Debug|Any CPU.ActiveCfg = SingleImage
-		{AE7F292B-5A30-4944-81B9-BBB4EB2FF6B5}.Release|Any CPU.ActiveCfg = SingleImage
-		{AE7F292B-5A30-4944-81B9-BBB4EB2FF6B5}.Release|Any CPU.Build.0 = SingleImage
 		{5988FBAF-37C4-4997-8389-55F2EBBB9511}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5988FBAF-37C4-4997-8389-55F2EBBB9511}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5988FBAF-37C4-4997-8389-55F2EBBB9511}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5988FBAF-37C4-4997-8389-55F2EBBB9511}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5F06EDA6-38C8-4BB7-8683-1EF94EE10290}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{5F06EDA6-38C8-4BB7-8683-1EF94EE10290}.Release|Any CPU.ActiveCfg = Release|x86
+		{5F06EDA6-38C8-4BB7-8683-1EF94EE10290}.Release|Any CPU.Build.0 = Release|x86
+		{8887893D-66AA-4B0C-B222-FBAC46D94455}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{8887893D-66AA-4B0C-B222-FBAC46D94455}.Release|Any CPU.ActiveCfg = Release|x86
+		{8887893D-66AA-4B0C-B222-FBAC46D94455}.Release|Any CPU.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

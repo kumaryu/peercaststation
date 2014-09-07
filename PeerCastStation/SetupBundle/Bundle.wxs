@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+	<Bundle
+			Name="PeerCastStation"
+			Version="!(bind.packageVersion.PeerCastStationInstaller)"
+			Manufacturer="pecastation.org"
+			UpgradeCode="38a3bdd9-0f4d-4051-bba0-13ae6c8f95c6">
+		<Variable Name="InstallFolder" Value="C:\Program Files\PeerCastStation"/>
+		<BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.HyperlinkSidebarLicense">
+			<bal:WixStandardBootstrapperApplication
+				xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
+				LaunchTarget="[InstallFolder]\PeerCastStation.exe"
+				LocalizationFile="HyperlinkTheme.wxl"
+				ThemeFile="HyperlinkSidebarTheme.xml"
+				LicenseUrl="" />
+		</BootstrapperApplicationRef>
+		<Chain>
+			<PackageGroupRef Id="NetFx45Web"/>
+			<MsiPackage Id="PeerCastStationInstaller" SourceFile="$(var.PeerCastStationInstaller.TargetPath)" Permanent="no">
+				<MsiProperty Name="INSTALLFOLDER" Value="[InstallFolder]"/>
+			</MsiPackage>
+		</Chain>
+</Bundle>
+</Wix>

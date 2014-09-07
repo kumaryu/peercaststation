@@ -1,0 +1,424 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Fragment>
+        <DirectoryRef Id="INSTALLFOLDER" />
+    </Fragment>
+    <Fragment>
+        <ComponentGroup Id="PeerCastStation.UI.HTTP.Binaries">
+            <ComponentRef Id="cmp1672B9F45449A6D46D9C5864EDAC87B7" />
+        </ComponentGroup>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="INSTALLFOLDER">
+            <Directory Id="dir028C6142D258AB7C6AC461E7AB3D3599" Name="Content" />
+            <Directory Id="dir1E1FE666E9CD7E4F73182A1AF06B6D6E" Name="help" />
+            <Directory Id="dirFC6FEC9877CD43BCEB77A3398D1F0E35" Name="html" />
+            <Directory Id="dirCFCF5C1BA7F31E3756AA0A8D4F873F04" Name="Scripts" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <ComponentGroup Id="PeerCastStation.UI.HTTP.Content">
+            <ComponentRef Id="cmp888D937621FAD34396D46D537634D15C" />
+            <ComponentRef Id="cmp4C88C1D6244FD2B04AE8F5FF71BC02DF" />
+            <ComponentRef Id="cmpDDBEF10158C778680512493957AE71B3" />
+            <ComponentRef Id="cmp9F659F6769627B1E545FB68FD6B8BD3A" />
+            <ComponentRef Id="cmpC2D401CD67BB36398F2A87B96CBF010E" />
+            <ComponentRef Id="cmp1EBCBE8B45F3CACF2E96B1F78A812EC2" />
+            <ComponentRef Id="cmp7083BAB3F9248B5B563F1150232876CE" />
+            <ComponentRef Id="cmpBB11AD858BE37BDEC3DFBEDA7B0267FD" />
+            <ComponentRef Id="cmpE5BE6CC97C19C704447833182862A406" />
+            <ComponentRef Id="cmp5A35C6949C1D271CC04ACD90D7D7A8FC" />
+            <ComponentRef Id="cmp1F670F68E744978B42FF39F27AD9E5EE" />
+            <ComponentRef Id="cmp2459E02EA1E58D266560EE4CAAC973F3" />
+            <ComponentRef Id="cmp14EA6016D403B21355D2F63C8E25C72C" />
+            <ComponentRef Id="cmp1B6BB64D6A729261204F2320173D2930" />
+            <ComponentRef Id="cmpA6AADBACD9F7115DE75DF1B325963633" />
+            <ComponentRef Id="cmp71C6A86E9E7E45D32484919B536B8B8A" />
+            <ComponentRef Id="cmp3FD44AE689059D5F63B85E26E7A98706" />
+            <ComponentRef Id="cmpD4125F2F88A87B513229CE067479814E" />
+            <ComponentRef Id="cmpB4F9E2E738E0780E01DE23FCFC7DCE3C" />
+            <ComponentRef Id="cmp7ACD237B4B2556F1FF630887950E1F6B" />
+            <ComponentRef Id="cmpC27FA6EA42DC5953D1674FEF0EE08296" />
+            <ComponentRef Id="cmp2AD0B6FBA51FFC8949F970D682F74F67" />
+            <ComponentRef Id="cmpCAAB7E583E5D8F8381A14E16AAA83325" />
+            <ComponentRef Id="cmp8B791845CD818D916D38A00B5EDBD982" />
+            <ComponentRef Id="cmp9AC44425E478D66F1524D5D1FAF57C89" />
+            <ComponentRef Id="cmpCED67BBA4A077E8AC1AF015B70850539" />
+            <ComponentRef Id="cmp9AE43D737BEF6B224E8DB907C67BC71B" />
+            <ComponentRef Id="cmp9D214A414E6E7A965B00078FE14B3423" />
+            <ComponentRef Id="cmp36440B62DDBFF3C5E3E57A36CABBF4E0" />
+            <ComponentRef Id="cmpE3FC84432CE36F1E708A70DEE2701210" />
+            <ComponentRef Id="cmp54E58AD181F92133407454579248CB79" />
+            <ComponentRef Id="cmp99E932CB404498CCAC8E748C0A79B574" />
+            <ComponentRef Id="cmpC734002E607DC427F4681055E244ECF2" />
+            <ComponentRef Id="cmp751C32DBDA8B0D2B44EA2F4CCBA7AD66" />
+            <ComponentRef Id="cmpDE8338789AB87F4C2CFF85B7544D5432" />
+            <ComponentRef Id="cmpB333B11D935BB56D3FA22F285BFE670A" />
+            <ComponentRef Id="cmp49E72337A1D71C894ADA6AE0C9D6BFFF" />
+            <ComponentRef Id="cmpFDAA1E91957E7185A4663597C43BCE92" />
+            <ComponentRef Id="cmp32E9203B562CB882E7586052FDB61A60" />
+            <ComponentRef Id="cmp7499E7E4BFBE3FAF92DCCEE62E1B5C6C" />
+            <ComponentRef Id="cmpAB1B55A66448C5E861E4E81A10FE8E84" />
+            <ComponentRef Id="cmpC6FEBB80DBF980B78222FEEAF933F295" />
+            <ComponentRef Id="cmp86CB72FC6563F2C19C6E9B42F19BEE59" />
+            <ComponentRef Id="cmp61C5A14CC27645D97680DF6BDD4B1D1D" />
+            <ComponentRef Id="cmp0B9BF5A4C83305FE4A2591ADA65D9835" />
+            <ComponentRef Id="cmp14845507D84AFF1508D160C0266BBBB1" />
+            <ComponentRef Id="cmp66CF6DEFF761B7874CEE14C5A0412FBF" />
+            <ComponentRef Id="cmpA037504F17EE39B56C5C1BE840ADD447" />
+            <ComponentRef Id="cmpE142C5970504A3B6120313E8A8EC02C3" />
+            <ComponentRef Id="cmp3841E6AC006679A17A4E98D4E0053016" />
+            <ComponentRef Id="cmp6ADA818AAC906E9A950D9D435D388564" />
+            <ComponentRef Id="cmp132392B762FB9F4C7EBD07EDF1A2C8F2" />
+            <ComponentRef Id="cmpFC0B56F9C79A18FD0F88DFD08FD1F175" />
+            <ComponentRef Id="cmp3553CAF05503C8B5BA62C3C0ACC8951E" />
+            <ComponentRef Id="cmp8D6B5F15493BBB8AA093506A0E63069B" />
+            <ComponentRef Id="cmpF6033D5DC48B64417CA5FA09F2EBDA8A" />
+            <ComponentRef Id="cmpD70EF0BB33C371125545C675EE7D7039" />
+            <ComponentRef Id="cmp5A205BE481C3CEA45C0DCA92C4DF9C41" />
+            <ComponentRef Id="cmp5BE68DF71EB91036BC222DAAC6BC20D2" />
+            <ComponentRef Id="cmp802DFE83DC97D5CABBC5AD65F18DDBAD" />
+            <ComponentRef Id="cmp1D71034A96B25376AC3D5E0A73DC66ED" />
+            <ComponentRef Id="cmp617C15CE237BDCC20037D182D8133BA4" />
+            <ComponentRef Id="cmp07835995E7CD117B55958493AA6AE986" />
+            <ComponentRef Id="cmp9E8B737B49B093F6B5F92A1070D0EE92" />
+            <ComponentRef Id="cmpAB0DD8486F5F9EF86CDE1A4E458D653A" />
+            <ComponentRef Id="cmpA678EF542955161DD2988F71F3710651" />
+            <ComponentRef Id="cmp8C558B2EBE1907BCBBA834FB1353E469" />
+            <ComponentRef Id="cmp8C59F2A46A83B0AC81B5AD0A09A65ADA" />
+            <ComponentRef Id="cmp49FEDA1F84CA235C39B4C27D38F6B05B" />
+            <ComponentRef Id="cmpC53B3BEF9A99DABB6133D4C7EB216CF7" />
+            <ComponentRef Id="cmp32FD39A55C45E2044ADCE5151FABB8F1" />
+            <ComponentRef Id="cmp366E1A831F46A03D88D3637BDE6D5DBD" />
+            <ComponentRef Id="cmpC0C419C90C39671F4D90F1D881B8C1B9" />
+            <ComponentRef Id="cmp1C2CDCEB3500C62AA811FE2FCA45C379" />
+            <ComponentRef Id="cmpB194C5738F7F03000C482F2B1302D501" />
+            <ComponentRef Id="cmpF4CB51FD983B82DEAB0115925FBF6D03" />
+            <ComponentRef Id="cmp2B5B7E45667D2BA876923C4008AEBA48" />
+            <ComponentRef Id="cmp9A2532F01663F38CBEF5F5B7916575F7" />
+            <ComponentRef Id="cmp42EE2F08D4E3930EA43B5F08193F2103" />
+            <ComponentRef Id="cmp3063D5677BB1A8C7296FB6D0FC384B25" />
+            <ComponentRef Id="cmp3C5CDD3AFE805D65E16B78DDCC8BFE40" />
+            <ComponentRef Id="cmpFD192FF411C90C34DDF47102A4DE32AC" />
+            <ComponentRef Id="cmpBE118A1F3255DA3BE3E11EB27F76DDA6" />
+            <ComponentRef Id="cmpC057FC7A9D28FFE718B5591058F801A3" />
+            <ComponentRef Id="cmp09C7353A1AA94F4DA94509305528BF00" />
+            <ComponentRef Id="cmp6306C3896E1CA30A4593A7F4D9FC9CA2" />
+        </ComponentGroup>
+    </Fragment>
+    <Fragment>
+        <ComponentGroup Id="PeerCastStation.UI.HTTP">
+            <Component Id="cmp1672B9F45449A6D46D9C5864EDAC87B7" Directory="INSTALLFOLDER" Guid="*">
+                <File Id="fil248EFC0D4917E367084AFAB748C9A006" Source="$(var.PeerCastStation.UI.HTTP.TargetDir)\PeerCastStation.UI.HTTP.dll" />
+            </Component>
+            <Component Id="cmp888D937621FAD34396D46D537634D15C" Directory="dir028C6142D258AB7C6AC461E7AB3D3599" Guid="*">
+                <File Id="filC5009A75BE1A4E9B2C5BD721898E4E4D" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\Content\bootstrap-responsive.css" />
+            </Component>
+            <Component Id="cmp4C88C1D6244FD2B04AE8F5FF71BC02DF" Directory="dir028C6142D258AB7C6AC461E7AB3D3599" Guid="*">
+                <File Id="fil20E2DF58EC8B0E4C1F4C96005BDCBB41" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\Content\bootstrap-responsive.min.css" />
+            </Component>
+            <Component Id="cmpDDBEF10158C778680512493957AE71B3" Directory="dir028C6142D258AB7C6AC461E7AB3D3599" Guid="*">
+                <File Id="fil8E2EB0A34F0A1C5F5DBF86A3639DA2BF" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\Content\bootstrap.css" />
+            </Component>
+            <Component Id="cmp9F659F6769627B1E545FB68FD6B8BD3A" Directory="dir028C6142D258AB7C6AC461E7AB3D3599" Guid="*">
+                <File Id="fil1D0BF2593C1C9FDC780E9FF024AAE9FF" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\Content\bootstrap.min.css" />
+            </Component>
+            <Component Id="cmpC2D401CD67BB36398F2A87B96CBF010E" Directory="dir6CE4F9F3777FFFD1FD3F1266AF2558AB" Guid="*">
+                <File Id="fil3FACC16E05BBC95AD5656980545EBEBB" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\Content\images\glyphicons-halflings-white.png" />
+            </Component>
+            <Component Id="cmp1EBCBE8B45F3CACF2E96B1F78A812EC2" Directory="dir6CE4F9F3777FFFD1FD3F1266AF2558AB" Guid="*">
+                <File Id="filD6568E79826F8DC3CBBC0EC5BFF45FCC" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\Content\images\glyphicons-halflings.png" />
+            </Component>
+            <Component Id="cmp7083BAB3F9248B5B563F1150232876CE" Directory="dir1E1FE666E9CD7E4F73182A1AF06B6D6E" Guid="*">
+                <File Id="filAB802D041CF037BEE9DB29F9D00BBB73" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\broadcast.html" />
+            </Component>
+            <Component Id="cmpBB11AD858BE37BDEC3DFBEDA7B0267FD" Directory="dir1E1FE666E9CD7E4F73182A1AF06B6D6E" Guid="*">
+                <File Id="filF47A1EF3C999E740E9B5503937513CD7" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\index.html" />
+            </Component>
+            <Component Id="cmpE5BE6CC97C19C704447833182862A406" Directory="dir1E1FE666E9CD7E4F73182A1AF06B6D6E" Guid="*">
+                <File Id="fil50794ACBF1DF9BA32F4113144ADA3AB4" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\misc.html" />
+            </Component>
+            <Component Id="cmp5A35C6949C1D271CC04ACD90D7D7A8FC" Directory="dir1E1FE666E9CD7E4F73182A1AF06B6D6E" Guid="*">
+                <File Id="fil19A2D089B0F60B9695105A54A7C91F45" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\settings.html" />
+            </Component>
+            <Component Id="cmp1F670F68E744978B42FF39F27AD9E5EE" Directory="dir1E1FE666E9CD7E4F73182A1AF06B6D6E" Guid="*">
+                <File Id="fil957849FE9D4B5C8524D23042A77848F3" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\usage.html" />
+            </Component>
+            <Component Id="cmp2459E02EA1E58D266560EE4CAAC973F3" Directory="dirA700AAF7FB18B12B4660A29684345CD7" Guid="*">
+                <File Id="filA9926C59ED5EB3D4485C73CC706E83E4" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\css\bootstrap-responsive.css" />
+            </Component>
+            <Component Id="cmp14EA6016D403B21355D2F63C8E25C72C" Directory="dirA700AAF7FB18B12B4660A29684345CD7" Guid="*">
+                <File Id="filBFC4B14DCA64D16CBD33027D6E20A8C6" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\css\bootstrap-responsive.min.css" />
+            </Component>
+            <Component Id="cmp1B6BB64D6A729261204F2320173D2930" Directory="dirA700AAF7FB18B12B4660A29684345CD7" Guid="*">
+                <File Id="filE88A5AA0554A1D72BB87ED79195A96AC" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\css\bootstrap.css" />
+            </Component>
+            <Component Id="cmpA6AADBACD9F7115DE75DF1B325963633" Directory="dirA700AAF7FB18B12B4660A29684345CD7" Guid="*">
+                <File Id="fil6E0044FF7E3715D1E4DDF3C89A4FF3AA" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\css\bootstrap.min.css" />
+            </Component>
+            <Component Id="cmp71C6A86E9E7E45D32484919B536B8B8A" Directory="dirD3730E39799F0961D5EDAEFCB157473A" Guid="*">
+                <File Id="filE5774E1C797ED434B68539E01435113D" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\img\glyphicons-halflings-white.png" />
+            </Component>
+            <Component Id="cmp3FD44AE689059D5F63B85E26E7A98706" Directory="dirD3730E39799F0961D5EDAEFCB157473A" Guid="*">
+                <File Id="fil4285E46C3FA9CAC6699EE29A53665D17" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\img\glyphicons-halflings.png" />
+            </Component>
+            <Component Id="cmpD4125F2F88A87B513229CE067479814E" Directory="dir7A45DECAF3B772F12B68300544672B3D" Guid="*">
+                <File Id="fil012C292A4CC3849A40140B0B2DE36673" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\js\bootstrap.js" />
+            </Component>
+            <Component Id="cmpB4F9E2E738E0780E01DE23FCFC7DCE3C" Directory="dir7A45DECAF3B772F12B68300544672B3D" Guid="*">
+                <File Id="fil225EFF98B95A49778D8A160917CB403B" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\js\bootstrap.min.js" />
+            </Component>
+            <Component Id="cmp7ACD237B4B2556F1FF630887950E1F6B" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil497B15BD151996E4BFA4B73937CDC7A9" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\gui_addport.png" />
+            </Component>
+            <Component Id="cmpC27FA6EA42DC5953D1674FEF0EE08296" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil50DBECE3CFF52315E251DDF10C6BB70A" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\gui_addyp.png" />
+            </Component>
+            <Component Id="cmp2AD0B6FBA51FFC8949F970D682F74F67" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil19520AF0E1F51F4B1D28D9DE70710382" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\gui_broadcast.png" />
+            </Component>
+            <Component Id="cmpCAAB7E583E5D8F8381A14E16AAA83325" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil4BFA3A80A44DCA0698E17FF2E0D2D842" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\gui_broadcast_rtmp.png" />
+            </Component>
+            <Component Id="cmp8B791845CD818D916D38A00B5EDBD982" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="filA8D2491218E6ED4C4380BFA7F9585DFE" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\gui_channelinfo.png" />
+            </Component>
+            <Component Id="cmp9AC44425E478D66F1524D5D1FAF57C89" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="filDB52AFF3C2D013D48F9C6E0A01547238" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\gui_connectionlist.png" />
+            </Component>
+            <Component Id="cmpCED67BBA4A077E8AC1AF015B70850539" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil89D9063DB94DF521B963A98D6C557911" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\gui_connectionsettings.png" />
+            </Component>
+            <Component Id="cmp9AE43D737BEF6B224E8DB907C67BC71B" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="filA4DE4B6EF9A44AF17CEA9F43C62299A7" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\gui_log.png" />
+            </Component>
+            <Component Id="cmp9D214A414E6E7A965B00078FE14B3423" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="filAC05DFDD59EADE941615B3650AD2E107" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\gui_main.png" />
+            </Component>
+            <Component Id="cmp36440B62DDBFF3C5E3E57A36CABBF4E0" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="filCDCAA23EBFE42937DFA4AAE98F028B27" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\gui_playcontextmenu.png" />
+            </Component>
+            <Component Id="cmpE3FC84432CE36F1E708A70DEE2701210" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil2138A128A132E815444C2C448E25ED1A" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\gui_settings.png" />
+            </Component>
+            <Component Id="cmp54E58AD181F92133407454579248CB79" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil53EB6B28E38EF872ACA2E5C838270019" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\gui_statusmenu.png" />
+            </Component>
+            <Component Id="cmp99E932CB404498CCAC8E748C0A79B574" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil03F706F9D84D730ECFE89B73E1D07F27" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\gui_uisettings.png" />
+            </Component>
+            <Component Id="cmpC734002E607DC427F4681055E244ECF2" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil2FE71501144C63255B843628612E80D1" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\htmlui_broadcast.png" />
+            </Component>
+            <Component Id="cmp751C32DBDA8B0D2B44EA2F4CCBA7AD66" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil57D8C522C0F8A37F942B80195261AEDD" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\htmlui_channelbutton0.png" />
+            </Component>
+            <Component Id="cmpDE8338789AB87F4C2CFF85B7544D5432" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil97CEE0DA76F3263A8969F7189ED551B0" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\htmlui_channelbutton1.png" />
+            </Component>
+            <Component Id="cmpB333B11D935BB56D3FA22F285BFE670A" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil54F842D8DF9B102907F9977CECC50D8A" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\htmlui_channelbutton2.png" />
+            </Component>
+            <Component Id="cmp49E72337A1D71C894ADA6AE0C9D6BFFF" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="filFADAA9256393A34CC7BAC7A28512952C" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\htmlui_channelbutton3.png" />
+            </Component>
+            <Component Id="cmpFDAA1E91957E7185A4663597C43BCE92" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil1CD4544EAA2670FFDDCC88108019AD2A" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\htmlui_channelbutton4.png" />
+            </Component>
+            <Component Id="cmp32E9203B562CB882E7586052FDB61A60" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil37B453564FCABA29F048E3788F49FF49" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\htmlui_channelbutton5.png" />
+            </Component>
+            <Component Id="cmp7499E7E4BFBE3FAF92DCCEE62E1B5C6C" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil9B076BD4E59F31F07402AEB7A0681BDD" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\htmlui_channelinfo.png" />
+            </Component>
+            <Component Id="cmpAB1B55A66448C5E861E4E81A10FE8E84" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil59E6CFD8418242049DA1BFAE1FE364FA" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\htmlui_channellist.png" />
+            </Component>
+            <Component Id="cmpC6FEBB80DBF980B78222FEEAF933F295" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil5AD481DEE8D0F07B12BFBEA8207E908E" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\htmlui_connectionlist.png" />
+            </Component>
+            <Component Id="cmp86CB72FC6563F2C19C6E9B42F19BEE59" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="filC946F9FAD9CFCC98CA7BED9CE9D14C52" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\htmlui_index.png" />
+            </Component>
+            <Component Id="cmp61C5A14CC27645D97680DF6BDD4B1D1D" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil6E2BE7027F4746481462BA803EB6359F" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\htmlui_settings.png" />
+            </Component>
+            <Component Id="cmp0B9BF5A4C83305FE4A2591ADA65D9835" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="filA539CCE3E785BE9279265F87028D06C2" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\relay_icon_0.png" />
+            </Component>
+            <Component Id="cmp14845507D84AFF1508D160C0266BBBB1" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="filBB2CA09446AA3C8B3B4F1C71086C1447" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\relay_icon_1.png" />
+            </Component>
+            <Component Id="cmp66CF6DEFF761B7874CEE14C5A0412FBF" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil0CB7C93C14A09D92DA045B4209406191" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\relay_icon_2.png" />
+            </Component>
+            <Component Id="cmpA037504F17EE39B56C5C1BE840ADD447" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="filADA463444AE6AB30C18B32179AECF032" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\relay_icon_3.png" />
+            </Component>
+            <Component Id="cmpE142C5970504A3B6120313E8A8EC02C3" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="filAB4CA72F4B6A91E14470A89DE9CAEA62" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\relay_icon_4.png" />
+            </Component>
+            <Component Id="cmp3841E6AC006679A17A4E98D4E0053016" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="filFDABAFEC002846863B82BDBE0C629EC6" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\relay_icon_5.png" />
+            </Component>
+            <Component Id="cmp6ADA818AAC906E9A950D9D435D388564" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="filA528AC1F63380B02BD89377D7E0EFF60" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\relay_icon_6.png" />
+            </Component>
+            <Component Id="cmp132392B762FB9F4C7EBD07EDF1A2C8F2" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="filEAE1C824D415771559A78E80168C8113" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\relay_icon_7.png" />
+            </Component>
+            <Component Id="cmpFC0B56F9C79A18FD0F88DFD08FD1F175" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil1D78D484E32699EDC3E61E94FDC2A3CF" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\relay_icon_8.png" />
+            </Component>
+            <Component Id="cmp3553CAF05503C8B5BA62C3C0ACC8951E" Directory="dir030C93F2626A33A927AE973F8AA0B38E" Guid="*">
+                <File Id="filE3DF29186E0B78785B9BE1314ECB9EF1" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\jquery\jquery-1.8.3.min.js" />
+            </Component>
+            <Component Id="cmp8D6B5F15493BBB8AA093506A0E63069B" Directory="dirFC6FEC9877CD43BCEB77A3398D1F0E35" Guid="*">
+                <File Id="filA8385DA21A65A0B30A3048CFB8F2CEA5" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\index.html" />
+            </Component>
+            <Component Id="cmpF6033D5DC48B64417CA5FA09F2EBDA8A" Directory="dirFC6FEC9877CD43BCEB77A3398D1F0E35" Guid="*">
+                <File Id="filFB1D6AD41A117F8FB09821052435B555" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\logs.html" />
+            </Component>
+            <Component Id="cmpD70EF0BB33C371125545C675EE7D7039" Directory="dirFC6FEC9877CD43BCEB77A3398D1F0E35" Guid="*">
+                <File Id="filC6728E8D3406F4F9E77E91FAF6C7026F" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\relays.html" />
+            </Component>
+            <Component Id="cmp5A205BE481C3CEA45C0DCA92C4DF9C41" Directory="dirFC6FEC9877CD43BCEB77A3398D1F0E35" Guid="*">
+                <File Id="fil458A7E5FE6162B82739098B42D1CA53E" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\settings.html" />
+            </Component>
+            <Component Id="cmp5BE68DF71EB91036BC222DAAC6BC20D2" Directory="dirFC6FEC9877CD43BCEB77A3398D1F0E35" Guid="*">
+                <File Id="filC3343AD56F2552DD82B475909AE572A9" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\update.html" />
+            </Component>
+            <Component Id="cmp802DFE83DC97D5CABBC5AD65F18DDBAD" Directory="dirD8459EFDDB049612C9D9B739F6EB670F" Guid="*">
+                <File Id="fil833267266D48BFA945CA8CEC8B3CC362" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\images\heart.png" />
+            </Component>
+            <Component Id="cmp1D71034A96B25376AC3D5E0A73DC66ED" Directory="dirD8459EFDDB049612C9D9B739F6EB670F" Guid="*">
+                <File Id="filF2BD35995894600540189452B7EBB82C" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\images\relay_icon_0.png" />
+            </Component>
+            <Component Id="cmp617C15CE237BDCC20037D182D8133BA4" Directory="dirD8459EFDDB049612C9D9B739F6EB670F" Guid="*">
+                <File Id="fil482071ED03B88823E8E7BAF34D1D2471" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\images\relay_icon_1.png" />
+            </Component>
+            <Component Id="cmp07835995E7CD117B55958493AA6AE986" Directory="dirD8459EFDDB049612C9D9B739F6EB670F" Guid="*">
+                <File Id="fil5BCDAB351257D78F89CFCDAF9942477F" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\images\relay_icon_2.png" />
+            </Component>
+            <Component Id="cmp9E8B737B49B093F6B5F92A1070D0EE92" Directory="dirD8459EFDDB049612C9D9B739F6EB670F" Guid="*">
+                <File Id="fil14D0032C52064CC8AEE614336EEEB4E1" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\images\relay_icon_3.png" />
+            </Component>
+            <Component Id="cmpAB0DD8486F5F9EF86CDE1A4E458D653A" Directory="dirD8459EFDDB049612C9D9B739F6EB670F" Guid="*">
+                <File Id="filE44616E8EF77D9D1BBE6869F6690B3D8" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\images\relay_icon_4.png" />
+            </Component>
+            <Component Id="cmpA678EF542955161DD2988F71F3710651" Directory="dirD8459EFDDB049612C9D9B739F6EB670F" Guid="*">
+                <File Id="filF5EC28166C276AB8343A4F81E713A478" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\images\relay_icon_5.png" />
+            </Component>
+            <Component Id="cmp8C558B2EBE1907BCBBA834FB1353E469" Directory="dirD8459EFDDB049612C9D9B739F6EB670F" Guid="*">
+                <File Id="fil57A1F5BB721B108FFCA0831A40B0596F" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\images\relay_icon_6.png" />
+            </Component>
+            <Component Id="cmp8C59F2A46A83B0AC81B5AD0A09A65ADA" Directory="dirD8459EFDDB049612C9D9B739F6EB670F" Guid="*">
+                <File Id="fil65E1F269760C6D97901A6AB574D261F5" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\images\relay_icon_7.png" />
+            </Component>
+            <Component Id="cmp49FEDA1F84CA235C39B4C27D38F6B05B" Directory="dirD8459EFDDB049612C9D9B739F6EB670F" Guid="*">
+                <File Id="fil4614819D6A2D2274073F69AEBAA10785" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\images\relay_icon_8.png" />
+            </Component>
+            <Component Id="cmpC53B3BEF9A99DABB6133D4C7EB216CF7" Directory="dir625C6F3A60D2313D43971CB336A662F0" Guid="*">
+                <File Id="fil88FB13FA690A39640908F2555FBD0845" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\js\common.js" />
+            </Component>
+            <Component Id="cmp32FD39A55C45E2044ADCE5151FABB8F1" Directory="dir625C6F3A60D2313D43971CB336A662F0" Guid="*">
+                <File Id="fil521BDC7D824D8C1DB9D2ADB705D98725" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\js\update.js" />
+            </Component>
+            <Component Id="cmp366E1A831F46A03D88D3637BDE6D5DBD" Directory="dir625C6F3A60D2313D43971CB336A662F0" Guid="*">
+                <File Id="filAF1C34EF7BDB3A8AF63C589A34CDEAA4" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\js\index.js" />
+            </Component>
+            <Component Id="cmpC0C419C90C39671F4D90F1D881B8C1B9" Directory="dir625C6F3A60D2313D43971CB336A662F0" Guid="*">
+                <File Id="fil9DB95839E89EB9B9F97CC2402E2C733B" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\js\logs.js" />
+            </Component>
+            <Component Id="cmp1C2CDCEB3500C62AA811FE2FCA45C379" Directory="dir625C6F3A60D2313D43971CB336A662F0" Guid="*">
+                <File Id="fil8239C11406DE3B3292D77065D3376511" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\js\peercaststation.1.0.0.js" />
+            </Component>
+            <Component Id="cmpB194C5738F7F03000C482F2B1302D501" Directory="dir625C6F3A60D2313D43971CB336A662F0" Guid="*">
+                <File Id="fil7D73343362612E5A2628C102A0D636E5" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\js\relays.js" />
+            </Component>
+            <Component Id="cmpF4CB51FD983B82DEAB0115925FBF6D03" Directory="dir625C6F3A60D2313D43971CB336A662F0" Guid="*">
+                <File Id="fil4BD6D40992AF2680C55C664BC93E4045" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\js\settings.js" />
+            </Component>
+            <Component Id="cmp2B5B7E45667D2BA876923C4008AEBA48" Directory="dir9EF0C8986094A5E2A7FEB0C142F52738" Guid="*">
+                <File Id="fil3057910986D82E82AEF4F027D48704C7" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\css\index.css" />
+            </Component>
+            <Component Id="cmp9A2532F01663F38CBEF5F5B7916575F7" Directory="dirCFCF5C1BA7F31E3756AA0A8D4F873F04" Guid="*">
+                <File Id="fil32290543727B5EA4BDEE9864A285380E" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\Scripts\bootstrap.js" />
+            </Component>
+            <Component Id="cmp42EE2F08D4E3930EA43B5F08193F2103" Directory="dirCFCF5C1BA7F31E3756AA0A8D4F873F04" Guid="*">
+                <File Id="fil801DA87EDD989228390DBF523BE6405C" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\Scripts\bootstrap.min.js" />
+            </Component>
+            <Component Id="cmp3063D5677BB1A8C7296FB6D0FC384B25" Directory="dirCFCF5C1BA7F31E3756AA0A8D4F873F04" Guid="*">
+                <File Id="fil135AD8160EFA14D3459196BBD52FE8D2" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\Scripts\jquery-1.8.3-vsdoc.js" />
+            </Component>
+            <Component Id="cmp3C5CDD3AFE805D65E16B78DDCC8BFE40" Directory="dirCFCF5C1BA7F31E3756AA0A8D4F873F04" Guid="*">
+                <File Id="fil67AB82BA81CDA7151C5136CF1EB33844" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\Scripts\jquery-1.8.3.js" />
+            </Component>
+            <Component Id="cmpFD192FF411C90C34DDF47102A4DE32AC" Directory="dirCFCF5C1BA7F31E3756AA0A8D4F873F04" Guid="*">
+                <File Id="fil6DE3F76B2C2CE32FF9FFAE949F612C81" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\Scripts\jquery-1.8.3.min.js" />
+            </Component>
+            <Component Id="cmpBE118A1F3255DA3BE3E11EB27F76DDA6" Directory="dirCFCF5C1BA7F31E3756AA0A8D4F873F04" Guid="*">
+                <File Id="fil74892FF18FCBB2F92E30078C89A7D386" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\Scripts\jquery.json-2.4.js" />
+            </Component>
+            <Component Id="cmpC057FC7A9D28FFE718B5591058F801A3" Directory="dirCFCF5C1BA7F31E3756AA0A8D4F873F04" Guid="*">
+                <File Id="fil91084BF339AE578BA5A23D74A32052EC" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\Scripts\jquery.json-2.4.min.js" />
+            </Component>
+            <Component Id="cmp09C7353A1AA94F4DA94509305528BF00" Directory="dirCFCF5C1BA7F31E3756AA0A8D4F873F04" Guid="*">
+                <File Id="fil5811990E5F263EEE3069ACC7C475CB66" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\Scripts\knockout-2.2.0.debug.js" />
+            </Component>
+            <Component Id="cmp6306C3896E1CA30A4593A7F4D9FC9CA2" Directory="dirCFCF5C1BA7F31E3756AA0A8D4F873F04" Guid="*">
+                <File Id="fil495063C977C59E3131B41B87E2AF3CF4" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\Scripts\knockout-2.2.0.js" />
+            </Component>
+        </ComponentGroup>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir1E1FE666E9CD7E4F73182A1AF06B6D6E">
+            <Directory Id="dir030C93F2626A33A927AE973F8AA0B38E" Name="jquery" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir1E1FE666E9CD7E4F73182A1AF06B6D6E">
+            <Directory Id="dir14E2CE0E32524BE3CC18AD0EC123542B" Name="bootstrap" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dirFC6FEC9877CD43BCEB77A3398D1F0E35">
+            <Directory Id="dir625C6F3A60D2313D43971CB336A662F0" Name="js" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir028C6142D258AB7C6AC461E7AB3D3599">
+            <Directory Id="dir6CE4F9F3777FFFD1FD3F1266AF2558AB" Name="images" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir14E2CE0E32524BE3CC18AD0EC123542B">
+            <Directory Id="dir7A45DECAF3B772F12B68300544672B3D" Name="js" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dirFC6FEC9877CD43BCEB77A3398D1F0E35">
+            <Directory Id="dir9EF0C8986094A5E2A7FEB0C142F52738" Name="css" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir14E2CE0E32524BE3CC18AD0EC123542B">
+            <Directory Id="dirA700AAF7FB18B12B4660A29684345CD7" Name="css" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir1E1FE666E9CD7E4F73182A1AF06B6D6E">
+            <Directory Id="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Name="images" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir14E2CE0E32524BE3CC18AD0EC123542B">
+            <Directory Id="dirD3730E39799F0961D5EDAEFCB157473A" Name="img" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dirFC6FEC9877CD43BCEB77A3398D1F0E35">
+            <Directory Id="dirD8459EFDDB049612C9D9B739F6EB670F" Name="images" />
+        </DirectoryRef>
+    </Fragment>
+</Wix>
