@@ -22,26 +22,39 @@ using PeerCastStation.WPF.Commons;
 
 namespace PeerCastStation.WPF.Dialogs
 {
-  class UpdaterViewModel:ViewModelBase
-  {
-    private readonly IEnumerable<VersionDescription> versionInfo;
+	class UpdaterViewModel:ViewModelBase
+	{
+		private readonly IEnumerable<VersionDescription> versionInfo;
 
-    private readonly Command download;
-    public Command Download { get { return download; } }
+		private readonly Command download;
+		public Command Download { get { return download; } }
 
-    public string Descriptions
-    {
-      get {
-        return String.Join("\n", versionInfo.Select(v => v.Description).ToArray());
-      }
-    }
+		public string Descriptions {
+			get { return String.Join("\n", versionInfo.Select(v => v.Description).ToArray()); }
+		}
 
-    public UpdaterViewModel(IEnumerable<VersionDescription> versionInfo)
-    {
-      this.versionInfo = versionInfo;
+		public IEnumerable<VersionEnclosure> Enclosures {
+			get { return versionInfo.First().Enclosures; }
+		}
 
-      download = new Command(
-        () => Process.Start(versionInfo.First().Link.ToString()));
-    }
-  }
+		private VersionEnclosure selectedEnclosure;
+		public VersionEnclosure SelectedEnclosure {
+			get { return selectedEnclosure; }
+			set { SetProperty("SelectedEnclosure", ref selectedEnclosure, value); }
+		}
+
+		public UpdaterViewModel(IEnumerable<VersionDescription> versionInfo)
+		{
+			this.versionInfo = versionInfo;
+			this.selectedEnclosure =
+				Enclosures.FirstOrDefault(e => e.InstallerType==Updater.CurrentInstallerType) ??
+				Enclosures.FirstOrDefault();
+
+			download = new Command(() => {
+				if (selectedEnclosure!=null) {
+					Process.Start(selectedEnclosure.Url.ToString());
+				}
+			});
+		}
+	}
 }
