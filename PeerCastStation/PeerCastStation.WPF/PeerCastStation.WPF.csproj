@@ -115,6 +115,7 @@
     <Compile Include="SettingsDialog.xaml.cs">
       <DependentUpon>SettingsDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Shell.cs" />
     <Compile Include="UISettingsViewModel.cs" />
     <Compile Include="UserInterface.cs" />
     <Compile Include="Commons\ViewModelBase.cs" />

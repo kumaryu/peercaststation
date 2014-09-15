@@ -17,17 +17,15 @@ using System;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
+using System.ComponentModel;
 using PeerCastStation.UI;
 using PeerCastStation.WPF.Commons;
 
 namespace PeerCastStation.WPF.Dialogs
 {
-	class UpdaterViewModel:ViewModelBase
+	internal class UpdaterViewModel:ViewModelBase
 	{
 		private readonly IEnumerable<VersionDescription> versionInfo;
-
-		private readonly Command download;
-		public Command Download { get { return download; } }
 
 		public string Descriptions {
 			get { return String.Join("\n", versionInfo.Select(v => v.Description).ToArray()); }
@@ -49,12 +47,93 @@ namespace PeerCastStation.WPF.Dialogs
 			this.selectedEnclosure =
 				Enclosures.FirstOrDefault(e => e.InstallerType==Updater.CurrentInstallerType) ??
 				Enclosures.FirstOrDefault();
-
-			download = new Command(() => {
-				if (selectedEnclosure!=null) {
-					Process.Start(selectedEnclosure.Url.ToString());
-				}
-			});
 		}
+
+		internal enum UpdateActionState {
+			Idle,
+			Downloading,
+			Downloaded,
+			Aborted,
+		};
+		private UpdateActionState state = UpdateActionState.Idle;
+		public UpdateActionState State {
+			get { return state; }
+			private set {
+				if (state==value) return;
+				state = value;
+				OnPropertyChanged("State");
+			}
+		}
+		private double progress = 0.0;
+		public double Progress {
+			get { return progress; }
+			private set {
+				if (progress==value) return;
+				progress = value;
+				OnPropertyChanged("Progress");
+			}
+		}
+
+		private string downloadPath;
+		public async System.Threading.Tasks.Task DoDownload()
+		{
+			var client = new System.Net.WebClient();
+			client.DownloadProgressChanged += (sender, args) => {
+				this.Progress = args.ProgressPercentage/100.0;
+			};
+			cancelSource.Token.Register(() => {
+				client.CancelAsync();
+			}, true);
+			this.State = UpdateActionState.Downloading;
+			try {
+				downloadPath = System.IO.Path.Combine(
+					Shell.GetKnownFolder(Shell.KnownFolder.Downloads),
+					System.IO.Path.GetFileName(SelectedEnclosure.Url.AbsolutePath));
+				await client.DownloadFileTaskAsync(
+					selectedEnclosure.Url.ToString(),
+					downloadPath);
+				this.State = UpdateActionState.Downloaded;
+			}
+			catch (System.Net.WebException) {
+				this.State = UpdateActionState.Aborted;
+			}
+		}
+
+		private void DoInstall()
+		{
+			if (downloadPath==null) return;
+			switch (System.IO.Path.GetExtension(downloadPath).ToLowerInvariant()) {
+			case ".msi":
+			case ".exe":
+				System.Diagnostics.Process.Start(downloadPath);
+				break;
+			default:
+				{
+					var args = "/select,\""+downloadPath+"\"";
+					System.Diagnostics.Process.Start("explorer.exe", args);
+				}
+				break;
+			}
+			PeerCastStation.Core.PeerCastApplication.Current.Stop();
+		}
+
+		private System.Threading.CancellationTokenSource cancelSource =
+			new System.Threading.CancellationTokenSource();
+		public async void Execute()
+		{
+			switch (this.State) {
+			case UpdateActionState.Idle:
+			case UpdateActionState.Aborted:
+				await DoDownload();
+				break;
+			case UpdateActionState.Downloading:
+				cancelSource.Cancel();
+				break;
+			case UpdateActionState.Downloaded:
+				DoInstall();
+				break;
+			}
+		}
+
 	}
 }
