@@ -53,7 +53,7 @@ namespace PeerCastStation.WPF
       notifyIcon.DoubleClick += (sender, args) => this.owner.ShowWindow();
       notifyIcon.BalloonTipClicked += (sender, e) => {
         if (newVersionInfo==null) return;
-        new UpdaterWindow() { DataContext=new UpdaterViewModel(newVersionInfo) }.Show();
+        new UpdaterWindow().Show();
       };
     }
 

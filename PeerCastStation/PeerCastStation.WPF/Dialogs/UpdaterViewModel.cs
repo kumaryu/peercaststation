@@ -18,21 +18,39 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.ComponentModel;
+using System.Threading.Tasks;
 using PeerCastStation.UI;
 using PeerCastStation.WPF.Commons;
 
 namespace PeerCastStation.WPF.Dialogs
 {
-	internal class UpdaterViewModel:ViewModelBase
+	internal class UpdaterViewModel
+		: ViewModelBase
 	{
-		private readonly IEnumerable<VersionDescription> versionInfo;
+		private IEnumerable<VersionDescription> versionInfo = Enumerable.Empty<VersionDescription>();
+		public IEnumerable<VersionDescription> VersionInfo {
+			get { return versionInfo; }
+			private set {
+				if (SetProperty("VersionInfo", ref versionInfo, value)) {
+					OnPropertyChanged("Descriptions");
+					OnPropertyChanged("Enclosures");
+				}
+			}
+		}
 
 		public string Descriptions {
 			get { return String.Join("\n", versionInfo.Select(v => v.Description).ToArray()); }
 		}
 
 		public IEnumerable<VersionEnclosure> Enclosures {
-			get { return versionInfo.First().Enclosures; }
+			get {
+				if (versionInfo!=null && versionInfo.Count()>0) {
+					return versionInfo.First().Enclosures;
+				}
+				else {
+					return Enumerable.Empty<VersionEnclosure>();
+				}
+			}
 		}
 
 		private VersionEnclosure selectedEnclosure;
@@ -41,16 +59,11 @@ namespace PeerCastStation.WPF.Dialogs
 			set { SetProperty("SelectedEnclosure", ref selectedEnclosure, value); }
 		}
 
-		public UpdaterViewModel(IEnumerable<VersionDescription> versionInfo)
-		{
-			this.versionInfo = versionInfo;
-			this.selectedEnclosure =
-				Enclosures.FirstOrDefault(e => e.InstallerType==Updater.CurrentInstallerType) ??
-				Enclosures.FirstOrDefault();
-		}
-
 		internal enum UpdateActionState {
 			Idle,
+			Checking,
+			NoUpdates,
+			NewVersionFound,
 			Downloading,
 			Downloaded,
 			Aborted,
@@ -71,6 +84,33 @@ namespace PeerCastStation.WPF.Dialogs
 				if (progress==value) return;
 				progress = value;
 				OnPropertyChanged("Progress");
+			}
+		}
+
+		public UpdaterViewModel()
+		{
+		}
+
+		private Updater versionChecker = new Updater();
+		public async Task<IEnumerable<VersionDescription>> DoCheckUpdate()
+		{
+			try {
+				var results = await versionChecker.CheckVersionTaskAsync(cancelSource.Token);
+				this.VersionInfo = results;
+				if (results!=null && results.Count()>0) {
+					this.SelectedEnclosure =
+						Enclosures.FirstOrDefault(e => e.InstallerType==Updater.CurrentInstallerType) ??
+						Enclosures.FirstOrDefault();
+					this.State = UpdateActionState.NewVersionFound;
+				}
+				else {
+					this.State = UpdateActionState.NoUpdates;
+				}
+				return results;
+			}
+			catch (System.Net.WebException) {
+				this.State = UpdateActionState.NoUpdates;
+				return Enumerable.Empty<VersionDescription>();
 			}
 		}
 
@@ -123,9 +163,14 @@ namespace PeerCastStation.WPF.Dialogs
 		{
 			switch (this.State) {
 			case UpdateActionState.Idle:
+			case UpdateActionState.NoUpdates:
+				await DoCheckUpdate();
+				break;
+			case UpdateActionState.NewVersionFound:
 			case UpdateActionState.Aborted:
 				await DoDownload();
 				break;
+			case UpdateActionState.Checking:
 			case UpdateActionState.Downloading:
 				cancelSource.Cancel();
 				break;

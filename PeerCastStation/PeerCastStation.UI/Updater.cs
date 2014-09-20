@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using PeerCastStation.Core;
 
 namespace PeerCastStation.UI
@@ -60,6 +62,15 @@ namespace PeerCastStation.UI
 				}
 				return result;
 			}
+		}
+
+		public async Task<IEnumerable<VersionDescription>> CheckVersionTaskAsync(CancellationToken cancel_token)
+		{
+			var results = await appcastReader.DownloadVersionInfoTaskAsync(url, cancel_token);
+			if (results==null) return null;
+			return results
+				.Where(v => v.PublishDate.Date>currentVersion)
+				.OrderByDescending(v => v.PublishDate);
 		}
 
     public bool CheckVersion()

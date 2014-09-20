@@ -19,7 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         xmlns:wf="clr-namespace:System.Windows.Forms.Integration;assembly=windowsformsintegration"
         xmlns:ui="clr-namespace:PeerCastStation.UI;assembly=PeerCastStation.UI"
         xmlns:wpf="clr-namespace:PeerCastStation.WPF.Dialogs"
-        Title="PeerCastStationのアップデート" Height="400" Width="540" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+        Title="PeerCastStationのアップデート"
+        Height="400" Width="540"
+        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
   <Window.Resources>
     <Style TargetType="Button">
       <Setter Property="Width"   Value="80"/>
@@ -33,7 +37,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
       <RowDefinition Height="*"/>
       <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
-    <TextBlock Grid.Row="0" Margin="5" Text="新しいバージョンがダウンロード可能です！"/>
+    <TextBlock Grid.Row="0" Margin="5">
+      <TextBlock.Style>
+        <Style TargetType="TextBlock">
+          <Style.Triggers>
+            <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Idle}">
+              <Setter Property="Text" Value="新しいバージョンがあるか確認しています..."/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.NoUpdates}">
+              <Setter Property="Text" Value="新しいバージョンはありません。最新版を使用中です"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.NewVersionFound}">
+              <Setter Property="Text" Value="新しいバージョンがダウンロード可能です！"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Downloading}">
+              <Setter Property="Text" Value="新しいバージョンがダウンロード可能です！"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Aborted}">
+              <Setter Property="Text" Value="新しいバージョンがダウンロード可能です！"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Downloaded}">
+              <Setter Property="Text" Value="新しいバージョンがダウンロード可能です！"/>
+            </DataTrigger>
+          </Style.Triggers>
+        </Style>
+      </TextBlock.Style>
+    </TextBlock>
     <Border Grid.Row="1" Margin="5" BorderBrush="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" BorderThickness="1">
       <wf:WindowsFormsHost Name="FormsHost" DataContext="{Binding Descriptions}"/>
     </Border>
@@ -44,7 +73,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <ColumnDefinition Width="Auto"/>
         <ColumnDefinition Width="Auto"/>
       </Grid.ColumnDefinitions>
-      <ProgressBar Grid.Column="0" Margin="8" Value="{Binding Path=Progress, Mode=OneWay}" Maximum="1.0"/>
+      <ProgressBar Grid.Column="0" Margin="8" Value="{Binding Path=Progress, Mode=OneWay}" Maximum="1.0">
+        <ProgressBar.Style>
+          <Style TargetType="ProgressBar">
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Checking}">
+                <Setter Property="IsIndeterminate" Value="True"/>
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </ProgressBar.Style>
+      </ProgressBar>
       <ComboBox Grid.Column="1" Margin="5" ItemsSource="{Binding Enclosures}" SelectedItem="{Binding SelectedEnclosure}">
         <ComboBox.ItemTemplate>
           <DataTemplate>
@@ -75,11 +114,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
             <Setter Property="Padding" Value="4"/>
             <Setter Property="Margin"  Value="5"/>
             <Style.Triggers>
-              <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Downloading}">
+              <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Idle}">
+                <Setter Property="Content" Value="更新の確認"/>
+              </DataTrigger>
+              <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Checking}">
                 <Setter Property="Content" Value="中止"/>
               </DataTrigger>
-              <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Idle}">
+              <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.NoUpdates}">
+                <Setter Property="Content" Value="更新の確認"/>
+              </DataTrigger>
+              <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.NewVersionFound}">
                 <Setter Property="Content" Value="ダウンロード"/>
+              </DataTrigger>
+              <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Downloading}">
+                <Setter Property="Content" Value="中止"/>
               </DataTrigger>
               <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Aborted}">
                 <Setter Property="Content" Value="ダウンロード"/>
