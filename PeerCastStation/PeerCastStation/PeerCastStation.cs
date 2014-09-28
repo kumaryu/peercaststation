@@ -41,6 +41,7 @@ namespace PeerCastStation.Main
         args.Cancel = true;
         Stop();
       };
+      settings.Load();
       foreach (var plugin in Plugins) {
         plugin.Attach(this);
       }
@@ -106,7 +107,6 @@ namespace PeerCastStation.Main
 
     void LoadSettings()
     {
-      settings.Load();
       PeerCastStationSettings s;
       if (settings.Contains(typeof(PeerCastStationSettings))) {
         s = settings.Get<PeerCastStationSettings>();
