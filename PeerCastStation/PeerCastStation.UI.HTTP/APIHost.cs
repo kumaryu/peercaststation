@@ -1031,18 +1031,30 @@ namespace PeerCastStation.UI.HTTP
         owner.CheckVersion();
       }
 
-      [RPCMethod("getNewVersions")]
-      public JArray GetNewVersions()
-      {
-        return new JArray(owner.GetNewVersions().Select(v => {
-          var obj = new JObject();
-          obj["title"]       = v.Title;
-          obj["publishDate"] = v.PublishDate;
-          obj["link"]        = v.Link;
-          obj["description"] = v.Description;
-          return obj;
-        }));
-      }
+			[RPCMethod("getNewVersions")]
+			public JArray GetNewVersions()
+			{
+				return new JArray(owner.GetNewVersions()
+					.OrderByDescending(v => v.PublishDate)
+					.Select(v => {
+						var obj = new JObject();
+						obj["title"]       = v.Title;
+						obj["publishDate"] = v.PublishDate;
+						obj["link"]        = v.Link;
+						obj["description"] = v.Description;
+						obj["enclosures"] = new JArray(v.Enclosures.Select(e => {
+							var enclosure = new JObject();
+							enclosure["title"] = e.Title;
+							enclosure["url"] = e.Url;
+							enclosure["length"] = e.Length;
+							enclosure["installerType"] = e.InstallerType.ToString().ToLowerInvariant();
+							enclosure["type"] = e.Type;
+							return enclosure;
+						}));
+					return obj;
+					})
+				);
+			}
 
       public static readonly int RequestLimit = 64*1024;
       public static readonly int TimeoutLimit = 5000;

@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Fragment>
+        <DirectoryRef Id="INSTALLFOLDER" />
+    </Fragment>
+    <Fragment>
+        <ComponentGroup Id="PeerCastStation.ASF.Binaries">
+            <ComponentRef Id="cmpB0C3BA74AF8F34DECB6D7BD2E9DFAD11" />
+        </ComponentGroup>
+    </Fragment>
+    <Fragment>
+        <ComponentGroup Id="PeerCastStation.ASF.Content" />
+    </Fragment>
+    <Fragment>
+        <ComponentGroup Id="PeerCastStation.ASF">
+            <Component Id="cmpB0C3BA74AF8F34DECB6D7BD2E9DFAD11" Directory="INSTALLFOLDER" Guid="*">
+                <File Id="fil7EF1CF230100BB430C20B74E7E221DC2" Source="$(var.PeerCastStation.ASF.TargetDir)\PeerCastStation.ASF.dll" />
+            </Component>
+        </ComponentGroup>
+    </Fragment>
+</Wix>

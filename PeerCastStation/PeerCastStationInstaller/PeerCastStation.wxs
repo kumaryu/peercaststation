@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:firewall="http://schemas.microsoft.com/wix/FirewallExtension">
+	<Fragment>
+		<Icon Id="PeerCastStation.exe" SourceFile="$(var.PeerCastStation.TargetDir)\PeerCastStation.exe"/>
+		<ComponentGroup Id="PeerCastStation" Directory="INSTALLFOLDER">
+			<Component Id="PeerCastStation.exe" Guid="*">
+				<File Id="PeerCastStation.exe" Source="$(var.PeerCastStation.TargetDir)\PeerCastStation.exe" KeyPath="yes">
+					<Shortcut Id='PeerCastStation.exe.lnk' Directory='ProgramMenu' Name='PeerCastStation' Icon='PeerCastStation.exe' Advertise='yes'/>
+					<firewall:FirewallException Id="PeerCastStation.exe.firewall" Name="PeerCastStation" Scope="any" IgnoreFailure="yes"/>
+				</File>
+			</Component>
+			<Component Id="PeerCastStation.config" Guid="*">
+				<File Id="PeerCastStation.exe.config" Source="$(var.PeerCastStation.TargetDir)\PeerCastStation.exe.config" />
+			</Component>
+			<Component Id="readme.txt" Guid="*">
+				<File Id="readme.txt" Source="$(var.PeerCastStation.ProjectDir)\readme.txt" />
+			</Component>
+			<Component Id="LICENSE.txt" Guid="*">
+				<File Id="LICENSE.txt" Source="$(var.PeerCastStation.ProjectDir)\LICENSE.txt" />
+			</Component>
+		</ComponentGroup>
+	</Fragment>
+</Wix>

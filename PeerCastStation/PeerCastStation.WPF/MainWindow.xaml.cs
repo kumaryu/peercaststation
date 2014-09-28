@@ -102,6 +102,13 @@ namespace PeerCastStation.WPF
       dialog.ShowDialog();
     }
 
+		private void UpdateCheck_Click(object sender, RoutedEventArgs e)
+		{
+			var dialog = new UpdaterWindow();
+			dialog.Owner = this;
+			dialog.ShowDialog();
+		}
+
     private LogWindow logWindow;
     private void OnShowLogs(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
     {

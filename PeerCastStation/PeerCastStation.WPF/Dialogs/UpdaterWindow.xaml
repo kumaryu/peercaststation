@@ -17,29 +17,129 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wf="clr-namespace:System.Windows.Forms.Integration;assembly=windowsformsintegration"
-        Title="UpdaterWindow" Height="400" Width="540">
-    <Window.Resources>
-        <Style TargetType="DockPanel">
-            <Setter Property="Margin" Value="5"/>
-        </Style>
+        xmlns:ui="clr-namespace:PeerCastStation.UI;assembly=PeerCastStation.UI"
+        xmlns:wpf="clr-namespace:PeerCastStation.WPF.Dialogs"
+        Title="PeerCastStationのアップデート"
+        Height="400" Width="540"
+        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+  <Window.Resources>
+    <Style TargetType="Button">
+      <Setter Property="Width"   Value="80"/>
+      <Setter Property="Padding" Value="4"/>
+      <Setter Property="Margin"  Value="5"/>
+    </Style>
+  </Window.Resources>
+  <Grid Margin="5">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <TextBlock Grid.Row="0" Margin="5">
+      <TextBlock.Style>
         <Style TargetType="TextBlock">
-            <Setter Property="Margin" Value="5"/>
+          <Style.Triggers>
+            <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Idle}">
+              <Setter Property="Text" Value="新しいバージョンがあるか確認しています..."/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.NoUpdates}">
+              <Setter Property="Text" Value="新しいバージョンはありません。最新版を使用中です"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.NewVersionFound}">
+              <Setter Property="Text" Value="新しいバージョンがダウンロード可能です！"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Downloading}">
+              <Setter Property="Text" Value="新しいバージョンがダウンロード可能です！"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Aborted}">
+              <Setter Property="Text" Value="新しいバージョンがダウンロード可能です！"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Downloaded}">
+              <Setter Property="Text" Value="新しいバージョンがダウンロード可能です！"/>
+            </DataTrigger>
+          </Style.Triggers>
         </Style>
-        <Style TargetType="WebBrowser">
-            <Setter Property="Margin" Value="5"/>
-        </Style>
-        <Style TargetType="Button">
-            <Setter Property="Width" Value="80"/>
-            <Setter Property="Height" Value="24"/>
-            <Setter Property="Margin" Value="5"/>
-        </Style>
-    </Window.Resources>
-    <DockPanel>
-        <TextBlock DockPanel.Dock="Top" Text="新しいバージョンがダウンロード可能です！"/>
-        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="ダウンロード" Command="{Binding Download}"/>
-            <Button Content="閉じる" Click="Button_Click"/>
-        </StackPanel>
-        <wf:WindowsFormsHost Name="FormsHost" DataContext="{Binding Descriptions}"/>
-    </DockPanel>
+      </TextBlock.Style>
+    </TextBlock>
+    <Border Grid.Row="1" Margin="5" BorderBrush="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" BorderThickness="1">
+      <wf:WindowsFormsHost Name="FormsHost" DataContext="{Binding Descriptions}"/>
+    </Border>
+    <Grid Grid.Row="2">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <ProgressBar Grid.Column="0" Margin="8" Value="{Binding Path=Progress, Mode=OneWay}" Maximum="1.0">
+        <ProgressBar.Style>
+          <Style TargetType="ProgressBar">
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Checking}">
+                <Setter Property="IsIndeterminate" Value="True"/>
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </ProgressBar.Style>
+      </ProgressBar>
+      <ComboBox Grid.Column="1" Margin="5" ItemsSource="{Binding Enclosures}" SelectedItem="{Binding SelectedEnclosure}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate>
+            <TextBlock>
+              <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                  <Setter Property="Text" Value="ZIP"/>
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding InstallerType}" Value="{x:Static ui:InstallerType.Installer}">
+                      <Setter Property="Text" Value="インストーラ"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding InstallerType}" Value="{x:Static ui:InstallerType.ServiceInstaller}">
+                      <Setter Property="Text" Value="サービスインストーラ"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding InstallerType}" Value="{x:Static ui:InstallerType.ServiceArchive}">
+                      <Setter Property="Text" Value="サービスZIP"/>
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </TextBlock.Style>
+            </TextBlock>
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+      <Button x:Name="UpdateButton" Grid.Column="2" Click="UpdateButton_Click" Width="140">
+        <Button.Style>
+          <Style TargetType="Button">
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="Margin"  Value="5"/>
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Idle}">
+                <Setter Property="Content" Value="更新の確認"/>
+              </DataTrigger>
+              <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Checking}">
+                <Setter Property="Content" Value="中止"/>
+              </DataTrigger>
+              <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.NoUpdates}">
+                <Setter Property="Content" Value="更新の確認"/>
+              </DataTrigger>
+              <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.NewVersionFound}">
+                <Setter Property="Content" Value="ダウンロード"/>
+              </DataTrigger>
+              <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Downloading}">
+                <Setter Property="Content" Value="中止"/>
+              </DataTrigger>
+              <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Aborted}">
+                <Setter Property="Content" Value="ダウンロード"/>
+              </DataTrigger>
+              <DataTrigger Binding="{Binding State}" Value="{x:Static wpf:UpdaterViewModel+UpdateActionState.Downloaded}">
+                <Setter Property="Content" Value="終了してインストール"/>
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </Button.Style>
+      </Button>
+      <Button Grid.Column="3" Content="閉じる" Click="Button_Click"/>
+    </Grid>
+  </Grid>
 </Window>

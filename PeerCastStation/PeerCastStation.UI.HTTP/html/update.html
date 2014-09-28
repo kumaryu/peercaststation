@@ -18,7 +18,7 @@
       });
     </script>
     <style>
-      .versions {
+      .content {
         margin-top: 3em;
         padding: 1em;
       }
@@ -29,11 +29,15 @@
       <div class="navbar-inner">
         <div class="container-fluid">
           <span class="brand" style="color:#FFFFFF">新しいバージョンがダウンロード可能です！</span>
-          <a class="btn btn-primary pull-right" data-bind="attr:{href:link}">ダウンロード</a>
         </div>
       </div>
     </div>
-    <div class="versions" data-bind="html:versions"></div>
+    <div class="content">
+      <div data-bind="foreach: enclosures">
+        <a class="btn btn-primary" data-bind="attr:{href:url}, text:title"></a>
+      </div>
+      <div data-bind="html:versions"></div>
+    </div>
   </body>
 </html>
 
