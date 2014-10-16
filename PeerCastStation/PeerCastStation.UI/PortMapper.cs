@@ -82,7 +82,6 @@ namespace PeerCastStation.UI
 		private List<INatDevice> devices = new List<INatDevice>();
 		private List<int>        ports   = new List<int>();
 		private System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
-		private bool enabled = true;
 		private PeerCast peerCast;
 
 		public PortMapperMonitor(PeerCast peercast)
