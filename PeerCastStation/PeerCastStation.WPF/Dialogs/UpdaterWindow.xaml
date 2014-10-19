@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         Height="400" Width="540"
         Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
         ShowInTaskbar="False"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner" Loaded="Window_Loaded">
   <Window.Resources>
     <Style TargetType="Button">
       <Setter Property="Width"   Value="80"/>
