@@ -89,12 +89,14 @@ namespace PeerCastStation.UI
 			peerCast = peercast;
 			NatUtility.DeviceFound += NatUtility_DeviceFound;
 			NatUtility.DeviceLost  += NatUtility_DeviceLost;
+			NatUtility.StartDiscovery();
 			timer.Start();
 		}
 
 		public void Dispose()
 		{
 			timer.Stop();
+			NatUtility.StopDiscovery();
 			NatUtility.DeviceFound -= NatUtility_DeviceFound;
 			NatUtility.DeviceLost  -= NatUtility_DeviceLost;
 			lock (ports) {
