@@ -45,6 +45,12 @@ namespace PeerCastStation.UI
       return src.Value;
     }
 
+    private string GetContents(XElement src)
+    {
+      if (src==null) throw new ParseErrorException();
+      return String.Join("", src.Nodes().Select(child => child.ToString(SaveOptions.DisableFormatting)));
+    }
+
     private string GetStringValue(XAttribute src)
     {
       if (src==null) throw new ParseErrorException();
@@ -108,7 +114,7 @@ namespace PeerCastStation.UI
 						Title       = GetStringValue(item.Element("title")),
 						PublishDate = GetDateTimeValue(item.Element("pubDate")),
 						Link        = GetUriValue(item.Element("link")),
-						Description = GetStringValue(item.Element("description")),
+						Description = GetContents(item.Element("description")),
 						Enclosures  = item.Elements("enclosure").Select(elt => 
 							new VersionEnclosure {
 								Url    = GetUriValue(elt.Attribute("url")),
