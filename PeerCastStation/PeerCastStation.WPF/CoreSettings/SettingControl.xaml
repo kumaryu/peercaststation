@@ -209,6 +209,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
             <Grid.RowDefinitions>
               <RowDefinition Height="Auto"/>
               <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="Auto"/>
@@ -216,8 +217,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
             </Grid.ColumnDefinitions>
             <Label    Grid.Column="0" Grid.Row="0" Content="ポート自動開放:"/>
             <CheckBox Grid.Column="1" Grid.Row="0" Content="自動開放する(UPnP/NAT-PMP)" VerticalAlignment="Center" IsChecked="{Binding PortMapperEnabled}"/>
-            <Label    Grid.Column="0" Grid.Row="1" Content="ポート開放確認:"/>
-            <Grid     Grid.Column="1" Grid.Row="1">
+            <Label     Grid.Column="0" Grid.Row="1" Content="外部アドレス:"/>
+            <TextBlock Grid.Column="1" Grid.Row="1" VerticalAlignment="Center">
+              <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding PortMapperExternalAddresses}" Value="">
+                      <Setter Property="Text" Value="ルーター未発見"/>
+                    </DataTrigger>
+                  </Style.Triggers>
+                  <Setter Property="Text" Value="{Binding PortMapperExternalAddresses}"/>
+                </Style>
+              </TextBlock.Style>
+            </TextBlock>
+            <Label    Grid.Column="0" Grid.Row="2" Content="ポート開放確認:"/>
+            <Grid     Grid.Column="1" Grid.Row="2">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
