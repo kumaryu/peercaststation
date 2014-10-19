@@ -1,4 +1,29 @@
 ---
+- name: Version 1.9.0.1 (2014年10月20日開発版)
+  version: 1.9.0.1
+  channel: dev
+  notes: |
+    .NET Framework 4.5を使うようにしました。UPnP/NAT-PMPでのポート開放に対応しました。
+
+    * .NET Framework 4.5.1を必須にしました。Windows XPには入らないのでVista以降専用になります。monoでは3.0以降を使用してください。
+    * UPnPやNAT-PMPに対応したルータがある場合に自動的にポート開放するようにしました(無効にもできます)。自動ポート開放はPeerCastStation起動中のみ有効になります。
+    * インストーラ版を追加しました。
+    * アップデート通知時にはインストーラ版とzip版を選択してダウンロードできるようになりました。また、GUI版ではブラウザを介さずに直接ダウンロードするようにしました。次回の更新以降で有効になります。
+    * RTMP配信時に一部のエンコーダで正常に配信できない場合があったのを修正しました(by niwakazoider)
+    * 1.9.0で自動ポート開放が動いていなかったのを修正しました。
+    * 自動ポート開放が有効でUPnPやNAT-PMPに対応したルータがあった場合には設定画面でルータの外部アドレスを表示するようにしました。ルータがUPnP/NAT-PMPに対応していることを確認するのにご利用ください。
+    * アップデート通知をクリックした時に、アップデートの内容が表示されなかったのを修正しました。
+    * アップデートの内容表示が改行も書式もないテキストで表示されてしまっていたのを修正しました。
+  date: Mon, 20 Oct 2014 1:10:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.9.0.1.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.9.0.1.zip
+    length: 1394395
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-1.9.0.1.exe
+    length: 1917036
+
 - name: Version 1.9.0 (2014年10月19日開発版)
   version: 1.9.0
   channel: dev
