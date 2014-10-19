@@ -9,6 +9,9 @@
         </ComponentGroup>
     </Fragment>
     <Fragment>
+        <ComponentGroup Id="PeerCastStation.UI.HTTP.Satellites" />
+    </Fragment>
+    <Fragment>
         <DirectoryRef Id="INSTALLFOLDER">
             <Directory Id="dir028C6142D258AB7C6AC461E7AB3D3599" Name="Content" />
             <Directory Id="dir1E1FE666E9CD7E4F73182A1AF06B6D6E" Name="help" />

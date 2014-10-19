@@ -9,6 +9,9 @@
         </ComponentGroup>
     </Fragment>
     <Fragment>
+        <ComponentGroup Id="PeerCastStation.ASF.Satellites" />
+    </Fragment>
+    <Fragment>
         <ComponentGroup Id="PeerCastStation.ASF.Content" />
     </Fragment>
     <Fragment>

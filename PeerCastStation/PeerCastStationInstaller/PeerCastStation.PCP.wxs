@@ -9,6 +9,9 @@
         </ComponentGroup>
     </Fragment>
     <Fragment>
+        <ComponentGroup Id="PeerCastStation.PCP.Satellites" />
+    </Fragment>
+    <Fragment>
         <ComponentGroup Id="PeerCastStation.PCP.Content" />
     </Fragment>
     <Fragment>
