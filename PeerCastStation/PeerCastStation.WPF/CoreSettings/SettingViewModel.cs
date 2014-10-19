@@ -525,6 +525,18 @@ namespace PeerCastStation.WPF.CoreSettings
       set { SetProperty("PortMapperEnabled", ref portMapperEnabled, value); }
     }
 
+    public string PortMapperExternalAddresses { 
+      get {
+        var port_mapper = pecaApp.Plugins.GetPlugin<PeerCastStation.UI.PortMapper>();
+        if (port_mapper!=null) {
+          return String.Join(",", port_mapper.GetExternalAddresses().Select(addr => addr.ToString()));
+        }
+        else {
+          return "";
+        }
+      }
+    }
+
     private YellowPageClientViewModel selectedYellowPage;
     public YellowPageClientViewModel SelectedYellowPage {
       get { return selectedYellowPage; }
@@ -717,6 +729,7 @@ namespace PeerCastStation.WPF.CoreSettings
       case "IsListenersModified":
       case "IsYellowPagesModified":
       case "PortCheckStatus":
+      case "PortMapperExternalAddresses":
         break;
       default:
         IsModified = true;
@@ -725,7 +738,7 @@ namespace PeerCastStation.WPF.CoreSettings
       base.OnPropertyChanged(propertyName);
     }
 
-    public void Apply()
+    public async void Apply()
     {
       if (!IsModified) return;
       IsModified = false;
@@ -764,6 +777,9 @@ namespace PeerCastStation.WPF.CoreSettings
       var port_mapper = pecaApp.Plugins.GetPlugin<PeerCastStation.UI.PortMapper>();
       if (port_mapper!=null) port_mapper.Enabled = portMapperEnabled;
       pecaApp.SaveSettings();
+      await System.Threading.Tasks.Task.Delay(200).ContinueWith(prev => {
+        OnPropertyChanged("PortMapperExternalAddresses");
+      });
     }
 
   }

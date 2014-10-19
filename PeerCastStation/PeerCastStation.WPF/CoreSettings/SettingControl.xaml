@@ -98,13 +98,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
               <Label Grid.Column="0" Grid.Row="0" Content="ポート番号:"/>
               <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="1" Increment="1" Value="{Binding PrimaryPort}"/>
-              <Label Grid.Column="0" Grid.Row="1" Content="ポート自動開放:"/>
-              <CheckBox Grid.Column="1" Grid.Row="1" Content="自動開放する(UPnP/NAT-PMP)" VerticalAlignment="Center" IsChecked="{Binding PortMapperEnabled}"/>
-              <Label Grid.Column="0" Grid.Row="2" Content="ポート開放状態:"/>
-              <Grid  Grid.Column="1" Grid.Row="2">
+              <Label     Grid.Column="0" Grid.Row="1" Content="ポート自動開放:"/>
+              <CheckBox  Grid.Column="1" Grid.Row="1" Content="自動開放する(UPnP/NAT-PMP)" VerticalAlignment="Center" IsChecked="{Binding PortMapperEnabled}"/>
+              <Label     Grid.Column="0" Grid.Row="2" Content="外部アドレス:"/>
+              <TextBlock Grid.Column="1" Grid.Row="2" VerticalAlignment="Center">
+                <TextBlock.Style>
+                  <Style TargetType="TextBlock">
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding PortMapperExternalAddresses}" Value="">
+                        <Setter Property="Text" Value="ルーター未発見"/>
+                      </DataTrigger>
+                    </Style.Triggers>
+                    <Setter Property="Text" Value="{Binding PortMapperExternalAddresses}"/>
+                  </Style>
+                </TextBlock.Style>
+              </TextBlock>
+              <Label Grid.Column="0" Grid.Row="3" Content="ポート開放状態:"/>
+              <Grid  Grid.Column="1" Grid.Row="3">
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*"/>
                   <ColumnDefinition Width="Auto"/>

@@ -21,10 +21,25 @@ namespace PeerCastStation.UI
 				if (enabled!=value) {
 					enabled = value;
 					if (Application==null) return;
-					if (enabled) OnStart();
-					else         OnStop();
+					if (enabled) {
+						if (monitor==null) OnStart();
+						else               monitor.OnTimer();
+					}
+					else {
+						if (monitor!=null) monitor.Clear();
+					}
 					SaveSettings();
 				}
+			}
+		}
+
+		public IEnumerable<System.Net.IPAddress> GetExternalAddresses()
+		{
+			if (monitor==null || !enabled) {
+				return Enumerable.Empty<System.Net.IPAddress>();
+			}
+			else {
+				return monitor.GetExternalAddresses();
 			}
 		}
 
@@ -109,10 +124,34 @@ namespace PeerCastStation.UI
 							device.BeginDeletePortMap(mapping_udp, OnPortMapDeleted, device);
 						}
 					}
+					devices.Clear();
 				}
 				ports.Clear();
 			}
-			devices.Clear();
+		}
+
+		public IList<System.Net.IPAddress> GetExternalAddresses()
+		{
+			lock (devices) {
+				return devices.Select(dev => dev.GetExternalIP()).ToArray();
+			}
+		}
+
+		public void Clear()
+		{
+			lock (ports) {
+				lock (devices) {
+					foreach (var port in ports) {
+						foreach (var device in devices) {
+							Mapping mapping_tcp = new Mapping(Protocol.Tcp, port, port, 7200);
+							Mapping mapping_udp = new Mapping(Protocol.Udp, port, port, 7200);
+							device.BeginDeletePortMap(mapping_tcp, OnPortMapDeleted, device);
+							device.BeginDeletePortMap(mapping_udp, OnPortMapDeleted, device);
+						}
+					}
+				}
+				ports.Clear();
+			}
 		}
 
 		private void AddPort(int port)
