@@ -23,7 +23,7 @@ unblock.batを実行してから再度PeerCastStation.exeを実行してみて�
 {% for release in site.data.releasenotes %}{% if release.channel contains 'dev' %}
 {{ release.name }}
 ------------------
-[ダウンロード]({{ release.url }})
+{% for enclosure in release.enclosures  %}{% if enclosure.type == 'archive' %}[ZIP版ダウンロード]({{ enclosure.url }}){% endif %}{% if enclosure.type == 'installer' %}[インストーラ版ダウンロード]({{ enclosure.url }}){% endif %} {% endfor %} 
 
 {{ release.notes }}
 

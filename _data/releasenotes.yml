@@ -1,4 +1,25 @@
 ---
+- name: Version 1.9.0 (2014年10月19日開発版)
+  version: 1.9.0
+  channel: dev
+  notes: |
+    .NET Framework 4.5を使うようにしました。UPnP/NAT-PMPでのポート開放に対応しました。
+
+    * .NET Framework 4.5.1を必須にしました。Windows XPには入らないのでVista以降専用になります。monoでは3.0以降を使用してください。
+    * UPnPやNAT-PMPに対応したルータがある場合に自動的にポート開放するようにしました(無効にもできます)。自動ポート開放はPeerCastStation起動中のみ有効になります。
+    * インストーラ版を追加しました。
+    * アップデート通知時にはインストーラ版とzip版を選択してダウンロードできるようになりました。また、GUI版ではブラウザを介さずに直接ダウンロードするようにしました。次回の更新以降で有効になります。
+    * RTMP配信時に一部のエンコーダで正常に配信できない場合があったのを修正しました(by niwakazoider)
+  date: Sun, 19 Oct 2014 19:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.9.0.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.9.0.zip
+    length: 1372371
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-1.9.0.exe
+    length: 1924462
+
 - name: Version 1.8.0 (2014年8月3日開発版)
   version: 1.8.0
   channel: dev
@@ -10,8 +31,10 @@
     * ドキュメントを現状に合わせて更新しました
   date: Sun, 3 Aug 2014 23:50:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.8.0-dev.zip
-  length: 1254365
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.8.0-dev.zip
+    length: 1254365
 - name: Version 1.8.0 (2014年8月3日安定版)
   version: 1.8.0
   channel: stable
@@ -30,8 +53,10 @@
     * その他いろいろと不具合の修正や使い勝手の向上をしました
   date: Sun, 3 Aug 2014 23:50:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.8.0.zip
-  length: 1272923
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.8.0.zip
+    length: 1272923
 - name: Version 1.7.11 (2014年6月29日開発版)
   version: 1.7.11
   channel: dev
@@ -43,8 +68,10 @@
     * 1.7.10.1に無用になったdllがまだ入っていたのを入らないようにしました
   date: Sun, 29 Jun 2014 3:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.7.11.zip
-  length: 1345104
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.7.11.zip
+    length: 1345104
 - name: Version 1.7.10.1 (2014年6月7日開発版)
   version: 1.7.10.1
   channel: dev
@@ -59,8 +86,10 @@
     * unblock.batで必要なdll全てのブロックが解除できていなかったのを修正しました
   date: Sat, 7 Jun 2014 3:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.7.10.1.zip
-  length: 1799033
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.7.10.1.zip
+    length: 1799033
 - name: Version 1.7.10 (2014年5月31日開発版)
   version: 1.7.10
   channel: dev
@@ -85,8 +114,10 @@
     * ライセンスに互換性がないライブラリを使っていたのを取り除きました
   date: Sat, 31 May 2014 23:55:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.7.10.zip
-  length: 1797975
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.7.10.zip
+    length: 1797975
 - name: Version 1.7.9.1 (2014年3月16日開発版)
   version: 1.7.9.1
   channel: dev
@@ -101,8 +132,10 @@
     * ファイルの実行ブロックを一括で解除するunblock.batを追加しました
   date: Sun, 16 Mar 2014 23:30:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.7.9.1.zip
-  length: 1781388
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.7.9.1.zip
+    length: 1781388
 - name: Version 1.7.9 (2014年3月16日開発版)
   version: 1.7.9
   channel: dev
@@ -116,8 +149,10 @@
     * ファイルの実行ブロックを一括で解除するunblock.batを追加しました
   date: Sun, 16 Mar 2014 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.7.9.zip
-  length: 1780894
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.7.9.zip
+    length: 1780894
 - name: Version 1.7.8 (2014年2月11日開発版)
   version: 1.7.8
   channel: dev
@@ -127,8 +162,10 @@
     * .NET3.5と.NET4(または4.5)がインストールされていた場合には.NET4で動作するようにしました
   date: Tue, 11 Feb 2014 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.7.8.zip
-  length: 1742754
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.7.8.zip
+    length: 1742754
 - name: Version 1.7.7 (2013年12月31日開発版)
   version: 1.7.7
   channel: dev
@@ -141,8 +178,10 @@
     * 新バージョンのチェックを2時間おきにやるようにしました
   date: Tue, 31 Dec 2013 2:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.7.7.zip
-  length: 1731655
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.7.7.zip
+    length: 1731655
 - name: Version 1.6.3 (2013年12月23日安定版)
   version: 1.6.3
   channel: stable
@@ -162,8 +201,10 @@
       落ちた場合の報告にはこのファイルの内容を記載してもらうと解析が進みますのでお願いします
   date: Mon, 23 Dec 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.6.3.zip
-  length: 1715969
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.6.3.zip
+    length: 1715969
 - name: Version 1.7.6 (2013年12月12日開発版)
   version: 1.7.6
   channel: dev
@@ -171,8 +212,10 @@
     * 1.7.5でリレー先が切れた時に落ちることがあったのを修正しました
   date: Thu, 12 Dec 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.7.6.zip
-  length: 1730740
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.7.6.zip
+    length: 1730740
 - name: Version 1.7.5 (2013年12月11日開発版)
   version: 1.7.5
   channel: dev
@@ -181,8 +224,10 @@
     * 受信処理の効率化をもうちょっと進めました
   date: Wed, 11 Dec 2013 18:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.7.5.zip
-  length: 1710476
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.7.5.zip
+    length: 1710476
 - name: Version 1.7.4 (2013年12月10日開発版)
   version: 1.7.4
   channel: dev
@@ -194,8 +239,10 @@
     * リレー時のパケット受信処理を効率化しました。パケット数が多いチャンネルでも処理が滞らなくなりました
   date: Tue, 10 Dec 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.7.4.zip
-  length: 1730688
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.7.4.zip
+    length: 1730688
 - name: Version 1.7.3 (2013年11月30日開発版)
   version: 1.7.3
   channel: dev
@@ -203,8 +250,10 @@
     * リレー可能なアドレスが無いノードが接続してきた場合に落ちる場合があったのを修正しました
   date: Sat, 30 Nov 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.7.3.zip
-  length: 1701959
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.7.3.zip
+    length: 1701959
 - name: Version 1.7.2 (2013年11月17日開発版)
   version: 1.7.2
   channel: dev
@@ -214,8 +263,10 @@
       落ちた場合の報告にはこのファイルの内容を記載してもらうと解析が進みますのでお願いします
   date: Sun, 17 Nov 2013 3:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.7.2.zip
-  length: 1701952
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.7.2.zip
+    length: 1701952
 - name: Version 1.7.1 (2013年10月27日開発版)
   version: 1.7.1
   channel: dev
@@ -228,8 +279,10 @@
     * LANの操作可能ポートがない時にタスクトレイからHTML UIやヘルプが表示できなかったのを修正しました
   date: Sun, 27 Oct 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.7.1.zip
-  length: 1700062
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.7.1.zip
+    length: 1700062
 - name: Version 1.7.0 (2013年10月21日開発版)
   version: 1.7.0
   channel: dev
@@ -244,8 +297,10 @@
     * JSON RPCのオブジェクトIDがおかしくなる可能性があるのを修正しました
   date: Mon, 21 Oct 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.7.0.zip
-  length: 1699645
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.7.0.zip
+    length: 1699645
 - name: Version 1.6.2 (2013年11月30日版)
   version: 1.6.2
   channel: stable
@@ -253,8 +308,10 @@
     * リレー可能なアドレスが無いノードが接続してきた場合に落ちる場合があったのを修正しました
   date: Sat, 30 Nov 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.6.2.zip
-  length: 1698548
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.6.2.zip
+    length: 1698548
 - name: Version 1.6.0 (2013年10月14日版)
   version: 1.6.0
   channel: stable
@@ -280,8 +337,10 @@
     * 外部からの視聴・操作にHTTPのBasic認証を設定できるようにしました。ポートの設定で「要認証」を有効にすると視聴と操作にのみBasic認証がかかります。今のところIDとパスワードは手動で設定できず自動生成のみになっています
   date: Mon, 14 Oct 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.6.0.zip
-  length: 1697942
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.6.0.zip
+    length: 1697942
 - name: Version 1.5.3 (2013年9月25日版)
   version: 1.5.3
   channel: stable
@@ -294,8 +353,10 @@
     * 下流へデータを送りきれないと判断して切断をする条件を3秒から10秒に緩和しました
   date: Wed, 25 Sep 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.5.3.zip
-  length: 1775782
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.5.3.zip
+    length: 1775782
 - name: Version 1.5.2 (2013年9月8日版)
   version: 1.5.2
   channel: stable
@@ -309,8 +370,10 @@
     * 外部ツールでウィンドウを表示させた時に真っ黒になるのに対処しました
   date: Sun, 8 Sep 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.5.2.zip
-  length: 1679049
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.5.2.zip
+    length: 1679049
 - name: Version 1.5.1 (2013年9月7日版)
   version: 1.5.1
   channel: stable
@@ -322,8 +385,10 @@
     * ヘルプページの表示がちょっとかわりました。目次がつきました
   date: Sat, 7 Sep 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.5.1.zip
-  length: 1678158
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.5.1.zip
+    length: 1678158
 - name: Version 1.5.0 (2013年9月4日版)
   version: 1.5.0
   channel: stable
@@ -339,8 +404,10 @@
     * 受信部を大幅に整理し、リレーの再接続などの安定化をしました
   date: Wed, 4 Sep 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.5.0.zip
-  length: 1647929
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.5.0.zip
+    length: 1647929
 - name: Version 1.4.2 (2013年7月13日版)
   version: 1.4.2
   channel: stable
@@ -355,8 +422,10 @@
     * 接続が切れているチャンネルに同時に複数の視聴要求がくると落ちることがあったのを修正しました
   date: Sat, 13 Jul 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.4.2.zip
-  length: 1114113
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.4.2.zip
+    length: 1114113
 - name: Version 1.4.1 (2013年6月19日版)
   version: 1.4.1
   channel: stable
@@ -371,8 +440,10 @@
     * ログファイルがずっとロックされていたのを実際の書き込み中のみロックされるように変更しました
   date: Wed, 19 Jun 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.4.1.zip
-  length: 1080443
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.4.1.zip
+    length: 1080443
 - name: Version 1.4.0 (2013年5月29日版)
   version: 1.4.0
   channel: stable
@@ -387,8 +458,10 @@
     * 設定保存がPeerCastStation正常終了時のみ行われていたのを、設定変更時にすぐ保存するようにしました
   date: Wed, 29 May 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.4.0.zip
-  length: 1079867
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.4.0.zip
+    length: 1079867
 - name: Version 1.3.2 (2013年5月8日版)
   version: 1.3.2
   channel: stable
@@ -398,8 +471,10 @@
     * HTML UIの設定ページでその他の設定を変更しても全く反映されないのを修正しました
   date: Wed, 08 May 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.3.2.zip
-  length: 1107730
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.3.2.zip
+    length: 1107730
 - name: Version 1.3.1 (2013年5月5日版)
   version: 1.3.1
   channel: stable
@@ -410,8 +485,10 @@
     * User-AgentやServerをPeerCastStation/1.3.1.0のようなバージョンに即した値を出力するようにしました
   date: Sun, 05 May 2013 18:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.3.1.zip
-  length: 1107524
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.3.1.zip
+    length: 1107524
 - name: Version 1.3.0 (2013年5月4日版)
   version: 1.3.0
   channel: stable
@@ -424,8 +501,10 @@
     * プラグインシステムの実装を変更しました。バージョン表示が少し変わりますが動作には何の影響もありません
   date: Sat, 04 May 2013 00:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.3.0.zip
-  length: 1076766
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.3.0.zip
+    length: 1076766
 - name: Version 1.2.1 (2013年3月29日版)
   version: 1.2.1
   channel: stable
@@ -442,8 +521,10 @@
     * GUIでログ表示の設定を変更しても反映されていなかったのを修正しました
   date: Fri, 29 Mar 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.2.1.zip
-  length: 1097430
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.2.1.zip
+    length: 1097430
 - name: Version 1.2.0 (2013年2月28日版)
   version: 1.2.0
   channel: stable
@@ -459,8 +540,10 @@
     * 機能追加をやりやすくするために設定ファイルの保存場所および内容を変更しました。新旧の設定保存先はヘルプのその他を参照してください
   date: Thu, 28 Feb 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.2.0.zip
-  length: 1061682
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.2.0.zip
+    length: 1061682
 - name: Version 1.1.0 (2013年1月29日版)
   version: 1.1.0
   channel: stable
@@ -477,8 +560,10 @@
     * 一部のチャンネルでチャンネル情報が文字化けすることがあるのを仕方なく対処してやりました。本来はShift-JISなんかでチャンネル情報を流す方が悪い
   date: Mon, 28 Jan 2013 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.1.0.zip
-  length: 1419469
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.1.0.zip
+    length: 1419469
 - name: Version 1.0.0 (2012年12月31日版)
   version: 1.0.0
   channel: stable
@@ -500,8 +585,10 @@
     * 31日版:HTML UIで起動時間・チャンネルリレー時間の計算が間違っていたのを修正しました
   date: Sun, 30 Dec 2012 2:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.0.0.zip
-  length: 1250498
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.0.0.zip
+    length: 1250498
 - name: Version 0.9.0 (2012年11月29日版)
   version: 0.9.0
   channel: stable
@@ -511,8 +598,10 @@
     * エンコードが停止再開されたあとやチャンネルの位置が4GBを越えた場合も安定して視聴やリレーができるように改善しました
   date: Thu, 29 Nov 2012 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-0.9.0.zip
-  length: 1264693
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-0.9.0.zip
+    length: 1264693
 - name: Version 0.8.1 (2012年10月29日版)
   version: 0.8.1
   channel: stable
@@ -527,8 +616,10 @@
     * その他細かいバグ修正やコードの整理を行ないました
   date: Mon, 29 Oct 2012 23:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-0.8.1.zip
-  length: 1262544
-
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-0.8.1.zip
+    length: 1262544
 - name: Version 0.8.0 (きゃすけっと2012秋版)
   version: 0.8.0
   channel: stable
@@ -541,4 +632,7 @@
     * おはおはが終わってしまったので対応を外しました
   date: Mon, 17 Sep 2012 16:00:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-0.8.0.zip
-  length: 1222903
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-0.8.0.zip
+    length: 1222903

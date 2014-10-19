@@ -10,5 +10,5 @@ description: PeerCastStationの更新情報です
   <description><h1>{{ release.name }}</h1>{{ release.notes | markdownify }}</description>
   <pubDate>{{ release.date }}</pubDate>
   <link>{{ release.url }}</link>
-  <enclosure url="{{ release.url }}" length="{{ release.length }}" type="application/octet-stream" />
+  {% for enclosure in release.enclosures %}<enclosure installer-type="{{ enclosure.type }}" url="{{ enclosure.url }}" length="{{ enclosure.length }}" type="application/octet-stream" />{% endfor %}
 </item>{% endif %}{% endfor %}
