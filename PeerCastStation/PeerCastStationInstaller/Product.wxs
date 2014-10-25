@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+	<Product Id="*"
+			Name="PeerCastStation"
+			Language="1041"
+      Version="!(bind.FileVersion.$(var.PeerCastStation.TargetFileName))"
+			Manufacturer="pecastation.org"
+			UpgradeCode="f0ddea2a-37af-428c-88ab-6fe829f20552">
+		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+		<MediaTemplate EmbedCab="yes"/>
+
+		<Feature Id="Complete" Title="PeerCastStation" Level="1">
+			<ComponentRef Id="ProgramMenu"/>
+			<ComponentGroupRef Id="PeerCastStation"/>
+			<ComponentGroupRef Id="PeerCastStation.Core"/>
+			<ComponentGroupRef Id="PeerCastStation.PCP"/>
+			<ComponentGroupRef Id="PeerCastStation.HTTP"/>
+			<ComponentGroupRef Id="PeerCastStation.ASF"/>
+			<ComponentGroupRef Id="PeerCastStation.FLV"/>
+			<ComponentGroupRef Id="PeerCastStation.MKV"/>
+			<ComponentGroupRef Id="PeerCastStation.UI"/>
+			<ComponentGroupRef Id="PeerCastStation.UI.HTTP"/>
+			<ComponentGroupRef Id="PeerCastStation.WPF"/>
+		</Feature>
+
+		<Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+		<UIRef Id="WixUI_InstallDir" />
+		<UIRef Id="WixUI_ErrorProgressText" />
+	</Product>
+
+	<Fragment>
+		<Directory Id="TARGETDIR" Name="SourceDir">
+			<Directory Id="ProgramFilesFolder">
+				<Directory Id="INSTALLFOLDER" Name="PeerCastStation" />
+			</Directory>
+
+			<Directory Id="ProgramMenuFolder" Name="Programs">
+				<Directory Id="ProgramMenu" Name="PeerCastStation">
+					<Component Id="ProgramMenu" Guid="a1107ec4-3dfb-41a9-9bb8-f9c710f1d6df">
+						<RemoveFolder Id='ProgramMenu' On='uninstall' />
+						<RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
+					</Component>
+				</Directory>
+			</Directory>
+		</Directory>
+	</Fragment>
+</Wix>

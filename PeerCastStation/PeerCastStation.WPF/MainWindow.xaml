@@ -53,7 +53,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <MenuItem Header="ヘルプの表示(_H)" Command="{x:Static my:PeerCastCommands.OpenHelp}"/>
         <MenuItem Header="ログの表示(_L)" Command="{x:Static my:PeerCastCommands.ShowLogs}"/>
         <Separator/>
-        <MenuItem Header="バージョン情報(_A)" Command="{x:Static my:PeerCastCommands.About}"/>
+        <MenuItem Header="更新の確認(_C)..." Click="UpdateCheck_Click"/>
+        <Separator/>
+        <MenuItem Header="バージョン情報(_A)..." Command="{x:Static my:PeerCastCommands.About}"/>
       </MenuItem>
     </Menu>
     <StatusBar DockPanel.Dock="Bottom">

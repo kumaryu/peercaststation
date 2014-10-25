@@ -97,17 +97,34 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
               <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
               <Label Grid.Column="0" Grid.Row="0" Content="ポート番号:"/>
               <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="1" Increment="1" Value="{Binding PrimaryPort}"/>
-              <Label Grid.Column="0" Grid.Row="1" Content="ポート開放状態:"/>
-              <Grid Grid.Column="1" Grid.Row="1">
+              <Label     Grid.Column="0" Grid.Row="1" Content="ポート自動開放:"/>
+              <CheckBox  Grid.Column="1" Grid.Row="1" Content="自動開放する(UPnP/NAT-PMP)" VerticalAlignment="Center" IsChecked="{Binding PortMapperEnabled}"/>
+              <Label     Grid.Column="0" Grid.Row="2" Content="外部アドレス:"/>
+              <TextBlock Grid.Column="1" Grid.Row="2" VerticalAlignment="Center">
+                <TextBlock.Style>
+                  <Style TargetType="TextBlock">
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding PortMapperExternalAddresses}" Value="">
+                        <Setter Property="Text" Value="ルーター未発見"/>
+                      </DataTrigger>
+                    </Style.Triggers>
+                    <Setter Property="Text" Value="{Binding PortMapperExternalAddresses}"/>
+                  </Style>
+                </TextBlock.Style>
+              </TextBlock>
+              <Label Grid.Column="0" Grid.Row="3" Content="ポート開放状態:"/>
+              <Grid  Grid.Column="1" Grid.Row="3">
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*"/>
                   <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" VerticalAlignment="Center" Style="{StaticResource PortCheckStatusText}"/>
-                <Button Grid.Column="1"  Content="開放確認" Click="PortCheckButton_Click" Style="{StaticResource PortCheckButton}"/>
+                <Button    Grid.Column="1" Content="開放確認" Click="PortCheckButton_Click" Style="{StaticResource PortCheckButton}"/>
               </Grid>
             </Grid>
           </GroupBox>
@@ -153,6 +170,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
           </Grid.RowDefinitions>
           <ListBox Grid.Row="0" Margin="2" ItemsSource="{Binding Ports}" SelectedItem="{Binding SelectedPort}">
             <ListBox.ItemTemplate>
@@ -183,17 +201,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
-          <Grid Grid.Row="1">
+          <StackPanel Orientation="Horizontal" Grid.Row="1">
+            <Button Content="追加" Command="{Binding AddPortCommand}"/>
+            <Button Content="削除" Command="{Binding RemovePortCommand}"/>
+          </StackPanel>
+          <Grid Grid.Row="2">
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="Auto"/>
-              <ColumnDefinition Width="Auto"/>
               <ColumnDefinition Width="*"/>
-              <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Button    Grid.Column="0" Content="追加" Command="{Binding AddPortCommand}"/>
-            <Button    Grid.Column="1" Content="削除" Command="{Binding RemovePortCommand}"/>
-            <TextBlock Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Style="{StaticResource PortCheckStatusText}"/>
-            <Button    Grid.Column="3" Content="開放確認" Click="PortCheckButton_Click" Style="{StaticResource PortCheckButton}"/>
+            <Label    Grid.Column="0" Grid.Row="0" Content="ポート自動開放:"/>
+            <CheckBox Grid.Column="1" Grid.Row="0" Content="自動開放する(UPnP/NAT-PMP)" VerticalAlignment="Center" IsChecked="{Binding PortMapperEnabled}"/>
+            <Label     Grid.Column="0" Grid.Row="1" Content="外部アドレス:"/>
+            <TextBlock Grid.Column="1" Grid.Row="1" VerticalAlignment="Center">
+              <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding PortMapperExternalAddresses}" Value="">
+                      <Setter Property="Text" Value="ルーター未発見"/>
+                    </DataTrigger>
+                  </Style.Triggers>
+                  <Setter Property="Text" Value="{Binding PortMapperExternalAddresses}"/>
+                </Style>
+              </TextBlock.Style>
+            </TextBlock>
+            <Label    Grid.Column="0" Grid.Row="2" Content="ポート開放確認:"/>
+            <Grid     Grid.Column="1" Grid.Row="2">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Grid.Column="0" VerticalAlignment="Center" Style="{StaticResource PortCheckStatusText}"/>
+              <Button    Grid.Column="1" Content="開放確認" Click="PortCheckButton_Click" Style="{StaticResource PortCheckButton}"/>
+            </Grid>
           </Grid>
         </Grid>
       </TabItem>

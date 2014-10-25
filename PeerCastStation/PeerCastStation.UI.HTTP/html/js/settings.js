@@ -245,6 +245,7 @@ var SettingsViewModel = new function() {
   self.checkPortsStatus          = ko.observable("");
   self.inactiveChannelLimit      = ko.observable(null);
   self.channelCleanupMode        = ko.observable(null);
+  self.portMapperEnabled         = ko.observable(null);
   self.listeners                 = ko.observableArray();
   self.yellowPages               = ko.observableArray();
 
@@ -256,7 +257,8 @@ var SettingsViewModel = new function() {
     self.maxUpstreamRate,
     self.maxUpstreamRatePerChannel,
     self.inactiveChannelLimit,
-    self.channelCleanupMode
+    self.channelCleanupMode,
+    self.portMapperEnabled
   ], function (i, o) {
     o.subscribe(function (new_value) { if (!updating) self.submit(); });
   });
@@ -271,6 +273,9 @@ var SettingsViewModel = new function() {
       channelCleaner: {
         inactiveLimit: self.inactiveChannelLimit()!=null ? Number(self.inactiveChannelLimit())*60000 : null,
         mode:          self.channelCleanupMode()!=null   ? Number(self.channelCleanupMode()) : null
+      },
+      portMapper: {
+        enabled:       self.portMapperEnabled()
       }
     };
     PeerCast.setSettings(settings);
@@ -381,6 +386,9 @@ var SettingsViewModel = new function() {
         if (result.channelCleaner) {
           self.inactiveChannelLimit(result.channelCleaner.inactiveLimit/60000);
           self.channelCleanupMode(result.channelCleaner.mode);
+        }
+        if (result.portMapper) {
+          self.portMapperEnabled(result.portMapper.enabled);
         }
         updating = false;
       }

@@ -48,5 +48,18 @@ namespace PeerCastStation.WPF.Dialogs
     {
       Close();
     }
+
+		private void UpdateButton_Click(object sender, RoutedEventArgs e)
+		{
+			((UpdaterViewModel)this.DataContext).Execute();
+		}
+
+		private void Window_Loaded(object sender, RoutedEventArgs e)
+		{
+			var viewmodel = new UpdaterViewModel();
+			this.DataContext = viewmodel;
+			viewmodel.Execute();
+		}
+
   }
 }

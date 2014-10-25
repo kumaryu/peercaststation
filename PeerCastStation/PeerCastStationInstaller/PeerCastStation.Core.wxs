@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Fragment>
+        <DirectoryRef Id="INSTALLFOLDER" />
+    </Fragment>
+    <Fragment>
+        <ComponentGroup Id="PeerCastStation.Core.Binaries">
+            <ComponentRef Id="cmpF27A819081B4983F60E8D60204F424AA" />
+        </ComponentGroup>
+    </Fragment>
+    <Fragment>
+        <ComponentGroup Id="PeerCastStation.Core.Satellites" />
+    </Fragment>
+    <Fragment>
+        <ComponentGroup Id="PeerCastStation.Core.Content" />
+    </Fragment>
+    <Fragment>
+        <ComponentGroup Id="PeerCastStation.Core">
+            <Component Id="cmpF27A819081B4983F60E8D60204F424AA" Directory="INSTALLFOLDER" Guid="*">
+                <File Id="fil4C21B0C75D4ACB6945EB4A59A4B03596" Source="$(var.PeerCastStation.Core.TargetDir)\PeerCastStation.Core.dll" />
+            </Component>
+        </ComponentGroup>
+    </Fragment>
+</Wix>

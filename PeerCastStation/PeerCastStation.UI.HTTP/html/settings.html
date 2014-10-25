@@ -66,10 +66,15 @@
             </thead>
             <tfoot>
               <tr>
-                <td class="form-actions" colspan="7">
+                <td class="form-actions" colspan="8">
                   <button class="btn" data-bind="click:addListener">追加</button>
                   <button class="btn" data-bind="click:removeListener">削除</button>
                   <button class="btn" data-bind="click:resetListenerAuthenticationKey">ID・パスワード再生成</button>
+                </td>
+              </tr>
+              <tr>
+                <td class="form-actions" colspan="8">
+                  <label class="checkbox"><input type="checkbox" data-bind="checked:portMapperEnabled">ポート自動開放(UPnP/PMP-NAT)</label>
                   <button class="btn" data-bind="click:checkPorts">ポート開放確認</button>
                   <span data-bind="text:checkPortsStatus"></span>
                 </td>

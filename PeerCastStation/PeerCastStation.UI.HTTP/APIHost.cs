@@ -210,6 +210,12 @@ namespace PeerCastStation.UI.HTTP
         channelCleaner["mode"]          = (int)ChannelCleaner.Mode;
         channelCleaner["inactiveLimit"] = ChannelCleaner.InactiveLimit;
         res["channelCleaner"] = channelCleaner;
+        var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapper>();
+        if (port_mapper!=null) {
+          var portMapper = new JObject();
+          portMapper["enabled"] = port_mapper.Enabled;
+          res["portMapper"] = portMapper;
+        }
         return res;
       }
 
@@ -221,6 +227,19 @@ namespace PeerCastStation.UI.HTTP
         case JTokenType.Float:
         case JTokenType.Integer:
           return (int)token;
+        default:
+          return null;
+        }
+      }
+
+      private bool? ParseBool(JToken token)
+      {
+        if (token==null) return null;
+        switch (token.Type) {
+        case JTokenType.Boolean:
+        case JTokenType.Float:
+        case JTokenType.Integer:
+          return (bool)token;
         default:
           return null;
         }
@@ -240,6 +259,11 @@ namespace PeerCastStation.UI.HTTP
           var channelCleaner = settings["channelCleaner"];
           ChannelCleaner.InactiveLimit = ParseInt(channelCleaner["inactiveLimit"]) ?? ChannelCleaner.InactiveLimit;
           ChannelCleaner.Mode = (ChannelCleaner.CleanupMode)(ParseInt(channelCleaner["mode"]) ?? (int)ChannelCleaner.Mode);
+        }
+        var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapper>();
+        if (port_mapper!=null && settings["portMapper"]!=null && settings["portMapper"].HasValues) {
+          var portMapper = settings["portMapper"];
+          port_mapper.Enabled = ParseBool(portMapper["enabled"]) ?? port_mapper.Enabled;
         }
         owner.Application.SaveSettings();
       }
@@ -1007,18 +1031,30 @@ namespace PeerCastStation.UI.HTTP
         owner.CheckVersion();
       }
 
-      [RPCMethod("getNewVersions")]
-      public JArray GetNewVersions()
-      {
-        return new JArray(owner.GetNewVersions().Select(v => {
-          var obj = new JObject();
-          obj["title"]       = v.Title;
-          obj["publishDate"] = v.PublishDate;
-          obj["link"]        = v.Link;
-          obj["description"] = v.Description;
-          return obj;
-        }));
-      }
+			[RPCMethod("getNewVersions")]
+			public JArray GetNewVersions()
+			{
+				return new JArray(owner.GetNewVersions()
+					.OrderByDescending(v => v.PublishDate)
+					.Select(v => {
+						var obj = new JObject();
+						obj["title"]       = v.Title;
+						obj["publishDate"] = v.PublishDate;
+						obj["link"]        = v.Link;
+						obj["description"] = v.Description;
+						obj["enclosures"] = new JArray(v.Enclosures.Select(e => {
+							var enclosure = new JObject();
+							enclosure["title"] = e.Title;
+							enclosure["url"] = e.Url;
+							enclosure["length"] = e.Length;
+							enclosure["installerType"] = e.InstallerType.ToString().ToLowerInvariant();
+							enclosure["type"] = e.Type;
+							return enclosure;
+						}));
+					return obj;
+					})
+				);
+			}
 
       public static readonly int RequestLimit = 64*1024;
       public static readonly int TimeoutLimit = 5000;
