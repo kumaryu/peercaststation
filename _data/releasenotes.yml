@@ -1,4 +1,22 @@
 ---
+- name: Version 1.9.0.2 (2014年10月25日開発版)
+  version: 1.9.0.2
+  channel: dev
+  notes: |
+    UPnPとmonoで落ちるのを修正しました
+
+    * UPnP有効時に落ちる場合があったのでライブラリ(Mono.Nat.dll)を更新しました。
+    * mono 3.0.7以前で動かすと落ちていたのでライブラリ(Newtonsoft.json.dll)を更新しました。
+  date: Sat, 25 Oct 2014 23:50:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.9.0.2.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.9.0.2.zip
+    length: 1398138
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-1.9.0.2.exe
+    length: 1919992
+
 - name: Version 1.9.0.1 (2014年10月20日開発版)
   version: 1.9.0.1
   channel: dev
