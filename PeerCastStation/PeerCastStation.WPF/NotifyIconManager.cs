@@ -111,7 +111,7 @@ namespace PeerCastStation.WPF
     {
       var item = new System.Windows.Forms.ToolStripMenuItem();
       item.Text = "アップデートのチェック(&U)";
-      item.Click += (sender, args) => this.owner.CheckVersion();
+      item.Click += (sender, args) => new UpdaterWindow().Show();
       return item;
     }
 
