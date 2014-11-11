@@ -123,7 +123,7 @@ namespace PeerCastStation.FLV.RTMP
       if (bind_addr==null) {
         throw new BindErrorException(String.Format("Cannot resolve bind address: {0}", source.DnsSafeHost));
       }
-      var listener = new TcpListener(IPAddress.Any, 1935);
+      var listener = new TcpListener(bind_addr);
       try {
         listener.Start(1);
         Logger.Debug("Listening on {0}", bind_addr);
