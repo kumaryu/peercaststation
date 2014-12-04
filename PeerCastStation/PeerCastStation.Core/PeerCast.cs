@@ -122,7 +122,8 @@ namespace PeerCastStation.Core
     /// <summary>
     /// チャンネル管理オブジェクトのリストを取得します
     /// </summary>
-    public IList<IChannelMonitor> ChannelMonitors { get; private set; }
+    public ReadOnlyCollection<IChannelMonitor> ChannelMonitors { get { return channelMonitors.AsReadOnly(); } }
+    private List<IChannelMonitor> channelMonitors = new List<IChannelMonitor>();
 
     /// <summary>
     /// チャンネルが追加された時に呼び出されます。
@@ -340,7 +341,6 @@ namespace PeerCastStation.Core
       this.SourceStreamFactories = new List<ISourceStreamFactory>();
       this.OutputStreamFactories = new List<IOutputStreamFactory>();
       this.ContentReaderFactories = new List<IContentReaderFactory>();
-      this.ChannelMonitors = new List<IChannelMonitor>();
       foreach (var addr in Dns.GetHostAddresses(Dns.GetHostName())) {
         switch (addr.AddressFamily) {
         case AddressFamily.InterNetwork:
@@ -371,6 +371,24 @@ namespace PeerCastStation.Core
       StartMonitor();
     }
 
+		public void AddChannelMonitor(IChannelMonitor monitor)
+		{
+			ReplaceCollection(ref channelMonitors, orig => {
+				var new_monitors = new List<IChannelMonitor>(orig);
+				new_monitors.Add(monitor);
+				return new_monitors;
+			});
+		}
+
+		public void RemoveChannelMonitor(IChannelMonitor monitor)
+		{
+			ReplaceCollection(ref channelMonitors, orig => {
+				var new_monitors = new List<IChannelMonitor>(orig);
+				new_monitors.Remove(monitor);
+				return new_monitors;
+			});
+		}
+
     private AutoResetEvent stoppedEvent = new AutoResetEvent(false);
     private RegisteredWaitHandle monitorThreadPool = null;
     private void StartMonitor()
@@ -380,10 +398,8 @@ namespace PeerCastStation.Core
           monitorThreadPool.Unregister(stoppedEvent);
         }
         else {
-          lock (ChannelMonitors) {
-            foreach (var monitor in ChannelMonitors) {
-              monitor.OnTimer();
-            }
+          foreach (var monitor in ChannelMonitors) {
+            monitor.OnTimer();
           }
         }
       }, null, 5000, false);
