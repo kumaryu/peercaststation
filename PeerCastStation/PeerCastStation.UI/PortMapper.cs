@@ -65,13 +65,13 @@ namespace PeerCastStation.UI
 			base.OnStart();
 			if (!enabled) return;
 			monitor = new PortMapperMonitor(Application.PeerCast);
-			Application.PeerCast.ChannelMonitors.Add(monitor);
+			Application.PeerCast.AddChannelMonitor(monitor);
 		}
 
 		protected override void OnStop()
 		{
 			if (monitor!=null) {
-				Application.PeerCast.ChannelMonitors.Remove(monitor);
+				Application.PeerCast.RemoveChannelMonitor(monitor);
 				monitor.Dispose();
 				monitor = null;
 			}
