@@ -8,6 +8,7 @@ using PeerCastStation.FLV.RTMP;
 namespace PeerCastStation.FLV
 {
   internal class FLVContentBuffer
+		: IRTMPContentSink
   {
     public Channel       TargetChannel { get; private set; }
     public long          Position      { get { return position; } }
@@ -75,7 +76,7 @@ namespace PeerCastStation.FLV
       OnContentChanged(msg);
     }
 
-    public void OnStart()
+    public void OnFLVHeader()
     {
       var info = new AtomCollection();
       info.SetChanInfoType("FLV");
