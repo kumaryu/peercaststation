@@ -95,11 +95,11 @@ namespace PeerCastStation.FLV
 				this.Footer = owner.ReadBytes(stream, 4);
 			}
 
-			public RTMPMessage ToRTMPMessage(long timestamp_offset)
+			public RTMPMessage ToRTMPMessage()
 			{
 				return new RTMPMessage(
 					(RTMPMessageType)this.Type,
-					this.Timestamp + timestamp_offset,
+					this.Timestamp,
 					this.StreamID,
 					this.Body);
 			}
@@ -123,7 +123,6 @@ namespace PeerCastStation.FLV
 			Body,
 		};
 		private ReaderState state = ReaderState.Header;
-		private long timestampOrigin = -1;
 
 		public bool Read(Stream stream, IRTMPContentSink sink)
 		{
@@ -138,7 +137,6 @@ namespace PeerCastStation.FLV
 							var bin = ReadBytes(stream, 13);
 							var header = new FileHeader(bin);
 							if (header.IsValid) {
-								timestampOrigin = -1;
 								sink.OnFLVHeader();
 								state = ReaderState.Body;
 							}
@@ -157,19 +155,15 @@ namespace PeerCastStation.FLV
 								body.ReadFooter(stream);
 								if (body.IsValidFooter) {
 									read_valid = true;
-									if (timestampOrigin<=0) {
-										//timestampOrigin = body.Timestamp;
-										timestampOrigin = 0;
-									}
 									switch (body.Type) {
 									case FLVTag.TagType.Audio:
-										sink.OnAudio(body.ToRTMPMessage(-timestampOrigin));
+										sink.OnAudio(body.ToRTMPMessage());
 										break;
 									case FLVTag.TagType.Video:
-										sink.OnVideo(body.ToRTMPMessage(-timestampOrigin));
+										sink.OnVideo(body.ToRTMPMessage());
 										break;
 									case FLVTag.TagType.Script:
-										sink.OnData(new DataAMF0Message(body.ToRTMPMessage(-timestampOrigin)));
+										sink.OnData(new DataAMF0Message(body.ToRTMPMessage()));
 										break;
 									}
 								}
@@ -178,7 +172,6 @@ namespace PeerCastStation.FLV
 								stream.Position = start_pos;
 								var header = new FileHeader(ReadBytes(stream, 13));
 								if (header.IsValid) {
-									timestampOrigin = -1;
 									read_valid = true;
 									sink.OnFLVHeader();
 								}
