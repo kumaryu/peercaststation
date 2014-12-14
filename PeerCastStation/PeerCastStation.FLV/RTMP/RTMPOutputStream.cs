@@ -162,6 +162,9 @@ namespace PeerCastStation.FLV.RTMP
 			connectionTask =
 				connection.Run(cancelSource.Token)
 				.ContinueWith(task => {
+					if (this.channel!=null) {
+						this.channel.RemoveOutputStream(this);
+					}
 					if (Stopped!=null) {
 						Stopped(this, new StreamStoppedEventArgs(stopReason));
 					}
