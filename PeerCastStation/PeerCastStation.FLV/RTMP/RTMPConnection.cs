@@ -25,8 +25,10 @@ namespace PeerCastStation.FLV.RTMP
 		protected Stream OutputStream { get { return outputStream; } }
 		public string ClientName { get; private set; }
 
+		private bool disposed = false;
 		public virtual void Dispose()
 		{
+			disposed = true;
 			this.OnClose();
 			this.inputStream.Close();
 			this.outputStream.Close();
@@ -78,6 +80,17 @@ namespace PeerCastStation.FLV.RTMP
 				var recv_messages = RecvAndProcessMessages(local_cancel.Token);
 				Task.WaitAny(send_messages, recv_messages);
 				local_cancel.Cancel();
+				Task.WaitAll(send_messages, recv_messages);
+			}
+			catch (IOException e) {
+				if (!disposed) {
+					logger.Error(e);
+				}
+			}
+			catch (AggregateException e) {
+				if (!disposed) {
+					logger.Error(e);
+				}
 			}
 			finally {
 				Close();
