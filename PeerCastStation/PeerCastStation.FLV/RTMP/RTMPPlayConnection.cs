@@ -78,67 +78,112 @@ namespace PeerCastStation.FLV.RTMP
 			}
 		}
 
+		private async Task<Channel> RequestChannel(
+			StreamName stream_name,
+			CancellationToken cancel_token)
+		{
+			Guid channel_id;
+			if (!Guid.TryParse(stream_name.Name, out channel_id)) {
+				return null;
+			}
+			var tracker_uri =
+				stream_name.Parameters.ContainsKey("tip") ?
+				OutputStreamBase.CreateTrackerUri(channel_id, stream_name.Parameters["tip"]) :
+				null;
+			var channel = owner.RequestChannel(channel_id, tracker_uri);
+			if (channel==null) return null;
+			var trying = 0;
+			while (
+					trying++<10 &&
+					(channel.ChannelInfo==null ||
+					 String.IsNullOrEmpty(channel.ChannelInfo.ContentType))){
+				await Task.Delay(1000, cancel_token);
+			}
+			if (channel.ChannelInfo==null ||
+			    String.IsNullOrEmpty(channel.ChannelInfo.ContentType) ||
+			    channel.ChannelInfo.ContentType!="FLV") {
+				return null;
+			}
+			return channel;
+		}
+
+		private async Task SendOnStatus(
+				long stream_id,
+				int transaction,
+				string level,
+				string code,
+				string description,
+				CancellationToken cancel_token)
+		{
+			var status_command = CommandMessage.Create(
+				this.ObjectEncoding,
+				this.Now,
+				stream_id,
+				"onStatus",
+				transaction,
+				null,
+				new AMFValue(new AMFObject {
+					{ "level",       level },
+					{ "code",        code },
+					{ "description", description },
+				})
+			);
+			await SendMessage(3, status_command, cancel_token);
+		}
+
 		protected override async Task OnCommandPlay(CommandMessage msg, CancellationToken cancel_token)
 		{
 			var stream_name = StreamName.Parse((string)msg.Arguments[0]);
 			var start       = msg.Arguments.Count>1 ? (int)msg.Arguments[1] : -2;
 			var duration    = msg.Arguments.Count>2 ? (int)msg.Arguments[2] : -1;
 			var reset       = msg.Arguments.Count>3 ? (bool)msg.Arguments[3] : false;
-			var channel_id  = Guid.Parse(stream_name.Name);
-			//TODO: チャンネルIDがパースできなかった時にエラーを返す
-			var tracker_uri =
-				stream_name.Parameters.ContainsKey("tip") ?
-				OutputStreamBase.CreateTrackerUri(channel_id, stream_name.Parameters["tip"]) :
-				null;
-			this.Channel = owner.RequestChannel(channel_id, tracker_uri);
-			//TODO: チャンネルが見つからなかった時にエラーを返す
-			//TODO: チャンネルがFLVじゃなかった場合もエラーを返す
+			this.Channel = await RequestChannel(stream_name, cancel_token);
 			logger.Debug("Play: {0}, {1}, {2}, {3}", stream_name.ToString(), start, duration, reset);
 			this.StreamId = msg.StreamId;
 			await SendMessage(2, new UserControlMessage.StreamBeginMessage(this.Now, 0, msg.StreamId), cancel_token);
-			var status_start = CommandMessage.Create(
-				this.ObjectEncoding,
-				this.Now,
-				msg.StreamId,
-				"onStatus",
-				msg.TransactionId+1,
-				null,
-				new AMFValue(new AMFObject {
-					{ "level",       "status" },
-					{ "code",        "NetStream.Play.Start" },
-					{ "description", stream_name.ToString() },
-				})
-			);
-			await SendMessage(3, status_start, cancel_token);
-			if (reset) {
-				var status_reset = CommandMessage.Create(
+			if (this.Channel!=null) {
+				await SendOnStatus(
+					this.StreamId,
+					msg.TransactionId+1,
+					"status",
+					"NetStream.Play.Start",
+					stream_name.ToString(),
+					cancel_token);
+				if (reset) {
+					await SendOnStatus(
+						this.StreamId,
+						msg.TransactionId+1,
+						"status",
+						"NetStream.Play.Reset",
+						stream_name.ToString(),
+						cancel_token);
+				}
+				this.Channel.ContentChanged += OnContentChanged;
+				OnContentChanged(this, new EventArgs());
+			}
+			else {
+				await SendOnStatus(
+					this.StreamId,
+					msg.TransactionId+1,
+					"error",
+					"NetStream.Play.FileNotFound",
+					stream_name.ToString(),
+					cancel_token);
+			}
+			if (msg.TransactionId!=0) {
+				var result = CommandMessage.Create(
 					this.ObjectEncoding,
 					this.Now,
 					msg.StreamId,
-					"onStatus",
-					msg.TransactionId+1,
-					null,
-					new AMFValue(new AMFObject {
-						{ "level",       "status" },
-						{ "code",        "NetStream.Play.Reset" },
-						{ "description", stream_name.ToString() },
-					})
+					"_result",
+					msg.TransactionId,
+					null
 				);
-				await SendMessage(3, status_reset, cancel_token);
-			}
-			var result = CommandMessage.Create(
-				this.ObjectEncoding,
-				this.Now,
-				msg.StreamId,
-				"_result",
-				msg.TransactionId,
-				null
-			);
-			if (msg.TransactionId!=0) {
 				await SendMessage(3, result, cancel_token);
 			}
-			this.Channel.ContentChanged += OnContentChanged;
-			OnContentChanged(this, new EventArgs());
+			if (this.Channel==null) {
+				Close();
+			}
 		}
 
 		private Content headerPacket = null;
