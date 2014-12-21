@@ -158,8 +158,6 @@ namespace PeerCastStation.FLV.RTMP
 						stream_name.ToString(),
 						cancel_token);
 				}
-				this.Channel.ContentChanged += OnContentChanged;
-				OnContentChanged(this, new EventArgs());
 			}
 			else {
 				await SendOnStatus(
@@ -181,7 +179,11 @@ namespace PeerCastStation.FLV.RTMP
 				);
 				await SendMessage(3, result, cancel_token);
 			}
-			if (this.Channel==null) {
+			if (this.Channel!=null) {
+				this.Channel.ContentChanged += OnContentChanged;
+				OnContentChanged(this, new EventArgs());
+			}
+			else {
 				Close();
 			}
 		}
