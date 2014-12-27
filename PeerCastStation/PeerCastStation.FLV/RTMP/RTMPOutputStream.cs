@@ -89,8 +89,8 @@ namespace PeerCastStation.FLV.RTMP
 		: IOutputStream
 	{
 		private PeerCast peerCast;
-		private System.IO.Stream inputStream;
-		private System.IO.Stream outputStream;
+		private RateCountedStream inputStream;
+		private RateCountedStream outputStream;
 		private System.Net.EndPoint remoteEndPoint;
 		private AccessControlInfo accessControl;
 		private RTMPPlayConnection connection;
@@ -109,8 +109,8 @@ namespace PeerCastStation.FLV.RTMP
 		{
 			input_stream.ReadTimeout = System.Threading.Timeout.Infinite;
 			this.peerCast       = peercast;
-			this.inputStream    = new BufferedReadStream(input_stream, 8192, header);
-			this.outputStream   = output_stream;
+			this.inputStream    = new RateCountedStream(new BufferedReadStream(input_stream, 8192, header), TimeSpan.FromMilliseconds(1000));
+			this.outputStream   = new RateCountedStream(output_stream, TimeSpan.FromMilliseconds(1000));
 			this.remoteEndPoint = remote_endpoint;
 			this.accessControl  = access_control;
 			this.connection = new RTMPPlayConnection(this, this.inputStream, this.outputStream);
@@ -125,7 +125,10 @@ namespace PeerCastStation.FLV.RTMP
 				remoteEndPoint.ToString(),
 				remoteEndPoint as System.Net.IPEndPoint,
 				RemoteHostStatus.Receiving,
-				null, null, null, null, null, "hoge");
+				connection.ContentPosition,
+				(float)this.inputStream.ReadRate, (float)this.outputStream.WriteRate,
+				null, null,
+				connection.ClientName);
 		}
 
 		public OutputStreamType OutputStreamType {

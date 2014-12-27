@@ -16,6 +16,13 @@ namespace PeerCastStation.FLV.RTMP
 		public Channel  Channel  { get; private set; }
 		public long     StreamId { get; private set; }
 
+		public long? ContentPosition {
+			get {
+				if (lastPacket==null) return null;
+				return lastPacket.Position;
+			}
+		}
+
 		public RTMPPlayConnection(
 			RTMPOutputStream owner,
 			System.IO.Stream input_stream,

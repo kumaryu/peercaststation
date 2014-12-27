@@ -642,7 +642,10 @@ namespace PeerCastStation.FLV.RTMP
 		{
 			objectEncoding = ((int)msg.CommandObject["objectEncoding"])==3 ? 3 : 0;
 			ClientName     = (string)msg.CommandObject["flashVer"];
-			logger.Debug("Connect: tcUrl:{0}", (string)msg.CommandObject["tcUrl"]);
+			logger.Debug("Connect: tcUrl:{0}, app:{1}, flashVer:{2}",
+				(string)msg.CommandObject["tcUrl"],
+				(string)msg.CommandObject["app"],
+				(string)msg.CommandObject["flashVer"]);
 			await SendMessage(2, new SetWindowSizeMessage(this.Now, 0, recvWindowSize), cancel_token);
 			await SendMessage(2, new SetPeerBandwidthMessage(this.Now, 0, sendWindowSize, PeerBandwidthLimitType.Hard), cancel_token);
 			await SendMessage(2, new UserControlMessage.StreamBeginMessage(this.Now, 0, 0), cancel_token);

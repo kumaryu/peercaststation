@@ -74,6 +74,7 @@
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueuedSynchronizationContext.cs" />
+    <Compile Include="RateCountedStream.cs" />
     <Compile Include="RawContentReader.cs" />
     <Compile Include="RelayChannel.cs" />
     <Compile Include="Ringbuffer.cs" />
