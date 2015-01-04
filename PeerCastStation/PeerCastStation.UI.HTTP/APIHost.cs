@@ -89,6 +89,20 @@ namespace PeerCastStation.UI.HTTP
       }
     }
 
+		public IEnumerable<YPChannel> GetYPChannels()
+		{
+			var channel_list = Application.Plugins.FirstOrDefault(plugin => plugin is YPChannelList) as YPChannelList;
+			if (channel_list==null) return Enumerable.Empty<YPChannel>();
+			return channel_list.Channels;
+		}
+
+		public IEnumerable<YPChannel> UpdateYPChannels()
+		{
+			var channel_list = Application.Plugins.FirstOrDefault(plugin => plugin is YPChannelList) as YPChannelList;
+			if (channel_list==null) return Enumerable.Empty<YPChannel>();
+			return channel_list.Update();
+		}
+
     public class APIHostOutputStream
       : OutputStreamBase
     {
@@ -1056,6 +1070,44 @@ namespace PeerCastStation.UI.HTTP
 				);
 			}
 
+			private JArray YPChannelsToArray(IEnumerable<PeerCastStation.UI.YPChannel> channels)
+			{
+				return new JArray(channels.Select(v => {
+						var obj = new JObject();
+						obj["yellowPage"]  = v.Source.Name;
+						obj["name"]        = v.Name;
+						obj["channelId"]   = v.ChannelId;
+						obj["tracker"]     = v.Tracker;
+						obj["contactUrl"]  = v.ContactUrl;
+						obj["genre"]       = v.Genre;
+						obj["description"] = v.Description;
+						obj["comment"]     = v.Comment;
+						obj["bitrate"]     = v.Bitrate;
+						obj["contentType"] = v.ContentType;
+						obj["trackTitle"]  = v.TrackTitle;
+						obj["album"]       = v.Album;
+						obj["creator"]     = v.Artist;
+						obj["trackUrl"]    = v.TrackUrl;
+						obj["listeners"]   = v.Listeners;
+						obj["relays"]      = v.Relays;
+						obj["uptime"]      = v.Uptime;
+						return obj;
+					})
+				);
+			}
+
+			[RPCMethod("getYPChannels")]
+			public JArray GetYPChannels()
+			{
+				return YPChannelsToArray(owner.GetYPChannels());
+			}
+
+			[RPCMethod("updateYPChannels")]
+			public JArray UpdateYPChannels()
+			{
+				return YPChannelsToArray(owner.UpdateYPChannels());
+			}
+
       public static readonly int RequestLimit = 64*1024;
       public static readonly int TimeoutLimit = 5000;
       private int bodyLength = -1;
@@ -1063,6 +1115,7 @@ namespace PeerCastStation.UI.HTTP
       protected override void OnStarted()
       {
         base.OnStarted();
+				System.Threading.SynchronizationContext.SetSynchronizationContext(new System.Threading.SynchronizationContext());
         Logger.Debug("Started");
         try {
           if (!HTTPUtils.CheckAuthorization(this.request, AccessControl.AuthenticationKey)) {

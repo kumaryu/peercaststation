@@ -1,0 +1,134 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>YPチャンネル一覧 - PeerCastStation </title>
+    <link type="text/css" href="/Content/bootstrap.min.css" rel="stylesheet" />
+    <link type="text/css" href="css/index.css" rel="stylesheet" />
+    <script type="text/javascript" src="/Scripts/jquery-1.8.3.min.js"></script>
+    <script type="text/javascript" src="/Scripts/jquery.json-2.4.min.js"></script>
+    <script type="text/javascript" src="/Scripts/knockout-2.2.0.js"></script>
+    <script type="text/javascript" src="/Scripts/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/peercaststation.1.0.0.js"></script>
+    <script type="text/javascript" src="js/common.js"></script>
+    <script type="text/javascript" src="js/channels.js"></script>
+    <script type="text/javascript">
+      $(function() {
+        $('#channels').tooltip({selector: "a[rel=tooltip]"});
+        $('#channels').popover({selector: "a[rel=popover]"});
+        $('.alert').alert();
+        $(document).on('mouseenter', ".channel-column", function () {
+          var $this = $(this);
+          if (this.offsetWidth < this.scrollWidth && !$this.attr('title')) {
+            $this.tooltip({ title: $this.text(), placement: "right" });
+            $this.tooltip('show');
+          }
+        });
+        var pageViewModel = {
+          list: channelsViewModel,
+          ui:   UIViewModel,
+          tagsEditDialog: tagsEditDialog
+        };
+        ko.applyBindings(pageViewModel, $('#header').get(0));
+        channelsViewModel.bind($('#channels').get(0));
+      });
+    </script>
+    <script type="text/html" id='alert'>
+      <div class="alert alert-block fade in" data-bind="css:'alert-'+type, click:clicked">
+        <a class="close" data-dismiss="alert" data-bind="css:'alert-'+type, click:close" href="#">&times;</a>
+        <h4 data-bind="text:title"></h4>
+        <p data-bind="text:message"></p>
+      </div>
+    </script>
+  </head>
+  <body>
+    <div id="header">
+      <div class="alerts" data-bind="template: { name: 'alert', foreach: ui.alerts }"></div>
+      <div class="navbar">
+        <div class="navbar-inner">
+          <div class="container-fluid">
+            <a class="brand" href="#">PeerCastStation</a>
+            <ul class="nav">
+              <li><a href="index.html">情報</a></li>
+              <li class="active"><a href="channels.html">Yellow Page</a></li>
+              <li><a href="relays.html">リレー</a></li>
+              <li><a href="settings.html">設定</a></li>
+              <li><a href="logs.html">ログ</a></li>
+              <li><a href="/help/index.html">ヘルプ</a></li>
+            </ul>
+            <a class="btn btn-primary pull-right" style="margin-left:4px" href="#" data-bind="click: list.update"><i class="icon-refresh icon-white"></i> 更新</a>
+            <a class="btn pull-right" style="margin-left:4px" href="#" data-bind="click: tagsEditDialog.show"><i class="icon-tags"></i></a>
+            <form class="navbar-search pull-right">
+              <input type="text" class="search-query" placeholder="検索" data-bind="value: list.searchText, valueUpdate: 'afterkeydown'">
+            </form>
+            <a class="btn btn-warning pull-right" data-bind="css:{hidden:!ui.newVersionAvailable()}" href="update.html" target="_blank">バージョンアップ</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+		<div id="channels">
+      <div><span data-bind="if: isLoading">Loading...</span></div>
+      <table class="table table-striped table-hover table-condensed channel-list">
+        <thead>
+          <tr>
+            <th class="column-play"></th>
+            <th class="column-name"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoName'        }, click: setSort('infoName')">チャンネル名</a></th>
+            <th class="column-genre"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoGenre'       }, click: setSort('infoGenre')">ジャンル</a></th>
+            <th class="column-desc"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoDesc'        }, click: setSort('infoDesc')">詳細</a></th>
+            <th class="column-bitrate"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoBitrate'     }, click: setSort('infoBitrate')">kbps</a></th>
+            <th class="column-uptime"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'uptime'          }, click: setSort('uptime')">時間</a></th>
+            <th class="column-listeners"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'listeners'       }, click: setSort('listeners')">L/R数</a></th>
+            <th class="column-type"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoContentType' }, click: setSort('infoContentType')">Type</a></th>
+            <th class="column-yp"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'yellowPage'      }, click: setSort('yellowPage')">YP</a></th>
+          </tr>
+        </thead>
+        <tbody data-bind="foreach: channelList">
+          <tr data-bind="css: { info: isInfoChannel }">
+            <td class="column-play"><span data-bind="if: isPlayable" class="group"><a class="btn btn-mini btn-play" data-bind="attr: { href: playlistUrl }, css: { 'btn-success': isPlaying }" rel="tooltip" title="再生"><i class="icon-play"></i></a><a href="#" class="btn btn-mini btn-menu" data-bind="css: { 'btn-success': isPlaying }" rel="popover" data-placement="right" data-content="hoge">...</a></span></td>
+            <td class="channel-column column-name"><span data-bind="if: infoUrl"><a data-bind="attr: { href: infoUrl }, text: infoName"></a></span><span data-bind="ifnot: infoUrl"><span data-bind="text:infoName"></span></span></td>
+            <td class="channel-column column-genre"><span data-bind="text: infoGenre"></span></td>
+            <td class="channel-column column-desc">
+              <span data-bind="text: infoDesc"></span> - <span data-bind="text: infoComment"></span>
+              Playing:<span data-bind="text: trackCreator"></span> <span data-bind="text: trackName"></span>
+            </td>
+            <td class="channel-column column-bitrate"><span data-bind="text: infoBitrate"></span></td>
+            <td class="channel-column column-uptime"><span data-bind="text: uptimeReadable"></span></td>
+            <td class="channel-column column-listeners"><span data-bind="text: listeners"></span>/<span data-bind="text: relays"></span></td>
+            <td class="channel-column column-type"><a data-bind="attr: {href:streamUrl}, text: infoContentType"></a></td>
+            <td class="channel-column column-yp"><span data-bind="text: yellowPage"></span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="tagsEditDialog" class="modal" style="display: none">
+      <div class="modal-header">
+        <a class="close" data-dismiss="modal">×</a>
+        <h3>タグ編集</h3>
+      </div>
+      <div class="modal-body">
+        <table style="width: 100%">
+          <tr><th>検索文字列</th><td><input type="text" name="pattern" data-bind="value:pattern"></td></tr>
+          <tr><th>タグ</th><td><input type="text" name="tags" data-bind="value:tags"></td></tr>
+          <tr><th>色</th><td>
+              <div class="btn-group">
+                <a href="#" class="btn"            >&nbsp;&nbsp;&nbsp;</a>
+                <a href="#" class="btn btn-primary">&nbsp;&nbsp;&nbsp;</a>
+                <a href="#" class="btn btn-success">&nbsp;&nbsp;&nbsp;</a>
+                <a href="#" class="btn btn-danger" >&nbsp;&nbsp;&nbsp;</a>
+                <a href="#" class="btn btn-warning">&nbsp;&nbsp;&nbsp;</a>
+                <a href="#" class="btn btn-inverse">&nbsp;&nbsp;&nbsp;</a>
+              </div>
+          </td></tr>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <a data-dismiss="modal" class="btn">閉じる</a>
+        <a href="#" data-bind="click:onAdd" class="btn btn-primary">追加</a>
+      </div>
+    </div>
+
+  </body>
+</html>
+

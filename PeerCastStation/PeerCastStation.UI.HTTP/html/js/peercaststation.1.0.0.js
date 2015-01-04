@@ -175,5 +175,18 @@ PeerCast = {
   getNewVersions: function(completed) {
     this.postRequest('getNewVersions', null, completed);
   },
-};
+
+  getYPChannels: function(completed) {
+    this.postRequest('getYPChannels', null, completed);
+  },
+  updateYPChannels: function(completed) {
+    this.postRequest('updateYPChannels', null, completed);
+  },
+  getUserConfig: function(user, key, completed) {
+    this.postRequest('getUserConfig', { user: user, key: key }, completed);
+  },
+  setUserConfig: function(user, key, value, completed) {
+    this.postRequest('setUserConfig', { user: user, key: key, value: value }, completed);
+  },
+ };
 

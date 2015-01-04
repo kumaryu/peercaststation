@@ -118,6 +118,25 @@ ul.relayTree {
   font-weight: 800;
 }
 
+.channel-list {
+  table-layout: auto;
+}
+
+.channel-list th {
+  font-weight: normal;
+}
+
+.channel-column {
+  height:20px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.sorted {
+  font-weight: bold;
+}
+
 .ui-grid {
   display:table;
   table-layout:auto;
@@ -146,5 +165,78 @@ ul.relayTree {
 
 .ui-row {
   display:table-row;
+}
+
+.channel-list {
+  display:flex;
+  flex-flow:column;
+}
+
+.channel-list thead,
+.channel-list tfoot,
+.channel-list tbody {
+  display:flex;
+  flex-flow:column;
+}
+
+.channel-list tr {
+  display:flex;
+  flex-flow:row;
+}
+
+.channel-list th {
+  display:block;
+}
+
+.channel-list td {
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  height:22px;
+}
+.channel-list .column-play      { width:45px; }
+.channel-list .column-name      { flex:16; }
+.channel-list .column-genre     { flex:8; }
+.channel-list .column-desc      { flex:40; }
+.channel-list .column-bitrate   { width:4em; }
+.channel-list .column-uptime    { width:4em; }
+.channel-list .column-listeners { width:4em; }
+.channel-list .column-type      { width:4em; }
+.channel-list .column-yp        { width:2em; }
+.channel-list .column-tags      { width:30px; }
+
+.channel-list .column-play .btn-play {
+  margin-left: 0;
+  -webkit-border-bottom-left-radius: 4px;
+          border-bottom-left-radius: 4px;
+  -webkit-border-top-left-radius: 4px;
+          border-top-left-radius: 4px;
+  -moz-border-radius-bottomleft: 4px;
+  -moz-border-radius-topleft: 4px;
+  -webkit-border-top-right-radius: 0px;
+          border-top-right-radius: 0px;
+  -webkit-border-bottom-right-radius: 0px;
+          border-bottom-right-radius: 0px;
+  -moz-border-radius-topright: 0px;
+  -moz-border-radius-bottomright: 0px;
+}
+
+.channel-list .column-play .btn-menu {
+  margin-left:  -1px;
+  padding-right: 5px;
+  padding-left:  5px;
+  -webkit-border-bottom-left-radius: 0px;
+          border-bottom-left-radius: 0px;
+  -webkit-border-top-left-radius: 0px;
+          border-top-left-radius: 0px;
+  -moz-border-radius-bottomleft: 0px;
+  -moz-border-radius-topleft: 0px;
+  -webkit-border-top-right-radius: 4px;
+          border-top-right-radius: 4px;
+  -webkit-border-bottom-right-radius: 4px;
+          border-bottom-right-radius: 4px;
+  -moz-border-radius-topright: 4px;
+  -moz-border-radius-bottomright:4px;
 }
 
