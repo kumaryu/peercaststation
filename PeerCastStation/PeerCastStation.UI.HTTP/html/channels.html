@@ -44,7 +44,7 @@
   <body>
     <div id="header">
       <div class="alerts" data-bind="template: { name: 'alert', foreach: ui.alerts }"></div>
-      <div class="navbar">
+      <div class="navbar" style="margin-bottom:0">
         <div class="navbar-inner">
           <div class="container-fluid">
             <a class="brand" href="#">PeerCastStation</a>
@@ -56,11 +56,6 @@
               <li><a href="logs.html">ログ</a></li>
               <li><a href="/help/index.html">ヘルプ</a></li>
             </ul>
-            <a class="btn btn-primary pull-right" style="margin-left:4px" href="#" data-bind="click: list.update"><i class="icon-refresh icon-white"></i> 更新</a>
-            <a class="btn pull-right" style="margin-left:4px" href="#" data-bind="click: tagsEditDialog.show"><i class="icon-tags"></i></a>
-            <form class="navbar-search pull-right">
-              <input type="text" class="search-query" placeholder="検索" data-bind="value: list.searchText, valueUpdate: 'afterkeydown'">
-            </form>
             <a class="btn btn-warning pull-right" data-bind="css:{hidden:!ui.newVersionAvailable()}" href="update.html" target="_blank">バージョンアップ</a>
           </div>
         </div>
@@ -68,9 +63,30 @@
     </div>
 
 		<div id="channels">
+      <div class="toolbar" data-spy="affix" data-offset-top="42">
+        <div class="toolbar-inner">
+          <div class="pull-left" style="margin-left:8px">
+            <a class="btn" data-bind="attr: { href: channelPlaylistUrl }, css: { disabled: !channelPlayable() }" href="#"><i class="icon-play"></i></a>
+            <a class="btn" data-bind="css: { disabled: !isChannelSelected() }" href="#"><i class="icon-heart"></i></a>
+          </div>
+          <div class="pull-left" style="margin-left:8px">
+            <ul class="filter-tabs nav nav-tabs">
+              <li class="active"><a href="#">すべて</a></li>
+              <li><a href="#">お気に入り</a></li>
+            </ul>
+          </div>
+          <div class="pull-right" style="margin-left:4px">
+            <a class="btn btn-primary" href="#" data-bind="click: update"><i class="icon-refresh icon-white"></i> 更新</a>
+          </div>
+          <form class="pull-right">
+            <a class="btn" href="#"><i class="icon-cog"></i></a>
+            <input style="width:100px" type="text" class="search-query" placeholder="検索" data-bind="value: searchText, valueUpdate: 'afterkeydown'">
+          </form>
+        </div>
+      </div>
       <div><span data-bind="if: isLoading">Loading...</span></div>
       <table class="table table-striped table-hover table-condensed channel-list">
-        <thead>
+        <thead class="theader" data-spy="affix" data-offset-top="42">
           <tr>
             <th class="column-play"></th>
             <th class="column-name"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoName'        }, click: setSort('infoName')">チャンネル名</a></th>
@@ -84,8 +100,8 @@
           </tr>
         </thead>
         <tbody data-bind="foreach: channelList">
-          <tr data-bind="css: { info: isInfoChannel }">
-            <td class="column-play"><span data-bind="if: isPlayable" class="group"><a class="btn btn-mini btn-play" data-bind="attr: { href: playlistUrl }, css: { 'btn-success': isPlaying }" rel="tooltip" title="再生"><i class="icon-play"></i></a><a href="#" class="btn btn-mini btn-menu" data-bind="css: { 'btn-success': isPlaying }" rel="popover" data-placement="right" data-content="hoge">...</a></span></td>
+          <tr data-bind="css: { info: isInfoChannel, selected: isSelected }, click: onSelected, event: { dblclick: onOpened }">
+            <td class="column-play"><i data-bind="css: { 'icon-bullhorn': isPlaying, 'icon-ban-circle': !isPlayable() }"></i></td>
             <td class="channel-column column-name"><span data-bind="if: infoUrl"><a data-bind="attr: { href: infoUrl }, text: infoName"></a></span><span data-bind="ifnot: infoUrl"><span data-bind="text:infoName"></span></span></td>
             <td class="channel-column column-genre"><span data-bind="text: infoGenre"></span></td>
             <td class="channel-column column-desc">

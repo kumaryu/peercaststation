@@ -195,7 +195,7 @@ ul.relayTree {
   white-space:nowrap;
   height:22px;
 }
-.channel-list .column-play      { width:45px; }
+.channel-list .column-play      { width:1em; }
 .channel-list .column-name      { flex:16; }
 .channel-list .column-genre     { flex:8; }
 .channel-list .column-desc      { flex:40; }
@@ -238,5 +238,49 @@ ul.relayTree {
           border-bottom-right-radius: 4px;
   -moz-border-radius-topright: 4px;
   -moz-border-radius-bottomright:4px;
+}
+
+.channel-list tbody tr.selected td {
+  background-color: #c5c5c5;
+}
+
+.toolbar {
+  width:100%;
+  height:38px;
+  background-color: #fafafa;
+  border-bottom: 1px solid #dddddd;
+}
+
+.toolbar-inner {
+  position:relative;
+  top:4px;
+  right:4px;
+  height:30px;
+}
+
+.toolbar.affix {
+  top:0px;
+}
+
+.toolbar form {
+  margin:0;
+}
+
+.theader {
+  width:100%;
+  background:white;
+}
+
+.theader.affix {
+  top:39px;
+  border-bottom: 1px solid #dddddd;
+}
+
+.filter-tabs {
+  margin-bottom: 0px;
+}
+
+.filter-tabs > li > a {
+  padding-bottom: 5px;
 }
 

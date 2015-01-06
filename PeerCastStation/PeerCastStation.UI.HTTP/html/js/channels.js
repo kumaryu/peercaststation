@@ -23,7 +23,7 @@ var tagsEditDialog = new function() {
   };
 };
 
-var YPChannelViewModel = function(initial_value) {
+var YPChannelViewModel = function(owner, initial_value) {
   var self = this;
   self.yellowPage      = ko.observable(initial_value.yellowPage);
   self.channelId       = ko.observable(initial_value.channelId);
@@ -44,6 +44,9 @@ var YPChannelViewModel = function(initial_value) {
   self.listeners       = ko.observable(initial_value.listeners);
   self.relays          = ko.observable(initial_value.relays);
   self.isPlaying       = ko.observable(false);
+  self.isSelected      = ko.computed(function() {
+    return owner.selectedChannel()==self;
+  });
   self.isPlayable      = ko.computed(function() {
     var channel_id = self.channelId();
     if (channel_id==null || channel_id==="" || channel_id==="00000000000000000000000000000000") return false;
@@ -65,6 +68,16 @@ var YPChannelViewModel = function(initial_value) {
     return hours + ":" + (minutes<10 ? ("0"+minutes) : minutes);
   });
 
+  self.onSelected = function() {
+    if (self.isInfoChannel()) return;
+    owner.selectedChannel(self);
+  };
+
+  self.onOpened = function() {
+    if (!self.isPlayable()) return;
+    window.open(self.playlistUrl());
+  };
+
   self.toString = function() {
     return self.infoName()    + " " +
            self.infoGenre()   + " " +
@@ -81,13 +94,27 @@ var YPChannelsViewModel = function() {
   self.sortColumn = ko.observable({ sortBy: 'uptime', ascending: true });
   self.isLoading = ko.observable(false);
   self.searchText = ko.observable("");
+  self.selectedChannel = ko.observable(null);
+  self.isChannelSelected = ko.computed(function () {
+    return self.selectedChannel()!=null;
+  });
+  self.channelPlayable = ko.computed(function () {
+    var channel = self.selectedChannel();
+    if (channel==null) return false;
+    return channel.isPlayable();
+  });
+  self.channelPlaylistUrl = ko.computed(function () {
+    var channel = self.selectedChannel();
+    if (channel==null || !channel.isPlayable()) return "#";
+    return channel.playlistUrl();
+  })
 
   self.update = function() {
     self.isLoading(true);
     PeerCast.updateYPChannels(function(result) {
       if (result) {
         var new_channels = $.map(result, function(channel_info) {
-          return new YPChannelViewModel(channel_info);
+          return new YPChannelViewModel(self, channel_info);
         });
         self.channels.splice.apply(self.channels, [0, self.channels().length].concat(new_channels));
         PeerCast.getChannels(function(result) {
