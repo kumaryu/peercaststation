@@ -14,8 +14,6 @@
     <script type="text/javascript" src="js/channels.js"></script>
     <script type="text/javascript">
       $(function() {
-        $('#channels').tooltip({selector: "a[rel=tooltip]"});
-        $('#channels').popover({selector: "a[rel=popover]"});
         $('.alert').alert();
         $(document).on('mouseenter', ".channel-column", function () {
           var $this = $(this);
@@ -67,7 +65,7 @@
         <div class="toolbar-inner">
           <div class="pull-left" style="margin-left:8px">
             <a class="btn" data-bind="attr: { href: channelPlaylistUrl }, css: { disabled: !channelPlayable() }" href="#"><i class="icon-play"></i></a>
-            <a class="btn" data-bind="css: { disabled: !isChannelSelected() }" href="#"><i class="icon-heart"></i></a>
+            <a class="btn" data-bind="css: { disabled: !isChannelSelected() }, click: favChannel" href="#"><i class="icon-heart"></i></a>
           </div>
           <div class="pull-left" style="margin-left:8px">
             <ul class="filter-tabs nav nav-tabs">
@@ -100,8 +98,8 @@
           </tr>
         </thead>
         <tbody data-bind="foreach: channelList">
-          <tr data-bind="css: { info: isInfoChannel, selected: isSelected }, click: onSelected, event: { dblclick: onOpened }">
-            <td class="column-play"><i data-bind="css: { 'icon-bullhorn': isPlaying, 'icon-ban-circle': !isPlayable() }"></i></td>
+          <tr data-bind="css: { selected: isSelected, info: color()==='blue', success: color()==='green', error: color()==='red', warning: color()==='orange' }, click: onSelected, event: { dblclick: onOpened }, attr: { title: tags }">
+            <td class="column-play"><i data-bind="css: { 'icon-bullhorn': isPlaying, 'icon-ban-circle': !isPlayable(), 'icon-heart': isFavorite() }"></i></span></td>
             <td class="channel-column column-name"><span data-bind="if: infoUrl"><a data-bind="attr: { href: infoUrl }, text: infoName"></a></span><span data-bind="ifnot: infoUrl"><span data-bind="text:infoName"></span></span></td>
             <td class="channel-column column-genre"><span data-bind="text: infoGenre"></span></td>
             <td class="channel-column column-desc">
@@ -121,27 +119,26 @@
     <div id="tagsEditDialog" class="modal" style="display: none">
       <div class="modal-header">
         <a class="close" data-dismiss="modal">×</a>
-        <h3>タグ編集</h3>
+        <h3>お気に入り編集</h3>
       </div>
       <div class="modal-body">
         <table style="width: 100%">
-          <tr><th>検索文字列</th><td><input type="text" name="pattern" data-bind="value:pattern"></td></tr>
+          <tr><th>チャンネル名</th><td><input type="text" name="pattern" data-bind="value:pattern"></td></tr>
           <tr><th>タグ</th><td><input type="text" name="tags" data-bind="value:tags"></td></tr>
           <tr><th>色</th><td>
               <div class="btn-group">
-                <a href="#" class="btn"            >&nbsp;&nbsp;&nbsp;</a>
-                <a href="#" class="btn btn-primary">&nbsp;&nbsp;&nbsp;</a>
-                <a href="#" class="btn btn-success">&nbsp;&nbsp;&nbsp;</a>
-                <a href="#" class="btn btn-danger" >&nbsp;&nbsp;&nbsp;</a>
-                <a href="#" class="btn btn-warning">&nbsp;&nbsp;&nbsp;</a>
-                <a href="#" class="btn btn-inverse">&nbsp;&nbsp;&nbsp;</a>
+                <a href="#" class="btn"             data-bind="css: { active: color()==='default' }, click: setColor('default')">無</a>
+                <a href="#" class="btn btn-info"    data-bind="css: { active: color()==='blue' }, click: setColor('blue')">青</a>
+                <a href="#" class="btn btn-success" data-bind="css: { active: color()==='green' }, click: setColor('green')">緑</a>
+                <a href="#" class="btn btn-danger"  data-bind="css: { active: color()==='red' }, click: setColor('red')">赤</a>
+                <a href="#" class="btn btn-warning" data-bind="css: { active: color()==='orange' }, click: setColor('orange')">橙</a>
               </div>
           </td></tr>
         </table>
       </div>
       <div class="modal-footer">
         <a data-dismiss="modal" class="btn">閉じる</a>
-        <a href="#" data-bind="click:onAdd" class="btn btn-primary">追加</a>
+        <a href="#" data-bind="click:onOK" class="btn btn-primary">OK</a>
       </div>
     </div>
 

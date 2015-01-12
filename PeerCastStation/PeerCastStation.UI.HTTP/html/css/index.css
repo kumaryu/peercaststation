@@ -241,7 +241,7 @@ ul.relayTree {
 }
 
 .channel-list tbody tr.selected td {
-  background-color: #c5c5c5;
+  background-color: #dddddd;
 }
 
 .toolbar {
