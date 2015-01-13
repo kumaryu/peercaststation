@@ -119,14 +119,45 @@ var FavoriteChannelViewModel = function(fav) {
   });
 };
 
+var AllFilter = function(owner) {
+  var self = this;
+  self.name = ko.observable('すべて');
+  self.test = function (channel) {
+    return true;
+  };
+  self.isSelected = ko.computed(function () {
+    return owner.selectedFilter()==self;
+  });
+  self.select = function () {
+    owner.selectedFilter(self);
+  };
+};
+
+var FavoriteFilter = function(owner) {
+  var self = this;
+  self.name = ko.observable('お気に入り');
+  self.test = function (channel) {
+    return owner.getMatchedFavorite(channel)!=null;
+  };
+  self.isSelected = ko.computed(function () {
+    return owner.selectedFilter()==self;
+  });
+  self.select = function () {
+    owner.selectedFilter(self);
+  };
+};
+
 var YPChannelsViewModel = function() {
   var self = this;
   self.channels = ko.observableArray();
   self.sortColumn = ko.observable({ sortBy: 'uptime', ascending: true });
   self.isLoading = ko.observable(false);
   self.searchText = ko.observable("");
-  self.selectedChannel = ko.observable(null);
+  self.selectedChannel  = ko.observable(null);
   self.favoriteChannels = ko.observableArray();
+  self.selectedFilter   = ko.observable(null);
+  self.filters = ko.observableArray([new AllFilter(self), new FavoriteFilter(self)]);
+  self.selectedFilter(self.filters()[0]);
   self.isChannelSelected = ko.computed(function () {
     return self.selectedChannel()!=null;
   });
@@ -201,12 +232,16 @@ var YPChannelsViewModel = function() {
     var search = self.searchText();
     var channels = self.channels();
     var column = self.sortColumn();
+    var filter = self.selectedFilter();
     if (search!=null && search!=="") {
       var pattern = RegExp(search, "i");
       channels = channels.filter(function (x) {
         return pattern.test(x.toString());
       });
     }
+    channels = channels.filter(function (x) {
+      return filter.test(x);
+    });
     var favs = self.favoriteChannels();
     return $.map(channels.sort(function (x,y) {
       var xplayable = x.isPlayable() ? 1 : 0;

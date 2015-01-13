@@ -68,9 +68,8 @@
             <a class="btn" data-bind="css: { disabled: !isChannelSelected() }, click: favChannel" href="#"><i class="icon-heart"></i></a>
           </div>
           <div class="pull-left" style="margin-left:8px">
-            <ul class="filter-tabs nav nav-tabs">
-              <li class="active"><a href="#">すべて</a></li>
-              <li><a href="#">お気に入り</a></li>
+            <ul class="filter-tabs nav nav-tabs" data-bind="foreach: filters">
+              <li data-bind="css: { active: isSelected }"><a href="#" data-bind="text: name, click: select"></a></li>
             </ul>
           </div>
           <div class="pull-right" style="margin-left:4px">
