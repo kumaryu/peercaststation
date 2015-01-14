@@ -133,7 +133,7 @@ namespace PeerCastStation.UI
 		public IList<System.Net.IPAddress> GetExternalAddresses()
 		{
 			lock (devices) {
-				return devices.Select(dev => dev.GetExternalIP()).ToArray();
+				return devices.Select(dev => dev.GetExternalIP()).Distinct().ToArray();
 			}
 		}
 
