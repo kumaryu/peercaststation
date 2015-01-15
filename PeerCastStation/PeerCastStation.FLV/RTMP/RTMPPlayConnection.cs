@@ -187,6 +187,7 @@ namespace PeerCastStation.FLV.RTMP
 				await SendMessage(3, result, cancel_token);
 			}
 			if (this.Channel!=null) {
+				await base.OnCommandPlay(msg, cancel_token);
 				this.Channel.ContentChanged += OnContentChanged;
 				OnContentChanged(this, new EventArgs());
 			}
