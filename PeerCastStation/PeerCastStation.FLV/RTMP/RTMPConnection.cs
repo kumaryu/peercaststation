@@ -116,33 +116,154 @@ namespace PeerCastStation.FLV.RTMP
 		}
 
 		System.Diagnostics.Stopwatch timestampTimer = new System.Diagnostics.Stopwatch();
-		private async Task Handshake(CancellationToken cancel_token)
+
+		private static readonly byte[] GenuineFMSKey = {
+			0x47, 0x65, 0x6E, 0x75, 0x69, 0x6E, 0x65, 0x20, 0x41, 0x64, 0x6F, 0x62,
+			0x65, 0x20, 0x46, 0x6C, 0x61, 0x73, 0x68, 0x20, 0x4D, 0x65, 0x64, 0x69,
+			0x61, 0x20, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72, 0x20, 0x30, 0x30, 0x31,
+			0xF0, 0xEE, 0xC2, 0x4A, 0x80, 0x68, 0xBE, 0xE8, 0x2E, 0x00, 0xD0, 0xD1,
+			0x02, 0x9E, 0x7E, 0x57, 0x6E, 0xEC, 0x5D, 0x2D, 0x29, 0x80, 0x6F, 0xAB,
+			0x93, 0xB8, 0xE6, 0x36, 0xCF, 0xEB, 0x31, 0xAE,
+		};
+
+		private static readonly byte[] GenuineFPKey = {
+			0x47, 0x65, 0x6E, 0x75, 0x69, 0x6E, 0x65, 0x20, 0x41, 0x64, 0x6F, 0x62,
+			0x65, 0x20, 0x46, 0x6C, 0x61, 0x73, 0x68, 0x20, 0x50, 0x6C, 0x61, 0x79,
+			0x65, 0x72, 0x20, 0x30, 0x30, 0x31, 0xF0, 0xEE, 0xC2, 0x4A, 0x80, 0x68,
+			0xBE, 0xE8, 0x2E, 0x00, 0xD0, 0xD1, 0x02, 0x9E, 0x7E, 0x57, 0x6E, 0xEC,
+			0x5D, 0x2D, 0x29, 0x80, 0x6F, 0xAB, 0x93, 0xB8, 0xE6, 0x36, 0xCF, 0xEB,
+			0x31, 0xAE,
+		};
+
+		private enum DigestPosition {
+			Unknown,
+			First,
+			Second,
+		};
+
+		private int GetDigestOffset(byte[] vec, DigestPosition pos)
 		{
+			switch (pos) {
+			case DigestPosition.First:
+				return (vec[8]+vec[9]+vec[10]+vec[11]) % 728 + 12;
+			case DigestPosition.Second:
+				return (vec[772]+vec[773]+vec[774]+vec[775]) % 728 + 776;
+			default:
+				throw new ArgumentException();
+			}
+		}
+
+		private byte[] ComputeHandshakeDigest1(byte[] vec, byte[] key, int doffset)
+		{
+			var msg = new byte[vec.Length-32];
+			Array.Copy(vec, 0, msg, 0, doffset);
+			Array.Copy(vec, doffset+32, msg, doffset, vec.Length-32-doffset);
+			var hasher = new System.Security.Cryptography.HMACSHA256(key);
+			return hasher.ComputeHash(msg);
+		}
+
+		private byte[] ComputeHandshakeDigest2(byte[] keyvec, DigestPosition keypos, byte[] vec, byte[] key)
+		{
+			var doffset = GetDigestOffset(keyvec, keypos);
+			var hasher1 = new System.Security.Cryptography.HMACSHA256(key);
+			var key2 = hasher1.ComputeHash(keyvec, doffset, 32);
+			var hasher2 = new System.Security.Cryptography.HMACSHA256(key2);
+			return hasher2.ComputeHash(vec, 0, vec.Length-32);
+		}
+
+		private byte[] SetServerHandshakeDigest1(byte[] vec, DigestPosition pos)
+		{
+			var doffset = GetDigestOffset(vec, pos);
+			var key = new byte[36];
+			Array.Copy(GenuineFMSKey, key, 36);
+			var hash = ComputeHandshakeDigest1(vec, key, doffset);
+			Array.Copy(hash, 0, vec, doffset, 32);
+			return vec;
+		}
+
+		private byte[] SetServerHandshakeDigest2(byte[] c1, DigestPosition pos)
+		{
+			var hash = ComputeHandshakeDigest2(c1, pos, c1, GenuineFMSKey);
+			Array.Copy(hash, 0, c1, c1.Length-32, 32);
+			return c1;
+		}
+
+		private bool ValidateClientHandshakeDigest(byte[] vec, int doffset)
+		{
+			var key = new byte[30];
+			Array.Copy(GenuineFPKey, key, 30);
+			var hash = ComputeHandshakeDigest1(vec, key, doffset);
+			return Enumerable.Range(doffset, 32).Select(i => vec[i]).SequenceEqual(hash);
+		}
+
+		private DigestPosition ValidateClientHandshakeDigest1(byte[] vec)
+		{
+			if (ValidateClientHandshakeDigest(vec, GetDigestOffset(vec, DigestPosition.First))) {
+				return DigestPosition.First;
+			}
+			if (ValidateClientHandshakeDigest(vec, GetDigestOffset(vec, DigestPosition.Second))) {
+				return DigestPosition.Second;
+			}
+			return DigestPosition.Unknown;
+		}
+
+		private bool ValidateClientHandshakeDigest2(byte[] vec, byte[] s1, DigestPosition pos)
+		{
+			var hash = ComputeHandshakeDigest2(s1, pos, vec, GenuineFPKey);
+			return Enumerable.Range(vec.Length-32, 32).Select(i => vec[i]).SequenceEqual(hash);
+		}
+
+		private async Task HandshakeNew(RTMPBinaryReader c1reader, CancellationToken cancel_token)
+		{
+			var s1 = new byte[1536];
 			var rand = new Random();
-			await Recv(1, reader => {
-				var c0 = reader.ReadByte();
-				if (c0!=3) {
-					throw new InvalidDataException();
-				}
-			}, cancel_token);
-			await Send(new byte[] { 0x03 }, cancel_token);
+			rand.NextBytes(s1);
+			//timestamp
+			s1[0] = s1[1] = s1[2] = s1[3] = 0;
+			//version
+			s1[4] = 3;
+			s1[5] = 5;
+			s1[6] = 1;
+			s1[7] = 1;
+			s1 = SetServerHandshakeDigest1(s1, DigestPosition.First);
+			await Send(s1, cancel_token);
+
+			var c1 = c1reader.ReadBytes(1536);
+			var c1pos = ValidateClientHandshakeDigest1(c1);
+			if (c1pos==DigestPosition.Unknown) {
+				throw new InvalidDataException("C1 digest is not matched.");
+			}
+
+			var s2 = SetServerHandshakeDigest2(c1, c1pos);
+			await Send(s2, cancel_token);
+
+			var c2reader = await Recv(1536, cancel_token);
+			var c2 = c2reader.ReadBytes(1536);
+			if (!ValidateClientHandshakeDigest2(c2, s1, DigestPosition.First)) {
+				throw new InvalidDataException("C2 digest is not matched.");
+			}
+		}
+
+		private async Task HandshakeOld(RTMPBinaryReader c1reader, CancellationToken cancel_token)
+		{
 			var s1vec = new byte[1528];
+			var rand = new Random();
 			rand.NextBytes(s1vec);
 			await Send(writer => {
 				writer.Write(0);
 				writer.Write(0);
 				writer.Write(s1vec);
 			}, cancel_token);
-			await Recv(1536, async reader => {
-				var c1time = reader.ReadInt32();
-				var c1zero = reader.ReadInt32();
-				var c1vec  = reader.ReadBytes(1528);
-				await Send(writer => {
-					writer.Write(c1time);
-					writer.Write(c1zero);
-					writer.Write(c1vec);
-				}, cancel_token);
+
+			var c1time = c1reader.ReadInt32();
+			var c1ver  = c1reader.ReadInt32();
+			var c1vec  = c1reader.ReadBytes(1528);
+			await Send(writer => {
+				writer.Write(c1time);
+				writer.Write(c1ver);
+				writer.Write(c1vec);
 			}, cancel_token);
+
 			await Recv(1536, reader => {
 				var c2time = reader.ReadInt32();
 				var c2zero = reader.ReadInt32();
@@ -151,6 +272,29 @@ namespace PeerCastStation.FLV.RTMP
 					throw new InvalidDataException("C2 random vector is not matched.");
 				}
 			}, cancel_token);
+		}
+
+		private async Task Handshake(CancellationToken cancel_token)
+		{
+			await Recv(1, reader => {
+				var c0 = reader.ReadByte();
+				if (c0!=3) {
+					throw new InvalidDataException();
+				}
+			}, cancel_token);
+			await Send(new byte[] { 0x03 }, cancel_token);
+
+			var c1reader = await Recv(1536, cancel_token);
+			var c1time = c1reader.ReadInt32();
+			var c1ver  = c1reader.ReadInt32();
+			if (c1ver==0) {
+				c1reader.BaseStream.Seek(0, SeekOrigin.Begin);
+				await HandshakeOld(c1reader, cancel_token);
+			}
+			else {
+				c1reader.BaseStream.Seek(0, SeekOrigin.Begin);
+				await HandshakeNew(c1reader, cancel_token);
+			}
 			timestampTimer.Reset();
 			logger.Debug("Handshake completed");
 		}
