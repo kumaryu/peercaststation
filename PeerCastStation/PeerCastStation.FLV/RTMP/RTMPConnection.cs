@@ -152,7 +152,6 @@ namespace PeerCastStation.FLV.RTMP
 				}
 			}, cancel_token);
 			timestampTimer.Reset();
-			timestampTimer.Start();
 			logger.Debug("Handshake completed");
 		}
 
@@ -640,15 +639,22 @@ namespace PeerCastStation.FLV.RTMP
 
 		protected virtual async Task OnCommandConnect(CommandMessage msg, CancellationToken cancel_token)
 		{
-			objectEncoding = ((int)msg.CommandObject["objectEncoding"])==3 ? 3 : 0;
-			ClientName     = (string)msg.CommandObject["flashVer"];
 			logger.Debug("Connect: tcUrl:{0}, app:{1}, flashVer:{2}",
 				(string)msg.CommandObject["tcUrl"],
 				(string)msg.CommandObject["app"],
 				(string)msg.CommandObject["flashVer"]);
+			if (msg.CommandObject.ContainsKey("objectEncoding")) {
+				objectEncoding = ((int)msg.CommandObject["objectEncoding"])==3 ? 3 : 0;
+			}
+			else {
+				objectEncoding = 0;
+			}
+			ClientName = (string)msg.CommandObject["flashVer"];
 			await SendMessage(2, new SetWindowSizeMessage(this.Now, 0, recvWindowSize), cancel_token);
 			await SendMessage(2, new SetPeerBandwidthMessage(this.Now, 0, sendWindowSize, PeerBandwidthLimitType.Hard), cancel_token);
 			await SendMessage(2, new UserControlMessage.StreamBeginMessage(this.Now, 0, 0), cancel_token);
+			sendChunkSize = 4096;
+			await SendMessage(2, new SetChunkSizeMessage(this.Now, 0, sendChunkSize), cancel_token);
 			var response = CommandMessage.Create(
 				objectEncoding,
 				this.Now,
@@ -663,10 +669,10 @@ namespace PeerCastStation.FLV.RTMP
 				new AMF.AMFValue(new AMF.AMFObject {
 					{ "level",          "status" },
 					{ "code",           "NetConnection.Connect.Success" },
-					{ "description",    "Connection succeeded" },
-					{ "data",           new AMF.AMFObject { { "version", "3,5,5,2004" } } },
+					{ "description",    "Connection succeeded." },
 					{ "clientId",       nextClientId++ },
 					{ "objectEncoding", objectEncoding },
+					{ "data",           new AMF.AMFValue(new Dictionary<string,AMF.AMFValue> { { "version", new AMF.AMFValue("5,0,6,6102") } }) },
 				})
 			);
 			if (msg.TransactionId!=0) {
@@ -701,10 +707,12 @@ namespace PeerCastStation.FLV.RTMP
 
 		protected virtual async Task OnCommandPublish(CommandMessage msg, CancellationToken cancel_token)
 		{
+			timestampTimer.Start();
 		}
 
 		protected virtual async Task OnCommandPlay(CommandMessage msg, CancellationToken cancel_token)
 		{
+			timestampTimer.Start();
 		}
 
 		protected virtual async Task OnAggregate(AggregateMessage msg, CancellationToken cancel_token)
