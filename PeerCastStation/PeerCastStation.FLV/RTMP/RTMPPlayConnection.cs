@@ -233,17 +233,35 @@ namespace PeerCastStation.FLV.RTMP
 
 			public void OnData(DataMessage msg)
 			{
-				this.connection.PostMessage(3, msg);
+				this.connection.PostMessage(3,
+					new RTMPMessage(
+						msg.MessageType,
+						msg.Timestamp,
+						this.connection.StreamId,
+						msg.Body)
+				);
 			}
 
 			public void OnVideo(RTMPMessage msg)
 			{
-				this.connection.PostMessage(3, msg);
+				this.connection.PostMessage(3,
+					new RTMPMessage(
+						msg.MessageType,
+						msg.Timestamp,
+						this.connection.StreamId,
+						msg.Body)
+				);
 			}
 
 			public void OnAudio(RTMPMessage msg)
 			{
-				this.connection.PostMessage(3, msg);
+				this.connection.PostMessage(3,
+					new RTMPMessage(
+						msg.MessageType,
+						msg.Timestamp,
+						this.connection.StreamId,
+						msg.Body)
+				);
 			}
 		}
 
