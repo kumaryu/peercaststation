@@ -94,7 +94,7 @@ namespace PeerCastStation.UI
 		: IChannelMonitor,
 		  IDisposable
 	{
-		private List<INatDevice> devices = new List<INatDevice>();
+		private ISet<INatDevice> devices = new HashSet<INatDevice>();
 		private List<int>        ports   = new List<int>();
 		private System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
 		private PeerCast peerCast;
@@ -133,7 +133,7 @@ namespace PeerCastStation.UI
 		public IList<System.Net.IPAddress> GetExternalAddresses()
 		{
 			lock (devices) {
-				return devices.Select(dev => dev.GetExternalIP()).ToArray();
+				return devices.Select(dev => dev.GetExternalIP()).Distinct().ToArray();
 			}
 		}
 
@@ -240,7 +240,9 @@ namespace PeerCastStation.UI
 		private void NatUtility_DeviceFound(object sender, DeviceEventArgs e)
 		{
 			lock (devices) {
-				devices.Add(e.Device);
+				if (!devices.Add(e.Device)) {
+					return;
+				}
 			}
 			lock (ports) {
 				foreach (var port in ports) {
