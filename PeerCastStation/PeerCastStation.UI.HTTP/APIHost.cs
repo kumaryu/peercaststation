@@ -341,7 +341,7 @@ namespace PeerCastStation.UI.HTTP
         var announcings = Enumerable.Empty<IAnnouncingChannel>();
         var channel = GetChannel(channelId);
         foreach (var yp in PeerCast.YellowPages) {
-          announcings.Concat(yp.AnnouncingChannels.Where(ac => ac.Channel.ChannelID==channel.ChannelID));
+          announcings = announcings.Concat(yp.AnnouncingChannels.Where(ac => ac.Channel.ChannelID==channel.ChannelID));
         }
         return new JArray(announcings.Select(ac => {
           var acinfo = new JObject();
