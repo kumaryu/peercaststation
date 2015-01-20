@@ -374,6 +374,24 @@ namespace PeerCastStation.Core
       }
     }
 
+    private class HostComparer
+      : IEqualityComparer<Host>
+    {
+      public bool Equals(Host x, Host y)
+      {
+        if (x==y) return true;
+        if (x!=null && y==null) return false;
+        if (x==null && y!=null) return false;
+        return x.SessionID.Equals(y.SessionID);
+      }
+
+      public int GetHashCode(Host obj)
+      {
+        if (obj==null) return 0;
+        return obj.SessionID.GetHashCode();
+      }
+    }
+
     /// <summary>
     /// 接続先として選択できるノードの読み取り専用リストを取得します
     /// </summary>
@@ -383,7 +401,9 @@ namespace PeerCastStation.Core
         ReplaceCollection(ref sourceNodes, orig => {
           return new List<Host>(orig.Where(n => cur_time-n.LastUpdated<=NodeLimit));
         });
-        return new ReadOnlyCollection<Host>(sourceNodes);
+        return new ReadOnlyCollection<Host>(
+          sourceNodes.Except(nodes, new HostComparer()).ToArray()
+        );
       }
     }
 
