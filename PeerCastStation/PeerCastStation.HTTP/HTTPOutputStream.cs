@@ -178,7 +178,7 @@ namespace PeerCastStation.HTTP
         IPAddress addr;
         if (IPAddress.TryParse(ipv6addr.Groups[1].Value, out addr) &&
             addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6) {
-          return addr.ToString();
+          return String.Format("[{0}]", addr.ToString());
         }
       }
       if (hostaddr.Success) {

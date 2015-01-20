@@ -810,11 +810,12 @@ namespace PeerCastStation.PCP
       var rnd = new Random();
       var res = GetConnectableNodes().OrderByDescending(n =>
         (IsSiteLocal(n) ? 8000 : 0) +
-        ( n.IsReceiving ? 4000 : 0) +
-        (!n.IsRelayFull ? 2000 : 0) +
-        (Math.Max(10-n.Hops, 0)*100) +
-        (n.RelayCount*10) +
-        rnd.NextDouble()
+        rnd.NextDouble() * (
+          ( n.IsReceiving ? 4000 : 0) +
+          (!n.IsRelayFull ? 2000 : 0) +
+          (Math.Max(10-n.Hops, 0)*100) +
+          (n.RelayCount*10)
+        )
       ).DefaultIfEmpty().First();
       if (res!=null) {
         var uri = CreateHostUri(res);
