@@ -50,8 +50,8 @@ namespace PecaStationd
 				foreach (var plugin in Plugins) {
 					plugin.Attach(this);
 				}
-				peerCast.ChannelMonitors.Add(new PeerCastStation.ChannelCleaner(peerCast));
-				peerCast.ChannelMonitors.Add(new PeerCastStation.ChannelNotifier(this));
+				peerCast.AddChannelMonitor(new PeerCastStation.ChannelCleaner(peerCast));
+				peerCast.AddChannelMonitor(new PeerCastStation.ChannelNotifier(this));
 				LoadSettings();
 				foreach (var plugin in Plugins) {
 					plugin.Start();
