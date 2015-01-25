@@ -271,6 +271,7 @@ namespace PeerCastStation.FLV.RTMP
 		private void PostContent(Content content)
 		{
 			var pos = contentBuffer.Position;
+			contentBuffer.Seek(0, System.IO.SeekOrigin.End);
 			contentBuffer.Write(content.Data, 0, content.Data.Length);
 			contentBuffer.Position = pos;
 			if (contentSink==null) contentSink = new RTMPContentSink(this);
