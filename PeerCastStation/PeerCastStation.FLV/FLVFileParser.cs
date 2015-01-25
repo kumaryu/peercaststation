@@ -76,8 +76,7 @@ namespace PeerCastStation.FLV
 				get {
 					return
 						(Header[0] & 0xC0)==0 &&
-						(Type==TagType.Audio || Type==TagType.Video || Type==TagType.Script) &&
-						StreamID==0;
+						(Type==TagType.Audio || Type==TagType.Video || Type==TagType.Script);
 				}
 			}
 
@@ -129,6 +128,7 @@ namespace PeerCastStation.FLV
 			var processed = false;
 			var eos = false;
 			while (!eos) {
+				retry:
 				var start_pos = stream.Position;
 				try {
 					switch (state) {
@@ -176,7 +176,19 @@ namespace PeerCastStation.FLV
 									sink.OnFLVHeader();
 								}
 							}
-							if (!read_valid) throw new BadDataException();
+							if (!read_valid) {
+								stream.Position = start_pos+1;
+								var b = stream.ReadByte();
+								while (true) {
+									if (b<0) throw new EndOfStreamException();
+									if ((b & 0xC0)==0 && ((b & 0x1F)==8 || (b & 0x1F)==9 || (b & 0x1F)==18)) {
+										break;
+									}
+									b = stream.ReadByte();
+								}
+								stream.Position = stream.Position-1;
+								goto retry;
+							}
 						}
 						break;
 					}
