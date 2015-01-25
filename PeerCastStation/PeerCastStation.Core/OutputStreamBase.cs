@@ -264,5 +264,74 @@ namespace PeerCastStation.Core
     }
 
     public abstract OutputStreamType OutputStreamType { get; }
+
+		private static string ParseEndPoint(string text)
+		{
+			var ipv4port = System.Text.RegularExpressions.Regex.Match(text, @"\A(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})\z");
+			var ipv6port = System.Text.RegularExpressions.Regex.Match(text, @"\A\[([a-fA-F0-9:]+)\]:(\d{1,5})\z");
+			var hostport = System.Text.RegularExpressions.Regex.Match(text, @"\A([a-zA-Z](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*):(\d{1,5})\z");
+			var ipv4addr = System.Text.RegularExpressions.Regex.Match(text, @"\A(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\z");
+			var ipv6addr = System.Text.RegularExpressions.Regex.Match(text, @"\A([a-fA-F0-9:.]+)\z");
+			var hostaddr = System.Text.RegularExpressions.Regex.Match(text, @"\A([a-zA-Z](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*)\z");
+			if (ipv4port.Success) {
+				IPAddress addr;
+				int port;
+				if (IPAddress.TryParse(ipv4port.Groups[1].Value, out addr) &&
+						addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork &&
+						Int32.TryParse(ipv4port.Groups[2].Value, out port) &&
+						0<port && port<=65535) {
+					return new IPEndPoint(addr, port).ToString();
+				}
+			}
+			if (ipv6port.Success) {
+				IPAddress addr;
+				int port;
+				if (IPAddress.TryParse(ipv6port.Groups[1].Value, out addr) &&
+						addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6 &&
+						Int32.TryParse(ipv6port.Groups[2].Value, out port) &&
+						0<port && port<=65535) {
+					return new IPEndPoint(addr, port).ToString();
+				}
+			}
+			if (hostport.Success) {
+				string host = hostport.Groups[1].Value;
+				int port;
+				if (Int32.TryParse(hostport.Groups[2].Value, out port) && 0<port && port<=65535) {
+					return String.Format("{0}:{1}", host, port);
+				}
+			}
+			if (ipv4addr.Success) {
+				IPAddress addr;
+				if (IPAddress.TryParse(ipv4addr.Groups[1].Value, out addr) &&
+						addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork) {
+					return addr.ToString();
+				}
+			}
+			if (ipv6addr.Success) {
+				IPAddress addr;
+				if (IPAddress.TryParse(ipv6addr.Groups[1].Value, out addr) &&
+						addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6) {
+					return addr.ToString();
+				}
+			}
+			if (hostaddr.Success) {
+				string host = hostaddr.Groups[1].Value;
+				return host;
+			}
+			return null;
+		}
+
+		public static Uri CreateTrackerUri(Guid channel_id, string tip)
+		{
+			if (tip==null) return null;
+			var endpoint = ParseEndPoint(tip);
+			if (endpoint!=null) {
+				return new Uri(String.Format("pcp://{0}/{1}", endpoint, channel_id));
+			}
+			else {
+				return null;
+			}
+		}
+
   }
 }
