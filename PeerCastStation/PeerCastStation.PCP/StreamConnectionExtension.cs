@@ -9,17 +9,20 @@ namespace PeerCastStation.PCP
     {
       var res = new Queue<Atom>();
       connection.Recv(s => {
+        var processed = false;
         while (s.Position<s.Length) {
           var pos = s.Position;
           try {
             var atom = AtomReader.Read(s);
             res.Enqueue(atom);
+            processed = true;
           }
           catch (System.IO.EndOfStreamException) {
             s.Position = pos;
             break;
           }
         }
+        return processed;
       });
       return res;
     }
