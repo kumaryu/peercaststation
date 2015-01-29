@@ -12,10 +12,10 @@ title: 開発版のダウンロード - PeerCastStation
 
 動作環境とインストール方法
 ==========================
-Windowsの場合はWindows XP SP3以降と.NET Framework 3.5以降、
-Windows以外の場合はMono 2.6以降が必要です。
+Windowsの場合はWindows Vista以降と.NET Framework 4.5以降、
+Windows以外の場合はMono 3.0以降が必要です。
 
-今のところインストーラはありません。ダウンロードしたzipは展開前にプロパティからブロック解除しておくとあとで便利です。中身を適当な場所に置いてPeerCastStation.exeを起動してください。詳しい使い方はzip内のhelp\\index.htmlを開いてヘルプを見てください。
+ダウンロードしたzipは展開前にプロパティからブロック解除しておくとあとで便利です。中身を適当な場所に置いてPeerCastStation.exeを起動してください。詳しい使い方はzip内のhelp\\index.htmlを開いてヘルプを見てください。
 
 なぜか起動しない場合は実行ファイルとdllファイルがブロックされている可能性があります。
 unblock.batを実行してから再度PeerCastStation.exeを実行してみてください。
