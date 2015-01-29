@@ -524,7 +524,8 @@ namespace PeerCastStation.FLV.RTMP
     public DataAMF3Message(RTMPMessage x)
       : base(x)
     {
-      using (var reader=new AMF3Reader(new MemoryStream(x.Body))) {
+      using (var reader=new AMF0Reader(new MemoryStream(x.Body))) {
+				reader.BaseStream.ReadByte();
         this.propertyName = (string)reader.ReadValue();
         var arguments = new List<AMFValue>();
         while (reader.BaseStream.Position<reader.BaseStream.Length) {
@@ -537,7 +538,8 @@ namespace PeerCastStation.FLV.RTMP
     private static byte[] CreateBody(string property_name, IEnumerable<AMFValue> arguments)
     {
       var s = new MemoryStream();
-      using (var writer=new AMF3Writer(s)) {
+      using (var writer=new AMF0Writer(s)) {
+				writer.BaseStream.WriteByte(0);
         writer.WriteString(property_name);
         foreach (var arg in arguments) {
           writer.WriteValue(arg);
@@ -662,7 +664,8 @@ namespace PeerCastStation.FLV.RTMP
     public CommandAMF3Message(RTMPMessage x)
       : base(x)
     {
-      using (var reader=new AMF3Reader(new MemoryStream(x.Body))) {
+      using (var reader=new AMF0Reader(new MemoryStream(x.Body))) {
+				reader.BaseStream.ReadByte();
         this.commandName   = (string)reader.ReadValue();
         this.transactionId = (int)reader.ReadValue();
         this.commandObject = reader.ReadValue();
@@ -684,7 +687,8 @@ namespace PeerCastStation.FLV.RTMP
       IEnumerable<AMFValue> arguments)
     {
       var s = new MemoryStream();
-      using (var writer=new AMF3Writer(s)) {
+      using (var writer=new AMF0Writer(s)) {
+				writer.BaseStream.WriteByte(0);
         writer.WriteString(command_name);
         writer.WriteNumber(transaction_id);
         writer.WriteValue(command_object);

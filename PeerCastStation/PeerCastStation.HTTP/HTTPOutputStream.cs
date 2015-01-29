@@ -197,18 +197,7 @@ namespace PeerCastStation.HTTP
           break;
         }
       }
-      if (tip!=null) {
-        var endpoint = ParseEndPoint(tip);
-        if (endpoint!=null) {
-          return new Uri(String.Format("pcp://{0}/{1}", endpoint, channel_id));
-        }
-        else {
-          return null;
-        }
-      }
-      else {
-        return null;
-      }
+      return OutputStreamBase.CreateTrackerUri(channel_id, tip);
     }
 
     /// <summary>
