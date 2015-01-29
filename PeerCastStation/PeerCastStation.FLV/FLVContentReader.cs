@@ -222,6 +222,21 @@ namespace PeerCastStation.FLV
     {
       return new FLVContentReader(channel);
     }
+
+    public bool TryParseContentType(byte[] header, out string content_type, out string mime_type)
+    {
+      if (header.Length>=13 && header[0]=='F' && header[1]=='L' && header[2]=='V') {
+        content_type = "FLV";
+        mime_type    = "video/x-flv";
+        return true;
+      }
+      else {
+        content_type = null;
+        mime_type    = null;
+        return false;
+      }
+    }
+
   }
 
   [Plugin]

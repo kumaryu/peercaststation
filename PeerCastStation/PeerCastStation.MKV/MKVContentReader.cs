@@ -557,6 +557,38 @@ namespace PeerCastStation.MKV
     {
       return new MKVContentReader(channel);
     }
+
+    public bool TryParseContentType(byte[] header, out string content_type, out string mime_type)
+    {
+      try {
+        using (var stream=new MemoryStream(header)) {
+          var elt = Element.ReadHeader(stream);
+          if (4<elt.ID.Length || 8<elt.Size.Length ||
+              !elt.ID.BinaryEquals(Elements.EBML)) {
+            content_type = null;
+            mime_type    = null;
+            return false;
+          }
+          elt.ReadBody(stream);
+          var ebml = new EBML(elt);
+          if (ebml.DocType=="webm") {
+            content_type = "WEBM";
+            mime_type = "video/webm";
+          }
+          else {
+            content_type = "MKV";
+            mime_type = "video/x-matroska";
+          }
+          return true;
+        }
+      }
+      catch (EndOfStreamException) {
+        content_type = null;
+        mime_type    = null;
+        return false;
+      }
+    }
+
   }
 
   [Plugin]
