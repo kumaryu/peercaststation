@@ -661,6 +661,15 @@ namespace PeerCastStation.Core
     /// <param name="channel">データ追加先となるチャンネル</param>
     /// <returns>IContentReaderを実装するオブジェクト</returns>
     IContentReader Create(Channel channel);
+
+    /// <summary>
+    /// 指定したバイト列を解析し、コンテントタイプを取得します
+    /// </summary>
+    /// <param name="header">解析するコンテントヘッダのバイト列</param>
+    /// <param name="content_type">解析したコンテントタイプの設定先</param>
+    /// <param name="mime_type">解析したMIMEタイプの設定先</param>
+    /// <returns>解析できた時はtrue、それ以外はfalse</returns>
+    bool TryParseContentType(byte[] header, out string content_type, out string mime_type);
   }
 
   /// <summary>

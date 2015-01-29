@@ -178,9 +178,10 @@ namespace PeerCastStation.HTTP
       }
       var request = String.Format(
           "GET {0} HTTP/1.1\r\n" +
-          "Host:{1}\r\n" +
-          "User-Agent:WMPlayer ({2})\r\n" +
-          "connection:close\r\n" +
+          "Host: {1}\r\n" +
+          "User-Agent: NSPlayer ({2})\r\n" +
+          "Connection: close\r\n" +
+          "Pragma: stream-switch-count=2\r\n" +
           "\r\n",
           SourceUri.PathAndQuery,
           host,

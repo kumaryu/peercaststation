@@ -567,7 +567,21 @@ namespace PeerCastStation.PCP
 
     protected void OnPCPChanInfo(Atom atom)
     {
-      Channel.ChannelInfo = new ChannelInfo(atom.Children);
+      var channel_info = new ChannelInfo(atom.Children);
+      var content_type = channel_info.ContentType;
+      if (content_type==null || content_type=="UNKNOWN") {
+        var header = Channel.ContentHeader;
+        string mime_type = null;
+        if (header!=null &&
+            PeerCast.ContentReaderFactories.Any(
+              factory => factory.TryParseContentType(header.Data, out content_type, out mime_type))) {
+          var new_info = new AtomCollection(atom.Children);
+          new_info.SetChanInfoType(content_type);
+          new_info.SetChanInfoStreamType(mime_type);
+          channel_info = new ChannelInfo(new_info);
+        }
+      }
+      Channel.ChannelInfo = channel_info;
       BroadcastHostInfo();
     }
 

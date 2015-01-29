@@ -64,6 +64,13 @@ namespace PeerCastStation.Core
     {
       return new RawContentReader(channel);
     }
+
+    public bool TryParseContentType(byte[] header, out string content_type, out string mime_type)
+    {
+      content_type = null;
+      mime_type = null;
+      return false;
+    }
   }
 
   [Plugin(PluginPriority.Lower)]

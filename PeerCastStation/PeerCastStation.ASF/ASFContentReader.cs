@@ -397,6 +397,38 @@ namespace PeerCastStation.ASF
     {
       return new ASFContentReader(channel);
     }
+
+    public bool TryParseContentType(byte[] header_bytes, out string content_type, out string mime_type)
+    {
+      using (var stream=new MemoryStream(header_bytes)) {
+        try {
+          for (var chunks=0; chunks<8; chunks++) {
+            var chunk = ASFChunk.Read(stream);
+            if (chunk.KnownType!=ASFChunk.ChunkType.Header) continue;
+            var header = ASFHeader.Read(chunk);
+            if (header.Streams.Any(type => type==ASFHeader.StreamType.Video)) {
+              content_type = "WMV";
+              mime_type = "video/x-ms-wmv";
+            }
+            else if (header.Streams.Any(type => type==ASFHeader.StreamType.Audio)) {
+              content_type = "WMA";
+              mime_type = "audio/x-ms-wma";
+            }
+            else {
+              content_type = "ASF";
+              mime_type = "video/x-ms-asf";
+            }
+            return true;
+          }
+        }
+        catch (EndOfStreamException) {
+        }
+      }
+      content_type = null;
+      mime_type    = null;
+      return false;
+    }
+
   }
 
   [Plugin]
