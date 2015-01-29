@@ -136,7 +136,13 @@ namespace PeerCastStation.HTTP
     {
       try {
         client = new TcpClient();
-        client.Connect(source.DnsSafeHost, source.Port);
+        if (source.HostNameType==UriHostNameType.IPv4 ||
+            source.HostNameType==UriHostNameType.IPv6) {
+          client.Connect(IPAddress.Parse(source.Host), source.Port);
+        }
+        else {
+          client.Connect(source.DnsSafeHost, source.Port);
+        }
         var stream = client.GetStream();
         var connection = new StreamConnection(stream, stream);
         connection.ReceiveTimeout = 10000;
