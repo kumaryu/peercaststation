@@ -1,8 +1,4 @@
 
-.hidden {
-  display:none;
-}
-
 .alerts {
   position: fixed;
   top: 60px;
@@ -282,5 +278,25 @@ ul.relayTree {
 
 .filter-tabs > li > a {
   padding-bottom: 5px;
+}
+
+.badge-mini {
+  display: inline-block;
+  padding: 2px 4px;
+  font-size: 9px;
+  font-weight: bold;
+  line-height: 12px;
+  color: #ffffff;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+  vertical-align: baseline;
+  background-color: #3a87ad;
+  -webkit-border-radius: 9px;
+     -moz-border-radius: 9px;
+          border-radius: 9px;
+}
+
+.hidden {
+  display:none;
 }
 

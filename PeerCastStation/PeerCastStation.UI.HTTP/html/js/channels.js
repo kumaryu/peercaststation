@@ -261,6 +261,9 @@ var AllFilter = function(owner) {
   self.select = function () {
     owner.selectedFilter(self);
   };
+  self.macthedCount = ko.computed(function () {
+    return owner.channels().length;
+  })
 };
 
 var FavoriteFilter = function(owner) {
@@ -275,6 +278,9 @@ var FavoriteFilter = function(owner) {
   self.select = function () {
     owner.selectedFilter(self);
   };
+  self.macthedCount = ko.computed(function () {
+    return $.grep(owner.channels(), function (channel) { return self.test(channel); }).length;
+  })
 };
 
 var CustomFilterViewModel = function(owner, filter) {
@@ -320,6 +326,9 @@ var CustomFilterViewModel = function(owner, filter) {
   self.isSelected = ko.computed(function () {
     return owner.selectedFilter()==self;
   });
+  self.macthedCount = ko.computed(function () {
+    return $.grep(owner.channels(), function (channel) { return self.test(channel); }).length;
+  })
   self.select = function () {
     owner.selectedFilter(self);
   };
