@@ -8,7 +8,7 @@ var tagsEditDialog = new function() {
     ko.applyBindings(self, dialog.get(0));
   });
 
-  self.model    = null;
+  self.name     = ko.observable(null);
   self.pattern  = ko.observable(null);
   self.tags     = ko.observable(null);
   self.color    = ko.observable('default');
@@ -20,18 +20,160 @@ var tagsEditDialog = new function() {
     };
   };
   self.show = function(fav, on_update) {
-    self.model = fav;
-    self.pattern(fav.channelName());
-    self.tags(fav.tags());
-    self.color(fav.color());
+    self.name(fav.name);
+    self.pattern(fav.pattern);
+    self.tags(fav.tags);
+    self.color(fav.color);
     self.onUpdate = on_update;
     dialog.modal('show');
   };
   self.onOK = function() {
-    self.model.channelName(self.pattern());
-    self.model.tags(self.tags());
-    self.model.color(self.color());
-    if (self.onUpdate) self.onUpdate(self.model);
+    if (self.onUpdate) {
+      self.onUpdate({
+        type: 'favorite',
+        name: self.name(),
+        pattern: self.pattern(),
+        tags: self.tags(),
+        color: self.color()
+      });
+    }
+    dialog.modal('hide');
+  };
+};
+
+var filtersEditDialog = new function() {
+  var self = this;
+  var dialog = null;
+  $(document).ready(function() {
+    dialog = $('#filtersEditDialog');
+    dialog.modal({show: false});
+    ko.applyBindings(self, dialog.get(0));
+  });
+
+  var FilterViewModel = function (filter) {
+    var self = this;
+    self.type    = ko.observable(filter.type);
+    self.name    = ko.observable(filter.name);
+    self.pattern = ko.observable(filter.pattern);
+    self.tags    = ko.observable(filter.tags);
+    self.color   = ko.observable(filter.color);
+    self.model = function () {
+      return {
+        type:    self.type(),
+        name:    self.name(),
+        pattern: self.pattern(),
+        tags:    self.tags(),
+        color:   self.color()
+      };
+    }
+  };
+
+  self.types = [
+    { name:'フィルタ', value:'filter' },
+    { name:'お気に入り', value:'favorite' },
+  ];
+
+  self.filters = ko.observableArray();
+  self.selectedFilter = ko.observable(null);
+  self.type = ko.computed({
+    read: function () {
+      var filter = self.selectedFilter();
+      if (!filter) return null;
+      return filter.type();
+    },
+    write: function (value) {
+      var filter = self.selectedFilter();
+      if (!filter) return;
+      filter.type(value);
+    }
+  });
+  self.name = ko.computed({
+    read: function () {
+      var filter = self.selectedFilter();
+      if (!filter) return null;
+      return filter.name();
+    },
+    write: function (value) {
+      var filter = self.selectedFilter();
+      if (!filter) return;
+      filter.name(value);
+    }
+  });
+  self.pattern = ko.computed({
+    read: function () {
+      var filter = self.selectedFilter();
+      if (!filter) return null;
+      return filter.pattern();
+    },
+    write: function (value) {
+      var filter = self.selectedFilter();
+      if (!filter) return;
+      filter.pattern(value);
+    }
+  });
+  self.tags = ko.computed({
+    read: function () {
+      var filter = self.selectedFilter();
+      if (!filter) return null;
+      return filter.tags();
+    },
+    write: function (value) {
+      var filter = self.selectedFilter();
+      if (!filter) return;
+      filter.tags(value);
+    }
+  });
+  self.color = ko.computed({
+    read: function () {
+      var filter = self.selectedFilter();
+      if (!filter) return null;
+      return filter.color();
+    },
+    write: function (value) {
+      var filter = self.selectedFilter();
+      if (!filter) return;
+      filter.color(value);
+    }
+  });
+  self.onUpdate = null;
+
+  self.add = function () {
+    self.filters.push(new FilterViewModel({
+      type: 'filter',
+      name: '新しいフィルタ',
+      pattern: '',
+      tags: '',
+      color: 'default'
+    }));
+  };
+
+  self.remove = function () {
+    self.filters.remove(self.selectedFilter());
+    self.selectedFilter(null);
+  };
+
+  self.setColor = function(name) {
+    return function() {
+      self.color(name);
+    };
+  };
+  self.show = function(filters, on_update) {
+    self.filters($.map(filters, function (filter) {
+      return new FilterViewModel({
+        type:    filter.type,
+        name:    filter.name,
+        pattern: filter.pattern,
+        tags:    filter.tags,
+        color:   filter.color
+      });
+    }));
+    self.onUpdate = on_update;
+    dialog.modal('show');
+  };
+  self.onOK = function() {
+    if (self.onUpdate) {
+      self.onUpdate($.map(self.filters(), function (filter) { return filter.model(); }));
+    }
     dialog.modal('hide');
   };
 };
@@ -59,6 +201,7 @@ var YPChannelViewModel = function(owner, initial_value) {
   self.color           = ko.observable(initial_value.listeners < -1 ? 'blue' : 'default');
   self.tags            = ko.observable(null);
   self.isPlaying       = ko.observable(false);
+  self.isFavorite      = ko.observable(false);
   self.isSelected      = ko.computed(function() {
     return owner.selectedChannel()==self;
   });
@@ -70,11 +213,8 @@ var YPChannelViewModel = function(owner, initial_value) {
   self.isInfoChannel   = ko.computed(function() {
     return self.listeners()<-1;
   });
-  self.isFavorite      = ko.computed(function() {
-    return self.tags()!=null && self.tags()!=='';
-  });
   self.attrRel = ko.computed(function() {
-    return self.isFavorite() ? 'tooltip' : '';
+    return (self.tags()!=null && self.tags()!=='') ? 'tooltip' : '';
   });
   self.streamUrl       = ko.computed(function() {
     return '/stream/' + self.channelId() + "?tip=" + self.tracker();
@@ -109,16 +249,6 @@ var YPChannelViewModel = function(owner, initial_value) {
   };
 };
 
-var FavoriteChannelViewModel = function(fav) {
-  var self = this;
-  self.channelName = ko.observable(fav.channelName);
-  self.tags        = ko.observable(fav.tags);
-  self.color       = ko.observable(fav.color);
-  self.pattern = ko.computed(function () {
-    return RegExp(self.channelName(), 'i');
-  });
-};
-
 var AllFilter = function(owner) {
   var self = this;
   self.name = ko.observable('すべて');
@@ -147,6 +277,54 @@ var FavoriteFilter = function(owner) {
   };
 };
 
+var CustomFilterViewModel = function(owner, filter) {
+  var self = this;
+  self.type     = ko.observable(filter.type);
+  self.name     = ko.observable(filter.name);
+  var regexp = RegExp(filter.pattern, 'i');
+  self.pattern  = ko.observable(filter.pattern);
+  self.pattern.subscribe(function (new_value) {
+    regexp = RegExp(new_value, 'i');
+  });
+  var tags = ko.observable(filter.tags);
+  self.tags     = ko.computed({
+    read: function () {
+      if (self.type()==='favorite') return tags();
+      else return null;
+    },
+    write: function (value) {
+      tags(value);
+    }
+  });
+  self.color    = ko.observable(filter.color);
+  self.model    = ko.computed(function () {
+    return {
+      type: self.type(),
+      name: self.name(),
+      pattern: self.pattern(),
+      tags: tags(),
+      color: self.color()
+    };
+  });
+
+  self.test = function (channel) {
+    switch (self.type()) {
+    case 'favorite':
+      return regexp.test(channel.infoName());
+    case 'filter':
+      return regexp.test(channel.toString());
+    default:
+      return false;
+    }
+  };
+  self.isSelected = ko.computed(function () {
+    return owner.selectedFilter()==self;
+  });
+  self.select = function () {
+    owner.selectedFilter(self);
+  };
+}
+
 var YPChannelsViewModel = function() {
   var self = this;
   self.channels = ko.observableArray();
@@ -154,10 +332,31 @@ var YPChannelsViewModel = function() {
   self.isLoading = ko.observable(false);
   self.searchText = ko.observable("");
   self.selectedChannel  = ko.observable(null);
-  self.favoriteChannels = ko.observableArray();
   self.selectedFilter   = ko.observable(null);
-  self.filters = ko.observableArray([new AllFilter(self), new FavoriteFilter(self)]);
-  self.selectedFilter(self.filters()[0]);
+  self.defaultFilters = [new AllFilter(self), new FavoriteFilter(self)];
+
+  var custom_filters = ko.observable([]);
+  self.customFilters = ko.computed({
+    read: function () { return custom_filters(); },
+    write: function (value) {
+      custom_filters(value.sort(function (x,y) {
+        var xname = x.name();
+        var yname = y.name();
+        var xtype = x.type();
+        var ytype = y.type();
+        return xtype===ytype ? (xname===yname ? 0 : xname<yname ? -1 : 1) : xtype<ytype ? -1 : 1;
+      }));
+    }
+  });
+  self.selectedFilter(self.defaultFilters[0]);
+  self.filters = ko.computed(function () {
+    return self.defaultFilters.concat(
+      $.grep(self.customFilters(), function (filter) { return filter.type()==='filter'; })
+    );
+  });
+  self.favoriteChannels = ko.computed(function () {
+    return $.grep(self.customFilters(), function (filter) { return filter.type()==='favorite'; });
+  });
   self.isChannelSelected = ko.computed(function () {
     return self.selectedChannel()!=null;
   });
@@ -176,7 +375,7 @@ var YPChannelsViewModel = function() {
     var fav_channels = self.favoriteChannels();
     for (var i in fav_channels) {
       var fav = fav_channels[i];
-      if (fav.pattern().test(channel.infoName())) {
+      if (fav.test(channel)) {
         return fav;
       }
     }
@@ -186,19 +385,38 @@ var YPChannelsViewModel = function() {
     var channel = self.selectedChannel();
     var fav = self.getMatchedFavorite(channel);
     if (fav) {
-      tagsEditDialog.show(fav, function () {
+      tagsEditDialog.show(fav.model(), function (favorite) {
+        fav.name(favorite.name);
+        fav.pattern(favorite.pattern);
+        fav.tags(favorite.tags);
+        fav.color(favorite.color);
         self.saveConfig();
       });
     }
     else {
-      fav = new FavoriteChannelViewModel({
-        channelName: channel.infoName(), tags: '', color: 'default'
-      });
-      tagsEditDialog.show(fav, function () {
-        self.favoriteChannels.push(fav);
+      fav = {
+        type:    'favorite',
+        name:    channel.infoName(),
+        pattern: channel.infoName(),
+        tags:    '',
+        color:   'default'
+      };
+      tagsEditDialog.show(fav, function (favorite) {
+        var filters = self.customFilters();
+        filters.push(new CustomFilterViewModel(self, favorite));
+        self.customFilters(filters);
         self.saveConfig();
       });
     }
+  };
+
+  self.editFilters = function() {
+    filtersEditDialog.show($.map(self.customFilters(), function (filter) { return filter.model(); }), function (filters) {
+      self.customFilters($.map(filters, function (filter) {
+        return new CustomFilterViewModel(self, filter);
+      }));
+      self.saveConfig();
+    });
   };
 
   self.update = function() {
@@ -242,7 +460,11 @@ var YPChannelsViewModel = function() {
     channels = channels.filter(function (x) {
       return filter.test(x);
     });
-    var favs = self.favoriteChannels();
+    var favs = self.customFilters().sort(function (x,y) {
+      var xval = x.type();
+      var yval = y.type();
+      return xval===yval ? 0 : xval<yval ? -1 : 1;
+    });
     return $.map(channels.sort(function (x,y) {
       var xplayable = x.isPlayable() ? 1 : 0;
       var yplayable = y.isPlayable() ? 1 : 0;
@@ -251,14 +473,17 @@ var YPChannelsViewModel = function() {
       var cmp = (xplayable<yplayable ? -1 : (xplayable>yplayable ? 1 : 0)) * 10 + (xval<yval ? -1 : (xval>yval ? 1 : 0));
       return column.ascending ? cmp : -cmp;
     }), function(channel) {
+      var favorite = false;
       for (var i in favs) {
         var fav = favs[i];
-        if (fav.pattern().test(channel.infoName())) {
+        if (fav.test(channel)) {
+          favorite = fav.type()==='favorite';
           channel.color(fav.color());
           channel.tags(fav.tags());
           break;
         }
       }
+      channel.isFavorite(favorite);
       return channel;
     });
   });
@@ -278,13 +503,7 @@ var YPChannelsViewModel = function() {
 
   self.saveConfig = function() {
     var yp_channels = {
-      favorites: $.map(self.favoriteChannels(), function (fav) {
-        return {
-          channelName: fav.channelName(),
-          tags: fav.tags(),
-          color: fav.color()
-        };
-      })
+      filters: $.map(self.customFilters(), function (filter) { return filter.model(); })
     };
     PeerCast.setUserConfig('default', 'ypChannels', yp_channels);
   };
@@ -292,8 +511,8 @@ var YPChannelsViewModel = function() {
   self.loadConfig = function() {
     PeerCast.getUserConfig('default', 'ypChannels', function (config) {
       if (config) {
-        self.favoriteChannels($.map(config.favorites, function (fav) {
-          return new FavoriteChannelViewModel(fav);
+        self.customFilters($.map(config.filters, function (filter) {
+          return new CustomFilterViewModel(self, filter);
         }));
       }
     });

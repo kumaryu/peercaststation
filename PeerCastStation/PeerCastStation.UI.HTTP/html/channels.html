@@ -24,8 +24,7 @@
         });
         var pageViewModel = {
           list: channelsViewModel,
-          ui:   UIViewModel,
-          tagsEditDialog: tagsEditDialog
+          ui:   UIViewModel
         };
         ko.applyBindings(pageViewModel, $('#header').get(0));
         channelsViewModel.bind($('#channels').get(0));
@@ -76,7 +75,7 @@
             <a class="btn btn-primary" href="#" data-bind="click: update"><i class="icon-refresh icon-white"></i> 更新</a>
           </div>
           <form class="pull-right">
-            <a class="btn" href="#"><i class="icon-cog"></i></a>
+            <a class="btn" href="#" data-bind="click: editFilters"><i class="icon-cog"></i></a>
             <input style="width:100px" type="text" class="search-query" placeholder="検索" data-bind="value: searchText, valueUpdate: 'afterkeydown'">
           </form>
         </div>
@@ -134,6 +133,43 @@
               </div>
           </td></tr>
         </table>
+      </div>
+      <div class="modal-footer">
+        <a data-dismiss="modal" class="btn">閉じる</a>
+        <a href="#" data-bind="click:onOK" class="btn btn-primary">OK</a>
+      </div>
+    </div>
+
+    <div id="filtersEditDialog" class="modal" style="display: none">
+      <div class="modal-header">
+        <a class="close" data-dismiss="modal">×</a>
+        <h3>フィルタ編集</h3>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex; flex-flow:row">
+          <div style="flex:1">
+            <select style="width:100%" size="7" data-bind="options:filters, optionsText:'name', value:selectedFilter"></select>
+            <a class="btn" data-bind="click:add">追加</a>
+            <a class="btn" data-bind="click:remove,css:{ disabled: !selectedFilter() }">削除</a>
+          </div>
+          <div style="flex:2">
+            <table style="width:100%">
+              <tr><th>種類</th><td><select data-bind="value:type,options:types,optionsText:'name',optionsValue:'value'"></select></td></tr>
+              <tr><th>フィルタ名</th><td><input type="text" name="name" data-bind="value:name"></td></tr>
+              <tr><th>検索文字列</th><td><input type="text" name="pattern" data-bind="value:pattern"></td></tr>
+              <tr data-bind="css:{hidden: type()!=='favorite'}"><th>タグ</th><td><input type="text" name="tags" data-bind="value:tags"></td></tr>
+              <tr><th>色</th><td>
+                  <div class="btn-group">
+                    <a href="#" class="btn"             data-bind="css: { active: color()==='default' }, click: setColor('default')">無</a>
+                    <a href="#" class="btn btn-info"    data-bind="css: { active: color()==='blue' }, click: setColor('blue')">青</a>
+                    <a href="#" class="btn btn-success" data-bind="css: { active: color()==='green' }, click: setColor('green')">緑</a>
+                    <a href="#" class="btn btn-danger"  data-bind="css: { active: color()==='red' }, click: setColor('red')">赤</a>
+                    <a href="#" class="btn btn-warning" data-bind="css: { active: color()==='orange' }, click: setColor('orange')">橙</a>
+                  </div>
+              </td></tr>
+            </table>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <a data-dismiss="modal" class="btn">閉じる</a>
