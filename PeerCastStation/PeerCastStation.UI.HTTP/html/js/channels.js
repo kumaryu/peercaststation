@@ -510,6 +510,23 @@ var YPChannelsViewModel = function() {
     };
   }
 
+  self.columnVisibilities = {
+    name: ko.observable(true),
+    genre: ko.observable(true),
+    desc: ko.observable(true),
+    bitrate: ko.observable(true),
+    uptime: ko.observable(true),
+    listeners: ko.observable(true),
+    type: ko.observable(true),
+    yp: ko.observable(true)
+  };
+  self.toggleColumnVisibility = function(name) {
+    return function (data, e) {
+      self.columnVisibilities[name](!self.columnVisibilities[name]());
+      e.stopPropagation();
+    };
+  }
+
   self.saveConfig = function() {
     var yp_channels = {
       filters: $.map(self.customFilters(), function (filter) { return filter.model(); })

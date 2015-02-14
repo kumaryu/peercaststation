@@ -184,12 +184,19 @@ ul.relayTree {
   display:block;
 }
 
+.channel-list th.hidden {
+  display:none;
+}
+
 .channel-list td {
   display:block;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
   height:22px;
+}
+.channel-list td.hidden {
+  display:none;
 }
 .channel-list .column-play      { width:1em; }
 .channel-list .column-name      { flex:16; }

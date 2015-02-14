@@ -84,31 +84,42 @@
       <table class="table table-striped table-hover table-condensed channel-list">
         <thead class="theader" data-spy="affix" data-offset-top="42">
           <tr>
-            <th class="column-play"></th>
-            <th class="column-name"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoName'        }, click: setSort('infoName')">チャンネル名</a></th>
-            <th class="column-genre"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoGenre'       }, click: setSort('infoGenre')">ジャンル</a></th>
-            <th class="column-desc"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoDesc'        }, click: setSort('infoDesc')">詳細</a></th>
-            <th class="column-bitrate"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoBitrate'     }, click: setSort('infoBitrate')">kbps</a></th>
-            <th class="column-uptime"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'uptime'          }, click: setSort('uptime')">時間</a></th>
-            <th class="column-listeners"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'listeners'       }, click: setSort('listeners')">L/R数</a></th>
-            <th class="column-type"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoContentType' }, click: setSort('infoContentType')">Type</a></th>
-            <th class="column-yp"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'yellowPage'      }, click: setSort('yellowPage')">YP</a></th>
+            <th class="column-play dropdown"><a data-toggle="dropdown" href="#">...</a>
+              <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+                <li><a href="#" data-bind="click: toggleColumnVisibility('name')"><i data-bind="css:{ 'icon-white': !columnVisibilities.name(), 'icon-ok': columnVisibilities.name() }"></i> チャンネル名</a></li>
+                <li><a href="#" data-bind="click: toggleColumnVisibility('genre')"><i data-bind="css:{ 'icon-white': !columnVisibilities.genre(), 'icon-ok': columnVisibilities.genre() }"></i> ジャンル</a></li>
+                <li><a href="#" data-bind="click: toggleColumnVisibility('desc')"><i data-bind="css:{ 'icon-white': !columnVisibilities.desc(), 'icon-ok': columnVisibilities.desc() }"></i> 詳細</a></li>
+                <li><a href="#" data-bind="click: toggleColumnVisibility('bitrate')"><i data-bind="css:{ 'icon-white': !columnVisibilities.bitrate(), 'icon-ok': columnVisibilities.bitrate() }"></i> kbps</a></li>
+                <li><a href="#" data-bind="click: toggleColumnVisibility('uptime')"><i data-bind="css:{ 'icon-white': !columnVisibilities.uptime(), 'icon-ok': columnVisibilities.uptime() }"></i> 時間</a></li>
+                <li><a href="#" data-bind="click: toggleColumnVisibility('listeners')"><i data-bind="css:{ 'icon-white': !columnVisibilities.listeners(), 'icon-ok': columnVisibilities.listeners() }"></i> L/R数</a></li>
+                <li><a href="#" data-bind="click: toggleColumnVisibility('type')"><i data-bind="css:{ 'icon-white': !columnVisibilities.type(), 'icon-ok': columnVisibilities.type() }"></i> Type</a></li>
+                <li><a href="#" data-bind="click: toggleColumnVisibility('yp')"><i data-bind="css:{ 'icon-white': !columnVisibilities.yp(), 'icon-ok': columnVisibilities.yp() }"></i> YP</a></li>
+              </ul>
+            </th>
+            <th class="column-name" data-bind="css:{hidden: !columnVisibilities.name()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoName'        }, click: setSort('infoName')">チャンネル名</a></th>
+            <th class="column-genre" data-bind="css:{hidden: !columnVisibilities.genre()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoGenre'       }, click: setSort('infoGenre')">ジャンル</a></th>
+            <th class="column-desc" data-bind="css:{hidden: !columnVisibilities.desc()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoDesc'        }, click: setSort('infoDesc')">詳細</a></th>
+            <th class="column-bitrate" data-bind="css:{hidden: !columnVisibilities.bitrate()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoBitrate'     }, click: setSort('infoBitrate')">kbps</a></th>
+            <th class="column-uptime" data-bind="css:{hidden: !columnVisibilities.uptime()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'uptime'          }, click: setSort('uptime')">時間</a></th>
+            <th class="column-listeners" data-bind="css:{hidden: !columnVisibilities.listeners()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'listeners'       }, click: setSort('listeners')">L/R数</a></th>
+            <th class="column-type" data-bind="css:{hidden: !columnVisibilities.type()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoContentType' }, click: setSort('infoContentType')">Type</a></th>
+            <th class="column-yp" data-bind="css:{hidden: !columnVisibilities.yp()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'yellowPage'      }, click: setSort('yellowPage')">YP</a></th>
           </tr>
         </thead>
         <tbody data-bind="foreach: channelList">
           <tr data-bind="css: { selected: isSelected, info: color()==='blue', success: color()==='green', error: color()==='red', warning: color()==='orange' }, click: onSelected, event: { dblclick: onOpened }, attr: { title: tags }">
             <td class="column-play"><i data-bind="css: { 'icon-bullhorn': isPlaying, 'icon-ban-circle': !isPlayable(), 'icon-heart': isFavorite() }"></i></span></td>
-            <td class="channel-column column-name"><span data-bind="if: infoUrl"><a data-bind="attr: { href: infoUrl }, text: infoName"></a></span><span data-bind="ifnot: infoUrl"><span data-bind="text:infoName"></span></span></td>
-            <td class="channel-column column-genre"><span data-bind="text: infoGenre"></span></td>
-            <td class="channel-column column-desc">
+            <td class="channel-column column-name" data-bind="css:{hidden: !$parent.columnVisibilities.name()}"><span data-bind="if: infoUrl"><a data-bind="attr: { href: infoUrl }, text: infoName"></a></span><span data-bind="ifnot: infoUrl"><span data-bind="text:infoName"></span></span></td>
+            <td class="channel-column column-genre" data-bind="css:{hidden: !$parent.columnVisibilities.genre()}"><span data-bind="text: infoGenre"></span></td>
+            <td class="channel-column column-desc" data-bind="css:{hidden: !$parent.columnVisibilities.desc()}">
               <span data-bind="text: infoDesc"></span> - <span data-bind="text: infoComment"></span>
               Playing:<span data-bind="text: trackCreator"></span> <span data-bind="text: trackName"></span>
             </td>
-            <td class="channel-column column-bitrate"><span data-bind="text: infoBitrate"></span></td>
-            <td class="channel-column column-uptime"><span data-bind="text: uptimeReadable"></span></td>
-            <td class="channel-column column-listeners"><span data-bind="text: listeners"></span>/<span data-bind="text: relays"></span></td>
-            <td class="channel-column column-type"><a data-bind="attr: {href:streamUrl}, text: infoContentType"></a></td>
-            <td class="channel-column column-yp"><span data-bind="text: yellowPage"></span></td>
+            <td class="channel-column column-bitrate" data-bind="css:{hidden: !$parent.columnVisibilities.bitrate()}"><span data-bind="text: infoBitrate"></span></td>
+            <td class="channel-column column-uptime" data-bind="css:{hidden: !$parent.columnVisibilities.uptime()}"><span data-bind="text: uptimeReadable"></span></td>
+            <td class="channel-column column-listeners" data-bind="css:{hidden: !$parent.columnVisibilities.listeners()}"><span data-bind="text: listeners"></span>/<span data-bind="text: relays"></span></td>
+            <td class="channel-column column-type" data-bind="css:{hidden: !$parent.columnVisibilities.type()}"><a data-bind="attr: {href:streamUrl}, text: infoContentType"></a></td>
+            <td class="channel-column column-yp" data-bind="css:{hidden: !$parent.columnVisibilities.yp()}"><span data-bind="text: yellowPage"></span></td>
           </tr>
         </tbody>
       </table>
