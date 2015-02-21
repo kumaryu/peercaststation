@@ -465,11 +465,11 @@ var YPChannelsViewModel = function() {
     var filter = self.selectedFilter();
     if (search!=null && search!=="") {
       var pattern = RegExp(search, "i");
-      channels = channels.filter(function (x) {
+      channels = $.grep(channels, function (x) {
         return pattern.test(x.toString());
       });
     }
-    channels = channels.filter(function (x) {
+    channels = $.grep(channels, function (x) {
       return filter.test(x);
     });
     var favs = self.customFilters().sort(function (x,y) {
