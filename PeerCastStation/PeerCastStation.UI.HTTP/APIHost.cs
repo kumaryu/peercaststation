@@ -1108,6 +1108,33 @@ namespace PeerCastStation.UI.HTTP
 				return YPChannelsToArray(owner.UpdateYPChannels());
 			}
 
+			[RPCMethod("setUserConfig")]
+			public void SetUserConfig(string user, string key, JObject value)
+			{
+				var settings = owner.Application.Settings.Get<UISettings>();
+				Dictionary<string, string> user_config;
+				if (!settings.UserConfig.TryGetValue(user, out user_config)) {
+					user_config = new Dictionary<string, string>();
+					settings.UserConfig[user] = user_config;
+				}
+				user_config[key] = value.ToString();
+				owner.Application.SaveSettings();
+			}
+
+			[RPCMethod("getUserConfig")]
+			public JToken GetUserConfig(string user, string key)
+			{
+				var settings = owner.Application.Settings.Get<UISettings>();
+				Dictionary<string, string> user_config;
+				if (!settings.UserConfig.TryGetValue(user, out user_config)) {
+					return null;
+				}
+				if (!user_config.ContainsKey(key)) {
+					return null;
+				}
+				return JToken.Parse(user_config[key]);
+			}
+
       public static readonly int RequestLimit = 64*1024;
       public static readonly int TimeoutLimit = 5000;
       private int bodyLength = -1;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace PeerCastStation.UI
@@ -12,8 +13,11 @@ namespace PeerCastStation.UI
       set { broadcastHistory = value; }
     }
 
+		public Dictionary<string, Dictionary<string, string>> UserConfig { get; set; }
+
     public UISettings()
     {
+			this.UserConfig = new Dictionary<string,Dictionary<string,string>>();
     }
 
     public void AddBroadcastHistory(BroadcastInfo info)
