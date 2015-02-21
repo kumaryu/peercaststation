@@ -110,7 +110,7 @@
         </thead>
         <tbody data-bind="foreach: channelList">
           <tr data-bind="css: { selected: isSelected, info: color()==='blue', success: color()==='green', error: color()==='red', warning: color()==='orange' }, click: onSelected, event: { dblclick: onOpened }, attr: { title: tags }">
-            <td class="column-play"><i data-bind="css: { 'icon-bullhorn': isPlaying, 'icon-ban-circle': !isPlayable(), 'icon-heart': isFavorite() }"></i></span></td>
+            <td class="column-play"><i data-bind="css: channelIcon"></i></td>
             <td class="channel-column column-name" data-bind="css:{hidden: !$parent.columnVisibilities.name()}"><span data-bind="if: infoUrl"><a data-bind="attr: { href: infoUrl }, text: infoName"></a></span><span data-bind="ifnot: infoUrl"><span data-bind="text:infoName"></span></span></td>
             <td class="channel-column column-genre" data-bind="css:{hidden: !$parent.columnVisibilities.genre()}"><span data-bind="text: infoGenre"></span></td>
             <td class="channel-column column-desc" data-bind="css:{hidden: !$parent.columnVisibilities.desc()}">

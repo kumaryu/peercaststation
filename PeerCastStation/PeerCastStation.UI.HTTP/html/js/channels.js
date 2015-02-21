@@ -178,7 +178,7 @@ var filtersEditDialog = new function() {
   };
 };
 
-var YPChannelViewModel = function(owner, initial_value) {
+var YPChannelViewModel = function(owner, initial_value, new_channel) {
   var self = this;
   self.yellowPage      = ko.observable(initial_value.yellowPage);
   self.channelId       = ko.observable(initial_value.channelId);
@@ -201,6 +201,7 @@ var YPChannelViewModel = function(owner, initial_value) {
   self.color           = ko.observable(initial_value.listeners < -1 ? 'blue' : 'default');
   self.tags            = ko.observable(null);
   self.isPlaying       = ko.observable(false);
+  self.isNewChannel    = ko.observable(new_channel);
   self.isFavorite      = ko.observable(false);
   self.isSelected      = ko.computed(function() {
     return owner.selectedChannel()==self;
@@ -212,6 +213,14 @@ var YPChannelViewModel = function(owner, initial_value) {
   });
   self.isInfoChannel   = ko.computed(function() {
     return self.listeners()<-1;
+  });
+  self.channelIcon = ko.computed(function () {
+    if (self.isFavorite())    return 'icon-heart';
+    if (self.isPlaying())     return 'icon-bullhorn';
+    if (self.isInfoChannel()) return 'icon-info-sign';
+    if (!self.isPlayable())   return 'icon-ban-circle';
+    if (self.isNewChannel())  return 'icon-flag';
+    return 'icon-white';
   });
   self.attrRel = ko.computed(function() {
     return (self.tags()!=null && self.tags()!=='') ? 'tooltip' : '';
@@ -431,13 +440,38 @@ var YPChannelsViewModel = function() {
     });
   };
 
+  var lastChannels = null;
+  var getLastChannels = function () {
+    if (lastChannels!=null) return lastChannels;
+    var doc = window.localStorage['lastChannels'];
+    if (!doc) return null;
+    lastChannels = JSON.parse(doc);
+    return lastChannels;
+  };
+
+  var setLastChannels = function (value) {
+    window.localStorage['lastChannels'] = JSON.stringify(value);
+    lastChannels = value;
+  };
+
   self.update = function() {
     self.isLoading(true);
     PeerCast.updateYPChannels(function(result) {
       if (result) {
+        var old_channels = getLastChannels();
+        var is_new_channel = function (channel_info) {
+          if (old_channels==null) return false;
+          for (var i in old_channels) {
+            if (old_channels[i]===channel_info.name) {
+              return false;
+            }
+          }
+          return true;
+        }
         var new_channels = $.map(result, function(channel_info) {
-          return new YPChannelViewModel(self, channel_info);
+          return new YPChannelViewModel(self, channel_info, is_new_channel(channel_info));
         });
+        setLastChannels($.map(result, function(channel_info) { return channel_info.name; }));
         self.channels.splice.apply(self.channels, [0, self.channels().length].concat(new_channels));
         PeerCast.getChannels(function(result) {
           if (!result) return;
