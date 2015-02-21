@@ -338,6 +338,9 @@ var YPChannelsViewModel = function() {
   var self = this;
   self.channels = ko.observableArray();
   self.sortColumn = ko.observable({ sortBy: 'uptime', ascending: true });
+  self.sortColumn.subscribe(function () {
+    self.saveLocalConfig();
+  });
   self.isLoading = ko.observable(false);
   self.searchText = ko.observable("");
   self.selectedChannel  = ko.observable(null);
@@ -511,15 +514,20 @@ var YPChannelsViewModel = function() {
   }
 
   self.columnVisibilities = {
-    name: ko.observable(true),
-    genre: ko.observable(true),
-    desc: ko.observable(true),
-    bitrate: ko.observable(true),
-    uptime: ko.observable(true),
+    name:      ko.observable(true),
+    genre:     ko.observable(true),
+    desc:      ko.observable(true),
+    bitrate:   ko.observable(true),
+    uptime:    ko.observable(true),
     listeners: ko.observable(true),
-    type: ko.observable(true),
-    yp: ko.observable(true)
+    type:      ko.observable(true),
+    yp:        ko.observable(true)
   };
+  for (var i in self.columnVisibilities) {
+    self.columnVisibilities[i].subscribe(function () {
+      self.saveLocalConfig();
+    });
+  }
   self.toggleColumnVisibility = function(name) {
     return function (data, e) {
       self.columnVisibilities[name](!self.columnVisibilities[name]());
@@ -544,9 +552,52 @@ var YPChannelsViewModel = function() {
     });
   };
 
+  self.saveLocalConfig = function () {
+    window.localStorage['ypChannels'] = JSON.stringify({
+      'default': {
+        sortColumn: self.sortColumn(),
+        columnVisibilities: {
+          name:      self.columnVisibilities.name(),
+          genre:     self.columnVisibilities.genre(),
+          desc:      self.columnVisibilities.desc(),
+          bitrate:   self.columnVisibilities.bitrate(),
+          uptime:    self.columnVisibilities.uptime(),
+          listeners: self.columnVisibilities.listeners(),
+          type:      self.columnVisibilities.type(),
+          yp:        self.columnVisibilities.yp()
+        }
+      }
+    });
+  };
+
+  self.loadLocalConfig = function () {
+    var config = window.localStorage['ypChannels'];
+    if (!config) return;
+    var user = JSON.parse(config);
+    if (!user) return;
+    var doc = user['default'];
+    if (!doc) return;
+    if (doc.sortColumn) {
+      self.sortColumn(doc.sortColumn);
+    }
+    if (doc.columnVisibilities) {
+      var set_visibility = function (dst, value) {
+        if (value===true || value===false) dst(value);
+      };
+      set_visibility(self.columnVisibilities.name,      doc.columnVisibilities.name);
+      set_visibility(self.columnVisibilities.genre,     doc.columnVisibilities.genre);
+      set_visibility(self.columnVisibilities.desc,      doc.columnVisibilities.desc);
+      set_visibility(self.columnVisibilities.bitrate,   doc.columnVisibilities.bitrate);
+      set_visibility(self.columnVisibilities.uptime,    doc.columnVisibilities.uptime);
+      set_visibility(self.columnVisibilities.listeners, doc.columnVisibilities.listeners);
+      set_visibility(self.columnVisibilities.type,      doc.columnVisibilities.type);
+      set_visibility(self.columnVisibilities.yp,        doc.columnVisibilities.yp);
+    }
+  };
+
   self.isSorted = function(name) {
     return self.sortColumn().sortBy===name;
-  }
+  };
 
   self.bind = function(target) {
     ko.applyBindings(self, target);
@@ -554,6 +605,7 @@ var YPChannelsViewModel = function() {
   };
 
   $(function () {
+    self.loadLocalConfig();
     self.loadConfig();
   });
 };
