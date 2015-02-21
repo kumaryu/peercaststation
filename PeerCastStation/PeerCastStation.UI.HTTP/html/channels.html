@@ -28,6 +28,9 @@
         };
         ko.applyBindings(pageViewModel, $('#header').get(0));
         channelsViewModel.bind($('#channels').get(0));
+        channelsViewModel.isLoading.subscribe(function (new_value) {
+          $('#update_button').button(new_value ? 'loading' : 'reset');
+        });
       });
     </script>
     <script type="text/html" id='alert'>
@@ -72,7 +75,7 @@
             </ul>
           </div>
           <div class="pull-right" style="margin-left:4px">
-            <a class="btn btn-primary" href="#" data-bind="click: update"><i class="icon-refresh icon-white"></i> 更新</a>
+            <a id="update_button" class="btn btn-primary" data-loading-text="更新中" href="#" data-bind="click: update"><i class="icon-refresh icon-white"></i> 更新</a>
           </div>
           <form class="pull-right">
             <a class="btn" href="#" data-bind="click: editFilters"><i class="icon-cog"></i></a>
@@ -80,7 +83,6 @@
           </form>
         </div>
       </div>
-      <div><span data-bind="if: isLoading">Loading...</span></div>
       <table class="table table-striped table-hover table-condensed channel-list">
         <thead class="theader" data-spy="affix" data-offset-top="42">
           <tr>
