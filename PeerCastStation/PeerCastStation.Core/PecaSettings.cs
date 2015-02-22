@@ -354,7 +354,12 @@ namespace PeerCastStation.Core
 
     private object DeserializeDictionary(XmlReader reader)
     {
+      if (!reader.IsStartElement("dictionary")) return null;
       var dic = new Dictionary<object,object>();
+      if (reader.IsEmptyElement) {
+        reader.Read();
+        return dic;
+      }
       reader.ReadStartElement("dictionary");
       while (reader.IsStartElement("key")) {
         reader.Read();
