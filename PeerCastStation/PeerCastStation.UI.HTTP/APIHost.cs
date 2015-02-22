@@ -1095,7 +1095,7 @@ namespace PeerCastStation.UI.HTTP
 						var obj = new JObject();
 						obj["yellowPage"]  = v.Source.Name;
 						obj["name"]        = v.Name;
-						obj["channelId"]   = v.ChannelId;
+						obj["channelId"]   = v.ChannelId.ToString("N").ToUpperInvariant();
 						obj["tracker"]     = v.Tracker;
 						obj["contactUrl"]  = v.ContactUrl;
 						obj["genre"]       = v.Genre;
