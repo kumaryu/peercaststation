@@ -84,11 +84,12 @@ PeerCast = {
   getSourceStreams:       function(completed) { this.postRequest('getSourceStreams',       null, completed); },
   getYellowPageProtocols: function(completed) { this.postRequest('getYellowPageProtocols', null, completed); },
   getYellowPages:         function(completed) { this.postRequest('getYellowPages',         null, completed); },
-  addYellowPage: function(protocol, name, uri, completed) {
+  addYellowPage: function(protocol, name, announce_uri, channels_uri, completed) {
     this.postRequest('addYellowPage', {
       protocol: protocol,
       name: name,
-      uri: uri
+      announceUri: announce_uri,
+      channelsUri: channels_uri
     }, completed);
   },
   removeYellowPage: function(id, completed) {

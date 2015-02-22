@@ -682,7 +682,7 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("addYellowPage")]
-      private JObject AddYellowPage(string protocol, string name, string uri, string announceUri, string channelsUri)
+      private JObject AddYellowPage(string protocol, string name, string uri=null, string announceUri=null, string channelsUri=null)
       {
         var factory = PeerCast.YellowPageFactories.FirstOrDefault(p => protocol==p.Protocol);
         if (factory==null) throw new RPCError(RPCErrorCode.InvalidParams, "protocol Not Found");
@@ -690,7 +690,7 @@ namespace PeerCastStation.UI.HTTP
 				Uri announce_uri = null;
 				try {
 					if (String.IsNullOrEmpty(uri)) uri = announceUri;
-					if (String.IsNullOrEmpty(uri)) {
+					if (!String.IsNullOrEmpty(uri)) {
 						announce_uri = new Uri(uri, UriKind.Absolute);
 						if (!factory.CheckURI(announce_uri)) {
 							throw new RPCError(RPCErrorCode.InvalidParams, String.Format("Not suitable uri for {0}", protocol));
@@ -705,7 +705,7 @@ namespace PeerCastStation.UI.HTTP
 				}
 				Uri channels_uri = null;
 				try {
-					if (String.IsNullOrEmpty(channelsUri)) {
+					if (!String.IsNullOrEmpty(channelsUri)) {
 						channels_uri = new Uri(channelsUri, UriKind.Absolute);
 					}
 				}

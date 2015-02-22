@@ -173,8 +173,9 @@
               <tr>
                 <th>削除</th>
                 <th>YP名</th>
-                <th>URL</th>
                 <th>プロトコル</th>
+                <th>配信掲載URL</th>
+                <th>チャンネル一覧URL</th>
               </tr>
             </thead>
             <tfoot>
@@ -189,8 +190,9 @@
               <tr>
                 <td><input type="checkbox" data-bind="checked:checked"></td>
                 <td><span data-bind="text:name"></span></td>
-                <td><span data-bind="text:uri"></span></td>
                 <td><span data-bind="text:protocol"></span></td>
+                <td><span data-bind="text:announceUri"></span></td>
+                <td><span data-bind="text:channelsUri"></span></td>
               </tr>
             </tbody>
           </table>
@@ -212,15 +214,21 @@
             </div>
           </div>
           <div class="control-group">
-            <label class="control-label">URL</label>
-            <div class="controls">
-              <input type="text" data-bind="value:uri">
-            </div>
-          </div>
-          <div class="control-group">
             <label class="control-label">プロトコル</label>
             <div class="controls">
               <select data-bind="options:yellowPageProtocols, optionsText:'name', optionsValue:'protocol', value:protocol"></select>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">配信掲載URL</label>
+            <div class="controls">
+              <input type="text" data-bind="value:announceUri">
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">チャンネル一覧URL</label>
+            <div class="controls">
+              <input type="text" data-bind="value:channelsUri">
             </div>
           </div>
         </div>
