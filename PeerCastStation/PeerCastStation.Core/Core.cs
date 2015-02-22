@@ -17,6 +17,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.Core
 {
@@ -61,6 +63,27 @@ namespace PeerCastStation.Core
     IYellowPageClient YellowPage { get; }
   }
 
+	public interface IYellowPageChannel
+	{
+		IYellowPageClient Source { get; }
+		string Name        { get; }
+		Guid   ChannelId   { get; }
+		string Tracker     { get; }
+		string ContentType { get; }
+		int?   Listeners   { get; }
+		int?   Relays      { get; }
+		int?   Bitrate     { get; }
+		int?   Uptime      { get; }
+		string ContactUrl  { get; }
+		string Genre       { get; }
+		string Description { get; }
+		string Comment     { get; }
+		string Artist      { get; }
+		string TrackTitle  { get; }
+		string Album       { get; }
+		string TrackUrl    { get; }
+	}
+
   /// <summary>
   /// YellowPageとやりとりするクライアントのインターフェースです
   /// </summary>
@@ -75,9 +98,13 @@ namespace PeerCastStation.Core
     /// </summary>
     string Protocol { get; }
     /// <summary>
-    /// YellowPageのURLを取得します
+    /// チャンネル掲載先のURLを取得します
     /// </summary>
-    Uri    Uri  { get; }
+    Uri AnnounceUri { get; }
+    /// <summary>
+    /// チャンネル一覧取得用のURLを取得します
+    /// </summary>
+    Uri ChannelsUri { get; }
     /// <summary>
     /// チャンネルIDからトラッカーを検索し取得します
     /// </summary>
@@ -124,6 +151,13 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <returns>呼び出した時点の接続先情報</returns>
     ConnectionInfo GetConnectionInfo();
+
+		/// <summary>
+		/// YellowPageに掲載されているチャンネル一覧を取得します
+		/// </summary>
+		/// <param name="cancel_token">キャンセル用トークン</param>
+		/// <returns>取得したチャンネル一覧</returns>
+		Task<IEnumerable<IYellowPageChannel>> GetChannelsAsync(CancellationToken cancel_token);
   }
 
   /// <summary>
@@ -143,9 +177,10 @@ namespace PeerCastStation.Core
     /// YellowPageクライアントインスタンスを作成し返します
     /// </summary>
     /// <param name="name">YellowPageに関連付けられる名前</param>
-    /// <param name="uri">YellowPageのURI</param>
+    /// <param name="annouce_uri">YellowPageの配信掲載用URI</param>
+    /// <param name="channels_uri">YellowPageのチャンネル一覧取得用URI</param>
     /// <returns>IYellowPageClientを実装するオブジェクトのインスタンス</returns>
-    IYellowPageClient Create(string name, Uri uri);
+    IYellowPageClient Create(string name, Uri announce_uri, Uri channels_uri);
     /// <summary>
     /// URIがこのYellowPageFactoryで扱えるかどうかを返します
     /// </summary>

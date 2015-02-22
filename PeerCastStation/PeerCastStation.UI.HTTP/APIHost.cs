@@ -89,17 +89,17 @@ namespace PeerCastStation.UI.HTTP
       }
     }
 
-		public IEnumerable<YPChannel> GetYPChannels()
+		public IEnumerable<IYellowPageChannel> GetYPChannels()
 		{
 			var channel_list = Application.Plugins.FirstOrDefault(plugin => plugin is YPChannelList) as YPChannelList;
-			if (channel_list==null) return Enumerable.Empty<YPChannel>();
+			if (channel_list==null) return Enumerable.Empty<IYellowPageChannel>();
 			return channel_list.Channels;
 		}
 
-		public IEnumerable<YPChannel> UpdateYPChannels()
+		public IEnumerable<IYellowPageChannel> UpdateYPChannels()
 		{
 			var channel_list = Application.Plugins.FirstOrDefault(plugin => plugin is YPChannelList) as YPChannelList;
-			if (channel_list==null) return Enumerable.Empty<YPChannel>();
+			if (channel_list==null) return Enumerable.Empty<IYellowPageChannel>();
 			return channel_list.Update();
 		}
 
@@ -386,7 +386,7 @@ namespace PeerCastStation.UI.HTTP
           acinfo["yellowPageId"] = GetObjectId(ac.YellowPage);
           acinfo["name"]         = ac.YellowPage.Name;
           acinfo["protocol"]     = ac.YellowPage.Protocol;
-          acinfo["uri"]          = ac.YellowPage.Uri.ToString();
+          acinfo["uri"]          = ac.YellowPage.AnnounceUri==null ? null : ac.YellowPage.AnnounceUri.ToString();
           acinfo["status"]       = ac.Status.ToString();
           return acinfo;
         }));
@@ -667,7 +667,9 @@ namespace PeerCastStation.UI.HTTP
           var res = new JObject();
           res["yellowPageId"] = GetObjectId(yp);
           res["name"]         = yp.Name;
-          res["uri"]          = yp.Uri.ToString();
+          res["uri"]          = yp.AnnounceUri==null ? null : yp.AnnounceUri.ToString();
+          res["announceUri"]  = yp.AnnounceUri==null ? null : yp.AnnounceUri.ToString();
+          res["channelsUri"]  = yp.ChannelsUri==null ? null : yp.ChannelsUri.ToString();
           res["protocol"]     = yp.Protocol;
           res["channels"]     = new JArray(yp.AnnouncingChannels.Select(ac => {
             var announcing = new JObject();
@@ -680,30 +682,47 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("addYellowPage")]
-      private JObject AddYellowPage(string protocol, string name, string uri)
+      private JObject AddYellowPage(string protocol, string name, string uri, string announceUri, string channelsUri)
       {
         var factory = PeerCast.YellowPageFactories.FirstOrDefault(p => protocol==p.Protocol);
         if (factory==null) throw new RPCError(RPCErrorCode.InvalidParams, "protocol Not Found");
         if (name==null) throw new RPCError(RPCErrorCode.InvalidParams, "name must be String");
-        Uri yp_uri;
-        try {
-          yp_uri = new Uri(uri);
-        }
-        catch (ArgumentNullException) {
-          throw new RPCError(RPCErrorCode.InvalidParams, "uri must be String");
-        }
-        catch (UriFormatException) {
-          throw new RPCError(RPCErrorCode.InvalidParams, "Invalid uri");
-        }
-        if (!factory.CheckURI(yp_uri)) {
-          throw new RPCError(RPCErrorCode.InvalidParams, String.Format("Not suitable uri for {0}", protocol));
-        }
-        var yp = PeerCast.AddYellowPage(factory.Protocol, name, yp_uri);
+				Uri announce_uri = null;
+				try {
+					if (String.IsNullOrEmpty(uri)) uri = announceUri;
+					if (String.IsNullOrEmpty(uri)) {
+						announce_uri = new Uri(uri, UriKind.Absolute);
+						if (!factory.CheckURI(announce_uri)) {
+							throw new RPCError(RPCErrorCode.InvalidParams, String.Format("Not suitable uri for {0}", protocol));
+						}
+					}
+				}
+				catch (ArgumentNullException) {
+					throw new RPCError(RPCErrorCode.InvalidParams, "uri must be String");
+				}
+				catch (UriFormatException) {
+					throw new RPCError(RPCErrorCode.InvalidParams, "Invalid uri");
+				}
+				Uri channels_uri = null;
+				try {
+					if (String.IsNullOrEmpty(channelsUri)) {
+						channels_uri = new Uri(channelsUri, UriKind.Absolute);
+					}
+				}
+				catch (ArgumentNullException) {
+					throw new RPCError(RPCErrorCode.InvalidParams, "uri must be String");
+				}
+				catch (UriFormatException) {
+					throw new RPCError(RPCErrorCode.InvalidParams, "Invalid uri");
+				}
+        var yp = PeerCast.AddYellowPage(factory.Protocol, name, announce_uri, channels_uri);
         owner.Application.SaveSettings();
         var res = new JObject();
         res["yellowPageId"] = GetObjectId(yp);
         res["name"]         = yp.Name;
-        res["uri"]          = yp.Uri.ToString();
+        res["uri"]          = yp.AnnounceUri==null ? null : yp.AnnounceUri.ToString();
+        res["announceUri"]  = yp.AnnounceUri==null ? null : yp.AnnounceUri.ToString();
+        res["channelsUri"]  = yp.ChannelsUri==null ? null : yp.ChannelsUri.ToString();
         res["protocol"]     = yp.Protocol;
         return res;
       }
@@ -1070,7 +1089,7 @@ namespace PeerCastStation.UI.HTTP
 				);
 			}
 
-			private JArray YPChannelsToArray(IEnumerable<PeerCastStation.UI.YPChannel> channels)
+			private JArray YPChannelsToArray(IEnumerable<IYellowPageChannel> channels)
 			{
 				return new JArray(channels.Select(v => {
 						var obj = new JObject();
