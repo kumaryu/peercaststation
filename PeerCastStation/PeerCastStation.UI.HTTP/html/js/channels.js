@@ -238,9 +238,10 @@ var YPChannelViewModel = function(owner, initial_value, new_channel) {
     return hours + ":" + (minutes<10 ? ("0"+minutes) : minutes);
   });
 
-  self.onSelected = function() {
-    if (self.isInfoChannel()) return;
+  self.onSelected = function(data, event) {
+    if (self.isInfoChannel()) return true;
     owner.selectedChannel(self);
+    return true;
   };
 
   self.onOpened = function() {
