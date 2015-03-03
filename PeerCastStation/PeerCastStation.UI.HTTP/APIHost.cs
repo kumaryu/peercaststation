@@ -1210,6 +1210,11 @@ namespace PeerCastStation.UI.HTTP
       {
         base.OnIdle();
         if (this.request.Method!="POST" || bodyLength<0) return;
+        if (!this.request.Headers.ContainsKey("X-REQUESTED-WITH")) {
+          Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.BadRequest, new Dictionary<string, string>()));
+          Stop();
+          return;
+        }
         string request_str = null;
         if (Recv(stream => {
           if (stream.Length-stream.Position<bodyLength) throw new EndOfStreamException();
