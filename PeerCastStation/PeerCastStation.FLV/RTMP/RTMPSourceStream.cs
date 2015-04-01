@@ -103,17 +103,23 @@ namespace PeerCastStation.FLV.RTMP
 
     private IPEndPoint GetBindAddress(Uri uri)
     {
-      try {
-        var address = Dns.GetHostAddresses(uri.DnsSafeHost)
-          .OrderBy(addr => addr.AddressFamily)
-          .FirstOrDefault();
-        var port = uri.Port;
-        if (address==null) return null;
-        return new IPEndPoint(address, port<0 ? 1935 : port);
+      IPAddress address;
+      if (uri.HostNameType==UriHostNameType.IPv4 ||
+          uri.HostNameType==UriHostNameType.IPv6) {
+        address = IPAddress.Parse(uri.Host);
       }
-      catch (SocketException) {
-        return null;
+      else {
+        try {
+          address = Dns.GetHostAddresses(uri.DnsSafeHost)
+            .OrderBy(addr => addr.AddressFamily)
+            .FirstOrDefault();
+          if (address == null) return null;
+        }
+        catch (SocketException) {
+          return null;
+        }
       }
+      return new IPEndPoint(address, uri.Port<0 ? 1935 : uri.Port);
     }
 
     protected override StreamConnection DoConnect(Uri source)
