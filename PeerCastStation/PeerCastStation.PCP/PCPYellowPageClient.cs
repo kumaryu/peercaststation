@@ -16,11 +16,10 @@ namespace PeerCastStation.PCP
     public string Name { get { return "PCP"; } }
     public string Protocol { get { return "pcp"; } }
 
-    public IYellowPageClient Create(string name, Uri uri)
-    {
-      if (!CheckURI(uri)) throw new ArgumentException("The uri is not suitable", "uri");
-      return new PCPYellowPageClient(PeerCast, name, uri);
-    }
+		public IYellowPageClient Create(string name, Uri announce_uri, Uri channels_uri)
+		{
+			return new PCPYellowPageClient(PeerCast, name, announce_uri, channels_uri);
+		}
 
     public bool CheckURI(Uri uri)
     {
@@ -31,7 +30,8 @@ namespace PeerCastStation.PCP
     {
       this.PeerCast = peercast;
     }
-  }
+
+	}
 
   public class PCPYellowPageClient
     : IYellowPageClient
@@ -40,7 +40,8 @@ namespace PeerCastStation.PCP
     public PeerCast PeerCast { get; private set; }
     public string Name { get; private set; }
     public string Protocol { get { return "pcp"; } }
-    public Uri Uri { get; private set; }
+		public Uri AnnounceUri { get; private set; }
+		public Uri ChannelsUri { get; private set; }
     public IList<IAnnouncingChannel> AnnouncingChannels {
       get {
         lock (announcingChannels) {
@@ -73,11 +74,39 @@ namespace PeerCastStation.PCP
     private List<AnnouncingChannel> announcingChannels = new List<AnnouncingChannel>();
     private AnnouncingStatus AnnouncingStatus { get; set; }
 
-    public PCPYellowPageClient(PeerCast peercast, string name, Uri uri)
+		public class PCPYellowPageChannel
+			: IYellowPageChannel
+		{
+			public IYellowPageClient Source { get; private set; }
+			public string Name        { get; set; }
+			public Guid ChannelId     { get; set; }
+			public string Tracker     { get; set; }
+			public string ContentType { get; set; }
+			public int? Listeners     { get; set; }
+			public int? Relays        { get; set; }
+			public int? Bitrate       { get; set; }
+			public int? Uptime        { get; set; }
+			public string ContactUrl  { get; set; }
+			public string Genre       { get; set; }
+			public string Description { get; set; }
+			public string Comment     { get; set; }
+			public string Artist      { get; set; }
+			public string TrackTitle  { get; set; }
+			public string Album       { get; set; }
+			public string TrackUrl    { get; set; }
+
+			public PCPYellowPageChannel(IYellowPageClient source)
+			{
+				this.Source = source;
+			}
+		}
+
+    public PCPYellowPageClient(PeerCast peercast, string name, Uri announce_uri, Uri channels_uri)
     {
       this.PeerCast = peercast;
       this.Name = name;
-      this.Uri = uri;
+      this.AnnounceUri = announce_uri;
+      this.ChannelsUri = channels_uri;
       this.Logger = new Logger(this.GetType());
       this.AnnouncingStatus = AnnouncingStatus.Idle;
     }
@@ -165,10 +194,10 @@ namespace PeerCastStation.PCP
 
     public Uri FindTracker(Guid channel_id)
     {
-      if (!IsValidUri(Uri)) return null;
-      Logger.Debug("Finding tracker {0} from {1}", channel_id.ToString("N"), Uri);
-      var host = Uri.DnsSafeHost;
-      var port = Uri.Port;
+      if (!IsValidUri(AnnounceUri)) return null;
+      Logger.Debug("Finding tracker {0} from {1}", channel_id.ToString("N"), AnnounceUri);
+      var host = AnnounceUri.DnsSafeHost;
+      var port = AnnounceUri.Port;
       Uri res = null;
       if (port<0) port = PCPVersion.DefaultPort;
       try {
@@ -198,7 +227,7 @@ namespace PeerCastStation.PCP
             case "200":
               //なぜかリレー可能だったのでYP自体をトラッカーとみなしてしまうことにする
               AtomWriter.Write(stream, new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT));
-              res = Uri;
+              res = AnnounceUri;
               break;
             default:
               //エラーだったのでトラッカーのアドレスを貰えず終了
@@ -227,13 +256,13 @@ namespace PeerCastStation.PCP
     private Thread announceThread;
     public IAnnouncingChannel Announce(Channel channel)
     {
-      if (!IsValidUri(Uri)) return null;
+      if (!IsValidUri(AnnounceUri)) return null;
       AnnouncingChannel announcing = null;
       lock (announcingChannels) {
         announcing = announcingChannels.FirstOrDefault(a => a.Channel==channel);
         if (announcing!=null) return announcing;
       }
-      Logger.Debug("Start announce channel {0} to {1}", channel.ChannelID.ToString("N"), Uri);
+      Logger.Debug("Start announce channel {0} to {1}", channel.ChannelID.ToString("N"), AnnounceUri);
       channel.ChannelInfoChanged  += OnChannelPropertyChanged;
       channel.ChannelTrackChanged += OnChannelPropertyChanged;
       channel.Closed              += OnChannelClosed;
@@ -244,7 +273,7 @@ namespace PeerCastStation.PCP
           isStopped = false;
           restartEvent.Reset();
           announceThread = new Thread(AnnounceThreadProc);
-          announceThread.Name = String.Format("PCPYP {0} Announce", Uri);
+          announceThread.Name = String.Format("PCPYP {0} Announce", AnnounceUri);
           announceThread.Start();
         }
       }
@@ -291,7 +320,7 @@ namespace PeerCastStation.PCP
             isStopped = false;
             restartEvent.Reset();
             announceThread = new Thread(AnnounceThreadProc);
-            announceThread.Name = String.Format("PCPYP {0} Announce", Uri);
+            announceThread.Name = String.Format("PCPYP {0} Announce", AnnounceUri);
             announceThread.Start();
           }
         }
@@ -360,8 +389,8 @@ namespace PeerCastStation.PCP
     private void AnnounceThreadProc()
     {
       Logger.Debug("Thread started");
-      var host = Uri.DnsSafeHost;
-      var port = Uri.Port;
+      var host = AnnounceUri.DnsSafeHost;
+      var port = AnnounceUri.Port;
       if (port<0) port = PCPVersion.DefaultPort;
       while (!IsStopped) {
         int next_update = Environment.TickCount;
@@ -635,7 +664,82 @@ namespace PeerCastStation.PCP
         null,
         null);
     }
-  }
+
+		public async System.Threading.Tasks.Task<IEnumerable<IYellowPageChannel>> GetChannelsAsync(CancellationToken cancel_token)
+		{
+			if (ChannelsUri==null) return Enumerable.Empty<IYellowPageChannel>();
+			var client = new WebClient();
+			client.Encoding = System.Text.Encoding.UTF8;
+			cancel_token.Register(() => client.CancelAsync());
+			try {
+				using (var reader=new StringReader(await client.DownloadStringTaskAsync(this.ChannelsUri))) {
+					var results = new List<IYellowPageChannel>();
+					var line = reader.ReadLine();
+					while (line!=null) {
+						var tokens = line.Split(new string[] { "<>" }, StringSplitOptions.None);
+						var channel = new PCPYellowPageChannel(this);
+						if (tokens.Length> 0) channel.Name        = ParseStr(tokens[0]);  //1 CHANNEL_NAME チャンネル名
+						if (tokens.Length> 1) channel.ChannelId   = ParseGuid(tokens[1]);  //2 ID ID ユニーク値16進数32桁、制限チャンネルは全て0埋め
+						if (tokens.Length> 2) channel.Tracker     = ParseStr(tokens[2]);  //3 TIP TIP ポートも含む。Push配信時はブランク、制限チャンネルは127.0.0.1
+						if (tokens.Length> 3) channel.ContactUrl  = ParseStr(tokens[3]);  //4 CONTACT_URL コンタクトURL 基本的にURL、任意の文字列も可 CONTACT_URL
+						if (tokens.Length> 4) channel.Genre       = ParseStr(tokens[4]);  //5 GENRE ジャンル
+						if (tokens.Length> 5) channel.Description = ParseStr(tokens[5]);  //6 DETAIL 詳細
+						if (tokens.Length> 6) channel.Listeners   = ParseInt(tokens[6]);  //7 LISTENER_NUM Listener数 -1は非表示、-1未満はサーバのメッセージ。ブランクもあるかも
+						if (tokens.Length> 7) channel.Relays      = ParseInt(tokens[7]);  //8 RELAY_NUM Relay数 同上 
+						if (tokens.Length> 8) channel.Bitrate     = ParseInt(tokens[8]);  //9 BITRATE Bitrate 単位は kbps 
+						if (tokens.Length> 9) channel.ContentType = ParseStr(tokens[9]);  //10 TYPE Type たぶん大文字 
+						if (tokens.Length>10) channel.Artist      = ParseStr(tokens[10]); //11 TRACK_ARTIST トラック アーティスト 
+						if (tokens.Length>11) channel.Album       = ParseStr(tokens[11]); //12 TRACK_ALBUM トラック アルバム 
+						if (tokens.Length>12) channel.TrackTitle  = ParseStr(tokens[12]); //13 TRACK_TITLE トラック タイトル 
+						if (tokens.Length>13) channel.TrackUrl    = ParseStr(tokens[13]); //14 TRACK_CONTACT_URL トラック コンタクトURL 基本的にURL、任意の文字列も可 
+						if (tokens.Length>15) channel.Uptime      = ParseUptime(tokens[15]); //16 BROADCAST_TIME 配信時間 000〜99999 
+						if (tokens.Length>17) channel.Comment     = ParseStr(tokens[17]); //18 COMMENT コメント 
+						results.Add(channel);
+						line = reader.ReadLine();
+					}
+					return results;
+				}
+			}
+			catch (Exception e) {
+				Logger.Error(e);
+				return Enumerable.Empty<IYellowPageChannel>();
+			}
+		}
+
+		private int? ParseUptime(string token)
+		{
+			if (String.IsNullOrWhiteSpace(token)) return null;
+			var times = token.Split(':');
+			if (times.Length<2) return ParseInt(times[0]);
+			var hours   = ParseInt(times[0]);
+			var minutes = ParseInt(times[1]);
+			if (!hours.HasValue || !minutes.HasValue) return null;
+			return (hours*60 + minutes)*60;
+		}
+
+		private string ParseStr(string token)
+		{
+			if (String.IsNullOrWhiteSpace(token)) return token;
+			return System.Net.WebUtility.HtmlDecode(token);
+		}
+
+		private Guid ParseGuid(string token)
+		{
+			if (String.IsNullOrWhiteSpace(token)) return Guid.Empty;
+			Guid result;
+			if (Guid.TryParse(token, out result)) {
+				return result;
+			}
+			return Guid.Empty;
+		}
+
+		private int? ParseInt(string token)
+		{
+			int result;
+			if (token==null || !Int32.TryParse(token, out result)) return null;
+			return result;
+		}
+	}
 
   [Plugin]
   class PCPYellowPageClientPlugin
