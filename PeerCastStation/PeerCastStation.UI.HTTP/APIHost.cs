@@ -233,51 +233,25 @@ namespace PeerCastStation.UI.HTTP
         return res;
       }
 
-      private int? ParseInt(JToken token)
-      {
-        if (token==null) return null;
-        switch (token.Type) {
-        case JTokenType.Boolean:
-        case JTokenType.Float:
-        case JTokenType.Integer:
-          return (int)token;
-        default:
-          return null;
-        }
-      }
-
-      private bool? ParseBool(JToken token)
-      {
-        if (token==null) return null;
-        switch (token.Type) {
-        case JTokenType.Boolean:
-        case JTokenType.Float:
-        case JTokenType.Integer:
-          return (bool)token;
-        default:
-          return null;
-        }
-      }
-
       [RPCMethod("setSettings")]
       private void SetSettings(JObject settings)
       {
         var acc = PeerCast.AccessController;
-        acc.MaxRelays                 = ParseInt(settings["maxRelays"])                 ?? acc.MaxRelays;
-        acc.MaxRelaysPerChannel       = ParseInt(settings["maxRelaysPerChannel"])       ?? acc.MaxRelaysPerChannel;
-        acc.MaxPlays                  = ParseInt(settings["maxDirects"])                ?? acc.MaxPlays;
-        acc.MaxPlaysPerChannel        = ParseInt(settings["maxDirectsPerChannel"])      ?? acc.MaxPlaysPerChannel;
-        acc.MaxUpstreamRate           = ParseInt(settings["maxUpstreamRate"])           ?? acc.MaxUpstreamRate;
-        acc.MaxUpstreamRatePerChannel = ParseInt(settings["maxUpstreamRatePerChannel"]) ?? acc.MaxUpstreamRatePerChannel;
-        if (settings["channelCleaner"]!=null && settings["channelCleaner"].HasValues) {
-          var channelCleaner = settings["channelCleaner"];
-          ChannelCleaner.InactiveLimit = ParseInt(channelCleaner["inactiveLimit"]) ?? ChannelCleaner.InactiveLimit;
-          ChannelCleaner.Mode = (ChannelCleaner.CleanupMode)(ParseInt(channelCleaner["mode"]) ?? (int)ChannelCleaner.Mode);
-        }
+        settings.TryGetThen("maxRelays",                 v => acc.MaxRelays = v);
+        settings.TryGetThen("maxRelaysPerChannel",       v => acc.MaxRelaysPerChannel = v);
+        settings.TryGetThen("maxDirects",                v => acc.MaxPlays = v);
+        settings.TryGetThen("maxDirectsPerChannel",      v => acc.MaxPlaysPerChannel = v);
+        settings.TryGetThen("maxUpstreamRate",           v => acc.MaxUpstreamRate = v);
+        settings.TryGetThen("maxUpstreamRatePerChannel", v => acc.MaxUpstreamRatePerChannel = v);
+        settings.TryGetThen("channelCleaner", (JObject channel_cleaner) => {
+          channel_cleaner.TryGetThen("inactiveLimit", v => ChannelCleaner.InactiveLimit = v);
+          channel_cleaner.TryGetThen("mode", v => ChannelCleaner.Mode = (ChannelCleaner.CleanupMode)v);
+        });
         var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapper>();
-        if (port_mapper!=null && settings["portMapper"]!=null && settings["portMapper"].HasValues) {
-          var portMapper = settings["portMapper"];
-          port_mapper.Enabled = ParseBool(portMapper["enabled"]) ?? port_mapper.Enabled;
+        if (port_mapper!=null) {
+          settings.TryGetThen("portMapper", (JObject mapper) => {
+            mapper.TryGetThen("enabled", v => port_mapper.Enabled = v);
+          });
         }
         owner.Application.SaveSettings();
       }
@@ -293,10 +267,10 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("setLogSettings")]
       private void setLogSettings(JObject settings)
       {
-        if (settings["level"]!=null) {
-          Logger.Level = (LogLevel)(ParseInt(settings["level"]) ?? (int)Logger.Level);
+        settings.TryGetThen("level", v => {
+          Logger.Level = (LogLevel)v;
           owner.Application.SaveSettings();
-        }
+        });
       }
 
       [RPCMethod("getLog")]
@@ -908,11 +882,11 @@ namespace PeerCastStation.UI.HTTP
 
         var new_info = new AtomCollection();
         if (info!=null) {
-          if (info["name"]!=null)    new_info.SetChanInfoName(   (string)info["name"]);
-          if (info["url"]!=null)     new_info.SetChanInfoURL(    (string)info["url"]);
-          if (info["genre"]!=null)   new_info.SetChanInfoGenre(  (string)info["genre"]);
-          if (info["desc"]!=null)    new_info.SetChanInfoDesc(   (string)info["desc"]);
-          if (info["comment"]!=null) new_info.SetChanInfoComment((string)info["comment"]);
+          info.TryGetThen("name",    v => new_info.SetChanInfoName(v));
+          info.TryGetThen("url",     v => new_info.SetChanInfoURL(v));
+          info.TryGetThen("genre",   v => new_info.SetChanInfoGenre(v));
+          info.TryGetThen("desc",    v => new_info.SetChanInfoDesc(v));
+          info.TryGetThen("comment", v => new_info.SetChanInfoComment(v));
         }
         var channel_info  = new ChannelInfo(new_info);
         if (channel_info.Name==null || channel_info.Name=="") {
@@ -926,11 +900,11 @@ namespace PeerCastStation.UI.HTTP
         var channel = PeerCast.BroadcastChannel(yp, channel_id, channel_info, source, source_stream, content_reader);
         if (track!=null) {
           var new_track = new AtomCollection(channel.ChannelTrack.Extra);
-          if (track["name"]!=null)    new_track.SetChanTrackTitle((string)track["name"]);
-          if (track["genre"]!=null)   new_track.SetChanTrackGenre((string)track["genre"]);
-          if (track["album"]!=null)   new_track.SetChanTrackAlbum((string)track["album"]);
-          if (track["creator"]!=null) new_track.SetChanTrackCreator((string)track["creator"]);
-          if (track["url"]!=null)     new_track.SetChanTrackURL((string)track["url"]);
+          track.TryGetThen("name",    v => new_track.SetChanTrackTitle(v));
+          track.TryGetThen("genre",   v => new_track.SetChanTrackGenre(v));
+          track.TryGetThen("album",   v => new_track.SetChanTrackAlbum(v));
+          track.TryGetThen("creator", v => new_track.SetChanTrackCreator(v));
+          track.TryGetThen("url",     v => new_track.SetChanTrackURL(v));
           channel.ChannelTrack = new ChannelTrack(new_track);
         }
         return channel.ChannelID.ToString("N").ToUpper();
@@ -969,26 +943,26 @@ namespace PeerCastStation.UI.HTTP
       public void AddBroadcastHistory(JObject info)
       {
         var obj = new PeerCastStation.UI.BroadcastInfo();
-        if (info["streamType"]!=null)  obj.StreamType  = (string)info["streamType"];
-        if (info["streamUrl"]!=null)   obj.StreamUrl   = (string)info["streamUrl"];
-        if (info["bitrate"]!=null)     obj.Bitrate     = (int)info["bitrate"];
-        if (info["contentType"]!=null) obj.ContentType = (string)info["contentType"];
-        if (info["yellowPage"]!=null)  obj.YellowPage  = (string)info["yellowPage"];
-        if (info["channelName"]!=null) obj.ChannelName = (string)info["channelName"];
-        if (info["genre"]!=null)       obj.Genre       = (string)info["genre"];
-        if (info["description"]!=null) obj.Description = (string)info["description"];
-        if (info["comment"]!=null)     obj.Comment     = (string)info["comment"];
-        if (info["contactUrl"]!=null)  obj.ContactUrl  = (string)info["contactUrl"];
-        if (info["trackTitle"]!=null)  obj.TrackTitle  = (string)info["trackTitle"];
-        if (info["trackAlbum"]!=null)  obj.TrackAlbum  = (string)info["trackAlbum"];
-        if (info["trackArtist"]!=null) obj.TrackArtist = (string)info["trackArtist"];
-        if (info["trackGenre"]!=null)  obj.TrackGenre  = (string)info["trackGenre"];
-        if (info["trackUrl"]!=null)    obj.TrackUrl    = (string)info["trackUrl"];
-        if (info["favorite"]!=null)    obj.Favorite    = (bool)info["favorite"];
+        info.TryGetThen("streamType",  v => obj.StreamType  = v);
+        info.TryGetThen("streamUrl",   v => obj.StreamUrl   = v);
+        info.TryGetThen("bitrate",     v => obj.Bitrate     = v);
+        info.TryGetThen("contentType", v => obj.ContentType = v);
+        info.TryGetThen("yellowPage",  v => obj.YellowPage  = v);
+        info.TryGetThen("channelName", v => obj.ChannelName = v);
+        info.TryGetThen("genre",       v => obj.Genre       = v);
+        info.TryGetThen("description", v => obj.Description = v);
+        info.TryGetThen("comment",     v => obj.Comment     = v);
+        info.TryGetThen("contactUrl",  v => obj.ContactUrl  = v);
+        info.TryGetThen("trackTitle",  v => obj.TrackTitle  = v);
+        info.TryGetThen("trackAlbum",  v => obj.TrackAlbum  = v);
+        info.TryGetThen("trackArtist", v => obj.TrackArtist = v);
+        info.TryGetThen("trackGenre",  v => obj.TrackGenre  = v);
+        info.TryGetThen("trackUrl",    v => obj.TrackUrl    = v);
+        info.TryGetThen("favorite",    v => obj.Favorite    = v);
         var settings = PeerCastApplication.Current.Settings.Get<UISettings>();
         var item = settings.FindBroadcastHistroryItem(obj);
         if (item!=null) {
-          if (info["favorite"]!=null) item.Favorite = (bool)info["favorite"];
+          info.TryGetThen("favorite", v => item.Favorite = v);
         }
         else {
           settings.AddBroadcastHistory(obj);
