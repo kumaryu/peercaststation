@@ -76,22 +76,22 @@ var BroadcastHistoryViewModel = function(parent, entry) {
   var self = this;
   var updateEntry = function() {
     PeerCast.addBroadcastHistory({
-      yellowPage: self.yellowPage(),
-      streamType: self.streamType(),
+      yellowPage:  self.yellowPage(),
+      streamType:  self.streamType(),
       contentType: self.contentType(),
-      streamUrl: self.streamUrl(),
-      bitrate: self.bitrate(),
+      streamUrl:   self.streamUrl(),
+      bitrate:     Number(self.bitrate()),
       channelName: self.channelName(),
-      genre: self.genre(),
+      genre:       self.genre(),
       description: self.description(),
-      comment: self.comment(),
-      contactUrl: self.contactUrl(),
-      trackTitle: self.trackTitle(),
-      trackAlbum: self.trackAlbum(),
+      comment:     self.comment(),
+      contactUrl:  self.contactUrl(),
+      trackTitle:  self.trackTitle(),
+      trackAlbum:  self.trackAlbum(),
       trackArtist: self.trackArtist(),
-      trackGenre: self.trackGenre(),
-      trackUrl: self.trackUrl(),
-      favorite: self.favorite()
+      trackGenre:  self.trackGenre(),
+      trackUrl:    self.trackUrl(),
+      favorite:    self.favorite()
     });
   };
   self.channelName = ko.observable(entry.channelName);
@@ -275,21 +275,21 @@ var BroadcastDialog = new function() {
           dialog.modal('hide');
         });
     PeerCast.addBroadcastHistory({
-      yellowPage: self.yellowPage() ? self.yellowPage().name : null,
-      streamType: sourceStream,
+      yellowPage:  self.yellowPage() ? self.yellowPage().name : null,
+      streamType:  sourceStream,
       contentType: contentReader,
-      streamUrl: self.source(),
-      bitrate: self.infoBitrate(),
+      streamUrl:   self.source(),
+      bitrate:     Number(self.infoBitrate()),
       channelName: self.infoName(),
-      genre: self.infoGenre(),
+      genre:       self.infoGenre(),
       description: self.infoDesc(),
-      comment: self.infoComment(),
-      contactUrl: self.infoUrl(),
-      trackTitle: self.trackName(),
-      trackAlbum: self.trackAlbum(),
+      comment:     self.infoComment(),
+      contactUrl:  self.infoUrl(),
+      trackTitle:  self.trackName(),
+      trackAlbum:  self.trackAlbum(),
       trackArtist: self.trackCreator(),
-      trackGenre: self.trackGenre(),
-      trackUrl: self.trackUrl()
+      trackGenre:  self.trackGenre(),
+      trackUrl:    self.trackUrl()
     });
   };
 };
