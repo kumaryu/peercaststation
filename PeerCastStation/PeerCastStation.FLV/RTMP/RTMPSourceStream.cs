@@ -101,61 +101,90 @@ namespace PeerCastStation.FLV.RTMP
     private ConnectionState state = ConnectionState.Waiting;
     private string clientName = "";
 
-    private IPEndPoint GetBindAddress(Uri uri)
+    private IEnumerable<IPEndPoint> GetBindAddresses(Uri uri)
     {
-      IPAddress address;
+      IEnumerable<IPAddress> addresses;
       if (uri.HostNameType==UriHostNameType.IPv4 ||
           uri.HostNameType==UriHostNameType.IPv6) {
-        address = IPAddress.Parse(uri.Host);
+        addresses = new IPAddress[] { IPAddress.Parse(uri.Host) };
       }
       else {
         try {
-          address = Dns.GetHostAddresses(uri.DnsSafeHost)
-            .OrderBy(addr => addr.AddressFamily)
-            .FirstOrDefault();
-          if (address == null) return null;
+          addresses = Dns.GetHostAddresses(uri.DnsSafeHost);
         }
         catch (SocketException) {
-          return null;
+          return Enumerable.Empty<IPEndPoint>();
         }
       }
-      return new IPEndPoint(address, uri.Port<0 ? 1935 : uri.Port);
+      return addresses.Select(addr => new IPEndPoint(addr, uri.Port<0 ? 1935 : uri.Port));
     }
 
-    protected override StreamConnection DoConnect(Uri source)
-    {
-      TcpClient client = null;
-      var bind_addr = GetBindAddress(source);
-      if (bind_addr==null) {
-        throw new BindErrorException(String.Format("Cannot resolve bind address: {0}", source.DnsSafeHost));
-      }
-      var listener = new TcpListener(bind_addr);
-      try {
-        listener.Start(1);
-        Logger.Debug("Listening on {0}", bind_addr);
-        var ar = listener.BeginAcceptTcpClient(null, null);
-        WaitAndProcessEvents(ar.AsyncWaitHandle, stopped => {
-          if (ar.IsCompleted) {
-            client = listener.EndAcceptTcpClient(ar);
-          }
-          return null;
-        });
-        Logger.Debug("Client accepted");
-      }
-      catch (SocketException) {
-        throw new BindErrorException(String.Format("Cannot bind address: {0}", bind_addr));
-      }
-      finally {
-        listener.Stop();
-      }
-      if (client!=null) {
-        this.client = client;
-        return new StreamConnection(client.GetStream(), client.GetStream());
-      }
-      else {
-        return null;
-      }
-    }
+		private T WaitAndProcessEvents<T>(IEnumerable<T> targets, Func<T, WaitHandle> get_waithandle)
+			where T : class
+		{
+			var target_ary = targets.ToArray();
+			var handles = new WaitHandle[] { SyncContext.EventHandle }
+				.Concat(target_ary.Select(t => get_waithandle(t)))
+				.ToArray();
+			bool event_processed = false;
+			T signaled = null;
+			while (!IsStopped && signaled==null) {
+				var idx = WaitHandle.WaitAny(handles);
+				if (idx==0) {
+					SyncContext.ProcessAll();
+					event_processed = true;
+				}
+				else {
+					signaled = target_ary[idx-1];
+				}
+			}
+			if (!event_processed) {
+				SyncContext.ProcessAll();
+			}
+			return signaled;
+		}
+
+		protected override StreamConnection DoConnect(Uri source)
+		{
+			TcpClient client = null;
+			var bind_addr = GetBindAddresses(source);
+			if (bind_addr==null || bind_addr.Count()==0) {
+				throw new BindErrorException(String.Format("Cannot resolve bind address: {0}", source.DnsSafeHost));
+			}
+			var listeners = bind_addr.Select(addr => new TcpListener(addr)).ToArray();
+			try {
+				var async_results = listeners.Select(listener => {
+					listener.Start(1);
+					Logger.Debug("Listening on {0}", listener.LocalEndpoint);
+					return new {
+						Listener    = listener,
+						AsyncResult = listener.BeginAcceptTcpClient(null, null),
+					};
+				}).ToArray();
+				var result = WaitAndProcessEvents(
+					async_results,
+					async_result => async_result.AsyncResult.AsyncWaitHandle);
+				if (result!=null) {
+					client = result.Listener.EndAcceptTcpClient(result.AsyncResult);
+					Logger.Debug("Client accepted");
+				}
+			}
+			catch (SocketException) {
+				throw new BindErrorException(String.Format("Cannot bind address: {0}", bind_addr));
+			}
+			finally {
+				foreach (var listener in listeners) {
+					listener.Stop();
+				}
+			}
+			if (client!=null) {
+				this.client = client;
+				return new StreamConnection(client.GetStream(), client.GetStream());
+			}
+			else {
+				return null;
+			}
+		}
 
     protected override void DoClose(StreamConnection connection)
     {
@@ -843,19 +872,6 @@ namespace PeerCastStation.FLV.RTMP
         SyncContext.ProcessAll();
       }
       return true;
-    }
-
-    protected bool WaitAndProcessEvents(IAsyncResult ar, Func<IAsyncResult,bool,IAsyncResult> on_signal)
-    {
-      if (ar==null) {
-        SyncContext.ProcessAll();
-        return true;
-      }
-      return WaitAndProcessEvents(ar.AsyncWaitHandle, stopped => {
-        ar = on_signal(ar, stopped);
-        if (ar!=null) return ar.AsyncWaitHandle;
-        else          return null;
-      });
     }
 
   }
