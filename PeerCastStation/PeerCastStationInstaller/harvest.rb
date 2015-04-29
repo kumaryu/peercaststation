@@ -1,5 +1,5 @@
 
-HEAT = 'c:\Program Files\WiX Toolset v3.8\bin\heat.exe'
+HEAT = 'c:\Program Files\WiX Toolset v3.9\bin\heat.exe'
 
 Projects = %W(
 PeerCastStation.Core
@@ -29,6 +29,6 @@ Projects.each do |proj|
     -directoryid INSTALLFOLDER
     -nologo
   )
-  system(*args)
+  p system(*args)
 end
 

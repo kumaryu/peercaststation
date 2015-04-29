@@ -101,6 +101,8 @@
     <Content Include="Content\images\glyphicons-halflings.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="help\images\htmlui_ypbrowser00.png" />
+    <Content Include="help\ypbrowser.html" />
     <Content Include="html\favicon.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

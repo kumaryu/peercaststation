@@ -14,7 +14,6 @@
     </script>
   </head>
   <body>
-    
     <div class="navbar">
       <div class="navbar-inner">
         <div class="container-fluid">
@@ -35,14 +34,13 @@
         <ul class="span12 nav nav-tabs">
           <li ><a href="index.html"    >PeerCastStationについて</a></li>
           <li ><a href="usage.html"    >使い方</a></li>
+          <li ><a href="ypbrowser.html">YPブラウザ</a></li>
           <li ><a href="broadcast.html">配信</a></li>
           <li  class="active" ><a href="settings.html" >設定</a></li>
           <li ><a href="misc.html"     >その他</a></li>
         </ul>
       </div>
     </div>
-    
-    
     <div class="container-fluid">
       <div class="row-fluid">
         <div class="span3">
@@ -52,7 +50,7 @@
 <li><a href='#section-1'>接続待ち受け</a></li>
 <li><a href='#section-2'>最大上り帯域</a></li>
 <li><a href='#section-3'>チャンネル自動切断</a></li>
-<li><a href='#section-4'>配信掲載用イエローページ</a></li>
+<li><a href='#section-4'>イエローページ</a></li>
 <li><a href='#ui'>UI設定</a></li>
 <li><a href='#section-5'>接続待ち受け</a></li>
 <li><a href='#section-6'>接続数設定</a></li>
@@ -162,23 +160,27 @@
 
 <p>自分で配信しているチャンネルに対してはチャンネル自動切断は効きません。</p>
 
-<h2 id="section-4">配信掲載用イエローページ</h2>
-<p>自分で配信をする際に掲載するイエローページを設定します。
+<h2 id="section-4">イエローページ</h2>
+<p>自分で配信をする際に掲載するや、YPブラウザでチャンネルを取得するイエローページを設定します。
 配信開始時には、ここで設定したイエローページの中からどこに掲載するか選択することになります。</p>
 
-<p><img src="images/gui_addyp.png" alt="配信掲載用イエローページ設定画面" /></p>
+<p><img src="images/gui_addyp.png" alt="イエローページ設定画面" /></p>
 
 <p>初期状態では空なので左下にある追加ボタンで追加してください。
 項目を選択して削除ボタンを押すと消えます。</p>
 
 <p>YellowPage名には選択する際の名前を指定します。自分でわかりやすい名前を適当に設定してください。</p>
 
-<p>プロトコルはPCPしか選択できないのでそのままにしておいてください。</p>
-
 <p>掲載用URLにはイエローページへの掲載用アドレスを設定します。http://で始まるイエローページのアドレスではなく、掲載用のアドレスであることに注意してください。
 yp.example.comやyp.example.com:7146のような形式で入力してください。勝手にpcp://yp.example.com:7146/のような形に修正されますのでそれで問題ありません。</p>
 
 <p>掲載用のアドレスはイエローページ毎に異なるので、各イエローページに従って設定してください。</p>
+
+<p>チャンネル一覧URLにはYPブラウザで使用するチャンネル一覧(index.txt)のURLを指定します。
+チャンネル一覧URLはYP毎に異なりますが、一般的にはWebブラウザでYPを見たときのURLにindex.txtをくっつけた物になります(例:http://example.com/index.txt)。
+詳しくは各YPの説明を見てください。</p>
+
+<p>掲載用URLやチャンネル一覧URLはどちらかだけ設定することも可能です。必要ない欄は空欄にしておいてください。</p>
 
 <h2 id="ui">UI設定</h2>
 <p>画面表示に関する設定をします。</p>

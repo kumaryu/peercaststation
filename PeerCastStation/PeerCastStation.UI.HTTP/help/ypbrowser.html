@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>YPブラウザの使い方 - PeerCastStation</title>
+    <link type="text/css" href="bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <script type="text/javascript" src="jquery/jquery-1.8.3.min.js"></script>
+    <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
+    <style type="text/css">img { max-width:none; }</style>
+    <script type="text/javascript">
+      $(function() {
+        $('.dropdown-toggle').dropdown();
+      });
+    </script>
+  </head>
+  <body>
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <a class="brand" href="#">PeerCastStation</a>
+          <ul class="nav">
+            <li><a href="/html/index.html">情報</a></li>
+            <li><a href="/html/channels.html">Yellow Page</a></li>
+            <li><a href="/html/relays.html">リレー</a></li>
+            <li><a href="/html/settings.html">設定</a></li>
+            <li><a href="/html/logs.html">ログ</a></li>
+            <li class="active"><a href="index.html">ヘルプ</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <ul class="span12 nav nav-tabs">
+          <li ><a href="index.html"    >PeerCastStationについて</a></li>
+          <li ><a href="usage.html"    >使い方</a></li>
+          <li  class="active" ><a href="ypbrowser.html">YPブラウザ</a></li>
+          <li ><a href="broadcast.html">配信</a></li>
+          <li ><a href="settings.html" >設定</a></li>
+          <li ><a href="misc.html"     >その他</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span3">
+          <ul class="nav nav-tabs nav-stacked">
+            <li><a href='#yellowpage'>YellowPageブラウザの使い方</a></li>
+<li><a href='#yellowpage-1'>YellowPageの登録</a></li>
+<li><a href='#yellowpage-2'>YellowPageブラウザを開く</a></li>
+<li><a href='#section'>視聴する</a></li>
+<li><a href='#section-1'>チャンネルを探す</a></li>
+<li><a href='#section-2'>表示の設定</a></li>
+          </ul>
+        </div>
+        <div class="span9">
+          <h1 id="yellowpage">YellowPageブラウザの使い方</h1>
+<p>配信の視聴を開始するには各YellowPage(YP)をWebブラウザで見てPlayリンクをクリックすることでできますが、複数のYPを見る場合にはYPブラウザを使用すると便利です。
+ここではPeerCastStation内蔵のYPブラウザ機能について説明します。</p>
+
+<h2 id="yellowpage-1">YellowPageの登録</h2>
+<p>まずは見たいチャンネルが掲載されてるYPをPeerCastStationに登録します。</p>
+
+<p><a href="settings.html">設定のイエローページ設定画面</a>でYPを追加してチャンネル一覧URLを記入してください。
+チャンネル一覧URLはYP毎に異なりますが、一般的にはWebブラウザでYPを見たときのURLにindex.txtをくっつけた物になります(例:http://example.com/index.txt)。
+詳しくは各YPの説明を見てください。</p>
+
+<h2 id="yellowpage-2">YellowPageブラウザを開く</h2>
+<p>YPブラウザいまのところHTML UIにしかありません。
+GUIを使ってる場合はメニューからファイル→ブラウザで表示を選択してHTML UIを表示してください。</p>
+
+<p>HTML UI上部のメニューでYellowPageを選択するとYPブラウザが開きます。</p>
+
+<p><img src="images/htmlui_ypbrowser00.png" alt="YPブラウザ画面" /></p>
+
+<p>チャンネル一覧に、YPから取得したチャンネル情報が表示されます。</p>
+
+<p>YPブラウザページを開いた時にはチャンネル情報の取得を行いますが、その後は右上の更新ボタンで手動更新を行ってください。</p>
+
+<h2 id="section">視聴する</h2>
+<p>視聴したいチャンネルをクリックすると選択されるので、左上の再生ボタンを押すか、そのままチャンネルをダブルクリックすることで視聴開始をすることができます。通常はプレイリストファイルがダウンロードされるので、そのファイルを開いて再生してください。</p>
+
+<p>ストリームタイプの列(WMVやFLVなど)にはプレイリストでなくストリーム本体へのリンクが設定されています。</p>
+
+<p>コンタクトURLが設定されているチャンネルは、チャンネル名をクリックすると設定されたURLが別ページで開きます。</p>
+
+<h2 id="section-1">チャンネルを探す</h2>
+<p>右上の検索テキストボックスに文字を入力すると、チャンネル情報に入力した文字が含まれるチャンネルだけが表示されます。</p>
+
+<p>チャンネルを選択して左上の♥ボタンを押すとお気に入りに追加できます。
+タグ(コメント)の設定やチャンネル一覧に表示する色を選択できます。
+お気に入りに設定されたチャンネルは左に♥マーク付きで表示され、上のお気に入りタブでお気に入りに入っているチャンネルだけを表示することができます。</p>
+
+<p>設定ボタン(歯車アイコンのボタン)を押すとフィルタの追加と削除ができます。お気に入りの管理もここでできます。</p>
+
+<p>フィルタを追加すると、検索と同じく登録しておいた文字列を含むチャンネルのみ表示することができます。
+検索との違いは上部のタブに表示されてワンクリックで切り替えできるのと、チャンネルの表示色を設定できるることです。
+頻繁に検索するものはフィルタに登録しておくと便利です。</p>
+
+<p>タブに書かれている数字は、そのタブで表示されるチャンネル数です。</p>
+
+<p>お気に入りやフィルタの設定はPeerCastStation本体に保存されるので、別なマシンやブラウザから見た時もそのまま使えます。</p>
+
+<h2 id="section-2">表示の設定</h2>
+<p>チャンネル一覧の項目名(チャンネル名・ジャンル・詳細など)をクリックすると、その項目で並び換えができます。同じ項目名をもう一度クリックすると昇順・降順を切り替えます。標準では時間の昇順になっています。</p>
+
+<p>項目名の左端にある「…」をクリックすると項目名一覧が出るので、各項目をクリックすることで表示・非表示を切り替えることができます。</p>
+
+<p>並び順や項目の表示・非表示はブラウザ毎に保存されます。別なマシンやブラウザから見た時は初期状態(時間昇順で並び換え、項目全部表示)になりますので設定しなおしてください。</p>
+
+
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
