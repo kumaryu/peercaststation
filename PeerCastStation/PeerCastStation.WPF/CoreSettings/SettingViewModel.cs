@@ -285,7 +285,8 @@ namespace PeerCastStation.WPF.CoreSettings
       : INotifyPropertyChanged
     {
       private string name;
-      private Uri    uri;
+      private Uri    announceUri;
+      private Uri    channelsUri;
       private IYellowPageClientFactory protocol;
 
       public string Name {
@@ -297,28 +298,42 @@ namespace PeerCastStation.WPF.CoreSettings
         }
       }
 
-      public string Uri {
-        get { return uri==null ? null : uri.ToString(); }
+      public string AnnounceUri {
+        get { return announceUri==null ? null : announceUri.ToString(); }
         set {
           if (String.IsNullOrEmpty(value)) return;
           if (protocol==null) new ArgumentException("プロトコルが選択されていません");
           Uri newvalue;
           if (System.Uri.TryCreate(value, UriKind.Absolute, out newvalue) && newvalue.Scheme=="pcp") {
-            if (uri==newvalue || (uri!=null && uri.Equals(newvalue))) return;
-            uri = newvalue;
-            OnPropertyChanged("Uri");
+            if (announceUri==newvalue || (announceUri!=null && announceUri.Equals(newvalue))) return;
+            announceUri = newvalue;
+            OnPropertyChanged("AnnounceUri");
           }
           if (System.Uri.TryCreate(value, UriKind.Absolute, out newvalue) &&
               (newvalue.Scheme=="http" || newvalue.Scheme=="file")) {
             throw new ArgumentException("指定したプロトコルでは使用できないURLです");
           }
           else if (System.Uri.TryCreate("pcp://"+value, UriKind.Absolute, out newvalue)) {
-            if (uri==newvalue || (uri!=null && uri.Equals(newvalue))) return;
-            uri = newvalue;
-            OnPropertyChanged("Uri");
+            if (announceUri==newvalue || (announceUri!=null && announceUri.Equals(newvalue))) return;
+            announceUri = newvalue;
+            OnPropertyChanged("AnnounceUri");
           }
           else {
             throw new ArgumentException("正しいURLが指定されていません");
+          }
+        }
+      }
+
+      public string ChannelsUri {
+        get { return channelsUri==null ? null : channelsUri.ToString(); }
+        set {
+          if (String.IsNullOrEmpty(value)) return;
+          if (protocol==null) new ArgumentException("プロトコルが選択されていません");
+          Uri newvalue;
+          if (System.Uri.TryCreate(value, UriKind.Absolute, out newvalue)) {
+            if (channelsUri==newvalue || (channelsUri!=null && channelsUri.Equals(newvalue))) return;
+            channelsUri = newvalue;
+            OnPropertyChanged("ChannelsUri");
           }
         }
       }
@@ -341,10 +356,11 @@ namespace PeerCastStation.WPF.CoreSettings
           SettingViewModel owner,
           IYellowPageClient model)
       {
-        this.owner = owner;
-        this.name     = model.Name;
-        this.uri      = model.Uri;
-        this.protocol = owner.peerCast.YellowPageFactories.FirstOrDefault(factory => factory.Protocol==model.Protocol);
+        this.owner       = owner;
+        this.name        = model.Name;
+        this.announceUri = model.AnnounceUri;
+        this.channelsUri = model.ChannelsUri;
+        this.protocol    = owner.peerCast.YellowPageFactories.FirstOrDefault(factory => factory.Protocol==model.Protocol);
       }
 
       internal YellowPageClientViewModel(SettingViewModel owner)
@@ -769,8 +785,11 @@ namespace PeerCastStation.WPF.CoreSettings
           peerCast.RemoveYellowPage(yp);
         }
         foreach (var yp in yellowPages) {
-          if (String.IsNullOrEmpty(yp.Name) || yp.Uri==null) continue;
-          peerCast.AddYellowPage(yp.Protocol.Protocol, yp.Name, new Uri(yp.Uri, UriKind.Absolute));
+          if (String.IsNullOrEmpty(yp.Name)) continue;
+          if (String.IsNullOrEmpty(yp.AnnounceUri) && String.IsNullOrEmpty(yp.ChannelsUri)) continue;
+          Uri announce_uri = String.IsNullOrEmpty(yp.AnnounceUri) ? null : new Uri(yp.AnnounceUri, UriKind.Absolute);
+          Uri channels_uri = String.IsNullOrEmpty(yp.ChannelsUri) ? null : new Uri(yp.ChannelsUri, UriKind.Absolute);
+          peerCast.AddYellowPage(yp.Protocol.Protocol, yp.Name, announce_uri, channels_uri);
         }
         isYellowPagesModified = false;
       }

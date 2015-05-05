@@ -27,19 +27,13 @@
             <ComponentRef Id="cmp9F659F6769627B1E545FB68FD6B8BD3A" />
             <ComponentRef Id="cmpC2D401CD67BB36398F2A87B96CBF010E" />
             <ComponentRef Id="cmp1EBCBE8B45F3CACF2E96B1F78A812EC2" />
+            <ComponentRef Id="cmp9B1BF39461A4FABDED04C91C6EB1B934" />
             <ComponentRef Id="cmp7083BAB3F9248B5B563F1150232876CE" />
             <ComponentRef Id="cmpBB11AD858BE37BDEC3DFBEDA7B0267FD" />
             <ComponentRef Id="cmpE5BE6CC97C19C704447833182862A406" />
             <ComponentRef Id="cmp5A35C6949C1D271CC04ACD90D7D7A8FC" />
             <ComponentRef Id="cmp1F670F68E744978B42FF39F27AD9E5EE" />
-            <ComponentRef Id="cmp2459E02EA1E58D266560EE4CAAC973F3" />
-            <ComponentRef Id="cmp14EA6016D403B21355D2F63C8E25C72C" />
-            <ComponentRef Id="cmp1B6BB64D6A729261204F2320173D2930" />
-            <ComponentRef Id="cmpA6AADBACD9F7115DE75DF1B325963633" />
-            <ComponentRef Id="cmp71C6A86E9E7E45D32484919B536B8B8A" />
-            <ComponentRef Id="cmp3FD44AE689059D5F63B85E26E7A98706" />
-            <ComponentRef Id="cmpD4125F2F88A87B513229CE067479814E" />
-            <ComponentRef Id="cmpB4F9E2E738E0780E01DE23FCFC7DCE3C" />
+            <ComponentRef Id="cmp191408109247F18EA726F9619D26F17C" />
             <ComponentRef Id="cmp7ACD237B4B2556F1FF630887950E1F6B" />
             <ComponentRef Id="cmpC27FA6EA42DC5953D1674FEF0EE08296" />
             <ComponentRef Id="cmp2AD0B6FBA51FFC8949F970D682F74F67" />
@@ -74,7 +68,17 @@
             <ComponentRef Id="cmp6ADA818AAC906E9A950D9D435D388564" />
             <ComponentRef Id="cmp132392B762FB9F4C7EBD07EDF1A2C8F2" />
             <ComponentRef Id="cmpFC0B56F9C79A18FD0F88DFD08FD1F175" />
+            <ComponentRef Id="cmp2459E02EA1E58D266560EE4CAAC973F3" />
+            <ComponentRef Id="cmp14EA6016D403B21355D2F63C8E25C72C" />
+            <ComponentRef Id="cmp1B6BB64D6A729261204F2320173D2930" />
+            <ComponentRef Id="cmpA6AADBACD9F7115DE75DF1B325963633" />
+            <ComponentRef Id="cmp71C6A86E9E7E45D32484919B536B8B8A" />
+            <ComponentRef Id="cmp3FD44AE689059D5F63B85E26E7A98706" />
+            <ComponentRef Id="cmpD4125F2F88A87B513229CE067479814E" />
+            <ComponentRef Id="cmpB4F9E2E738E0780E01DE23FCFC7DCE3C" />
             <ComponentRef Id="cmp3553CAF05503C8B5BA62C3C0ACC8951E" />
+            <ComponentRef Id="cmp7A281A92C750CB07CF4B03BE250DB1C8" />
+            <ComponentRef Id="cmp03FB7A711A96CF16673312DDF745DCEA" />
             <ComponentRef Id="cmp8D6B5F15493BBB8AA093506A0E63069B" />
             <ComponentRef Id="cmpF6033D5DC48B64417CA5FA09F2EBDA8A" />
             <ComponentRef Id="cmpD70EF0BB33C371125545C675EE7D7039" />
@@ -90,6 +94,7 @@
             <ComponentRef Id="cmp8C558B2EBE1907BCBBA834FB1353E469" />
             <ComponentRef Id="cmp8C59F2A46A83B0AC81B5AD0A09A65ADA" />
             <ComponentRef Id="cmp49FEDA1F84CA235C39B4C27D38F6B05B" />
+            <ComponentRef Id="cmp9CF1A772C61076B8C5A376D00DADA813" />
             <ComponentRef Id="cmpC53B3BEF9A99DABB6133D4C7EB216CF7" />
             <ComponentRef Id="cmp32FD39A55C45E2044ADCE5151FABB8F1" />
             <ComponentRef Id="cmp366E1A831F46A03D88D3637BDE6D5DBD" />
@@ -132,6 +137,9 @@
             <Component Id="cmp1EBCBE8B45F3CACF2E96B1F78A812EC2" Directory="dir6CE4F9F3777FFFD1FD3F1266AF2558AB" Guid="*">
                 <File Id="filD6568E79826F8DC3CBBC0EC5BFF45FCC" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\Content\images\glyphicons-halflings.png" />
             </Component>
+            <Component Id="cmp9B1BF39461A4FABDED04C91C6EB1B934" Directory="dir1E1FE666E9CD7E4F73182A1AF06B6D6E" Guid="*">
+                <File Id="filC6AF82B5495BC49A4B93FF551C584177" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\ypbrowser.html" />
+            </Component>
             <Component Id="cmp7083BAB3F9248B5B563F1150232876CE" Directory="dir1E1FE666E9CD7E4F73182A1AF06B6D6E" Guid="*">
                 <File Id="filAB802D041CF037BEE9DB29F9D00BBB73" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\broadcast.html" />
             </Component>
@@ -147,29 +155,8 @@
             <Component Id="cmp1F670F68E744978B42FF39F27AD9E5EE" Directory="dir1E1FE666E9CD7E4F73182A1AF06B6D6E" Guid="*">
                 <File Id="fil957849FE9D4B5C8524D23042A77848F3" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\usage.html" />
             </Component>
-            <Component Id="cmp2459E02EA1E58D266560EE4CAAC973F3" Directory="dirA700AAF7FB18B12B4660A29684345CD7" Guid="*">
-                <File Id="filA9926C59ED5EB3D4485C73CC706E83E4" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\css\bootstrap-responsive.css" />
-            </Component>
-            <Component Id="cmp14EA6016D403B21355D2F63C8E25C72C" Directory="dirA700AAF7FB18B12B4660A29684345CD7" Guid="*">
-                <File Id="filBFC4B14DCA64D16CBD33027D6E20A8C6" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\css\bootstrap-responsive.min.css" />
-            </Component>
-            <Component Id="cmp1B6BB64D6A729261204F2320173D2930" Directory="dirA700AAF7FB18B12B4660A29684345CD7" Guid="*">
-                <File Id="filE88A5AA0554A1D72BB87ED79195A96AC" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\css\bootstrap.css" />
-            </Component>
-            <Component Id="cmpA6AADBACD9F7115DE75DF1B325963633" Directory="dirA700AAF7FB18B12B4660A29684345CD7" Guid="*">
-                <File Id="fil6E0044FF7E3715D1E4DDF3C89A4FF3AA" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\css\bootstrap.min.css" />
-            </Component>
-            <Component Id="cmp71C6A86E9E7E45D32484919B536B8B8A" Directory="dirD3730E39799F0961D5EDAEFCB157473A" Guid="*">
-                <File Id="filE5774E1C797ED434B68539E01435113D" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\img\glyphicons-halflings-white.png" />
-            </Component>
-            <Component Id="cmp3FD44AE689059D5F63B85E26E7A98706" Directory="dirD3730E39799F0961D5EDAEFCB157473A" Guid="*">
-                <File Id="fil4285E46C3FA9CAC6699EE29A53665D17" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\img\glyphicons-halflings.png" />
-            </Component>
-            <Component Id="cmpD4125F2F88A87B513229CE067479814E" Directory="dir7A45DECAF3B772F12B68300544672B3D" Guid="*">
-                <File Id="fil012C292A4CC3849A40140B0B2DE36673" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\js\bootstrap.js" />
-            </Component>
-            <Component Id="cmpB4F9E2E738E0780E01DE23FCFC7DCE3C" Directory="dir7A45DECAF3B772F12B68300544672B3D" Guid="*">
-                <File Id="fil225EFF98B95A49778D8A160917CB403B" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\js\bootstrap.min.js" />
+            <Component Id="cmp191408109247F18EA726F9619D26F17C" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
+                <File Id="fil5BA4AAAF22EB30FA6747D120C78F1040" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\htmlui_ypbrowser00.png" />
             </Component>
             <Component Id="cmp7ACD237B4B2556F1FF630887950E1F6B" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
                 <File Id="fil497B15BD151996E4BFA4B73937CDC7A9" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\gui_addport.png" />
@@ -273,8 +260,38 @@
             <Component Id="cmpFC0B56F9C79A18FD0F88DFD08FD1F175" Directory="dirB85ED4FC2FE6C86FB60B386AF2E4A559" Guid="*">
                 <File Id="fil1D78D484E32699EDC3E61E94FDC2A3CF" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\images\relay_icon_8.png" />
             </Component>
+            <Component Id="cmp2459E02EA1E58D266560EE4CAAC973F3" Directory="dirA700AAF7FB18B12B4660A29684345CD7" Guid="*">
+                <File Id="filA9926C59ED5EB3D4485C73CC706E83E4" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\css\bootstrap-responsive.css" />
+            </Component>
+            <Component Id="cmp14EA6016D403B21355D2F63C8E25C72C" Directory="dirA700AAF7FB18B12B4660A29684345CD7" Guid="*">
+                <File Id="filBFC4B14DCA64D16CBD33027D6E20A8C6" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\css\bootstrap-responsive.min.css" />
+            </Component>
+            <Component Id="cmp1B6BB64D6A729261204F2320173D2930" Directory="dirA700AAF7FB18B12B4660A29684345CD7" Guid="*">
+                <File Id="filE88A5AA0554A1D72BB87ED79195A96AC" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\css\bootstrap.css" />
+            </Component>
+            <Component Id="cmpA6AADBACD9F7115DE75DF1B325963633" Directory="dirA700AAF7FB18B12B4660A29684345CD7" Guid="*">
+                <File Id="fil6E0044FF7E3715D1E4DDF3C89A4FF3AA" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\css\bootstrap.min.css" />
+            </Component>
+            <Component Id="cmp71C6A86E9E7E45D32484919B536B8B8A" Directory="dirD3730E39799F0961D5EDAEFCB157473A" Guid="*">
+                <File Id="filE5774E1C797ED434B68539E01435113D" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\img\glyphicons-halflings-white.png" />
+            </Component>
+            <Component Id="cmp3FD44AE689059D5F63B85E26E7A98706" Directory="dirD3730E39799F0961D5EDAEFCB157473A" Guid="*">
+                <File Id="fil4285E46C3FA9CAC6699EE29A53665D17" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\img\glyphicons-halflings.png" />
+            </Component>
+            <Component Id="cmpD4125F2F88A87B513229CE067479814E" Directory="dir7A45DECAF3B772F12B68300544672B3D" Guid="*">
+                <File Id="fil012C292A4CC3849A40140B0B2DE36673" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\js\bootstrap.js" />
+            </Component>
+            <Component Id="cmpB4F9E2E738E0780E01DE23FCFC7DCE3C" Directory="dir7A45DECAF3B772F12B68300544672B3D" Guid="*">
+                <File Id="fil225EFF98B95A49778D8A160917CB403B" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\bootstrap\js\bootstrap.min.js" />
+            </Component>
             <Component Id="cmp3553CAF05503C8B5BA62C3C0ACC8951E" Directory="dir030C93F2626A33A927AE973F8AA0B38E" Guid="*">
                 <File Id="filE3DF29186E0B78785B9BE1314ECB9EF1" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\help\jquery\jquery-1.8.3.min.js" />
+            </Component>
+            <Component Id="cmp7A281A92C750CB07CF4B03BE250DB1C8" Directory="dirFC6FEC9877CD43BCEB77A3398D1F0E35" Guid="*">
+                <File Id="fil03958EF57AD7B9B36CC8DC4AD02FB2C5" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\favicon.ico" />
+            </Component>
+            <Component Id="cmp03FB7A711A96CF16673312DDF745DCEA" Directory="dirFC6FEC9877CD43BCEB77A3398D1F0E35" Guid="*">
+                <File Id="filBB4FBD23EA3CCB9B4CF89F831D152516" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\channels.html" />
             </Component>
             <Component Id="cmp8D6B5F15493BBB8AA093506A0E63069B" Directory="dirFC6FEC9877CD43BCEB77A3398D1F0E35" Guid="*">
                 <File Id="filA8385DA21A65A0B30A3048CFB8F2CEA5" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\index.html" />
@@ -320,6 +337,9 @@
             </Component>
             <Component Id="cmp49FEDA1F84CA235C39B4C27D38F6B05B" Directory="dirD8459EFDDB049612C9D9B739F6EB670F" Guid="*">
                 <File Id="fil4614819D6A2D2274073F69AEBAA10785" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\images\relay_icon_8.png" />
+            </Component>
+            <Component Id="cmp9CF1A772C61076B8C5A376D00DADA813" Directory="dir625C6F3A60D2313D43971CB336A662F0" Guid="*">
+                <File Id="fil101A50AB00794E6E10EC0DBC3F697114" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\js\channels.js" />
             </Component>
             <Component Id="cmpC53B3BEF9A99DABB6133D4C7EB216CF7" Directory="dir625C6F3A60D2313D43971CB336A662F0" Guid="*">
                 <File Id="fil88FB13FA690A39640908F2555FBD0845" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\js\common.js" />

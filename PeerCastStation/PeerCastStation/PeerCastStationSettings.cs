@@ -94,6 +94,7 @@ namespace PeerCastStation
       public string Protocol { get; set; }
       public string Name     { get; set; }
       public Uri    Uri      { get; set; }
+      public Uri    ChannelsUri { get; set; }
 
       public YellowPageSettings()
       {

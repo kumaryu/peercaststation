@@ -503,9 +503,43 @@ namespace PeerCastStation.PCP
       Logger.Debug("Starting");
       if (Channel!=null) {
         Channel.ContentChanged += new EventHandler(Channel_ContentChanged);
+        if (Channel.IsBroadcasting) {
+          Channel.ChannelInfoChanged  += Channel_ChannelPropertyChanged;
+          Channel.ChannelTrackChanged += Channel_ChannelPropertyChanged;
+        }
       }
       SendRelayResponse();
     }
+
+		private void Channel_ChannelPropertyChanged(object sender, EventArgs e)
+		{
+			SyncContext.Post(dummy => {
+				Logger.Debug("Broadcasting channel info");
+				Channel.Broadcast(null, CreateBroadcastPacket(BroadcastGroup.Relays, CreateChanPacket()), BroadcastGroup.Relays);
+			}, null);
+		}
+
+		private Atom CreateBroadcastPacket(BroadcastGroup group, Atom packet)
+		{
+			var bcst = new AtomCollection();
+			bcst.SetBcstFrom(PeerCast.SessionID);
+			bcst.SetBcstGroup(group);
+			bcst.SetBcstHops(0);
+			bcst.SetBcstTTL(11);
+			PCPVersion.SetBcstVersion(bcst);
+			bcst.SetBcstChannelID(Channel.ChannelID);
+			bcst.Add(packet);
+			return new Atom(Atom.PCP_BCST, bcst);
+		}
+
+		private Atom CreateChanPacket()
+		{
+			var chan = new AtomCollection();
+			chan.SetChanID(Channel.ChannelID);
+			chan.SetChanInfo(Channel.ChannelInfo.Extra);
+			chan.SetChanTrack(Channel.ChannelTrack.Extra);
+			return new Atom(Atom.PCP_CHAN, chan);
+		}
 
     private Content lastHeader = null;
     private Content lastContent = null;
@@ -539,6 +573,8 @@ namespace PeerCastStation.PCP
     {
       if (Channel!=null) {
         Channel.ContentChanged -= Channel_ContentChanged;
+        Channel.ChannelInfoChanged  -= Channel_ChannelPropertyChanged;
+        Channel.ChannelTrackChanged -= Channel_ChannelPropertyChanged;
       }
       base.OnStopped();
       Logger.Debug("Finished");

@@ -313,7 +313,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           </GroupBox>
         </StackPanel>
       </TabItem>
-      <TabItem Header="配信掲載用イエローページ">
+      <TabItem Header="イエローページ">
         <Grid>
           <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -333,7 +333,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto" SharedSizeGroup="Protocol"/>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto" SharedSizeGroup="Uri"/>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="AnnounceUri"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="ChannelsUri"/>
                             <ColumnDefinition Width="Auto"/>
                           </Grid.ColumnDefinitions>
                           <Line         Grid.Column="0" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" X1="1" X2="1" Y1="1" Y2="15" StrokeThickness="1" HorizontalAlignment="Right" VerticalAlignment="Center"/>
@@ -346,6 +348,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                           <TextBlock    Grid.Column="5" Margin="2">掲載用URL</TextBlock>
                           <Line         Grid.Column="6" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" X1="1" X2="1" Y1="1" Y2="15" StrokeThickness="1" VerticalAlignment="Center"/>
                           <GridSplitter Grid.Column="6" Width="2" HorizontalAlignment="Left" VerticalAlignment="Stretch" Background="Transparent"/>
+                          <TextBlock    Grid.Column="7" Margin="2">チャンネル一覧URL</TextBlock>
+                          <Line         Grid.Column="8" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" X1="1" X2="1" Y1="1" Y2="15" StrokeThickness="1" VerticalAlignment="Center"/>
+                          <GridSplitter Grid.Column="8" Width="2" HorizontalAlignment="Left" VerticalAlignment="Stretch" Background="Transparent"/>
                         </Grid>
                       </Border>
                       <StackPanel IsItemsHost="True"/>
@@ -361,11 +366,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                     <ColumnDefinition Width="16"/>
                     <ColumnDefinition Width="Auto" SharedSizeGroup="Name" />
                     <ColumnDefinition Width="Auto" SharedSizeGroup="Protocol"/>
-                    <ColumnDefinition Width="Auto" SharedSizeGroup="Uri"/>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="AnnounceUri"/>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="ChannelsUri"/>
                   </Grid.ColumnDefinitions>
                   <TextBox  Grid.Column="1" Text="{Binding Name}"/>
                   <ComboBox Grid.Column="2" SelectedItem="{Binding Protocol}" ItemsSource="{Binding Protocols}" DisplayMemberPath="Name"/>
-                  <TextBox  Grid.Column="3" Text="{Binding Path=Uri,ValidatesOnExceptions=True}" InputScope="Url"/>
+                  <TextBox  Grid.Column="3" Text="{Binding Path=AnnounceUri,ValidatesOnExceptions=True}" InputScope="Url"/>
+                  <TextBox  Grid.Column="4" Text="{Binding Path=ChannelsUri,ValidatesOnExceptions=True}" InputScope="Url"/>
                 </Grid>
               </DataTemplate>
             </ListBox.ItemTemplate>

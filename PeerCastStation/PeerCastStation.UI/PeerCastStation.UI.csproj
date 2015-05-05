@@ -60,6 +60,7 @@
     <Compile Include="Updater.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AppCastReader.cs" />
+    <Compile Include="YPChannelList.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\PeerCastStation.snk" />

@@ -83,12 +83,11 @@ namespace PeerCastStation.Core
 
     private void ReplaceCollection<T>(ref T collection, Func<T,T> newcollection_func) where T : class
     {
-      bool replaced = false;
-      while (!replaced) {
-        var prev = collection;
-        var new_collection = newcollection_func(collection);
-        System.Threading.Interlocked.CompareExchange(ref collection, new_collection, prev);
-        replaced = Object.ReferenceEquals(collection, new_collection);
+    retry:
+      var prev = collection;
+      var new_collection = newcollection_func(prev);
+      if (!Object.ReferenceEquals(Interlocked.CompareExchange(ref collection, new_collection, prev), prev)) {
+        goto retry;
       }
     }
 
@@ -279,13 +278,14 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="protocol">YPクライアントのプロトコル名</param>
     /// <param name="name">YPの名前</param>
-    /// <param name="uri">YPのURI</param>
-    public IYellowPageClient AddYellowPage(string protocol, string name, Uri uri)
+    /// <param name="announce_uri">YPの掲載先URI</param>
+    /// <param name="channels_uri">YPのチャンネル一覧取得先URI</param>
+    public IYellowPageClient AddYellowPage(string protocol, string name, Uri announce_uri, Uri channels_uri)
     {
       IYellowPageClient yp = null;
       foreach (var factory in YellowPageFactories) {
         if (factory.Protocol==protocol) {
-          yp = factory.Create(name, uri);
+          yp = factory.Create(name, announce_uri, channels_uri);
           break;
         }
       }

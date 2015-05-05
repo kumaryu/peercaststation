@@ -16,10 +16,11 @@ var YellowPageEditDialog = new function() {
     });
   });
   self.yellowPageProtocols = ko.observableArray();
-  self.name     = ko.observable("");
-  self.uri      = ko.observable("");
-  self.protocol = ko.observable("");
-  self.onOK     = null;
+  self.name        = ko.observable("");
+  self.protocol    = ko.observable("");
+  self.announceUri = ko.observable("");
+  self.channelsUri = ko.observable("");
+  self.onOK        = null;
 
   self.show = function(ok) {
     self.onOK = ok;
@@ -224,11 +225,12 @@ var ListenerViewModel = function(value) {
 
 var YellowPageViewModel = function(value) {
   var self = this;
-  self.id       = ko.observable(value.yellowPageId);
-  self.name     = ko.observable(value.name);
-  self.uri      = ko.observable(value.uri);
-  self.protocol = ko.observable(value.protocol);
-  self.checked  = ko.observable(false);
+  self.id          = ko.observable(value.yellowPageId);
+  self.name        = ko.observable(value.name);
+  self.announceUri = ko.observable(value.announceUri);
+  self.channelsUri = ko.observable(value.channelsUri);
+  self.protocol    = ko.observable(value.protocol);
+  self.checked     = ko.observable(false);
 };
 
 var SettingsViewModel = new function() {
@@ -283,11 +285,18 @@ var SettingsViewModel = new function() {
 
   self.addYellowPage = function() {
     YellowPageEditDialog.show(function(yp) {
-      var uri = yp.uri();
-      if (!uri.match(/^\w+:\/\//)) {
-        uri = yp.protocol() + '://' + yp.uri();
+      var announce_uri = yp.announceUri();
+      if (announce_uri==null || announce_uri==="") {
+        announce_uri = null;
       }
-      PeerCast.addYellowPage(yp.protocol(), yp.name(), uri, function() {
+      else if (!announce_uri.match(/^\w+:\/\//)) {
+        announce_uri = yp.protocol() + '://' + yp.announceUri();
+      }
+      var channels_uri = yp.channelsUri();
+      if (channels_uri==null || channels_uri==="") {
+        channels_uri = null;
+      }
+      PeerCast.addYellowPage(yp.protocol(), yp.name(), announce_uri, channels_uri, function() {
         self.update();
       });
     });

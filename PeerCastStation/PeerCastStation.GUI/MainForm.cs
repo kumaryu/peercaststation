@@ -278,7 +278,7 @@ namespace PeerCastStation.GUI
       }
 
       public YellowPageItem(IYellowPageClient yellowpage)
-        : this(String.Format("{0} ({1})", yellowpage.Name, yellowpage.Uri), yellowpage)
+        : this(String.Format("{0} ({1})", yellowpage.Name, yellowpage.AnnounceUri), yellowpage)
       {
       }
 
@@ -1134,7 +1134,7 @@ namespace PeerCastStation.GUI
     {
       var dlg = new YellowPagesEditDialog(peerCast);
       if (dlg.ShowDialog(this)==System.Windows.Forms.DialogResult.OK) {
-        peerCast.AddYellowPage(dlg.Protocol, dlg.YPName, dlg.Uri);
+        peerCast.AddYellowPage(dlg.Protocol, dlg.YPName, dlg.Uri, null);
         application.SaveSettings();
         yellowPagesList.Items.Clear();
         yellowPagesList.Items.AddRange(peerCast.YellowPages.Select(yp => new YellowPageItem(yp)).ToArray());

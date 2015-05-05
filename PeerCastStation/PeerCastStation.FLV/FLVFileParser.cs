@@ -84,14 +84,18 @@ namespace PeerCastStation.FLV
 				get { return this.DataSize+11==this.TagSize; }
 			}
 
-			public void ReadBody(Stream stream)
+			public bool ReadBody(Stream stream)
 			{
-				this.Body = owner.ReadBytes(stream, this.DataSize);
+				bool eos;
+				this.Body = owner.ReadBytes(stream, this.DataSize, out eos);
+				return !eos;
 			}
 
-			public void ReadFooter(Stream stream)
+			public bool ReadFooter(Stream stream)
 			{
-				this.Footer = owner.ReadBytes(stream, 4);
+				bool eos;
+				this.Footer = owner.ReadBytes(stream, 4, out eos);
+				return !eos;
 			}
 
 			public RTMPMessage ToRTMPMessage()
@@ -104,11 +108,11 @@ namespace PeerCastStation.FLV
 			}
 		}
 
-		private byte[] ReadBytes(Stream stream, int len)
+		private byte[] ReadBytes(Stream stream, int len, out bool eos)
 		{
 			var res = new byte[len];
 			var read = stream.Read(res, 0, len);
-			if (read<len) throw new EndOfStreamException();
+			eos = read<len;
 			return res;
 		}
 
@@ -134,7 +138,8 @@ namespace PeerCastStation.FLV
 					switch (state) {
 					case ReaderState.Header:
 						{
-							var bin = ReadBytes(stream, 13);
+							var bin = ReadBytes(stream, 13, out eos);
+							if (eos) goto error;
 							var header = new FileHeader(bin);
 							if (header.IsValid) {
 								sink.OnFLVHeader();
@@ -147,12 +152,13 @@ namespace PeerCastStation.FLV
 						break;
 					case ReaderState.Body:
 						{
-							var bin = ReadBytes(stream, 11);
+							var bin = ReadBytes(stream, 11, out eos);
+							if (eos) goto error;
 							var read_valid = false;
 							var body = new FLVTag(this, bin);
 							if (body.IsValidHeader) {
-								body.ReadBody(stream);
-								body.ReadFooter(stream);
+								if (!body.ReadBody(stream)) { eos = true; goto error; }
+								if (!body.ReadFooter(stream)) {  eos = true; goto error; }
 								if (body.IsValidFooter) {
 									read_valid = true;
 									switch (body.Type) {
@@ -170,7 +176,9 @@ namespace PeerCastStation.FLV
 							}
 							else {
 								stream.Position = start_pos;
-								var header = new FileHeader(ReadBytes(stream, 13));
+								var headerbin = ReadBytes(stream, 13, out eos);
+								if (eos) goto error;
+								var header = new FileHeader(headerbin);
 								if (header.IsValid) {
 									read_valid = true;
 									sink.OnFLVHeader();
@@ -180,7 +188,10 @@ namespace PeerCastStation.FLV
 								stream.Position = start_pos+1;
 								var b = stream.ReadByte();
 								while (true) {
-									if (b<0) throw new EndOfStreamException();
+									if (b<0) {
+										eos = true;
+										goto error;
+									}
 									if ((b & 0xC0)==0 && ((b & 0x1F)==8 || (b & 0x1F)==9 || (b & 0x1F)==18)) {
 										break;
 									}
@@ -200,6 +211,11 @@ namespace PeerCastStation.FLV
 				}
 				catch (BadDataException) {
 					stream.Position = start_pos+1;
+				}
+			error:
+				if (eos) {
+					stream.Position = start_pos;
+					eos = true;
 				}
 			}
 			return processed;

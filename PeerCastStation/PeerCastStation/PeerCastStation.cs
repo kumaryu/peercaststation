@@ -174,7 +174,7 @@ namespace PeerCastStation.Main
         if (s.YellowPages!=null) {
           foreach (var yellowpage in s.YellowPages) {
             try {
-              peerCast.AddYellowPage(yellowpage.Protocol, yellowpage.Name, yellowpage.Uri);
+              peerCast.AddYellowPage(yellowpage.Protocol, yellowpage.Name, yellowpage.Uri, yellowpage.ChannelsUri);
             }
             catch (ArgumentException e) {
               logger.Error(e);
@@ -221,7 +221,8 @@ namespace PeerCastStation.Main
         new PeerCastStationSettings.YellowPageSettings {
           Protocol = yellowpage.Protocol,
           Name     = yellowpage.Name,
-          Uri      = yellowpage.Uri,
+          Uri      = yellowpage.AnnounceUri,
+          ChannelsUri = yellowpage.ChannelsUri,
         }
       ).ToArray();
       settings.Get<ChannelCleanerSettings>().InactiveLimit = ChannelCleaner.InactiveLimit;
