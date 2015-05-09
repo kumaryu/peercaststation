@@ -1,4 +1,54 @@
 ---
+- name: Version 1.8.1 (2015年5月9日安定版)
+  version: 1.8.1
+  channel: stable
+  notes: |
+    開発版でのバグ修正を取り込みました。
+
+    * 配信中にチャンネル情報を変更しても、リレー中の下流では反映されなかったのを修正しました。
+    * RTMP配信の接続受け付け時にIPv6アドレスでも待ち受けるようにしました。最新のOBSでlocalhostを指定するとつながらない問題への対応です。
+    * JSON RPCのパラメータが不正な場合に無視していたパラメータがあったのを、不正なパラメータは無視せずにエラーを返すようにしました。
+    * 一部プレイヤーで再生できない場合があったので、asxプレイリスト内のURLをhttpでなくmmsに変更しました。
+    * WMPで再生できない場合があったので、monoなど日本語設定のWindows以外で動かした場合にもasxプレイリストの文字エンコーディングをなるべくCP932で出力するようにしました。
+    * リレー接続時にいつも同じノードに接続してしまうのを避けるために、接続ノード選択のランダム性を高めました。
+    * リレーがループする場合があったのを修正しました。
+    * 起動時に落ちる場合があったのを修正しました。
+    * リレー受信時にCPUを余計に食う場合があったのを修正しました。
+    * RTMP配信時にURLに何を指定しても0.0.0.0:1935で接続待ち受けをしてしまっていたのを修正しました。指定したURLのホスト名・ポート番号でエンコーダの接続待ち受けをします。
+    * 視聴リクエストのtipにIPv6アドレスを指定すると落ちる場合があったのを修正しました。
+    * JSON RPC APIで掲載中YPの情報が取得できていなかったのを修正しました。
+    * エンコーダからのHTTP Pullで配信する時のUserAgentをNSPlayerに変更しました。(by shinji3)
+  date: Sat, 9 May 2015 17:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.8.1.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.8.1.zip
+    length: 1276372
+
+- name: Version 1.9.2 (2015年4月29日開発版)
+  version: 1.9.1.0
+  channel: dev
+  notes: |
+    主にバグ修正と、HTML UIにYPブラウザ機能を追加しました。
+
+    * HTML UIにYPブラウザを追加しました。YP設定でindex.txtのアドレスを追加するとWebブラウザからYP掲載のチャンネルが見れます。
+    * 配信中にチャンネル情報を変更しても、リレー中の下流では反映されなかったのを修正しました。
+    * RTMP配信の接続受け付け時にIPv6アドレスでも待ち受けるようにしました。最新のOBSでlocalhostを指定するとつながらない問題への対応です。
+    * RTMP視聴の安定性をちょっと向上しました。
+    * JSON RPCのパラメータが不正な場合に無視していたパラメータがあったのを、不正なパラメータは無視せずにエラーを返すようにしました。
+    * CSRF対策としてJSON RPCのリクエストにX-REQUEST-WITHヘッダが無い場合はエラーとなるようにしました。
+      これにより未対応の一部のツールが動かなくなります。
+    * 配信開始時のURLでホスト名にIPアドレスを指定すると落ちる場合があったのを修正しました。(by plonk)
+  date: Wed, 29 Jan 2015 16:30:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-1.9.2.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-1.9.2.zip
+    length: 1474305
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-1.9.2.exe
+    length: 2195345
+
 - name: Version 1.9.1 (2015年1月29日開発版)
   version: 1.9.1.0
   channel: dev
