@@ -62,6 +62,7 @@ namespace PecaStationd
 			IEnumerable<Type> LoadPluginAssemblies()
 			{
 				var res = LoadPluginAssembly(System.Reflection.Assembly.GetExecutingAssembly());
+				res = res.Concat(LoadPluginAssembly(typeof(PeerCastStation.PeerCastStationSettings).Assembly));
 				foreach (var dll in System.IO.Directory.GetFiles(PluginPath, "*.dll")) {
 					res = res.Concat(LoadPluginAssembly(System.Reflection.Assembly.LoadFrom(dll)));
 				}
@@ -164,7 +165,11 @@ namespace PecaStationd
 					if (s.YellowPages!=null) {
 						foreach (var yellowpage in s.YellowPages) {
 							try {
-								peerCast.AddYellowPage(yellowpage.Protocol, yellowpage.Name, yellowpage.Uri);
+								peerCast.AddYellowPage(
+									yellowpage.Protocol,
+									yellowpage.Name,
+									yellowpage.Uri,
+									yellowpage.ChannelsUri);
 							}
 							catch (ArgumentException e) {
 								logger.Error(e);
@@ -209,9 +214,10 @@ namespace PecaStationd
 				).ToArray();
 				s.YellowPages = peerCast.YellowPages.Select(yellowpage =>
 					new PeerCastStation.PeerCastStationSettings.YellowPageSettings {
-						Protocol = yellowpage.Protocol,
-						Name     = yellowpage.Name,
-						Uri      = yellowpage.Uri,
+						Protocol    = yellowpage.Protocol,
+						Name        = yellowpage.Name,
+						Uri         = yellowpage.AnnounceUri,
+						ChannelsUri = yellowpage.ChannelsUri,
 					}
 				).ToArray();
 
