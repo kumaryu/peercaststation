@@ -546,7 +546,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 元になるストリームへチャンネルのContentを流しはじめます
     /// </summary>
-    void Start();
+    Task<StopReason> Start();
     /// <summary>
     /// ストリームへパケットを送信します
     /// </summary>
@@ -571,10 +571,6 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <returns>呼び出した時点の接続先情報</returns>
     ConnectionInfo GetConnectionInfo();
-    /// <summary>
-    /// 出力ストリームの動作が終了した際に呼ばれるイベントです
-    /// </summary>
-    event StreamStoppedEventHandler Stopped;
   }
 
   /// <summary>

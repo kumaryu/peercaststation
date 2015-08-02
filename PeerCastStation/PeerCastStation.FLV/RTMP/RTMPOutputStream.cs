@@ -2,6 +2,7 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using PeerCastStation.Core;
 
 namespace PeerCastStation.FLV.RTMP
@@ -94,7 +95,7 @@ namespace PeerCastStation.FLV.RTMP
 		private System.Net.EndPoint remoteEndPoint;
 		private AccessControlInfo accessControl;
 		private RTMPPlayConnection connection;
-		private System.Threading.Tasks.Task connectionTask;
+		private System.Threading.Tasks.Task<StopReason> connectionTask;
 		private System.Threading.CancellationTokenSource cancelSource = new System.Threading.CancellationTokenSource();
 		private Channel channel;
 
@@ -160,7 +161,7 @@ namespace PeerCastStation.FLV.RTMP
 			}
 		}
 
-		public void Start()
+		public Task<StopReason> Start()
 		{
 			connectionTask =
 				connection.Run(cancelSource.Token)
@@ -168,10 +169,9 @@ namespace PeerCastStation.FLV.RTMP
 					if (this.channel!=null) {
 						this.channel.RemoveOutputStream(this);
 					}
-					if (Stopped!=null) {
-						Stopped(this, new StreamStoppedEventArgs(stopReason));
-					}
+          return stopReason;
 				});
+      return connectionTask;
 		}
 
 		public void Post(Host from, Atom packet)
@@ -189,8 +189,6 @@ namespace PeerCastStation.FLV.RTMP
 			stopReason = reason;
 			cancelSource.Cancel();
 		}
-
-		public event StreamStoppedEventHandler Stopped;
 	}
 
 	public class RTMPOutputStreamFactory

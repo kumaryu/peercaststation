@@ -17,6 +17,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.Core
 {
@@ -58,10 +59,11 @@ namespace PeerCastStation.Core
         }
       }
     }
-    volatile bool isStopped;
-    public bool IsStopped { get { return isStopped; } private set { isStopped = value; } }
+    private CancellationTokenSource isStopped = new CancellationTokenSource();
+    public bool IsStopped {
+      get { return isStopped.IsCancellationRequested; }
+    }
     public StopReason StoppedReason { get; private set; }
-    public event StreamStoppedEventHandler Stopped;
     public bool HasError { get; private set; }
     public float SendRate { get { return Connection.SendRate; } }
     public float RecvRate { get { return Connection.ReceiveRate; } }
@@ -70,7 +72,6 @@ namespace PeerCastStation.Core
 
     public abstract ConnectionInfo GetConnectionInfo();
 
-    private Thread mainThread;
     public OutputStreamBase(
       PeerCast peercast,
       Stream input_stream,
@@ -88,9 +89,6 @@ namespace PeerCastStation.Core
       this.Channel = channel;
       var ip = remote_endpoint as IPEndPoint;
       this.IsLocal = ip!=null ? ip.Address.IsSiteLocal() : true;
-      this.IsStopped = false;
-      this.mainThread = new Thread(MainProc);
-      this.mainThread.Name = String.Format("{0}:{1}", this.GetType().Name, remote_endpoint);
       this.SyncContext = new QueuedSynchronizationContext();
       this.Logger = new Logger(this.GetType());
     }
@@ -98,18 +96,6 @@ namespace PeerCastStation.Core
     protected virtual int GetUpstreamRate()
     {
       return 0;
-    }
-
-    protected virtual void MainProc()
-    {
-      SynchronizationContext.SetSynchronizationContext(this.SyncContext);
-      OnStarted();
-      while (!IsStopped) {
-        WaitEventAny();
-        DoProcess();
-      }
-      Cleanup();
-      OnStopped();
     }
 
     protected virtual void Cleanup()
@@ -127,12 +113,15 @@ namespace PeerCastStation.Core
 
     protected virtual void OnStarted()
     {
+      if (this.Channel!=null) {
+        this.Channel.AddOutputStream(this);
+      }
     }
 
     protected virtual void OnStopped()
     {
-      if (Stopped!=null) {
-        Stopped(this, new StreamStoppedEventArgs(this.StoppedReason));
+      if (this.Channel!=null) {
+        this.Channel.RemoveOutputStream(this);
       }
     }
 
@@ -149,26 +138,24 @@ namespace PeerCastStation.Core
       SyncContext.ProcessAll();
     }
 
-    protected virtual void DoStart()
+    private Task mainTask;
+    protected virtual Task<StopReason> DoStart()
     {
-      try {
-        if ((mainThread.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted))!=0) {
-          IsStopped = false;
-          mainThread.Start();
-        }
-        else {
-          throw new InvalidOperationException("Output Streams is already started");
-        }
+      if (mainTask!=null) {
+        throw new InvalidOperationException("Output Stream is already started");
       }
-      catch (ThreadStateException) {
-        throw new InvalidOperationException("Output Streams is already started");
-      }
+      var main_task = Task<StopReason>.Factory.StartNew(() => {
+        SynchronizationContext.SetSynchronizationContext(this.SyncContext);
+        return Process();
+      });
+      mainTask = main_task;
+      return main_task;
     }
 
     protected virtual void DoStop(StopReason reason)
     {
       StoppedReason = reason;
-      IsStopped = true;
+      isStopped.Cancel();
     }
 
     protected virtual void DoPost(Host from, Atom packet)
@@ -190,9 +177,9 @@ namespace PeerCastStation.Core
       Stop(StopReason.ConnectionError);
     }
 
-    public void Start()
+    public Task<StopReason> Start()
     {
-      DoStart();
+      return DoStart();
     }
 
     public void Post(Host from, Atom packet)
@@ -215,9 +202,8 @@ namespace PeerCastStation.Core
 
     public void Join()
     {
-      if (mainThread!=null && mainThread.IsAlive) {
-        mainThread.Join();
-      }
+      if (mainTask==null) return;
+      mainTask.Wait();
     }
 
     public void Stop(StopReason reason)
@@ -227,6 +213,18 @@ namespace PeerCastStation.Core
           DoStop(reason);
         });
       }
+    }
+
+    public virtual StopReason Process()
+    {
+      OnStarted();
+      while (!IsStopped) {
+        WaitEventAny();
+        DoProcess();
+      }
+      Cleanup();
+      OnStopped();
+      return StoppedReason;
     }
 
     protected void Send(byte[] bytes)

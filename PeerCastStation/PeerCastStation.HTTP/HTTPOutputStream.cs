@@ -619,6 +619,7 @@ namespace PeerCastStation.HTTP
     protected override void OnStarted()
     {
       Logger.Debug("Starting");
+      base.OnStarted();
       if (this.Channel!=null) {
         this.Channel.ContentChanged += OnContentChanged;
         OnContentChanged(this, new EventArgs());
@@ -628,10 +629,10 @@ namespace PeerCastStation.HTTP
 
     protected override void OnStopped()
     {
-      base.OnStopped();
       if (this.Channel!=null) {
         this.Channel.ContentChanged -= OnContentChanged;
       }
+      base.OnStopped();
       Logger.Debug("Finished");
     }
 

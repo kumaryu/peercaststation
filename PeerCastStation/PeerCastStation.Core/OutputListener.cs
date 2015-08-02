@@ -221,12 +221,7 @@ namespace PeerCastStation.Core
         var handler = await CreateMatchedHandler(remote_endpoint, stream, acinfo);
         if (handler!=null) {
           logger.Debug("Output stream started");
-          var wait_task = new TaskCompletionSource<bool>();
-          handler.Stopped += (sender, args) => {
-            wait_task.SetResult(true);
-          };
-          handler.Start();
-          await wait_task.Task;
+          await handler.Start();
         }
         else {
           logger.Debug("No protocol handler matched");

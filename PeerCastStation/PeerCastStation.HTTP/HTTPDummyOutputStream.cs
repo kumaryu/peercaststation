@@ -120,7 +120,8 @@ namespace PeerCastStation.HTTP
 
     protected override void OnStopped()
     {
-      Logger.Debug("Finished"); base.OnStopped();
+      Logger.Debug("Finished");
+      base.OnStopped();
     }
 
     public override OutputStreamType OutputStreamType
