@@ -29,9 +29,9 @@ namespace PeerCastStation.UI.HTTP
 
   class HTTPUtils
   {
-    public static bool CheckAuthorization(PeerCastStation.HTTP.HTTPRequest request, PeerCastStation.Core.AuthenticationKey key)
+    public static bool CheckAuthorization(PeerCastStation.HTTP.HTTPRequest request, PeerCastStation.Core.AccessControlInfo acinfo)
     {
-      if (key==null) return true;
+      if (!acinfo.AuthorizationRequired || acinfo.AuthenticationKey==null) return true;
       if (!request.Headers.ContainsKey("AUTHORIZATION")) {
         return false;
       }
@@ -46,9 +46,7 @@ namespace PeerCastStation.UI.HTTP
             if (authorization.Length>=2) {
               var user = authorization[0];
               var pass = String.Join(":", authorization.Skip(1).ToArray());
-              if (key.Id==user && key.Password==pass) {
-                authorized = true;
-              }
+              authorized = acinfo.CheckAuthorization(user, pass);
             }
           }
           catch (FormatException) {

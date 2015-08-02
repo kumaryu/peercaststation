@@ -215,7 +215,7 @@ namespace PeerCastStation.UI.HTTP
         base.OnStarted();
         Logger.Debug("Started");
         try {
-          if (!HTTPUtils.CheckAuthorization(this.request, AccessControl.AuthenticationKey)) {
+          if (!HTTPUtils.CheckAuthorization(this.request, this.AccessControlInfo)) {
             throw new HTTPError(HttpStatusCode.Unauthorized);
           }
           if (this.request.Method!="HEAD" && this.request.Method!="GET") {

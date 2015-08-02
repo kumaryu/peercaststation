@@ -43,7 +43,7 @@ namespace PeerCastStation.Core
     public Stream InputStream { get; private set; }
     public Stream OutputStream { get; private set; }
     public StreamConnection Connection { get; private set; }
-    public AccessControlInfo AccessControl { get; private set; }
+    public AccessControlInfo AccessControlInfo { get; private set; }
     public EndPoint RemoteEndPoint { get; private set; }
     public Channel Channel { get; private set; }
     public bool IsLocal { get; private set; }
@@ -76,7 +76,7 @@ namespace PeerCastStation.Core
       Stream input_stream,
       Stream output_stream,
       EndPoint remote_endpoint,
-      AccessControlInfo access_control,
+      AccessControlInfo acinfo,
       Channel channel,
       byte[] header)
     {
@@ -84,7 +84,7 @@ namespace PeerCastStation.Core
       this.Connection = new StreamConnection(input_stream, output_stream, header);
       this.Connection.SendTimeout = 10000;
       this.RemoteEndPoint = remote_endpoint;
-      this.AccessControl = access_control;
+      this.AccessControlInfo = acinfo;
       this.Channel = channel;
       var ip = remote_endpoint as IPEndPoint;
       this.IsLocal = ip!=null ? ip.Address.IsSiteLocal() : true;

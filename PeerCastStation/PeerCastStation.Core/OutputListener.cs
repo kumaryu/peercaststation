@@ -88,7 +88,9 @@ namespace PeerCastStation.Core
     /// </summary>
     public AuthenticationKey AuthenticationKey { get; set; }
 
-    public AccessControlInfo  AccessControlInfo { get; private set; }
+    public AccessControlInfo  LoopbackAccessControlInfo  { get; private set; }
+    public AccessControlInfo  LocalAccessControlInfo  { get; private set; }
+    public AccessControlInfo  GlobalAccessControlInfo { get; private set; }
     public IConnectionHandler ConnectionHandler { get; private set; }
 
     private TcpListener server;
@@ -114,9 +116,15 @@ namespace PeerCastStation.Core
       this.LocalAuthorizationRequired  = false;
       this.GlobalAuthorizationRequired = true;
       this.AuthenticationKey = AuthenticationKey.Generate();
-      this.AccessControlInfo = new AccessControlInfo(
+      this.LoopbackAccessControlInfo = new AccessControlInfo(
+        OutputStreamType.All,
+        false,
+        null);
+      this.LocalAccessControlInfo = new AccessControlInfo(
         this.localOutputAccepts,
         this.LocalAuthorizationRequired,
+        this.AuthenticationKey);
+      this.GlobalAccessControlInfo = new AccessControlInfo(
         this.globalOutputAccepts,
         this.GlobalAuthorizationRequired,
         this.AuthenticationKey);
@@ -132,6 +140,21 @@ namespace PeerCastStation.Core
       this.AuthenticationKey = AuthenticationKey.Generate();
     }
 
+    private AccessControlInfo GetAccessControlInfo(IPEndPoint remote_endpoint)
+    {
+      if (remote_endpoint==null) return this.GlobalAccessControlInfo;
+      if (remote_endpoint.Address.Equals(IPAddress.Loopback) ||
+          remote_endpoint.Address.Equals(IPAddress.IPv6Loopback)) {
+        return this.LoopbackAccessControlInfo;
+      }
+      else if (remote_endpoint.Address.IsSiteLocal()) {
+        return this.LocalAccessControlInfo;
+      }
+      else {
+        return this.GlobalAccessControlInfo;
+      }
+    }
+
     private Task StartListen(TcpListener server, CancellationToken cancel_token)
     {
       server.Start();
@@ -143,7 +166,9 @@ namespace PeerCastStation.Core
           while (!cancel_token.IsCancellationRequested) {
             var client = await server.AcceptTcpClientAsync();
             logger.Info("Client connected {0}", client.Client.RemoteEndPoint);
-            var client_task = ConnectionHandler.HandleClient(client, this.AccessControlInfo);
+            var client_task = ConnectionHandler.HandleClient(
+              client,
+              GetAccessControlInfo(client.Client.RemoteEndPoint as IPEndPoint));
           }
         }
         catch (SocketException e) {
@@ -222,26 +247,6 @@ namespace PeerCastStation.Core
       else       return buf[0];
     }
 
-    private enum RemoteType {
-      Loopback,
-      SiteLocal,
-      Global,
-    }
-
-    private RemoteType GetRemoteType(IPEndPoint remote_endpoint)
-    {
-      if (remote_endpoint.Address.Equals(IPAddress.Loopback) ||
-          remote_endpoint.Address.Equals(IPAddress.IPv6Loopback)) {
-        return RemoteType.Loopback;
-      }
-      else if (remote_endpoint.Address.IsSiteLocal()) {
-        return RemoteType.SiteLocal;
-      }
-      else {
-        return RemoteType.Global;
-      }
-    }
-
     private async Task<IOutputStream> CreateMatchedHandler(
         IPEndPoint remote_endpoint,
         NetworkStream stream,
@@ -249,7 +254,6 @@ namespace PeerCastStation.Core
     {
       var output_factories = PeerCast.OutputStreamFactories.OrderBy(factory => factory.Priority);
       var header = new List<byte>();
-      RemoteType remote_type = GetRemoteType(remote_endpoint);
       bool eos = false;
       while (!eos && header.Count<=4096) {
         try {
@@ -268,36 +272,9 @@ namespace PeerCastStation.Core
         }
         var header_ary = header.ToArray();
         foreach (var factory in output_factories) {
-          if (remote_type==RemoteType.SiteLocal && (factory.OutputStreamType & acinfo.LocalOutputAccepts )==0) continue;
-          if (remote_type==RemoteType.Global    && (factory.OutputStreamType & acinfo.GlobalOutputAccepts)==0) continue;
+          if (!acinfo.Accepts.HasFlag(factory.OutputStreamType)) continue;
           var channel_id = factory.ParseChannelID(header_ary);
           if (channel_id.HasValue) {
-            switch (remote_type) {
-            case RemoteType.Loopback:
-              acinfo = new AccessControlInfo(
-                acinfo.LocalOutputAccepts,
-                acinfo.LocalAuthorizationRequired,
-                acinfo.GlobalOutputAccepts,
-                acinfo.GlobalAuthorizationRequired,
-                null);
-              break;
-            case RemoteType.SiteLocal:
-              acinfo = new AccessControlInfo(
-                acinfo.LocalOutputAccepts,
-                acinfo.LocalAuthorizationRequired,
-                acinfo.GlobalOutputAccepts,
-                acinfo.GlobalAuthorizationRequired,
-                acinfo.LocalAuthorizationRequired ? acinfo.AuthenticationKey : null);
-              break;
-            case RemoteType.Global:
-              acinfo = new AccessControlInfo(
-                acinfo.LocalOutputAccepts,
-                acinfo.LocalAuthorizationRequired,
-                acinfo.GlobalOutputAccepts,
-                acinfo.GlobalAuthorizationRequired,
-                acinfo.GlobalAuthorizationRequired ? acinfo.AuthenticationKey : null);
-              break;
-            }
             return factory.Create(
               stream,
               stream,

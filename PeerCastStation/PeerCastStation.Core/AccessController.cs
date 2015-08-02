@@ -198,45 +198,25 @@ namespace PeerCastStation.Core
   /// </summary>
   public class AccessControlInfo
   {
-    /// <summary>
-    /// リンクローカルな接続先に許可する出力ストリームタイプを取得します。
-    /// </summary>
-    public OutputStreamType LocalOutputAccepts  { get; private set; }
+    public OutputStreamType Accepts { get; private set; }
 
-    /// <summary>
-    /// リンクローカルな接続先に対して認証が必要かどうかを取得します。
-    /// </summary>
-    public bool LocalAuthorizationRequired { get; private set; }
-
-    /// <summary>
-    /// リンクローカルな接続先に許可する出力ストリームタイプを取得します。
-    /// </summary>
-    public OutputStreamType GlobalOutputAccepts  { get; private set; }
-
-    /// <summary>
-    /// リンクローカルな接続先に対して認証が必要かどうかを取得します。
-    /// </summary>
-    public bool GlobalAuthorizationRequired { get; private set; }
+    public bool AuthorizationRequired { get; private set; }
 
     public AuthenticationKey AuthenticationKey { get; private set; }
 
     public AccessControlInfo(
-      OutputStreamType local_accepts,
-      bool local_auth_required,
-      OutputStreamType global_accepts,
-      bool global_auth_required,
+      OutputStreamType accepts,
+      bool auth_required,
       AuthenticationKey key)
     {
-      this.LocalOutputAccepts          = local_accepts;
-      this.LocalAuthorizationRequired  = local_auth_required;
-      this.GlobalOutputAccepts         = global_accepts;
-      this.GlobalAuthorizationRequired = global_auth_required;
-      this.AuthenticationKey           = key;
+      this.Accepts                = accepts;
+      this.AuthorizationRequired  = auth_required;
+      this.AuthenticationKey      = key;
     }
 
     public bool CheckAuthorization(string id, string pass)
     {
-      if (AuthenticationKey==null) return true;
+      if (!AuthorizationRequired || AuthenticationKey==null) return true;
       return AuthenticationKey.Id==id && AuthenticationKey.Password==pass;
     }
   }

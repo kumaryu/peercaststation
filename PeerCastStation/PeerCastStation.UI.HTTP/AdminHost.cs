@@ -38,9 +38,9 @@ namespace PeerCastStation.UI.HTTP
         Stream input_stream,
         Stream output_stream,
         EndPoint remote_endpoint,
-        AccessControlInfo access_control,
+        AccessControlInfo acinfo,
         HTTPRequest request)
-        : base(peercast, input_stream, output_stream, remote_endpoint, access_control, null, null)
+        : base(peercast, input_stream, output_stream, remote_endpoint, acinfo, null, null)
       {
         this.owner   = owner;
         this.request = request;
@@ -73,7 +73,7 @@ namespace PeerCastStation.UI.HTTP
         base.OnStarted();
         Logger.Debug("Started");
         try {
-          if (!HTTPUtils.CheckAuthorization(this.request, AccessControl.AuthenticationKey)) {
+          if (!HTTPUtils.CheckAuthorization(this.request, this.AccessControlInfo)) {
             throw new HTTPError(HttpStatusCode.Unauthorized);
           }
           if (this.request.Method!="HEAD" && this.request.Method!="GET") {
