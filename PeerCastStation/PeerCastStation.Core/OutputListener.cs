@@ -14,18 +14,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
 
 namespace PeerCastStation.Core
 {
+  public interface IConnectionHandler
+  {
+    Task HandleClient(TcpClient client, AccessControlInfo acinfo);
+  }
+
   /// <summary>
   /// 接続待ち受け処理を扱うクラスです
   /// </summary>
   public class OutputListener
+    : IDisposable
   {
     private static Logger logger = new Logger(typeof(OutputListener));
     /// <summary>
@@ -80,7 +88,12 @@ namespace PeerCastStation.Core
     /// </summary>
     public AuthenticationKey AuthenticationKey { get; set; }
 
+    public AccessControlInfo  AccessControlInfo { get; private set; }
+    public IConnectionHandler ConnectionHandler { get; private set; }
+
     private TcpListener server;
+    private CancellationTokenSource cancellationSource = new CancellationTokenSource();
+    private Task listenTask;
     /// <summary>
     /// 指定したエンドポイントで接続待ち受けをするOutputListenerを初期化します
     /// </summary>
@@ -90,6 +103,7 @@ namespace PeerCastStation.Core
     /// <param name="global_accepts">リンクグローバルな接続先に許可する出力ストリームタイプ</param>
     internal OutputListener(
       PeerCast peercast,
+      IConnectionHandler connection_handler,
       IPEndPoint ip,
       OutputStreamType local_accepts,
       OutputStreamType global_accepts)
@@ -100,12 +114,17 @@ namespace PeerCastStation.Core
       this.LocalAuthorizationRequired  = false;
       this.GlobalAuthorizationRequired = true;
       this.AuthenticationKey = AuthenticationKey.Generate();
+      this.AccessControlInfo = new AccessControlInfo(
+        this.localOutputAccepts,
+        this.LocalAuthorizationRequired,
+        this.globalOutputAccepts,
+        this.GlobalAuthorizationRequired,
+        this.AuthenticationKey);
+      this.ConnectionHandler = connection_handler;
       server = new TcpListener(ip);
       server.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
       server.Start();
-      listenerThread = new Thread(ListenerThreadFunc);
-      listenerThread.Name = String.Format("OutputListenerThread:{0}", ip);
-      listenerThread.Start(server);
+      listenTask = StartListen(server, cancellationSource.Token);
     }
 
     public void ResetAuthenticationKey()
@@ -113,38 +132,94 @@ namespace PeerCastStation.Core
       this.AuthenticationKey = AuthenticationKey.Generate();
     }
 
-    private Thread listenerThread = null;
-    private void ListenerThreadFunc(object arg)
+    private Task StartListen(TcpListener server, CancellationToken cancel_token)
     {
-      logger.Debug("Listener thread started");
-      var server = (TcpListener)arg;
-      while (!IsClosed) {
+      server.Start();
+      return Task<Task>.Factory.StartNew(async () => {
         try {
-          var client = server.AcceptTcpClient();
-          logger.Info("Client connected {0}", client.Client.RemoteEndPoint);
-          var output_thread = new Thread(OutputThreadFunc);
-          lock (outputThreads) {
-            outputThreads.Add(output_thread);
+          cancel_token.Register(() => {
+            server.Stop();
+          });
+          while (!cancel_token.IsCancellationRequested) {
+            var client = await server.AcceptTcpClientAsync();
+            logger.Info("Client connected {0}", client.Client.RemoteEndPoint);
+            var client_task = ConnectionHandler.HandleClient(client, this.AccessControlInfo);
           }
-          output_thread.Name = String.Format("OutputThread:{0}", client.Client.RemoteEndPoint);
-          output_thread.Start(client);
         }
         catch (SocketException e) {
-          if (!IsClosed) logger.Error(e);
+          if (!IsClosed) throw;
         }
-      }
-      logger.Debug("Listener thread finished");
+        catch (ObjectDisposedException) {
+        }
+      }).Unwrap();
     }
 
     /// <summary>
     /// 接続を待ち受けを終了します
     /// </summary>
-    internal void Stop()
+    public void Stop()
     {
       logger.Debug("Stopping listener");
+      cancellationSource.Cancel();
       IsClosed = true;
       server.Stop();
-      listenerThread.Join();
+      listenTask.Wait();
+    }
+
+    public void Dispose()
+    {
+      Stop();
+    }
+  }
+
+  public class ConnectionHandler
+    : IConnectionHandler
+  {
+    private static Logger logger = new Logger(typeof(ConnectionHandler));
+    public PeerCast PeerCast { get; private set; }
+
+    public ConnectionHandler(PeerCast peercast)
+    {
+      this.PeerCast = peercast;
+    }
+
+    public async Task HandleClient(TcpClient client, AccessControlInfo acinfo)
+    {
+      logger.Debug("Output thread started");
+      client.ReceiveBufferSize = 64*1024;
+      client.SendBufferSize    = 64*1024;
+      var stream = client.GetStream();
+      stream.WriteTimeout = 3000;
+      stream.ReadTimeout = 3000;
+      try {
+        var remote_endpoint = (IPEndPoint)client.Client.RemoteEndPoint;
+        var handler = await CreateMatchedHandler(remote_endpoint, stream, acinfo);
+        if (handler!=null) {
+          logger.Debug("Output stream started");
+          var wait_task = new TaskCompletionSource<bool>();
+          handler.Stopped += (sender, args) => {
+            wait_task.SetResult(true);
+          };
+          handler.Start();
+          await wait_task.Task;
+        }
+        else {
+          logger.Debug("No protocol handler matched");
+        }
+      }
+      finally {
+        logger.Debug("Closing client connection");
+        stream.Close();
+        client.Close();
+      }
+    }
+
+    private async Task<int> ReadByteAsync(System.IO.Stream stream)
+    {
+      var buf = new byte[1];
+      var len = await stream.ReadAsync(buf, 0, 1);
+      if (len<1) return -1;
+      else       return buf[0];
     }
 
     private enum RemoteType {
@@ -155,34 +230,31 @@ namespace PeerCastStation.Core
 
     private RemoteType GetRemoteType(IPEndPoint remote_endpoint)
     {
-        if (remote_endpoint.Address.Equals(IPAddress.Loopback) ||
-            remote_endpoint.Address.Equals(IPAddress.IPv6Loopback)) {
-          return RemoteType.Loopback;
-        }
-        else if (remote_endpoint.Address.IsSiteLocal()) {
-          return RemoteType.SiteLocal;
-        }
-        else {
-          return RemoteType.Global;
-        }
+      if (remote_endpoint.Address.Equals(IPAddress.Loopback) ||
+          remote_endpoint.Address.Equals(IPAddress.IPv6Loopback)) {
+        return RemoteType.Loopback;
+      }
+      else if (remote_endpoint.Address.IsSiteLocal()) {
+        return RemoteType.SiteLocal;
+      }
+      else {
+        return RemoteType.Global;
+      }
     }
 
-    private IOutputStreamFactory FindMatchedFactory(
-        RemoteType remote_type,
+    private async Task<IOutputStream> CreateMatchedHandler(
+        IPEndPoint remote_endpoint,
         NetworkStream stream,
-        out List<byte> header,
-        out Guid channel_id,
-        out AuthenticationKey auth_key)
+        AccessControlInfo acinfo)
     {
       var output_factories = PeerCast.OutputStreamFactories.OrderBy(factory => factory.Priority);
-      header = new List<byte>();
-      channel_id = Guid.Empty;
-      auth_key = null;
+      var header = new List<byte>();
+      RemoteType remote_type = GetRemoteType(remote_endpoint);
       bool eos = false;
       while (!eos && header.Count<=4096) {
         try {
           do {
-            var val = stream.ReadByte();
+            var val = await ReadByteAsync(stream);
             if (val < 0) {
               eos = true;
             }
@@ -196,71 +268,49 @@ namespace PeerCastStation.Core
         }
         var header_ary = header.ToArray();
         foreach (var factory in output_factories) {
-          if (remote_type==RemoteType.SiteLocal && (factory.OutputStreamType & this.LocalOutputAccepts )==0) continue;
-          if (remote_type==RemoteType.Global    && (factory.OutputStreamType & this.GlobalOutputAccepts)==0) continue;
-          var cid = factory.ParseChannelID(header_ary);
-          if (cid.HasValue) {
-            channel_id = cid.Value;
+          if (remote_type==RemoteType.SiteLocal && (factory.OutputStreamType & acinfo.LocalOutputAccepts )==0) continue;
+          if (remote_type==RemoteType.Global    && (factory.OutputStreamType & acinfo.GlobalOutputAccepts)==0) continue;
+          var channel_id = factory.ParseChannelID(header_ary);
+          if (channel_id.HasValue) {
             switch (remote_type) {
-            case RemoteType.Loopback:  auth_key = null; break;
-            case RemoteType.SiteLocal: auth_key = LocalAuthorizationRequired  ? AuthenticationKey : null; break;
-            case RemoteType.Global:    auth_key = GlobalAuthorizationRequired ? AuthenticationKey : null; break;
+            case RemoteType.Loopback:
+              acinfo = new AccessControlInfo(
+                acinfo.LocalOutputAccepts,
+                acinfo.LocalAuthorizationRequired,
+                acinfo.GlobalOutputAccepts,
+                acinfo.GlobalAuthorizationRequired,
+                null);
+              break;
+            case RemoteType.SiteLocal:
+              acinfo = new AccessControlInfo(
+                acinfo.LocalOutputAccepts,
+                acinfo.LocalAuthorizationRequired,
+                acinfo.GlobalOutputAccepts,
+                acinfo.GlobalAuthorizationRequired,
+                acinfo.LocalAuthorizationRequired ? acinfo.AuthenticationKey : null);
+              break;
+            case RemoteType.Global:
+              acinfo = new AccessControlInfo(
+                acinfo.LocalOutputAccepts,
+                acinfo.LocalAuthorizationRequired,
+                acinfo.GlobalOutputAccepts,
+                acinfo.GlobalAuthorizationRequired,
+                acinfo.GlobalAuthorizationRequired ? acinfo.AuthenticationKey : null);
+              break;
             }
-            return factory;
+            return factory.Create(
+              stream,
+              stream,
+              remote_endpoint,
+              acinfo,
+              channel_id.Value,
+              header.ToArray());
           }
         }
       }
       return null;
     }
 
-    private static List<Thread> outputThreads = new List<Thread>();
-    private void OutputThreadFunc(object arg)
-    {
-      logger.Debug("Output thread started");
-      var client = (TcpClient)arg;
-      client.ReceiveBufferSize = 64*1024;
-      client.SendBufferSize    = 64*1024;
-      var stream = client.GetStream();
-      stream.WriteTimeout = 3000;
-      stream.ReadTimeout = 3000;
-      IOutputStream output_stream = null;
-      Channel channel = null;
-      try {
-        var remote_endpoint = (IPEndPoint)client.Client.RemoteEndPoint;
-        List<byte> header;
-        Guid channel_id;
-        AuthenticationKey auth_key;
-        var factory = FindMatchedFactory(GetRemoteType(remote_endpoint), stream, out header, out channel_id, out auth_key);
-        if (factory!=null) {
-          var access_control = new AccessControlInfo(auth_key);
-          output_stream = factory.Create(stream, stream, remote_endpoint, access_control, channel_id, header.ToArray());
-          channel = PeerCast.Channels.FirstOrDefault(c => c.ChannelID==channel_id);
-          if (channel!=null) {
-            channel.AddOutputStream(output_stream);
-          }
-          logger.Debug("Output stream started");
-          var wait_stopped = new EventWaitHandle(false, EventResetMode.ManualReset);
-          output_stream.Stopped += (sender, args) => { wait_stopped.Set(); };
-          output_stream.Start();
-          wait_stopped.WaitOne();
-        }
-        else {
-          logger.Debug("No protocol matched");
-        }
-      }
-      finally {
-        logger.Debug("Closing client connection");
-        if (output_stream!=null && channel!=null) {
-          channel.RemoveOutputStream(output_stream);
-        }
-        stream.Close();
-        client.Close();
-        lock (outputThreads) {
-          outputThreads.Remove(Thread.CurrentThread);
-        }
-        logger.Debug("Output thread finished");
-      }
-    }
-
   }
+
 }

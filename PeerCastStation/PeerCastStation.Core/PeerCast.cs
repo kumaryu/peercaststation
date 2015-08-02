@@ -433,7 +433,7 @@ namespace PeerCastStation.Core
       OutputListener res = null;
       logger.Info("starting listen at {0}", ip);
       try {
-        res = new OutputListener(this, ip, local_accepts, global_accepts);
+        res = new OutputListener(this, new ConnectionHandler(this), ip, local_accepts, global_accepts);
         ReplaceCollection(ref outputListeners, orig => {
           var new_collection = new List<OutputListener>(orig);
           new_collection.Add(res);
