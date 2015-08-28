@@ -83,6 +83,7 @@
     <Compile Include="SourceConnectionBase.cs" />
     <Compile Include="SourceStreamBase.cs" />
     <Compile Include="StreamConnection.cs" />
+    <Compile Include="StreamConnection2.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\PeerCastStation.snk">
