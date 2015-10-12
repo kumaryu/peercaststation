@@ -664,6 +664,7 @@ namespace PeerCastStation.Core
     /// </list>
     /// </remarks>
     ParsedContent Read(Stream stream);
+    Task<ParsedContent> ReadAsync(Stream stream, CancellationToken cancel_token);
 
     /// <summary>
     /// コンテント解析器の名称を取得します

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.Core
 {
@@ -43,6 +45,11 @@ namespace PeerCastStation.Core
         }
       }
       return res;
+    }
+
+    public Task<ParsedContent> ReadAsync(Stream stream, CancellationToken cancel_token)
+    {
+      throw new NotImplementedException();
     }
 
     public string  Name    { get { return "RAW"; } }

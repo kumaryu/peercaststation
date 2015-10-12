@@ -17,6 +17,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.Core
 {
@@ -134,7 +135,7 @@ namespace PeerCastStation.Core
 
     protected Logger Logger { get; private set; }
     protected ISourceConnection sourceConnection;
-    protected Thread            sourceConnectionThread;
+    protected Task              sourceConnectionTask;
 
     public abstract ConnectionInfo GetConnectionInfo();
     protected abstract ISourceConnection CreateConnection(Uri source_uri);
@@ -167,28 +168,35 @@ namespace PeerCastStation.Core
 
     protected virtual void OnSourceConnectionStopped(object sender, StreamStoppedEventArgs args)
     {
-      EventQueue.Enqueue(new ConnectionStoppedEvent(sender as ISourceConnection, args.StopReason));
     }
 
     protected void StartConnection(Uri source_uri)
     {
       if (sourceConnection!=null) {
-        sourceConnection.Stopped -= OnSourceConnectionStopped;
         StopConnection(StopReason.UserReconnect);
       }
       sourceConnection = CreateConnection(source_uri);
-      sourceConnection.Stopped += OnSourceConnectionStopped;
-      sourceConnectionThread = new Thread(state => {
-        sourceConnection.Run();
-      });
-      sourceConnectionThread.Start();
+      sourceConnectionTask = sourceConnection
+        .Run()
+        .ContinueWith(prev => {
+          if (prev.IsFaulted) {
+            Logger.Error(prev.Exception);
+            EventQueue.Enqueue(new ConnectionStoppedEvent(sourceConnection, StopReason.NotIdentifiedError));
+          }
+          else if (prev.IsCanceled) {
+            EventQueue.Enqueue(new ConnectionStoppedEvent(sourceConnection, StopReason.UserShutdown));
+          }
+          else {
+            EventQueue.Enqueue(new ConnectionStoppedEvent(sourceConnection, prev.Result));
+          }
+        });
     }
 
     protected void StopConnection(StopReason reason)
     {
       if (sourceConnection!=null) {
         sourceConnection.Stop(reason);
-        sourceConnectionThread.Join();
+        sourceConnectionTask.Wait();
       }
     }
 

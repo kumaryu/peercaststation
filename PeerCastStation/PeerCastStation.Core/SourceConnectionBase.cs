@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.Core
 {
@@ -13,11 +14,9 @@ namespace PeerCastStation.Core
     float      RecvRate      { get; }
 
     ConnectionInfo GetConnectionInfo();
-    void Run();
+    Task<StopReason> Run();
     void Post(Host from, Atom packet);
     void Stop(StopReason reason);
-
-    event StreamStoppedEventHandler Stopped;
   }
 
   public abstract class SourceConnectionBase
@@ -30,8 +29,6 @@ namespace PeerCastStation.Core
     public bool       IsStopped { get { return StoppedReason!=StopReason.None; } }
     public float      SendRate { get { return connection!=null ? connection.SendRate    : 0; } }
     public float      RecvRate { get { return connection!=null ? connection.ReceiveRate : 0; } }
-
-    public event StreamStoppedEventHandler Stopped;
 
     protected QueuedSynchronizationContext SyncContext { get; private set; }
     protected Logger Logger { get; private set; }
@@ -56,16 +53,19 @@ namespace PeerCastStation.Core
       this.Logger        = new Logger(this.GetType());
     }
 
-    public virtual void Run()
+    public virtual Task<StopReason> Run()
     {
-      SynchronizationContext.SetSynchronizationContext(this.SyncContext);
-      OnStarted();
-      while (!IsStopped) {
-        WaitEventAny();
-        DoProcess();
-        SyncContext.ProcessAll();
-      }
-      OnStopped();
+      return Task<StopReason>.Run(() => {
+        SynchronizationContext.SetSynchronizationContext(this.SyncContext);
+        OnStarted();
+        while (!IsStopped) {
+          WaitEventAny();
+          DoProcess();
+          SyncContext.ProcessAll();
+        }
+        OnStopped();
+        return StoppedReason;
+      });
     }
 
     protected virtual void WaitEventAny()
@@ -86,9 +86,6 @@ namespace PeerCastStation.Core
 
     protected virtual void OnStopped()
     {
-      if (Stopped!=null) {
-        Stopped(this, new StreamStoppedEventArgs(this.StoppedReason));
-      }
       if (connection!=null) {
         DoClose(connection);
       }

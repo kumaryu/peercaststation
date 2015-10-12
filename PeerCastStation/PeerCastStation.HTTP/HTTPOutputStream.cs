@@ -300,7 +300,7 @@ namespace PeerCastStation.HTTP
     : IOutputStream
   {
     private HTTPRequest request;
-    private StreamConnection2 connection;
+    private ConnectionStream connection;
     private Logger Logger = new Logger(typeof(HTTPOutputStream));
     public Channel Channel { get; private set; }
     public PeerCast PeerCast { get; private set; }
@@ -331,7 +331,7 @@ namespace PeerCastStation.HTTP
         remote_endpoint,
         request.Method,
         request.Uri);
-      this.connection = new StreamConnection2(input_stream, output_stream);
+      this.connection = new ConnectionStream(input_stream, output_stream);
       this.request = request;
       this.PeerCast = peercast;
       this.RemoteEndPoint = remote_endpoint;
@@ -508,8 +508,8 @@ namespace PeerCastStation.HTTP
         (IPEndPoint)RemoteEndPoint,
         IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
         lastPacket!=null ? lastPacket.Position : 0,
-        connection.ReceiveRate,
-        connection.SendRate,
+        connection.ReadRate,
+        connection.WriteRate,
         null,
         null,
         user_agent);
@@ -537,7 +537,7 @@ namespace PeerCastStation.HTTP
     {
       var response_header = CreateResponseHeader();
       var bytes = System.Text.Encoding.UTF8.GetBytes(response_header + "\r\n");
-      await connection.SendAsync(bytes);
+      await connection.WriteAsync(bytes);
       Logger.Debug("Header: {0}", response_header);
     }
 
@@ -588,7 +588,7 @@ namespace PeerCastStation.HTTP
         switch (packet.Type) {
         case Packet.ContentType.Header:
           if (sent_header!=packet.Content && packet.Content!=null) {
-            await connection.SendAsync(packet.Content.Data);
+            await connection.WriteAsync(packet.Content.Data);
             Logger.Debug("Sent ContentHeader pos {0}", packet.Content.Position);
             sent_header = packet.Content;
             sent_packet = packet.Content;
@@ -599,7 +599,7 @@ namespace PeerCastStation.HTTP
           var c = packet.Content;
           if (c.Timestamp>sent_packet.Timestamp ||
               (c.Timestamp==sent_packet.Timestamp && c.Position>sent_packet.Position)) {
-            await connection.SendAsync(c.Data);
+            await connection.WriteAsync(c.Data);
             sent_packet = c;
           }
           break;
@@ -625,7 +625,7 @@ namespace PeerCastStation.HTTP
       var baseuri = new Uri(
         new Uri(request.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped)),
         "stream/");
-      await connection.SendAsync(pls.CreatePlayList(baseuri));
+      await connection.WriteAsync(pls.CreatePlayList(baseuri));
     }
 
     private async Task SendReponseBody()

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using PeerCastStation.Core;
 
 namespace PeerCastStation.FLV.RTMP
@@ -193,7 +194,7 @@ namespace PeerCastStation.FLV.RTMP
       Logger.Debug("Closed");
     }
 
-    public override void Run()
+    public override async Task<StopReason> Run()
     {
       this.state = ConnectionState.Waiting;
       try {
@@ -219,6 +220,7 @@ namespace PeerCastStation.FLV.RTMP
       }
       SyncContext.ProcessAll();
       OnStopped();
+      return StoppedReason;
     }
 
     protected override void DoProcess()

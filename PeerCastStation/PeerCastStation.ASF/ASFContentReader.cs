@@ -3,6 +3,8 @@ using System.Linq;
 using System.IO;
 using PeerCastStation.Core;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.ASF
 {
@@ -71,10 +73,34 @@ namespace PeerCastStation.ASF
       return bytes;
     }
 
+    public static async Task<byte[]> ReadBytesAsync(Stream s, int sz, CancellationToken cancel_token)
+    {
+      var bytes = new byte[sz];
+      var pos = 0;
+      while (pos<sz) {
+        var read = await s.ReadAsync(bytes, 0, bytes.Length, cancel_token);
+        if (read<=0) throw new EndOfStreamException();
+        pos += read;
+      }
+      return bytes;
+    }
+
     public static byte[] ReadBytesLE(Stream s, int sz)
     {
       if (BitConverter.IsLittleEndian) {
         return ReadBytes(s, sz);
+      }
+      else {
+        var bytes = ReadBytes(s, sz);
+        Array.Reverse(bytes);
+        return bytes;
+      }
+    }
+
+    public static async Task<byte[]> ReadBytesLEAsync(Stream s, int sz, CancellationToken cancel_token)
+    {
+      if (BitConverter.IsLittleEndian) {
+        return await ReadBytesAsync(s, sz, cancel_token);
       }
       else {
         var bytes = ReadBytes(s, sz);
@@ -90,9 +116,31 @@ namespace PeerCastStation.ASF
       return (byte)b;
     }
 
+    public static async Task<byte> ReadUInt8Async(Stream s, CancellationToken cancel_token)
+    {
+      int b = await s.ReadByteAsync();
+      if (b<0) throw new EndOfStreamException();
+      return (byte)b;
+    }
+
     public static short ReadInt16LE(Stream s)
     {
       return BitConverter.ToInt16(ReadBytesLE(s, 2), 0);
+    }
+
+    public static async Task<short> ReadInt16LEAsync(Stream s, CancellationToken cancel_token)
+    {
+      return BitConverter.ToInt16(await ReadBytesLEAsync(s, 2, cancel_token), 0);
+    }
+
+    public static short GetInt16LE(byte[] bytes, int offset)
+    {
+      if (BitConverter.IsLittleEndian) {
+        return BitConverter.ToInt16(bytes, offset);
+      }
+      else {
+        return BitConverter.ToInt16(new byte[] { bytes[offset+1], bytes[offset+0] }, 0);
+      }
     }
 
     public static ushort ReadUInt16LE(Stream s)
@@ -100,9 +148,41 @@ namespace PeerCastStation.ASF
       return BitConverter.ToUInt16(ReadBytesLE(s, 2), 0);
     }
 
+    public static async Task<ushort> ReadUInt16LEAsync(Stream s, CancellationToken cancel_token)
+    {
+      return BitConverter.ToUInt16(await ReadBytesLEAsync(s, 2, cancel_token), 0);
+    }
+
+    public static ushort GetUInt16LE(byte[] bytes, int offset)
+    {
+      if (BitConverter.IsLittleEndian) {
+        return BitConverter.ToUInt16(bytes, offset);
+      }
+      else {
+        return BitConverter.ToUInt16(new byte[] { bytes[offset+1], bytes[offset+0] }, 0);
+      }
+    }
+
     public static int ReadInt32LE(Stream s)
     {
       return BitConverter.ToInt32(ReadBytesLE(s, 4), 0);
+    }
+
+    public static async Task<int> ReadInt32LEAsync(Stream s, CancellationToken cancel_token)
+    {
+      return BitConverter.ToInt32(await ReadBytesLEAsync(s, 4, cancel_token), 0);
+    }
+
+    public static int GetInt32LE(byte[] bytes, int offset)
+    {
+      if (BitConverter.IsLittleEndian) {
+        return BitConverter.ToInt32(bytes, offset);
+      }
+      else {
+        return BitConverter.ToInt32(new byte[] {
+          bytes[offset+3], bytes[offset+2], bytes[offset+1], bytes[offset+0]
+        }, 0);
+      }
     }
 
     public static uint ReadUInt32LE(Stream s)
@@ -110,15 +190,69 @@ namespace PeerCastStation.ASF
       return BitConverter.ToUInt32(ReadBytesLE(s, 4), 0);
     }
 
+    public static async Task<uint> ReadUInt32LEAsync(Stream s, CancellationToken cancel_token)
+    {
+      return BitConverter.ToUInt32(await ReadBytesLEAsync(s, 4, cancel_token), 0);
+    }
+
+    public static uint GetUInt32LE(byte[] bytes, int offset)
+    {
+      if (BitConverter.IsLittleEndian) {
+        return BitConverter.ToUInt32(bytes, offset);
+      }
+      else {
+        return BitConverter.ToUInt32(new byte[] {
+          bytes[offset+3], bytes[offset+2], bytes[offset+1], bytes[offset+0]
+        }, 0);
+      }
+    }
+
     public static long ReadInt64LE(Stream s)
     {
       return BitConverter.ToInt64(ReadBytesLE(s, 8), 0);
+    }
+
+    public static async Task<long> ReadInt64LEAsync(Stream s, CancellationToken cancel_token)
+    {
+      return BitConverter.ToInt64(await ReadBytesLEAsync(s, 8, cancel_token), 0);
+    }
+
+    public static long GetInt64LE(byte[] bytes, int offset)
+    {
+      if (BitConverter.IsLittleEndian) {
+        return BitConverter.ToInt64(bytes, offset);
+      }
+      else {
+        return BitConverter.ToInt64(new byte[] {
+          bytes[offset+7], bytes[offset+6], bytes[offset+5], bytes[offset+4],
+          bytes[offset+3], bytes[offset+2], bytes[offset+1], bytes[offset+0]
+        }, 0);
+      }
     }
 
     public static ulong ReadUInt64LE(Stream s)
     {
       return BitConverter.ToUInt64(ReadBytesLE(s, 8), 0);
     }
+
+    public static async Task<ulong> ReadUInt64LEAsync(Stream s, CancellationToken cancel_token)
+    {
+      return BitConverter.ToUInt64(await ReadBytesLEAsync(s, 8, cancel_token), 0);
+    }
+
+    public static ulong GetUInt64LE(byte[] bytes, int offset)
+    {
+      if (BitConverter.IsLittleEndian) {
+        return BitConverter.ToUInt64(bytes, offset);
+      }
+      else {
+        return BitConverter.ToUInt64(new byte[] {
+          bytes[offset+7], bytes[offset+6], bytes[offset+5], bytes[offset+4],
+          bytes[offset+3], bytes[offset+2], bytes[offset+1], bytes[offset+0]
+        }, 0);
+      }
+    }
+
   }
 
   internal class ASFChunk
@@ -197,6 +331,23 @@ namespace PeerCastStation.ASF
       catch (EndOfStreamException) {
         stream.Position = pos;
         throw;
+      }
+    }
+
+    public static async Task<ASFChunk> ReadAsync(Stream stream, CancellationToken cancel_token)
+    {
+      var type = await BinaryReader.ReadUInt16LEAsync(stream, cancel_token);
+      var len  = await BinaryReader.ReadUInt16LEAsync(stream, cancel_token);
+      if (len<8) {
+        var data = await BinaryReader.ReadBytesAsync(stream, len, cancel_token);
+        return new ASFChunk(type, len, 0, 0, 0, data);
+      }
+      else {
+        var seq_num = await BinaryReader.ReadUInt32LEAsync(stream, cancel_token);
+        var v1      = await BinaryReader.ReadUInt16LEAsync(stream, cancel_token);
+        var v2      = await BinaryReader.ReadUInt16LEAsync(stream, cancel_token);
+        var data    = await BinaryReader.ReadBytesAsync(stream, len-8, cancel_token);
+        return new ASFChunk(type, len, seq_num, v1, v2, data);
       }
     }
   }
@@ -386,6 +537,50 @@ namespace PeerCastStation.ASF
       }
       return res;
     }
+
+    public async Task<ParsedContent> ReadAsync(Stream stream, CancellationToken cancel_token)
+    {
+      var res = new ParsedContent();
+    retry:
+      var chunk = await ASFChunk.ReadAsync(stream, cancel_token);
+      switch (chunk.KnownType) {
+      case ASFChunk.ChunkType.Header: {
+          var header = ASFHeader.Read(chunk);
+          var info = new AtomCollection(Channel.ChannelInfo.Extra);
+          info.SetChanInfoBitrate(header.Bitrate);
+          if (header.Streams.Any(type => type==ASFHeader.StreamType.Video)) {
+            info.SetChanInfoType("WMV");
+            info.SetChanInfoStreamType("video/x-ms-wmv");
+            info.SetChanInfoStreamExt(".wmv");
+          }
+          else if (header.Streams.Any(type => type==ASFHeader.StreamType.Audio)) {
+            info.SetChanInfoType("WMA");
+            info.SetChanInfoStreamType("audio/x-ms-wma");
+            info.SetChanInfoStreamExt(".wma");
+          }
+          else {
+            info.SetChanInfoType("ASF");
+            info.SetChanInfoStreamType("video/x-ms-asf");
+            info.SetChanInfoStreamExt(".asf");
+          }
+          res.ChannelInfo = new ChannelInfo(info);
+          streamIndex = Channel.GenerateStreamID();
+          streamOrigin = DateTime.Now;
+          res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, Channel.ContentPosition, chunk.ToByteArray());
+          break;
+        }
+      case ASFChunk.ChunkType.Data:
+        res.Contents = new Content[] {
+          new Content(streamIndex, DateTime.Now-streamOrigin, Channel.ContentPosition, chunk.ToByteArray()),
+        };
+        break;
+      case ASFChunk.ChunkType.Unknown:
+      default:
+        goto retry;
+      }
+      return res;
+    }
+
   }
 
   public class ASFContentReaderFactory
