@@ -339,7 +339,7 @@ namespace PeerCastStation.HTTP
   }
 
   public class HTTPSourceStream
-    : SourceStreamBase
+    : SourceStreamBase2
   {
     public IContentReader ContentReader { get; private set; }
     public bool UseContentBitrate { get; private set; }
@@ -386,19 +386,16 @@ namespace PeerCastStation.HTTP
       return new HTTPSourceConnection(PeerCast, Channel, source_uri, ContentReader, UseContentBitrate);
     }
 
-    protected override void OnConnectionStopped(ConnectionStoppedEvent msg)
+    protected override void OnConnectionStopped(StopReason reason)
     {
-      switch (msg.StopReason) {
+      switch (reason) {
       case StopReason.UserReconnect:
         break;
       case StopReason.UserShutdown:
-        Stop(msg.StopReason);
+        Stop(reason);
         break;
       default:
-        ThreadPool.QueueUserWorkItem(state => {
-          Thread.Sleep(3000);
-          Reconnect();
-        });
+        Task.Delay(3000).ContinueWith(prev => Reconnect());
         break;
       }
     }
