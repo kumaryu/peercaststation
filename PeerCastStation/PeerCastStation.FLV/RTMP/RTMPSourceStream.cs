@@ -928,16 +928,16 @@ namespace PeerCastStation.FLV.RTMP
       return new RTMPSourceConnection(PeerCast, Channel, source_uri, UseContentBitrate);
     }
 
-    protected override void OnConnectionStopped(SourceStreamBase.ConnectionStoppedEvent msg)
+    protected override void OnConnectionStopped(ISourceConnection connection, StopReason reason)
     {
-      switch (msg.StopReason) {
+      switch (reason) {
       case StopReason.UserReconnect:
         break;
       case StopReason.UserShutdown:
-        Stop(msg.StopReason);
+        Stop(reason);
         break;
       case StopReason.NoHost:
-        Stop(msg.StopReason);
+        Stop(reason);
         break;
       default:
         Reconnect();

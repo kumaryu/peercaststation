@@ -778,14 +778,12 @@ namespace PeerCastStation.PCP
       }
     }
 
-    private Uri trackerUri;
     public PCPSourceStream(PeerCast peercast, Channel channel, Uri source_uri)
       : base(peercast, channel, source_uri)
     {
       Logger.Debug("Initialized: Channel {0}, Source {1}",
         channel!=null ? channel.ChannelID.ToString("N") : "(null)",
         source_uri);
-      trackerUri = source_uri;
     }
 
     private Uri CreateHostUri(Host host)
@@ -836,9 +834,9 @@ namespace PeerCastStation.PCP
         Logger.Debug("{0} is selected to source.", uri);
         return uri;
       }
-      else if (!IsIgnored(trackerUri)) {
-        Logger.Debug("Tracker {0} is selected to source.", trackerUri);
-        return trackerUri;
+      else if (!IsIgnored(this.SourceUri)) {
+        Logger.Debug("Tracker {0} is selected to source.", this.SourceUri);
+        return this.SourceUri;
       }
       else {
         return null;
@@ -880,7 +878,7 @@ namespace PeerCastStation.PCP
 
     protected override ISourceConnection CreateConnection(Uri source_uri)
     {
-      if (source_uri==trackerUri) {
+      if (source_uri==this.SourceUri) {
         return new PCPSourceConnection(PeerCast, Channel, source_uri, RemoteHostStatus.Tracker);
       }
       else {
@@ -888,20 +886,20 @@ namespace PeerCastStation.PCP
       }
     }
 
-    protected override void OnConnectionStopped(SourceStreamBase.ConnectionStoppedEvent msg)
+    protected override void OnConnectionStopped(ISourceConnection connection, StopReason reason)
     {
-      switch (msg.StopReason) {
+      switch (reason) {
       case StopReason.UnavailableError:
-        IgnoreNode(msg.Connection.SourceUri);
+        IgnoreNode(connection.SourceUri);
         Reconnect(SelectSourceHost());
         break;
       case StopReason.ConnectionError:
       case StopReason.OffAir:
-        if (msg.Connection.SourceUri==trackerUri) {
-          Stop(msg.StopReason);
+        if (connection.SourceUri==this.SourceUri) {
+          Stop(reason);
         }
         else {
-          IgnoreNode(msg.Connection.SourceUri);
+          IgnoreNode(connection.SourceUri);
           Reconnect(SelectSourceHost());
         }
         break;
@@ -909,17 +907,22 @@ namespace PeerCastStation.PCP
         break;
       case StopReason.UserShutdown:
       default:
-        Stop(msg.StopReason);
+        Stop(reason);
         break;
       }
     }
 
-    protected override void OnReconnected(SourceStreamBase.ReconnectEvent msg)
+    protected override void DoReconnect()
     {
-      if (this.sourceConnection.SourceUri!=trackerUri) {
+      if (this.sourceConnection.SourceUri!=this.SourceUri) {
         IgnoreNode(this.sourceConnection.SourceUri);
       }
       Reconnect(SelectSourceHost());
+    }
+
+    private void Reconnect(Uri new_source)
+    {
+      StartConnection(new_source);
     }
 
     public override SourceStreamType Type {

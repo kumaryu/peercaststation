@@ -339,7 +339,7 @@ namespace PeerCastStation.HTTP
   }
 
   public class HTTPSourceStream
-    : SourceStreamBase2
+    : SourceStreamBase
   {
     public IContentReader ContentReader { get; private set; }
     public bool UseContentBitrate { get; private set; }
@@ -386,7 +386,7 @@ namespace PeerCastStation.HTTP
       return new HTTPSourceConnection(PeerCast, Channel, source_uri, ContentReader, UseContentBitrate);
     }
 
-    protected override void OnConnectionStopped(StopReason reason)
+    protected override void OnConnectionStopped(ISourceConnection connection, StopReason reason)
     {
       switch (reason) {
       case StopReason.UserReconnect:
