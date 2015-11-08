@@ -20,6 +20,7 @@ using System.Net.Sockets;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using PeerCastStation.Core;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
@@ -108,24 +109,12 @@ namespace PeerCastStation.PCP
   }
 
   public class PCPSourceConnection
-    : SourceConnectionBase
+    : SourceConnectionBase2
   {
     private TcpClient client = null;
-    private enum State {
-      SendingRelayRequest,
-      WaitingRelayResponse,
-      SendingHandshakeRequest,
-      WaitingHandshakeResponse,
-      Receiving,
-      Disconnected,
-    }
-    private State state = State.SendingRelayRequest;
     private RelayRequestResponse relayResponse = null;
     private Host uphost;
     private RemoteHostStatus remoteType = RemoteHostStatus.None;
-    private IPEndPoint remoteEndPoint;
-
-    private IPEndPoint RemoteEndPoint { get { return remoteEndPoint; } }
 
     public PCPSourceConnection(
         PeerCast peercast,
@@ -158,16 +147,14 @@ namespace PeerCastStation.PCP
       BroadcastHostInfo();
     }
 
-    protected StreamConnection DoConnect(IPEndPoint endpoint)
+    protected async Task<SourceConnectionClient> DoConnect(IPEndPoint endpoint)
     {
       try {
         client = new TcpClient();
-        client.Connect(endpoint);
-        remoteEndPoint = (IPEndPoint)client.Client.RemoteEndPoint;
-        var stream = client.GetStream();
-        var connection = new StreamConnection(stream, stream);
-        connection.ReceiveTimeout = 30000;
-        connection.SendTimeout    = 8000;
+        var connection = new SourceConnectionClient(client);
+        await client.ConnectAsync(endpoint.Address, endpoint.Port);
+        connection.Stream.ReadTimeout  = 30000;
+        connection.Stream.WriteTimeout = 8000;
         Logger.Debug("Connected: {0}", endpoint);
         return connection;
       }
@@ -178,200 +165,106 @@ namespace PeerCastStation.PCP
       }
     }
 
-    protected override StreamConnection DoConnect(Uri source)
+    protected override async Task<SourceConnectionClient> DoConnect(Uri source, CancellationToken cancel_token)
     {
-      var port = source.Port<0 ? PCPVersion.DefaultPort : source.Port;
-      IPEndPoint endpoint = null;
       try {
-        var addresses = Dns.GetHostAddresses(source.DnsSafeHost);
-        var addr = addresses.FirstOrDefault(x => x.AddressFamily==AddressFamily.InterNetwork);
-        if (addr!=null) {
-          endpoint = new IPEndPoint(addr, port);
+        var port = source.Port<0 ? PCPVersion.DefaultPort : source.Port;
+        client = new TcpClient();
+        if (source.HostNameType==UriHostNameType.IPv4 ||
+            source.HostNameType==UriHostNameType.IPv6) {
+          await client.ConnectAsync(IPAddress.Parse(source.Host), port);
         }
+        else {
+          await client.ConnectAsync(source.DnsSafeHost, port);
+        }
+        var connection = new SourceConnectionClient(client);
+        connection.Stream.ReadTimeout  = 30000;
+        connection.Stream.WriteTimeout = 8000;
+        Logger.Debug("Connected: {0}", source);
+        return connection;
       }
-      catch (ArgumentException) {}
-      catch (SocketException) {}
-      if (endpoint!=null) {
-        return DoConnect(endpoint);
-      }
-      else {
-        Logger.Debug("No Host Found: {0}", source);
+      catch (SocketException e) {
+        Logger.Debug("Connection Failed: {0}", source);
+        Logger.Debug(e);
         return null;
       }
     }
 
-    protected override void DoClose(StreamConnection connection)
+    protected override async void DoPost(Host from, Atom packet)
     {
-      Logger.Debug("closing connection");
-      connection.Close();
-      Logger.Debug("closing client");
-      client.Close();
-      Logger.Debug("closed");
-      state = State.Disconnected;
-    }
-
-    protected override void DoPost(Host from, Atom packet)
-    {
-      if (uphost!=from) {
-        try {
-          connection.Send(stream => {
-            AtomWriter.Write(stream, packet);
-          });
-        }
-        catch (IOException e) {
-          Logger.Info(e);
-          Stop(StopReason.ConnectionError);
-        }
+      if (uphost==from) return;
+      try {
+        await connection.Stream.WriteAsync(packet);
+      }
+      catch (IOException e) {
+        Logger.Info(e);
+        Stop(StopReason.ConnectionError);
+      }
+      catch (Exception e) {
+        Logger.Info(e);
       }
     }
 
-    protected override void DoProcess()
+    protected override async Task DoProcess(CancellationToken cancel_token)
     {
-      switch (state) {
-      case State.SendingRelayRequest:      state = SendRelayRequest();      break;
-      case State.WaitingRelayResponse:     state = WaitRelayResponse();     break;
-      case State.SendingHandshakeRequest:  state = SendHandshakeRequest();  break;
-      case State.WaitingHandshakeResponse: state = WaitHandshakeResponse(); break;
-      case State.Receiving:                state = ReceiveBody();           break;
-      case State.Disconnected: break;
-      }
+      this.Status = ConnectionStatus.Connecting;
+      await ProcessRelayRequest(cancel_token);
+      if (IsStopped) goto Stopped;
+      await ProcessHandshake(cancel_token);
+      if (IsStopped) goto Stopped;
+      this.Status = ConnectionStatus.Connected;
+      await ProcessBody(cancel_token);
+Stopped:
+      Logger.Debug("Disconnected");
     }
 
-    private State SendRelayRequest()
+    private async Task<RelayRequestResponse> ReadRequestResponseAsync(Stream stream, CancellationToken cancel_token)
+    {
+      string line = null;
+      var responses = new List<string>();
+      var buf = new List<byte>();
+      while (line!="") {
+        var value = await stream.ReadByteAsync(cancel_token);
+        if (value<0) throw new IOException();
+        buf.Add((byte)value);
+        if (buf.Count>=2 && buf[buf.Count-2] == '\r' && buf[buf.Count-1] == '\n') {
+          line = System.Text.Encoding.UTF8.GetString(buf.ToArray(), 0, buf.Count - 2);
+          if (line!="") responses.Add(line);
+          buf.Clear();
+        }
+      }
+      return new RelayRequestResponse(responses);
+    }
+
+    private async Task ProcessRelayRequest(CancellationToken cancel_token)
     {
       Logger.Debug("Sending Relay request: /channel/{0}", Channel.ChannelID.ToString("N"));
-      var req = String.Format(
+      var req = System.Text.Encoding.UTF8.GetBytes(String.Format(
         "GET /channel/{0} HTTP/1.0\r\n" +
         "x-peercast-pcp:1\r\n" +
         "x-peercast-pos:{1}\r\n" +
         "\r\n",
         Channel.ChannelID.ToString("N"),
-        Channel.ContentPosition);
+        Channel.ContentPosition));
       try {
-        connection.Send(System.Text.Encoding.UTF8.GetBytes(req));
-      }
-      catch (IOException e) {
-        Logger.Info(e);
-        Stop(StopReason.ConnectionError);
-        return State.Disconnected;
-      }
-      return State.WaitingRelayResponse;
-    }
-
-    private State WaitRelayResponse()
-    {
-      relayResponse = null;
-      bool longresponse = false;
-      try {
-        connection.Recv(stream => {
-          longresponse = stream.Length>=2048;
-          relayResponse = RelayRequestResponseReader.Read(stream);
-        });
-      }
-      catch (IOException) {
-        Stop(StopReason.ConnectionError);
-        return State.Disconnected;
-      }
-      if (relayResponse!=null) {
-          Logger.Debug("Relay response: {0}", relayResponse.StatusCode);
+        await connection.Stream.WriteAsync(req, cancel_token);
+        relayResponse = await ReadRequestResponseAsync(connection.Stream, cancel_token);
+        Logger.Debug("Relay response: {0}", relayResponse.StatusCode);
         if (relayResponse.StatusCode==200 || relayResponse.StatusCode==503) {
-          return State.SendingHandshakeRequest;
+          return;
         }
         else {
           Logger.Error("Server responses {0} to GET {1}", relayResponse.StatusCode, SourceUri.PathAndQuery);
           Stop(relayResponse.StatusCode==404 ? StopReason.OffAir : StopReason.UnavailableError);
-          return State.Disconnected;
         }
-      }
-      else if (longresponse) {
-        Stop(StopReason.ConnectionError);
-        return State.Disconnected;
-      }
-      else {
-        return State.WaitingRelayResponse;
-      }
-    }
-
-    private State SendHandshakeRequest()
-    {
-      Logger.Debug("Handshake Started");
-      if (SendPCPHelo()) {
-        return State.WaitingHandshakeResponse;
-      }
-      else {
-        return State.Disconnected;
-      }
-    }
-
-    private State WaitHandshakeResponse()
-    {
-      try {
-        bool handshake_finished = false;
-        foreach (var atom in connection.RecvAtoms()) {
-          if (atom.Name==Atom.PCP_OLEH) {
-            OnPCPOleh(atom);
-            Logger.Debug("Handshake Finished: {0}", PeerCast.GlobalAddress);
-            handshake_finished = true;
-          }
-          if (atom.Name==Atom.PCP_QUIT) {
-            OnPCPQuit(atom);
-            return State.Disconnected;
-          }
-          else if (handshake_finished) {
-            ProcessAtom(atom);
-          }
-          else {
-            //Ignore packet
-          }
-        }
-        if (handshake_finished) {
-          return State.Receiving;
-        }
-        else {
-          return State.WaitingHandshakeResponse;
-        }
-      }
-      catch (InvalidDataException e) {
-        Logger.Error(e);
-        Stop(StopReason.ConnectionError);
-        return State.Disconnected;
       }
       catch (IOException e) {
         Logger.Info(e);
         Stop(StopReason.ConnectionError);
-        return State.Disconnected;
       }
     }
 
-    System.Diagnostics.Stopwatch hostInfoUpdateTimer = new System.Diagnostics.Stopwatch();
-    private State ReceiveBody()
-    {
-      if (!hostInfoUpdateTimer.IsRunning) {
-        hostInfoUpdateTimer.Reset();
-        hostInfoUpdateTimer.Start();
-      }
-      if (hostInfoUpdateTimer.ElapsedMilliseconds>=120000) {
-        BroadcastHostInfo();
-      }
-      try {
-        foreach (var atom in connection.RecvAtoms()) {
-          if (!ProcessAtom(atom)) break;
-        }
-        return State.Receiving;
-      }
-      catch (InvalidDataException e) {
-        Logger.Error(e);
-        Stop(StopReason.ConnectionError);
-        return State.Disconnected;
-      }
-      catch (IOException e) {
-        Logger.Info(e);
-        Stop(StopReason.ConnectionError);
-        return State.Disconnected;
-      }
-    }
-
-    private bool SendPCPHelo()
+    private Atom CreatePCPHelo()
     {
       var helo = new AtomCollection();
       helo.SetHeloAgent(PeerCast.AgentName);
@@ -382,45 +275,91 @@ namespace PeerCastStation.PCP
         }
         else {
           var listener = PeerCast.FindListener(
-            RemoteEndPoint.Address,
+            connection.RemoteEndPoint.Address,
             OutputStreamType.Relay | OutputStreamType.Metadata);
           helo.SetHeloPort(listener.LocalEndPoint.Port);
         }
       }
       else {
         var listener = PeerCast.FindListener(
-          RemoteEndPoint.Address,
+          connection.RemoteEndPoint.Address,
           OutputStreamType.Relay | OutputStreamType.Metadata);
         if (listener!=null) {
           helo.SetHeloPing(listener.LocalEndPoint.Port);
         }
       }
       PCPVersion.SetHeloVersion(helo);
+      return new Atom(Atom.PCP_HELO, helo);
+    }
+
+    private async Task ProcessHandshake(CancellationToken cancel_token)
+    {
+      Logger.Debug("Handshake Started");
+      var helo = CreatePCPHelo();
       try {
-        connection.Send(stream => {
-          AtomWriter.Write(stream, new Atom(Atom.PCP_HELO, helo));
-        });
+        await connection.Stream.WriteAsync(helo, cancel_token);
+        var handshake_finished = false;
+        while (!handshake_finished) {
+          cancel_token.ThrowIfCancellationRequested();
+          var atom = await connection.Stream.ReadAtomAsync(cancel_token);
+          if (atom.Name==Atom.PCP_OLEH) {
+            OnPCPOleh(atom);
+            Logger.Debug("Handshake Finished: {0}", PeerCast.GlobalAddress);
+            handshake_finished = true;
+          }
+          else if (atom.Name==Atom.PCP_OLEH) {
+            OnPCPQuit(atom);
+          }
+          else {
+            //Ignore other packets
+          }
+        }
+      }
+      catch (InvalidDataException e) {
+        Logger.Error(e);
+        Stop(StopReason.ConnectionError);
       }
       catch (IOException e) {
         Logger.Info(e);
         Stop(StopReason.ConnectionError);
-        return false;
       }
-      return true;
+    }
+
+    private async Task ProcessBody(CancellationToken cancel_token)
+    {
+      try {
+        BroadcastHostInfo();
+        while (!cancel_token.IsCancellationRequested) {
+          if (CheckHostInfoUpdate()) {
+            BroadcastHostInfo();
+          }
+          var atom = await connection.Stream.ReadAtomAsync(cancel_token);
+          Logger.Debug("Atom: {0}", atom.Name.ToString());
+          ProcessAtom(atom);
+        }
+      }
+      catch (InvalidDataException e) {
+        Logger.Error(e);
+        Stop(StopReason.ConnectionError);
+      }
+      catch (IOException e) {
+        Logger.Info(e);
+        Stop(StopReason.ConnectionError);
+      }
     }
 
     /// <summary>
     /// 現在のチャンネルとPeerCastの状態からHostパケットを作ります
     /// </summary>
     /// <returns>作ったPCP_HOSTパケット</returns>
-    private Atom CreateHostPacket()
+    private Atom CreatePCPHOST()
     {
       var host = new AtomCollection();
       host.SetHostChannelID(Channel.ChannelID);
       host.SetHostSessionID(PeerCast.SessionID);
       var globalendpoint = 
         PeerCast.GetGlobalEndPoint(
-          RemoteEndPoint.AddressFamily,
+          connection.RemoteEndPoint.AddressFamily,
           OutputStreamType.Relay);
       if (globalendpoint!=null) {
         host.AddHostIP(globalendpoint.Address);
@@ -428,7 +367,7 @@ namespace PeerCastStation.PCP
       }
       var localendpoint = 
         PeerCast.GetLocalEndPoint(
-          RemoteEndPoint.AddressFamily,
+          connection.RemoteEndPoint.AddressFamily,
           OutputStreamType.Relay);
       if (localendpoint!=null) {
         host.AddHostIP(localendpoint.Address);
@@ -447,8 +386,8 @@ namespace PeerCastStation.PCP
         (PeerCast.AccessController.IsChannelPlayable(Channel) ? PCPHostFlags1.Direct : 0) |
         ((!PeerCast.IsFirewalled.HasValue || PeerCast.IsFirewalled.Value) ? PCPHostFlags1.Firewalled : 0) |
         (RecvRate>0 ? PCPHostFlags1.Receiving : 0));
-      host.SetHostUphostIP(RemoteEndPoint.Address);
-      host.SetHostUphostPort(RemoteEndPoint.Port);
+      host.SetHostUphostIP(connection.RemoteEndPoint.Address);
+      host.SetHostUphostPort(connection.RemoteEndPoint.Port);
       return new Atom(Atom.PCP_HOST, host);
     }
 
@@ -458,7 +397,7 @@ namespace PeerCastStation.PCP
     /// <param name="group">配送先グループ</param>
     /// <param name="packet">配送するパケット</param>
     /// <returns>作成したPCP_BCSTパケット</returns>
-    private Atom CreateBroadcastPacket(BroadcastGroup group, Atom packet)
+    private Atom CreatePCPBCST(BroadcastGroup group, Atom packet)
     {
       var bcst = new AtomCollection();
       bcst.SetBcstFrom(PeerCast.SessionID);
@@ -471,14 +410,26 @@ namespace PeerCastStation.PCP
       return new Atom(Atom.PCP_BCST, bcst);
     }
 
+    Stopwatch hostInfoUpdateTimer = new Stopwatch();
+
+    private bool CheckHostInfoUpdate()
+    {
+      lock (hostInfoUpdateTimer) {
+        if (!hostInfoUpdateTimer.IsRunning) {
+          hostInfoUpdateTimer.Reset();
+          hostInfoUpdateTimer.Start();
+        }
+        return hostInfoUpdateTimer.ElapsedMilliseconds>=120000;
+      }
+    }
+
     private void BroadcastHostInfo()
     {
-      SyncContext.Post(dummy => {
-        Logger.Debug("Broadcasting host info");
-        Channel.Broadcast(null, CreateBroadcastPacket(BroadcastGroup.Trackers, CreateHostPacket()), BroadcastGroup.Trackers);
-      }, null);
-      hostInfoUpdateTimer.Reset();
-      hostInfoUpdateTimer.Start();
+      lock (hostInfoUpdateTimer) {
+        Channel.Broadcast(null, CreatePCPBCST(BroadcastGroup.Trackers, CreatePCPHOST()), BroadcastGroup.Trackers);
+        hostInfoUpdateTimer.Reset();
+        hostInfoUpdateTimer.Start();
+      }
     }
 
     protected bool ProcessAtom(Atom atom)
@@ -522,7 +473,7 @@ namespace PeerCastStation.PCP
       if (sid.HasValue) {
         var host = new HostBuilder();
         host.SessionID      = sid.Value;
-        host.GlobalEndPoint = RemoteEndPoint;
+        host.GlobalEndPoint = connection.RemoteEndPoint;
         uphost = host.ToHost();
       }
     }
@@ -658,22 +609,13 @@ namespace PeerCastStation.PCP
 
     public override ConnectionInfo GetConnectionInfo()
     {
-      ConnectionStatus status;
-      switch (state) {
-      case State.SendingRelayRequest:      status = ConnectionStatus.Connecting; break;
-      case State.WaitingRelayResponse:     status = ConnectionStatus.Connecting; break;
-      case State.SendingHandshakeRequest:  status = ConnectionStatus.Connecting; break;
-      case State.WaitingHandshakeResponse: status = ConnectionStatus.Connecting; break;
-      case State.Receiving:                status = ConnectionStatus.Connected; break;
-      case State.Disconnected:             status = ConnectionStatus.Error; break;
-      default:                             status = ConnectionStatus.Idle; break;
-      }
       var server_name = "";
       if (relayResponse!=null && relayResponse.Server!=null) {
         server_name = relayResponse.Server;
       }
       var remote = remoteType;
-      if (RemoteEndPoint!=null && RemoteEndPoint.Address.IsSiteLocal()) remote |= RemoteHostStatus.Local;
+      var remote_endpoint = connection!=null ? connection.RemoteEndPoint : null;
+      if (remote_endpoint!=null && remote_endpoint.Address.IsSiteLocal()) remote |= RemoteHostStatus.Local;
       var remote_name = String.Format(
         "{0}:{1}",
         SourceUri.Host,
@@ -681,9 +623,9 @@ namespace PeerCastStation.PCP
       return new ConnectionInfo(
         "PCP Source",
         ConnectionType.Source,
-        status,
+        this.Status,
         remote_name,
-        RemoteEndPoint,
+        remote_endpoint,
         remote,
         lastPosition,
         RecvRate,
