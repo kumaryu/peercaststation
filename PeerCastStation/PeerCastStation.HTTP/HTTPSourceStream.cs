@@ -104,50 +104,12 @@ namespace PeerCastStation.HTTP
   }
 
   public class HTTPSourceConnection
-    : ISourceConnection
+    : SourceConnectionBase2
   {
     private IContentReader contentReader;
     private HTTPResponse response = null;
     private bool useContentBitrate;
     private long lastPosition = 0;
-    private ConnectionStatus status = ConnectionStatus.Idle;
-
-    public PeerCast   PeerCast { get; private set; }
-    public Channel    Channel { get; private set; }
-    public Uri        SourceUri { get; private set; }
-    public StopReason StoppedReason { get; private set; }
-    public float      SendRate { get { return connection!=null ? connection.Stream.WriteRate : 0; } }
-    public float      RecvRate { get { return connection!=null ? connection.Stream.ReadRate  : 0; } }
-
-    private CancellationTokenSource isStopped = new CancellationTokenSource();
-    public bool IsStopped {
-      get { return isStopped.IsCancellationRequested; }
-    }
-    protected Logger Logger { get; private set; }
-
-    protected class SourceConnectionClient
-      : IDisposable
-    {
-      public TcpClient Client { get; private set; }
-      public ConnectionStream Stream { get; private set; }
-      public SourceConnectionClient(TcpClient client)
-      {
-        this.Client = client;
-        var stream = client.GetStream();
-        this.Stream = new ConnectionStream(stream, stream);
-      }
-
-      public IPEndPoint RemoteEndPoint {
-        get { return this.Client.Connected ? this.Client.Client.RemoteEndPoint as IPEndPoint : null; }
-      }
-
-      public void Dispose()
-      {
-        this.Stream.Close();
-        this.Client.Close();
-      }
-    }
-    protected SourceConnectionClient connection;
 
     public HTTPSourceConnection(
         PeerCast peercast,
@@ -155,52 +117,13 @@ namespace PeerCastStation.HTTP
         Uri      source_uri,
         IContentReader content_reader,
         bool use_content_bitrate)
+      : base(peercast, channel, source_uri)
     {
-      this.PeerCast      = peercast;
-      this.Channel       = channel;
-      this.SourceUri     = source_uri;
-      this.StoppedReason = StopReason.None;
-      this.Logger        = new Logger(this.GetType());
       contentReader = content_reader;
       useContentBitrate = use_content_bitrate;
     }
 
-    public async Task<StopReason> Run()
-    {
-      status = ConnectionStatus.Connecting;
-      connection = await DoConnect(SourceUri);
-      if (connection==null) {
-        Stop(StopReason.ConnectionError);
-      }
-      if (!IsStopped) {
-        await DoProcess();
-      }
-      if (connection!=null) {
-        await DoClose(connection);
-      }
-      return StoppedReason;
-    }
-
-    public void Post(Host from, Atom packet)
-    {
-      if (IsStopped) return;
-      DoPost(from, packet);
-    }
-
-    public void Stop()
-    {
-      Stop(StopReason.UserShutdown);
-    }
-
-    public void Stop(StopReason reason)
-    {
-      if (reason==StopReason.None) throw new ArgumentException("Invalid value", "reason");
-      if (IsStopped) return;
-      StoppedReason = reason;
-      isStopped.Cancel();
-    }
-
-    protected async Task<SourceConnectionClient> DoConnect(Uri source)
+    protected override async Task<SourceConnectionClient> DoConnect(Uri source, CancellationToken cancel_token)
     {
       try {
         var client = new TcpClient();
@@ -222,21 +145,10 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    protected async Task DoClose(SourceConnectionClient connection)
-    {
-      await connection.Stream.FlushAsync();
-      connection.Dispose();
-      status = ConnectionStatus.Error;
-    }
-
-    protected void DoPost(Host from, Atom packet)
-    {
-    }
-
-    protected async Task DoProcess()
+    protected override async Task DoProcess(CancellationToken cancel_token)
     {
       try {
-        status = ConnectionStatus.Connecting;
+        this.Status = ConnectionStatus.Connecting;
         var host = SourceUri.DnsSafeHost;
         if (SourceUri.Port!=-1 && SourceUri.Port!=80) {
           host = String.Format("{0}:{1}", SourceUri.DnsSafeHost, SourceUri.Port);
@@ -255,15 +167,15 @@ namespace PeerCastStation.HTTP
         Logger.Debug("Sending request:\n" + request);
 
         response = null;
-        response = await HTTPResponseReader.ReadAsync(connection.Stream, isStopped.Token);
+        response = await HTTPResponseReader.ReadAsync(connection.Stream, cancel_token);
         if (response.Status!=200) {
           Logger.Error("Server responses {0} to GET {1}", response.Status, SourceUri.PathAndQuery);
           Stop(response.Status==404 ? StopReason.OffAir : StopReason.UnavailableError);
         }
 
-        status = ConnectionStatus.Connected;
+        this.Status = ConnectionStatus.Connected;
         while (!IsStopped) {
-          var data = await contentReader.ReadAsync(connection.Stream, isStopped.Token);
+          var data = await contentReader.ReadAsync(connection.Stream, cancel_token);
           if (data.ChannelInfo!=null) {
             Channel.ChannelInfo = UpdateChannelInfo(Channel.ChannelInfo, data.ChannelInfo);
           }
@@ -293,7 +205,7 @@ namespace PeerCastStation.HTTP
       catch (IOException) {
         Stop(StopReason.ConnectionError);
       }
-      status = ConnectionStatus.Error;
+      this.Status = ConnectionStatus.Error;
     }
 
     private ChannelInfo UpdateChannelInfo(ChannelInfo a, ChannelInfo b)
@@ -314,7 +226,7 @@ namespace PeerCastStation.HTTP
       return new ChannelTrack(base_atoms);
     }
 
-    public ConnectionInfo GetConnectionInfo()
+    public override ConnectionInfo GetConnectionInfo()
     {
       IPEndPoint endpoint = connection!=null ? connection.RemoteEndPoint : null;
       string server_name = "";
@@ -324,7 +236,7 @@ namespace PeerCastStation.HTTP
       return new ConnectionInfo(
         "HTTP Source",
         ConnectionType.Source,
-        status,
+        Status,
         SourceUri.ToString(),
         endpoint,
         (endpoint!=null && endpoint.Address.IsSiteLocal()) ? RemoteHostStatus.Local : RemoteHostStatus.None,
