@@ -264,7 +264,7 @@ namespace PeerCastStation.Core
     {
     }
 
-    protected abstract Task DoProcess(CancellationToken cancellationoOkne);
+    protected abstract Task DoProcess(CancellationToken cancellationToken);
 
     public abstract ConnectionInfo GetConnectionInfo();
   }
