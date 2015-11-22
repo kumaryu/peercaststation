@@ -227,6 +227,7 @@ namespace PeerCastStation.PCP
     }
 
     public Host Downhost       { get; protected set; }
+    public bool IsHandshaked   { get { return Downhost!=null; } }
     public string UserAgent    { get; protected set; }
     public bool IsRelayFull    { get; protected set; }
     public bool IsChannelFound { get; protected set; }
@@ -543,29 +544,47 @@ namespace PeerCastStation.PCP
 
     private Content lastHeader = null;
     private Content lastContent = null;
+    private System.Diagnostics.Stopwatch handshakeTimeout = new System.Diagnostics.Stopwatch();
     protected override void OnIdle()
     {
       base.OnIdle();
-      if (IsChannelFound) {
-        try {
+      if (!IsChannelFound) {
+        Stop(StopReason.None);
+      }
+      try {
+        if (!IsHandshaked) {
+          if (!handshakeTimeout.IsRunning) {
+            handshakeTimeout.Reset();
+            handshakeTimeout.Start();
+          }
+          //Handshakeが3秒以内に完了しなければ切る
+          if (handshakeTimeout.ElapsedMilliseconds>3000) {
+            Logger.Info("Handshake timed out.");
+            Stop(StopReason.BadAgentError);
+          }
+          foreach (var atom in Connection.RecvAtoms()) {
+            if (IsStopped) break;
+            //HELOでセッションIDを受け取るまでは他のパケットは無視
+            if (atom.Name==Atom.PCP_HELO) OnPCPHelo(atom);
+            else if (IsHandshaked) ProcessAtom(atom);
+          }
+        }
+        if (IsHandshaked) {
           foreach (var atom in Connection.RecvAtoms()) {
             ProcessAtom(atom);
           }
-          if (Downhost!=null && !IsRelayFull) {
+          if (!IsRelayFull) {
             SendRelayBody(ref lastHeader, ref lastContent);
           }
         }
-        catch (InvalidDataException e) {
-          Logger.Error(e);
-          OnError();
-        }
-        catch (IOException e) {
-          Logger.Info(e);
-          OnError();
-        }
       }
-      else {
-        Stop(StopReason.None);
+      catch (InvalidDataException e) {
+        Logger.Error(e);
+        OnError();
+      }
+      catch (IOException e) {
+        Logger.Info(e);
+        OnError();
       }
     }
 
