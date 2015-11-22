@@ -169,12 +169,12 @@ namespace PeerCastStation.Core
     {
       logger.Debug("Requesting channel {0} from {1}", channel_id.ToString("N"), tracker);
       var channel = new RelayChannel(this, channel_id);
+      channel.Start(tracker);
       ReplaceCollection(ref channels, orig => {
         var new_collection = new List<Channel>(orig);
         new_collection.Add(channel);
         return new_collection;
       });
-      channel.Start(tracker);
       if (ChannelAdded!=null) ChannelAdded(this, new ChannelChangedEventArgs(channel));
       return channel;
     }
