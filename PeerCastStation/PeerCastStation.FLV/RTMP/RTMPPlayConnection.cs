@@ -196,27 +196,29 @@ namespace PeerCastStation.FLV.RTMP
 			}
 		}
 
-		private Content headerPacket = null;
-		private Content lastPacket = null;
-		private object locker = new object();
-		private void OnContentChanged(object sender, EventArgs args)
-		{
-			lock (locker) {
-				var new_header = Channel.ContentHeader;
-				if (new_header!=headerPacket) {
-					headerPacket = Channel.ContentHeader;
-					PostContent(headerPacket);
-					lastPacket = headerPacket;
-				}
-				if (headerPacket==null) return;
-				IEnumerable<Content> contents;
-				contents = Channel.Contents.GetNewerContents(lastPacket.Stream, lastPacket.Timestamp, lastPacket.Position);
-				foreach (var content in contents) {
-					PostContent(content);
-					lastPacket = content;
-				}
-			}
-		}
+    private Content headerPacket = null;
+    private Content lastPacket = null;
+    private object locker = new object();
+    private void OnContentChanged(object sender, EventArgs args)
+    {
+      lock (locker) {
+        var new_header = Channel.ContentHeader;
+        if (new_header!=headerPacket) {
+          headerPacket = Channel.ContentHeader;
+          if (headerPacket!=null) {
+            PostContent(headerPacket);
+          }
+          lastPacket = headerPacket;
+        }
+        if (headerPacket==null) return;
+        IEnumerable<Content> contents;
+        contents = Channel.Contents.GetNewerContents(lastPacket.Stream, lastPacket.Timestamp, lastPacket.Position);
+        foreach (var content in contents) {
+          PostContent(content);
+          lastPacket = content;
+        }
+      }
+    }
 
 		class RTMPContentSink
 			: IRTMPContentSink
