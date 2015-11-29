@@ -1,4 +1,54 @@
 ---
+- name: Version 2.1.0 (2015年11月30日開発版)
+  version: 2.1.0.0
+  channel: dev
+  notes: |
+    主にバグ修正です。安定版が2.0.0になったので開発版もバージョン番号を上げました。
+
+    * RTMP視聴時にURLにフォーマット指定とパラメータが両方ついてると再生できないのを修正しました。
+    * RTMP視聴中に再接続が起きると落ちる場合があったのを修正しました。
+    * RTMP視聴中にチャンネルを切っても接続が切れなかったのを修正しました。
+    * 配信開始直後にJSON RPCでチャンネル情報を取得すると落ちることがあったのを修正しました。
+    * リレー要求が来たときに3秒以内にハンドシェイクが完了しないと切るようにしました。
+    * 足りないドキュメントファイルがあったので追加しました。
+    * kagamin2とwmrelayの対応のバグを修正 (by shinji3)
+    * SafariでYPブラウザが正しく表示できないのを修正しました。
+  date: Mon, 30 Nov 2015 02:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-2.1.0.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.1.0.zip
+    length: 1589834
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.1.0.exe
+    length: 2249018
+
+- name: Version 2.0.0 (2015年11月30日安定版)
+  version: 2.0.0.0
+  channel: stable
+  notes: |
+    開発版の機能を取り込みました。動作環境が変更されていますのでご注意ください。
+
+    * .NET Framework 4.5.1を必須にしました。Windows XPには入らないのでVista以降専用になります。monoでは3.0以降のなるべく新しいのを使用してください。
+    * インストーラ版を追加しました。
+    * アップデート通知時にはインストーラ版とzip版を選択してダウンロードできるようになりました。また、GUI版ではブラウザを介さずに直接ダウンロードするようにしました。次回の更新以降で有効になります。
+    * UPnPやNAT-PMPに対応したルータがある場合に自動的にポート開放するようにしました(無効にもできます)。自動ポート開放はPeerCastStation起動中のみ有効になります。
+    * HTML UIにYPブラウザを追加しました。YP設定でindex.txtのアドレスを追加するとWebブラウザからYP掲載のチャンネルが見れます。
+    * RTMP視聴に試験的に対応しました。RTMP対応のプレイヤーでrtmp://localhost:7144/stream/チャンネルID?tip=～のようなアドレスにアクセスすることにより、RTMPで視聴できます。
+    * CSRF対策としてJSON RPCのリクエストにX-REQUEST-WITHヘッダが無い場合はエラーとなるようにしました。
+      これにより未対応の一部のツールが動かなくなります。
+    * 配信開始時のURLでホスト名にIPアドレスを指定すると落ちる場合があったのを修正しました。(by plonk)
+    * 上流がFLVやMKVに対応していないPeerCastの場合にタイプがUNKNOWNになってしまうため、UNKNOWNの場合はタイプを自動判別できるようにしました。
+  date: Mon, 30 Nov 2015 02:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-2.0.0.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.0.0.zip
+    length: 1589757
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.0.0.exe
+    length: 2248963
+
 - name: Version 1.8.1 (2015年5月9日安定版)
   version: 1.8.1
   channel: stable
