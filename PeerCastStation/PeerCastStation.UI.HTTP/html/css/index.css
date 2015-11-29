@@ -164,19 +164,25 @@ ul.relayTree {
 }
 
 .channel-list {
+  display:-webkit-flex;
   display:flex;
+  -webkit-flex-flow:column;
   flex-flow:column;
 }
 
 .channel-list thead,
 .channel-list tfoot,
 .channel-list tbody {
+  display:-webkit-flex;
   display:flex;
+  -webkit-flex-flow:column;
   flex-flow:column;
 }
 
 .channel-list tr {
+  display:-webkit-flex;
   display:flex;
+  -webkit-flex-flow:row;
   flex-flow:row;
 }
 
@@ -199,9 +205,9 @@ ul.relayTree {
   display:none;
 }
 .channel-list .column-play      { width:1em; }
-.channel-list .column-name      { flex:16; }
-.channel-list .column-genre     { flex:8; }
-.channel-list .column-desc      { flex:40; }
+.channel-list .column-name      { -webkit-flex:16; flex:16; }
+.channel-list .column-genre     { -webkit-flex:8; flex:8; }
+.channel-list .column-desc      { -webkit-flex:40; flex:40; }
 .channel-list .column-bitrate   { width:4em; }
 .channel-list .column-uptime    { width:4em; }
 .channel-list .column-listeners { width:4em; }

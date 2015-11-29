@@ -13,6 +13,14 @@ namespace PeerCastStation.Core
 			this.writeCounter = new RateCounter((int)duration.TotalMilliseconds);
 		}
 
+    protected override void Dispose(bool disposing)
+    {
+      base.Dispose(disposing);
+      if (disposing) {
+        this.BaseStream.Dispose();
+      }
+    }
+
 		private RateCounter readCounter;
 		private RateCounter writeCounter;
 

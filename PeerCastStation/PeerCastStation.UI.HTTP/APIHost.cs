@@ -335,7 +335,7 @@ namespace PeerCastStation.UI.HTTP
         var channel = GetChannel(channelId);
         var res = new JObject();
         res["status"]          = channel.Status.ToString();
-        res["source"]          = channel.SourceUri.ToString();
+        res["source"]          = channel.SourceUri!=null ? channel.SourceUri.ToString() : null;
         res["uptime"]          = (int)channel.Uptime.TotalSeconds;
         res["localRelays"]     = channel.LocalRelays;
         res["localDirects"]    = channel.LocalDirects;

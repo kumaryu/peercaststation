@@ -40,50 +40,62 @@ namespace PeerCastStation.FLV.RTMP
 			}
 		}
 
-		private class StreamName
-		{
-			public string Name { get; set; }
-			public Dictionary<string,string> Parameters { get; set; }
+    private class StreamName
+    {
+      public string Name { get; set; }
+      public string Format { get; set; }
+      public Dictionary<string,string> Parameters { get; set; }
 
-			public StreamName()
-			{
-				this.Name = "";
-				this.Parameters = new Dictionary<string,string>();
-			}
+      public StreamName()
+      {
+        this.Name = "";
+        this.Format = "flv";
+        this.Parameters = new Dictionary<string,string>();
+      }
 
-			public override string ToString()
-			{
-				return String.Join("?",
-					Uri.EscapeDataString(this.Name),
-					String.Join("&",
-						this.Parameters.Select(kv =>
-							Uri.EscapeDataString(kv.Key) + "=" +
-							Uri.EscapeDataString(kv.Value)
-						)
-					)
-				);
-			}
+      public override string ToString()
+      {
+        return String.Join("?",
+          String.Join(".",
+            Uri.EscapeDataString(this.Name),
+            this.Format
+          ),
+          String.Join("&",
+            this.Parameters.Select(kv =>
+              Uri.EscapeDataString(kv.Key) + "=" +
+              Uri.EscapeDataString(kv.Value)
+            )
+          )
+        );
+      }
 
-			public static StreamName Parse(string str)
-			{
-				var result = new StreamName();
-				var param_begin = str.IndexOf('?');
-				if (param_begin<0) {
-					result.Name = str;
-					return result;
-				}
-				result.Name = Uri.UnescapeDataString(str.Substring(0, param_begin));
-				var params_str = str.Substring(param_begin+1);
-				foreach (var param_str in params_str.Split('&')) {
-					var idx = param_str.IndexOf('=');
-					if (idx<0) continue;
-					var key = Uri.UnescapeDataString(param_str.Substring(0, idx));
-					var val = Uri.UnescapeDataString(param_str.Substring(idx+1));
-					result.Parameters[key] = val;
-				}
-				return result;
-			}
-		}
+      private static readonly System.Text.RegularExpressions.Regex namePattern =
+        new System.Text.RegularExpressions.Regex(@"(?<name>[^.?]+)(?:\.(?<format>[^?]+))?(?:\?(?<params>\S+))?");
+      public static StreamName Parse(string str)
+      {
+        var result = new StreamName();
+        var match = namePattern.Match(str);
+        if (!match.Success) {
+          result.Name = str;
+          return result;
+        }
+        result.Name = Uri.UnescapeDataString(match.Groups["name"].Value);
+        if (match.Groups["format"].Success) {
+          result.Format = Uri.UnescapeDataString(match.Groups["format"].Value);
+        }
+        if (match.Groups["params"].Success) {
+          var params_str = match.Groups["params"].Value;
+          foreach (var param_str in params_str.Split('&')) {
+            var idx = param_str.IndexOf('=');
+            if (idx<0) continue;
+            var key = Uri.UnescapeDataString(param_str.Substring(0, idx));
+            var val = Uri.UnescapeDataString(param_str.Substring(idx+1));
+            result.Parameters[key] = val;
+          }
+        }
+        return result;
+      }
+    }
 
 		private async Task<Channel> RequestChannel(
 			StreamName stream_name,
@@ -196,27 +208,29 @@ namespace PeerCastStation.FLV.RTMP
 			}
 		}
 
-		private Content headerPacket = null;
-		private Content lastPacket = null;
-		private object locker = new object();
-		private void OnContentChanged(object sender, EventArgs args)
-		{
-			lock (locker) {
-				var new_header = Channel.ContentHeader;
-				if (new_header!=headerPacket) {
-					headerPacket = Channel.ContentHeader;
-					PostContent(headerPacket);
-					lastPacket = headerPacket;
-				}
-				if (headerPacket==null) return;
-				IEnumerable<Content> contents;
-				contents = Channel.Contents.GetNewerContents(lastPacket.Stream, lastPacket.Timestamp, lastPacket.Position);
-				foreach (var content in contents) {
-					PostContent(content);
-					lastPacket = content;
-				}
-			}
-		}
+    private Content headerPacket = null;
+    private Content lastPacket = null;
+    private object locker = new object();
+    private void OnContentChanged(object sender, EventArgs args)
+    {
+      lock (locker) {
+        var new_header = Channel.ContentHeader;
+        if (new_header!=headerPacket) {
+          headerPacket = Channel.ContentHeader;
+          if (headerPacket!=null) {
+            PostContent(headerPacket);
+          }
+          lastPacket = headerPacket;
+        }
+        if (headerPacket==null) return;
+        IEnumerable<Content> contents;
+        contents = Channel.Contents.GetNewerContents(lastPacket.Stream, lastPacket.Timestamp, lastPacket.Position);
+        foreach (var content in contents) {
+          PostContent(content);
+          lastPacket = content;
+        }
+      }
+    }
 
 		class RTMPContentSink
 			: IRTMPContentSink
