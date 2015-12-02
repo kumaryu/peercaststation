@@ -89,7 +89,7 @@ namespace PeerCastStation.UI
     private DateTime GetDateTimeValue(XElement src)
     {
       DateTime result;
-      if (!DateTime.TryParse(GetStringValue(src), out result)) {
+      if (!DateTime.TryParse(GetStringValue(src), System.Globalization.DateTimeFormatInfo.InvariantInfo, System.Globalization.DateTimeStyles.None, out result)) {
         throw new ParseErrorException();
       }
       return result;
