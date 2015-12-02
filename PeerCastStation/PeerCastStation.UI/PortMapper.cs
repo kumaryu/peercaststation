@@ -102,13 +102,27 @@ namespace PeerCastStation.UI
 		public PortMapperMonitor(PeerCast peercast)
 		{
 			peerCast = peercast;
+      var path = System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
+        "PeerCastStation",
+        "PortMapper.log");
+      NatUtility.Logger = new System.IO.StreamWriter(path);
+      AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 			NatUtility.DeviceFound += NatUtility_DeviceFound;
 			NatUtility.DeviceLost  += NatUtility_DeviceLost;
 			NatUtility.StartDiscovery();
 			timer.Start();
 		}
 
-		public void Dispose()
+    private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+      if (NatUtility.Logger!=null) {
+        NatUtility.Logger.Close();
+        NatUtility.Logger = null;
+      }
+    }
+
+    public void Dispose()
 		{
 			timer.Stop();
 			NatUtility.StopDiscovery();
@@ -128,6 +142,11 @@ namespace PeerCastStation.UI
 				}
 				ports.Clear();
 			}
+      if (NatUtility.Logger!=null) {
+        NatUtility.Logger.Close();
+        NatUtility.Logger = null;
+      }
+      AppDomain.CurrentDomain.UnhandledException -= OnUnhandledException;
 		}
 
 		public IList<System.Net.IPAddress> GetExternalAddresses()
@@ -166,6 +185,8 @@ namespace PeerCastStation.UI
 				foreach (var device in devices) {
 					device.BeginCreatePortMap(mapping_tcp, OnPortMapCreated, device);
 					device.BeginCreatePortMap(mapping_udp, OnPortMapCreated, device);
+              NatUtility.Logger.WriteLine("hoge");
+              throw new ApplicationException();
 				}
 			}
 		}
