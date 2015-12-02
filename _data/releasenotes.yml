@@ -89,7 +89,7 @@
     * CSRF対策としてJSON RPCのリクエストにX-REQUEST-WITHヘッダが無い場合はエラーとなるようにしました。
       これにより未対応の一部のツールが動かなくなります。
     * 配信開始時のURLでホスト名にIPアドレスを指定すると落ちる場合があったのを修正しました。(by plonk)
-  date: Wed, 29 Jan 2015 16:30:00 +0900
+  date: Thu, 29 Jan 2015 16:30:00 +0900
   url: http://www.pecastation.org/files/PeerCastStation-1.9.2.zip
   enclosures:
   - type: archive
