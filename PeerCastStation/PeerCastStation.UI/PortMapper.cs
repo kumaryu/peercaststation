@@ -185,8 +185,6 @@ namespace PeerCastStation.UI
 				foreach (var device in devices) {
 					device.BeginCreatePortMap(mapping_tcp, OnPortMapCreated, device);
 					device.BeginCreatePortMap(mapping_udp, OnPortMapCreated, device);
-              NatUtility.Logger.WriteLine("hoge");
-              throw new ApplicationException();
 				}
 			}
 		}
