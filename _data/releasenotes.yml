@@ -1,4 +1,22 @@
 ---
+- name: Version 2.1.1 (2015年12月12日開発版)
+  version: 2.1.1.0
+  channel: dev
+  notes: |
+    ごく一部の環境で影響があったバグの修正です。
+
+    * UPnPでのポート開放を有効にすると一部のルータで落ちる場合があったのを修正しました。
+    * OSのカレンダー形式が西暦でない場合にアップデート通知が出なかったのを修正しました。
+  date: Sat, 12 Dev 2015 12:00:00 +0900
+  url: http://www.pecastation.org/files/PeerCastStation-2.1.1.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.1.1.zip
+    length: 1590376
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.1.1.exe
+    length: 2249729
+
 - name: Version 2.1.0 (2015年11月30日開発版)
   version: 2.1.0.0
   channel: dev
