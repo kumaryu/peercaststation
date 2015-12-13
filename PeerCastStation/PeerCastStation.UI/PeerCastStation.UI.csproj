@@ -52,7 +52,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PCPPortChecker.cs" />
-    <Compile Include="PortMapper.cs" />
+    <Compile Include="PortMapperPlugin.cs" />
     <Compile Include="UISettings.cs" />
     <Compile Include="Updater.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

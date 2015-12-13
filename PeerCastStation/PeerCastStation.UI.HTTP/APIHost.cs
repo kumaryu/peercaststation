@@ -224,7 +224,7 @@ namespace PeerCastStation.UI.HTTP
         channelCleaner["mode"]          = (int)ChannelCleaner.Mode;
         channelCleaner["inactiveLimit"] = ChannelCleaner.InactiveLimit;
         res["channelCleaner"] = channelCleaner;
-        var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapper>();
+        var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
         if (port_mapper!=null) {
           var portMapper = new JObject();
           portMapper["enabled"] = port_mapper.Enabled;
@@ -247,7 +247,7 @@ namespace PeerCastStation.UI.HTTP
           channel_cleaner.TryGetThen("inactiveLimit", v => ChannelCleaner.InactiveLimit = v);
           channel_cleaner.TryGetThen("mode", v => ChannelCleaner.Mode = (ChannelCleaner.CleanupMode)v);
         });
-        var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapper>();
+        var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
         if (port_mapper!=null) {
           settings.TryGetThen("portMapper", (JObject mapper) => {
             mapper.TryGetThen("enabled", v => port_mapper.Enabled = v);
