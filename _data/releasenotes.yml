@@ -7,7 +7,7 @@
 
     * UPnPでのポート開放を有効にすると一部のルータで落ちる場合があったのを修正しました。
     * OSのカレンダー形式が西暦でない場合にアップデート通知が出なかったのを修正しました。
-  date: Sat, 12 Dev 2015 12:00:00 +0900
+  date: 2015-12-12T12:00:00+09:00
   url: http://www.pecastation.org/files/PeerCastStation-2.1.1.zip
   enclosures:
   - type: archive
@@ -31,7 +31,7 @@
     * 足りないドキュメントファイルがあったので追加しました。
     * kagamin2とwmrelayの対応のバグを修正 (by shinji3)
     * SafariでYPブラウザが正しく表示できないのを修正しました。
-  date: Mon, 30 Nov 2015 02:00:00 +0900
+  date: 2015-11-30 02:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-2.1.0.zip
   enclosures:
   - type: archive
@@ -40,7 +40,6 @@
   - type: installer
     url: http://www.pecastation.org/files/PeerCastStation-2.1.0.exe
     length: 2249018
-
 - name: Version 2.0.0 (2015年11月30日安定版)
   version: 2.0.0.0
   channel: stable
@@ -57,7 +56,7 @@
       これにより未対応の一部のツールが動かなくなります。
     * 配信開始時のURLでホスト名にIPアドレスを指定すると落ちる場合があったのを修正しました。(by plonk)
     * 上流がFLVやMKVに対応していないPeerCastの場合にタイプがUNKNOWNになってしまうため、UNKNOWNの場合はタイプを自動判別できるようにしました。
-  date: Mon, 30 Nov 2015 02:00:00 +0900
+  date: 2015-11-30 02:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-2.0.0.zip
   enclosures:
   - type: archive
@@ -66,7 +65,6 @@
   - type: installer
     url: http://www.pecastation.org/files/PeerCastStation-2.0.0.exe
     length: 2248963
-
 - name: Version 1.8.1 (2015年5月9日安定版)
   version: 1.8.1
   channel: stable
@@ -86,13 +84,12 @@
     * 視聴リクエストのtipにIPv6アドレスを指定すると落ちる場合があったのを修正しました。
     * JSON RPC APIで掲載中YPの情報が取得できていなかったのを修正しました。
     * エンコーダからのHTTP Pullで配信する時のUserAgentをNSPlayerに変更しました。(by shinji3)
-  date: Sat, 9 May 2015 17:00:00 +0900
+  date: 2015-05-09 17:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.8.1.zip
   enclosures:
   - type: archive
     url: http://www.pecastation.org/files/PeerCastStation-1.8.1.zip
     length: 1276372
-
 - name: Version 1.9.2 (2015年4月29日開発版)
   version: 1.9.1.0
   channel: dev
@@ -107,7 +104,7 @@
     * CSRF対策としてJSON RPCのリクエストにX-REQUEST-WITHヘッダが無い場合はエラーとなるようにしました。
       これにより未対応の一部のツールが動かなくなります。
     * 配信開始時のURLでホスト名にIPアドレスを指定すると落ちる場合があったのを修正しました。(by plonk)
-  date: Thu, 29 Jan 2015 16:30:00 +0900
+  date: 2015-01-29 16:30:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.9.2.zip
   enclosures:
   - type: archive
@@ -116,7 +113,6 @@
   - type: installer
     url: http://www.pecastation.org/files/PeerCastStation-1.9.2.exe
     length: 2195345
-
 - name: Version 1.9.1 (2015年1月29日開発版)
   version: 1.9.1.0
   channel: dev
@@ -137,7 +133,7 @@
     * 視聴リクエストのtipにIPv6アドレスを指定すると落ちる場合があったのを修正しました。
     * JSON RPC APIで掲載中YPの情報が取得できていなかったのを修正しました。
     * エンコーダからのHTTP Pullで配信する時のUserAgentをNSPlayerに変更しました。(by shinji3)
-  date: Thu, 29 Jan 2015 23:50:00 +0900
+  date: 2015-01-29 23:50:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.9.1.zip
   enclosures:
   - type: archive
@@ -146,7 +142,6 @@
   - type: installer
     url: http://www.pecastation.org/files/PeerCastStation-1.9.1.exe
     length: 2025712
-
 - name: Version 1.9.0.2 (2014年10月25日開発版)
   version: 1.9.0.2
   channel: dev
@@ -155,7 +150,7 @@
 
     * UPnP有効時に落ちる場合があったのでライブラリ(Mono.Nat.dll)を更新しました。
     * mono 3.0.7以前で動かすと落ちていたのでライブラリ(Newtonsoft.json.dll)を更新しました。
-  date: Sat, 25 Oct 2014 23:50:00 +0900
+  date: 2014-10-25 23:50:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.9.0.2.zip
   enclosures:
   - type: archive
@@ -164,7 +159,6 @@
   - type: installer
     url: http://www.pecastation.org/files/PeerCastStation-1.9.0.2.exe
     length: 1919992
-
 - name: Version 1.9.0.1 (2014年10月20日開発版)
   version: 1.9.0.1
   channel: dev
@@ -180,7 +174,7 @@
     * 自動ポート開放が有効でUPnPやNAT-PMPに対応したルータがあった場合には設定画面でルータの外部アドレスを表示するようにしました。ルータがUPnP/NAT-PMPに対応していることを確認するのにご利用ください。
     * アップデート通知をクリックした時に、アップデートの内容が表示されなかったのを修正しました。
     * アップデートの内容表示が改行も書式もないテキストで表示されてしまっていたのを修正しました。
-  date: Mon, 20 Oct 2014 1:10:00 +0900
+  date: 2014-10-20 01:10:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.9.0.1.zip
   enclosures:
   - type: archive
@@ -189,7 +183,6 @@
   - type: installer
     url: http://www.pecastation.org/files/PeerCastStation-1.9.0.1.exe
     length: 1917036
-
 - name: Version 1.9.0 (2014年10月19日開発版)
   version: 1.9.0
   channel: dev
@@ -201,7 +194,7 @@
     * インストーラ版を追加しました。
     * アップデート通知時にはインストーラ版とzip版を選択してダウンロードできるようになりました。また、GUI版ではブラウザを介さずに直接ダウンロードするようにしました。次回の更新以降で有効になります。
     * RTMP配信時に一部のエンコーダで正常に配信できない場合があったのを修正しました(by niwakazoider)
-  date: Sun, 19 Oct 2014 19:00:00 +0900
+  date: 2014-10-19 19:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.9.0.zip
   enclosures:
   - type: archive
@@ -210,7 +203,6 @@
   - type: installer
     url: http://www.pecastation.org/files/PeerCastStation-1.9.0.exe
     length: 1924462
-
 - name: Version 1.8.0 (2014年8月3日開発版)
   version: 1.8.0
   channel: dev
@@ -220,7 +212,7 @@
     * 視聴時のアドレスにつくtipにIPアドレスだけでなくホスト名を指定してもリレーできるようにしました
     * 掲載用YPアドレスに不正なアドレスが指定されていると落ちる場合があったのを修正しました
     * ドキュメントを現状に合わせて更新しました
-  date: Sun, 3 Aug 2014 23:50:00 +0900
+  date: 2014-08-03 23:50:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.8.0-dev.zip
   enclosures:
   - type: archive
@@ -242,7 +234,7 @@
     * ライセンスに互換性がないライブラリを使っていたのを取り除きました
     * ファイルの実行ブロックを一括で解除するunblock.batを追加しました
     * その他いろいろと不具合の修正や使い勝手の向上をしました
-  date: Sun, 3 Aug 2014 23:50:00 +0900
+  date: 2014-08-03 23:50:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.8.0.zip
   enclosures:
   - type: archive
@@ -257,7 +249,7 @@
     * 設定画面にポートの開放チェックをするボタンを追加しました(GUI・HTML UIともに)
     * 配信開始時に、エンコーダからのデータが受信されていない状態でもYPに載ってしまうのを修正しました。そのかわりYPに載るのに最大30秒ほど時間がかかる可能性があります
     * 1.7.10.1に無用になったdllがまだ入っていたのを入らないようにしました
-  date: Sun, 29 Jun 2014 3:00:00 +0900
+  date: 2014-06-29 03:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.7.11.zip
   enclosures:
   - type: archive
@@ -275,7 +267,7 @@
     * GUIの再接続ボタンが切断になっていたのを修正しました
     * 無用になったdllが入っていたのを入らないようにしました
     * unblock.batで必要なdll全てのブロックが解除できていなかったのを修正しました
-  date: Sat, 7 Jun 2014 3:00:00 +0900
+  date: 2014-06-07 03:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.7.10.1.zip
   enclosures:
   - type: archive
@@ -303,7 +295,7 @@
     * YP掲載時にDirect接続ができない場合でもDirectと表示されるのを修正しました
     * 日本語設定のWindows以外では一部のチャンネル情報が文字化けするのを対処しました
     * ライセンスに互換性がないライブラリを使っていたのを取り除きました
-  date: Sat, 31 May 2014 23:55:00 +0900
+  date: 2014-05-31 23:55:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.7.10.zip
   enclosures:
   - type: archive
@@ -321,7 +313,7 @@
     * FLV、RTMP Source配信時に低ビットレートでは遅延がとても大きくなることがあるのを修正しました
     * 試聴しているチャンネルのデータが取得できていない時にプレイヤーの接続が切れるとCPUを無駄に食い潰すのを修正しました
     * ファイルの実行ブロックを一括で解除するunblock.batを追加しました
-  date: Sun, 16 Mar 2014 23:30:00 +0900
+  date: 2014-03-16 23:30:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.7.9.1.zip
   enclosures:
   - type: archive
@@ -338,7 +330,7 @@
     * RTMP Sourceでの配信時に接続待ち受けが0.0.0.0:1935固定だったのを、指定したアドレスのホストで接続待ち受けるようにしました。ポート番号省略時は1935(RTMPの標準)です
     * FLV、RTMP Source配信時に低ビットレートでは遅延がとても大きくなることがあるのを修正しました
     * ファイルの実行ブロックを一括で解除するunblock.batを追加しました
-  date: Sun, 16 Mar 2014 23:00:00 +0900
+  date: 2014-03-16 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.7.9.zip
   enclosures:
   - type: archive
@@ -351,7 +343,7 @@
     * 配信方法にRTMP Sourceを追加して、RTMP配信に対応したエンコーダからのFLV配信に対応しました
     * 設定に帯域測定ボタンを追加し、上り帯域の測定と設定を1ボタンで行えるようにしました
     * .NET3.5と.NET4(または4.5)がインストールされていた場合には.NET4で動作するようにしました
-  date: Tue, 11 Feb 2014 23:00:00 +0900
+  date: 2014-02-11 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.7.8.zip
   enclosures:
   - type: archive
@@ -367,7 +359,7 @@
     * データの送信エラーが起きた時にCPUをくいつぶす場合がまだあったのを修正しました
     * 壊れたデータを受け取った時に落ちることがあったのを修正しました
     * 新バージョンのチェックを2時間おきにやるようにしました
-  date: Tue, 31 Dec 2013 2:00:00 +0900
+  date: 2013-12-31 02:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.7.7.zip
   enclosures:
   - type: archive
@@ -390,7 +382,7 @@
     * 落ちた際に例外のログを書き出すようにしました。
       通常はC:\Users\(ユーザー名)\AppData\Roaming\PeerCastStation\exception.logに書き出されます。
       落ちた場合の報告にはこのファイルの内容を記載してもらうと解析が進みますのでお願いします
-  date: Mon, 23 Dec 2013 23:00:00 +0900
+  date: 2013-12-23 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.6.3.zip
   enclosures:
   - type: archive
@@ -401,7 +393,7 @@
   channel: dev
   notes: |
     * 1.7.5でリレー先が切れた時に落ちることがあったのを修正しました
-  date: Thu, 12 Dec 2013 23:00:00 +0900
+  date: 2013-12-12 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.7.6.zip
   enclosures:
   - type: archive
@@ -413,7 +405,7 @@
   notes: |
     * 1.7.4でリレー開始時にいくらかのデータを受信し損ねて正しく視聴できないことがあったのを修正しました
     * 受信処理の効率化をもうちょっと進めました
-  date: Wed, 11 Dec 2013 18:00:00 +0900
+  date: 2013-12-11 18:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.7.5.zip
   enclosures:
   - type: archive
@@ -428,7 +420,7 @@
     * 多量のデータを一度に送ろうとすると切れていたのを修正しました。最低でも16kbpsの帯域がないと切れます
     * 動画パケットの保持量を100パケットから5秒に変更しました
     * リレー時のパケット受信処理を効率化しました。パケット数が多いチャンネルでも処理が滞らなくなりました
-  date: Tue, 10 Dec 2013 23:00:00 +0900
+  date: 2013-12-10 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.7.4.zip
   enclosures:
   - type: archive
@@ -439,7 +431,7 @@
   channel: dev
   notes: |
     * リレー可能なアドレスが無いノードが接続してきた場合に落ちる場合があったのを修正しました
-  date: Sat, 30 Nov 2013 23:00:00 +0900
+  date: 2013-11-30 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.7.3.zip
   enclosures:
   - type: archive
@@ -452,7 +444,7 @@
     * 落ちた際に例外のログを書き出すようにしました。
       通常はC:\Users\(ユーザー名)\AppData\Roaming\PeerCastStation\exception.logに書き出されます。
       落ちた場合の報告にはこのファイルの内容を記載してもらうと解析が進みますのでお願いします
-  date: Sun, 17 Nov 2013 3:00:00 +0900
+  date: 2013-11-17 03:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.7.2.zip
   enclosures:
   - type: archive
@@ -468,7 +460,7 @@
     * チャンネル切断時などの通知表示を5秒に短縮しました
     * タスクトレイのアイコンにカーソルを合わせた時に名前が出るようにしました
     * LANの操作可能ポートがない時にタスクトレイからHTML UIやヘルプが表示できなかったのを修正しました
-  date: Sun, 27 Oct 2013 23:00:00 +0900
+  date: 2013-10-27 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.7.1.zip
   enclosures:
   - type: archive
@@ -486,7 +478,7 @@
     * 自分で配信しているチャンネルに対してリレーリクエストを出すと落ちるのを修正しました
     * swpcでチャンネルのbumpや切断が動いていなかったのを対策しました
     * JSON RPCのオブジェクトIDがおかしくなる可能性があるのを修正しました
-  date: Mon, 21 Oct 2013 23:00:00 +0900
+  date: 2013-10-21 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.7.0.zip
   enclosures:
   - type: archive
@@ -497,7 +489,7 @@
   channel: stable
   notes: |
     * リレー可能なアドレスが無いノードが接続してきた場合に落ちる場合があったのを修正しました
-  date: Sat, 30 Nov 2013 23:00:00 +0900
+  date: 2013-11-30 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.6.2.zip
   enclosures:
   - type: archive
@@ -526,7 +518,7 @@
     * /admin?cmd=viewxmlで表示されるXMLのチャンネル状態がPeerCastと合っていなかったのを修正しました。AirYPなどでも正しく認識されるようになります
     * 異常なHTTPリクエストを受け取った際に落ちることがあったのを修正しました
     * 外部からの視聴・操作にHTTPのBasic認証を設定できるようにしました。ポートの設定で「要認証」を有効にすると視聴と操作にのみBasic認証がかかります。今のところIDとパスワードは手動で設定できず自動生成のみになっています
-  date: Mon, 14 Oct 2013 23:00:00 +0900
+  date: 2013-10-14 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.6.0.zip
   enclosures:
   - type: archive
@@ -542,7 +534,7 @@
     * 総視聴/リレー数の表示がよくわからない値になることがあるのがついでに解消されました
     * リレーツリーの表示がよくわからないつながりになることがあるのもついでに解消されました
     * 下流へデータを送りきれないと判断して切断をする条件を3秒から10秒に緩和しました
-  date: Wed, 25 Sep 2013 23:00:00 +0900
+  date: 2013-09-25 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.5.3.zip
   enclosures:
   - type: archive
@@ -559,7 +551,7 @@
     * 処理されない例外があった場合に落ちる前にログに例外情報を吐くようにしました
     * GUIの表示を実行した時になるべく前面にウィンドウを持ってきて最小化も解除するようにしました
     * 外部ツールでウィンドウを表示させた時に真っ黒になるのに対処しました
-  date: Sun, 8 Sep 2013 23:00:00 +0900
+  date: 2013-09-08 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.5.2.zip
   enclosures:
   - type: archive
@@ -574,7 +566,7 @@
     * 再接続時に落ちることがあったのを修正しました
     * GUIを非表示のまま終了すると次回起動時に落ちることがあったのを修正しました
     * ヘルプページの表示がちょっとかわりました。目次がつきました
-  date: Sat, 7 Sep 2013 23:00:00 +0900
+  date: 2013-09-07 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.5.1.zip
   enclosures:
   - type: archive
@@ -593,7 +585,7 @@
     * 読み込めないプラグインがあった場合に起動しないのを修正しました。Monoでもファイルを消さずにGUI無しで起動します
     * PCP通信時に拡張バージョンとしてST150を出力するようにしました
     * 受信部を大幅に整理し、リレーの再接続などの安定化をしました
-  date: Wed, 4 Sep 2013 23:00:00 +0900
+  date: 2013-09-04 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.5.0.zip
   enclosures:
   - type: archive
@@ -611,7 +603,7 @@
     * HTML UIでのリレーツリー表示で常にローカルアドレスを表示するようになっていたのを修正しました
     * GUIのウィンドウの位置とサイズを保存するようにしました
     * 接続が切れているチャンネルに同時に複数の視聴要求がくると落ちることがあったのを修正しました
-  date: Sat, 13 Jul 2013 23:00:00 +0900
+  date: 2013-07-13 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.4.2.zip
   enclosures:
   - type: archive
@@ -629,7 +621,7 @@
     * リレー接続時に接続可能にもかかわらず接続失敗で終了してしまう場合があったのを修正しました
     * 視聴リクエストにつくtipパラメータに不正な値が設定されていた場合に落ちるのを修正しました
     * ログファイルがずっとロックされていたのを実際の書き込み中のみロックされるように変更しました
-  date: Wed, 19 Jun 2013 23:00:00 +0900
+  date: 2013-06-19 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.4.1.zip
   enclosures:
   - type: archive
@@ -647,7 +639,7 @@
     * -killと-multiの起動オプションに対応しました。pcypLiteの「終了(完全)」で正しく終了するようになります
     * リレーしていたチャンネルが終了した時や接続失敗した時に通知が出るようにしました
     * 設定保存がPeerCastStation正常終了時のみ行われていたのを、設定変更時にすぐ保存するようにしました
-  date: Wed, 29 May 2013 23:00:00 +0900
+  date: 2013-05-29 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.4.0.zip
   enclosures:
   - type: archive
@@ -660,7 +652,7 @@
     まだあったHTML UIの不具合を修正しました。
 
     * HTML UIの設定ページでその他の設定を変更しても全く反映されないのを修正しました
-  date: Wed, 08 May 2013 23:00:00 +0900
+  date: 2013-05-08 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.3.2.zip
   enclosures:
   - type: archive
@@ -674,7 +666,7 @@
 
     * HTML UIのチャンネル一覧ページで多くの操作がエラーになって動かなかったのを修正しました
     * User-AgentやServerをPeerCastStation/1.3.1.0のようなバージョンに即した値を出力するようにしました
-  date: Sun, 05 May 2013 18:00:00 +0900
+  date: 2013-05-05 18:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.3.1.zip
   enclosures:
   - type: archive
@@ -690,7 +682,7 @@
     * 接続一覧での表示が少し変更されました。詳しくはヘルプの使い方のページを見てください
     * 設定ファイルの内容が変更されました。ファイルの場所などは変更ありません
     * プラグインシステムの実装を変更しました。バージョン表示が少し変わりますが動作には何の影響もありません
-  date: Sat, 04 May 2013 00:00:00 +0900
+  date: 2013-05-04 00:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.3.0.zip
   enclosures:
   - type: archive
@@ -710,7 +702,7 @@
     * リレー接続で不正なデータを受信すると落ちることがあったのに(少し)対策しました
     * 視聴できないチャンネルへの視聴リクエストを受けつけると落ちるのを修正しました
     * GUIでログ表示の設定を変更しても反映されていなかったのを修正しました
-  date: Fri, 29 Mar 2013 23:00:00 +0900
+  date: 2013-03-29 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.2.1.zip
   enclosures:
   - type: archive
@@ -729,7 +721,7 @@
     * ウィンドウを起動時に開かない設定にするとリレー開始した時に落ちることがあったのを修正しました
     * monoの一部バージョンでHTML UIが動かないことがあるのに対処しました
     * 機能追加をやりやすくするために設定ファイルの保存場所および内容を変更しました。新旧の設定保存先はヘルプのその他を参照してください
-  date: Thu, 28 Feb 2013 23:00:00 +0900
+  date: 2013-02-28 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.2.0.zip
   enclosures:
   - type: archive
@@ -749,7 +741,7 @@
     * HTML UIでポート開放状況の表示が逆だった(ポート開いてる時にNGになってる)のを修正しました
     * viewxmlで取得できるxmlでチャンネル毎のuptimeとageの文字列がおかしかったのを修正しました
     * 一部のチャンネルでチャンネル情報が文字化けすることがあるのを仕方なく対処してやりました。本来はShift-JISなんかでチャンネル情報を流す方が悪い
-  date: Mon, 28 Jan 2013 23:00:00 +0900
+  date: 2013-01-28 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.1.0.zip
   enclosures:
   - type: archive
@@ -774,7 +766,7 @@
     * .NET4/4.5のみが入っている環境(つまり.NET3.5を入れていないWindows8)でも起動できるようにしました。たぶん
     * 31日版:新バージョンチェック用の日付が11月のままだったのを修正しました
     * 31日版:HTML UIで起動時間・チャンネルリレー時間の計算が間違っていたのを修正しました
-  date: Sun, 30 Dec 2012 2:00:00 +0900
+  date: 2012-12-30 02:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-1.0.0.zip
   enclosures:
   - type: archive
@@ -787,7 +779,7 @@
     * リレー要求を受け付けた際に新しく接続されたリレー先に多量のデータを集中して送ってしまっていたのを修正しました
     * GUIでチャンネル一覧と接続一覧にリレー可否状況を記号で表示するようにしました
     * エンコードが停止再開されたあとやチャンネルの位置が4GBを越えた場合も安定して視聴やリレーができるように改善しました
-  date: Thu, 29 Nov 2012 23:00:00 +0900
+  date: 2012-11-29 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-0.9.0.zip
   enclosures:
   - type: archive
@@ -805,7 +797,7 @@
     * GUIでYPのアドレス入力をしても追加できないことがあったのを修正しました
     * リレーや視聴してるチャンネルの位置が4GBを越えると止まってしまっていたのを修正しました
     * その他細かいバグ修正やコードの整理を行ないました
-  date: Mon, 29 Oct 2012 23:00:00 +0900
+  date: 2012-10-29 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-0.8.1.zip
   enclosures:
   - type: archive
@@ -821,7 +813,7 @@
     * FLVとMKVの配信に対応しました。ただし視聴側のPeerCast本体も対応している必要があります
     * 配信時にYPへの掲載状況を接続先リストに表示できるようにしました。再接続もできます
     * おはおはが終わってしまったので対応を外しました
-  date: Mon, 17 Sep 2012 16:00:00 +0900
+  date: 2012-09-17 16:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-0.8.0.zip
   enclosures:
   - type: archive
