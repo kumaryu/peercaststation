@@ -139,9 +139,9 @@ namespace PeerCastStation.UI.PortMapper
 
     public async Task<IPAddress> GetExternalAddressAsync(CancellationToken cancel_token)
     {
-      cancel_token.ThrowIfCancellationRequested();
       int tries = 1;
     retry:
+      cancel_token.ThrowIfCancellationRequested();
       using (var client = new UdpClient()) {
         var cancel_source = CancellationTokenSource.CreateLinkedTokenSource(
           new CancellationTokenSource(250*tries).Token,

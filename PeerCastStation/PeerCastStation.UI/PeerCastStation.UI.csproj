@@ -68,10 +68,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Mono.Nat\Mono.Nat\Mono.Nat.csproj">
-      <Project>{f5d74163-145f-47bf-83dc-d0e07249c6ca}</Project>
-      <Name>Mono.Nat</Name>
-    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj">
       <Project>{387996f5-e31d-4d92-bd86-8983c599f748}</Project>
       <Name>PeerCastStation.Core</Name>

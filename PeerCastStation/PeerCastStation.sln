@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Core", "PeerCastStation.Core\PeerCastStation.Core.csproj", "{387996F5-E31D-4D92-BD86-8983C599F748}"
 EndProject
@@ -64,8 +64,6 @@ EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "PeerCastStationInstaller", "PeerCastStationInstaller\PeerCastStationInstaller.wixproj", "{5F06EDA6-38C8-4BB7-8683-1EF94EE10290}"
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "PeerCastStationSetupBundle", "SetupBundle\PeerCastStationSetupBundle.wixproj", "{8887893D-66AA-4B0C-B222-FBAC46D94455}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Nat", "Mono.Nat\Mono.Nat\Mono.Nat.csproj", "{F5D74163-145F-47BF-83DC-D0E07249C6CA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -137,10 +135,6 @@ Global
 		{8887893D-66AA-4B0C-B222-FBAC46D94455}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{8887893D-66AA-4B0C-B222-FBAC46D94455}.Release|Any CPU.ActiveCfg = Release|x86
 		{8887893D-66AA-4B0C-B222-FBAC46D94455}.Release|Any CPU.Build.0 = Release|x86
-		{F5D74163-145F-47BF-83DC-D0E07249C6CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F5D74163-145F-47BF-83DC-D0E07249C6CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F5D74163-145F-47BF-83DC-D0E07249C6CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F5D74163-145F-47BF-83DC-D0E07249C6CA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
