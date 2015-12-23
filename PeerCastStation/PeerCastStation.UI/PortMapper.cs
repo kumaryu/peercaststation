@@ -108,7 +108,7 @@ namespace PeerCastStation.UI
 			timer.Start();
 		}
 
-		public void Dispose()
+    public void Dispose()
 		{
 			timer.Stop();
 			NatUtility.StopDiscovery();

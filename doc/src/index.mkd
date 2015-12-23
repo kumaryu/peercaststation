@@ -13,17 +13,15 @@ PeerCastStationはリメイク版PeerCastです。PeerCast.exeのかわりとし
 
 動作環境とインストール方法
 ------------------------
-WindowsではWindows XP SP3以降 + .NET Framework 3.5以降が必要です。
+WindowsではVista SP2以降 + .NET Framework 4.5.1以降が必要です。
 
-Windows以外ではmono 2.6.7以降があれば動くと思います。ただしGUIは使えません。
+Windows以外ではmono 3.0.0以降があれば動くと思います(なるべく新しいのを推奨)。ただしGUIは使えません。
 
-インストーラなどは無いので適当な場所にzipを展開してPeerCastStation.exeを起動してください。
-起動時にエラーが起きた場合は.NET Framework 3.5以降が入ってない可能性が高いです。[先にダウンロードしてインストールしてください。](http://www.microsoft.com/downloads/ja-jp/details.aspx?FamilyID=AB99342F-5D1A-413D-8319-81DA479AB0D7)
-Windows7だと最初っから入ってます。Windows8では.NET Framework 4.5がインストール済みなため、.NET Framework 3.5が入ってなくても動きます。
+Windowsではインストーラ版がおすすめです。必要なバージョンの.NET Frameworkが入っていなければインストーラ起動時にインストールします。zip版を使う場合は手動で必要な.NET Frameworkを入れてください。
 
 Windows以外の場合はmonoをインストールしてください。
-Linuxなどではパッケージマネージャから入れれば大丈夫なはずです。
-OSXなどでは[mono-projectからダウンロードして](http://www.go-mono.com/mono-downloads/download.html)インストールします(2.6.7以降ならどれでも)。あとはPeerCastStationのzipを適当な場所に展開して、ターミナルから
+Linuxなどではパッケージマネージャにあればそこから入れてください。
+OSXなどでは[mono-projectからダウンロードして](http://www.go-mono.com/mono-downloads/download.html)インストールします(なるべく新しいのを推奨します)。あとはPeerCastStationのzipを適当な場所に展開して、ターミナルから
 
     mono PeerCastStation.exe
 
