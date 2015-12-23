@@ -245,6 +245,7 @@ var SettingsViewModel = new function() {
   self.maxUpstreamRatePerChannel = ko.observable(null);
   self.checkBandwidthStatus      = ko.observable("");
   self.checkPortsStatus          = ko.observable("");
+  self.externalIPAddresses       = ko.observable("");
   self.inactiveChannelLimit      = ko.observable(null);
   self.channelCleanupMode        = ko.observable(null);
   self.portMapperEnabled         = ko.observable(null);
@@ -424,6 +425,11 @@ var SettingsViewModel = new function() {
           self.yellowPages,
           [0, self.yellowPages().length].concat(new_yps));
         updating = false;
+      }
+    });
+    PeerCast.getExternalIPAddresses(function(result) {
+      if (result) {
+        self.externalIPAddresses(result.join(", "));
       }
     });
   };

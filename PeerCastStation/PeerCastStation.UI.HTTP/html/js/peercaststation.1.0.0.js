@@ -169,6 +169,9 @@ PeerCast = {
   checkPorts: function(completed) {
     this.postRequest('checkPorts', null, completed);
   },
+  getExternalIPAddresses: function(completed) {
+    this.postRequest('getExternalIPAddresses', null, completed);
+  },
 
   checkUpdate: function(completed) {
     this.postRequest('checkUpdate', null, completed);

@@ -78,6 +78,10 @@
               <tr>
                 <td class="form-actions" colspan="8">
                   <label class="checkbox"><input type="checkbox" data-bind="checked:portMapperEnabled">ポート自動開放(UPnP/PMP-NAT)</label>
+                  <label>外部アドレス:
+                    <span data-bind="if:externalIPAddresses()==''">ルータ未発見</span>
+                    <span data-bind="text:externalIPAddresses"></span>
+                  </label>
                   <button class="btn" data-bind="click:checkPorts">ポート開放確認</button>
                   <span data-bind="text:checkPortsStatus"></span>
                 </td>
