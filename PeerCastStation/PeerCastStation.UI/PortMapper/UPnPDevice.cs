@@ -20,6 +20,7 @@ namespace PeerCastStation.UI.PortMapper
     private string location;
     public string ServiceType { get; private set; }
     public string USN { get; private set; }
+    public Guid DeviceUUID { get; private set; }
     public IPAddress DeviceAddress { get; private set; }
 
     private IPAddress GetInternalAddress()
@@ -35,12 +36,28 @@ namespace PeerCastStation.UI.PortMapper
         .FirstOrDefault();
     }
 
+    private static readonly System.Text.RegularExpressions.Regex UUIDPattern =
+      new System.Text.RegularExpressions.Regex(@"^uuid:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+    private Guid GetUUIDFromUSN(string usn)
+    {
+      Guid result = Guid.Empty;
+      var md = UUIDPattern.Match(usn);
+      if (md.Success &&
+          Guid.TryParse(md.Groups[1].Value, out result)) {
+        return result;
+      }
+      else {
+        return Guid.Empty;
+      }
+    }
+
     public UPnPDevice(IPAddress device_address, string location, string st, string usn)
     {
       this.DeviceAddress = device_address;
       this.location = location;
       this.ServiceType = st;
       this.USN = usn;
+      this.DeviceUUID = GetUUIDFromUSN(usn);
     }
 
     private Uri controlPointUrl = null;
@@ -244,7 +261,7 @@ namespace PeerCastStation.UI.PortMapper
       var result = await SendActionAsync("AddPortMapping", parameters, cancel_token);
       if (result.IsSucceeded) {
         if (lifetime==Timeout.InfiniteTimeSpan) {
-          return new MappedPort(this, protocol, port, port, DateTime.MaxValue);
+          return new MappedPort(this, protocol, port, port, DateTime.Now+TimeSpan.FromSeconds(604800));
         }
         else {
           return new MappedPort(this, protocol, port, port, DateTime.Now+lifetime);
@@ -342,7 +359,7 @@ namespace PeerCastStation.UI.PortMapper
           await client.SendAsync(msg, msg.Length, SSDPEndpoint);
         }
         if (client.Available==0 && !cancel_token.IsCancellationRequested) {
-          Thread.Sleep(250);
+          await Task.Delay(1000, cancel_token);
         }
         while (client.Available>0 && !cancel_token.IsCancellationRequested) {
           var result = await client.ReceiveAsync();
@@ -365,17 +382,23 @@ namespace PeerCastStation.UI.PortMapper
       return responses.Distinct();
     }
 
-    static readonly string[] SupportedServices = {
-      "urn:schemas-upnp-org:service:WANIPConnection:1",
-      "urn:schemas-upnp-org:service:WANPPPConnection:1",
+    class SupportedService {
+      public string Service;
+      public int    Priority;
+    }
+    static readonly SupportedService[] SupportedServices = {
+      new SupportedService { Service="urn:schemas-upnp-org:service:WANIPConnection:1", Priority=1 },
+      new SupportedService { Service="urn:schemas-upnp-org:service:WANPPPConnection:1", Priority=0 },
     };
 
     public async Task<IEnumerable<INatDevice>> DiscoverAsync(CancellationToken cancel_token)
     {
       var responses = await SSDPAsync(cancel_token);
       return responses
-        .Where(rsp => SupportedServices.Any(svc => svc==rsp.ST))
-        .Select(rsp => new UPnPDevice(rsp.RemoteEndPoint.Address, rsp.Location, rsp.ST, rsp.USN));
+        .Where(rsp => SupportedServices.Any(svc => svc.Service==rsp.ST))
+        .Select(rsp => new UPnPDevice(rsp.RemoteEndPoint.Address, rsp.Location, rsp.ST, rsp.USN))
+        .GroupBy(dev => dev.DeviceUUID)
+        .Select(group => group.OrderByDescending(dev => SupportedServices.First(svc => svc.Service==dev.ServiceType).Priority).First());
     }
 
   }
