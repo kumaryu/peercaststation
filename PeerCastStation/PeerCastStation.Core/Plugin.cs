@@ -5,8 +5,7 @@ using System.Collections.Generic;
 
 namespace PeerCastStation.Core
 {
-  public enum PluginPriority
-  {
+  public enum PluginPriority {
     Highest = -200,
     Higher  = -100,
     Normal  =    0,
@@ -14,19 +13,42 @@ namespace PeerCastStation.Core
     Lowest  =  200,
   }
 
+  [Flags]
+  public enum PluginType {
+    Unknown       = 0x00,
+    UserInterface = 0x01,
+    GUI           = 0x02,
+    Protocol      = 0x04,
+    Content       = 0x08,
+    Utility       = 0x10,
+    Automation    = 0x20,
+  }
+
   [AttributeUsage(AttributeTargets.Class)]
   public class PluginAttribute
     : Attribute
   {
+    public PluginType Type { get; private set; }
     public PluginPriority Priority { get; private set; }
 
-    public PluginAttribute(PluginPriority priority)
+    public PluginAttribute(PluginType type, PluginPriority priority)
     {
+      this.Type     = type;
       this.Priority = priority;
     }
 
+    public PluginAttribute(PluginPriority priority)
+      : this(PluginType.Unknown, priority)
+    {
+    }
+
+    public PluginAttribute(PluginType type)
+      : this(type, PluginPriority.Normal)
+    {
+    }
+
     public PluginAttribute()
-      : this(PluginPriority.Normal)
+      : this(PluginType.Unknown, PluginPriority.Normal)
     {
     }
   }
