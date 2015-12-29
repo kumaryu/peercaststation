@@ -16,9 +16,6 @@
 			<Component Id="Newtonsoft.Json.dll" Guid="*">
 				<File Id="Newtonsoft.Json.dll" Source="$(var.PeerCastStation.TargetDir)\Newtonsoft.Json.dll" />
 			</Component>
-			<Component Id="Mono.Nat.dll" Guid="*">
-				<File Id="Mono.Nat.dll" Source="$(var.PeerCastStation.TargetDir)\Mono.Nat.dll" />
-			</Component>
 			<Component Id="readme.txt" Guid="*">
 				<File Id="readme.txt" Source="$(var.PeerCastStation.ProjectDir)\readme.txt" />
 			</Component>

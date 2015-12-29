@@ -1,6 +1,5 @@
 @cd %~dp0
 echo. > PeerCastStation.exe:Zone.Identifier
-echo. > Mono.Nat.dll:Zone.Identifier
 echo. > Newtonsoft.Json.dll:Zone.Identifier
 echo. > PeerCastStation.ASF.dll:Zone.Identifier
 echo. > PeerCastStation.Core.dll:Zone.Identifier

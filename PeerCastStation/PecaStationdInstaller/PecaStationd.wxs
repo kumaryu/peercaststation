@@ -33,9 +33,6 @@
       <Component Id="Newtonsoft.Json.dll" Guid="*">
         <File Id="Newtonsoft.Json.dll" Source="$(var.PecaStationd.TargetDir)\Newtonsoft.Json.dll" />
       </Component>
-      <Component Id="Mono.Nat.dll" Guid="*">
-        <File Id="Mono.Nat.dll" Source="$(var.PecaStationd.TargetDir)\Mono.Nat.dll" />
-      </Component>
       <Component Id="PeerCastStation.config" Guid="*">
         <File Id="PeerCastStation.exe.config" Source="$(var.PeerCastStation.TargetDir)\PeerCastStation.exe.config" />
       </Component>

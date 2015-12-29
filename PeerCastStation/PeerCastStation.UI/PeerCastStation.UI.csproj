@@ -47,12 +47,16 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PCPPortChecker.cs" />
-    <Compile Include="PortMapper.cs" />
+    <Compile Include="PortMapperPlugin.cs" />
+    <Compile Include="PortMapper\NatDeviceDiscoverer.cs" />
+    <Compile Include="PortMapper\NatPmpDevice.cs" />
+    <Compile Include="PortMapper\UPnPDevice.cs" />
     <Compile Include="UISettings.cs" />
     <Compile Include="Updater.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -64,15 +68,12 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Mono.Nat\Mono.Nat\Mono.Nat.csproj">
-      <Project>{f5d74163-145f-47bf-83dc-d0e07249c6ca}</Project>
-      <Name>Mono.Nat</Name>
-    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj">
       <Project>{387996f5-e31d-4d92-bd86-8983c599f748}</Project>
       <Name>PeerCastStation.Core</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

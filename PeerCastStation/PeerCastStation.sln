@@ -75,8 +75,6 @@ Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "PeerCastStationInstaller", 
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "PeerCastStationSetupBundle", "SetupBundle\PeerCastStationSetupBundle.wixproj", "{8887893D-66AA-4B0C-B222-FBAC46D94455}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Nat", "Mono.Nat\Mono.Nat\Mono.Nat.csproj", "{F5D74163-145F-47BF-83DC-D0E07249C6CA}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PecaStationdDebug", "PecaStationdDebug\PecaStationdDebug.csproj", "{CB01F4C1-482B-45FD-9237-1ADEA259BB2B}"
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "PecaStationdInstaller", "PecaStationdInstaller\PecaStationdInstaller.wixproj", "{380048CC-CCEC-4864-B7B1-60E9360560B9}"
@@ -227,14 +225,6 @@ Global
 		{8887893D-66AA-4B0C-B222-FBAC46D94455}.Release|Any CPU.Build.0 = Release|x86
 		{8887893D-66AA-4B0C-B222-FBAC46D94455}.Release|x86.ActiveCfg = Release|x86
 		{8887893D-66AA-4B0C-B222-FBAC46D94455}.Release|x86.Build.0 = Release|x86
-		{F5D74163-145F-47BF-83DC-D0E07249C6CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F5D74163-145F-47BF-83DC-D0E07249C6CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F5D74163-145F-47BF-83DC-D0E07249C6CA}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{F5D74163-145F-47BF-83DC-D0E07249C6CA}.Debug|x86.Build.0 = Debug|Any CPU
-		{F5D74163-145F-47BF-83DC-D0E07249C6CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F5D74163-145F-47BF-83DC-D0E07249C6CA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F5D74163-145F-47BF-83DC-D0E07249C6CA}.Release|x86.ActiveCfg = Release|Any CPU
-		{F5D74163-145F-47BF-83DC-D0E07249C6CA}.Release|x86.Build.0 = Release|Any CPU
 		{CB01F4C1-482B-45FD-9237-1ADEA259BB2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CB01F4C1-482B-45FD-9237-1ADEA259BB2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CB01F4C1-482B-45FD-9237-1ADEA259BB2B}.Debug|x86.ActiveCfg = Debug|Any CPU
