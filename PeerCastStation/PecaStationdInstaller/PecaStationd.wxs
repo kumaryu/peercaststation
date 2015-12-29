@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:firewall="http://schemas.microsoft.com/wix/FirewallExtension">
+  <Fragment>
+    <Icon Id="PecaStationd.exe" SourceFile="$(var.PecaStationd.TargetDir)\PecaStationd.exe"/>
+    <ComponentGroup Id="PecaStationd" Directory="INSTALLFOLDER">
+      <Component Id="PecaStationd.exe" Guid="*">
+        <File Id="PecaStationd.exe" Source="$(var.PecaStationd.TargetDir)\PecaStationd.exe" KeyPath="yes">
+          <firewall:FirewallException Id="PecaStationd.exe.firewall" Name="PeerCastStation Service" Scope="any" IgnoreFailure="yes"/>
+        </File>
+        <ServiceInstall Id="ServiceInstall"
+                        Type="ownProcess"
+                        Name="PeerCastStationService"
+                        DisplayName="PeerCastStation Service"
+                        Description="PeerCastStation Service"
+                        ErrorControl="normal"
+                        Start="auto"
+                        Interactive="no"
+                        Vital="yes"/>
+        <ServiceControl Id="StartService"
+                        Start="install"
+                        Stop="both"
+                        Remove="uninstall"
+                        Name="PeerCastStationService"
+                        Wait="yes"/>
+      </Component>
+      <Component Id="PecaStationd.config" Guid="*">
+        <File Id="PecaStationd.exe.config" Source="$(var.PecaStationd.TargetDir)\PecaStationd.exe.config" />
+      </Component>
+      <Component Id="PeerCastStation.exe" Guid="*">
+        <File Id="PeerCastStation.exe" Source="$(var.PecaStationd.TargetDir)\PeerCastStation.exe" />
+      </Component>
+      <Component Id="Newtonsoft.Json.dll" Guid="*">
+        <File Id="Newtonsoft.Json.dll" Source="$(var.PecaStationd.TargetDir)\Newtonsoft.Json.dll" />
+      </Component>
+      <Component Id="PeerCastStation.config" Guid="*">
+        <File Id="PeerCastStation.exe.config" Source="$(var.PeerCastStation.TargetDir)\PeerCastStation.exe.config" />
+      </Component>
+      <Component Id="readme.txt" Guid="*">
+        <File Id="readme.txt" Source="$(var.PeerCastStation.ProjectDir)\readme.txt" />
+      </Component>
+      <Component Id="LICENSE.txt" Guid="*">
+        <File Id="LICENSE.txt" Source="$(var.PeerCastStation.ProjectDir)\LICENSE.txt" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

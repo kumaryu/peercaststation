@@ -3,10 +3,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <ProductVersion>3.8</ProductVersion>
-    <ProjectGuid>5f06eda6-38c8-4bb7-8683-1ef94ee10290</ProjectGuid>
+    <ProductVersion>3.10</ProductVersion>
+    <ProjectGuid>380048cc-ccec-4864-b7b1-60e9360560b9</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
-    <OutputName>PeerCastStationInstaller</OutputName>
+    <OutputName>PecaStationdInstaller</OutputName>
     <OutputType>Package</OutputType>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
@@ -20,45 +20,44 @@
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <Cultures>ja-JP</Cultures>
-    <LinkerAdditionalOptions>
-    </LinkerAdditionalOptions>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
-    <DefineConstants>Debug</DefineConstants>
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
-    <Cultures>ja-JP</Cultures>
-    <LinkerAdditionalOptions />
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
-    <DefineConstants>Debug</DefineConstants>
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
-    <Cultures>ja-JP</Cultures>
-    <LinkerAdditionalOptions />
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="PeerCastStation.ASF.wxs" />
-    <Compile Include="PeerCastStation.Core.wxs" />
-    <Compile Include="PeerCastStation.FLV.wxs" />
-    <Compile Include="PeerCastStation.HTTP.wxs" />
-    <Compile Include="PeerCastStation.MKV.wxs" />
-    <Compile Include="PeerCastStation.PCP.wxs" />
-    <Compile Include="PeerCastStation.UI.HTTP.wxs" />
-    <Compile Include="PeerCastStation.UI.wxs" />
-    <Compile Include="PeerCastStation.WPF.wxs" />
-    <Compile Include="PeerCastStation.wxs" />
+    <Compile Include="..\PeerCastStationInstaller\PeerCastStation.ASF.wxs">
+      <Link>PeerCastStation.ASF.wxs</Link>
+    </Compile>
+    <Compile Include="..\PeerCastStationInstaller\PeerCastStation.Core.wxs">
+      <Link>PeerCastStation.Core.wxs</Link>
+    </Compile>
+    <Compile Include="..\PeerCastStationInstaller\PeerCastStation.FLV.wxs">
+      <Link>PeerCastStation.FLV.wxs</Link>
+    </Compile>
+    <Compile Include="..\PeerCastStationInstaller\PeerCastStation.HTTP.wxs">
+      <Link>PeerCastStation.HTTP.wxs</Link>
+    </Compile>
+    <Compile Include="..\PeerCastStationInstaller\PeerCastStation.MKV.wxs">
+      <Link>PeerCastStation.MKV.wxs</Link>
+    </Compile>
+    <Compile Include="..\PeerCastStationInstaller\PeerCastStation.PCP.wxs">
+      <Link>PeerCastStation.PCP.wxs</Link>
+    </Compile>
+    <Compile Include="..\PeerCastStationInstaller\PeerCastStation.UI.HTTP.wxs">
+      <Link>PeerCastStation.UI.HTTP.wxs</Link>
+    </Compile>
+    <Compile Include="..\PeerCastStationInstaller\PeerCastStation.UI.wxs">
+      <Link>PeerCastStation.UI.wxs</Link>
+    </Compile>
+    <Compile Include="PecaStationd.wxs" />
     <Compile Include="Product.wxs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\PecaStationd\PecaStationd.csproj">
+      <Name>PecaStationd</Name>
+      <Project>{6bb358e2-a9eb-453c-aaba-5080dddb3b86}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.ASF\PeerCastStation.ASF.csproj">
       <Name>PeerCastStation.ASF</Name>
       <Project>{dee84338-9849-4a90-8f1c-7bd6d88e3c2d}</Project>
@@ -123,14 +122,6 @@
       <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
       <RefTargetDir>INSTALLFOLDER</RefTargetDir>
     </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.WPF\PeerCastStation.WPF.csproj">
-      <Name>PeerCastStation.WPF</Name>
-      <Project>{5ea68141-ac06-428b-9526-a6835e0cc2b2}</Project>
-      <Private>True</Private>
-      <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
-      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
-    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation\PeerCastStation.csproj">
       <Name>PeerCastStation</Name>
       <Project>{3d030f73-33a1-4fef-9a3f-d8cd34fc63a2}</Project>
@@ -141,13 +132,17 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <WixExtension Include="WixFirewallExtension">
-      <HintPath>$(WixExtDir)\WixFirewallExtension.dll</HintPath>
-      <Name>WixFirewallExtension</Name>
+    <WixExtension Include="WixUtilExtension">
+      <HintPath>$(WixExtDir)\WixUtilExtension.dll</HintPath>
+      <Name>WixUtilExtension</Name>
     </WixExtension>
     <WixExtension Include="WixUIExtension">
       <HintPath>$(WixExtDir)\WixUIExtension.dll</HintPath>
       <Name>WixUIExtension</Name>
+    </WixExtension>
+    <WixExtension Include="WixFirewallExtension">
+      <HintPath>$(WixExtDir)\WixFirewallExtension.dll</HintPath>
+      <Name>WixFirewallExtension</Name>
     </WixExtension>
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" />

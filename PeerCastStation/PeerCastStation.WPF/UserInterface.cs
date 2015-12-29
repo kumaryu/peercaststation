@@ -21,7 +21,7 @@ using PeerCastStation.WPF.Properties;
 
 namespace PeerCastStation.WPF
 {
-  [Plugin]
+  [Plugin(PluginType.GUI)]
   public class UserInterface
     : PluginBase,
       IUserInterfacePlugin
