@@ -1,4 +1,29 @@
 ---
+- name: Version 2.1.2 (2015年12月29日開発版)
+  version: 2.1.2.0
+  channel: dev
+  notes: |
+    UPnPでのポート開放を作り直しました。
+    サービス版のPecaStationd.exeを追加しました。
+    サービスが何か分からない人には関係ないので気にしないください。
+
+    * UPnP・NAT-PMPでのポート開放を作り直しました
+    * サービス版のPecaStationd.exeを追加しました。
+      Windowsではサービス版インストーラを使う必要があります。
+      Monoではzip版のPecaStationd.exeをmono-serviceで実行することができます。
+  date: 2015-12-29T13:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.1.2.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.1.2.zip
+    length: 1614484
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.1.2.exe
+    length: 2245589
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.1.2.msi
+    length: 2007040
+
 - name: Version 2.1.1 (2015年12月12日開発版)
   version: 2.1.1.0
   channel: dev
