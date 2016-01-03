@@ -7,96 +7,58 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
-using System.Xml;
 using System.Xml.Linq;
 using System.Net.NetworkInformation;
+using PeerCastStation.Core;
 
 namespace PeerCastStation.UI.PortMapper
 {
-  public class UPnPDevice
-    : INatDevice
+  public class UPnPServiceDescription
   {
-    public static readonly string PortMappingDescription = "PeerCastStation";
-    private string location;
+    public string DeviceName { get; private set; }
+    public string DeviceType { get; private set; }
+    public string UDN { get; private set; }
+    public string ServiceId { get; private set; }
     public string ServiceType { get; private set; }
-    public string USN { get; private set; }
-    public Guid DeviceUUID { get; private set; }
-    public IPAddress DeviceAddress { get; private set; }
-
-    private IPAddress GetInternalAddress()
+    public Uri ControlUrl { get; private set; }
+    public Uri EventSubUrl { get; private set; }
+    public Uri SCPDUrl { get; private set; }
+    public UPnPServiceDescription(string device_name, string device_type, string udn, string service_id, string service_type, Uri control_url, Uri event_sub_url, Uri scpd_url)
     {
-      return NetworkInterface.GetAllNetworkInterfaces()
-        .Where(intf => intf.OperationalStatus==OperationalStatus.Up)
-        .Select(intf => intf.GetIPProperties())
-        .Where(ipprop => ipprop.GatewayAddresses.Any(addr => addr.Address.Equals(this.DeviceAddress)))
-        .Where(ipprop => ipprop.UnicastAddresses.Count>0)
-        .SelectMany(ipprop => ipprop.UnicastAddresses
-            .Select(addr => addr.Address)
-            .Where(addr => addr.AddressFamily==AddressFamily.InterNetwork))
-        .FirstOrDefault();
+      this.DeviceName  = device_name;
+      this.DeviceType  = device_type;
+      this.UDN         = udn;
+      this.ServiceId   = service_id;
+      this.ServiceType = service_type;
+      this.ControlUrl  = control_url;
+      this.EventSubUrl = event_sub_url;
+      this.SCPDUrl     = scpd_url;
+    }
+    public override bool Equals(object obj)
+    {
+      if (obj==null) return false;
+      if (this.GetType()!=obj.GetType()) return false;
+      if (ReferenceEquals(this, obj)) return true;
+      var x = ((UPnPServiceDescription)obj);
+      return this.UDN==x.UDN && this.ServiceId==x.ServiceId;
     }
 
-    private static readonly System.Text.RegularExpressions.Regex UUIDPattern =
-      new System.Text.RegularExpressions.Regex(@"^uuid:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
-    private Guid GetUUIDFromUSN(string usn)
+    public override int GetHashCode()
     {
-      Guid result = Guid.Empty;
-      var md = UUIDPattern.Match(usn);
-      if (md.Success &&
-          Guid.TryParse(md.Groups[1].Value, out result)) {
-        return result;
-      }
-      else {
-        return Guid.Empty;
-      }
+      if (String.IsNullOrEmpty(this.UDN) ||
+          String.IsNullOrEmpty(this.ServiceId)) return 0;
+      return (this.UDN+this.ServiceId).GetHashCode();
     }
+  }
 
-    public UPnPDevice(IPAddress device_address, string location, string st, string usn)
+  public class UPnPService
+  {
+    private Logger logger;
+    public UPnPServiceDescription ServiceDescription { get; private set; }
+    public UPnPService(UPnPServiceDescription service_desc)
     {
-      this.DeviceAddress = device_address;
-      this.location = location;
-      this.ServiceType = st;
-      this.USN = usn;
-      this.DeviceUUID = GetUUIDFromUSN(usn);
-    }
-
-    private Uri controlPointUrl = null;
-    private async Task<Uri> GetControlPointUrl(CancellationToken cancel_token)
-    {
-      if (controlPointUrl!=null) return controlPointUrl;
-      using (var client=new HttpClient()) {
-        var response = await client.GetAsync(this.location, cancel_token);
-        if (!response.IsSuccessStatusCode) {
-          throw new HttpErrorException(response.StatusCode, response.ReasonPhrase);
-        }
-        var doc = XDocument.Load(await response.Content.ReadAsStreamAsync());
-        var urlbase = doc.Descendants()
-          .Where(node => node.Name==XName.Get("URLBase", "urn:schemas-upnp-org:device-1-0"))
-          .SingleOrDefault();
-        var baseurl = urlbase==null ? this.location : urlbase.Value;
-        var control_url = doc.Descendants()
-          .Where(node => node.Parent!=null)
-          .Where(node => node.Name==XName.Get("controlURL", "urn:schemas-upnp-org:device-1-0"))
-          .Where(node => node.Parent.Descendants().Any(
-            sub => sub.Name==XName.Get("serviceType", "urn:schemas-upnp-org:device-1-0") &&
-                   sub.Value==this.ServiceType))
-          .SingleOrDefault();
-        if (control_url==null) {
-          throw new InvalidDataException();
-        }
-        var url = new Uri(control_url.Value, UriKind.RelativeOrAbsolute);
-        if (url.IsAbsoluteUri) {
-          controlPointUrl = url;
-        }
-        else {
-          controlPointUrl = new Uri(new Uri(this.location), url);
-        }
-        return controlPointUrl;
-      }
-    }
-
-    public string Name {
-      get { return location; }
+      this.logger = new Logger(this.GetType());
+      this.ServiceDescription = service_desc;
     }
 
     public class HttpErrorException
@@ -123,7 +85,7 @@ namespace PeerCastStation.UI.PortMapper
       }
     }
 
-    private class ActionResult
+    public class ActionResult
     {
       public string Action { get; private set; }
       public bool IsSucceeded { get; private set; }
@@ -155,33 +117,35 @@ namespace PeerCastStation.UI.PortMapper
       }
     }
 
-    private XmlDocument CreateActionRequest(string action, Dictionary<string,string> parameters)
+    private XDocument CreateActionRequest(string action, Dictionary<string,string> parameters)
     {
-      var doc = new XmlDocument();
-      var root = doc.CreateElement("s:Envelope", "http://schemas.xmlsoap.org/soap/envelope/");
-      root.SetAttribute("s:encodingStyle", "http://schemas.xmlsoap.org/soap/encoding/");
-      var body = doc.CreateElement("s:Body", "http://schemas.xmlsoap.org/soap/envelope/");
-      var act = doc.CreateElement("u", action, this.ServiceType);
-      foreach (var kv in parameters) {
-        var param = doc.CreateElement(kv.Key);
-        param.AppendChild(doc.CreateTextNode(kv.Value));
-        act.AppendChild(param);
-      }
-      body.AppendChild(act);
-      root.AppendChild(body);
-      doc.AppendChild(root);
+      var ns_s = XNamespace.Get("http://schemas.xmlsoap.org/soap/envelope/");
+      var ns_u = XNamespace.Get(this.ServiceDescription.ServiceType);
+      var doc = new XDocument(
+        new XElement(ns_s+"Envelope",
+          new XAttribute(XNamespace.Xmlns+"s", ns_s),
+          new XElement(ns_s+"Body",
+            new XElement(ns_u+action,
+              new XAttribute(XNamespace.Xmlns+"u", ns_u),
+              parameters.Select(kv => new XElement(XName.Get(kv.Key), kv.Value))
+            )
+          )
+        )
+      );
       return doc;
     }
 
     private async Task<ActionResult> ParseActionResponse(string action, HttpResponseMessage msg)
     {
       if (msg.IsSuccessStatusCode) {
+        logger.Info("UPnP Action {0} Success", action);
         var doc = XDocument.Load(await msg.Content.ReadAsStreamAsync());
         var results = doc.Descendants()
           .Where(node => node.Parent!=null)
-          .Where(node => node.Parent.Name==XName.Get(action+"Response", this.ServiceType));
+          .Where(node => node.Parent.Name==XName.Get(action+"Response", this.ServiceDescription.ServiceType));
         var parameters = new Dictionary<string, string>();
         foreach (var param in results) {
+          logger.Debug("Param {0}:{1}", param.Name, param.Value);
           parameters.Add(param.Name.LocalName, param.Value);
         }
         return new ActionResult(action, parameters);
@@ -194,41 +158,106 @@ namespace PeerCastStation.UI.PortMapper
         var error_description = doc.Descendants()
           .Where(node => node.Name==XName.Get("errorDescription", "urn:schemas-upnp-org:control-1-0"))
           .Single();
+        logger.Info("UPnP Action {0} Error, code:{1}, descripion:{2}", action, error_code, error_description);
         return new ActionResult(action, Int32.Parse(error_code.Value), error_description.Value);
       }
       else {
+        logger.Info("UPnP Action {0} Other Error, status code:{1}}", action, msg.StatusCode);
         return new ActionResult(action, msg.StatusCode, msg.ReasonPhrase);
       }
     }
 
-    private async Task<ActionResult> SendActionAsync(string action, Dictionary<string, string> parameters, CancellationToken cancel_token)
+    public async Task<ActionResult> SendActionAsync(string action, Dictionary<string, string> parameters, CancellationToken cancel_token)
     {
       try {
-        var controlpoint = await GetControlPointUrl(cancel_token);
         var request = CreateActionRequest(action, parameters);
         var writer = new StringWriter();
         request.Save(writer);
 
-        var content = new StringContent(writer.ToString(), System.Text.Encoding.UTF8, "text/xml");
-        content.Headers.Add("SOAPACTION", this.ServiceType+"#"+action);
-
-        using (var client=new HttpClient()) {
-          return await ParseActionResponse(
-              action,
-              await client.PostAsync(controlpoint, content, cancel_token));
+        logger.Debug("Sending UPnP Action {0} to {1}", this.ServiceDescription.ServiceType+"#"+action, this.ServiceDescription.ControlUrl);
+        try {
+          var content = new StringContent(writer.ToString(), System.Text.Encoding.UTF8, "text/xml");
+          content.Headers.Add("SOAPACTION", this.ServiceDescription.ServiceType+"#"+action);
+          using (var client=new HttpClient()) {
+            return await ParseActionResponse(
+                action,
+                await client.PostAsync(this.ServiceDescription.ControlUrl, content, cancel_token));
+          }
+        }
+        catch (Exception e) {
+          return null;
         }
       }
       catch (OperationCanceledException e) {
         throw e;
       }
-      catch (Exception e) {
-        return new ActionResult(action, e);
-      }
     }
 
-    private Task<ActionResult> SendActionAsync(string action, CancellationToken cancel_token)
+    public Task<ActionResult> SendActionAsync(string action, CancellationToken cancel_token)
     {
       return SendActionAsync(action, new Dictionary<string, string>(), cancel_token);
+    }
+
+    public override bool Equals(object obj)
+    {
+      if (obj==null) return false;
+      if (this.GetType()!=obj.GetType()) return false;
+      if (ReferenceEquals(this, obj)) return true;
+      var x = ((UPnPService)obj);
+      return this.ServiceDescription.UDN==x.ServiceDescription.UDN &&
+             this.ServiceDescription.ServiceId==x.ServiceDescription.ServiceId;
+    }
+
+    public override int GetHashCode()
+    {
+      if (String.IsNullOrEmpty(this.ServiceDescription.UDN) ||
+          String.IsNullOrEmpty(this.ServiceDescription.ServiceId)) return 0;
+      return (this.ServiceDescription.UDN+this.ServiceDescription.ServiceId).GetHashCode();
+    }
+
+    public override string ToString()
+    {
+      return String.Format("{0},{1}", ServiceDescription.DeviceName, ServiceDescription.ServiceId);
+    }
+  }
+
+  public class WANConnectionService
+    : UPnPService, INatDevice
+  {
+    public static readonly string PortMappingDescription = "PeerCastStation";
+
+    public string Name {
+      get { return this.ToString(); }
+    }
+
+    private bool IsOnSameNetwork(IPAddress mask, IPAddress addr1, IPAddress addr2)
+    {
+      if (addr1==null || addr2==null) return false;
+      if (addr1==addr2) return true;
+      if (mask.AddressFamily!=addr1.AddressFamily || mask.AddressFamily!=addr2.AddressFamily) return false;
+      var bytes1 = mask.GetAddressBytes().Zip(addr1.GetAddressBytes(), (a,b) => a & b);
+      var bytes2 = mask.GetAddressBytes().Zip(addr2.GetAddressBytes(), (a,b) => a & b);
+      return bytes1.SequenceEqual(bytes2);
+    }
+
+    private async Task<IPAddress> GetInternalAddressAsync()
+    {
+      var dev_addr = (await Dns.GetHostAddressesAsync(ServiceDescription.ControlUrl.DnsSafeHost))
+        .Where(addr => addr.AddressFamily==AddressFamily.InterNetwork)
+        .First();
+      return NetworkInterface.GetAllNetworkInterfaces()
+        .Where(intf => intf.OperationalStatus==OperationalStatus.Up)
+        .Select(intf => intf.GetIPProperties())
+        .SelectMany(ipprop => ipprop.UnicastAddresses)
+        .Where(addrinfo => addrinfo.Address.AddressFamily==AddressFamily.InterNetwork)
+        .Where(addrinfo => IsOnSameNetwork(addrinfo.IPv4Mask, addrinfo.Address, dev_addr))
+        .Select(addrinfo => addrinfo.Address)
+        .FirstOrDefault();
+    }
+
+    public WANConnectionService(UPnPServiceDescription service_desc)
+      : base(service_desc)
+    {
     }
 
     public async Task<IPAddress> GetExternalAddressAsync(CancellationToken cancel_token)
@@ -253,7 +282,7 @@ namespace PeerCastStation.UI.PortMapper
         { "NewExternalPort",   port.ToString() },
         { "NewProtocol",       protocol==MappingProtocol.TCP ? "TCP" : "UDP" },
         { "NewInternalPort",   port.ToString() },
-        { "NewInternalClient", GetInternalAddress().ToString() },
+        { "NewInternalClient", (await GetInternalAddressAsync()).ToString() },
         { "NewEnabled",        "1" },
         { "NewPortMappingDescription", PortMappingDescription },
         { "NewLeaseDuration",  "0" },
@@ -281,26 +310,72 @@ namespace PeerCastStation.UI.PortMapper
       };
       await SendActionAsync("DeletePortMapping", parameters, cancel_token);
     }
+  }
 
-    public override bool Equals(object obj)
+  public class WANCommonInterfaceConfigService
+    : UPnPService
+  {
+    public WANCommonInterfaceConfigService(UPnPServiceDescription service_desc)
+      : base(service_desc)
     {
-      if (obj==null) return false;
-      if (this.GetType()!=obj.GetType()) return false;
-      if (ReferenceEquals(this, obj)) return true;
-      return this.USN==((UPnPDevice)obj).USN;
     }
 
-    public override int GetHashCode()
+    public enum WANAccessType {
+      Unknown = 0,
+      POTS,
+      DSL,
+      Cable,
+      Ethernet,
+    }
+
+    public enum PhysicalLinkStatus {
+      Unknown = 0,
+      Up,
+      Down,
+      Initializing,
+      Unavailable,
+    }
+
+    public class CommonLinkProperties
     {
-      if (String.IsNullOrEmpty(this.USN)) return 0;
-      return this.USN.GetHashCode();
+      public WANAccessType WANAccessType { get; private set; }
+      public int Layer1UpstreamMaxBitRate { get; private set; }
+      public int Layer1DownstreamMaxBitRate { get; private set; }
+      public PhysicalLinkStatus PhysicalLinkStatus { get; private set; }
+      public CommonLinkProperties(
+        WANAccessType wan_access_type,
+        int layer1_upstream_max_bitrate,
+        int layer1_downstream_max_bitrate,
+        PhysicalLinkStatus physical_link_status)
+      {
+        this.WANAccessType              = wan_access_type;
+        this.Layer1UpstreamMaxBitRate   = layer1_upstream_max_bitrate;
+        this.Layer1DownstreamMaxBitRate = layer1_downstream_max_bitrate;
+        this.PhysicalLinkStatus         = physical_link_status;
+      }
+    }
+
+    public async Task<CommonLinkProperties> GetCommonLinkProperties(CancellationToken cancel_token)
+    {
+      var result = await SendActionAsync("GetCommonLinkProperties", cancel_token);
+      if (!result.IsSucceeded) return null;
+      string value;
+      WANAccessType wan_access_type = WANAccessType.Unknown;
+      if (result.Parameters.TryGetValue("NewWANAccessType", out value)) Enum.TryParse(value, out wan_access_type);
+      int layer1_upstream_max_bitrate = 0;
+      if (result.Parameters.TryGetValue("NewLayer1UpstreamMaxBitRate", out value)) Int32.TryParse(value, out layer1_upstream_max_bitrate);
+      int layer1_downstream_max_bitrate = 0;
+      if (result.Parameters.TryGetValue("NewLayer1DownstreamMaxBitRate", out value)) Int32.TryParse(value, out layer1_downstream_max_bitrate);
+      PhysicalLinkStatus physical_link_status = PhysicalLinkStatus.Unknown;
+      if (result.Parameters.TryGetValue("NewPhysicalLinkStatus", out value)) Enum.TryParse(value, out physical_link_status);
+      return new CommonLinkProperties(wan_access_type, layer1_upstream_max_bitrate, layer1_downstream_max_bitrate, physical_link_status);
     }
   }
 
-  public class UPnPDeviceDiscoverer
-    : INatDeviceDiscoverer
+  class SSDPDiscoverer
   {
     static readonly IPEndPoint SSDPEndpoint = new IPEndPoint(IPAddress.Parse("239.255.255.250"), 1900);
+    private static readonly Logger logger = new Logger(typeof(SSDPDiscoverer));
 
     class SSDPResponse
     {
@@ -344,7 +419,7 @@ namespace PeerCastStation.UI.PortMapper
       }
     }
 
-    private async Task<IEnumerable<SSDPResponse>> SSDPAsync(CancellationToken cancel_token)
+    private async Task<IEnumerable<SSDPResponse>> SSDPAsync(IPAddress bind_addr, CancellationToken cancel_token)
     {
       var msg = System.Text.Encoding.ASCII.GetBytes(
         "M-SEARCH * HTTP/1.1\r\n" +
@@ -354,7 +429,7 @@ namespace PeerCastStation.UI.PortMapper
         "ST: ssdp:all\r\n\r\n"
       );
       var responses = new List<SSDPResponse>();
-      using (var client=new UdpClient()) {
+      using (var client=new UdpClient(new IPEndPoint(bind_addr, 0))) {
         for (int i=0; i<3; i++) {
           await client.SendAsync(msg, msg.Length, SSDPEndpoint);
         }
@@ -376,31 +451,136 @@ namespace PeerCastStation.UI.PortMapper
             var value = md.Groups[2].Value.Trim();
             headers.Add(key.ToUpperInvariant(), value);
           }
-          responses.Add(new SSDPResponse(result.RemoteEndPoint, headers));
+          var rsp = new SSDPResponse(result.RemoteEndPoint, headers);
+          logger.Debug("SSDP Found {0} at {1}", rsp.ST, rsp.Location);
+          responses.Add(rsp);
+          if (client.Available==0 && !cancel_token.IsCancellationRequested) {
+            await Task.Delay(100, cancel_token);
+          }
         }
       }
       return responses.Distinct();
     }
 
+    private IEnumerable<IPAddress> GetInternalAddresses()
+    {
+      return NetworkInterface.GetAllNetworkInterfaces()
+        .Where(intf => intf.OperationalStatus==OperationalStatus.Up)
+        .Select(intf => intf.GetIPProperties())
+        .Where(ipprop => ipprop.UnicastAddresses.Count>0)
+        .SelectMany(ipprop => ipprop.UnicastAddresses
+            .Select(addr => addr.Address)
+            .Where(addr => addr.AddressFamily==AddressFamily.InterNetwork));
+    }
+
+    private Uri MakeUrl(string base_url, string rel_url)
+    {
+      if (rel_url==null) return null;
+      var url = new Uri(rel_url, UriKind.RelativeOrAbsolute);
+      return url.IsAbsoluteUri ? url : new Uri(new Uri(base_url), url);
+    }
+
+    private static readonly XNamespace DeviceNS = "urn:schemas-upnp-org:device-1-0";
+    public async Task<IEnumerable<UPnPServiceDescription>> GetUPnPServiceAsync(string location, CancellationToken cancel_token)
+    {
+      using (var client=new HttpClient()) {
+        var response = await client.GetAsync(location, cancel_token);
+        var doc = XDocument.Load(await response.Content.ReadAsStreamAsync());
+        var urlbase = doc.Descendants(DeviceNS+"URLBase").SingleOrDefault();
+        var baseurl = urlbase==null ? location : urlbase.Value;
+        var devices = doc.Descendants(DeviceNS+"device");
+        return devices.SelectMany(dev => {
+          var friendly_name = dev.Elements(DeviceNS+"friendlyName").Select(elt => elt.Value).SingleOrDefault();
+          var device_type   = dev.Elements(DeviceNS+"deviceType").Select(elt => elt.Value).SingleOrDefault();
+          var udn           = dev.Elements(DeviceNS+"UDN").Select(elt => elt.Value).SingleOrDefault();
+          return dev.Elements(DeviceNS+"serviceList").SelectMany(elt => elt.Elements(DeviceNS+"service")).Select(svc => {
+            var service_type  = svc.Elements(DeviceNS+"serviceType").Select(elt => elt.Value).SingleOrDefault();
+            var service_id    = svc.Elements(DeviceNS+"serviceId").Select(elt => elt.Value).SingleOrDefault();
+            var control_url   = MakeUrl(baseurl, svc.Elements(DeviceNS+"controlURL").Select(elt => elt.Value).SingleOrDefault());
+            var event_sub_url = MakeUrl(baseurl, svc.Elements(DeviceNS+"eventSubURL").Select(elt => elt.Value).SingleOrDefault());
+            var scpd_url      = MakeUrl(baseurl, svc.Elements(DeviceNS+"SCPDURL").Select(elt => elt.Value).SingleOrDefault());
+            return new UPnPServiceDescription(friendly_name, device_type, udn, service_id, service_type, control_url, event_sub_url, scpd_url);
+          });
+        });
+      }
+    }
+
+    private async Task<IEnumerable<SSDPResponse>> SSDPAsync(CancellationToken cancel_token)
+    {
+      var results = Enumerable.Empty<SSDPResponse>();
+      foreach (var task in GetInternalAddresses().Select(addr => SSDPAsync(addr, cancel_token))) {
+        results = results.Concat(await task);
+      }
+      return results;
+    }
+
     class SupportedService {
+      public string Device;
       public string Service;
-      public int    Priority;
+      public Type   Type;
     }
     static readonly SupportedService[] SupportedServices = {
-      new SupportedService { Service="urn:schemas-upnp-org:service:WANIPConnection:1", Priority=1 },
-      new SupportedService { Service="urn:schemas-upnp-org:service:WANPPPConnection:1", Priority=0 },
+      new SupportedService {
+        Device="urn:schemas-upnp-org:device:WANConnectionDevice:1",
+        Service="urn:schemas-upnp-org:service:WANPPPConnection:1",
+        Type=typeof(WANConnectionService),
+      },
+      new SupportedService {
+        Device="urn:schemas-upnp-org:device:WANConnectionDevice:1",
+        Service="urn:schemas-upnp-org:service:WANIPConnection:1",
+        Type=typeof(WANConnectionService),
+      },
+      new SupportedService {
+        Device="urn:schemas-upnp-org:device:WANConnectionDevice:2",
+        Service="urn:schemas-upnp-org:service:WANPPPConnection:1",
+        Type=typeof(WANConnectionService),
+      },
+      new SupportedService {
+        Device="urn:schemas-upnp-org:device:WANConnectionDevice:2",
+        Service="urn:schemas-upnp-org:service:WANIPConnection:2",
+        Type=typeof(WANConnectionService),
+      },
+      new SupportedService {
+        Device="urn:schemas-upnp-org:device:WANDevice:1",
+        Service="urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1",
+        Type=typeof(WANCommonInterfaceConfigService),
+      },
+      new SupportedService {
+        Device="urn:schemas-upnp-org:device:WANDevice:2",
+        Service="urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1",
+        Type=typeof(WANCommonInterfaceConfigService),
+      },
     };
 
-    public async Task<IEnumerable<INatDevice>> DiscoverAsync(CancellationToken cancel_token)
+    static readonly Type[] constructorArgs = new Type[] { typeof(UPnPServiceDescription) };
+    public async Task<IEnumerable<UPnPService>> DiscoverAsync(CancellationToken cancel_token)
     {
-      var responses = await SSDPAsync(cancel_token);
-      return responses
-        .Where(rsp => SupportedServices.Any(svc => svc.Service==rsp.ST))
-        .Select(rsp => new UPnPDevice(rsp.RemoteEndPoint.Address, rsp.Location, rsp.ST, rsp.USN))
-        .GroupBy(dev => dev.DeviceUUID)
-        .Select(group => group.OrderByDescending(dev => SupportedServices.First(svc => svc.Service==dev.ServiceType).Priority).First());
+      var responses = (await SSDPAsync(cancel_token)).Distinct();
+      var services = (await Task.WhenAll(responses.Select(rsp => GetUPnPServiceAsync(rsp.Location, cancel_token))))
+        .SelectMany(svcs => svcs)
+        .Distinct()
+        .Select(svc => {
+        var type = SupportedServices
+          .Where(supported => supported.Device==svc.DeviceType && supported.Service==svc.ServiceType)
+          .Select(supported => supported.Type)
+          .FirstOrDefault() ?? typeof(UPnPService);
+        return type.GetConstructor(constructorArgs).Invoke(new object[] { svc }) as UPnPService;
+      });
+      return services;
     }
 
+  }
+
+  public class UPnPWANConnectionServiceDiscoverer
+    : INatDeviceDiscoverer
+  {
+    public async Task<IEnumerable<INatDevice>> DiscoverAsync(CancellationToken cancel_token)
+    {
+      var services = await (new SSDPDiscoverer()).DiscoverAsync(cancel_token);
+      return services
+        .Select(svc => svc as WANConnectionService)
+        .Where(svc => svc!= null);
+    }
   }
 
 }

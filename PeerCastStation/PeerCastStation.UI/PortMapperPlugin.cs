@@ -180,7 +180,10 @@ namespace PeerCastStation.UI
 
     public IEnumerable<IPAddress> GetExternalAddresses()
     {
-      return devices.Select(dev => dev.ExternalIPAddress).ToArray();
+      return devices
+        .Select(dev => dev.ExternalIPAddress)
+        .Where(addr => addr!=null)
+        .ToArray();
     }
 
     public void Clear()
