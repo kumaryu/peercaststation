@@ -102,7 +102,7 @@ namespace PeerCastStation.Core
       this.AuthenticationKey = AuthenticationKey.Generate();
       server = new TcpListener(ip);
       server.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-      server.Start();
+      server.Start(Int32.MaxValue);
       listenerThread = new Thread(ListenerThreadFunc);
       listenerThread.Name = String.Format("OutputListenerThread:{0}", ip);
       listenerThread.Start(server);
