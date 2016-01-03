@@ -409,6 +409,42 @@ namespace PeerCastStation.HTTP
       }
     }
 
+    private string GetPlaylistExtension()
+    {
+      var md = Regex.Match(request.Uri.AbsolutePath, @"^/pls/[0-9A-Fa-f]{32}\.(\w+)$");
+      if (md.Success) {
+        return md.Groups[1].Value.ToLowerInvariant();
+      }
+      else {
+        return null;
+      }
+    }
+
+    private IPlayList CreateDefaultPlaylist()
+    {
+      bool mms = 
+        Channel.ChannelInfo.ContentType=="WMV" ||
+        Channel.ChannelInfo.ContentType=="WMA" ||
+        Channel.ChannelInfo.ContentType=="ASX";
+      if (mms) return new ASXPlayList();
+      else     return new M3UPlayList();
+    }
+
+    private IPlayList CreatePlaylist()
+    {
+      var ext = GetPlaylistExtension();
+      if (String.IsNullOrEmpty(ext)) {
+        return CreateDefaultPlaylist();
+      }
+      else {
+        switch (ext) {
+        case "asx": return new ASXPlayList();
+        case "m3u": return new M3UPlayList();
+        default:    return CreateDefaultPlaylist();
+        }
+      }
+    }
+
     /// <summary>
     /// HTTPのレスポンスヘッダを作成して取得します
     /// </summary>
@@ -448,18 +484,7 @@ namespace PeerCastStation.HTTP
         }
       case BodyType.Playlist:
         {
-          bool mms = 
-            Channel.ChannelInfo.ContentType=="WMV" ||
-            Channel.ChannelInfo.ContentType=="WMA" ||
-            Channel.ChannelInfo.ContentType=="ASX";
-          IPlayList pls;
-          if (mms) {
-            pls = new ASXPlayList();
-          }
-          else {
-            pls = new M3UPlayList();
-          }
-          pls.Channels.Add(Channel);
+          var pls = CreatePlaylist();
           return String.Format(
             "HTTP/1.0 200 OK\r\n"             +
             "Server: {0}\r\n"                 +
@@ -480,17 +505,7 @@ namespace PeerCastStation.HTTP
     /// </summary>
     protected void WritePlayList()
     {
-      bool mms = 
-        Channel.ChannelInfo.ContentType=="WMV" ||
-        Channel.ChannelInfo.ContentType=="WMA" ||
-        Channel.ChannelInfo.ContentType=="ASX";
-      IPlayList pls;
-      if (mms) {
-        pls = new ASXPlayList();
-      }
-      else {
-        pls = new M3UPlayList();
-      }
+      var pls = CreatePlaylist();
       pls.Channels.Add(Channel);
       var baseuri = new Uri(
         new Uri(request.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped)),
