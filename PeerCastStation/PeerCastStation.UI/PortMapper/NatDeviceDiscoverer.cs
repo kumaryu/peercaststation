@@ -61,7 +61,7 @@ namespace PeerCastStation.UI.PortMapper
     {
       this.Discoverers = new INatDeviceDiscoverer[] {
         new NatPmpDeviceDiscoverer(),
-        new UPnPDeviceDiscoverer(),
+        new UPnPWANConnectionServiceDiscoverer(),
       };
     }
 
