@@ -19,10 +19,10 @@ PeerCastの配信をPeerCastStationで視聴・リレーしたり、PeerCastStat
 
 従来のPeerCastやPeerCast改造版との違いは次のようなところです
 
-* C#で一から作り直されています(.NET Framework 3.5以降が必要です)
+* C#で一から作り直されています(.NET Framework 4.5以降が必要です)
 * Monoを使えばWindowsでなくとも動きます
 * FLVやMKVなど新しいフォーマットでの配信に対応しています
-* Open Broadcaster SoftwareなどRTMP配信に対応したエンコーダからFLV配信が行えます(開発版のみ)
+* Open Broadcaster SoftwareなどRTMP配信に対応したエンコーダからFLV配信が行えます
 * 逆にShoutcastなどには(今のところ)対応していません
 * 自動リレー管理機能がついています(リレー可能なノードを優先して接続します)
 * GUIからでもHTML UIからでもほぼ同等の操作ができ、どちらでも全ての操作ができます(Windows以外ではHTML UIのみになります)

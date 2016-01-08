@@ -20,6 +20,11 @@ Windows以外の場合はMono 3.0以降が必要です。
 なぜか起動しない場合は実行ファイルとdllファイルがブロックされている可能性があります。
 unblock.batを実行してから再度PeerCastStation.exeを実行してみてください。
 
+zip内のPecaStationd.exeはサービス版の実行ファイルです。
+通常のmonoでなくmono-serviceで起動してください。
+Windowsでは普通に起動しようとしても起動しませんので気にしないでください。
+Windowsでサービス版を実行するにはサービス版インストーラを使用してください。
+
 {% for release in site.data.releasenotes %}{% if release.channel contains 'dev' %}
 {{ release.name }}
 ------------------

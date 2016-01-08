@@ -1,4 +1,28 @@
 ---
+- name: Version 2.1.3 (2016年1月8日開発版)
+  version: 2.1.3.0
+  channel: dev
+  notes: |
+    UPnPでのポート開放を修正しました。
+
+    * UPnPでのポート開放がだいたい動いてなかったのを修正しました。
+      ルータによってはまだダメな可能性がありますので、ダメな時は報告ください。
+    * Monoで同時に複数の接続要求があった場合に5つまでしか受け入れなかったのを修正しました。
+      HTML UIでCSSが読み込めなかったりしたのが改善されます。
+    * プレイリストのURLに.asxや.m3uの拡張子をつけることで強制的にプレイリストフォーマットを指定できるようにしました。
+  date: 2016-01-08T23:45:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.1.3.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.1.3.zip
+    length: 1619379
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.1.3.exe
+    length: 2250307
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.1.3.msi
+    length: 2015232
+
 - name: Version 2.1.2 (2015年12月29日開発版)
   version: 2.1.2.0
   channel: dev
