@@ -34,6 +34,20 @@ namespace PeerCastStation.Main
       stopTask.TrySetResult(true);
     }
 
+    private Task FromWaitHandle(WaitHandle handle)
+    {
+      TaskCompletionSource<bool> task = new TaskCompletionSource<bool>();
+      RegisteredWaitHandle registered = null;
+      registered = ThreadPool.RegisterWaitForSingleObject(handle, (state, timedout) => {
+        task.TrySetResult(timedout);
+      }, null, Timeout.Infinite, true);
+      return task.Task.ContinueWith(prev => {
+        if (registered!=null) {
+          registered.Unregister(null);
+        }
+      });
+    }
+
     PeerCast peerCast = new PeerCast();
     override public PeerCast PeerCast { get { return peerCast; } }
     public void Run()
@@ -60,7 +74,9 @@ namespace PeerCastStation.Main
           plugin.Start();
         }
       })
-      .ContinueWith(prev => stopTask.Task).Unwrap()
+      .ContinueWith(prev =>
+        Task.WhenAny(stopTask.Task, FromWaitHandle(killWaitHandle))
+      ).Unwrap()
       .ContinueWith(prev => {
         foreach (var plugin in Plugins) {
           plugin.Stop();
