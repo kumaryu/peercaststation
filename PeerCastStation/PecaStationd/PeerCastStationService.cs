@@ -6,6 +6,10 @@ namespace PecaStationd
   {
     public class PecaServiceApplication : PeerCastStation.Main.Application
     {
+      protected override void DoSetup()
+      {
+        //Do nothing
+      }
     }
 
     public PeerCastStationService()

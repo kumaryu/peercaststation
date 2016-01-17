@@ -28,7 +28,7 @@ namespace PeerCastStation.Main
       LoadPlugins();
     }
 
-    TaskCompletionSource<bool> stopTask = new TaskCompletionSource<bool>();
+    private TaskCompletionSource<bool> stopTask = new TaskCompletionSource<bool>();
     override public void Stop()
     {
       stopTask.TrySetResult(true);
@@ -52,11 +52,28 @@ namespace PeerCastStation.Main
     override public PeerCast PeerCast { get { return peerCast; } }
     public void Run()
     {
+      DoSetup();
+      Start().Wait();
+      DoCleanup();
+    }
+
+    protected virtual void DoSetup()
+    {
       Console.CancelKeyPress += (sender, args) => {
         args.Cancel = true;
         Stop();
       };
-      Start().Wait();
+      RegisteredWaitHandle registered = null;
+      registered = ThreadPool.RegisterWaitForSingleObject(killWaitHandle, (state, timedout) => {
+        Stop();
+        if (registered!=null) {
+          registered.Unregister(null);
+        }
+      }, null, Timeout.Infinite, true);
+    }
+
+    protected virtual void DoCleanup()
+    {
       Logger.Close();
     }
 
@@ -74,9 +91,7 @@ namespace PeerCastStation.Main
           plugin.Start();
         }
       })
-      .ContinueWith(prev =>
-        Task.WhenAny(stopTask.Task, FromWaitHandle(killWaitHandle))
-      ).Unwrap()
+      .ContinueWith(prev => stopTask.Task).Unwrap()
       .ContinueWith(prev => {
         foreach (var plugin in Plugins) {
           plugin.Stop();
