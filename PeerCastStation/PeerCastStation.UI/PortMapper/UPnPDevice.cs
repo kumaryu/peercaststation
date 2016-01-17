@@ -553,7 +553,20 @@ namespace PeerCastStation.UI.PortMapper
     public async Task<IEnumerable<UPnPService>> DiscoverAsync(CancellationToken cancel_token)
     {
       var responses = (await SSDPAsync(cancel_token)).Distinct();
-      var services = (await Task.WhenAll(responses.Select(rsp => GetUPnPServiceAsync(rsp.Location, cancel_token))))
+      var services = (await Task.WhenAll(
+            responses.Select(async rsp => {
+              try {
+                return await GetUPnPServiceAsync(rsp.Location, cancel_token);
+              }
+              catch (OperationCanceledException) {
+                throw;
+              }
+              catch (Exception) {
+                return Enumerable.Empty<UPnPServiceDescription>();
+              }
+            })
+          )
+        )
         .SelectMany(svcs => svcs)
         .Distinct()
         .Select(svc => {

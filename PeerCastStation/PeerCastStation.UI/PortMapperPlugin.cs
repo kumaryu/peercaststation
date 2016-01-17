@@ -142,6 +142,7 @@ namespace PeerCastStation.UI
     private PeerCast peerCast;
     private NatDeviceDiscoverer discoverer = new NatDeviceDiscoverer();
     private CancellationTokenSource cancelSource = new CancellationTokenSource();
+    private Logger logger = new Logger(typeof(PortMapperMonitor));
 
     public PortMapperMonitor(PeerCast peercast)
     {
@@ -157,17 +158,23 @@ namespace PeerCastStation.UI
     private async Task DiscoverAsync(CancellationToken cancel_token)
     {
       cancel_token.ThrowIfCancellationRequested();
-      var new_devices = new HashSet<NatDevice>(await Task.WhenAll(
-        (await discoverer.DiscoverAsync(cancel_token))
-        .Select(async dev => new NatDevice(dev, await dev.GetExternalAddressAsync(cancel_token)))
-      ));
-      foreach (var device in new_devices) {
-        if (devices.Contains(device)) continue;
-        foreach (var port in ports) {
-          AddPortOnDevice(device, port);
+      try {
+        var new_devices = new HashSet<NatDevice>(await Task.WhenAll(
+          (await discoverer.DiscoverAsync(cancel_token))
+          .Select(async dev => new NatDevice(dev, await dev.GetExternalAddressAsync(cancel_token)))
+        ));
+        foreach (var device in new_devices) {
+          if (devices.Contains(device)) continue;
+          foreach (var port in ports) {
+            AddPortOnDevice(device, port);
+          }
         }
+        devices = new_devices;
       }
-      devices = new_devices;
+      catch (Exception e) {
+        logger.Info(e);
+        throw;
+      }
     }
 
     public void Dispose()
