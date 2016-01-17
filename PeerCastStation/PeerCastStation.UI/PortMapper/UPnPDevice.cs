@@ -152,8 +152,8 @@ namespace PeerCastStation.UI.PortMapper
       }
       else if (msg.StatusCode==HttpStatusCode.InternalServerError) {
         var doc = XDocument.Load(await msg.Content.ReadAsStreamAsync());
-        var error_code = doc.Descendants(XName.Get("errorCode", "")).Single();
-        var error_description = doc.Descendants(XName.Get("errorDescription", "")).Single();
+        var error_code = doc.Descendants(XName.Get("errorCode", "urn:schemas-upnp-org:control-1-0")).Single();
+        var error_description = doc.Descendants(XName.Get("errorDescription", "urn:schemas-upnp-org:control-1-0")).Single();
         logger.Info("UPnP Action {0} Error, code:{1}, descripion:{2}", action, error_code, error_description);
         return new ActionResult(action, Int32.Parse(error_code.Value), error_description.Value);
       }
@@ -173,7 +173,7 @@ namespace PeerCastStation.UI.PortMapper
         logger.Debug("Sending UPnP Action {0} to {1}", this.ServiceDescription.ServiceType+"#"+action, this.ServiceDescription.ControlUrl);
         try {
           var content = new StringContent(writer.ToString(), System.Text.Encoding.UTF8, "text/xml");
-          content.Headers.Add("SOAPACTION", this.ServiceDescription.ServiceType+"#"+action);
+          content.Headers.Add("SOAPACTION", "\"" + this.ServiceDescription.ServiceType+"#"+action + "\"");
           using (var client=new HttpClient()) {
             return await ParseActionResponse(
                 action,
