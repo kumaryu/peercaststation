@@ -12,7 +12,7 @@
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate EmbedCab="yes"/>
 
-    <Feature Id="Service" Title="PeerCastStationサービス" Level="1" Absent="disallow" AllowAdvertise="no">
+    <Feature Id="Service" Title="PeerCastStationサービス" Level="1" Absent="disallow" AllowAdvertise="no" ConfigurableDirectory="INSTALLFOLDER">
       <ComponentGroupRef Id="PecaStationd"/>
       <ComponentGroupRef Id="PeerCastStation.Core"/>
       <ComponentGroupRef Id="PeerCastStation.PCP"/>
@@ -27,6 +27,17 @@
     <Feature Id="Menu" Title="プログラムメニューの追加" Level="1" AllowAdvertise="no">
       <ComponentRef Id="ProgramMenu"/>
     </Feature>
+
+    <Property Id="INSTALLFOLDER"/>
+    <Property Id="INSTALLED">
+      <RegistrySearch
+        Id="InstallDir"
+        Root='HKCU'
+        Key='Software\[Manufacturer]\[ProductName]'
+        Name='InstallDir'
+        Type='directory'/>
+    </Property>
+    <SetProperty After='AppSearch' Id='INSTALLFOLDER' Value='[INSTALLED]' Sequence='first'>NOT INSTALLFOLDER</SetProperty>
 
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="PeerCastStation HTML UIを開く" />
@@ -51,6 +62,7 @@
               Type="url"/>
             <RemoveFolder Id='ProgramMenu' On='uninstall' />
             <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
+            <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' Type='string' Value='[INSTALLFOLDER]'/>
           </Component>
 
         </Directory>

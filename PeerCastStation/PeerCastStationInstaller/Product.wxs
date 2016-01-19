@@ -41,6 +41,7 @@
 					<Component Id="ProgramMenu" Guid="a1107ec4-3dfb-41a9-9bb8-f9c710f1d6df">
 						<RemoveFolder Id='ProgramMenu' On='uninstall' />
 						<RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
+						<RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' Type='string' Value='[INSTALLFOLDER]'/>
 					</Component>
 				</Directory>
 			</Directory>

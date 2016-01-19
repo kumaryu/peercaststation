@@ -1,11 +1,28 @@
 <?xml version="1.0"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
 	<Bundle
 			Name="PeerCastStation"
 			Version="!(bind.packageVersion.PeerCastStationInstaller)"
 			Manufacturer="pecastation.org"
 			UpgradeCode="38a3bdd9-0f4d-4051-bba0-13ae6c8f95c6">
 		<Variable Name="InstallFolder" Value="[ProgramFilesFolder]PeerCastStation"/>
+		<util:RegistrySearch
+			Id='FindInstalled'
+			Variable="Installed"
+			Root='HKCU'
+			Key='Software\pecastation.org\PeerCastStation'
+			Result='exists'
+			Value='InstallDir'/>
+		<util:RegistrySearch
+			After='FindInstalled'
+			Variable="InstallFolder"
+			Id='PeerCastStationInstallDir'
+			Root='HKCU'
+			Key='Software\pecastation.org\PeerCastStation'
+			Result='value'
+			Value='InstallDir'
+			Condition='Installed = 1'/>
 		<BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.HyperlinkSidebarLicense">
 			<bal:WixStandardBootstrapperApplication
 				xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
