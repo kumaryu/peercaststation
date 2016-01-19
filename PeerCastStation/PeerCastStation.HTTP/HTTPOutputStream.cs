@@ -40,6 +40,7 @@ namespace PeerCastStation.HTTP
     /// リクエストヘッダの値のコレクション取得します
     /// </summary>
     public Dictionary<string, string> Headers { get; private set; }
+    public Dictionary<string, string> Parameters { get; private set; }
 
     /// <summary>
     /// HTTPリクエスト文字列からHTTPRequestオブジェクトを構築します
@@ -48,6 +49,7 @@ namespace PeerCastStation.HTTP
     public HTTPRequest(IEnumerable<string> requests)
     {
       Headers = new Dictionary<string, string>();
+      Parameters = new Dictionary<string, string>();
       string host = "localhost";
       string path = "/";
       foreach (var req in requests) {
@@ -67,6 +69,11 @@ namespace PeerCastStation.HTTP
       Uri uri;
       if (Uri.TryCreate("http://" + host + path, UriKind.Absolute, out uri)) {
         this.Uri = uri;
+        foreach (Match param in Regex.Matches(uri.Query, @"(&|\?)([^&=]+)=([^&=]+)")) {
+          this.Parameters.Add(
+            Uri.UnescapeDataString(param.Groups[2].Value).ToLowerInvariant(),
+            Uri.UnescapeDataString(param.Groups[3].Value));
+        }
       }
       else {
         this.Uri = null;
@@ -409,11 +416,11 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    private string GetPlaylistExtension()
+    private string GetPlaylistFormat()
     {
-      var md = Regex.Match(request.Uri.AbsolutePath, @"^/pls/[0-9A-Fa-f]{32}\.(\w+)$");
-      if (md.Success) {
-        return md.Groups[1].Value.ToLowerInvariant();
+      string fmt;
+      if (request.Parameters.TryGetValue("pls", out fmt)) {
+        return fmt;
       }
       else {
         return null;
@@ -432,12 +439,12 @@ namespace PeerCastStation.HTTP
 
     private IPlayList CreatePlaylist()
     {
-      var ext = GetPlaylistExtension();
-      if (String.IsNullOrEmpty(ext)) {
+      var fmt = GetPlaylistFormat();
+      if (String.IsNullOrEmpty(fmt)) {
         return CreateDefaultPlaylist();
       }
       else {
-        switch (ext) {
+        switch (fmt.ToLowerInvariant()) {
         case "asx": return new ASXPlayList();
         case "m3u": return new M3UPlayList();
         default:    return CreateDefaultPlaylist();
