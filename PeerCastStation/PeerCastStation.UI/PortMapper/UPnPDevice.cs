@@ -423,15 +423,15 @@ namespace PeerCastStation.UI.PortMapper
         "HOST: 239.255.255.250:1900\r\n" +
         "MAN: \"ssdp:discover\"\r\n" +
         "MX: 3\r\n" +
-        "ST: ssdp:all\r\n\r\n"
+        "ST: upnp:rootdevice\r\n\r\n"
       );
       var responses = new List<SSDPResponse>();
       using (var client=new UdpClient(new IPEndPoint(bind_addr, 0))) {
         for (int i=0; i<3; i++) {
           await client.SendAsync(msg, msg.Length, SSDPEndpoint);
         }
-        if (client.Available==0 && !cancel_token.IsCancellationRequested) {
-          await Task.Delay(1000, cancel_token);
+        for (int i=0; i<10 && client.Available==0 && !cancel_token.IsCancellationRequested; i++) {
+          await Task.Delay(100, cancel_token);
         }
         while (client.Available>0 && !cancel_token.IsCancellationRequested) {
           var result = await client.ReceiveAsync();
@@ -504,11 +504,10 @@ namespace PeerCastStation.UI.PortMapper
 
     private async Task<IEnumerable<SSDPResponse>> SSDPAsync(CancellationToken cancel_token)
     {
-      var results = Enumerable.Empty<SSDPResponse>();
-      foreach (var task in GetInternalAddresses().Select(addr => SSDPAsync(addr, cancel_token))) {
-        results = results.Concat(await task);
-      }
-      return results;
+      return (await Task.WhenAll(
+        GetInternalAddresses()
+        .Select(addr => SSDPAsync(addr, cancel_token))
+      )).SelectMany(seq => seq);
     }
 
     class SupportedService {
