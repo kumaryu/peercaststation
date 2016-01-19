@@ -32,7 +32,7 @@
 				LicenseUrl="" />
 		</BootstrapperApplicationRef>
 		<Chain>
-			<PackageGroupRef Id="NetFx451Web"/>
+			<PackageGroupRef Id="NetFx452Web"/>
 			<MsiPackage Id="PeerCastStationInstaller" SourceFile="$(var.PeerCastStationInstaller.TargetPath)" Permanent="no">
 				<MsiProperty Name="INSTALLFOLDER" Value="[InstallFolder]"/>
 			</MsiPackage>
