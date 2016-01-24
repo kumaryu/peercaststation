@@ -1,4 +1,32 @@
 ---
+- name: Version 2.1.4 (2016年1月24日開発版)
+  version: 2.1.4.0
+  channel: dev
+  notes: |
+    UPnPでのポート開放を再修正しました。
+
+    * UPnPでのポート開放がまだあんまり動いてなかったのを修正しました。
+      もうだいたい大丈夫だと思いますが、まだダメな場合がありましたらご報告ください。
+    * プレイリストのフォーマット指定を拡張子でなくplsパラメータで行うようにしました。pls=asxやpls=m3uといったパラメータをプレイリストのURLにつけてください。
+    * -killをつけて起動した時に、既に起動中のPeerCastStationが終了しなくなっていたのを修正しました。サービス版は終了しません。
+    * HTML UIとヘルプに検索エンジン避け用のmetaタグを追加しました。万が一WAN側フルオープンになってた時も検索エンジンにはひっかかりづらくなります。
+    * インストーラ版でアップグレード時に、前回のインストール先をデフォルトで指定するようにしました。
+      ただしインストール先をレジストリに書き込む必要があるので、次のバージョンアップから有効になります。
+    * サービス版インストーラでインストール先が選択できなかったのを修正しました。
+    * インストーラで自動的にインストールされる.NET Frameworkを4.5.2にしました。
+  date: 2016-01-24T18:30:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.1.4.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.1.4.zip
+    length: 1620608
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.1.4.exe
+    length: 2251438
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.1.4.msi
+    length: 2015848
+
 - name: Version 2.1.3 (2016年1月8日開発版)
   version: 2.1.3.0
   channel: dev
