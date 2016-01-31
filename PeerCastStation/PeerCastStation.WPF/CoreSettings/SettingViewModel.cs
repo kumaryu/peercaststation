@@ -753,23 +753,6 @@ namespace PeerCastStation.WPF.CoreSettings
       });
     }
 
-    void checker_PortCheckCompleted(object sender, UI.PortCheckCompletedEventArgs args)
-    {
-      if (args.Success) {
-        var status = PortCheckStatus.Closed;
-        foreach (var port in ports) {
-          port.IsOpen = args.Ports.Contains(port.Port);
-          if (port.IsOpen.HasValue && port.IsOpen.Value) {
-            status = PortCheckStatus.Opened;
-          }
-        }
-        PortCheckStatus = status;
-      }
-      else {
-        PortCheckStatus = PortCheckStatus.Failed;
-      }
-    }
-
     protected override void OnPropertyChanged(string propertyName)
     {
       switch (propertyName) {
