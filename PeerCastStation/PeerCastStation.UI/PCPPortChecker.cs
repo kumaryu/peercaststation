@@ -32,19 +32,18 @@ namespace PeerCastStation.UI
       CheckAsync()
         .ContinueWith(prev => {
           if (prev.IsCanceled || prev.IsFaulted) return;
-          this.Application.PeerCast.IsFirewalled = !prev.Result;
+          this.Application.PeerCast.IsFirewalled = !prev.Result.IsOpen;
         });
     }
 
-    public async Task<bool> CheckAsync()
+    public async Task<PortCheckResult> CheckAsync()
     {
       var peercast = Application.PeerCast;
       var ports = peercast.OutputListeners
         .Where( listener => (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0)
         .Select(listener => listener.LocalEndPoint.Port);
       var checker = new PCPPortChecker(peercast.SessionID, TargetUri, ports);
-      var result = await checker.RunTaskAsync();
-      return result.Success && result.Ports.Count()>0;
+      return await checker.RunTaskAsync();
     }
   }
 
@@ -70,6 +69,7 @@ namespace PeerCastStation.UI
     public bool     Success     { get; private set; }
     public int[]    Ports       { get; private set; }
     public TimeSpan ElapsedTime { get; private set; }
+    public bool IsOpen { get { return Success && Ports.Length>0; } }
 
     public PortCheckResult(bool success, int[] ports, TimeSpan elapsed)
     {
