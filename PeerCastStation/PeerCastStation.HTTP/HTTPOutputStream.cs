@@ -41,6 +41,7 @@ namespace PeerCastStation.HTTP
     /// </summary>
     public Dictionary<string, string> Headers { get; private set; }
     public Dictionary<string, string> Parameters { get; private set; }
+    public Dictionary<string, string> Cookies { get; private set; }
 
     /// <summary>
     /// HTTPリクエスト文字列からHTTPRequestオブジェクトを構築します
@@ -48,8 +49,9 @@ namespace PeerCastStation.HTTP
     /// <param name="requests">行毎に区切られたHTTPリクエストの文字列表現</param>
     public HTTPRequest(IEnumerable<string> requests)
     {
-      Headers = new Dictionary<string, string>();
+      Headers    = new Dictionary<string, string>();
       Parameters = new Dictionary<string, string>();
+      Cookies    = new Dictionary<string, string>();
       string host = "localhost";
       string path = "/";
       foreach (var req in requests) {
@@ -61,6 +63,14 @@ namespace PeerCastStation.HTTP
         else if ((match = Regex.Match(req, @"^Host:(.+)$", RegexOptions.IgnoreCase)).Success) {
           host = match.Groups[1].Value.Trim();
           Headers["HOST"] = host;
+        }
+        else if ((match = Regex.Match(req, @"^Cookie:(\s*)(.+)(\s*)$", RegexOptions.IgnoreCase)).Success) {
+          foreach (var pair in match.Groups[2].Value.Split(';')) {
+            var md = Regex.Match(pair, @"^([A-Za-z0-9!#$%^&*_\-+|~`'"".]+)=(.*)$");
+            if (md.Success) {
+              Cookies.Add(md.Groups[1].Value, md.Groups[2].Value);
+            }
+          }
         }
         else if ((match = Regex.Match(req, @"^(\S*):(.+)$", RegexOptions.IgnoreCase)).Success) {
           Headers[match.Groups[1].Value.ToUpper()] = match.Groups[2].Value.Trim();

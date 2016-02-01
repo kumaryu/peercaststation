@@ -29,35 +29,52 @@ namespace PeerCastStation.UI.HTTP
 
   class HTTPUtils
   {
-    public static bool CheckAuthorization(PeerCastStation.HTTP.HTTPRequest request, PeerCastStation.Core.AuthenticationKey key)
+    private static string GetAuthorizationToken(PeerCastStation.HTTP.HTTPRequest request)
     {
-      if (key==null) return true;
-      if (!request.Headers.ContainsKey("AUTHORIZATION")) {
-        return false;
-      }
-      else {
-        var authorized = false;
+      String result = null;
+      if (request.Headers.ContainsKey("AUTHORIZATION")) {
         var md = System.Text.RegularExpressions.Regex.Match(
           request.Headers["AUTHORIZATION"],
           @"\s*BASIC (\S+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         if (md.Success) {
-          try {
-            var authorization = System.Text.Encoding.ASCII.GetString(Convert.FromBase64String(md.Groups[1].Value)).Split(':');
-            if (authorization.Length>=2) {
-              var user = authorization[0];
-              var pass = String.Join(":", authorization.Skip(1).ToArray());
-              if (key.Id==user && key.Password==pass) {
-                authorized = true;
-              }
-            }
-          }
-          catch (FormatException) {
-          }
-          catch (ArgumentException) {
+          result = md.Groups[1].Value;
+        }
+      }
+      if (result==null) {
+        request.Parameters.TryGetValue("auth", out result);
+      }
+      if (result==null) {
+        request.Cookies.TryGetValue("auth", out result);
+      }
+      return result;
+    }
+
+    public static string CreateAuthorizationToken(PeerCastStation.Core.AuthenticationKey key)
+    {
+      return Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes(key.Id + ":" + key.Password));
+    }
+
+    public static bool CheckAuthorization(PeerCastStation.HTTP.HTTPRequest request, PeerCastStation.Core.AuthenticationKey key)
+    {
+      if (key==null) return true;
+      var token = GetAuthorizationToken(request);
+      if (token==null) return false;
+      var authorized = false;
+      try {
+        var authorization = System.Text.Encoding.ASCII.GetString(Convert.FromBase64String(token)).Split(':');
+        if (authorization.Length>=2) {
+          var user = authorization[0];
+          var pass = String.Join(":", authorization.Skip(1).ToArray());
+          if (key.Id==user && key.Password==pass) {
+            authorized = true;
           }
         }
-        return authorized;
       }
+      catch (FormatException) {
+      }
+      catch (ArgumentException) {
+      }
+      return authorized;
     }
 
     public static string CreateResponseHeader(HttpStatusCode code, Dictionary<string, string> parameters)

@@ -179,6 +179,9 @@ namespace PeerCastStation.UI.HTTP
           {"Content-Length", content.Length.ToString() },
           {"Location",       "/html/index.html" },
         };
+        if (AccessControl.AuthenticationKey!=null) {
+          parameters.Add("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(AccessControl.AuthenticationKey));
+        }
         Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.Moved, parameters));
         if (this.request.Method=="GET") {
           Send(content);
@@ -200,6 +203,9 @@ namespace PeerCastStation.UI.HTTP
             {"Content-Type",   content_desc.MimeType },
             {"Content-Length", contents.Length.ToString() },
           };
+          if (AccessControl.AuthenticationKey!=null) {
+            parameters.Add("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(AccessControl.AuthenticationKey));
+          }
           Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.OK, parameters));
           if (this.request.Method=="GET") {
             Send(contents);

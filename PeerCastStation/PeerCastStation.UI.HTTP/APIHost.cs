@@ -774,6 +774,7 @@ namespace PeerCastStation.UI.HTTP
         res["globalAuthorizationRequired"] = listener.GlobalAuthorizationRequired;
         res["authenticationId"]       = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Id : null;
         res["authenticationPassword"] = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Password : null;
+        res["authToken"]     = listener.AuthenticationKey!=null ? HTTPUtils.CreateAuthorizationToken(listener.AuthenticationKey) : null;
         if ((listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 && owner.OpenedPorts!=null) {
           res["isOpened"] = (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 &&
                             owner.OpenedPorts.Contains(listener.LocalEndPoint.Port);
