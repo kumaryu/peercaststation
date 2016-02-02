@@ -602,6 +602,19 @@ namespace PeerCastStation.HTTP
       });
     }
 
+    protected void Unauthorized()
+    {
+      SetState(() => {
+        var response_header = HTTPUtils.CreateResponseHeader(
+          HttpStatusCode.Unauthorized,
+          new Dictionary<string, string>());
+        var bytes = System.Text.Encoding.UTF8.GetBytes(response_header);
+        Send(bytes);
+        Logger.Debug("Header: {0}", response_header);
+        Stop();
+      });
+    }
+
     protected virtual void OnWaitChannelCompleted()
     {
       if (!IsStopped) {
@@ -651,11 +664,16 @@ namespace PeerCastStation.HTTP
     protected override void OnStarted()
     {
       Logger.Debug("Starting");
-      if (this.Channel!=null) {
-        this.Channel.ContentChanged += OnContentChanged;
-        OnContentChanged(this, new EventArgs());
+      if (HTTPUtils.CheckAuthorization(request, AccessControl.AuthenticationKey)) {
+        if (this.Channel!=null) {
+          this.Channel.ContentChanged += OnContentChanged;
+          OnContentChanged(this, new EventArgs());
+        }
+        WaitChannel();
       }
-      WaitChannel();
+      else {
+        Unauthorized();
+      }
     }
 
     protected override void OnStopped()
