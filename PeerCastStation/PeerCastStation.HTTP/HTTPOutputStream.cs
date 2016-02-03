@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
+using System.Linq;
 using System.IO;
 using System.Net;
 using System.Collections.Generic;
@@ -527,7 +528,15 @@ namespace PeerCastStation.HTTP
       var baseuri = new Uri(
         new Uri(request.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped)),
         "stream/");
-      Send(pls.CreatePlayList(baseuri));
+      if (AccessControl.AuthenticationKey!=null) {
+        var parameters = new Dictionary<string, string>() {
+          { "auth", HTTPUtils.CreateAuthorizationToken(AccessControl.AuthenticationKey) },
+        };
+        Send(pls.CreatePlayList(baseuri, parameters));
+      }
+      else {
+        Send(pls.CreatePlayList(baseuri, Enumerable.Empty<KeyValuePair<string,string>>()));
+      }
     }
 
     /// <summary>
