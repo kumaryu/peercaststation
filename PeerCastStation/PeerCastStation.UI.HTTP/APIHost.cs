@@ -162,6 +162,17 @@ namespace PeerCastStation.UI.HTTP
         return res;
       }
 
+      [RPCMethod("getAuthToken")]
+      public string GetAuthToken()
+      {
+        if (AccessControl.AuthenticationKey!=null) {
+          return HTTPUtils.CreateAuthorizationToken(AccessControl.AuthenticationKey);
+        }
+        else {
+          return null;
+        }
+      }
+
       [RPCMethod("getPlugins")]
       private JArray GetPlugins()
       {
