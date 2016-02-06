@@ -51,37 +51,44 @@ namespace PeerCastStation.UI.HTTP
     private Dictionary<ObjectReference, int> objToId = new Dictionary<ObjectReference, int>();
     private HashSet<int> idSet = new HashSet<int>();
     private Random rand = new Random();
+    private object locker = new object();
 
     private void Cleanup()
     {
-      var dead_list = objToId.Where(kv => !kv.Key.IsAlive).ToArray();
-      foreach (var kv in dead_list) {
-        objToId.Remove(kv.Key);
-        idSet.Remove(kv.Value);
+      lock (locker) {
+        var dead_list = objToId.Where(kv => !kv.Key.IsAlive).ToArray();
+        foreach (var kv in dead_list) {
+          objToId.Remove(kv.Key);
+          idSet.Remove(kv.Value);
+        }
       }
     }
 
     private int AllocateId()
     {
-      Cleanup();
-      var id = rand.Next();
-      while (!idSet.Add(id)) {
-        id = rand.Next();
+      lock (locker) {
+        Cleanup();
+        var id = rand.Next();
+        while (!idSet.Add(id)) {
+          id = rand.Next();
+        }
+        return id;
       }
-      return id;
     }
 
     public int GetId(object obj)
     {
-      var reference = new ObjectReference(obj);
-      int id;
-      if (objToId.TryGetValue(reference, out id)) {
-        return id;
-      }
-      else {
-        var new_id = AllocateId();
-        objToId.Add(reference, new_id);
-        return new_id;
+      lock (locker) {
+        var reference = new ObjectReference(obj);
+        int id;
+        if (objToId.TryGetValue(reference, out id)) {
+          return id;
+        }
+        else {
+          var new_id = AllocateId();
+          objToId.Add(reference, new_id);
+          return new_id;
+        }
       }
     }
 
