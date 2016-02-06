@@ -169,12 +169,12 @@ namespace PeerCastStation.Core
     {
       logger.Debug("Requesting channel {0} from {1}", channel_id.ToString("N"), tracker);
       var channel = new RelayChannel(this, channel_id);
+      channel.Start(tracker);
       ReplaceCollection(ref channels, orig => {
         var new_collection = new List<Channel>(orig);
         new_collection.Add(channel);
         return new_collection;
       });
-      channel.Start(tracker);
       if (ChannelAdded!=null) ChannelAdded(this, new ChannelChangedEventArgs(channel));
       return channel;
     }
@@ -233,12 +233,12 @@ namespace PeerCastStation.Core
     {
       logger.Debug("Broadcasting channel {0} from {1}", channel_id.ToString("N"), source);
       var channel = new BroadcastChannel(this, channel_id, channel_info, source_stream_factory, content_reader_factory);
+      channel.Start(source);
       ReplaceCollection(ref channels, orig => {
         var new_collection = new List<Channel>(orig);
         new_collection.Add(channel);
         return new_collection;
       });
-      channel.Start(source);
       if (ChannelAdded!=null) ChannelAdded(this, new ChannelChangedEventArgs(channel));
       if (yp!=null) yp.Announce(channel);
       return channel;

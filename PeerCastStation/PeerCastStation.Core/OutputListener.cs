@@ -131,7 +131,7 @@ namespace PeerCastStation.Core
       this.ConnectionHandler = connection_handler;
       server = new TcpListener(ip);
       server.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-      server.Start();
+      server.Start(Int32.MaxValue);
       listenTask = StartListen(server, cancellationSource.Token);
     }
 

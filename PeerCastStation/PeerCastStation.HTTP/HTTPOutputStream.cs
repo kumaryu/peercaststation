@@ -1,4 +1,4 @@
-﻿// PeerCastStation, a P2P streaming servent.
+// PeerCastStation, a P2P streaming servent.
 // Copyright (C) 2011 Ryuichi Sakamoto (kumaryu@kumaryu.net)
 // 
 // This program is free software: you can redistribute it and/or modify
@@ -41,6 +41,7 @@ namespace PeerCastStation.HTTP
     /// リクエストヘッダの値のコレクション取得します
     /// </summary>
     public Dictionary<string, string> Headers { get; private set; }
+    public Dictionary<string, string> Parameters { get; private set; }
 
     /// <summary>
     /// HTTPリクエスト文字列からHTTPRequestオブジェクトを構築します
@@ -49,6 +50,7 @@ namespace PeerCastStation.HTTP
     public HTTPRequest(IEnumerable<string> requests)
     {
       Headers = new Dictionary<string, string>();
+      Parameters = new Dictionary<string, string>();
       string host = "localhost";
       string path = "/";
       foreach (var req in requests) {
@@ -68,6 +70,11 @@ namespace PeerCastStation.HTTP
       Uri uri;
       if (Uri.TryCreate("http://" + host + path, UriKind.Absolute, out uri)) {
         this.Uri = uri;
+        foreach (Match param in Regex.Matches(uri.Query, @"(&|\?)([^&=]+)=([^&=]+)")) {
+          this.Parameters.Add(
+            Uri.UnescapeDataString(param.Groups[2].Value).ToLowerInvariant(),
+            Uri.UnescapeDataString(param.Groups[3].Value));
+        }
       }
       else {
         this.Uri = null;
@@ -406,6 +413,42 @@ namespace PeerCastStation.HTTP
       }
     }
 
+    private string GetPlaylistFormat()
+    {
+      string fmt;
+      if (request.Parameters.TryGetValue("pls", out fmt)) {
+        return fmt;
+      }
+      else {
+        return null;
+      }
+    }
+
+    private IPlayList CreateDefaultPlaylist()
+    {
+      bool mms = 
+        Channel.ChannelInfo.ContentType=="WMV" ||
+        Channel.ChannelInfo.ContentType=="WMA" ||
+        Channel.ChannelInfo.ContentType=="ASX";
+      if (mms) return new ASXPlayList();
+      else     return new M3UPlayList();
+    }
+
+    private IPlayList CreatePlaylist()
+    {
+      var fmt = GetPlaylistFormat();
+      if (String.IsNullOrEmpty(fmt)) {
+        return CreateDefaultPlaylist();
+      }
+      else {
+        switch (fmt.ToLowerInvariant()) {
+        case "asx": return new ASXPlayList();
+        case "m3u": return new M3UPlayList();
+        default:    return CreateDefaultPlaylist();
+        }
+      }
+    }
+
     /// <summary>
     /// HTTPのレスポンスヘッダを作成して取得します
     /// </summary>
@@ -445,18 +488,7 @@ namespace PeerCastStation.HTTP
         }
       case BodyType.Playlist:
         {
-          bool mms = 
-            Channel.ChannelInfo.ContentType=="WMV" ||
-            Channel.ChannelInfo.ContentType=="WMA" ||
-            Channel.ChannelInfo.ContentType=="ASX";
-          IPlayList pls;
-          if (mms) {
-            pls = new ASXPlayList();
-          }
-          else {
-            pls = new M3UPlayList();
-          }
-          pls.Channels.Add(Channel);
+          var pls = CreatePlaylist();
           return String.Format(
             "HTTP/1.0 200 OK\r\n"             +
             "Server: {0}\r\n"                 +

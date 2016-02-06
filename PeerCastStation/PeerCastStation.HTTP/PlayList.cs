@@ -60,7 +60,14 @@ namespace PeerCastStation.HTTP
     {
       var res = new System.Text.StringBuilder();
       foreach (var c in Channels) {
-        var url = new Uri(baseuri, c.ChannelID.ToString("N").ToUpper() + c.ChannelInfo.ContentExtension);
+        var url = new UriBuilder(new Uri(baseuri, c.ChannelID.ToString("N").ToUpper() + c.ChannelInfo.ContentExtension));
+        bool mms = 
+          c.ChannelInfo.ContentType=="WMV" ||
+          c.ChannelInfo.ContentType=="WMA" ||
+          c.ChannelInfo.ContentType=="ASX";
+        if (mms) {
+          url.Scheme = "mms";
+        }
         res.AppendLine(url.ToString());
       }
       return System.Text.Encoding.UTF8.GetBytes(res.ToString());

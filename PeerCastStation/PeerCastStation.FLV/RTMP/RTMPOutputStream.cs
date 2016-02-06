@@ -31,6 +31,14 @@ namespace PeerCastStation.FLV.RTMP
 			}
 		}
 
+    protected override void Dispose(bool disposing)
+    {
+      base.Dispose(disposing);
+      if (disposing) {
+        baseStream.Dispose();
+      }
+    }
+
 		public override bool CanRead {
 			get { return true; }
 		}

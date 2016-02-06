@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using PeerCastStation.Core;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.Main
 {
@@ -27,40 +28,80 @@ namespace PeerCastStation.Main
       LoadPlugins();
     }
 
-    ManualResetEvent stoppedEvent = new ManualResetEvent(false);
+    private TaskCompletionSource<bool> stopTask = new TaskCompletionSource<bool>();
     override public void Stop()
     {
-      stoppedEvent.Set();
+      stopTask.TrySetResult(true);
+    }
+
+    private Task FromWaitHandle(WaitHandle handle)
+    {
+      TaskCompletionSource<bool> task = new TaskCompletionSource<bool>();
+      RegisteredWaitHandle registered = null;
+      registered = ThreadPool.RegisterWaitForSingleObject(handle, (state, timedout) => {
+        task.TrySetResult(timedout);
+      }, null, Timeout.Infinite, true);
+      return task.Task.ContinueWith(prev => {
+        if (registered!=null) {
+          registered.Unregister(null);
+        }
+      });
     }
 
     PeerCast peerCast = new PeerCast();
     override public PeerCast PeerCast { get { return peerCast; } }
     public void Run()
     {
+      DoSetup();
+      Start().Wait();
+      DoCleanup();
+    }
+
+    protected virtual void DoSetup()
+    {
       Console.CancelKeyPress += (sender, args) => {
         args.Cancel = true;
         Stop();
       };
-      settings.Load();
-      foreach (var plugin in Plugins) {
-        plugin.Attach(this);
-      }
-      peerCast.AddChannelMonitor(new ChannelCleaner(peerCast));
-      peerCast.AddChannelMonitor(new ChannelNotifier(this));
-      LoadSettings();
-      foreach (var plugin in Plugins) {
-        plugin.Start();
-      }
-      WaitHandle.WaitAny(new WaitHandle[] { killWaitHandle, stoppedEvent });
-      foreach (var plugin in Plugins) {
-        plugin.Stop();
-      }
-      SaveSettings();
-      peerCast.Stop();
-      foreach (var plugin in Plugins) {
-        plugin.Detach();
-      }
+      RegisteredWaitHandle registered = null;
+      registered = ThreadPool.RegisterWaitForSingleObject(killWaitHandle, (state, timedout) => {
+        Stop();
+        if (registered!=null) {
+          registered.Unregister(null);
+        }
+      }, null, Timeout.Infinite, true);
+    }
+
+    protected virtual void DoCleanup()
+    {
       Logger.Close();
+    }
+
+    public Task Start()
+    {
+      return Task.Factory.StartNew(() => {
+        settings.Load();
+        foreach (var plugin in Plugins) {
+          plugin.Attach(this);
+        }
+        peerCast.AddChannelMonitor(new ChannelCleaner(peerCast));
+        peerCast.AddChannelMonitor(new ChannelNotifier(this));
+        LoadSettings();
+        foreach (var plugin in Plugins) {
+          plugin.Start();
+        }
+      })
+      .ContinueWith(prev => stopTask.Task).Unwrap()
+      .ContinueWith(prev => {
+        foreach (var plugin in Plugins) {
+          plugin.Stop();
+        }
+        SaveSettings();
+        peerCast.Stop();
+        foreach (var plugin in Plugins) {
+          plugin.Detach();
+        }
+      });
     }
 
     public static readonly string PluginPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);

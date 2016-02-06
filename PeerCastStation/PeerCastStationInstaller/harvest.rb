@@ -1,5 +1,5 @@
 
-HEAT = 'c:\Program Files\WiX Toolset v3.9\bin\heat.exe'
+HEAT = ENV['WIX'] + 'bin\\heat.exe'
 
 Projects = %W(
 PeerCastStation.Core

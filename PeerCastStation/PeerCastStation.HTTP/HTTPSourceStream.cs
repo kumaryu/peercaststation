@@ -158,7 +158,7 @@ namespace PeerCastStation.HTTP
             "Host: {1}\r\n" +
             "User-Agent: NSPlayer ({2})\r\n" +
             "Connection: close\r\n" +
-            "Pragma: stream-switch-count=2\r\n" +
+            "Pragma: stream-switch\r\n" +
             "\r\n",
             SourceUri.PathAndQuery,
             host,

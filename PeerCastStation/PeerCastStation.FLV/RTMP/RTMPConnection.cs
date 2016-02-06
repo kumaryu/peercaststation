@@ -75,11 +75,12 @@ namespace PeerCastStation.FLV.RTMP
 				cancel_token.ThrowIfCancellationRequested();
 				await Handshake(cancel_token);
 				var local_cancel = new CancellationTokenSource();
-				cancel_token.Register(() => local_cancel.Cancel());
+				cancel_token.Register(() => { local_cancel.Cancel(); Close(); });
 				var send_messages = SendServerMessages(local_cancel.Token);
 				var recv_messages = RecvAndProcessMessages(local_cancel.Token);
 				Task.WaitAny(send_messages, recv_messages);
 				local_cancel.Cancel();
+				Close();
 				Task.WaitAll(send_messages, recv_messages);
 			}
 			catch (IOException e) {

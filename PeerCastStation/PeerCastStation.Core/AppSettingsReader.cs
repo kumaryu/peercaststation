@@ -9,7 +9,7 @@ namespace PeerCastStation.Core
     {
       try {
         var v = System.Configuration.ConfigurationManager.AppSettings[key];
-        return DateTime.TryParse(v, out value);
+        return DateTime.TryParse(v, System.Globalization.DateTimeFormatInfo.InvariantInfo, System.Globalization.DateTimeStyles.None, out value);
       }
       catch (System.Configuration.ConfigurationException) {
         value = DateTime.Today;

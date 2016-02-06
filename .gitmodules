@@ -1,0 +1,3 @@
+[submodule "PeerCastStation/Mono.Nat"]
+	path = PeerCastStation/Mono.Nat
+	url = https://github.com/kumaryu/Mono.Nat.git

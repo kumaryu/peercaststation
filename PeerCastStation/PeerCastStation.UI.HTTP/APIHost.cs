@@ -210,6 +210,20 @@ namespace PeerCastStation.UI.HTTP
         return res;
       }
 
+      [RPCMethod("getExternalIPAddresses")]
+      private JArray GetExternalIPAddresses()
+      {
+        var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
+        if (port_mapper!=null) {
+          return new JArray(
+            port_mapper.GetExternalAddresses().Select(addr => addr.ToString())
+          );
+        }
+        else {
+          return new JArray();
+        }
+      }
+
       [RPCMethod("getSettings")]
       private JToken GetSettings()
       {
@@ -224,7 +238,7 @@ namespace PeerCastStation.UI.HTTP
         channelCleaner["mode"]          = (int)ChannelCleaner.Mode;
         channelCleaner["inactiveLimit"] = ChannelCleaner.InactiveLimit;
         res["channelCleaner"] = channelCleaner;
-        var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapper>();
+        var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
         if (port_mapper!=null) {
           var portMapper = new JObject();
           portMapper["enabled"] = port_mapper.Enabled;
@@ -247,12 +261,13 @@ namespace PeerCastStation.UI.HTTP
           channel_cleaner.TryGetThen("inactiveLimit", v => ChannelCleaner.InactiveLimit = v);
           channel_cleaner.TryGetThen("mode", v => ChannelCleaner.Mode = (ChannelCleaner.CleanupMode)v);
         });
-        var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapper>();
-        if (port_mapper!=null) {
-          settings.TryGetThen("portMapper", (JObject mapper) => {
+        settings.TryGetThen("portMapper", (JObject mapper) => {
+          var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
+          if (port_mapper!=null) {
             mapper.TryGetThen("enabled", v => port_mapper.Enabled = v);
-          });
-        }
+            port_mapper.DiscoverAsync();
+          }
+        });
         owner.Application.SaveSettings();
       }
 
@@ -335,7 +350,7 @@ namespace PeerCastStation.UI.HTTP
         var channel = GetChannel(channelId);
         var res = new JObject();
         res["status"]          = channel.Status.ToString();
-        res["source"]          = channel.SourceUri.ToString();
+        res["source"]          = channel.SourceUri!=null ? channel.SourceUri.ToString() : null;
         res["uptime"]          = (int)channel.Uptime.TotalSeconds;
         res["localRelays"]     = channel.LocalRelays;
         res["localDirects"]    = channel.LocalDirects;
@@ -1022,7 +1037,15 @@ namespace PeerCastStation.UI.HTTP
               result = args.Ports;
             }
           };
-          checker.Run();
+          var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
+          if (port_mapper!=null) {
+            var task = port_mapper.DiscoverAsync()
+              .ContinueWith(prev => checker.Run());
+            task.Wait();
+          }
+          else {
+            checker.Run();
+          }
         }
         if (result!=null) {
           return new JArray(result);

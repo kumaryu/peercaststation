@@ -2,6 +2,7 @@
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="robots" content="noindex,nofollow">
     <title>PeerCastStation - PeerCastStationについて</title>
     <link type="text/css" href="bootstrap/css/bootstrap.min.css" rel="stylesheet" />
     <script type="text/javascript" src="jquery/jquery-1.8.3.min.js"></script>
@@ -58,20 +59,19 @@
 <p>公式サイトは<a href="http://www.pecastation.org/">http://www.pecastation.org/</a>です。</p>
 
 <h2 id="section">動作環境とインストール方法</h2>
-<p>WindowsではWindows XP SP3以降 + .NET Framework 3.5以降が必要です。</p>
+<p>WindowsではVista SP2以降 + .NET Framework 4.5.1以降が必要です。</p>
 
-<p>Windows以外ではmono 2.6.7以降があれば動くと思います。ただしGUIは使えません。</p>
+<p>Windows以外ではmono 3.0.0以降があれば動くと思います(なるべく新しいのを推奨)。ただしGUIは使えません。</p>
 
-<p>インストーラなどは無いので適当な場所にzipを展開してPeerCastStation.exeを起動してください。
-起動時にエラーが起きた場合は.NET Framework 3.5以降が入ってない可能性が高いです。<a href="http://www.microsoft.com/downloads/ja-jp/details.aspx?FamilyID=AB99342F-5D1A-413D-8319-81DA479AB0D7">先にダウンロードしてインストールしてください。</a>
-Windows7だと最初っから入ってます。Windows8では.NET Framework 4.5がインストール済みなため、.NET Framework 3.5が入ってなくても動きます。</p>
+<p>Windowsではインストーラ版がおすすめです。必要なバージョンの.NET Frameworkが入っていなければインストーラ起動時にインストールします。zip版を使う場合は手動で必要な.NET Frameworkを入れてください。</p>
 
 <p>Windows以外の場合はmonoをインストールしてください。
-Linuxなどではパッケージマネージャから入れれば大丈夫なはずです。
-OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mono-projectからダウンロードして</a>インストールします(2.6.7以降ならどれでも)。あとはPeerCastStationのzipを適当な場所に展開して、ターミナルから</p>
+Linuxなどではパッケージマネージャにあればそこから入れてください。
+OSXなどでは<a href="http://www.go-mono.com/mono-downloads/download.html">mono-projectからダウンロードして</a>インストールします(なるべく新しいのを推奨します)。あとはPeerCastStationのzipを適当な場所に展開して、ターミナルから</p>
 
-<pre><code>mono PeerCastStation.exe
+<div class="highlighter-rouge"><pre class="highlight"><code>mono PeerCastStation.exe
 </code></pre>
+</div>
 
 <p>で実行してください。</p>
 
