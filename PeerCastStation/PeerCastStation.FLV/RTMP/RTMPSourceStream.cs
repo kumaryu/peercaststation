@@ -572,7 +572,7 @@ namespace PeerCastStation.FLV.RTMP
     private Task OnSetChunkSize(SetChunkSizeMessage msg, CancellationToken cancel_token)
     {
       recvChunkSize = Math.Min(msg.ChunkSize, 0xFFFFFF);
-      return Task.CompletedTask;
+      return Task.Delay(0);
     }
 
     private Task OnAbort(AbortMessage msg, CancellationToken cancel_token)
@@ -581,19 +581,19 @@ namespace PeerCastStation.FLV.RTMP
       if (lastMessages.TryGetValue(msg.TargetChunkStream, out builder)) {
         builder.Abort();
       }
-      return Task.CompletedTask;
+      return Task.Delay(0);
     }
 
     private Task OnUserControl(UserControlMessage msg, CancellationToken cancel_token)
     {
-      return Task.CompletedTask;
+      return Task.Delay(0);
     }
 
     private Task OnSetWindowSize(SetWindowSizeMessage msg, CancellationToken cancel_token)
     {
       recvWindowSize = msg.WindowSize;
       receivedSize = 0;
-      return Task.CompletedTask;
+      return Task.Delay(0);
     }
 
     private Task OnSetPeerBandwidth(SetPeerBandwidthMessage msg, CancellationToken cancel_token)
@@ -614,25 +614,25 @@ namespace PeerCastStation.FLV.RTMP
         }
         break;
       }
-      return Task.CompletedTask;
+      return Task.Delay(0);
     }
 
     private Task OnAudio(RTMPMessage msg, CancellationToken cancel_token)
     {
       flvBuffer.OnAudio(msg);
-      return Task.CompletedTask;
+      return Task.Delay(0);
     }
 
     private Task OnVideo(RTMPMessage msg, CancellationToken cancel_token)
     {
       flvBuffer.OnVideo(msg);
-      return Task.CompletedTask;
+      return Task.Delay(0);
     }
 
     private Task OnData(DataMessage msg, CancellationToken cancel_token)
     {
       flvBuffer.OnData(msg);
-      return Task.CompletedTask;
+      return Task.Delay(0);
     }
 
     private async Task OnCommand(CommandMessage msg, CancellationToken cancel_token)
@@ -701,12 +701,12 @@ namespace PeerCastStation.FLV.RTMP
 
     private Task OnCommandCall(CommandMessage msg, CancellationToken cancel_token)
     {
-      return Task.CompletedTask;
+      return Task.Delay(0);
     }
 
     private Task OnCommandClose(CommandMessage msg, CancellationToken cancel_token)
     {
-      return Task.CompletedTask;
+      return Task.Delay(0);
     }
 
     private async Task OnCommandCreateStream(CommandMessage msg, CancellationToken cancel_token)
