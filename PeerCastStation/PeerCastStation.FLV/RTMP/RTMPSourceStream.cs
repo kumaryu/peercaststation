@@ -134,7 +134,7 @@ namespace PeerCastStation.FLV.RTMP
           return listener.AcceptTcpClientAsync();
         }).ToArray();
         var result = await Task.WhenAny(tasks);
-        if (result.IsCanceled) {
+        if (!result.IsCanceled) {
           client = result.Result;
           Logger.Debug("Client accepted");
         }
