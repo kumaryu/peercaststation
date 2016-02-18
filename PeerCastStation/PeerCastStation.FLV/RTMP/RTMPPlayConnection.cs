@@ -69,6 +69,17 @@ namespace PeerCastStation.FLV.RTMP
         );
       }
 
+      public string GetParameter(string key)
+      {
+        string value;
+        if (this.Parameters.TryGetValue(key, out value)) {
+          return value;
+        }
+        else {
+          return null;
+        }
+      }
+
       private static readonly System.Text.RegularExpressions.Regex namePattern =
         new System.Text.RegularExpressions.Regex(@"(?<name>[^.?]+)(?:\.(?<format>[^?]+))?(?:\?(?<params>\S+))?");
       public static StreamName Parse(string str)
@@ -150,63 +161,74 @@ namespace PeerCastStation.FLV.RTMP
 			await SendMessage(3, status_command, cancel_token);
 		}
 
-		protected override async Task OnCommandPlay(CommandMessage msg, CancellationToken cancel_token)
-		{
-			var stream_name = StreamName.Parse((string)msg.Arguments[0]);
-			var start       = msg.Arguments.Count>1 ? (int)msg.Arguments[1] : -2;
-			var duration    = msg.Arguments.Count>2 ? (int)msg.Arguments[2] : -1;
-			var reset       = msg.Arguments.Count>3 ? (bool)msg.Arguments[3] : false;
-			this.Channel = await RequestChannel(stream_name, cancel_token);
-			logger.Debug("Play: {0}, {1}, {2}, {3}", stream_name.ToString(), start, duration, reset);
-			this.StreamId = msg.StreamId;
-			await SendMessage(2, new UserControlMessage.StreamBeginMessage(this.Now, 0, msg.StreamId), cancel_token);
-			if (this.Channel!=null) {
-				await SendOnStatus(
-					this.StreamId,
-					msg.TransactionId+1,
-					"status",
-					"NetStream.Play.Start",
-					stream_name.ToString(),
-					cancel_token);
-				if (reset) {
-					await SendOnStatus(
-						this.StreamId,
-						msg.TransactionId+1,
-						"status",
-						"NetStream.Play.Reset",
-						stream_name.ToString(),
-						cancel_token);
-				}
-			}
-			else {
-				await SendOnStatus(
-					this.StreamId,
-					msg.TransactionId+1,
-					"error",
-					"NetStream.Play.FileNotFound",
-					stream_name.ToString(),
-					cancel_token);
-			}
-			if (msg.TransactionId!=0) {
-				var result = CommandMessage.Create(
-					this.ObjectEncoding,
-					this.Now,
-					msg.StreamId,
-					"_result",
-					msg.TransactionId,
-					null
-				);
-				await SendMessage(3, result, cancel_token);
-			}
-			if (this.Channel!=null) {
-				await base.OnCommandPlay(msg, cancel_token);
-				this.Channel.ContentChanged += OnContentChanged;
-				OnContentChanged(this, new EventArgs());
-			}
-			else {
-				Close();
-			}
-		}
+    protected override async Task OnCommandPlay(CommandMessage msg, CancellationToken cancel_token)
+    {
+      var stream_name = StreamName.Parse((string)msg.Arguments[0]);
+      var start       = msg.Arguments.Count>1 ? (int)msg.Arguments[1] : -2;
+      var duration    = msg.Arguments.Count>2 ? (int)msg.Arguments[2] : -1;
+      var reset       = msg.Arguments.Count>3 ? (bool)msg.Arguments[3] : false;
+      logger.Debug("Play: {0}, {1}, {2}, {3}", stream_name.ToString(), start, duration, reset);
+      if (owner.CheckAuthotization(stream_name.GetParameter("auth"))) {
+        this.Channel = await RequestChannel(stream_name, cancel_token);
+        this.StreamId = msg.StreamId;
+        await SendMessage(2, new UserControlMessage.StreamBeginMessage(this.Now, 0, msg.StreamId), cancel_token);
+        if (this.Channel!=null) {
+          await SendOnStatus(
+            this.StreamId,
+            msg.TransactionId+1,
+            "status",
+            "NetStream.Play.Start",
+            stream_name.ToString(),
+            cancel_token);
+          if (reset) {
+            await SendOnStatus(
+              this.StreamId,
+              msg.TransactionId+1,
+              "status",
+              "NetStream.Play.Reset",
+              stream_name.ToString(),
+              cancel_token);
+          }
+        }
+        else {
+          await SendOnStatus(
+            this.StreamId,
+            msg.TransactionId+1,
+            "error",
+            "NetStream.Play.FileNotFound",
+            stream_name.ToString(),
+            cancel_token);
+        }
+      }
+      else {
+        await SendOnStatus(
+          this.StreamId,
+          msg.TransactionId+1,
+          "error",
+          "NetStream.Play.Failed",
+          "auth failed",
+          cancel_token);
+      }
+      if (msg.TransactionId!=0) {
+        var result = CommandMessage.Create(
+          this.ObjectEncoding,
+          this.Now,
+          msg.StreamId,
+          "_result",
+          msg.TransactionId,
+          null
+        );
+        await SendMessage(3, result, cancel_token);
+      }
+      if (this.Channel!=null) {
+        await base.OnCommandPlay(msg, cancel_token);
+        this.Channel.ContentChanged += OnContentChanged;
+        OnContentChanged(this, new EventArgs());
+      }
+      else {
+        Close();
+      }
+    }
 
     private Content headerPacket = null;
     private Content lastPacket = null;

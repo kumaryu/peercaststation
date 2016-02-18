@@ -56,7 +56,6 @@
     <Compile Include="AdminHost.cs" />
     <Compile Include="HTMLHost.cs" />
     <Compile Include="APIHost.cs" />
-    <Compile Include="HTTPUtils.cs" />
     <Compile Include="JSONRPC.cs" />
     <Compile Include="JObjectExtension.cs" />
     <Compile Include="ObjectIdRegistry.cs" />

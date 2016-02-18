@@ -120,7 +120,15 @@ var ListenerViewModel = function(value) {
   self.globalAuthRequired     = ko.observable(value.globalAuthorizationRequired);
   self.authenticationId       = ko.observable(value.authenticationId);
   self.authenticationPassword = ko.observable(value.authenticationPassword);
+  self.authToken              = ko.observable(value.authToken);
   self.isOpened               = ko.observable(value.isOpened);
+  self.authUrl = ko.computed(function () {
+    var addr = self.address();
+    if (addr=='0.0.0.0' || addr=='0::0') {
+      addr = window.location.hostname;
+    }
+    return "http://" + addr + ":" + self.port() + "/?auth=" + self.authToken();
+  });
   self.portStatus = ko.computed(function() {
     switch (self.isOpened()) {
     case true:  return "開放";

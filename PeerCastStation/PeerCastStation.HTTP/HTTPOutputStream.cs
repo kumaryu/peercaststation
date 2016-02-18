@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
+using System.Linq;
 using System.IO;
 using System.Net;
 using System.Collections.Generic;
@@ -41,6 +42,7 @@ namespace PeerCastStation.HTTP
     /// </summary>
     public Dictionary<string, string> Headers { get; private set; }
     public Dictionary<string, string> Parameters { get; private set; }
+    public Dictionary<string, string> Cookies { get; private set; }
 
     /// <summary>
     /// HTTPリクエスト文字列からHTTPRequestオブジェクトを構築します
@@ -48,8 +50,9 @@ namespace PeerCastStation.HTTP
     /// <param name="requests">行毎に区切られたHTTPリクエストの文字列表現</param>
     public HTTPRequest(IEnumerable<string> requests)
     {
-      Headers = new Dictionary<string, string>();
+      Headers    = new Dictionary<string, string>();
       Parameters = new Dictionary<string, string>();
+      Cookies    = new Dictionary<string, string>();
       string host = "localhost";
       string path = "/";
       foreach (var req in requests) {
@@ -61,6 +64,14 @@ namespace PeerCastStation.HTTP
         else if ((match = Regex.Match(req, @"^Host:(.+)$", RegexOptions.IgnoreCase)).Success) {
           host = match.Groups[1].Value.Trim();
           Headers["HOST"] = host;
+        }
+        else if ((match = Regex.Match(req, @"^Cookie:(\s*)(.+)(\s*)$", RegexOptions.IgnoreCase)).Success) {
+          foreach (var pair in match.Groups[2].Value.Split(';')) {
+            var md = Regex.Match(pair, @"^([A-Za-z0-9!#$%^&*_\-+|~`'"".]+)=(.*)$");
+            if (md.Success) {
+              Cookies.Add(md.Groups[1].Value, md.Groups[2].Value);
+            }
+          }
         }
         else if ((match = Regex.Match(req, @"^(\S*):(.+)$", RegexOptions.IgnoreCase)).Success) {
           Headers[match.Groups[1].Value.ToUpper()] = match.Groups[2].Value.Trim();
@@ -517,7 +528,15 @@ namespace PeerCastStation.HTTP
       var baseuri = new Uri(
         new Uri(request.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped)),
         "stream/");
-      Send(pls.CreatePlayList(baseuri));
+      if (AccessControl.AuthenticationKey!=null) {
+        var parameters = new Dictionary<string, string>() {
+          { "auth", HTTPUtils.CreateAuthorizationToken(AccessControl.AuthenticationKey) },
+        };
+        Send(pls.CreatePlayList(baseuri, parameters));
+      }
+      else {
+        Send(pls.CreatePlayList(baseuri, Enumerable.Empty<KeyValuePair<string,string>>()));
+      }
     }
 
     /// <summary>
@@ -592,6 +611,19 @@ namespace PeerCastStation.HTTP
       });
     }
 
+    protected void Unauthorized()
+    {
+      SetState(() => {
+        var response_header = HTTPUtils.CreateResponseHeader(
+          HttpStatusCode.Unauthorized,
+          new Dictionary<string, string>());
+        var bytes = System.Text.Encoding.UTF8.GetBytes(response_header);
+        Send(bytes);
+        Logger.Debug("Header: {0}", response_header);
+        Stop();
+      });
+    }
+
     protected virtual void OnWaitChannelCompleted()
     {
       if (!IsStopped) {
@@ -641,11 +673,16 @@ namespace PeerCastStation.HTTP
     protected override void OnStarted()
     {
       Logger.Debug("Starting");
-      if (this.Channel!=null) {
-        this.Channel.ContentChanged += OnContentChanged;
-        OnContentChanged(this, new EventArgs());
+      if (HTTPUtils.CheckAuthorization(request, AccessControl.AuthenticationKey)) {
+        if (this.Channel!=null) {
+          this.Channel.ContentChanged += OnContentChanged;
+          OnContentChanged(this, new EventArgs());
+        }
+        WaitChannel();
       }
-      WaitChannel();
+      else {
+        Unauthorized();
+      }
     }
 
     protected override void OnStopped()

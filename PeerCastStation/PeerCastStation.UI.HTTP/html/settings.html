@@ -64,8 +64,8 @@
                 <th>開放状態</th>
                 <th>LAN接続許可</th>
                 <th>WAN接続許可</th>
-                <th>認証ID</th>
-                <th>認証パスワード</th>
+                <th>認証付URL</th>
+                <th>認証ID・パスワード</th>
               </tr>
             </thead>
             <tfoot>
@@ -106,8 +106,9 @@
                   <label class="checkbox"><input type="checkbox" data-bind="checked:wanInterfaceAccept">操作</label>
                   <label class="checkbox"><input type="checkbox" data-bind="checked:globalAuthRequired">要認証</label>
                 </td>
-                <td><span data-bind="text:authenticationId"></span></td>
-                <td><span data-bind="text:authenticationPassword"></span></td>
+                <td><a data-bind="attr:{href: authUrl}">リンク</a></td>
+                <td>ID: <span data-bind="text:authenticationId"></span><br>
+                    パスワード: <span data-bind="text:authenticationPassword"></span></td>
               </tr>
             </tbody>
           </table>

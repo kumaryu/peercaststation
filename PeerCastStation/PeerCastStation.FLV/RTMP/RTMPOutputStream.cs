@@ -199,6 +199,26 @@ namespace PeerCastStation.FLV.RTMP
 		}
 
 		public event StreamStoppedEventHandler Stopped;
+
+    public bool CheckAuthotization(string auth)
+    {
+      if (accessControl.AuthenticationKey==null) return true;
+      if (auth==null) return false;
+      var authorized = false;
+      try {
+        var authorization = System.Text.Encoding.ASCII.GetString(Convert.FromBase64String(auth)).Split(':');
+        if (authorization.Length>=2) {
+          var user = authorization[0];
+          var pass = String.Join(":", authorization.Skip(1).ToArray());
+          authorized = accessControl.CheckAuthorization(user, pass);
+        }
+      }
+      catch (FormatException) {
+      }
+      catch (ArgumentException) {
+      }
+      return authorized;
+    }
 	}
 
 	public class RTMPOutputStreamFactory
