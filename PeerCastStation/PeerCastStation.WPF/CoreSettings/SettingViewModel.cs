@@ -20,6 +20,7 @@ using System.Linq;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.Commons;
 using System.ComponentModel;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.WPF.CoreSettings
 {
@@ -670,6 +671,35 @@ namespace PeerCastStation.WPF.CoreSettings
         port_mapper.DiscoverAsync()
           .ContinueWith(prev => OnPropertyChanged("PortMapperExternalAddresses"));
       }
+      PortCheckStatus = PortCheckStatus.Checking;
+      CheckPortAsync().ContinueWith(prev => {
+        if (prev.IsCanceled || prev.IsFaulted) {
+          PortCheckStatus = PortCheckStatus.Failed;
+        }
+        else {
+          PortCheckStatus = prev.Result;
+        }
+      });
+    }
+
+    private async Task<PortCheckStatus> CheckPortAsync()
+    {
+      var port_checker = pecaApp.Plugins.GetPlugin<PeerCastStation.UI.PCPPortCheckerPlugin>();
+      if (port_checker==null) return PortCheckStatus.Failed;
+      var result = await port_checker.CheckAsync();
+      if (!result.Success) {
+        return PortCheckStatus.Failed;
+      }
+      else {
+        var status = PortCheckStatus.Closed;
+        foreach (var port in ports) {
+          port.IsOpen = result.Ports.Contains(port.Port);
+          if (port.IsOpen.HasValue && port.IsOpen.Value) {
+            status = PortCheckStatus.Opened;
+          }
+        }
+        return status;
+      }
     }
 
     public void AddPort()
@@ -710,34 +740,17 @@ namespace PeerCastStation.WPF.CoreSettings
       set { SetProperty("PortCheckStatus", ref portCheckStatus, value); }
     }
 
-    public void PortCheck()
+    public void CheckPort()
     {
-      var ports = peerCast.OutputListeners
-        .Where( listener => (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0)
-        .Select(listener => listener.LocalEndPoint.Port);
-      Uri target_uri;
-      if (!AppSettingsReader.TryGetUri("PCPPortChecker", out target_uri)) return;
-      var checker = new PeerCastStation.UI.PCPPortChecker(peerCast.SessionID, target_uri, ports);
-      checker.PortCheckCompleted += checker_PortCheckCompleted;
-      checker.RunAsync();
       PortCheckStatus = PortCheckStatus.Checking;
-    }
-
-    void checker_PortCheckCompleted(object sender, UI.PortCheckCompletedEventArgs args)
-    {
-      if (args.Success) {
-        var status = PortCheckStatus.Closed;
-        foreach (var port in ports) {
-          port.IsOpen = args.Ports.Contains(port.Port);
-          if (port.IsOpen.HasValue && port.IsOpen.Value) {
-            status = PortCheckStatus.Opened;
-          }
+      CheckPortAsync().ContinueWith(prev => {
+        if (prev.IsCanceled || prev.IsFaulted) {
+          PortCheckStatus = PortCheckStatus.Failed;
         }
-        PortCheckStatus = status;
-      }
-      else {
-        PortCheckStatus = PortCheckStatus.Failed;
-      }
+        else {
+          PortCheckStatus = prev.Result;
+        }
+      });
     }
 
     protected override void OnPropertyChanged(string propertyName)
@@ -803,6 +816,16 @@ namespace PeerCastStation.WPF.CoreSettings
         port_mapper.DiscoverAsync()
           .ContinueWith(prev => OnPropertyChanged("PortMapperExternalAddresses"));
       }
+      PortCheckStatus = PortCheckStatus.Checking;
+      CheckPortAsync().ContinueWith(prev => {
+        if (prev.IsCanceled || prev.IsFaulted) {
+          PortCheckStatus = PortCheckStatus.Failed;
+        }
+        else {
+          PortCheckStatus = prev.Result;
+          peerCast.IsFirewalled = prev.Result!=PortCheckStatus.Opened;
+        }
+      });
       pecaApp.SaveSettings();
     }
 

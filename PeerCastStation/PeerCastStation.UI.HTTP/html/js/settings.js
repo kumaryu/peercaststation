@@ -436,6 +436,7 @@ var SettingsViewModel = new function() {
 
   self.bind = function(target) {
     self.update();
+    self.checkPorts();
     updating = true;
     ko.applyBindings(self, target);
     updating = false;
