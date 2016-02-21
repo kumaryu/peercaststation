@@ -21,6 +21,7 @@ using PeerCastStation.Core;
 using PeerCastStation.WPF.ChannelLists.ChannelInfos;
 using PeerCastStation.WPF.Commons;
 using PeerCastStation.WPF.CoreSettings;
+using System.Windows;
 
 namespace PeerCastStation.WPF.ChannelLists.Dialogs
 {
@@ -81,8 +82,18 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
             value!=null &&
             value.DefaultUri!=null) {
           StreamUrl = value.DefaultUri.ToString();
+          OnPropertyChanged("IsContentReaderRequired");
+          OnPropertyChanged("ContentTypeVisibility");
         }
       }
+    }
+
+    public Visibility ContentTypeVisibility {
+      get { return IsContentReaderRequired ? Visibility.Visible : Visibility.Collapsed; }
+    }
+
+    public bool IsContentReaderRequired {
+      get { return selectedSourceStream!=null && selectedSourceStream.IsContentReaderRequired; }
     }
 
     private string streamUrl = "";
