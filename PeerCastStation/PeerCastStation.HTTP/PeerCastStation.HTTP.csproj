@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="HTTPDummyOutputStream.cs" />
     <Compile Include="HTTPOutputStream.cs" />
+    <Compile Include="HTTPPushSourceStream.cs" />
     <Compile Include="HTTPSourceStream.cs" />
     <Compile Include="HTTPUtils.cs" />
     <Compile Include="PlayList.cs" />
