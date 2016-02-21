@@ -33,6 +33,10 @@ namespace PeerCastStation.HTTP
       get { return new Uri("http://localhost:8080/"); }
     }
 
+    public override bool IsContentReaderRequired {
+      get { return true; }
+    }
+
     public override ISourceStream Create(Channel channel, Uri source, IContentReader reader)
     {
       return new HTTPPushSourceStream(PeerCast, channel, source, reader);
@@ -237,6 +241,7 @@ namespace PeerCastStation.HTTP
       });
       if (request==null) new HTTPError(HttpStatusCode.BadRequest);
       if (request.Method!="POST") new HTTPError(HttpStatusCode.MethodNotAllowed);
+      Logger.Debug("POST requested");
 
       string encodings;
       if (request.Headers.TryGetValue("TRANSFER-ENCODING", out encodings)) {
@@ -249,9 +254,12 @@ namespace PeerCastStation.HTTP
           new HTTPError(HttpStatusCode.NotImplemented);
         }
         chunked = true;
+        Logger.Debug("chunked encoding");
       }
 
-      Logger.Debug("Handshake succeeded");
+      if (request.Headers.ContainsKey("CONTENT-TYPE")) {
+        Logger.Debug("Content-Type: {0}", request.Headers["CONTENT-TYPE"]);
+      }
       return true;
     }
 

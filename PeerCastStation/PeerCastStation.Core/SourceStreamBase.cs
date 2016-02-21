@@ -33,6 +33,7 @@ namespace PeerCastStation.Core
     public abstract string           Scheme { get; }
     public abstract SourceStreamType Type { get; }
     public abstract Uri              DefaultUri { get; }
+    public abstract bool             IsContentReaderRequired { get; }
     public virtual ISourceStream Create(Channel channel, Uri tracker)
     {
       throw new NotImplementedException();
