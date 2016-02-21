@@ -173,6 +173,11 @@ var BroadcastDialog = new function() {
     }
   });
 
+  self.contentTypeVisibility = ko.computed(function () {
+    var source_stream = self.sourceStream();
+    return source_stream && source_stream.isContentReaderRequired;
+  });
+
   self.yellowPages = ko.observableArray([
     {
       yellowPageId: null,

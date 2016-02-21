@@ -93,6 +93,9 @@ namespace PeerCastStation.HTTP
     public override Uri DefaultUri {
       get { return new Uri("http://localhost:8080/"); }
     }
+    public override bool IsContentReaderRequired {
+      get { return true; }
+    }
 
     public override ISourceStream Create(Channel channel, Uri source, IContentReader reader)
     {

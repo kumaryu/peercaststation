@@ -119,10 +119,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           </ComboBox>
           <TextBlock Grid.Column="1" Text="kbps" VerticalAlignment="Center"/>
         </Grid>
-        <Label    Grid.Column="0" Grid.Row="3" Content="タイプ:"/>
+        <Label    Grid.Column="0" Grid.Row="3" Content="タイプ:"
+                  Visibility="{Binding ContentTypeVisibility}"/>
         <ComboBox Grid.Column="1" Grid.Row="3"
                   ItemsSource="{Binding ContentTypes}"
                   SelectedItem="{Binding ContentType}"
+                  Visibility="{Binding ContentTypeVisibility}"
                   DisplayMemberPath="Name"/>
         <Label    Grid.Column="0" Grid.Row="4" Content="掲載YP:"/>
         <ComboBox Grid.Column="1" Grid.Row="4"

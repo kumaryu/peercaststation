@@ -33,6 +33,10 @@ namespace PeerCastStation.FLV.RTMP
       get { return new Uri("rtmp://localhost/live/livestream"); }
     }
 
+    public override bool IsContentReaderRequired {
+      get { return false; }
+    }
+
     public override ISourceStream Create(Channel channel, Uri source, IContentReader reader)
     {
       return new RTMPSourceStream(PeerCast, channel, source);

@@ -645,6 +645,7 @@ namespace PeerCastStation.UI.HTTP
           res["scheme"]     = sstream.Scheme;
           res["type"]       = (int)sstream.Type;
           res["defaultUri"] = sstream.DefaultUri!=null ? sstream.DefaultUri.ToString() : "";
+          res["isContentReaderRequired"] = sstream.IsContentReaderRequired;
           return res;
         }).ToArray());
       }
