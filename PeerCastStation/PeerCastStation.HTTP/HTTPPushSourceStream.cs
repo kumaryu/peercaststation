@@ -222,6 +222,7 @@ namespace PeerCastStation.HTTP
       OnStopped();
     }
 
+    private bool chunked = false;
     private bool Handshake()
     {
       HTTPRequest request = null;
@@ -236,8 +237,97 @@ namespace PeerCastStation.HTTP
       });
       if (request==null) new HTTPError(HttpStatusCode.BadRequest);
       if (request.Method!="POST") new HTTPError(HttpStatusCode.MethodNotAllowed);
+
+      string encodings;
+      if (request.Headers.TryGetValue("TRANSFER-ENCODING", out encodings)) {
+        var codings = encodings.Split(',')
+          .Select(token => token.Trim())
+          .Distinct()
+          .ToArray();
+        if (codings.Length>1 ||
+            codings[0].ToLowerInvariant()!="chunked") {
+          new HTTPError(HttpStatusCode.NotImplemented);
+        }
+        chunked = true;
+      }
+
       Logger.Debug("Handshake succeeded");
       return true;
+    }
+
+    Stream GetChunkedStream(Stream stream)
+    {
+      if (!chunked) return stream;
+      var pos = stream.Position;
+      MemoryStream substream = null;
+      var bytes = new List<byte>();
+      while (stream.Position<stream.Length) {
+        var b = stream.ReadByte();
+        if (b=='\r') {
+          b = stream.ReadByte();
+          if (b<0) {
+            if (substream!=null) {
+              substream.Position = 0;
+            }
+            stream.Position = pos;
+            return substream;
+          }
+          if (b=='\n') {
+            var line = System.Text.Encoding.ASCII.GetString(bytes.ToArray());
+            bytes.Clear();
+            Logger.Debug(line);
+            if (line!="") {
+              int len;
+              if (Int32.TryParse(
+                  line.Split(';')[0],
+                  System.Globalization.NumberStyles.AllowHexSpecifier,
+                  System.Globalization.CultureInfo.InvariantCulture.NumberFormat,
+                  out len)) {
+                if (len==0) {
+                  if (substream!=null) {
+                    substream.Position = 0;
+                  }
+                  stream.Position = pos;
+                  return substream ?? stream;
+                }
+                if (stream.Length-stream.Position<len+2) {
+                  if (substream!=null) {
+                    substream.Position = 0;
+                  }
+                  stream.Position = pos;
+                  return substream;
+                }
+                else {
+                  var buf = new byte[len];
+                  stream.Read(buf, 0, len);
+                  if (substream==null) {
+                    substream = new MemoryStream();
+                  }
+                  substream.Write(buf, 0, len);
+                  stream.ReadByte(); // \r
+                  stream.ReadByte(); // \n
+                  pos = stream.Position;
+                }
+              }
+              else {
+                throw new HTTPError(HttpStatusCode.BadRequest);
+              }
+            }
+          }
+          else {
+            bytes.Add((byte)'\r');
+            bytes.Add((byte)b);
+          }
+        }
+        else {
+          bytes.Add((byte)b);
+        }
+      }
+      if (substream!=null) {
+        substream.Position = 0;
+      }
+      stream.Position = pos;
+      return substream;
     }
 
     long lastPosition = 0;
@@ -246,6 +336,8 @@ namespace PeerCastStation.HTTP
       this.state = ConnectionState.Connected;
       while (!IsStopped) {
         RecvUntil(stream => {
+          stream = GetChunkedStream(stream);
+          if (stream==null) return false;
           if (stream.Length<=0) return true;
           this.state = ConnectionState.Receiving;
           var data = this.ContentReader.Read(stream);
