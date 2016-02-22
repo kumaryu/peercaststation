@@ -58,6 +58,16 @@ namespace PeerCastStation.UI.HTTP
       }
     }
 
+    public static string CreateResponseHeader(HttpStatusCode code)
+    {
+      var header = new System.Text.StringBuilder(String.Format("HTTP/1.0 {0} {1}\r\n", (int)code, code.ToString()));
+      if (code==HttpStatusCode.Unauthorized) {
+        header.AppendFormat("{0}: {1}\r\n", "WWW-Authenticate", "Basic realm=\"PeerCastStation\"");
+      }
+      header.Append("\r\n");
+      return header.ToString();
+    }
+
     public static string CreateResponseHeader(HttpStatusCode code, Dictionary<string, string> parameters)
     {
       var header = new System.Text.StringBuilder(String.Format("HTTP/1.0 {0} {1}\r\n", (int)code, code.ToString()));

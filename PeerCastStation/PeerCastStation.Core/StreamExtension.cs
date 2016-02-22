@@ -139,6 +139,23 @@ namespace PeerCastStation.Core
       return ReadAtomAsync(stream, CancellationToken.None);
     }
 
+    static public void WriteUTF8(this Stream stream, string value)
+    {
+      var bytes = System.Text.Encoding.UTF8.GetBytes(value);
+      stream.Write(bytes, 0, bytes.Length);
+    }
+
+    static public async Task WriteUTF8Async(this Stream stream, string value, CancellationToken cancel_token)
+    {
+      var bytes = System.Text.Encoding.UTF8.GetBytes(value);
+      await stream.WriteAsync(bytes, 0, bytes.Length, cancel_token);
+    }
+
+    static public Task WriteUTF8Async(this Stream stream, string value)
+    {
+      return WriteUTF8Async(stream, value, CancellationToken.None);
+    }
+
   }
 
 }

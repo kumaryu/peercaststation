@@ -40,16 +40,52 @@ namespace PeerCastStation.Core
   public abstract class OutputStreamBase
     : IOutputStream
   {
-    public PeerCast PeerCast { get; private set; }
-    public Stream InputStream { get; private set; }
-    public Stream OutputStream { get; private set; }
-    public StreamConnection Connection { get; private set; }
-    public AccessControlInfo AccessControlInfo { get; private set; }
-    public EndPoint RemoteEndPoint { get; private set; }
+    private ConnectionStream connection;
+    protected ConnectionStream Connection { get { return connection; } }
+    protected Logger Logger { get; private set; }
     public Channel Channel { get; private set; }
-    public bool IsLocal { get; private set; }
-    public int UpstreamRate
+    public PeerCast PeerCast { get; private set; }
+    public EndPoint RemoteEndPoint { get; private set; }
+    public AccessControlInfo AccessControlInfo { get; private set; }
+
+    /// <summary>
+    /// 元になるストリーム、チャンネル、リクエストからHTTPOutputStreamを初期化します
+    /// </summary>
+    /// <param name="peercast">所属するPeerCast</param>
+    /// <param name="input_stream">元になる受信ストリーム</param>
+    /// <param name="output_stream">元になる送信ストリーム</param>
+    /// <param name="remote_endpoint">接続先のアドレス</param>
+    /// <param name="access_control">接続可否および認証の情報</param>
+    /// <param name="channel">所属するチャンネル。無い場合はnull</param>
+    /// <param name="request">クライアントからのリクエスト</param>
+    public OutputStreamBase(
+      PeerCast peercast,
+      Stream input_stream,
+      Stream output_stream,
+      EndPoint remote_endpoint,
+      AccessControlInfo access_control,
+      Channel channel,
+      byte[] header)
     {
+      this.Logger = new Logger(this.GetType());
+      this.connection = new ConnectionStream(
+        header!=null && header.Length>0 ? new PrependedStream(header, input_stream) : input_stream,
+        output_stream);
+      this.connection.WriteTimeout = 10000;
+      this.PeerCast = peercast;
+      this.RemoteEndPoint = remote_endpoint;
+      this.AccessControlInfo = access_control;
+      this.Channel = channel;
+      var ip = remote_endpoint as IPEndPoint;
+      this.IsLocal = ip!=null ? ip.Address.IsSiteLocal() : true;
+    }
+
+    public abstract OutputStreamType OutputStreamType { get; }
+
+    public bool IsLocal { get; private set; }
+    public bool HasError { get; private set; }
+
+    public int UpstreamRate {
       get {
         if (IsLocal || Channel==null) {
           return 0;
@@ -59,277 +95,177 @@ namespace PeerCastStation.Core
         }
       }
     }
-    private CancellationTokenSource isStopped = new CancellationTokenSource();
-    public bool IsStopped {
-      get { return isStopped.IsCancellationRequested; }
-    }
-    public StopReason StoppedReason { get; private set; }
-    public bool HasError { get; private set; }
-    public float SendRate { get { return Connection.SendRate; } }
-    public float RecvRate { get { return Connection.ReceiveRate; } }
-    protected QueuedSynchronizationContext SyncContext { get; private set; }
-    protected Logger Logger { get; private set; }
-
-    public abstract ConnectionInfo GetConnectionInfo();
-
-    public OutputStreamBase(
-      PeerCast peercast,
-      Stream input_stream,
-      Stream output_stream,
-      EndPoint remote_endpoint,
-      AccessControlInfo acinfo,
-      Channel channel,
-      byte[] header)
-    {
-      this.PeerCast = peercast;
-      this.Connection = new StreamConnection(input_stream, output_stream, header);
-      this.Connection.SendTimeout = 10000;
-      this.RemoteEndPoint = remote_endpoint;
-      this.AccessControlInfo = acinfo;
-      this.Channel = channel;
-      var ip = remote_endpoint as IPEndPoint;
-      this.IsLocal = ip!=null ? ip.Address.IsSiteLocal() : true;
-      this.SyncContext = new QueuedSynchronizationContext();
-      this.Logger = new Logger(this.GetType());
-    }
 
     protected virtual int GetUpstreamRate()
     {
       return 0;
     }
 
-    protected virtual void Cleanup()
-    {
-      Connection.Close();
-    }
+    public abstract ConnectionInfo GetConnectionInfo();
 
-    protected virtual void WaitEventAny()
-    {
-      WaitHandle.WaitAny(new WaitHandle[] {
-        Connection.ReceiveWaitHandle,
-        SyncContext.EventHandle,
-      }, 10);
+    private CancellationTokenSource isStopped = new CancellationTokenSource();
+    public bool IsStopped {
+      get { return isStopped.IsCancellationRequested; }
     }
+    public StopReason StoppedReason { get; private set; }
 
-    protected virtual void OnStarted()
+    protected virtual Task OnStarted(CancellationToken cancel_token)
     {
       if (this.Channel!=null) {
         this.Channel.AddOutputStream(this);
       }
+      return Task.Delay(0);
     }
 
-    protected virtual void OnStopped()
+    protected virtual Task OnStopped(CancellationToken cancel_token)
     {
       if (this.Channel!=null) {
         this.Channel.RemoveOutputStream(this);
       }
+      return Task.Delay(0);
     }
 
-    protected virtual void DoProcess()
+    protected virtual Task OnError(Exception err, CancellationToken cancel_token)
+    {
+      HasError = true;
+      Stop(StopReason.ConnectionError);
+      Logger.Info(err);
+      return Task.Delay(0);
+    }
+
+    protected Task OnError(Exception err)
+    {
+      return OnError(err, isStopped.Token);
+    }
+
+    protected abstract Task<StopReason> DoProcess(CancellationToken cancel_token);
+
+    public virtual async Task<StopReason> Start()
     {
       try {
-        Connection.CheckErrors();
+        Logger.Debug("Starting");
+        try {
+          await OnStarted(isStopped.Token);
+          try {
+            Stop(await DoProcess(isStopped.Token));
+          }
+          catch (IOException err) {
+            await OnError(err, isStopped.Token);
+          }
+          catch (OperationCanceledException) {
+          }
+          await OnStopped(isStopped.Token);
+        }
+        catch (OperationCanceledException) {
+        }
+        finally {
+          var timeout_source = new CancellationTokenSource(TimeSpan.FromMilliseconds(connection.WriteTimeout));
+          await connection.CloseAsync(timeout_source.Token);
+        }
+        Logger.Debug("Finished");
+        return StoppedReason;
       }
-      catch (IOException e) {
-        Logger.Info(e);
-        OnError();
+      catch (Exception e) {
+        Logger.Error(e);
+        if (StoppedReason==StopReason.None) {
+          return StopReason.NotIdentifiedError;
+        }
+        else {
+          return StoppedReason;
+        }
       }
-      OnIdle();
-      SyncContext.ProcessAll();
     }
 
-    private Task mainTask;
-    protected virtual Task<StopReason> DoStart()
+    protected virtual Task DoPost(Host from, Atom packet, CancellationToken cancel_token)
     {
-      if (mainTask!=null) {
-        throw new InvalidOperationException("Output Stream is already started");
-      }
-      var main_task = Task<StopReason>.Factory.StartNew(() => {
-        SynchronizationContext.SetSynchronizationContext(this.SyncContext);
-        return Process();
-      });
-      mainTask = main_task;
-      return main_task;
+      return Task.Delay(0);
     }
 
-    protected virtual void DoStop(StopReason reason)
+    public void Post(Host from, Atom packet)
+    {
+      if (isStopped.IsCancellationRequested) return;
+      DoPost(from, packet, isStopped.Token);
+    }
+
+    public void Stop()
+    {
+      Stop(StopReason.UserShutdown);
+    }
+
+    public void Stop(StopReason reason)
     {
       StoppedReason = reason;
       isStopped.Cancel();
     }
 
-    protected virtual void DoPost(Host from, Atom packet)
+    private static string ParseEndPoint(string text)
     {
+      var ipv4port = System.Text.RegularExpressions.Regex.Match(text, @"\A(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})\z");
+      var ipv6port = System.Text.RegularExpressions.Regex.Match(text, @"\A\[([a-fA-F0-9:]+)\]:(\d{1,5})\z");
+      var hostport = System.Text.RegularExpressions.Regex.Match(text, @"\A([a-zA-Z](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*):(\d{1,5})\z");
+      var ipv4addr = System.Text.RegularExpressions.Regex.Match(text, @"\A(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\z");
+      var ipv6addr = System.Text.RegularExpressions.Regex.Match(text, @"\A([a-fA-F0-9:.]+)\z");
+      var hostaddr = System.Text.RegularExpressions.Regex.Match(text, @"\A([a-zA-Z](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*)\z");
+      if (ipv4port.Success) {
+        IPAddress addr;
+        int port;
+        if (IPAddress.TryParse(ipv4port.Groups[1].Value, out addr) &&
+            addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork &&
+            Int32.TryParse(ipv4port.Groups[2].Value, out port) &&
+            0<port && port<=65535) {
+          return new IPEndPoint(addr, port).ToString();
+        }
+      }
+      if (ipv6port.Success) {
+        IPAddress addr;
+        int port;
+        if (IPAddress.TryParse(ipv6port.Groups[1].Value, out addr) &&
+            addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6 &&
+            Int32.TryParse(ipv6port.Groups[2].Value, out port) &&
+            0<port && port<=65535) {
+          return new IPEndPoint(addr, port).ToString();
+        }
+      }
+      if (hostport.Success) {
+        string host = hostport.Groups[1].Value;
+        int port;
+        if (Int32.TryParse(hostport.Groups[2].Value, out port) && 0<port && port<=65535) {
+          return String.Format("{0}:{1}", host, port);
+        }
+      }
+      if (ipv4addr.Success) {
+        IPAddress addr;
+        if (IPAddress.TryParse(ipv4addr.Groups[1].Value, out addr) &&
+            addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork) {
+          return addr.ToString();
+        }
+      }
+      if (ipv6addr.Success) {
+        IPAddress addr;
+        if (IPAddress.TryParse(ipv6addr.Groups[1].Value, out addr) &&
+            addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6) {
+          return addr.ToString();
+        }
+      }
+      if (hostaddr.Success) {
+        string host = hostaddr.Groups[1].Value;
+        return host;
+      }
+      return null;
     }
 
-    protected virtual void PostAction(Action proc)
+    public static Uri CreateTrackerUri(Guid channel_id, string tip)
     {
-      SyncContext.Post(dummy => { proc(); }, null);
-    }
-
-    protected virtual void OnIdle()
-    {
-    }
-
-    protected virtual void OnError()
-    {
-      HasError = true;
-      Stop(StopReason.ConnectionError);
-    }
-
-    public Task<StopReason> Start()
-    {
-      return DoStart();
-    }
-
-    public void Post(Host from, Atom packet)
-    {
-      if (!IsStopped) {
-        PostAction(() => {
-          DoPost(from, packet);
-        });
+      if (tip==null) return null;
+      var endpoint = ParseEndPoint(tip);
+      if (endpoint!=null) {
+        return new Uri(String.Format("pcp://{0}/{1}", endpoint, channel_id));
+      }
+      else {
+        return null;
       }
     }
-
-    public void Stop()
-    {
-      if (!IsStopped) {
-        PostAction(() => {
-          DoStop(StopReason.UserShutdown);
-        });
-      }
-    }
-
-    public void Join()
-    {
-      if (mainTask==null) return;
-      mainTask.Wait();
-    }
-
-    public void Stop(StopReason reason)
-    {
-      if (!IsStopped) {
-        PostAction(() => {
-          DoStop(reason);
-        });
-      }
-    }
-
-    public virtual StopReason Process()
-    {
-      OnStarted();
-      while (!IsStopped) {
-        WaitEventAny();
-        DoProcess();
-      }
-      Cleanup();
-      OnStopped();
-      return StoppedReason;
-    }
-
-    protected void Send(byte[] bytes)
-    {
-      try {
-        Connection.Send(bytes);
-      }
-      catch (IOException e) {
-        Logger.Info(e);
-        OnError();
-      }
-    }
-
-    protected void Send(Atom atom)
-    {
-      try {
-        Connection.Send(stream => AtomWriter.Write(stream, atom));
-      }
-      catch (IOException e) {
-        Logger.Info(e);
-        OnError();
-      }
-    }
-
-    protected bool Recv(Action<Stream> proc)
-    {
-      try {
-        return Connection.Recv(proc);
-      }
-      catch (IOException e) {
-        Logger.Info(e);
-        OnError();
-        return false;
-      }
-    }
-
-    public abstract OutputStreamType OutputStreamType { get; }
-
-		private static string ParseEndPoint(string text)
-		{
-			var ipv4port = System.Text.RegularExpressions.Regex.Match(text, @"\A(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})\z");
-			var ipv6port = System.Text.RegularExpressions.Regex.Match(text, @"\A\[([a-fA-F0-9:]+)\]:(\d{1,5})\z");
-			var hostport = System.Text.RegularExpressions.Regex.Match(text, @"\A([a-zA-Z](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*):(\d{1,5})\z");
-			var ipv4addr = System.Text.RegularExpressions.Regex.Match(text, @"\A(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\z");
-			var ipv6addr = System.Text.RegularExpressions.Regex.Match(text, @"\A([a-fA-F0-9:.]+)\z");
-			var hostaddr = System.Text.RegularExpressions.Regex.Match(text, @"\A([a-zA-Z](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*)\z");
-			if (ipv4port.Success) {
-				IPAddress addr;
-				int port;
-				if (IPAddress.TryParse(ipv4port.Groups[1].Value, out addr) &&
-						addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork &&
-						Int32.TryParse(ipv4port.Groups[2].Value, out port) &&
-						0<port && port<=65535) {
-					return new IPEndPoint(addr, port).ToString();
-				}
-			}
-			if (ipv6port.Success) {
-				IPAddress addr;
-				int port;
-				if (IPAddress.TryParse(ipv6port.Groups[1].Value, out addr) &&
-						addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6 &&
-						Int32.TryParse(ipv6port.Groups[2].Value, out port) &&
-						0<port && port<=65535) {
-					return new IPEndPoint(addr, port).ToString();
-				}
-			}
-			if (hostport.Success) {
-				string host = hostport.Groups[1].Value;
-				int port;
-				if (Int32.TryParse(hostport.Groups[2].Value, out port) && 0<port && port<=65535) {
-					return String.Format("{0}:{1}", host, port);
-				}
-			}
-			if (ipv4addr.Success) {
-				IPAddress addr;
-				if (IPAddress.TryParse(ipv4addr.Groups[1].Value, out addr) &&
-						addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork) {
-					return addr.ToString();
-				}
-			}
-			if (ipv6addr.Success) {
-				IPAddress addr;
-				if (IPAddress.TryParse(ipv6addr.Groups[1].Value, out addr) &&
-						addr.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6) {
-					return addr.ToString();
-				}
-			}
-			if (hostaddr.Success) {
-				string host = hostaddr.Groups[1].Value;
-				return host;
-			}
-			return null;
-		}
-
-		public static Uri CreateTrackerUri(Guid channel_id, string tip)
-		{
-			if (tip==null) return null;
-			var endpoint = ParseEndPoint(tip);
-			if (endpoint!=null) {
-				return new Uri(String.Format("pcp://{0}/{1}", endpoint, channel_id));
-			}
-			else {
-				return null;
-			}
-		}
 
   }
+
 }
