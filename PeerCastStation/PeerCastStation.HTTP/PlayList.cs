@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using PeerCastStation.Core;
 
@@ -39,7 +40,7 @@ namespace PeerCastStation.HTTP
     /// </summary>
     /// <param name="baseuri">ベースとなるURI</param>
     /// <returns>作成したプレイリスト</returns>
-    byte[] CreatePlayList(Uri baseuri);
+    byte[] CreatePlayList(Uri baseuri, IEnumerable<KeyValuePair<string,string>> parameters);
   }
 
   /// <summary>
@@ -56,9 +57,10 @@ namespace PeerCastStation.HTTP
       Channels = new List<Channel>();
     }
 
-    public byte[] CreatePlayList(Uri baseuri)
+    public byte[] CreatePlayList(Uri baseuri, IEnumerable<KeyValuePair<string,string>> parameters)
     {
       var res = new System.Text.StringBuilder();
+      var queries = String.Join("&", parameters.Select(kv => Uri.EscapeDataString(kv.Key) + "=" + Uri.EscapeDataString(kv.Value)));
       foreach (var c in Channels) {
         var url = new UriBuilder(new Uri(baseuri, c.ChannelID.ToString("N").ToUpper() + c.ChannelInfo.ContentExtension));
         bool mms = 
@@ -67,6 +69,9 @@ namespace PeerCastStation.HTTP
           c.ChannelInfo.ContentType=="ASX";
         if (mms) {
           url.Scheme = "mms";
+        }
+        if (queries!="") {
+          url.Query = queries;
         }
         res.AppendLine(url.ToString());
       }
@@ -88,8 +93,9 @@ namespace PeerCastStation.HTTP
       Channels = new List<Channel>();
     }
 
-    public byte[] CreatePlayList(Uri baseuri)
+    public byte[] CreatePlayList(Uri baseuri, IEnumerable<KeyValuePair<string,string>> parameters)
     {
+      var queries = String.Join("&", parameters.Select(kv => Uri.EscapeDataString(kv.Key) + "=" + Uri.EscapeDataString(kv.Value)));
       var stream = new System.IO.StringWriter();
       var xml = new System.Xml.XmlTextWriter(stream);
       xml.Formatting = System.Xml.Formatting.Indented;
@@ -112,6 +118,9 @@ namespace PeerCastStation.HTTP
         stream_url.Path +=
           c.ChannelID.ToString("N").ToUpper() +
           c.ChannelInfo.ContentExtension;
+        if (queries!="") {
+          stream_url.Query = queries;
+        }
         xml.WriteStartElement("Entry");
         xml.WriteElementString("Title", name);
         if (contact_url!=null && contact_url!="") {

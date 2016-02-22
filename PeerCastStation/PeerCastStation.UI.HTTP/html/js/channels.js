@@ -226,10 +226,14 @@ var YPChannelViewModel = function(owner, initial_value, new_channel) {
     return (self.tags()!=null && self.tags()!=='') ? 'tooltip' : '';
   });
   self.streamUrl       = ko.computed(function() {
-    return '/stream/' + self.channelId() + "?tip=" + self.tracker();
+    var url = '/stream/' + self.channelId() + "?tip=" + self.tracker();
+    var auth_token = owner.authToken();
+    return auth_token ? url + '&auth=' + auth_token : url;
   });
   self.playlistUrl     = ko.computed(function() {
-    return '/pls/'+self.channelId()+ "?tip=" + self.tracker();
+    var url = '/pls/' + self.channelId() + "?tip=" + self.tracker();
+    var auth_token = owner.authToken();
+    return auth_token ? url + '&auth=' + auth_token : url;
   });
   self.uptimeReadable  = ko.computed(function() {
     var seconds = self.uptime();
@@ -347,6 +351,7 @@ var CustomFilterViewModel = function(owner, filter) {
 var YPChannelsViewModel = function() {
   var self = this;
   self.channels = ko.observableArray();
+  self.authToken = ko.observable(null);
   self.sortColumn = ko.observable({ sortBy: 'uptime', ascending: true });
   self.sortColumn.subscribe(function () {
     self.saveLocalConfig();
@@ -457,6 +462,9 @@ var YPChannelsViewModel = function() {
 
   self.update = function() {
     self.isLoading(true);
+    PeerCast.getAuthToken(function (result) {
+      if (result) self.authToken(result);
+    });
     PeerCast.updateYPChannels(function(result) {
       if (result) {
         var old_channels = getLastChannels();

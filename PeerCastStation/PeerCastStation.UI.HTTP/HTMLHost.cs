@@ -176,6 +176,9 @@ namespace PeerCastStation.UI.HTTP
           {"Content-Length", content.Length.ToString() },
           {"Location",       "/html/index.html" },
         };
+        if (AccessControlInfo.AuthenticationKey!=null) {
+          parameters.Add("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey));
+        }
         await Connection.WriteUTF8Async(HTTPUtils.CreateResponseHeader(HttpStatusCode.Moved, parameters), cancel_token);
         if (this.request.Method=="GET") {
           await Connection.WriteUTF8Async(content, cancel_token);
@@ -197,6 +200,9 @@ namespace PeerCastStation.UI.HTTP
             {"Content-Type",   content_desc.MimeType },
             {"Content-Length", contents.Length.ToString() },
           };
+          if (AccessControlInfo.AuthenticationKey!=null) {
+            parameters.Add("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey));
+          }
           await Connection.WriteUTF8Async(HTTPUtils.CreateResponseHeader(HttpStatusCode.OK, parameters), cancel_token);
           if (this.request.Method=="GET") {
             await Connection.WriteAsync(contents, cancel_token);

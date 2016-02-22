@@ -46,6 +46,10 @@ namespace PeerCastStation.PCP
       get { return null; }
     }
 
+    public override bool IsContentReaderRequired {
+      get { return false; }
+    }
+
     public override ISourceStream Create(Channel channel, Uri tracker)
     {
       return new PCPSourceStream(PeerCast, channel, tracker);

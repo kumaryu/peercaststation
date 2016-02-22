@@ -466,6 +466,10 @@ namespace PeerCastStation.Core
     /// </summary>
     SourceStreamType Type { get; }
     /// <summary>
+    /// ContentReaderの指定が必要かどうかを取得します
+    /// </summary>
+    bool IsContentReaderRequired { get; }
+    /// <summary>
     /// 配信時に使われるURIのデフォルト値を取得します
     /// </summary>
     Uri DefaultUri { get; }

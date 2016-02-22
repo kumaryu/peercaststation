@@ -43,6 +43,7 @@ PeerCast = {
   },
   getVersionInfo: function(completed)    { this.postRequest('getVersionInfo', null, completed); },
   getPlugins:  function(completed)       { this.postRequest('getPlugins',     null, completed); },
+  getAuthToken:function(completed)       { this.postRequest('getAuthToken',   null, completed); },
   getStatus:   function(completed)       { this.postRequest('getStatus',      null, completed); },
   getSettings: function(completed)       { this.postRequest('getSettings',    null, completed); },
   setSettings: function(args, completed) { this.postRequest('setSettings',    { settings: args }, completed); },

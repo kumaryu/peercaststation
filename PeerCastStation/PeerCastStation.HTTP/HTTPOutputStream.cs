@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
+using System.Linq;
 using System.IO;
 using System.Net;
 using System.Collections.Generic;
@@ -42,6 +43,7 @@ namespace PeerCastStation.HTTP
     /// </summary>
     public Dictionary<string, string> Headers { get; private set; }
     public Dictionary<string, string> Parameters { get; private set; }
+    public Dictionary<string, string> Cookies { get; private set; }
 
     /// <summary>
     /// HTTPリクエスト文字列からHTTPRequestオブジェクトを構築します
@@ -49,8 +51,9 @@ namespace PeerCastStation.HTTP
     /// <param name="requests">行毎に区切られたHTTPリクエストの文字列表現</param>
     public HTTPRequest(IEnumerable<string> requests)
     {
-      Headers = new Dictionary<string, string>();
+      Headers    = new Dictionary<string, string>();
       Parameters = new Dictionary<string, string>();
+      Cookies    = new Dictionary<string, string>();
       string host = "localhost";
       string path = "/";
       foreach (var req in requests) {
@@ -62,6 +65,14 @@ namespace PeerCastStation.HTTP
         else if ((match = Regex.Match(req, @"^Host:(.+)$", RegexOptions.IgnoreCase)).Success) {
           host = match.Groups[1].Value.Trim();
           Headers["HOST"] = host;
+        }
+        else if ((match = Regex.Match(req, @"^Cookie:(\s*)(.+)(\s*)$", RegexOptions.IgnoreCase)).Success) {
+          foreach (var pair in match.Groups[2].Value.Split(';')) {
+            var md = Regex.Match(pair, @"^([A-Za-z0-9!#$%^&*_\-+|~`'"".]+)=(.*)$");
+            if (md.Success) {
+              Cookies.Add(md.Groups[1].Value, md.Groups[2].Value);
+            }
+          }
         }
         else if ((match = Regex.Match(req, @"^(\S*):(.+)$", RegexOptions.IgnoreCase)).Success) {
           Headers[match.Groups[1].Value.ToUpper()] = match.Groups[2].Value.Trim();
@@ -304,15 +315,9 @@ namespace PeerCastStation.HTTP
   /// HTTPで視聴出力をするクラスです
   /// </summary>
   public class HTTPOutputStream
-    : IOutputStream
+    : OutputStreamBase
   {
     private HTTPRequest request;
-    private ConnectionStream connection;
-    private Logger Logger = new Logger(typeof(HTTPOutputStream));
-    public Channel Channel { get; private set; }
-    public PeerCast PeerCast { get; private set; }
-    public EndPoint RemoteEndPoint { get; private set; }
-    public AccessControlInfo AccessControlInfo { get; private set; }
 
     /// <summary>
     /// 元になるストリーム、チャンネル、リクエストからHTTPOutputStreamを初期化します
@@ -332,20 +337,14 @@ namespace PeerCastStation.HTTP
       AccessControlInfo access_control,
       Channel channel,
       HTTPRequest request)
+      : base(peercast, input_stream, output_stream, remote_endpoint, access_control, channel, null)
     {
       Logger.Debug("Initialized: Channel {0}, Remote {1}, Request {2} {3}",
         channel!=null ? channel.ChannelID.ToString("N") : "(null)",
         remote_endpoint,
         request.Method,
         request.Uri);
-      this.connection = new ConnectionStream(input_stream, output_stream);
       this.request = request;
-      this.PeerCast = peercast;
-      this.RemoteEndPoint = remote_endpoint;
-      this.AccessControlInfo = access_control;
-      this.Channel = channel;
-      var ip = remote_endpoint as IPEndPoint;
-      this.IsLocal = ip!=null ? ip.Address.IsSiteLocal() : true;
     }
 
     private Queue<Packet> contentPacketQueue = new Queue<Packet>();
@@ -507,22 +506,17 @@ namespace PeerCastStation.HTTP
     /// <summary>
     /// OutputStreamの種別を取得します。常にOutputStreamType.Playを返します
     /// </summary>
-    public OutputStreamType OutputStreamType
+    public override OutputStreamType OutputStreamType
     {
       get { return OutputStreamType.Play; }
     }
 
-    public bool IsLocal { get; private set; }
-    public bool HasError { get; private set; }
-
-    public int UpstreamRate {
-      get {
-        if (Channel==null || IsLocal) return 0;
-        else return Channel.ChannelInfo.Bitrate;
-      }
+    protected override int GetUpstreamRate()
+    {
+      return Channel.ChannelInfo.Bitrate;
     }
 
-    public ConnectionInfo GetConnectionInfo()
+    public override ConnectionInfo GetConnectionInfo()
     {
       ConnectionStatus status = ConnectionStatus.Connected;
       if (IsStopped) {
@@ -540,18 +534,12 @@ namespace PeerCastStation.HTTP
         (IPEndPoint)RemoteEndPoint,
         IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
         lastPacket!=null ? lastPacket.Position : 0,
-        connection.ReadRate,
-        connection.WriteRate,
+        Connection.ReadRate,
+        Connection.WriteRate,
         null,
         null,
         user_agent);
     }
-
-    private CancellationTokenSource isStopped = new CancellationTokenSource();
-    public bool IsStopped {
-      get { return isStopped.IsCancellationRequested; }
-    }
-    public StopReason StoppedReason { get; private set; }
 
     public async Task WaitChannelReceived()
     {
@@ -569,7 +557,7 @@ namespace PeerCastStation.HTTP
     {
       var response_header = CreateResponseHeader();
       var bytes = System.Text.Encoding.UTF8.GetBytes(response_header + "\r\n");
-      await connection.WriteAsync(bytes);
+      await Connection.WriteAsync(bytes);
       Logger.Debug("Header: {0}", response_header);
     }
 
@@ -620,7 +608,7 @@ namespace PeerCastStation.HTTP
         switch (packet.Type) {
         case Packet.ContentType.Header:
           if (sent_header!=packet.Content && packet.Content!=null) {
-            await connection.WriteAsync(packet.Content.Data);
+            await Connection.WriteAsync(packet.Content.Data);
             Logger.Debug("Sent ContentHeader pos {0}", packet.Content.Position);
             sent_header = packet.Content;
             sent_packet = packet.Content;
@@ -631,7 +619,7 @@ namespace PeerCastStation.HTTP
           var c = packet.Content;
           if (c.Timestamp>sent_packet.Timestamp ||
               (c.Timestamp==sent_packet.Timestamp && c.Position>sent_packet.Position)) {
-            await connection.WriteAsync(c.Data);
+            await Connection.WriteAsync(c.Data);
             sent_packet = c;
           }
           break;
@@ -657,7 +645,17 @@ namespace PeerCastStation.HTTP
       var baseuri = new Uri(
         new Uri(request.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped)),
         "stream/");
-      await connection.WriteAsync(pls.CreatePlayList(baseuri));
+
+      if (AccessControlInfo.AuthenticationKey!=null) {
+        var parameters = new Dictionary<string, string>() {
+          { "auth", HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey) },
+        };
+        await Connection.WriteAsync(pls.CreatePlayList(baseuri, parameters));
+      }
+      else {
+        await Connection.WriteAsync(pls.CreatePlayList(baseuri, Enumerable.Empty<KeyValuePair<string,string>>()));
+      }
+
     }
 
     private async Task SendReponseBody()
@@ -674,63 +672,47 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    public Task<StopReason> Start()
+    private async Task Unauthorized()
     {
-      return Task.Run(async () => {
-        Logger.Debug("Starting");
-        if (this.Channel!=null) {
-          this.Channel.AddOutputStream(this);
-          this.Channel.ContentChanged += OnContentChanged;
-          OnContentChanged(this, new EventArgs());
-        }
-        try {
-          await WaitChannelReceived();
-          await SendResponseHeader();
-          if (request.Method=="GET") {
-            await SendReponseBody();
-          }
-          Stop(StopReason.OffAir);
-        }
-        catch (IOException) {
-          HasError = true;
-          Stop(StopReason.ConnectionError);
-        }
-        if (this.Channel!=null) {
-          this.Channel.ContentChanged -= OnContentChanged;
-          this.Channel.RemoveOutputStream(this);
-        }
-        Logger.Debug("Finished");
-        return StoppedReason;
-      }).ContinueWith(prev => {
-        if (prev.IsFaulted) {
-          Logger.Error(prev.Exception);
-          if (StoppedReason==StopReason.None) {
-            return StopReason.NotIdentifiedError;
-          }
-          else {
-            return StoppedReason;
-          }
-        }
-        else {
-          return prev.Result;
-        }
-      });
+      var response_header = HTTPUtils.CreateResponseHeader(HttpStatusCode.Unauthorized, new Dictionary<string,string>());
+      await Connection.WriteAsync(System.Text.Encoding.UTF8.GetBytes(response_header));
+      Logger.Debug("Header: {0}", response_header);
     }
 
-    public void Post(Host from, Atom packet)
+    protected override Task OnStarted(CancellationToken cancel_token)
     {
+      if (this.Channel!=null) {
+        this.Channel.AddOutputStream(this);
+        this.Channel.ContentChanged += OnContentChanged;
+        OnContentChanged(this, new EventArgs());
+      }
+      return base.OnStarted(cancel_token);
     }
 
-    public void Stop()
+    protected override Task OnStopped(CancellationToken cancel_token)
     {
-      Stop(StopReason.UserShutdown);
+      if (this.Channel!=null) {
+        this.Channel.ContentChanged -= OnContentChanged;
+        this.Channel.RemoveOutputStream(this);
+      }
+      return base.OnStopped(cancel_token);
     }
 
-    public void Stop(StopReason reason)
+    protected override async Task<StopReason> DoProcess(CancellationToken cancel_token)
     {
-      StoppedReason = reason;
-      isStopped.Cancel();
+      if (!HTTPUtils.CheckAuthorization(request, AccessControlInfo)) {
+        await Unauthorized();
+        return StopReason.OffAir;
+      }
+      await WaitChannelReceived();
+      await SendResponseHeader();
+      if (request.Method=="GET") {
+        await SendReponseBody();
+      }
+      return StopReason.OffAir;
     }
+
+
   }
 
   [Plugin]

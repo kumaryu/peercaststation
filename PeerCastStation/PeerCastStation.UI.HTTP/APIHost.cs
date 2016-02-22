@@ -164,6 +164,17 @@ namespace PeerCastStation.UI.HTTP
         return res;
       }
 
+      [RPCMethod("getAuthToken")]
+      public string GetAuthToken()
+      {
+        if (AccessControlInfo.AuthenticationKey!=null) {
+          return HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey);
+        }
+        else {
+          return null;
+        }
+      }
+
       [RPCMethod("getPlugins")]
       private JArray GetPlugins()
       {
@@ -636,6 +647,7 @@ namespace PeerCastStation.UI.HTTP
           res["scheme"]     = sstream.Scheme;
           res["type"]       = (int)sstream.Type;
           res["defaultUri"] = sstream.DefaultUri!=null ? sstream.DefaultUri.ToString() : "";
+          res["isContentReaderRequired"] = sstream.IsContentReaderRequired;
           return res;
         }).ToArray());
       }
@@ -776,6 +788,7 @@ namespace PeerCastStation.UI.HTTP
         res["globalAuthorizationRequired"] = listener.GlobalAuthorizationRequired;
         res["authenticationId"]       = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Id : null;
         res["authenticationPassword"] = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Password : null;
+        res["authToken"]     = listener.AuthenticationKey!=null ? HTTPUtils.CreateAuthorizationToken(listener.AuthenticationKey) : null;
         if ((listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 && owner.OpenedPorts!=null) {
           res["isOpened"] = (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 &&
                             owner.OpenedPorts.Contains(listener.LocalEndPoint.Port);
@@ -1026,31 +1039,20 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("checkPorts")]
       public JArray CheckPorts()
       {
-        int[] result = null;
-        Uri target_uri;
-        if (AppSettingsReader.TryGetUri("PCPPortChecker", out target_uri)) {
-          var ports = PeerCast.OutputListeners
-            .Where( listener => (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0)
-            .Select(listener => listener.LocalEndPoint.Port);
-          var checker = new PeerCastStation.UI.PCPPortChecker(PeerCast.SessionID, target_uri, ports);
-          checker.PortCheckCompleted += (sender, args) => {
-            if (args.Success) {
-              owner.OpenedPorts = args.Ports;
-              result = args.Ports;
-            }
-          };
-          var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
-          if (port_mapper!=null) {
-            var task = port_mapper.DiscoverAsync()
-              .ContinueWith(prev => checker.Run());
-            task.Wait();
-          }
-          else {
-            checker.Run();
+        int[] results = null;
+        var port_checker = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PCPPortCheckerPlugin>();
+        if (port_checker!=null) {
+          var task = port_checker.CheckAsync();
+          task.Wait();
+          var result = task.Result;
+          if (result.Success) {
+            PeerCast.IsFirewalled = result.Ports.Length==0;
+            owner.OpenedPorts = result.Ports;
+            results = result.Ports;
           }
         }
-        if (result!=null) {
-          return new JArray(result);
+        if (results!=null) {
+          return new JArray(results);
         }
         else {
           return null;

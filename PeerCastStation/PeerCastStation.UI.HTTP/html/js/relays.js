@@ -173,6 +173,11 @@ var BroadcastDialog = new function() {
     }
   });
 
+  self.contentTypeVisibility = ko.computed(function () {
+    var source_stream = self.sourceStream();
+    return source_stream && source_stream.isContentReaderRequired;
+  });
+
   self.yellowPages = ko.observableArray([
     {
       yellowPageId: null,
@@ -420,11 +425,20 @@ var ChannelYellowPageViewModel = function(owner, initial_value) {
   };
 };
 
-var ChannelViewModel = function(initial_value) {
+var ChannelViewModel = function(owner, initial_value) {
   var self = this;
   self.channelId       = ko.observable(initial_value.channelId);
-  self.streamUrl       = ko.computed(function() { return '/stream/'+self.channelId();});
-  self.playlistUrl     = ko.computed(function() { return '/pls/'+self.channelId();});
+  self.streamUrl = ko.computed(function () {
+      var url = '/stream/' + self.channelId();
+      var auth_token = owner.authToken();
+      return auth_token ? url + '?auth=' + auth_token : url;
+    });
+  self.playlistUrl = ko.computed(
+    function () {
+      var url = '/pls/' + self.channelId();
+      var auth_token = owner.authToken();
+      return auth_token ? url + '?auth=' + auth_token : url;
+    });
   self.infoName        = ko.observable(initial_value.info.name);
   self.infoUrl         = ko.observable(initial_value.info.url);
   self.infoBitrate     = ko.observable(initial_value.info.bitrate);
@@ -646,6 +660,7 @@ var channelsViewModel = new function() {
   self.currentChannel = ko.observable(null);
   self.isFirewalled = ko.observable(null);
   self.channels = ko.observableArray();
+  self.authToken = ko.observable(null);
 
   self.update = function() {
     PeerCast.getStatus(function(result) {
@@ -653,6 +668,9 @@ var channelsViewModel = new function() {
     });
     PeerCast.getChannels(function(result) {
       if (result) self.updateChannels(result);
+    });
+    PeerCast.getAuthToken(function(result) {
+      if (result) self.authToken(result);
     });
   };
 
@@ -668,7 +686,7 @@ var channelsViewModel = new function() {
           return channels[i].update(channel_info);
         }
       }
-      return new ChannelViewModel(channel_info);
+      return new ChannelViewModel(self, channel_info);
     });
     self.channels.splice.apply(self.channels, [0, self.channels().length].concat(new_channels));
   };
