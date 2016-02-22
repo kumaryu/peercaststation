@@ -130,6 +130,29 @@ namespace PeerCastStation.HTTP
       if (req.Uri==null) throw new InvalidDataException();
       return req;
     }
+
+    public static async Task<HTTPRequest> ReadAsync(Stream stream, CancellationToken cancel_token)
+    {
+      string line = null;
+      var requests = new List<string>();
+      var buf = new List<byte>();
+      while (line!="") {
+        var value = await stream.ReadByteAsync(cancel_token);
+        if (value<0) {
+          throw new EndOfStreamException();
+        }
+        buf.Add((byte)value);
+        if (buf.Count >= 2 && buf[buf.Count - 2] == '\r' && buf[buf.Count - 1] == '\n') {
+          line = System.Text.Encoding.UTF8.GetString(buf.ToArray(), 0, buf.Count - 2);
+          if (line!="") requests.Add(line);
+          buf.Clear();
+        }
+      }
+      var req = new HTTPRequest(requests);
+      if (req.Uri==null) throw new InvalidDataException();
+      return req;
+    }
+
   }
 
   /// <summary>
