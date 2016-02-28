@@ -101,10 +101,14 @@ namespace PeerCastStation.WPF
     {
       var listener = 
         application.PeerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.Interface) ??
-        application.PeerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.All);
+        application.PeerCast.FindListener(System.Net.IPAddress.IPv6Loopback, OutputStreamType.Interface) ??
+        application.PeerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.All) ??
+        application.PeerCast.FindListener(System.Net.IPAddress.IPv6Loopback, OutputStreamType.All);
       if (listener != null) {
         var endpoint = listener.LocalEndPoint;
-        var host = endpoint.Address.Equals(System.Net.IPAddress.Any) ?
+        var host =
+          endpoint.Address.Equals(System.Net.IPAddress.Any) ||
+          endpoint.Address.Equals(System.Net.IPAddress.IPv6Any) ?
           String.Format("localhost:{0}", endpoint.Port) :
           endpoint.ToString();
         System.Diagnostics.Process.Start(String.Format("http://{0}/html/index.html", host));
@@ -113,12 +117,16 @@ namespace PeerCastStation.WPF
 
     public void OpenHelp()
     {
-      var listener =
+      var listener = 
         application.PeerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.Interface) ??
-        application.PeerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.All);
+        application.PeerCast.FindListener(System.Net.IPAddress.IPv6Loopback, OutputStreamType.Interface) ??
+        application.PeerCast.FindListener(System.Net.IPAddress.Loopback, OutputStreamType.All) ??
+        application.PeerCast.FindListener(System.Net.IPAddress.IPv6Loopback, OutputStreamType.All);
       if (listener != null) {
         var endpoint = listener.LocalEndPoint;
-        var host = endpoint.Address.Equals(System.Net.IPAddress.Any) ?
+        var host =
+          endpoint.Address.Equals(System.Net.IPAddress.Any) ||
+          endpoint.Address.Equals(System.Net.IPAddress.IPv6Any) ?
           String.Format("localhost:{0}", endpoint.Port) :
           endpoint.ToString();
         System.Diagnostics.Process.Start(String.Format("http://{0}/help/index.html", host));
