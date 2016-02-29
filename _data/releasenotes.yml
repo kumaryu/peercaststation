@@ -1,4 +1,35 @@
 ---
+- name: Version 2.1.5 (2016年2月29日開発版)
+  version: 2.1.5.0
+  channel: dev
+  notes: |
+    HTTP POSTでの配信ができるようになりました。
+
+    * ポート開放チェックのタイミングを増やしました。
+      起動時やポート設定変更のタイミングで自動的にポート開放チェックを行うようにしました。
+    * 配信方法にHTTP Push Sourceを追加しました。指定したURLでHTTP POSTでの配信を受け付けます。コンテナタイプを選択する必要があります。
+    * 配信方法にRTMPを選択した場合にコンテナタイプを選択できないようにしました。
+    * HTML UIの認証にBasic認証だけでなくauthパラメータを使ったトークン認証を使えるようにしました。
+      HTML UIの設定ページから認証URLを使ってアクセスすることができます。
+    * 認証が必要なポートからアクセスした場合、視聴時も認証が必要になりました。
+    * HTML UIを開いた時に稀に落ちる可能性があったのを修正しました。
+    * IPv6 Anyで待ち受けた際にHTML UIでアドレスが::で表示されていたのを修正しました。
+    * IPv6のみで待ち受けてた際にGUIからHTML UIやヘルプが開けなかったのを修正しました。
+    * ローカルIPアドレスの取得方法を一部変更しました。
+    * 一部のログの表示レベルを落としました。
+  date: 2016-02-29T23:50:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.1.5.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.1.5.zip
+    length: 1628356
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.1.5.exe
+    length: 2259767
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.1.5.msi
+    length: 2024040
+
 - name: Version 2.1.4 (2016年1月24日開発版)
   version: 2.1.4.0
   channel: dev
