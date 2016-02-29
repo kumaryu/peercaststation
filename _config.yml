@@ -1,7 +1,6 @@
 
 safe:     true
 lsi:      false
-highlighter: pygments
 encoding: utf-8
 exclude: ['bin', 'vendor', 'Gemfile', 'Gemfile.lock']
 source:   .
