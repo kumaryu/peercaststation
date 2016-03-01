@@ -199,6 +199,21 @@ namespace PeerCastStation.ASF
         throw;
       }
     }
+
+    public void Write(long pos)
+    {
+      var s = new MemoryStream(Data, true);
+      s.Seek(pos + 40, SeekOrigin.Current);
+      var asf_no_error_correction = new Guid(0x20FB5700, 0x5B55, 0x11CF, 0xA8, 0xFD, 0x00, 0x80, 0x5F, 0x5C, 0x44, 0x2B);
+      BinaryWriter.WriteBytes(s, asf_no_error_correction.ToByteArray());
+      s.Seek(30, SeekOrigin.Current);
+      var average_number_of_bytes_per_second = BinaryReader.ReadInt32LE(s);
+      if (average_number_of_bytes_per_second == 0) {
+        s.Seek(-4, SeekOrigin.Current);
+        BinaryWriter.WriteInt32LE(s, 16000);
+      }
+      Data = s.ToArray();
+    }
   }
 
   internal class ASFHeader
@@ -243,6 +258,7 @@ namespace PeerCastStation.ASF
           var stream_type = new Guid(BinaryReader.ReadBytes(objdata, 16));
           if (stream_type==ASFObject.StreamIDAudio) {
             streams.Add(StreamType.Audio);
+            chunk.Write(s.Position - (long)obj.Length);
           }
           else if (stream_type==ASFObject.StreamIDVideo) {
             streams.Add(StreamType.Video);
