@@ -5,6 +5,8 @@ using System.Linq;
 using PeerCastStation.Core;
 using PeerCastStation.HTTP;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.UI.HTTP
 {
@@ -96,8 +98,8 @@ namespace PeerCastStation.UI.HTTP
           (IPEndPoint)RemoteEndPoint,
           IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
           null,
-          RecvRate,
-          SendRate,
+          Connection.ReadRate,
+          Connection.WriteRate,
           null,
           null,
           request.Headers["USER-AGENT"]);
@@ -123,11 +125,6 @@ namespace PeerCastStation.UI.HTTP
           return code.ToString();
         }
       };
-
-      private void Send(string str)
-      {
-        Send(System.Text.Encoding.UTF8.GetBytes(str));
-      }
 
       private string GetPhysicalPath(Uri uri)
       {
@@ -171,7 +168,7 @@ namespace PeerCastStation.UI.HTTP
         return res;
       }
 
-      private void SendResponseMoveToIndex()
+      private async Task SendResponseMoveToIndex(CancellationToken cancel_token)
       {
         var content = "Moving...";
         var parameters = new Dictionary<string, string> {
@@ -179,16 +176,16 @@ namespace PeerCastStation.UI.HTTP
           {"Content-Length", content.Length.ToString() },
           {"Location",       "/html/index.html" },
         };
-        if (AccessControl.AuthenticationKey!=null) {
-          parameters.Add("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(AccessControl.AuthenticationKey));
+        if (AccessControlInfo.AuthenticationKey!=null) {
+          parameters.Add("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey));
         }
-        Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.Moved, parameters));
+        await Connection.WriteUTF8Async(HTTPUtils.CreateResponseHeader(HttpStatusCode.Moved, parameters), cancel_token);
         if (this.request.Method=="GET") {
-          Send(content);
+          await Connection.WriteUTF8Async(content, cancel_token);
         }
       }
 
-      private void SendResponseFileContent()
+      private async Task SendResponseFileContent(CancellationToken cancel_token)
       {
         var localpath = GetPhysicalPath(this.request.Uri);
         if (localpath==null) throw new HTTPError(HttpStatusCode.Forbidden);
@@ -203,12 +200,12 @@ namespace PeerCastStation.UI.HTTP
             {"Content-Type",   content_desc.MimeType },
             {"Content-Length", contents.Length.ToString() },
           };
-          if (AccessControl.AuthenticationKey!=null) {
-            parameters.Add("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(AccessControl.AuthenticationKey));
+          if (AccessControlInfo.AuthenticationKey!=null) {
+            parameters.Add("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey));
           }
-          Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.OK, parameters));
+          await Connection.WriteUTF8Async(HTTPUtils.CreateResponseHeader(HttpStatusCode.OK, parameters), cancel_token);
           if (this.request.Method=="GET") {
-            Send(contents);
+            await Connection.WriteAsync(contents, cancel_token);
           }
         }
         else {
@@ -216,37 +213,29 @@ namespace PeerCastStation.UI.HTTP
         }
       }
 
-      protected override void OnStarted()
+      protected override async Task<StopReason> DoProcess(CancellationToken cancel_token)
       {
-        base.OnStarted();
-        Logger.Debug("Started");
         try {
-          if (!HTTPUtils.CheckAuthorization(this.request, AccessControl.AuthenticationKey)) {
+          if (!HTTPUtils.CheckAuthorization(this.request, this.AccessControlInfo)) {
             throw new HTTPError(HttpStatusCode.Unauthorized);
           }
           if (this.request.Method!="HEAD" && this.request.Method!="GET") {
             throw new HTTPError(HttpStatusCode.MethodNotAllowed);
           }
           if (this.request.Uri.AbsolutePath=="/") {
-            SendResponseMoveToIndex();
+            await SendResponseMoveToIndex(cancel_token);
           }
           else {
-            SendResponseFileContent();
+            await SendResponseFileContent(cancel_token);
           }
         }
         catch (HTTPError err) {
-          Send(HTTPUtils.CreateResponseHeader(err.StatusCode, new Dictionary<string, string> { }));
+          await Connection.WriteUTF8Async(HTTPUtils.CreateResponseHeader(err.StatusCode), cancel_token);
         }
         catch (UnauthorizedAccessException) {
-          Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.Forbidden, new Dictionary<string, string> { }));
+          await Connection.WriteUTF8Async(HTTPUtils.CreateResponseHeader(HttpStatusCode.Forbidden), cancel_token);
         }
-        Stop();
-      }
-
-      protected override void OnStopped()
-      {
-        Logger.Debug("Finished");
-       	base.OnStopped();
+        return StopReason.OffAir;
       }
 
       public override OutputStreamType OutputStreamType

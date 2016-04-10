@@ -3,6 +3,8 @@ using System.Linq;
 using System.IO;
 using PeerCastStation.Core;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.FLV
 {
@@ -35,7 +37,11 @@ namespace PeerCastStation.FLV
 			}
 		}
 
-	}
+    public Task<ParsedContent> ReadAsync(Stream stream, CancellationToken cancel_token)
+    {
+      throw new NotImplementedException();
+    }
+  }
 
   public class FLVContentReaderFactory
     : IContentReaderFactory

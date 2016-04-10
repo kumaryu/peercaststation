@@ -19,6 +19,11 @@ namespace PeerCastStation.FLV.RTMP
     {
     }
 
+    public RTMPBinaryReader(byte[] bytes)
+      : this(new MemoryStream(bytes, false), false)
+    {
+    }
+
     public void Dispose()
     {
       if (!LeaveOpen) {

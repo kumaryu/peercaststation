@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>PeerCastStation.Core</RootNamespace>
     <AssemblyName>PeerCastStation.Core</AssemblyName>
-    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\PeerCastStation\</SolutionDir>
@@ -72,6 +72,7 @@
     <Compile Include="OutputStreamBase.cs" />
     <Compile Include="PeerCast.cs" />
     <Compile Include="Plugin.cs" />
+    <Compile Include="PrependedStream.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueuedSynchronizationContext.cs" />
     <Compile Include="RateCountedStream.cs" />
@@ -83,6 +84,8 @@
     <Compile Include="SourceConnectionBase.cs" />
     <Compile Include="SourceStreamBase.cs" />
     <Compile Include="StreamConnection.cs" />
+    <Compile Include="ConnectionStream.cs" />
+    <Compile Include="StreamExtension.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\PeerCastStation.snk">

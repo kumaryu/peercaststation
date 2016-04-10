@@ -506,21 +506,38 @@ namespace PeerCastStation.Core
       OnClosed(args.StopReason);
     }
 
+    private CancellationTokenSource sourceStreamCancelSource;
     protected void Start(Uri source_uri, ISourceStream source_stream)
     {
       WriteLock(() => {
         if (sourceStream!=null) {
-          sourceStream.Stopped -= SourceStream_Stopped;
+          sourceStreamCancelSource.Cancel();
           sourceStream.Stop();
         }
         this.contentHeader = null;
         this.contents.Clear();
         this.SourceUri = source_uri;
         sourceStream = source_stream;
-        sourceStream.Stopped += SourceStream_Stopped;
+        sourceStreamCancelSource = new CancellationTokenSource();
+        var cancel = sourceStreamCancelSource.Token;
+        sourceStream.Run().ContinueWith(prev => {
+          if (cancel.IsCancellationRequested) return;
+          WriteLock(() => {
+            foreach (var os in outputStreams) {
+              os.Stop();
+            }
+            outputStreams = new List<IOutputStream>();
+            uptimeTimer.Stop();
+          });
+          if (prev.IsFaulted) {
+            OnClosed(StopReason.NotIdentifiedError);
+          }
+          else {
+            OnClosed(prev.Result);
+          }
+        }, sourceStreamCancelSource.Token);
         uptimeTimer.Reset();
         uptimeTimer.Start();
-        sourceStream.Start();
       });
       OnContentChanged();
     }

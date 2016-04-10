@@ -17,6 +17,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.Core
 {
@@ -57,89 +58,24 @@ namespace PeerCastStation.Core
     public float SendRate { get { return sourceConnection!=null ? sourceConnection.SendRate : 0.0f; } }
     public float RecvRate { get { return sourceConnection!=null ? sourceConnection.RecvRate : 0.0f; } }
 
-    protected enum SourceStreamEventType {
-      None,
-      Start,
-      Stop,
-      Post,
-      Reconnect,
-      ConnectionStopped,
-    }
-    protected class SourceStreamEvent 
-    {
-      public SourceStreamEventType Type { get; private set; }
-      public SourceStreamEvent(SourceStreamEventType type)
-      {
-        this.Type = type;
-      }
-    }
-
-    protected class StartEvent
-      : SourceStreamEvent
-    {
-      public Uri SourceUri { get; private set; }
-      public StartEvent(Uri source_uri)
-        : base(SourceStreamEventType.Start)
-      {
-        this.SourceUri = source_uri;
-      }
-    }
-
-    protected class StopEvent
-      : SourceStreamEvent
-    {
-      public StopReason StopReason { get; private set; }
-      public StopEvent(StopReason reason)
-        : base(SourceStreamEventType.Stop)
-      {
-        this.StopReason = reason;
-      }
-    }
-
-    protected class PostEvent
-      : SourceStreamEvent
-    {
-      public Host From    { get; private set; }
-      public Atom Message { get; private set; }
-      public PostEvent(Host from, Atom message)
-        : base(SourceStreamEventType.Post)
-      {
-        this.From    = from;
-        this.Message = message;
-      }
-    }
-
-    protected class ReconnectEvent
-      : SourceStreamEvent
-    {
-      public ReconnectEvent()
-        : base(SourceStreamEventType.Reconnect)
-      {
-      }
-    }
-
-    protected class ConnectionStoppedEvent
-      : SourceStreamEvent
-    {
-      public ISourceConnection Connection { get; private set; }
-      public StopReason        StopReason { get; private set; }
-      public ConnectionStoppedEvent(ISourceConnection connection, StopReason reason)
-        : base(SourceStreamEventType.ConnectionStopped)
-      {
-        this.Connection = connection;
-        this.StopReason = reason;
-      }
-    }
-
-    protected EventQueue<SourceStreamEvent> EventQueue { get; private set; }
-
     protected Logger Logger { get; private set; }
     protected ISourceConnection sourceConnection;
-    protected Thread            sourceConnectionThread;
+    protected Task              sourceConnectionTask;
+    private Task eventTask = Task.Delay(0);
+    private TaskCompletionSource<StopReason> ranTaskSource;
+
+    protected Task Queue(Action action)
+    {
+      eventTask = eventTask.ContinueWith(prev => {
+        if (prev.IsFaulted) return;
+        action.Invoke();
+      });
+      return eventTask;
+    }
 
     public abstract ConnectionInfo GetConnectionInfo();
     protected abstract ISourceConnection CreateConnection(Uri source_uri);
-    protected abstract void OnConnectionStopped(ConnectionStoppedEvent msg);
+    protected abstract void OnConnectionStopped(ISourceConnection connection, StopReason reason);
 
     public SourceStreamBase(
       PeerCast peercast,
@@ -150,132 +86,93 @@ namespace PeerCastStation.Core
       this.Channel   = channel;
       this.SourceUri = source_uri;
       this.StoppedReason = StopReason.None;
-      this.EventQueue = new EventQueue<SourceStreamEvent>();
       this.Logger = new Logger(this.GetType());
-      ThreadPool.RegisterWaitForSingleObject(this.EventQueue.WaitHandle, OnEvent, null, Timeout.Infinite, true);
-    }
-
-    protected virtual void OnEvent(object state, bool timedout)
-    {
-      SourceStreamEvent msg;
-      while (this.EventQueue.TryDequeue(0, out msg)) {
-        ProcessEvent(msg);
-      }
-      if (!IsStopped) {
-        ThreadPool.RegisterWaitForSingleObject(this.EventQueue.WaitHandle, OnEvent, null, Timeout.Infinite, true);
-      }
-    }
-
-    protected virtual void OnSourceConnectionStopped(object sender, StreamStoppedEventArgs args)
-    {
-      EventQueue.Enqueue(new ConnectionStoppedEvent(sender as ISourceConnection, args.StopReason));
     }
 
     protected void StartConnection(Uri source_uri)
     {
       if (sourceConnection!=null) {
-        sourceConnection.Stopped -= OnSourceConnectionStopped;
         StopConnection(StopReason.UserReconnect);
       }
-      sourceConnection = CreateConnection(source_uri);
-      sourceConnection.Stopped += OnSourceConnectionStopped;
-      sourceConnectionThread = new Thread(state => {
-        sourceConnection.Run();
-      });
-      sourceConnectionThread.Start();
+      var conn = CreateConnection(source_uri);
+      sourceConnection = conn;
+      sourceConnectionTask = sourceConnection
+        .Run()
+        .ContinueWith(prev => {
+          if (prev.IsFaulted) {
+            Queue(() => { OnConnectionStopped(conn, StopReason.NotIdentifiedError); });
+          }
+          else if (prev.IsCanceled) {
+            Queue(() => { OnConnectionStopped(conn, StopReason.UserShutdown); });
+          }
+          else {
+            Queue(() => { OnConnectionStopped(conn, prev.Result); });
+          }
+        });
     }
 
     protected void StopConnection(StopReason reason)
     {
-      if (sourceConnection!=null) {
-        sourceConnection.Stop(reason);
-        sourceConnectionThread.Join();
-      }
+      if (sourceConnection==null) return;
+      sourceConnection.Stop(reason);
+      sourceConnectionTask.Wait();
     }
 
-    protected virtual void ProcessEvent(SourceStreamEvent msg)
+    protected virtual void DoStart()
     {
-      switch (msg.Type) {
-      case SourceStreamEventType.None:
-        break;
-      case SourceStreamEventType.Start:
-        OnStarted(msg as StartEvent);
-        break;
-      case SourceStreamEventType.Stop:
-        OnStopped(msg as StopEvent);
-        break;
-      case SourceStreamEventType.Post:
-        OnPosted(msg as PostEvent);
-        break;
-      case SourceStreamEventType.Reconnect:
-        OnReconnected(msg as ReconnectEvent);
-        break;
-      case SourceStreamEventType.ConnectionStopped:
-        OnConnectionStopped(msg as ConnectionStoppedEvent);
-        break;
-      }
-    }
-
-    protected virtual void OnStarted(StartEvent msg)
-    {
-      if (msg.SourceUri!=null) {
-        this.SourceUri = msg.SourceUri;
-        StartConnection(msg.SourceUri);
-      }
-      else {
+      if (this.SourceUri==null) {
         Stop(StopReason.NoHost);
+        return;
       }
+      StartConnection(this.SourceUri);
     }
 
-    protected virtual void OnStopped(StopEvent msg)
+    protected virtual void DoStop(StopReason reason)
     {
-      StoppedReason = msg.StopReason;
-      StopConnection(msg.StopReason);
-      if (Stopped!=null) {
-        Stopped(this, new StreamStoppedEventArgs(msg.StopReason));
+      StoppedReason = reason;
+      StopConnection(reason);
+      ranTaskSource.TrySetResult(reason);
+    }
+
+    protected virtual void DoPost(Host from, Atom message)
+    {
+      if (sourceConnection==null || sourceConnection.IsStopped) return;
+      sourceConnection.Post(from, message);
+    }
+
+    protected virtual void DoReconnect()
+    {
+      if (sourceConnection!=null) {
+        StopConnection(StopReason.UserReconnect);
       }
+      DoStart();
     }
 
-    protected virtual void OnPosted(PostEvent msg)
+    public Task<StopReason> Run()
     {
-      if (sourceConnection!=null && !sourceConnection.IsStopped) {
-        sourceConnection.Post(msg.From, msg.Message);
-      }
-    }
-
-    protected virtual void OnReconnected(ReconnectEvent msg)
-    {
-      OnStarted(new StartEvent(this.SourceUri));
-    }
-
-    public void Start()
-    {
-      EventQueue.Enqueue(new StartEvent(this.SourceUri));
+      ranTaskSource = new TaskCompletionSource<StopReason>();
+      Queue(() => { DoStart(); });
+      return ranTaskSource.Task;
     }
 
     public void Post(Host from, Atom packet)
     {
-      EventQueue.Enqueue(new PostEvent(from, packet));
+      Queue(() => { DoPost(from, packet); });
     }
 
     public void Stop()
     {
-      EventQueue.Enqueue(new StopEvent(StopReason.UserShutdown));
+      Stop(StopReason.UserShutdown);
     }
 
     protected void Stop(StopReason reason)
     {
-      EventQueue.Enqueue(new StopEvent(reason));
+      Queue(() => { DoStop(reason); });
     }
 
     public void Reconnect()
     {
-      EventQueue.Enqueue(new ReconnectEvent());
-    }
-
-    public void Reconnect(Uri source_uri)
-    {
-      EventQueue.Enqueue(new StartEvent(source_uri));
+      Queue(() => { DoReconnect(); });
     }
 
     public abstract SourceStreamType Type { get; }
@@ -293,4 +190,5 @@ namespace PeerCastStation.Core
       }
     }
   }
+
 }

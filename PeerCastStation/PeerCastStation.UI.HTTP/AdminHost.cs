@@ -2,6 +2,8 @@
 using System.IO;
 using System.Net;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using System.Collections.Generic;
 using PeerCastStation.Core;
@@ -38,9 +40,9 @@ namespace PeerCastStation.UI.HTTP
         Stream input_stream,
         Stream output_stream,
         EndPoint remote_endpoint,
-        AccessControlInfo access_control,
+        AccessControlInfo acinfo,
         HTTPRequest request)
-        : base(peercast, input_stream, output_stream, remote_endpoint, access_control, null, null)
+        : base(peercast, input_stream, output_stream, remote_endpoint, acinfo, null, null)
       {
         this.owner   = owner;
         this.request = request;
@@ -61,19 +63,17 @@ namespace PeerCastStation.UI.HTTP
           (IPEndPoint)RemoteEndPoint,
           IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
           null,
-          RecvRate,
-          SendRate,
+          Connection.ReadRate,
+          Connection.WriteRate,
           null,
           null,
           request.Headers["USER-AGENT"]);
       }
 
-      protected override void OnStarted()
+      protected override async Task<StopReason> DoProcess(CancellationToken cancel_token)
       {
-        base.OnStarted();
-        Logger.Debug("Started");
         try {
-          if (!HTTPUtils.CheckAuthorization(this.request, AccessControl.AuthenticationKey)) {
+          if (!HTTPUtils.CheckAuthorization(this.request, this.AccessControlInfo)) {
             throw new HTTPError(HttpStatusCode.Unauthorized);
           }
           if (this.request.Method!="HEAD" && this.request.Method!="GET") {
@@ -84,13 +84,13 @@ namespace PeerCastStation.UI.HTTP
           if (query.TryGetValue("cmd", out value)) {
             switch (value) {
             case "viewxml": //リレー情報XML出力
-              OnViewXML(query);
+              await OnViewXML(query, cancel_token);
               break;
             case "stop": //チャンネル停止
-              OnStop(query);
+              await OnStop(query, cancel_token);
               break;
             case "bump": //チャンネル再接続
-              OnBump(query);
+              await OnBump(query, cancel_token);
               break;
             default:
               throw new HTTPError(HttpStatusCode.BadRequest);
@@ -101,9 +101,9 @@ namespace PeerCastStation.UI.HTTP
           }
         }
         catch (HTTPError err) {
-          Send(HTTPUtils.CreateResponseHeader(err.StatusCode, new Dictionary<string, string> { }));
+          await Connection.WriteUTF8Async(HTTPUtils.CreateResponseHeader(err.StatusCode, new Dictionary<string, string> { }), cancel_token);
         }
-        Stop();
+        return StopReason.OffAir;
       }
 
       private XElement BuildChannelXml(Channel c)
@@ -220,16 +220,16 @@ namespace PeerCastStation.UI.HTTP
         return res.ToArray();
       }
 
-      private void OnViewXML(Dictionary<string, string> query)
+      private async Task OnViewXML(Dictionary<string, string> query, CancellationToken cancel_token)
       {
         var data = BuildViewXml();
         var parameters = new Dictionary<string, string> {
           {"Content-Type",   "text/xml" },
           {"Content-Length", data.Length.ToString() },
         };
-        Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.OK, parameters));
+        await Connection.WriteUTF8Async(HTTPUtils.CreateResponseHeader(HttpStatusCode.OK, parameters), cancel_token);
         if (this.request.Method!="HEAD") {
-          Send(data);
+          await Connection.WriteAsync(data, cancel_token);
         }
       }
 
@@ -253,7 +253,7 @@ namespace PeerCastStation.UI.HTTP
         }
       }
 
-      private void OnBump(Dictionary<string, string> query)
+      private Task OnBump(Dictionary<string, string> query, CancellationToken cancel_token)
       {
         HttpStatusCode status;
         var parameters = new Dictionary<string, string> {};
@@ -268,10 +268,10 @@ namespace PeerCastStation.UI.HTTP
           status = HttpStatusCode.NotFound;
           res = "Channel NotFound";
         }
-        Send(HTTPUtils.CreateResponse(status, parameters, res));
+        return Connection.WriteAsync(HTTPUtils.CreateResponse(status, parameters, res), cancel_token);
       }
 
-      private void OnStop(Dictionary<string, string> query)
+      private Task OnStop(Dictionary<string, string> query, CancellationToken cancel_token)
       {
         HttpStatusCode status;
         var parameters = new Dictionary<string, string> {};
@@ -286,18 +286,7 @@ namespace PeerCastStation.UI.HTTP
           status = HttpStatusCode.NotFound;
           res = "Channel NotFound";
         }
-        Send(HTTPUtils.CreateResponse(status, parameters, res));
-      }
-
-      private void Send(string str)
-      {
-        Send(System.Text.Encoding.UTF8.GetBytes(str));
-      }
-
-      protected override void OnStopped()
-      {
-        Logger.Debug("Finished");
-       	base.OnStopped();
+        return Connection.WriteAsync(HTTPUtils.CreateResponse(status, parameters, res), cancel_token);
       }
 
       public override OutputStreamType OutputStreamType

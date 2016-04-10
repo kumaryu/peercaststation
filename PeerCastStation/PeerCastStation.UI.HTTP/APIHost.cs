@@ -8,6 +8,8 @@ using PeerCastStation.HTTP;
 using PeerCastStation.UI.HTTP.JSONRPC;
 using PeerCastStation.UI;
 using Newtonsoft.Json.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.UI.HTTP
 {
@@ -145,8 +147,8 @@ namespace PeerCastStation.UI.HTTP
           (IPEndPoint)RemoteEndPoint,
           IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
           null,
-          RecvRate,
-          SendRate,
+          Connection.ReadRate,
+          Connection.WriteRate,
           null,
           null,
           request.Headers["USER-AGENT"]);
@@ -165,8 +167,8 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("getAuthToken")]
       public string GetAuthToken()
       {
-        if (AccessControl.AuthenticationKey!=null) {
-          return HTTPUtils.CreateAuthorizationToken(AccessControl.AuthenticationKey);
+        if (AccessControlInfo.AuthenticationKey!=null) {
+          return HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey);
         }
         else {
           return null;
@@ -1155,107 +1157,69 @@ namespace PeerCastStation.UI.HTTP
 
       public static readonly int RequestLimit = 64*1024;
       public static readonly int TimeoutLimit = 5000;
-      private int bodyLength = -1;
-      private System.Diagnostics.Stopwatch timeoutWatch = new System.Diagnostics.Stopwatch();
-      protected override void OnStarted()
+      protected override async Task<StopReason> DoProcess(CancellationToken cancel_token)
       {
-        base.OnStarted();
-				System.Threading.SynchronizationContext.SetSynchronizationContext(new System.Threading.SynchronizationContext());
-        Logger.Debug("Started");
+        System.Threading.SynchronizationContext.SetSynchronizationContext(new System.Threading.SynchronizationContext());
         try {
-          if (!HTTPUtils.CheckAuthorization(this.request, AccessControl.AuthenticationKey)) {
+          if (!HTTPUtils.CheckAuthorization(this.request, this.AccessControlInfo)) {
             throw new HTTPError(HttpStatusCode.Unauthorized);
           }
           if (this.request.Method=="HEAD" || this.request.Method=="GET") {
-            var token = GetVersionInfo();
-            var body = System.Text.Encoding.UTF8.GetBytes(token.ToString());
-            var parameters = new Dictionary<string, string> {
-              {"Content-Type",   "application/json" },
-              {"Content-Length", body.Length.ToString() },
-            };
-            Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.OK, parameters));
-            if (this.request.Method!="HEAD") {
-              Send(body);
-            }
-            Stop();
+            await SendJson(GetVersionInfo(), this.request.Method!="HEAD", cancel_token);
+            return StopReason.OffAir;
           }
           else if (this.request.Method=="POST") {
-            string length;
-            if (request.Headers.TryGetValue("CONTENT-LENGTH", out length)) {
-              int len;
-              if (int.TryParse(length, out len) && len>=0 && len<=RequestLimit) {
-                bodyLength = len;
-                timeoutWatch.Start();
-              }
-              else {
-                throw new HTTPError(HttpStatusCode.BadRequest);
-              }
+            if (!this.request.Headers.ContainsKey("X-REQUESTED-WITH")) {
+              throw new HTTPError(HttpStatusCode.BadRequest);
             }
-            else {
+            if (!this.request.Headers.ContainsKey("CONTENT-LENGTH")) {
               throw new HTTPError(HttpStatusCode.LengthRequired);
             }
+            string length = request.Headers["CONTENT-LENGTH"];
+            int len;
+            if (!Int32.TryParse(length, out len) || len<=0 || RequestLimit<len) {
+              throw new HTTPError(HttpStatusCode.BadRequest);
+            }
+
+            try {
+              var timeout_token = new CancellationTokenSource(TimeoutLimit);
+              var buf = await Connection.ReadBytesAsync(len, CancellationTokenSource.CreateLinkedTokenSource(cancel_token, timeout_token.Token).Token);
+              var request_str = System.Text.Encoding.UTF8.GetString(buf);
+              JToken res = rpcHost.ProcessRequest(request_str);
+              if (res!=null) {
+                await SendJson(res, true, cancel_token);
+              }
+              else {
+                throw new HTTPError(HttpStatusCode.NoContent);
+              }
+            }
+            catch (OperationCanceledException) {
+              throw new HTTPError(HttpStatusCode.RequestTimeout);
+            }
+            return StopReason.OffAir;
           }
           else {
             throw new HTTPError(HttpStatusCode.MethodNotAllowed);
           }
         }
         catch (HTTPError err) {
-          Send(HTTPUtils.CreateResponseHeader(err.StatusCode, new Dictionary<string, string> { }));
-          Stop();
+          await Connection.WriteUTF8Async(HTTPUtils.CreateResponseHeader(err.StatusCode, new Dictionary<string, string> { }), cancel_token);
+          return StopReason.OffAir;
         }
+
       }
 
-      protected override void OnIdle()
-      {
-        base.OnIdle();
-        if (this.request.Method!="POST" || bodyLength<0) return;
-        if (!this.request.Headers.ContainsKey("X-REQUESTED-WITH")) {
-          Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.BadRequest, new Dictionary<string, string>()));
-          Stop();
-          return;
-        }
-        string request_str = null;
-        if (Recv(stream => {
-          if (stream.Length-stream.Position<bodyLength) throw new EndOfStreamException();
-          var buf = new byte[stream.Length-stream.Position];
-          stream.Read(buf, 0, (int)(stream.Length-stream.Position));
-          request_str = System.Text.Encoding.UTF8.GetString(buf);
-        })) {
-          JToken res = rpcHost.ProcessRequest(request_str);
-          if (res!=null) {
-            SendJson(res);
-          }
-          else {
-            Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.NoContent, new Dictionary<string, string>()));
-          }
-          Stop();
-        }
-        else if (timeoutWatch.ElapsedMilliseconds>TimeoutLimit) {
-          Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.RequestTimeout, new Dictionary<string, string>()));
-          Stop();
-        }
-      }
-
-      private void Send(string str)
-      {
-        Send(System.Text.Encoding.UTF8.GetBytes(str));
-      }
-
-      private void SendJson(JToken token)
+      private async Task SendJson(JToken token, bool send_body, CancellationToken cancel_token)
       {
         var body = System.Text.Encoding.UTF8.GetBytes(token.ToString());
         var parameters = new Dictionary<string, string> {
           {"Content-Type",   "application/json" },
           {"Content-Length", body.Length.ToString() },
         };
-        Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.OK, parameters));
-        Send(body);
-      }
-
-      protected override void OnStopped()
-      {
-        Logger.Debug("Finished");
-       	base.OnStopped();
+        await Connection.WriteUTF8Async(HTTPUtils.CreateResponseHeader(HttpStatusCode.OK, parameters), cancel_token);
+        if (send_body) {
+          await Connection.WriteAsync(body, cancel_token);
+        }
       }
 
       public override OutputStreamType OutputStreamType

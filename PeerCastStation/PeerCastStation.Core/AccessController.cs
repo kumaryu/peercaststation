@@ -198,15 +198,25 @@ namespace PeerCastStation.Core
   /// </summary>
   public class AccessControlInfo
   {
+    public OutputStreamType Accepts { get; private set; }
+
+    public bool AuthorizationRequired { get; private set; }
+
     public AuthenticationKey AuthenticationKey { get; private set; }
-    public AccessControlInfo(AuthenticationKey key)
+
+    public AccessControlInfo(
+      OutputStreamType accepts,
+      bool auth_required,
+      AuthenticationKey key)
     {
-      this.AuthenticationKey = key;
+      this.Accepts                = accepts;
+      this.AuthorizationRequired  = auth_required;
+      this.AuthenticationKey      = key;
     }
 
     public bool CheckAuthorization(string id, string pass)
     {
-      if (AuthenticationKey==null) return true;
+      if (!AuthorizationRequired || AuthenticationKey==null) return true;
       return AuthenticationKey.Id==id && AuthenticationKey.Password==pass;
     }
   }

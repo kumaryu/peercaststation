@@ -418,15 +418,11 @@ namespace PeerCastStation.Core
     /// ストリームの取得を開始します。
     /// チャンネルと取得元URIはISourceStreamFactory.Createに渡された物を使います
     /// </summary>
-    void Start();
+    Task<StopReason> Run();
     /// <summary>
     /// 現在の接続を切って新しいソースへの接続を試みます。
     /// </summary>
     void Reconnect();
-    /// <summary>
-    /// 現在の接続を切って指定した新しいソースへの接続を試みます。
-    /// </summary>
-    void Reconnect(Uri source_uri);
     /// <summary>
     /// ストリームへパケットを送信します
     /// </summary>
@@ -450,11 +446,6 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <returns>呼び出した時点の接続先情報</returns>
     ConnectionInfo GetConnectionInfo();
-
-    /// <summary>
-    /// ストリームの動作が終了した際に呼ばれるイベントです
-    /// </summary>
-    event StreamStoppedEventHandler Stopped;
   }
 
   /// <summary>
@@ -550,7 +541,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 元になるストリームへチャンネルのContentを流しはじめます
     /// </summary>
-    void Start();
+    Task<StopReason> Start();
     /// <summary>
     /// ストリームへパケットを送信します
     /// </summary>
@@ -575,10 +566,6 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <returns>呼び出した時点の接続先情報</returns>
     ConnectionInfo GetConnectionInfo();
-    /// <summary>
-    /// 出力ストリームの動作が終了した際に呼ばれるイベントです
-    /// </summary>
-    event StreamStoppedEventHandler Stopped;
   }
 
   /// <summary>
@@ -672,6 +659,7 @@ namespace PeerCastStation.Core
     /// </list>
     /// </remarks>
     ParsedContent Read(Stream stream);
+    Task<ParsedContent> ReadAsync(Stream stream, CancellationToken cancel_token);
 
     /// <summary>
     /// コンテント解析器の名称を取得します

@@ -1,4 +1,4 @@
-﻿// PeerCastStation, a P2P streaming servent.
+// PeerCastStation, a P2P streaming servent.
 // Copyright (C) 2011 Ryuichi Sakamoto (kumaryu@kumaryu.net)
 // 
 // This program is free software: you can redistribute it and/or modify
@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Text.RegularExpressions;
 using PeerCastStation.Core;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.HTTP
 {
@@ -129,6 +130,29 @@ namespace PeerCastStation.HTTP
       if (req.Uri==null) throw new InvalidDataException();
       return req;
     }
+
+    public static async Task<HTTPRequest> ReadAsync(Stream stream, CancellationToken cancel_token)
+    {
+      string line = null;
+      var requests = new List<string>();
+      var buf = new List<byte>();
+      while (line!="") {
+        var value = await stream.ReadByteAsync(cancel_token);
+        if (value<0) {
+          throw new EndOfStreamException();
+        }
+        buf.Add((byte)value);
+        if (buf.Count >= 2 && buf[buf.Count - 2] == '\r' && buf[buf.Count - 1] == '\n') {
+          line = System.Text.Encoding.UTF8.GetString(buf.ToArray(), 0, buf.Count - 2);
+          if (line!="") requests.Add(line);
+          buf.Clear();
+        }
+      }
+      var req = new HTTPRequest(requests);
+      if (req.Uri==null) throw new InvalidDataException();
+      return req;
+    }
+
   }
 
   /// <summary>
@@ -317,9 +341,6 @@ namespace PeerCastStation.HTTP
     : OutputStreamBase
   {
     private HTTPRequest request;
-    private Content headerPacket = null;
-    private List<Content> contentPacketQueue = new List<Content>();
-    private Content sentPacket;
 
     /// <summary>
     /// 元になるストリーム、チャンネル、リクエストからHTTPOutputStreamを初期化します
@@ -349,40 +370,27 @@ namespace PeerCastStation.HTTP
       this.request = request;
     }
 
+    private Queue<Packet> contentPacketQueue = new Queue<Packet>();
+    private Content headerContent = null;
+    private Content lastPacket = null;
+    private ManualResetEventSlim packetEvent = new ManualResetEventSlim();
     private void OnContentChanged(object sender, EventArgs args)
     {
       lock (contentPacketQueue) {
-        headerPacket = Channel.ContentHeader;
-        if (headerPacket==null) return;
-        if (contentPacketQueue.Count>0) {
-          var last_packet = contentPacketQueue[contentPacketQueue.Count-1];
-          contentPacketQueue.AddRange(Channel.Contents.GetNewerContents(headerPacket.Stream, last_packet.Timestamp, last_packet.Position));
+        if (headerContent!=Channel.ContentHeader) {
+          headerContent = Channel.ContentHeader;
+          lastPacket = headerContent;
+          contentPacketQueue.Enqueue(new Packet(Packet.ContentType.Header, Channel.ContentHeader));
+          packetEvent.Set();
         }
-        else if (sentPacket!=null) {
-          contentPacketQueue.AddRange(Channel.Contents.GetNewerContents(headerPacket.Stream, sentPacket.Timestamp, sentPacket.Position));
-        }
-        else {
-          contentPacketQueue.AddRange(Channel.Contents.GetNewerContents(headerPacket.Stream, headerPacket.Timestamp, headerPacket.Position));
+        if (headerContent!=null) {
+          foreach (var content in Channel.Contents.GetNewerContents(headerContent.Stream, lastPacket.Timestamp, lastPacket.Position)) {
+            contentPacketQueue.Enqueue(new Packet(Packet.ContentType.Body, content));
+            packetEvent.Set();
+            lastPacket = content;
+          }
         }
       }
-    }
-
-    protected override int GetUpstreamRate()
-    {
-      return Channel.ChannelInfo.Bitrate;
-    }
-
-    public override string ToString()
-    {
-      string user_agent = "";
-      if (request.Headers.ContainsKey("USER-AGENT")) {
-        user_agent = request.Headers["USER-AGENT"];
-      }
-      return String.Format(
-        "HTTP Direct {0} ({1}) {2}kbps",
-        RemoteEndPoint,
-        user_agent,
-        (int)(RecvRate+SendRate)*8/1000);
     }
 
     /// <summary>
@@ -411,7 +419,7 @@ namespace PeerCastStation.HTTP
     /// パスが/stream/で始まる場合はBodyType.Content、
     /// パスが/pls/で始まる場合はBodyType.Playlist
     /// </returns>
-    protected virtual BodyType GetBodyType()
+    private BodyType GetBodyType()
     {
       if (Channel==null || Channel.Status==SourceStreamStatus.Error) {
         return BodyType.None;
@@ -519,187 +527,16 @@ namespace PeerCastStation.HTTP
     }
 
     /// <summary>
-    /// ストリームにプレイリストを出力します
-    /// </summary>
-    protected void WritePlayList()
-    {
-      var pls = CreatePlaylist();
-      pls.Channels.Add(Channel);
-      var baseuri = new Uri(
-        new Uri(request.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped)),
-        "stream/");
-      if (AccessControl.AuthenticationKey!=null) {
-        var parameters = new Dictionary<string, string>() {
-          { "auth", HTTPUtils.CreateAuthorizationToken(AccessControl.AuthenticationKey) },
-        };
-        Send(pls.CreatePlayList(baseuri, parameters));
-      }
-      else {
-        Send(pls.CreatePlayList(baseuri, Enumerable.Empty<KeyValuePair<string,string>>()));
-      }
-    }
-
-    /// <summary>
-    /// ストリームにHTTPレスポンスのボディ部分を出力します
-    /// </summary>
-    protected virtual void WriteResponseBody()
-    {
-      Logger.Debug("Sending Contents");
-      Content sentHeader = null;
-      SetState(() => {
-        switch (GetBodyType()) {
-        case BodyType.None:
-          OnWriteResponseBodyCompleted();
-          break;
-        case BodyType.Content:
-          if (sentHeader!=headerPacket) {
-            sentHeader = headerPacket;
-            sentPacket = sentHeader;
-            if (headerPacket!=null) {
-              Send(headerPacket.Data);
-              Logger.Debug("Sent ContentHeader pos {0}", sentHeader.Position);
-            }
-          }
-          if (sentHeader!=null) {
-            lock (contentPacketQueue) {
-              foreach (var c in contentPacketQueue) {
-                if (HasError) break;
-                if (c.Timestamp>sentPacket.Timestamp ||
-                    (c.Timestamp==sentPacket.Timestamp && c.Position>sentPacket.Position)) {
-                  Send(c.Data);
-                  sentPacket = c;
-                }
-              }
-              contentPacketQueue.Clear();
-            }
-          }
-          break;
-        case BodyType.Playlist:
-          Logger.Debug("Sending Playlist");
-          WritePlayList();
-          OnWriteResponseBodyCompleted();
-          break;
-        }
-      });
-    }
-
-    protected virtual void OnWriteResponseBodyCompleted()
-    {
-      Stop();
-    }
-
-    /// <summary>
-    /// チャンネルのContentTypeが取得できるか10秒たつまで待ちます。
-    /// </summary>
-    protected void WaitChannel()
-    {
-      var started = Environment.TickCount;
-      SetState(() => {
-        if (!IsStopped &&
-            Channel!=null &&
-            Environment.TickCount-started<10000 &&
-            (Channel.ChannelInfo.ContentType==null ||
-             Channel.ChannelInfo.ContentType=="")) {
-          //Do nothing
-        }
-        else {
-          if (Channel!=null) {
-            Logger.Debug("ContentType: {0}", Channel.ChannelInfo.ContentType);
-          }
-          OnWaitChannelCompleted();
-        }
-      });
-    }
-
-    protected void Unauthorized()
-    {
-      SetState(() => {
-        var response_header = HTTPUtils.CreateResponseHeader(
-          HttpStatusCode.Unauthorized,
-          new Dictionary<string, string>());
-        var bytes = System.Text.Encoding.UTF8.GetBytes(response_header);
-        Send(bytes);
-        Logger.Debug("Header: {0}", response_header);
-        Stop();
-      });
-    }
-
-    protected virtual void OnWaitChannelCompleted()
-    {
-      if (!IsStopped) {
-        WriteResponseHeader();
-      }
-    }
-
-    /// <summary>
-    /// ストリームにHTTPレスポンスヘッダを出力します
-    /// </summary>
-    protected void WriteResponseHeader()
-    {
-      SetState(() => {
-        var response_header = CreateResponseHeader();
-        var bytes = System.Text.Encoding.UTF8.GetBytes(response_header + "\r\n");
-        Send(bytes);
-        Logger.Debug("Header: {0}", response_header);
-        OnWriteResponseHeaderCompleted();
-      });
-    }
-
-    protected virtual void OnWriteResponseHeaderCompleted()
-    {
-      if (request.Method=="GET") {
-        WriteResponseBody();
-      }
-      else {
-        Stop();
-      }
-    }
-
-    Action state = null;
-    private void SetState(Action state)
-    {
-      this.state = state;
-    }
-
-    protected override void OnIdle()
-    {
-      if (this.state!=null) this.state();
-      base.OnIdle();
-    }
-
-    /// <summary>
-    /// ストリームにレスポンスを出力します
-    /// </summary>
-    protected override void OnStarted()
-    {
-      Logger.Debug("Starting");
-      if (HTTPUtils.CheckAuthorization(request, AccessControl.AuthenticationKey)) {
-        if (this.Channel!=null) {
-          this.Channel.ContentChanged += OnContentChanged;
-          OnContentChanged(this, new EventArgs());
-        }
-        WaitChannel();
-      }
-      else {
-        Unauthorized();
-      }
-    }
-
-    protected override void OnStopped()
-    {
-      base.OnStopped();
-      if (this.Channel!=null) {
-        this.Channel.ContentChanged -= OnContentChanged;
-      }
-      Logger.Debug("Finished");
-    }
-
-    /// <summary>
     /// OutputStreamの種別を取得します。常にOutputStreamType.Playを返します
     /// </summary>
     public override OutputStreamType OutputStreamType
     {
       get { return OutputStreamType.Play; }
+    }
+
+    protected override int GetUpstreamRate()
+    {
+      return Channel.ChannelInfo.Bitrate;
     }
 
     public override ConnectionInfo GetConnectionInfo()
@@ -719,13 +556,186 @@ namespace PeerCastStation.HTTP
         RemoteEndPoint.ToString(),
         (IPEndPoint)RemoteEndPoint,
         IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
-        sentPacket!=null ? sentPacket.Position : 0,
-        RecvRate,
-        SendRate,
+        lastPacket!=null ? lastPacket.Position : 0,
+        Connection.ReadRate,
+        Connection.WriteRate,
         null,
         null,
         user_agent);
     }
+
+    public async Task WaitChannelReceived()
+    {
+      if (Channel==null) return;
+      var cancel_soruce = new CancellationTokenSource(10000);
+      while (
+          (!cancel_soruce.IsCancellationRequested || !IsStopped) &&
+          String.IsNullOrEmpty(Channel.ChannelInfo.ContentType)) {
+        await Task.Yield();
+      }
+      Logger.Debug("ContentType: {0}", Channel.ChannelInfo.ContentType);
+    }
+
+    private async Task SendResponseHeader()
+    {
+      var response_header = CreateResponseHeader();
+      var bytes = System.Text.Encoding.UTF8.GetBytes(response_header + "\r\n");
+      await Connection.WriteAsync(bytes);
+      Logger.Debug("Header: {0}", response_header);
+    }
+
+    private class Packet {
+      public enum ContentType {
+        Header,
+        Body,
+      }
+
+      public ContentType Type { get; private set; }
+      public Content Content { get; private set; }
+      public Packet(ContentType type, Content content)
+      {
+        this.Type = type;
+        this.Content = content;
+      }
+    }
+
+    private Task<Packet> GetPacket()
+    {
+      return Task.Run(() => {
+        lock (contentPacketQueue) {
+          if (contentPacketQueue.Count>0) {
+            packetEvent.Reset();
+            return contentPacketQueue.Dequeue();
+          }
+        }
+        while (contentPacketQueue.Count==0) {
+          packetEvent.Wait();
+          lock (contentPacketQueue) {
+            if (contentPacketQueue.Count>0) {
+              packetEvent.Reset();
+              return contentPacketQueue.Dequeue();
+            }
+          }
+        }
+        return contentPacketQueue.Dequeue();
+      });
+    }
+
+    private async Task SendContents()
+    {
+      Logger.Debug("Sending Contents");
+      Content sent_header = null;
+      Content sent_packet = null;
+      while (!IsStopped) {
+        var packet = await GetPacket();
+        switch (packet.Type) {
+        case Packet.ContentType.Header:
+          if (sent_header!=packet.Content && packet.Content!=null) {
+            await Connection.WriteAsync(packet.Content.Data);
+            Logger.Debug("Sent ContentHeader pos {0}", packet.Content.Position);
+            sent_header = packet.Content;
+            sent_packet = packet.Content;
+          }
+          break;
+        case Packet.ContentType.Body:
+          if (sent_header==null) continue;
+          var c = packet.Content;
+          if (c.Timestamp>sent_packet.Timestamp ||
+              (c.Timestamp==sent_packet.Timestamp && c.Position>sent_packet.Position)) {
+            await Connection.WriteAsync(c.Data);
+            sent_packet = c;
+          }
+          break;
+        }
+      }
+    }
+
+    private async Task SendPlaylist()
+    {
+      Logger.Debug("Sending Playlist");
+      bool mms = 
+        Channel.ChannelInfo.ContentType=="WMV" ||
+        Channel.ChannelInfo.ContentType=="WMA" ||
+        Channel.ChannelInfo.ContentType=="ASX";
+      IPlayList pls;
+      if (mms) {
+        pls = new ASXPlayList();
+      }
+      else {
+        pls = new M3UPlayList();
+      }
+      pls.Channels.Add(Channel);
+      var baseuri = new Uri(
+        new Uri(request.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped)),
+        "stream/");
+
+      if (AccessControlInfo.AuthenticationKey!=null) {
+        var parameters = new Dictionary<string, string>() {
+          { "auth", HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey) },
+        };
+        await Connection.WriteAsync(pls.CreatePlayList(baseuri, parameters));
+      }
+      else {
+        await Connection.WriteAsync(pls.CreatePlayList(baseuri, Enumerable.Empty<KeyValuePair<string,string>>()));
+      }
+
+    }
+
+    private async Task SendReponseBody()
+    {
+      switch (GetBodyType()) {
+      case BodyType.None:
+        break;
+      case BodyType.Content:
+        await SendContents();
+        break;
+      case BodyType.Playlist:
+        await SendPlaylist();
+        break;
+      }
+    }
+
+    private async Task Unauthorized()
+    {
+      var response_header = HTTPUtils.CreateResponseHeader(HttpStatusCode.Unauthorized, new Dictionary<string,string>());
+      await Connection.WriteAsync(System.Text.Encoding.UTF8.GetBytes(response_header));
+      Logger.Debug("Header: {0}", response_header);
+    }
+
+    protected override Task OnStarted(CancellationToken cancel_token)
+    {
+      if (this.Channel!=null) {
+        this.Channel.AddOutputStream(this);
+        this.Channel.ContentChanged += OnContentChanged;
+        OnContentChanged(this, new EventArgs());
+      }
+      return base.OnStarted(cancel_token);
+    }
+
+    protected override Task OnStopped(CancellationToken cancel_token)
+    {
+      if (this.Channel!=null) {
+        this.Channel.ContentChanged -= OnContentChanged;
+        this.Channel.RemoveOutputStream(this);
+      }
+      return base.OnStopped(cancel_token);
+    }
+
+    protected override async Task<StopReason> DoProcess(CancellationToken cancel_token)
+    {
+      if (!HTTPUtils.CheckAuthorization(request, AccessControlInfo)) {
+        await Unauthorized();
+        return StopReason.OffAir;
+      }
+      await WaitChannelReceived();
+      await SendResponseHeader();
+      if (request.Method=="GET") {
+        await SendReponseBody();
+      }
+      return StopReason.OffAir;
+    }
+
+
   }
 
   [Plugin]

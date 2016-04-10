@@ -18,6 +18,8 @@ using System.IO;
 using System.Net;
 using System.Collections.Generic;
 using PeerCastStation.Core;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.HTTP
 {
@@ -108,19 +110,12 @@ namespace PeerCastStation.HTTP
       this.request = req;
     }
 
-    protected override void OnStarted()
+    protected override async Task<StopReason> DoProcess(CancellationToken cancel_token)
     {
-      base.OnStarted();
-      Logger.Debug("Started");
       var response = "HTTP/1.0 404 NotFound\r\n\r\n";
       var bytes = System.Text.Encoding.UTF8.GetBytes(response);
-      Send(bytes);
-      Stop();
-    }
-
-    protected override void OnStopped()
-    {
-      Logger.Debug("Finished"); base.OnStopped();
+      await Connection.WriteAsync(bytes, cancel_token);
+      return StopReason.OffAir;
     }
 
     public override OutputStreamType OutputStreamType
@@ -138,8 +133,8 @@ namespace PeerCastStation.HTTP
         (IPEndPoint)RemoteEndPoint,
         IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
         null,
-        RecvRate,
-        SendRate,
+        Connection.ReadRate,
+        Connection.WriteRate,
         null,
         null,
         request.Headers["USER-AGENT"]);
