@@ -258,7 +258,7 @@ Stopped:
           return;
         }
         else {
-          Logger.Error("Server responses {0} to GET {1}", relayResponse.StatusCode, SourceUri.PathAndQuery);
+          Logger.Info("Server responses {0} to GET {1}", relayResponse.StatusCode, SourceUri.PathAndQuery);
           Stop(relayResponse.StatusCode==404 ? StopReason.OffAir : StopReason.UnavailableError);
         }
       }

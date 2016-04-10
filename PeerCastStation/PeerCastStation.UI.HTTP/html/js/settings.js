@@ -165,9 +165,9 @@ var ListenerViewModel = function(value) {
 
   self.addressLabel = ko.computed(function() {
     var addr = self.address();
-    if (addr=='0.0.0.0')   return 'IPv4 Any';
-    else if (addr=='0::0') return 'IPv6 Any';
-    else                   return addr;
+    if (addr==='0.0.0.0')                  return 'IPv4 Any';
+    else if (addr==='0::0' || addr==='::') return 'IPv6 Any';
+    else                                   return addr;
   });
 
   self.lanPlayAccept = ko.computed({

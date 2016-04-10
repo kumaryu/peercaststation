@@ -341,33 +341,6 @@ namespace PeerCastStation.Core
       this.SourceStreamFactories = new List<ISourceStreamFactory>();
       this.OutputStreamFactories = new List<IOutputStreamFactory>();
       this.ContentReaderFactories = new List<IContentReaderFactory>();
-      foreach (var addr in Dns.GetHostAddresses(Dns.GetHostName())) {
-        switch (addr.AddressFamily) {
-        case AddressFamily.InterNetwork:
-          if (this.LocalAddress==null && 
-              !addr.Equals(IPAddress.None) &&
-              !addr.Equals(IPAddress.Any) &&
-              !addr.Equals(IPAddress.Broadcast) &&
-              !IPAddress.IsLoopback(addr)) {
-            this.LocalAddress = addr;
-            logger.Info("IPv4 LocalAddress: {0}", this.LocalAddress);
-          }
-          break;
-        case AddressFamily.InterNetworkV6:
-          if (LocalAddress6==null && 
-              !addr.Equals(IPAddress.IPv6Any) &&
-              !addr.Equals(IPAddress.IPv6Loopback) &&
-              !addr.Equals(IPAddress.IPv6None)) {
-            this.LocalAddress6 = addr;
-            logger.Info("IPv6 LocalAddress: {0}", this.LocalAddress6);
-          }
-          break;
-        default:
-          break;
-        }
-      }
-      if (this.LocalAddress==null)  this.LocalAddress  = IPAddress.Loopback;
-      if (this.LocalAddress6==null) this.LocalAddress6 = IPAddress.IPv6Loopback;
       StartMonitor();
     }
 
@@ -405,12 +378,53 @@ namespace PeerCastStation.Core
       }, null, 5000, false);
     }
 
+    private IPAddress GetLocalAddress(AddressFamily addr_family)
+    {
+      return System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+        .Where(intf => !intf.IsReceiveOnly)
+        .Where(intf => intf.OperationalStatus==System.Net.NetworkInformation.OperationalStatus.Up)
+        .Where(intf => intf.NetworkInterfaceType!=System.Net.NetworkInformation.NetworkInterfaceType.Loopback)
+        .Select(intf => intf.GetIPProperties())
+        .SelectMany(prop => prop.UnicastAddresses)
+        .Where(uaddr => uaddr.Address.AddressFamily==addr_family)
+        .Select(uaddr => uaddr.Address)
+        .FirstOrDefault();
+    }
+
     public bool? IsFirewalled { get; set; }
     public Guid SessionID { get; private set; }
     public Guid BroadcastID { get; set; }
-    public IPAddress LocalAddress { get; private set; }
+    private IPAddress localAddress;
+    public IPAddress LocalAddress {
+      get {
+        if (localAddress!=null) return localAddress;
+        var addr = GetLocalAddress(AddressFamily.InterNetwork);
+        if (addr!=null) {
+          this.localAddress = addr;
+        }
+        else {
+          this.localAddress = IPAddress.Loopback;
+        }
+        logger.Info("IPv4 LocalAddress: {0}", this.localAddress);
+        return this.localAddress;
+      }
+    }
     public IPAddress GlobalAddress { get; set; }
-    public IPAddress LocalAddress6 { get; private set; }
+    private IPAddress localAddress6;
+    public IPAddress LocalAddress6 {
+      get {
+        if (localAddress6!=null) return localAddress6;
+        var addr = GetLocalAddress(AddressFamily.InterNetworkV6);
+        if (addr!=null) {
+          this.localAddress6 = addr;
+        }
+        else {
+          this.localAddress6 = IPAddress.IPv6Loopback;
+        }
+        logger.Info("IPv6 LocalAddress: {0}", this.localAddress6);
+        return this.localAddress6;
+      }
+    }
     public IPAddress GlobalAddress6 { get; set; }
 
     private List<OutputListener> outputListeners = new List<OutputListener>();
