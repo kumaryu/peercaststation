@@ -636,30 +636,23 @@ namespace PeerCastStation.Core
     public IList<Content> Contents;
   }
 
+  public interface IContentSink
+  {
+    void OnChannelInfo(ChannelInfo channel_info);
+    void OnChannelTrack(ChannelTrack channel_track);
+    void OnContentHeader(Content content_header);
+    void OnContent(Content content);
+  }
+
   /// <summary>
   /// ストリームからのコンテントデータの読み取りを行なうインターフェースです
   /// </summary>
   public interface IContentReader
   {
-    /// <summary>
-    /// 指定したストリームからデータを読み取ります
-    /// </summary>
-    /// <param name="stream">読み取り元のストリーム</param>
-    /// <returns>読み取ったデータを保持するParsedContent</returns>
-    /// <exception cref="EndOfStreamException">
-    /// 必要なデータを読み取る前にストリームが終端に到達した
-    /// </exception>
-    /// <remarks>
-    /// 戻り値にChannelInfoが存在する場合には、次のパケットが設定されていることが期待されます。
-    /// <list type="bullet">
-    ///   <item><description>Atom.PCP_CHAN_INFO_TYPE</description></item>
-    ///   <item><description>Atom.PCP_CHAN_INFO_MIME</description></item>
-    ///   <item><description>Atom.PCP_CHAN_INFO_PLS</description></item>
-    ///   <item><description>Atom.PCP_CHAN_INFO_EXT</description></item>
-    /// </list>
-    /// </remarks>
-    ParsedContent Read(Stream stream);
-    Task<ParsedContent> ReadAsync(Stream stream, CancellationToken cancel_token);
+    Task ReadAsync(
+      IContentSink      sink,
+      Stream            stream,
+      CancellationToken cancel_token);
 
     /// <summary>
     /// コンテント解析器の名称を取得します
