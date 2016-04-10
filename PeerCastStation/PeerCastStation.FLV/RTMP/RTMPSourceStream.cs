@@ -45,7 +45,7 @@ namespace PeerCastStation.FLV.RTMP
   }
 
   public class RTMPSourceConnection
-    : SourceConnectionBase2
+    : SourceConnectionBase
   {
     public RTMPSourceConnection(PeerCast peercast, Channel channel, Uri source_uri, bool use_content_bitrate)
       : base(peercast, channel, source_uri)

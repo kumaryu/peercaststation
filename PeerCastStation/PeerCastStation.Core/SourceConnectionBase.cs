@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
@@ -21,7 +20,7 @@ namespace PeerCastStation.Core
     void Stop(StopReason reason);
   }
 
-  public abstract class SourceConnectionBase2
+  public abstract class SourceConnectionBase
     : ISourceConnection
   {
     protected ConnectionStatus Status { get; set; }
@@ -80,7 +79,7 @@ namespace PeerCastStation.Core
     }
     protected SourceConnectionClient connection;
 
-    public SourceConnectionBase2(
+    public SourceConnectionBase(
         PeerCast peercast,
         Channel  channel,
         Uri      source_uri)

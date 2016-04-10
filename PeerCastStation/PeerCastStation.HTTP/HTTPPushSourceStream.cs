@@ -45,7 +45,7 @@ namespace PeerCastStation.HTTP
   }
 
   public class HTTPPushSourceConnection
-    : SourceConnectionBase2
+    : SourceConnectionBase
   {
     public HTTPPushSourceConnection(PeerCast peercast, Channel channel, Uri source_uri, IContentReader content_reader, bool use_content_bitrate)
       : base(peercast, channel, source_uri)

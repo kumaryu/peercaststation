@@ -107,7 +107,7 @@ namespace PeerCastStation.HTTP
   }
 
   public class HTTPSourceConnection
-    : SourceConnectionBase2
+    : SourceConnectionBase
   {
     private IContentReader contentReader;
     private HTTPResponse response = null;

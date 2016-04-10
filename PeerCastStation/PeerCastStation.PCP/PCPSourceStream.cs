@@ -113,7 +113,7 @@ namespace PeerCastStation.PCP
   }
 
   public class PCPSourceConnection
-    : SourceConnectionBase2
+    : SourceConnectionBase
   {
     private TcpClient client = null;
     private RelayRequestResponse relayResponse = null;
