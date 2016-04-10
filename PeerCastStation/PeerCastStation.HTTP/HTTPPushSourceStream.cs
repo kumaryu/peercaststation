@@ -51,8 +51,9 @@ namespace PeerCastStation.HTTP
       : base(peercast, channel, source_uri)
     {
       this.ContentReader = content_reader;
-      this.useContentBitrate = use_content_bitrate;
+      this.contentSink = new ChannelContentSink(channel, use_content_bitrate);
     }
+    private ChannelContentSink contentSink;
 
     public IContentReader ContentReader { get; private set; }
 
@@ -65,8 +66,6 @@ namespace PeerCastStation.HTTP
       {
       }
     }
-    private TcpClient client;
-    private bool useContentBitrate;
 
     public override ConnectionInfo GetConnectionInfo()
     {
@@ -79,8 +78,8 @@ namespace PeerCastStation.HTTP
       default:                        status = ConnectionStatus.Idle; break;
       }
       IPEndPoint endpoint = null;
-      if (client!=null && client.Connected) {
-        endpoint = (IPEndPoint)client.Client.RemoteEndPoint;
+      if (this.connection?.Client?.Connected ?? false) {
+        endpoint = (IPEndPoint)this.connection.Client.Client.RemoteEndPoint;
       }
       return new ConnectionInfo(
         "HTTP Push Source",
@@ -89,7 +88,7 @@ namespace PeerCastStation.HTTP
         SourceUri.ToString(),
         endpoint,
         (endpoint!=null && endpoint.Address.IsSiteLocal()) ? RemoteHostStatus.Local : RemoteHostStatus.None,
-        lastPosition,
+        contentSink.LastContent?.Position ?? 0,
         RecvRate,
         SendRate,
         null,
@@ -381,32 +380,12 @@ namespace PeerCastStation.HTTP
       return chunked ? new HTTPChunkedContentStream(stream) : stream;
     }
 
-    long lastPosition = 0;
     private async Task ReadContents(CancellationToken cancel_token)
     {
       this.state = ConnectionState.Connected;
       var stream = GetChunkedStream(connection.Stream);
-      while (!IsStopped) {
-        var data = await ContentReader.ReadAsync(stream, cancel_token);
-        this.state = ConnectionState.Receiving;
-        if (data.ChannelInfo!=null) {
-          Channel.ChannelInfo = UpdateChannelInfo(Channel.ChannelInfo, data.ChannelInfo);
-        }
-        if (data.ChannelTrack!=null) {
-          Channel.ChannelTrack = UpdateChannelTrack(Channel.ChannelTrack, data.ChannelTrack);
-        }
-        if (data.ContentHeader!=null) {
-          Channel.ContentHeader = data.ContentHeader;
-          Channel.Contents.Clear();
-          lastPosition = data.ContentHeader.Position;
-        }
-        if (data.Contents!=null) {
-          foreach (var content in data.Contents) {
-            Channel.Contents.Add(content);
-            lastPosition = content.Position;
-          }
-        }
-      }
+      this.state = ConnectionState.Receiving;
+      await ContentReader.ReadAsync(contentSink, stream, cancel_token);
       Stop(StopReason.OffAir);
     }
 
@@ -443,24 +422,6 @@ namespace PeerCastStation.HTTP
     protected override void DoPost(Host from, Atom packet)
     {
       //Do nothing
-    }
-
-    private ChannelInfo UpdateChannelInfo(ChannelInfo a, ChannelInfo b)
-    {
-      var base_atoms = new AtomCollection(a.Extra);
-      var new_atoms  = new AtomCollection(b.Extra);
-      if (!useContentBitrate) {
-        new_atoms.RemoveByName(Atom.PCP_CHAN_INFO_BITRATE);
-      }
-      base_atoms.Update(new_atoms);
-      return new ChannelInfo(base_atoms);
-    }
-
-    private ChannelTrack UpdateChannelTrack(ChannelTrack a, ChannelTrack b)
-    {
-      var base_atoms = new AtomCollection(a.Extra);
-      base_atoms.Update(b.Extra);
-      return new ChannelTrack(base_atoms);
     }
 
   }
