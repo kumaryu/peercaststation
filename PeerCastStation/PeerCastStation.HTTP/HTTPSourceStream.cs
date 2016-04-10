@@ -110,9 +110,8 @@ namespace PeerCastStation.HTTP
     : SourceConnectionBase
   {
     private IContentReader contentReader;
+    private ChannelContentSink contentSink;
     private HTTPResponse response = null;
-    private bool useContentBitrate;
-    private long lastPosition = 0;
 
     public HTTPSourceConnection(
         PeerCast peercast,
@@ -123,7 +122,7 @@ namespace PeerCastStation.HTTP
       : base(peercast, channel, source_uri)
     {
       contentReader = content_reader;
-      useContentBitrate = use_content_bitrate;
+      contentSink = new ChannelContentSink(channel, use_content_bitrate);
     }
 
     protected override async Task<SourceConnectionClient> DoConnect(Uri source, CancellationToken cancel_token)
@@ -177,26 +176,7 @@ namespace PeerCastStation.HTTP
         }
 
         this.Status = ConnectionStatus.Connected;
-        while (!IsStopped) {
-          var data = await contentReader.ReadAsync(connection.Stream, cancel_token);
-          if (data.ChannelInfo!=null) {
-            Channel.ChannelInfo = UpdateChannelInfo(Channel.ChannelInfo, data.ChannelInfo);
-          }
-          if (data.ChannelTrack!=null) {
-            Channel.ChannelTrack = UpdateChannelTrack(Channel.ChannelTrack, data.ChannelTrack);
-          }
-          if (data.ContentHeader!=null) {
-            Channel.ContentHeader = data.ContentHeader;
-            Channel.Contents.Clear();
-            lastPosition = data.ContentHeader.Position;
-          }
-          if (data.Contents!=null) {
-            foreach (var content in data.Contents) {
-              Channel.Contents.Add(content);
-              lastPosition = content.Position;
-            }
-          }
-        }
+        await contentReader.ReadAsync(contentSink, connection.Stream, cancel_token);
       }
       catch (InvalidDataException) {
         Stop(StopReason.ConnectionError);
@@ -209,24 +189,6 @@ namespace PeerCastStation.HTTP
         Stop(StopReason.ConnectionError);
       }
       this.Status = ConnectionStatus.Error;
-    }
-
-    private ChannelInfo UpdateChannelInfo(ChannelInfo a, ChannelInfo b)
-    {
-      var base_atoms = new AtomCollection(a.Extra);
-      var new_atoms  = new AtomCollection(b.Extra);
-      if (!useContentBitrate) {
-        new_atoms.RemoveByName(Atom.PCP_CHAN_INFO_BITRATE);
-      }
-      base_atoms.Update(new_atoms);
-      return new ChannelInfo(base_atoms);
-    }
-
-    private ChannelTrack UpdateChannelTrack(ChannelTrack a, ChannelTrack b)
-    {
-      var base_atoms = new AtomCollection(a.Extra);
-      base_atoms.Update(b.Extra);
-      return new ChannelTrack(base_atoms);
     }
 
     public override ConnectionInfo GetConnectionInfo()
@@ -243,7 +205,7 @@ namespace PeerCastStation.HTTP
         SourceUri.ToString(),
         endpoint,
         (endpoint!=null && endpoint.Address.IsSiteLocal()) ? RemoteHostStatus.Local : RemoteHostStatus.None,
-        lastPosition,
+        contentSink.LastContent?.Position ?? 0,
         RecvRate,
         SendRate,
         null,
