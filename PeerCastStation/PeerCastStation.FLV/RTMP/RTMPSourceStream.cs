@@ -50,7 +50,7 @@ namespace PeerCastStation.FLV.RTMP
     public RTMPSourceConnection(PeerCast peercast, Channel channel, Uri source_uri, bool use_content_bitrate)
       : base(peercast, channel, source_uri)
     {
-      this.flvBuffer = new FLVContentBuffer(channel);
+      this.flvBuffer = new FLVContentBuffer(channel, new ChannelContentSink(channel, use_content_bitrate));
       this.useContentBitrate = use_content_bitrate;
     }
 
@@ -476,49 +476,11 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
-    private ChannelInfo UpdateChannelInfo(ChannelInfo a, ChannelInfo b)
-    {
-      var base_atoms = new AtomCollection(a.Extra);
-      var new_atoms  = new AtomCollection(b.Extra);
-      if (!useContentBitrate) {
-        new_atoms.RemoveByName(Atom.PCP_CHAN_INFO_BITRATE);
-      }
-      base_atoms.Update(new_atoms);
-      return new ChannelInfo(base_atoms);
-    }
-
-    private ChannelTrack UpdateChannelTrack(ChannelTrack a, ChannelTrack b)
-    {
-      var base_atoms = new AtomCollection(a.Extra);
-      base_atoms.Update(b.Extra);
-      return new ChannelTrack(base_atoms);
-    }
-
-    private void FlushBuffer()
-    {
-      var data = flvBuffer.GetContents();
-      if (data.ChannelInfo!=null) {
-        Channel.ChannelInfo = UpdateChannelInfo(Channel.ChannelInfo, data.ChannelInfo);
-      }
-      if (data.ChannelTrack!=null) {
-        Channel.ChannelTrack = UpdateChannelTrack(Channel.ChannelTrack, data.ChannelTrack);
-      }
-      if (data.ContentHeader!=null) {
-        Channel.ContentHeader = data.ContentHeader;
-      }
-      if (data.Contents!=null) {
-        foreach (var content in data.Contents) {
-          Channel.Contents.Add(content);
-        }
-      }
-    }
-
     private async Task ProcessMessages(IEnumerable<RTMPMessage> messages, CancellationToken cancel_token)
     {
       foreach (var msg in messages) {
         await ProcessMessage(msg, cancel_token);
       }
-      FlushBuffer();
     }
 
     private async Task ProcessMessage(RTMPMessage msg, CancellationToken cancel_token)
