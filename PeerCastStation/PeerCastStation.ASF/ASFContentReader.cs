@@ -483,102 +483,57 @@ namespace PeerCastStation.ASF
     public string Name { get { return "ASF(WMV or WMA)"; } }
     public Channel Channel { get; private set; }
 
-    private int      streamIndex = -1;
-    private DateTime streamOrigin;
-
-    public ParsedContent Read(Stream stream)
+    public async Task ReadAsync(IContentSink sink, Stream stream, CancellationToken cancel_token)
     {
-      var chunks = 0;
-      var res = new ParsedContent();
-      var pos = Channel.ContentPosition;
-      try {
-        while (chunks<8) {
-          var chunk = ASFChunk.Read(stream);
-          chunks++;
-          switch (chunk.KnownType) {
-          case ASFChunk.ChunkType.Header: {
-              var header = ASFHeader.Read(chunk);
-              var info = new AtomCollection(Channel.ChannelInfo.Extra);
-              info.SetChanInfoBitrate(header.Bitrate);
-              if (header.Streams.Any(type => type==ASFHeader.StreamType.Video)) {
-                info.SetChanInfoType("WMV");
-                info.SetChanInfoStreamType("video/x-ms-wmv");
-                info.SetChanInfoStreamExt(".wmv");
-              }
-              else if (header.Streams.Any(type => type==ASFHeader.StreamType.Audio)) {
-                info.SetChanInfoType("WMA");
-                info.SetChanInfoStreamType("audio/x-ms-wma");
-                info.SetChanInfoStreamExt(".wma");
-              }
-              else {
-                info.SetChanInfoType("ASF");
-                info.SetChanInfoStreamType("video/x-ms-asf");
-                info.SetChanInfoStreamExt(".asf");
-              }
-              res.ChannelInfo = new ChannelInfo(info);
-              streamIndex = Channel.GenerateStreamID();
-              streamOrigin = DateTime.Now;
-              res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, pos, chunk.ToByteArray());
-              pos += chunk.TotalLength;
-            }
-            break;
-          case ASFChunk.ChunkType.Data:
-            if (res.Contents==null) res.Contents = new System.Collections.Generic.List<Content>();
-            res.Contents.Add(new Content(streamIndex, DateTime.Now-streamOrigin, pos, chunk.ToByteArray()));
-            pos += chunk.TotalLength;
-            break;
-          case ASFChunk.ChunkType.Unknown:
-            break;
-          }
+      int      streamIndex  = -1;
+      DateTime streamOrigin = DateTime.Now;
+      bool eof = false;
+      do {
+        ASFChunk chunk = null;
+        try {
+          chunk = await ASFChunk.ReadAsync(stream, cancel_token);
         }
-      }
-      catch (EndOfStreamException) {
-        if (chunks==0) throw;
-      }
-      return res;
-    }
-
-    public async Task<ParsedContent> ReadAsync(Stream stream, CancellationToken cancel_token)
-    {
-      var res = new ParsedContent();
-    retry:
-      var chunk = await ASFChunk.ReadAsync(stream, cancel_token);
-      switch (chunk.KnownType) {
-      case ASFChunk.ChunkType.Header: {
-          var header = ASFHeader.Read(chunk);
-          var info = new AtomCollection(Channel.ChannelInfo.Extra);
-          info.SetChanInfoBitrate(header.Bitrate);
-          if (header.Streams.Any(type => type==ASFHeader.StreamType.Video)) {
-            info.SetChanInfoType("WMV");
-            info.SetChanInfoStreamType("video/x-ms-wmv");
-            info.SetChanInfoStreamExt(".wmv");
+        catch (EndOfStreamException) {
+          eof = true;
+          continue;
+        }
+        switch (chunk.KnownType) {
+        case ASFChunk.ChunkType.Header:
+          {
+            var header = ASFHeader.Read(chunk);
+            var info = new AtomCollection(Channel.ChannelInfo.Extra);
+            info.SetChanInfoBitrate(header.Bitrate);
+            if (header.Streams.Any(type => type==ASFHeader.StreamType.Video)) {
+              info.SetChanInfoType("WMV");
+              info.SetChanInfoStreamType("video/x-ms-wmv");
+              info.SetChanInfoStreamExt(".wmv");
+            }
+            else if (header.Streams.Any(type => type==ASFHeader.StreamType.Audio)) {
+              info.SetChanInfoType("WMA");
+              info.SetChanInfoStreamType("audio/x-ms-wma");
+              info.SetChanInfoStreamExt(".wma");
+            }
+            else {
+              info.SetChanInfoType("ASF");
+              info.SetChanInfoStreamType("video/x-ms-asf");
+              info.SetChanInfoStreamExt(".asf");
+            }
+            sink.OnChannelInfo(new ChannelInfo(info));
+            streamIndex = Channel.GenerateStreamID();
+            streamOrigin = DateTime.Now;
+            sink.OnContentHeader(new Content(streamIndex, TimeSpan.Zero, Channel.ContentPosition, chunk.ToByteArray()));
+            break;
           }
-          else if (header.Streams.Any(type => type==ASFHeader.StreamType.Audio)) {
-            info.SetChanInfoType("WMA");
-            info.SetChanInfoStreamType("audio/x-ms-wma");
-            info.SetChanInfoStreamExt(".wma");
-          }
-          else {
-            info.SetChanInfoType("ASF");
-            info.SetChanInfoStreamType("video/x-ms-asf");
-            info.SetChanInfoStreamExt(".asf");
-          }
-          res.ChannelInfo = new ChannelInfo(info);
-          streamIndex = Channel.GenerateStreamID();
-          streamOrigin = DateTime.Now;
-          res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, Channel.ContentPosition, chunk.ToByteArray());
+        case ASFChunk.ChunkType.Data:
+          sink.OnContent(
+            new Content(streamIndex, DateTime.Now-streamOrigin, Channel.ContentPosition, chunk.ToByteArray())
+          );
+          break;
+        case ASFChunk.ChunkType.Unknown:
           break;
         }
-      case ASFChunk.ChunkType.Data:
-        res.Contents = new Content[] {
-          new Content(streamIndex, DateTime.Now-streamOrigin, Channel.ContentPosition, chunk.ToByteArray()),
-        };
-        break;
-      case ASFChunk.ChunkType.Unknown:
-      default:
-        goto retry;
-      }
-      return res;
+      } while (!eof);
+
     }
 
   }
