@@ -36,19 +36,13 @@ namespace PeerCastStation.MKV
 
     public static async Task<VInt> ReadUIntAsync(Stream s, CancellationToken cancel_token)
     {
-      int b = await s.ReadByteAsync();
-      if (b<0) throw new EndOfStreamException();
-      int len = CheckLength(b);
-      if (len<0) throw new BadDataException();
+      int first = await s.ReadByteAsync();
+      if (first<0) throw new EndOfStreamException();
+      int len = CheckLength(first);
       var bin = new byte[len];
-      bin[0] = (byte)b;
-      long res = b;
-      for (var i=1; i<len; i++) {
-        b = await s.ReadByteAsync();
-        if (b<0) throw new EndOfStreamException();
-        bin[i] = (byte)b;
-        res = (res<<8) | (byte)b;
-      }
+      bin[0] = (byte)first;
+      await s.ReadBytesAsync(bin, 1, len-1, cancel_token);
+      long res = bin.Aggregate(0L, (r, b) => (r<<8) | b);
       res &= (1<<(7*len))-1;
       return new VInt(res, bin);
     }
@@ -58,7 +52,6 @@ namespace PeerCastStation.MKV
       int b = s.ReadByte();
       if (b<0) throw new EndOfStreamException();
       int len = CheckLength(b);
-      if (len<0) throw new BadDataException();
       var bin = new byte[len];
       bin[0] = (byte)b;
       long res = b;
@@ -72,19 +65,13 @@ namespace PeerCastStation.MKV
       return new VInt(res, bin);
     }
 
-    public static VInt ReadSInt(Stream s)
-    {
-      var uv = ReadUInt(s);
-      return new VInt(uv.Value - (1<<(uv.Length*7-1))-1, uv.Binary);
-    }
-
-    public static int CheckLength(int v)
+    private static int CheckLength(int v)
     {
       try {
         return Enumerable.Range(0, 8).First(i => ((1<<(7-i)) & v)!=0)+1;
       }
       catch (InvalidOperationException) {
-        return -1;
+        throw new BadDataException();
       }
     }
   }
@@ -159,27 +146,7 @@ namespace PeerCastStation.MKV
 
     public static long ReadUInt(Stream s, long len)
     {
-      long res = 0;
-      for (var i=0; i<len; i++) {
-        var v = s.ReadByte();
-        if (v<0) throw new EndOfStreamException();
-        res = (res<<8) | (byte)v;
-      }
-      return res;
-    }
-
-    public static long ReadSInt(Stream s, long len)
-    {
-      long res = 0;
-      for (var i=0; i<len; i++) {
-        var v = s.ReadByte();
-        if (v<0) throw new EndOfStreamException();
-        res = (res<<8) | (byte)v;
-      }
-      if ((res & (1<<(int)(len*8-1)))!=0) {
-        res -= 1<<(int)(len*8);
-      }
-      return res;
+      return s.ReadBytes((int)len).Aggregate(0L, (r,v) => (r<<8) | v);
     }
 
     public static string ReadString(Stream s, long len)
