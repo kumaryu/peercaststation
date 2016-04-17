@@ -177,6 +177,7 @@ namespace PeerCastStation.HTTP
 
         this.Status = ConnectionStatus.Connected;
         await contentReader.ReadAsync(contentSink, connection.Stream, cancel_token);
+        Stop(StopReason.OffAir);
       }
       catch (InvalidDataException) {
         Stop(StopReason.ConnectionError);
