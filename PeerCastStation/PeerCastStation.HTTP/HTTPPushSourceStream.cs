@@ -163,12 +163,7 @@ namespace PeerCastStation.HTTP
     private bool chunked = false;
     private async Task Handshake(CancellationToken cancel_token)
     {
-      HTTPRequest request = null;
-      try {
-        request = await HTTPRequestReader.ReadAsync(connection.Stream, cancel_token);
-      }
-      catch (EndOfStreamException) {
-      }
+      var request = await HTTPRequestReader.ReadAsync(connection.Stream, cancel_token);
       if (request==null) new HTTPError(HttpStatusCode.BadRequest);
       if (request.Method!="POST") new HTTPError(HttpStatusCode.MethodNotAllowed);
       Logger.Debug("POST requested");

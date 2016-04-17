@@ -1254,46 +1254,31 @@ namespace PeerCastStation.UI.HTTP
         Guid channel_id,
         byte[] header)
       {
-        HTTPRequest request = null;
-        long bytes = 0;
         using (var stream = new MemoryStream(header)) {
-          try {
-            request = HTTPRequestReader.Read(stream);
-            bytes = stream.Position;
-          }
-          catch (EndOfStreamException) {
-          }
-          catch (InvalidDataException) {
-          }
+          var request = HTTPRequestReader.Read(stream);
+          var bytes = stream.Position;
+          return new APIHostOutputStream(
+            owner,
+            PeerCast,
+            input_stream,
+            output_stream,
+            remote_endpoint,
+            access_control,
+            request,
+            header.Skip((int)bytes).ToArray());
         }
-        return new APIHostOutputStream(
-          owner,
-          PeerCast,
-          input_stream,
-          output_stream,
-          remote_endpoint,
-          access_control,
-          request,
-          header.Skip((int)bytes).ToArray());
       }
 
       public override Guid? ParseChannelID(byte[] header)
       {
-        HTTPRequest res = null;
-        using (var stream = new MemoryStream(header)) {
-          try {
-            res = HTTPRequestReader.Read(stream);
+        using (var stream=new MemoryStream(header)) {
+          var res = HTTPRequestReader.Read(stream);
+          if (res!=null && res.Uri.AbsolutePath=="/api/1") {
+            return Guid.Empty;
           }
-          catch (EndOfStreamException) {
+          else {
+            return null;
           }
-          catch (InvalidDataException) {
-          }
-        }
-        if (res!=null && res.Uri.AbsolutePath=="/api/1") {
-          return Guid.Empty;
-        }
-        else {
-          return null;
         }
       }
 

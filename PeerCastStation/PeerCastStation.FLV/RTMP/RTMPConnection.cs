@@ -300,15 +300,10 @@ namespace PeerCastStation.FLV.RTMP
 			logger.Debug("Handshake completed");
 		}
 
-		private async Task Recv(byte[] buf, int offset, int len, CancellationToken cancel_token)
-		{
-			var pos = 0;
-			while (pos<len) {
-				var recvd = await InputStream.ReadAsync(buf, offset+pos, len-pos, cancel_token);
-				if (recvd==0) throw new EndOfStreamException();
-				pos += recvd;
-			}
-		}
+    private Task Recv(byte[] buf, int offset, int len, CancellationToken cancel_token)
+    {
+      return InputStream.ReadBytesAsync(buf, offset, len, cancel_token);
+    }
 
 		private async Task<RTMPBinaryReader> Recv(int len, CancellationToken cancel_token)
 		{

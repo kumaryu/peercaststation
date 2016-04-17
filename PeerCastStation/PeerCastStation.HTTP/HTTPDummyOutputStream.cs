@@ -50,36 +50,25 @@ namespace PeerCastStation.HTTP
       Guid channel_id,
       byte[] header)
     {
-      HTTPRequest req = null;
-      var stream = new MemoryStream(header);
-      try {
-        req = HTTPRequestReader.Read(stream);
+      using (var stream = new MemoryStream(header)) {
+        var req = HTTPRequestReader.Read(stream);
+        return new HTTPDummyOutputStream(
+          PeerCast,
+          input_stream,
+          output_stream,
+          remote_endpoint,
+          access_control,
+          req);
       }
-      catch (EndOfStreamException) {
-      }
-      return new HTTPDummyOutputStream(
-        PeerCast,
-        input_stream,
-        output_stream,
-        remote_endpoint,
-        access_control,
-        req);
     }
 
     public override Guid? ParseChannelID(byte[] header)
     {
-      HTTPRequest res = null;
-      var stream = new MemoryStream(header);
-      try {
-        res = HTTPRequestReader.Read(stream);
+      using (var stream=new MemoryStream(header)) {
+        var res = HTTPRequestReader.Read(stream);
+        if (res!=null) return Guid.Empty;
+        else           return null;
       }
-      catch (EndOfStreamException) {
-      }
-      catch (InvalidDataException) {
-      }
-      stream.Close();
-      if (res!=null) return Guid.Empty;
-      else           return null;
     }
 
     public HTTPDummyOutputStreamFactory(PeerCast peercast)

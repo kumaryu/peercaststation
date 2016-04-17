@@ -89,29 +89,6 @@ namespace PeerCastStation.PCP
     }
   }
 
-  public static class RelayRequestResponseReader
-  {
-    public static RelayRequestResponse Read(Stream stream)
-    {
-      string line = null;
-      var responses = new List<string>();
-      var buf = new List<byte>();
-      while (line!="") {
-        var value = stream.ReadByte();
-        if (value<0) {
-          throw new EndOfStreamException();
-        }
-        buf.Add((byte)value);
-        if (buf.Count >= 2 && buf[buf.Count - 2] == '\r' && buf[buf.Count - 1] == '\n') {
-          line = System.Text.Encoding.UTF8.GetString(buf.ToArray(), 0, buf.Count - 2);
-          if (line!="") responses.Add(line);
-          buf.Clear();
-        }
-      }
-      return new RelayRequestResponse(responses);
-    }
-  }
-
   public class PCPSourceConnection
     : SourceConnectionBase
   {

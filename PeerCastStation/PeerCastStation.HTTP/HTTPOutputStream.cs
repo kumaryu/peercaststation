@@ -103,12 +103,6 @@ namespace PeerCastStation.HTTP
     /// </summary>
     /// <param name="stream">読み取り元のストリーム</param>
     /// <returns>解析済みHTTPRequest</returns>
-    /// <exception cref="EndOfStreamException">
-    /// HTTPリクエストの終端より前に解析ストリームの末尾に到達した
-    /// </exception>
-    /// <exception cref="InvalidDataException">
-    /// HTTPリクエストが不正な形式であった
-    /// </exception>
     public static HTTPRequest Read(Stream stream)
     {
       string line = null;
@@ -116,9 +110,7 @@ namespace PeerCastStation.HTTP
       var buf = new List<byte>();
       while (line!="") {
         var value = stream.ReadByte();
-        if (value<0) {
-          throw new EndOfStreamException();
-        }
+        if (value<0) return null;
         buf.Add((byte)value);
         if (buf.Count >= 2 && buf[buf.Count - 2] == '\r' && buf[buf.Count - 1] == '\n') {
           line = System.Text.Encoding.UTF8.GetString(buf.ToArray(), 0, buf.Count - 2);
@@ -127,7 +119,7 @@ namespace PeerCastStation.HTTP
         }
       }
       var req = new HTTPRequest(requests);
-      if (req.Uri==null) throw new InvalidDataException();
+      if (req.Uri==null) return null;
       return req;
     }
 
@@ -138,9 +130,7 @@ namespace PeerCastStation.HTTP
       var buf = new List<byte>();
       while (line!="") {
         var value = await stream.ReadByteAsync(cancel_token);
-        if (value<0) {
-          throw new EndOfStreamException();
-        }
+        if (value<0) return null;
         buf.Add((byte)value);
         if (buf.Count >= 2 && buf[buf.Count - 2] == '\r' && buf[buf.Count - 1] == '\n') {
           line = System.Text.Encoding.UTF8.GetString(buf.ToArray(), 0, buf.Count - 2);
@@ -149,7 +139,7 @@ namespace PeerCastStation.HTTP
         }
       }
       var req = new HTTPRequest(requests);
-      if (req.Uri==null) throw new InvalidDataException();
+      if (req.Uri==null) return null;
       return req;
     }
 
@@ -320,17 +310,9 @@ namespace PeerCastStation.HTTP
     /// </returns>
     private HTTPRequest ParseRequest(byte[] header)
     {
-      HTTPRequest res = null;
-      var stream = new MemoryStream(header);
-      try {
-        res = HTTPRequestReader.Read(stream);
+      using (var stream=new MemoryStream(header)) {
+        return HTTPRequestReader.Read(stream);
       }
-      catch (EndOfStreamException) {
-      }
-      catch (InvalidDataException) {
-      }
-      stream.Close();
-      return res;
     }
   }
 
