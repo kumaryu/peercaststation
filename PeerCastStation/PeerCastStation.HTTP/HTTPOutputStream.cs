@@ -22,6 +22,7 @@ using System.Threading;
 using System.Text.RegularExpressions;
 using PeerCastStation.Core;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace PeerCastStation.HTTP
 {
@@ -352,25 +353,42 @@ namespace PeerCastStation.HTTP
       this.request = request;
     }
 
-    private Queue<Packet> contentPacketQueue = new Queue<Packet>();
+    class WaitableQueue<T>
+    {
+      private SemaphoreSlim locker = new SemaphoreSlim(0);
+      private ConcurrentQueue<T> queue = new ConcurrentQueue<T>();
+
+      public void Enqueue(T value)
+      {
+        queue.Enqueue(value);
+        locker.Release();
+      }
+
+      public async Task<T> DequeueAsync(CancellationToken cancellationToken)
+      {
+        await locker.WaitAsync(cancellationToken);
+        T result;
+        while (!queue.TryDequeue(out result)) {
+          await locker.WaitAsync(cancellationToken);
+        }
+        return result;
+      }
+    }
+
+    private WaitableQueue<Packet> contentPacketQueue = new WaitableQueue<Packet>();
     private Content headerContent = null;
     private Content lastPacket = null;
-    private ManualResetEventSlim packetEvent = new ManualResetEventSlim();
     private void OnContentChanged(object sender, EventArgs args)
     {
-      lock (contentPacketQueue) {
-        if (headerContent!=Channel.ContentHeader) {
-          headerContent = Channel.ContentHeader;
-          lastPacket = headerContent;
-          contentPacketQueue.Enqueue(new Packet(Packet.ContentType.Header, Channel.ContentHeader));
-          packetEvent.Set();
-        }
-        if (headerContent!=null) {
-          foreach (var content in Channel.Contents.GetNewerContents(headerContent.Stream, lastPacket.Timestamp, lastPacket.Position)) {
-            contentPacketQueue.Enqueue(new Packet(Packet.ContentType.Body, content));
-            packetEvent.Set();
-            lastPacket = content;
-          }
+      if (headerContent!=Channel.ContentHeader) {
+        headerContent = Channel.ContentHeader;
+        lastPacket = headerContent;
+        contentPacketQueue.Enqueue(new Packet(Packet.ContentType.Header, Channel.ContentHeader));
+      }
+      if (headerContent!=null) {
+        foreach (var content in Channel.Contents.GetNewerContents(headerContent.Stream, lastPacket.Timestamp, lastPacket.Position)) {
+          contentPacketQueue.Enqueue(new Packet(Packet.ContentType.Body, content));
+          lastPacket = content;
         }
       }
     }
@@ -581,58 +599,45 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    private Task<Packet> GetPacket()
+    private Task<Packet> GetPacket(CancellationToken cancel_token)
     {
-      return Task.Run(() => {
-        lock (contentPacketQueue) {
-          if (contentPacketQueue.Count>0) {
-            packetEvent.Reset();
-            return contentPacketQueue.Dequeue();
-          }
-        }
-        while (contentPacketQueue.Count==0) {
-          packetEvent.Wait();
-          lock (contentPacketQueue) {
-            if (contentPacketQueue.Count>0) {
-              packetEvent.Reset();
-              return contentPacketQueue.Dequeue();
-            }
-          }
-        }
-        return contentPacketQueue.Dequeue();
-      });
+      return contentPacketQueue.DequeueAsync(cancel_token);
     }
 
-    private async Task SendContents()
+    private async Task SendContents(CancellationToken cancel_token)
     {
       Logger.Debug("Sending Contents");
       Content sent_header = null;
       Content sent_packet = null;
-      while (!IsStopped) {
-        var packet = await GetPacket();
-        switch (packet.Type) {
-        case Packet.ContentType.Header:
-          if (sent_header!=packet.Content && packet.Content!=null) {
-            await Connection.WriteAsync(packet.Content.Data);
-            Logger.Debug("Sent ContentHeader pos {0}", packet.Content.Position);
-            sent_header = packet.Content;
-            sent_packet = packet.Content;
+      try {
+        while (!IsStopped) {
+          var packet = await GetPacket(cancel_token);
+          switch (packet.Type) {
+          case Packet.ContentType.Header:
+            if (sent_header!=packet.Content && packet.Content!=null) {
+              await Connection.WriteAsync(packet.Content.Data, cancel_token);
+              Logger.Debug("Sent ContentHeader pos {0}", packet.Content.Position);
+              sent_header = packet.Content;
+              sent_packet = packet.Content;
+            }
+            break;
+          case Packet.ContentType.Body:
+            if (sent_header==null) continue;
+            var c = packet.Content;
+            if (c.Timestamp>sent_packet.Timestamp ||
+                (c.Timestamp==sent_packet.Timestamp && c.Position>sent_packet.Position)) {
+              await Connection.WriteAsync(c.Data, cancel_token);
+              sent_packet = c;
+            }
+            break;
           }
-          break;
-        case Packet.ContentType.Body:
-          if (sent_header==null) continue;
-          var c = packet.Content;
-          if (c.Timestamp>sent_packet.Timestamp ||
-              (c.Timestamp==sent_packet.Timestamp && c.Position>sent_packet.Position)) {
-            await Connection.WriteAsync(c.Data);
-            sent_packet = c;
-          }
-          break;
         }
+      }
+      catch (OperationCanceledException) {
       }
     }
 
-    private async Task SendPlaylist()
+    private async Task SendPlaylist(CancellationToken cancel_token)
     {
       Logger.Debug("Sending Playlist");
       bool mms = 
@@ -655,24 +660,24 @@ namespace PeerCastStation.HTTP
         var parameters = new Dictionary<string, string>() {
           { "auth", HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey) },
         };
-        await Connection.WriteAsync(pls.CreatePlayList(baseuri, parameters));
+        await Connection.WriteAsync(pls.CreatePlayList(baseuri, parameters), cancel_token);
       }
       else {
-        await Connection.WriteAsync(pls.CreatePlayList(baseuri, Enumerable.Empty<KeyValuePair<string,string>>()));
+        await Connection.WriteAsync(pls.CreatePlayList(baseuri, Enumerable.Empty<KeyValuePair<string,string>>()), cancel_token);
       }
 
     }
 
-    private async Task SendReponseBody()
+    private async Task SendReponseBody(CancellationToken cancel_token)
     {
       switch (GetBodyType()) {
       case BodyType.None:
         break;
       case BodyType.Content:
-        await SendContents();
+        await SendContents(cancel_token);
         break;
       case BodyType.Playlist:
-        await SendPlaylist();
+        await SendPlaylist(cancel_token);
         break;
       }
     }
@@ -687,7 +692,6 @@ namespace PeerCastStation.HTTP
     protected override Task OnStarted(CancellationToken cancel_token)
     {
       if (this.Channel!=null) {
-        this.Channel.AddOutputStream(this);
         this.Channel.ContentChanged += OnContentChanged;
         OnContentChanged(this, new EventArgs());
       }
@@ -698,7 +702,6 @@ namespace PeerCastStation.HTTP
     {
       if (this.Channel!=null) {
         this.Channel.ContentChanged -= OnContentChanged;
-        this.Channel.RemoveOutputStream(this);
       }
       return base.OnStopped(cancel_token);
     }
@@ -712,7 +715,7 @@ namespace PeerCastStation.HTTP
       await WaitChannelReceived();
       await SendResponseHeader();
       if (request.Method=="GET") {
-        await SendReponseBody();
+        await SendReponseBody(cancel_token);
       }
       return StopReason.OffAir;
     }
