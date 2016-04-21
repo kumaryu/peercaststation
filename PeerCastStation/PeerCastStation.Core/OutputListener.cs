@@ -234,38 +234,25 @@ namespace PeerCastStation.Core
       }
     }
 
-    private async Task<int> ReadByteAsync(System.IO.Stream stream)
-    {
-      var buf = new byte[1];
-      var len = await stream.ReadAsync(buf, 0, 1);
-      if (len<1) return -1;
-      else       return buf[0];
-    }
-
     private async Task<IOutputStream> CreateMatchedHandler(
         IPEndPoint remote_endpoint,
         NetworkStream stream,
         AccessControlInfo acinfo)
     {
       var output_factories = PeerCast.OutputStreamFactories.OrderBy(factory => factory.Priority);
-      var header = new List<byte>();
+      var header = new byte[4096];
+      int offset = 0;
       bool eos = false;
-      while (!eos && header.Count<=4096) {
+      while (!eos && offset<header.Length) {
         try {
-          do {
-            var val = await ReadByteAsync(stream);
-            if (val < 0) {
-              eos = true;
-            }
-            else {
-              header.Add((byte)val);
-            }
-          } while (stream.DataAvailable);
+          var len = await stream.ReadAsync(header, offset, header.Length-offset);
+          if (len==0) eos = true;
+          offset += len;
         }
         catch (System.IO.IOException) {
           eos = true;
         }
-        var header_ary = header.ToArray();
+        var header_ary = header.Take(offset).ToArray();
         foreach (var factory in output_factories) {
           if (!acinfo.Accepts.HasFlag(factory.OutputStreamType)) continue;
           var channel_id = factory.ParseChannelID(header_ary);
