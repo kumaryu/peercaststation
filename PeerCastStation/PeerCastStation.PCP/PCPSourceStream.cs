@@ -193,8 +193,13 @@ namespace PeerCastStation.PCP
       if (IsStopped) goto Stopped;
       await ProcessHandshake(cancel_token);
       if (IsStopped) goto Stopped;
-      this.Status = ConnectionStatus.Connected;
-      await ProcessBody(cancel_token);
+      if (relayResponse.StatusCode==503) {
+        await ProcessHosts(cancel_token);
+      }
+      else {
+        this.Status = ConnectionStatus.Connected;
+        await ProcessBody(cancel_token);
+      }
 Stopped:
       Logger.Debug("Disconnected");
     }
@@ -315,7 +320,24 @@ Stopped:
             BroadcastHostInfo();
           }
           var atom = await connection.Stream.ReadAtomAsync(cancel_token);
-          Logger.Debug("Atom: {0}", atom.Name.ToString());
+          ProcessAtom(atom);
+        }
+      }
+      catch (InvalidDataException e) {
+        Logger.Error(e);
+        Stop(StopReason.ConnectionError);
+      }
+      catch (IOException e) {
+        Logger.Info(e);
+        Stop(StopReason.ConnectionError);
+      }
+    }
+
+    private async Task ProcessHosts(CancellationToken cancel_token)
+    {
+      try {
+        while (!cancel_token.IsCancellationRequested) {
+          var atom = await connection.Stream.ReadAtomAsync(cancel_token);
           ProcessAtom(atom);
         }
       }
