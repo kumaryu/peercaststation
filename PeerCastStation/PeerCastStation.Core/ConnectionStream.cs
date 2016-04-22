@@ -105,7 +105,7 @@ namespace PeerCastStation.Core
         lastWriteTask = lastWriteTask.ContinueWith(
             prev => WriteStream.FlushAsync(cancellationToken),
             closedCancelSource.Token);
-        return WaitOrCancelTask(() => lastWriteTask, cancellationToken);
+        return WaitOrCancelTask(lastWriteTask, cancellationToken);
       }
     }
 
@@ -129,24 +129,31 @@ namespace PeerCastStation.Core
       WriteAsync(buffer, offset, count).Wait();
     }
 
-    private async Task<int> WaitOrCancelTask(Func<Task<int>> task_func, CancellationToken cancel_token)
+    private async Task<int> WaitOrCancelTask(Task<int> task, CancellationToken cancel_token)
     {
-      var cancel_task_source = new TaskCompletionSource<int>();
-      cancel_token.Register(() => cancel_task_source.TrySetCanceled());
-      var result = await Task.WhenAny(task_func(), cancel_task_source.Task);
-      cancel_task_source.TrySetResult(0);
-      if (result.IsCanceled) throw new TaskCanceledException();
-      return result.Result;
+      try {
+        return await task.ContinueWith(prev => {
+          if (prev.IsCanceled) throw new OperationCanceledException();
+          if (prev.IsFaulted)  throw prev.Exception;
+          return prev.Result;
+        }, cancel_token);
+      }
+      catch (AggregateException e) {
+        throw e.InnerException;
+      }
     }
 
-    private async Task WaitOrCancelTask(Func<Task> task_func, CancellationToken cancel_token)
+    private async Task WaitOrCancelTask(Task task, CancellationToken cancel_token)
     {
-      var cancel_task_source = new TaskCompletionSource<int>();
-      cancel_token.Register(() => cancel_task_source.TrySetCanceled());
-      var result = await Task.WhenAny(task_func(), cancel_task_source.Task);
-      cancel_task_source.TrySetResult(0);
-      if (result.IsCanceled) throw new TaskCanceledException();
-      result.Wait();
+      try {
+        await task.ContinueWith(prev => {
+          if (prev.IsCanceled) throw new OperationCanceledException();
+          if (prev.IsFaulted)  throw prev.Exception;
+        }, cancel_token);
+      }
+      catch (AggregateException e) {
+        throw e.InnerException;
+      }
     }
 
     public override Task<int> ReadAsync(byte[] buf, int offset, int length, CancellationToken cancel_token)
@@ -155,7 +162,7 @@ namespace PeerCastStation.Core
       lock (readTaskLock) {
         var task = lastReadTask.ContinueWith(async prev => {
           var cancelsource = CancellationTokenSource.CreateLinkedTokenSource(closedCancelSource.Token, cancel_token);
-          var len = await WaitOrCancelTask(() => ReadStream.ReadAsync(buf, offset, length, cancelsource.Token), cancelsource.Token);
+          var len = await WaitOrCancelTask(ReadStream.ReadAsync(buf, offset, length, cancelsource.Token), cancelsource.Token);
           readBytesCounter.Add(len);
           return len;
         }).Unwrap();
@@ -174,7 +181,7 @@ namespace PeerCastStation.Core
           var offset = 0;
           while (offset<length) {
             cancelsource.Token.ThrowIfCancellationRequested();
-            var len = await WaitOrCancelTask(() => ReadStream.ReadAsync(buf, offset, length-offset, cancelsource.Token), cancelsource.Token);
+            var len = await WaitOrCancelTask(ReadStream.ReadAsync(buf, offset, length-offset, cancelsource.Token), cancelsource.Token);
             if (len==0) throw new EndOfStreamException();
             else {
               offset += len;
@@ -201,7 +208,7 @@ namespace PeerCastStation.Core
           var cancelsource = CancellationTokenSource.CreateLinkedTokenSource(closedCancelSource.Token, cancel_token);
           cancelsource.Token.ThrowIfCancellationRequested();
           var buf = new byte[1];
-          var len = await WaitOrCancelTask(() => ReadStream.ReadAsync(buf, 0, 1, cancelsource.Token), cancelsource.Token);
+          var len = await WaitOrCancelTask(ReadStream.ReadAsync(buf, 0, 1, cancelsource.Token), cancelsource.Token);
           if (len==0) return -1;
           readBytesCounter.Add(1);
           return buf[0];
@@ -222,7 +229,7 @@ namespace PeerCastStation.Core
       lock (writeTaskLock) {
         var task = lastWriteTask.ContinueWith(async prev => {
           var cancelsource = CancellationTokenSource.CreateLinkedTokenSource(closedCancelSource.Token, cancel_token);
-          await WaitOrCancelTask(() => WriteStream.WriteAsync(buf, offset, length, cancelsource.Token), cancelsource.Token);
+          await WaitOrCancelTask(WriteStream.WriteAsync(buf, offset, length, cancelsource.Token), cancelsource.Token);
           if (!cancelsource.IsCancellationRequested) {
             writeBytesCounter.Add(length);
           }
