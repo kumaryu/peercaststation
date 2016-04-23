@@ -131,29 +131,19 @@ namespace PeerCastStation.Core
 
     private async Task<int> WaitOrCancelTask(Task<int> task, CancellationToken cancel_token)
     {
-      try {
-        return await task.ContinueWith(prev => {
-          if (prev.IsCanceled) throw new OperationCanceledException();
-          if (prev.IsFaulted)  throw prev.Exception;
-          return prev.Result;
-        }, cancel_token);
-      }
-      catch (AggregateException e) {
-        throw e.InnerException;
-      }
+      return await task.ContinueWith(prev => {
+        if (prev.IsCanceled) throw new OperationCanceledException();
+        if (prev.IsFaulted)  throw prev.Exception.InnerException;
+        return prev.Result;
+      }, cancel_token);
     }
 
     private async Task WaitOrCancelTask(Task task, CancellationToken cancel_token)
     {
-      try {
-        await task.ContinueWith(prev => {
-          if (prev.IsCanceled) throw new OperationCanceledException();
-          if (prev.IsFaulted)  throw prev.Exception;
-        }, cancel_token);
-      }
-      catch (AggregateException e) {
-        throw e.InnerException;
-      }
+      await task.ContinueWith(prev => {
+        if (prev.IsCanceled) throw new OperationCanceledException();
+        if (prev.IsFaulted)  throw prev.Exception.InnerException;
+      }, cancel_token);
     }
 
     public override Task<int> ReadAsync(byte[] buf, int offset, int length, CancellationToken cancel_token)
