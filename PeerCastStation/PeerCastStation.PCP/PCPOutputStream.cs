@@ -515,7 +515,10 @@ namespace PeerCastStation.PCP
             }
           }
         }
-        if (IsHandshaked) {
+        if (IsRelayFull) {
+          return StopReason.UnavailableError;
+        }
+        else {
           await Task.WhenAll(
             ReadAndProcessAtom(cancel_token),
             SendRelayBody(cancel_token)
