@@ -398,10 +398,8 @@ namespace PeerCastStation.PCP
         if (Channel.ContentHeader!=null &&
             (last_header==null || Channel.ContentHeader.Position!=last_header.Position)) {
           last_header = Channel.ContentHeader;
+          last_content = null;
           lastPosition = last_header.Position;
-          if (last_content!=null && last_content.Position<last_header.Position) {
-            last_header = last_content;
-          }
           atoms = atoms.Concat(CreateContentHeaderPacket(Channel, last_header));
         }
         if (last_header!=null) {
@@ -431,9 +429,9 @@ namespace PeerCastStation.PCP
             lastPosition = content.Position;
             atoms = atoms.Concat(CreateContentBodyPacket(Channel, content));
           }
-          foreach (var atom in atoms) {
-            await Connection.WriteAsync(atom, cancel_token);
-          }
+        }
+        foreach (var atom in atoms) {
+          await Connection.WriteAsync(atom, cancel_token);
         }
         if (skipped) {
           Stop(StopReason.SendTimeoutError);
