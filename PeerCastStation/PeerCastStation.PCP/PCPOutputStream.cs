@@ -222,7 +222,7 @@ namespace PeerCastStation.PCP
     public string UserAgent    { get; protected set; }
     public bool IsRelayFull    { get; protected set; }
     public bool IsChannelFound { get; protected set; }
-    private System.Threading.AutoResetEvent changedEvent = new System.Threading.AutoResetEvent(true);
+    private SemaphoreSlim changedEvent = new SemaphoreSlim(1);
 
     protected override int GetUpstreamRate()
     {
@@ -328,19 +328,7 @@ namespace PeerCastStation.PCP
 
     private void Channel_ContentChanged(object sender, EventArgs args)
     {
-      changedEvent.Set();
-    }
-
-    private Task WaitContentChangedAsync(CancellationToken cancel_token)
-    {
-      var completion_source = new TaskCompletionSource<bool>();
-      var threadpool_handle = ThreadPool.RegisterWaitForSingleObject(changedEvent, (state, timedout) => {
-        completion_source.TrySetResult(true);
-      }, null, Timeout.Infinite, true);
-      cancel_token.Register(() => completion_source.TrySetCanceled());
-      var task = completion_source.Task;
-      task.ContinueWith(prev => threadpool_handle.Unregister(null));
-      return task;
+      changedEvent.Release();
     }
 
     protected IEnumerable<Atom> CreateContentHeaderPacket(Channel channel, Content content)
@@ -392,7 +380,7 @@ namespace PeerCastStation.PCP
       Content last_header = null;
       Content last_content = null;
       while (!cancel_token.IsCancellationRequested) {
-        await WaitContentChangedAsync(cancel_token);
+        await changedEvent.WaitAsync(cancel_token);
         bool skipped = false;
         var atoms = Enumerable.Empty<Atom>();
         if (Channel.ContentHeader!=null &&
