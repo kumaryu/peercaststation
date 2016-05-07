@@ -406,8 +406,10 @@ namespace PeerCastStation.PCP
             }
           }
           else if (relayRequest.StreamPos.HasValue && relayRequest.StreamPos.Value>last_header.Position) {
-            content = Channel.Contents.FindNextByPosition(last_header.Stream, relayRequest.StreamPos.Value-1) ??
-                      Channel.Contents.GetNewest(last_header.Stream);
+            content = Channel.Contents.FindNextByPosition(last_header.Stream, relayRequest.StreamPos.Value-1);
+            if (content==null || content==Channel.Contents.GetOldest(last_header.Stream)) {
+              Channel.Contents.GetNewest(last_header.Stream);
+            }
           }
           else {
             content = Channel.Contents.GetNewest(last_header.Stream);
