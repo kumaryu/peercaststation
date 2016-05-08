@@ -492,6 +492,12 @@ namespace PeerCastStation.Core
     ISourceStream Create(Channel channel, Uri source, IContentReader reader);
   }
 
+  public enum HandlerResult {
+    Close    =  0,
+    Continue =  1,
+    Error    = -1,
+  }
+
   /// <summary>
   /// OutputStreamの種類を表します
   /// </summary>
@@ -541,7 +547,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 元になるストリームへチャンネルのContentを流しはじめます
     /// </summary>
-    Task<StopReason> Start();
+    Task<HandlerResult> Start();
     /// <summary>
     /// ストリームへパケットを送信します
     /// </summary>

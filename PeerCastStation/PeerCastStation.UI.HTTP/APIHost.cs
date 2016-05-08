@@ -1196,6 +1196,12 @@ namespace PeerCastStation.UI.HTTP
             catch (OperationCanceledException) {
               throw new HTTPError(HttpStatusCode.RequestTimeout);
             }
+            if (this.request.KeepAlive) {
+              HandlerResult = HandlerResult.Continue;
+            }
+            else {
+              HandlerResult = HandlerResult.Close;
+            }
             return StopReason.OffAir;
           }
           else {
@@ -1203,7 +1209,9 @@ namespace PeerCastStation.UI.HTTP
           }
         }
         catch (HTTPError err) {
-          await Connection.WriteUTF8Async(HTTPUtils.CreateResponseHeader(err.StatusCode, new Dictionary<string, string> { }), cancel_token);
+          HandlerResult = HandlerResult.Error;
+          var response = new HTTPResponse(this.request.Protocol, err.StatusCode);
+          await Connection.WriteAsync(response.GetBytes(), cancel_token);
           return StopReason.OffAir;
         }
 
@@ -1216,7 +1224,8 @@ namespace PeerCastStation.UI.HTTP
           {"Content-Type",   "application/json" },
           {"Content-Length", body.Length.ToString() },
         };
-        await Connection.WriteUTF8Async(HTTPUtils.CreateResponseHeader(HttpStatusCode.OK, parameters), cancel_token);
+        var response = new HTTPResponse(this.request.Protocol, HttpStatusCode.OK, parameters);
+        await Connection.WriteAsync(response.GetBytes(), cancel_token);
         if (send_body) {
           await Connection.WriteAsync(body, cancel_token);
         }

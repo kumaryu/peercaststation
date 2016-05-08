@@ -214,14 +214,25 @@ namespace PeerCastStation.Core
       client.ReceiveBufferSize = 64*1024;
       client.SendBufferSize    = 64*1024;
       var stream = client.GetStream();
-      stream.WriteTimeout = 3000;
-      stream.ReadTimeout = 3000;
+      int trying = 0;
       try {
+        retry:
+        stream.WriteTimeout = 3000;
+        stream.ReadTimeout  = 3000;
         var remote_endpoint = (IPEndPoint)client.Client.RemoteEndPoint;
         var handler = await CreateMatchedHandler(remote_endpoint, stream, acinfo);
         if (handler!=null) {
-          logger.Debug("Output stream started");
-          await handler.Start();
+          logger.Debug("Output stream started {0}", trying);
+          var result = await handler.Start();
+          switch (result) {
+          case HandlerResult.Continue:
+            trying++;
+            goto retry;
+          case HandlerResult.Close:
+          case HandlerResult.Error:
+          default:
+            break;
+          }
         }
         else {
           logger.Debug("No protocol handler matched");
@@ -242,29 +253,33 @@ namespace PeerCastStation.Core
       var output_factories = PeerCast.OutputStreamFactories.OrderBy(factory => factory.Priority);
       var header = new byte[4096];
       int offset = 0;
-      bool eos = false;
-      while (!eos && offset<header.Length) {
+      using (var cancel_source=new CancellationTokenSource(TimeSpan.FromMilliseconds(3000))) {
+        var cancel_token = cancel_source.Token;
+        cancel_token.Register(() => stream.Close());
         try {
-          var len = await stream.ReadAsync(header, offset, header.Length-offset);
-          if (len==0) eos = true;
-          offset += len;
+          while (offset<header.Length) {
+            var len = await stream.ReadAsync(header, offset, header.Length-offset);
+            if (len==0) break;
+            offset += len;
+            var header_ary = header.Take(offset).ToArray();
+            foreach (var factory in output_factories) {
+              if (!acinfo.Accepts.HasFlag(factory.OutputStreamType)) continue;
+              var channel_id = factory.ParseChannelID(header_ary);
+              if (channel_id.HasValue) {
+                return factory.Create(
+                  stream,
+                  stream,
+                  remote_endpoint,
+                  acinfo,
+                  channel_id.Value,
+                  header_ary);
+              }
+            }
+          }
+        }
+        catch (System.ObjectDisposedException) {
         }
         catch (System.IO.IOException) {
-          eos = true;
-        }
-        var header_ary = header.Take(offset).ToArray();
-        foreach (var factory in output_factories) {
-          if (!acinfo.Accepts.HasFlag(factory.OutputStreamType)) continue;
-          var channel_id = factory.ParseChannelID(header_ary);
-          if (channel_id.HasValue) {
-            return factory.Create(
-              stream,
-              stream,
-              remote_endpoint,
-              acinfo,
-              channel_id.Value,
-              header.ToArray());
-          }
         }
       }
       return null;

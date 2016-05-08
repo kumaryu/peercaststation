@@ -35,6 +35,7 @@ namespace PeerCastStation.HTTP
     /// HTTPメソッドを取得および設定します
     /// </summary>
     public string Method { get; private set; }
+    public string Protocol { get; private set; }
     /// <summary>
     /// リクエストされたUriを取得および設定します
     /// </summary>
@@ -46,22 +47,53 @@ namespace PeerCastStation.HTTP
     public Dictionary<string, string> Parameters { get; private set; }
     public Dictionary<string, string> Cookies { get; private set; }
 
+    public bool KeepAlive {
+      get {
+        switch (Protocol) {
+        case "HTTP/1.1":
+          {
+            string value;
+            if (Headers.TryGetValue("CONNECTION", out value) && value=="close") {
+              return false;
+            }
+            else {
+              return true;
+            }
+          }
+        case "HTTP/1.0":
+          {
+            string value;
+            if (Headers.TryGetValue("CONNECTION", out value) && value=="keep-alive") {
+              return true;
+            }
+            else {
+              return false;
+            }
+          }
+        default:
+          return false;
+        }
+      }
+    }
+
     /// <summary>
     /// HTTPリクエスト文字列からHTTPRequestオブジェクトを構築します
     /// </summary>
     /// <param name="requests">行毎に区切られたHTTPリクエストの文字列表現</param>
     public HTTPRequest(IEnumerable<string> requests)
     {
-      Headers    = new Dictionary<string, string>();
+      Headers    = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
       Parameters = new Dictionary<string, string>();
       Cookies    = new Dictionary<string, string>();
+      Protocol   = "HTTP/1.0";
       string host = "localhost";
       string path = "/";
       foreach (var req in requests) {
         Match match = null;
-        if ((match = Regex.Match(req, @"^(\w+) +(\S+) +HTTP/1.\d$", RegexOptions.IgnoreCase)).Success) {
+        if ((match = Regex.Match(req, @"^(\w+) +(\S+) +(HTTP/1.\d)$", RegexOptions.IgnoreCase)).Success) {
           this.Method = match.Groups[1].Value.ToUpper();
           path = match.Groups[2].Value;
+          Protocol = match.Groups[3].Value;
         }
         else if ((match = Regex.Match(req, @"^Host:(.+)$", RegexOptions.IgnoreCase)).Success) {
           host = match.Groups[1].Value.Trim();

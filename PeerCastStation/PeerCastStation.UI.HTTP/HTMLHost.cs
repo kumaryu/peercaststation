@@ -170,7 +170,7 @@ namespace PeerCastStation.UI.HTTP
 
       private async Task SendResponseMoveToIndex(CancellationToken cancel_token)
       {
-        var content = "Moving...";
+        var content = System.Text.Encoding.UTF8.GetBytes("Moving...");
         var parameters = new Dictionary<string, string> {
           {"Content-Type",   "text/plain" },
           {"Content-Length", content.Length.ToString() },
@@ -179,9 +179,10 @@ namespace PeerCastStation.UI.HTTP
         if (AccessControlInfo.AuthenticationKey!=null) {
           parameters.Add("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey));
         }
-        await Connection.WriteUTF8Async(HTTPUtils.CreateResponseHeader(HttpStatusCode.Moved, parameters), cancel_token);
+        var response = new HTTPResponse(this.request.Protocol, HttpStatusCode.Moved, parameters);
+        await Connection.WriteAsync(response.GetBytes(), cancel_token);
         if (this.request.Method=="GET") {
-          await Connection.WriteUTF8Async(content, cancel_token);
+          await Connection.WriteAsync(content, cancel_token);
         }
       }
 
@@ -203,7 +204,8 @@ namespace PeerCastStation.UI.HTTP
           if (AccessControlInfo.AuthenticationKey!=null) {
             parameters.Add("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey));
           }
-          await Connection.WriteUTF8Async(HTTPUtils.CreateResponseHeader(HttpStatusCode.OK, parameters), cancel_token);
+          var response = new HTTPResponse(this.request.Protocol, HttpStatusCode.OK, parameters);
+          await Connection.WriteAsync(response.GetBytes(), cancel_token);
           if (this.request.Method=="GET") {
             await Connection.WriteAsync(contents, cancel_token);
           }
@@ -230,10 +232,22 @@ namespace PeerCastStation.UI.HTTP
           }
         }
         catch (HTTPError err) {
-          await Connection.WriteUTF8Async(HTTPUtils.CreateResponseHeader(err.StatusCode), cancel_token);
+          await Connection.WriteAsync(
+            new HTTPResponse(this.request.Protocol, err.StatusCode).GetBytes(),
+            cancel_token
+          );
         }
         catch (UnauthorizedAccessException) {
-          await Connection.WriteUTF8Async(HTTPUtils.CreateResponseHeader(HttpStatusCode.Forbidden), cancel_token);
+          await Connection.WriteAsync(
+            new HTTPResponse(this.request.Protocol, HttpStatusCode.Forbidden).GetBytes(),
+            cancel_token
+          );
+        }
+        if (this.request.KeepAlive) {
+          HandlerResult = HandlerResult.Continue;
+        }
+        else {
+          HandlerResult = HandlerResult.Close;
         }
         return StopReason.OffAir;
       }
