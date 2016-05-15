@@ -54,6 +54,18 @@ namespace PeerCastStation.HTTP
       }
     }
 
+    public bool ChunkedEncoding {
+      get {
+        string value;
+        if (Headers.TryGetValue("Transfer-Encoding", out value)) {
+          return value.Contains("chunked");
+        }
+        else {
+          return false;
+        }
+      }
+    }
+
     /// <summary>
     /// HTTPリクエスト文字列からHTTPRequestオブジェクトを構築します
     /// </summary>
@@ -102,6 +114,34 @@ namespace PeerCastStation.HTTP
         this.Uri = null;
       }
     }
+
+    private static readonly Regex RequestLineRegex = new Regex(@"^(\w+) +(\S+) +(HTTP/1.\d)$", RegexOptions.IgnoreCase);
+    public class HTTPRequestLine {
+      public string Method   { get; private set; }
+      public string Path     { get; private set; }
+      public string Protocol { get; private set; }
+      public HTTPRequestLine(string method, string path, string protocol)
+      {
+        this.Method   = method;
+        this.Path     = path;
+        this.Protocol = protocol;
+      }
+    }
+
+    public static HTTPRequestLine ParseRequestLine(string line)
+    {
+      var match = RequestLineRegex.Match(line);
+      if (match.Success) {
+        return new HTTPRequestLine(
+          match.Groups[1].Value.ToUpper(),
+          match.Groups[2].Value,
+          match.Groups[3].Value);
+      }
+      else {
+        return null;
+      }
+    }
+
   }
 
 }

@@ -84,6 +84,7 @@
     <Compile Include="SourceStreamBase.cs" />
     <Compile Include="ConnectionStream.cs" />
     <Compile Include="StreamExtension.cs" />
+    <Compile Include="SynchronizedList.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\PeerCastStation.snk">
