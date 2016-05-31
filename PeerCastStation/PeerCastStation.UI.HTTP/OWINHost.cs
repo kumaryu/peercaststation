@@ -14,13 +14,20 @@ namespace PeerCastStation.UI.HTTP
       IDictionary<string, object>, // Environment
       Task>; // Done
 
+  public enum PathParameters {
+    Any,
+    None,
+  }
+
   public class OWINApplication
   {
     public string Path { get; private set; }
+    public PathParameters Parameters { get; private set; }
     public AppFunc AppFunc { get; private set; }
-    public OWINApplication(string path, AppFunc appfunc)
+    public OWINApplication(string path, PathParameters parameters, AppFunc appfunc)
     {
       this.Path = path;
+      this.Parameters = parameters;
       this.AppFunc = appfunc;
     }
   }
@@ -77,7 +84,11 @@ namespace PeerCastStation.UI.HTTP
       env["owin.RequestPath"]        = this.request.Uri.LocalPath.Substring(application.Path.Length);
       env["owin.RequestQueryString"] = this.request.Uri.Query;
       env["owin.RequestProtocol"]    = this.request.Protocol;
-      env["owin.RequestHeaders"]     = this.request.Headers;
+      var request_headers = new Dictionary<string, string[]>();
+      foreach (var kv in this.request.Headers) {
+        request_headers.Add(kv.Key, new string[] { kv.Value });
+      }
+      env["owin.RequestHeaders"]     = request_headers;
       string value;
       int length;
       if (request.Headers.TryGetValue("Content-Length", out value) && 
@@ -93,6 +104,7 @@ namespace PeerCastStation.UI.HTTP
       }
       env["owin.CallCancelled"]      = cancel_token;
       env["owin.Version"]            = "OWIN 1.0.0";
+      env["peercast.AccessControlInfo"] = this.AccessControlInfo;
 
       env["owin.ResponseHeaders"]    = new Dictionary<string, string[]>();
       env["owin.ResponseBody"]       = new MemoryStream();
@@ -151,6 +163,9 @@ namespace PeerCastStation.UI.HTTP
       if (body_ary.Length>0) {
         SetHeader(headers, "Content-Length", body_ary.Length.ToString());
       }
+      if (status_code==(int)HttpStatusCode.Unauthorized) {
+        SetHeader(headers, "WWW-Authenticate", "Basic realm=\"PeerCastStation\"");
+      }
 
       var header = new System.Text.StringBuilder($"{protocol} {status_code} {reason_phrase}\r\n");
       foreach (var kv in headers) {
@@ -208,9 +223,9 @@ namespace PeerCastStation.UI.HTTP
 
     private SynchronizedList<OWINApplication> applications = new SynchronizedList<OWINApplication>();
 
-    public OWINApplication AddApplication(string path, AppFunc application)
+    public OWINApplication AddApplication(string path, PathParameters parameters, AppFunc application)
     {
-      var app = new OWINApplication(path, application);
+      var app = new OWINApplication(path, parameters, application);
       applications.Add(app);
       return app;
     }
@@ -218,6 +233,24 @@ namespace PeerCastStation.UI.HTTP
     public void RemoveApplication(OWINApplication app)
     {
       applications.Remove(app);
+    }
+
+    private static readonly char[] PathSeparator = new char[] { '/' };
+    private OWINApplication FindApplication(Uri uri)
+    {
+      var path = uri.AbsolutePath.Split(PathSeparator, StringSplitOptions.RemoveEmptyEntries);
+      return applications.FirstOrDefault(app => {
+        var apppath = app.Path.Split(PathSeparator, StringSplitOptions.RemoveEmptyEntries);
+        switch (app.Parameters) {
+        case PathParameters.Any:
+          return apppath.Length<=path.Length &&
+                 apppath.SequenceEqual(path.Take(apppath.Length));
+        case PathParameters.None:
+          return apppath.SequenceEqual(path);
+        default:
+          return false;
+        }
+      });
     }
 
     public override IOutputStream Create(
@@ -231,7 +264,7 @@ namespace PeerCastStation.UI.HTTP
       using (var stream=new MemoryStream(header)) {
         var req = HTTPRequestReader.Read(stream);
         var bytes = stream.Position;
-        var application = applications.FirstOrDefault(app => req.Uri.AbsolutePath.StartsWith(app.Path));
+        var application = FindApplication(req.Uri);
         return new OWINHostOutputStream(
           PeerCast,
           input_stream,
@@ -249,7 +282,7 @@ namespace PeerCastStation.UI.HTTP
       using (var stream=new MemoryStream(header)) {
         var req = HTTPRequestReader.Read(stream);
         if (req==null) return null;
-        if (applications.Any(app => req.Uri.AbsolutePath.StartsWith(app.Path))) {
+        if (FindApplication(req.Uri)!=null) {
           return Guid.Empty;
         }
         else {

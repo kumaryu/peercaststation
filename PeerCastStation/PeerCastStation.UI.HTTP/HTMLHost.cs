@@ -7,6 +7,7 @@ using PeerCastStation.HTTP;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 namespace PeerCastStation.UI.HTTP
 {
@@ -49,273 +50,255 @@ namespace PeerCastStation.UI.HTTP
       virtualPhysicalPathMap.Add("/Scripts/", Path.Combine(basepath, "Scripts"));
     }
 
-    HTMLHostOutputStreamFactory factory;
     override protected void OnAttach()
     {
-      factory = new HTMLHostOutputStreamFactory(this, Application.PeerCast);
-      Application.PeerCast.OutputStreamFactories.Add(factory);
+    }
+
+    private List<OWINApplication> applications = new List<OWINApplication>();
+    protected override void OnStart()
+    {
+      base.OnStart();
+      var owinhost =
+        Application.PeerCast.OutputStreamFactories.FirstOrDefault(factory => factory is OWINHostOutputStreamFactory) as OWINHostOutputStreamFactory;
+      if (owinhost!=null) {
+        applications.AddRange(
+          virtualPhysicalPathMap.Keys.Select(path =>
+            owinhost.AddApplication(path, PathParameters.Any, OnProcess)));
+        applications.Add(owinhost.AddApplication("/", PathParameters.None, OnRedirect));
+      }
+    }
+
+    protected override void OnStop()
+    {
+      var owinhost =
+        Application.PeerCast.OutputStreamFactories.FirstOrDefault(factory => factory is OWINHostOutputStreamFactory) as OWINHostOutputStreamFactory;
+      if (owinhost!=null) {
+        foreach (var app in applications) {
+          owinhost.RemoveApplication(app);
+        }
+      }
+      base.OnStop();
     }
 
     override protected void OnDetach()
     {
-      if (factory!=null) {
-        Application.PeerCast.OutputStreamFactories.Remove(factory);
-        factory = null;
+    }
+
+    private class OWINEnv
+    {
+      public IDictionary<string, object> Environment { get; private set; }
+      public OWINEnv(IDictionary<string, object> env)
+      {
+        this.Environment = env;
+      }
+
+      public string RequestMethod { get { return (string)this.Environment["owin.RequestMethod"]; } }
+      public string RequestScheme { get { return (string)this.Environment["owin.RequestScheme"]; } }
+      public string RequestPathBase { get { return (string)this.Environment["owin.RequestPathBase"]; } }
+      public string RequestPath     { get { return (string)this.Environment["owin.RequestPath"]; } }
+      public string RequestQueryString { get { return (string)this.Environment["owin.RequestQueryString"]; } }
+      public string RequestProtocol { get { return (string)this.Environment["owin.RequestProtocol"]; } }
+      public IDictionary<string, string[]> RequestHeaders { get { return (IDictionary<string,string[]>)this.Environment["owin.RequestHeaders"]; } }
+      public Stream RequestBody { get { return (Stream)this.Environment["owin.RequestBody"]; } }
+      public CancellationToken CallCanlelled { get { return (CancellationToken)this.Environment["owin.CallCancelled"]; } }
+      public string Version { get { return (string)this.Environment["owin.Version"]; } }
+      public AccessControlInfo AccessControlInfo { get { return (AccessControlInfo)this.Environment["peercast.AccessControlInfo"]; } }
+      public IDictionary<string, string[]> ResponseHeaders { get { return (IDictionary<string,string[]>)this.Environment["owin.ResponseHeaders"]; } }
+      public Stream ResponseBody { get { return (Stream)this.Environment["owin.ResponseBody"]; } }
+      public int ResponseStatusCode {
+        get { return (int)this.Environment["owin.ResponseStatusCode"]; }
+        set { this.Environment["owin.ResponseStatusCode"] = value; }
+      }
+      public string ResponseReasonPhrase {
+        get { return (string)this.Environment["owin.ResponseReasonPhrase"]; }
+        set { this.Environment["owin.ResponseReasonPhrase"] = value; }
+      }
+      public string ResponseProtocol {
+        get { return (string)this.Environment["owin.ResponseProtocol"]; }
+        set { this.Environment["owin.ResponseProtocol"] = value; }
+      }
+
+      public Dictionary<string, string> RequestParameters {
+        get {
+          var parameters = new Dictionary<string, string>();
+          foreach (Match param in Regex.Matches(this.RequestQueryString, @"(&|\?)([^&=]+)=([^&=]+)")) {
+            parameters.Add(
+              Uri.UnescapeDataString(param.Groups[2].Value).ToLowerInvariant(),
+              Uri.UnescapeDataString(param.Groups[3].Value));
+          }
+          return parameters;
+        }
+      }
+
+      public Dictionary<string, string> RequestCookies {
+        get {
+          var cookies = new Dictionary<string, string>();
+          string[] cookie_headers;
+          if (!this.RequestHeaders.TryGetValue("COOKIE", out cookie_headers)) return cookies;
+          foreach (var pair in cookie_headers.SelectMany(v => v.Split(';'))) {
+            var md = Regex.Match(pair, @"^([A-Za-z0-9!#$%^&*_\-+|~`'"".]+)=(.*)$");
+            if (md.Success) {
+              cookies.Add(md.Groups[1].Value, md.Groups[2].Value);
+            }
+          }
+          return cookies;
+        }
+      }
+
+      public void AddResponseHeader(string key, string value)
+      {
+        var headers = this.ResponseHeaders;
+        string[] v;
+        if (headers.TryGetValue(key, out v)) {
+          if (v.Any(line => line.Split(',').Select(token => token.Trim()).Any(token => token==value))) {
+            return;
+          }
+          if (v.Length==1) {
+            headers[key] = new string[] {  String.Join(",", v[0], value) };
+          }
+          else {
+            headers[key] = v.Concat(new string[] { value }).ToArray();
+          }
+        }
+        else {
+          headers.Add(key, new string[] { value });
+        }
+      }
+
+      public void SetResponseHeader(string key, string value)
+      {
+        var headers = this.ResponseHeaders;
+        string[] v;
+        if (!headers.TryGetValue(key, out v)) {
+          headers.Add(key, new string[] { value });
+        }
+      }
+
+      public string GetAuthorizationToken()
+      {
+        String result = null;
+        if (this.RequestHeaders.ContainsKey("AUTHORIZATION")) {
+          var md = System.Text.RegularExpressions.Regex.Match(
+            this.RequestHeaders["AUTHORIZATION"][0],
+            @"\s*BASIC (\S+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+          if (md.Success) {
+            result = md.Groups[1].Value;
+          }
+        }
+        if (result==null) {
+          this.RequestParameters.TryGetValue("auth", out result);
+        }
+        if (result==null) {
+          this.RequestCookies.TryGetValue("auth", out result);
+        }
+        return result;
+      }
+
+    }
+
+    private string GetPhysicalPath(OWINEnv env)
+    {
+      string physical_path;
+      if (virtualPhysicalPathMap.TryGetValue(env.RequestPathBase, out physical_path)) {
+        return Path.GetFullPath(Path.Combine(physical_path, env.RequestPath));
+      }
+      else {
+        return null;
       }
     }
 
-    public class HTMLHostOutputStream
-      : OutputStreamBase
+    private FileDesc GetFileDesc(string ext)
     {
-      HTMLHost owner;
-      HTTPRequest request;
-      public HTMLHostOutputStream(
-        HTMLHost owner,
-        PeerCast peercast,
-        Stream input_stream,
-        Stream output_stream,
-        EndPoint remote_endpoint,
-        AccessControlInfo access_control,
-        HTTPRequest request)
-        : base(peercast, input_stream, output_stream, remote_endpoint, access_control, null, null)
-      {
-        this.owner   = owner;
-        this.request = request;
-        Logger.Debug("Initialized: Remote {0}", remote_endpoint);
-      }
-
-      public override ConnectionInfo GetConnectionInfo()
-      {
-        ConnectionStatus status = ConnectionStatus.Connected;
-        if (IsStopped) {
-          status = HasError ? ConnectionStatus.Error : ConnectionStatus.Idle;
-        }
-        return new ConnectionInfo(
-          "HTML Host",
-          ConnectionType.Interface,
-          status,
-          RemoteEndPoint.ToString(),
-          (IPEndPoint)RemoteEndPoint,
-          IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
-          null,
-          Connection.ReadRate,
-          Connection.WriteRate,
-          null,
-          null,
-          request.Headers["USER-AGENT"]);
-      }
-
-      class HTTPError : ApplicationException
-      {
-        public HttpStatusCode StatusCode { get; private set; }
-        public HTTPError(HttpStatusCode code)
-          : base(StatusMessage(code))
-        {
-          StatusCode = code;
-        }
-
-        public HTTPError(HttpStatusCode code, string message)
-          : base(message)
-        {
-          StatusCode = code;
-        }
-
-        private static string StatusMessage(HttpStatusCode code)
-        {
-          return code.ToString();
-        }
-      };
-
-      private string GetPhysicalPath(Uri uri)
-      {
-        var virtualpath = uri.AbsolutePath;
-        var map = this.owner.VirtualPhysicalPathMap.Reverse().FirstOrDefault(kv => virtualpath.StartsWith(kv.Key));
-        if (map.Key!=null && map.Value!=null) {
-          return Path.GetFullPath(Path.Combine(map.Value, virtualpath.Substring(map.Key.Length)));
-        }
-        else {
-          return null;
-        }
-      }
-
-      private FileDesc GetFileDesc(string ext)
-      {
-        FileDesc res;
-        if (FileDescriptions.TryGetValue(ext, out res)) {
-          return res;
-        }
-        else {
-          return FileDescriptions[""];
-        }
-      }
-
-      private Dictionary<string, string> ParseQuery(string query)
-      {
-        var res = new Dictionary<string, string>();
-        if (query!=null && query.StartsWith("?")) {
-          foreach (var q in request.Uri.Query.Substring(1).Split('&')) {
-            var entry = q.Split('=');
-            var key = Uri.UnescapeDataString(entry[0]).Replace('+', ' ');
-            if (entry.Length>1) {
-              var value = Uri.UnescapeDataString(entry[1]).Replace('+', ' ');
-              res[key] = value;
-            }
-            else {
-              res[key] = null;
-            }
-          }
-        }
+      FileDesc res;
+      if (FileDescriptions.TryGetValue(ext, out res)) {
         return res;
       }
-
-      private async Task SendResponseMoveToIndex(CancellationToken cancel_token)
-      {
-        var content = System.Text.Encoding.UTF8.GetBytes("Moving...");
-        var parameters = new Dictionary<string, string> {
-          {"Content-Type",   "text/plain" },
-          {"Content-Length", content.Length.ToString() },
-          {"Location",       "/html/index.html" },
-        };
-        if (AccessControlInfo.AuthenticationKey!=null) {
-          parameters.Add("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey));
-        }
-        var response = new HTTPResponse(this.request.Protocol, HttpStatusCode.Moved, parameters);
-        await Connection.WriteAsync(response.GetBytes(), cancel_token);
-        if (this.request.Method=="GET") {
-          await Connection.WriteAsync(content, cancel_token);
-        }
-      }
-
-      private async Task SendResponseFileContent(CancellationToken cancel_token)
-      {
-        var localpath = GetPhysicalPath(this.request.Uri);
-        if (localpath==null) throw new HTTPError(HttpStatusCode.Forbidden);
-        if (Directory.Exists(localpath)) {
-          localpath = Path.Combine(localpath, "index.html");
-          if (!File.Exists(localpath)) throw new HTTPError(HttpStatusCode.Forbidden);
-        }
-        if (File.Exists(localpath)) {
-          var contents = File.ReadAllBytes(localpath);
-          var content_desc = GetFileDesc(Path.GetExtension(localpath));
-          var parameters = new Dictionary<string, string> {
-            {"Content-Type",   content_desc.MimeType },
-            {"Content-Length", contents.Length.ToString() },
-          };
-          if (AccessControlInfo.AuthenticationKey!=null) {
-            parameters.Add("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey));
-          }
-          var response = new HTTPResponse(this.request.Protocol, HttpStatusCode.OK, parameters);
-          await Connection.WriteAsync(response.GetBytes(), cancel_token);
-          if (this.request.Method=="GET") {
-            await Connection.WriteAsync(contents, cancel_token);
-          }
-        }
-        else {
-          throw new HTTPError(HttpStatusCode.NotFound);
-        }
-      }
-
-      protected override async Task<StopReason> DoProcess(CancellationToken cancel_token)
-      {
-        try {
-          if (!HTTPUtils.CheckAuthorization(this.request, this.AccessControlInfo)) {
-            throw new HTTPError(HttpStatusCode.Unauthorized);
-          }
-          if (this.request.Method!="HEAD" && this.request.Method!="GET") {
-            throw new HTTPError(HttpStatusCode.MethodNotAllowed);
-          }
-          if (this.request.Uri.AbsolutePath=="/") {
-            await SendResponseMoveToIndex(cancel_token);
-          }
-          else {
-            await SendResponseFileContent(cancel_token);
-          }
-        }
-        catch (HTTPError err) {
-          await Connection.WriteAsync(
-            new HTTPResponse(this.request.Protocol, err.StatusCode).GetBytes(),
-            cancel_token
-          );
-        }
-        catch (UnauthorizedAccessException) {
-          await Connection.WriteAsync(
-            new HTTPResponse(this.request.Protocol, HttpStatusCode.Forbidden).GetBytes(),
-            cancel_token
-          );
-        }
-        if (this.request.KeepAlive) {
-          HandlerResult = HandlerResult.Continue;
-        }
-        else {
-          HandlerResult = HandlerResult.Close;
-        }
-        return StopReason.OffAir;
-      }
-
-      public override OutputStreamType OutputStreamType
-      {
-        get { return OutputStreamType.Interface; }
+      else {
+        return FileDescriptions[""];
       }
     }
 
-    public class HTMLHostOutputStreamFactory
-      : OutputStreamFactoryBase
+    private async Task SendResponseMoveToIndex(OWINEnv env, CancellationToken cancel_token)
     {
-      public override string Name
-      {
-        get { return "HTTP HTML Host UI"; }
+      var content = System.Text.Encoding.UTF8.GetBytes("Moving...");
+      env.SetResponseHeader("Content-Type",   "text/plain");
+      env.SetResponseHeader("Content-Length", content.Length.ToString());
+      env.SetResponseHeader("Location",       "/html/index.html");
+      if (env.AccessControlInfo.AuthenticationKey!=null) {
+        env.SetResponseHeader("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(env.AccessControlInfo.AuthenticationKey));
       }
-
-      public override OutputStreamType OutputStreamType
-      {
-        get { return OutputStreamType.Interface; }
-      }
-
-      public override int Priority
-      {
-        get { return 10; }
-      }
-
-      HTMLHost owner;
-      public HTMLHost Owner
-      {
-        get { return owner; }
-      }
-
-      public override IOutputStream Create(
-        Stream input_stream,
-        Stream output_stream,
-        EndPoint remote_endpoint,
-        AccessControlInfo access_control,
-        Guid channel_id,
-        byte[] header)
-      {
-        using (var stream=new MemoryStream(header)) {
-          var request = HTTPRequestReader.Read(stream);
-          return new HTMLHostOutputStream(owner, PeerCast, input_stream, output_stream, remote_endpoint, access_control, request);
-        }
-      }
-
-      public override Guid? ParseChannelID(byte[] header)
-      {
-        using (var stream=new MemoryStream(header)) {
-          var res = HTTPRequestReader.Read(stream);
-          if (res!=null &&
-              (this.owner.VirtualPhysicalPathMap.Any(kv => res.Uri.AbsolutePath.StartsWith(kv.Key)) ||
-               res.Uri.AbsolutePath=="/")) {
-            return Guid.Empty;
-          }
-          else {
-            return null;
-          }
-        }
-      }
-
-      public HTMLHostOutputStreamFactory(HTMLHost owner, PeerCast peercast)
-        : base(peercast)
-      {
-        this.owner = owner;
+      env.ResponseStatusCode = (int)HttpStatusCode.Moved;
+      if (env.RequestMethod=="GET") {
+        await env.ResponseBody.WriteAsync(content, 0, content.Length, cancel_token);
       }
     }
+
+    private async Task SendResponseFileContent(OWINEnv env, CancellationToken cancel_token)
+    {
+      var localpath = GetPhysicalPath(env);
+      if (localpath==null) throw new HTTPError(HttpStatusCode.Forbidden);
+      if (Directory.Exists(localpath)) {
+        localpath = Path.Combine(localpath, "index.html");
+        if (!File.Exists(localpath)) throw new HTTPError(HttpStatusCode.Forbidden);
+      }
+      if (File.Exists(localpath)) {
+        var contents = File.ReadAllBytes(localpath);
+        var content_desc = GetFileDesc(Path.GetExtension(localpath));
+        env.SetResponseHeader("Content-Type",   content_desc.MimeType);
+        env.SetResponseHeader("Content-Length", contents.Length.ToString());
+        if (env.AccessControlInfo.AuthenticationKey!=null) {
+          env.SetResponseHeader("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(env.AccessControlInfo.AuthenticationKey));
+        }
+        if (env.RequestMethod=="GET") {
+          await env.ResponseBody.WriteAsync(contents, 0, contents.Length, cancel_token);
+        }
+      }
+      else {
+        throw new HTTPError(HttpStatusCode.NotFound);
+      }
+    }
+
+    private async Task OnProcess(IDictionary<string, object> owinenv)
+    {
+      var env = new OWINEnv(owinenv);
+      var cancel_token = env.CallCanlelled;
+      try {
+        if (!HTTPUtils.CheckAuthorization(env.GetAuthorizationToken(), env.AccessControlInfo)) {
+          throw new HTTPError(HttpStatusCode.Unauthorized);
+        }
+        if (env.RequestMethod!="HEAD" && env.RequestMethod!="GET") {
+          throw new HTTPError(HttpStatusCode.MethodNotAllowed);
+        }
+        await SendResponseFileContent(env, cancel_token);
+      }
+      catch (HTTPError err) {
+        env.ResponseStatusCode = (int)err.StatusCode;
+      }
+      catch (UnauthorizedAccessException) {
+        env.ResponseStatusCode = (int)HttpStatusCode.Forbidden;
+      }
+    }
+
+    private async Task OnRedirect(IDictionary<string, object> owinenv)
+    {
+      var env = new OWINEnv(owinenv);
+      var cancel_token = env.CallCanlelled;
+      try {
+        if (!HTTPUtils.CheckAuthorization(env.GetAuthorizationToken(), env.AccessControlInfo)) {
+          throw new HTTPError(HttpStatusCode.Unauthorized);
+        }
+        if (env.RequestMethod!="HEAD" && env.RequestMethod!="GET") {
+          throw new HTTPError(HttpStatusCode.MethodNotAllowed);
+        }
+        await SendResponseMoveToIndex(env, cancel_token);
+      }
+      catch (HTTPError err) {
+        env.ResponseStatusCode = (int)err.StatusCode;
+      }
+      catch (UnauthorizedAccessException) {
+        env.ResponseStatusCode = (int)HttpStatusCode.Forbidden;
+      }
+    }
+
   }
 }

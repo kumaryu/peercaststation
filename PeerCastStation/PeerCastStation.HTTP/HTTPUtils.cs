@@ -54,14 +54,13 @@ namespace PeerCastStation.HTTP
       return Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes(key.Id + ":" + key.Password));
     }
 
-    public static bool CheckAuthorization(PeerCastStation.HTTP.HTTPRequest request, PeerCastStation.Core.AccessControlInfo acinfo)
+    public static bool CheckAuthorization(string authorization_token, PeerCastStation.Core.AccessControlInfo acinfo)
     {
       if (!acinfo.AuthorizationRequired || acinfo.AuthenticationKey==null) return true;
-      var token = GetAuthorizationToken(request);
-      if (token==null) return false;
+      if (authorization_token==null) return false;
       var authorized = false;
       try {
-        var authorization = System.Text.Encoding.ASCII.GetString(Convert.FromBase64String(token)).Split(':');
+        var authorization = System.Text.Encoding.ASCII.GetString(Convert.FromBase64String(authorization_token)).Split(':');
         if (authorization.Length>=2) {
           var user = authorization[0];
           var pass = String.Join(":", authorization.Skip(1).ToArray());
@@ -73,6 +72,11 @@ namespace PeerCastStation.HTTP
       catch (ArgumentException) {
       }
       return authorized;
+    }
+
+    public static bool CheckAuthorization(PeerCastStation.HTTP.HTTPRequest request, PeerCastStation.Core.AccessControlInfo acinfo)
+    {
+      return CheckAuthorization(GetAuthorizationToken(request), acinfo);
     }
 
     public static string CreateResponseHeader(HttpStatusCode code)
