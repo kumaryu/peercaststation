@@ -3,8 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.UI.HTTP
 {
@@ -116,6 +118,17 @@ namespace PeerCastStation.UI.HTTP
         this.RequestCookies.TryGetValue("auth", out result);
       }
       return result;
+    }
+
+    public void SetResponseStatusCode(HttpStatusCode status_code)
+    {
+      this.ResponseStatusCode = (int)status_code;
+    }
+
+    public async Task SetResponseBodyAsync(string str, CancellationToken cancel_token)
+    {
+      SetResponseHeader("Content-Type", "text/plain; charset=utf-8");
+      await this.ResponseBody.WriteUTF8Async(str, cancel_token);
     }
 
   }
