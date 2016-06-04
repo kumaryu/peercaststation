@@ -22,6 +22,7 @@ namespace PeerCastStation.UI.HTTP
     private LogWriter logWriter = new LogWriter(1000);
     private Updater updater = new Updater();
     private IEnumerable<VersionDescription> newVersions = Enumerable.Empty<VersionDescription>();
+    private OWINApplication application;
 
     private ObjectIdRegistry idRegistry = new ObjectIdRegistry();
     override protected void OnAttach()
@@ -36,12 +37,20 @@ namespace PeerCastStation.UI.HTTP
       var owinhost =
         Application.PeerCast.OutputStreamFactories.FirstOrDefault(factory => factory is OWINHostOutputStreamFactory) as OWINHostOutputStreamFactory;
       if (owinhost!=null) {
-        owinhost.AddApplication("/api/1", PathParameters.None, OnProcess);
+        if (application!=null) {
+          owinhost.RemoveApplication(application);
+        }
+        application = owinhost.AddApplication("/api/1", PathParameters.None, OnProcess);
       }
     }
 
     protected override void OnStop()
     {
+      var owinhost =
+        Application.PeerCast.OutputStreamFactories.FirstOrDefault(factory => factory is OWINHostOutputStreamFactory) as OWINHostOutputStreamFactory;
+      if (owinhost!=null && application!=null) {
+        owinhost.RemoveApplication(application);
+      }
       Logger.RemoveWriter(logWriter);
     }
 
