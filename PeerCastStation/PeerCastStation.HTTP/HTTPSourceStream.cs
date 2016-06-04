@@ -91,7 +91,7 @@ namespace PeerCastStation.HTTP
     : SourceConnectionBase
   {
     private IContentReader contentReader;
-    private ChannelContentSink contentSink;
+    private BufferedContentSink contentSink;
     private HTTPResponse response = null;
 
     public HTTPSourceConnection(
@@ -103,7 +103,7 @@ namespace PeerCastStation.HTTP
       : base(peercast, channel, source_uri)
     {
       contentReader = content_reader;
-      contentSink = new ChannelContentSink(channel, use_content_bitrate);
+      contentSink = new BufferedContentSink(new ChannelContentSink(channel, use_content_bitrate));
     }
 
     protected override async Task<SourceConnectionClient> DoConnect(Uri source, CancellationToken cancel_token)
