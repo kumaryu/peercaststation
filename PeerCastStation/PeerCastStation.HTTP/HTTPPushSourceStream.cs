@@ -51,9 +51,9 @@ namespace PeerCastStation.HTTP
       : base(peercast, channel, source_uri)
     {
       this.ContentReader = content_reader;
-      this.contentSink = new ChannelContentSink(channel, use_content_bitrate);
+      this.contentSink = new BufferedContentSink(new ChannelContentSink(channel, use_content_bitrate));
     }
-    private ChannelContentSink contentSink;
+    private BufferedContentSink contentSink;
 
     public IContentReader ContentReader { get; private set; }
 
