@@ -185,6 +185,10 @@ namespace PeerCastStation.HTTP
       if (request.Headers.ContainsKey("CONTENT-TYPE")) {
         Logger.Debug("Content-Type: {0}", request.Headers["CONTENT-TYPE"]);
       }
+
+      if (!request.Headers.TryGetValue("USER-AGENT", out clientName)) {
+        clientName = "";
+      }
     }
 
     Stream GetChunkedStream(Stream stream)
