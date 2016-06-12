@@ -619,6 +619,7 @@ namespace PeerCastStation.FLV.RTMP
         //NetStream commands
         switch (msg.CommandName) {
         case "publish": await OnCommandPublish(msg, cancel_token); break;
+        case "deleteStream": await OnCommandDeleteStream(msg, cancel_token); break;
         case "play":
         case "play2":
         case "closeStream":
