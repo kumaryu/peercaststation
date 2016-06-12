@@ -106,10 +106,12 @@ namespace PeerCastStation.UI.HTTP
       env["owin.Version"]            = "OWIN 1.0.0";
       env["peercast.AccessControlInfo"] = this.AccessControlInfo;
 
-      env["owin.ResponseHeaders"]    = new Dictionary<string, string[]>();
+      var response_headers = new Dictionary<string, string[]>();
+      env["owin.ResponseHeaders"]    = response_headers;
       env["owin.ResponseBody"]       = new MemoryStream();
       env["owin.ResponseStatusCode"] = 200;
       env["owin.ResponseProtocol"]   = this.request.Protocol;
+      SetHeader(response_headers, "Server", PeerCast.AgentName);
       return env;
     }
 

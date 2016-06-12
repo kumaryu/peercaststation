@@ -434,10 +434,9 @@ namespace PeerCastStation.HTTP
           }
           else {
             return
-              "HTTP/1.0 200 OK\r\n"        +
-              "Content-Type: "             +
-              Channel.ChannelInfo.MIMEType +
-              "\r\n";
+              $"HTTP/1.0 200 OK\r\n" +
+              $"Server: {PeerCast.AgentName}\r\n" +
+              $"Content-Type: {Channel.ChannelInfo.MIMEType}\r\n";
           }
         }
       case BodyType.Playlist:

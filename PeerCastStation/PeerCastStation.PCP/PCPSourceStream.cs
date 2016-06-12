@@ -96,6 +96,7 @@ namespace PeerCastStation.PCP
     private RelayRequestResponse relayResponse = null;
     private Host uphost;
     private RemoteHostStatus remoteType = RemoteHostStatus.None;
+    private EndPoint remoteHost = null;
 
     public PCPSourceConnection(
         PeerCast peercast,
@@ -136,6 +137,7 @@ namespace PeerCastStation.PCP
         await client.ConnectAsync(endpoint.Address, endpoint.Port);
         connection.Stream.ReadTimeout  = 30000;
         connection.Stream.WriteTimeout = 8000;
+        remoteHost = endpoint;
         Logger.Debug("Connected: {0}", endpoint);
         return connection;
       }
@@ -161,6 +163,7 @@ namespace PeerCastStation.PCP
         var connection = new SourceConnectionClient(client);
         connection.Stream.ReadTimeout  = 30000;
         connection.Stream.WriteTimeout = 8000;
+        remoteHost = new DnsEndPoint(source.Host, port);
         Logger.Debug("Connected: {0}", source);
         return connection;
       }
@@ -225,13 +228,14 @@ Stopped:
     private async Task ProcessRelayRequest(CancellationToken cancel_token)
     {
       Logger.Debug("Sending Relay request: /channel/{0}", Channel.ChannelID.ToString("N"));
-      var req = System.Text.Encoding.UTF8.GetBytes(String.Format(
-        "GET /channel/{0} HTTP/1.0\r\n" +
-        "x-peercast-pcp:1\r\n" +
-        "x-peercast-pos:{1}\r\n" +
-        "\r\n",
-        Channel.ChannelID.ToString("N"),
-        Channel.ContentPosition));
+      var req = System.Text.Encoding.UTF8.GetBytes(
+        $"GET /channel/{Channel.ChannelID.ToString("N")} HTTP/1.0\r\n" +
+        remoteHost!=null ? $"Host:{remoteHost}\r\n" : "" +
+        $"User-Agent:{PeerCast.AgentName}\r\n" +
+        $"x-peercast-pcp:1\r\n" +
+        $"x-peercast-pos:{Channel.ContentPosition}\r\n" +
+        $"\r\n"
+      );
       try {
         await connection.Stream.WriteAsync(req, cancel_token);
         relayResponse = await ReadRequestResponseAsync(connection.Stream, cancel_token);

@@ -293,7 +293,9 @@ namespace PeerCastStation.PCP
       if (!IsChannelFound) {
         return String.Format(
           "HTTP/1.0 404 Not Found.\r\n" +
-          "\r\n");
+          "Server: {0}\r\n" +
+          "\r\n",
+          PeerCast.AgentName);
       }
       else {
         var status = IsRelayFull ? "503 Temporary Unavailable." : "200 OK";
@@ -727,7 +729,10 @@ namespace PeerCastStation.PCP
         host.IsFirewalled = remote_port==0;
         host.Extra.Update(atom.Children);
         Downhost = host.ToHost();
-        UserAgent = atom.Children.GetHeloAgent() ?? UserAgent;
+        var user_agent = atom.Children.GetHeloAgent();
+        if (user_agent!=null) {
+          UserAgent = user_agent;
+        }
       }
       var oleh = new AtomCollection();
       if (RemoteEndPoint!=null && RemoteEndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork) {
