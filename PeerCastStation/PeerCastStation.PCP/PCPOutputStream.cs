@@ -258,7 +258,7 @@ namespace PeerCastStation.PCP
         Connection.WriteRate,
         relay_count,
         direct_count,
-        relayRequest.UserAgent);
+        this.UserAgent ?? "");
     }
 
     private RelayRequest relayRequest;
@@ -285,6 +285,7 @@ namespace PeerCastStation.PCP
       this.IsChannelFound = channel!=null && channel.Status==SourceStreamStatus.Receiving;
       this.IsRelayFull    = channel!=null ? !channel.MakeRelayable(this) : false;
       this.relayRequest   = request;
+      this.UserAgent      = request.UserAgent;
     }
 
     protected string CreateRelayResponse()
