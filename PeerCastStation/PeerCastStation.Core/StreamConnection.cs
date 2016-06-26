@@ -310,7 +310,10 @@ namespace PeerCastStation.Core
           sending_result = sendResult;
         }
         if (sending_result!=null) {
-          if (!sending_result.AsyncWaitHandle.WaitOne(sendTimeout)) {
+          if (sending_result.AsyncWaitHandle.WaitOne(sendTimeout)) {
+            Thread.Sleep(10);
+          }
+          else {
             break;
           }
         }
