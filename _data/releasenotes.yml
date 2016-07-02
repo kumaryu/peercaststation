@@ -1,4 +1,50 @@
 ---
+- name: Version 2.2.0 (2016年7月3日安定版)
+  version: 2.2.0.0
+  channel: stable
+  notes: |
+    いろいろ更新しました。
+
+    * ポート開放チェックのタイミングを増やしました。
+      起動時やポート設定変更のタイミングで自動的にポート開放チェックを行うようにしました。
+    * UPnP・NAT-PMPでのポート開放を作り直しました
+    * 配信方法にHTTP Push Sourceを追加しました。指定したURLでHTTP POSTでの配信を受け付けます。コンテナタイプを選択する必要があります。試験的機能なためまだ安定版ではおすすめしません。
+    * 配信方法にRTMPを選択した場合にコンテナタイプを選択できないようにしました。
+    * HTML UIの認証にBasic認証だけでなくauthパラメータを使ったトークン認証を使えるようにしました。
+      HTML UIの設定ページから認証URLを使ってアクセスすることができます。
+    * 認証が必要なポートからアクセスした場合、視聴時も認証が必要になりました。
+    * HTML UIを開いた時に稀に落ちる可能性があったのを修正しました。
+    * IPv6 Anyで待ち受けた際にHTML UIでアドレスが::で表示されていたのを修正しました。
+    * IPv6のみで待ち受けてた際にGUIからHTML UIやヘルプが開けなかったのを修正しました。
+    * ローカルIPアドレスの取得方法を一部変更しました。
+    * 一部のログの表示レベルを落としました。
+    * -killをつけて起動した時に、既に起動中のPeerCastStationが終了しなくなっていたのを修正しました。サービス版は終了しません。
+    * HTML UIとヘルプに検索エンジン避け用のmetaタグを追加しました。万が一WAN側フルオープンになってた時も検索エンジンにはひっかかりづらくなります。
+    * インストーラ版でアップグレード時に、前回のインストール先をデフォルトで指定するようにしました。
+      ただしインストール先をレジストリに書き込む必要があるので、次のバージョンアップから有効になります。
+    * サービス版インストーラでインストール先が選択できなかったのを修正しました。
+    * インストーラで自動的にインストールされる.NET Frameworkを4.5.2にしました。
+    * Monoで同時に複数の接続要求があった場合に5つまでしか受け入れなかったのを修正しました。
+      HTML UIでCSSが読み込めなかったりしたのが改善されます。
+    * プレイリストのURLにpls=asxやpls=m3uといったパラメータをつけることで強制的にプレイリストフォーマットを指定できるようにしました。
+    * サービス版のPecaStationd.exeを追加しました。
+      Windowsではサービス版インストーラを使う必要があります。
+      Monoではzip版のPecaStationd.exeをmono-serviceで実行することができます。
+      サービス版てなんだろうと思う人にはだいたい関係ないので気にしないでください。
+    * OSのカレンダー形式が西暦でない場合にアップデート通知が出なかったのを修正しました。
+  date: 2016-07-03 00:00:00.000000000 +09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.2.0.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.2.0.zip
+    length: 1628319
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.2.0.exe
+    length: 2259716
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.2.0.msi
+    length: 2024040
+
 - name: Version 2.1.5 (2016年2月29日開発版)
   version: 2.1.5.0
   channel: dev
@@ -148,6 +194,7 @@
   - type: installer
     url: http://www.pecastation.org/files/PeerCastStation-2.1.0.exe
     length: 2249018
+
 - name: Version 2.0.0 (2015年11月30日安定版)
   version: 2.0.0.0
   channel: stable
@@ -173,6 +220,7 @@
   - type: installer
     url: http://www.pecastation.org/files/PeerCastStation-2.0.0.exe
     length: 2248963
+
 - name: Version 1.8.1 (2015年5月9日安定版)
   version: 1.8.1
   channel: stable
