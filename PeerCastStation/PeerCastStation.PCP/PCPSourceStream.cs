@@ -228,9 +228,14 @@ Stopped:
     private async Task ProcessRelayRequest(CancellationToken cancel_token)
     {
       Logger.Debug("Sending Relay request: /channel/{0}", Channel.ChannelID.ToString("N"));
+      var host_header = remoteHost!=null ? $"Host:{remoteHost}\r\n" : "";
+      if (remoteHost is DnsEndPoint) {
+        var dnsendpoint = remoteHost as DnsEndPoint;
+        host_header = $"Host:{dnsendpoint.Host}:{dnsendpoint.Port}\r\n";
+      }
       var req = System.Text.Encoding.UTF8.GetBytes(
         $"GET /channel/{Channel.ChannelID.ToString("N")} HTTP/1.0\r\n" +
-        remoteHost!=null ? $"Host:{remoteHost}\r\n" : "" +
+        host_header +
         $"User-Agent:{PeerCast.AgentName}\r\n" +
         $"x-peercast-pcp:1\r\n" +
         $"x-peercast-pos:{Channel.ContentPosition}\r\n" +
