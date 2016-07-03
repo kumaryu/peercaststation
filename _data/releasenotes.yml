@@ -1,4 +1,24 @@
 ---
+- name: Version 2.3.1 (2016年7月3日開発版)
+  version: 2.3.1.0
+  channel: dev
+  notes: |
+    2.3.0でリレーできなくなっていたのを修正しました。
+
+    * 2.3.0でリレー接続のリクエストが間違ってて受信できなくなっていたのを修正しました。
+  date: 2016-07-04T00:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.3.1.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.1.zip
+    length: 1647100
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.1.exe
+    length: 2285246
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.3.1.msi
+    length: 2048616
+
 - name: Version 2.3.0 (2016年7月3日開発版)
   version: 2.3.0.0
   channel: dev
