@@ -1,4 +1,31 @@
 ---
+- name: Version 2.3.0 (2016年7月3日開発版)
+  version: 2.3.0.0
+  channel: dev
+  notes: |
+    内部処理を大幅に書き直しました。
+
+    * 非同期処理にあまりスレッドを立ち上げないようにしました。
+      実行スレッド数が少ないCPUでの処理性能の改善が期待できる……かも？
+    * HTML UIなどにHTTP 1.1を使うようにしました。HTML UIの反応が早くなりました。
+    * MKV配信がPeerCastでリレーしづらかったのを修正しました。
+    * GUIのリレー接続にUser-Agentが表示されてなかったのを修正しました。
+    * HTTPの接続時にUser-Agent/Serverヘッダを出力するようにしました。
+    * 出力接続にNoDelayを設定するようにしました。
+    * リレー時に古いPosition指定があるとリレーが切れやすかったのを修正しました。
+  date: 2016-07-03T14:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.3.0.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.0.zip
+    length: 1628319
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.0.exe
+    length: 2285157
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.3.0.msi
+    length: 2048616
+
 - name: Version 2.2.0 (2016年7月3日安定版)
   version: 2.2.0.0
   channel: stable
@@ -32,7 +59,7 @@
       Monoではzip版のPecaStationd.exeをmono-serviceで実行することができます。
       サービス版てなんだろうと思う人にはだいたい関係ないので気にしないでください。
     * OSのカレンダー形式が西暦でない場合にアップデート通知が出なかったのを修正しました。
-  date: 2016-07-03 00:00:00.000000000 +09:00
+  date: 2016-07-02 23:00:00.000000000 +09:00
   url: http://www.pecastation.org/files/PeerCastStation-2.2.0.zip
   enclosures:
   - type: archive
