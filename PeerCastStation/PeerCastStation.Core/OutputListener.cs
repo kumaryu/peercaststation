@@ -61,7 +61,16 @@ namespace PeerCastStation.Core
     /// <summary>
     /// リンクローカルな接続先に対して認証が必要かどうかを取得および設定します。
     /// </summary>
-    public bool LocalAuthorizationRequired { get; set; }
+    public bool LocalAuthorizationRequired {
+      get {
+        return localAuthorizationRequired;
+      }
+      set {
+        localAuthorizationRequired = value;
+        UpdateLocalAccessControlInfo();
+      }
+    }
+    private bool localAuthorizationRequired = false;
 
     /// <summary>
     /// リンクグローバルな接続先に許可する出力ストリームタイプを取得および設定します。
@@ -81,12 +90,43 @@ namespace PeerCastStation.Core
     /// <summary>
     /// リンクグローバルな接続先に対して認証が必要かどうかを取得および設定します。
     /// </summary>
-    public bool GlobalAuthorizationRequired { get; set; }
+    public bool GlobalAuthorizationRequired {
+      get { return globalAuthorizationRequired; }
+      set {
+        globalAuthorizationRequired = value;
+        UpdateGlobalAccessControlInfo();
+      }
+    }
+    private bool globalAuthorizationRequired = true;
 
     /// <summary>
     /// 認証用IDとパスワードの組を取得および設定します
     /// </summary>
-    public AuthenticationKey AuthenticationKey { get; set; }
+    public AuthenticationKey AuthenticationKey {
+      get { return authenticationKey; }
+      set {
+        this.authenticationKey = value;
+        UpdateLocalAccessControlInfo();
+        UpdateGlobalAccessControlInfo();
+      }
+    }
+    private AuthenticationKey authenticationKey = AuthenticationKey.Generate();
+
+    private void UpdateLocalAccessControlInfo()
+    {
+      this.LocalAccessControlInfo = new AccessControlInfo(
+        this.localOutputAccepts,
+        this.LocalAuthorizationRequired,
+        this.authenticationKey);
+    }
+
+    private void UpdateGlobalAccessControlInfo()
+    {
+      this.GlobalAccessControlInfo = new AccessControlInfo(
+        this.globalOutputAccepts,
+        this.GlobalAuthorizationRequired,
+        this.authenticationKey);
+    }
 
     public AccessControlInfo  LoopbackAccessControlInfo  { get; private set; }
     public AccessControlInfo  LocalAccessControlInfo  { get; private set; }
@@ -113,21 +153,12 @@ namespace PeerCastStation.Core
       this.PeerCast = peercast;
       this.localOutputAccepts  = local_accepts;
       this.globalOutputAccepts = global_accepts;
-      this.LocalAuthorizationRequired  = false;
-      this.GlobalAuthorizationRequired = true;
-      this.AuthenticationKey = AuthenticationKey.Generate();
       this.LoopbackAccessControlInfo = new AccessControlInfo(
         OutputStreamType.All,
         false,
         null);
-      this.LocalAccessControlInfo = new AccessControlInfo(
-        this.localOutputAccepts,
-        this.LocalAuthorizationRequired,
-        this.AuthenticationKey);
-      this.GlobalAccessControlInfo = new AccessControlInfo(
-        this.globalOutputAccepts,
-        this.GlobalAuthorizationRequired,
-        this.AuthenticationKey);
+      UpdateLocalAccessControlInfo();
+      UpdateGlobalAccessControlInfo();
       this.ConnectionHandler = connection_handler;
       server = new TcpListener(ip);
       server.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
