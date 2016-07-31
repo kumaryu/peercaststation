@@ -33,6 +33,9 @@ var UpdateViewModel = new function() {
         case "installer":
           title = "インストーラをダウンロード";
           break;
+        case "serviceinstaller":
+          title = "サービス版インストーラをダウンロード";
+          break;
         }
         self.enclosures.push({
           title: title,
