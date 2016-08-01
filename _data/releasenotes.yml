@@ -1,4 +1,26 @@
 ---
+- name: Version 2.3.2 (2016年8月1日開発版)
+  version: 2.3.2.0
+  channel: dev
+  notes: |
+    バグ修正をしました
+
+    * リレー時に古いPosition指定があるとリレーが切れやすかったのを修正したつもりが全然修正できてなかったので再修正しました。
+    * 認証情報を変更しても表示が変わるだけで実際には全てデフォルト値と同じ扱いになっていたのを修正しました。
+    * HTML版のアップデートページに間違いがあったのを修正しました (by ha2ne2)
+  date: 2016-08-01T00:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.3.2.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.2.zip
+    length: 1647166
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.2.exe
+    length: 2285366
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.3.2.msi
+    length: 2048616
+
 - name: Version 2.3.1 (2016年7月3日開発版)
   version: 2.3.1.0
   channel: dev
