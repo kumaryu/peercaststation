@@ -183,7 +183,10 @@ namespace PeerCastStation.FLV.RTMP
 			}
 			if (client!=null) {
 				this.client = client;
-				return new StreamConnection(client.GetStream(), client.GetStream());
+				var connection = new StreamConnection(client.GetStream(), client.GetStream());
+				connection.ReceiveTimeout = 10000;
+				connection.SendTimeout = 8000;
+				return connection;
 			}
 			else {
 				return null;
