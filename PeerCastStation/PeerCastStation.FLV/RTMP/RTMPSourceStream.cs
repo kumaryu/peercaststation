@@ -222,7 +222,7 @@ namespace PeerCastStation.FLV.RTMP
       using (var reader=await RecvAsync(1536, cancel_token)) {
         reader.ReadInt32();
         reader.ReadInt32();
-        if (!s1vec.Equals(reader.ReadBytes(1528))) {
+        if (!s1vec.SequenceEqual(reader.ReadBytes(1528))) {
           Logger.Debug("Handshake failed");
           return false;
         }
