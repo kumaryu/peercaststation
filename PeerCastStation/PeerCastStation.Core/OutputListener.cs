@@ -295,7 +295,7 @@ namespace PeerCastStation.Core
             offset += len;
             var header_ary = header.Take(offset).ToArray();
             foreach (var factory in output_factories) {
-              if (!acinfo.Accepts.HasFlag(factory.OutputStreamType)) continue;
+              if ((acinfo.Accepts & factory.OutputStreamType) == 0) continue;
               var channel_id = factory.ParseChannelID(header_ary);
               if (channel_id.HasValue) {
                 return factory.Create(
