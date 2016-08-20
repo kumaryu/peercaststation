@@ -14,41 +14,6 @@ namespace PeerCastStation.HTTP
   /// <summary>
   ///サーバからのHTTPレスポンス内容を保持するクラスです
   /// </summary>
-  public class HTTPResponse
-  {
-    /// <summary>
-    /// HTTPバージョンを取得および設定します
-    /// </summary>
-    public string Version { get; private set; }
-    /// <summary>
-    /// HTTPステータスを取得および設定します
-    /// </summary>
-    public int Status { get; private set; }
-    /// <summary>
-    /// レスポンスヘッダの値のコレクション取得します
-    /// </summary>
-    public Dictionary<string, string> Headers { get; private set; }
-
-    /// <summary>
-    /// HTTPレンスポンス文字列からHTTPResponseオブジェクトを構築します
-    /// </summary>
-    /// <param name="response">行毎に区切られたHTTPレスポンスの文字列表現</param>
-    public HTTPResponse(IEnumerable<string> requests)
-    {
-      Headers = new Dictionary<string, string>();
-      foreach (var req in requests) {
-        Match match = null;
-        if ((match = Regex.Match(req, @"^HTTP/(1.\d) (\d+) .*$")).Success) {
-          this.Version = match.Groups[1].Value;
-          this.Status = Int32.Parse(match.Groups[2].Value);
-        }
-        else if ((match = Regex.Match(req, @"^(\S*):\s*(.*)\s*$", RegexOptions.IgnoreCase)).Success) {
-          Headers[match.Groups[1].Value.ToUpperInvariant()] = match.Groups[2].Value;
-        }
-      }
-    }
-  }
-
   /// <summary>
   /// ストリームからHTTPレスポンスを読み取るクラスです
   /// </summary>
@@ -76,7 +41,23 @@ namespace PeerCastStation.HTTP
           throw new InvalidDataException();
         }
       }
-      return new HTTPResponse(requests);
+
+      var headers = new Dictionary<string, string>();
+      var protocol = "";
+      var status   = 200;
+      var reason_phrase = "";
+      foreach (var req in requests) {
+        Match match = null;
+        if ((match = Regex.Match(req, @"^(HTTP/1.\d) (\d+) (.*)$")).Success) {
+          protocol = match.Groups[1].Value;
+          status   = Int32.Parse(match.Groups[2].Value);
+          reason_phrase = match.Groups[3].Value;
+        }
+        else if ((match = Regex.Match(req, @"^(\S*):\s*(.*)\s*$", RegexOptions.IgnoreCase)).Success) {
+          headers[match.Groups[1].Value.ToUpperInvariant()] = match.Groups[2].Value;
+        }
+      }
+      return new HTTPResponse(protocol, status, reason_phrase, headers, null);
     }
   }
 
@@ -110,7 +91,7 @@ namespace PeerCastStation.HTTP
     : SourceConnectionBase
   {
     private IContentReader contentReader;
-    private ChannelContentSink contentSink;
+    private BufferedContentSink contentSink;
     private HTTPResponse response = null;
 
     public HTTPSourceConnection(
@@ -122,7 +103,7 @@ namespace PeerCastStation.HTTP
       : base(peercast, channel, source_uri)
     {
       contentReader = content_reader;
-      contentSink = new ChannelContentSink(channel, use_content_bitrate);
+      contentSink = new BufferedContentSink(new ChannelContentSink(channel, use_content_bitrate));
     }
 
     protected override async Task<SourceConnectionClient> DoConnect(Uri source, CancellationToken cancel_token)

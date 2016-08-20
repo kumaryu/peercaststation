@@ -222,7 +222,7 @@ namespace PeerCastStation.PCP
     public string UserAgent    { get; protected set; }
     public bool IsRelayFull    { get; protected set; }
     public bool IsChannelFound { get; protected set; }
-    private System.Threading.AutoResetEvent changedEvent = new System.Threading.AutoResetEvent(true);
+    private SemaphoreSlim changedEvent = new SemaphoreSlim(1);
 
     protected override int GetUpstreamRate()
     {
@@ -258,7 +258,7 @@ namespace PeerCastStation.PCP
         Connection.WriteRate,
         relay_count,
         direct_count,
-        relayRequest.UserAgent);
+        this.UserAgent ?? "");
     }
 
     private RelayRequest relayRequest;
@@ -285,6 +285,7 @@ namespace PeerCastStation.PCP
       this.IsChannelFound = channel!=null && channel.Status==SourceStreamStatus.Receiving;
       this.IsRelayFull    = channel!=null ? !channel.MakeRelayable(this) : false;
       this.relayRequest   = request;
+      this.UserAgent      = request.UserAgent;
     }
 
     protected string CreateRelayResponse()
@@ -292,7 +293,9 @@ namespace PeerCastStation.PCP
       if (!IsChannelFound) {
         return String.Format(
           "HTTP/1.0 404 Not Found.\r\n" +
-          "\r\n");
+          "Server: {0}\r\n" +
+          "\r\n",
+          PeerCast.AgentName);
       }
       else {
         var status = IsRelayFull ? "503 Temporary Unavailable." : "200 OK";
@@ -328,19 +331,7 @@ namespace PeerCastStation.PCP
 
     private void Channel_ContentChanged(object sender, EventArgs args)
     {
-      changedEvent.Set();
-    }
-
-    private Task WaitContentChangedAsync(CancellationToken cancel_token)
-    {
-      var completion_source = new TaskCompletionSource<bool>();
-      var threadpool_handle = ThreadPool.RegisterWaitForSingleObject(changedEvent, (state, timedout) => {
-        completion_source.TrySetResult(true);
-      }, null, Timeout.Infinite, true);
-      cancel_token.Register(() => completion_source.TrySetCanceled());
-      var task = completion_source.Task;
-      task.ContinueWith(prev => threadpool_handle.Unregister(null));
-      return task;
+      changedEvent.Release();
     }
 
     protected IEnumerable<Atom> CreateContentHeaderPacket(Channel channel, Content content)
@@ -392,16 +383,14 @@ namespace PeerCastStation.PCP
       Content last_header = null;
       Content last_content = null;
       while (!cancel_token.IsCancellationRequested) {
-        await WaitContentChangedAsync(cancel_token);
+        await changedEvent.WaitAsync(cancel_token);
         bool skipped = false;
         var atoms = Enumerable.Empty<Atom>();
         if (Channel.ContentHeader!=null &&
             (last_header==null || Channel.ContentHeader.Position!=last_header.Position)) {
           last_header = Channel.ContentHeader;
+          last_content = null;
           lastPosition = last_header.Position;
-          if (last_content!=null && last_content.Position<last_header.Position) {
-            last_header = last_content;
-          }
           atoms = atoms.Concat(CreateContentHeaderPacket(Channel, last_header));
         }
         if (last_header!=null) {
@@ -420,8 +409,10 @@ namespace PeerCastStation.PCP
             }
           }
           else if (relayRequest.StreamPos.HasValue && relayRequest.StreamPos.Value>last_header.Position) {
-            content = Channel.Contents.FindNextByPosition(last_header.Stream, relayRequest.StreamPos.Value-1) ??
-                      Channel.Contents.GetNewest(last_header.Stream);
+            content = Channel.Contents.FindNextByPosition(last_header.Stream, relayRequest.StreamPos.Value-1);
+            if (content==null || content==Channel.Contents.GetOldest(last_header.Stream)) {
+              content = Channel.Contents.GetNewest(last_header.Stream);
+            }
           }
           else {
             content = Channel.Contents.GetNewest(last_header.Stream);
@@ -431,9 +422,9 @@ namespace PeerCastStation.PCP
             lastPosition = content.Position;
             atoms = atoms.Concat(CreateContentBodyPacket(Channel, content));
           }
-          foreach (var atom in atoms) {
-            await Connection.WriteAsync(atom, cancel_token);
-          }
+        }
+        foreach (var atom in atoms) {
+          await Connection.WriteAsync(atom, cancel_token);
         }
         if (skipped) {
           Stop(StopReason.SendTimeoutError);
@@ -738,7 +729,10 @@ namespace PeerCastStation.PCP
         host.IsFirewalled = remote_port==0;
         host.Extra.Update(atom.Children);
         Downhost = host.ToHost();
-        UserAgent = atom.Children.GetHeloAgent() ?? UserAgent;
+        var user_agent = atom.Children.GetHeloAgent();
+        if (user_agent!=null) {
+          UserAgent = user_agent;
+        }
       }
       var oleh = new AtomCollection();
       if (RemoteEndPoint!=null && RemoteEndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork) {

@@ -129,6 +129,7 @@ namespace PeerCastStation.Core
     {
       HasError = true;
       Stop(StopReason.ConnectionError);
+      HandlerResult = HandlerResult.Error;
       Logger.Info(err);
       return Task.Delay(0);
     }
@@ -140,7 +141,9 @@ namespace PeerCastStation.Core
 
     protected abstract Task<StopReason> DoProcess(CancellationToken cancel_token);
 
-    public virtual async Task<StopReason> Start()
+    protected HandlerResult HandlerResult { get; set; }
+
+    public virtual async Task<HandlerResult> Start()
     {
       try {
         Logger.Debug("Starting");
@@ -160,19 +163,19 @@ namespace PeerCastStation.Core
         }
         finally {
           var timeout_source = new CancellationTokenSource(TimeSpan.FromMilliseconds(connection.WriteTimeout));
-          await connection.CloseAsync(timeout_source.Token);
+          if (HandlerResult!=HandlerResult.Continue) {
+            await connection.CloseAsync(timeout_source.Token);
+          }
         }
         Logger.Debug("Finished");
-        return StoppedReason;
+        return HandlerResult;
       }
       catch (Exception e) {
         Logger.Error(e);
         if (StoppedReason==StopReason.None) {
-          return StopReason.NotIdentifiedError;
+          StoppedReason = StopReason.NotIdentifiedError;
         }
-        else {
-          return StoppedReason;
-        }
+        return HandlerResult.Error;
       }
     }
 

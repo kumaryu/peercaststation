@@ -611,6 +611,7 @@ namespace PeerCastStation.FLV.RTMP
         case "call":         await OnCommandCall(msg, cancel_token); break;
         case "close":        await OnCommandClose(msg, cancel_token); break;
         case "createStream": await OnCommandCreateStream(msg, cancel_token); break;
+        case "deleteStream": await OnCommandDeleteStream(msg, cancel_token); break;
         }
       }
       else {
@@ -618,9 +619,9 @@ namespace PeerCastStation.FLV.RTMP
         //NetStream commands
         switch (msg.CommandName) {
         case "publish": await OnCommandPublish(msg, cancel_token); break;
+        case "deleteStream": await OnCommandDeleteStream(msg, cancel_token); break;
         case "play":
         case "play2":
-        case "deleteStream":
         case "closeStream":
         case "receiveAudio":
         case "receiveVideo":
@@ -690,6 +691,12 @@ namespace PeerCastStation.FLV.RTMP
       if (msg.TransactionId!=0) {
         await SendMessage(3, response, cancel_token);
       }
+    }
+
+    private Task OnCommandDeleteStream(CommandMessage msg, CancellationToken cancel_token)
+    {
+      Stop(StopReason.OffAir);
+      return Task.Delay(0);
     }
 
     private async Task OnCommandPublish(CommandMessage msg, CancellationToken cancel_token)

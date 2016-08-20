@@ -20,62 +20,6 @@ namespace PeerCastStation.Core
     void Stop(StopReason reason);
   }
 
-  public class ChannelContentSink
-    : IContentSink
-  {
-    public Channel Channel     { get; private set; }
-    public Content LastContent { get; private set; }
-    public bool    UseContentBitrate { get; private set; }
-    public ChannelContentSink(Channel channel, bool use_content_bitrate)
-    {
-      this.Channel = channel;
-      this.LastContent = null;
-      this.UseContentBitrate = use_content_bitrate;
-    }
-
-    public void OnChannelInfo(ChannelInfo channel_info)
-    {
-      this.Channel.ChannelInfo = MergeChannelInfo(Channel.ChannelInfo, channel_info);
-    }
-
-    public void OnChannelTrack(ChannelTrack channel_track)
-    {
-      this.Channel.ChannelTrack = MergeChannelTrack(Channel.ChannelTrack, channel_track);
-    }
-
-    public void OnContent(Content content)
-    {
-      this.Channel.Contents.Add(content);
-      this.LastContent = content;
-    }
-
-    public void OnContentHeader(Content content_header)
-    {
-      this.Channel.ContentHeader = content_header;
-      this.Channel.Contents.Clear();
-      this.LastContent = content_header;
-    }
-
-    private ChannelInfo MergeChannelInfo(ChannelInfo a, ChannelInfo b)
-    {
-      var base_atoms = new AtomCollection(a.Extra);
-      var new_atoms  = new AtomCollection(b.Extra);
-      if (!UseContentBitrate) {
-        new_atoms.RemoveByName(Atom.PCP_CHAN_INFO_BITRATE);
-      }
-      base_atoms.Update(new_atoms);
-      return new ChannelInfo(base_atoms);
-    }
-
-    private ChannelTrack MergeChannelTrack(ChannelTrack a, ChannelTrack b)
-    {
-      var base_atoms = new AtomCollection(a.Extra);
-      base_atoms.Update(b.Extra);
-      return new ChannelTrack(base_atoms);
-    }
-
-  }
-
   public abstract class SourceConnectionBase
     : ISourceConnection
   {

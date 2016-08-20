@@ -61,7 +61,16 @@ namespace PeerCastStation.Core
     /// <summary>
     /// リンクローカルな接続先に対して認証が必要かどうかを取得および設定します。
     /// </summary>
-    public bool LocalAuthorizationRequired { get; set; }
+    public bool LocalAuthorizationRequired {
+      get {
+        return localAuthorizationRequired;
+      }
+      set {
+        localAuthorizationRequired = value;
+        UpdateLocalAccessControlInfo();
+      }
+    }
+    private bool localAuthorizationRequired = false;
 
     /// <summary>
     /// リンクグローバルな接続先に許可する出力ストリームタイプを取得および設定します。
@@ -81,12 +90,43 @@ namespace PeerCastStation.Core
     /// <summary>
     /// リンクグローバルな接続先に対して認証が必要かどうかを取得および設定します。
     /// </summary>
-    public bool GlobalAuthorizationRequired { get; set; }
+    public bool GlobalAuthorizationRequired {
+      get { return globalAuthorizationRequired; }
+      set {
+        globalAuthorizationRequired = value;
+        UpdateGlobalAccessControlInfo();
+      }
+    }
+    private bool globalAuthorizationRequired = true;
 
     /// <summary>
     /// 認証用IDとパスワードの組を取得および設定します
     /// </summary>
-    public AuthenticationKey AuthenticationKey { get; set; }
+    public AuthenticationKey AuthenticationKey {
+      get { return authenticationKey; }
+      set {
+        this.authenticationKey = value;
+        UpdateLocalAccessControlInfo();
+        UpdateGlobalAccessControlInfo();
+      }
+    }
+    private AuthenticationKey authenticationKey = AuthenticationKey.Generate();
+
+    private void UpdateLocalAccessControlInfo()
+    {
+      this.LocalAccessControlInfo = new AccessControlInfo(
+        this.localOutputAccepts,
+        this.LocalAuthorizationRequired,
+        this.authenticationKey);
+    }
+
+    private void UpdateGlobalAccessControlInfo()
+    {
+      this.GlobalAccessControlInfo = new AccessControlInfo(
+        this.globalOutputAccepts,
+        this.GlobalAuthorizationRequired,
+        this.authenticationKey);
+    }
 
     public AccessControlInfo  LoopbackAccessControlInfo  { get; private set; }
     public AccessControlInfo  LocalAccessControlInfo  { get; private set; }
@@ -113,21 +153,12 @@ namespace PeerCastStation.Core
       this.PeerCast = peercast;
       this.localOutputAccepts  = local_accepts;
       this.globalOutputAccepts = global_accepts;
-      this.LocalAuthorizationRequired  = false;
-      this.GlobalAuthorizationRequired = true;
-      this.AuthenticationKey = AuthenticationKey.Generate();
       this.LoopbackAccessControlInfo = new AccessControlInfo(
         OutputStreamType.All,
         false,
         null);
-      this.LocalAccessControlInfo = new AccessControlInfo(
-        this.localOutputAccepts,
-        this.LocalAuthorizationRequired,
-        this.AuthenticationKey);
-      this.GlobalAccessControlInfo = new AccessControlInfo(
-        this.globalOutputAccepts,
-        this.GlobalAuthorizationRequired,
-        this.AuthenticationKey);
+      UpdateLocalAccessControlInfo();
+      UpdateGlobalAccessControlInfo();
       this.ConnectionHandler = connection_handler;
       server = new TcpListener(ip);
       server.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
@@ -211,17 +242,29 @@ namespace PeerCastStation.Core
     public async Task HandleClient(TcpClient client, AccessControlInfo acinfo)
     {
       logger.Debug("Output thread started");
-      client.ReceiveBufferSize = 64*1024;
-      client.SendBufferSize    = 64*1024;
+      client.ReceiveBufferSize = 16*1024;
+      client.SendBufferSize    = 16*1024;
+      client.NoDelay = true;
       var stream = client.GetStream();
-      stream.WriteTimeout = 3000;
-      stream.ReadTimeout = 3000;
+      int trying = 0;
       try {
+        retry:
+        stream.WriteTimeout = 3000;
+        stream.ReadTimeout  = 3000;
         var remote_endpoint = (IPEndPoint)client.Client.RemoteEndPoint;
         var handler = await CreateMatchedHandler(remote_endpoint, stream, acinfo);
         if (handler!=null) {
-          logger.Debug("Output stream started");
-          await handler.Start();
+          logger.Debug("Output stream started {0}", trying);
+          var result = await handler.Start();
+          switch (result) {
+          case HandlerResult.Continue:
+            trying++;
+            goto retry;
+          case HandlerResult.Close:
+          case HandlerResult.Error:
+          default:
+            break;
+          }
         }
         else {
           logger.Debug("No protocol handler matched");
@@ -242,29 +285,33 @@ namespace PeerCastStation.Core
       var output_factories = PeerCast.OutputStreamFactories.OrderBy(factory => factory.Priority);
       var header = new byte[4096];
       int offset = 0;
-      bool eos = false;
-      while (!eos && offset<header.Length) {
+      using (var cancel_source=new CancellationTokenSource(TimeSpan.FromMilliseconds(3000))) {
+        var cancel_token = cancel_source.Token;
+        cancel_token.Register(() => stream.Close());
         try {
-          var len = await stream.ReadAsync(header, offset, header.Length-offset);
-          if (len==0) eos = true;
-          offset += len;
+          while (offset<header.Length) {
+            var len = await stream.ReadAsync(header, offset, header.Length-offset);
+            if (len==0) break;
+            offset += len;
+            var header_ary = header.Take(offset).ToArray();
+            foreach (var factory in output_factories) {
+              if ((acinfo.Accepts & factory.OutputStreamType) == 0) continue;
+              var channel_id = factory.ParseChannelID(header_ary);
+              if (channel_id.HasValue) {
+                return factory.Create(
+                  stream,
+                  stream,
+                  remote_endpoint,
+                  acinfo,
+                  channel_id.Value,
+                  header_ary);
+              }
+            }
+          }
+        }
+        catch (System.ObjectDisposedException) {
         }
         catch (System.IO.IOException) {
-          eos = true;
-        }
-        var header_ary = header.Take(offset).ToArray();
-        foreach (var factory in output_factories) {
-          if (!acinfo.Accepts.HasFlag(factory.OutputStreamType)) continue;
-          var channel_id = factory.ParseChannelID(header_ary);
-          if (channel_id.HasValue) {
-            return factory.Create(
-              stream,
-              stream,
-              remote_endpoint,
-              acinfo,
-              channel_id.Value,
-              header.ToArray());
-          }
         }
       }
       return null;

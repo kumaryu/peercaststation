@@ -50,9 +50,12 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="HTTPChunkedContentStream.cs" />
     <Compile Include="HTTPDummyOutputStream.cs" />
     <Compile Include="HTTPOutputStream.cs" />
     <Compile Include="HTTPPushSourceStream.cs" />
+    <Compile Include="HTTPRequest.cs" />
+    <Compile Include="HTTPResponse.cs" />
     <Compile Include="HTTPSourceStream.cs" />
     <Compile Include="HTTPUtils.cs" />
     <Compile Include="PlayList.cs" />
