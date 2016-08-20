@@ -268,7 +268,7 @@ namespace PeerCastStation.FLV.RTMP
       using (var reader=new RTMPBinaryReader(new MemoryStream(Recv(1536)))) {
         reader.ReadInt32();
         reader.ReadInt32();
-        if (!s1vec.Equals(reader.ReadBytes(1528))) {
+        if (!s1vec.SequenceEqual(reader.ReadBytes(1528))) {
           Logger.Debug("Handshake failed");
           return false;
         }
