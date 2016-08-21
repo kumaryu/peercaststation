@@ -478,8 +478,13 @@ namespace PeerCastStation.UI.PortMapper
     private Uri MakeUrl(string base_url, string rel_url)
     {
       if (rel_url==null) return null;
-      var url = new Uri(rel_url, UriKind.RelativeOrAbsolute);
-      return url.IsAbsoluteUri ? url : new Uri(new Uri(base_url), url);
+      Uri url;
+      if (Uri.TryCreate(rel_url, UriKind.Relative, out url)) {
+        return new Uri(new Uri(base_url, UriKind.Absolute), url);
+      }
+      else {
+        return new Uri(rel_url, UriKind.Absolute);
+      }
     }
 
     private static readonly XNamespace DeviceNS = "urn:schemas-upnp-org:device-1-0";
