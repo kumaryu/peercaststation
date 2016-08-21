@@ -426,35 +426,40 @@ namespace PeerCastStation.UI.PortMapper
         "ST: upnp:rootdevice\r\n\r\n"
       );
       var responses = new List<SSDPResponse>();
-      using (var client=new UdpClient(new IPEndPoint(bind_addr, 0))) {
-        for (int i=0; i<3; i++) {
-          await client.SendAsync(msg, msg.Length, SSDPEndpoint);
-        }
-        for (int i=0; i<10 && client.Available==0 && !cancel_token.IsCancellationRequested; i++) {
-          await Task.Delay(100, cancel_token);
-        }
-        while (client.Available>0 && !cancel_token.IsCancellationRequested) {
-          var result = await client.ReceiveAsync();
-          var response = System.Text.Encoding.ASCII.GetString(result.Buffer).Split(new string[] { "\r\n" }, StringSplitOptions.None);
-          if (response.Length<0) continue;
-          if (response[0].IndexOf("HTTP/1.1 200")!=0) continue;
-          var header_pattern = new System.Text.RegularExpressions.Regex(@"(.*?):(.*)");
-          var headers = new Dictionary<string,string>();
-          foreach (var line in response.Skip(1)) {
-            if (line.Length==0) break;
-            var md = header_pattern.Match(line);
-            if (!md.Success) continue;
-            var key   = md.Groups[1].Value.Trim();
-            var value = md.Groups[2].Value.Trim();
-            headers.Add(key.ToUpperInvariant(), value);
+      try {
+        using (var client=new UdpClient(new IPEndPoint(bind_addr, 0))) {
+          for (int i=0; i<3; i++) {
+            await client.SendAsync(msg, msg.Length, SSDPEndpoint);
           }
-          var rsp = new SSDPResponse(result.RemoteEndPoint, headers);
-          logger.Debug("SSDP Found {0} at {1}", rsp.ST, rsp.Location);
-          responses.Add(rsp);
-          if (client.Available==0 && !cancel_token.IsCancellationRequested) {
+          for (int i=0; i<10 && client.Available==0 && !cancel_token.IsCancellationRequested; i++) {
             await Task.Delay(100, cancel_token);
           }
+          while (client.Available>0 && !cancel_token.IsCancellationRequested) {
+            var result = await client.ReceiveAsync();
+            var response = System.Text.Encoding.ASCII.GetString(result.Buffer).Split(new string[] { "\r\n" }, StringSplitOptions.None);
+            if (response.Length<0) continue;
+            if (response[0].IndexOf("HTTP/1.1 200")!=0) continue;
+            var header_pattern = new System.Text.RegularExpressions.Regex(@"(.*?):(.*)");
+            var headers = new Dictionary<string,string>();
+            foreach (var line in response.Skip(1)) {
+              if (line.Length==0) break;
+              var md = header_pattern.Match(line);
+              if (!md.Success) continue;
+              var key   = md.Groups[1].Value.Trim();
+              var value = md.Groups[2].Value.Trim();
+              headers.Add(key.ToUpperInvariant(), value);
+            }
+            var rsp = new SSDPResponse(result.RemoteEndPoint, headers);
+            logger.Debug("SSDP Found {0} at {1}", rsp.ST, rsp.Location);
+            responses.Add(rsp);
+            if (client.Available==0 && !cancel_token.IsCancellationRequested) {
+              await Task.Delay(100, cancel_token);
+            }
+          }
         }
+      }
+      catch (SocketException e) {
+        logger.Debug("Search Error on {0}: {1}", bind_addr, e);
       }
       return responses.Distinct();
     }
