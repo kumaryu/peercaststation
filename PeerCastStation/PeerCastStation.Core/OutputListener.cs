@@ -54,7 +54,10 @@ namespace PeerCastStation.Core
     /// </summary>
     public OutputStreamType LocalOutputAccepts  {
       get { return localOutputAccepts;  }
-      set { localOutputAccepts = value; }
+      set {
+        localOutputAccepts = value;
+        UpdateLocalAccessControlInfo();
+      }
     }
     private OutputStreamType localOutputAccepts;
 
@@ -83,6 +86,7 @@ namespace PeerCastStation.Core
           else                                     PeerCast.OnListenPortClosed();
         }
         globalOutputAccepts = value;
+        UpdateGlobalAccessControlInfo();
       }
     }
     private OutputStreamType globalOutputAccepts;
