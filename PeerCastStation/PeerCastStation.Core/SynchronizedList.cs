@@ -98,7 +98,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    private sealed class SynchronizedEnumerator<T>
+    private sealed class SynchronizedEnumerator
       : IEnumerator<T>
     {
       private SynchronizedList<T> owner;
@@ -139,7 +139,7 @@ namespace PeerCastStation.Core
 
     public IEnumerator<T> GetEnumerator()
     {
-      return new SynchronizedEnumerator<T>(this);
+      return new SynchronizedEnumerator(this);
     }
 
     public int IndexOf(T item)
@@ -188,7 +188,7 @@ namespace PeerCastStation.Core
 
     IEnumerator IEnumerable.GetEnumerator()
     {
-      return new SynchronizedEnumerator<T>(this);
+      return new SynchronizedEnumerator(this);
     }
   }
 }
