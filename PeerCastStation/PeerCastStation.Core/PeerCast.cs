@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.ObjectModel;
 
@@ -318,6 +319,8 @@ namespace PeerCastStation.Core
       if (YellowPagesChanged!=null) YellowPagesChanged(this, new EventArgs());
     }
 
+    private CancellationTokenSource cancelSource = new CancellationTokenSource();
+    private Task monitorTask = null;
     /// <summary>
     /// PeerCastを初期化します
     /// </summary>
@@ -341,7 +344,7 @@ namespace PeerCastStation.Core
       this.SourceStreamFactories = new List<ISourceStreamFactory>();
       this.OutputStreamFactories = new List<IOutputStreamFactory>();
       this.ContentReaderFactories = new List<IContentReaderFactory>();
-      StartMonitor();
+      monitorTask = StartMonitor(cancelSource.Token);
     }
 
 		public void AddChannelMonitor(IChannelMonitor monitor)
@@ -362,20 +365,18 @@ namespace PeerCastStation.Core
 			});
 		}
 
-    private AutoResetEvent stoppedEvent = new AutoResetEvent(false);
-    private RegisteredWaitHandle monitorThreadPool = null;
-    private void StartMonitor()
+    private async Task StartMonitor(CancellationToken cancel_token)
     {
-      monitorThreadPool = ThreadPool.RegisterWaitForSingleObject(stoppedEvent, (state,timed_out) => {
-        if (!timed_out) {
-          monitorThreadPool.Unregister(stoppedEvent);
-        }
-        else {
+      try {
+        while (!cancel_token.IsCancellationRequested) {
           foreach (var monitor in ChannelMonitors) {
             monitor.OnTimer();
           }
+          await Task.Delay(5000, cancel_token);
         }
-      }, null, 5000, false);
+      }
+      catch (OperationCanceledException) {
+      }
     }
 
     private IPAddress GetLocalAddress(AddressFamily addr_family)
@@ -556,7 +557,7 @@ namespace PeerCastStation.Core
     public void Stop()
     {
       logger.Info("Stopping PeerCast");
-      stoppedEvent.Set();
+      cancelSource.Cancel();
       foreach (var listener in outputListeners) {
         listener.Stop();
       }
