@@ -118,7 +118,7 @@ namespace PeerCastStation.UI.HTTP
     T GetEnvValue<T>(IDictionary<string, object> env, string key, T default_value)
     {
       object value;
-      if (env.TryGetValue("owin.ResponseStatusCode", out value) && value is T) {
+      if (env.TryGetValue(key, out value) && value is T) {
         return (T)value;
       }
       else {
