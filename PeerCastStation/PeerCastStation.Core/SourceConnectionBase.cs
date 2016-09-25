@@ -52,6 +52,8 @@ namespace PeerCastStation.Core
         this.Client = client;
         var stream = client.GetStream();
         this.Stream = new ConnectionStream(stream, stream);
+        this.Stream.ReadTimeout = 10000;
+        this.Stream.WriteTimeout = 10000;
       }
 
       private IPEndPoint remoteEndPoint = null;

@@ -71,6 +71,7 @@ namespace PeerCastStation.Core
       this.connection = new ConnectionStream(
         header!=null && header.Length>0 ? new PrependedStream(header, input_stream) : input_stream,
         output_stream);
+      this.connection.ReadTimeout = 10000;
       this.connection.WriteTimeout = 10000;
       this.PeerCast = peercast;
       this.RemoteEndPoint = remote_endpoint;
