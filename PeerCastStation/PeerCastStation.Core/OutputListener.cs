@@ -161,7 +161,14 @@ namespace PeerCastStation.Core
       UpdateGlobalAccessControlInfo();
       this.ConnectionHandler = connection_handler;
       server = new TcpListener(ip);
-      server.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+      if (Environment.OSVersion.Platform==PlatformID.Win32NT) {
+        //Windowsの時だけReuseAddressをつける。
+        //Windows以外ではReuseAddressがSO_REUSEADDR+SO_REUSEPORT扱いになり
+        //monoの4.6ではLinuxでUDP以外にSO_REUSEPORTを付けようとすると失敗する。
+        //そのかわりmonoではSO_REUSEADDRが標準で付いてるようなので
+        //Windows以外は明示的には付けないようにした。
+        server.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+      }
       server.Start(Int32.MaxValue);
       listenTask = StartListen(server, cancellationSource.Token);
     }
