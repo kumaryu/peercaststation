@@ -253,17 +253,17 @@ namespace PeerCastStation.FLV.RTMP
     {
       if (len+receivedSize>=recvWindowSize) {
         var len1 = (int)(recvWindowSize-receivedSize);
-        await connection.Stream.ReadAsync(buf, offset, len1, cancel_token);
+        await connection.Stream.ReadBytesAsync(buf, offset, len1, cancel_token);
         receivedSize   += len1;
         sequenceNumber += len1;
         await SendMessage(2, new AckMessage(this.Now, 0, sequenceNumber), cancel_token);
         var len2 = len - len1;
-        await connection.Stream.ReadAsync(buf, offset+len1, len2, cancel_token);
+        await connection.Stream.ReadBytesAsync(buf, offset+len1, len2, cancel_token);
         receivedSize    = len2; //reset
         sequenceNumber += len2;
       }
       else {
-        await connection.Stream.ReadAsync(buf, offset, len, cancel_token);
+        await connection.Stream.ReadBytesAsync(buf, offset, len, cancel_token);
         receivedSize   += len;
         sequenceNumber += len;
       }
