@@ -146,6 +146,7 @@ namespace PeerCastStation.PCP
       Logger.Debug("Started");
       Channel.ChannelInfoChanged  += Channel_HostInfoUpdated;
       Channel.ChannelTrackChanged += Channel_HostInfoUpdated;
+      Channel.NodesChanged        += Channel_HostInfoUpdated;
       base.OnStarted();
     }
 
@@ -153,6 +154,7 @@ namespace PeerCastStation.PCP
     {
       Channel.ChannelInfoChanged  -= Channel_HostInfoUpdated;
       Channel.ChannelTrackChanged -= Channel_HostInfoUpdated;
+      Channel.NodesChanged        -= Channel_HostInfoUpdated;
       Logger.Debug("Finished");
       base.OnStopped();
     }
