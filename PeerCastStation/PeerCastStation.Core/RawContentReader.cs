@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,7 +34,7 @@ namespace PeerCastStation.Core
         var buf = new byte[8192];
         var sz = await stream.ReadAsync(buf, 0, buf.Length, cancel_token);
         if (sz>0) {
-          sink.OnContent(new Content(streamIndex, DateTime.Now-streamOrigin, pos, buf));
+          sink.OnContent(new Content(streamIndex, DateTime.Now-streamOrigin, pos, buf.Take(sz).ToArray()));
           pos += sz;
         }
         else {
