@@ -280,6 +280,7 @@ namespace PeerCastStation.PCP
         request.StreamPos,
         request.PCPVersion,
         request.UserAgent);
+      this.Connection.ReadTimeout = 180000;
       this.Downhost = null;
       this.UserAgent = request.UserAgent;
       this.IsChannelFound = channel!=null && channel.Status==SourceStreamStatus.Receiving;
