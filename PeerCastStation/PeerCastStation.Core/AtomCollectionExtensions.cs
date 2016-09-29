@@ -892,7 +892,7 @@ namespace PeerCastStation.Core
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_ID, IDToByteArray(value)));
     }
 
-    public static void SetHostUphostHops(this IAtomCollection collection, byte value)
+    public static void SetHostUphostHops(this IAtomCollection collection, int value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_UPHOST_HOPS, value));
     }
