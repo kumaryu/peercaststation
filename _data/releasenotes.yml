@@ -1,4 +1,35 @@
 ---
+- name: Version 2.3.3 (2016年9月29日開発版)
+  version: 2.3.3.0
+  channel: dev
+  notes: |
+    細々としたバグ修正をしました。
+    特にWindows以外のmonoで動かす場合のバグ修正が多めです。
+
+    * リモートからの操作許可がされてない状態でHTML UIにアクセスすると3秒待たされてから切れるようになっていたのをすぐ404を返すように修正しました。 (by plonk)
+    * リレー接続先を決めるのに使うホップ数が取得できていなかったのを修正しました。ただし現状そのデータを送ってないので動作にはあまり影響ありません。 (by plonk)
+    * LAN/WANの接続許可設定を変更した時にすぐに反映されたいなかったのを修正しました。 (by plonk)
+    * RTMP配信の開始時に指定したアドレス・ポートで接続待ち受けできない時にCPU負荷が上がっていたのを修正しました。 (by plonk)
+    * RTMP配信時にエンコーダから変なパケットを受け取っても落ちないようにしました。
+    * RTMP配信時にエンコーダの接続が切れた時に正しく切断処理ができておらず再接続できなかったのを修正しました。
+    * RAW配信時に正しくデータを受信できていなかったのを修正しました。
+    * 下流のリレー接続が増減した時にすぐにホスト情報を上流に送るようにしました。
+    * monoでUPnPのポート自動開放が失敗することがあったのを修正しました。
+    * monoでチャンネル自動切断が効かなくなっていたのを修正しました。
+    * Linuxのmono 4.6以降で接続待ち受け時に例外が出ていたのを修正しました。
+  date: 2016-09-29T23:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.3.3.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.3.zip
+    length: 1647501
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.3.exe
+    length: 2292446
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.3.3.msi
+    length: 2048616
+
 - name: Version 2.3.2 (2016年8月1日開発版)
   version: 2.3.2.0
   channel: dev
