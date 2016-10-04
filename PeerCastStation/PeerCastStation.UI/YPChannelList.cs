@@ -51,7 +51,7 @@ namespace PeerCastStation.UI
 		public async Task<IEnumerable<IYellowPageChannel>> UpdateAsync()
 		{
 			if (updateTimer.IsRunning && updateTimer.ElapsedMilliseconds<18000) return Channels;
-			updateCancel = new CancellationTokenSource();
+			updateCancel = new CancellationTokenSource(5000);
 			updateTask = Task.WhenAll(this.Application.PeerCast.YellowPages.Select(yp => yp.GetChannelsAsync(updateCancel.Token)))
 				.ContinueWith(task => {
 					updateTimer.Restart();
