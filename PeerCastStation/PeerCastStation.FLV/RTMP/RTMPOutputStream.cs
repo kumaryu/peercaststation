@@ -202,7 +202,7 @@ namespace PeerCastStation.FLV.RTMP
 
     public bool CheckAuthotization(string auth)
     {
-      if (accessControl.AuthenticationKey==null) return true;
+      if (!accessControl.AuthorizationRequired || accessControl.AuthenticationKey==null) return true;
       if (auth==null) return false;
       var authorized = false;
       try {
