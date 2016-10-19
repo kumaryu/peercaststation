@@ -278,23 +278,30 @@ namespace PeerCastStation.FLV.RTMP
 				);
 			}
 
+      private long timestampBase = -1;
 			public void OnVideo(RTMPMessage msg)
 			{
-				this.connection.PostMessage(3,
-					new RTMPMessage(
-						msg.MessageType,
-						msg.Timestamp,
-						this.connection.StreamId,
-						msg.Body)
-				);
+        if (timestampBase<0 && msg.Timestamp>0) {
+          timestampBase = msg.Timestamp;
+        }
+        this.connection.PostMessage(3,
+          new RTMPMessage(
+            msg.MessageType,
+            msg.Timestamp - Math.Max(timestampBase, 0),
+            this.connection.StreamId,
+            msg.Body)
+        );
 			}
 
 			public void OnAudio(RTMPMessage msg)
 			{
+        if (timestampBase<0 && msg.Timestamp>0) {
+          timestampBase = msg.Timestamp;
+        }
 				this.connection.PostMessage(3,
 					new RTMPMessage(
 						msg.MessageType,
-						msg.Timestamp,
+            msg.Timestamp - Math.Max(timestampBase, 0),
 						this.connection.StreamId,
 						msg.Body)
 				);
