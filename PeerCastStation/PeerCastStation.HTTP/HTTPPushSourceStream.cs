@@ -129,22 +129,28 @@ namespace PeerCastStation.HTTP
       TcpClient client = null;
       var bind_addr = GetBindAddresses(source);
       if (bind_addr.Count()==0) {
+        this.state = ConnectionState.Error;
         throw new BindErrorException(String.Format("Cannot resolve bind address: {0}", source.DnsSafeHost));
       }
       var listeners = bind_addr.Select(addr => new TcpListener(addr)).ToArray();
       try {
+        var cancel_task = cancellationToken.CreateCancelTask<TcpClient>();
         var tasks = listeners.Select(listener => {
           listener.Start(1);
           Logger.Debug("Listening on {0}", listener.LocalEndpoint);
           return listener.AcceptTcpClientAsync();
-        }).ToArray();
+        }).Concat(Enumerable.Repeat(cancel_task, 1)).ToArray();
         var result = await Task.WhenAny(tasks);
         if (!result.IsCanceled) {
           client = result.Result;
           Logger.Debug("Client accepted");
         }
+        else {
+          Logger.Debug("Listen cancelled");
+        }
       }
       catch (SocketException) {
+        this.state = ConnectionState.Error;
         throw new BindErrorException(String.Format("Cannot bind address: {0}", bind_addr));
       }
       finally {
