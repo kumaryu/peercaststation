@@ -302,19 +302,21 @@ namespace PeerCastStation.WPF.CoreSettings
       public string AnnounceUri {
         get { return announceUri==null ? null : announceUri.ToString(); }
         set {
-          if (String.IsNullOrEmpty(value)) return;
+          if (String.IsNullOrEmpty(value)) {
+            if (announceUri==null) return;
+            announceUri = null;
+            OnPropertyChanged("AnnounceUri");
+            return;
+          }
           if (protocol==null) new ArgumentException("プロトコルが選択されていません");
           Uri newvalue;
-          if (System.Uri.TryCreate(value, UriKind.Absolute, out newvalue) && newvalue.Scheme=="pcp") {
-            if (announceUri==newvalue || (announceUri!=null && announceUri.Equals(newvalue))) return;
-            announceUri = newvalue;
-            OnPropertyChanged("AnnounceUri");
-          }
           if (System.Uri.TryCreate(value, UriKind.Absolute, out newvalue) &&
               (newvalue.Scheme=="http" || newvalue.Scheme=="file")) {
             throw new ArgumentException("指定したプロトコルでは使用できないURLです");
           }
-          else if (System.Uri.TryCreate("pcp://"+value, UriKind.Absolute, out newvalue)) {
+          else if (
+              (System.Uri.TryCreate(value, UriKind.Absolute, out newvalue) && newvalue.Scheme=="pcp") ||
+              (System.Uri.TryCreate("pcp://"+value, UriKind.Absolute, out newvalue))) {
             if (announceUri==newvalue || (announceUri!=null && announceUri.Equals(newvalue))) return;
             announceUri = newvalue;
             OnPropertyChanged("AnnounceUri");
