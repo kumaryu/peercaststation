@@ -486,10 +486,10 @@ namespace PeerCastStation.PCP
     {
       if (!IsChannelFound) return StopReason.None;
       try {
-        var handshake_timeout = new CancellationTokenSource(3000);
+        var handshake_timeout = new CancellationTokenSource(5000);
         var unified_cancel = CancellationTokenSource.CreateLinkedTokenSource(cancel_token, handshake_timeout.Token);
         while (!IsHandshaked) {
-          //Handshakeが3秒以内に完了しなければ切る
+          //Handshakeが5秒以内に完了しなければ切る
           //HELOでセッションIDを受け取るまでは他のパケットは無視
           try {
             var atom = await Connection.ReadAtomAsync(unified_cancel.Token);
@@ -630,8 +630,8 @@ namespace PeerCastStation.PCP
       bool result = false;
       try {
         var client = new System.Net.Sockets.TcpClient();
-        client.ReceiveTimeout = 3000;
-        client.SendTimeout    = 3000;
+        client.ReceiveTimeout = 2000;
+        client.SendTimeout    = 2000;
         await client.ConnectAsync(target.Address, target.Port);
         var stream = client.GetStream();
         await stream.WriteAsync(new Atom(Atom.PCP_CONNECT, 1), cancel_token);
