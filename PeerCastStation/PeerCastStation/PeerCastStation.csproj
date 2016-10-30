@@ -100,6 +100,10 @@
       <Project>{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}</Project>
       <Name>PeerCastStation.PCP</Name>
     </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.TS\PeerCastStation.TS.csproj">
+      <Project>{0f0123ae-e500-45ca-b69d-4fbdbb88b752}</Project>
+      <Name>PeerCastStation.TS</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.UI.HTTP\PeerCastStation.UI.HTTP.csproj">
       <Project>{BF5E0B6D-961A-4216-BACF-01D80AB3D6BB}</Project>
       <Name>PeerCastStation.UI.HTTP</Name>
