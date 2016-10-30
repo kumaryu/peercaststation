@@ -57,6 +57,7 @@
     <Compile Include="AtomCollectionExtensions.cs" />
     <Compile Include="BandwidthChecker.cs" />
     <Compile Include="BroadcastChannel.cs" />
+    <Compile Include="CancellationTokenExtension.cs" />
     <Compile Include="Channel.cs" />
     <Compile Include="ChannelCleaner.cs" />
     <Compile Include="ChannelInfo.cs" />
