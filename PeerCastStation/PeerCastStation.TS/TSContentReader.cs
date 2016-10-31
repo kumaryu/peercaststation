@@ -19,43 +19,50 @@ namespace PeerCastStation.TS
     public string Name { get { return "MPEG-TS (TS)"; } }
     public Channel Channel { get; private set; }
     private float? recvRate = 0;
+    private int patID = 0;
+    private int pmtID = -1;
+    private MemoryStream head = new MemoryStream();
     private MemoryStream cache = new MemoryStream();
     
     public async Task ReadAsync(IContentSink sink, Stream stream, CancellationToken cancel_token)
     {
       int streamIndex = -1;
       DateTime streamOrigin = DateTime.Now;
+      byte[] bytes188 = new byte[188];
 
       streamIndex = Channel.GenerateStreamID();
       streamOrigin = DateTime.Now;
       sink.OnContentHeader(new Content(streamIndex, TimeSpan.Zero, Channel.ContentPosition, new byte[] {}));
       
-      var eof = false;
       try
       {
-        while (!eof)
+        while (true)
         {
-          byte[] bytes = null;
-          TSPacket packet = null;
-          try
-          {
-            bytes = await ReadBytesAsync(stream, cancel_token);
-          }
-          catch (EndOfStreamException)
-          {
-            eof = true;
-            continue;
-          }
+          byte[] bytes = await ReadBytesAsync(stream, 188*10, cancel_token);
 
           for (int i = 0; i < bytes.Length/188; i++)
           {
-            byte[] bytes188 = new byte[188];
             Array.Copy(bytes, 188 * i, bytes188, 0, 188);
-            packet = new TSPacket(bytes188);
-
+            TSPacket packet = new TSPacket(bytes188);
+            //logger.Debug("{0}",BitConverter.ToString(bytes188).Replace("-", " "));
             if (packet.sync_byte != 0x47) throw new Exception();
             if (packet.payload_unit_start_indicator > 0)
             {
+              if (packet.PID == patID)
+              {
+                pmtID = packet.PMTID;
+                head = new MemoryStream();
+                head.Write(bytes188, 0, bytes188.Length);
+                continue;
+              }
+              if (packet.PID == pmtID)
+              {
+                head.Write(bytes188, 0, bytes188.Length);
+                head.Close();
+                sink.OnContentHeader(new Content(streamIndex, DateTime.Now - streamOrigin, Channel.ContentPosition, head.ToArray()));
+                continue;
+              }
+
               byte[] contentData;
               TryParseContent(packet, out contentData);
               if(contentData!=null) {
@@ -67,8 +74,10 @@ namespace PeerCastStation.TS
           }
         }
       }
-      catch (Exception) {
-      }
+      catch (EndOfStreamException)
+      { }
+      catch (Exception)
+      { }
     }
 
     private void UpdateRecvRate(IContentSink sink) {
@@ -109,10 +118,10 @@ namespace PeerCastStation.TS
       return false;
     }
     
-    private async Task<byte[]> ReadBytesAsync(Stream stream, CancellationToken cancel_token)
+    private async Task<byte[]> ReadBytesAsync(Stream stream, int len, CancellationToken cancel_token)
     {
-      var bytes = await stream.ReadBytesAsync(188*10, cancel_token);
-      if (bytes.Length < 188*10) throw new EndOfStreamException();
+      var bytes = await stream.ReadBytesAsync(len, cancel_token);
+      if (bytes.Length < len) throw new EndOfStreamException();
       return bytes;
     }
 
