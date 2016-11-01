@@ -1,8 +1,9 @@
 ﻿using System;
 using System.IO;
-using PeerCastStation.Core;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using PeerCastStation.Core;
 
 namespace PeerCastStation.TS
 {
@@ -28,7 +29,10 @@ namespace PeerCastStation.TS
     {
       int streamIndex = -1;
       DateTime streamOrigin = DateTime.Now;
+      DateTime latestContentTime = DateTime.Now;
       byte[] bytes188 = new byte[188];
+      byte[] latestHead = new byte[0];
+      byte[] contentData = null;
 
       streamIndex = Channel.GenerateStreamID();
       streamOrigin = DateTime.Now;
@@ -36,42 +40,42 @@ namespace PeerCastStation.TS
       
       try
       {
-        while (true)
+        while (!cancel_token.IsCancellationRequested)
         {
-          byte[] bytes = await ReadBytesAsync(stream, 188*10, cancel_token);
-
-          for (int i = 0; i < bytes.Length/188; i++)
+          bytes188 = ReadBytes(stream, 188);
+          TSPacket packet = new TSPacket(bytes188);
+          if (packet.sync_byte != 0x47) throw new Exception();
+          if (packet.payload_unit_start_indicator > 0)
           {
-            Array.Copy(bytes, 188 * i, bytes188, 0, 188);
-            TSPacket packet = new TSPacket(bytes188);
-            //logger.Debug("{0}",BitConverter.ToString(bytes188).Replace("-", " "));
-            if (packet.sync_byte != 0x47) throw new Exception();
-            if (packet.payload_unit_start_indicator > 0)
+            if (packet.PID == patID)
             {
-              if (packet.PID == patID)
+              pmtID = packet.PMTID;
+              head = new MemoryStream();
+              if(!addHead(bytes188)) throw new Exception();
+              continue;
+            }
+            if (packet.PID == pmtID)
+            {
+              if(!addHead(bytes188)) throw new Exception();
+              head.Close();
+              byte[] newHead = head.ToArray();
+              if(!Enumerable.SequenceEqual(newHead, latestHead))
               {
-                pmtID = packet.PMTID;
-                head = new MemoryStream();
-                head.Write(bytes188, 0, bytes188.Length);
-                continue;
+                sink.OnContentHeader(new Content(streamIndex, DateTime.Now - streamOrigin, Channel.ContentPosition, newHead));
+                latestHead = newHead;                  
               }
-              if (packet.PID == pmtID)
-              {
-                head.Write(bytes188, 0, bytes188.Length);
-                head.Close();
-                sink.OnContentHeader(new Content(streamIndex, DateTime.Now - streamOrigin, Channel.ContentPosition, head.ToArray()));
-                continue;
-              }
-
-              byte[] contentData;
+              continue;
+            }
+            if ((DateTime.Now - latestContentTime).Milliseconds > 50) {
               TryParseContent(packet, out contentData);
               if(contentData!=null) {
                 sink.OnContent(new Content(streamIndex, DateTime.Now - streamOrigin, Channel.ContentPosition, contentData));
+                latestContentTime = DateTime.Now;
                 UpdateRecvRate(sink);
               }
             }
-            if (!addCache(bytes188)) throw new Exception();
           }
+          if (!addCache(bytes188)) throw new Exception();
         }
       }
       catch (EndOfStreamException)
@@ -96,6 +100,18 @@ namespace PeerCastStation.TS
 
     }
 
+    private bool addHead(byte[] bytes) {
+      if (head.Length < 1024 * 1024) {
+        //continuity_counter = 0
+        bytes[3] = (byte)(bytes[3] & 0xF0); 
+        head.Write(bytes, 0, bytes.Length);
+        return true;
+      }
+      else {
+        return false;
+      }
+    }
+
     private bool addCache(byte[] bytes) {
       if (cache.Length < 8 * 1024 * 1024) {
         cache.Write(bytes, 0, bytes.Length);
@@ -108,8 +124,7 @@ namespace PeerCastStation.TS
     
     private bool TryParseContent(TSPacket packet, out byte[] data) {
       data = null;
-      if (cache.Length < 7144) return false;
-      if (packet.video_block) {
+      if (packet.video_block || packet.audio_block) {
         cache.Close();
         data = cache.ToArray();
         cache = new MemoryStream();
@@ -118,9 +133,9 @@ namespace PeerCastStation.TS
       return false;
     }
     
-    private async Task<byte[]> ReadBytesAsync(Stream stream, int len, CancellationToken cancel_token)
+    private byte[] ReadBytes(Stream stream, int len)
     {
-      var bytes = await stream.ReadBytesAsync(len, cancel_token);
+      var bytes = stream.ReadBytes(len);
       if (bytes.Length < len) throw new EndOfStreamException();
       return bytes;
     }
