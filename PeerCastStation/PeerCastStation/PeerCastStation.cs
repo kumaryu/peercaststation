@@ -148,14 +148,7 @@ namespace PeerCastStation.Main
 
     void LoadSettings()
     {
-      PeerCastStationSettings s;
-      if (settings.Contains(typeof(PeerCastStationSettings))) {
-        s = settings.Get<PeerCastStationSettings>();
-      }
-      else {
-        s = settings.Get<PeerCastStationSettings>();
-        s.Import(PeerCastStation.Properties.Settings.Default);
-      }
+      var s = settings.Get<PeerCastStationSettings>();
       try {
         if (s.Logger!=null) {
           Logger.Level        = s.Logger.Level;
