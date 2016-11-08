@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using PeerCastStation.Core;
 
 namespace PeerCastStation
@@ -55,13 +53,6 @@ namespace PeerCastStation
         this.AuthId       = newkey.Id;
         this.AuthPassword = newkey.Password;
       }
-
-      internal ListenerSettings(PeerCastStation.Properties.ListenerSettings settings)
-      {
-        this.EndPoint      = settings.EndPoint;
-        this.LocalAccepts  = settings.LocalAccepts;
-        this.GlobalAccepts = settings.GlobalAccepts;
-      }
     }
 
     [PecaSettings]
@@ -77,15 +68,6 @@ namespace PeerCastStation
       public AccessControllerSettings()
       {
       }
-
-      internal AccessControllerSettings(PeerCastStation.Properties.AccessControllerSettings settings)
-      {
-        this.MaxRelays                 = settings.MaxRelays;
-        this.MaxDirects                = settings.MaxDirects;
-        this.MaxRelaysPerChannel       = settings.MaxRelaysPerChannel;
-        this.MaxDirectsPerChannel      = settings.MaxDirectsPerChannel;
-        this.MaxUpstreamRate           = settings.MaxUpstreamRate;
-      }
     }
 
     [PecaSettings]
@@ -98,13 +80,6 @@ namespace PeerCastStation
 
       public YellowPageSettings()
       {
-      }
-
-      internal YellowPageSettings(PeerCastStation.Properties.YellowPageSettings settings)
-      {
-        this.Protocol = settings.Protocol;
-        this.Name     = settings.Name;
-        this.Uri      = settings.Uri;
       }
     }
 
@@ -120,28 +95,6 @@ namespace PeerCastStation
       Listeners        = new ListenerSettings[0];
       AccessController = new AccessControllerSettings();
       YellowPages      = new YellowPageSettings[0];
-    }
-
-    internal void Import(PeerCastStation.Properties.Settings settings)
-    {
-      if (settings==null) return;
-      try {
-        if (settings.BroadcastID!=Guid.Empty) {
-          this.BroadcastID = settings.BroadcastID;
-        }
-        settings.BroadcastID = Guid.NewGuid();
-        if (settings.AccessController!=null) {
-          this.AccessController = new AccessControllerSettings(settings.AccessController);
-        }
-        if (settings.Listeners!=null) {
-          this.Listeners = settings.Listeners.Where(s => s!=null).Select(s => new ListenerSettings(s)).ToArray();
-        }
-        if (settings.YellowPages!=null) {
-          this.YellowPages = settings.YellowPages.Where(s => s!=null).Select(s => new YellowPageSettings(s)).ToArray();
-        }
-      }
-      catch (System.Configuration.ConfigurationErrorsException) {
-      }
     }
   }
 }
