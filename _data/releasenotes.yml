@@ -1,4 +1,30 @@
 ---
+- name: Version 2.3.4 (2016年11月09日開発版)
+  version: 2.3.4.0
+  channel: dev
+  notes: |
+    RTMP視聴をちょっと安定するようにしました。
+
+    * YPからのチャンネル一覧取得のタイムアウトを5秒に設定しました。
+    * RTMP視聴接続で認証が不要な場合でも認証要求していたのを修正しました。
+    * RTMP視聴接続を作り直して多少安定するようにしました。
+    * RTMP配信・HTTP PUSH配信時の接続待ち受けが正しくキャンセルされていなかったのを修正しました。
+    * GUIの設定画面でYPの掲載用URI設定がおかしかったのを修正しました。
+    * リレーでUNKNOWNのContentTypeを受け取った時のContentType推定が上手く動かない場合があったのを修正しました。
+    * 古いバージョン(1.2.0より前)の設定ファイルの読み込みを削除しました。
+  date: 2016-11-09T09:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.3.4.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.4.zip
+    length: 1642461
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.4.exe
+    length: 2286273
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.3.4.msi
+    length: 2044520
+
 - name: Version 2.3.3 (2016年9月29日開発版)
   version: 2.3.3.0
   channel: dev
