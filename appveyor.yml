@@ -1,0 +1,28 @@
+version: 2.3.5.{build}
+configuration: Release
+install:
+- cmd: >-
+    set PATH=C:\Ruby23\bin;%PATH%
+
+    gem install jekyll
+before_build:
+- cmd: >-
+    ruby bumpversion.rb %APPVEYOR_BUILD_VERSION%
+
+    pushd doc\help
+
+    jekyll build
+
+    popd
+
+build:
+  verbosity: minimal
+artifacts:
+- path: PeerCastStation/PeerCastStation/bin/$(CONFIGURATION)
+  name: PeerCastStation-$(APPVEYOR_BUILD_VERSION)
+- path: PeerCastStation/PecaStationd/bin/$(CONFIGURATION)
+  name: PecastStationd-$(APPVEYOR_BUILD_VERSION)
+- path: PeerCastStation/PecaStationdInstaller/bin/$(CONFIGURATION)/PecaStationdInstaller.msi
+  name: PecastStationdInstaller-$(APPVEYOR_BUILD_VERSION)
+- path: PeerCastStation/SetupBundle/bin/$(CONFIGURATION)/PeerCastStationSetup.exe
+  name: PeerCastStationSetup-$(APPVEYOR_BUILD_VERSION)
