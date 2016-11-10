@@ -9,11 +9,11 @@ before_build:
 - cmd: >-
     ruby bumpversion.rb %APPVEYOR_BUILD_VERSION%
 
-    pushd doc\help
+    cd doc\help
 
     jekyll build
 
-    popd
+    cd ..\..
 
 build:
   verbosity: minimal
