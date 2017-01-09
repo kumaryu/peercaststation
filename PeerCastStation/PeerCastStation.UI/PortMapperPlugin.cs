@@ -180,8 +180,8 @@ namespace PeerCastStation.UI
     public void Dispose()
     {
       renewTimer.Stop();
-      cancelSource.Cancel();
       Clear();
+      cancelSource.CancelAfter(1000);
       devices = new HashSet<NatDevice>();
     }
 
