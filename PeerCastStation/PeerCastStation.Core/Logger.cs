@@ -232,11 +232,9 @@ namespace PeerCastStation.Core
       };
       try {
         var message =  
-          String.Format("{0:s} [{1}] {2} {3} - {4}",
+          String.Format("{0:s} {1} - {2}",
             DateTime.Now,
-            System.Threading.Thread.CurrentThread.Name,
             level_name[(int)level],
-            "",
             String.Format(format, args));
         switch (level) {
         case LogLevel.Debug:
@@ -281,6 +279,11 @@ namespace PeerCastStation.Core
     public Logger(string source)
     {
       this.Source = source;
+    }
+
+    public Logger(Type type, string instance)
+    {
+      this.Source = $"{type.Name}[{instance}]";
     }
 
     /// <summary>

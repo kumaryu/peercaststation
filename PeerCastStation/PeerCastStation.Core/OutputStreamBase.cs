@@ -67,7 +67,7 @@ namespace PeerCastStation.Core
       Channel channel,
       byte[] header)
     {
-      this.Logger = new Logger(this.GetType());
+      this.Logger = new Logger(this.GetType(), remote_endpoint!=null ? remote_endpoint.ToString() : "");
       this.connection = new ConnectionStream(
         header!=null && header.Length>0 ? new PrependedStream(header, input_stream) : input_stream,
         output_stream);

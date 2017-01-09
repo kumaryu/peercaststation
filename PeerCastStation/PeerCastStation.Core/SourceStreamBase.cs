@@ -86,7 +86,7 @@ namespace PeerCastStation.Core
       this.Channel   = channel;
       this.SourceUri = source_uri;
       this.StoppedReason = StopReason.None;
-      this.Logger = new Logger(this.GetType());
+      this.Logger = new Logger(this.GetType(), source_uri.ToString());
     }
 
     protected void StartConnection(Uri source_uri)
