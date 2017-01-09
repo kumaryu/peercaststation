@@ -21,8 +21,8 @@ artifacts:
 - path: PeerCastStation/PeerCastStation/bin/$(CONFIGURATION)
   name: PeerCastStation-$(APPVEYOR_BUILD_VERSION)
 - path: PeerCastStation/PecaStationd/bin/$(CONFIGURATION)
-  name: PecastStationd-$(APPVEYOR_BUILD_VERSION)
+  name: PecaStationd-$(APPVEYOR_BUILD_VERSION)
 - path: PeerCastStation/PecaStationdInstaller/bin/$(CONFIGURATION)/PecaStationdInstaller.msi
-  name: PecastStationdInstaller-$(APPVEYOR_BUILD_VERSION)
+  name: PecaStationdInstaller-$(APPVEYOR_BUILD_VERSION)
 - path: PeerCastStation/SetupBundle/bin/$(CONFIGURATION)/PeerCastStationSetup.exe
   name: PeerCastStationSetup-$(APPVEYOR_BUILD_VERSION)
