@@ -158,8 +158,9 @@ namespace PeerCastStation.UI.HTTP
       if (request_method == "HEAD") {
         return false;
       }
-      // 1xx Informational
-      if (status_code >= 100 && status_code <= 199) {
+      if (status_code >= 100 && status_code <= 199 || // 1xx Informational
+          status_code == 204 || // 204 No Content
+          status_code == 304) { // 304 Not Modified
         return false;
       }
       if (request_method == "CONNECT" &&
