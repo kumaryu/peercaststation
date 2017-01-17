@@ -153,6 +153,23 @@ namespace PeerCastStation.UI.HTTP
       }
     }
 
+    private bool ResponseHasMessageBody(string request_method, int status_code)
+    {
+      if (request_method == "HEAD") {
+        return false;
+      }
+      // 1xx Informational
+      if (status_code >= 100 && status_code <= 199) {
+        return false;
+      }
+      if (request_method == "CONNECT" &&
+          status_code >= 200 && status_code <= 299) {
+        return false;
+      }
+
+      return true;
+    }
+
     private async Task ProcessResponse(IDictionary<string, object> env, CancellationToken cancel_token)
     {
       var headers       = (Dictionary<string, string[]>)env["owin.ResponseHeaders"];
@@ -160,9 +177,10 @@ namespace PeerCastStation.UI.HTTP
       var protocol      = GetEnvValue(env, "owin.ResponseProtocol", this.request.Protocol);
       var status_code   = GetEnvValue(env, "owin.ResponseStatusCode", 200);
       var reason_phrase = GetEnvValue(env, "owin.ResponseReasonPhrase", HTTPUtils.GetReasonPhrase(status_code));
+      var method        = GetEnvValue(env, "owin.RequestMethod", "GET");
       body.Close();
       var body_ary = body.ToArray();
-      if (body_ary.Length>0) {
+      if (ResponseHasMessageBody(method, status_code)) {
         SetHeader(headers, "Content-Length", body_ary.Length.ToString());
       }
       if (status_code==(int)HttpStatusCode.Unauthorized) {
