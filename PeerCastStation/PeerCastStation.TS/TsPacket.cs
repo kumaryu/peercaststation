@@ -11,9 +11,9 @@ namespace PeerCastStation.TS
     public int PID { get; private set; }
     public int PMTID { get; private set; }
     public int transport_scrambling_control { get; private set; }
-    public int adaption_field_control { get; private set; }
+    public int adaptation_field_control { get; private set; }
     public int continuity_counter { get; private set; }
-    public int adaption_field_length { get; private set; }
+    public int adaptation_field_length { get; private set; }
     public int random_access_indicator { get; private set; }
     public bool audio_block { get; private set; }
     public bool video_block { get; private set; }
@@ -28,9 +28,9 @@ namespace PeerCastStation.TS
       this.PID = ((packet[1] & 0x1F) << 8) | packet[2];
       this.PMTID = 0;
       this.transport_scrambling_control = (packet[3] & 0x60) >> 6;
-      this.adaption_field_control = (packet[3] & 0x30) >> 4;
+      this.adaptation_field_control = (packet[3] & 0x30) >> 4;
       this.continuity_counter = (packet[3] & 0x0F);
-      this.adaption_field_length = 0;
+      this.adaptation_field_length = 0;
       this.random_access_indicator = 0;
       this.audio_block = false;
       this.video_block = false;
@@ -50,13 +50,13 @@ namespace PeerCastStation.TS
           }
         }
       }
-      if (this.payload_unit_start_indicator > 0 && this.adaption_field_control > 0)
+      if ((this.adaptation_field_control & 0x02)!=0)
       {
-        this.adaption_field_length = packet[4];
-        if (this.adaption_field_length > 0)
+        this.adaptation_field_length = packet[4];
+        if (this.adaptation_field_length > 0)
         {
           this.random_access_indicator = packet[5] & 0x40;
-          int i = 5 + adaption_field_length;
+          int i = 5 + adaptation_field_length;
           if (packet[i] == 0x0 && packet[i + 1] == 0x0 && packet[i + 2] == 0x1 && packet[i + 3] == 0xC0)
           {
             this.audio_block = true;

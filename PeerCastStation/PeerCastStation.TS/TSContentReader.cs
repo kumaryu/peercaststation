@@ -92,7 +92,7 @@ namespace PeerCastStation.TS
 
         var info = new AtomCollection(Channel.ChannelInfo.Extra);
         info.SetChanInfoType("TS");
-        info.SetChanInfoStreamType("video/mp2ts");
+        info.SetChanInfoStreamType("video/mp2t");
         info.SetChanInfoStreamExt(".ts");
         info.SetChanInfoBitrate((int)bitrate);
         sink.OnChannelInfo(new ChannelInfo(info));
@@ -156,7 +156,7 @@ namespace PeerCastStation.TS
     {
       if (header.Length>=188 && header[0]==0x47) {
         content_type = "TS";
-        mime_type    = "video/mp2ts";
+        mime_type    = "video/mp2t";
         return true;
       }
       else {
