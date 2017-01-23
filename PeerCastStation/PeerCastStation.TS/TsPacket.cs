@@ -59,7 +59,7 @@ namespace PeerCastStation.TS
       if (this.payload_unit_start_indicator > 0)
       {
         int adaptation_size = ((adaptation_field_control & 0x02)!=0) ? 1+adaptation_field_length : 0;
-        int payload_offset = (adaptation_size>0) ? 4+adaptation_size : 4+1;//4byte[header]+1byte[pointer_field]
+        int payload_offset = 4+1 + adaptation_size;//4byte[header]+1byte[pointer_field]
         //PAT
         if(PID==0)
         {
