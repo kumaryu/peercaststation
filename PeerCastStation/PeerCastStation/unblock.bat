@@ -8,6 +8,7 @@ echo. > PeerCastStation.GUI.dll:Zone.Identifier
 echo. > PeerCastStation.HTTP.dll:Zone.Identifier
 echo. > PeerCastStation.MKV.dll:Zone.Identifier
 echo. > PeerCastStation.PCP.dll:Zone.Identifier
+echo. > PeerCastStation.TS.dll:Zone.Identifier
 echo. > PeerCastStation.UI.HTTP.dll:Zone.Identifier
 echo. > PeerCastStation.WPF.dll:Zone.Identifier
 echo. > PeerCastStation.UI.dll:Zone.Identifier
