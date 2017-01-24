@@ -17,7 +17,7 @@ namespace PeerCastStation.TS
       this.Channel = channel;
     }
 
-    public string Name { get { return "MPEG-TS (TS)"; } }
+    public string Name { get { return "MPEG-2 TS (TS)"; } }
     public Channel Channel { get; private set; }
     private float? recvRate = 0;
     private int patID = 0;
