@@ -19,12 +19,32 @@ namespace PeerCastStation.TS
 
     public string Name { get { return "MPEG-2 TS (TS)"; } }
     public Channel Channel { get; private set; }
-    private float? recvRate = 0;
+    private double recvRate = 0;
     private int patID = 0;
     private int pmtID = -1;
+    private int pcrPID = -1;
     private MemoryStream head = new MemoryStream();
     private MemoryStream cache = new MemoryStream();
-    
+    private class RateCounter {
+      public double lastPCR   = Double.MaxValue;
+      public long   byteCount = 0;
+    }
+    private RateCounter rateCounter = new RateCounter();
+
+    class ProgramMapTable {
+      public int PCRPID { get; private set; } = -1;
+      public ProgramMapTable(TSPacket pkt, byte[] packet)
+      {
+        int section_length = ((packet[pkt.payload_offset+1] & 0x0F)<<8 | packet[pkt.payload_offset+2]);
+        if (section_length<13) {
+          PCRPID = -1;
+        }
+        else {
+          PCRPID = ((packet[pkt.payload_offset+8] & 0x1F)<<8 | packet[pkt.payload_offset+9]);
+        }
+      }
+    }
+
     public async Task ReadAsync(IContentSink sink, Stream stream, CancellationToken cancel_token)
     {
       int streamIndex = -1;
@@ -56,26 +76,36 @@ namespace PeerCastStation.TS
             }
             if (packet.PID == pmtID)
             {
+              var pmt = new ProgramMapTable(packet, bytes188);
+              pcrPID = pmt.PCRPID;
               if(!addHead(bytes188)) throw new Exception();
               head.Close();
               byte[] newHead = head.ToArray();
               if(!Enumerable.SequenceEqual(newHead, latestHead))
               {
                 sink.OnContentHeader(new Content(streamIndex, DateTime.Now - streamOrigin, Channel.ContentPosition, newHead));
-                latestHead = newHead;                  
+                latestHead = newHead;
               }
               continue;
+            }
+            if (packet.PID==pcrPID && packet.program_clock_reference>0.0) {
+              if (rateCounter.lastPCR<packet.program_clock_reference) {
+                var bitrate = 8*rateCounter.byteCount / (packet.program_clock_reference - rateCounter.lastPCR);
+                UpdateRecvRate(sink, bitrate);
+              }
+              rateCounter.lastPCR = packet.program_clock_reference;
+              rateCounter.byteCount = 0;
             }
             if ((DateTime.Now - latestContentTime).Milliseconds > 50) {
               TryParseContent(packet, out contentData);
               if(contentData!=null) {
                 sink.OnContent(new Content(streamIndex, DateTime.Now - streamOrigin, Channel.ContentPosition, contentData));
                 latestContentTime = DateTime.Now;
-                UpdateRecvRate(sink);
               }
             }
           }
           if (!addCache(bytes188)) throw new Exception();
+          rateCounter.byteCount += 188;
         }
       }
       catch (EndOfStreamException)
@@ -84,9 +114,7 @@ namespace PeerCastStation.TS
       { }
     }
 
-    private void UpdateRecvRate(IContentSink sink) {
-      var bitrate = (int)((Channel.SourceStream.GetConnectionInfo().RecvRate ?? 0)*8/1000);
-
+    private void UpdateRecvRate(IContentSink sink, double bitrate) {
       if(recvRate*1.2 < bitrate) {
         recvRate = bitrate;
 
@@ -94,7 +122,7 @@ namespace PeerCastStation.TS
         info.SetChanInfoType("TS");
         info.SetChanInfoStreamType("video/mp2t");
         info.SetChanInfoStreamExt(".ts");
-        info.SetChanInfoBitrate((int)bitrate);
+        info.SetChanInfoBitrate((int)bitrate/1000);
         sink.OnChannelInfo(new ChannelInfo(info));
       }
 

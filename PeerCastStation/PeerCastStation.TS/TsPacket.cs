@@ -18,6 +18,8 @@ namespace PeerCastStation.TS
     public bool audio_block { get; private set; }
     public bool video_block { get; private set; }
     public bool keyframe { get; private set; }
+    public int payload_offset { get; private set; }
+    public double program_clock_reference = -1.0;
 
     public TSPacket(byte[] packet)
     {
@@ -35,12 +37,24 @@ namespace PeerCastStation.TS
       this.audio_block = false;
       this.video_block = false;
       this.keyframe = false;
-      if((adaptation_field_control & 0x02)!=0)
-      {
+      this.payload_offset = 4;
+      if((adaptation_field_control & 0x02)!=0) {
         this.adaptation_field_length = packet[4];
+        this.payload_offset += 1+this.adaptation_field_length;
         if (this.adaptation_field_length > 0)
         {
           this.random_access_indicator = packet[5] & 0x40;
+          var pcr_flag = (packet[5] & 0x10)!=0;
+          if (pcr_flag) {
+            var program_clock_reference_base =
+              ((long)packet[6+0] << 25) |
+              ((long)packet[6+1] << 17) |
+              ((long)packet[6+2] << 9) |
+              ((long)packet[6+3] << 1) |
+              (((long)packet[6+4] & 0x80) >> 7);
+            var program_clock_reference_extension = ((packet[6+4] & 0x01) << 8) | packet[6+5];
+            this. program_clock_reference = (program_clock_reference_base * 300 + program_clock_reference_extension) / 27000000.0;
+          }
           int i = 5 + adaptation_field_length;
           if (packet[i] == 0x0 && packet[i + 1] == 0x0 && packet[i + 2] == 0x1 && packet[i + 3] == 0xC0)
           {
@@ -56,26 +70,29 @@ namespace PeerCastStation.TS
           }
         }
       }
-      if (this.payload_unit_start_indicator > 0)
-      {
-        int adaptation_size = ((adaptation_field_control & 0x02)!=0) ? 1+adaptation_field_length : 0;
-        int payload_offset = 4+1 + adaptation_size;//4byte[header]+1byte[pointer_field]
-        //PAT
-        if(PID==0)
-        {
-          int section_length = (packet[payload_offset+1] & 0x0F << 8 | packet[payload_offset+2]);
-          //section_length-5byte[transport_stream_id ... last_section_number]-4byte[CRC_32]
-          for(int i=0;i<section_length-5-4;i+=4)
-          {
-            byte[] pmts = new byte[4];
-            Array.Copy(packet, payload_offset+8+i, pmts, 0, 4);//8byte[table_id ... last_section_number]
-            int program_number = pmts[0] << 8 | pmts[1];
-            int pmtid = (pmts[2] & 0x1F) << 8 | pmts[3];
-            if(program_number>0) {
-              this.PMTID = pmtid;
+      if ((adaptation_field_control & 0x01)!=0) {
+        if (this.payload_unit_start_indicator!=0) {
+          int pointer_field = packet[this.payload_offset++];
+          this.payload_offset += pointer_field;
+          //PAT
+          if (PID==0) {
+            int section_length = ((packet[payload_offset+1] & 0x0F)<<8 | packet[payload_offset+2]);
+            //section_length-5byte[transport_stream_id ... last_section_number]-4byte[CRC_32]
+            for(int i=0;i<section_length-5-4;i+=4)
+            {
+              byte[] pmts = new byte[4];
+              Array.Copy(packet, payload_offset+8+i, pmts, 0, 4);//8byte[table_id ... last_section_number]
+              int program_number = pmts[0] << 8 | pmts[1];
+              int pmtid = (pmts[2] & 0x1F) << 8 | pmts[3];
+              if(program_number>0) {
+                this.PMTID = pmtid;
+              }
             }
           }
         }
+      }
+      else {
+        this.payload_offset = -1;
       }
     }
   }
