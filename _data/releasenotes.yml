@@ -1,4 +1,27 @@
 ---
+- name: Version 2.3.5 (2017年02月07日開発版)
+  version: 2.3.5.0
+  channel: dev
+  notes: |
+    MPEG-2 TS配信ができるようになりました。
+
+    * HTTP配信(Pull/Push共に)でMPEG-2 TSを配信できるようにしました。(thanks niwakazoider)
+    * PeerCastStation終了時にUPnPで開けたポートを閉じるはずが動いてなかったのを修正しました
+    * デバッグ用のログ出力を少し変更しました。
+    * HTTPで404を返す時に0バイトのContent-Lengthが付いてなかったのを修正しました。
+  date: 2017-02-07T22:30:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.3.5.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.5.zip
+    length: 1649073
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.5.exe
+    length: 2286652
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.3.5.msi
+    length: 2044520
+
 - name: Version 2.3.4 (2016年11月09日開発版)
   version: 2.3.4.0
   channel: dev
