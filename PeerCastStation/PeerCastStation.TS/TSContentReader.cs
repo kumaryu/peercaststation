@@ -89,12 +89,17 @@ namespace PeerCastStation.TS
               continue;
             }
             if (packet.PID==pcrPID && packet.program_clock_reference>0.0) {
-              if (rateCounter.lastPCR<packet.program_clock_reference) {
+              if (packet.program_clock_reference<rateCounter.lastPCR) {
+                rateCounter.lastPCR = packet.program_clock_reference;
+                rateCounter.byteCount = 0;
+                recvRate = 0.0;
+              }
+              else if (rateCounter.lastPCR+10.0<packet.program_clock_reference) {
                 var bitrate = 8*rateCounter.byteCount / (packet.program_clock_reference - rateCounter.lastPCR);
                 UpdateRecvRate(sink, bitrate);
+                rateCounter.lastPCR = packet.program_clock_reference;
+                rateCounter.byteCount = 0;
               }
-              rateCounter.lastPCR = packet.program_clock_reference;
-              rateCounter.byteCount = 0;
             }
             if ((DateTime.Now - latestContentTime).Milliseconds > 50) {
               TryParseContent(packet, out contentData);
@@ -115,7 +120,7 @@ namespace PeerCastStation.TS
     }
 
     private void UpdateRecvRate(IContentSink sink, double bitrate) {
-      if(recvRate*1.2 < bitrate) {
+      if (recvRate==0.0 || (recvRate*1.2<bitrate && bitrate<recvRate*10.0)) {
         recvRate = bitrate;
 
         var info = new AtomCollection(Channel.ChannelInfo.Extra);
@@ -125,7 +130,6 @@ namespace PeerCastStation.TS
         info.SetChanInfoBitrate((int)bitrate/1000);
         sink.OnChannelInfo(new ChannelInfo(info));
       }
-
     }
 
     private bool addHead(byte[] bytes) {
