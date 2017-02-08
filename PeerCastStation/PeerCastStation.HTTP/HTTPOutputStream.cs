@@ -500,7 +500,7 @@ namespace PeerCastStation.HTTP
       if (Channel==null) return;
       await Task.WhenAny(
         Task.Delay(10000),
-        Channel.WaitForReadyAsync(),
+        Channel.WaitForReadyContentTypeAsync(),
         WaitForStoppedAsync());
       Logger.Debug("ContentType: {0}", Channel.ChannelInfo.ContentType);
     }

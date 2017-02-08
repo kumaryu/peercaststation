@@ -611,18 +611,19 @@ namespace PeerCastStation.Core
       });
     }
 
-    public async Task WaitForReadyAsync(CancellationToken cancel_token)
+    public async Task WaitForReadyContentTypeAsync(CancellationToken cancel_token)
     {
       var task = new TaskCompletionSource<bool>();
       cancel_token.Register(() => task.TrySetCanceled());
       var channel_info_changed = new EventHandler<ChannelInfoEventArgs>((sender, e) => {
-        if (!String.IsNullOrEmpty(e.ChannelInfo.ContentType)) {
+        if (e.ChannelInfo!=null && !String.IsNullOrEmpty(e.ChannelInfo.ContentType)) {
           task.TrySetResult(true);
         }
       });
       try {
         this.ChannelInfoChanged += channel_info_changed;
-        if (!String.IsNullOrEmpty(this.ChannelInfo.ContentType)) return;
+        var channel_info = this.ChannelInfo;
+        if (channel_info!=null && !String.IsNullOrEmpty(channel_info.ContentType)) return;
         await task.Task;
       }
       finally {
@@ -630,9 +631,9 @@ namespace PeerCastStation.Core
       }
     }
 
-    public Task WaitForReadyAsync()
+    public Task WaitForReadyContentTypeAsync()
     {
-      return WaitForReadyAsync(CancellationToken.None);
+      return WaitForReadyContentTypeAsync(CancellationToken.None);
     }
 
 
