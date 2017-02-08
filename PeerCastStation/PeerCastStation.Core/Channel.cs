@@ -219,7 +219,7 @@ namespace PeerCastStation.Core
         return channelInfo;
       }
       set {
-        var old = Interlocked.CompareExchange(ref channelInfo, value, value);
+        var old = Interlocked.Exchange(ref channelInfo, value);
         if (old!=value) {
           ChannelInfoChanged?.Invoke(this, new ChannelInfoEventArgs(value));
         }
@@ -246,7 +246,7 @@ namespace PeerCastStation.Core
         return channelTrack;
       }
       set {
-        var old = Interlocked.CompareExchange(ref channelTrack, value, value);
+        var old = Interlocked.Exchange(ref channelTrack, value);
         if (old!=value) {
           ChannelTrackChanged?.Invoke(this, new ChannelTrackEventArgs(value));
         }
