@@ -498,12 +498,10 @@ namespace PeerCastStation.HTTP
     public async Task WaitChannelReceived()
     {
       if (Channel==null) return;
-      var cancel_soruce = new CancellationTokenSource(10000);
-      while (
-          (!cancel_soruce.IsCancellationRequested || !IsStopped) &&
-          String.IsNullOrEmpty(Channel.ChannelInfo.ContentType)) {
-        await Task.Yield();
-      }
+      await Task.WhenAny(
+        Task.Delay(10000),
+        Channel.WaitForReadyAsync(),
+        WaitForStoppedAsync());
       Logger.Debug("ContentType: {0}", Channel.ChannelInfo.ContentType);
     }
 

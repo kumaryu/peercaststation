@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.Core
 {
@@ -198,52 +199,56 @@ namespace PeerCastStation.Core
       return WriteLock(() => streamID++);
     }
 
-    public event EventHandler ChannelInfoChanged;
+    public class ChannelInfoEventArgs
+      : EventArgs
+    {
+      public ChannelInfo ChannelInfo { get; private set; }
+      public ChannelInfoEventArgs(ChannelInfo channel_info)
+      {
+        this.ChannelInfo = channel_info;
+      }
+    }
+
+    public event EventHandler<ChannelInfoEventArgs> ChannelInfoChanged;
     private ChannelInfo channelInfo = new ChannelInfo(new AtomCollection());
     /// <summary>
     /// チャンネル情報を取得および設定します
     /// </summary>
     public ChannelInfo ChannelInfo {
       get {
-        return ReadLock(() => channelInfo);
+        return channelInfo;
       }
       set {
-        if (WriteLock(() => {
-          if (channelInfo!=value) {
-            channelInfo = value;
-            return true;
-          }
-          else {
-            return false;
-          }
-        })) {
-          var events = ChannelInfoChanged;
-          if (events!=null) events(this, new EventArgs());
+        var old = Interlocked.CompareExchange(ref channelInfo, value, value);
+        if (old!=value) {
+          ChannelInfoChanged?.Invoke(this, new ChannelInfoEventArgs(value));
         }
       }
     }
 
-    public event EventHandler ChannelTrackChanged;
+    public class ChannelTrackEventArgs
+      : EventArgs
+    {
+      public ChannelTrack ChannelTrack { get; private set; }
+      public ChannelTrackEventArgs(ChannelTrack channel_track)
+      {
+        this.ChannelTrack = channel_track;
+      }
+    }
+
+    public event EventHandler<ChannelTrackEventArgs> ChannelTrackChanged;
     private ChannelTrack channelTrack = new ChannelTrack(new AtomCollection());
     /// <summary>
     /// トラック情報を取得および設定します
     /// </summary>
     public ChannelTrack ChannelTrack {
       get {
-        return ReadLock(() => channelTrack);
+        return channelTrack;
       }
       set {
-        if (WriteLock(() => {
-          if (channelTrack!=value) {
-            channelTrack = value;
-            return true;
-          }
-          else {
-            return false;
-          }
-        })) {
-          var events = ChannelTrackChanged;
-          if (events!=null) events(this, new EventArgs());
+        var old = Interlocked.CompareExchange(ref channelTrack, value, value);
+        if (old!=value) {
+          ChannelTrackChanged?.Invoke(this, new ChannelTrackEventArgs(value));
         }
       }
     }
@@ -605,6 +610,31 @@ namespace PeerCastStation.Core
         }
       });
     }
+
+    public async Task WaitForReadyAsync(CancellationToken cancel_token)
+    {
+      var task = new TaskCompletionSource<bool>();
+      cancel_token.Register(() => task.TrySetCanceled());
+      var channel_info_changed = new EventHandler<ChannelInfoEventArgs>((sender, e) => {
+        if (!String.IsNullOrEmpty(e.ChannelInfo.ContentType)) {
+          task.TrySetResult(true);
+        }
+      });
+      try {
+        this.ChannelInfoChanged += channel_info_changed;
+        if (!String.IsNullOrEmpty(this.ChannelInfo.ContentType)) return;
+        await task.Task;
+      }
+      finally {
+        this.ChannelInfoChanged -= channel_info_changed;
+      }
+    }
+
+    public Task WaitForReadyAsync()
+    {
+      return WaitForReadyAsync(CancellationToken.None);
+    }
+
 
     /// <summary>
     /// チャンネル接続を終了します。ソースストリームと接続している出力ストリームを全て閉じます
