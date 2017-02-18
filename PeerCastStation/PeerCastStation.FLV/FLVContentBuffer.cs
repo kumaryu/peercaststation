@@ -79,7 +79,7 @@ namespace PeerCastStation.FLV
       OnContentChanged(msg);
     }
 
-    public void OnFLVHeader()
+    public void OnFLVHeader(FLVFileHeader header)
     {
       var info = new AtomCollection();
       info.SetChanInfoType("FLV");

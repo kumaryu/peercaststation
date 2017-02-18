@@ -259,9 +259,9 @@ namespace PeerCastStation.FLV.RTMP
 				this.connection = conn;
 			}
 
-			public void OnFLVHeader()
-			{
-			}
+      public void OnFLVHeader(FLVFileHeader header)
+      {
+      }
 
 			public void OnData(DataMessage msg)
 			{
