@@ -253,7 +253,8 @@ namespace PeerCastStation.HTTP
   /// HTTPで視聴出力をするクラスです
   /// </summary>
   public class HTTPOutputStream
-    : OutputStreamBase
+    : OutputStreamBase,
+      IContentSink
   {
     private HTTPRequest request;
 
@@ -310,20 +311,6 @@ namespace PeerCastStation.HTTP
     private WaitableQueue<Packet> contentPacketQueue = new WaitableQueue<Packet>();
     private Content headerContent = null;
     private Content lastPacket = null;
-    private void OnContentChanged(object sender, EventArgs args)
-    {
-      if (headerContent!=Channel.ContentHeader) {
-        headerContent = Channel.ContentHeader;
-        lastPacket = headerContent;
-        contentPacketQueue.Enqueue(new Packet(Packet.ContentType.Header, Channel.ContentHeader));
-      }
-      if (headerContent!=null) {
-        foreach (var content in Channel.Contents.GetNewerContents(headerContent.Stream, lastPacket.Timestamp, lastPacket.Position)) {
-          contentPacketQueue.Enqueue(new Packet(Packet.ContentType.Body, content));
-          lastPacket = content;
-        }
-      }
-    }
 
     /// <summary>
     /// 出力する内容を表します
@@ -621,8 +608,8 @@ namespace PeerCastStation.HTTP
     protected override Task OnStarted(CancellationToken cancel_token)
     {
       if (this.Channel!=null) {
-        this.Channel.ContentChanged += OnContentChanged;
-        OnContentChanged(this, new EventArgs());
+        var sink = this;
+        this.Channel.AddContentSink(sink);
       }
       return base.OnStarted(cancel_token);
     }
@@ -630,7 +617,7 @@ namespace PeerCastStation.HTTP
     protected override Task OnStopped(CancellationToken cancel_token)
     {
       if (this.Channel!=null) {
-        this.Channel.ContentChanged -= OnContentChanged;
+        this.Channel.RemoveContentSink(this);
       }
       return base.OnStopped(cancel_token);
     }
@@ -649,7 +636,34 @@ namespace PeerCastStation.HTTP
       return StopReason.OffAir;
     }
 
+    public void OnChannelInfo(ChannelInfo channel_info)
+    {
+    }
 
+    public void OnChannelTrack(ChannelTrack channel_track)
+    {
+    }
+
+    public void OnContentHeader(Content content_header)
+    {
+      if (headerContent!=content_header) {
+        headerContent = content_header;
+        lastPacket = headerContent;
+        contentPacketQueue.Enqueue(new Packet(Packet.ContentType.Header, Channel.ContentHeader));
+      }
+    }
+
+    public void OnContent(Content content)
+    {
+      if (headerContent!=null) {
+        contentPacketQueue.Enqueue(new Packet(Packet.ContentType.Body, content));
+        lastPacket = content;
+      }
+    }
+
+    public void OnStop(StopReason reason)
+    {
+    }
   }
 
   [Plugin]

@@ -55,7 +55,7 @@ namespace PeerCastStation.Core
     private List<Host> sourceNodes = new List<Host>();
     private List<Host> nodes = new List<Host>();
     private Content contentHeader = null;
-    private ContentCollection contents = new ContentCollection();
+    private ContentCollection contents;
     private System.Diagnostics.Stopwatch uptimeTimer = new System.Diagnostics.Stopwatch();
     private int streamID = 0;
     protected ReaderWriterLockSlim readWriteLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
@@ -324,7 +324,7 @@ namespace PeerCastStation.Core
             return false;
           }
         })) {
-          OnContentChanged();
+          OnContentHeaderChanged(value);
         }
       }
     }
@@ -334,11 +334,88 @@ namespace PeerCastStation.Core
     /// </summary>
     public ContentCollection Contents { get { return contents; } }
 
+    private List<IContentSink> contentSinks = new List<IContentSink>();
+
+    public void AddContentSink(IContentSink sink)
+    {
+      ReplaceCollection(ref contentSinks, orig => {
+        var new_collection = new List<IContentSink>(orig);
+        new_collection.Add(sink);
+        return new_collection;
+      });
+    }
+
+    public bool RemoveContentSink(IContentSink sink)
+    {
+      bool removed = false;
+      ReplaceCollection(ref contentSinks, orig => {
+        var new_collection = new List<IContentSink>(orig);
+        removed = new_collection.Remove(sink);
+        return new_collection;
+      });
+      return removed;
+    }
+
+    private void OnContentHeaderChanged(Content header)
+    {
+      var sinks = contentSinks;
+      foreach (var sink in sinks) {
+        sink.OnContentHeader(header);
+      }
+    }
+
     private void OnContentChanged()
     {
-      var events = ReadLock(() => ContentChanged);
-      if (events!=null) {
-        events(this, new EventArgs());
+      var header = contentHeader;
+      if (header!=null) {
+        OnContentHeaderChanged(header);
+        var contents = Contents.GetNewerContents(header.Stream, header.Timestamp, header.Position);
+        foreach (var content in contents) {
+          OnContentAdded(content);
+        }
+      }
+    }
+
+    internal void OnContentAdded(Content content)
+    {
+      var sinks = contentSinks;
+      foreach (var sink in sinks) {
+        sink.OnContent(content);
+      }
+    }
+
+    class ChannelEventInvoker
+      : IContentSink
+    {
+      private Channel owner;
+      public ChannelEventInvoker(Channel owner)
+      {
+        this.owner = owner;
+      }
+
+      public void OnChannelInfo(ChannelInfo channel_info)
+      {
+        owner.ChannelInfoChanged?.Invoke(owner, new ChannelInfoEventArgs(channel_info));
+      }
+
+      public void OnChannelTrack(ChannelTrack channel_track)
+      {
+        owner.ChannelTrackChanged?.Invoke(owner, new ChannelTrackEventArgs(channel_track));
+      }
+
+      public void OnContent(Content content)
+      {
+        owner.ContentChanged?.Invoke(owner, new EventArgs());
+      }
+
+      public void OnContentHeader(Content content_header)
+      {
+        owner.ContentChanged?.Invoke(owner, new EventArgs());
+      }
+
+      public void OnStop(StopReason reason)
+      {
+        owner.Closed?.Invoke(owner, new StreamStoppedEventArgs(reason));
       }
     }
 
@@ -373,9 +450,9 @@ namespace PeerCastStation.Core
     public event StreamStoppedEventHandler Closed;
     private void OnClosed(StopReason reason)
     {
-      var events = ReadLock(() => Closed);
-      if (events!=null) {
-        events(this, new StreamStoppedEventArgs(reason));
+      var sinks = contentSinks;
+      foreach (var sink in sinks) {
+        sink.OnStop(reason);
       }
     }
 
@@ -496,19 +573,6 @@ namespace PeerCastStation.Core
           return host.ToHost();
         });
       }
-    }
-
-    private void SourceStream_Stopped(object sender, StreamStoppedEventArgs args)
-    {
-      WriteLock(() => {
-        if (!Object.ReferenceEquals(sender, sourceStream)) return;
-        foreach (var os in outputStreams) {
-          os.Stop();
-        }
-        outputStreams = new List<IOutputStream>();
-        uptimeTimer.Stop();
-      });
-      OnClosed(args.StopReason);
     }
 
     private CancellationTokenSource sourceStreamCancelSource;
@@ -636,7 +700,6 @@ namespace PeerCastStation.Core
       return WaitForReadyContentTypeAsync(CancellationToken.None);
     }
 
-
     /// <summary>
     /// チャンネル接続を終了します。ソースストリームと接続している出力ストリームを全て閉じます
     /// </summary>
@@ -662,9 +725,8 @@ namespace PeerCastStation.Core
     {
       this.PeerCast    = peercast;
       this.ChannelID   = channel_id;
-      contents.ContentChanged += (sender, e) => {
-        OnContentChanged();
-      };
+      this.contents    = new ContentCollection(this);
+      this.contentSinks.Add(new ChannelEventInvoker(this));
     }
   }
 

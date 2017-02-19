@@ -648,6 +648,7 @@ namespace PeerCastStation.Core
     void OnChannelTrack(ChannelTrack channel_track);
     void OnContentHeader(Content content_header);
     void OnContent(Content content);
+    void OnStop(StopReason reason);
   }
 
   /// <summary>
