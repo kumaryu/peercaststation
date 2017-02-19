@@ -113,6 +113,7 @@ namespace PeerCastStation.Core
     /// 登録されているIContentReaderFactoryのリストを取得します
     /// </summary>
     public IList<IContentReaderFactory> ContentReaderFactories { get; private set; }
+    public IList<IContentFilter> ContentFilters { get; private set; }
     /// <summary>
     /// 接続しているチャンネルの読み取り専用リストを取得します
     /// </summary>
@@ -344,6 +345,7 @@ namespace PeerCastStation.Core
       this.SourceStreamFactories = new List<ISourceStreamFactory>();
       this.OutputStreamFactories = new List<IOutputStreamFactory>();
       this.ContentReaderFactories = new List<IContentReaderFactory>();
+      this.ContentFilters = new List<IContentFilter>();
       monitorTask = StartMonitor(cancelSource.Token);
     }
 

@@ -699,6 +699,13 @@ namespace PeerCastStation.Core
     bool TryParseContentType(byte[] header, out string content_type, out string mime_type);
   }
 
+  public interface IContentFilter
+  {
+    string Name { get; } 
+
+    IContentSink Activate(IContentSink sink);
+  }
+
   /// <summary>
   /// チャンネルを監視して管理するためのオブジェクトのインターフェースです
   /// </summary>

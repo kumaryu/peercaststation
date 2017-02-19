@@ -608,7 +608,15 @@ namespace PeerCastStation.HTTP
     protected override Task OnStarted(CancellationToken cancel_token)
     {
       if (this.Channel!=null) {
-        var sink = this;
+        IContentSink sink = this;
+        string filters;
+        if (request.Parameters.TryGetValue("filters", out filters)) {
+          sink =
+            filters.Split(',')
+            .Select(name => PeerCast.ContentFilters.FirstOrDefault(filter => filter.Name.ToLowerInvariant()==name.ToLowerInvariant()))
+            .Where(filter => filter!=null)
+            .Aggregate(sink, (r,filter) => filter.Activate(r));
+        }
         this.Channel.AddContentSink(sink);
       }
       return base.OnStarted(cancel_token);
