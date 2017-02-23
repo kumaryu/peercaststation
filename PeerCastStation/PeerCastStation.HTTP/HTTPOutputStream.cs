@@ -605,11 +605,12 @@ namespace PeerCastStation.HTTP
       Logger.Debug("Header: {0}", response_header);
     }
 
+    IContentSink sink = null;
     protected override Task OnStarted(CancellationToken cancel_token)
     {
       if (this.Channel!=null) {
-        IContentSink sink = this;
         string filters;
+        sink = this;
         if (request.Parameters.TryGetValue("filters", out filters)) {
           sink =
             filters.Split(',')
@@ -625,7 +626,7 @@ namespace PeerCastStation.HTTP
     protected override Task OnStopped(CancellationToken cancel_token)
     {
       if (this.Channel!=null) {
-        this.Channel.RemoveContentSink(this);
+        this.Channel.RemoveContentSink(sink);
       }
       return base.OnStopped(cancel_token);
     }
@@ -657,7 +658,7 @@ namespace PeerCastStation.HTTP
       if (headerContent!=content_header) {
         headerContent = content_header;
         lastPacket = headerContent;
-        contentPacketQueue.Enqueue(new Packet(Packet.ContentType.Header, Channel.ContentHeader));
+        contentPacketQueue.Enqueue(new Packet(Packet.ContentType.Header, content_header));
       }
     }
 
