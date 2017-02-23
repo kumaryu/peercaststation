@@ -608,6 +608,11 @@ namespace PeerCastStation.FLV
       private int nalSizeLen = 0;
       private long ptsBase = -1;
 
+      public Context(Stream stream)
+      {
+        this.writer = new TSWriter(stream, true);
+      }
+
       public Context(TSWriter writer)
       {
         this.writer = writer;
@@ -868,5 +873,124 @@ namespace PeerCastStation.FLV
 
     }
 
+  }
+
+  public class FLVToTSContentFilter
+    : IContentFilter
+  {
+    public string Name { get { return "FLVToTS"; } }
+    public IContentSink Activate(IContentSink sink)
+    {
+      return new FLVToTSContentFilterSink(sink);
+    }
+
+    public class FLVToTSContentFilterSink
+      : IContentSink
+    {
+      private IContentSink targetSink;
+      private MemoryStream bufferStream = new MemoryStream();
+      private FLVToMPEG2TS.Context context;
+      private System.IO.MemoryStream contentBuffer = new System.IO.MemoryStream();
+      private FLVFileParser fileParser = new FLVFileParser();
+      public FLVToTSContentFilterSink(IContentSink sink)
+      {
+        targetSink = sink;
+        context = new FLVToMPEG2TS.Context(bufferStream);
+      }
+
+      public void OnChannelInfo(ChannelInfo channel_info)
+      {
+        targetSink.OnChannelInfo(channel_info);
+      }
+
+      public void OnChannelTrack(ChannelTrack channel_track)
+      {
+        targetSink.OnChannelTrack(channel_track);
+      }
+
+      public void OnContent(Content content)
+      {
+        var pos = contentBuffer.Position;
+        contentBuffer.Seek(0, System.IO.SeekOrigin.End);
+        contentBuffer.Write(content.Data, 0, content.Data.Length);
+        contentBuffer.Position = pos;
+        fileParser.Read(contentBuffer, context);
+        if (contentBuffer.Position!=0) {
+          var new_buf = new System.IO.MemoryStream();
+          var trim_pos = contentBuffer.Position;
+          contentBuffer.Close();
+          var buf = contentBuffer.ToArray();
+          new_buf.Write(buf, (int)trim_pos, (int)(buf.Length-trim_pos));
+          new_buf.Position = 0;
+          contentBuffer = new_buf;
+        }
+        if (bufferStream.Position!=0) {
+          targetSink.OnContent(
+            new Content(
+              content.Stream,
+              content.Timestamp,
+              content.Position,
+              bufferStream.ToArray()
+            )
+          );
+          bufferStream.SetLength(0);
+        }
+      }
+
+      public void OnContentHeader(Content content_header)
+      {
+        var pos = contentBuffer.Position;
+        contentBuffer.Seek(0, System.IO.SeekOrigin.End);
+        contentBuffer.Write(content_header.Data, 0, content_header.Data.Length);
+        contentBuffer.Position = pos;
+        fileParser.Read(contentBuffer, context);
+        if (contentBuffer.Position!=0) {
+          var new_buf = new System.IO.MemoryStream();
+          var trim_pos = contentBuffer.Position;
+          contentBuffer.Close();
+          var buf = contentBuffer.ToArray();
+          new_buf.Write(buf, (int)trim_pos, (int)(buf.Length-trim_pos));
+          new_buf.Position = 0;
+          contentBuffer = new_buf;
+        }
+        if (bufferStream.Position!=0) {
+          targetSink.OnContentHeader(
+            new Content(
+              content_header.Stream,
+              content_header.Timestamp,
+              content_header.Position,
+              bufferStream.ToArray()
+            )
+          );
+          bufferStream.SetLength(0);
+        }
+      }
+
+      public void OnStop(StopReason reason)
+      {
+        targetSink.OnStop(reason);
+      }
+    }
+
+  }
+
+  [Plugin]
+  public class FLVToTSContentFilterPlugin
+    : PluginBase
+  {
+    public override string Name {
+      get { return "FLVToTSContentFilter"; }
+    }
+
+    private FLVToTSContentFilter filter = new FLVToTSContentFilter();
+    protected override void OnAttach()
+    {
+      Application.PeerCast.ContentFilters.Add(filter);
+    }
+
+    protected override void OnDetach()
+    {
+      Application.PeerCast.ContentFilters.Remove(filter);
+    }
   }
 }
