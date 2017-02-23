@@ -343,6 +343,14 @@ namespace PeerCastStation.Core
         new_collection.Add(sink);
         return new_collection;
       });
+      var header = contentHeader;
+      if (header!=null) {
+        sink.OnContentHeader(header);
+        var contents = Contents.GetNewerContents(header.Stream, header.Timestamp, header.Position);
+        foreach (var content in contents) {
+          sink.OnContent(content);
+        }
+      }
     }
 
     public bool RemoveContentSink(IContentSink sink)
