@@ -253,6 +253,7 @@ namespace PeerCastStation.PCP
         RemoteName       = RemoteEndPoint.ToString(),
         RemoteEndPoint   = (IPEndPoint)RemoteEndPoint,
         RemoteHostStatus = host_status,
+        RemoteSessionID  = Downhost?.SessionID,
         ContentPosition  = lastPosition,
         RecvRate         = Connection.ReadRate,
         SendRate         = Connection.WriteRate,

@@ -79,6 +79,8 @@ namespace PeerCastStation.PCP
   public class PCPPongOutputStream
     : OutputStreamBase
   {
+    public Guid? RemoteSessionID { get; private set; } = null;
+
     public PCPPongOutputStream(
       PeerCast peercast,
       Stream input_stream,
@@ -113,6 +115,7 @@ namespace PeerCastStation.PCP
     protected async Task OnPCPHelo(Atom atom, CancellationToken cancel_token)
     {
       var session_id = atom.Children.GetHeloSessionID();
+      RemoteSessionID = session_id;
       var oleh = new AtomCollection();
       oleh.SetHeloSessionID(PeerCast.SessionID);
       await Connection.WriteAsync(new Atom(Atom.PCP_OLEH, oleh));
@@ -150,6 +153,7 @@ namespace PeerCastStation.PCP
         RemoteName       = RemoteEndPoint.ToString(),
         RemoteEndPoint   = (IPEndPoint)RemoteEndPoint,
         RemoteHostStatus = IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
+        RemoteSessionID  = RemoteSessionID,
         RecvRate         = Connection.ReadRate,
         SendRate         = Connection.WriteRate,
       }.Build();

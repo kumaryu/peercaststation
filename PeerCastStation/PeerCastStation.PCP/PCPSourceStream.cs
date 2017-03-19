@@ -648,6 +648,7 @@ Stopped:
         RemoteName       = remote_name,
         RemoteEndPoint   = remote_endpoint,
         RemoteHostStatus = remote,
+        RemoteSessionID  = uphost?.SessionID,
         ContentPosition  = lastPosition,
         RecvRate         = RecvRate,
         SendRate         = SendRate,
