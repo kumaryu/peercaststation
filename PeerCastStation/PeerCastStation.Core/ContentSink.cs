@@ -26,6 +26,11 @@ namespace PeerCastStation.Core
       this.BaseSink.OnChannelTrack(channel_track);
     }
 
+    public void OnStop(StopReason reason)
+    {
+      this.BaseSink.OnStop(reason);
+    }
+
     private class ContentBuilder
     {
       private bool empty = true;
@@ -142,6 +147,10 @@ namespace PeerCastStation.Core
       this.Channel.ContentHeader = content_header;
       this.Channel.Contents.Clear();
       this.LastContent = content_header;
+    }
+
+    public void OnStop(StopReason reason)
+    {
     }
 
     private ChannelInfo MergeChannelInfo(ChannelInfo a, ChannelInfo b)

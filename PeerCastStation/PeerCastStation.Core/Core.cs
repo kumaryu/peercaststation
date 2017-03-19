@@ -648,6 +648,7 @@ namespace PeerCastStation.Core
     void OnChannelTrack(ChannelTrack channel_track);
     void OnContentHeader(Content content_header);
     void OnContent(Content content);
+    void OnStop(StopReason reason);
   }
 
   /// <summary>
@@ -696,6 +697,13 @@ namespace PeerCastStation.Core
     /// <param name="mime_type">解析したMIMEタイプの設定先</param>
     /// <returns>解析できた時はtrue、それ以外はfalse</returns>
     bool TryParseContentType(byte[] header, out string content_type, out string mime_type);
+  }
+
+  public interface IContentFilter
+  {
+    string Name { get; } 
+
+    IContentSink Activate(IContentSink sink);
   }
 
   /// <summary>

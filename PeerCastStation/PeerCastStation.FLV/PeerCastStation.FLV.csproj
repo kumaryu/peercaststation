@@ -58,6 +58,7 @@
     <Compile Include="FLVContentBuffer.cs" />
     <Compile Include="FLVContentReader.cs" />
     <Compile Include="FLVFileParser.cs" />
+    <Compile Include="FLVToMPEG2TS.cs" />
     <Compile Include="RTMP\IRTMPContentSink.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RTMP\MessageQueue.cs" />

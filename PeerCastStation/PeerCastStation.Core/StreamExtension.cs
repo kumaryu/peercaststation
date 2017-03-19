@@ -32,6 +32,12 @@ namespace PeerCastStation.Core
       return bytes;
     }
 
+    public static int ReadUInt16BE(this Stream stream)
+    {
+      var bytes = stream.ReadBytes(2);
+      return (bytes[0]<<8) | bytes[1];
+    }
+
     public static async Task<byte[]> ReadBytesAsync(this Stream stream, int length, CancellationToken cancel_token)
     {
       var bytes = new byte[length];
@@ -55,6 +61,11 @@ namespace PeerCastStation.Core
         pos += r;
       }
       return length;
+    }
+
+    public static void WriteByte(this Stream stream, int value)
+    {
+      stream.WriteByte((byte)value);
     }
 
     public static Task WriteByteAsync(this Stream stream, byte value, CancellationToken cancel_token)
@@ -94,6 +105,28 @@ namespace PeerCastStation.Core
     static public Task WriteAsync(this Stream stream, Atom atom)
     {
       return WriteAsync(stream, atom, CancellationToken.None);
+    }
+
+    public static void WriteUInt16BE(this Stream stream, int value)
+    {
+      stream.WriteByte((byte)((value>>8)&0xFF));
+      stream.WriteByte((byte)(value&0xFF));
+    }
+
+    public static void WriteUInt32BE(this Stream stream, long value)
+    {
+      stream.WriteByte((byte)((value>>24)&0xFF));
+      stream.WriteByte((byte)((value>>16)&0xFF));
+      stream.WriteByte((byte)((value>>8)&0xFF));
+      stream.WriteByte((byte)(value&0xFF));
+    }
+
+    public static void WriteUInt32LE(this Stream stream, long value)
+    {
+      stream.WriteByte((byte)(value&0xFF));
+      stream.WriteByte((byte)((value>>8)&0xFF));
+      stream.WriteByte((byte)((value>>16)&0xFF));
+      stream.WriteByte((byte)((value>>24)&0xFF));
     }
 
     static public Atom ReadAtom(this Stream stream)

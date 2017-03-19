@@ -53,7 +53,7 @@ namespace PeerCastStation.TS
               ((long)packet[6+3] << 1) |
               (((long)packet[6+4] & 0x80) >> 7);
             var program_clock_reference_extension = ((packet[6+4] & 0x01) << 8) | packet[6+5];
-            this. program_clock_reference = (program_clock_reference_base * 300 + program_clock_reference_extension) / 27000000.0;
+            this.program_clock_reference = (program_clock_reference_base * 300 + program_clock_reference_extension) / 27000000.0;
           }
           int i = 5 + adaptation_field_length;
           if (packet[i] == 0x0 && packet[i + 1] == 0x0 && packet[i + 2] == 0x1 && packet[i + 3] == 0xC0)
