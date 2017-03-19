@@ -48,6 +48,7 @@ namespace PeerCastStation.TS
     public async Task ReadAsync(IContentSink sink, Stream stream, CancellationToken cancel_token)
     {
       int streamIndex = -1;
+      long contentPosition = 0;
       DateTime streamOrigin = DateTime.Now;
       DateTime latestContentTime = DateTime.Now;
       byte[] bytes188 = new byte[188];
@@ -56,7 +57,7 @@ namespace PeerCastStation.TS
 
       streamIndex = Channel.GenerateStreamID();
       streamOrigin = DateTime.Now;
-      sink.OnContentHeader(new Content(streamIndex, TimeSpan.Zero, Channel.ContentPosition, new byte[] {}));
+      sink.OnContentHeader(new Content(streamIndex, TimeSpan.Zero, contentPosition, new byte[] {}));
       
       try
       {
@@ -83,7 +84,10 @@ namespace PeerCastStation.TS
               byte[] newHead = head.ToArray();
               if(!Enumerable.SequenceEqual(newHead, latestHead))
               {
-                sink.OnContentHeader(new Content(streamIndex, DateTime.Now - streamOrigin, Channel.ContentPosition, newHead));
+                streamIndex = Channel.GenerateStreamID();
+                contentPosition = 0;
+                sink.OnContentHeader(new Content(streamIndex, DateTime.Now - streamOrigin, contentPosition, newHead));
+                contentPosition += newHead.Length;
                 latestHead = newHead;
               }
               continue;
@@ -104,7 +108,8 @@ namespace PeerCastStation.TS
             if ((DateTime.Now - latestContentTime).Milliseconds > 50) {
               TryParseContent(packet, out contentData);
               if(contentData!=null) {
-                sink.OnContent(new Content(streamIndex, DateTime.Now - streamOrigin, Channel.ContentPosition, contentData));
+                sink.OnContent(new Content(streamIndex, DateTime.Now - streamOrigin, contentPosition, contentData));
+                contentPosition += contentData.Length;
                 latestContentTime = DateTime.Now;
               }
             }

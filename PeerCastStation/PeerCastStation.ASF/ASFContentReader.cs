@@ -487,6 +487,7 @@ namespace PeerCastStation.ASF
     {
       int      streamIndex  = -1;
       DateTime streamOrigin = DateTime.Now;
+      long contentPosition = 0;
       bool eof = false;
       do {
         ASFChunk chunk = null;
@@ -521,13 +522,20 @@ namespace PeerCastStation.ASF
             sink.OnChannelInfo(new ChannelInfo(info));
             streamIndex = Channel.GenerateStreamID();
             streamOrigin = DateTime.Now;
-            sink.OnContentHeader(new Content(streamIndex, TimeSpan.Zero, Channel.ContentPosition, chunk.ToByteArray()));
+            contentPosition = 0;
+            var data = chunk.ToByteArray();
+            sink.OnContentHeader(new Content(streamIndex, TimeSpan.Zero, contentPosition, data));
+            contentPosition += data.Length;
             break;
           }
         case ASFChunk.ChunkType.Data:
-          sink.OnContent(
-            new Content(streamIndex, DateTime.Now-streamOrigin, Channel.ContentPosition, chunk.ToByteArray())
-          );
+          {
+            var data = chunk.ToByteArray();
+            sink.OnContent(
+              new Content(streamIndex, DateTime.Now-streamOrigin, contentPosition, chunk.ToByteArray())
+            );
+            contentPosition += data.Length;
+          }
           break;
         case ASFChunk.ChunkType.Unknown:
           break;
