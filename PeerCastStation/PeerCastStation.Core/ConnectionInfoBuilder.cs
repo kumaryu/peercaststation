@@ -31,6 +31,7 @@ namespace PeerCastStation.Core
       this.RemoteName       = other.RemoteName;
       this.RemoteEndPoint   = other.RemoteEndPoint;
       this.RemoteHostStatus = other.RemoteHostStatus;
+      this.RemoteSessionID  = other.RemoteSessionID;
       this.ContentPosition  = other.ContentPosition;
       this.RecvRate         = other.RecvRate;
       this.SendRate         = other.SendRate;
@@ -48,6 +49,7 @@ namespace PeerCastStation.Core
         this.RemoteName,
         this.RemoteEndPoint,
         this.RemoteHostStatus,
+        this.RemoteSessionID,
         this.ContentPosition,
         this.RecvRate,
         this.SendRate,

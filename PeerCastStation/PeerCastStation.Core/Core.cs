@@ -301,6 +301,7 @@ namespace PeerCastStation.Core
     public ConnectionStatus Status    { get; private set; }
     public IPEndPoint RemoteEndPoint  { get; private set; }
     public RemoteHostStatus RemoteHostStatus { get; private set; }
+    public Guid?      RemoteSessionID { get; private set; }
     public long?      ContentPosition { get; private set; }
     public float?     RecvRate        { get; private set; }
     public float?     SendRate        { get; private set; }
@@ -315,6 +316,7 @@ namespace PeerCastStation.Core
       string           remote_name,
       IPEndPoint       remote_endpoint,
       RemoteHostStatus remote_host_status,
+      Guid?            remote_session_id,
       long?      content_position,
       float?     recv_rate,
       float?     send_rate,
@@ -328,6 +330,7 @@ namespace PeerCastStation.Core
       RemoteName       = remote_name;
       RemoteEndPoint   = remote_endpoint;
       RemoteHostStatus = remote_host_status;
+      RemoteSessionID  = remote_session_id;
       ContentPosition  = content_position;
       RecvRate         = recv_rate;
       SendRate         = send_rate;
