@@ -577,6 +577,7 @@ namespace PeerCastStation.UI.HTTP
         if ((info.RemoteHostStatus & RemoteHostStatus.Tracker)!=0)    remote_host_status.Add("tracker");
         res["remoteHostStatus"] = remote_host_status;
         res["remoteName"]       = info.RemoteName;
+        res["remoteSessionId"]  = info.RemoteSessionID?.ToString("N").ToUpperInvariant();
         return res;
       }
 
