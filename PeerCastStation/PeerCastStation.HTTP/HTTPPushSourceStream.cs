@@ -81,19 +81,18 @@ namespace PeerCastStation.HTTP
       if (this.connection?.Client?.Connected ?? false) {
         endpoint = (IPEndPoint)this.connection.Client.Client.RemoteEndPoint;
       }
-      return new ConnectionInfo(
-        "HTTP Push Source",
-        ConnectionType.Source,
-        status,
-        SourceUri.ToString(),
-        endpoint,
-        (endpoint!=null && endpoint.Address.IsSiteLocal()) ? RemoteHostStatus.Local : RemoteHostStatus.None,
-        contentSink.LastContent?.Position ?? 0,
-        RecvRate,
-        SendRate,
-        null,
-        null,
-        clientName);
+      return new ConnectionInfoBuilder {
+        ProtocolName     = "HTTP Push Source",
+        Type             = ConnectionType.Source,
+        Status           = status,
+        RemoteName       = SourceUri.ToString(),
+        RemoteEndPoint   = endpoint,
+        RemoteHostStatus = (endpoint!=null && endpoint.Address.IsSiteLocal()) ? RemoteHostStatus.Local : RemoteHostStatus.None,
+        ContentPosition  = contentSink.LastContent?.Position ?? 0,
+        RecvRate         = RecvRate,
+        SendRate         = SendRate,
+        AgentName        = clientName,
+      }.Build();
     }
 
     private enum ConnectionState {
@@ -280,19 +279,16 @@ namespace PeerCastStation.HTTP
         }
         IPEndPoint endpoint = null;
         string client_name = "";
-        return new ConnectionInfo(
-          "RTMP Source",
-          ConnectionType.Source,
-          status,
-          SourceUri.ToString(),
-          endpoint,
-          RemoteHostStatus.None,
-          null,
-          null,
-          null,
-          null,
-          null,
-          client_name);
+
+        return new ConnectionInfoBuilder {
+          ProtocolName     = "RTMP Source",
+          Type             = ConnectionType.Source,
+          Status           = status,
+          RemoteName       = SourceUri.ToString(),
+          RemoteEndPoint   = endpoint,
+          RemoteHostStatus = RemoteHostStatus.None,
+          AgentName        = client_name,
+        }.Build();
       }
     }
 

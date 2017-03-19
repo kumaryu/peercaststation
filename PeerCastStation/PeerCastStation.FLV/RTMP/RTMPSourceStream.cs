@@ -80,19 +80,18 @@ namespace PeerCastStation.FLV.RTMP
       if (connection!=null) {
         endpoint = connection.RemoteEndPoint;
       }
-      return new ConnectionInfo(
-        "RTMP Source",
-        ConnectionType.Source,
-        status,
-        SourceUri.ToString(),
-        endpoint,
-        (endpoint!=null && endpoint.Address.IsSiteLocal()) ? RemoteHostStatus.Local : RemoteHostStatus.None,
-        flvBuffer.Position,
-        RecvRate,
-        SendRate,
-        null,
-        null,
-        clientName);
+      return new ConnectionInfoBuilder {
+        ProtocolName     = "RTMP Source",
+        Type             = ConnectionType.Source,
+        Status           = status,
+        RemoteName       = SourceUri.ToString(),
+        RemoteEndPoint   = endpoint,
+        RemoteHostStatus = (endpoint!=null && endpoint.Address.IsSiteLocal()) ? RemoteHostStatus.Local : RemoteHostStatus.None,
+        ContentPosition  = flvBuffer.Position,
+        RecvRate         = RecvRate,
+        SendRate         = SendRate,
+        AgentName        = clientName,
+      }.Build();
     }
 
     private enum ConnectionState {
@@ -801,19 +800,15 @@ namespace PeerCastStation.FLV.RTMP
         }
         IPEndPoint endpoint = null;
         string client_name = "";
-        return new ConnectionInfo(
-          "RTMP Source",
-          ConnectionType.Source,
-          status,
-          SourceUri.ToString(),
-          endpoint,
-          RemoteHostStatus.None,
-          null,
-          null,
-          null,
-          null,
-          null,
-          client_name);
+        return new ConnectionInfoBuilder {
+          ProtocolName     = "RTMP Source",
+          Type             = ConnectionType.Source,
+          Status           = status,
+          RemoteName       = SourceUri.ToString(),
+          RemoteEndPoint   = endpoint,
+          RemoteHostStatus = RemoteHostStatus.None,
+          AgentName        = client_name,
+        }.Build();
       }
     }
 

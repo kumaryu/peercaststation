@@ -650,19 +650,14 @@ namespace PeerCastStation.PCP
         host_status |= RemoteHostStatus.Root;
         if (rhost.Address.IsSiteLocal()) host_status |= RemoteHostStatus.Local;
       }
-      return new ConnectionInfo(
-        "PCP COUT",
-        ConnectionType.Announce,
-        status,
-        Name,
-        rhost,
-        host_status,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null);
+      return new ConnectionInfoBuilder {
+        ProtocolName     = "PCP COUT",
+        Type             = ConnectionType.Announce,
+        Status           = status,
+        RemoteName       = Name,
+        RemoteEndPoint   = rhost,
+        RemoteHostStatus = host_status,
+      }.Build();
     }
 
 		public async System.Threading.Tasks.Task<IEnumerable<IYellowPageChannel>> GetChannelsAsync(CancellationToken cancel_token)

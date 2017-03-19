@@ -246,19 +246,20 @@ namespace PeerCastStation.PCP
         relay_count  = Downhost.RelayCount;
         direct_count = Downhost.DirectCount;
       }
-      return new ConnectionInfo(
-        "PCP Relay",
-        ConnectionType.Relay,
-        status,
-        RemoteEndPoint.ToString(),
-        (IPEndPoint)RemoteEndPoint,
-        host_status,
-        lastPosition,
-        Connection.ReadRate,
-        Connection.WriteRate,
-        relay_count,
-        direct_count,
-        this.UserAgent ?? "");
+      return new ConnectionInfoBuilder {
+        ProtocolName     = "PCP Relay",
+        Type             = ConnectionType.Relay,
+        Status           = status,
+        RemoteName       = RemoteEndPoint.ToString(),
+        RemoteEndPoint   = (IPEndPoint)RemoteEndPoint,
+        RemoteHostStatus = host_status,
+        ContentPosition  = lastPosition,
+        RecvRate         = Connection.ReadRate,
+        SendRate         = Connection.WriteRate,
+        LocalRelays      = relay_count,
+        LocalDirects     = direct_count,
+        AgentName        = this.UserAgent ?? "",
+      }.Build();
     }
 
     private RelayRequest relayRequest;

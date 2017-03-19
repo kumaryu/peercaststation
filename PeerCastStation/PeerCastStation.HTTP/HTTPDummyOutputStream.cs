@@ -114,19 +114,17 @@ namespace PeerCastStation.HTTP
 
     public override ConnectionInfo GetConnectionInfo()
     {
-      return new ConnectionInfo(
-        "No Protocol Matched",
-        ConnectionType.Metadata,
-        ConnectionStatus.Connected,
-        RemoteEndPoint.ToString(),
-        (IPEndPoint)RemoteEndPoint,
-        IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
-        null,
-        Connection.ReadRate,
-        Connection.WriteRate,
-        null,
-        null,
-        request.Headers["USER-AGENT"]);
+      return new ConnectionInfoBuilder {
+        ProtocolName     = "No Protocol Matched",
+        Type             = ConnectionType.Metadata,
+        Status           = ConnectionStatus.Connected,
+        RemoteName       = RemoteEndPoint.ToString(),
+        RemoteEndPoint   = (IPEndPoint)RemoteEndPoint,
+        RemoteHostStatus = IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
+        RecvRate         = Connection.ReadRate,
+        SendRate         = Connection.WriteRate,
+        AgentName        = request.Headers["USER-AGENT"],
+      }.Build();
     }
   }
 

@@ -129,17 +129,18 @@ namespace PeerCastStation.FLV.RTMP
 
 		public ConnectionInfo GetConnectionInfo()
 		{
-			return new ConnectionInfo(
-				"RTMP Output",
-				ConnectionType.Direct,
-				ConnectionStatus.Connected,
-				remoteEndPoint.ToString(),
-				remoteEndPoint as System.Net.IPEndPoint,
-				RemoteHostStatus.Receiving,
-				connection.ContentPosition,
-				(float)this.inputStream.ReadRate, (float)this.outputStream.WriteRate,
-				null, null,
-				connection.ClientName);
+      return new ConnectionInfoBuilder {
+        ProtocolName     = "RTMP Output",
+        Type             = ConnectionType.Direct,
+        Status           = ConnectionStatus.Connected,
+        RemoteName       = remoteEndPoint.ToString(),
+        RemoteEndPoint   = remoteEndPoint as System.Net.IPEndPoint,
+        RemoteHostStatus = RemoteHostStatus.Receiving,
+        ContentPosition  = connection.ContentPosition,
+        RecvRate         = (float)this.inputStream.ReadRate,
+        SendRate         = (float)this.outputStream.WriteRate,
+        AgentName        = connection.ClientName
+      }.Build();
 		}
 
 		public OutputStreamType OutputStreamType {

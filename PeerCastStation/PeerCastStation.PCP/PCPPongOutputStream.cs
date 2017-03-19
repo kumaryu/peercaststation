@@ -143,19 +143,16 @@ namespace PeerCastStation.PCP
       if (IsStopped) {
         status = HasError ? ConnectionStatus.Error : ConnectionStatus.Idle;
       }
-      return new ConnectionInfo(
-        "PCP Pong",
-        ConnectionType.Metadata,
-        status,
-        RemoteEndPoint.ToString(),
-        (IPEndPoint)RemoteEndPoint,
-        IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
-        null,
-        Connection.ReadRate,
-        Connection.WriteRate,
-        null,
-        null,
-        null);
+      return new ConnectionInfoBuilder {
+        ProtocolName     = "PCP Pong",
+        Type             = ConnectionType.Metadata,
+        Status           = status,
+        RemoteName       = RemoteEndPoint.ToString(),
+        RemoteEndPoint   = (IPEndPoint)RemoteEndPoint,
+        RemoteHostStatus = IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
+        RecvRate         = Connection.ReadRate,
+        SendRate         = Connection.WriteRate,
+      }.Build();
     }
   }
 
