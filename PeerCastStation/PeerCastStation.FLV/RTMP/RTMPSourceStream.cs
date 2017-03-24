@@ -50,7 +50,16 @@ namespace PeerCastStation.FLV.RTMP
     public RTMPSourceConnection(PeerCast peercast, Channel channel, Uri source_uri, bool use_content_bitrate)
       : base(peercast, channel, source_uri)
     {
-      this.flvBuffer = new FLVContentBuffer(channel, new ChannelContentSink(channel, use_content_bitrate));
+      IContentSink sink = new ChannelContentSink(channel, use_content_bitrate);
+      sink =
+        System.Text.RegularExpressions.Regex.Matches(source_uri.Query, @"(&|\?)([^&=]+)=([^&=]+)")
+          .Cast<System.Text.RegularExpressions.Match>()
+          .Where(param => Uri.UnescapeDataString(param.Groups[2].Value).ToLowerInvariant()=="filters")
+          .SelectMany(param => Uri.UnescapeDataString(param.Groups[3].Value).Split(','))
+          .Select(name => PeerCast.ContentFilters.FirstOrDefault(filter => filter.Name.ToLowerInvariant()==name.ToLowerInvariant()))
+          .Where(filter => filter!=null)
+          .Aggregate(sink, (r,filter) => filter.Activate(r));
+      this.flvBuffer = new FLVContentBuffer(channel, sink);
       this.useContentBitrate = use_content_bitrate;
     }
 
