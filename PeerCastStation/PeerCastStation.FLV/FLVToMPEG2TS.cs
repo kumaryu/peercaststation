@@ -900,7 +900,11 @@ namespace PeerCastStation.FLV
 
       public void OnChannelInfo(ChannelInfo channel_info)
       {
-        targetSink.OnChannelInfo(channel_info);
+        var info = new AtomCollection(channel_info.Extra);
+        info.SetChanInfoType("TS");
+        info.SetChanInfoStreamType("video/mp2t");
+        info.SetChanInfoStreamExt(".ts");
+        targetSink.OnChannelInfo(new ChannelInfo(info));
       }
 
       public void OnChannelTrack(ChannelTrack channel_track)
