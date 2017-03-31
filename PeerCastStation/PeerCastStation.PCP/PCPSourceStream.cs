@@ -641,19 +641,19 @@ Stopped:
         "{0}:{1}",
         SourceUri.Host,
         SourceUri.IsDefaultPort ? PCPVersion.DefaultPort : SourceUri.Port);
-      return new ConnectionInfo(
-        "PCP Source",
-        ConnectionType.Source,
-        this.Status,
-        remote_name,
-        remote_endpoint,
-        remote,
-        lastPosition,
-        RecvRate,
-        SendRate,
-        null,
-        null,
-        server_name);
+      return new ConnectionInfoBuilder {
+        ProtocolName     = "PCP Source",
+        Type             = ConnectionType.Source,
+        Status           = this.Status,
+        RemoteName       = remote_name,
+        RemoteEndPoint   = remote_endpoint,
+        RemoteHostStatus = remote,
+        RemoteSessionID  = uphost?.SessionID,
+        ContentPosition  = lastPosition,
+        RecvRate         = RecvRate,
+        SendRate         = SendRate,
+        AgentName        = server_name,
+      }.Build();
     }
   }
 
@@ -824,19 +824,11 @@ Stopped:
         status = ConnectionStatus.Error;
         break;
       }
-      return new ConnectionInfo(
-        "PCP Source",
-        ConnectionType.Source,
-        status,
-        null,
-        null,
-        RemoteHostStatus.None,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null);
+      return new ConnectionInfoBuilder {
+        ProtocolName     = "PCP Source",
+        Type             = ConnectionType.Source,
+        Status           = status,
+      }.Build();
     }
 
     protected override ISourceConnection CreateConnection(Uri source_uri)

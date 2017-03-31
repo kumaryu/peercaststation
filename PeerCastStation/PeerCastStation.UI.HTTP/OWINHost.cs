@@ -60,19 +60,17 @@ namespace PeerCastStation.UI.HTTP
       if (IsStopped) {
         status = HasError ? ConnectionStatus.Error : ConnectionStatus.Idle;
       }
-      return new ConnectionInfo(
-        "OWIN Host",
-        ConnectionType.Interface,
-        status,
-        RemoteEndPoint.ToString(),
-        (IPEndPoint)RemoteEndPoint,
-        IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
-        null,
-        Connection.ReadRate,
-        Connection.WriteRate,
-        null,
-        null,
-        request.Headers["USER-AGENT"]);
+      return new ConnectionInfoBuilder {
+        ProtocolName     = "OWIN Host",
+        Type             = ConnectionType.Interface,
+        Status           = status,
+        RemoteName       = RemoteEndPoint.ToString(),
+        RemoteEndPoint   = (IPEndPoint)RemoteEndPoint,
+        RemoteHostStatus = IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
+        RecvRate         = Connection.ReadRate,
+        SendRate         = Connection.WriteRate,
+        AgentName        = request.Headers["USER-AGENT"],
+      }.Build();
     }
 
     private async Task<IDictionary<string, object>> CreateOWINEnvironment(CancellationToken cancel_token)

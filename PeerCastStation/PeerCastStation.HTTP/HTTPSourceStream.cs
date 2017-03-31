@@ -180,19 +180,18 @@ namespace PeerCastStation.HTTP
       if (response==null || !response.Headers.TryGetValue("SERVER", out server_name)) {
         server_name = "";
       }
-      return new ConnectionInfo(
-        "HTTP Source",
-        ConnectionType.Source,
-        Status,
-        SourceUri.ToString(),
-        endpoint,
-        (endpoint!=null && endpoint.Address.IsSiteLocal()) ? RemoteHostStatus.Local : RemoteHostStatus.None,
-        contentSink.LastContent?.Position ?? 0,
-        RecvRate,
-        SendRate,
-        null,
-        null,
-        server_name);
+      return new ConnectionInfoBuilder {
+        ProtocolName     = "HTTP Source",
+        Type             = ConnectionType.Source,
+        Status           = Status,
+        RemoteName       = SourceUri.ToString(),
+        RemoteEndPoint   = endpoint,
+        RemoteHostStatus = (endpoint!=null && endpoint.Address.IsSiteLocal()) ? RemoteHostStatus.Local : RemoteHostStatus.None,
+        ContentPosition  = contentSink.LastContent?.Position ?? 0,
+        RecvRate         = RecvRate,
+        SendRate         = SendRate,
+        AgentName        = server_name,
+      }.Build();
     }
 
   }
@@ -224,19 +223,15 @@ namespace PeerCastStation.HTTP
         }
         IPEndPoint endpoint = null;
         string server_name = "";
-        return new ConnectionInfo(
-          "HTTP Source",
-          ConnectionType.Source,
-          status,
-          SourceUri.ToString(),
-          endpoint,
-          RemoteHostStatus.None,
-          null,
-          null,
-          null,
-          null,
-          null,
-          server_name);
+        return new ConnectionInfoBuilder {
+          ProtocolName     = "HTTP Source",
+          Type             = ConnectionType.Source,
+          Status           = status,
+          RemoteName       = SourceUri.ToString(),
+          RemoteEndPoint   = endpoint,
+          RemoteHostStatus = RemoteHostStatus.None,
+          AgentName        = server_name,
+        }.Build();
       }
     }
 

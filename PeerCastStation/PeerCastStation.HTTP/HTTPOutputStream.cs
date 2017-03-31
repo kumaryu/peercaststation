@@ -467,19 +467,18 @@ namespace PeerCastStation.HTTP
       if (request.Headers.ContainsKey("USER-AGENT")) {
         user_agent = request.Headers["USER-AGENT"];
       }
-      return new ConnectionInfo(
-        "HTTP Direct",
-        ConnectionType.Direct,
-        status,
-        RemoteEndPoint.ToString(),
-        (IPEndPoint)RemoteEndPoint,
-        IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
-        lastPacket!=null ? lastPacket.Position : 0,
-        Connection.ReadRate,
-        Connection.WriteRate,
-        null,
-        null,
-        user_agent);
+      return new ConnectionInfoBuilder() {
+        ProtocolName     = "HTTP Direct",
+        Type             = ConnectionType.Direct,
+        Status           = status,
+        RemoteName       = RemoteEndPoint.ToString(),
+        RemoteEndPoint   = (IPEndPoint)RemoteEndPoint,
+        RemoteHostStatus = IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
+        ContentPosition  = lastPacket!=null ? lastPacket.Position : 0,
+        RecvRate         = Connection.ReadRate,
+        SendRate         = Connection.WriteRate,
+        AgentName        = user_agent,
+      }.Build();
     }
 
     public async Task WaitChannelReceived()
