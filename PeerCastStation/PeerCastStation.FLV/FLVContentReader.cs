@@ -1,41 +1,34 @@
 ﻿using System;
-using System.Linq;
 using System.IO;
 using PeerCastStation.Core;
-using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.FLV
 {
-	internal class BadDataException : ApplicationException
-	{
-	}
+  internal class BadDataException : ApplicationException
+  {
+  }
 
-	public class FLVContentReader
-		: IContentReader
-	{
-		private static readonly Logger Logger = new Logger(typeof(FLVContentReader));
-		public FLVContentReader(Channel channel)
-		{
-			this.Channel = channel;
-			this.contentBuffer = new FLVContentBuffer(channel);
-		}
+  public class FLVContentReader
+    : IContentReader
+  {
+    private static readonly Logger Logger = new Logger(typeof(FLVContentReader));
+    public FLVContentReader(Channel channel)
+    {
+      this.Channel = channel;
+    }
 
-		public string Name { get { return "Flash Video (FLV)"; } }
-		public Channel Channel { get; private set; }
-		private FLVContentBuffer contentBuffer;
-		private FLVFileParser fileParser = new FLVFileParser();
+    public string Name { get { return "Flash Video (FLV)"; } }
+    public Channel Channel { get; private set; }
+    private FLVFileParser fileParser = new FLVFileParser();
 
-		public ParsedContent Read(Stream stream)
-		{
-			if (fileParser.Read(stream, contentBuffer)) {
-				return contentBuffer.GetContents();
-			}
-			else {
-				throw new EndOfStreamException();
-			}
-		}
-
-	}
+    public async Task ReadAsync(IContentSink sink, Stream stream, CancellationToken cancel_token)
+    {
+      var buffered_sink = new FLVContentBuffer(this.Channel, sink);
+      await fileParser.ReadAsync(stream, buffered_sink, cancel_token);
+    }
+  }
 
   public class FLVContentReaderFactory
     : IContentReaderFactory

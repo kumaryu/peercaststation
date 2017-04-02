@@ -8,9 +8,10 @@ using PeerCastStation.FLV.RTMP;
 namespace PeerCastStation.FLV
 {
   internal class FLVContentBuffer
-		: IRTMPContentSink
+    : IRTMPContentSink
   {
     public Channel       TargetChannel { get; private set; }
+    public IContentSink  ContentSink   { get; private set; }
     public long          Position      { get { return position; } }
     private long         position        = 0;
     private int          streamIndex     = -1;
@@ -21,11 +22,13 @@ namespace PeerCastStation.FLV
     private RTMPMessage  videoHeader     = null;
     private MemoryStream bodyBuffer      = new MemoryStream();
     private System.Diagnostics.Stopwatch flushTimer = new System.Diagnostics.Stopwatch();
-    private ParsedContent contents = new ParsedContent();
 
-    public FLVContentBuffer(Channel target_channel)
+    public FLVContentBuffer(
+      Channel target_channel,
+      IContentSink content_sink)
     {
       this.TargetChannel = target_channel;
+      this.ContentSink   = content_sink;
       this.flushTimer.Start();
     }
 
@@ -76,7 +79,7 @@ namespace PeerCastStation.FLV
       OnContentChanged(msg);
     }
 
-    public void OnFLVHeader()
+    public void OnFLVHeader(FLVFileHeader header)
     {
       var info = new AtomCollection();
       info.SetChanInfoType("FLV");
@@ -180,7 +183,7 @@ namespace PeerCastStation.FLV
       streamOrigin    = DateTime.Now;
       timestampOrigin = msg.Timestamp;
       var bytes = s.ToArray();
-      contents.ContentHeader = new Content(streamIndex, TimeSpan.Zero, position, bytes);
+      ContentSink.OnContentHeader(new Content(streamIndex, TimeSpan.Zero, position, bytes));
       position += bytes.Length;
     }
 
@@ -197,10 +200,8 @@ namespace PeerCastStation.FLV
     private void FlushContents()
     {
       if (bodyBuffer.Length>0) {
-        if (contents.Contents==null) {
-          contents.Contents = new List<Content>();
-        }
-        contents.Contents.Add(new Content(streamIndex, DateTime.Now-streamOrigin, position, bodyBuffer.ToArray()));
+        ContentSink.OnContent(
+          new Content(streamIndex, DateTime.Now-streamOrigin, position, bodyBuffer.ToArray()));
         position += bodyBuffer.Length;
         bodyBuffer.SetLength(0);
       }
@@ -210,21 +211,13 @@ namespace PeerCastStation.FLV
 
     private void OnChannelInfoChanged(AtomCollection info)
     {
-      contents.ChannelInfo = new ChannelInfo(info);
+      ContentSink.OnChannelInfo(new ChannelInfo(info));
     }
 
     private void OnChannelTrackChanged(AtomCollection info)
     {
-      contents.ChannelTrack = new ChannelTrack(info);
+      ContentSink.OnChannelTrack(new ChannelTrack(info));
     }
-
-    public ParsedContent GetContents()
-    {
-      var res = contents;
-      contents = new ParsedContent();
-      return res;
-    }
-
   }
 
 }

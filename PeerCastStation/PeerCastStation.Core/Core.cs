@@ -301,6 +301,7 @@ namespace PeerCastStation.Core
     public ConnectionStatus Status    { get; private set; }
     public IPEndPoint RemoteEndPoint  { get; private set; }
     public RemoteHostStatus RemoteHostStatus { get; private set; }
+    public Guid?      RemoteSessionID { get; private set; }
     public long?      ContentPosition { get; private set; }
     public float?     RecvRate        { get; private set; }
     public float?     SendRate        { get; private set; }
@@ -315,6 +316,7 @@ namespace PeerCastStation.Core
       string           remote_name,
       IPEndPoint       remote_endpoint,
       RemoteHostStatus remote_host_status,
+      Guid?            remote_session_id,
       long?      content_position,
       float?     recv_rate,
       float?     send_rate,
@@ -328,6 +330,7 @@ namespace PeerCastStation.Core
       RemoteName       = remote_name;
       RemoteEndPoint   = remote_endpoint;
       RemoteHostStatus = remote_host_status;
+      RemoteSessionID  = remote_session_id;
       ContentPosition  = content_position;
       RecvRate         = recv_rate;
       SendRate         = send_rate;
@@ -418,15 +421,11 @@ namespace PeerCastStation.Core
     /// ストリームの取得を開始します。
     /// チャンネルと取得元URIはISourceStreamFactory.Createに渡された物を使います
     /// </summary>
-    void Start();
+    Task<StopReason> Run();
     /// <summary>
     /// 現在の接続を切って新しいソースへの接続を試みます。
     /// </summary>
     void Reconnect();
-    /// <summary>
-    /// 現在の接続を切って指定した新しいソースへの接続を試みます。
-    /// </summary>
-    void Reconnect(Uri source_uri);
     /// <summary>
     /// ストリームへパケットを送信します
     /// </summary>
@@ -450,11 +449,6 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <returns>呼び出した時点の接続先情報</returns>
     ConnectionInfo GetConnectionInfo();
-
-    /// <summary>
-    /// ストリームの動作が終了した際に呼ばれるイベントです
-    /// </summary>
-    event StreamStoppedEventHandler Stopped;
   }
 
   /// <summary>
@@ -499,6 +493,12 @@ namespace PeerCastStation.Core
     /// <returns>プロトコルが適合していればSourceStreamのインスタンス、それ以外はnull</returns>
     /// <exception cref="NotImplentedException">このプロトコルではContentReaderを指定した読み取りができない</exception> 
     ISourceStream Create(Channel channel, Uri source, IContentReader reader);
+  }
+
+  public enum HandlerResult {
+    Close    =  0,
+    Continue =  1,
+    Error    = -1,
   }
 
   /// <summary>
@@ -550,7 +550,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 元になるストリームへチャンネルのContentを流しはじめます
     /// </summary>
-    void Start();
+    Task<HandlerResult> Start();
     /// <summary>
     /// ストリームへパケットを送信します
     /// </summary>
@@ -575,10 +575,6 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <returns>呼び出した時点の接続先情報</returns>
     ConnectionInfo GetConnectionInfo();
-    /// <summary>
-    /// 出力ストリームの動作が終了した際に呼ばれるイベントです
-    /// </summary>
-    event StreamStoppedEventHandler Stopped;
   }
 
   /// <summary>
@@ -649,29 +645,24 @@ namespace PeerCastStation.Core
     public IList<Content> Contents;
   }
 
+  public interface IContentSink
+  {
+    void OnChannelInfo(ChannelInfo channel_info);
+    void OnChannelTrack(ChannelTrack channel_track);
+    void OnContentHeader(Content content_header);
+    void OnContent(Content content);
+    void OnStop(StopReason reason);
+  }
+
   /// <summary>
   /// ストリームからのコンテントデータの読み取りを行なうインターフェースです
   /// </summary>
   public interface IContentReader
   {
-    /// <summary>
-    /// 指定したストリームからデータを読み取ります
-    /// </summary>
-    /// <param name="stream">読み取り元のストリーム</param>
-    /// <returns>読み取ったデータを保持するParsedContent</returns>
-    /// <exception cref="EndOfStreamException">
-    /// 必要なデータを読み取る前にストリームが終端に到達した
-    /// </exception>
-    /// <remarks>
-    /// 戻り値にChannelInfoが存在する場合には、次のパケットが設定されていることが期待されます。
-    /// <list type="bullet">
-    ///   <item><description>Atom.PCP_CHAN_INFO_TYPE</description></item>
-    ///   <item><description>Atom.PCP_CHAN_INFO_MIME</description></item>
-    ///   <item><description>Atom.PCP_CHAN_INFO_PLS</description></item>
-    ///   <item><description>Atom.PCP_CHAN_INFO_EXT</description></item>
-    /// </list>
-    /// </remarks>
-    ParsedContent Read(Stream stream);
+    Task ReadAsync(
+      IContentSink      sink,
+      Stream            stream,
+      CancellationToken cancel_token);
 
     /// <summary>
     /// コンテント解析器の名称を取得します
@@ -709,6 +700,13 @@ namespace PeerCastStation.Core
     /// <param name="mime_type">解析したMIMEタイプの設定先</param>
     /// <returns>解析できた時はtrue、それ以外はfalse</returns>
     bool TryParseContentType(byte[] header, out string content_type, out string mime_type);
+  }
+
+  public interface IContentFilter
+  {
+    string Name { get; } 
+
+    IContentSink Activate(IContentSink sink);
   }
 
   /// <summary>

@@ -6,8 +6,9 @@ using System.Collections.Generic;
 using PeerCastStation.Core;
 using PeerCastStation.HTTP;
 using PeerCastStation.UI.HTTP.JSONRPC;
-using PeerCastStation.UI;
 using Newtonsoft.Json.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.UI.HTTP
 {
@@ -21,13 +22,11 @@ namespace PeerCastStation.UI.HTTP
     private LogWriter logWriter = new LogWriter(1000);
     private Updater updater = new Updater();
     private IEnumerable<VersionDescription> newVersions = Enumerable.Empty<VersionDescription>();
+    private OWINApplication application;
 
     private ObjectIdRegistry idRegistry = new ObjectIdRegistry();
-    private APIHostOutputStreamFactory factory;
     override protected void OnAttach()
     {
-      factory = new APIHostOutputStreamFactory(this, Application.PeerCast);
-      Application.PeerCast.OutputStreamFactories.Add(factory);
     }
 
     protected override void OnStart()
@@ -35,16 +34,28 @@ namespace PeerCastStation.UI.HTTP
       Logger.AddWriter(logWriter);
       updater.NewVersionFound += OnNewVersionFound;
       updater.CheckVersion();
+      var owinhost =
+        Application.PeerCast.OutputStreamFactories.FirstOrDefault(factory => factory is OWINHostOutputStreamFactory) as OWINHostOutputStreamFactory;
+      if (owinhost!=null) {
+        if (application!=null) {
+          owinhost.RemoveApplication(application);
+        }
+        application = owinhost.AddApplication("/api/1", PathParameters.None, OnProcess);
+      }
     }
 
     protected override void OnStop()
     {
+      var owinhost =
+        Application.PeerCast.OutputStreamFactories.FirstOrDefault(factory => factory is OWINHostOutputStreamFactory) as OWINHostOutputStreamFactory;
+      if (owinhost!=null && application!=null) {
+        owinhost.RemoveApplication(application);
+      }
       Logger.RemoveWriter(logWriter);
     }
 
     protected override void OnDetach()
     {
-      Application.PeerCast.OutputStreamFactories.Remove(factory);
     }
 
     void OnNewVersionFound(object sender, NewVersionFoundEventArgs args)
@@ -89,41 +100,105 @@ namespace PeerCastStation.UI.HTTP
       }
     }
 
-		public IEnumerable<IYellowPageChannel> GetYPChannels()
-		{
-			var channel_list = Application.Plugins.FirstOrDefault(plugin => plugin is YPChannelList) as YPChannelList;
-			if (channel_list==null) return Enumerable.Empty<IYellowPageChannel>();
-			return channel_list.Channels;
-		}
+    public IEnumerable<IYellowPageChannel> GetYPChannels()
+    {
+      var channel_list = Application.Plugins.FirstOrDefault(plugin => plugin is YPChannelList) as YPChannelList;
+      if (channel_list==null) return Enumerable.Empty<IYellowPageChannel>();
+      return channel_list.Channels;
+    }
 
-		public IEnumerable<IYellowPageChannel> UpdateYPChannels()
-		{
-			var channel_list = Application.Plugins.FirstOrDefault(plugin => plugin is YPChannelList) as YPChannelList;
-			if (channel_list==null) return Enumerable.Empty<IYellowPageChannel>();
-			return channel_list.Update();
-		}
+    public IEnumerable<IYellowPageChannel> UpdateYPChannels()
+    {
+      var channel_list = Application.Plugins.FirstOrDefault(plugin => plugin is YPChannelList) as YPChannelList;
+      if (channel_list==null) return Enumerable.Empty<IYellowPageChannel>();
+      return channel_list.Update();
+    }
 
-    public class APIHostOutputStream
-      : OutputStreamBase
+    public static readonly int RequestLimit = 64*1024;
+    public static readonly int TimeoutLimit = 5000;
+    private async Task OnProcess(IDictionary<string, object> owinenv)
+    {
+      var env = new OWINEnv(owinenv);
+      var cancel_token = env.CallCanlelled;
+      try {
+        
+        if (!HTTPUtils.CheckAuthorization(env.GetAuthorizationToken(), env.AccessControlInfo)) {
+          throw new HTTPError(HttpStatusCode.Unauthorized);
+        }
+        var ctx = new APIContext(this, this.Application.PeerCast, env.AccessControlInfo);
+        var rpc_host = new JSONRPCHost(ctx);
+        switch (env.RequestMethod) {
+        case "HEAD":
+        case "GET":
+          await SendJson(env, ctx.GetVersionInfo(), env.RequestMethod!="HEAD", cancel_token);
+          break;
+        case "POST":
+          {
+            if (!env.RequestHeaders.ContainsKey("X-REQUESTED-WITH")) {
+              throw new HTTPError(HttpStatusCode.BadRequest);
+            }
+            if (!env.RequestHeaders.ContainsKey("CONTENT-LENGTH")) {
+              throw new HTTPError(HttpStatusCode.LengthRequired);
+            }
+            var body = env.RequestBody;
+            var len  = body.Length;
+            if (len<=0 || RequestLimit<len) {
+              throw new HTTPError(HttpStatusCode.BadRequest);
+            }
+
+            try {
+              var timeout_token = new CancellationTokenSource(TimeoutLimit);
+              var buf = await body.ReadBytesAsync((int)len, CancellationTokenSource.CreateLinkedTokenSource(cancel_token, timeout_token.Token).Token);
+              var request_str = System.Text.Encoding.UTF8.GetString(buf);
+              JToken res = rpc_host.ProcessRequest(request_str);
+              if (res!=null) {
+                await SendJson(env, res, true, cancel_token);
+              }
+              else {
+                throw new HTTPError(HttpStatusCode.NoContent);
+              }
+            }
+            catch (OperationCanceledException) {
+              throw new HTTPError(HttpStatusCode.RequestTimeout);
+            }
+          }
+          break;
+        default:
+          throw new HTTPError(HttpStatusCode.MethodNotAllowed);
+        }
+      }
+      catch (HTTPError err) {
+        env.ResponseStatusCode = (int)err.StatusCode;
+      }
+      catch (UnauthorizedAccessException) {
+        env.ResponseStatusCode = (int)HttpStatusCode.Forbidden;
+      }
+    }
+
+    private async Task SendJson(OWINEnv env, JToken token, bool send_body, CancellationToken cancel_token)
+    {
+      var body = System.Text.Encoding.UTF8.GetBytes(token.ToString());
+      env.AddResponseHeader("Content-Type",   "application/json");
+      env.AddResponseHeader("Content-Length", body.Length.ToString());
+      env.ResponseStatusCode = (int)HttpStatusCode.OK;
+      if (send_body) {
+        await env.ResponseBody.WriteAsync(body, 0, body.Length, cancel_token);
+      }
+    }
+
+    public class APIContext
     {
       APIHost owner;
-      HTTPRequest request;
-      JSONRPCHost rpcHost;
-      public APIHostOutputStream(
+      public PeerCast PeerCast { get; private set; }
+      public AccessControlInfo AccessControlInfo { get; private set; }
+      public APIContext(
         APIHost owner,
         PeerCast peercast,
-        Stream input_stream,
-        Stream output_stream,
-        EndPoint remote_endpoint,
-        AccessControlInfo access_control,
-        HTTPRequest request,
-        byte[] header)
-        : base(peercast, input_stream, output_stream, remote_endpoint, access_control, null, header)
+        AccessControlInfo access_control)
       {
-        this.owner   = owner;
-        this.request = request;
-        this.rpcHost = new JSONRPCHost(this);
-        Logger.Debug("Initialized: Remote {0}", remote_endpoint);
+        this.owner = owner;
+        this.PeerCast = peercast;
+        this.AccessControlInfo = access_control;
       }
 
       private int GetObjectId(object obj)
@@ -131,29 +206,8 @@ namespace PeerCastStation.UI.HTTP
         return owner.idRegistry.GetId(obj);
       }
 
-      public override ConnectionInfo GetConnectionInfo()
-      {
-        ConnectionStatus status = ConnectionStatus.Connected;
-        if (IsStopped) {
-          status = HasError ? ConnectionStatus.Error : ConnectionStatus.Idle;
-        }
-        return new ConnectionInfo(
-          "API Host",
-          ConnectionType.Interface,
-          status,
-          RemoteEndPoint.ToString(),
-          (IPEndPoint)RemoteEndPoint,
-          IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
-          null,
-          RecvRate,
-          SendRate,
-          null,
-          null,
-          request.Headers["USER-AGENT"]);
-      }
-
       [RPCMethod("getVersionInfo")]
-      private JObject GetVersionInfo()
+      public JObject GetVersionInfo()
       {
         var res = new JObject();
         res["agentName"]  = PeerCast.AgentName;
@@ -165,8 +219,8 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("getAuthToken")]
       public string GetAuthToken()
       {
-        if (AccessControl.AuthenticationKey!=null) {
-          return HTTPUtils.CreateAuthorizationToken(AccessControl.AuthenticationKey);
+        if (AccessControlInfo.AuthenticationKey!=null) {
+          return HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey);
         }
         else {
           return null;
@@ -523,6 +577,7 @@ namespace PeerCastStation.UI.HTTP
         if ((info.RemoteHostStatus & RemoteHostStatus.Tracker)!=0)    remote_host_status.Add("tracker");
         res["remoteHostStatus"] = remote_host_status;
         res["remoteName"]       = info.RemoteName;
+        res["remoteSessionId"]  = info.RemoteSessionID?.ToString("N").ToUpperInvariant();
         return res;
       }
 
@@ -1153,192 +1208,7 @@ namespace PeerCastStation.UI.HTTP
 				return JToken.Parse(user_config[key]);
 			}
 
-      public static readonly int RequestLimit = 64*1024;
-      public static readonly int TimeoutLimit = 5000;
-      private int bodyLength = -1;
-      private System.Diagnostics.Stopwatch timeoutWatch = new System.Diagnostics.Stopwatch();
-      protected override void OnStarted()
-      {
-        base.OnStarted();
-				System.Threading.SynchronizationContext.SetSynchronizationContext(new System.Threading.SynchronizationContext());
-        Logger.Debug("Started");
-        try {
-          if (!HTTPUtils.CheckAuthorization(this.request, AccessControl.AuthenticationKey)) {
-            throw new HTTPError(HttpStatusCode.Unauthorized);
-          }
-          if (this.request.Method=="HEAD" || this.request.Method=="GET") {
-            var token = GetVersionInfo();
-            var body = System.Text.Encoding.UTF8.GetBytes(token.ToString());
-            var parameters = new Dictionary<string, string> {
-              {"Content-Type",   "application/json" },
-              {"Content-Length", body.Length.ToString() },
-            };
-            Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.OK, parameters));
-            if (this.request.Method!="HEAD") {
-              Send(body);
-            }
-            Stop();
-          }
-          else if (this.request.Method=="POST") {
-            string length;
-            if (request.Headers.TryGetValue("CONTENT-LENGTH", out length)) {
-              int len;
-              if (int.TryParse(length, out len) && len>=0 && len<=RequestLimit) {
-                bodyLength = len;
-                timeoutWatch.Start();
-              }
-              else {
-                throw new HTTPError(HttpStatusCode.BadRequest);
-              }
-            }
-            else {
-              throw new HTTPError(HttpStatusCode.LengthRequired);
-            }
-          }
-          else {
-            throw new HTTPError(HttpStatusCode.MethodNotAllowed);
-          }
-        }
-        catch (HTTPError err) {
-          Send(HTTPUtils.CreateResponseHeader(err.StatusCode, new Dictionary<string, string> { }));
-          Stop();
-        }
-      }
-
-      protected override void OnIdle()
-      {
-        base.OnIdle();
-        if (this.request.Method!="POST" || bodyLength<0) return;
-        if (!this.request.Headers.ContainsKey("X-REQUESTED-WITH")) {
-          Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.BadRequest, new Dictionary<string, string>()));
-          Stop();
-          return;
-        }
-        string request_str = null;
-        if (Recv(stream => {
-          if (stream.Length-stream.Position<bodyLength) throw new EndOfStreamException();
-          var buf = new byte[stream.Length-stream.Position];
-          stream.Read(buf, 0, (int)(stream.Length-stream.Position));
-          request_str = System.Text.Encoding.UTF8.GetString(buf);
-        })) {
-          JToken res = rpcHost.ProcessRequest(request_str);
-          if (res!=null) {
-            SendJson(res);
-          }
-          else {
-            Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.NoContent, new Dictionary<string, string>()));
-          }
-          Stop();
-        }
-        else if (timeoutWatch.ElapsedMilliseconds>TimeoutLimit) {
-          Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.RequestTimeout, new Dictionary<string, string>()));
-          Stop();
-        }
-      }
-
-      private void Send(string str)
-      {
-        Send(System.Text.Encoding.UTF8.GetBytes(str));
-      }
-
-      private void SendJson(JToken token)
-      {
-        var body = System.Text.Encoding.UTF8.GetBytes(token.ToString());
-        var parameters = new Dictionary<string, string> {
-          {"Content-Type",   "application/json" },
-          {"Content-Length", body.Length.ToString() },
-        };
-        Send(HTTPUtils.CreateResponseHeader(HttpStatusCode.OK, parameters));
-        Send(body);
-      }
-
-      protected override void OnStopped()
-      {
-        Logger.Debug("Finished");
-       	base.OnStopped();
-      }
-
-      public override OutputStreamType OutputStreamType
-      {
-        get { return OutputStreamType.Interface; }
-      }
     }
 
-    public class APIHostOutputStreamFactory
-      : OutputStreamFactoryBase
-    {
-      public override string Name
-      {
-        get { return "API Host UI"; }
-      }
-
-      public override OutputStreamType OutputStreamType
-      {
-        get { return OutputStreamType.Interface; }
-      }
-
-      public override int Priority
-      {
-        get { return 10; }
-      }
-
-      public override IOutputStream Create(
-        Stream input_stream,
-        Stream output_stream,
-        EndPoint remote_endpoint,
-        AccessControlInfo access_control,
-        Guid channel_id,
-        byte[] header)
-      {
-        HTTPRequest request = null;
-        long bytes = 0;
-        using (var stream = new MemoryStream(header)) {
-          try {
-            request = HTTPRequestReader.Read(stream);
-            bytes = stream.Position;
-          }
-          catch (EndOfStreamException) {
-          }
-          catch (InvalidDataException) {
-          }
-        }
-        return new APIHostOutputStream(
-          owner,
-          PeerCast,
-          input_stream,
-          output_stream,
-          remote_endpoint,
-          access_control,
-          request,
-          header.Skip((int)bytes).ToArray());
-      }
-
-      public override Guid? ParseChannelID(byte[] header)
-      {
-        HTTPRequest res = null;
-        using (var stream = new MemoryStream(header)) {
-          try {
-            res = HTTPRequestReader.Read(stream);
-          }
-          catch (EndOfStreamException) {
-          }
-          catch (InvalidDataException) {
-          }
-        }
-        if (res!=null && res.Uri.AbsolutePath=="/api/1") {
-          return Guid.Empty;
-        }
-        else {
-          return null;
-        }
-      }
-
-      APIHost owner;
-      public APIHostOutputStreamFactory(APIHost owner, PeerCast peercast)
-        : base(peercast)
-      {
-        this.owner = owner;
-      }
-    }
   }
 }

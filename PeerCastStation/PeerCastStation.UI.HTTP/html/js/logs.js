@@ -41,7 +41,7 @@ var LogsViewModel = new function() {
   self.bind = function(target) {
     self.update();
     ko.applyBindings(self, target);
-    setInterval(self.update(), 1000);
+    setInterval(self.update, 1000);
   };
 };
 

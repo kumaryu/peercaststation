@@ -108,34 +108,30 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
-		private async Task<Channel> RequestChannel(
-			StreamName stream_name,
-			CancellationToken cancel_token)
-		{
-			Guid channel_id;
-			if (!Guid.TryParse(stream_name.Name, out channel_id)) {
-				return null;
-			}
-			var tracker_uri =
-				stream_name.Parameters.ContainsKey("tip") ?
-				OutputStreamBase.CreateTrackerUri(channel_id, stream_name.Parameters["tip"]) :
-				null;
-			var channel = owner.RequestChannel(channel_id, tracker_uri);
-			if (channel==null) return null;
-			var trying = 0;
-			while (
-					trying++<10 &&
-					(channel.ChannelInfo==null ||
-					 String.IsNullOrEmpty(channel.ChannelInfo.ContentType))){
-				await Task.Delay(1000, cancel_token);
-			}
-			if (channel.ChannelInfo==null ||
-			    String.IsNullOrEmpty(channel.ChannelInfo.ContentType) ||
-			    channel.ChannelInfo.ContentType!="FLV") {
-				return null;
-			}
-			return channel;
-		}
+    private async Task<Channel> RequestChannel(
+      StreamName stream_name,
+      CancellationToken cancel_token)
+    {
+      Guid channel_id;
+      if (!Guid.TryParse(stream_name.Name, out channel_id)) {
+        return null;
+      }
+      var tracker_uri =
+        stream_name.Parameters.ContainsKey("tip") ?
+        OutputStreamBase.CreateTrackerUri(channel_id, stream_name.Parameters["tip"]) :
+        null;
+      var channel = owner.RequestChannel(channel_id, tracker_uri);
+      if (channel==null) return null;
+      await Task.WhenAny(
+        Task.Delay(10000),
+        channel.WaitForReadyContentTypeAsync(cancel_token));
+      if (channel.ChannelInfo==null ||
+          String.IsNullOrEmpty(channel.ChannelInfo.ContentType) ||
+          channel.ChannelInfo.ContentType!="FLV") {
+        return null;
+      }
+      return channel;
+    }
 
 		private async Task SendOnStatus(
 				long stream_id,
@@ -263,9 +259,9 @@ namespace PeerCastStation.FLV.RTMP
 				this.connection = conn;
 			}
 
-			public void OnFLVHeader()
-			{
-			}
+      public void OnFLVHeader(FLVFileHeader header)
+      {
+      }
 
 			public void OnData(DataMessage msg)
 			{
@@ -278,23 +274,30 @@ namespace PeerCastStation.FLV.RTMP
 				);
 			}
 
+      private long timestampBase = -1;
 			public void OnVideo(RTMPMessage msg)
 			{
-				this.connection.PostMessage(3,
-					new RTMPMessage(
-						msg.MessageType,
-						msg.Timestamp,
-						this.connection.StreamId,
-						msg.Body)
-				);
+        if (timestampBase<0 && msg.Timestamp>0) {
+          timestampBase = msg.Timestamp;
+        }
+        this.connection.PostMessage(3,
+          new RTMPMessage(
+            msg.MessageType,
+            msg.Timestamp - Math.Max(timestampBase, 0),
+            this.connection.StreamId,
+            msg.Body)
+        );
 			}
 
 			public void OnAudio(RTMPMessage msg)
 			{
+        if (timestampBase<0 && msg.Timestamp>0) {
+          timestampBase = msg.Timestamp;
+        }
 				this.connection.PostMessage(3,
 					new RTMPMessage(
 						msg.MessageType,
-						msg.Timestamp,
+            msg.Timestamp - Math.Max(timestampBase, 0),
 						this.connection.StreamId,
 						msg.Body)
 				);

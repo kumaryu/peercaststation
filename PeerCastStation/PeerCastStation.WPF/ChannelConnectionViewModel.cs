@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using PeerCastStation.Core;
+using System;
 using System.ComponentModel;
-using System.Linq;
-using System.Windows.Media.Imaging;
-using PeerCastStation.Core;
 
 namespace PeerCastStation.WPF
 {
@@ -56,6 +53,24 @@ namespace PeerCastStation.WPF
     {
       return Connection.GetHashCode();
     }
+
+    protected string GetRemoteName(ConnectionInfo connection_info)
+    {
+      var settings = PeerCastApplication.Current.Settings.Get<WPFSettings>();
+      switch (settings.RemoteNodeName) {
+      case RemoteNodeName.EndPoint:
+        return connection_info.RemoteEndPoint!=null ?
+               connection_info.RemoteEndPoint.ToString() :
+               connection_info.RemoteName;
+      case RemoteNodeName.SessionID:
+        return connection_info.RemoteSessionID.HasValue ?
+               connection_info.RemoteSessionID.Value.ToString("N").ToUpperInvariant() :
+               connection_info.RemoteName;
+      case RemoteNodeName.Uri:
+      default:
+        return connection_info.RemoteName;
+      }
+    }
   }
 
   public class SourceChannelConnectionViewModel
@@ -89,7 +104,7 @@ namespace PeerCastStation.WPF
     }
 
     public override string RemoteName {
-      get { return sourceStream.GetConnectionInfo().RemoteName; }
+      get { return GetRemoteName(sourceStream.GetConnectionInfo()); }
     }
 
     public override string Bitrate {
@@ -173,7 +188,7 @@ namespace PeerCastStation.WPF
     }
 
     public override string RemoteName {
-      get { return outputStream.GetConnectionInfo().RemoteName; }
+      get { return GetRemoteName(outputStream.GetConnectionInfo()); }
     }
 
     public override string Bitrate {
@@ -244,7 +259,7 @@ namespace PeerCastStation.WPF
     }
 
     public override string RemoteName {
-      get { return announcingChannel.YellowPage.GetConnectionInfo().RemoteName; }
+      get { return GetRemoteName(announcingChannel.YellowPage.GetConnectionInfo()); }
     }
 
     public override string Bitrate {

@@ -19,6 +19,8 @@ using System.Net;
 using System.IO;
 
 using PeerCastStation.Core;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.PCP
 {
@@ -77,10 +79,7 @@ namespace PeerCastStation.PCP
   public class PCPPongOutputStream
     : OutputStreamBase
   {
-    public override string ToString()
-    {
-      return String.Format("PCP(PONG) {0}", RemoteEndPoint);
-    }
+    public Guid? RemoteSessionID { get; private set; } = null;
 
     public PCPPongOutputStream(
       PeerCast peercast,
@@ -94,48 +93,32 @@ namespace PeerCastStation.PCP
       Logger.Debug("Initialized: Remote {0}", endpoint);
     }
 
-    protected override void OnStarted()
+    protected override async Task<StopReason> DoProcess(CancellationToken cancel_token)
     {
-      Logger.Debug("Starting");
-     	base.OnStarted();
-    }
-
-    protected override void OnIdle()
-    {
-      base.OnIdle();
-      try {
-        foreach (var atom in Connection.RecvAtoms()) {
-          ProcessAtom(atom);
-        }
+      var timeout_source = CancellationTokenSource.CreateLinkedTokenSource(
+        new CancellationTokenSource(3000).Token,
+        cancel_token);
+      while (!timeout_source.IsCancellationRequested) {
+        var atom = await Connection.ReadAtomAsync(timeout_source.Token);
+        await ProcessAtom(atom, cancel_token);
       }
-      catch (InvalidDataException e) {
-        Logger.Error(e);
-        OnError();
-      }
-      catch (IOException e) {
-        Logger.Info(e);
-        OnError();
-      }
+      return StopReason.OffAir;
     }
 
-    protected override void OnStopped()
+    protected Task ProcessAtom(Atom atom, CancellationToken cancel_token)
     {
-      base.OnStopped();
-      Logger.Debug("Finished");
+           if (atom.Name==Atom.PCP_HELO) return OnPCPHelo(atom, cancel_token);
+      else if (atom.Name==Atom.PCP_QUIT) return OnPCPQuit(atom, cancel_token);
+      else return Task.Delay(0);
     }
 
-    protected virtual void ProcessAtom(Atom atom)
-    {
-           if (atom.Name==Atom.PCP_HELO) OnPCPHelo(atom);
-      else if (atom.Name==Atom.PCP_QUIT) OnPCPQuit(atom);
-    }
-
-    protected virtual void OnPCPHelo(Atom atom)
+    protected async Task OnPCPHelo(Atom atom, CancellationToken cancel_token)
     {
       var session_id = atom.Children.GetHeloSessionID();
+      RemoteSessionID = session_id;
       var oleh = new AtomCollection();
       oleh.SetHeloSessionID(PeerCast.SessionID);
-      Send(new Atom(Atom.PCP_OLEH, oleh));
+      await Connection.WriteAsync(new Atom(Atom.PCP_OLEH, oleh));
       if (session_id==null) {
         Logger.Info("Helo has no SessionID");
         Stop(StopReason.NotIdentifiedError);
@@ -146,14 +129,15 @@ namespace PeerCastStation.PCP
       }
     }
 
-    protected virtual void OnPCPQuit(Atom atom)
+    protected Task OnPCPQuit(Atom atom, CancellationToken cancel_token)
     {
       Stop(StopReason.None);
+      return Task.Delay(0);
     }
 
     public override OutputStreamType OutputStreamType
     {
-      get { return OutputStreamType.Metadata;  }
+      get { return OutputStreamType.Metadata; }
     }
 
     public override ConnectionInfo GetConnectionInfo()
@@ -162,19 +146,17 @@ namespace PeerCastStation.PCP
       if (IsStopped) {
         status = HasError ? ConnectionStatus.Error : ConnectionStatus.Idle;
       }
-      return new ConnectionInfo(
-        "PCP Pong",
-        ConnectionType.Metadata,
-        status,
-        RemoteEndPoint.ToString(),
-        (IPEndPoint)RemoteEndPoint,
-        IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
-        null,
-        RecvRate,
-        SendRate,
-        null,
-        null,
-        null);
+      return new ConnectionInfoBuilder {
+        ProtocolName     = "PCP Pong",
+        Type             = ConnectionType.Metadata,
+        Status           = status,
+        RemoteName       = RemoteEndPoint.ToString(),
+        RemoteEndPoint   = (IPEndPoint)RemoteEndPoint,
+        RemoteHostStatus = IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
+        RemoteSessionID  = RemoteSessionID,
+        RecvRate         = Connection.ReadRate,
+        SendRate         = Connection.WriteRate,
+      }.Build();
     }
   }
 

@@ -73,6 +73,7 @@ namespace PeerCastStation.PCP
     }
     private List<AnnouncingChannel> announcingChannels = new List<AnnouncingChannel>();
     private AnnouncingStatus AnnouncingStatus { get; set; }
+    private Guid? RemoteSessionID { get; set; }
 
 		public class PCPYellowPageChannel
 			: IYellowPageChannel
@@ -397,6 +398,7 @@ namespace PeerCastStation.PCP
         try {
           Logger.Debug("Connecting to YP");
           AnnouncingStatus = AnnouncingStatus.Connecting;
+          RemoteSessionID = null;
           using (var client = new TcpClient(host, port)) {
             remoteEndPoint = (IPEndPoint)client.Client.RemoteEndPoint;
             using (var stream = client.GetStream()) {
@@ -503,6 +505,7 @@ namespace PeerCastStation.PCP
         }
         finally {
           remoteEndPoint = null;
+          RemoteSessionID = null;
         }
         Logger.Debug("Connection closed");
         if (!IsStopped) {
@@ -517,6 +520,7 @@ namespace PeerCastStation.PCP
 
     private void OnPCPOleh(Atom atom)
     {
+      RemoteSessionID = atom.Children.GetHeloSessionID();
       var dis = atom.Children.GetHeloDisable();
       if (dis!=null && dis.Value!=0) {
       }
@@ -650,19 +654,15 @@ namespace PeerCastStation.PCP
         host_status |= RemoteHostStatus.Root;
         if (rhost.Address.IsSiteLocal()) host_status |= RemoteHostStatus.Local;
       }
-      return new ConnectionInfo(
-        "PCP COUT",
-        ConnectionType.Announce,
-        status,
-        Name,
-        rhost,
-        host_status,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null);
+      return new ConnectionInfoBuilder {
+        ProtocolName     = "PCP COUT",
+        Type             = ConnectionType.Announce,
+        Status           = status,
+        RemoteName       = Name,
+        RemoteEndPoint   = rhost,
+        RemoteHostStatus = host_status,
+        RemoteSessionID  = RemoteSessionID,
+      }.Build();
     }
 
 		public async System.Threading.Tasks.Task<IEnumerable<IYellowPageChannel>> GetChannelsAsync(CancellationToken cancel_token)

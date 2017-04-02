@@ -1,6 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.Core
 {
@@ -15,34 +17,30 @@ namespace PeerCastStation.Core
       this.Channel = channel;
     }
 
-    private int streamIndex = -1;
-    private DateTime streamOrigin;
-    public ParsedContent Read(Stream stream)
+    public async Task ReadAsync(IContentSink sink, Stream stream, CancellationToken cancel_token)
     {
-      if (stream.Length-stream.Position<=0) throw new EndOfStreamException();
-      var res = new ParsedContent();
-      var pos = Channel.ContentPosition;
-      if (Channel.ContentHeader==null) {
-        streamIndex = Channel.GenerateStreamID();
-        streamOrigin = DateTime.Now;
-        res.ContentHeader = new Content(streamIndex, TimeSpan.Zero, pos, new byte[] { });
-        var channel_info = new AtomCollection(Channel.ChannelInfo.Extra);
-        channel_info.SetChanInfoType("RAW");
-        channel_info.SetChanInfoStreamType("application/octet-stream");
-        channel_info.SetChanInfoStreamExt("");
-        res.ChannelInfo = new ChannelInfo(channel_info);
-      }
-      res.Contents = new List<Content>();
-      while (stream.Length-stream.Position>0) {
-        var bytes = new byte[Math.Min(8192, stream.Length-stream.Position)];
-        var sz = stream.Read(bytes, 0, bytes.Length);
+      long pos = 0;
+      var streamIndex = Channel.GenerateStreamID();
+      var streamOrigin = DateTime.Now;
+      sink.OnContentHeader(new Content(streamIndex, TimeSpan.Zero, pos, new byte[] { }));
+      var channel_info = new AtomCollection(Channel.ChannelInfo.Extra);
+      channel_info.SetChanInfoType("RAW");
+      channel_info.SetChanInfoStreamType("application/octet-stream");
+      channel_info.SetChanInfoStreamExt("");
+      sink.OnChannelInfo(new ChannelInfo(channel_info));
+
+      bool eof = false;
+      do {
+        var buf = new byte[8192];
+        var sz = await stream.ReadAsync(buf, 0, buf.Length, cancel_token);
         if (sz>0) {
-          Array.Resize(ref bytes, sz);
-          res.Contents.Add(new Content(streamIndex, DateTime.Now-streamOrigin, pos, bytes));
+          sink.OnContent(new Content(streamIndex, DateTime.Now-streamOrigin, pos, buf.Take(sz).ToArray()));
           pos += sz;
         }
-      }
-      return res;
+        else {
+          eof = true;
+        }
+      } while (!eof);
     }
 
     public string  Name    { get { return "RAW"; } }

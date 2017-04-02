@@ -592,9 +592,9 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static byte? GetHostUphostHops(this IAtomCollection collection)
+    public static int? GetHostUphostHops(this IAtomCollection collection)
     {
-      return GetByteFrom(collection, Atom.PCP_HOST_UPHOST_HOPS);
+      return GetIntFrom(collection, Atom.PCP_HOST_UPHOST_HOPS);
     }
 
     public static int? GetQuit(this IAtomCollection collection)
@@ -892,7 +892,7 @@ namespace PeerCastStation.Core
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_ID, IDToByteArray(value)));
     }
 
-    public static void SetHostUphostHops(this IAtomCollection collection, byte value)
+    public static void SetHostUphostHops(this IAtomCollection collection, int value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_UPHOST_HOPS, value));
     }

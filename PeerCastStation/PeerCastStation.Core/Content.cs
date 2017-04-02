@@ -16,7 +16,6 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 
 namespace PeerCastStation.Core
 {
@@ -95,15 +94,11 @@ namespace PeerCastStation.Core
     private long serial = 0;
     private SortedList<ContentKey, Content> list = new SortedList<ContentKey, Content>();
     public TimeSpan PacketTimeLimit { get; set; }
-    public ContentCollection()
+    private Channel owner;
+    public ContentCollection(Channel owner)
     {
+      this.owner = owner;
       PacketTimeLimit = TimeSpan.FromSeconds(5);
-    }
-
-    public event EventHandler ContentChanged;
-    private void OnContentChanged()
-    {
-      if (ContentChanged!=null) ContentChanged(this, new EventArgs());
     }
 
     public int Count {
@@ -138,7 +133,7 @@ namespace PeerCastStation.Core
         }
       }
       if (added) {
-        OnContentChanged();
+        owner.OnContentAdded(item);
       }
     }
 
@@ -147,7 +142,6 @@ namespace PeerCastStation.Core
       lock (list) {
         list.Clear();
       }
-      OnContentChanged();
     }
 
     public bool Contains(Content item)
@@ -171,7 +165,6 @@ namespace PeerCastStation.Core
         res = list.Remove(new ContentKey(item.Stream, item.Timestamp, item.Position));
       }
       if (res) {
-        OnContentChanged();
         return true;
       }
       else {

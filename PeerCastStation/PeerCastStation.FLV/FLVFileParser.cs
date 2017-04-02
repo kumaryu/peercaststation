@@ -3,39 +3,41 @@ using System.Linq;
 using System.IO;
 using PeerCastStation.FLV.RTMP;
 using PeerCastStation.Core;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.FLV
 {
-	class FLVFileParser
+  public class FLVFileHeader
+  {
+    public byte[] Binary     { get; private set; }
+    public byte[] Signature  { get; private set; }
+    public int    Version    { get; private set; }
+    public bool   HasAudio   { get; private set; }
+    public bool   HasVideo   { get; private set; }
+    public long   DataOffset { get; private set; }
+    public long   Size       { get; private set; }
+
+    public FLVFileHeader(byte[] binary)
+    {
+      this.Binary     = binary;
+      this.Signature  = new byte[] { binary[0], binary[1], binary[2] };
+      this.Version    = binary[3];
+      this.HasAudio   = (binary[4] & 0x4)!=0;
+      this.HasVideo   = (binary[4] & 0x1)!=0;
+      this.DataOffset = (binary[5]<<24) | (binary[ 6]<<16) | (binary[ 7]<<8) | (binary[ 8]<<0);
+      this.Size       = (binary[9]<<24) | (binary[10]<<16) | (binary[11]<<8) | (binary[12]<<0);
+    }
+
+    public bool IsValid {
+      get {
+        return Signature[0]=='F' && Signature[1]=='L' && Signature[2]=='V' && Version==1 && Size==0;
+      }
+    }
+  }
+
+	public class FLVFileParser
 	{
-		private class FileHeader
-		{
-			public byte[] Binary     { get; private set; }
-			public byte[] Signature  { get; private set; }
-			public int    Version    { get; private set; }
-			public bool   HasAudio   { get; private set; }
-			public bool   HasVideo   { get; private set; }
-			public long   DataOffset { get; private set; }
-			public long   Size       { get; private set; }
-
-			public FileHeader(byte[] binary)
-			{
-				this.Binary     = binary;
-				this.Signature  = new byte[] { binary[0], binary[1], binary[2] };
-				this.Version    = binary[3];
-				this.HasAudio   = (binary[4] & 0x4)!=0;
-				this.HasVideo   = (binary[4] & 0x1)!=0;
-				this.DataOffset = (binary[5]<<24) | (binary[ 6]<<16) | (binary[ 7]<<8) | (binary[ 8]<<0);
-				this.Size       = (binary[9]<<24) | (binary[10]<<16) | (binary[11]<<8) | (binary[12]<<0);
-			}
-
-			public bool IsValid {
-				get {
-					return Signature[0]=='F' && Signature[1]=='L' && Signature[2]=='V' && Version==1 && Size==0;
-				}
-			}
-		}
-
 		private class FLVTag
 		{
 			public enum TagType {
@@ -98,6 +100,13 @@ namespace PeerCastStation.FLV
 				return !eos;
 			}
 
+      public async Task<bool> ReadTagBodyAsync(Stream stream, CancellationToken cancel_token)
+      {
+        this.Body   = await stream.ReadBytesAsync(this.DataSize, cancel_token);
+        this.Footer = await stream.ReadBytesAsync(4, cancel_token);
+        return IsValidFooter;
+      }
+
 			public RTMPMessage ToRTMPMessage()
 			{
 				return new RTMPMessage(
@@ -140,9 +149,9 @@ namespace PeerCastStation.FLV
 						{
 							var bin = ReadBytes(stream, 13, out eos);
 							if (eos) goto error;
-							var header = new FileHeader(bin);
+							var header = new FLVFileHeader(bin);
 							if (header.IsValid) {
-								sink.OnFLVHeader();
+								sink.OnFLVHeader(header);
 								state = ReaderState.Body;
 							}
 							else {
@@ -178,10 +187,10 @@ namespace PeerCastStation.FLV
 								stream.Position = start_pos;
 								var headerbin = ReadBytes(stream, 13, out eos);
 								if (eos) goto error;
-								var header = new FileHeader(headerbin);
+								var header = new FLVFileHeader(headerbin);
 								if (header.IsValid) {
 									read_valid = true;
-									sink.OnFLVHeader();
+									sink.OnFLVHeader(header);
 								}
 							}
 							if (!read_valid) {
@@ -220,6 +229,79 @@ namespace PeerCastStation.FLV
 			}
 			return processed;
 		}
+
+    public async Task ReadAsync(
+      Stream stream,
+      IRTMPContentSink sink,
+      CancellationToken cancel_token)
+    {
+      int len = 0;
+      var bin = new byte[13];
+      try {
+        len += await stream.ReadBytesAsync(bin, len, 13-len, cancel_token);
+      }
+      catch (EndOfStreamException) {
+        return;
+      }
+      var header = new FLVFileHeader(bin);
+      if (!header.IsValid) throw new BadDataException();
+      sink.OnFLVHeader(header);
+      len = 0;
+
+      bool eos = false;
+      while (!eos) {
+        try {
+          len += await stream.ReadBytesAsync(bin, len, 11-len, cancel_token);
+          var read_valid = false;
+          var body = new FLVTag(this, bin);
+          if (body.IsValidHeader) {
+            if (await body.ReadTagBodyAsync(stream, cancel_token)) {
+              len = 0;
+              read_valid = true;
+              switch (body.Type) {
+              case FLVTag.TagType.Audio:
+                sink.OnAudio(body.ToRTMPMessage());
+                break;
+              case FLVTag.TagType.Video:
+                sink.OnVideo(body.ToRTMPMessage());
+                break;
+              case FLVTag.TagType.Script:
+                sink.OnData(new DataAMF0Message(body.ToRTMPMessage()));
+                break;
+              }
+            }
+          }
+          else {
+            len += await stream.ReadBytesAsync(bin, len, 13-len, cancel_token);
+            var new_header = new FLVFileHeader(bin);
+            if (new_header.IsValid) {
+              read_valid = true;
+              sink.OnFLVHeader(header);
+            }
+          }
+          if (!read_valid) {
+            int pos = 1;
+            for (; pos<len; pos++) {
+              var b = bin[pos];
+              if ((b & 0xC0)==0 && ((b & 0x1F)==8 || (b & 0x1F)==9 || (b & 0x1F)==18)) {
+                break;
+              }
+            }
+            if (pos==len) {
+              len = 0;
+            }
+            else {
+              Array.Copy(bin, pos, bin, 0, len-pos);
+              len -= pos;
+            }
+          }
+        }
+        catch (EndOfStreamException) {
+          eos = true;
+        }
+      }
+
+    }
 
 	}
 

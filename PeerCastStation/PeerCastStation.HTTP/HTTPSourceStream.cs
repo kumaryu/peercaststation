@@ -7,78 +7,57 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.HTTP
 {
   /// <summary>
   ///サーバからのHTTPレスポンス内容を保持するクラスです
   /// </summary>
-  public class HTTPResponse
-  {
-    /// <summary>
-    /// HTTPバージョンを取得および設定します
-    /// </summary>
-    public string Version { get; private set; }
-    /// <summary>
-    /// HTTPステータスを取得および設定します
-    /// </summary>
-    public int Status { get; private set; }
-    /// <summary>
-    /// レスポンスヘッダの値のコレクション取得します
-    /// </summary>
-    public Dictionary<string, string> Headers { get; private set; }
-
-    /// <summary>
-    /// HTTPレンスポンス文字列からHTTPResponseオブジェクトを構築します
-    /// </summary>
-    /// <param name="response">行毎に区切られたHTTPレスポンスの文字列表現</param>
-    public HTTPResponse(IEnumerable<string> requests)
-    {
-      Headers = new Dictionary<string, string>();
-      foreach (var req in requests) {
-        Match match = null;
-        if ((match = Regex.Match(req, @"^HTTP/(1.\d) (\d+) .*$")).Success) {
-          this.Version = match.Groups[1].Value;
-          this.Status = Int32.Parse(match.Groups[2].Value);
-        }
-        else if ((match = Regex.Match(req, @"^(\S*):\s*(.*)\s*$", RegexOptions.IgnoreCase)).Success) {
-          Headers[match.Groups[1].Value.ToUpperInvariant()] = match.Groups[2].Value;
-        }
-      }
-    }
-  }
-
   /// <summary>
   /// ストリームからHTTPレスポンスを読み取るクラスです
   /// </summary>
   public static class HTTPResponseReader
   {
-    /// <summary>
-    /// ストリームからHTTPレスポンスを読み取り解析します
-    /// </summary>
-    /// <param name="stream">読み取り元のストリーム</param>
-    /// <returns>解析済みHTTPResponse</returns>
-    /// <exception cref="EndOfStreamException">
-    /// HTTPレスポンスの終端より前に解析ストリームの末尾に到達した
-    /// </exception>
-    public static HTTPResponse Read(Stream stream)
+    public static async Task<HTTPResponse> ReadAsync(Stream stream, CancellationToken cancel_token)
     {
       string line = null;
       var requests = new List<string>();
       var buf = new List<byte>();
+      var length = 0;
       while (line!="") {
-        var value = stream.ReadByte();
+        var value = await stream.ReadByteAsync(cancel_token);
         if (value<0) {
           throw new EndOfStreamException();
         }
         buf.Add((byte)value);
-        if (buf.Count >= 2 && buf[buf.Count - 2] == '\r' && buf[buf.Count - 1] == '\n') {
+        length += 1;
+        if (buf.Count>=2 && buf[buf.Count-2]=='\r' && buf[buf.Count-1]=='\n') {
           line = System.Text.Encoding.UTF8.GetString(buf.ToArray(), 0, buf.Count - 2);
           if (line!="") requests.Add(line);
           buf.Clear();
         }
+        else if (length>4096) {
+          throw new InvalidDataException();
+        }
       }
-      return new HTTPResponse(requests);
+
+      var headers = new Dictionary<string, string>();
+      var protocol = "";
+      var status   = 200;
+      var reason_phrase = "";
+      foreach (var req in requests) {
+        Match match = null;
+        if ((match = Regex.Match(req, @"^(HTTP/1.\d) (\d+) (.*)$")).Success) {
+          protocol = match.Groups[1].Value;
+          status   = Int32.Parse(match.Groups[2].Value);
+          reason_phrase = match.Groups[3].Value;
+        }
+        else if ((match = Regex.Match(req, @"^(\S*):\s*(.*)\s*$", RegexOptions.IgnoreCase)).Success) {
+          headers[match.Groups[1].Value.ToUpperInvariant()] = match.Groups[2].Value;
+        }
+      }
+      return new HTTPResponse(protocol, status, reason_phrase, headers, null);
     }
   }
 
@@ -112,16 +91,8 @@ namespace PeerCastStation.HTTP
     : SourceConnectionBase
   {
     private IContentReader contentReader;
-    private TcpClient    client = null;
+    private BufferedContentSink contentSink;
     private HTTPResponse response = null;
-    bool useContentBitrate;
-    private enum State {
-      SendingRequest,
-      WaitingResponse,
-      Receiving,
-      Disconnected,
-    }
-    private State state = State.SendingRequest;
 
     public HTTPSourceConnection(
         PeerCast peercast,
@@ -132,24 +103,23 @@ namespace PeerCastStation.HTTP
       : base(peercast, channel, source_uri)
     {
       contentReader = content_reader;
-      useContentBitrate = use_content_bitrate;
+      contentSink = new BufferedContentSink(new ChannelContentSink(channel, use_content_bitrate));
     }
 
-    protected override StreamConnection DoConnect(Uri source)
+    protected override async Task<SourceConnectionClient> DoConnect(Uri source, CancellationToken cancel_token)
     {
       try {
-        client = new TcpClient();
+        var client = new TcpClient();
         if (source.HostNameType==UriHostNameType.IPv4 ||
             source.HostNameType==UriHostNameType.IPv6) {
-          client.Connect(IPAddress.Parse(source.Host), source.Port);
+          await client.ConnectAsync(IPAddress.Parse(source.Host), source.Port);
         }
         else {
-          client.Connect(source.DnsSafeHost, source.Port);
+          await client.ConnectAsync(source.DnsSafeHost, source.Port);
         }
-        var stream = client.GetStream();
-        var connection = new StreamConnection(stream, stream);
-        connection.ReceiveTimeout = 10000;
-        connection.SendTimeout    = 8000;
+        var connection = new SourceConnectionClient(client);
+        connection.Stream.ReadTimeout  = 10000;
+        connection.Stream.WriteTimeout = 8000;
         return connection;
       }
       catch (SocketException e) {
@@ -158,178 +128,72 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    protected override void DoClose(StreamConnection connection)
+    protected override async Task DoProcess(CancellationToken cancel_token)
     {
-      connection.Close();
-      client.Close();
-      state = State.Disconnected;
-    }
-
-    protected override void DoPost(Host from, Atom packet)
-    {
-    }
-
-    protected override void DoProcess()
-    {
-      switch (state) {
-      case State.SendingRequest:  state = SendRequest();  break;
-      case State.WaitingResponse: state = WaitResponse(); break;
-      case State.Receiving:       state = ReceiveBody();  break;
-      case State.Disconnected: break;
-      }
-    }
-
-    private State SendRequest()
-    {
-      var host = SourceUri.DnsSafeHost;
-      if (SourceUri.Port!=-1 && SourceUri.Port!=80) {
-        host = String.Format("{0}:{1}", SourceUri.DnsSafeHost, SourceUri.Port);
-      }
-      var request = String.Format(
-          "GET {0} HTTP/1.1\r\n" +
-          "Host: {1}\r\n" +
-          "User-Agent: NSPlayer ({2})\r\n" +
-          "Connection: close\r\n" +
-          "Pragma: stream-switch\r\n" +
-          "\r\n",
-          SourceUri.PathAndQuery,
-          host,
-          PeerCast.AgentName);
-      connection.Send(System.Text.Encoding.UTF8.GetBytes(request));
-      Logger.Debug("Sending request:\n" + request);
-      return State.WaitingResponse;
-    }
-
-    private State WaitResponse()
-    {
-      response = null;
-      bool longresponse = false;
       try {
-        connection.Recv(stream => {
-          longresponse = stream.Length>=2048;
-          response = HTTPResponseReader.Read(stream);
-        });
-      }
-      catch (IOException) {
-        Stop(StopReason.ConnectionError);
-        return State.Disconnected;
-      }
-      if (response!=null) {
-        if (response.Status==200) {
-          return State.Receiving;
+        this.Status = ConnectionStatus.Connecting;
+        var host = SourceUri.DnsSafeHost;
+        if (SourceUri.Port!=-1 && SourceUri.Port!=80) {
+          host = String.Format("{0}:{1}", SourceUri.DnsSafeHost, SourceUri.Port);
         }
-        else {
+        var request = String.Format(
+            "GET {0} HTTP/1.1\r\n" +
+            "Host: {1}\r\n" +
+            "User-Agent: NSPlayer ({2})\r\n" +
+            "Connection: close\r\n" +
+            "Pragma: stream-switch\r\n" +
+            "\r\n",
+            SourceUri.PathAndQuery,
+            host,
+            PeerCast.AgentName);
+        await connection.Stream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(request));
+        Logger.Debug("Sending request:\n" + request);
+
+        response = null;
+        response = await HTTPResponseReader.ReadAsync(connection.Stream, cancel_token);
+        if (response.Status!=200) {
           Logger.Error("Server responses {0} to GET {1}", response.Status, SourceUri.PathAndQuery);
           Stop(response.Status==404 ? StopReason.OffAir : StopReason.UnavailableError);
-          return State.Disconnected;
         }
+
+        this.Status = ConnectionStatus.Connected;
+        await contentReader.ReadAsync(contentSink, connection.Stream, cancel_token);
+        Stop(StopReason.OffAir);
       }
-      else if (longresponse) {
+      catch (InvalidDataException) {
         Stop(StopReason.ConnectionError);
-        return State.Disconnected;
       }
-      else {
-        return State.WaitingResponse;
-      }
-    }
-
-
-    private ChannelInfo UpdateChannelInfo(ChannelInfo a, ChannelInfo b)
-    {
-      var base_atoms = new AtomCollection(a.Extra);
-      var new_atoms  = new AtomCollection(b.Extra);
-      if (!useContentBitrate) {
-        new_atoms.RemoveByName(Atom.PCP_CHAN_INFO_BITRATE);
-      }
-      base_atoms.Update(new_atoms);
-      return new ChannelInfo(base_atoms);
-    }
-
-    private ChannelTrack UpdateChannelTrack(ChannelTrack a, ChannelTrack b)
-    {
-      var base_atoms = new AtomCollection(a.Extra);
-      base_atoms.Update(b.Extra);
-      return new ChannelTrack(base_atoms);
-    }
-
-    long lastPosition = 0;
-    System.Diagnostics.Stopwatch receiveTimeout = null;
-    private State ReceiveBody()
-    {
-      if (receiveTimeout==null) {
-        receiveTimeout = new System.Diagnostics.Stopwatch();
-        receiveTimeout.Start();
-      }
-      try {
-        connection.Recv(stream => {
-          if (stream.Length>0) {
-            var data = contentReader.Read(stream);
-            if (data.ChannelInfo!=null) {
-              Channel.ChannelInfo = UpdateChannelInfo(Channel.ChannelInfo, data.ChannelInfo);
-            }
-            if (data.ChannelTrack!=null) {
-              Channel.ChannelTrack = UpdateChannelTrack(Channel.ChannelTrack, data.ChannelTrack);
-            }
-            if (data.ContentHeader!=null) {
-              Channel.ContentHeader = data.ContentHeader;
-              Channel.Contents.Clear();
-              lastPosition = data.ContentHeader.Position;
-            }
-            if (data.Contents!=null) {
-              foreach (var content in data.Contents) {
-                Channel.Contents.Add(content);
-                lastPosition = content.Position;
-              }
-            }
-            receiveTimeout.Reset();
-            receiveTimeout.Start();
-          }
-        });
-        if (receiveTimeout.ElapsedMilliseconds>60000) {
-          Logger.Error("Recv content timed out");
-          Stop(StopReason.ConnectionError);
-          return State.Disconnected;
-        }
+      catch (OperationCanceledException) {
+        Logger.Error("Recv content timed out");
+        Stop(StopReason.ConnectionError);
       }
       catch (IOException) {
         Stop(StopReason.ConnectionError);
-        return State.Disconnected;
       }
-      return State.Receiving;
+      this.Status = ConnectionStatus.Error;
     }
 
     public override ConnectionInfo GetConnectionInfo()
     {
-      ConnectionStatus status;
-      switch (state) {
-      case State.SendingRequest:  status = ConnectionStatus.Connecting; break;
-      case State.WaitingResponse: status = ConnectionStatus.Connecting; break;
-      case State.Receiving:       status = ConnectionStatus.Connected; break;
-      case State.Disconnected:    status = ConnectionStatus.Error; break;
-      default:                    status = ConnectionStatus.Idle; break;
-      }
-      IPEndPoint endpoint = null;
-      if (client!=null && client.Connected) {
-        endpoint = (IPEndPoint)client.Client.RemoteEndPoint;
-      }
+      IPEndPoint endpoint = connection!=null ? connection.RemoteEndPoint : null;
       string server_name = "";
       if (response==null || !response.Headers.TryGetValue("SERVER", out server_name)) {
         server_name = "";
       }
-      return new ConnectionInfo(
-        "HTTP Source",
-        ConnectionType.Source,
-        status,
-        SourceUri.ToString(),
-        endpoint,
-        (endpoint!=null && endpoint.Address.IsSiteLocal()) ? RemoteHostStatus.Local : RemoteHostStatus.None,
-        lastPosition,
-        RecvRate,
-        SendRate,
-        null,
-        null,
-        server_name);
+      return new ConnectionInfoBuilder {
+        ProtocolName     = "HTTP Source",
+        Type             = ConnectionType.Source,
+        Status           = Status,
+        RemoteName       = SourceUri.ToString(),
+        RemoteEndPoint   = endpoint,
+        RemoteHostStatus = (endpoint!=null && endpoint.Address.IsSiteLocal()) ? RemoteHostStatus.Local : RemoteHostStatus.None,
+        ContentPosition  = contentSink.LastContent?.Position ?? 0,
+        RecvRate         = RecvRate,
+        SendRate         = SendRate,
+        AgentName        = server_name,
+      }.Build();
     }
+
   }
 
   public class HTTPSourceStream
@@ -359,19 +223,15 @@ namespace PeerCastStation.HTTP
         }
         IPEndPoint endpoint = null;
         string server_name = "";
-        return new ConnectionInfo(
-          "HTTP Source",
-          ConnectionType.Source,
-          status,
-          SourceUri.ToString(),
-          endpoint,
-          RemoteHostStatus.None,
-          null,
-          null,
-          null,
-          null,
-          null,
-          server_name);
+        return new ConnectionInfoBuilder {
+          ProtocolName     = "HTTP Source",
+          Type             = ConnectionType.Source,
+          Status           = status,
+          RemoteName       = SourceUri.ToString(),
+          RemoteEndPoint   = endpoint,
+          RemoteHostStatus = RemoteHostStatus.None,
+          AgentName        = server_name,
+        }.Build();
       }
     }
 
@@ -380,19 +240,16 @@ namespace PeerCastStation.HTTP
       return new HTTPSourceConnection(PeerCast, Channel, source_uri, ContentReader, UseContentBitrate);
     }
 
-    protected override void OnConnectionStopped(ConnectionStoppedEvent msg)
+    protected override void OnConnectionStopped(ISourceConnection connection, StopReason reason)
     {
-      switch (msg.StopReason) {
+      switch (reason) {
       case StopReason.UserReconnect:
         break;
       case StopReason.UserShutdown:
-        Stop(msg.StopReason);
+        Stop(reason);
         break;
       default:
-        ThreadPool.QueueUserWorkItem(state => {
-          Thread.Sleep(3000);
-          Reconnect();
-        });
+        Task.Delay(3000).ContinueWith(prev => Reconnect());
         break;
       }
     }

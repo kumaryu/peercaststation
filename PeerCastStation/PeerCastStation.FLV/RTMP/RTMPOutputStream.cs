@@ -2,6 +2,7 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using PeerCastStation.Core;
 
 namespace PeerCastStation.FLV.RTMP
@@ -97,12 +98,12 @@ namespace PeerCastStation.FLV.RTMP
 		: IOutputStream
 	{
 		private PeerCast peerCast;
-		private RateCountedStream inputStream;
-		private RateCountedStream outputStream;
+		private ConnectionStream inputStream;
+		private ConnectionStream outputStream;
 		private System.Net.EndPoint remoteEndPoint;
 		private AccessControlInfo accessControl;
 		private RTMPPlayConnection connection;
-		private System.Threading.Tasks.Task connectionTask;
+		private System.Threading.Tasks.Task<HandlerResult> connectionTask;
 		private System.Threading.CancellationTokenSource cancelSource = new System.Threading.CancellationTokenSource();
 		private Channel channel;
 
@@ -117,8 +118,10 @@ namespace PeerCastStation.FLV.RTMP
 		{
 			input_stream.ReadTimeout = System.Threading.Timeout.Infinite;
 			this.peerCast       = peercast;
-			this.inputStream    = new RateCountedStream(new BufferedReadStream(input_stream, 8192, header), TimeSpan.FromMilliseconds(1000));
-			this.outputStream   = new RateCountedStream(output_stream, TimeSpan.FromMilliseconds(1000));
+      var stream = new ConnectionStream(new BufferedReadStream(input_stream, 8192, header), output_stream);
+			this.inputStream    = stream;
+			this.outputStream   = stream;
+      stream.WriteTimeout = 10000;
 			this.remoteEndPoint = remote_endpoint;
 			this.accessControl  = access_control;
 			this.connection = new RTMPPlayConnection(this, this.inputStream, this.outputStream);
@@ -126,17 +129,18 @@ namespace PeerCastStation.FLV.RTMP
 
 		public ConnectionInfo GetConnectionInfo()
 		{
-			return new ConnectionInfo(
-				"RTMP Output",
-				ConnectionType.Direct,
-				ConnectionStatus.Connected,
-				remoteEndPoint.ToString(),
-				remoteEndPoint as System.Net.IPEndPoint,
-				RemoteHostStatus.Receiving,
-				connection.ContentPosition,
-				(float)this.inputStream.ReadRate, (float)this.outputStream.WriteRate,
-				null, null,
-				connection.ClientName);
+      return new ConnectionInfoBuilder {
+        ProtocolName     = "RTMP Output",
+        Type             = ConnectionType.Direct,
+        Status           = ConnectionStatus.Connected,
+        RemoteName       = remoteEndPoint.ToString(),
+        RemoteEndPoint   = remoteEndPoint as System.Net.IPEndPoint,
+        RemoteHostStatus = RemoteHostStatus.Receiving,
+        ContentPosition  = connection.ContentPosition,
+        RecvRate         = (float)this.inputStream.ReadRate,
+        SendRate         = (float)this.outputStream.WriteRate,
+        AgentName        = connection.ClientName
+      }.Build();
 		}
 
 		public OutputStreamType OutputStreamType {
@@ -168,7 +172,7 @@ namespace PeerCastStation.FLV.RTMP
 			}
 		}
 
-		public void Start()
+		public Task<HandlerResult> Start()
 		{
 			connectionTask =
 				connection.Run(cancelSource.Token)
@@ -176,10 +180,9 @@ namespace PeerCastStation.FLV.RTMP
 					if (this.channel!=null) {
 						this.channel.RemoveOutputStream(this);
 					}
-					if (Stopped!=null) {
-						Stopped(this, new StreamStoppedEventArgs(stopReason));
-					}
+          return HandlerResult.Close;
 				});
+      return connectionTask;
 		}
 
 		public void Post(Host from, Atom packet)
@@ -198,11 +201,9 @@ namespace PeerCastStation.FLV.RTMP
 			cancelSource.Cancel();
 		}
 
-		public event StreamStoppedEventHandler Stopped;
-
     public bool CheckAuthotization(string auth)
     {
-      if (accessControl.AuthenticationKey==null) return true;
+      if (!accessControl.AuthorizationRequired || accessControl.AuthenticationKey==null) return true;
       if (auth==null) return false;
       var authorized = false;
       try {
@@ -219,6 +220,7 @@ namespace PeerCastStation.FLV.RTMP
       }
       return authorized;
     }
+
 	}
 
 	public class RTMPOutputStreamFactory

@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Core", "PeerCastStation.Core\PeerCastStation.Core.csproj", "{387996F5-E31D-4D92-BD86-8983C599F748}"
 EndProject
@@ -78,6 +78,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PecaStationdDebug", "PecaStationdDebug\PecaStationdDebug.csproj", "{CB01F4C1-482B-45FD-9237-1ADEA259BB2B}"
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "PecaStationdInstaller", "PecaStationdInstaller\PecaStationdInstaller.wixproj", "{380048CC-CCEC-4864-B7B1-60E9360560B9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.TS", "PeerCastStation.TS\PeerCastStation.TS.csproj", "{0F0123AE-E500-45CA-B69D-4FBDBB88B752}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -160,6 +162,10 @@ Global
 		{380048CC-CCEC-4864-B7B1-60E9360560B9}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{380048CC-CCEC-4864-B7B1-60E9360560B9}.Release|Any CPU.ActiveCfg = Release|x86
 		{380048CC-CCEC-4864-B7B1-60E9360560B9}.Release|Any CPU.Build.0 = Release|x86
+		{0F0123AE-E500-45CA-B69D-4FBDBB88B752}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F0123AE-E500-45CA-B69D-4FBDBB88B752}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F0123AE-E500-45CA-B69D-4FBDBB88B752}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F0123AE-E500-45CA-B69D-4FBDBB88B752}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -91,11 +91,27 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
 
     public string RemoteName {
       get {
-        if (Node.Host.GlobalEndPoint!=null && Node.Host.GlobalEndPoint.Port!=0) {
-          return Node.Host.GlobalEndPoint.ToString();
-        }
-        else {
-          return Node.Host.LocalEndPoint.ToString();
+        var settings = PeerCastApplication.Current.Settings.Get<WPFSettings>();
+        switch (settings.RemoteNodeName) {
+        case RemoteNodeName.SessionID:
+          if (Node.Host.SessionID!=null) {
+            return Node.Host.SessionID.ToString("N").ToUpperInvariant();
+          }
+          else if (Node.Host.GlobalEndPoint!=null && Node.Host.GlobalEndPoint.Port!=0) {
+            return Node.Host.GlobalEndPoint.ToString();
+          }
+          else {
+            return Node.Host.LocalEndPoint.ToString();
+          }
+        default:
+        case RemoteNodeName.Uri:
+        case RemoteNodeName.EndPoint:
+          if (Node.Host.GlobalEndPoint!=null && Node.Host.GlobalEndPoint.Port!=0) {
+            return Node.Host.GlobalEndPoint.ToString();
+          }
+          else {
+            return Node.Host.LocalEndPoint.ToString();
+          }
         }
       }
     }

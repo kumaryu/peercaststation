@@ -10,7 +10,7 @@ using System.Collections;
 
 namespace PeerCastStation.Core
 {
-  [AttributeUsage(AttributeTargets.Class)]
+  [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Struct)]
   public class PecaSettingsAttribute
     : Attribute
   {

@@ -1,0 +1,7 @@
+﻿bin
+obj
+Thumbs.db
+*.user
+*.userprefs
+*.suo
+/PeerCastStation/packages

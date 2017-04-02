@@ -877,15 +877,7 @@ namespace PeerCastStation.Core
     /// <exception cref="EndOfStreamException">ストリームの末尾に達しました</exception>
     public Atom Read()
     {
-      var header = new byte[8];
-      int pos = 0;
-      while (pos<8) {
-        var r = stream.Read(header, pos, 8-pos);
-        if (r<=0) {
-          throw new EndOfStreamException();
-        }
-        pos += r;
-      }
+      var header = stream.ReadBytes(8);
       var name = new ID4(header, 0);
       if (!BitConverter.IsLittleEndian) Array.Reverse(header, 4, 4);
       uint len = BitConverter.ToUInt32(header, 4);
@@ -897,15 +889,7 @@ namespace PeerCastStation.Core
         return new Atom(name, children);
       }
       else {
-        var value = new byte[len];
-        pos = 0;
-        while (pos<len) {
-          var r = stream.Read(value, pos, (int)len-pos);
-          if (r<=0) {
-            throw new EndOfStreamException();
-          }
-          pos += r;
-        }
+        var value = stream.ReadBytes((int)len);
         return new Atom(name, value);
       }
     }
@@ -918,15 +902,7 @@ namespace PeerCastStation.Core
     /// <exception cref="EndOfStreamException">ストリームの末尾に達しました</exception>
     static public Atom Read(Stream stream)
     {
-      var header = new byte[8];
-      int pos = 0;
-      while (pos<8) {
-        var r = stream.Read(header, pos, 8-pos);
-        if (r<=0) {
-          throw new EndOfStreamException();
-        }
-        pos += r;
-      }
+      var header = stream.ReadBytes(8);
       var name = new ID4(header, 0);
       if (!BitConverter.IsLittleEndian) Array.Reverse(header, 4, 4);
       uint len = BitConverter.ToUInt32(header, 4);
@@ -944,15 +920,7 @@ namespace PeerCastStation.Core
         if (len>1024*1024) {
           throw new InvalidDataException("Atom length too long");
         }
-        var value = new byte[len];
-        pos = 0;
-        while (pos<len) {
-          var r = stream.Read(value, pos, (int)len-pos);
-          if (r<=0) {
-            throw new EndOfStreamException();
-          }
-          pos += r;
-        }
+        var value = stream.ReadBytes((int)len);
         return new Atom(name, value);
       }
     }

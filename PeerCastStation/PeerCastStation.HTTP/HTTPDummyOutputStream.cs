@@ -18,6 +18,8 @@ using System.IO;
 using System.Net;
 using System.Collections.Generic;
 using PeerCastStation.Core;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.HTTP
 {
@@ -48,36 +50,25 @@ namespace PeerCastStation.HTTP
       Guid channel_id,
       byte[] header)
     {
-      HTTPRequest req = null;
-      var stream = new MemoryStream(header);
-      try {
-        req = HTTPRequestReader.Read(stream);
+      using (var stream = new MemoryStream(header)) {
+        var req = HTTPRequestReader.Read(stream);
+        return new HTTPDummyOutputStream(
+          PeerCast,
+          input_stream,
+          output_stream,
+          remote_endpoint,
+          access_control,
+          req);
       }
-      catch (EndOfStreamException) {
-      }
-      return new HTTPDummyOutputStream(
-        PeerCast,
-        input_stream,
-        output_stream,
-        remote_endpoint,
-        access_control,
-        req);
     }
 
     public override Guid? ParseChannelID(byte[] header)
     {
-      HTTPRequest res = null;
-      var stream = new MemoryStream(header);
-      try {
-        res = HTTPRequestReader.Read(stream);
+      using (var stream=new MemoryStream(header)) {
+        var res = HTTPRequestReader.Read(stream);
+        if (res!=null) return Guid.Empty;
+        else           return null;
       }
-      catch (EndOfStreamException) {
-      }
-      catch (InvalidDataException) {
-      }
-      stream.Close();
-      if (res!=null) return Guid.Empty;
-      else           return null;
     }
 
     public HTTPDummyOutputStreamFactory(PeerCast peercast)
@@ -108,19 +99,12 @@ namespace PeerCastStation.HTTP
       this.request = req;
     }
 
-    protected override void OnStarted()
+    protected override async Task<StopReason> DoProcess(CancellationToken cancel_token)
     {
-      base.OnStarted();
-      Logger.Debug("Started");
       var response = "HTTP/1.0 404 NotFound\r\n\r\n";
       var bytes = System.Text.Encoding.UTF8.GetBytes(response);
-      Send(bytes);
-      Stop();
-    }
-
-    protected override void OnStopped()
-    {
-      Logger.Debug("Finished"); base.OnStopped();
+      await Connection.WriteAsync(bytes, cancel_token);
+      return StopReason.OffAir;
     }
 
     public override OutputStreamType OutputStreamType
@@ -130,19 +114,17 @@ namespace PeerCastStation.HTTP
 
     public override ConnectionInfo GetConnectionInfo()
     {
-      return new ConnectionInfo(
-        "No Protocol Matched",
-        ConnectionType.Metadata,
-        ConnectionStatus.Connected,
-        RemoteEndPoint.ToString(),
-        (IPEndPoint)RemoteEndPoint,
-        IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
-        null,
-        RecvRate,
-        SendRate,
-        null,
-        null,
-        request.Headers["USER-AGENT"]);
+      return new ConnectionInfoBuilder {
+        ProtocolName     = "No Protocol Matched",
+        Type             = ConnectionType.Metadata,
+        Status           = ConnectionStatus.Connected,
+        RemoteName       = RemoteEndPoint.ToString(),
+        RemoteEndPoint   = (IPEndPoint)RemoteEndPoint,
+        RemoteHostStatus = IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
+        RecvRate         = Connection.ReadRate,
+        SendRate         = Connection.WriteRate,
+        AgentName        = request.Headers["USER-AGENT"],
+      }.Build();
     }
   }
 

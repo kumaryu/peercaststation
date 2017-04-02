@@ -1,31 +1,31 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace PeerCastStation.FLV.RTMP
 {
-	class MessageQueue<T>
-	{
-		private SemaphoreSlim filledLock = new SemaphoreSlim(0, Int32.MaxValue);
-		private Queue<T> queue = new Queue<T>();
+  class MessageQueue<T>
+  {
+    private SemaphoreSlim filledLock = new SemaphoreSlim(0, Int32.MaxValue);
+    private ConcurrentQueue<T> queue = new ConcurrentQueue<T>();
 
-		public void Enqueue(T item)
-		{
-			lock (queue) {
-				queue.Enqueue(item);
-				filledLock.Release();
-			}
-		}
+    public void Enqueue(T item)
+    {
+      queue.Enqueue(item);
+      filledLock.Release();
+    }
 
-		public async Task<T> DequeueAsync(CancellationToken cancel_token)
-		{
-			await filledLock.WaitAsync(cancel_token);
-			lock (queue) {
-				return queue.Dequeue();
-			}
-		}
+    public async Task<T> DequeueAsync(CancellationToken cancel_token)
+    {
+    retry:
+      await filledLock.WaitAsync(cancel_token);
+      T value;
+      if (!queue.TryDequeue(out value)) {
+        goto retry;
+      }
+      return value;
+    }
 
-	}
+  }
 }

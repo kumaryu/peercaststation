@@ -302,19 +302,21 @@ namespace PeerCastStation.WPF.CoreSettings
       public string AnnounceUri {
         get { return announceUri==null ? null : announceUri.ToString(); }
         set {
-          if (String.IsNullOrEmpty(value)) return;
+          if (String.IsNullOrEmpty(value)) {
+            if (announceUri==null) return;
+            announceUri = null;
+            OnPropertyChanged("AnnounceUri");
+            return;
+          }
           if (protocol==null) new ArgumentException("プロトコルが選択されていません");
           Uri newvalue;
-          if (System.Uri.TryCreate(value, UriKind.Absolute, out newvalue) && newvalue.Scheme=="pcp") {
-            if (announceUri==newvalue || (announceUri!=null && announceUri.Equals(newvalue))) return;
-            announceUri = newvalue;
-            OnPropertyChanged("AnnounceUri");
-          }
           if (System.Uri.TryCreate(value, UriKind.Absolute, out newvalue) &&
               (newvalue.Scheme=="http" || newvalue.Scheme=="file")) {
             throw new ArgumentException("指定したプロトコルでは使用できないURLです");
           }
-          else if (System.Uri.TryCreate("pcp://"+value, UriKind.Absolute, out newvalue)) {
+          else if (
+              (System.Uri.TryCreate(value, UriKind.Absolute, out newvalue) && newvalue.Scheme=="pcp") ||
+              (System.Uri.TryCreate("pcp://"+value, UriKind.Absolute, out newvalue))) {
             if (announceUri==newvalue || (announceUri!=null && announceUri.Equals(newvalue))) return;
             announceUri = newvalue;
             OnPropertyChanged("AnnounceUri");
@@ -636,6 +638,21 @@ namespace PeerCastStation.WPF.CoreSettings
       set { SetProperty("IsShowWindowOnStartup", ref isShowWindowOnStartup, value); }
     }
 
+    private static readonly Tuple<string, RemoteNodeName>[] remoteNodeNameItems = new Tuple<string, RemoteNodeName>[] {
+      new Tuple<string, RemoteNodeName>("セッションID", RemoteNodeName.SessionID),
+      new Tuple<string, RemoteNodeName>("URL", RemoteNodeName.Uri),
+      new Tuple<string, RemoteNodeName>("アドレス", RemoteNodeName.EndPoint),
+    };
+    public IEnumerable<Tuple<string,RemoteNodeName>> RemoteNodeNameItems {
+      get { return remoteNodeNameItems; }
+    }
+
+    private RemoteNodeName remoteNodeName;
+    public RemoteNodeName RemoteNodeName {
+      get { return remoteNodeName; }
+      set { SetProperty(nameof(RemoteNodeName), ref remoteNodeName, value); }
+    }
+
     public System.Windows.Input.ICommand CheckBandwidth { get; private set; }
 
     PeerCastApplication pecaApp;
@@ -657,6 +674,7 @@ namespace PeerCastStation.WPF.CoreSettings
       maxUpstreamRate           = peerCast.AccessController.MaxUpstreamRate;
       maxUpstreamRatePerChannel = peerCast.AccessController.MaxUpstreamRatePerChannel;
       isShowWindowOnStartup = pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup;
+      remoteNodeName        = pecaApp.Settings.Get<WPFSettings>().RemoteNodeName;
       ports = new ObservableCollection<OutputListenerViewModel>(
         peerCast.OutputListeners
         .Select(listener => new OutputListenerViewModel(this, listener))
@@ -785,6 +803,7 @@ namespace PeerCastStation.WPF.CoreSettings
       peerCast.AccessController.MaxUpstreamRate = maxUpstreamRate;
       peerCast.AccessController.MaxUpstreamRatePerChannel = maxUpstreamRatePerChannel;
       pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup = isShowWindowOnStartup;
+      pecaApp.Settings.Get<WPFSettings>().RemoteNodeName = remoteNodeName;
       if (IsListenersModified) {
         foreach (var listener in peerCast.OutputListeners.ToArray()) {
           peerCast.StopListen(listener);
