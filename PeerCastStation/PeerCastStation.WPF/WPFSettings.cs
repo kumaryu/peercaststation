@@ -1,9 +1,14 @@
 ﻿using System;
-using System.Linq;
-using System.ComponentModel;
 
 namespace PeerCastStation.WPF
 {
+  [PeerCastStation.Core.PecaSettings]
+  public enum RemoteNodeName {
+    Uri,
+    EndPoint,
+    SessionID,
+  }
+
   [PeerCastStation.Core.PecaSettings]
   public class WPFSettings
   {
@@ -14,6 +19,7 @@ namespace PeerCastStation.WPF
       set { showWindowOnStartup = value; }
     }
 
+    public RemoteNodeName RemoteNodeName { get; set; } = RemoteNodeName.SessionID;
     public double WindowLeft   { get; set; }
     public double WindowTop    { get; set; }
     public double WindowWidth  { get; set; }
