@@ -1,4 +1,20 @@
 
+var UserConfig = new function () {
+  var self = this;
+  self.remoteNodeName = ko.observable("sessionId");
+
+  self.loadConfig = function() {
+    PeerCast.getUserConfig('default', 'ui', function (config) {
+      if (!config) return;
+      if (config.remoteNodeName) self.remoteNodeName(config.remoteNodeName);
+    });
+  };
+
+  $(function () {
+    self.loadConfig();
+  });
+}
+
 var ChannelEditDialog = new function() {
   var self = this;
   var dialog = null;
@@ -315,6 +331,19 @@ var ChannelConnectionViewModel = function(owner, initial_value) {
   self.remoteEndpoint   = ko.observable(initial_value.remoteEndpoint);
   self.remoteHostStatus = ko.observable(initial_value.remoteHostStatus);
   self.remoteName       = ko.observable(initial_value.remoteName);
+  self.remoteSessionId  = ko.observable(initial_value.remoteSessionId);
+
+  self.connectionName = ko.computed(function () {
+    switch (UserConfig.remoteNodeName()) {
+    case "sessionId":
+      return self.remoteSessionId() || self.remoteName();
+    case "endPoint":
+      return self.remoteEndPoint();
+    case "uri":
+    default:
+      return self.remoteName();
+    }
+  });
 
   self.connectionStatus = ko.computed(function () {
     var result = "unknown";
@@ -575,9 +604,21 @@ var ChannelViewModel = function(owner, initial_value) {
       status = "notRelayable";
     }
     var connections = "[" + node.localDirects + "/" + node.localRelays + "]";
+    var connection_name = node.address + ":" + node.port;
+    switch (UserConfig.remoteNodeName()) {
+    case "sessionId":
+      connection_name = node.sessionId || connection_name;
+      break;
+    case "endPoint":
+    case "uri":
+    default:
+      connection_name = node.address + ":" + node.port;
+      break;
+    }
     return {
       connectionStatus: status,
       remoteName:   node.address + ":" + node.port,
+      connectionName: connection_name,
       connections:  connections,
       agentVersion: version,
       children: $.map(node.children, createTreeNode)

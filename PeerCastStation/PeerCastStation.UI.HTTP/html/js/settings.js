@@ -1,4 +1,27 @@
 ﻿
+var UserConfig = new function () {
+  var self = this;
+  self.remoteNodeName = ko.observable("sessionId");
+
+  self.loadConfig = function() {
+    PeerCast.getUserConfig('default', 'ui', function (config) {
+      if (!config) return;
+      if (config.remoteNodeName) self.remoteNodeName(config.remoteNodeName);
+    });
+  };
+
+  self.saveConfig = function() {
+    var ui = {
+      remoteNodeName: self.remoteNodeName()
+    };
+    PeerCast.setUserConfig('default', 'ui', ui);
+  };
+
+  $(function () {
+    self.loadConfig();
+  });
+}
+
 var YellowPageEditDialog = new function() {
   var self = this;
   var dialog = null;
@@ -259,6 +282,7 @@ var SettingsViewModel = new function() {
   self.portMapperEnabled         = ko.observable(null);
   self.listeners                 = ko.observableArray();
   self.yellowPages               = ko.observableArray();
+  self.remoteNodeName            = UserConfig.remoteNodeName;
 
   $.each([
     self.maxRelays,
@@ -290,6 +314,14 @@ var SettingsViewModel = new function() {
       }
     };
     PeerCast.setSettings(settings);
+  };
+  $.each([
+    self.remoteNodeName
+  ], function (i, o) {
+    o.subscribe(function (new_value) { if (!updating) self.submitUserConfig(); });
+  });
+  self.submitUserConfig = function() {
+    UserConfig.saveConfig();
   };
 
   self.addYellowPage = function() {

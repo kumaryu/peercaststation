@@ -206,6 +206,23 @@
           </table>
         </div>
       </div>
+      <div class="row-fluid">
+        <div class="span12">
+          <h2>UI設定</h2>
+          <div class="ui-grid">
+            <div class="ui-row">
+              <div class="ui-header">接続先表示</div>
+              <div class="ui-label"></div>
+              <div class="ui-control">
+                <select data-bind="value:remoteNodeName">
+                  <option value="sessionId">セッションID</option>
+                  <option value="uri">アドレス</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="yellowPageEditDialog" class="modal" style="display: none; max-height: inherit">
