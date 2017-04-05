@@ -640,8 +640,7 @@ namespace PeerCastStation.WPF.CoreSettings
 
     private static readonly Tuple<string, RemoteNodeName>[] remoteNodeNameItems = new Tuple<string, RemoteNodeName>[] {
       new Tuple<string, RemoteNodeName>("セッションID", RemoteNodeName.SessionID),
-      new Tuple<string, RemoteNodeName>("URL", RemoteNodeName.Uri),
-      new Tuple<string, RemoteNodeName>("アドレス", RemoteNodeName.EndPoint),
+      new Tuple<string, RemoteNodeName>("アドレス", RemoteNodeName.Uri),
     };
     public IEnumerable<Tuple<string,RemoteNodeName>> RemoteNodeNameItems {
       get { return remoteNodeNameItems; }
