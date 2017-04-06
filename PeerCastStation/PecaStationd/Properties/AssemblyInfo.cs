@@ -33,4 +33,4 @@ using System.Runtime.InteropServices;
 // 既定値にすることができます:
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.9.1.0")]
-[assembly: AssemblyFileVersion("2.3.5.0")]
+[assembly: AssemblyFileVersion("2.3.6.0")]
