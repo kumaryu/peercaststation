@@ -1,4 +1,29 @@
 ---
+- name: Version 2.3.6 (2017年04月06日開発版)
+  version: 2.3.6.0
+  channel: dev
+  notes: |
+    バグ修正とマイナーな機能追加をしました。
+
+    * リレーの接続先表示をIPアドレスでなくセッションIDで表示するようにしました。
+      設定画面のUI設定で元のアドレス表示とセッションID表示を切り替えられます。
+    * 視聴用の接続開始時および視聴用の接続ができない時にCPU使用率が高くなっていたのを修正しました。
+    * WMVとTS配信が不安定になる可能性があったのを修正しました。WMVではほぼ発生しなかったと思われます。
+    * FLVからMPEG-2 TSに変換しつつ視聴する機能を追加しました。FLV配信視聴時にストリームURLに"&filters=flvtots"をつけると中身はそのままに、コンテナだけMPEG-2 TSに変換して出力します。
+    * RTMPからMPEG-2 TSに変換しつつ配信する機能を追加しました。RTMP配信開始時にURLに"&filters=flvtots"をつけるとFLVでなくMPEG-2 TSに入れて配信します。
+  date: 2017-04-06T23:50:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.3.6.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.6.zip
+    length: 1663284
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.6.exe
+    length: 2305127
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.3.6.msi
+    length: 2065074
+
 - name: Version 2.3.5 (2017年02月07日開発版)
   version: 2.3.5.0
   channel: dev
