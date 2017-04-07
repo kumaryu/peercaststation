@@ -118,7 +118,7 @@ namespace PeerCastStation.MKV
         return
           this.ID.Binary.LongLength +
           this.Size.Binary.LongLength +
-          this.Data?.LongLength ?? 0L;
+          (this.Data?.LongLength ?? 0L);
       }
     }
 
