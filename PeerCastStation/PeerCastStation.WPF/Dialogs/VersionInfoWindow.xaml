@@ -18,20 +18,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="バージョン情報" Height="380" Width="420"
         WindowStartupLocation="CenterOwner">
-    <DockPanel Margin="16">
-        <Button DockPanel.Dock="Bottom" Margin="0,13,0,0" HorizontalAlignment="Right"
-                Width="70" Height="23" Content="閉じる" Click="Button_Click"/>
-        <ListView ItemsSource="{Binding Items}">
+    <Grid Margin="4">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" Grid.Column="0" Margin="4" Text="バージョン: "/>
+        <TextBlock Grid.Row="0" Grid.Column="1" Margin="4" Text="{Binding AgentName}"/>
+        <ListView Grid.Row="1" Grid.ColumnSpan="2" Margin="4" ItemsSource="{Binding Items}">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="プラグイン名" Width="200" DisplayMemberBinding="{Binding Name}"/>
-                    <GridViewColumn Header="使用可能"     Width="60"  DisplayMemberBinding="{Binding IsUsable}"/>
-                    <GridViewColumn Header="ファイル"     Width="200" DisplayMemberBinding="{Binding FileName}"/>
-                    <GridViewColumn Header="バージョン"   Width="60"  DisplayMemberBinding="{Binding Version}"/>
-                    <GridViewColumn Header="アセンブリ名" Width="60"  DisplayMemberBinding="{Binding AssemblyName}"/>
-                    <GridViewColumn Header="著作権"       Width="60"  DisplayMemberBinding="{Binding Copyright}"/>
+                    <GridViewColumn Header="使用可能" Width="60" DisplayMemberBinding="{Binding IsUsable}"/>
+                    <GridViewColumn Header="ファイル" Width="200" DisplayMemberBinding="{Binding FileName}"/>
+                    <GridViewColumn Header="バージョン" Width="60" DisplayMemberBinding="{Binding Version}"/>
+                    <GridViewColumn Header="アセンブリ名" Width="60" DisplayMemberBinding="{Binding AssemblyName}"/>
+                    <GridViewColumn Header="著作権" Width="60" DisplayMemberBinding="{Binding Copyright}"/>
                 </GridView>
             </ListView.View>
         </ListView>
-    </DockPanel>
+        <Button Grid.Row="2" Grid.Column="1" Margin="4" HorizontalAlignment="Right" Width="70" Height="23" Content="閉じる" Click="Button_Click"/>
+    </Grid>
 </Window>
