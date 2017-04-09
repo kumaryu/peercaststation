@@ -13,14 +13,8 @@
 // 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
 using PeerCastStation.Core;
+using System.Linq;
 
 namespace PeerCastStation.WPF.Dialogs
 {
@@ -28,9 +22,11 @@ namespace PeerCastStation.WPF.Dialogs
   {
     private readonly object[] items;
     public object[] Items { get { return items; } }
+    public string AgentName { get; private set; }
 
     public VersionInfoViewModel(PeerCastApplication app)
     {
+      this.AgentName = AppSettingsReader.GetString("AgentName", "PeerCastStation/Unknown");
       items = app.Plugins.Select(plugin => {
         var info = plugin.GetVersionInfo();
         return new {
