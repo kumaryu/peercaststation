@@ -61,19 +61,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
       <CheckBox Grid.Row="1" Grid.Column="4" Content="要認証" IsChecked="{Binding GlobalAuthRequired}"/>
     </Grid>
 
-    <Grid Grid.Row="1" Grid.Column="0" Visibility="{Binding Path=AuthRequired, Converter={StaticResource VisibilityConverter}}">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="Auto" />
-        <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="Auto" />
-        <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="Auto" />
-      </Grid.ColumnDefinitions>
-      <Label    Grid.Column="0" Content="認証ID:"/>
-      <TextBox  Grid.Column="1" IsReadOnly="True" Text="{Binding Path=AuthId, Mode=OneWay}"/>
-      <Label    Grid.Column="2" Content="認証パスワード:"/>
-      <TextBox  Grid.Column="3" IsReadOnly="True" Text="{Binding Path=AuthPassword, Mode=OneWay}"/>
-      <Button   Grid.Column="4" Content="再生成" Command="{Binding RegenerateAuthKey}"/>
-    </Grid>
+    <Expander Header="認証情報" Grid.Row="1" Grid.Column="0" Visibility="{Binding Path=AuthRequired, Converter={StaticResource VisibilityConverter}}">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Label   Grid.Column="0" Content="認証ID:"/>
+        <TextBox Grid.Column="1" IsReadOnly="True" Text="{Binding Path=AuthId, Mode=OneWay}"/>
+        <Label   Grid.Column="2" Content="認証パスワード:"/>
+        <TextBox Grid.Column="3" IsReadOnly="True" Text="{Binding Path=AuthPassword, Mode=OneWay}"/>
+        <Button  Grid.Column="4" Content="再生成" Command="{Binding RegenerateAuthKey}"/>
+      </Grid>
+    </Expander>
   </Grid>
 </UserControl>
