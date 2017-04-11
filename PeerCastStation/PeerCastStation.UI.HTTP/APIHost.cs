@@ -970,6 +970,7 @@ namespace PeerCastStation.UI.HTTP
           info.TryGetThen("genre",   v => new_info.SetChanInfoGenre(v));
           info.TryGetThen("desc",    v => new_info.SetChanInfoDesc(v));
           info.TryGetThen("comment", v => new_info.SetChanInfoComment(v));
+          info.TryGetThen("bitrate", v => new_info.SetChanInfoBitrate(v));
         }
         var channel_info  = new ChannelInfo(new_info);
         if (channel_info.Name==null || channel_info.Name=="") {
