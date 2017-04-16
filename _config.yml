@@ -5,4 +5,5 @@ encoding: utf-8
 exclude: ['bin', 'vendor', 'Gemfile', 'Gemfile.lock']
 source:   .
 markdown: kramdown
+excerpt_separator: <!--more-->
 
