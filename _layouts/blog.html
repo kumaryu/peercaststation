@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>PeerCastStation by kumaryu</title>
+    <title>{{ page.title }} - PeerCastStation</title>
 
     <link rel="stylesheet" href="{{ '/stylesheets/styles.css' | relative_url }}">
     <link rel="stylesheet" href="{{ '/stylesheets/pygment_trac.css' | relative_url }}">
@@ -21,10 +21,12 @@
 
         <ul>
           <li class="download" style="width:auto; height:auto">
-          <a class="buttons" href="{{ '/download-stable.html' | relative_url }}">安定版ダウンロード<br>Version 2.2.0 (2016年7月3日)</a>
+          {% assign stable = site.data.releasenotes | where:'channel','stable' | first %}
+          <a class="buttons" href="{{ '/download-stable.html' | relative_url }}">安定版ダウンロード<br>{{ stable.name }}</a>
           </li>
+          {% assign dev = site.data.releasenotes | where:'channel','dev' | first %}
           <li class="download" style="width:auto; height:auto">
-          <a class="buttons" href="{{ '/download-dev.html' | relative_url }}">開発版ダウンロード<br>Version 2.3.6 (2017年4月6日)</a>
+            <a class="buttons" href="{{ '/download-dev.html' | relative_url }}">開発版ダウンロード<br>{{ dev.name }}</a>
           </li>
           <li style="width:auto; height:auto">
           <a class="buttons" href="{{ '/blog.html' | relative_url }}">ブログ</a>
