@@ -62,6 +62,16 @@ namespace PeerCastStation.Core
       Data      = data;
       Serial    = -1;
     }
+
+    public Content(int stream, TimeSpan timestamp, long pos, byte[] data, int offset, int length)
+    {
+      Stream    = stream;
+      Timestamp = timestamp;
+      Position  = pos;
+      Data      = new byte[length];
+      Array.Copy(data, offset, this.Data, 0, length);
+      Serial    = -1;
+    }
   }
 
   public class ContentCollection
