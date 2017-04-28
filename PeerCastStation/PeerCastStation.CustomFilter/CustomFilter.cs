@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using PeerCastStation.Core;
 using System.Xml.Linq;
+using System.Collections.Concurrent;
 
 namespace PeerCastStation.CustomFilter
 {
@@ -17,6 +18,7 @@ namespace PeerCastStation.CustomFilter
     public string OutputMIMEType    { get; private set; }
     public string OutputContentExt  { get; private set; }
     public string BasePath          { get; private set; }
+    public bool   Logging           { get; private set; }
 
     public static IEnumerable<CustomFilterDescription> Load(string filename)
     {
@@ -29,10 +31,24 @@ namespace PeerCastStation.CustomFilter
           desc.OutputMIMEType    = filter.Attribute(XName.Get("mimetype"))?.Value;
           desc.OutputContentType = filter.Attribute(XName.Get("contenttype"))?.Value;
           desc.OutputContentExt  = filter.Attribute(XName.Get("contentext"))?.Value;
+          desc.Logging           = ToBool(filter.Attribute(XName.Get("logging"))?.Value);
           desc.BasePath = System.IO.Path.GetDirectoryName(filename);
           desc.CommandLine = filter.Value;
           return desc;
         }).ToArray();
+    }
+
+    private static bool ToBool(string value)
+    {
+      if (value==null) return false;
+      switch (value.ToLowerInvariant()) {
+      case "1":
+      case "true":
+      case "on":
+        return true;
+      default:
+        return false;
+      }
     }
   }
 
@@ -60,8 +76,14 @@ namespace PeerCastStation.CustomFilter
         if (!String.IsNullOrEmpty(this.Description.OutputMIMEType)) {
           newinfo.SetChanInfoStreamType(this.Description.OutputMIMEType);
         }
+        else {
+          newinfo.RemoveByName(Atom.PCP_CHAN_INFO_STREAMTYPE);
+        }
         if (!String.IsNullOrEmpty(this.Description.OutputContentExt)) {
           newinfo.SetChanInfoStreamExt(this.Description.OutputContentExt);
+        }
+        else {
+          newinfo.RemoveByName(Atom.PCP_CHAN_INFO_STREAMEXT);
         }
         Sink.OnChannelInfo(new ChannelInfo(newinfo));
       }
@@ -72,61 +94,143 @@ namespace PeerCastStation.CustomFilter
       Sink.OnChannelTrack(channel_track);
     }
 
+    class WaitableQueue<T>
+    {
+      private SemaphoreSlim locker = new SemaphoreSlim(0);
+      private ConcurrentQueue<T> queue = new ConcurrentQueue<T>();
+
+      public bool IsEmpty {
+        get { return locker.CurrentCount==0; }
+        }
+
+      public void Enqueue(T value)
+      {
+        queue.Enqueue(value);
+        locker.Release();
+      }
+
+      public async Task<T> DequeueAsync(CancellationToken cancellationToken)
+      {
+        await locker.WaitAsync(cancellationToken);
+        T result;
+        while (!queue.TryDequeue(out result)) {
+          await locker.WaitAsync(cancellationToken);
+        }
+        return result;
+      }
+    }
+
     private CancellationTokenSource processCancellationToken;
     private Task stdErrorTask;
     private Task stdOutTask;
+    private Task stdInTask;
+    private bool writable = false;
+    private WaitableQueue<byte[]> pipePackets = new WaitableQueue<byte[]>();
+
     private Content lastContent = null;
+    private void StartProcess()
+    {
+      var startinfo = new System.Diagnostics.ProcessStartInfo();
+      var cmd = this.Description.CommandLine;
+      var args =
+        System.Text.RegularExpressions.Regex.Matches(cmd, @"(?:""[^""]+?"")|(?:\S+)")
+        .Cast<System.Text.RegularExpressions.Match>()
+        .Select(match => match.ToString())
+        .ToArray();
+      startinfo.WorkingDirectory = this.Description.BasePath;
+      startinfo.UseShellExecute = false;
+      startinfo.FileName = args.First();
+      startinfo.Arguments = String.Join(" ", args.Skip(1));
+      startinfo.CreateNoWindow = true;
+      startinfo.ErrorDialog = false;
+      startinfo.RedirectStandardInput = true;
+      startinfo.RedirectStandardOutput = true;
+      startinfo.RedirectStandardError = true;
+      startinfo.StandardOutputEncoding = System.Text.Encoding.ASCII;
+      startinfo.StandardErrorEncoding = System.Text.Encoding.Default;
+      processCancellationToken = new CancellationTokenSource();
+      var cancel = processCancellationToken.Token;
+      process = System.Diagnostics.Process.Start(startinfo);
+      pipePackets = new WaitableQueue<byte[]>();
+      var stdout = process.StandardOutput.BaseStream;
+      var stdin  = process.StandardInput.BaseStream;
+      var stderr = process.StandardError;
+      stdErrorTask = Task.Run(async () => {
+        try {
+          Logger logger = new Logger(typeof(CustomFilterContentSink), this.Description.Name);
+          while (!cancel.IsCancellationRequested) {
+            var line = await stderr.ReadLineAsync();
+            if (line==null) break;
+            if (Description.Logging) {
+              logger.Debug(line);
+            }
+          }
+          stderr.Close();
+        }
+        catch (System.IO.IOException) {
+        }
+        catch (ObjectDisposedException) {
+        }
+      });
+      stdOutTask = Task.Run(async () => {
+        try {
+          long pos = 0;
+          var buffer = new byte[1024*15];
+          while (!cancel.IsCancellationRequested) {
+            var len = await stdout.ReadAsync(buffer, 0, buffer.Length, cancel);
+            System.Console.WriteLine("stdout {0}", len);
+            if (len<=0) break;
+            Sink.OnContent(new Content(lastContent.Stream, lastContent.Timestamp, pos, buffer, 0, len));
+            pos += len;
+          }
+          stdout.Close();
+        }
+        catch (System.IO.IOException) {
+        }
+        catch (ObjectDisposedException) {
+        }
+        finally {
+          System.Console.WriteLine("stdoutclosed");
+        }
+      });
+      writable = true;
+      stdInTask = Task.Run(async () => {
+        try {
+          while (!cancel.IsCancellationRequested) {
+            var packet = await pipePackets.DequeueAsync(cancel);
+            if (packet!=null) {
+              await stdin.WriteAsync(packet, 0, packet.Length, cancel);
+              if (pipePackets.IsEmpty) {
+                await stdin.FlushAsync();
+              }
+            }
+            else {
+              stdin.Close();
+              break;
+            }
+          }
+        }
+        catch (System.IO.IOException) {
+        }
+        catch (ObjectDisposedException) {
+        }
+        finally {
+          writable = false;
+          System.Console.WriteLine("stdinclosed");
+        }
+        //TODO:子プロセスが死んだ時に上流か下流かに伝える必要がある
+      });
+    }
+
     public void OnContent(Content content)
     {
       lastContent = content;
       if (process==null) {
-        var startinfo = new System.Diagnostics.ProcessStartInfo();
-        var cmd = this.Description.CommandLine;
-        var args =
-          System.Text.RegularExpressions.Regex.Matches(cmd, @"(?:""[^""]+?"")|(?:\S+)")
-          .Cast<System.Text.RegularExpressions.Match>()
-          .Select(match => match.ToString())
-          .ToArray();
-        startinfo.WorkingDirectory = this.Description.BasePath;
-        startinfo.FileName = args.First();
-        startinfo.Arguments = String.Join(" ", args.Skip(1));
-        startinfo.CreateNoWindow = false;
-        startinfo.ErrorDialog = false;
-        startinfo.RedirectStandardInput = true;
-        startinfo.RedirectStandardOutput = true;
-        startinfo.RedirectStandardError = true;
-        startinfo.StandardOutputEncoding = System.Text.Encoding.ASCII;
-        startinfo.StandardErrorEncoding = System.Text.Encoding.UTF8;
-        processCancellationToken = new CancellationTokenSource();
-        var cancel = processCancellationToken.Token;
-        process = System.Diagnostics.Process.Start(startinfo);
-        stdErrorTask = Task.Run(async () => {
-          try {
-            Logger logger = new Logger(typeof(CustomFilterContentSink), this.Description.Name);
-            while (!cancel.IsCancellationRequested) {
-              var line = await process.StandardError.ReadLineAsync();
-              logger.Debug(line);
-            }
-          }
-          catch (ObjectDisposedException) {
-          }
-        });
-        stdOutTask = Task.Run(async () => {
-          try {
-            long pos = 0;
-            var buffer = new byte[1024*15];
-            while (!cancel.IsCancellationRequested) {
-              var len = await process.StandardOutput.BaseStream.ReadAsync(buffer, 0, buffer.Length, cancel);
-              if (len<=0) break;
-              Sink.OnContent(new Content(lastContent.Stream, lastContent.Timestamp, pos, buffer, 0, len));
-              pos += len;
-            }
-          }
-          catch (ObjectDisposedException) {
-          }
-        });
+        StartProcess();
       }
-      process.StandardInput.BaseStream.Write(content.Data, 0, content.Data.Length);
+      if (writable) {
+        pipePackets.Enqueue(content.Data);
+      }
     }
 
     public void OnContentHeader(Content content_header)
@@ -137,10 +241,33 @@ namespace PeerCastStation.CustomFilter
 
     public void OnStop(StopReason reason)
     {
-      process.Close();
-      processCancellationToken.Cancel();
-      process = null;
-      processCancellationToken = null;
+      if (process!=null) {
+        pipePackets.Enqueue(null);
+        try {
+          if (!Task.WaitAll(new [] { stdInTask, stdOutTask, stdErrorTask }, 333)) {
+            processCancellationToken.Cancel();
+            Task.WaitAll(new [] { stdInTask, stdOutTask, stdErrorTask }, 333);
+          }
+        }
+        catch (AggregateException) {
+        }
+        try {
+          if (!process.HasExited) {
+            if (!process.CloseMainWindow() ||
+                !process.WaitForExit(1000)) {
+              process.Kill();
+            }
+          }
+        }
+        catch (System.ComponentModel.Win32Exception) {
+        }
+        catch (InvalidOperationException) {
+        }
+        process.Close();
+        process = null;
+        processCancellationToken = null;
+      }
+      Sink.OnStop(reason);
     }
   }
 
