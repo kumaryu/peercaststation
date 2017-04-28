@@ -221,7 +221,7 @@ namespace PeerCastStation.Core
       set {
         var old = Interlocked.Exchange(ref channelInfo, value);
         if (old!=value) {
-          ChannelInfoChanged?.Invoke(this, new ChannelInfoEventArgs(value));
+          OnChannelInfoChanged(value);
         }
       }
     }
@@ -248,7 +248,7 @@ namespace PeerCastStation.Core
       set {
         var old = Interlocked.Exchange(ref channelTrack, value);
         if (old!=value) {
-          ChannelTrackChanged?.Invoke(this, new ChannelTrackEventArgs(value));
+          OnChannelTrackChanged(value);
         }
       }
     }
@@ -346,6 +346,14 @@ namespace PeerCastStation.Core
       var header = contentHeader;
       if (header!=null) {
         sink.OnContentHeader(header);
+        var channel_info = ChannelInfo;
+        if (channel_info!=null) {
+          sink.OnChannelInfo(channel_info);
+        }
+        var channel_track = ChannelTrack;
+        if (channel_track!=null) {
+          sink.OnChannelTrack(channel_track);
+        }
         var contents = Contents.GetNewerContents(header.Stream, header.Timestamp, header.Position);
         foreach (var content in contents) {
           sink.OnContent(content);
@@ -364,6 +372,22 @@ namespace PeerCastStation.Core
       return removed;
     }
 
+    private void OnChannelInfoChanged(ChannelInfo channel_info)
+    {
+      var sinks = contentSinks;
+      foreach (var sink in sinks) {
+        sink.OnChannelInfo(channel_info);
+      }
+    }
+
+    private void OnChannelTrackChanged(ChannelTrack channel_track)
+    {
+      var sinks = contentSinks;
+      foreach (var sink in sinks) {
+        sink.OnChannelTrack(channel_track);
+      }
+    }
+
     private void OnContentHeaderChanged(Content header)
     {
       var sinks = contentSinks;
@@ -377,6 +401,14 @@ namespace PeerCastStation.Core
       var header = contentHeader;
       if (header!=null) {
         OnContentHeaderChanged(header);
+        var channel_info = ChannelInfo;
+        if (channel_info!=null) {
+          OnChannelInfoChanged(channel_info);
+        }
+        var channel_track = ChannelTrack;
+        if (channel_track!=null) {
+          OnChannelTrackChanged(channel_track);
+        }
         var contents = Contents.GetNewerContents(header.Stream, header.Timestamp, header.Position);
         foreach (var content in contents) {
           OnContentAdded(content);
