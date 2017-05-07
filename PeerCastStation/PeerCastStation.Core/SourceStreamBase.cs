@@ -54,7 +54,6 @@ namespace PeerCastStation.Core
     public Uri      SourceUri { get; private set; }
     public StopReason StoppedReason { get; private set; }
     public bool       IsStopped { get { return StoppedReason!=StopReason.None; } }
-    public event StreamStoppedEventHandler Stopped;
     public float SendRate { get { return sourceConnection!=null ? sourceConnection.SendRate : 0.0f; } }
     public float RecvRate { get { return sourceConnection!=null ? sourceConnection.RecvRate : 0.0f; } }
 
