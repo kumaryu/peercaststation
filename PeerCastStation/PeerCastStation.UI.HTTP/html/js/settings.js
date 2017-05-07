@@ -145,6 +145,7 @@ var ListenerViewModel = function(value) {
   self.authenticationPassword = ko.observable(value.authenticationPassword);
   self.authToken              = ko.observable(value.authToken);
   self.isOpened               = ko.observable(value.isOpened);
+  self.authenticationInfoVisibility = ko.observable(false);
   self.authUrl = ko.computed(function () {
     var addr = self.address();
     if (addr=='0.0.0.0' || addr=='0::0') {
@@ -172,6 +173,10 @@ var ListenerViewModel = function(value) {
   self.globalAuthRequired.subscribe(function (value) {
     self.setAuthorizationRequired();
   });
+
+  self.showAuthenticationInfo = function() {
+    self.authenticationInfoVisibility(true);
+  };
 
   self.update = function(data) {
     self.id(data.listenerId);
