@@ -311,6 +311,7 @@ namespace PeerCastStation.HTTP
     private WaitableQueue<Packet> contentPacketQueue = new WaitableQueue<Packet>();
     private Content headerContent = null;
     private Content lastPacket = null;
+    private ChannelInfo channelInfo = null;
 
     /// <summary>
     /// 出力する内容を表します
@@ -368,9 +369,9 @@ namespace PeerCastStation.HTTP
     private IPlayList CreateDefaultPlaylist()
     {
       bool mms = 
-        Channel.ChannelInfo.ContentType=="WMV" ||
-        Channel.ChannelInfo.ContentType=="WMA" ||
-        Channel.ChannelInfo.ContentType=="ASX";
+        channelInfo.ContentType=="WMV" ||
+        channelInfo.ContentType=="WMA" ||
+        channelInfo.ContentType=="ASX";
       if (mms) return new ASXPlayList();
       else     return new M3UPlayList();
     }
@@ -407,9 +408,9 @@ namespace PeerCastStation.HTTP
       case BodyType.Content:
         {
           bool mms = 
-            Channel.ChannelInfo.ContentType=="WMV" ||
-            Channel.ChannelInfo.ContentType=="WMA" ||
-            Channel.ChannelInfo.ContentType=="ASX";
+            channelInfo.ContentType=="WMV" ||
+            channelInfo.ContentType=="WMA" ||
+            channelInfo.ContentType=="ASX";
           if (mms) {
             return
               "HTTP/1.0 200 OK\r\n"                         +
@@ -423,7 +424,7 @@ namespace PeerCastStation.HTTP
             return
               $"HTTP/1.0 200 OK\r\n" +
               $"Server: {PeerCast.AgentName}\r\n" +
-              $"Content-Type: {Channel.ChannelInfo.MIMEType}\r\n";
+              $"Content-Type: {channelInfo.MIMEType}\r\n";
           }
         }
       case BodyType.Playlist:
@@ -454,7 +455,7 @@ namespace PeerCastStation.HTTP
 
     protected override int GetUpstreamRate()
     {
-      return Channel.ChannelInfo.Bitrate;
+      return channelInfo.Bitrate;
     }
 
     public override ConnectionInfo GetConnectionInfo()
@@ -488,7 +489,7 @@ namespace PeerCastStation.HTTP
         Task.Delay(10000),
         Channel.WaitForReadyContentTypeAsync(),
         WaitForStoppedAsync());
-      Logger.Debug("ContentType: {0}", Channel.ChannelInfo.ContentType);
+      Logger.Debug("ContentType: {0}", channelInfo.ContentType);
     }
 
     private async Task SendResponseHeader()
@@ -556,9 +557,9 @@ namespace PeerCastStation.HTTP
     {
       Logger.Debug("Sending Playlist");
       bool mms = 
-        Channel.ChannelInfo.ContentType=="WMV" ||
-        Channel.ChannelInfo.ContentType=="WMA" ||
-        Channel.ChannelInfo.ContentType=="ASX";
+        channelInfo.ContentType=="WMV" ||
+        channelInfo.ContentType=="WMA" ||
+        channelInfo.ContentType=="ASX";
       IPlayList pls;
       if (mms) {
         pls = new ASXPlayList();
@@ -625,6 +626,7 @@ namespace PeerCastStation.HTTP
     protected override Task OnStopped(CancellationToken cancel_token)
     {
       if (this.Channel!=null) {
+        sink.OnStop(StopReason.OffAir);
         this.Channel.RemoveContentSink(sink);
       }
       return base.OnStopped(cancel_token);
@@ -646,6 +648,7 @@ namespace PeerCastStation.HTTP
 
     public void OnChannelInfo(ChannelInfo channel_info)
     {
+      this.channelInfo = channel_info;
     }
 
     public void OnChannelTrack(ChannelTrack channel_track)
