@@ -107,8 +107,15 @@
                   <label class="checkbox"><input type="checkbox" data-bind="checked:globalAuthRequired">要認証</label>
                 </td>
                 <td><a data-bind="attr:{href: authUrl}">リンク</a></td>
-                <td>ID: <span data-bind="text:authenticationId"></span><br>
-                    パスワード: <span data-bind="text:authenticationPassword"></span></td>
+                <td>
+                  <div data-bind="if: authenticationInfoVisibility">
+                    ID: <span data-bind="text:authenticationId"></span><br>
+                    パスワード: <span data-bind="text:authenticationPassword"></span>
+                  </div>
+                  <div data-bind="ifnot: authenticationInfoVisibility">
+                    <button data-bind="click:showAuthenticationInfo">認証情報の表示</button> 
+                  </div>
+                </td>
               </tr>
             </tbody>
           </table>
