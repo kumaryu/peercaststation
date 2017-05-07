@@ -28,7 +28,6 @@
       <ComponentRef Id="ProgramMenu"/>
     </Feature>
 
-    <Property Id="INSTALLFOLDER"/>
     <Property Id="INSTALLED">
       <RegistrySearch
         Id="InstallDir"
