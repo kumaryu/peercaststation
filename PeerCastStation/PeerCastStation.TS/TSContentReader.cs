@@ -63,7 +63,7 @@ namespace PeerCastStation.TS
       {
         while (!cancel_token.IsCancellationRequested)
         {
-          bytes188 = ReadBytes(stream, 188);
+          bytes188 = await stream.ReadBytesAsync(188, cancel_token);
           TSPacket packet = new TSPacket(bytes188);
           if (packet.sync_byte != 0x47) throw new Exception();
           if (packet.payload_unit_start_indicator > 0)
@@ -168,13 +168,6 @@ namespace PeerCastStation.TS
         return true;
       }
       return false;
-    }
-    
-    private byte[] ReadBytes(Stream stream, int len)
-    {
-      var bytes = stream.ReadBytes(len);
-      if (bytes.Length < len) throw new EndOfStreamException();
-      return bytes;
     }
 
   }
