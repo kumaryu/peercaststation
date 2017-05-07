@@ -2,7 +2,6 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
      xmlns:firewall="http://schemas.microsoft.com/wix/FirewallExtension">
   <Fragment>
-    <Icon Id="PecaStationd.exe" SourceFile="$(var.PecaStationd.TargetDir)\PecaStationd.exe"/>
     <ComponentGroup Id="PecaStationd" Directory="INSTALLFOLDER">
       <Component Id="PecaStationd.exe" Guid="*">
         <File Id="PecaStationd.exe" Source="$(var.PecaStationd.TargetDir)\PecaStationd.exe" KeyPath="yes">
