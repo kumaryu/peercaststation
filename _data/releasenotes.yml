@@ -1,4 +1,30 @@
 ---
+- name: Version 2.3.7 (2017年05月07日開発版)
+  version: 2.3.7.0
+  channel: dev
+  notes: |
+    バグ修正とマイナーな機能追加をしました。
+
+    * インストーラ版でTS配信用のDLLが入っていなかったのを修正しました。
+    * TS配信の非同期処理が正しく行われていなかったのを修正しました。
+    * チャンネルのリレーツリーを覚えてるノード情報全てではなく、今実際に繋がってるリレー接続を加味して作るようにしました。
+    * 接続待ち受け設定の認証情報を既定では非表示にしました。
+    * 視聴時に外部コマンドにコンテンツ自体を通すことができるCustomFilterを追加しました。
+    * HTML UIやAPI経由で配信する時にビットレートの手動設定が無視されるのを修正しました。 (by ha2ne2)
+    * MKV配信のコンテンツ位置が正しく出力されず不安定になるのを修正しました。(by Yoteichi)
+  date: 2017-05-07T23:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.3.7.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.7.zip
+    length: 1673561
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.7.exe
+    length: 2322187
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.3.7.msi
+    length: 2032488
+
 - name: Version 2.3.6 (2017年04月06日開発版)
   version: 2.3.6.0
   channel: dev
