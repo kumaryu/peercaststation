@@ -213,7 +213,7 @@ namespace PeerCastStation.Core
               GetAccessControlInfo(client.Client.RemoteEndPoint as IPEndPoint));
           }
         }
-        catch (SocketException e) {
+        catch (SocketException) {
           if (!IsClosed) throw;
         }
         catch (ObjectDisposedException) {
