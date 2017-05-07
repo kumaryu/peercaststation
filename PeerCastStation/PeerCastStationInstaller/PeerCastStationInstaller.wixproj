@@ -48,10 +48,12 @@
   <ItemGroup>
     <Compile Include="PeerCastStation.ASF.wxs" />
     <Compile Include="PeerCastStation.Core.wxs" />
+    <Compile Include="PeerCastStation.CustomFilter.wxs" />
     <Compile Include="PeerCastStation.FLV.wxs" />
     <Compile Include="PeerCastStation.HTTP.wxs" />
     <Compile Include="PeerCastStation.MKV.wxs" />
     <Compile Include="PeerCastStation.PCP.wxs" />
+    <Compile Include="PeerCastStation.TS.wxs" />
     <Compile Include="PeerCastStation.UI.HTTP.wxs" />
     <Compile Include="PeerCastStation.UI.wxs" />
     <Compile Include="PeerCastStation.WPF.wxs" />
@@ -70,6 +72,14 @@
     <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj">
       <Name>PeerCastStation.Core</Name>
       <Project>{387996f5-e31d-4d92-bd86-8983c599f748}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.CustomFilter\PeerCastStation.CustomFilter.csproj">
+      <Name>PeerCastStation.CustomFilter</Name>
+      <Project>{e45e0a0a-4acc-4b46-a4b4-e2d836bde3dd}</Project>
       <Private>True</Private>
       <DoNotHarvest>True</DoNotHarvest>
       <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
@@ -102,6 +112,14 @@
     <ProjectReference Include="..\PeerCastStation.PCP\PeerCastStation.PCP.csproj">
       <Name>PeerCastStation.PCP</Name>
       <Project>{f9d126c6-76b7-45e2-b62e-6ac35ee285cd}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.TS\PeerCastStation.TS.csproj">
+      <Name>PeerCastStation.TS</Name>
+      <Project>{0f0123ae-e500-45ca-b69d-4fbdbb88b752}</Project>
       <Private>True</Private>
       <DoNotHarvest>True</DoNotHarvest>
       <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>

@@ -6,8 +6,8 @@
     <ProductVersion>3.10</ProductVersion>
     <ProjectGuid>380048cc-ccec-4864-b7b1-60e9360560b9</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
-    <OutputName Condition=" '$(APPVEYOR_BUILD_VERSION)' != ''" >PecaStationd-$(APPVEYOR_BUILD_VERSION)</OutputName>
-    <OutputName Condition=" '$(APPVEYOR_BUILD_VERSION)' == ''" >PecaStationdInstaller</OutputName>
+    <OutputName Condition=" '$(APPVEYOR_BUILD_VERSION)' != ''">PecaStationd-$(APPVEYOR_BUILD_VERSION)</OutputName>
+    <OutputName Condition=" '$(APPVEYOR_BUILD_VERSION)' == ''">PecaStationdInstaller</OutputName>
     <OutputType>Package</OutputType>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
@@ -29,6 +29,9 @@
     <Compile Include="..\PeerCastStationInstaller\PeerCastStation.Core.wxs">
       <Link>PeerCastStation.Core.wxs</Link>
     </Compile>
+    <Compile Include="..\PeerCastStationInstaller\PeerCastStation.CustomFilter.wxs">
+      <Link>PeerCastStation.CustomFilter.wxs</Link>
+    </Compile>
     <Compile Include="..\PeerCastStationInstaller\PeerCastStation.FLV.wxs">
       <Link>PeerCastStation.FLV.wxs</Link>
     </Compile>
@@ -40,6 +43,9 @@
     </Compile>
     <Compile Include="..\PeerCastStationInstaller\PeerCastStation.PCP.wxs">
       <Link>PeerCastStation.PCP.wxs</Link>
+    </Compile>
+    <Compile Include="..\PeerCastStationInstaller\PeerCastStation.TS.wxs">
+      <Link>PeerCastStation.TS.wxs</Link>
     </Compile>
     <Compile Include="..\PeerCastStationInstaller\PeerCastStation.UI.HTTP.wxs">
       <Link>PeerCastStation.UI.HTTP.wxs</Link>
@@ -75,6 +81,14 @@
       <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
       <RefTargetDir>INSTALLFOLDER</RefTargetDir>
     </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.CustomFilter\PeerCastStation.CustomFilter.csproj">
+      <Name>PeerCastStation.CustomFilter</Name>
+      <Project>{e45e0a0a-4acc-4b46-a4b4-e2d836bde3dd}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.FLV\PeerCastStation.FLV.csproj">
       <Name>PeerCastStation.FLV</Name>
       <Project>{895d4df8-a8b2-43a0-85e4-ed74152e73b2}</Project>
@@ -102,6 +116,14 @@
     <ProjectReference Include="..\PeerCastStation.PCP\PeerCastStation.PCP.csproj">
       <Name>PeerCastStation.PCP</Name>
       <Project>{f9d126c6-76b7-45e2-b62e-6ac35ee285cd}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.TS\PeerCastStation.TS.csproj">
+      <Name>PeerCastStation.TS</Name>
+      <Project>{0f0123ae-e500-45ca-b69d-4fbdbb88b752}</Project>
       <Private>True</Private>
       <DoNotHarvest>True</DoNotHarvest>
       <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>

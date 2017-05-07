@@ -6,6 +6,8 @@ PeerCastStation.Core
 PeerCastStation.ASF
 PeerCastStation.FLV
 PeerCastStation.MKV
+PeerCastStation.TS
+PeerCastStation.CustomFilter
 PeerCastStation.HTTP
 PeerCastStation.PCP
 PeerCastStation.UI
