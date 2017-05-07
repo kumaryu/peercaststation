@@ -33,7 +33,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>../PeerCastStation.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\PeerCastStation.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -52,7 +52,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="../PeerCastStation.snk" />
+    <None Include="..\PeerCastStation.snk" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
