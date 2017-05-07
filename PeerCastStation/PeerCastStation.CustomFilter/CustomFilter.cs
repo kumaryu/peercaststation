@@ -306,11 +306,29 @@ namespace PeerCastStation.CustomFilter
 
     public CustomFilterPlugin()
     {
-      this.CustomFilterPath =
-        System.IO.Path.Combine(
-          Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-          "PeerCastStation",
-          "Filters");
+      string path = null;
+      try {
+        path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+      }
+      catch (PlatformNotSupportedException) {
+      }
+      if (string.IsNullOrEmpty(path)) {
+        try {
+          path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        }
+        catch (PlatformNotSupportedException) {
+        }
+      }
+      if (string.IsNullOrEmpty(path)) {
+        this.CustomFilterPath =
+          System.IO.Path.Combine(
+            path,
+            "PeerCastStation",
+            "Filters");
+      }
+      else {
+        this.CustomFilterPath = null;
+      }
     }
 
     override protected void OnAttach()
@@ -343,9 +361,14 @@ namespace PeerCastStation.CustomFilter
 
     public IEnumerable<CustomFilterDescription> LoadDescriptions()
     {
-      return
-        System.IO.Directory.GetFiles(CustomFilterPath, "*.xml")
-        .SelectMany(file => CustomFilterDescription.Load(file));
+      try {
+        return
+          System.IO.Directory.GetFiles(CustomFilterPath, "*.xml")
+          .SelectMany(file => CustomFilterDescription.Load(file));
+      }
+      catch (Exception) {
+        return Enumerable.Empty<CustomFilterDescription>();
+      }
     }
 
     public void Restart()
