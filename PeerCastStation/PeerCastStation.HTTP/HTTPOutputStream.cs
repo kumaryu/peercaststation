@@ -487,8 +487,9 @@ namespace PeerCastStation.HTTP
       if (Channel==null) return;
       await Task.WhenAny(
         Task.Delay(10000),
-        Channel.WaitForReadyContentTypeAsync(),
+        this.channelInfoReadyTaskSource.Task,
         WaitForStoppedAsync());
+      if (channelInfo==null) return;
       Logger.Debug("ContentType: {0}", channelInfo.ContentType);
     }
 
@@ -646,9 +647,13 @@ namespace PeerCastStation.HTTP
       return StopReason.OffAir;
     }
 
+    TaskCompletionSource<ChannelInfo> channelInfoReadyTaskSource = new TaskCompletionSource<ChannelInfo>();
     public void OnChannelInfo(ChannelInfo channel_info)
     {
       this.channelInfo = channel_info;
+      if (channel_info!=null) {
+        this.channelInfoReadyTaskSource.TrySetResult(channel_info);
+      }
     }
 
     public void OnChannelTrack(ChannelTrack channel_track)
