@@ -32,7 +32,9 @@ namespace PeerCastStation.UI
       CheckAsync()
         .ContinueWith(prev => {
           if (prev.IsCanceled || prev.IsFaulted) return;
-          this.Application.PeerCast.IsFirewalled = !prev.Result.IsOpen;
+          if (prev.Result.Success) {
+            this.Application.PeerCast.IsFirewalled = !prev.Result.IsOpen;
+          }
         });
     }
 
@@ -52,7 +54,7 @@ namespace PeerCastStation.UI
     public bool     Success     { get; private set; }
     public int[]    Ports       { get; private set; }
     public TimeSpan ElapsedTime { get; private set; }
-    public bool IsOpen { get { return Success && Ports.Length>0; } }
+    public bool IsOpen { get { return Ports.Length>0; } }
 
     public PortCheckResult(bool success, int[] ports, TimeSpan elapsed)
     {

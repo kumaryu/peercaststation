@@ -1100,7 +1100,7 @@ namespace PeerCastStation.UI.HTTP
           task.Wait();
           var result = task.Result;
           if (result.Success) {
-            PeerCast.IsFirewalled = result.Ports.Length==0;
+            PeerCast.IsFirewalled = !result.IsOpen;
             owner.OpenedPorts = result.Ports;
             results = result.Ports;
           }
