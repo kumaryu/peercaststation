@@ -559,8 +559,8 @@ namespace PeerCastStation.PCP
             handshakeTimeout.Reset();
             handshakeTimeout.Start();
           }
-          //Handshakeが3秒以内に完了しなければ切る
-          if (handshakeTimeout.ElapsedMilliseconds>3000) {
+          //Handshakeが5秒以内に完了しなければ切る
+          if (handshakeTimeout.ElapsedMilliseconds>5000) {
             Logger.Info("Handshake timed out.");
             Stop(StopReason.BadAgentError);
           }
@@ -634,8 +634,8 @@ namespace PeerCastStation.PCP
       try {
         var client = new System.Net.Sockets.TcpClient();
         client.Connect(target);
-        client.ReceiveTimeout = 3000;
-        client.SendTimeout    = 3000;
+        client.ReceiveTimeout = 2000;
+        client.SendTimeout    = 2000;
         var stream = client.GetStream();
         var conn = new Atom(Atom.PCP_CONNECT, 1);
         AtomWriter.Write(stream, conn);
