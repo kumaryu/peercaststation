@@ -1,4 +1,38 @@
 ---
+- name: Version 2.2.1 (2017年05月19日安定版)
+  version: 2.2.1
+  channel: stable
+  notes: |
+    バグ修正とマイナーな機能追加をしました。
+
+    * 接続待ち受け設定の認証情報を既定では非表示にしました。
+    * 起動時のポート開放確認に失敗した時にポートが閉じている判定になってしまっていたのを修正しました。
+    * PeerCastStation終了時にUPnPで開けたポートを閉じるはずが動いてなかったのを修正しました
+    * リレーでUNKNOWNのContentTypeを受け取った時のContentType推定が上手く動かない場合があったのを修正しました。
+    * GUIの設定画面でYPの掲載用URI設定がおかしかったのを修正しました。
+    * 下流のリレー接続が増減した時にすぐにホスト情報を上流に送るようにしました。
+    * RTMP配信時にエンコーダから変なパケットを受け取っても落ちないようにしました。
+    * HTML UIやAPI経由で配信する時にビットレートの手動設定が無視されるのを修正しました。 (by ha2ne2)
+    * HTML版のアップデートページに間違いがあったのを修正しました (by ha2ne2)
+    * リレー時に古いPosition指定があるとリレーが切れやすかったのを修正しました。
+    * リレー接続先を決めるのに使うホップ数が取得できていなかったのを修正しました。 (by plonk)
+    * YPからのチャンネル一覧取得のタイムアウトを5秒に設定しました。
+    * Linuxのmono 4.6以降で接続待ち受け時に例外が出ていたのを修正しました。
+    * monoでUPnPのポート自動開放が失敗することがあったのを修正しました。
+    * 古いバージョン(1.2.0より前)の設定ファイルの読み込みを削除しました。
+  date: 2017-05-19T02:30:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.2.1.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.2.1.zip
+    length: 1612432
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.2.1.exe
+    length: 2257964
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.2.1.msi
+    length: 1966656
+
 - name: Version 2.3.7.1 (2017年05月08日開発版)
   version: 2.3.7.1
   channel: dev
