@@ -258,6 +258,15 @@ namespace PeerCastStation.HTTP
   {
     private HTTPRequest request;
 
+    static HTTPOutputStream()
+    {
+      var chaninfo = new AtomCollection();
+      chaninfo.SetChanInfoBitrate(0);
+      chaninfo.SetChanInfoType("RAW");
+      chaninfo.SetChanInfoStreamType("application/octet-stream");
+      chaninfo.SetChanInfoStreamExt("");
+    }
+
     /// <summary>
     /// 元になるストリーム、チャンネル、リクエストからHTTPOutputStreamを初期化します
     /// </summary>
@@ -489,7 +498,9 @@ namespace PeerCastStation.HTTP
         Task.Delay(10000),
         this.channelInfoReadyTaskSource.Task,
         WaitForStoppedAsync());
-      if (channelInfo==null) return;
+      if (channelInfo==null) {
+        throw new HTTPError(HttpStatusCode.ServiceUnavailable);
+      }
       Logger.Debug("ContentType: {0}", channelInfo.ContentType);
     }
 
@@ -606,6 +617,13 @@ namespace PeerCastStation.HTTP
       Logger.Debug("Header: {0}", response_header);
     }
 
+    private async Task SendErrorResponse(HttpStatusCode code)
+    {
+      var response_header = HTTPUtils.CreateResponseHeader(code, new Dictionary<string,string>());
+      await Connection.WriteAsync(System.Text.Encoding.UTF8.GetBytes(response_header));
+      Logger.Debug("Header: {0}", response_header);
+    }
+
     IContentSink sink = null;
     protected override Task OnStarted(CancellationToken cancel_token)
     {
@@ -635,16 +653,21 @@ namespace PeerCastStation.HTTP
 
     protected override async Task<StopReason> DoProcess(CancellationToken cancel_token)
     {
-      if (!HTTPUtils.CheckAuthorization(request, AccessControlInfo)) {
-        await Unauthorized();
+      try {
+        if (!HTTPUtils.CheckAuthorization(request, AccessControlInfo)) {
+          throw new HTTPError(HttpStatusCode.Unauthorized);
+        }
+        await WaitChannelReceived();
+        await SendResponseHeader();
+        if (request.Method=="GET") {
+          await SendReponseBody(cancel_token);
+        }
         return StopReason.OffAir;
       }
-      await WaitChannelReceived();
-      await SendResponseHeader();
-      if (request.Method=="GET") {
-        await SendReponseBody(cancel_token);
+      catch (HTTPError err) {
+        await SendErrorResponse(err.StatusCode);
+        return StopReason.OffAir;
       }
-      return StopReason.OffAir;
     }
 
     TaskCompletionSource<ChannelInfo> channelInfoReadyTaskSource = new TaskCompletionSource<ChannelInfo>();
