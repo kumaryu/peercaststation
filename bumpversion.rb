@@ -2,6 +2,7 @@
 
 require 'optparse'
 require 'time'
+require 'yaml'
 
 BASE = File.dirname(__FILE__)
 date = Time.now
@@ -55,6 +56,14 @@ def replace_setting(project, name, value)
   end
 end
 
+def replace_yaml(file, &block)
+  doc = YAML.load_file(File.join(BASE, 'appveyor.yml'))
+  block.call(doc)
+  File.open(file, 'w:utf-8') do |f|
+    YAML.dump(doc, f)
+  end
+end
+
 replace_files(File.join(BASE, '**/AssemblyInfo.cs')) do |f, line|
   case line
   when /\[assembly: AssemblyFileVersion\("\S+"\)\]/
@@ -81,5 +90,9 @@ replace_files(File.join(BASE, 'PeerCastStation/PeerCastStation.PCP/PCPVersion.cs
   else
     f.puts line
   end
+end
+
+replace_yaml(File.join(BASE, 'appveyor.yml')) do |doc|
+  doc['version'] = version.split('.')[0,3].join('.') + '.{build}'
 end
 
