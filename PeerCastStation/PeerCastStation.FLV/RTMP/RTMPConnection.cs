@@ -321,7 +321,7 @@ namespace PeerCastStation.FLV.RTMP
     int nextClientId    = 1;
     int nextStreamId    = 1;
     int objectEncoding  = 0;
-    int sendChunkSize   = 128;
+    int sendChunkSize   = 1536;
     int recvChunkSize   = 128;
     long sendWindowSize = 0x7FFFFFFF;
     PeerBandwidthLimitType sendWindowLimitType = PeerBandwidthLimitType.Hard;
@@ -725,6 +725,7 @@ namespace PeerCastStation.FLV.RTMP
       objectEncoding = ((int)msg.CommandObject["objectEncoding"])==3 ? 3 : 0;
       ClientName     = (string)msg.CommandObject["flashVer"];
       logger.Debug("connect: objectEncoding {0}, flashVer: {1}", objectEncoding, ClientName);
+      await SendMessage(2, new SetChunkSizeMessage(this.Now, 0, sendChunkSize), cancel_token);
       await SendMessage(2, new SetWindowSizeMessage(this.Now, 0, recvWindowSize), cancel_token);
       await SendMessage(2, new SetPeerBandwidthMessage(this.Now, 0, sendWindowSize, PeerBandwidthLimitType.Hard), cancel_token);
       await SendMessage(2, new UserControlMessage.StreamBeginMessage(this.Now, 0, 0), cancel_token);
