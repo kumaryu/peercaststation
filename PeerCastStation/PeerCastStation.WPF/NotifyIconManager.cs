@@ -73,6 +73,7 @@ namespace PeerCastStation.WPF
     public void ShowNotificationMessage(NotificationMessage msg)
     {
       if (notifyIcon==null) return;
+      if (!appViewModel.Model.Settings.Get<WPFSettings>().ShowNotifications) return;
       var timeout = 5000;
       var icon = ToolTipIcon.Info;
       switch (msg.Type) {

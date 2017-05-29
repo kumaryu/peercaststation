@@ -13,10 +13,15 @@ namespace PeerCastStation.WPF
   public class WPFSettings
   {
     private bool showWindowOnStartup = true;
+    private bool showNotifications = true;
 
     public bool ShowWindowOnStartup {
       get { return showWindowOnStartup; }
       set { showWindowOnStartup = value; }
+    }
+    public bool ShowNotifications {
+      get { return showNotifications; }
+      set { showNotifications = value; }
     }
 
     public RemoteNodeName RemoteNodeName { get; set; } = RemoteNodeName.SessionID;

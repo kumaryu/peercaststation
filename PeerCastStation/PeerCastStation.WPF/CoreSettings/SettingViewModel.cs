@@ -638,6 +638,12 @@ namespace PeerCastStation.WPF.CoreSettings
       set { SetProperty("IsShowWindowOnStartup", ref isShowWindowOnStartup, value); }
     }
 
+    private bool isShowNotifications;
+    public bool IsShowNotifications {
+      get { return isShowNotifications; }
+      set { SetProperty("IsShowNotifications", ref isShowNotifications, value); }
+    }
+
     private static readonly Tuple<string, RemoteNodeName>[] remoteNodeNameItems = new Tuple<string, RemoteNodeName>[] {
       new Tuple<string, RemoteNodeName>("セッションID", RemoteNodeName.SessionID),
       new Tuple<string, RemoteNodeName>("アドレス", RemoteNodeName.Uri),
@@ -673,6 +679,7 @@ namespace PeerCastStation.WPF.CoreSettings
       maxUpstreamRate           = peerCast.AccessController.MaxUpstreamRate;
       maxUpstreamRatePerChannel = peerCast.AccessController.MaxUpstreamRatePerChannel;
       isShowWindowOnStartup = pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup;
+      isShowNotifications   = pecaApp.Settings.Get<WPFSettings>().ShowNotifications;
       remoteNodeName        = pecaApp.Settings.Get<WPFSettings>().RemoteNodeName;
       ports = new ObservableCollection<OutputListenerViewModel>(
         peerCast.OutputListeners
@@ -802,6 +809,7 @@ namespace PeerCastStation.WPF.CoreSettings
       peerCast.AccessController.MaxUpstreamRate = maxUpstreamRate;
       peerCast.AccessController.MaxUpstreamRatePerChannel = maxUpstreamRatePerChannel;
       pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup = isShowWindowOnStartup;
+      pecaApp.Settings.Get<WPFSettings>().ShowNotifications = isShowNotifications;
       pecaApp.Settings.Get<WPFSettings>().RemoteNodeName = remoteNodeName;
       if (IsListenersModified) {
         foreach (var listener in peerCast.OutputListeners.ToArray()) {
