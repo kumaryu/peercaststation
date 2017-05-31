@@ -59,7 +59,7 @@ namespace PeerCastStation.WPF
       });
       notifyIconThread.SetApartmentState(ApartmentState.STA);
       notifyIconThread.Start();
-      versionCheckTimer = new Timer(OnVersionCheckTimer, null, 1000, 1000*7200);
+      versionCheckTimer = new Timer(OnVersionCheckTimer, null, 1000, 1000*3600*24);
 
       mainThread = new Thread(() => {
         var app = new Application();
