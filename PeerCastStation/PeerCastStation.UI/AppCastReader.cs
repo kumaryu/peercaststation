@@ -4,7 +4,6 @@ using System.Linq;
 using System.Xml.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using PeerCastStation.Core;
 using System.Threading;
 
 namespace PeerCastStation.UI
@@ -16,6 +15,7 @@ namespace PeerCastStation.UI
     public AppCastReader()
     {
       this.client = new WebClient();
+      this.client.Headers.Add(HttpRequestHeader.AcceptEncoding, "deflate, gzip");
       this.client.DownloadDataCompleted += OnDownloadDataCompleted;
     }
 
@@ -134,14 +134,35 @@ namespace PeerCastStation.UI
 			return versions;
 		}
 
-		private void OnDownloadDataCompleted(object sender, DownloadDataCompletedEventArgs args)
-		{
-			if (args.Cancelled || args.Error!=null) return;
-			var result = ParseAppCast(System.Text.Encoding.UTF8.GetString(args.Result));
-			if (result.Count()>0 && downloaded!=null) {
-				downloaded(result);
-			}
-		}
+    private void OnDownloadDataCompleted(object sender, DownloadDataCompletedEventArgs args)
+    {
+      if (args.Cancelled || args.Error!=null) return;
+      var bytes = args.Result;
+      switch (this.client.ResponseHeaders.Get("Content-Encoding")) {
+      case "gzip":
+        using (var dst=new System.IO.MemoryStream())
+        using (var s=new System.IO.Compression.GZipStream(new System.IO.MemoryStream(bytes), System.IO.Compression.CompressionMode.Decompress)) {
+          s.CopyTo(dst);
+          dst.Flush();
+          bytes = dst.ToArray();
+        }
+        break;
+      case "deflate":
+        using (var dst=new System.IO.MemoryStream())
+        using (var s=new System.IO.Compression.DeflateStream(new System.IO.MemoryStream(bytes), System.IO.Compression.CompressionMode.Decompress)) {
+          s.CopyTo(dst);
+          dst.Flush();
+          bytes = dst.ToArray();
+        }
+        break;
+      default:
+        break;
+      }
+      var result = ParseAppCast(System.Text.Encoding.UTF8.GetString(bytes));
+      if (result.Count()>0 && downloaded!=null) {
+        downloaded(result);
+      }
+    }
 
   }
 }
