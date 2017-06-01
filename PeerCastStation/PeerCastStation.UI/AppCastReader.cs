@@ -27,16 +27,16 @@ namespace PeerCastStation.UI
       return true;
     }
 
-		public async Task<IEnumerable<VersionDescription>> DownloadVersionInfoTaskAsync(
-			Uri source,
-			CancellationToken cancel_token)
-		{
-			var client = new WebClient();
-			cancel_token.Register(() => client.CancelAsync());
-			return ParseAppCast(
-				System.Text.Encoding.UTF8.GetString(
-					await this.client.DownloadDataTaskAsync(source)));
-		}
+    public async Task<IEnumerable<VersionDescription>> DownloadVersionInfoTaskAsync(
+      Uri source,
+      CancellationToken cancel_token)
+    {
+      var client = new WebClient();
+      client.Headers.Add(HttpRequestHeader.AcceptEncoding, "deflate, gzip");
+      cancel_token.Register(() => client.CancelAsync());
+      var body = await client.DownloadDataTaskAsync(source);
+      return ParseResponse(client.ResponseHeaders, body);
+    }
 
     private class ParseErrorException : ApplicationException {}
     private string GetStringValue(XElement src)
@@ -104,61 +104,65 @@ namespace PeerCastStation.UI
       return result;
     }
 
-		private IEnumerable<VersionDescription> ParseAppCast(string data)
-		{
-			var doc = XDocument.Parse(data);
-			var versions = new List<VersionDescription>();
-			foreach (var item in doc.Descendants("item")) {
-				try {
-					var ver = new VersionDescription {
-						Title       = GetStringValue(item.Element("title")),
-						PublishDate = GetDateTimeValue(item.Element("pubDate")),
-						Link        = GetUriValue(item.Element("link")),
-						Description = GetContents(item.Element("description")),
-						Enclosures  = item.Elements("enclosure").Select(elt => 
-							new VersionEnclosure {
-								Url    = GetUriValue(elt.Attribute("url")),
-								Length = GetIntValue(elt.Attribute("length")),
-								Type   = GetStringValue(elt.Attribute("type")),
-								Title  = GetStringValue(elt),
-								InstallerType = GetInstallerTypeValue(elt.Attribute("installer-type")),
-							}
-						).ToArray(),
-					};
-					versions.Add(ver);
-				}
-				catch (ParseErrorException) {
-					//Do nothing
-				}
-			}
-			return versions;
-		}
-
-    private void OnDownloadDataCompleted(object sender, DownloadDataCompletedEventArgs args)
+    private IEnumerable<VersionDescription> ParseAppCast(string data)
     {
-      if (args.Cancelled || args.Error!=null) return;
-      var bytes = args.Result;
-      switch (this.client.ResponseHeaders.Get("Content-Encoding")) {
+      var doc = XDocument.Parse(data);
+      var versions = new List<VersionDescription>();
+      foreach (var item in doc.Descendants("item")) {
+        try {
+          var ver = new VersionDescription {
+            Title       = GetStringValue(item.Element("title")),
+            PublishDate = GetDateTimeValue(item.Element("pubDate")),
+            Link        = GetUriValue(item.Element("link")),
+            Description = GetContents(item.Element("description")),
+            Enclosures  = item.Elements("enclosure").Select(elt => 
+              new VersionEnclosure {
+                Url    = GetUriValue(elt.Attribute("url")),
+                Length = GetIntValue(elt.Attribute("length")),
+                Type   = GetStringValue(elt.Attribute("type")),
+                Title  = GetStringValue(elt),
+                InstallerType = GetInstallerTypeValue(elt.Attribute("installer-type")),
+              }
+            ).ToArray(),
+          };
+          versions.Add(ver);
+        }
+        catch (ParseErrorException) {
+          //Do nothing
+        }
+      }
+      return versions;
+    }
+
+    private IEnumerable<VersionDescription> ParseResponse(WebHeaderCollection header, byte[] body)
+    {
+      switch (header.Get("Content-Encoding")) {
       case "gzip":
         using (var dst=new System.IO.MemoryStream())
-        using (var s=new System.IO.Compression.GZipStream(new System.IO.MemoryStream(bytes), System.IO.Compression.CompressionMode.Decompress)) {
+        using (var s=new System.IO.Compression.GZipStream(new System.IO.MemoryStream(body), System.IO.Compression.CompressionMode.Decompress)) {
           s.CopyTo(dst);
           dst.Flush();
-          bytes = dst.ToArray();
+          body = dst.ToArray();
         }
         break;
       case "deflate":
         using (var dst=new System.IO.MemoryStream())
-        using (var s=new System.IO.Compression.DeflateStream(new System.IO.MemoryStream(bytes), System.IO.Compression.CompressionMode.Decompress)) {
+        using (var s=new System.IO.Compression.DeflateStream(new System.IO.MemoryStream(body), System.IO.Compression.CompressionMode.Decompress)) {
           s.CopyTo(dst);
           dst.Flush();
-          bytes = dst.ToArray();
+          body = dst.ToArray();
         }
         break;
       default:
         break;
       }
-      var result = ParseAppCast(System.Text.Encoding.UTF8.GetString(bytes));
+      return ParseAppCast(System.Text.Encoding.UTF8.GetString(body));
+    }
+
+    private void OnDownloadDataCompleted(object sender, DownloadDataCompletedEventArgs args)
+    {
+      if (args.Cancelled || args.Error!=null) return;
+      var result = ParseResponse(this.client.ResponseHeaders, args.Result);
       if (result.Count()>0 && downloaded!=null) {
         downloaded(result);
       }
