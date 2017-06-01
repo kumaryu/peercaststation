@@ -1,4 +1,33 @@
 ---
+- name: Version 2.3.8 (2017年06月02日開発版)
+  version: 2.3.8
+  channel: dev
+  notes: |
+    バグ修正とマイナーな機能追加をしました。
+
+    * GUIの設定で通知を出さないよう設定できるようにしました。
+    * GUIでの起動中のアップデートチェック間隔を2時間から24時間にしました。
+    * アップデートチェック時の転送量を減らしました。
+    * チャンネル情報を取得できないチャンネルを視聴しようとした時に接続が切れずに残っていたのを修正しました。
+    * 起動時のポート開放確認で、ポート開放確認自体に失敗した時に未開放扱いになってしまっていたのを開放状態不明のままになるようにしました。
+    * 配信開始時のビットレートに負数や空文字を設定するとビットレートが正しく設定されないのを修正しました。
+    * YPからのチャンネル情報取得を設定している場合に http://localhost:7144/ypchannels/index.txt でindex.txtの再配信がされるようにしました。
+    * RTMPの送信パケットサイズを1536に変更しました。RTMP視聴時に通信のオーバーヘッドが削減されます。
+    * zip版でunblock.batで一部DLLのブロックが解除されなかったのを修正しました。
+    * zip版にデバッグ用のpdbを追加しました。
+  date: 2017-06-02T00:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.3.8.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.8.zip
+    length: 2160689
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.8.exe
+    length: 2323939
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.3.8.msi
+    length: 2032488
+
 - name: Version 2.2.1 (2017年05月19日安定版)
   version: 2.2.1
   channel: stable
@@ -20,7 +49,7 @@
     * Linuxのmono 4.6以降で接続待ち受け時に例外が出ていたのを修正しました。
     * monoでUPnPのポート自動開放が失敗することがあったのを修正しました。
     * 古いバージョン(1.2.0より前)の設定ファイルの読み込みを削除しました。
-  date: 2017-05-19T02:30:00+09:00
+  date: 2017-05-15T02:30:00+09:00
   url: http://www.pecastation.org/files/PeerCastStation-2.2.1.zip
   enclosures:
   - type: archive
