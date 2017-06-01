@@ -1,20 +1,16 @@
-version: 2.3.7.{build}
+---
+version: 2.3.8.{build}
 configuration: Release
 install:
-- cmd: >-
+- cmd: |-
     set PATH=C:\Ruby23\bin;%PATH%
-
     gem install jekyll
 before_build:
-- cmd: >-
+- cmd: |-
     ruby bumpversion.rb %APPVEYOR_BUILD_VERSION%
-
     cd doc\help
-
     jekyll build
-
     cd ..\..
-
 build:
   verbosity: minimal
 artifacts:
