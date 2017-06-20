@@ -132,6 +132,7 @@ namespace PeerCastStation.Core
     public void Post(Host from, Atom packet)
     {
       if (IsStopped) return;
+      if (connection==null) return;
       DoPost(from, packet);
     }
 
