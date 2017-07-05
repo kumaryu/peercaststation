@@ -13,7 +13,7 @@ namespace PeerCastStation.Core
     {
     }
 
-    public override void Start(Uri source_uri)
+    protected override ISourceStream CreateSourceStream(Uri source_uri)
     {
       var source_factory = PeerCast.SourceStreamFactories
         .Where(factory => (factory.Type & SourceStreamType.Relay)!=0)
@@ -22,8 +22,7 @@ namespace PeerCastStation.Core
         logger.Error("Protocol `{0}' is not found", source_uri.Scheme);
         throw new ArgumentException(String.Format("Protocol `{0}' is not found", source_uri.Scheme));
       }
-      var source_stream = source_factory.Create(this, source_uri);
-      this.Start(source_uri, source_stream);
+      return source_factory.Create(this, source_uri);
     }
 
   }

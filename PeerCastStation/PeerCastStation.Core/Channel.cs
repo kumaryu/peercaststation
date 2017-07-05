@@ -58,36 +58,6 @@ namespace PeerCastStation.Core
     private ContentCollection contents;
     private System.Diagnostics.Stopwatch uptimeTimer = new System.Diagnostics.Stopwatch();
     private int streamID = 0;
-    protected ReaderWriterLockSlim readWriteLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-    protected void ReadLock(Action action)
-    {
-      readWriteLock.EnterReadLock();
-      action.Invoke();
-      readWriteLock.ExitReadLock();
-    }
-
-    protected T ReadLock<T>(Func<T> func)
-    {
-      readWriteLock.EnterReadLock();
-      var result = func.Invoke();
-      readWriteLock.ExitReadLock();
-      return result;
-    }
-
-    protected void WriteLock(Action action)
-    {
-      readWriteLock.EnterWriteLock();
-      action.Invoke();
-      readWriteLock.ExitWriteLock();
-    }
-
-    protected T WriteLock<T>(Func<T> func)
-    {
-      readWriteLock.EnterWriteLock();
-      var result = func.Invoke();
-      readWriteLock.ExitWriteLock();
-      return result;
-    }
 
     /// <summary>
     /// 所属するPeerCastオブジェクトを取得します
@@ -98,8 +68,8 @@ namespace PeerCastStation.Core
     /// </summary>
     public virtual SourceStreamStatus Status {
       get {
-        return ReadLock(() =>
-          sourceStream!=null ? sourceStream.Status : SourceStreamStatus.Idle);
+        var source = sourceStream;
+        return source!=null ? source.Status : SourceStreamStatus.Idle;
       }
     }
     public Guid ChannelID   { get; private set; }
@@ -111,7 +81,7 @@ namespace PeerCastStation.Core
     /// </summary>
     public ISourceStream SourceStream {
       get {
-        return ReadLock(() => sourceStream);
+        return sourceStream;
       }
     }
 
@@ -155,12 +125,11 @@ namespace PeerCastStation.Core
     private void ReplaceCollection<T>(ref T collection, Func<T,T> newcollection_func) where T : class
     {
       bool replaced = false;
-      while (!replaced) {
-        var prev = collection;
-        var new_collection = newcollection_func(collection);
-        System.Threading.Interlocked.CompareExchange(ref collection, new_collection, prev);
-        replaced = Object.ReferenceEquals(collection, new_collection);
-      }
+      do {
+        var orig = collection;
+        var new_collection = newcollection_func(orig);
+        replaced = Object.ReferenceEquals(System.Threading.Interlocked.CompareExchange(ref collection, new_collection, orig), orig);
+      } while (!replaced);
     }
 
     /// <summary>
@@ -196,7 +165,7 @@ namespace PeerCastStation.Core
 
     public int GenerateStreamID()
     {
-      return WriteLock(() => streamID++);
+      return Interlocked.Increment(ref streamID);
     }
 
     public class ChannelInfoEventArgs
@@ -312,18 +281,11 @@ namespace PeerCastStation.Core
     public Content ContentHeader
     {
       get {
-        return ReadLock(() => contentHeader);
+        return contentHeader;
       }
       set {
-        if (WriteLock(() => {
-          if (contentHeader!=value) {
-            contentHeader = value;
-            return true;
-          }
-          else {
-            return false;
-          }
-        })) {
+        var old = Interlocked.Exchange(ref contentHeader, value);
+        if (old!=value) {
           OnContentHeaderChanged(value);
         }
       }
@@ -469,18 +431,19 @@ namespace PeerCastStation.Core
     /// </summary>
     public long ContentPosition {
       get {
-        return ReadLock(() => {
-          var content = contents.Newest;
-          if (contentHeader==null) {
-            return 0;
-          }
-          else if (content==null || contentHeader.Position>content.Position) {
-            return contentHeader.Position + contentHeader.Data.Length;
+        var header  = contentHeader;
+        var content = contents.Newest;
+        if (header==null) {
+          return 0;
+        }
+        else {
+          if (content==null || header.Position>content.Position) {
+            return header.Position + header.Data.Length;
           }
           else {
             return content.Position + content.Data.Length;
           }
-        });
+        }
       }
     }
 
@@ -599,89 +562,70 @@ namespace PeerCastStation.Core
 
     public Host SelfNode {
       get {
-        return ReadLock(() => {
-          var host = new HostBuilder();
-          host.SessionID      = this.PeerCast.SessionID;
-          host.LocalEndPoint  = this.PeerCast.GetLocalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
-          host.GlobalEndPoint = this.PeerCast.GetGlobalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
-          host.IsFirewalled   = this.PeerCast.IsFirewalled ?? true;
-          host.DirectCount    = this.LocalDirects;
-          host.RelayCount     = this.LocalRelays;
-          host.IsDirectFull   = !this.PeerCast.AccessController.IsChannelPlayable(this);
-          host.IsRelayFull    = !this.PeerCast.AccessController.IsChannelRelayable(this);
-          host.IsReceiving    = this.SourceStream!=null && (this.SourceStream.GetConnectionInfo().RecvRate ?? 0.0f)>0;
-          return host.ToHost();
-        });
+        var source = this.SourceStream;
+        var host = new HostBuilder();
+        host.SessionID      = this.PeerCast.SessionID;
+        host.LocalEndPoint  = this.PeerCast.GetLocalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
+        host.GlobalEndPoint = this.PeerCast.GetGlobalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
+        host.IsFirewalled   = this.PeerCast.IsFirewalled ?? true;
+        host.DirectCount    = this.LocalDirects;
+        host.RelayCount     = this.LocalRelays;
+        host.IsDirectFull   = !this.PeerCast.AccessController.IsChannelPlayable(this);
+        host.IsRelayFull    = !this.PeerCast.AccessController.IsChannelRelayable(this);
+        host.IsReceiving    = source!=null && (source.GetConnectionInfo().RecvRate ?? 0.0f)>0;
+        return host.ToHost();
       }
     }
 
-    private CancellationTokenSource sourceStreamCancelSource;
-    protected void Start(Uri source_uri, ISourceStream source_stream)
+    protected void AddSourceStream(ISourceStream source_stream)
     {
-      WriteLock(() => {
-        if (sourceStream!=null) {
-          sourceStreamCancelSource.Cancel();
-          sourceStream.Stop();
-        }
+      var old = Interlocked.Exchange(ref sourceStream, source_stream);
+      if (old==null) {
         this.contentHeader = null;
         this.contents.Clear();
-        this.SourceUri = source_uri;
-        sourceStream = source_stream;
-        sourceStreamCancelSource = new CancellationTokenSource();
-        var cancel = sourceStreamCancelSource.Token;
-        sourceStream.Run().ContinueWith(prev => {
-          if (cancel.IsCancellationRequested) return;
-          WriteLock(() => {
-            foreach (var os in outputStreams) {
-              os.Stop();
-            }
-            outputStreams = new List<IOutputStream>();
-            uptimeTimer.Stop();
-          });
-          if (prev.IsFaulted) {
-            OnClosed(StopReason.NotIdentifiedError);
-          }
-          else {
-            OnClosed(prev.Result);
-          }
-        }, sourceStreamCancelSource.Token);
-        uptimeTimer.Reset();
-        uptimeTimer.Start();
+        uptimeTimer.Restart();
+      }
+      else {
+        old.Stop();
+      }
+      sourceStream.Run().ContinueWith(prev => {
+        RemoveSourceStream(source_stream, prev.IsFaulted ? StopReason.NotIdentifiedError : prev.Result);
       });
-      OnContentChanged();
     }
 
-    public abstract void Start(Uri source_uri);
-
-    private bool IsSourceConnected()
+    protected void RemoveSourceStream(ISourceStream source_stream, StopReason reason)
     {
-      return ReadLock(() => {
-        if (sourceStream!=null) {
-          var status = sourceStream.Status;
-          switch (status) {
-          case SourceStreamStatus.Idle:
-          case SourceStreamStatus.Error:
-            return false;
-          default:
-            return true;
-          }
-        }
-        else {
-          return false;
-        }
-      });
+      var old = Interlocked.CompareExchange(ref sourceStream, null, source_stream);
+      if (old!=source_stream) return;
+      var ostreams = Interlocked.Exchange(ref outputStreams, new List<IOutputStream>());
+      foreach (var os in ostreams) {
+        os.Stop();
+      }
+      uptimeTimer.Stop();
+      OnClosed(reason);
     }
+
+    public void Start(Uri source_uri)
+    {
+      this.SourceUri = source_uri;
+      AddSourceStream(CreateSourceStream(source_uri));
+    }
+
+    protected abstract ISourceStream CreateSourceStream(Uri source_uri);
 
     public void Reconnect()
     {
-      if (IsSourceConnected()) {
-        WriteLock(() => {
-          sourceStream.Reconnect();
-        });
-      }
-      else {
+      var source = sourceStream;
+      var status = source!=null ? SourceStreamStatus.Idle : source.Status;
+      switch (status) {
+      case SourceStreamStatus.Idle:
+      case SourceStreamStatus.Error:
         var source_uri = this.SourceUri;
         if (source_uri!=null) Start(source_uri);
+        break;
+      default:
+        source.Reconnect();
+        break;
       }
     }
 
@@ -701,18 +645,17 @@ namespace PeerCastStation.Core
     /// <param name="group">送信先グループ</param>
     public virtual void Broadcast(Host from, Atom packet, BroadcastGroup group)
     {
-      WriteLock(() => {
-        if ((group & (BroadcastGroup.Trackers | BroadcastGroup.Relays))!=0) {
-          if (sourceStream!=null) {
-            sourceStream.Post(from, packet);
-          }
+      if ((group & (BroadcastGroup.Trackers | BroadcastGroup.Relays))!=0) {
+        var source = sourceStream;
+        if (source!=null) {
+          source.Post(from, packet);
         }
-        if ((group & (BroadcastGroup.Relays))!=0) {
-          foreach (var outputStream in outputStreams) {
-            outputStream.Post(from, packet);
-          }
+      }
+      if ((group & (BroadcastGroup.Relays))!=0) {
+        foreach (var outputStream in outputStreams) {
+          outputStream.Post(from, packet);
         }
-      });
+      }
     }
 
     public async Task WaitForReadyContentTypeAsync(CancellationToken cancel_token)
@@ -745,15 +688,14 @@ namespace PeerCastStation.Core
     /// </summary>
     public void Close()
     {
-      WriteLock(() => {
-        if (sourceStream!=null) {
-          sourceStream.Stop();
-        }
-        foreach (var outputStream in outputStreams) {
-          outputStream.Stop();
-        }
-        outputStreams = new List<IOutputStream>();
-      });
+      var source = sourceStream;
+      if (source!=null) {
+        source.Stop();
+      }
+      var ostreams = Interlocked.Exchange(ref outputStreams, new List<IOutputStream>());
+      foreach (var os in ostreams) {
+        os.Stop();
+      }
     }
 
     /// <summary>

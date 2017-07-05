@@ -23,7 +23,7 @@ namespace PeerCastStation.Core
       this.ContentReaderFactory = content_reader_factory;
     }
 
-    public override void Start(Uri source_uri)
+    protected override ISourceStream CreateSourceStream(Uri source_uri)
     {
       var source_factory = this.SourceStreamFactory;
       if (source_factory==null) {
@@ -34,8 +34,7 @@ namespace PeerCastStation.Core
         }
       }
       var content_reader = ContentReaderFactory.Create(this);
-      var source_stream = source_factory.Create(this, source_uri, content_reader);
-      this.Start(source_uri, source_stream);
+      return source_factory.Create(this, source_uri, content_reader);
     }
 
     static public Guid CreateChannelID(Guid bcid, string channel_name, string genre, string source)
