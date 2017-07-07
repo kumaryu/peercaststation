@@ -334,28 +334,33 @@ namespace PeerCastStation.Core
       return removed;
     }
 
-    private void OnChannelInfoChanged(ChannelInfo channel_info)
+    private void DispatchSinkEvent(Action<IContentSink> action)
     {
       var sinks = contentSinks;
-      foreach (var sink in sinks) {
+      Task.Run(() => {
+        sinks.AsParallel().ForAll(action);
+      });
+    }
+
+    private void OnChannelInfoChanged(ChannelInfo channel_info)
+    {
+      DispatchSinkEvent(sink => {
         sink.OnChannelInfo(channel_info);
-      }
+      });
     }
 
     private void OnChannelTrackChanged(ChannelTrack channel_track)
     {
-      var sinks = contentSinks;
-      foreach (var sink in sinks) {
+      DispatchSinkEvent(sink => {
         sink.OnChannelTrack(channel_track);
-      }
+      });
     }
 
     private void OnContentHeaderChanged(Content header)
     {
-      var sinks = contentSinks;
-      foreach (var sink in sinks) {
+      DispatchSinkEvent(sink => {
         sink.OnContentHeader(header);
-      }
+      });
     }
 
     private void OnContentChanged()
@@ -380,10 +385,9 @@ namespace PeerCastStation.Core
 
     internal void OnContentAdded(Content content)
     {
-      var sinks = contentSinks;
-      foreach (var sink in sinks) {
+      DispatchSinkEvent(sink => {
         sink.OnContent(content);
-      }
+      });
     }
 
     class ChannelEventInvoker
