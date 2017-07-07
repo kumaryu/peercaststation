@@ -97,6 +97,9 @@ namespace PeerCastStation.PCP
     private Host uphost;
     private RemoteHostStatus remoteType = RemoteHostStatus.None;
     private EndPoint remoteHost = null;
+    private IContentSink contentSink;
+    private Content     lastHeader = null;
+    private ChannelInfo lastInfo = null;
 
     public PCPSourceConnection(
         PeerCast peercast,
@@ -106,6 +109,7 @@ namespace PeerCastStation.PCP
       : base(peercast, channel, source_uri)
     {
       remoteType = remote_type;
+      contentSink = new AsynchronousContentSink(new ChannelContentSink(channel, true));
     }
 
     protected override void OnStarted()
@@ -114,6 +118,8 @@ namespace PeerCastStation.PCP
       Channel.ChannelInfoChanged  += Channel_HostInfoUpdated;
       Channel.ChannelTrackChanged += Channel_HostInfoUpdated;
       Channel.NodesChanged        += Channel_HostInfoUpdated;
+      lastInfo = Channel.ChannelInfo;
+      lastHeader = Channel.ContentHeader;
       base.OnStarted();
     }
 
@@ -534,14 +540,18 @@ Stopped:
           long pkt_pos = atom.Children.GetChanPktPos() ?? 0;
           streamIndex = Channel.GenerateStreamID();
           streamOrigin = DateTime.Now;
-          Channel.ContentHeader = new Content(streamIndex, TimeSpan.Zero, pkt_pos, pkt_data);
-          Channel.ChannelInfo = ResetContentType(Channel.ChannelInfo, Channel.ContentHeader);
+          var header = new Content(streamIndex, TimeSpan.Zero, pkt_pos, pkt_data);
+          var info   = ResetContentType(lastInfo, header);
+          contentSink.OnContentHeader(header);
+          contentSink.OnChannelInfo(info);
+          lastHeader = header;
+          lastInfo   = info;
           lastPosition = pkt_pos;
         }
         else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_DATA) {
           if (atom.Children.GetChanPktPos()!=null) {
             long pkt_pos = atom.Children.GetChanPktPos().Value;
-            Channel.Contents.Add(new Content(streamIndex, DateTime.Now-streamOrigin, pkt_pos, pkt_data));
+            contentSink.OnContent(new Content(streamIndex, DateTime.Now-streamOrigin, pkt_pos, pkt_data));
             lastPosition = pkt_pos;
           }
         }
@@ -552,14 +562,15 @@ Stopped:
 
     protected void OnPCPChanInfo(Atom atom)
     {
-      var channel_info = new ChannelInfo(atom.Children);
-      Channel.ChannelInfo = ResetContentType(channel_info, Channel.ContentHeader);
+      var channel_info = ResetContentType(new ChannelInfo(atom.Children), lastHeader);
+      contentSink.OnChannelInfo(channel_info);
+      lastInfo = channel_info;
       BroadcastHostInfo();
     }
 
     protected void OnPCPChanTrack(Atom atom)
     {
-      Channel.ChannelTrack = new ChannelTrack(atom.Children);
+      contentSink.OnChannelTrack(new ChannelTrack(atom.Children));
     }
 
     protected void OnPCPBcst(Atom atom)
