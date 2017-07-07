@@ -52,6 +52,7 @@
     <Compile Include="AccessController.cs" />
     <Compile Include="Application.cs" />
     <Compile Include="AppSettingsReader.cs" />
+    <Compile Include="AsynchronousContentSink.cs" />
     <Compile Include="Atom.cs" />
     <Compile Include="AtomCollectionExtensions.cs" />
     <Compile Include="BandwidthChecker.cs" />

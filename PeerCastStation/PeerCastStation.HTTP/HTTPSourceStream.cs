@@ -103,7 +103,7 @@ namespace PeerCastStation.HTTP
       : base(peercast, channel, source_uri)
     {
       contentReader = content_reader;
-      contentSink = new BufferedContentSink(new ChannelContentSink(channel, use_content_bitrate));
+      contentSink = new BufferedContentSink(new AsynchronousContentSink(new ChannelContentSink(channel, use_content_bitrate)));
     }
 
     protected override async Task<SourceConnectionClient> DoConnect(Uri source, CancellationToken cancel_token)

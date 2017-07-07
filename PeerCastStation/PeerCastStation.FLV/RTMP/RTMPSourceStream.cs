@@ -59,7 +59,7 @@ namespace PeerCastStation.FLV.RTMP
           .Select(name => PeerCast.ContentFilters.FirstOrDefault(filter => filter.Name.ToLowerInvariant()==name.ToLowerInvariant()))
           .Where(filter => filter!=null)
           .Aggregate(sink, (r,filter) => filter.Activate(r));
-      this.flvBuffer = new FLVContentBuffer(channel, sink);
+      this.flvBuffer = new FLVContentBuffer(channel, new AsynchronousContentSink(sink));
       this.useContentBitrate = use_content_bitrate;
     }
 
