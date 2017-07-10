@@ -34,10 +34,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Management" />
-    <Reference Include="System.ServiceProcess" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
@@ -47,9 +43,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\PecaStationd\PecaStationd.csproj">
-      <Project>{6bb358e2-a9eb-453c-aaba-5080dddb3b86}</Project>
-      <Name>PecaStationd</Name>
+    <ProjectReference Include="..\PeerCastStation.App\PeerCastStation.App.csproj">
+      <Project>{c8b4e4dc-be2b-4fc5-94d2-a22ff754c9a7}</Project>
+      <Name>PeerCastStation.App</Name>
     </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.ASF\PeerCastStation.ASF.csproj">
       <Project>{dee84338-9849-4a90-8f1c-7bd6d88e3c2d}</Project>
@@ -82,10 +78,6 @@
     <ProjectReference Include="..\PeerCastStation.UI\PeerCastStation.UI.csproj">
       <Project>{5988fbaf-37c4-4997-8389-55f2ebbb9511}</Project>
       <Name>PeerCastStation.UI</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation\PeerCastStation.csproj">
-      <Project>{3d030f73-33a1-4fef-9a3f-d8cd34fc63a2}</Project>
-      <Name>PeerCastStation</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -4,20 +4,12 @@ namespace PecaStationd
 {
   public partial class PeerCastStationService : ServiceBase
   {
-    public class PecaServiceApplication : PeerCastStation.Main.Application
-    {
-      protected override void DoSetup()
-      {
-        //Do nothing
-      }
-    }
-
     public PeerCastStationService()
     {
       InitializeComponent();
     }
 
-    private PecaServiceApplication app = new PecaServiceApplication();
+    private PeerCastStation.App.ServiceApp app = new PeerCastStation.App.ServiceApp();
     private System.Threading.Tasks.Task appTask;
     protected override void OnStart(string[] args)
     {

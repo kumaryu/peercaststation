@@ -4,7 +4,7 @@
   {
     static void Main(string[] args)
     {
-      var app = new PecaStationd.PeerCastStationService.PecaServiceApplication();
+      var app = new PeerCastStation.App.ServiceApp();
       var task = app.Start();
       System.Console.ReadLine();
       app.Stop();

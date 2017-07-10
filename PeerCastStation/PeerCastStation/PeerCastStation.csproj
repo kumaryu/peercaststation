@@ -60,12 +60,14 @@
     <Reference Include="System.Web.Extensions" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ChannelNotifier.cs" />
     <Compile Include="PeerCastStation.cs" />
-    <Compile Include="PeerCastStationSettings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\PeerCastStation.App\PeerCastStation.App.csproj">
+      <Project>{c8b4e4dc-be2b-4fc5-94d2-a22ff754c9a7}</Project>
+      <Name>PeerCastStation.App</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.ASF\PeerCastStation.ASF.csproj">
       <Project>{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}</Project>
       <Name>PeerCastStation.ASF</Name>
