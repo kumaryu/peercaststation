@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace PeerCastStation.App
 {
   public class ServiceApp
-    : Application
+    : AppBase
   {
     public ServiceApp()
     {

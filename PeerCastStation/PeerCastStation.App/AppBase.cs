@@ -6,10 +6,10 @@ using PeerCastStation.Core;
 
 namespace PeerCastStation.App
 {
-  public class Application
+  public class AppBase
     : PeerCastApplication
   {
-    private static Logger logger = new Logger(typeof(Application));
+    private static Logger logger = new Logger(typeof(AppBase));
     private IEnumerable<IPlugin> plugins;
     override public IEnumerable<IPlugin> Plugins {
       get { return plugins.Where(p => p.IsUsable); }
@@ -21,7 +21,7 @@ namespace PeerCastStation.App
       get { return settings; }
     }
 
-    public Application()
+    public AppBase()
     {
       peerCast.AgentName = AppSettingsReader.GetString("AgentName", "PeerCastStation");
       LoadPlugins();

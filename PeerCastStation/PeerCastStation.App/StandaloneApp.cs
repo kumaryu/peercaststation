@@ -6,7 +6,7 @@ using System.Threading;
 namespace PeerCastStation.App
 {
   public class StandaloneApp
-    : Application
+    : AppBase
   {
     private PecaSettings settings = new PecaSettings(PecaSettings.DefaultFileName);
     public override PecaSettings Settings {
