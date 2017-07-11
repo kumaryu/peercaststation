@@ -17,17 +17,18 @@ namespace PeerCastStation.App
     {
     }
 
+    RegisteredWaitHandle registeredWaitHandle = null;
     protected override void DoSetup()
     {
       Console.CancelKeyPress += (sender, args) => {
         args.Cancel = true;
         Stop();
       };
-      RegisteredWaitHandle registered = null;
-      registered = ThreadPool.RegisterWaitForSingleObject(killWaitHandle, (state, timedout) => {
+      registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(killWaitHandle, (state, timedout) => {
         Stop();
-        if (registered!=null) {
-          registered.Unregister(null);
+        if (registeredWaitHandle!=null) {
+          registeredWaitHandle.Unregister(null);
+          registeredWaitHandle = null;
         }
       }, null, Timeout.Infinite, true);
       base.DoSetup();
@@ -35,6 +36,10 @@ namespace PeerCastStation.App
 
     protected override void DoCleanup()
     {
+      if (registeredWaitHandle!=null) {
+        registeredWaitHandle.Unregister(null);
+        registeredWaitHandle = null;
+      }
       base.DoCleanup();
     }
 
@@ -42,7 +47,7 @@ namespace PeerCastStation.App
     static private bool CheckIsFirstInstance(ref EventWaitHandle wait_handle)
     {
       bool is_first_instance;
-      var event_name = System.Reflection.Assembly.GetEntryAssembly().Location
+      var event_name = System.Reflection.Assembly.GetExecutingAssembly().Location
         .Replace('\\', '/')+".kill";
       try {
         wait_handle = EventWaitHandle.OpenExisting(event_name);
@@ -56,18 +61,20 @@ namespace PeerCastStation.App
     }
 
     [STAThread]
-    public static void Run(string[] args)
+    public static int Run(string[] args)
     {
       AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
       var first_instance = CheckIsFirstInstance(ref killWaitHandle);
-      if (args.Contains("-kill")) {
-        killWaitHandle.Set();
-        return;
+      using (killWaitHandle) {
+        if (args.Contains("-kill")) {
+          killWaitHandle.Set();
+          return 0;
+        }
+        if (!first_instance && !args.Contains("-multi")) {
+          return 1;
+        }
+        return (new StandaloneApp()).Run();
       }
-      if (!first_instance && !args.Contains("-multi")) {
-        return;
-      }
-      (new StandaloneApp()).Run();
     }
 
     private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs args)

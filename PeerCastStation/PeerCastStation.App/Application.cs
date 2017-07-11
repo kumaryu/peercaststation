@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using PeerCastStation.Core;
-using System.Threading;
 
 namespace PeerCastStation.App
 {
@@ -28,19 +27,21 @@ namespace PeerCastStation.App
       LoadPlugins();
     }
 
-    private TaskCompletionSource<bool> stopTask = new TaskCompletionSource<bool>();
-    override public void Stop()
+    private TaskCompletionSource<int> stopTask = new TaskCompletionSource<int>();
+    override public void Stop(int exit_code)
     {
-      stopTask.TrySetResult(true);
+      stopTask.TrySetResult(exit_code);
     }
 
     PeerCast peerCast = new PeerCast();
     override public PeerCast PeerCast { get { return peerCast; } }
-    public void Run()
+    public int Run()
     {
       DoSetup();
-      Start().Wait();
+      var task = Start();
+      task.Wait();
       DoCleanup();
+      return task.Result;
     }
 
     protected virtual void DoSetup()
@@ -56,7 +57,7 @@ namespace PeerCastStation.App
       Logger.Close();
     }
 
-    public async Task Start()
+    public async Task<int> Start()
     {
       settings.Load();
       foreach (var plugin in Plugins) {
@@ -68,7 +69,7 @@ namespace PeerCastStation.App
       foreach (var plugin in Plugins) {
         plugin.Start();
       }
-      await stopTask.Task;
+      var result = await stopTask.Task;
       foreach (var plugin in Plugins) {
         plugin.Stop();
       }
@@ -77,9 +78,10 @@ namespace PeerCastStation.App
       foreach (var plugin in Plugins) {
         plugin.Detach();
       }
+      return result;
     }
 
-    public static readonly string PluginPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+    public static readonly string PluginPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
     IEnumerable<Type> LoadPluginAssemblies()
     {
       var res = LoadPluginAssembly(System.Reflection.Assembly.GetExecutingAssembly());
