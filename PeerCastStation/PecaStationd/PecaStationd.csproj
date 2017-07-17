@@ -58,6 +58,7 @@
     <Compile Include="PeerCastStationService.Designer.cs">
       <DependentUpon>PeerCastStationService.cs</DependentUpon>
     </Compile>
+    <Compile Include="PeerCastStationServiceMain.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProjectInstaller.cs">
       <SubType>Component</SubType>

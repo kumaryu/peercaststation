@@ -43,6 +43,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\PecaStationd\PecaStationd.csproj">
+      <Project>{6bb358e2-a9eb-453c-aaba-5080dddb3b86}</Project>
+      <Name>PecaStationd</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.App\PeerCastStation.App.csproj">
       <Project>{c8b4e4dc-be2b-4fc5-94d2-a22ff754c9a7}</Project>
       <Name>PeerCastStation.App</Name>

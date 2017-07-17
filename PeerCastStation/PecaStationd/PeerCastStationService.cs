@@ -1,4 +1,6 @@
-﻿using System.ServiceProcess;
+﻿using System;
+using System.ServiceProcess;
+using System.Threading.Tasks;
 
 namespace PecaStationd
 {
@@ -8,20 +10,16 @@ namespace PecaStationd
     {
       InitializeComponent();
     }
+    private PeerCastStationServiceMain main = new PeerCastStationServiceMain();
 
-    private PeerCastStation.App.ServiceApp app = new PeerCastStation.App.ServiceApp();
-    private System.Threading.Tasks.Task appTask;
     protected override void OnStart(string[] args)
     {
-      appTask = app.Start();
+      main.Start(args);
     }
 
     protected override void OnStop()
     {
-      app.Stop();
-      if (appTask!=null) {
-        appTask.Wait();
-      }
+      main.Stop();
     }
   }
 }

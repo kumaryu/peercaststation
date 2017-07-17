@@ -57,7 +57,7 @@ namespace PeerCastStation.App
       Logger.Close();
     }
 
-    public async Task<int> Start()
+    public virtual async Task<int> Start()
     {
       settings.Load();
       foreach (var plugin in Plugins) {
