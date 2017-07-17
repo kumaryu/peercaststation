@@ -166,6 +166,7 @@ namespace PeerCastStation.UI.HTTP
     {
       var peercast = Application.PeerCast;
       var root = new XElement("peercast");
+      root.Add(new XAttribute("session", peercast.SessionID.ToString("N").ToUpperInvariant()));
       var servent = new XElement("servent", new XAttribute("uptime", (int)peercast.Uptime.TotalSeconds));
       var bandwidth = new XElement("bandwidth",
         new XAttribute("in",  peercast.Channels.Sum(c => c.ChannelInfo.Bitrate)),
