@@ -187,6 +187,7 @@ namespace PeerCastStation.UI.PortMapper
         .Select(intf => intf.GetIPProperties())
         .Where(ipprop => ipprop.UnicastAddresses.Count>0)
         .SelectMany(ipprop => ipprop.GatewayAddresses.Select(addr => addr.Address))
+        .Where(addr => addr.AddressFamily==AddressFamily.InterNetwork)
         .Distinct();
     }
 
