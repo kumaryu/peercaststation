@@ -29,6 +29,17 @@ namespace PeerCastStation.Core
       }
     }
 
+    public class RoundtripEnum
+    {
+      public string TypeName { get; private set; }
+      public string Value { get; private set; }
+      public RoundtripEnum(string typename, string value)
+      {
+        this.TypeName = typename;
+        this.Value = value;
+      }
+    }
+
     private void SerializeValue(XmlWriter writer, object obj)
     {
            if (obj==null)     SerializeNull(writer, obj);
@@ -49,6 +60,8 @@ namespace PeerCastStation.Core
       else if (obj is IPAddress)  SerializeIPAddress(writer, (IPAddress)obj);
       else if (obj is IDictionary) SerializeDictionary(writer, (IDictionary)obj);
       else if (obj is IEnumerable) SerializeArray(writer, (IEnumerable)obj);
+      else if (obj is RoundtripObject) SerializeRoundtripObject(writer, (RoundtripObject)obj);
+      else if (obj is RoundtripEnum) SerializeRoundtripEnum(writer, (RoundtripEnum)obj);
       else SerializeObject(writer, obj);
     }
 
@@ -67,10 +80,6 @@ namespace PeerCastStation.Core
 
     private void SerializeObject(XmlWriter writer, object obj)
     {
-      if (obj is RoundtripObject) {
-        SerializeRoundtripObject(writer, (RoundtripObject)obj);
-        return;
-      }
       var type = obj.GetType();
       writer.WriteStartElement("object");
       writer.WriteAttributeString("type", type.FullName);
@@ -166,6 +175,14 @@ namespace PeerCastStation.Core
       writer.WriteStartElement("enum");
       writer.WriteAttributeString("type", value.GetType().FullName);
       writer.WriteString(value.ToString());
+      writer.WriteEndElement();
+    }
+
+    private void SerializeRoundtripEnum(XmlWriter writer, RoundtripEnum obj)
+    {
+      writer.WriteStartElement("enum");
+      writer.WriteAttributeString("type", obj.TypeName);
+      writer.WriteString(obj.Value);
       writer.WriteEndElement();
     }
 
@@ -448,11 +465,13 @@ namespace PeerCastStation.Core
     private object DeserializeEnum(XmlReader reader)
     {
       if (!reader.IsStartElement("enum")) return null;
-      var type = FindEnumType(reader.GetAttribute("type"));
+      var typename = reader.GetAttribute("type");
+      var type = FindEnumType(typename);
       reader.Read();
       var value = reader.ReadContentAsString();
       reader.ReadEndElement();
-      if (type==null || String.IsNullOrEmpty(value)) return null;
+      if (type==null) return new RoundtripEnum(typename, value);
+      if (String.IsNullOrEmpty(value)) return null;
       return Enum.Parse(type, value);
     }
 
