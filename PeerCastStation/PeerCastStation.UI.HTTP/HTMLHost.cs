@@ -43,15 +43,15 @@ namespace PeerCastStation.UI.HTTP
 
     public HTMLHost()
     {
-      var basepath = Path.GetFullPath(Path.GetDirectoryName(typeof(HTMLHost).Assembly.Location));
-      virtualPhysicalPathMap.Add("/html/", Path.Combine(basepath, "html"));
-      virtualPhysicalPathMap.Add("/help/", Path.Combine(basepath, "help"));
-      virtualPhysicalPathMap.Add("/Content/", Path.Combine(basepath, "Content"));
-      virtualPhysicalPathMap.Add("/Scripts/", Path.Combine(basepath, "Scripts"));
     }
 
     override protected void OnAttach()
     {
+      var basepath = this.Application.BasePath;
+      virtualPhysicalPathMap.Add("/html/", Path.Combine(basepath, "html"));
+      virtualPhysicalPathMap.Add("/help/", Path.Combine(basepath, "help"));
+      virtualPhysicalPathMap.Add("/Content/", Path.Combine(basepath, "Content"));
+      virtualPhysicalPathMap.Add("/Scripts/", Path.Combine(basepath, "Scripts"));
     }
 
     private List<OWINApplication> applications = new List<OWINApplication>();
@@ -82,6 +82,10 @@ namespace PeerCastStation.UI.HTTP
 
     override protected void OnDetach()
     {
+      virtualPhysicalPathMap.Remove("/html/");
+      virtualPhysicalPathMap.Remove("/help/");
+      virtualPhysicalPathMap.Remove("/Content/");
+      virtualPhysicalPathMap.Remove("/Scripts/");
     }
 
     private string GetPhysicalPath(OWINEnv env)

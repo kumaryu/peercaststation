@@ -12,13 +12,13 @@ namespace PeerCastStation.Main
     [Serializable]
     class StartUpContext
     {
-      public string   BaseDir;
+      public string   BasePath;
       public string[] Args;
       public ResultContainer Result;
 
       public void Run()
       {
-        var asm = System.Reflection.Assembly.LoadFile(System.IO.Path.Combine(this.BaseDir, "PeerCastStation.App.dll"));
+        var asm = System.Reflection.Assembly.LoadFrom(System.IO.Path.Combine(this.BasePath, "PeerCastStation.App.dll"));
         var type = asm.GetType("PeerCastStation.App.StandaloneApp");
         var result = type.InvokeMember("Run",
           System.Reflection.BindingFlags.Public |
@@ -26,7 +26,7 @@ namespace PeerCastStation.Main
           System.Reflection.BindingFlags.InvokeMethod,
           null,
           null,
-          new object[] { this.Args });
+          new object[] { this.BasePath, this.Args });
         if (result is Int32) {
           this.Result.ExitCode = (int)result;
         }
@@ -38,6 +38,7 @@ namespace PeerCastStation.Main
     static int Main(string[] args)
     {
     start:
+      var basepath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
       var appdomain = AppDomain.CreateDomain(
         "PeerCastStaion.App",
         null,
@@ -45,7 +46,7 @@ namespace PeerCastStation.Main
         AppDomain.CurrentDomain.RelativeSearchPath,
         true);
       var ctx = new StartUpContext() {
-        BaseDir  = AppDomain.CurrentDomain.BaseDirectory,
+        BasePath = basepath,
         Args     = args,
         Result   = new ResultContainer { ExitCode = 1 },
       };

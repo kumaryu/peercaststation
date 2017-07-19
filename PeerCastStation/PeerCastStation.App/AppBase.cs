@@ -21,8 +21,14 @@ namespace PeerCastStation.App
       get { return settings; }
     }
 
-    public AppBase()
+    private string basePath;
+    public override string BasePath {
+      get { return basePath; }
+    }
+
+    public AppBase(string basepath)
     {
+      basePath = basepath;
       peerCast.AgentName = AppSettingsReader.GetString("AgentName", "PeerCastStation");
       LoadPlugins();
     }
@@ -81,11 +87,10 @@ namespace PeerCastStation.App
       return result;
     }
 
-    public static readonly string PluginPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
     IEnumerable<Type> LoadPluginAssemblies()
     {
       var res = LoadPluginAssembly(System.Reflection.Assembly.GetExecutingAssembly());
-      foreach (var dll in System.IO.Directory.GetFiles(PluginPath, "*.dll")) {
+      foreach (var dll in System.IO.Directory.GetFiles(BasePath, "*.dll")) {
         res = res.Concat(LoadPluginAssembly(System.Reflection.Assembly.LoadFrom(dll)));
       }
       return res;

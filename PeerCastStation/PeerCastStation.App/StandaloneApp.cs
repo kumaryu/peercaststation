@@ -13,7 +13,8 @@ namespace PeerCastStation.App
       get { return settings; }
     }
 
-    public StandaloneApp()
+    public StandaloneApp(string basepath)
+      : base(basepath)
     {
     }
 
@@ -44,11 +45,10 @@ namespace PeerCastStation.App
     }
 
     static EventWaitHandle killWaitHandle;
-    static private bool CheckIsFirstInstance(ref EventWaitHandle wait_handle)
+    private static bool CheckIsFirstInstance(string basepath, ref EventWaitHandle wait_handle)
     {
       bool is_first_instance;
-      var event_name = System.Reflection.Assembly.GetExecutingAssembly().Location
-        .Replace('\\', '/')+".kill";
+      var event_name = System.IO.Path.Combine(basepath, "PeerCastStation.exe").Replace('\\', '/')+".kill";
       try {
         wait_handle = EventWaitHandle.OpenExisting(event_name);
         is_first_instance = false;
@@ -61,10 +61,10 @@ namespace PeerCastStation.App
     }
 
     [STAThread]
-    public static int Run(string[] args)
+    public static int Run(string basepath, string[] args)
     {
       AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
-      var first_instance = CheckIsFirstInstance(ref killWaitHandle);
+      var first_instance = CheckIsFirstInstance(basepath, ref killWaitHandle);
       using (killWaitHandle) {
         if (args.Contains("-kill")) {
           killWaitHandle.Set();
@@ -73,7 +73,7 @@ namespace PeerCastStation.App
         if (!first_instance && !args.Contains("-multi")) {
           return 1;
         }
-        return (new StandaloneApp()).Run();
+        return (new StandaloneApp(basepath)).Run();
       }
     }
 

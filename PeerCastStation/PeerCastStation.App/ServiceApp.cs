@@ -9,7 +9,8 @@ namespace PeerCastStation.App
   public class ServiceApp
     : AppBase
   {
-    public ServiceApp()
+    public ServiceApp(string basepath)
+      : base(basepath)
     {
     }
   }

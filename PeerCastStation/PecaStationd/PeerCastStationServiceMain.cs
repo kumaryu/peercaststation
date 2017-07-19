@@ -16,16 +16,16 @@ namespace PecaStationd
       public Task<int> mainTask;
       public Action<int> onStoppedCallback;
 
-      public AppContext(string basedir, string[] args)
+      public AppContext(string basepath, string[] args)
       {
-        var asm = System.Reflection.Assembly.LoadFile(
-          System.IO.Path.Combine(basedir, "PeerCastStation.App.dll"));
+        var asm = System.Reflection.Assembly.LoadFrom(
+          System.IO.Path.Combine(basepath, "PeerCastStation.App.dll"));
         var type = asm.GetType("PeerCastStation.App.ServiceApp");
         serviceApp = type.InvokeMember("ServiceApp",
           System.Reflection.BindingFlags.CreateInstance,
           null,
           null,
-          new object[] { });
+          new object[] { basepath });
         mainTask = (Task<int>)serviceApp.GetType().InvokeMember("Start",
           System.Reflection.BindingFlags.Public |
           System.Reflection.BindingFlags.Instance |
@@ -65,13 +65,13 @@ namespace PecaStationd
     [Serializable]
     class StartUpContext
     {
-      public string   BaseDir;
+      public string   BasePath;
       public string[] Args;
       public ResultContainer Result;
 
       public void Start()
       {
-        Result.AppContext = new AppContext(this.BaseDir, this.Args);
+        Result.AppContext = new AppContext(this.BasePath, this.Args);
       }
     }
 
@@ -92,6 +92,7 @@ namespace PecaStationd
 
     public void Start(string[] args)
     {
+      var basepath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
       var appdomain = AppDomain.CreateDomain(
         "PeerCastStaion.App",
         null,
@@ -99,7 +100,7 @@ namespace PecaStationd
         AppDomain.CurrentDomain.RelativeSearchPath,
         true);
       var ctx = new StartUpContext() {
-        BaseDir  = AppDomain.CurrentDomain.BaseDirectory,
+        BasePath = basepath,
         Args     = args,
         Result   = new ResultContainer { AppContext = null },
       };
