@@ -90,6 +90,7 @@ namespace PecaStationd
       }
     }
 
+    private StoppedCallback stoppedCallback;
     public void Start(string[] args)
     {
       var basepath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
@@ -106,8 +107,8 @@ namespace PecaStationd
       };
       appdomain.DoCallBack(new CrossAppDomainDelegate(ctx.Start));
       appContext = ctx.Result.AppContext;
-      var callback = new StoppedCallback { Owner=this, Args=args, };
-      appContext.SetOnStopped(new Action<int>(callback.OnStopped));
+      stoppedCallback = new StoppedCallback { Owner=this, Args=args, };
+      appContext.SetOnStopped(new Action<int>(stoppedCallback.OnStopped));
     }
 
     public int Stop()
