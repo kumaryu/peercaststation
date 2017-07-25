@@ -84,30 +84,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           </Style>
         </ProgressBar.Style>
       </ProgressBar>
-      <ComboBox Grid.Column="1" Margin="5" ItemsSource="{Binding Enclosures}" SelectedItem="{Binding SelectedEnclosure}">
-        <ComboBox.ItemTemplate>
-          <DataTemplate>
-            <TextBlock>
-              <TextBlock.Style>
-                <Style TargetType="TextBlock">
-                  <Setter Property="Text" Value="ZIP"/>
-                  <Style.Triggers>
-                    <DataTrigger Binding="{Binding InstallerType}" Value="{x:Static ui:InstallerType.Installer}">
-                      <Setter Property="Text" Value="インストーラ"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding InstallerType}" Value="{x:Static ui:InstallerType.ServiceInstaller}">
-                      <Setter Property="Text" Value="サービスインストーラ"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding InstallerType}" Value="{x:Static ui:InstallerType.ServiceArchive}">
-                      <Setter Property="Text" Value="サービスZIP"/>
-                    </DataTrigger>
-                  </Style.Triggers>
-                </Style>
-              </TextBlock.Style>
-            </TextBlock>
-          </DataTemplate>
-        </ComboBox.ItemTemplate>
-      </ComboBox>
       <Button x:Name="UpdateButton" Grid.Column="2" Click="UpdateButton_Click" Width="140">
         <Button.Style>
           <Style TargetType="Button">
