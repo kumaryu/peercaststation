@@ -1,22 +1,14 @@
 ﻿
 var UpdateViewModel = new function() {
-  var EnclosureViewModel = function (data) {
-    self.title = "ZIP";
-    switch (data) {
-    case "archive":
-      self.title = "ZIP";
-      break;
-    case "installer":
-      self.title = "インストーラ";
-      break;
-    }
-    self.url = data.url;
-  };
   var self = this;
+  self.currentVersion = ko.observable();
   self.versions = ko.observable();
-  self.enclosures = ko.observableArray();
   self.refresh = function() {
-    PeerCast.getNewVersions(function(results) {
+    PeerCast.getVersionInfo(function (result) {
+      if (!result) return;
+      self.currentVersion(result.agentName);
+    });
+    PeerCast.getNewVersions(function (results) {
       if (!results) return;
       var descs = "";
       for (var i in results) {
@@ -24,25 +16,59 @@ var UpdateViewModel = new function() {
         descs += ver.description;
       }
       self.versions(descs);
-      for (var i in results[0].enclosures) {
-        var title = "ZIP";
-        switch (results[0].enclosures[i].installerType) {
-        case "archive":
-          title = "ZIPをダウンロード";
-          break;
-        case "installer":
-          title = "インストーラをダウンロード";
-          break;
-        case "serviceinstaller":
-          title = "サービス版インストーラをダウンロード";
-          break;
-        }
-        self.enclosures.push({
-          title: title,
-          url:   results[0].enclosures[i].url
-        });
-      }
     });
+  };
+  self.updateStatus   = ko.observable('ready');
+  self.updateProgress = ko.observable();
+  self.checkUpdated = function () {
+    var check_func = function () {
+      PeerCast.getVersionInfo(function (result) {
+        if (result && self.currentVersion()!==result.agentName) {
+          self.updateStatus('completed');
+        }
+        else {
+          window.setTimeout(check_func, 1000);
+        }
+      });
+    };
+    window.setTimeout(check_func, 1000);
+  };
+
+  self.updating = function (result) {
+    if (!result) {
+      window.setTimeout(function () { PeerCast.getUpdateStatus(self.updating); }, 1000);
+      return;
+    }
+    self.updateStatus(result.status);
+    self.updateProgress(Math.floor(result.progress * 100.0));
+    switch (result.status) {
+    case "progress":
+      window.setTimeout(function () { PeerCast.getUpdateStatus(self.updating); }, 1000);
+      break;
+    case "succeeded":
+      if (self.currentVersion()!==result.agentName) {
+        self.updateStatus('completed');
+      }
+      else {
+        window.setTimeout(function () { PeerCast.getUpdateStatus(self.updating); }, 1000);
+      }
+      break;
+    }
+  };
+
+  self.doUpdate = function () {
+    switch (self.updateStatus()) {
+    case 'ready':
+      PeerCast.updateAndRestart(self.updating);
+      break;
+    case 'succeeded':
+    case 'progress':
+      break;
+    case 'completed':
+    case 'failed':
+      window.close();
+      break;
+    }
   };
 
   self.bind = function (target) {
@@ -50,3 +76,4 @@ var UpdateViewModel = new function() {
     self.refresh();
   }
 };
+

@@ -155,6 +155,75 @@ namespace PeerCastStation.UI
       }
     }
 
+    public static string GetDownloadPath()
+    {
+      return
+        Environment.GetEnvironmentVariable("TEMP") ??
+        Environment.GetFolderPath(Environment.SpecialFolder.InternetCache);
+    }
+
+    public class DownloadResult
+    {
+      public string FilePath { get; private set; }
+      public VersionDescription Version { get; private set; }
+      public VersionEnclosure Enclosure { get; private set; }
+      public DownloadResult(string filepath, VersionDescription version, VersionEnclosure enclosure)
+      {
+        FilePath = filepath;
+        Version = version;
+        Enclosure = enclosure;
+      }
+    }
+
+    public static async Task<DownloadResult> DownloadAsync(VersionDescription version, Action<float> onprogress, CancellationToken ct)
+    {
+      using (var client = new System.Net.WebClient()) {
+        if (onprogress!=null) {
+          client.DownloadProgressChanged += (sender, args) => {
+            onprogress(args.ProgressPercentage/100.0f);
+          };
+        }
+        ct.Register(() => { client.CancelAsync(); }, true);
+        var enclosure = version.Enclosures.First(e => e.InstallerType==Updater.CurrentInstallerType);
+        var filepath =
+          System.IO.Path.Combine(
+            GetDownloadPath(),
+            System.IO.Path.GetFileName(enclosure.Url.AbsolutePath));
+        await client.DownloadFileTaskAsync(enclosure.Url.ToString(), filepath);
+        return new DownloadResult(filepath, version, enclosure);
+      }
+    }
+
+    public static bool Install(DownloadResult downloaded)
+    {
+      try {
+        switch (downloaded.Enclosure.InstallerType) {
+        case InstallerType.Archive:
+        case InstallerType.ServiceArchive:
+          Updater.InplaceUpdate(
+            PeerCastApplication.Current.BasePath,
+            downloaded.FilePath,
+            new string[] { "PeerCastStation.exe", "PecaStationd.exe" });
+          PeerCastApplication.Current.Stop(-1);
+          break;
+        case InstallerType.Installer:
+          System.Diagnostics.Process.Start(downloaded.FilePath);
+          PeerCastApplication.Current.Stop();
+          break;
+        case InstallerType.ServiceInstaller:
+          System.Diagnostics.Process.Start(downloaded.FilePath, "/passive");
+          PeerCastApplication.Current.Stop();
+          break;
+        case InstallerType.Unknown:
+          throw new ApplicationException();
+        }
+        return true;
+      }
+      catch (Exception) {
+        return false;
+      }
+    }
+
     public event NewVersionFoundEventHandler NewVersionFound;
   }
 
