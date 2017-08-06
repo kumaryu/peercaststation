@@ -15,6 +15,7 @@
 			<ComponentRef Id="ProgramMenu"/>
 			<ComponentGroupRef Id="PeerCastStation"/>
 			<ComponentGroupRef Id="PeerCastStation.Core"/>
+			<ComponentGroupRef Id="PeerCastStation.App"/>
 			<ComponentGroupRef Id="PeerCastStation.PCP"/>
 			<ComponentGroupRef Id="PeerCastStation.HTTP"/>
 			<ComponentGroupRef Id="PeerCastStation.ASF"/>

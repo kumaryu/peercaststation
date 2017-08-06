@@ -3,6 +3,7 @@ HEAT = ENV['WIX'] + 'bin\\heat.exe'
 
 Projects = %W(
 PeerCastStation.Core
+PeerCastStation.App
 PeerCastStation.ASF
 PeerCastStation.FLV
 PeerCastStation.MKV
