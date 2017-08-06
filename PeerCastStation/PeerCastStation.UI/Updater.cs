@@ -211,8 +211,7 @@ namespace PeerCastStation.UI
           PeerCastApplication.Current.Stop();
           break;
         case InstallerType.ServiceInstaller:
-          System.Diagnostics.Process.Start(downloaded.FilePath, "/passive");
-          PeerCastApplication.Current.Stop();
+          System.Diagnostics.Process.Start(downloaded.FilePath, "/quiet");
           break;
         case InstallerType.Unknown:
           throw new ApplicationException();
