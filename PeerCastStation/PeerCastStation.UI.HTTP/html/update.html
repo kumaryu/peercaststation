@@ -31,14 +31,24 @@
     <div class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container-fluid">
-          <span class="brand" style="color:#FFFFFF">新しいバージョンがダウンロード可能です！</span>
-        </div>
+          <span class="brand" style="color:#FFFFFF">
+            <span data-bind="if:updateStatus()==='ready'">新しいバージョンがダウンロード可能です</span>
+            <span data-bind="if:updateStatus()==='progress'">アップデート中です</span>
+            <span data-bind="if:updateStatus()==='succeeded'">アップデートが成功しました。再起動します</span>
+            <span data-bind="if:updateStatus()==='failed'">アップデートに失敗しました</span>
+            <span data-bind="if:updateStatus()==='completed'">アップデートが完了しました</span>
+          </span>
+        </div> 
       </div>
     </div>
     <div class="content">
-      <div data-bind="foreach: enclosures">
-        <a class="btn btn-primary" data-bind="attr:{href:url}, text:title"></a>
-      </div>
+      <button class="btn btn-primary" data-bind="click:doUpdate,enable:(updateStatus()==='ready' || updateStatus()==='completed' || updateStatus()==='failed')">
+        <span data-bind="if:updateStatus()==='ready'">アップデートして再起動</span>
+        <span data-bind="if:updateStatus()==='progress'">アップデート中: <span data-bind="text:updateProgress()"></span>%</span>
+        <span data-bind="if:updateStatus()==='succeeded'">アップデート中: 再起動</span>
+        <span data-bind="if:updateStatus()==='failed'">閉じる</span>
+        <span data-bind="if:updateStatus()==='completed'">閉じる</span>
+      </button>
       <div data-bind="html:versions"></div>
     </div>
   </body>

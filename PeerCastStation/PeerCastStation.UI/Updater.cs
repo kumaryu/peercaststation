@@ -85,6 +85,144 @@ namespace PeerCastStation.UI
       });
     }
 
+    private static IEnumerable<string> Glob(string path)
+    {
+      try {
+        return
+          System.IO.Directory.GetFiles(path)
+          .Concat(
+            System.IO.Directory.GetDirectories(path).SelectMany(subpath => Glob(subpath)))
+          .Select(subpath => System.IO.Path.GetFullPath(subpath));
+      }
+      catch (Exception) {
+        return Enumerable.Empty<string>();
+      }
+    }
+
+    public static void InplaceUpdate(string destpath, string filename, string[] excludes)
+    {
+      destpath = System.IO.Path.GetFullPath(destpath);
+      using (var file = System.IO.File.OpenRead(filename))
+      using (var archive = new System.IO.Compression.ZipArchive(file, System.IO.Compression.ZipArchiveMode.Read)) {
+        var entries = archive.Entries.OrderBy(ent => ent.FullName);
+        var root = entries.First();
+        string rootpath = "";
+        if (root.FullName.EndsWith("/") &&
+            entries.All(ent => ent.FullName.StartsWith(root.FullName))) {
+          rootpath = root.FullName;
+        }
+        foreach (var ent in entries) {
+          var path = System.IO.Path.Combine(destpath, ent.FullName.Substring(rootpath.Length).Replace('/', '\\'));
+          if (ent.FullName.EndsWith("/")) {
+            var info = System.IO.Directory.CreateDirectory(path);
+            try {
+              info.LastWriteTime = ent.LastWriteTime.DateTime;
+            }
+            catch (System.IO.IOException) {
+            }
+          }
+          else {
+            try {
+              using (var dst = System.IO.File.OpenWrite(path))
+              using (var src = ent.Open()) {
+                src.CopyTo(dst);
+              }
+              var info = new System.IO.FileInfo(path);
+              try {
+                info.LastWriteTime = ent.LastWriteTime.DateTime;
+              }
+              catch (System.IO.IOException) {
+              }
+            }
+            catch (System.IO.IOException) {
+              if (!excludes.Contains(ent.Name)) throw;
+            }
+          }
+        }
+        var oldentries = Glob(destpath).ToArray();
+        var newentries = entries
+          .Select(ent => ent.FullName)
+          .Where(ent => !ent.EndsWith("/"))
+          .Select(ent => System.IO.Path.Combine(destpath, ent.Substring(rootpath.Length).Replace('/', '\\'))) 
+          .ToArray();
+        foreach (var old in oldentries.Except(newentries)) {
+          try {
+            System.IO.File.Delete(old);
+          }
+          catch (System.IO.IOException) {
+          }
+        }
+      }
+    }
+
+    public static string GetDownloadPath()
+    {
+      return
+        Environment.GetEnvironmentVariable("TEMP") ??
+        Environment.GetFolderPath(Environment.SpecialFolder.InternetCache);
+    }
+
+    public class DownloadResult
+    {
+      public string FilePath { get; private set; }
+      public VersionDescription Version { get; private set; }
+      public VersionEnclosure Enclosure { get; private set; }
+      public DownloadResult(string filepath, VersionDescription version, VersionEnclosure enclosure)
+      {
+        FilePath = filepath;
+        Version = version;
+        Enclosure = enclosure;
+      }
+    }
+
+    public static async Task<DownloadResult> DownloadAsync(VersionDescription version, Action<float> onprogress, CancellationToken ct)
+    {
+      using (var client = new System.Net.WebClient()) {
+        if (onprogress!=null) {
+          client.DownloadProgressChanged += (sender, args) => {
+            onprogress(args.ProgressPercentage/100.0f);
+          };
+        }
+        ct.Register(() => { client.CancelAsync(); }, true);
+        var enclosure = version.Enclosures.First(e => e.InstallerType==Updater.CurrentInstallerType);
+        var filepath =
+          System.IO.Path.Combine(
+            GetDownloadPath(),
+            System.IO.Path.GetFileName(enclosure.Url.AbsolutePath));
+        await client.DownloadFileTaskAsync(enclosure.Url.ToString(), filepath);
+        return new DownloadResult(filepath, version, enclosure);
+      }
+    }
+
+    public static bool Install(DownloadResult downloaded)
+    {
+      try {
+        switch (downloaded.Enclosure.InstallerType) {
+        case InstallerType.Archive:
+        case InstallerType.ServiceArchive:
+          Updater.InplaceUpdate(
+            PeerCastApplication.Current.BasePath,
+            downloaded.FilePath,
+            new string[] { "PeerCastStation.exe", "PecaStationd.exe" });
+          PeerCastApplication.Current.Stop(-1);
+          break;
+        case InstallerType.Installer:
+          System.Diagnostics.Process.Start(downloaded.FilePath);
+          PeerCastApplication.Current.Stop();
+          break;
+        case InstallerType.ServiceInstaller:
+          System.Diagnostics.Process.Start(downloaded.FilePath, "/quiet");
+          break;
+        case InstallerType.Unknown:
+          throw new ApplicationException();
+        }
+        return true;
+      }
+      catch (Exception) {
+        return false;
+      }
+    }
+
     public event NewVersionFoundEventHandler NewVersionFound;
   }
 

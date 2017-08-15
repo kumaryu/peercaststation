@@ -14,6 +14,7 @@
 
     <Feature Id="Service" Title="PeerCastStationサービス" Level="1" Absent="disallow" AllowAdvertise="no" ConfigurableDirectory="INSTALLFOLDER">
       <ComponentGroupRef Id="PecaStationd"/>
+      <ComponentGroupRef Id="PeerCastStation.App"/>
       <ComponentGroupRef Id="PeerCastStation.Core"/>
       <ComponentGroupRef Id="PeerCastStation.PCP"/>
       <ComponentGroupRef Id="PeerCastStation.HTTP"/>

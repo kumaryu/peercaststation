@@ -2,13 +2,12 @@
 {
   class Program
   {
-    static void Main(string[] args)
+    static int Main(string[] args)
     {
-      var app = new PecaStationd.PeerCastStationService.PecaServiceApplication();
-      var task = app.Start();
+      var main = new PecaStationd.PeerCastStationServiceMain();
+      main.Start(args);
       System.Console.ReadLine();
-      app.Stop();
-      task.Wait();
+      return main.Stop();
     }
   }
 }

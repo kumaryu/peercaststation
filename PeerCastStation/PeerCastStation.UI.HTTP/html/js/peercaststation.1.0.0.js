@@ -180,6 +180,12 @@ PeerCast = {
   getNewVersions: function(completed) {
     this.postRequest('getNewVersions', null, completed);
   },
+  updateAndRestart: function(completed) {
+    this.postRequest('updateAndRestart', null, completed);
+  },
+  getUpdateStatus: function(completed) {
+    this.postRequest('getUpdateStatus', null, completed);
+  },
 
   getYPChannels: function(completed) {
     this.postRequest('getYPChannels', null, completed);

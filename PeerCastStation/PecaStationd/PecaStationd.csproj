@@ -58,6 +58,7 @@
     <Compile Include="PeerCastStationService.Designer.cs">
       <DependentUpon>PeerCastStationService.cs</DependentUpon>
     </Compile>
+    <Compile Include="PeerCastStationServiceMain.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProjectInstaller.cs">
       <SubType>Component</SubType>
@@ -76,6 +77,10 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\PeerCastStation.App\PeerCastStation.App.csproj">
+      <Project>{c8b4e4dc-be2b-4fc5-94d2-a22ff754c9a7}</Project>
+      <Name>PeerCastStation.App</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.ASF\PeerCastStation.ASF.csproj">
       <Project>{dee84338-9849-4a90-8f1c-7bd6d88e3c2d}</Project>
       <Name>PeerCastStation.ASF</Name>
@@ -111,10 +116,6 @@
     <ProjectReference Include="..\PeerCastStation.WPF\PeerCastStation.WPF.csproj">
       <Project>{5ea68141-ac06-428b-9526-a6835e0cc2b2}</Project>
       <Name>PeerCastStation.WPF</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation\PeerCastStation.csproj">
-      <Project>{3d030f73-33a1-4fef-9a3f-d8cd34fc63a2}</Project>
-      <Name>PeerCastStation</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

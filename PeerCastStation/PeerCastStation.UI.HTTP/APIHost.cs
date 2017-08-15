@@ -80,6 +80,39 @@ namespace PeerCastStation.UI.HTTP
       return newVersions;
     }
 
+    public class UpdateStatus {
+      public Task UpdateTask;
+      public float Progress;
+      public bool IsCompleted { get { return UpdateTask.IsCompleted; } }
+      public bool IsFaulted { get { return UpdateTask.IsFaulted; } }
+      public bool IsSucceeded { get { return UpdateTask.IsCompleted && !UpdateTask.IsFaulted && !UpdateTask.IsCanceled; } }
+    }
+    private UpdateStatus updateStatus = null;
+
+    public UpdateStatus UpdateAsync()
+    {
+      if (updateStatus!=null) return updateStatus;
+      var latest =
+        newVersions
+          .OrderByDescending(v => v.PublishDate)
+          .FirstOrDefault();
+      if (latest==null) return null;
+      var status = new UpdateStatus { UpdateTask = null, Progress = 0.0f };
+      status.UpdateTask = 
+        Updater.DownloadAsync(latest, progress => status.Progress = progress, CancellationToken.None)
+          .ContinueWith(prev => {
+            if (prev.IsFaulted || prev.IsCanceled) return;
+            Updater.Install(prev.Result);
+          });
+      updateStatus = status;
+      return updateStatus;
+    }
+
+    public UpdateStatus GetUpdateStatus()
+    {
+      return updateStatus;
+    }
+
     private List<NotificationMessage> notificationMessages = new List<NotificationMessage>();
     public void ShowNotificationMessage(NotificationMessage msg)
     {
@@ -1117,6 +1150,58 @@ namespace PeerCastStation.UI.HTTP
       public void CheckUpdate()
       {
         owner.CheckVersion();
+      }
+
+      [RPCMethod("updateAndRestart")]
+      public JObject UpdateAndRestart()
+      {
+        var status = owner.UpdateAsync();
+        if (status!=null) {
+          var obj = new JObject();
+          obj["agentName"] = PeerCast.AgentName;
+          obj["progress"] = status.Progress;
+          if (status.IsCompleted && status.IsFaulted) {
+            obj["status"] = "failed";
+          }
+          if (status.IsCompleted && !status.IsFaulted) {
+            obj["status"] = "succeeded";
+          }
+          else {
+            obj["status"] = "progress";
+          }
+          return obj;
+        }
+        else {
+          return null;
+        }
+      }
+
+      [RPCMethod("getUpdateStatus")]
+      public JObject GetUpdateStatus()
+      {
+        var status = owner.GetUpdateStatus();
+        if (status!=null) {
+          var obj = new JObject();
+          obj["agentName"] = PeerCast.AgentName;
+          obj["progress"] = status.Progress;
+          if (status.IsCompleted && status.IsFaulted) {
+            obj["status"] = "failed";
+          }
+          if (status.IsCompleted && !status.IsFaulted) {
+            obj["status"] = "succeeded";
+          }
+          else {
+            obj["status"] = "progress";
+          }
+          return obj;
+        }
+        else {
+          var obj = new JObject();
+          obj["agentName"] = PeerCast.AgentName;
+          obj["progress"]  = 1.0f;
+          obj["status"]    = "succeeded";
+          return obj;
+        }
       }
 
 			[RPCMethod("getNewVersions")]

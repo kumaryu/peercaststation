@@ -13,7 +13,13 @@ namespace PeerCastStation.Core
     public abstract PecaSettings Settings { get; }
     public abstract IEnumerable<IPlugin> Plugins { get; }
     public abstract PeerCast PeerCast { get; }
-    public abstract void Stop();
+    public abstract string BasePath { get; }
+    public abstract void Stop(int exit_code);
+    public void Stop()
+    {
+      Stop(0);
+    }
+
     public abstract void SaveSettings();
     public PeerCastApplication()
     {

@@ -46,6 +46,7 @@
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="PeerCastStation.App.wxs" />
     <Compile Include="PeerCastStation.ASF.wxs" />
     <Compile Include="PeerCastStation.Core.wxs" />
     <Compile Include="PeerCastStation.CustomFilter.wxs" />
@@ -61,6 +62,14 @@
     <Compile Include="Product.wxs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\PeerCastStation.App\PeerCastStation.App.csproj">
+      <Name>PeerCastStation.App</Name>
+      <Project>{c8b4e4dc-be2b-4fc5-94d2-a22ff754c9a7}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.ASF\PeerCastStation.ASF.csproj">
       <Name>PeerCastStation.ASF</Name>
       <Project>{dee84338-9849-4a90-8f1c-7bd6d88e3c2d}</Project>
