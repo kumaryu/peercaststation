@@ -89,11 +89,9 @@ namespace PeerCastStation.App
 
     IEnumerable<Type> LoadPluginAssemblies()
     {
-      var res = LoadPluginAssembly(System.Reflection.Assembly.GetExecutingAssembly());
-      foreach (var dll in System.IO.Directory.GetFiles(BasePath, "*.dll")) {
-        res = res.Concat(LoadPluginAssembly(System.Reflection.Assembly.LoadFrom(dll)));
-      }
-      return res;
+      return
+        System.IO.Directory.GetFiles(BasePath, "*.dll").SelectMany(dll =>
+          LoadPluginAssembly(System.Reflection.Assembly.LoadFrom(dll)));
     }
 
     IEnumerable<Type> LoadPluginAssembly(System.Reflection.Assembly asm)
@@ -104,7 +102,14 @@ namespace PeerCastStation.App
             .Where(type => type.GetInterfaces().Contains(typeof(IPlugin)))
             .OrderBy(type => ((PluginAttribute)(type.GetCustomAttributes(typeof(PluginAttribute), true)[0])).Priority);
         foreach (var settingtype in asm.GetTypes().Where(type => type.GetCustomAttributes(typeof(PecaSettingsAttribute), true).Length>0)) {
-          PecaSettings.RegisterType(settingtype);
+          foreach (var attr in settingtype.GetCustomAttributes(typeof(PecaSettingsAttribute), true).Cast<PecaSettingsAttribute>()) {
+            if (attr.Alias!=null) {
+              PecaSettings.RegisterType(attr.Alias, settingtype);
+            }
+            else {
+              PecaSettings.RegisterType(settingtype.FullName, settingtype);
+            }
+          }
         }
         return res;
       }

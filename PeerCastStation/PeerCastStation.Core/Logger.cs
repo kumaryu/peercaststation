@@ -23,6 +23,7 @@ namespace PeerCastStation.Core
   /// <summary>
   /// ログのレベルを表します
   /// </summary>
+  [PecaSettings]
   public enum LogLevel
   {
     /// <summary>
@@ -51,6 +52,7 @@ namespace PeerCastStation.Core
     Debug,
   }
 
+  [PecaSettings]
   [Flags]
   public enum LoggerOutputTarget {
     None          = 0,

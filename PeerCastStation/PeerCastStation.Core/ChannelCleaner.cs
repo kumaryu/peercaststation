@@ -15,6 +15,7 @@ namespace PeerCastStation
       this.peerCast = peercast;
     }
 
+    [PecaSettings]
     public enum CleanupMode {
       None         = 0,
       Disconnected = 1,

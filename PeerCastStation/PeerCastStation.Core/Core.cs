@@ -505,6 +505,7 @@ namespace PeerCastStation.Core
   /// OutputStreamの種類を表します
   /// </summary>
   [Flags]
+  [PecaSettings]
   public enum OutputStreamType
   {
     /// <summary>

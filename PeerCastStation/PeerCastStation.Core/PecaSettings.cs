@@ -14,10 +14,43 @@ namespace PeerCastStation.Core
   public class PecaSettingsAttribute
     : Attribute
   {
+    public PecaSettingsAttribute()
+    {
+      this.Alias = null;
+    }
+
+    public PecaSettingsAttribute(string alias)
+    {
+      this.Alias = alias;
+    }
+
+    public string Alias { get; private set; }
   }
 
   public class PecaSerializer
   {
+    private Type FindType(string name)
+    {
+      Type t;
+      if (PecaSettings.SettingTypes.TryGetValue(name, out t)) {
+        return t;
+      }
+      else {
+        return null;
+      }
+    }
+
+    private string FindTypeName(Type type)
+    {
+      string name;
+      if (PecaSettings.SettingTypeNames.TryGetValue(type, out name)) {
+        return name;
+      }
+      else {
+        return type.FullName;
+      }
+    }
+
     public class RoundtripObject
     {
       public string TypeName { get; private set; }
@@ -82,7 +115,7 @@ namespace PeerCastStation.Core
     {
       var type = obj.GetType();
       writer.WriteStartElement("object");
-      writer.WriteAttributeString("type", type.FullName);
+      writer.WriteAttributeString("type", FindTypeName(type));
       var properties = type.GetProperties(
         BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.SetProperty)
         .Where(prop => prop.CanRead && prop.CanWrite);
@@ -173,7 +206,7 @@ namespace PeerCastStation.Core
     private void SerializeEnum(XmlWriter writer, Enum value)
     {
       writer.WriteStartElement("enum");
-      writer.WriteAttributeString("type", value.GetType().FullName);
+      writer.WriteAttributeString("type", FindTypeName(value.GetType()));
       writer.WriteString(value.ToString());
       writer.WriteEndElement();
     }
@@ -265,19 +298,6 @@ namespace PeerCastStation.Core
       return null;
     }
 
-    private IEnumerable<Type> GetSettingTypes(IEnumerable<Type> types)
-    {
-      return types.Concat(types.SelectMany(t => GetSettingTypes(t.GetNestedTypes())));
-    }
-
-    private IEnumerable<Type> GetSettingTypes()
-    {
-      return GetSettingTypes(
-        Assembly.GetExecutingAssembly().GetExportedTypes()
-        .Concat(PecaSettings.SettingTypes)
-      );
-    }
-
     private object ChangeType(object value, Type target)
     {
       if (target.IsArray) {
@@ -329,7 +349,7 @@ namespace PeerCastStation.Core
       else {
         reader.Read();
       }
-      var type = GetSettingTypes().Where(t => t.FullName==typename).FirstOrDefault();
+      var type = FindType(typename);
       if (type!=null) {
         var obj = type.InvokeMember("", BindingFlags.CreateInstance, null, null, new object[] {});
         foreach (var prop in properties) {
@@ -459,7 +479,13 @@ namespace PeerCastStation.Core
 
     private Type FindEnumType(string name)
     {
-      return GetSettingTypes().Where(t => t.FullName==name && t.IsSubclassOf(typeof(Enum))).FirstOrDefault();
+      var t = FindType(name);
+      if (t.IsSubclassOf(typeof(Enum))) {
+        return t;
+      }
+      else {
+        return null;
+      }
     }
 
     private object DeserializeEnum(XmlReader reader)
@@ -502,16 +528,18 @@ namespace PeerCastStation.Core
 
   public class PecaSettings
   {
-    private static List<Type> settingTypes = new List<Type>();
-    public static IEnumerable<Type> SettingTypes { get { return settingTypes; } }
-    public static void RegisterType(Type type)
-    {
-      settingTypes.Add(type);
-    }
+    private static Dictionary<string, Type> settingTypes = new Dictionary<string, Type>();
+    private static Dictionary<Type, string> settingTypeNames = new Dictionary<Type, string>();
+    public static IDictionary<string, Type> SettingTypes { get { return settingTypes; } }
+    public static IDictionary<Type, string> SettingTypeNames { get { return settingTypeNames; } }
 
-    public static void UnregisterType(Type type)
+    public static void RegisterType(string name, Type type)
     {
-      settingTypes.Remove(type);
+      settingTypes.Add(name, type);
+      settingTypeNames.Add(type, name);
+      foreach (var t in type.GetNestedTypes()) {
+        RegisterType(name + "+" + t.FullName.Split('+').Last(), t);
+      }
     }
 
     public static string DefaultFileName {
@@ -585,21 +613,6 @@ namespace PeerCastStation.Core
       }
     }
 
-    private bool LoadWCFFormat(string filename)
-    {
-      var serializer = new DataContractSerializer(typeof(object[]), settingTypes);
-      if (!System.IO.File.Exists(FileName)) return false;
-      try {
-        using (var fd=System.IO.File.OpenRead(FileName)) {
-          values = new List<object>((object[])serializer.ReadObject(fd));
-        }
-      }
-      catch (SerializationException) { return false; }
-      catch (XmlException) { return false; }
-      catch (IOException)  { return false; }
-      return true;
-    }
-
     private bool LoadOriginalFormat(string filename)
     {
       try {
@@ -620,7 +633,7 @@ namespace PeerCastStation.Core
     public bool Load()
     {
       if (!System.IO.File.Exists(FileName)) return false;
-      return LoadWCFFormat(FileName) || LoadOriginalFormat(FileName);
+      return LoadOriginalFormat(FileName);
     }
   }
 }
