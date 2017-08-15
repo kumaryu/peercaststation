@@ -1,7 +1,7 @@
 ---
 layout: blog
 title:  "解説: GitHubへのアカウント登録からIssue作成まで"
-date:   2017-08-15 23:00:00 +0900
+date:   2017-08-16 00:00:00 +0900
 categories: blog
 tags:   解説
 ---
