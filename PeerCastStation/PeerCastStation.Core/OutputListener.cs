@@ -36,6 +36,7 @@ namespace PeerCastStation.Core
     : IDisposable
   {
     private static Logger logger = new Logger(typeof(OutputListener));
+    public static int MaxPendingConnections { get; set; } = Int32.MaxValue;
     /// <summary>
     /// 所属しているPeerCastオブジェクトを取得します
     /// </summary>
@@ -173,7 +174,7 @@ namespace PeerCastStation.Core
         //Windows以外は明示的には付けないようにした。
         server.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
       }
-      server.Start(Int32.MaxValue);
+      server.Start(MaxPendingConnections);
       listenTask = StartListen(server, cancellationSource.Token);
     }
 

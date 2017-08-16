@@ -71,6 +71,7 @@ namespace PeerCastStation.App
       }
       peerCast.AddChannelMonitor(new ChannelCleaner(peerCast));
       peerCast.AddChannelMonitor(new ChannelNotifier(this));
+      LoadConfigurations();
       LoadSettings();
       foreach (var plugin in Plugins) {
         plugin.Start();
@@ -131,6 +132,14 @@ namespace PeerCastStation.App
       })
       .Where(plugin => plugin!=null)
       .ToArray();
+    }
+
+    void LoadConfigurations()
+    {
+      int backlog;
+      if (AppSettingsReader.TryGetInt("MaxPendingConnections", out backlog) && backlog>0) {
+        OutputListener.MaxPendingConnections = backlog;
+      }
     }
 
     void LoadSettings()
