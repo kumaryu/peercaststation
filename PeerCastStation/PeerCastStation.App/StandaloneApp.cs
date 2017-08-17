@@ -8,11 +8,6 @@ namespace PeerCastStation.App
   public class StandaloneApp
     : AppBase
   {
-    private PecaSettings settings = new PecaSettings(PecaSettings.DefaultFileName);
-    public override PecaSettings Settings {
-      get { return settings; }
-    }
-
     public StandaloneApp(string basepath)
       : base(basepath)
     {
