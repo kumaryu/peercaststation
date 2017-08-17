@@ -319,7 +319,7 @@ namespace PeerCastStation.CustomFilter
         catch (PlatformNotSupportedException) {
         }
       }
-      if (string.IsNullOrEmpty(path)) {
+      if (!string.IsNullOrEmpty(path)) {
         this.CustomFilterPath =
           System.IO.Path.Combine(
             path,
