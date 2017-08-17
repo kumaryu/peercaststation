@@ -29,6 +29,7 @@ namespace PeerCastStation.Core
 
   public class PecaSerializer
   {
+    private Logger logger = new Logger(typeof(PecaSerializer));
     private Type FindType(string name)
     {
       Type t;
@@ -366,6 +367,7 @@ namespace PeerCastStation.Core
         return obj;
       }
       else {
+        logger.Info($"Unknown Type found: {typename}");
         return new RoundtripObject(typename, properties);
       }
     }
@@ -496,7 +498,10 @@ namespace PeerCastStation.Core
       reader.Read();
       var value = reader.ReadContentAsString();
       reader.ReadEndElement();
-      if (type==null) return new RoundtripEnum(typename, value);
+      if (type==null) {
+        logger.Info($"Unknown Enum type found: {typename}");
+        return new RoundtripEnum(typename, value);
+      }
       if (String.IsNullOrEmpty(value)) return null;
       return Enum.Parse(type, value);
     }
