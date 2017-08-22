@@ -50,7 +50,8 @@ namespace PeerCastStation.Main
         Args     = args,
         Result   = new ResultContainer { ExitCode = 1 },
       };
-      appdomain.DoCallBack(new CrossAppDomainDelegate(ctx.Run));
+      var d = new CrossAppDomainDelegate(ctx.Run);
+      appdomain.DoCallBack(d);
       switch (ctx.Result.ExitCode) {
       case -1:
         goto start;

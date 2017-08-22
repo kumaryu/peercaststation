@@ -105,7 +105,8 @@ namespace PecaStationd
         Args     = args,
         Result   = new ResultContainer { AppContext = null },
       };
-      appdomain.DoCallBack(new CrossAppDomainDelegate(ctx.Start));
+      var d = new CrossAppDomainDelegate(ctx.Start);
+      appdomain.DoCallBack(d);
       appContext = ctx.Result.AppContext;
       stoppedCallback = new StoppedCallback { Owner=this, Args=args, };
       appContext.SetOnStopped(new Action<int>(stoppedCallback.OnStopped));
