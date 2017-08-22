@@ -43,6 +43,11 @@ namespace PeerCastStation.Core
     Relays = 4,
   }
 
+  public enum NetworkType : int {
+    IPv4,
+    IPv6,
+  }
+
   /// <summary>
   /// チャンネル接続を管理するクラスです
   /// </summary>
@@ -72,6 +77,20 @@ namespace PeerCastStation.Core
         return source!=null ? source.Status : SourceStreamStatus.Idle;
       }
     }
+
+    public AddressFamily NetworkAddressFamily {
+      get {
+        switch (this.Network) {
+        case NetworkType.IPv6:
+          return AddressFamily.InterNetworkV6;
+        case NetworkType.IPv4:
+        default:
+          return AddressFamily.InterNetwork;
+        }
+      }
+    }
+
+    public NetworkType Network { get; private set; }
     public Guid ChannelID   { get; private set; }
     public Uri  SourceUri   { get; private set; }
     public abstract bool IsBroadcasting { get; }
@@ -569,8 +588,8 @@ namespace PeerCastStation.Core
         var source = this.SourceStream;
         var host = new HostBuilder();
         host.SessionID      = this.PeerCast.SessionID;
-        host.LocalEndPoint  = this.PeerCast.GetLocalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
-        host.GlobalEndPoint = this.PeerCast.GetGlobalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
+        host.LocalEndPoint  = this.PeerCast.GetLocalEndPoint(this.NetworkAddressFamily, OutputStreamType.Relay);
+        host.GlobalEndPoint = this.PeerCast.GetGlobalEndPoint(this.NetworkAddressFamily, OutputStreamType.Relay);
         host.IsFirewalled   = this.PeerCast.IsFirewalled ?? true;
         host.DirectCount    = this.LocalDirects;
         host.RelayCount     = this.LocalRelays;
@@ -708,9 +727,10 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="peercast">所属するPeerCastオブジェクト</param>
     /// <param name="channel_id">チャンネルID</param>
-    protected Channel(PeerCast peercast, Guid channel_id)
+    protected Channel(PeerCast peercast, NetworkType network, Guid channel_id)
     {
       this.PeerCast    = peercast;
+      this.Network     = network;
       this.ChannelID   = channel_id;
       this.contents    = new ContentCollection(this);
       this.contentSinks.Add(new ChannelEventInvoker(this));

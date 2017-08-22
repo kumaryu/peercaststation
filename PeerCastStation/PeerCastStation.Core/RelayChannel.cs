@@ -8,8 +8,9 @@ namespace PeerCastStation.Core
   {
     public override bool IsBroadcasting { get { return false; } }
 
-    public RelayChannel(PeerCast peercast, Guid channel_id)
-      : base(peercast, channel_id)
+    public RelayChannel(PeerCast peercast, NetworkType network,Guid channel_id)
+        
+      : base(peercast, network, channel_id)
     {
     }
 

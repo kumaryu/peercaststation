@@ -13,15 +13,13 @@
 // 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+using PeerCastStation.Core;
+using PeerCastStation.WPF.Commons;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Input;
-using PeerCastStation.Core;
-using PeerCastStation.WPF.ChannelLists.ChannelInfos;
-using PeerCastStation.WPF.Commons;
-using PeerCastStation.WPF.CoreSettings;
 using System.Windows;
+using System.Windows.Input;
 
 namespace PeerCastStation.WPF.ChannelLists.Dialogs
 {
@@ -94,6 +92,23 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
 
     public bool IsContentReaderRequired {
       get { return selectedSourceStream!=null && selectedSourceStream.IsContentReaderRequired; }
+    }
+
+    private static readonly NetworkType[] networkTypes = new NetworkType[] {
+      NetworkType.IPv4,
+      NetworkType.IPv6,
+    };
+    public IEnumerable<NetworkType> NetworkTypes {
+      get { return networkTypes; }
+    }
+
+    private NetworkType networkType = NetworkType.IPv4;
+    public NetworkType NetworkType {
+      get { return networkType; }
+      set {
+        SetProperty("NetworkType", ref networkType, value,
+          () => start.OnCanExecuteChanged());
+      }
     }
 
     private string streamUrl = "";
@@ -265,6 +280,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
           .Where(sstream => (sstream.Type & SourceStreamType.Broadcast)!=0)
           .FirstOrDefault(sstream => sstream.Scheme==source.Scheme);
       var channel = peerCast.BroadcastChannel(
+        networkType,
         yellowPage,
         channel_id,
         channelInfo,
