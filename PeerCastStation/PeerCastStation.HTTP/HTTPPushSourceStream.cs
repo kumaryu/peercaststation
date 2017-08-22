@@ -58,14 +58,6 @@ namespace PeerCastStation.HTTP
     public IContentReader ContentReader { get; private set; }
 
     private class ConnectionStoppedExcception : ApplicationException {}
-    private class BindErrorException
-      : ApplicationException
-    {
-      public BindErrorException(string message)
-        : base(message)
-      {
-      }
-    }
 
     public override ConnectionInfo GetConnectionInfo()
     {
@@ -223,11 +215,6 @@ namespace PeerCastStation.HTTP
       catch (HTTPError e) {
         await connection.Stream.WriteUTF8Async(HTTPUtils.CreateResponseHeader(e.StatusCode));
         Stop(StopReason.BadAgentError);
-        this.state = ConnectionState.Error;
-      }
-      catch (BindErrorException e) {
-        Logger.Error(e);
-        Stop(StopReason.NoHost);
         this.state = ConnectionState.Error;
       }
       catch (IOException e) {

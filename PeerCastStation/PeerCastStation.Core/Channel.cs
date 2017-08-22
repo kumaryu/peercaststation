@@ -590,7 +590,7 @@ namespace PeerCastStation.Core
         uptimeTimer.Restart();
       }
       else {
-        old.Stop();
+        old.Dispose();
       }
       sourceStream.Run().ContinueWith(prev => {
         RemoveSourceStream(source_stream, prev.IsFaulted ? StopReason.NotIdentifiedError : prev.Result);
@@ -601,6 +601,7 @@ namespace PeerCastStation.Core
     {
       var old = Interlocked.CompareExchange(ref sourceStream, null, source_stream);
       if (old!=source_stream) return;
+      old.Dispose();
       var ostreams = Interlocked.Exchange(ref outputStreams, new List<IOutputStream>());
       foreach (var os in ostreams) {
         os.Stop();
@@ -620,7 +621,7 @@ namespace PeerCastStation.Core
     public void Reconnect()
     {
       var source = sourceStream;
-      var status = source!=null ? SourceStreamStatus.Idle : source.Status;
+      var status = source?.Status ?? SourceStreamStatus.Idle;
       switch (status) {
       case SourceStreamStatus.Idle:
       case SourceStreamStatus.Error:
@@ -694,7 +695,7 @@ namespace PeerCastStation.Core
     {
       var source = sourceStream;
       if (source!=null) {
-        source.Stop();
+        source.Dispose();
       }
       var ostreams = Interlocked.Exchange(ref outputStreams, new List<IOutputStream>());
       foreach (var os in ostreams) {

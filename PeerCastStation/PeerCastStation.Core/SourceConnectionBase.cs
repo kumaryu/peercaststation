@@ -107,12 +107,18 @@ namespace PeerCastStation.Core
       this.Status = ConnectionStatus.Connecting;
       try {
         connection = await DoConnect(SourceUri, isStopped.Token);
+        if (connection==null) {
+          Stop(StopReason.ConnectionError);
+        }
       }
       catch (OperationCanceledException) {
         connection = null;
+        Stop(StopReason.UserShutdown);
       }
-      if (connection==null) {
-        Stop(StopReason.ConnectionError);
+      catch (BindErrorException e) {
+        connection = null;
+        Logger.Error(e);
+        Stop(StopReason.NoHost);
       }
       if (!IsStopped) {
         OnStarted();
@@ -136,14 +142,10 @@ namespace PeerCastStation.Core
       DoPost(from, packet);
     }
 
-    public void Stop()
-    {
-      Stop(StopReason.UserShutdown);
-    }
-
     public virtual void Stop(StopReason reason)
     {
       if (reason==StopReason.None) throw new ArgumentException("Invalid value", "reason");
+      if (reason==StopReason.UserShutdown && StoppedReason!=reason) StoppedReason = reason;
       if (IsStopped) return;
       StoppedReason = reason;
       isStopped.Cancel();

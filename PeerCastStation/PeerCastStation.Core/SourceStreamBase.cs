@@ -21,6 +21,15 @@ using System.Threading.Tasks;
 
 namespace PeerCastStation.Core
 {
+  public class BindErrorException
+    : ApplicationException
+  {
+    public BindErrorException(string message)
+      : base(message)
+    {
+    }
+  }
+
   public abstract class SourceStreamFactoryBase
     : ISourceStreamFactory
   {
@@ -62,6 +71,7 @@ namespace PeerCastStation.Core
     protected Task              sourceConnectionTask;
     private Task eventTask = Task.Delay(0);
     private TaskCompletionSource<StopReason> ranTaskSource;
+    private bool disposed = false;
 
     protected Task Queue(Action action)
     {
@@ -86,6 +96,12 @@ namespace PeerCastStation.Core
       this.SourceUri = source_uri;
       this.StoppedReason = StopReason.None;
       this.Logger = new Logger(this.GetType(), source_uri.ToString());
+    }
+
+    public void Dispose()
+    {
+      disposed = true;
+      Queue(() => { DoStop(StopReason.UserShutdown); }).Wait();
     }
 
     protected void StartConnection(Uri source_uri)
@@ -149,6 +165,7 @@ namespace PeerCastStation.Core
 
     public Task<StopReason> Run()
     {
+      if (disposed) throw new ObjectDisposedException(this.GetType().Name);
       ranTaskSource = new TaskCompletionSource<StopReason>();
       Queue(() => { DoStart(); });
       return ranTaskSource.Task;
@@ -156,12 +173,8 @@ namespace PeerCastStation.Core
 
     public void Post(Host from, Atom packet)
     {
+      if (disposed) throw new ObjectDisposedException(this.GetType().Name);
       Queue(() => { DoPost(from, packet); });
-    }
-
-    public void Stop()
-    {
-      Stop(StopReason.UserShutdown);
     }
 
     protected void Stop(StopReason reason)
@@ -171,6 +184,7 @@ namespace PeerCastStation.Core
 
     public void Reconnect()
     {
+      if (disposed) throw new ObjectDisposedException(this.GetType().Name);
       Queue(() => { DoReconnect(); });
     }
 

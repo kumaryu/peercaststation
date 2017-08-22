@@ -64,14 +64,6 @@ namespace PeerCastStation.FLV.RTMP
     }
 
     private class ConnectionStoppedExcception : ApplicationException {}
-    private class BindErrorException
-      : ApplicationException
-    {
-      public BindErrorException(string message)
-        : base(message)
-      {
-      }
-    }
     private FLVContentBuffer flvBuffer;
     private bool useContentBitrate;
 
@@ -180,11 +172,6 @@ namespace PeerCastStation.FLV.RTMP
         await Handshake(cancellationToken);
         await ProcessRTMPMessages(cancellationToken);
         this.state = ConnectionState.Closed;
-      }
-      catch (BindErrorException e) {
-        Logger.Error(e);
-        Stop(StopReason.NoHost);
-        this.state = ConnectionState.Error;
       }
       catch (IOException e) {
         Logger.Error(e);

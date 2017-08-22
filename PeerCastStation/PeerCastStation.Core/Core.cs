@@ -416,6 +416,7 @@ namespace PeerCastStation.Core
   /// 上流からチャンネルにContentを追加するストリームを表すインターフェースです
   /// </summary>
   public interface ISourceStream
+    : IDisposable
   {
     /// <summary>
     /// ストリームの取得を開始します。
@@ -432,10 +433,6 @@ namespace PeerCastStation.Core
     /// <param name="from">ブロードキャストパケットの送信元。無い場合はnull</param>
     /// <param name="packet">送信するデータ</param>
     void Post(Host from, Atom packet);
-    /// <summary>
-    /// ストリームの取得を終了します
-    /// </summary>
-    void Stop();
     /// <summary>
     /// ストリームの種類を取得します
     /// </summary>
