@@ -182,7 +182,9 @@ namespace PeerCastStation.WPF
     public IEnumerable<ChannelConnectionViewModel> Connections {
       get {
         var connections = new List<ChannelConnectionViewModel>();
-        connections.Add(new SourceChannelConnectionViewModel(Model.SourceStream));
+        if (Model.SourceStream!=null) {
+          connections.Add(new SourceChannelConnectionViewModel(Model.SourceStream));
+        }
         var announcings = Model.PeerCast.YellowPages
           .Select(yp => yp.AnnouncingChannels.FirstOrDefault(c => c.Channel.ChannelID==Model.ChannelID))
           .Where(c => c!=null);

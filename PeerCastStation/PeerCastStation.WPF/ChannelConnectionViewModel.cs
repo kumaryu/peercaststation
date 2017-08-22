@@ -51,6 +51,7 @@ namespace PeerCastStation.WPF
 
     public override int GetHashCode()
     {
+      if (Connection==null) return 0;
       return Connection.GetHashCode();
     }
 
