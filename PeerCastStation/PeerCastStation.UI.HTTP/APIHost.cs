@@ -964,12 +964,13 @@ namespace PeerCastStation.UI.HTTP
 
       [RPCMethod("broadcastChannel")]
       private string BroadcastChannel(
-        int?    yellowPageId,
-        string  sourceUri,
-        string  contentReader,
+        int?   yellowPageId,
+        string network,
+        string sourceUri,
+        string contentReader,
         JObject info,
         JObject track,
-        string  sourceStream=null)
+        string sourceStream=null)
       {
         IYellowPageClient yp = null;
         if (yellowPageId.HasValue) {
@@ -996,6 +997,18 @@ namespace PeerCastStation.UI.HTTP
         }
         if (source_stream==null) throw new RPCError(RPCErrorCode.InvalidParams, "Source stream not found");
 
+        NetworkType network_type;
+        switch (network.ToLowerInvariant()) {
+        case "ipv4":
+          network_type = NetworkType.IPv4;
+          break;
+        case "ipv6":
+          network_type = NetworkType.IPv6;
+          break;
+        default:
+          throw new RPCError(RPCErrorCode.InvalidParams, "Invalid Network Type");
+        }
+
         var new_info = new AtomCollection();
         if (info!=null) {
           info.TryGetThen("name",    v => new_info.SetChanInfoName(v));
@@ -1014,7 +1027,7 @@ namespace PeerCastStation.UI.HTTP
           channel_info.Name,
           channel_info.Genre ?? "",
           source.ToString());
-        var channel = PeerCast.BroadcastChannel(yp, channel_id, channel_info, source, source_stream, content_reader);
+        var channel = PeerCast.BroadcastChannel(network_type, yp, channel_id, channel_info, source, source_stream, content_reader);
         if (track!=null) {
           var new_track = new AtomCollection(channel.ChannelTrack.Extra);
           track.TryGetThen("name",    v => new_track.SetChanTrackTitle(v));

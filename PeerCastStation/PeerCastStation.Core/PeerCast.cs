@@ -160,6 +160,18 @@ namespace PeerCastStation.Core
       return result;
     }
 
+    private NetworkType GetNetworkTypeFromUri(Uri uri)
+    {
+      switch (uri.HostNameType) {
+      case UriHostNameType.IPv4:
+        return NetworkType.IPv4;
+      case UriHostNameType.IPv6:
+        return NetworkType.IPv6;
+      default:
+        throw new ArgumentException("Address must be IPv4 or IPv6 host", "uri");
+      }
+    }
+
     /// <summary>
     /// 接続先を指定してチャンネルのリレーを開始します。
     /// URIから接続プロトコルも判別します
@@ -170,7 +182,7 @@ namespace PeerCastStation.Core
     public Channel RelayChannel(Guid channel_id, Uri tracker)
     {
       logger.Debug("Requesting channel {0} from {1}", channel_id.ToString("N"), tracker);
-      var channel = new RelayChannel(this, channel_id);
+      var channel = new RelayChannel(this, GetNetworkTypeFromUri(tracker), channel_id);
       channel.Start(tracker);
       ReplaceCollection(ref channels, orig => {
         var new_collection = new List<Channel>(orig);
@@ -226,6 +238,7 @@ namespace PeerCastStation.Core
     /// <param name="content_reader_factory">配信ソースのコンテンツを解析するIContentReaderFactory</param>
     /// <returns>Channelのインスタンス</returns>
     public Channel BroadcastChannel(
+      NetworkType           network,
       IYellowPageClient     yp,
       Guid                  channel_id,
       ChannelInfo           channel_info,
@@ -234,7 +247,7 @@ namespace PeerCastStation.Core
       IContentReaderFactory content_reader_factory)
     {
       logger.Debug("Broadcasting channel {0} from {1}", channel_id.ToString("N"), source);
-      var channel = new BroadcastChannel(this, channel_id, channel_info, source_stream_factory, content_reader_factory);
+      var channel = new BroadcastChannel(this, network, channel_id, channel_info, source_stream_factory, content_reader_factory);
       channel.Start(source);
       ReplaceCollection(ref channels, orig => {
         var new_collection = new List<Channel>(orig);

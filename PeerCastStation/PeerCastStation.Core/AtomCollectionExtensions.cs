@@ -121,7 +121,7 @@ namespace PeerCastStation.Core
     {
       var atom = collection.FindByName(name);
       IPAddress value = null;
-      if (atom != null && atom.TryGetIPv4Address(out value)) {
+      if (atom != null && atom.TryGetIPAddress(out value)) {
         return value;
       }
       else {
@@ -475,7 +475,7 @@ namespace PeerCastStation.Core
       foreach (var atom in collection) {
         if (atom.Name==Atom.PCP_HOST_IP) {
           IPAddress value;
-          if (atom.TryGetIPv4Address(out value)) {
+          if (atom.TryGetIPAddress(out value)) {
             addresses.Add(value);
           }
         }

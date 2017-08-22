@@ -464,7 +464,7 @@ namespace PeerCastStation.HTTP
 
     protected override int GetUpstreamRate()
     {
-      return channelInfo.Bitrate;
+      return channelInfo?.Bitrate ?? 0;
     }
 
     public override ConnectionInfo GetConnectionInfo()

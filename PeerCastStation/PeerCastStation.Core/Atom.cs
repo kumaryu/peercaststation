@@ -559,16 +559,16 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
-    /// 保持している値をIPv4アドレスとして取得します
+    /// 保持している値をIPアドレスとして取得します
     /// </summary>
     /// <exception cref="FormatException">
     /// 値の長さが合わない、または値を保持していません
     /// </exception>
-    /// <returns>値のIPv4アドレス</returns>
-    public IPAddress GetIPv4Address()
+    /// <returns>値のIPアドレス</returns>
+    public IPAddress GetIPAddress()
     {
       IPAddress res;
-      if (TryGetIPv4Address(out res)) {
+      if (TryGetIPAddress(out res)) {
         return res;
       }
       else {
@@ -577,13 +577,13 @@ namespace PeerCastStation.Core
     }
 
     /// <summary>
-    /// 保持している値をIPv4アドレスとして取得しようと試みます。
+    /// 保持している値をIPアドレスとして取得しようと試みます。
     /// </summary>
     /// <param name="res">保持している値の書き込み先</param>
-    /// <returns>値がIPv4アドレスとして解析できた場合はtrue、そうでない場合はfalse</returns>
-    public bool TryGetIPv4Address(out IPAddress res)
+    /// <returns>値がIPv4またはIPv6アドレスとして解析できた場合はtrue、そうでない場合はfalse</returns>
+    public bool TryGetIPAddress(out IPAddress res)
     {
-      if (value != null && value.Length==4) {
+      if (value!=null && (value.Length==4 || value.Length==8)) {
         var ip_ary = new byte[value.Length];
         value.CopyTo(ip_ary, 0);
         Array.Reverse(ip_ary);

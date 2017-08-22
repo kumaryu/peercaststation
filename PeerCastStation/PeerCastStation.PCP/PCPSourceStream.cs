@@ -140,7 +140,7 @@ namespace PeerCastStation.PCP
     protected async Task<SourceConnectionClient> DoConnect(IPEndPoint endpoint)
     {
       try {
-        client = new TcpClient();
+        client = new TcpClient(endpoint.AddressFamily);
         var connection = new SourceConnectionClient(client);
         await client.ConnectAsync(endpoint.Address, endpoint.Port);
         connection.Stream.ReadTimeout  = 30000;
@@ -160,12 +160,14 @@ namespace PeerCastStation.PCP
     {
       try {
         var port = source.Port<0 ? PCPVersion.DefaultPort : source.Port;
-        client = new TcpClient();
         if (source.HostNameType==UriHostNameType.IPv4 ||
             source.HostNameType==UriHostNameType.IPv6) {
-          await client.ConnectAsync(IPAddress.Parse(source.Host), port);
+          var addr = IPAddress.Parse(source.Host);
+          client = new TcpClient(addr.AddressFamily);
+          await client.ConnectAsync(addr, port);
         }
         else {
+          client = new TcpClient(Channel.NetworkAddressFamily);
           await client.ConnectAsync(source.DnsSafeHost, port);
         }
         var connection = new SourceConnectionClient(client);

@@ -12,11 +12,12 @@ namespace PeerCastStation.Core
 
     public BroadcastChannel(
         PeerCast peercast,
+        NetworkType network,
         Guid channel_id,
         ChannelInfo channel_info,
         ISourceStreamFactory source_stream_factory,
         IContentReaderFactory content_reader_factory)
-      : base(peercast, channel_id)
+      : base(peercast, network, channel_id)
     {
       this.ChannelInfo = channel_info;
       this.SourceStreamFactory = source_stream_factory;

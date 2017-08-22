@@ -631,7 +631,7 @@ namespace PeerCastStation.PCP
       Logger.Debug("Ping requested. Try to ping: {0}({1})", target, remote_session_id);
       bool result = false;
       try {
-        var client = new System.Net.Sockets.TcpClient();
+        var client = new System.Net.Sockets.TcpClient(target.AddressFamily);
         client.ReceiveTimeout = 2000;
         client.SendTimeout    = 2000;
         await client.ConnectAsync(target.Address, target.Port);
