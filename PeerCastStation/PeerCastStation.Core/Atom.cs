@@ -583,7 +583,7 @@ namespace PeerCastStation.Core
     /// <returns>値がIPv4またはIPv6アドレスとして解析できた場合はtrue、そうでない場合はfalse</returns>
     public bool TryGetIPAddress(out IPAddress res)
     {
-      if (value!=null && (value.Length==4 || value.Length==8)) {
+      if (value!=null && (value.Length==4 || value.Length==16)) {
         var ip_ary = new byte[value.Length];
         value.CopyTo(ip_ary, 0);
         Array.Reverse(ip_ary);
