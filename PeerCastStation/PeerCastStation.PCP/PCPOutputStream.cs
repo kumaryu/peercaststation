@@ -738,7 +738,7 @@ namespace PeerCastStation.PCP
         }
       }
       var oleh = new AtomCollection();
-      if (RemoteEndPoint!=null && RemoteEndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork) {
+      if (RemoteEndPoint!=null && RemoteEndPoint.AddressFamily==Channel.NetworkAddressFamily) {
         oleh.SetHeloRemoteIP(((IPEndPoint)RemoteEndPoint).Address);
       }
       oleh.SetHeloAgent(PeerCast.AgentName);
