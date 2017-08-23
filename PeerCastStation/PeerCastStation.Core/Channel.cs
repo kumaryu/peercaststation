@@ -590,7 +590,7 @@ namespace PeerCastStation.Core
         host.SessionID      = this.PeerCast.SessionID;
         host.LocalEndPoint  = this.PeerCast.GetLocalEndPoint(this.NetworkAddressFamily, OutputStreamType.Relay);
         host.GlobalEndPoint = this.PeerCast.GetGlobalEndPoint(this.NetworkAddressFamily, OutputStreamType.Relay);
-        host.IsFirewalled   = this.PeerCast.IsFirewalled ?? true;
+        host.IsFirewalled   = this.PeerCast.GetPortStatus(this.NetworkAddressFamily)!=PortStatus.Open;
         host.DirectCount    = this.LocalDirects;
         host.RelayCount     = this.LocalRelays;
         host.IsDirectFull   = !this.PeerCast.AccessController.IsChannelPlayable(this);
