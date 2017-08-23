@@ -284,7 +284,17 @@ namespace PeerCastStation.UI.HTTP
       {
         var res = new JObject();
         res["uptime"]       = (int)PeerCast.Uptime.TotalSeconds;
-        res["isFirewalled"] = PeerCast.IsFirewalled;
+        switch (PeerCast.GetPortStatus(System.Net.Sockets.AddressFamily.InterNetwork)) {
+        case PortStatus.Unknown:
+          res["isFirewalled"] = null;
+          break;
+        case PortStatus.Open:
+          res["isFirewalled"] = false;
+          break;
+        case PortStatus.Firewalled:
+          res["isFirewalled"] = true;
+          break;
+        }
         var endpoint = 
           PeerCast.GetGlobalEndPoint(
             System.Net.Sockets.AddressFamily.InterNetwork,
@@ -1146,7 +1156,7 @@ namespace PeerCastStation.UI.HTTP
           task.Wait();
           var result = task.Result;
           if (result.Success) {
-            PeerCast.IsFirewalled = !result.IsOpen;
+            PeerCast.SetPortStatus(System.Net.Sockets.AddressFamily.InterNetwork, result.IsOpen ? PortStatus.Open : PortStatus.Firewalled);
             owner.OpenedPorts = result.Ports;
             results = result.Ports;
           }

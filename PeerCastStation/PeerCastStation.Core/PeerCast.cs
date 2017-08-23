@@ -51,6 +51,12 @@ namespace PeerCastStation.Core
   /// <param name="e">イベント引数</param>
   public delegate void ChannelChangedEventHandler(object sender, ChannelChangedEventArgs e);
 
+  public enum PortStatus {
+    Unknown,
+    Open,
+    Firewalled,
+  }
+
   /// <summary>
   /// PeerCastStationの主要な動作を行ない、管理するクラスです
   /// </summary>
@@ -351,9 +357,6 @@ namespace PeerCastStation.Core
       this.BroadcastID = AtomCollectionExtensions.ByteArrayToID(bcid);
       logger.Debug("SessionID: {0}",   this.SessionID.ToString("N"));
       logger.Debug("BroadcastID: {0}", this.BroadcastID.ToString("N"));
-      this.GlobalAddress = null;
-      this.GlobalAddress6 = null;
-      this.IsFirewalled = null;
       this.YellowPageFactories = new List<IYellowPageClientFactory>();
       this.SourceStreamFactories = new List<ISourceStreamFactory>();
       this.OutputStreamFactories = new List<IOutputStreamFactory>();
@@ -394,7 +397,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    private IPAddress GetLocalAddress(AddressFamily addr_family)
+    private IPAddress GetInterfaceAddress(AddressFamily addr_family)
     {
       return System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
         .Where(intf => !intf.IsReceiveOnly)
@@ -407,41 +410,107 @@ namespace PeerCastStation.Core
         .FirstOrDefault();
     }
 
-    public bool? IsFirewalled { get; set; }
     public Guid SessionID { get; private set; }
     public Guid BroadcastID { get; set; }
-    private IPAddress localAddress;
-    public IPAddress LocalAddress {
-      get {
-        if (localAddress!=null) return localAddress;
-        var addr = GetLocalAddress(AddressFamily.InterNetwork);
-        if (addr!=null) {
-          this.localAddress = addr;
-        }
-        else {
-          this.localAddress = IPAddress.Loopback;
-        }
-        logger.Info("IPv4 LocalAddress: {0}", this.localAddress);
-        return this.localAddress;
+
+    private PortStatus portStatusV4 = PortStatus.Unknown;
+    private PortStatus portStatusV6 = PortStatus.Unknown;
+    public PortStatus GetPortStatus(AddressFamily family)
+    {
+      switch (family) {
+      case AddressFamily.InterNetwork:
+        return portStatusV4;
+      case AddressFamily.InterNetworkV6:
+        return portStatusV6;
+      default:
+        throw new NotSupportedException();
       }
     }
-    public IPAddress GlobalAddress { get; set; }
-    private IPAddress localAddress6;
-    public IPAddress LocalAddress6 {
-      get {
-        if (localAddress6!=null) return localAddress6;
-        var addr = GetLocalAddress(AddressFamily.InterNetworkV6);
-        if (addr!=null) {
-          this.localAddress6 = addr;
-        }
-        else {
-          this.localAddress6 = IPAddress.IPv6Loopback;
-        }
-        logger.Info("IPv6 LocalAddress: {0}", this.localAddress6);
-        return this.localAddress6;
+
+    public void SetPortStatus(AddressFamily family, PortStatus value)
+    {
+      switch (family) {
+      case AddressFamily.InterNetwork:
+        portStatusV4 = value;
+        break;
+      case AddressFamily.InterNetworkV6:
+        portStatusV6 = value;
+        break;
+      default:
+        throw new NotSupportedException();
       }
     }
-    public IPAddress GlobalAddress6 { get; set; }
+
+    private IPAddress localAddressV4;
+    private IPAddress GetLocalAddressV4()
+    {
+      if (localAddressV4!=null) return localAddressV4;
+      var addr = GetInterfaceAddress(AddressFamily.InterNetwork);
+      if (addr!=null) {
+        this.localAddressV4 = addr;
+      }
+      else {
+        this.localAddressV4 = IPAddress.Loopback;
+      }
+      logger.Info("IPv4 LocalAddress: {0}", this.localAddressV4);
+      return this.localAddressV4;
+    }
+
+    private IPAddress localAddressV6;
+    private IPAddress GetLocalAddressV6()
+    {
+      if (localAddressV6!=null) return localAddressV6;
+      var addr = GetInterfaceAddress(AddressFamily.InterNetworkV6);
+      if (addr!=null) {
+        this.localAddressV6 = addr;
+      }
+      else {
+        this.localAddressV6 = IPAddress.IPv6Loopback;
+      }
+      logger.Info("IPv6 LocalAddress: {0}", this.localAddressV6);
+      return this.localAddressV6;
+    }
+
+    public IPAddress GetLocalAddress(AddressFamily family)
+    {
+      switch (family) {
+      case AddressFamily.InterNetwork:
+        return GetLocalAddressV4();
+      case AddressFamily.InterNetworkV6:
+        return GetLocalAddressV6();
+      default:
+        throw new NotSupportedException();
+      }
+    }
+
+    private IPAddress globalAddressV4 = null;
+    private IPAddress globalAddressV6 = null;
+
+    public IPAddress GetGlobalAddress(AddressFamily family)
+    {
+      switch (family) {
+      case AddressFamily.InterNetwork:
+        return globalAddressV4;
+      case AddressFamily.InterNetworkV6:
+        return globalAddressV6;
+      default:
+        throw new NotSupportedException();
+      }
+    }
+
+    public void SetGlobalAddress(IPAddress addr)
+    {
+      switch (addr.AddressFamily) {
+      case AddressFamily.InterNetwork:
+        globalAddressV4 = addr;
+        break;
+      case AddressFamily.InterNetworkV6:
+        globalAddressV6 = addr;
+        break;
+      default:
+        throw new NotSupportedException();
+      }
+    }
 
     private List<OutputListener> outputListeners = new List<OutputListener>();
     /// <summary>
@@ -502,15 +571,21 @@ namespace PeerCastStation.Core
 
     internal void OnListenPortOpened()
     {
-      if (IsFirewalled.HasValue && IsFirewalled.Value==true) {
-        IsFirewalled = null;
+      if (GetPortStatus(AddressFamily.InterNetwork)==PortStatus.Firewalled) {
+        SetPortStatus(AddressFamily.InterNetwork, PortStatus.Unknown);
+      }
+      if (GetPortStatus(AddressFamily.InterNetworkV6)==PortStatus.Firewalled) {
+        SetPortStatus(AddressFamily.InterNetworkV6, PortStatus.Unknown);
       }
     }
 
     internal void OnListenPortClosed()
     {
-      if (IsFirewalled.HasValue && IsFirewalled.Value==false) {
-        IsFirewalled = null;
+      if (GetPortStatus(AddressFamily.InterNetwork)==PortStatus.Open) {
+        SetPortStatus(AddressFamily.InterNetwork, PortStatus.Unknown);
+      }
+      if (GetPortStatus(AddressFamily.InterNetworkV6)==PortStatus.Open) {
+        SetPortStatus(AddressFamily.InterNetworkV6, PortStatus.Unknown);
       }
     }
 
@@ -519,7 +594,7 @@ namespace PeerCastStation.Core
       var listener = outputListeners.FirstOrDefault(
         x => x.LocalEndPoint.AddressFamily==addr_family &&
              (x.GlobalOutputAccepts & connection_type)!=0);
-      var addr = addr_family==AddressFamily.InterNetwork ? GlobalAddress : GlobalAddress6;
+      var addr = GetGlobalAddress(addr_family);
       if (listener!=null && addr!=null) {
         return new IPEndPoint(addr, listener.LocalEndPoint.Port);
       }
@@ -531,9 +606,8 @@ namespace PeerCastStation.Core
       var listener = outputListeners.FirstOrDefault(
         x =>  x.LocalEndPoint.AddressFamily==addr_family &&
              (x.LocalOutputAccepts & connection_type)!=0);
-      var addr = addr_family==AddressFamily.InterNetwork ? LocalAddress : LocalAddress6;
       if (listener!=null) {
-        return new IPEndPoint(addr, listener.LocalEndPoint.Port);
+        return new IPEndPoint(GetLocalAddress(addr_family), listener.LocalEndPoint.Port);
       }
       return null;
     }

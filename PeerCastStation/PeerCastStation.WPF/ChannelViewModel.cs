@@ -138,8 +138,7 @@ namespace PeerCastStation.WPF
 
     public ConnectionStatus ConnectionStatus {
       get {
-        if (!Model.PeerCast.IsFirewalled.HasValue ||
-             Model.PeerCast.IsFirewalled.Value) {
+        if (Model.PeerCast.GetPortStatus(Model.NetworkAddressFamily)!=PortStatus.Open) {
           if (Model.LocalRelays>0) {
             return ConnectionStatus.FirewalledRelaying;
           }

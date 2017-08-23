@@ -274,23 +274,26 @@ Stopped:
       var helo = new AtomCollection();
       helo.SetHeloAgent(PeerCast.AgentName);
       helo.SetHeloSessionID(PeerCast.SessionID);
-      if (PeerCast.IsFirewalled.HasValue) {
-        if (PeerCast.IsFirewalled.Value) {
-          //Do nothing
-        }
-        else {
+      switch (PeerCast.GetPortStatus(Channel.NetworkAddressFamily)) {
+      case PortStatus.Open:
+        break;
+      case PortStatus.Firewalled:
+        {
           var listener = PeerCast.FindListener(
             connection.RemoteEndPoint.Address,
             OutputStreamType.Relay | OutputStreamType.Metadata);
           helo.SetHeloPort(listener.LocalEndPoint.Port);
         }
-      }
-      else {
-        var listener = PeerCast.FindListener(
-          connection.RemoteEndPoint.Address,
-          OutputStreamType.Relay | OutputStreamType.Metadata);
-        if (listener!=null) {
-          helo.SetHeloPing(listener.LocalEndPoint.Port);
+        break;
+      case PortStatus.Unknown:
+        break;
+        {
+          var listener = PeerCast.FindListener(
+            connection.RemoteEndPoint.Address,
+            OutputStreamType.Relay | OutputStreamType.Metadata);
+          if (listener!=null) {
+            helo.SetHeloPing(listener.LocalEndPoint.Port);
+          }
         }
       }
       PCPVersion.SetHeloVersion(helo);
@@ -309,7 +312,7 @@ Stopped:
           var atom = await connection.Stream.ReadAtomAsync(cancel_token);
           if (atom.Name==Atom.PCP_OLEH) {
             OnPCPOleh(atom);
-            Logger.Debug("Handshake Finished: {0}", PeerCast.GlobalAddress);
+            Logger.Debug("Handshake Finished");
             handshake_finished = true;
           }
           else if (atom.Name==Atom.PCP_OLEH) {
@@ -406,7 +409,7 @@ Stopped:
       host.SetHostFlags1(
         (PeerCast.AccessController.IsChannelRelayable(Channel) ? PCPHostFlags1.Relay : 0) |
         (PeerCast.AccessController.IsChannelPlayable(Channel) ? PCPHostFlags1.Direct : 0) |
-        ((!PeerCast.IsFirewalled.HasValue || PeerCast.IsFirewalled.Value) ? PCPHostFlags1.Firewalled : 0) |
+        ((PeerCast.GetPortStatus(connection.RemoteEndPoint.AddressFamily)!=PortStatus.Open) ? PCPHostFlags1.Firewalled : 0) |
         (RecvRate>0 ? PCPHostFlags1.Receiving : 0));
       host.SetHostUphostIP(connection.RemoteEndPoint.Address);
       host.SetHostUphostPort(connection.RemoteEndPoint.Port);
@@ -472,24 +475,15 @@ Stopped:
     {
       var rip = atom.Children.GetHeloRemoteIP();
       if (rip!=null) {
-        switch (rip.AddressFamily) {
-        case AddressFamily.InterNetwork:
-          if (PeerCast.GlobalAddress==null ||
-              PeerCast.GlobalAddress.GetAddressLocality()<=rip.GetAddressLocality()) {
-            PeerCast.GlobalAddress = rip;
-          }
-          break;
-        case AddressFamily.InterNetworkV6:
-          if (PeerCast.GlobalAddress6==null ||
-              PeerCast.GlobalAddress6.GetAddressLocality()<=rip.GetAddressLocality()) {
-            PeerCast.GlobalAddress6 = rip;
-          }
-          break;
+        var global_addr = PeerCast.GetGlobalAddress(rip.AddressFamily);
+        if (global_addr==null ||
+            global_addr.GetAddressLocality()<=rip.GetAddressLocality()) {
+          PeerCast.SetGlobalAddress(rip);
         }
       }
       var port = atom.Children.GetHeloPort();
       if (port.HasValue) {
-        PeerCast.IsFirewalled = port.Value==0;
+        PeerCast.SetPortStatus(rip.AddressFamily, port.Value!=0 ? PortStatus.Open : PortStatus.Firewalled);
       }
       var sid = atom.Children.GetHeloSessionID();
       if (sid.HasValue) {
@@ -775,17 +769,7 @@ Stopped:
     private bool IsSiteLocal(Host node)
     {
       if (node.GlobalEndPoint!=null) {
-        IPAddress global;
-        switch (node.GlobalEndPoint.AddressFamily) {
-        case AddressFamily.InterNetwork:
-          global = PeerCast.GlobalAddress;
-          break;
-        case AddressFamily.InterNetworkV6:
-          global = PeerCast.GlobalAddress6;
-          break;
-        default:
-          throw new ArgumentException("Unsupported AddressFamily", "addr");
-        }
+        var global = PeerCast.GetGlobalAddress(node.GlobalEndPoint.AddressFamily);
         return node.GlobalEndPoint.Equals(global);
       }
       else {

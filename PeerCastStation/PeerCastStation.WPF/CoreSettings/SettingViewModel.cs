@@ -849,7 +849,7 @@ namespace PeerCastStation.WPF.CoreSettings
         }
         else {
           PortCheckStatus = prev.Result;
-          peerCast.IsFirewalled = prev.Result!=PortCheckStatus.Opened;
+          peerCast.SetPortStatus(System.Net.Sockets.AddressFamily.InterNetwork, prev.Result==PortCheckStatus.Opened ? PortStatus.Open : PortStatus.Firewalled);
         }
       });
       pecaApp.SaveSettings();

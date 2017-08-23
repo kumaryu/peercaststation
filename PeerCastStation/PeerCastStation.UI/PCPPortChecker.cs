@@ -33,7 +33,12 @@ namespace PeerCastStation.UI
         .ContinueWith(prev => {
           if (prev.IsCanceled || prev.IsFaulted) return;
           if (prev.Result.Success) {
-            this.Application.PeerCast.IsFirewalled = !prev.Result.IsOpen;
+            if (prev.Result.IsOpen) {
+              this.Application.PeerCast.SetPortStatus(System.Net.Sockets.AddressFamily.InterNetwork, PortStatus.Open);
+            }
+            else {
+              this.Application.PeerCast.SetPortStatus(System.Net.Sockets.AddressFamily.InterNetwork, PortStatus.Firewalled);
+            }
           }
         });
     }
