@@ -568,17 +568,7 @@ namespace PeerCastStation.HTTP
     private async Task SendPlaylist(CancellationToken cancel_token)
     {
       Logger.Debug("Sending Playlist");
-      bool mms = 
-        channelInfo.ContentType=="WMV" ||
-        channelInfo.ContentType=="WMA" ||
-        channelInfo.ContentType=="ASX";
-      IPlayList pls;
-      if (mms) {
-        pls = new ASXPlayList();
-      }
-      else {
-        pls = new M3UPlayList();
-      }
+      var pls = CreatePlaylist();
       pls.Channels.Add(Channel);
       var baseuri = new Uri(
         new Uri(request.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped)),
