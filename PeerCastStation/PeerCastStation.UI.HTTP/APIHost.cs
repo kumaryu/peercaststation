@@ -68,7 +68,8 @@ namespace PeerCastStation.UI.HTTP
       }
     }
 
-    public int[] OpenedPorts { get; set; }
+    public int[] OpenedPortsV4 { get; set; }
+    public int[] OpenedPortsV6 { get; set; }
 
     public void CheckVersion()
     {
@@ -885,12 +886,28 @@ namespace PeerCastStation.UI.HTTP
         res["authenticationId"]       = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Id : null;
         res["authenticationPassword"] = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Password : null;
         res["authToken"]     = listener.AuthenticationKey!=null ? HTTPUtils.CreateAuthorizationToken(listener.AuthenticationKey) : null;
-        if ((listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 && owner.OpenedPorts!=null) {
-          res["isOpened"] = (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 &&
-                            owner.OpenedPorts.Contains(listener.LocalEndPoint.Port);
-        }
-        else {
-          res["isOpened"] = null;
+        switch (listener.LocalEndPoint.AddressFamily) {
+        case System.Net.Sockets.AddressFamily.InterNetwork:
+          if ((listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 && owner.OpenedPortsV4!=null) {
+            res["isOpened"] = (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 &&
+                              owner.OpenedPortsV4.Contains(listener.LocalEndPoint.Port);
+          }
+          else {
+            res["isOpened"] = null;
+          }
+          break;
+        case System.Net.Sockets.AddressFamily.InterNetworkV6:
+          if ((listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 && owner.OpenedPortsV6!=null) {
+            res["isOpened"] = (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 &&
+                              owner.OpenedPortsV6.Contains(listener.LocalEndPoint.Port);
+          }
+          else {
+            res["isOpened"] = null;
+          }
+          break;
+          break;
+        default:
+          break;
         }
         return res;
       }
@@ -1149,16 +1166,30 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("checkPorts")]
       public JArray CheckPorts()
       {
-        int[] results = null;
+        List<int> results = null;
         var port_checker = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PCPPortCheckerPlugin>();
         if (port_checker!=null) {
           var task = port_checker.CheckAsync();
           task.Wait();
-          var result = task.Result;
-          if (result.Success) {
-            PeerCast.SetPortStatus(System.Net.Sockets.AddressFamily.InterNetwork, result.IsOpen ? PortStatus.Open : PortStatus.Firewalled);
-            owner.OpenedPorts = result.Ports;
-            results = result.Ports;
+          foreach (var result in task.Result) {
+            if (!result.Success) continue;
+            PeerCast.SetPortStatus(result.LocalAddress.AddressFamily, result.IsOpen ? PortStatus.Open : PortStatus.Firewalled);
+            switch (result.LocalAddress.AddressFamily) {
+            case System.Net.Sockets.AddressFamily.InterNetwork:
+              owner.OpenedPortsV4 = result.Ports;
+              break;
+            case System.Net.Sockets.AddressFamily.InterNetworkV6:
+              owner.OpenedPortsV6 = result.Ports;
+              break;
+            default:
+              break;
+            }
+            if (results==null) {
+              results = new List<int>(result.Ports);
+            }
+            else {
+              results.AddRange(result.Ports);
+            }
           }
         }
         if (results!=null) {

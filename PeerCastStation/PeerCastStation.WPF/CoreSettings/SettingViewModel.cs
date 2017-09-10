@@ -710,19 +710,22 @@ namespace PeerCastStation.WPF.CoreSettings
     {
       var port_checker = pecaApp.Plugins.GetPlugin<PeerCastStation.UI.PCPPortCheckerPlugin>();
       if (port_checker==null) return PortCheckStatus.Failed;
-      var result = await port_checker.CheckAsync();
-      if (!result.Success) {
+      var results = await port_checker.CheckAsync();
+      foreach (var result in results) {
+        if (!result.Success) continue;
+        foreach (var port in ports) {
+          if (!port.EndPoint.Address.Equals(result.LocalAddress)) continue;
+          port.IsOpen = result.Ports.Contains(port.Port);
+        }
+      }
+      if (results.All(result => !result.Success)) {
         return PortCheckStatus.Failed;
       }
+      else if (ports.Any(port => port.IsOpen.HasValue && port.IsOpen.Value)) {
+        return PortCheckStatus.Opened;
+      }
       else {
-        var status = PortCheckStatus.Closed;
-        foreach (var port in ports) {
-          port.IsOpen = result.Ports.Contains(port.Port);
-          if (port.IsOpen.HasValue && port.IsOpen.Value) {
-            status = PortCheckStatus.Opened;
-          }
-        }
-        return status;
+        return PortCheckStatus.Closed;
       }
     }
 
