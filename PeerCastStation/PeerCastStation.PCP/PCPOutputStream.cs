@@ -291,8 +291,8 @@ namespace PeerCastStation.PCP
       this.IsChannelFound = channel!=null && channel.Status==SourceStreamStatus.Receiving;
       this.IsRelayFull    = channel!=null ? !channel.MakeRelayable(this) : false;
       this.IsProtocolMatched = channel!=null ?
-        (channel.Network==NetworkType.IPv6 && request.PCPVersion==PCPVersion.ProtocolVersionIPv6) ||
-        (channel.Network==NetworkType.IPv4 && request.PCPVersion==PCPVersion.ProtocolVersionIPv4) : false;
+        (channel.Network==NetworkType.IPv6 && request.PCPVersion==PCPVersion.ProtocolVersionIPv6 && remote_endpoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6) ||
+        (channel.Network==NetworkType.IPv4 && request.PCPVersion==PCPVersion.ProtocolVersionIPv4 && remote_endpoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork) : false;
       this.relayRequest   = request;
       this.UserAgent      = request.UserAgent;
     }
