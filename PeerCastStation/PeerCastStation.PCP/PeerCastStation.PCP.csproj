@@ -47,6 +47,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ChannelExtensions.cs" />
     <Compile Include="PCPOutputStream.cs" />
     <Compile Include="PCPPongOutputStream.cs" />
     <Compile Include="PCPSourceStream.cs" />

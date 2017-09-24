@@ -247,7 +247,7 @@ Stopped:
         $"GET /channel/{Channel.ChannelID.ToString("N")} HTTP/1.0\r\n" +
         host_header +
         $"User-Agent:{PeerCast.AgentName}\r\n" +
-        $"x-peercast-pcp:1\r\n" +
+        $"x-peercast-pcp:{Channel.GetPCPVersion()}\r\n" +
         $"x-peercast-pos:{Channel.ContentPosition}\r\n" +
         $"\r\n"
       );
@@ -260,7 +260,7 @@ Stopped:
         }
         else {
           Logger.Info("Server responses {0} to GET {1}", relayResponse.StatusCode, SourceUri.PathAndQuery);
-          Stop(relayResponse.StatusCode==404 ? StopReason.OffAir : StopReason.UnavailableError);
+          Stop(relayResponse.StatusCode==404 ? StopReason.OffAir : StopReason.ConnectionError);
         }
       }
       catch (IOException e) {

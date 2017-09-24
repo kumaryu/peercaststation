@@ -176,7 +176,9 @@ namespace PeerCastStation.PCP
     public override Guid? ParseChannelID(byte[] header)
     {
       var request = ParseRequest(header);
-      if (request!=null && request.Uri!=null && request.PCPVersion==1) {
+      if (request!=null &&
+          request.Uri!=null &&
+          (request.PCPVersion==PCPVersion.ProtocolVersionIPv4 || request.PCPVersion==PCPVersion.ProtocolVersionIPv6)) {
         Match match = null;
         if ((match = Regex.Match(request.Uri.AbsolutePath, @"^/channel/([0-9A-Fa-f]{32}).*$")).Success) {
           return new Guid(match.Groups[1].Value);
@@ -222,6 +224,7 @@ namespace PeerCastStation.PCP
     public string UserAgent    { get; protected set; }
     public bool IsRelayFull    { get; protected set; }
     public bool IsChannelFound { get; protected set; }
+    public bool IsProtocolMatched { get; protected set; }
     private SemaphoreSlim changedEvent = new SemaphoreSlim(1);
 
     protected override int GetUpstreamRate()
@@ -287,6 +290,9 @@ namespace PeerCastStation.PCP
       this.UserAgent = request.UserAgent;
       this.IsChannelFound = channel!=null && channel.Status==SourceStreamStatus.Receiving;
       this.IsRelayFull    = channel!=null ? !channel.MakeRelayable(this) : false;
+      this.IsProtocolMatched = channel!=null ?
+        (channel.Network==NetworkType.IPv6 && request.PCPVersion==PCPVersion.ProtocolVersionIPv6) ||
+        (channel.Network==NetworkType.IPv4 && request.PCPVersion==PCPVersion.ProtocolVersionIPv4) : false;
       this.relayRequest   = request;
       this.UserAgent      = request.UserAgent;
     }
@@ -296,6 +302,13 @@ namespace PeerCastStation.PCP
       if (!IsChannelFound) {
         return String.Format(
           "HTTP/1.0 404 Not Found.\r\n" +
+          "Server: {0}\r\n" +
+          "\r\n",
+          PeerCast.AgentName);
+      }
+      else if (!IsProtocolMatched) {
+        return String.Format(
+          "HTTP/1.0 403 Forbidden.\r\n" +
           "Server: {0}\r\n" +
           "\r\n",
           PeerCast.AgentName);
@@ -486,7 +499,7 @@ namespace PeerCastStation.PCP
 
     protected override async Task<StopReason> DoProcess(CancellationToken cancel_token)
     {
-      if (!IsChannelFound) return StopReason.None;
+      if (!IsChannelFound || !IsProtocolMatched) return StopReason.None;
       try {
         var handshake_timeout = new CancellationTokenSource(5000);
         var unified_cancel = CancellationTokenSource.CreateLinkedTokenSource(cancel_token, handshake_timeout.Token);
