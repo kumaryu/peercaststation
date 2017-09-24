@@ -286,7 +286,6 @@ Stopped:
         }
         break;
       case PortStatus.Unknown:
-        break;
         {
           var listener = PeerCast.FindListener(
             connection.RemoteEndPoint.Address,
@@ -295,6 +294,7 @@ Stopped:
             helo.SetHeloPing(listener.LocalEndPoint.Port);
           }
         }
+        break;
       }
       PCPVersion.SetHeloVersion(helo);
       return new Atom(Atom.PCP_HELO, helo);
