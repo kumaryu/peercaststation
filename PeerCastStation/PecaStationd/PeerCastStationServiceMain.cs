@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.Remoting.Lifetime;
 using System.Threading.Tasks;
 
 namespace PecaStationd
@@ -7,11 +8,29 @@ namespace PecaStationd
   {
     class ResultContainer : MarshalByRefObject
     {
+      public override Object InitializeLifetimeService()
+      {
+        var lease = (ILease)base.InitializeLifetimeService();
+        if (lease.CurrentState==LeaseState.Initial) {
+          lease.InitialLeaseTime = TimeSpan.Zero;
+        }
+        return lease;
+      }
+
       public AppContext AppContext;
     }
 
     class AppContext : MarshalByRefObject
     {
+      public override Object InitializeLifetimeService()
+      {
+        var lease = (ILease)base.InitializeLifetimeService();
+        if (lease.CurrentState==LeaseState.Initial) {
+          lease.InitialLeaseTime = TimeSpan.Zero;
+        }
+        return lease;
+      }
+
       public object serviceApp;
       public Task<int> mainTask;
       public Action<int> onStoppedCallback;
@@ -78,9 +97,17 @@ namespace PecaStationd
     private AppContext appContext;
     public int Result { get; private set; } = -1;
 
-    private class StoppedCallback
-      : MarshalByRefObject
+    private class StoppedCallback : MarshalByRefObject
     {
+      public override Object InitializeLifetimeService()
+      {
+        var lease = (ILease)base.InitializeLifetimeService();
+        if (lease.CurrentState==LeaseState.Initial) {
+          lease.InitialLeaseTime = TimeSpan.Zero;
+        }
+        return lease;
+      }
+
       public PeerCastStationServiceMain Owner;
       public string[] Args;
       public void OnStopped(int result)

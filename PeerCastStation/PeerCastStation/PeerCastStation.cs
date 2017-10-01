@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.Remoting.Lifetime;
 
 namespace PeerCastStation.Main
 {
@@ -6,6 +7,15 @@ namespace PeerCastStation.Main
   {
     class ResultContainer : MarshalByRefObject
     {
+      public override Object InitializeLifetimeService()
+      {
+        var lease = (ILease)base.InitializeLifetimeService();
+        if (lease.CurrentState==LeaseState.Initial) {
+          lease.InitialLeaseTime = TimeSpan.Zero;
+        }
+        return lease;
+      }
+
       public int ExitCode;
     }
 
