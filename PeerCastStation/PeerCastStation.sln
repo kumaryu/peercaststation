@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Core", "PeerCastStation.Core\PeerCastStation.Core.csproj", "{387996F5-E31D-4D92-BD86-8983C599F748}"
 EndProject
@@ -25,8 +25,6 @@ Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestHTTP", "TestHTTP\TestHT
 	ProjectSection(ProjectDependencies) = postProject
 		{DB3BBED9-6F4B-456C-910D-E1801C94A110} = {DB3BBED9-6F4B-456C-910D-E1801C94A110}
 	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.GUI", "PeerCastStation.GUI\PeerCastStation.GUI.csproj", "{C48B0B43-0061-4049-8EBF-5F3757009F13}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.ASF", "PeerCastStation.ASF\PeerCastStation.ASF.csproj", "{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}"
 EndProject
@@ -109,10 +107,6 @@ Global
 		{DB3BBED9-6F4B-456C-910D-E1801C94A110}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5FD6FD1D-1911-467A-95E2-1CEDD8C49B26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5FD6FD1D-1911-467A-95E2-1CEDD8C49B26}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C48B0B43-0061-4049-8EBF-5F3757009F13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C48B0B43-0061-4049-8EBF-5F3757009F13}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C48B0B43-0061-4049-8EBF-5F3757009F13}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C48B0B43-0061-4049-8EBF-5F3757009F13}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -181,5 +175,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E7CE92D1-253F-4E71-8EB4-B911910DB1E4}
 	EndGlobalSection
 EndGlobal
