@@ -1,5 +1,5 @@
 ---
-version: 2.3.8.{build}
+version: 2.3.9.{build}
 configuration: Release
 install:
 - cmd: |-
