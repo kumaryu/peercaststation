@@ -1,4 +1,32 @@
 ---
+- name: Version 2.3.9 (2017年10月15日開発版)
+  version: 2.3.9
+  channel: dev
+  notes: |
+    バグ修正とZIP版での自動アップデートを追加しました。
+
+    * ZIP版でダウンロードから展開と置き換えと再起動まで自動でアップデートできるようにしました。
+      次のアップデートから有効になります。
+      インストーラ版は従来通りインストーラでアップデートします。
+    * 出力(リレー・視聴共に)の安定性を改善しました。
+    * viewxmlにセッションIDが載るようになりました。
+    * プレイリストの強制m3u化が効いてなかったのを修正しました。(by ha2ne2)
+    * IPv6のルーターにNAT-PMPのパケットを投げようとしていたのを投げないようにしました。
+    * CustomFilterの設定ファイルが読み込まれなかったのを修正しました。
+    * HTTP PushやRTMP配信時に接続待ち受けに失敗すると、エラーにならずにおかしな状態になっていたのを修正しました。
+  date: 2017-10-15T00:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.3.9.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.9.zip
+    length: 1646552
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.3.9.exe
+    length: 2323345
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.3.9.msi
+    length: 2011938
+
 - name: Version 2.3.8 (2017年06月02日開発版)
   version: 2.3.8
   channel: dev
