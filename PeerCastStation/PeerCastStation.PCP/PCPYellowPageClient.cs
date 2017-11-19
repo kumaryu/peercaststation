@@ -546,12 +546,12 @@ namespace PeerCastStation.PCP
       var hostinfo = new AtomCollection();
       hostinfo.SetHostChannelID(channel.ChannelID);
       hostinfo.SetHostSessionID(PeerCast.SessionID);
-      var globalendpoint = PeerCast.GetGlobalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
+      var globalendpoint = PeerCast.GetGlobalEndPoint(channel.NetworkAddressFamily, OutputStreamType.Relay);
       if (globalendpoint!=null) {
         hostinfo.AddHostIP(globalendpoint.Address);
         hostinfo.AddHostPort(globalendpoint.Port);
       }
-      var localendpoint = PeerCast.GetLocalEndPoint(AddressFamily.InterNetwork, OutputStreamType.Relay);
+      var localendpoint = PeerCast.GetLocalEndPoint(channel.NetworkAddressFamily, OutputStreamType.Relay);
       if (localendpoint!=null) {
         hostinfo.AddHostIP(localendpoint.Address);
         hostinfo.AddHostPort(localendpoint.Port);
