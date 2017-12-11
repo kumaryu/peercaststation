@@ -415,6 +415,12 @@ namespace PeerCastStation.Core
 
     private PortStatus portStatusV4 = PortStatus.Unknown;
     private PortStatus portStatusV6 = PortStatus.Unknown;
+
+    public PortStatus GetPortStatus(NetworkType type)
+    {
+      return GetPortStatus(type.GetAddressFamily());
+    }
+
     public PortStatus GetPortStatus(AddressFamily family)
     {
       switch (family) {
@@ -425,6 +431,11 @@ namespace PeerCastStation.Core
       default:
         throw new NotSupportedException();
       }
+    }
+
+    public void SetPortStatus(NetworkType type, PortStatus value)
+    {
+      SetPortStatus(type.GetAddressFamily(), value);
     }
 
     public void SetPortStatus(AddressFamily family, PortStatus value)
@@ -626,15 +637,21 @@ namespace PeerCastStation.Core
     public OutputListener FindListener(IPAddress remote_addr, OutputStreamType connection_type)
     {
       if (remote_addr==null) throw new ArgumentNullException("remote_addr");
+      return FindListener(remote_addr.AddressFamily, remote_addr, connection_type);
+    }
+
+    public OutputListener FindListener(AddressFamily family, IPAddress remote_addr, OutputStreamType connection_type)
+    {
+      if (remote_addr==null) throw new ArgumentNullException("remote_addr");
       if (remote_addr.IsSiteLocal()) {
         var listener = outputListeners.FirstOrDefault(
-          x =>  x.LocalEndPoint.AddressFamily==remote_addr.AddressFamily &&
+          x =>  x.LocalEndPoint.AddressFamily==family &&
                (x.LocalOutputAccepts & connection_type)!=0);
         return listener;
       }
       else {
         var listener = outputListeners.FirstOrDefault(
-          x => x.LocalEndPoint.AddressFamily==remote_addr.AddressFamily &&
+          x => x.LocalEndPoint.AddressFamily==family &&
                (x.GlobalOutputAccepts & connection_type)!=0);
         return listener;
       }

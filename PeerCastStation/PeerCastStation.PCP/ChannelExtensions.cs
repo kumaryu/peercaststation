@@ -7,13 +7,7 @@ namespace PeerCastStation.PCP
   {
     public static int GetPCPVersion(this Channel channel)
     {
-      switch (channel.Network) {
-      case NetworkType.IPv6:
-        return PCPVersion.ProtocolVersionIPv6;
-      case NetworkType.IPv4:
-      default:
-        return PCPVersion.ProtocolVersionIPv4;
-      }
+      return PCPVersion.GetPCPVersionForNetworkType(channel.Network);
     }
 
   }

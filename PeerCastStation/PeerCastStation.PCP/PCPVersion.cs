@@ -13,6 +13,17 @@ namespace PeerCastStation.PCP
     public static readonly int    ProtocolVersionIPv4    = 1;
     public static readonly int    ProtocolVersionIPv6    = 100;
 
+    public static int GetPCPVersionForNetworkType(NetworkType type)
+    {
+      switch (type) {
+      case NetworkType.IPv6:
+        return ProtocolVersionIPv6;
+      case NetworkType.IPv4:
+      default:
+        return ProtocolVersionIPv4;
+      }
+    }
+
     public static void SetHeloVersion(IAtomCollection helo)
     {
       helo.SetHeloVersion(ServantVersion);

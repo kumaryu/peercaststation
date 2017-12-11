@@ -89,6 +89,7 @@
     <Compile Include="ConnectionStream.cs" />
     <Compile Include="StreamExtension.cs" />
     <Compile Include="SynchronizedList.cs" />
+    <Compile Include="WaitableQueue.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\PeerCastStation.snk">

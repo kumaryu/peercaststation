@@ -477,7 +477,7 @@ namespace PeerCastStation.UI.HTTP
         var announcings = Enumerable.Empty<IAnnouncingChannel>();
         var channel = GetChannel(channelId);
         foreach (var yp in PeerCast.YellowPages) {
-          announcings = announcings.Concat(yp.AnnouncingChannels.Where(ac => ac.Channel.ChannelID==channel.ChannelID));
+          announcings = announcings.Concat(yp.GetAnnouncingChannels().Where(ac => ac.Channel.ChannelID==channel.ChannelID));
         }
         return new JArray(announcings.Select(ac => {
           var acinfo = new JObject();
@@ -593,7 +593,7 @@ namespace PeerCastStation.UI.HTTP
 
       private JObject GetChannelConnection(IAnnouncingChannel ac)
       {
-        return GetChannelConnection(ac, ac.YellowPage.GetConnectionInfo());
+        return GetChannelConnection(ac, ac.GetConnectionInfo());
       }
 
       private JObject GetChannelConnection(object connection, ConnectionInfo info)
@@ -635,7 +635,7 @@ namespace PeerCastStation.UI.HTTP
           Enumerable.Repeat(channel.SourceStream, 1).Select(s => GetChannelConnection(s));
         res = res.Concat(channel.OutputStreams.Select(s => GetChannelConnection(s)));
         foreach (var yp in PeerCast.YellowPages) {
-          res = res.Concat(yp.AnnouncingChannels
+          res = res.Concat(yp.GetAnnouncingChannels()
                 .Where(ac => ac.Channel.ChannelID==channel.ChannelID)
                 .Select(s => GetChannelConnection(s)));
         }
@@ -653,7 +653,7 @@ namespace PeerCastStation.UI.HTTP
           return true;
         }
         foreach (var yp in PeerCast.YellowPages) {
-          var ac = yp.AnnouncingChannels
+          var ac = yp.GetAnnouncingChannels()
             .Where(s => GetObjectId(s)==connectionId)
             .Where(s => s.Channel.ChannelID==channel.ChannelID).FirstOrDefault();
           if (ac!=null) {
@@ -673,7 +673,7 @@ namespace PeerCastStation.UI.HTTP
           return true;
         }
         foreach (var yp in PeerCast.YellowPages) {
-          var ac = yp.AnnouncingChannels
+          var ac = yp.GetAnnouncingChannels()
             .Where(s => GetObjectId(s)==connectionId)
             .Where(s => s.Channel.ChannelID==channel.ChannelID).FirstOrDefault();
           if (ac!=null) {
@@ -771,7 +771,7 @@ namespace PeerCastStation.UI.HTTP
           res["announceUri"]  = yp.AnnounceUri==null ? null : yp.AnnounceUri.ToString();
           res["channelsUri"]  = yp.ChannelsUri==null ? null : yp.ChannelsUri.ToString();
           res["protocol"]     = yp.Protocol;
-          res["channels"]     = new JArray(yp.AnnouncingChannels.Select(ac => {
+          res["channels"]     = new JArray(yp.GetAnnouncingChannels().Select(ac => {
             var announcing = new JObject();
             announcing["channelId"] = ac.Channel.ChannelID.ToString("N").ToUpperInvariant();
             announcing["status"]  = ac.Status.ToString();
@@ -844,7 +844,7 @@ namespace PeerCastStation.UI.HTTP
         if (yp!=null) {
           if (channelId!=null) {
             var channel = GetChannel(channelId);
-            var announcing = yp.AnnouncingChannels.FirstOrDefault(ac => ac.Channel.ChannelID==channel.ChannelID);
+            var announcing = yp.GetAnnouncingChannels().FirstOrDefault(ac => ac.Channel.ChannelID==channel.ChannelID);
             if (announcing!=null) {
               yp.StopAnnounce(announcing);
             }
@@ -862,7 +862,7 @@ namespace PeerCastStation.UI.HTTP
         if (yp!=null) {
           if (channelId!=null) {
             var channel = GetChannel(channelId);
-            var announcing = yp.AnnouncingChannels.FirstOrDefault(ac => ac.Channel.ChannelID==channel.ChannelID);
+            var announcing = yp.GetAnnouncingChannels().FirstOrDefault(ac => ac.Channel.ChannelID==channel.ChannelID);
             if (announcing!=null) {
               yp.RestartAnnounce(announcing);
             }
@@ -904,7 +904,6 @@ namespace PeerCastStation.UI.HTTP
           else {
             res["isOpened"] = null;
           }
-          break;
           break;
         default:
           break;

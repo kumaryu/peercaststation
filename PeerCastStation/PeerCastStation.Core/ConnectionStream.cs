@@ -100,6 +100,11 @@ namespace PeerCastStation.Core
       }
     }
 
+    public ConnectionStream(Stream base_stream)
+      : this(base_stream, base_stream)
+    {
+    }
+
     public override void Flush()
     {
       FlushAsync().Wait();

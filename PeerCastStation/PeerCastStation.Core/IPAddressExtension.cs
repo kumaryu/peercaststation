@@ -2,11 +2,21 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 
 namespace PeerCastStation.Core
 {
   public static class IPAddressExtension
   {
+    static public AddressFamily GetAddressFamily(this NetworkType type)
+    {
+      switch (type) {
+      case NetworkType.IPv4: return AddressFamily.InterNetwork;
+      case NetworkType.IPv6: return AddressFamily.InterNetworkV6;
+      default: throw new ArgumentException("Not supported network type", "type");
+      }
+    }
+
     static public bool IsSiteLocal(this IPAddress addr)
     {
       switch (addr.AddressFamily) {
