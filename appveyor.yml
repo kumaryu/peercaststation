@@ -12,6 +12,7 @@ before_build:
     cd doc\help
     jekyll build
     cd ..\..
+    nuget restore PeerCastStation\PeerCastStation.sln
 build:
   verbosity: minimal
 artifacts:
