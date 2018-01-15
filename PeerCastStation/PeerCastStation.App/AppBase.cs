@@ -112,6 +112,9 @@ namespace PeerCastStation.App
             }
           }
         }
+        foreach (var enumtype in asm.GetTypes().Where(type => type.IsEnum && type.IsPublic && !type.IsNested)) {
+          PecaSettings.RegisterType(enumtype.FullName, enumtype);
+        }
         return res;
       }
       catch (System.Reflection.ReflectionTypeLoadException) {

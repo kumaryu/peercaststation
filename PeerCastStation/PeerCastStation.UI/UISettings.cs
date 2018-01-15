@@ -31,6 +31,7 @@ namespace PeerCastStation.UI
     public BroadcastInfo FindBroadcastHistroryItem(BroadcastInfo info)
     {
       return BroadcastHistory.FirstOrDefault(i =>
+          i.NetworkType == info.NetworkType &&
           i.StreamType  == info.StreamType  &&
           i.StreamUrl   == info.StreamUrl   &&
           i.Bitrate     == info.Bitrate     &&
@@ -52,6 +53,7 @@ namespace PeerCastStation.UI
   [PeerCastStation.Core.PecaSettings]
   public class BroadcastInfo
   {
+    public PeerCastStation.Core.NetworkType NetworkType { get; set; }
     public string StreamType  { get; set; }
     public string StreamUrl   { get; set; }
     public int    Bitrate     { get; set; }

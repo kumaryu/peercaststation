@@ -45,6 +45,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
             SelectedSourceStream = SourceStreams.FirstOrDefault(t => t.Name==value.StreamType);
           }
           ContentType = contentTypes.FirstOrDefault(t => t.Name==value.ContentType);
+          NetworkType = value.NetworkType;
           StreamUrl   = value.StreamUrl;
           Bitrate     = value.Bitrate==0 ? null : value.Bitrate.ToString();
           ContentType = contentTypes.FirstOrDefault(t => t.Name==value.ContentType);
@@ -292,6 +293,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       }
 
       var info = new BroadcastInfoViewModel {
+        NetworkType = this.NetworkType,
         StreamUrl   = this.StreamUrl,
         StreamType  = this.SelectedSourceStream!=null ? this.SelectedSourceStream.Name : null,
         Bitrate     = this.bitrate.HasValue ? this.bitrate.Value : 0,

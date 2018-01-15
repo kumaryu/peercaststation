@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using PeerCastStation.Core;
 
 namespace PeerCastStation.WPF
 {
@@ -65,6 +66,7 @@ namespace PeerCastStation.WPF
 
     public BroadcastInfoViewModel(BroadcastInfo model)
     {
+      networkType = model.NetworkType;
       streamType  = model.StreamType;
       streamUrl   = model.StreamUrl;
       bitrate     = model.Bitrate;
@@ -84,6 +86,7 @@ namespace PeerCastStation.WPF
 
     public BroadcastInfoViewModel(PeerCastStation.UI.BroadcastInfo model)
     {
+      networkType = model.NetworkType;
       streamType  = model.StreamType;
       streamUrl   = model.StreamUrl;
       bitrate     = model.Bitrate;
@@ -105,6 +108,7 @@ namespace PeerCastStation.WPF
     public PeerCastStation.UI.BroadcastInfo Save()
     {
       return new PeerCastStation.UI.BroadcastInfo() {
+        NetworkType = this.NetworkType,
         StreamType  = this.StreamType,
         StreamUrl   = this.StreamUrl,
         Bitrate     = this.Bitrate,
@@ -136,6 +140,7 @@ namespace PeerCastStation.WPF
       }
     }
 
+    private NetworkType networkType;
     private string streamType;
     private string streamUrl;
     private int    bitrate;
@@ -153,6 +158,10 @@ namespace PeerCastStation.WPF
     private string trackUrl;
     private bool   favorite;
 
+    public NetworkType NetworkType {
+      get { return networkType; }
+      set { if (networkType!=value) { networkType = value; OnPropertyChanged(nameof(NetworkType)); } }
+    }
     public string StreamType {
       get { return streamType; }
       set { if (streamType!=value) { streamType = value; OnPropertyChanged("StreamType"); } }
@@ -222,7 +231,8 @@ namespace PeerCastStation.WPF
     {
       if (obj==null || GetType()!=obj.GetType()) return false;
       var x = (BroadcastInfoViewModel)obj;
-      return StreamUrl   == x.StreamUrl   &&
+      return NetworkType == x.NetworkType &&
+             StreamUrl   == x.StreamUrl   &&
              StreamType  == x.StreamType  &&
              Bitrate     == x.Bitrate     &&
              ContentType == x.ContentType &&
@@ -242,6 +252,7 @@ namespace PeerCastStation.WPF
     public override int GetHashCode()
     {
       return (int)(new object[] {
+        NetworkType,
         StreamType,
         StreamUrl,
         Bitrate,
