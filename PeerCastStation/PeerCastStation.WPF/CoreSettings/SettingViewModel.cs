@@ -81,6 +81,34 @@ namespace PeerCastStation.WPF.CoreSettings
         RegenerateAuthKey = new Command(DoRegenerateAuthKey);
       }
 
+      public OutputListenerViewModel(SettingViewModel owner, System.Net.IPEndPoint endpoint)
+      {
+        this.owner = owner;
+        if (endpoint.Address.Equals(System.Net.IPAddress.Any)) {
+          address = "IPv4 Any";
+        }
+        else if (endpoint.Address.Equals(System.Net.IPAddress.IPv6Any)) {
+          address = "IPv6 Any";
+        }
+        else {
+          address = endpoint.Address.ToString();
+        }
+        port    = endpoint.Port;
+        globalRelay     = true;
+        globalPlay      = false;
+        globalInterface = false;
+        globalAuthRequired = true;
+        localRelay      = true;
+        localPlay       = true;
+        localInterface  = true;
+        localAuthRequired = false;
+        var authkey = AuthenticationKey.Generate();
+        authId       = authkey.Id;
+        authPassword = authkey.Password;
+        isOpen = null;
+        RegenerateAuthKey = new Command(DoRegenerateAuthKey);
+      }
+
       public OutputListenerViewModel(SettingViewModel owner, int new_port)
       {
         this.owner = owner;
@@ -510,6 +538,30 @@ namespace PeerCastStation.WPF.CoreSettings
         else if ( listener.Port!=value) {
           listener.Port = value;
           OnPropertyChanged("PrimaryPort");
+        }
+      }
+    }
+
+    public bool IPv6Enabled {
+      get {
+        return ports.Any(p => p.EndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6);
+      }
+      set {
+        if (value && !ports.Any(p => p.EndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6)) {
+          ports.Add(new OutputListenerViewModel(this, new System.Net.IPEndPoint(System.Net.IPAddress.IPv6Any, PrimaryPort)));
+          IsListenersModified = true;
+          OnPropertyChanged(nameof(IPv6Enabled));
+        }
+        else if (!value) {
+          bool changed = false;
+          foreach (var listener in ports.Where(p => p.EndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6).ToArray()) {
+            ports.Remove(listener);
+            IsListenersModified = true;
+            changed = true;
+          }
+          if (changed) {
+            OnPropertyChanged(nameof(IPv6Enabled));
+          }
         }
       }
     }
