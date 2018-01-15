@@ -48,19 +48,38 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
       <Style x:Key="PortCheckStatusText" TargetType="TextBlock">
         <Style.Triggers>
           <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Unknown}">
-            <Setter Property="Text" Value="未確認"/>
+            <Setter Property="Text" Value="IPv4: 未確認"/>
           </DataTrigger>
           <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Checking}">
-            <Setter Property="Text" Value="確認しています"/>
+            <Setter Property="Text" Value="IPv4: 確認しています"/>
           </DataTrigger>
           <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Opened}">
-            <Setter Property="Text" Value="開放されています"/>
+            <Setter Property="Text" Value="IPv4: 開放されています"/>
           </DataTrigger>
           <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Closed}">
-            <Setter Property="Text" Value="未開放です"/>
+            <Setter Property="Text" Value="IPv4: 未開放です"/>
           </DataTrigger>
           <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Failed}">
-            <Setter Property="Text" Value="確認失敗しました"/>
+            <Setter Property="Text" Value="IPv4: 確認失敗しました"/>
+          </DataTrigger>
+        </Style.Triggers>
+      </Style>
+      <Style x:Key="PortCheckV6StatusText" TargetType="TextBlock">
+        <Style.Triggers>
+          <DataTrigger Binding="{Binding PortCheckV6Status}" Value="{x:Static l:PortCheckStatus.Unknown}">
+            <Setter Property="Text" Value="IPv6: 未確認"/>
+          </DataTrigger>
+          <DataTrigger Binding="{Binding PortCheckV6Status}" Value="{x:Static l:PortCheckStatus.Checking}">
+            <Setter Property="Text" Value="IPv6: 確認しています"/>
+          </DataTrigger>
+          <DataTrigger Binding="{Binding PortCheckV6Status}" Value="{x:Static l:PortCheckStatus.Opened}">
+            <Setter Property="Text" Value="IPv6: 開放されています"/>
+          </DataTrigger>
+          <DataTrigger Binding="{Binding PortCheckV6Status}" Value="{x:Static l:PortCheckStatus.Closed}">
+            <Setter Property="Text" Value="IPv6: 未開放です"/>
+          </DataTrigger>
+          <DataTrigger Binding="{Binding PortCheckV6Status}" Value="{x:Static l:PortCheckStatus.Failed}">
+            <Setter Property="Text" Value="IPv6: 確認失敗しました"/>
           </DataTrigger>
         </Style.Triggers>
       </Style>
@@ -158,8 +177,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                   <ColumnDefinition Width="*"/>
                   <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" VerticalAlignment="Center" Style="{StaticResource PortCheckStatusText}"/>
-                <Button    Grid.Column="1" Content="開放確認" Click="PortCheckButton_Click" Style="{StaticResource PortCheckButton}"/>
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" Style="{StaticResource PortCheckStatusText}"/>
+                <TextBlock Grid.Column="0" Grid.Row="1" VerticalAlignment="Center" Style="{StaticResource PortCheckV6StatusText}"/>
+                <Button    Grid.Column="1" Grid.RowSpan="2" Content="開放確認" Click="PortCheckButton_Click" Style="{StaticResource PortCheckButton}"/>
               </Grid>
             </Grid>
           </GroupBox>
@@ -253,26 +277,58 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
             <Label    Grid.Column="0" Grid.Row="0" Content="ポート自動開放:"/>
             <CheckBox Grid.Column="1" Grid.Row="0" Content="自動開放する(UPnP/NAT-PMP)" VerticalAlignment="Center" IsChecked="{Binding PortMapperEnabled}"/>
             <Label     Grid.Column="0" Grid.Row="1" Content="外部アドレス:"/>
-            <TextBlock Grid.Column="1" Grid.Row="1" VerticalAlignment="Center">
-              <TextBlock.Style>
-                <Style TargetType="TextBlock">
-                  <Style.Triggers>
-                    <DataTrigger Binding="{Binding PortMapperExternalAddresses}" Value="">
-                      <Setter Property="Text" Value="ルーター未発見"/>
-                    </DataTrigger>
-                  </Style.Triggers>
-                  <Setter Property="Text" Value="{Binding PortMapperExternalAddresses}"/>
-                </Style>
-              </TextBlock.Style>
-            </TextBlock>
+            <Grid Grid.Column="1" Grid.Row="1">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
+              <TextBlock Grid.Row="0" VerticalAlignment="Center" Margin="2">
+                <TextBlock.Style>
+                  <Style TargetType="TextBlock">
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding PortMapperExternalAddresses}" Value="">
+                        <Setter Property="Text" Value="ルーター未発見"/>
+                      </DataTrigger>
+                      <DataTrigger Binding="{Binding PortMapperEnabled}" Value="false">
+                        <Setter Property="Text" Value="UPnP無効"/>
+                      </DataTrigger>
+                    </Style.Triggers>
+                    <Setter Property="Text" Value="{Binding PortMapperExternalAddresses}"/>
+                  </Style>
+                </TextBlock.Style>
+              </TextBlock>
+              <TextBlock Grid.Row="1" VerticalAlignment="Center" Margin="2">
+                <TextBlock.Style>
+                  <Style TargetType="TextBlock">
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding ExternalAddressesV6}" Value="">
+                        <Setter Property="Text" Value="IPv6グローバルアドレス無し"/>
+                      </DataTrigger>
+                      <DataTrigger Binding="{Binding IPv6Enabled}" Value="false">
+                        <Setter Property="Text" Value="IPv6無効"/>
+                      </DataTrigger>
+                    </Style.Triggers>
+                    <Setter Property="Text" Value="{Binding ExternalAddressesV6}"/>
+                  </Style>
+                </TextBlock.Style>
+              </TextBlock>
+            </Grid>
             <Label    Grid.Column="0" Grid.Row="2" Content="ポート開放確認:"/>
             <Grid     Grid.Column="1" Grid.Row="2">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
               </Grid.ColumnDefinitions>
-              <TextBlock Grid.Column="0" VerticalAlignment="Center" Style="{StaticResource PortCheckStatusText}"/>
-              <Button    Grid.Column="1" Content="開放確認" Click="PortCheckButton_Click" Style="{StaticResource PortCheckButton}"/>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
+              <TextBlock Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" Style="{StaticResource PortCheckStatusText}"/>
+              <TextBlock Grid.Column="0" Grid.Row="1" VerticalAlignment="Center" Style="{StaticResource PortCheckV6StatusText}"/>
+              <Button    Grid.Column="1" Grid.RowSpan="2" Content="開放確認" Click="PortCheckButton_Click" Style="{StaticResource PortCheckButton}"/>
             </Grid>
           </Grid>
         </Grid>
