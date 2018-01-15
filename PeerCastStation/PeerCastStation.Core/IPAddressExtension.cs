@@ -17,6 +17,13 @@ namespace PeerCastStation.Core
       }
     }
 
+    static public bool IsIPv6UniqueLocal(this IPAddress addr)
+    {
+      if (addr.AddressFamily!=System.Net.Sockets.AddressFamily.InterNetworkV6) return false;
+      var bytes = addr.GetAddressBytes();
+      return bytes[0]==0xfc || bytes[0]==0xfd;
+    }
+
     static public bool IsSiteLocal(this IPAddress addr)
     {
       switch (addr.AddressFamily) {
@@ -32,6 +39,8 @@ namespace PeerCastStation.Core
         return
           addr.IsIPv6LinkLocal ||
           addr.IsIPv6SiteLocal ||
+          addr.IsIPv6UniqueLocal() ||
+          addr.IsIPv6Teredo ||
           addr==IPAddress.IPv6Loopback;
       default:
         return false;

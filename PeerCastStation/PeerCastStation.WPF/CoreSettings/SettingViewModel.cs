@@ -608,6 +608,43 @@ namespace PeerCastStation.WPF.CoreSettings
       }
     }
 
+    private System.Net.IPAddress[] EnumGlobalAddressesV6()
+    {
+      return System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+        .Where(intf => !intf.IsReceiveOnly)
+        .Where(intf => intf.OperationalStatus==System.Net.NetworkInformation.OperationalStatus.Up)
+        .Where(intf => intf.NetworkInterfaceType!=System.Net.NetworkInformation.NetworkInterfaceType.Loopback)
+        .Select(intf => intf.GetIPProperties())
+        .SelectMany(prop => prop.UnicastAddresses)
+        .Where(uaddr => uaddr.Address.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6)
+        .Where(uaddr => !uaddr.Address.IsSiteLocal())
+        .Select(uaddr => uaddr.Address)
+        .ToArray();
+    }
+
+    public string ExternalAddressesV6 {
+      get {
+        var listeners = ports
+          .Where(p =>
+            p.GlobalAccepts!=OutputStreamType.None &&
+            p.EndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6);
+        var addresses = listeners
+          .Where(p =>
+            p.EndPoint.Address!=System.Net.IPAddress.IPv6Loopback &&
+            p.EndPoint.Address!=System.Net.IPAddress.IPv6Any &&
+            p.EndPoint.Address!=System.Net.IPAddress.IPv6None &&
+            !p.EndPoint.Address.IsIPv6Teredo &&
+            !p.EndPoint.Address.IsIPv6LinkLocal &&
+            !p.EndPoint.Address.IsIPv6SiteLocal)
+          .Select(p => p.EndPoint.Address)
+          .Distinct();
+        if (listeners.Any(p => p.EndPoint.Address==System.Net.IPAddress.IPv6Any)) {
+          addresses = addresses.Concat(EnumGlobalAddressesV6());
+        }
+        return String.Join(", ", addresses.Select(addr => addr.ToString()));
+      }
+    }
+
     private YellowPageClientViewModel selectedYellowPage;
     public YellowPageClientViewModel SelectedYellowPage {
       get { return selectedYellowPage; }
@@ -737,6 +774,9 @@ namespace PeerCastStation.WPF.CoreSettings
         peerCast.OutputListeners
         .Select(listener => new OutputListenerViewModel(this, listener))
       );
+      ports.CollectionChanged += (sender, args) => {
+        OnPropertyChanged(nameof(ExternalAddressesV6));
+      };
       yellowPages = new ObservableCollection<YellowPageClientViewModel>(
         peerCast.YellowPages
         .Select(yp => new YellowPageClientViewModel(this, yp))
@@ -842,6 +882,7 @@ namespace PeerCastStation.WPF.CoreSettings
       case "IsYellowPagesModified":
       case "PortCheckStatus":
       case "PortMapperExternalAddresses":
+      case nameof(ExternalAddressesV6):
         break;
       default:
         IsModified = true;

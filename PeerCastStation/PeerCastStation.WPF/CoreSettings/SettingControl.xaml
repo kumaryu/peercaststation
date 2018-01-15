@@ -112,18 +112,46 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
               <Label     Grid.Column="0" Grid.Row="1" Content="ポート自動開放:"/>
               <CheckBox  Grid.Column="1" Grid.Row="1" Content="自動開放する(UPnP/NAT-PMP)" VerticalAlignment="Center" IsChecked="{Binding PortMapperEnabled}"/>
               <Label     Grid.Column="0" Grid.Row="2" Content="外部アドレス:"/>
-              <TextBlock Grid.Column="1" Grid.Row="2" VerticalAlignment="Center">
-                <TextBlock.Style>
-                  <Style TargetType="TextBlock">
-                    <Style.Triggers>
-                      <DataTrigger Binding="{Binding PortMapperExternalAddresses}" Value="">
-                        <Setter Property="Text" Value="ルーター未発見"/>
-                      </DataTrigger>
-                    </Style.Triggers>
-                    <Setter Property="Text" Value="{Binding PortMapperExternalAddresses}"/>
-                  </Style>
-                </TextBlock.Style>
-              </TextBlock>
+              <Grid Grid.Column="1" Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" VerticalAlignment="Center" Margin="2">
+                  <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding PortMapperExternalAddresses}" Value="">
+                          <Setter Property="Text" Value="ルーター未発見"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding PortMapperEnabled}" Value="false">
+                          <Setter Property="Text" Value="UPnP無効"/>
+                        </DataTrigger>
+                      </Style.Triggers>
+                      <Setter Property="Text" Value="{Binding PortMapperExternalAddresses}"/>
+                    </Style>
+                  </TextBlock.Style>
+                </TextBlock>
+                <TextBlock Grid.Row="1" VerticalAlignment="Center" Margin="2">
+                  <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding ExternalAddressesV6}" Value="">
+                          <Setter Property="Text" Value="IPv6グローバルアドレス無し"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IPv6Enabled}" Value="false">
+                          <Setter Property="Text" Value="IPv6無効"/>
+                        </DataTrigger>
+                      </Style.Triggers>
+                      <Setter Property="Text" Value="{Binding ExternalAddressesV6}"/>
+                    </Style>
+                  </TextBlock.Style>
+                </TextBlock>
+              </Grid>
+
               <Label Grid.Column="0" Grid.Row="3" Content="ポート開放状態:"/>
               <Grid  Grid.Column="1" Grid.Row="3">
                 <Grid.ColumnDefinitions>
