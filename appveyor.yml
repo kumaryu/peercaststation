@@ -1,4 +1,5 @@
 ---
+image: Visual Studio 2017
 version: 2.3.9.{build}
 configuration: Release
 install:
@@ -11,6 +12,7 @@ before_build:
     cd doc\help
     jekyll build
     cd ..\..
+    nuget restore PeerCastStation\PeerCastStation.sln
 build:
   verbosity: minimal
 artifacts:
