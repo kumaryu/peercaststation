@@ -776,6 +776,7 @@ namespace PeerCastStation.WPF.CoreSettings
       );
       ports.CollectionChanged += (sender, args) => {
         OnPropertyChanged(nameof(ExternalAddressesV6));
+        OnPropertyChanged(nameof(IPv6Enabled));
       };
       yellowPages = new ObservableCollection<YellowPageClientViewModel>(
         peerCast.YellowPages
