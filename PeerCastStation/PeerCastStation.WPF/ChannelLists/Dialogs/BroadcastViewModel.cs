@@ -270,8 +270,9 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       var channelInfo = CreateChannelInfo(this);
       var channelTrack = CreateChannelTrack(this);
 
-      var channel_id = PeerCastStation.Core.BroadcastChannel.CreateChannelID(
+      var channel_id = BroadcastChannel.CreateChannelID(
         peerCast.BroadcastID,
+        networkType,
         channelName,
         genre,
         source.ToString());

@@ -1080,6 +1080,7 @@ namespace PeerCastStation.UI.HTTP
         }
         var channel_id = PeerCastStation.Core.BroadcastChannel.CreateChannelID(
           PeerCast.BroadcastID,
+          network_type,
           channel_info.Name,
           channel_info.Genre ?? "",
           source.ToString());
