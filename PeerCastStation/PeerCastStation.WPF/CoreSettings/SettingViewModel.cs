@@ -549,19 +549,18 @@ namespace PeerCastStation.WPF.CoreSettings
             p.GlobalAccepts!=OutputStreamType.None &&
             p.EndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6);
         var addresses = listeners
-          .Where(p =>
-            p.EndPoint.Address!=System.Net.IPAddress.IPv6Loopback &&
-            p.EndPoint.Address!=System.Net.IPAddress.IPv6Any &&
-            p.EndPoint.Address!=System.Net.IPAddress.IPv6None &&
-            !p.EndPoint.Address.IsIPv6Teredo &&
-            !p.EndPoint.Address.IsIPv6LinkLocal &&
-            !p.EndPoint.Address.IsIPv6SiteLocal)
           .Select(p => p.EndPoint.Address)
-          .Distinct();
-        if (listeners.Any(p => p.EndPoint.Address==System.Net.IPAddress.IPv6Any)) {
+          .Where(addr =>
+            !addr.Equals(System.Net.IPAddress.IPv6Loopback) &&
+            !addr.Equals(System.Net.IPAddress.IPv6Any) &&
+            !addr.Equals(System.Net.IPAddress.IPv6None) &&
+            !addr.IsIPv6Teredo &&
+            !addr.IsIPv6LinkLocal &&
+            !addr.IsIPv6SiteLocal);
+        if (listeners.Any(p => p.EndPoint.Address.Equals(System.Net.IPAddress.IPv6Any))) {
           addresses = addresses.Concat(EnumGlobalAddressesV6());
         }
-        return String.Join(", ", addresses.Select(addr => addr.ToString()));
+        return String.Join(", ", addresses.Distinct().Select(addr => addr.ToString()));
       }
     }
 
