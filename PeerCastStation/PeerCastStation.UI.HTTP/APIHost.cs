@@ -342,6 +342,7 @@ namespace PeerCastStation.UI.HTTP
         res["maxDirects"]                = PeerCast.AccessController.MaxPlays;
         res["maxDirectsPerChannel"]      = PeerCast.AccessController.MaxPlaysPerChannel;
         res["maxUpstreamRate"]           = PeerCast.AccessController.MaxUpstreamRate;
+        res["maxUpstreamRateIPv6"]       = PeerCast.AccessController.MaxUpstreamRateIPv6;
         res["maxUpstreamRatePerChannel"] = PeerCast.AccessController.MaxUpstreamRatePerChannel;
         var channelCleaner = new JObject();
         channelCleaner["mode"]          = (int)ChannelCleaner.Mode;
@@ -365,6 +366,7 @@ namespace PeerCastStation.UI.HTTP
         settings.TryGetThen("maxDirects",                v => acc.MaxPlays = v);
         settings.TryGetThen("maxDirectsPerChannel",      v => acc.MaxPlaysPerChannel = v);
         settings.TryGetThen("maxUpstreamRate",           v => acc.MaxUpstreamRate = v);
+        settings.TryGetThen("maxUpstreamRateIPv6",       v => acc.MaxUpstreamRateIPv6 = v);
         settings.TryGetThen("maxUpstreamRatePerChannel", v => acc.MaxUpstreamRatePerChannel = v);
         settings.TryGetThen("channelCleaner", (JObject channel_cleaner) => {
           channel_cleaner.TryGetThen("inactiveLimit", v => ChannelCleaner.InactiveLimit = v);

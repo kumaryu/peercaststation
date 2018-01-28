@@ -198,14 +198,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
               <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
-              <Label              Grid.Column="0" Grid.Row="0" Content="合計:"/>
+              <Label              Grid.Column="0" Grid.Row="0" Content="合計(IPv4):"/>
               <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRate}"/>
               <Label              Grid.Column="2" Grid.Row="0" Content="kbps"/>
               <Button             Grid.Column="3" Grid.Row="0" Content="自動設定" Click="BandwidthCheckButton_Click"/>
-              <Label              Grid.Column="0" Grid.Row="1" Content="チャンネル毎:"/>
-              <peca:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerChannel}" MinimumText="制限無し"/>
+              <Label              Grid.Column="0" Grid.Row="1" Content="合計(IPv6):"/>
+              <peca:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRateIPv6}"/>
               <Label              Grid.Column="2" Grid.Row="1" Content="kbps"/>
+              <Button             Grid.Column="3" Grid.Row="1" Content="自動設定" Click="BandwidthCheckButtonIPv6_Click"/>
+              <Label              Grid.Column="0" Grid.Row="2" Content="チャンネル毎:"/>
+              <peca:IntegerUpDown Grid.Column="1" Grid.Row="2" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerChannel}" MinimumText="制限無し"/>
+              <Label              Grid.Column="2" Grid.Row="2" Content="kbps"/>
             </Grid>
           </GroupBox>
           <GroupBox Header="チャンネル自動切断">
@@ -378,14 +383,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
               <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
               </Grid.RowDefinitions>
-              <Label              Grid.Column="0" Grid.Row="0" Content="合計:"/>
+              <Label              Grid.Column="0" Grid.Row="0" Content="合計(IPv4):"/>
               <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRate}"/>
               <Label              Grid.Column="2" Grid.Row="0" Content="kbps"/>
               <Button             Grid.Column="3" Grid.Row="0" Content="自動設定" Click="BandwidthCheckButton_Click"/>
-              <Label              Grid.Column="0" Grid.Row="1" Content="チャンネル毎:"/>
-              <peca:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerChannel}" MinimumText="制限無し"/>
+              <Label              Grid.Column="0" Grid.Row="1" Content="合計(IPv6):"/>
+              <peca:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRateIPv6}"/>
               <Label              Grid.Column="2" Grid.Row="1" Content="kbps"/>
+              <Button             Grid.Column="3" Grid.Row="1" Content="自動設定" Click="BandwidthCheckButtonIPv6_Click"/>
+              <Label              Grid.Column="0" Grid.Row="2" Content="チャンネル毎:"/>
+              <peca:IntegerUpDown Grid.Column="1" Grid.Row="2" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerChannel}" MinimumText="制限無し"/>
+              <Label              Grid.Column="2" Grid.Row="2" Content="kbps"/>
             </Grid>
           </GroupBox>
           <GroupBox Header="チャンネルの自動切断">

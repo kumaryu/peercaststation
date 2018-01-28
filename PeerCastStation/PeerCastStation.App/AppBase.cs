@@ -160,6 +160,7 @@ namespace PeerCastStation.App
           peerCast.AccessController.MaxPlaysPerChannel        = s.AccessController.MaxDirectsPerChannel;
           peerCast.AccessController.MaxRelaysPerChannel       = s.AccessController.MaxRelaysPerChannel;
           peerCast.AccessController.MaxUpstreamRate           = s.AccessController.MaxUpstreamRate;
+          peerCast.AccessController.MaxUpstreamRateIPv6       = s.AccessController.MaxUpstreamRateIPv6;
           peerCast.AccessController.MaxUpstreamRatePerChannel = s.AccessController.MaxUpstreamRatePerChannel;
         }
         if ( s.BroadcastID!=Guid.Empty &&
@@ -236,6 +237,7 @@ namespace PeerCastStation.App
         MaxRelays                 = peerCast.AccessController.MaxRelays,
         MaxRelaysPerChannel       = peerCast.AccessController.MaxRelaysPerChannel,
         MaxUpstreamRate           = peerCast.AccessController.MaxUpstreamRate,
+        MaxUpstreamRateIPv6       = peerCast.AccessController.MaxUpstreamRateIPv6,
         MaxUpstreamRatePerChannel = peerCast.AccessController.MaxUpstreamRatePerChannel,
       };
       s.BroadcastID = peerCast.BroadcastID;

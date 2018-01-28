@@ -410,86 +410,6 @@ namespace PeerCastStation.WPF.CoreSettings
       }
     }
 
-    internal class CheckBandwidthCommand
-      : System.Windows.Input.ICommand,
-        System.ComponentModel.INotifyPropertyChanged
-    {
-      private SettingViewModel owner;
-      private BandwidthChecker checker;
-      private bool canExecute = true;
-      private string status = "";
-
-      public string Status {
-        get { return status; }
-        private set {
-          if (status==value) return;
-          status = value;
-          OnPropertyChanged("Status");
-        }
-      }
-
-      public CheckBandwidthCommand(SettingViewModel owner)
-      {
-        this.owner = owner;
-        Uri target_uri;
-        if (AppSettingsReader.TryGetUri("BandwidthChecker", out target_uri)) {
-          this.checker = new BandwidthChecker(target_uri);
-          this.checker.BandwidthCheckCompleted += checker_BandwidthCheckCompleted;
-        }
-        else {
-          canExecute = false;
-        }
-      }
-
-      private void checker_BandwidthCheckCompleted(
-          object sender,
-          BandwidthCheckCompletedEventArgs args)
-      {
-        if (args.Success) {
-          owner.MaxUpstreamRate = (int)((args.Bitrate / 1000) * 0.8 / 100) * 100;
-          Status = String.Format("帯域測定完了: {0}kbps, 設定推奨値: {1}kbps",
-            args.Bitrate/1000,
-            (int)((args.Bitrate / 1000) * 0.8 / 100) * 100);
-        }
-        else {
-          Status = "帯域測定失敗。接続できませんでした";
-        }
-        SetCanExecute(true);
-      }
-
-      public bool CanExecute(object parameter)
-      {
-        return canExecute;
-      }
-
-      private void SetCanExecute(bool value)
-      {
-        if (canExecute!=value) {
-          canExecute = value;
-          if (CanExecuteChanged!=null) {
-            CanExecuteChanged(this, new EventArgs());
-          }
-        }
-      }
-      public event EventHandler CanExecuteChanged;
-
-      public void Execute(object parameter)
-      {
-        if (!canExecute) return;
-        SetCanExecute(false);
-        checker.RunAsync();
-        Status = "帯域測定中";
-      }
-
-      public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
-      private void OnPropertyChanged(string name)
-      {
-        if (PropertyChanged!=null) {
-          PropertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(name));
-        }
-      }
-    }
-
     private readonly PeerCast peerCast;
 
     private bool isModified;
@@ -714,6 +634,12 @@ namespace PeerCastStation.WPF.CoreSettings
       set { SetProperty("MaxUpstreamRate", ref maxUpstreamRate, value); }
     }
 
+    private int maxUpstreamRateIPv6;
+    public int MaxUpstreamRateIPv6 {
+      get { return maxUpstreamRateIPv6; }
+      set { SetProperty(nameof(MaxUpstreamRateIPv6), ref maxUpstreamRateIPv6, value); }
+    }
+
     private int maxUpstreamRatePerChannel;
     public int MaxUpstreamRatePerChannel {
       get { return maxUpstreamRatePerChannel; }
@@ -747,8 +673,6 @@ namespace PeerCastStation.WPF.CoreSettings
       set { SetProperty(nameof(RemoteNodeName), ref remoteNodeName, value); }
     }
 
-    public System.Windows.Input.ICommand CheckBandwidth { get; private set; }
-
     PeerCastApplication pecaApp;
     internal SettingViewModel(PeerCastApplication peca_app)
     {
@@ -758,7 +682,6 @@ namespace PeerCastStation.WPF.CoreSettings
       this.RemovePortCommand = new Command(() => RemovePort(), () => SelectedPort!=null);
       this.AddYellowPageCommand = new Command(() => AddYellowPage());
       this.RemoveYellowPageCommand = new Command(() => RemoveYellowPage(), () => SelectedYellowPage!=null);
-      this.CheckBandwidth = new CheckBandwidthCommand(this);
       channelCleanupMode = ChannelCleaner.Mode;
       channelCleanupInactiveLimit = ChannelCleaner.InactiveLimit/60000;
       maxRelays           = peerCast.AccessController.MaxRelays;
@@ -766,6 +689,7 @@ namespace PeerCastStation.WPF.CoreSettings
       maxPlays            = peerCast.AccessController.MaxPlays;
       maxPlaysPerChannel  = peerCast.AccessController.MaxPlaysPerChannel;
       maxUpstreamRate           = peerCast.AccessController.MaxUpstreamRate;
+      maxUpstreamRateIPv6       = peerCast.AccessController.MaxUpstreamRateIPv6;
       maxUpstreamRatePerChannel = peerCast.AccessController.MaxUpstreamRatePerChannel;
       isShowWindowOnStartup = pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup;
       isShowNotifications   = pecaApp.Settings.Get<WPFSettings>().ShowNotifications;
@@ -941,6 +865,7 @@ namespace PeerCastStation.WPF.CoreSettings
       peerCast.AccessController.MaxPlays = maxPlays;
       peerCast.AccessController.MaxPlaysPerChannel = maxPlaysPerChannel;
       peerCast.AccessController.MaxUpstreamRate = maxUpstreamRate;
+      peerCast.AccessController.MaxUpstreamRateIPv6 = maxUpstreamRateIPv6;
       peerCast.AccessController.MaxUpstreamRatePerChannel = maxUpstreamRatePerChannel;
       pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup = isShowWindowOnStartup;
       pecaApp.Settings.Get<WPFSettings>().ShowNotifications = isShowNotifications;
