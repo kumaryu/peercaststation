@@ -130,13 +130,7 @@ namespace PeerCastStation.WPF
 
     public string Name {
       get {
-        return String.Format(
-          "{0} {1} {2} - {3} Playing: {4}",
-          ChannelName,
-          Genre,
-          Description,
-          Comment,
-          TrackTitle);
+        return $"{NetworkType} {ChannelName} {Genre} {Description} - {Comment} Playing: {TrackTitle}";
       }
     }
 
