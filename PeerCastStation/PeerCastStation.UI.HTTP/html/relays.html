@@ -157,6 +157,7 @@
             <div class="span12">
               <table class="table table-bordered table-striped table-condensed">
                 <tr><th>チャンネル名</th>       <td data-bind="text: infoName       "></td></tr>
+                <tr><th>ネットワーク</th>       <td data-bind="text: networkType    "></td></tr>
                 <tr><th>ステータス</th>         <td data-bind="text: status         "></td></tr>
                 <tr><th>チャンネルID</th>       <td data-bind="text: channelId      "></td></tr>
                 <tr><th>ソースURL</th>          <td data-bind="text: source         "></td></tr>
@@ -266,6 +267,7 @@
               </ul>
             </div>
           </td></tr>
+          <tr><th>ネットワーク</th>      <td><select data-bind="options:networkTypes, optionsText: 'name', optionsValue: 'value', value:networkType"></select></td></tr>
           <tr><th>ソース</th>            <td><select data-bind="options:sourceStreams, optionsText: 'desc', value:sourceStream"></select></td></tr>
           <tr><th>ストリームURL</th>      <td><input type="text" name="sourceUrl"       data-bind="value:source          "></td></tr>
           <tr><th>ビットレート</th>       <td><input type="text" name="infoBitrate"     data-bind="value:infoBitrate     "></td></tr>

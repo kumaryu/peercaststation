@@ -141,10 +141,11 @@
             </div>
             <div class="ui-row">
               <div class="ui-header">最大上り帯域</div>
-              <div class="ui-label">合計</div>
+              <div class="ui-label">合計(IPv4)</div>
               <div class="ui-control">
                 <input class="input-small" type="text" data-bind="value:maxUpstreamRate">
                 <span class="help-inline">kbps</span>
+                <button class="btn" data-bind="click:checkBandwidth">自動設定</button>
               </div>
               <div class="ui-label">チャンネル毎</div>
               <div class="ui-control">
@@ -154,9 +155,17 @@
             </div>
             <div class="ui-row">
               <div class="ui-header"></div>
+              <div class="ui-label">合計(IPv6)</div>
+              <div class="ui-control">
+                <input class="input-small" type="text" data-bind="value:maxUpstreamRateIPv6">
+                <span class="help-inline">kbps</span>
+                <button class="btn" data-bind="click:checkBandwidthIPv6">自動設定</button>
+              </div>
+            </div>
+            <div class="ui-row">
+              <div class="ui-header"></div>
               <div class="ui-label"></div>
               <div class="ui-control">
-                <button class="btn" data-bind="click:checkBandwidth">上り帯域計測</button>
                 <span data-bind="text:checkBandwidthStatus"></span>
               </div>
             </div>

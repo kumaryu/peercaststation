@@ -93,6 +93,7 @@ var BroadcastHistoryViewModel = function(parent, entry) {
   var updateEntry = function() {
     PeerCast.addBroadcastHistory({
       yellowPage:  self.yellowPage(),
+      networkTyep: self.networkType(),
       streamType:  self.streamType(),
       contentType: self.contentType(),
       streamUrl:   self.streamUrl(),
@@ -111,6 +112,16 @@ var BroadcastHistoryViewModel = function(parent, entry) {
     });
   };
   self.channelName = ko.observable(entry.channelName);
+  self.networkType = ko.observable(entry.networkType || "ipv4");
+  self.networkName = ko.computed(function () {
+    switch (self.networkType()) {
+    case 'ipv6':
+      return 'IPv6';
+    case 'ipv4':
+    default:
+      return 'IPv4';
+    }
+  });
   self.streamType  = ko.observable(entry.streamType);
   self.streamUrl   = ko.observable(entry.streamUrl);
   self.bitrate     = ko.observable(entry.bitrate);
@@ -128,6 +139,7 @@ var BroadcastHistoryViewModel = function(parent, entry) {
   self.trackUrl    = ko.observable(entry.trackUrl);
   self.favorite    = ko.observable(entry.favorite);
   self.name = ko.observable(
+      (self.networkName() || "") + " " +
       (self.channelName() || "") + " " +
       (self.genre()       || "") + " " +
       (self.description() || "") + " - " +
@@ -166,6 +178,7 @@ var BroadcastDialog = new function() {
     ko.applyBindings(self, dialog.get(0));
   });
 
+  self.networkType  = ko.observable("ipv4");
   self.sourceStream = ko.observable(null);
   self.source       = ko.observable("");
   self.yellowPage   = ko.observable(null);
@@ -204,11 +217,18 @@ var BroadcastDialog = new function() {
   ]);
 
   self.contentTypes = ko.observableArray();
+  self.networkTypes = ko.observableArray([
+    { name: 'IPv4', value: 'ipv4' },
+    { name: 'IPv6', value: 'ipv6' }
+  ]);
   self.sourceStreams = ko.observableArray();
   self.broadcastHistory = ko.observableArray();
   self.selectedHistory = ko.observable({ name: "配信設定履歴" });
   self.selectedHistory.subscribe(function (value) {
     if (!value) return;
+    if (value.networkType()) {
+      self.networkType(value.networkType());
+    }
     for (var i in self.sourceStreams()) {
       var item = self.sourceStreams()[i];
       if (item.name===value.streamType()) {
@@ -286,6 +306,7 @@ var BroadcastDialog = new function() {
     var contentReader = self.contentType()  ? self.contentType().name        : null;
     PeerCast.broadcastChannel(
         yellowPageId,
+        self.networkType(),
         self.source(),
         sourceStream,
         contentReader,
@@ -297,6 +318,7 @@ var BroadcastDialog = new function() {
         });
     PeerCast.addBroadcastHistory({
       yellowPage:  self.yellowPage() ? self.yellowPage().name : null,
+      networkType: self.networkType(),
       streamType:  sourceStream,
       contentType: contentReader,
       streamUrl:   self.source(),
@@ -482,6 +504,16 @@ var ChannelViewModel = function(owner, initial_value) {
   self.trackAlbum      = ko.observable(initial_value.track.album);
   self.trackUrl        = ko.observable(initial_value.track.url);
   self.source          = ko.observable(initial_value.status.source);
+  self.network         = ko.observable(initial_value.status.network);
+  self.networkType = ko.computed(function () {
+    switch (self.network()) {
+    case 'ipv6':
+      return 'IPv6';
+    case 'ipv4':
+    default:
+      return 'IPv4';
+    }
+  });
   self.status          = ko.observable(initial_value.status.status);
   self.uptime          = ko.observable(initial_value.status.uptime);
   self.totalDirects    = ko.observable(initial_value.status.totalDirects);

@@ -131,9 +131,10 @@ PeerCast = {
   removeListener: function(id, completed) {
     this.postRequest('removeListener', { listenerId: id }, completed);
   },
-  broadcastChannel: function(yellowPageId, sourceUri, sourceStream, contentReader, info, track, completed) {
+  broadcastChannel: function(yellowPageId, networkType, sourceUri, sourceStream, contentReader, info, track, completed) {
     this.postRequest('broadcastChannel', {
       yellowPageId: yellowPageId,
+      networkType: networkType,
       sourceUri: sourceUri,
       sourceStream: sourceStream,
       contentReader: contentReader,
@@ -164,8 +165,8 @@ PeerCast = {
   getNotificationMessages: function(completed) {
     this.postRequest('getNotificationMessages', null, completed);
   },
-  checkBandwidth: function(completed) {
-    this.postRequest('checkBandwidth', null, completed);
+  checkBandwidth: function(networkType, completed) {
+    this.postRequest('checkBandwidth', { networkType: networkType }, completed);
   },
   checkPorts: function(completed) {
     this.postRequest('checkPorts', null, completed);
