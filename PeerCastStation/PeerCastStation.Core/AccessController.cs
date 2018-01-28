@@ -108,11 +108,12 @@ namespace PeerCastStation.Core
 
     protected bool IsChannelRelayableIPv4(Channel channel)
     {
+      var channels = PeerCast.Channels.Where(c => c.Network==channel.Network);
       int channel_bitrate = channel.ChannelInfo.Bitrate;
-      var total_upstream_rate = PeerCast.Channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
+      var total_upstream_rate = channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
       var channel_upstream_rate = channel.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate);
       return
-        (this.MaxRelays<=0 || this.MaxRelays>PeerCast.Channels.Sum(c => c.LocalRelays)) &&
+        (this.MaxRelays<=0 || this.MaxRelays>channels.Sum(c => c.LocalRelays)) &&
         (this.MaxRelaysPerChannel<=0 || this.MaxRelaysPerChannel>channel.LocalRelays) &&
         (this.MaxUpstreamRate<0 || this.MaxUpstreamRate>=total_upstream_rate+channel_bitrate) &&
         (this.MaxUpstreamRatePerChannel<=0 || this.MaxUpstreamRatePerChannel>=channel_upstream_rate+channel_bitrate);
@@ -120,11 +121,12 @@ namespace PeerCastStation.Core
 
     protected bool IsChannelRelayableIPv6(Channel channel)
     {
+      var channels = PeerCast.Channels.Where(c => c.Network==channel.Network);
       int channel_bitrate = channel.ChannelInfo.Bitrate;
-      var total_upstream_rate = PeerCast.Channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
+      var total_upstream_rate = channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
       var channel_upstream_rate = channel.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate);
       return
-        (this.MaxRelays<=0 || this.MaxRelays>PeerCast.Channels.Sum(c => c.LocalRelays)) &&
+        (this.MaxRelays<=0 || this.MaxRelays>channels.Sum(c => c.LocalRelays)) &&
         (this.MaxRelaysPerChannel<=0 || this.MaxRelaysPerChannel>channel.LocalRelays) &&
         (this.MaxUpstreamRateIPv6<0 || this.MaxUpstreamRateIPv6>=total_upstream_rate+channel_bitrate) &&
         (this.MaxUpstreamRatePerChannel<=0 || this.MaxUpstreamRatePerChannel>=channel_upstream_rate+channel_bitrate);
@@ -149,10 +151,11 @@ namespace PeerCastStation.Core
 
     protected bool IsChannelRelayableIPv4(Channel channel, IOutputStream output_stream)
     {
-      var total_upstream_rate = PeerCast.Channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
+      var channels = PeerCast.Channels.Where(c => c.Network==channel.Network);
+      var total_upstream_rate = channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
       var channel_upstream_rate = channel.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate);
       return
-        (this.MaxRelays<=0 || this.MaxRelays>PeerCast.Channels.Sum(c => c.LocalRelays)) &&
+        (this.MaxRelays<=0 || this.MaxRelays>channels.Sum(c => c.LocalRelays)) &&
         (this.MaxRelaysPerChannel<=0 || this.MaxRelaysPerChannel>channel.LocalRelays) &&
         (this.MaxUpstreamRate<0 || this.MaxUpstreamRate>=total_upstream_rate+(output_stream.IsLocal ? 0 : output_stream.UpstreamRate)) &&
         (this.MaxUpstreamRatePerChannel<=0 || this.MaxUpstreamRatePerChannel>=channel_upstream_rate+(output_stream.IsLocal ? 0 : output_stream.UpstreamRate));
@@ -160,10 +163,11 @@ namespace PeerCastStation.Core
 
     protected bool IsChannelRelayableIPv6(Channel channel, IOutputStream output_stream)
     {
-      var total_upstream_rate = PeerCast.Channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
+      var channels = PeerCast.Channels.Where(c => c.Network==channel.Network);
+      var total_upstream_rate = channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
       var channel_upstream_rate = channel.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate);
       return
-        (this.MaxRelays<=0 || this.MaxRelays>PeerCast.Channels.Sum(c => c.LocalRelays)) &&
+        (this.MaxRelays<=0 || this.MaxRelays>channels.Sum(c => c.LocalRelays)) &&
         (this.MaxRelaysPerChannel<=0 || this.MaxRelaysPerChannel>channel.LocalRelays) &&
         (this.MaxUpstreamRateIPv6<0 || this.MaxUpstreamRateIPv6>=total_upstream_rate+(output_stream.IsLocal ? 0 : output_stream.UpstreamRate)) &&
         (this.MaxUpstreamRatePerChannel<=0 || this.MaxUpstreamRatePerChannel>=channel_upstream_rate+(output_stream.IsLocal ? 0 : output_stream.UpstreamRate));
@@ -187,11 +191,12 @@ namespace PeerCastStation.Core
 
     protected bool IsChannelPlayableIPv4(Channel channel)
     {
+      var channels = PeerCast.Channels.Where(c => c.Network==channel.Network);
       int channel_bitrate = channel.ChannelInfo.Bitrate;
-      var total_upstream_rate = PeerCast.Channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
+      var total_upstream_rate = channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
       var channel_upstream_rate = channel.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate);
       return
-        (this.MaxPlays<=0 || this.MaxPlays>PeerCast.Channels.Sum(c => c.LocalDirects)) &&
+        (this.MaxPlays<=0 || this.MaxPlays>channels.Sum(c => c.LocalDirects)) &&
         (this.MaxPlaysPerChannel<=0 || this.MaxPlaysPerChannel>channel.LocalDirects) &&
         (this.MaxUpstreamRate<0 || this.MaxUpstreamRate>=total_upstream_rate+channel_bitrate) &&
         (this.MaxUpstreamRatePerChannel<=0 || this.MaxUpstreamRatePerChannel>=channel_upstream_rate+channel_bitrate);
@@ -199,11 +204,12 @@ namespace PeerCastStation.Core
 
     protected bool IsChannelPlayableIPv6(Channel channel)
     {
+      var channels = PeerCast.Channels.Where(c => c.Network==channel.Network);
       int channel_bitrate = channel.ChannelInfo.Bitrate;
-      var total_upstream_rate = PeerCast.Channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
+      var total_upstream_rate = channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
       var channel_upstream_rate = channel.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate);
       return
-        (this.MaxPlays<=0 || this.MaxPlays>PeerCast.Channels.Sum(c => c.LocalDirects)) &&
+        (this.MaxPlays<=0 || this.MaxPlays>channels.Sum(c => c.LocalDirects)) &&
         (this.MaxPlaysPerChannel<=0 || this.MaxPlaysPerChannel>channel.LocalDirects) &&
         (this.MaxUpstreamRateIPv6<0 || this.MaxUpstreamRateIPv6>=total_upstream_rate+channel_bitrate) &&
         (this.MaxUpstreamRatePerChannel<=0 || this.MaxUpstreamRatePerChannel>=channel_upstream_rate+channel_bitrate);
@@ -228,10 +234,11 @@ namespace PeerCastStation.Core
 
     protected bool IsChannelPlayableIPv4(Channel channel, IOutputStream output_stream)
     {
-      var total_upstream_rate = PeerCast.Channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
+      var channels = PeerCast.Channels.Where(c => c.Network==channel.Network);
+      var total_upstream_rate = channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
       var channel_upstream_rate = channel.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate);
       return
-        (this.MaxPlays<=0 || this.MaxPlays>PeerCast.Channels.Sum(c => c.LocalDirects)) &&
+        (this.MaxPlays<=0 || this.MaxPlays>channels.Sum(c => c.LocalDirects)) &&
         (this.MaxPlaysPerChannel<=0 || this.MaxPlaysPerChannel>channel.LocalDirects) &&
         (this.MaxUpstreamRate<0 || this.MaxUpstreamRate>=total_upstream_rate+(output_stream.IsLocal ? 0 : output_stream.UpstreamRate)) &&
         (this.MaxUpstreamRatePerChannel<=0 || this.MaxUpstreamRatePerChannel>=channel_upstream_rate+(output_stream.IsLocal ? 0 : output_stream.UpstreamRate));
@@ -239,10 +246,11 @@ namespace PeerCastStation.Core
 
     protected bool IsChannelPlayableIPv6(Channel channel, IOutputStream output_stream)
     {
-      var total_upstream_rate = PeerCast.Channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
+      var channels = PeerCast.Channels.Where(c => c.Network==channel.Network);
+      var total_upstream_rate = channels.Sum(c => c.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate));
       var channel_upstream_rate = channel.OutputStreams.Sum(o => o.IsLocal ? 0 : o.UpstreamRate);
       return
-        (this.MaxPlays<=0 || this.MaxPlays>PeerCast.Channels.Sum(c => c.LocalDirects)) &&
+        (this.MaxPlays<=0 || this.MaxPlays>channels.Sum(c => c.LocalDirects)) &&
         (this.MaxPlaysPerChannel<=0 || this.MaxPlaysPerChannel>channel.LocalDirects) &&
         (this.MaxUpstreamRateIPv6<0 || this.MaxUpstreamRateIPv6>=total_upstream_rate+(output_stream.IsLocal ? 0 : output_stream.UpstreamRate)) &&
         (this.MaxUpstreamRatePerChannel<=0 || this.MaxUpstreamRatePerChannel>=channel_upstream_rate+(output_stream.IsLocal ? 0 : output_stream.UpstreamRate));
