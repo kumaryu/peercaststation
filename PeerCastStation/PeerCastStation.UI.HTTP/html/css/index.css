@@ -37,6 +37,21 @@ ul.relayTree {
   list-style: none;
 }
 
+.ipv4 {
+  display: inline-block;
+  vertical-align: text-top;
+  width: 16px;
+  height: 16px;
+}
+.ipv6{
+  display: inline-block;
+  vertical-align: text-top;
+  width: 16px;
+  height: 16px;
+  background-repeat: no-repeat;
+  background-image: url("../images/icon-v6.svg");
+}
+
 .relayable {
   display: inline-block;
   vertical-align: text-top;

@@ -136,6 +136,10 @@ namespace PeerCastStation.WPF
       }
     }
 
+    public NetworkType NetworkType {
+      get { return Model.Network; }
+    }
+
     public ConnectionStatus ConnectionStatus {
       get {
         if (Model.PeerCast.GetPortStatus(Model.NetworkAddressFamily)!=PortStatus.Open) {

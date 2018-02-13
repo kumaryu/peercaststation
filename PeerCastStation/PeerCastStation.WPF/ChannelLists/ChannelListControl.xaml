@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
              xmlns:lch="clr-namespace:PeerCastStation.WPF.ChannelLists.ChannelInfos"
              xmlns:lco="clr-namespace:PeerCastStation.WPF.ChannelLists.ConnectionLists"
              xmlns:lr="clr-namespace:PeerCastStation.WPF.ChannelLists.RelayTrees"
+             xmlns:PresentationOptions="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="400">
   <UserControl.Resources>
@@ -75,44 +76,96 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                 <BitmapImage x:Key="IconFirewalledRelaying" UriSource="../images/relay_icon_4.png"/>
                 <BitmapImage x:Key="IconUnknown"            UriSource="../images/relay_icon_5.png"/>
                 <BitmapImage x:Key="IconNotReceiving"       UriSource="../images/relay_icon_6.png"/>
-                <Style TargetType="Image">
-                  <Style.Triggers>
-                    <DataTrigger Binding="{Binding ConnectionStatus}" Value="Relayable">
-                      <Setter Property="Source" Value="{StaticResource ResourceKey=IconRelayable}"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding ConnectionStatus}" Value="RelayFull">
-                      <Setter Property="Source" Value="{StaticResource ResourceKey=IconRelayFull}"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding ConnectionStatus}" Value="NotRelayable">
-                      <Setter Property="Source" Value="{StaticResource ResourceKey=IconNotRelayable}"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding ConnectionStatus}" Value="Firewalled">
-                      <Setter Property="Source" Value="{StaticResource ResourceKey=IconFirewalled}"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding ConnectionStatus}" Value="FirewalledRelaying">
-                      <Setter Property="Source" Value="{StaticResource ResourceKey=IconFirewalledRelaying}"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding ConnectionStatus}" Value="Unknown">
-                      <Setter Property="Source" Value="{StaticResource ResourceKey=IconUnknown}"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding ConnectionStatus}" Value="NotReceiving">
-                      <Setter Property="Source" Value="{StaticResource ResourceKey=IconNotReceiving}"/>
-                    </DataTrigger>
-                  </Style.Triggers>
-                </Style>
+                <DrawingImage x:Key="IconIPv4" PresentationOptions:Freeze="True">
+                  <DrawingImage.Drawing>
+                    <DrawingGroup>
+                      <DrawingGroup.ClipGeometry>
+                        <RectangleGeometry Rect="0,0,16,16" />
+                      </DrawingGroup.ClipGeometry>
+                    </DrawingGroup>
+                  </DrawingImage.Drawing>
+                </DrawingImage>
+                <DrawingImage x:Key="IconIPv6" PresentationOptions:Freeze="True">
+                  <DrawingImage.Drawing>
+                    <DrawingGroup>
+                      <DrawingGroup x:Name="DrawingLayer">
+                        <DrawingGroup.ClipGeometry>
+                          <RectangleGeometry Rect="0,0,32,32" />
+                        </DrawingGroup.ClipGeometry>
+                        <DrawingGroup x:Name="レイヤ_x0020_1">
+                          <DrawingGroup x:Name="_1964870155552">
+                            <GeometryDrawing Brush="#FF000000">
+                              <GeometryDrawing.Geometry>
+                                <PathGeometry FillRule="Nonzero" Figures="M21.07,15.465C21.935,15.465 22.877,15.822 23.462,16.407 24.098,17.044 24.455,18.061 24.455,18.927 24.455,19.792 24.098,20.81 23.462,21.447 22.826,22.083 21.859,22.389 21.07,22.389 20.179,22.389 19.16,21.956 18.626,21.447 17.964,20.81 17.634,19.792 17.634,18.927 17.634,17.858 18.066,16.941 18.626,16.407 19.237,15.822 20.204,15.465 21.07,15.465z M22.673,6.837L17.964,12.895C17.201,13.887 16.539,14.651 15.902,15.923 15.368,16.967 15.088,17.934 15.088,19.181 15.088,20.836 15.673,22.083 16.564,23.025 17.863,24.374 19.466,24.679 20.942,24.679 22.062,24.679 23.895,24.476 25.32,23.076 26.466,21.956 27,20.302 27,18.8 27,17.247 26.415,15.796 25.498,14.829 24.811,14.116 23.564,13.251 21.579,13.251 21.222,13.251 20.892,13.276 20.509,13.353L24.557,8.237 22.673,6.837z" />
+                              </GeometryDrawing.Geometry>
+                            </GeometryDrawing>
+                            <GeometryDrawing Brush="#FF000000">
+                              <GeometryDrawing.Geometry>
+                                <PathGeometry FillRule="Nonzero" Figures="M3.754,13.684L3.754,13.684 9.303,25.163 14.852,13.684 12.052,13.684 9.303,19.792 6.554,13.684z" />
+                              </GeometryDrawing.Geometry>
+                            </GeometryDrawing>
+                          </DrawingGroup>
+                        </DrawingGroup>
+                      </DrawingGroup>
+                    </DrawingGroup>
+                  </DrawingImage.Drawing>
+                </DrawingImage>
               </Grid.Resources>
               <Grid.ColumnDefinitions>
+                <ColumnDefinition SharedSizeGroup="NetworkType"      Width="Auto"/>
                 <ColumnDefinition SharedSizeGroup="ConnectionStatus" Width="Auto"/>
                 <ColumnDefinition SharedSizeGroup="Name"             Width="Auto"/>
                 <ColumnDefinition SharedSizeGroup="Bitrate"          Width="Auto"/>
                 <ColumnDefinition SharedSizeGroup="ConnectionCount"  Width="Auto"/>
                 <ColumnDefinition SharedSizeGroup="ChannelStatus"    Width="Auto"/>
               </Grid.ColumnDefinitions>
-              <Image     Grid.Column="0" Margin="2,0,0,0" Width="16" Height="16" />
-              <TextBlock Grid.Column="1" Margin="2,0,0,0" Text="{Binding Name}"/>
-              <TextBlock Grid.Column="2" Margin="2,0,0,0" Text="{Binding Bitrate}"/>
-              <TextBlock Grid.Column="3" Margin="2,0,0,0" Text="{Binding ConnectionCount}"/>
-              <TextBlock Grid.Column="4" Margin="2,0,0,0" Text="{Binding ChannelStatus}"/>
+              <Image Grid.Column="0" Margin="2,0,0,0" Width="16" Height="16">
+                <Image.Style>
+                  <Style TargetType="Image">
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding NetworkType}" Value="IPv4">
+                        <Setter Property="Source" Value="{StaticResource ResourceKey=IconIPv4}"/>
+                      </DataTrigger>
+                      <DataTrigger Binding="{Binding NetworkType}" Value="IPv6">
+                        <Setter Property="Source" Value="{StaticResource ResourceKey=IconIPv6}"/>
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </Image.Style>
+              </Image>
+              <Image Grid.Column="1" Margin="2,0,0,0" Width="16" Height="16">
+                <Image.Style>
+                  <Style TargetType="Image">
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding ConnectionStatus}" Value="Relayable">
+                        <Setter Property="Source" Value="{StaticResource ResourceKey=IconRelayable}"/>
+                      </DataTrigger>
+                      <DataTrigger Binding="{Binding ConnectionStatus}" Value="RelayFull">
+                        <Setter Property="Source" Value="{StaticResource ResourceKey=IconRelayFull}"/>
+                      </DataTrigger>
+                      <DataTrigger Binding="{Binding ConnectionStatus}" Value="NotRelayable">
+                        <Setter Property="Source" Value="{StaticResource ResourceKey=IconNotRelayable}"/>
+                      </DataTrigger>
+                      <DataTrigger Binding="{Binding ConnectionStatus}" Value="Firewalled">
+                        <Setter Property="Source" Value="{StaticResource ResourceKey=IconFirewalled}"/>
+                      </DataTrigger>
+                      <DataTrigger Binding="{Binding ConnectionStatus}" Value="FirewalledRelaying">
+                        <Setter Property="Source" Value="{StaticResource ResourceKey=IconFirewalledRelaying}"/>
+                      </DataTrigger>
+                      <DataTrigger Binding="{Binding ConnectionStatus}" Value="Unknown">
+                        <Setter Property="Source" Value="{StaticResource ResourceKey=IconUnknown}"/>
+                      </DataTrigger>
+                      <DataTrigger Binding="{Binding ConnectionStatus}" Value="NotReceiving">
+                        <Setter Property="Source" Value="{StaticResource ResourceKey=IconNotReceiving}"/>
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </Image.Style>
+              </Image>
+              <TextBlock Grid.Column="2" Margin="2,0,0,0" Text="{Binding Name}"/>
+              <TextBlock Grid.Column="3" Margin="2,0,0,0" Text="{Binding Bitrate}"/>
+              <TextBlock Grid.Column="4" Margin="2,0,0,0" Text="{Binding ConnectionCount}"/>
+              <TextBlock Grid.Column="5" Margin="2,0,0,0" Text="{Binding ChannelStatus}"/>
             </Grid>
           </DataTemplate>
         </ListBox.ItemTemplate>

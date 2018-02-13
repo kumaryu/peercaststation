@@ -101,6 +101,7 @@
           <div class="row-fluid">
             <div class="span3">
               <div data-bind="css: { 'source-tracker': isSourceTracker }">
+                <i data-bind="attr:{class:network}"></i>
                 <i data-bind="attr:{class:connectionStatus}"></i>
                 <span data-bind="if: infoUrl"><a data-bind="attr: { href: infoUrl }, text:infoName"></a></span>
                 <span data-bind="ifnot: infoUrl"><span data-bind="text:infoName"></span></span>
