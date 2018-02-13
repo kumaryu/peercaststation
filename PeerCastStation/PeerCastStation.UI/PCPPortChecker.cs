@@ -50,31 +50,29 @@ namespace PeerCastStation.UI
         });
     }
 
-    public async Task<PortCheckResult> CheckAsyncV4()
-    {
-      var peercast = Application.PeerCast;
-      var endpoints = peercast.OutputListeners
-        .Where( listener => (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0)
-        .Where( listener => listener.LocalEndPoint.AddressFamily==AddressFamily.InterNetwork)
-        .Select(listener => listener.LocalEndPoint);
-      var checker = new PCPPortChecker(peercast.SessionID, TargetUriV4, endpoints);
-      return await checker.RunAsync();
-    }
-
-    public async Task<PortCheckResult> CheckAsyncV6()
-    {
-      var peercast = Application.PeerCast;
-      var endpoints = peercast.OutputListeners
-        .Where( listener => (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0)
-        .Where( listener => listener.LocalEndPoint.AddressFamily==AddressFamily.InterNetworkV6)
-        .Select(listener => listener.LocalEndPoint);
-      var checker = new PCPPortChecker(peercast.SessionID, TargetUriV6, endpoints);
-      return await checker.RunAsync();
-    }
-
     public async Task<PortCheckResult[]> CheckAsync()
     {
-      return await Task.WhenAll(CheckAsyncV4(), CheckAsyncV6());
+      var peercast = Application.PeerCast;
+      var endpoints = peercast.OutputListeners
+        .Where( listener => (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0)
+        .Select(listener => listener.LocalEndPoint)
+        .GroupBy(ep => ep.Address);
+      return await Task.WhenAll(
+        endpoints.Select(group => {
+          var target = TargetUriV4;
+          switch (group.Key.AddressFamily) {
+          case AddressFamily.InterNetworkV6:
+            target = TargetUriV6;
+            break;
+          case AddressFamily.InterNetwork:
+          default:
+            target = TargetUriV4;
+            break;
+          }
+          var checker = new PCPPortChecker(peercast.SessionID, target, group.Key, group.Select(ep => ep.Port));
+          return checker.RunAsync();
+        })
+      );
     }
   }
 
@@ -99,64 +97,22 @@ namespace PeerCastStation.UI
   {
     public Guid  InstanceId { get; private set; }
     public Uri   Target     { get; private set; }
-    public IPEndPoint[] EndPoints { get; private set; }
-    public PCPPortChecker(Guid instance_id, Uri target_uri, IEnumerable<IPEndPoint> endpoints)
+    public IPAddress LocalAddress { get; private set; }
+    public int[] Ports { get; private set; }
+    public PCPPortChecker(Guid instance_id, Uri target_uri, IPAddress local_address, IEnumerable<int> ports)
     {
       this.InstanceId = instance_id;
       this.Target     = target_uri;
-      this.EndPoints  = endpoints.ToArray();
+      this.LocalAddress = local_address;
+      this.Ports = ports.ToArray();
     }
 
-    public async Task<PortCheckResult> RunAsync(IPEndPoint endpoint)
-    {
-      var client = new WebClient();
-      var data   = new JObject();
-      data["instanceId"] = InstanceId.ToString("N");
-      data["ports"] = new JArray(EndPoints.Select(ep => ep.Port));
-      var succeeded = false;
-      var stopwatch = new System.Diagnostics.Stopwatch();
-      string response_body = null;
-      try {
-        stopwatch.Start();
-        var body = System.Text.Encoding.UTF8.GetBytes(data.ToString());
-        response_body = System.Text.Encoding.UTF8.GetString(
-          await client.UploadDataTaskAsync(Target, body)
-        );
-        stopwatch.Stop();
-        succeeded = true;
-        var response = JToken.Parse(response_body);
-        var response_ports = response["ports"].Select(token => (int)token);
-        return new PortCheckResult(
-            succeeded,
-            endpoint.Address,
-            response_ports.ToArray(),
-            stopwatch.Elapsed);
-      }
-      catch (WebException) {
-        succeeded = false;
-        return new PortCheckResult(
-            succeeded,
-            endpoint.Address,
-            new int[0],
-            stopwatch.Elapsed);
-      }
-      catch (Newtonsoft.Json.JsonReaderException) {
-        succeeded = false;
-        return new PortCheckResult(
-            succeeded,
-            endpoint.Address,
-            new int[0],
-            stopwatch.Elapsed);
-      }
-
-    }
-    
     public async Task<PortCheckResult> RunAsync()
     {
       var client = new WebClient();
       var data   = new JObject();
       data["instanceId"] = InstanceId.ToString("N");
-      data["ports"] = new JArray(EndPoints.Select(ep => ep.Port));
+      data["ports"] = new JArray(this.Ports);
       var succeeded = false;
       var stopwatch = new System.Diagnostics.Stopwatch();
       string response_body = null;
@@ -172,7 +128,7 @@ namespace PeerCastStation.UI
         var response_ports = response["ports"].Select(token => (int)token);
         return new PortCheckResult(
             succeeded,
-            EndPoints.First().Address,
+            LocalAddress,
             response_ports.ToArray(),
             stopwatch.Elapsed);
       }
@@ -180,7 +136,7 @@ namespace PeerCastStation.UI
         succeeded = false;
         return new PortCheckResult(
             succeeded,
-            EndPoints.First().Address,
+            LocalAddress,
             new int[0],
             stopwatch.Elapsed);
       }
@@ -188,7 +144,7 @@ namespace PeerCastStation.UI
         succeeded = false;
         return new PortCheckResult(
             succeeded,
-            EndPoints.First().Address,
+            LocalAddress,
             new int[0],
             stopwatch.Elapsed);
       }
