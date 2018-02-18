@@ -482,7 +482,7 @@ namespace PeerCastStation.Core
     private Type FindEnumType(string name)
     {
       var t = FindType(name);
-      if (t.IsSubclassOf(typeof(Enum))) {
+      if (t!=null && t.IsSubclassOf(typeof(Enum))) {
         return t;
       }
       else {
