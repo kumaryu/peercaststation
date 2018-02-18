@@ -38,11 +38,20 @@ namespace PeerCastStation.Core
       get { return StoppedReason!=StopReason.None; }
     }
 
-    public float SendRate { get { return 0.0f; } }
-    public float RecvRate { get { return 0.0f; } }
+    public float SendRate {
+      get {
+        return SourceChannel?.SourceStream?.GetConnectionInfo()?.SendRate ?? 0.0f;
+      }
+    }
+    public float RecvRate {
+      get {
+        return SourceChannel?.SourceStream?.GetConnectionInfo()?.RecvRate ?? 0.0f;
+      }
+    }
 
     public ConnectionInfo GetConnectionInfo()
     {
+      var source_connection_info = SourceChannel?.SourceStream?.GetConnectionInfo();
       ConnectionStatus status;
       switch (StoppedReason) {
       case StopReason.None:
@@ -70,8 +79,8 @@ namespace PeerCastStation.Core
         RemoteEndPoint   = null,
         RemoteHostStatus = RemoteHostStatus.Local,
         ContentPosition  = SourceChannel?.ContentPosition ?? 0,
-        RecvRate         = RecvRate,
-        SendRate         = SendRate,
+        RecvRate         = source_connection_info?.RecvRate ?? 0.0f,
+        SendRate         = source_connection_info?.SendRate ?? 0.0f,
         AgentName        = "",
       }.Build();
     }
