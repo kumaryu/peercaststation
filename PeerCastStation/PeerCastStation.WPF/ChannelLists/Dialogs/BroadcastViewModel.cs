@@ -23,10 +23,33 @@ using System.Windows.Input;
 
 namespace PeerCastStation.WPF.ChannelLists.Dialogs
 {
+  class LocalChannelViewModel
+  {
+    public LocalChannelViewModel(Channel channel)
+    {
+      Channel = channel;
+    }
+
+    public Channel Channel { get; private set; }
+
+    public string Name {
+      get {
+        return Channel.ChannelInfo.Name;
+      }
+    }
+
+    public string ChannelID {
+      get { return Channel.ChannelID.ToString("N").ToUpperInvariant(); }
+    }
+  }
+
   class BroadcastViewModel : ViewModelBase
   {
     private readonly IContentReaderFactory[] contentTypes;
     public IContentReaderFactory[] ContentTypes { get { return contentTypes; } }
+
+    private readonly LocalChannelViewModel[] localChannels;
+    public LocalChannelViewModel[] LocalChannels { get { return localChannels; } }
 
     private readonly IEnumerable<KeyValuePair<string,IYellowPageClient>> yellowPages;
     public IEnumerable<KeyValuePair<string,IYellowPageClient>> YellowPages { get { return yellowPages; } }
@@ -47,6 +70,13 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
           ContentType = contentTypes.FirstOrDefault(t => t.Name==value.ContentType);
           NetworkType = value.NetworkType;
           StreamUrl   = value.StreamUrl;
+          if (value.StreamUrl!=null && value.StreamUrl.StartsWith("loopback:")) {
+            var channel_id = value.StreamUrl.Substring("loopback:".Length).ToUpperInvariant();
+            var channel = localChannels.FirstOrDefault(c => c.ChannelID==channel_id);
+            if (channel!=null) {
+              SourceChannel = channel;
+            }
+          }
           Bitrate     = value.Bitrate==0 ? null : value.Bitrate.ToString();
           ContentType = contentTypes.FirstOrDefault(t => t.Name==value.ContentType);
           if (value.YellowPage!=null) {
@@ -81,14 +111,24 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
             value!=null &&
             value.DefaultUri!=null) {
           StreamUrl = value.DefaultUri.ToString();
-          OnPropertyChanged("IsContentReaderRequired");
-          OnPropertyChanged("ContentTypeVisibility");
+          OnPropertyChanged(nameof(IsContentReaderRequired));
+          OnPropertyChanged(nameof(ContentTypeVisibility));
+          OnPropertyChanged(nameof(LocalChannelVisibility));
+          OnPropertyChanged(nameof(StreamUrlVisibility));
         }
       }
     }
 
     public Visibility ContentTypeVisibility {
       get { return IsContentReaderRequired ? Visibility.Visible : Visibility.Collapsed; }
+    }
+
+    public Visibility LocalChannelVisibility {
+      get { return selectedSourceStream!=null && selectedSourceStream.Scheme=="loopback" ? Visibility.Visible : Visibility.Collapsed; }
+    }
+
+    public Visibility StreamUrlVisibility {
+      get { return selectedSourceStream==null || selectedSourceStream.Scheme!="loopback" ? Visibility.Visible : Visibility.Collapsed; }
     }
 
     public bool IsContentReaderRequired {
@@ -109,6 +149,24 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       set {
         SetProperty("NetworkType", ref networkType, value,
           () => start.OnCanExecuteChanged());
+      }
+    }
+
+    private LocalChannelViewModel sourceChannel = null;
+    public LocalChannelViewModel SourceChannel {
+      get { return sourceChannel; }
+      set {
+        SetProperty(nameof(SourceChannel), ref sourceChannel, value,
+          () => {
+            if (value!=null) {
+              StreamUrl = "loopback:" + value.ChannelID;
+            }
+            else {
+              StreamUrl = "loopback:00000000000000000000000000000000";
+            }
+            start.OnCanExecuteChanged();
+          }
+        );
       }
     }
 
@@ -253,6 +311,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       this.uiSettings = new UISettingsViewModel(PeerCastApplication.Current.Settings);
       start = new Command(OnBroadcast, () => CanBroadcast(StreamSource, ContentType, channelName));
       contentTypes = peerCast.ContentReaderFactories.ToArray();
+      localChannels = peerCast.Channels.Select(c => new LocalChannelViewModel(c)).ToArray();
 
       yellowPages = Enumerable.Repeat(new KeyValuePair<string,IYellowPageClient>("掲載なし", null),1)
         .Concat(peerCast.YellowPages.Select(yp => new KeyValuePair<string,IYellowPageClient>(yp.Name, yp)));
