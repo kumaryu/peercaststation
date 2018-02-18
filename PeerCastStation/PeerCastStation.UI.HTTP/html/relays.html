@@ -270,7 +270,8 @@
           </td></tr>
           <tr><th>ネットワーク</th>      <td><select data-bind="options:networkTypes, optionsText: 'name', optionsValue: 'value', value:networkType"></select></td></tr>
           <tr><th>ソース</th>            <td><select data-bind="options:sourceStreams, optionsText: 'desc', value:sourceStream"></select></td></tr>
-          <tr><th>ストリームURL</th>      <td><input type="text" name="sourceUrl"       data-bind="value:source          "></td></tr>
+          <tr data-bind="visible:localChannelVisibility"><th>元チャンネル</th>       <td><select data-bind="options:localChannels, optionsText: 'name', value:sourceChannel"></select></td></tr>
+          <tr data-bind="visible:!localChannelVisibility()"><th>ストリームURL</th>      <td><input type="text" name="sourceUrl"       data-bind="value:source          "></td></tr>
           <tr><th>ビットレート</th>       <td><input type="text" name="infoBitrate"     data-bind="value:infoBitrate     "></td></tr>
           <tr data-bind="visible:contentTypeVisibility"><th>ストリームタイプ</th>   <td><select data-bind="options:contentTypes, optionsText: 'desc', value:contentType"></select></td></tr>
           <tr><th>掲載YP</th>            <td><select data-bind="options: yellowPages, optionsText: 'name', value:yellowPage"></select></td></tr>

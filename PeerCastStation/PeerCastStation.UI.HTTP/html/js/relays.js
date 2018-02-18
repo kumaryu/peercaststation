@@ -155,6 +155,11 @@ var BroadcastHistoryViewModel = function(parent, entry) {
   };
 };
 
+var LocalChannelViewModel = function(owner, initial_value) {
+  var self = this;
+  self.channelId = ko.observable(initial_value.channelId);
+  self.name      = ko.observable(initial_value.info.name);
+};
 
 var BroadcastDialog = new function() {
   var self = this;
@@ -195,6 +200,13 @@ var BroadcastDialog = new function() {
   self.trackGenre   = ko.observable("");
   self.trackAlbum   = ko.observable("");
   self.trackUrl     = ko.observable("");
+  self.localChannels = ko.observableArray();
+  self.sourceChannel = ko.observable(null);
+  self.sourceChannel.subscribe(function (value) {
+    if (value!=null && self.sourceStream() && self.sourceStream().scheme==="loopback") {
+      self.source("loopback:" + value.channelId());
+    }
+  });
 
   self.sourceStream.subscribe(function (value) {
     if (value!=null) {
@@ -202,6 +214,10 @@ var BroadcastDialog = new function() {
     }
   });
 
+  self.localChannelVisibility = ko.computed(function () {
+    var source_stream = self.sourceStream();
+    return source_stream && source_stream.scheme==='loopback';
+  });
   self.contentTypeVisibility = ko.computed(function () {
     var source_stream = self.sourceStream();
     return source_stream && source_stream.isContentReaderRequired;
@@ -237,6 +253,17 @@ var BroadcastDialog = new function() {
       }
     }
     self.source(value.streamUrl());
+    var result = /loopback:([0-9a-fA-F]{32})/.exec(value.streamUrl());
+    if (result!=null && result[1]) {
+      var channel_id = result[1];
+      for (var i in self.localChannels()) {
+        var channel = self.localChannels()[i];
+        if (channel.channelId()===channel_id) {
+          self.sourceChannel(channel);
+          break;
+        }
+      }
+    }
     self.infoBitrate(value.bitrate());
     for (var i in self.contentTypes()) {
       var item = self.contentTypes()[i];
@@ -283,6 +310,10 @@ var BroadcastDialog = new function() {
       if (!result) return;
       self.broadcastHistory($.map(result, function (value) { return new BroadcastHistoryViewModel(self, value); }));
     });
+    PeerCast.getChannels(function(result) {
+      if (!result) return;
+      self.localChannels($.map(result, function (value) { return new LocalChannelViewModel(self, value); }));
+    })
   };
   self.onBroadcast = function() {
     var info = {
