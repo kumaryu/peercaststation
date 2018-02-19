@@ -101,6 +101,7 @@
           <div class="row-fluid">
             <div class="span3">
               <div data-bind="css: { 'source-tracker': isSourceTracker }">
+                <i data-bind="attr:{class:network}"></i>
                 <i data-bind="attr:{class:connectionStatus}"></i>
                 <span data-bind="if: infoUrl"><a data-bind="attr: { href: infoUrl }, text:infoName"></a></span>
                 <span data-bind="ifnot: infoUrl"><span data-bind="text:infoName"></span></span>
@@ -157,6 +158,7 @@
             <div class="span12">
               <table class="table table-bordered table-striped table-condensed">
                 <tr><th>チャンネル名</th>       <td data-bind="text: infoName       "></td></tr>
+                <tr><th>ネットワーク</th>       <td data-bind="text: networkType    "></td></tr>
                 <tr><th>ステータス</th>         <td data-bind="text: status         "></td></tr>
                 <tr><th>チャンネルID</th>       <td data-bind="text: channelId      "></td></tr>
                 <tr><th>ソースURL</th>          <td data-bind="text: source         "></td></tr>
@@ -266,8 +268,10 @@
               </ul>
             </div>
           </td></tr>
+          <tr><th>ネットワーク</th>      <td><select data-bind="options:networkTypes, optionsText: 'name', optionsValue: 'value', value:networkType"></select></td></tr>
           <tr><th>ソース</th>            <td><select data-bind="options:sourceStreams, optionsText: 'desc', value:sourceStream"></select></td></tr>
-          <tr><th>ストリームURL</th>      <td><input type="text" name="sourceUrl"       data-bind="value:source          "></td></tr>
+          <tr data-bind="visible:localChannelVisibility"><th>元チャンネル</th>       <td><select data-bind="options:localChannels, optionsText: 'name', value:sourceChannel"></select></td></tr>
+          <tr data-bind="visible:!localChannelVisibility()"><th>ストリームURL</th>      <td><input type="text" name="sourceUrl"       data-bind="value:source          "></td></tr>
           <tr><th>ビットレート</th>       <td><input type="text" name="infoBitrate"     data-bind="value:infoBitrate     "></td></tr>
           <tr data-bind="visible:contentTypeVisibility"><th>ストリームタイプ</th>   <td><select data-bind="options:contentTypes, optionsText: 'desc', value:contentType"></select></td></tr>
           <tr><th>掲載YP</th>            <td><select data-bind="options: yellowPages, optionsText: 'name', value:yellowPage"></select></td></tr>

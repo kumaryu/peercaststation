@@ -60,6 +60,7 @@ namespace PeerCastStation.App
       public int MaxRelaysPerChannel       { get; set; }
       public int MaxDirectsPerChannel      { get; set; }
       public int MaxUpstreamRate           { get; set; }
+      public int MaxUpstreamRateIPv6       { get; set; }
       public int MaxUpstreamRatePerChannel { get; set; }
 
       public AccessControllerSettings()

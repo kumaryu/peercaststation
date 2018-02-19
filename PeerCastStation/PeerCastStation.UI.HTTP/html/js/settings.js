@@ -278,6 +278,7 @@ var SettingsViewModel = new function() {
   self.maxRelaysPerChannel       = ko.observable(null);
   self.maxDirectsPerChannel      = ko.observable(null);
   self.maxUpstreamRate           = ko.observable(null);
+  self.maxUpstreamRateIPv6       = ko.observable(null);
   self.maxUpstreamRatePerChannel = ko.observable(null);
   self.checkBandwidthStatus      = ko.observable("");
   self.checkPortsStatus          = ko.observable("");
@@ -295,6 +296,7 @@ var SettingsViewModel = new function() {
     self.maxRelaysPerChannel,
     self.maxDirectsPerChannel,
     self.maxUpstreamRate,
+    self.maxUpstreamRateIPv6,
     self.maxUpstreamRatePerChannel,
     self.inactiveChannelLimit,
     self.channelCleanupMode,
@@ -309,6 +311,7 @@ var SettingsViewModel = new function() {
       maxRelaysPerChannel:       self.maxRelaysPerChannel()!=null       ? Number(self.maxRelaysPerChannel()) : null,
       maxDirectsPerChannel:      self.maxDirectsPerChannel()!=null      ? Number(self.maxDirectsPerChannel()) : null,
       maxUpstreamRate:           self.maxUpstreamRate()!=null           ? Number(self.maxUpstreamRate()) : null,
+      maxUpstreamRateIPv6:       self.maxUpstreamRateIPv6()!=null       ? Number(self.maxUpstreamRateIPv6()) : null,
       maxUpstreamRatePerChannel: self.maxUpstreamRatePerChannel()!=null ? Number(self.maxUpstreamRatePerChannel()) : null,
       channelCleaner: {
         inactiveLimit: self.inactiveChannelLimit()!=null ? Number(self.inactiveChannelLimit())*60000 : null,
@@ -387,10 +390,24 @@ var SettingsViewModel = new function() {
 
   self.checkBandwidth = function() {
     self.checkBandwidthStatus("計測中");
-    PeerCast.checkBandwidth(function (result) {
+    PeerCast.checkBandwidth('ipv4', function (result) {
       if (result) {
         var rate = Math.floor(result * 0.8 / 100) * 100;
         self.maxUpstreamRate(rate);
+        self.checkBandwidthStatus("帯域測定完了: " + result + "kbps, 設定推奨値: " + rate + "kbps");
+      }
+      else {
+        self.checkBandwidthStatus("帯域測定失敗。接続できませんでした");
+      }
+    });
+  };
+
+  self.checkBandwidthIPv6 = function() {
+    self.checkBandwidthStatus("計測中");
+    PeerCast.checkBandwidth('ipv6', function (result) {
+      if (result) {
+        var rate = Math.floor(result * 0.8 / 100) * 100;
+        self.maxUpstreamRateIPv6(rate);
         self.checkBandwidthStatus("帯域測定完了: " + result + "kbps, 設定推奨値: " + rate + "kbps");
       }
       else {
@@ -437,6 +454,7 @@ var SettingsViewModel = new function() {
         self.maxRelaysPerChannel(result.maxRelaysPerChannel);
         self.maxDirectsPerChannel(result.maxDirectsPerChannel);
         self.maxUpstreamRate(result.maxUpstreamRate);
+        self.maxUpstreamRateIPv6(result.maxUpstreamRateIPv6);
         self.maxUpstreamRatePerChannel(result.maxUpstreamRatePerChannel);
         if (result.channelCleaner) {
           self.inactiveChannelLimit(result.channelCleaner.inactiveLimit/60000);

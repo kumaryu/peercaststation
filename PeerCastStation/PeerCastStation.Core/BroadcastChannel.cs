@@ -12,11 +12,12 @@ namespace PeerCastStation.Core
 
     public BroadcastChannel(
         PeerCast peercast,
+        NetworkType network,
         Guid channel_id,
         ChannelInfo channel_info,
         ISourceStreamFactory source_stream_factory,
         IContentReaderFactory content_reader_factory)
-      : base(peercast, channel_id)
+      : base(peercast, network, channel_id)
     {
       this.ChannelInfo = channel_info;
       this.SourceStreamFactory = source_stream_factory;
@@ -37,11 +38,14 @@ namespace PeerCastStation.Core
       return source_factory.Create(this, source_uri, content_reader);
     }
 
-    static public Guid CreateChannelID(Guid bcid, string channel_name, string genre, string source)
+    static public Guid CreateChannelID(Guid bcid, NetworkType network, string channel_name, string genre, string source)
     {
       var stream = new System.IO.MemoryStream();
       using (var writer = new System.IO.BinaryWriter(stream)) {
         var bcid_hash = System.Security.Cryptography.SHA512.Create().ComputeHash(bcid.ToByteArray());
+        if (network!=NetworkType.IPv4) {
+          writer.Write((int)network);
+        }
         writer.Write(bcid_hash);
         writer.Write(channel_name);
         writer.Write(genre);

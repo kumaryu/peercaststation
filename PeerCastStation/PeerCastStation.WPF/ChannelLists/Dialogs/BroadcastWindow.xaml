@@ -100,16 +100,34 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Label    Grid.Column="0" Grid.Row="0" Content="ソース:"/>
+        <Label    Grid.Column="0" Grid.Row="0" Content="ネットワーク:"/>
         <ComboBox Grid.Column="1" Grid.Row="0"
+                  ItemsSource="{Binding NetworkTypes}"
+                  SelectedItem="{Binding NetworkType}"/>
+        <Label    Grid.Column="0" Grid.Row="1" Content="ソース:"/>
+        <ComboBox Grid.Column="1" Grid.Row="1"
                   ItemsSource="{Binding SourceStreams}"
                   SelectedItem="{Binding SelectedSourceStream}"
                   DisplayMemberPath="Name"/>
-        <Label    Grid.Column="0" Grid.Row="1" Content="ストリームURL:"/>
-        <TextBox  Grid.Column="1" Grid.Row="1" Text="{Binding StreamUrl, UpdateSourceTrigger=PropertyChanged}" InputScope="Url"/>
-        <Label    Grid.Column="0" Grid.Row="2" Content="ビットレート:"/>
-        <Grid Grid.Column="1" Grid.Row="2">
+        <Label    Grid.Column="0" Grid.Row="2"
+                  Content="ストリームURL:"
+                  Visibility="{Binding StreamUrlVisibility}"/>
+        <TextBox  Grid.Column="1" Grid.Row="2"
+                  Text="{Binding StreamUrl, UpdateSourceTrigger=PropertyChanged}"
+                  InputScope="Url"
+                  Visibility="{Binding StreamUrlVisibility}"/>
+        <Label    Grid.Column="0" Grid.Row="2"
+                  Content="元チャンネル:"
+                  Visibility="{Binding LocalChannelVisibility}"/>
+        <ComboBox Grid.Column="1" Grid.Row="2"
+                  ItemsSource="{Binding LocalChannels}"
+                  SelectedItem="{Binding SourceChannel}"
+                  Visibility="{Binding LocalChannelVisibility}"
+                  DisplayMemberPath="Name"/>
+        <Label    Grid.Column="0" Grid.Row="3" Content="ビットレート:"/>
+        <Grid Grid.Column="1" Grid.Row="3">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
@@ -119,15 +137,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           </ComboBox>
           <TextBlock Grid.Column="1" Text="kbps" VerticalAlignment="Center"/>
         </Grid>
-        <Label    Grid.Column="0" Grid.Row="3" Content="タイプ:"
+        <Label    Grid.Column="0" Grid.Row="4" Content="タイプ:"
                   Visibility="{Binding ContentTypeVisibility}"/>
-        <ComboBox Grid.Column="1" Grid.Row="3"
+        <ComboBox Grid.Column="1" Grid.Row="4"
                   ItemsSource="{Binding ContentTypes}"
                   SelectedItem="{Binding ContentType}"
                   Visibility="{Binding ContentTypeVisibility}"
                   DisplayMemberPath="Name"/>
-        <Label    Grid.Column="0" Grid.Row="4" Content="掲載YP:"/>
-        <ComboBox Grid.Column="1" Grid.Row="4"
+        <Label    Grid.Column="0" Grid.Row="5" Content="掲載YP:"/>
+        <ComboBox Grid.Column="1" Grid.Row="5"
                   ItemsSource="{Binding YellowPages}"
                   SelectedValue="{Binding YellowPage}"
                   SelectedValuePath="Value"

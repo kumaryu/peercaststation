@@ -136,10 +136,13 @@ namespace PeerCastStation.WPF
       }
     }
 
+    public NetworkType NetworkType {
+      get { return Model.Network; }
+    }
+
     public ConnectionStatus ConnectionStatus {
       get {
-        if (!Model.PeerCast.IsFirewalled.HasValue ||
-             Model.PeerCast.IsFirewalled.Value) {
+        if (Model.PeerCast.GetPortStatus(Model.NetworkAddressFamily)!=PortStatus.Open) {
           if (Model.LocalRelays>0) {
             return ConnectionStatus.FirewalledRelaying;
           }
@@ -186,7 +189,7 @@ namespace PeerCastStation.WPF
           connections.Add(new SourceChannelConnectionViewModel(Model.SourceStream));
         }
         var announcings = Model.PeerCast.YellowPages
-          .Select(yp => yp.AnnouncingChannels.FirstOrDefault(c => c.Channel.ChannelID==Model.ChannelID))
+          .Select(yp => yp.GetAnnouncingChannels().FirstOrDefault(c => c.Channel.ChannelID==Model.ChannelID))
           .Where(c => c!=null);
         foreach (var announcing in announcings) {
           connections.Add(new AnnounceChannelConnectionViewModel(announcing));

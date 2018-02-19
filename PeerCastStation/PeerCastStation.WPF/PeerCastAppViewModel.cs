@@ -22,6 +22,7 @@ using PeerCastStation.WPF.CoreSettings;
 using PeerCastStation.WPF.Dialogs;
 using PeerCastStation.WPF.Logs;
 using System.Windows;
+using System.Net.Sockets;
 
 namespace PeerCastStation.WPF
 {
@@ -30,22 +31,34 @@ namespace PeerCastStation.WPF
     private readonly PeerCastApplication application;
     public PeerCastApplication Model { get { return application; } }
 
+    private string GetPortStatus(AddressFamily family)
+    {
+      switch (application.PeerCast.GetPortStatus(family)) {
+      case Core.PortStatus.Open:
+        return "開放";
+      case Core.PortStatus.Firewalled:
+        return "未開放";
+      case Core.PortStatus.Unknown:
+      default:
+        return "開放状態不明";
+      }
+    }
+
     public string PortStatus
     {
       get
       {
         var peerCast = application.PeerCast;
         return "リレー可能ポート:" + String.Join(", ",
-          peerCast.OutputListeners.Where(listener =>
-            (listener.GlobalOutputAccepts & OutputStreamType.Relay) != 0
-          ).Select(
-            listener => listener.LocalEndPoint.Port
-          ).Distinct().Select(
-            port => port.ToString()
-          ).ToArray())
-          + " " + (peerCast.IsFirewalled.HasValue
-          ? peerCast.IsFirewalled.Value ? "未開放" : "開放"
-          : "開放状態不明");
+            peerCast.OutputListeners
+            .Where(listener => (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0)
+            .Select(listener => listener.LocalEndPoint.Port)
+            .Distinct()
+            .Select(port => port.ToString())
+            .ToArray()
+          )
+          + " IPv4:" + GetPortStatus(AddressFamily.InterNetwork)
+          + " IPv6:" + GetPortStatus(AddressFamily.InterNetworkV6);
       }
     }
 

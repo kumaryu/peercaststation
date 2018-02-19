@@ -1,4 +1,5 @@
 ﻿using System;
+using PeerCastStation.Core;
 
 namespace PeerCastStation.WPF
 {
@@ -48,6 +49,7 @@ namespace PeerCastStation.WPF
   [PeerCastStation.Core.PecaSettings]
   public class BroadcastInfo
   {
+    public NetworkType NetworkType { get; set; }
     public string StreamType  { get; set; }
     public string StreamUrl   { get; set; }
     public int    Bitrate     { get; set; }

@@ -48,19 +48,38 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
       <Style x:Key="PortCheckStatusText" TargetType="TextBlock">
         <Style.Triggers>
           <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Unknown}">
-            <Setter Property="Text" Value="未確認"/>
+            <Setter Property="Text" Value="IPv4: 未確認"/>
           </DataTrigger>
           <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Checking}">
-            <Setter Property="Text" Value="確認しています"/>
+            <Setter Property="Text" Value="IPv4: 確認しています"/>
           </DataTrigger>
           <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Opened}">
-            <Setter Property="Text" Value="開放されています"/>
+            <Setter Property="Text" Value="IPv4: 開放されています"/>
           </DataTrigger>
           <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Closed}">
-            <Setter Property="Text" Value="未開放です"/>
+            <Setter Property="Text" Value="IPv4: 未開放です"/>
           </DataTrigger>
           <DataTrigger Binding="{Binding PortCheckStatus}" Value="{x:Static l:PortCheckStatus.Failed}">
-            <Setter Property="Text" Value="確認失敗しました"/>
+            <Setter Property="Text" Value="IPv4: 確認失敗しました"/>
+          </DataTrigger>
+        </Style.Triggers>
+      </Style>
+      <Style x:Key="PortCheckV6StatusText" TargetType="TextBlock">
+        <Style.Triggers>
+          <DataTrigger Binding="{Binding PortCheckV6Status}" Value="{x:Static l:PortCheckStatus.Unknown}">
+            <Setter Property="Text" Value="IPv6: 未確認"/>
+          </DataTrigger>
+          <DataTrigger Binding="{Binding PortCheckV6Status}" Value="{x:Static l:PortCheckStatus.Checking}">
+            <Setter Property="Text" Value="IPv6: 確認しています"/>
+          </DataTrigger>
+          <DataTrigger Binding="{Binding PortCheckV6Status}" Value="{x:Static l:PortCheckStatus.Opened}">
+            <Setter Property="Text" Value="IPv6: 開放されています"/>
+          </DataTrigger>
+          <DataTrigger Binding="{Binding PortCheckV6Status}" Value="{x:Static l:PortCheckStatus.Closed}">
+            <Setter Property="Text" Value="IPv6: 未開放です"/>
+          </DataTrigger>
+          <DataTrigger Binding="{Binding PortCheckV6Status}" Value="{x:Static l:PortCheckStatus.Failed}">
+            <Setter Property="Text" Value="IPv6: 確認失敗しました"/>
           </DataTrigger>
         </Style.Triggers>
       </Style>
@@ -101,30 +120,70 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                 <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
               <Label Grid.Column="0" Grid.Row="0" Content="ポート番号:"/>
-              <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="1" Increment="1" Value="{Binding PrimaryPort}"/>
+              <Grid Grid.Column="1" Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <peca:IntegerUpDown Minimum="1" Increment="1" Value="{Binding PrimaryPort}"/>
+                <CheckBox Grid.Column="1" Margin="2" VerticalAlignment="Center" Content="IPv6も使う" IsChecked="{Binding IPv6Enabled}"/>
+              </Grid>
               <Label     Grid.Column="0" Grid.Row="1" Content="ポート自動開放:"/>
               <CheckBox  Grid.Column="1" Grid.Row="1" Content="自動開放する(UPnP/NAT-PMP)" VerticalAlignment="Center" IsChecked="{Binding PortMapperEnabled}"/>
               <Label     Grid.Column="0" Grid.Row="2" Content="外部アドレス:"/>
-              <TextBlock Grid.Column="1" Grid.Row="2" VerticalAlignment="Center">
-                <TextBlock.Style>
-                  <Style TargetType="TextBlock">
-                    <Style.Triggers>
-                      <DataTrigger Binding="{Binding PortMapperExternalAddresses}" Value="">
-                        <Setter Property="Text" Value="ルーター未発見"/>
-                      </DataTrigger>
-                    </Style.Triggers>
-                    <Setter Property="Text" Value="{Binding PortMapperExternalAddresses}"/>
-                  </Style>
-                </TextBlock.Style>
-              </TextBlock>
+              <Grid Grid.Column="1" Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" VerticalAlignment="Center" Margin="2">
+                  <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding PortMapperExternalAddresses}" Value="">
+                          <Setter Property="Text" Value="ルーター未発見"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding PortMapperEnabled}" Value="false">
+                          <Setter Property="Text" Value="UPnP無効"/>
+                        </DataTrigger>
+                      </Style.Triggers>
+                      <Setter Property="Text" Value="{Binding PortMapperExternalAddresses}"/>
+                    </Style>
+                  </TextBlock.Style>
+                </TextBlock>
+                <TextBlock Grid.Row="1" VerticalAlignment="Center" Margin="2">
+                  <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding ExternalAddressesV6}" Value="">
+                          <Setter Property="Text" Value="IPv6グローバルアドレス無し"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IPv6Enabled}" Value="false">
+                          <Setter Property="Text" Value="IPv6無効"/>
+                        </DataTrigger>
+                      </Style.Triggers>
+                      <Setter Property="Text" Value="{Binding ExternalAddressesV6}"/>
+                    </Style>
+                  </TextBlock.Style>
+                </TextBlock>
+              </Grid>
+
               <Label Grid.Column="0" Grid.Row="3" Content="ポート開放状態:"/>
               <Grid  Grid.Column="1" Grid.Row="3">
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*"/>
                   <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" VerticalAlignment="Center" Style="{StaticResource PortCheckStatusText}"/>
-                <Button    Grid.Column="1" Content="開放確認" Click="PortCheckButton_Click" Style="{StaticResource PortCheckButton}"/>
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" Style="{StaticResource PortCheckStatusText}"/>
+                <TextBlock Grid.Column="0" Grid.Row="1" VerticalAlignment="Center" Style="{StaticResource PortCheckV6StatusText}"/>
+                <Button    Grid.Column="1" Grid.RowSpan="2" Content="開放確認" Click="PortCheckButton_Click" Style="{StaticResource PortCheckButton}"/>
               </Grid>
             </Grid>
           </GroupBox>
@@ -139,14 +198,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
               <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
-              <Label              Grid.Column="0" Grid.Row="0" Content="合計:"/>
+              <Label              Grid.Column="0" Grid.Row="0" Content="合計(IPv4):"/>
               <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRate}"/>
               <Label              Grid.Column="2" Grid.Row="0" Content="kbps"/>
               <Button             Grid.Column="3" Grid.Row="0" Content="自動設定" Click="BandwidthCheckButton_Click"/>
-              <Label              Grid.Column="0" Grid.Row="1" Content="チャンネル毎:"/>
-              <peca:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerChannel}" MinimumText="制限無し"/>
+              <Label              Grid.Column="0" Grid.Row="1" Content="合計(IPv6):"/>
+              <peca:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRateIPv6}"/>
               <Label              Grid.Column="2" Grid.Row="1" Content="kbps"/>
+              <Button             Grid.Column="3" Grid.Row="1" Content="自動設定" Click="BandwidthCheckButtonIPv6_Click"/>
+              <Label              Grid.Column="0" Grid.Row="2" Content="チャンネル毎:"/>
+              <peca:IntegerUpDown Grid.Column="1" Grid.Row="2" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerChannel}" MinimumText="制限無し"/>
+              <Label              Grid.Column="2" Grid.Row="2" Content="kbps"/>
             </Grid>
           </GroupBox>
           <GroupBox Header="チャンネル自動切断">
@@ -218,26 +282,58 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
             <Label    Grid.Column="0" Grid.Row="0" Content="ポート自動開放:"/>
             <CheckBox Grid.Column="1" Grid.Row="0" Content="自動開放する(UPnP/NAT-PMP)" VerticalAlignment="Center" IsChecked="{Binding PortMapperEnabled}"/>
             <Label     Grid.Column="0" Grid.Row="1" Content="外部アドレス:"/>
-            <TextBlock Grid.Column="1" Grid.Row="1" VerticalAlignment="Center">
-              <TextBlock.Style>
-                <Style TargetType="TextBlock">
-                  <Style.Triggers>
-                    <DataTrigger Binding="{Binding PortMapperExternalAddresses}" Value="">
-                      <Setter Property="Text" Value="ルーター未発見"/>
-                    </DataTrigger>
-                  </Style.Triggers>
-                  <Setter Property="Text" Value="{Binding PortMapperExternalAddresses}"/>
-                </Style>
-              </TextBlock.Style>
-            </TextBlock>
+            <Grid Grid.Column="1" Grid.Row="1">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
+              <TextBlock Grid.Row="0" VerticalAlignment="Center" Margin="2">
+                <TextBlock.Style>
+                  <Style TargetType="TextBlock">
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding PortMapperExternalAddresses}" Value="">
+                        <Setter Property="Text" Value="ルーター未発見"/>
+                      </DataTrigger>
+                      <DataTrigger Binding="{Binding PortMapperEnabled}" Value="false">
+                        <Setter Property="Text" Value="UPnP無効"/>
+                      </DataTrigger>
+                    </Style.Triggers>
+                    <Setter Property="Text" Value="{Binding PortMapperExternalAddresses}"/>
+                  </Style>
+                </TextBlock.Style>
+              </TextBlock>
+              <TextBlock Grid.Row="1" VerticalAlignment="Center" Margin="2">
+                <TextBlock.Style>
+                  <Style TargetType="TextBlock">
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding ExternalAddressesV6}" Value="">
+                        <Setter Property="Text" Value="IPv6グローバルアドレス無し"/>
+                      </DataTrigger>
+                      <DataTrigger Binding="{Binding IPv6Enabled}" Value="false">
+                        <Setter Property="Text" Value="IPv6無効"/>
+                      </DataTrigger>
+                    </Style.Triggers>
+                    <Setter Property="Text" Value="{Binding ExternalAddressesV6}"/>
+                  </Style>
+                </TextBlock.Style>
+              </TextBlock>
+            </Grid>
             <Label    Grid.Column="0" Grid.Row="2" Content="ポート開放確認:"/>
             <Grid     Grid.Column="1" Grid.Row="2">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
               </Grid.ColumnDefinitions>
-              <TextBlock Grid.Column="0" VerticalAlignment="Center" Style="{StaticResource PortCheckStatusText}"/>
-              <Button    Grid.Column="1" Content="開放確認" Click="PortCheckButton_Click" Style="{StaticResource PortCheckButton}"/>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
+              <TextBlock Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" Style="{StaticResource PortCheckStatusText}"/>
+              <TextBlock Grid.Column="0" Grid.Row="1" VerticalAlignment="Center" Style="{StaticResource PortCheckV6StatusText}"/>
+              <Button    Grid.Column="1" Grid.RowSpan="2" Content="開放確認" Click="PortCheckButton_Click" Style="{StaticResource PortCheckButton}"/>
             </Grid>
           </Grid>
         </Grid>
@@ -287,14 +383,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
               <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
               </Grid.RowDefinitions>
-              <Label              Grid.Column="0" Grid.Row="0" Content="合計:"/>
+              <Label              Grid.Column="0" Grid.Row="0" Content="合計(IPv4):"/>
               <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRate}"/>
               <Label              Grid.Column="2" Grid.Row="0" Content="kbps"/>
               <Button             Grid.Column="3" Grid.Row="0" Content="自動設定" Click="BandwidthCheckButton_Click"/>
-              <Label              Grid.Column="0" Grid.Row="1" Content="チャンネル毎:"/>
-              <peca:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerChannel}" MinimumText="制限無し"/>
+              <Label              Grid.Column="0" Grid.Row="1" Content="合計(IPv6):"/>
+              <peca:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRateIPv6}"/>
               <Label              Grid.Column="2" Grid.Row="1" Content="kbps"/>
+              <Button             Grid.Column="3" Grid.Row="1" Content="自動設定" Click="BandwidthCheckButtonIPv6_Click"/>
+              <Label              Grid.Column="0" Grid.Row="2" Content="チャンネル毎:"/>
+              <peca:IntegerUpDown Grid.Column="1" Grid.Row="2" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerChannel}" MinimumText="制限無し"/>
+              <Label              Grid.Column="2" Grid.Row="2" Content="kbps"/>
             </Grid>
           </GroupBox>
           <GroupBox Header="チャンネルの自動切断">

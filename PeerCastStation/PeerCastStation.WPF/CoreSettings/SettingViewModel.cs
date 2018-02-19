@@ -81,6 +81,34 @@ namespace PeerCastStation.WPF.CoreSettings
         RegenerateAuthKey = new Command(DoRegenerateAuthKey);
       }
 
+      public OutputListenerViewModel(SettingViewModel owner, System.Net.IPEndPoint endpoint)
+      {
+        this.owner = owner;
+        if (endpoint.Address.Equals(System.Net.IPAddress.Any)) {
+          address = "IPv4 Any";
+        }
+        else if (endpoint.Address.Equals(System.Net.IPAddress.IPv6Any)) {
+          address = "IPv6 Any";
+        }
+        else {
+          address = endpoint.Address.ToString();
+        }
+        port    = endpoint.Port;
+        globalRelay     = true;
+        globalPlay      = false;
+        globalInterface = false;
+        globalAuthRequired = true;
+        localRelay      = true;
+        localPlay       = true;
+        localInterface  = true;
+        localAuthRequired = false;
+        var authkey = AuthenticationKey.Generate();
+        authId       = authkey.Id;
+        authPassword = authkey.Password;
+        isOpen = null;
+        RegenerateAuthKey = new Command(DoRegenerateAuthKey);
+      }
+
       public OutputListenerViewModel(SettingViewModel owner, int new_port)
       {
         this.owner = owner;
@@ -382,86 +410,6 @@ namespace PeerCastStation.WPF.CoreSettings
       }
     }
 
-    internal class CheckBandwidthCommand
-      : System.Windows.Input.ICommand,
-        System.ComponentModel.INotifyPropertyChanged
-    {
-      private SettingViewModel owner;
-      private BandwidthChecker checker;
-      private bool canExecute = true;
-      private string status = "";
-
-      public string Status {
-        get { return status; }
-        private set {
-          if (status==value) return;
-          status = value;
-          OnPropertyChanged("Status");
-        }
-      }
-
-      public CheckBandwidthCommand(SettingViewModel owner)
-      {
-        this.owner = owner;
-        Uri target_uri;
-        if (AppSettingsReader.TryGetUri("BandwidthChecker", out target_uri)) {
-          this.checker = new BandwidthChecker(target_uri);
-          this.checker.BandwidthCheckCompleted += checker_BandwidthCheckCompleted;
-        }
-        else {
-          canExecute = false;
-        }
-      }
-
-      private void checker_BandwidthCheckCompleted(
-          object sender,
-          BandwidthCheckCompletedEventArgs args)
-      {
-        if (args.Success) {
-          owner.MaxUpstreamRate = (int)((args.Bitrate / 1000) * 0.8 / 100) * 100;
-          Status = String.Format("帯域測定完了: {0}kbps, 設定推奨値: {1}kbps",
-            args.Bitrate/1000,
-            (int)((args.Bitrate / 1000) * 0.8 / 100) * 100);
-        }
-        else {
-          Status = "帯域測定失敗。接続できませんでした";
-        }
-        SetCanExecute(true);
-      }
-
-      public bool CanExecute(object parameter)
-      {
-        return canExecute;
-      }
-
-      private void SetCanExecute(bool value)
-      {
-        if (canExecute!=value) {
-          canExecute = value;
-          if (CanExecuteChanged!=null) {
-            CanExecuteChanged(this, new EventArgs());
-          }
-        }
-      }
-      public event EventHandler CanExecuteChanged;
-
-      public void Execute(object parameter)
-      {
-        if (!canExecute) return;
-        SetCanExecute(false);
-        checker.RunAsync();
-        Status = "帯域測定中";
-      }
-
-      public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
-      private void OnPropertyChanged(string name)
-      {
-        if (PropertyChanged!=null) {
-          PropertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(name));
-        }
-      }
-    }
-
     private readonly PeerCast peerCast;
 
     private bool isModified;
@@ -514,6 +462,30 @@ namespace PeerCastStation.WPF.CoreSettings
       }
     }
 
+    public bool IPv6Enabled {
+      get {
+        return ports.Any(p => p.EndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6);
+      }
+      set {
+        if (value && !ports.Any(p => p.EndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6)) {
+          ports.Add(new OutputListenerViewModel(this, new System.Net.IPEndPoint(System.Net.IPAddress.IPv6Any, PrimaryPort)));
+          IsListenersModified = true;
+          OnPropertyChanged(nameof(IPv6Enabled));
+        }
+        else if (!value) {
+          bool changed = false;
+          foreach (var listener in ports.Where(p => p.EndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6).ToArray()) {
+            ports.Remove(listener);
+            IsListenersModified = true;
+            changed = true;
+          }
+          if (changed) {
+            OnPropertyChanged(nameof(IPv6Enabled));
+          }
+        }
+      }
+    }
+
     private ObservableCollection<OutputListenerViewModel> ports =
       new ObservableCollection<OutputListenerViewModel>();
     public IEnumerable<OutputListenerViewModel> Ports {
@@ -553,6 +525,42 @@ namespace PeerCastStation.WPF.CoreSettings
         else {
           return "";
         }
+      }
+    }
+
+    private System.Net.IPAddress[] EnumGlobalAddressesV6()
+    {
+      return System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+        .Where(intf => !intf.IsReceiveOnly)
+        .Where(intf => intf.OperationalStatus==System.Net.NetworkInformation.OperationalStatus.Up)
+        .Where(intf => intf.NetworkInterfaceType!=System.Net.NetworkInformation.NetworkInterfaceType.Loopback)
+        .Select(intf => intf.GetIPProperties())
+        .SelectMany(prop => prop.UnicastAddresses)
+        .Where(uaddr => uaddr.Address.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6)
+        .Where(uaddr => !uaddr.Address.IsSiteLocal())
+        .Select(uaddr => uaddr.Address)
+        .ToArray();
+    }
+
+    public string ExternalAddressesV6 {
+      get {
+        var listeners = ports
+          .Where(p =>
+            p.GlobalAccepts!=OutputStreamType.None &&
+            p.EndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6);
+        var addresses = listeners
+          .Select(p => p.EndPoint.Address)
+          .Where(addr =>
+            !addr.Equals(System.Net.IPAddress.IPv6Loopback) &&
+            !addr.Equals(System.Net.IPAddress.IPv6Any) &&
+            !addr.Equals(System.Net.IPAddress.IPv6None) &&
+            !addr.IsIPv6Teredo &&
+            !addr.IsIPv6LinkLocal &&
+            !addr.IsIPv6SiteLocal);
+        if (listeners.Any(p => p.EndPoint.Address.Equals(System.Net.IPAddress.IPv6Any))) {
+          addresses = addresses.Concat(EnumGlobalAddressesV6());
+        }
+        return String.Join(", ", addresses.Distinct().Select(addr => addr.ToString()));
       }
     }
 
@@ -625,6 +633,12 @@ namespace PeerCastStation.WPF.CoreSettings
       set { SetProperty("MaxUpstreamRate", ref maxUpstreamRate, value); }
     }
 
+    private int maxUpstreamRateIPv6;
+    public int MaxUpstreamRateIPv6 {
+      get { return maxUpstreamRateIPv6; }
+      set { SetProperty(nameof(MaxUpstreamRateIPv6), ref maxUpstreamRateIPv6, value); }
+    }
+
     private int maxUpstreamRatePerChannel;
     public int MaxUpstreamRatePerChannel {
       get { return maxUpstreamRatePerChannel; }
@@ -658,8 +672,6 @@ namespace PeerCastStation.WPF.CoreSettings
       set { SetProperty(nameof(RemoteNodeName), ref remoteNodeName, value); }
     }
 
-    public System.Windows.Input.ICommand CheckBandwidth { get; private set; }
-
     PeerCastApplication pecaApp;
     internal SettingViewModel(PeerCastApplication peca_app)
     {
@@ -669,7 +681,6 @@ namespace PeerCastStation.WPF.CoreSettings
       this.RemovePortCommand = new Command(() => RemovePort(), () => SelectedPort!=null);
       this.AddYellowPageCommand = new Command(() => AddYellowPage());
       this.RemoveYellowPageCommand = new Command(() => RemoveYellowPage(), () => SelectedYellowPage!=null);
-      this.CheckBandwidth = new CheckBandwidthCommand(this);
       channelCleanupMode = ChannelCleaner.Mode;
       channelCleanupInactiveLimit = ChannelCleaner.InactiveLimit/60000;
       maxRelays           = peerCast.AccessController.MaxRelays;
@@ -677,6 +688,7 @@ namespace PeerCastStation.WPF.CoreSettings
       maxPlays            = peerCast.AccessController.MaxPlays;
       maxPlaysPerChannel  = peerCast.AccessController.MaxPlaysPerChannel;
       maxUpstreamRate           = peerCast.AccessController.MaxUpstreamRate;
+      maxUpstreamRateIPv6       = peerCast.AccessController.MaxUpstreamRateIPv6;
       maxUpstreamRatePerChannel = peerCast.AccessController.MaxUpstreamRatePerChannel;
       isShowWindowOnStartup = pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup;
       isShowNotifications   = pecaApp.Settings.Get<WPFSettings>().ShowNotifications;
@@ -685,6 +697,10 @@ namespace PeerCastStation.WPF.CoreSettings
         peerCast.OutputListeners
         .Select(listener => new OutputListenerViewModel(this, listener))
       );
+      ports.CollectionChanged += (sender, args) => {
+        OnPropertyChanged(nameof(ExternalAddressesV6));
+        OnPropertyChanged(nameof(IPv6Enabled));
+      };
       yellowPages = new ObservableCollection<YellowPageClientViewModel>(
         peerCast.YellowPages
         .Select(yp => new YellowPageClientViewModel(this, yp))
@@ -696,34 +712,65 @@ namespace PeerCastStation.WPF.CoreSettings
           .ContinueWith(prev => OnPropertyChanged("PortMapperExternalAddresses"));
       }
       PortCheckStatus = PortCheckStatus.Checking;
+      PortCheckV6Status = PortCheckStatus.Checking;
       CheckPortAsync().ContinueWith(prev => {
         if (prev.IsCanceled || prev.IsFaulted) {
           PortCheckStatus = PortCheckStatus.Failed;
+          PortCheckV6Status = PortCheckStatus.Failed;
         }
         else {
-          PortCheckStatus = prev.Result;
+          PortCheckStatus = prev.Result.ResultV4;
+          PortCheckV6Status = prev.Result.ResultV6;
         }
       });
     }
 
-    private async Task<PortCheckStatus> CheckPortAsync()
+    private class PortCheckResult {
+      public PortCheckStatus ResultV4 { get; set; }
+      public PortCheckStatus ResultV6 { get; set; }
+
+      public static readonly PortCheckResult Failed = new PortCheckResult {
+        ResultV4 = PortCheckStatus.Failed, 
+        ResultV6 = PortCheckStatus.Failed,
+      };
+    }
+
+    private async Task<PortCheckResult> CheckPortAsync()
     {
       var port_checker = pecaApp.Plugins.GetPlugin<PeerCastStation.UI.PCPPortCheckerPlugin>();
-      if (port_checker==null) return PortCheckStatus.Failed;
-      var result = await port_checker.CheckAsync();
-      if (!result.Success) {
-        return PortCheckStatus.Failed;
+      if (port_checker==null) return PortCheckResult.Failed;
+      var results = await port_checker.CheckAsync();
+      foreach (var result in results) {
+        if (!result.Success) continue;
+        foreach (var port in ports) {
+          if (!port.EndPoint.Address.Equals(result.LocalAddress)) continue;
+          port.IsOpen = result.Ports.Contains(port.Port);
+        }
+      }
+      var r = new PortCheckResult();
+      var resultsv4 = 
+        results.Where(result => result.LocalAddress.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork);
+      if (resultsv4.All(result => !result.Success)) {
+        r.ResultV4 = PortCheckStatus.Failed;
+      }
+      else if (ports.Where(port => port.EndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork).Any(port => port.IsOpen.HasValue && port.IsOpen.Value)) {
+        r.ResultV4 = PortCheckStatus.Opened;
       }
       else {
-        var status = PortCheckStatus.Closed;
-        foreach (var port in ports) {
-          port.IsOpen = result.Ports.Contains(port.Port);
-          if (port.IsOpen.HasValue && port.IsOpen.Value) {
-            status = PortCheckStatus.Opened;
-          }
-        }
-        return status;
+        r.ResultV4 = PortCheckStatus.Closed;
       }
+      var resultsv6 = 
+        results.Where(result => result.LocalAddress.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6);
+      if (resultsv6.All(result => !result.Success)) {
+        r.ResultV6 = PortCheckStatus.Failed;
+      }
+      else if (ports.Where(port => port.EndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6).Any(port => port.IsOpen.HasValue && port.IsOpen.Value)) {
+        r.ResultV6 = PortCheckStatus.Opened;
+      }
+      else {
+        r.ResultV6 = PortCheckStatus.Closed;
+      }
+      return r;
     }
 
     public void AddPort()
@@ -764,15 +811,23 @@ namespace PeerCastStation.WPF.CoreSettings
       set { SetProperty("PortCheckStatus", ref portCheckStatus, value); }
     }
 
+    private PortCheckStatus portCheckV6Status;
+    public PortCheckStatus PortCheckV6Status {
+      get { return portCheckV6Status; }
+      set { SetProperty(nameof(PortCheckV6Status), ref portCheckV6Status, value); }
+    }
+
     public void CheckPort()
     {
       PortCheckStatus = PortCheckStatus.Checking;
       CheckPortAsync().ContinueWith(prev => {
         if (prev.IsCanceled || prev.IsFaulted) {
           PortCheckStatus = PortCheckStatus.Failed;
+          PortCheckV6Status = PortCheckStatus.Failed;
         }
         else {
-          PortCheckStatus = prev.Result;
+          PortCheckStatus = prev.Result.ResultV4;
+          PortCheckV6Status = prev.Result.ResultV6;
         }
       });
     }
@@ -786,7 +841,9 @@ namespace PeerCastStation.WPF.CoreSettings
       case "IsListenersModified":
       case "IsYellowPagesModified":
       case "PortCheckStatus":
+      case nameof(PortCheckV6Status):
       case "PortMapperExternalAddresses":
+      case nameof(ExternalAddressesV6):
         break;
       default:
         IsModified = true;
@@ -807,6 +864,7 @@ namespace PeerCastStation.WPF.CoreSettings
       peerCast.AccessController.MaxPlays = maxPlays;
       peerCast.AccessController.MaxPlaysPerChannel = maxPlaysPerChannel;
       peerCast.AccessController.MaxUpstreamRate = maxUpstreamRate;
+      peerCast.AccessController.MaxUpstreamRateIPv6 = maxUpstreamRateIPv6;
       peerCast.AccessController.MaxUpstreamRatePerChannel = maxUpstreamRatePerChannel;
       pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup = isShowWindowOnStartup;
       pecaApp.Settings.Get<WPFSettings>().ShowNotifications = isShowNotifications;
@@ -843,13 +901,17 @@ namespace PeerCastStation.WPF.CoreSettings
           .ContinueWith(prev => OnPropertyChanged("PortMapperExternalAddresses"));
       }
       PortCheckStatus = PortCheckStatus.Checking;
+      PortCheckV6Status = PortCheckStatus.Checking;
       CheckPortAsync().ContinueWith(prev => {
         if (prev.IsCanceled || prev.IsFaulted) {
           PortCheckStatus = PortCheckStatus.Failed;
+          PortCheckV6Status = PortCheckStatus.Failed;
         }
         else {
-          PortCheckStatus = prev.Result;
-          peerCast.IsFirewalled = prev.Result!=PortCheckStatus.Opened;
+          PortCheckStatus = prev.Result.ResultV4;
+          PortCheckV6Status = prev.Result.ResultV6;
+          peerCast.SetPortStatus(System.Net.Sockets.AddressFamily.InterNetwork, prev.Result.ResultV4==PortCheckStatus.Opened ? PortStatus.Open : PortStatus.Firewalled);
+          peerCast.SetPortStatus(System.Net.Sockets.AddressFamily.InterNetworkV6, prev.Result.ResultV6==PortCheckStatus.Opened ? PortStatus.Open : PortStatus.Firewalled);
         }
       });
       pecaApp.SaveSettings();

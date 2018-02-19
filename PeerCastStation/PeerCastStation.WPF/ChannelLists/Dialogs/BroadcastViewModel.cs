@@ -13,22 +13,43 @@
 // 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+using PeerCastStation.Core;
+using PeerCastStation.WPF.Commons;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Input;
-using PeerCastStation.Core;
-using PeerCastStation.WPF.ChannelLists.ChannelInfos;
-using PeerCastStation.WPF.Commons;
-using PeerCastStation.WPF.CoreSettings;
 using System.Windows;
+using System.Windows.Input;
 
 namespace PeerCastStation.WPF.ChannelLists.Dialogs
 {
+  class LocalChannelViewModel
+  {
+    public LocalChannelViewModel(Channel channel)
+    {
+      Channel = channel;
+    }
+
+    public Channel Channel { get; private set; }
+
+    public string Name {
+      get {
+        return Channel.ChannelInfo.Name;
+      }
+    }
+
+    public string ChannelID {
+      get { return Channel.ChannelID.ToString("N").ToUpperInvariant(); }
+    }
+  }
+
   class BroadcastViewModel : ViewModelBase
   {
     private readonly IContentReaderFactory[] contentTypes;
     public IContentReaderFactory[] ContentTypes { get { return contentTypes; } }
+
+    private readonly LocalChannelViewModel[] localChannels;
+    public LocalChannelViewModel[] LocalChannels { get { return localChannels; } }
 
     private readonly IEnumerable<KeyValuePair<string,IYellowPageClient>> yellowPages;
     public IEnumerable<KeyValuePair<string,IYellowPageClient>> YellowPages { get { return yellowPages; } }
@@ -47,7 +68,15 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
             SelectedSourceStream = SourceStreams.FirstOrDefault(t => t.Name==value.StreamType);
           }
           ContentType = contentTypes.FirstOrDefault(t => t.Name==value.ContentType);
+          NetworkType = value.NetworkType;
           StreamUrl   = value.StreamUrl;
+          if (value.StreamUrl!=null && value.StreamUrl.StartsWith("loopback:")) {
+            var channel_id = value.StreamUrl.Substring("loopback:".Length).ToUpperInvariant();
+            var channel = localChannels.FirstOrDefault(c => c.ChannelID==channel_id);
+            if (channel!=null) {
+              SourceChannel = channel;
+            }
+          }
           Bitrate     = value.Bitrate==0 ? null : value.Bitrate.ToString();
           ContentType = contentTypes.FirstOrDefault(t => t.Name==value.ContentType);
           if (value.YellowPage!=null) {
@@ -82,8 +111,10 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
             value!=null &&
             value.DefaultUri!=null) {
           StreamUrl = value.DefaultUri.ToString();
-          OnPropertyChanged("IsContentReaderRequired");
-          OnPropertyChanged("ContentTypeVisibility");
+          OnPropertyChanged(nameof(IsContentReaderRequired));
+          OnPropertyChanged(nameof(ContentTypeVisibility));
+          OnPropertyChanged(nameof(LocalChannelVisibility));
+          OnPropertyChanged(nameof(StreamUrlVisibility));
         }
       }
     }
@@ -92,8 +123,51 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       get { return IsContentReaderRequired ? Visibility.Visible : Visibility.Collapsed; }
     }
 
+    public Visibility LocalChannelVisibility {
+      get { return selectedSourceStream!=null && selectedSourceStream.Scheme=="loopback" ? Visibility.Visible : Visibility.Collapsed; }
+    }
+
+    public Visibility StreamUrlVisibility {
+      get { return selectedSourceStream==null || selectedSourceStream.Scheme!="loopback" ? Visibility.Visible : Visibility.Collapsed; }
+    }
+
     public bool IsContentReaderRequired {
       get { return selectedSourceStream!=null && selectedSourceStream.IsContentReaderRequired; }
+    }
+
+    private static readonly NetworkType[] networkTypes = new NetworkType[] {
+      NetworkType.IPv4,
+      NetworkType.IPv6,
+    };
+    public IEnumerable<NetworkType> NetworkTypes {
+      get { return networkTypes; }
+    }
+
+    private NetworkType networkType = NetworkType.IPv4;
+    public NetworkType NetworkType {
+      get { return networkType; }
+      set {
+        SetProperty("NetworkType", ref networkType, value,
+          () => start.OnCanExecuteChanged());
+      }
+    }
+
+    private LocalChannelViewModel sourceChannel = null;
+    public LocalChannelViewModel SourceChannel {
+      get { return sourceChannel; }
+      set {
+        SetProperty(nameof(SourceChannel), ref sourceChannel, value,
+          () => {
+            if (value!=null) {
+              StreamUrl = "loopback:" + value.ChannelID;
+            }
+            else {
+              StreamUrl = "loopback:00000000000000000000000000000000";
+            }
+            start.OnCanExecuteChanged();
+          }
+        );
+      }
     }
 
     private string streamUrl = "";
@@ -237,6 +311,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       this.uiSettings = new UISettingsViewModel(PeerCastApplication.Current.Settings);
       start = new Command(OnBroadcast, () => CanBroadcast(StreamSource, ContentType, channelName));
       contentTypes = peerCast.ContentReaderFactories.ToArray();
+      localChannels = peerCast.Channels.Select(c => new LocalChannelViewModel(c)).ToArray();
 
       yellowPages = Enumerable.Repeat(new KeyValuePair<string,IYellowPageClient>("掲載なし", null),1)
         .Concat(peerCast.YellowPages.Select(yp => new KeyValuePair<string,IYellowPageClient>(yp.Name, yp)));
@@ -254,8 +329,9 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       var channelInfo = CreateChannelInfo(this);
       var channelTrack = CreateChannelTrack(this);
 
-      var channel_id = PeerCastStation.Core.BroadcastChannel.CreateChannelID(
+      var channel_id = BroadcastChannel.CreateChannelID(
         peerCast.BroadcastID,
+        networkType,
         channelName,
         genre,
         source.ToString());
@@ -265,6 +341,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
           .Where(sstream => (sstream.Type & SourceStreamType.Broadcast)!=0)
           .FirstOrDefault(sstream => sstream.Scheme==source.Scheme);
       var channel = peerCast.BroadcastChannel(
+        networkType,
         yellowPage,
         channel_id,
         channelInfo,
@@ -276,6 +353,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       }
 
       var info = new BroadcastInfoViewModel {
+        NetworkType = this.NetworkType,
         StreamUrl   = this.StreamUrl,
         StreamType  = this.SelectedSourceStream!=null ? this.SelectedSourceStream.Name : null,
         Bitrate     = this.bitrate.HasValue ? this.bitrate.Value : 0,

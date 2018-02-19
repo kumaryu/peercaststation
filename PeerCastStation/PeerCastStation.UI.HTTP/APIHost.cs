@@ -68,7 +68,8 @@ namespace PeerCastStation.UI.HTTP
       }
     }
 
-    public int[] OpenedPorts { get; set; }
+    public int[] OpenedPortsV4 { get; set; }
+    public int[] OpenedPortsV6 { get; set; }
 
     public void CheckVersion()
     {
@@ -239,6 +240,17 @@ namespace PeerCastStation.UI.HTTP
         return owner.idRegistry.GetId(obj);
       }
 
+      private NetworkType ParseNetworkType(string value)
+      {
+        NetworkType result;
+        if (Enum.TryParse(value, true, out result)) {
+          return result;
+        }
+        else {
+          return NetworkType.IPv4;
+        }
+      }
+
       [RPCMethod("getVersionInfo")]
       public JObject GetVersionInfo()
       {
@@ -284,7 +296,17 @@ namespace PeerCastStation.UI.HTTP
       {
         var res = new JObject();
         res["uptime"]       = (int)PeerCast.Uptime.TotalSeconds;
-        res["isFirewalled"] = PeerCast.IsFirewalled;
+        switch (PeerCast.GetPortStatus(System.Net.Sockets.AddressFamily.InterNetwork)) {
+        case PortStatus.Unknown:
+          res["isFirewalled"] = null;
+          break;
+        case PortStatus.Open:
+          res["isFirewalled"] = false;
+          break;
+        case PortStatus.Firewalled:
+          res["isFirewalled"] = true;
+          break;
+        }
         var endpoint = 
           PeerCast.GetGlobalEndPoint(
             System.Net.Sockets.AddressFamily.InterNetwork,
@@ -311,15 +333,41 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("getExternalIPAddresses")]
       private JArray GetExternalIPAddresses()
       {
+        var addresses = Enumerable.Empty<IPAddress>();
         var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
         if (port_mapper!=null) {
-          return new JArray(
-            port_mapper.GetExternalAddresses().Select(addr => addr.ToString())
+          addresses = addresses.Concat(port_mapper.GetExternalAddresses());
+        }
+        var listeners =
+          PeerCast.OutputListeners
+          .Where(p =>
+            p.GlobalOutputAccepts!=OutputStreamType.None &&
+            p.LocalEndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6);
+        addresses = addresses.Concat(
+          listeners
+          .Select(p => p.LocalEndPoint.Address)
+          .Where(addr =>
+            !addr.Equals(IPAddress.IPv6Loopback) &&
+            !addr.Equals(IPAddress.IPv6Any) &&
+            !addr.Equals(IPAddress.IPv6None) &&
+            !addr.IsIPv6Teredo &&
+            !addr.IsIPv6LinkLocal &&
+            !addr.IsIPv6SiteLocal)
+        );
+        if (listeners.Any(p => p.LocalEndPoint.Address.Equals(System.Net.IPAddress.IPv6Any))) {
+          addresses = addresses.Concat(
+            System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+              .Where(intf => !intf.IsReceiveOnly)
+              .Where(intf => intf.OperationalStatus==System.Net.NetworkInformation.OperationalStatus.Up)
+              .Where(intf => intf.NetworkInterfaceType!=System.Net.NetworkInformation.NetworkInterfaceType.Loopback)
+              .Select(intf => intf.GetIPProperties())
+              .SelectMany(prop => prop.UnicastAddresses)
+              .Where(uaddr => uaddr.Address.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6)
+              .Where(uaddr => !uaddr.Address.IsSiteLocal())
+              .Select(uaddr => uaddr.Address)
           );
         }
-        else {
-          return new JArray();
-        }
+        return new JArray(addresses.Distinct().Select(addr => addr.ToString()));
       }
 
       [RPCMethod("getSettings")]
@@ -331,6 +379,7 @@ namespace PeerCastStation.UI.HTTP
         res["maxDirects"]                = PeerCast.AccessController.MaxPlays;
         res["maxDirectsPerChannel"]      = PeerCast.AccessController.MaxPlaysPerChannel;
         res["maxUpstreamRate"]           = PeerCast.AccessController.MaxUpstreamRate;
+        res["maxUpstreamRateIPv6"]       = PeerCast.AccessController.MaxUpstreamRateIPv6;
         res["maxUpstreamRatePerChannel"] = PeerCast.AccessController.MaxUpstreamRatePerChannel;
         var channelCleaner = new JObject();
         channelCleaner["mode"]          = (int)ChannelCleaner.Mode;
@@ -354,6 +403,7 @@ namespace PeerCastStation.UI.HTTP
         settings.TryGetThen("maxDirects",                v => acc.MaxPlays = v);
         settings.TryGetThen("maxDirectsPerChannel",      v => acc.MaxPlaysPerChannel = v);
         settings.TryGetThen("maxUpstreamRate",           v => acc.MaxUpstreamRate = v);
+        settings.TryGetThen("maxUpstreamRateIPv6",       v => acc.MaxUpstreamRateIPv6 = v);
         settings.TryGetThen("maxUpstreamRatePerChannel", v => acc.MaxUpstreamRatePerChannel = v);
         settings.TryGetThen("channelCleaner", (JObject channel_cleaner) => {
           channel_cleaner.TryGetThen("inactiveLimit", v => ChannelCleaner.InactiveLimit = v);
@@ -447,6 +497,7 @@ namespace PeerCastStation.UI.HTTP
       {
         var channel = GetChannel(channelId);
         var res = new JObject();
+        res["network"]         = channel.Network.ToString().ToLowerInvariant();
         res["status"]          = channel.Status.ToString();
         res["source"]          = channel.SourceUri!=null ? channel.SourceUri.ToString() : null;
         res["uptime"]          = (int)channel.Uptime.TotalSeconds;
@@ -466,7 +517,7 @@ namespace PeerCastStation.UI.HTTP
         var announcings = Enumerable.Empty<IAnnouncingChannel>();
         var channel = GetChannel(channelId);
         foreach (var yp in PeerCast.YellowPages) {
-          announcings = announcings.Concat(yp.AnnouncingChannels.Where(ac => ac.Channel.ChannelID==channel.ChannelID));
+          announcings = announcings.Concat(yp.GetAnnouncingChannels().Where(ac => ac.Channel.ChannelID==channel.ChannelID));
         }
         return new JArray(announcings.Select(ac => {
           var acinfo = new JObject();
@@ -582,7 +633,7 @@ namespace PeerCastStation.UI.HTTP
 
       private JObject GetChannelConnection(IAnnouncingChannel ac)
       {
-        return GetChannelConnection(ac, ac.YellowPage.GetConnectionInfo());
+        return GetChannelConnection(ac, ac.GetConnectionInfo());
       }
 
       private JObject GetChannelConnection(object connection, ConnectionInfo info)
@@ -624,7 +675,7 @@ namespace PeerCastStation.UI.HTTP
           Enumerable.Repeat(channel.SourceStream, 1).Select(s => GetChannelConnection(s));
         res = res.Concat(channel.OutputStreams.Select(s => GetChannelConnection(s)));
         foreach (var yp in PeerCast.YellowPages) {
-          res = res.Concat(yp.AnnouncingChannels
+          res = res.Concat(yp.GetAnnouncingChannels()
                 .Where(ac => ac.Channel.ChannelID==channel.ChannelID)
                 .Select(s => GetChannelConnection(s)));
         }
@@ -642,7 +693,7 @@ namespace PeerCastStation.UI.HTTP
           return true;
         }
         foreach (var yp in PeerCast.YellowPages) {
-          var ac = yp.AnnouncingChannels
+          var ac = yp.GetAnnouncingChannels()
             .Where(s => GetObjectId(s)==connectionId)
             .Where(s => s.Channel.ChannelID==channel.ChannelID).FirstOrDefault();
           if (ac!=null) {
@@ -662,7 +713,7 @@ namespace PeerCastStation.UI.HTTP
           return true;
         }
         foreach (var yp in PeerCast.YellowPages) {
-          var ac = yp.AnnouncingChannels
+          var ac = yp.GetAnnouncingChannels()
             .Where(s => GetObjectId(s)==connectionId)
             .Where(s => s.Channel.ChannelID==channel.ChannelID).FirstOrDefault();
           if (ac!=null) {
@@ -760,7 +811,7 @@ namespace PeerCastStation.UI.HTTP
           res["announceUri"]  = yp.AnnounceUri==null ? null : yp.AnnounceUri.ToString();
           res["channelsUri"]  = yp.ChannelsUri==null ? null : yp.ChannelsUri.ToString();
           res["protocol"]     = yp.Protocol;
-          res["channels"]     = new JArray(yp.AnnouncingChannels.Select(ac => {
+          res["channels"]     = new JArray(yp.GetAnnouncingChannels().Select(ac => {
             var announcing = new JObject();
             announcing["channelId"] = ac.Channel.ChannelID.ToString("N").ToUpperInvariant();
             announcing["status"]  = ac.Status.ToString();
@@ -833,7 +884,7 @@ namespace PeerCastStation.UI.HTTP
         if (yp!=null) {
           if (channelId!=null) {
             var channel = GetChannel(channelId);
-            var announcing = yp.AnnouncingChannels.FirstOrDefault(ac => ac.Channel.ChannelID==channel.ChannelID);
+            var announcing = yp.GetAnnouncingChannels().FirstOrDefault(ac => ac.Channel.ChannelID==channel.ChannelID);
             if (announcing!=null) {
               yp.StopAnnounce(announcing);
             }
@@ -851,7 +902,7 @@ namespace PeerCastStation.UI.HTTP
         if (yp!=null) {
           if (channelId!=null) {
             var channel = GetChannel(channelId);
-            var announcing = yp.AnnouncingChannels.FirstOrDefault(ac => ac.Channel.ChannelID==channel.ChannelID);
+            var announcing = yp.GetAnnouncingChannels().FirstOrDefault(ac => ac.Channel.ChannelID==channel.ChannelID);
             if (announcing!=null) {
               yp.RestartAnnounce(announcing);
             }
@@ -875,12 +926,27 @@ namespace PeerCastStation.UI.HTTP
         res["authenticationId"]       = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Id : null;
         res["authenticationPassword"] = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Password : null;
         res["authToken"]     = listener.AuthenticationKey!=null ? HTTPUtils.CreateAuthorizationToken(listener.AuthenticationKey) : null;
-        if ((listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 && owner.OpenedPorts!=null) {
-          res["isOpened"] = (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 &&
-                            owner.OpenedPorts.Contains(listener.LocalEndPoint.Port);
-        }
-        else {
-          res["isOpened"] = null;
+        switch (listener.LocalEndPoint.AddressFamily) {
+        case System.Net.Sockets.AddressFamily.InterNetwork:
+          if ((listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 && owner.OpenedPortsV4!=null) {
+            res["isOpened"] = (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 &&
+                              owner.OpenedPortsV4.Contains(listener.LocalEndPoint.Port);
+          }
+          else {
+            res["isOpened"] = null;
+          }
+          break;
+        case System.Net.Sockets.AddressFamily.InterNetworkV6:
+          if ((listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 && owner.OpenedPortsV6!=null) {
+            res["isOpened"] = (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 &&
+                              owner.OpenedPortsV6.Contains(listener.LocalEndPoint.Port);
+          }
+          else {
+            res["isOpened"] = null;
+          }
+          break;
+        default:
+          break;
         }
         return res;
       }
@@ -964,12 +1030,13 @@ namespace PeerCastStation.UI.HTTP
 
       [RPCMethod("broadcastChannel")]
       private string BroadcastChannel(
-        int?    yellowPageId,
-        string  sourceUri,
-        string  contentReader,
+        int?   yellowPageId,
+        string networkType,
+        string sourceUri,
+        string contentReader,
         JObject info,
         JObject track,
-        string  sourceStream=null)
+        string sourceStream=null)
       {
         IYellowPageClient yp = null;
         if (yellowPageId.HasValue) {
@@ -996,6 +1063,8 @@ namespace PeerCastStation.UI.HTTP
         }
         if (source_stream==null) throw new RPCError(RPCErrorCode.InvalidParams, "Source stream not found");
 
+        var network_type = ParseNetworkType(networkType);
+
         var new_info = new AtomCollection();
         if (info!=null) {
           info.TryGetThen("name",    v => new_info.SetChanInfoName(v));
@@ -1011,10 +1080,11 @@ namespace PeerCastStation.UI.HTTP
         }
         var channel_id = PeerCastStation.Core.BroadcastChannel.CreateChannelID(
           PeerCast.BroadcastID,
+          network_type,
           channel_info.Name,
           channel_info.Genre ?? "",
           source.ToString());
-        var channel = PeerCast.BroadcastChannel(yp, channel_id, channel_info, source, source_stream, content_reader);
+        var channel = PeerCast.BroadcastChannel(network_type, yp, channel_id, channel_info, source, source_stream, content_reader);
         if (track!=null) {
           var new_track = new AtomCollection(channel.ChannelTrack.Extra);
           track.TryGetThen("name",    v => new_track.SetChanTrackTitle(v));
@@ -1037,6 +1107,7 @@ namespace PeerCastStation.UI.HTTP
             var obj = new JObject();
             obj["streamType"]  = info.StreamType;
             obj["streamUrl"]   = info.StreamUrl;
+            obj["networkType"] = info.NetworkType.ToString().ToLowerInvariant();
             obj["bitrate"]     = info.Bitrate;
             obj["contentType"] = info.ContentType;
             obj["yellowPage"]  = info.YellowPage;
@@ -1060,6 +1131,7 @@ namespace PeerCastStation.UI.HTTP
       public void AddBroadcastHistory(JObject info)
       {
         var obj = new PeerCastStation.UI.BroadcastInfo();
+        info.TryGetThen("networkType", v => obj.NetworkType = ParseNetworkType(v));
         info.TryGetThen("streamType",  v => obj.StreamType  = v);
         info.TryGetThen("streamUrl",   v => obj.StreamUrl   = v);
         info.TryGetThen("bitrate",     v => obj.Bitrate     = v);
@@ -1107,11 +1179,21 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("checkBandwidth")]
-      public int? CheckBandWidth()
+      public int? CheckBandWidth(string networkType)
       {
         int? result = null;
+        string uri_key;
+        switch (ParseNetworkType(networkType)) {
+        case NetworkType.IPv6:
+          uri_key = "BandwidthCheckerV6";
+          break;
+        case NetworkType.IPv4:
+        default:
+          uri_key = "BandwidthChecker";
+          break;
+        }
         Uri target_uri;
-        if (AppSettingsReader.TryGetUri("BandwidthChecker", out target_uri)) {
+        if (AppSettingsReader.TryGetUri(uri_key, out target_uri)) {
           var checker = new BandwidthChecker(target_uri);
           checker.BandwidthCheckCompleted += (sender, args) => {
             if (args.Success) {
@@ -1126,16 +1208,30 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("checkPorts")]
       public JArray CheckPorts()
       {
-        int[] results = null;
+        List<int> results = null;
         var port_checker = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PCPPortCheckerPlugin>();
         if (port_checker!=null) {
           var task = port_checker.CheckAsync();
           task.Wait();
-          var result = task.Result;
-          if (result.Success) {
-            PeerCast.IsFirewalled = !result.IsOpen;
-            owner.OpenedPorts = result.Ports;
-            results = result.Ports;
+          foreach (var result in task.Result) {
+            if (!result.Success) continue;
+            PeerCast.SetPortStatus(result.LocalAddress.AddressFamily, result.IsOpen ? PortStatus.Open : PortStatus.Firewalled);
+            switch (result.LocalAddress.AddressFamily) {
+            case System.Net.Sockets.AddressFamily.InterNetwork:
+              owner.OpenedPortsV4 = result.Ports;
+              break;
+            case System.Net.Sockets.AddressFamily.InterNetworkV6:
+              owner.OpenedPortsV6 = result.Ports;
+              break;
+            default:
+              break;
+            }
+            if (results==null) {
+              results = new List<int>(result.Ports);
+            }
+            else {
+              results.AddRange(result.Ports);
+            }
           }
         }
         if (results!=null) {

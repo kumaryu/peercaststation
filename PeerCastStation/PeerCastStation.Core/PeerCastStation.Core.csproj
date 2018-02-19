@@ -72,6 +72,7 @@
     <Compile Include="IPAddressExtension.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="LogWriter.cs" />
+    <Compile Include="LoopbackSourceStream.cs" />
     <Compile Include="OutputListener.cs" />
     <Compile Include="OutputStreamBase.cs" />
     <Compile Include="PeerCast.cs" />
@@ -89,6 +90,7 @@
     <Compile Include="ConnectionStream.cs" />
     <Compile Include="StreamExtension.cs" />
     <Compile Include="SynchronizedList.cs" />
+    <Compile Include="WaitableQueue.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\PeerCastStation.snk">

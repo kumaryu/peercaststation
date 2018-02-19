@@ -540,6 +540,7 @@ namespace PeerCastStation.Core
 
     public static void RegisterType(string name, Type type)
     {
+      if (settingTypes.ContainsKey(name)) return;
       settingTypes.Add(name, type);
       settingTypeNames.Add(type, name);
       foreach (var t in type.GetNestedTypes()) {

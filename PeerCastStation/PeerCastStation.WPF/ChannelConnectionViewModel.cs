@@ -240,7 +240,7 @@ namespace PeerCastStation.WPF
 
     public override ConnectionStatus ConnectionStatus {
       get {
-        var info = announcingChannel.YellowPage.GetConnectionInfo();
+        var info = announcingChannel.GetConnectionInfo();
         if ((info.RemoteHostStatus & RemoteHostStatus.Root)!=0) {
           return ConnectionStatus.ConnectionToRoot;
         }
@@ -252,20 +252,20 @@ namespace PeerCastStation.WPF
     }
 
     public override string Protocol {
-      get { return announcingChannel.YellowPage.GetConnectionInfo().ProtocolName; }
+      get { return announcingChannel.GetConnectionInfo().ProtocolName; }
     }
 
     public override string Status {
-      get { return announcingChannel.YellowPage.GetConnectionInfo().Status.ToString(); }
+      get { return announcingChannel.GetConnectionInfo().Status.ToString(); }
     }
 
     public override string RemoteName {
-      get { return GetRemoteName(announcingChannel.YellowPage.GetConnectionInfo()); }
+      get { return GetRemoteName(announcingChannel.GetConnectionInfo()); }
     }
 
     public override string Bitrate {
       get {
-        var info = announcingChannel.YellowPage.GetConnectionInfo();
+        var info = announcingChannel.GetConnectionInfo();
         var bitrate = (int)(((info.RecvRate ?? 0) + (info.SendRate ?? 0))*8/1000);
         return String.Format("{0}kbps", bitrate);
       }
@@ -280,7 +280,7 @@ namespace PeerCastStation.WPF
     }
 
     public override string AgentName {
-      get { return announcingChannel.YellowPage.GetConnectionInfo().AgentName; }
+      get { return announcingChannel.GetConnectionInfo().AgentName; }
     }
 
     public override object Connection { get { return announcingChannel; } }

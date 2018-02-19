@@ -61,6 +61,11 @@ namespace PeerCastStation.Core
     /// 掲載するYellowPageを取得します
     /// </summary>
     IYellowPageClient YellowPage { get; }
+    /// <summary>
+    /// 現在の接続情報を取得します
+    /// </summary>
+    /// <returns>呼び出した時点の接続先情報</returns>
+    ConnectionInfo GetConnectionInfo();
   }
 
 	public interface IYellowPageChannel
@@ -144,13 +149,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// YellowPageに掲載しようとしているチャンネルの一覧を取得します
     /// </summary>
-    IList<IAnnouncingChannel> AnnouncingChannels { get; }
-
-    /// <summary>
-    /// 現在の接続情報を取得します
-    /// </summary>
-    /// <returns>呼び出した時点の接続先情報</returns>
-    ConnectionInfo GetConnectionInfo();
+    IEnumerable<IAnnouncingChannel> GetAnnouncingChannels();
 
 		/// <summary>
 		/// YellowPageに掲載されているチャンネル一覧を取得します

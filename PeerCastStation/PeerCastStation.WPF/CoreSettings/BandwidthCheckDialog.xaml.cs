@@ -20,12 +20,24 @@ namespace PeerCastStation.WPF.CoreSettings
   public partial class BandwidthCheckDialog : Window
   {
     private BandwidthChecker checker;
-    public BandwidthCheckDialog()
+    public NetworkType NetworkType { get; private set; }
+    public BandwidthCheckDialog(NetworkType networkType)
     {
       InitializeComponent();
       this.DataContext = this;
+      this.NetworkType = networkType;
       Uri target_uri;
-      if (AppSettingsReader.TryGetUri("BandwidthChecker", out target_uri)) {
+      string uri_key;
+      switch (networkType) {
+      case NetworkType.IPv6:
+        uri_key = "BandwidthCheckerV6";
+        break;
+      case NetworkType.IPv4:
+      default:
+        uri_key = "BandwidthChecker";
+        break;
+      }
+      if (AppSettingsReader.TryGetUri(uri_key, out target_uri)) {
         this.checker = new BandwidthChecker(target_uri);
         this.checker.BandwidthCheckCompleted += checker_BandwidthCheckCompleted;
         this.checker.RunAsync();
