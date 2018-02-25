@@ -276,14 +276,14 @@ Stopped:
       helo.SetHeloSessionID(PeerCast.SessionID);
       switch (PeerCast.GetPortStatus(Channel.NetworkAddressFamily)) {
       case PortStatus.Open:
-        break;
-      case PortStatus.Firewalled:
         {
           var listener = PeerCast.FindListener(
             connection.RemoteEndPoint.Address,
             OutputStreamType.Relay | OutputStreamType.Metadata);
           helo.SetHeloPort(listener.LocalEndPoint.Port);
         }
+        break;
+      case PortStatus.Firewalled:
         break;
       case PortStatus.Unknown:
         {
