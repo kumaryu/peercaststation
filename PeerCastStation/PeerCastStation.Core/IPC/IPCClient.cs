@@ -24,6 +24,22 @@ namespace PeerCastStation.Core.IPC
     {
       Dispose();
     }
+
+    public static IPCClient Create(string path)
+    {
+      switch (Environment.OSVersion.Platform) {
+      case PlatformID.Win32NT:
+      case PlatformID.Win32S:
+      case PlatformID.Win32Windows:
+      case PlatformID.WinCE:
+      case PlatformID.Xbox:
+        return new NamedPipeIPCClient(path);
+      case PlatformID.MacOSX:
+      case PlatformID.Unix:
+      default:
+        return new UnixSocketIPCClient(path);
+      }
+    }
   }
 
 }
