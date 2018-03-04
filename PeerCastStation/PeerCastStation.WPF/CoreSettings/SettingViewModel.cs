@@ -146,6 +146,18 @@ namespace PeerCastStation.WPF.CoreSettings
         }
       }
 
+      public NetworkType NetworkType {
+        get {
+          switch (EndPoint.AddressFamily) {
+          case System.Net.Sockets.AddressFamily.InterNetworkV6:
+            return NetworkType.IPv6;
+          case System.Net.Sockets.AddressFamily.InterNetwork:
+          default:
+            return NetworkType.IPv4;
+          }
+        }
+      }
+
       public System.Net.IPEndPoint EndPoint {
         get {
           System.Net.IPAddress addr;
@@ -440,26 +452,37 @@ namespace PeerCastStation.WPF.CoreSettings
 
     public int PrimaryPort {
       get {
-        var listener = ports.FirstOrDefault();
-        if (listener==null) {
-          AddPort();
+        var listenerv4 = ports.FirstOrDefault(port => port.NetworkType==NetworkType.IPv4);
+        if (listenerv4==null) {
+          AddPort(7144, NetworkType.IPv4);
           return PrimaryPort;
         }
         else {
-          return listener.Port;
+          return listenerv4.Port;
         }
       }
       set {
-        var listener = ports.FirstOrDefault();
-        if (listener==null) {
-          AddPort();
-          PrimaryPort = value;
+        bool changed = false;
+        var listenerv4 = ports.FirstOrDefault(port => port.NetworkType==NetworkType.IPv4);
+        if (listenerv4==null) {
+          AddPort(value, NetworkType.IPv4);
+          changed = true;
         }
-        else if ( listener.Port!=value) {
-          listener.Port = value;
-          OnPropertyChanged("PrimaryPort");
+        else if (listenerv4.Port!=value) {
+          listenerv4.Port = value;
+          changed = true;
+        }
+
+        var listenerv6 = ports.FirstOrDefault(port => port.NetworkType==NetworkType.IPv6);
+        if (listenerv6!=null && listenerv6.Port!=value) {
+          listenerv6.Port = value;
+          changed = true;
+        }
+        if (changed) {
+          OnPropertyChanged(nameof(PrimaryPort));
         }
       }
+
     }
 
     public bool IPv6Enabled {
@@ -677,7 +700,7 @@ namespace PeerCastStation.WPF.CoreSettings
     {
       this.pecaApp = peca_app;
       this.peerCast = peca_app.PeerCast;
-      this.AddPortCommand = new Command(() => AddPort());
+      this.AddPortCommand = new Command(() => AddPort(PrimaryPort, NetworkType.IPv4));
       this.RemovePortCommand = new Command(() => RemovePort(), () => SelectedPort!=null);
       this.AddYellowPageCommand = new Command(() => AddYellowPage());
       this.RemoveYellowPageCommand = new Command(() => RemoveYellowPage(), () => SelectedYellowPage!=null);
@@ -773,15 +796,25 @@ namespace PeerCastStation.WPF.CoreSettings
       return r;
     }
 
-    public void AddPort()
+    public void AddPort(int port, NetworkType network)
     {
-      var new_port = 7144;
+      var new_port = port;
       try {
-        new_port = ports.Max(port => port.Port)+1;
+        new_port =
+          ports
+            .Where(prt => prt.NetworkType==network)
+            .Max(prt => prt.Port)+1;
       }
       catch (InvalidOperationException) {
       }
-      ports.Add(new OutputListenerViewModel(this, new_port));
+      switch (network) {
+      case NetworkType.IPv4:
+        ports.Add(new OutputListenerViewModel(this, new System.Net.IPEndPoint(System.Net.IPAddress.Any, new_port)));
+        break;
+      case NetworkType.IPv6:
+        ports.Add(new OutputListenerViewModel(this, new System.Net.IPEndPoint(System.Net.IPAddress.IPv6Any, new_port)));
+        break;
+      }
       IsListenersModified = true;
     }
 
