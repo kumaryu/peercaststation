@@ -353,10 +353,11 @@ namespace PeerCastStation.Core
       return removed;
     }
 
+    private Task lastTask = Task.Delay(0);
     private void DispatchSinkEvent(Action<IContentSink> action)
     {
       var sinks = contentSinks;
-      Task.Run(() => {
+      lastTask = lastTask.ContinueWith(prev => {
         sinks.AsParallel().ForAll(action);
       });
     }
