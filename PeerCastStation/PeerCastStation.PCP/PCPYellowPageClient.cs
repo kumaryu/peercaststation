@@ -104,8 +104,6 @@ namespace PeerCastStation.PCP
         helo.SetHeloBCID(peerCast.BroadcastID);
         switch (peerCast.GetPortStatus(networkType)) {
         case PortStatus.Open:
-          break;
-        case PortStatus.Firewalled:
           {
             var listener = peerCast.FindListener(
               networkType.GetAddressFamily(),
@@ -115,6 +113,8 @@ namespace PeerCastStation.PCP
               helo.SetHeloPort(listener.LocalEndPoint.Port);
             }
           }
+          break;
+        case PortStatus.Firewalled:
           break;
         case PortStatus.Unknown:
           {
