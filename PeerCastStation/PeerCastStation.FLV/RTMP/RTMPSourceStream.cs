@@ -47,6 +47,35 @@ namespace PeerCastStation.FLV.RTMP
   public class RTMPSourceConnection
     : SourceConnectionBase
   {
+    protected class RTMPSourceConnectionClient
+      : SourceConnectionClient
+    {
+      public MultiListener Listener { get; private set; }
+      private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+      public RTMPSourceConnectionClient(TcpClient client, MultiListener listener)
+        : base(client)
+      {
+        Listener = listener;
+        Task.Run(async () => {
+          while (!cancellationTokenSource.IsCancellationRequested) {
+            try {
+              var c = await listener.AcceptAsync(cancellationTokenSource.Token);
+              c.Close();
+            }
+            catch (TaskCanceledException) {
+            }
+          }
+        });
+      }
+
+      public override void Dispose()
+      {
+        base.Dispose();
+        cancellationTokenSource.Cancel();
+        Listener.Dispose();
+      }
+    }
+
     public RTMPSourceConnection(PeerCast peercast, Channel channel, Uri source_uri, bool use_content_bitrate)
       : base(peercast, channel, source_uri)
     {
@@ -105,60 +134,116 @@ namespace PeerCastStation.FLV.RTMP
     private ConnectionState state = ConnectionState.Waiting;
     private string clientName = "";
 
-    private IEnumerable<IPEndPoint> GetBindAddresses(Uri uri)
+    public class MultiListener
+      : IDisposable
     {
-      IEnumerable<IPAddress> addresses;
-      if (uri.HostNameType==UriHostNameType.IPv4 ||
-          uri.HostNameType==UriHostNameType.IPv6) {
-        addresses = new IPAddress[] { IPAddress.Parse(uri.Host) };
+      private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+      private volatile TaskCompletionSource<TcpClient> acceptedTaskSource = new TaskCompletionSource<TcpClient>();
+      private Uri source;
+      private TcpListener[] listeners = new TcpListener[0];
+
+      public MultiListener(Uri source)
+      {
+        this.source = source;
       }
-      else {
+
+      private static IEnumerable<IPEndPoint> GetBindAddresses(Uri uri)
+      {
+        IEnumerable<IPAddress> addresses;
+        if (uri.HostNameType==UriHostNameType.IPv4 ||
+            uri.HostNameType==UriHostNameType.IPv6) {
+          addresses = new IPAddress[] { IPAddress.Parse(uri.Host) };
+        }
+        else {
+          try {
+            addresses = Dns.GetHostAddresses(uri.DnsSafeHost);
+          }
+          catch (SocketException) {
+            return Enumerable.Empty<IPEndPoint>();
+          }
+        }
+        return addresses.Select(addr => new IPEndPoint(addr, uri.Port<0 ? 1935 : uri.Port));
+      }
+
+      public void Start()
+      {
+        var bind_addr = GetBindAddresses(source);
+        if (bind_addr.Count()==0) {
+          throw new BindErrorException(String.Format("Cannot resolve bind address: {0}", source.DnsSafeHost));
+        }
+        listeners = bind_addr.Select(addr => new TcpListener(addr)).ToArray();
         try {
-          addresses = Dns.GetHostAddresses(uri.DnsSafeHost);
+          foreach (var listener in listeners) {
+            listener.Start();
+            Task.Run(async () => {
+              while (!cancellationTokenSource.IsCancellationRequested) {
+                var client = await listener.AcceptTcpClientAsync();
+                acceptedTaskSource.TrySetResult(client);
+              }
+              acceptedTaskSource.TrySetCanceled();
+            });
+          }
         }
         catch (SocketException) {
-          return Enumerable.Empty<IPEndPoint>();
+          throw new BindErrorException(String.Format("Cannot bind address: {0}", bind_addr));
         }
       }
-      return addresses.Select(addr => new IPEndPoint(addr, uri.Port<0 ? 1935 : uri.Port));
+
+      public void Stop()
+      {
+        cancellationTokenSource.Cancel();
+        foreach (var listener in listeners) {
+          listener.Stop();
+        }
+      }
+
+      public void Dispose()
+      {
+        Stop();
+      }
+
+      public async Task<TcpClient> AcceptAsync(CancellationToken cancellationToken)
+      {
+        var cancel_task = cancellationToken.CreateCancelTask<TcpClient>();
+        start:
+        cancellationToken.ThrowIfCancellationRequested();
+        var taskSource = acceptedTaskSource;
+        var result = await Task.WhenAny(taskSource.Task, cancel_task);
+        if (result!=taskSource.Task) {
+          cancellationToken.ThrowIfCancellationRequested();
+        }
+        if (Interlocked.CompareExchange(ref acceptedTaskSource, new TaskCompletionSource<TcpClient>(), taskSource)==taskSource) {
+          return await result;
+        }
+        else {
+          goto start;
+        }
+      }
     }
 
     protected override async Task<SourceConnectionClient> DoConnect(Uri source, CancellationToken cancellationToken)
     {
       TcpClient client = null;
-      var bind_addr = GetBindAddresses(source);
-      if (bind_addr.Count()==0) {
-        this.state = ConnectionState.Error;
-        throw new BindErrorException(String.Format("Cannot resolve bind address: {0}", source.DnsSafeHost));
-      }
-      var listeners = bind_addr.Select(addr => new TcpListener(addr)).ToArray();
+      var listener = new MultiListener(source);
       try {
-        var cancel_task = cancellationToken.CreateCancelTask<TcpClient>();
-        var tasks = listeners.Select(listener => {
-          listener.Start(1);
-          Logger.Debug("Listening on {0}", listener.LocalEndpoint);
-          return listener.AcceptTcpClientAsync();
-        }).Concat(Enumerable.Repeat(cancel_task, 1)).ToArray();
-        var result = await Task.WhenAny(tasks);
-        if (!result.IsCanceled) {
-          client = result.Result;
-          Logger.Debug("Client accepted");
-        }
-        else {
-          Logger.Debug("Listen cancelled");
-        }
+        listener.Start();
+        client = await listener.AcceptAsync(cancellationToken);
+        Logger.Debug("Client accepted");
       }
-      catch (SocketException) {
+      catch (TaskCanceledException) {
+        Logger.Debug("Listen cancelled");
+      }
+      catch (BindErrorException e) {
         this.state = ConnectionState.Error;
-        throw new BindErrorException(String.Format("Cannot bind address: {0}", bind_addr));
+        throw;
       }
       finally {
-        foreach (var listener in listeners) {
+        if (client==null) {
           listener.Stop();
         }
       }
       if (client!=null) {
-        return new SourceConnectionClient(client);
+        return new RTMPSourceConnectionClient(client, listener);
       }
       else {
         return null;
@@ -354,6 +439,8 @@ namespace PeerCastStation.FLV.RTMP
     }
 
     private Dictionary<int, RTMPMessageBuilder> lastMessages = new Dictionary<int,RTMPMessageBuilder>();
+    private bool isClientXSplit = false;
+
     private async Task<bool> RecvMessage(Queue<RTMPMessage> messages, CancellationToken cancel_token)
     {
       var basic_header = (await RecvStream(1, cancel_token))[0];
@@ -397,7 +484,7 @@ namespace PeerCastStation.FLV.RTMP
           long timestamp_delta = reader.ReadUInt24();
           var body_length      = reader.ReadUInt24();
           var type_id          = reader.ReadByte();
-          if (timestamp_delta==0xFFFFFF) {
+          if (timestamp_delta==0xFFFFFF && !isClientXSplit) {
             using (var ext_reader=new RTMPBinaryReader(await RecvStream(4, cancel_token))) {
               timestamp_delta = ext_reader.ReadUInt32();
             }
@@ -413,7 +500,7 @@ namespace PeerCastStation.FLV.RTMP
       case 2:
         using (var reader=new RTMPBinaryReader(await RecvStream(3, cancel_token))) {
           long timestamp_delta = reader.ReadUInt24();
-          if (timestamp_delta==0xFFFFFF) {
+          if (timestamp_delta==0xFFFFFF && !isClientXSplit) {
             using (var ext_reader=new RTMPBinaryReader(await RecvStream(4, cancel_token))) {
               timestamp_delta = ext_reader.ReadUInt32();
             }
@@ -603,6 +690,13 @@ namespace PeerCastStation.FLV.RTMP
     private Task OnData(DataMessage msg, CancellationToken cancel_token)
     {
       flvBuffer.OnData(msg);
+      if (msg.PropertyName=="@setDataFrame") {
+        var name = (string)msg.Arguments[0];
+        var data_msg = new DataAMF0Message(msg.Timestamp, 0, name, new AMF.AMFValue[] { msg.Arguments[1] });
+        if (data_msg.PropertyName=="onMetaData") {
+          isClientXSplit = data_msg.Arguments[0].ContainsKey("xsplitCoreVersion");
+        }
+      }
       return Task.Delay(0);
     }
 
@@ -641,7 +735,7 @@ namespace PeerCastStation.FLV.RTMP
     private async Task OnCommandConnect(CommandMessage msg, CancellationToken cancel_token)
     {
       objectEncoding = ((int)msg.CommandObject["objectEncoding"])==3 ? 3 : 0;
-      clientName     = (string)msg.CommandObject["flashVer"];
+      clientName     = (string)msg.CommandObject["flashVer"] ?? (string)msg.CommandObject["flashver"];
       Logger.Debug("connect: objectEncoding {0}, flashVer: {1}", objectEncoding, clientName);
       await SendMessage(2, new SetWindowSizeMessage(this.Now, 0, recvWindowSize), cancel_token);
       await SendMessage(2, new SetPeerBandwidthMessage(this.Now, 0, sendWindowSize, PeerBandwidthLimitType.Hard), cancel_token);

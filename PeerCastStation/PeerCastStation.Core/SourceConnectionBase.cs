@@ -75,7 +75,7 @@ namespace PeerCastStation.Core
         }
       }
 
-      public void Dispose()
+      public virtual void Dispose()
       {
         remoteEndPoint = null;
         this.Stream.Close();
