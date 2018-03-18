@@ -273,13 +273,16 @@ var SettingsViewModel = new function() {
   var self = this;
   var updating = false;
 
-  self.maxRelays                 = ko.observable(null);
-  self.maxDirects                = ko.observable(null);
-  self.maxRelaysPerChannel       = ko.observable(null);
-  self.maxDirectsPerChannel      = ko.observable(null);
+  self.maxRelays                     = ko.observable(null);
+  self.maxDirects                    = ko.observable(null);
+  self.maxRelaysPerBroadcastChannel  = ko.observable(null);
+  self.maxRelaysPerRelayChannel      = ko.observable(null);
+  self.maxDirectsPerBroadcastChannel = ko.observable(null);
+  self.maxDirectsPerRelayChannel     = ko.observable(null);
   self.maxUpstreamRate           = ko.observable(null);
   self.maxUpstreamRateIPv6       = ko.observable(null);
-  self.maxUpstreamRatePerChannel = ko.observable(null);
+  self.maxUpstreamRatePerBroadcastChannel = ko.observable(null);
+  self.maxUpstreamRatePerRelayChannel     = ko.observable(null);
   self.checkBandwidthStatus      = ko.observable("");
   self.checkPortsStatus          = ko.observable("");
   self.externalIPAddresses       = ko.observable("");
@@ -293,11 +296,14 @@ var SettingsViewModel = new function() {
   $.each([
     self.maxRelays,
     self.maxDirects,
-    self.maxRelaysPerChannel,
-    self.maxDirectsPerChannel,
+    self.maxRelaysPerBroadcastChannel,
+    self.maxRelaysPerRelayChannel,
+    self.maxDirectsPerBroadcastChannel,
+    self.maxDirectsPerRelayChannel,
     self.maxUpstreamRate,
     self.maxUpstreamRateIPv6,
-    self.maxUpstreamRatePerChannel,
+    self.maxUpstreamRatePerBroadcastChannel,
+    self.maxUpstreamRatePerRelayChannel,
     self.inactiveChannelLimit,
     self.channelCleanupMode,
     self.portMapperEnabled
@@ -306,13 +312,16 @@ var SettingsViewModel = new function() {
   });
   self.submit = function() {
     var settings = {
-      maxRelays:                 self.maxRelays()!=null                 ? Number(self.maxRelays()) : null,
-      maxDirects:                self.maxDirects()!=null                ? Number(self.maxDirects()) : null,
-      maxRelaysPerChannel:       self.maxRelaysPerChannel()!=null       ? Number(self.maxRelaysPerChannel()) : null,
-      maxDirectsPerChannel:      self.maxDirectsPerChannel()!=null      ? Number(self.maxDirectsPerChannel()) : null,
-      maxUpstreamRate:           self.maxUpstreamRate()!=null           ? Number(self.maxUpstreamRate()) : null,
-      maxUpstreamRateIPv6:       self.maxUpstreamRateIPv6()!=null       ? Number(self.maxUpstreamRateIPv6()) : null,
-      maxUpstreamRatePerChannel: self.maxUpstreamRatePerChannel()!=null ? Number(self.maxUpstreamRatePerChannel()) : null,
+      maxRelays:                          self.maxRelays()!=null                          ? Number(self.maxRelays()) : null,
+      maxDirects:                         self.maxDirects()!=null                         ? Number(self.maxDirects()) : null,
+      maxRelaysPerBroadcastChannel:       self.maxRelaysPerBroadcastChannel()!=null       ? Number(self.maxRelaysPerBroadcastChannel()) : null,
+      maxRelaysPerRelayChannel:           self.maxRelaysPerRelayChannel()!=null           ? Number(self.maxRelaysPerRelayChannel()) : null,
+      maxDirectsPerBroadcastChannel:      self.maxDirectsPerBroadcastChannel()!=null      ? Number(self.maxDirectsPerBroadcastChannel()) : null,
+      maxDirectsPerRelayChannel:          self.maxDirectsPerRelayChannel()!=null          ? Number(self.maxDirectsPerRelayChannel()) : null,
+      maxUpstreamRate:                    self.maxUpstreamRate()!=null                    ? Number(self.maxUpstreamRate()) : null,
+      maxUpstreamRateIPv6:                self.maxUpstreamRateIPv6()!=null                ? Number(self.maxUpstreamRateIPv6()) : null,
+      maxUpstreamRatePerBroadcastChannel: self.maxUpstreamRatePerBroadcastChannel()!=null ? Number(self.maxUpstreamRatePerBroadcastChannel()) : null,
+      maxUpstreamRatePerRelayChannel:     self.maxUpstreamRatePerRelayChannel()!=null     ? Number(self.maxUpstreamRatePerRelayChannel()) : null,
       channelCleaner: {
         inactiveLimit: self.inactiveChannelLimit()!=null ? Number(self.inactiveChannelLimit())*60000 : null,
         mode:          self.channelCleanupMode()!=null   ? Number(self.channelCleanupMode()) : null
@@ -451,11 +460,14 @@ var SettingsViewModel = new function() {
         updating = true;
         self.maxRelays(result.maxRelays);
         self.maxDirects(result.maxDirects);
-        self.maxRelaysPerChannel(result.maxRelaysPerChannel);
-        self.maxDirectsPerChannel(result.maxDirectsPerChannel);
+        self.maxRelaysPerBroadcastChannel(result.maxRelaysPerBroadcastChannel);
+        self.maxRelaysPerRelayChannel(result.maxRelaysPerRelayChannel);
+        self.maxDirectsPerBroadcastChannel(result.maxDirectsPerBroadcastChannel);
+        self.maxDirectsPerRelayChannel(result.maxDirectsPerRelayChannel);
         self.maxUpstreamRate(result.maxUpstreamRate);
         self.maxUpstreamRateIPv6(result.maxUpstreamRateIPv6);
-        self.maxUpstreamRatePerChannel(result.maxUpstreamRatePerChannel);
+        self.maxUpstreamRatePerBroadcastChannel(result.maxUpstreamRatePerBroadcastChannel);
+        self.maxUpstreamRatePerRelayChannel(result.maxUpstreamRatePerRelayChannel);
         if (result.channelCleaner) {
           self.inactiveChannelLimit(result.channelCleaner.inactiveLimit/60000);
           self.channelCleanupMode(result.channelCleaner.mode);
