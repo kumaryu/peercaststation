@@ -287,6 +287,11 @@ namespace PeerCastStation.Core
       get { return !this.PeerCast.AccessController.IsChannelPlayable(this); }
     }
 
+    public virtual bool IsPlayable(IOutputStream sink)
+    {
+      return this.PeerCast.AccessController.IsChannelPlayable(this, sink);
+    }
+
     /// <summary>
     /// チャンネルの連続接続時間を取得します
     /// </summary>
