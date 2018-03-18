@@ -55,22 +55,22 @@ namespace PeerCastStation.App
 
     public class AccessControllerSettings
     {
-      public int MaxRelays                      { get; set; }
-      public int MaxDirects                     { get; set; }
-      public int MaxRelaysPerChannel            { get; set; }
-      public int MaxRelaysPerRelayChannel       { get; set; }
-      public int MaxDirectsPerChannel           { get; set; }
-      public int MaxDirectsPerRelayChannel      { get; set; }
-      public int MaxUpstreamRate                { get; set; }
-      public int MaxUpstreamRateIPv6            { get; set; }
-      public int MaxUpstreamRatePerChannel      { get; set; }
-      public int MaxUpstreamRatePerRelayChannel { get; set; }
+      public int MaxRelays                          { get; set; }
+      public int MaxDirects                         { get; set; }
+      public int MaxRelaysPerChannel                { get; set; }
+      public int MaxRelaysPerBroadcastChannel       { get; set; }
+      public int MaxDirectsPerChannel               { get; set; }
+      public int MaxDirectsPerBroadcastChannel      { get; set; }
+      public int MaxUpstreamRate                    { get; set; }
+      public int MaxUpstreamRateIPv6                { get; set; }
+      public int MaxUpstreamRatePerChannel          { get; set; }
+      public int MaxUpstreamRatePerBroadcastChannel { get; set; }
 
       public AccessControllerSettings()
       {
-        MaxRelaysPerRelayChannel       = -1;
-        MaxDirectsPerRelayChannel      = -1;
-        MaxUpstreamRatePerRelayChannel = -1;
+        MaxRelaysPerBroadcastChannel       = 0;
+        MaxDirectsPerBroadcastChannel      = 0;
+        MaxUpstreamRatePerBroadcastChannel = 0;
       }
     }
 
