@@ -257,6 +257,7 @@ namespace PeerCastStation.HTTP
       IContentSink
   {
     private HTTPRequest request;
+    public bool IsPlayable { get; private set; }
 
     static HTTPOutputStream()
     {
@@ -293,6 +294,7 @@ namespace PeerCastStation.HTTP
         request.Method,
         request.Uri);
       this.request = request;
+      IsPlayable = channel!=null ? channel.IsPlayable(this) : false;
     }
 
     class WaitableQueue<T>
@@ -350,7 +352,7 @@ namespace PeerCastStation.HTTP
     /// </returns>
     private BodyType GetBodyType()
     {
-      if (Channel==null || Channel.Status==SourceStreamStatus.Error) {
+      if (Channel==null || Channel.Status==SourceStreamStatus.Error || !IsPlayable) {
         return BodyType.None;
       }
       else if (Regex.IsMatch(request.Uri.AbsolutePath, @"^/stream/[0-9A-Fa-f]{32}.*$")) {
@@ -410,6 +412,9 @@ namespace PeerCastStation.HTTP
     {
       if (Channel==null) {
         return "HTTP/1.0 404 NotFound\r\n";
+      }
+      if (!IsPlayable) {
+        return "HTTP/1.0 503 ServiceUnavailable\r\n";
       }
       switch (GetBodyType()) {
       case BodyType.None:
