@@ -193,7 +193,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                   <RowDefinition Height="Auto"/>
                   <RowDefinition Height="Auto"/>
                   <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Label              Grid.Column="0" Grid.Row="0" Content="合計(IPv4):"/>
                 <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRate}"/>
@@ -205,13 +204,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                 <Label              Grid.Column="2" Grid.Row="1" Content="kbps"/>
                 <Button             Grid.Column="3" Grid.Row="1" Content="自動設定" Click="BandwidthCheckButtonIPv6_Click"/>
 
-                <Label              Grid.Column="0" Grid.Row="2" Content="チャンネル毎(配信):"/>
-                <peca:IntegerUpDown Grid.Column="1" Grid.Row="2" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerBroadcastChannel}" MinimumText="制限無し"/>
+                <Label              Grid.Column="0" Grid.Row="2" Content="チャンネル毎:"/>
+                <peca:IntegerUpDown Grid.Column="1" Grid.Row="2" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerRelayChannel}" MinimumText="制限無し"/>
                 <Label              Grid.Column="2" Grid.Row="2" Content="kbps"/>
-
-                <Label              Grid.Column="0" Grid.Row="3" Content="チャンネル毎(リレー):"/>
-                <peca:IntegerUpDown Grid.Column="1" Grid.Row="3" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerRelayChannel}" MinimumText="制限無し"/>
-                <Label              Grid.Column="2" Grid.Row="3" Content="kbps"/>
               </Grid>
             </GroupBox>
             <GroupBox Header="チャンネル自動切断">
@@ -350,10 +345,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                 <Label              Grid.Column="0" Grid.Row="0" Content="合計:"/>
                 <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="0" Value="{Binding MaxRelays}" MinimumText="制限無し"/>
 
-                <Label              Grid.Column="0" Grid.Row="1" Content="チャンネル毎(配信):"/>
+                <Label              Grid.Column="0" Grid.Row="1" Content="チャンネル毎(配信時):"/>
                 <peca:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="0" Value="{Binding MaxRelaysPerBroadcastChannel}" MinimumText="制限無し"/>
 
-                <Label              Grid.Column="0" Grid.Row="2" Content="チャンネル毎(リレー):"/>
+                <Label              Grid.Column="0" Grid.Row="2" Content="チャンネル毎(視聴時):"/>
                 <peca:IntegerUpDown Grid.Column="1" Grid.Row="2" Minimum="0" Value="{Binding MaxRelaysPerRelayChannel}" MinimumText="制限無し"/>
               </Grid>
             </GroupBox>
@@ -371,10 +366,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                 <Label              Grid.Column="0" Grid.Row="0" Content="合計:"/>
                 <peca:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="0" Value="{Binding MaxPlays}" MinimumText="制限無し"/>
 
-                <Label              Grid.Column="0" Grid.Row="1" Content="チャンネル毎(配信):"/>
+                <Label              Grid.Column="0" Grid.Row="1" Content="チャンネル毎(配信時):"/>
                 <peca:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="0" Value="{Binding MaxPlaysPerBroadcastChannel}" MinimumText="制限無し"/>
 
-                <Label              Grid.Column="0" Grid.Row="2" Content="チャンネル毎(リレー):"/>
+                <Label              Grid.Column="0" Grid.Row="2" Content="チャンネル毎(視聴時):"/>
                 <peca:IntegerUpDown Grid.Column="1" Grid.Row="2" Minimum="0" Value="{Binding MaxPlaysPerRelayChannel}" MinimumText="制限無し"/>
               </Grid>
             </GroupBox>
@@ -402,11 +397,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                 <Label              Grid.Column="2" Grid.Row="1" Content="kbps"/>
                 <Button             Grid.Column="3" Grid.Row="1" Content="自動設定" Click="BandwidthCheckButtonIPv6_Click"/>
 
-                <Label              Grid.Column="0" Grid.Row="2" Content="チャンネル毎(配信):"/>
+                <Label              Grid.Column="0" Grid.Row="2" Content="チャンネル毎(配信時):"/>
                 <peca:IntegerUpDown Grid.Column="1" Grid.Row="2" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerBroadcastChannel}" MinimumText="制限無し"/>
                 <Label              Grid.Column="2" Grid.Row="2" Content="kbps"/>
 
-                <Label              Grid.Column="0" Grid.Row="3" Content="チャンネル毎(リレー):"/>
+                <Label              Grid.Column="0" Grid.Row="3" Content="チャンネル毎(視聴時):"/>
                 <peca:IntegerUpDown Grid.Column="1" Grid.Row="3" Minimum="0" Increment="100" Value="{Binding MaxUpstreamRatePerRelayChannel}" MinimumText="制限無し"/>
                 <Label              Grid.Column="2" Grid.Row="3" Content="kbps"/>
               </Grid>
