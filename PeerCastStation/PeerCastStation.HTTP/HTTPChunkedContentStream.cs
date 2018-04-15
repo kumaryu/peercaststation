@@ -63,10 +63,10 @@ namespace PeerCastStation.HTTP
     {
       var bytes = new List<byte>();
       while (currentChunkSize==0) {
-        var b = await BaseStream.ReadByteAsync(cancellationToken);
+        var b = await BaseStream.ReadByteAsync(cancellationToken).ConfigureAwait(false);
         if (b<0) throw new IOException();
         if (b=='\r') {
-          b = await BaseStream.ReadByteAsync(cancellationToken);
+          b = await BaseStream.ReadByteAsync(cancellationToken).ConfigureAwait(false);
           if (b<0) throw new IOException();
           if (b=='\n') {
             var line = System.Text.Encoding.ASCII.GetString(bytes.ToArray());
@@ -100,15 +100,15 @@ namespace PeerCastStation.HTTP
         }
       }
       if (currentChunkSize>0) {
-        int len = await BaseStream.ReadAsync(buffer, offset, Math.Min(count, currentChunkSize), cancellationToken);
+        int len = await BaseStream.ReadAsync(buffer, offset, Math.Min(count, currentChunkSize), cancellationToken).ConfigureAwait(false);
         if (len>=0) {
           offset += len;
           count  -= len;
           currentChunkSize -= len;
         }
         if (currentChunkSize==0) {
-          await BaseStream.ReadByteAsync(cancellationToken); //\r
-          await BaseStream.ReadByteAsync(cancellationToken); //\n
+          await BaseStream.ReadByteAsync(cancellationToken).ConfigureAwait(false); //\r
+          await BaseStream.ReadByteAsync(cancellationToken).ConfigureAwait(false); //\n
         }
         return len;
       }
@@ -197,7 +197,7 @@ namespace PeerCastStation.HTTP
         buf.Write(CRLF,   0, CRLF.Length);
       }
       var ary = buf.ToArray();
-      await BaseStream.WriteAsync(ary, 0, ary.Length, cancellationToken);
+      await BaseStream.WriteAsync(ary, 0, ary.Length, cancellationToken).ConfigureAwait(false);
     }
 
     public override void Write(byte[] buffer, int offset, int count)

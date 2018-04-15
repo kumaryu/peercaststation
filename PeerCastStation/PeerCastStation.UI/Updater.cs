@@ -66,7 +66,7 @@ namespace PeerCastStation.UI
 
 		public async Task<IEnumerable<VersionDescription>> CheckVersionTaskAsync(CancellationToken cancel_token)
 		{
-			var results = await appcastReader.DownloadVersionInfoTaskAsync(url, cancel_token);
+			var results = await appcastReader.DownloadVersionInfoTaskAsync(url, cancel_token).ConfigureAwait(false);
 			if (results==null) return null;
 			return results
 				.Where(v => v.PublishDate.Date>currentVersion)
@@ -189,7 +189,7 @@ namespace PeerCastStation.UI
           System.IO.Path.Combine(
             GetDownloadPath(),
             System.IO.Path.GetFileName(enclosure.Url.AbsolutePath));
-        await client.DownloadFileTaskAsync(enclosure.Url.ToString(), filepath);
+        await client.DownloadFileTaskAsync(enclosure.Url.ToString(), filepath).ConfigureAwait(false);
         return new DownloadResult(filepath, version, enclosure);
       }
     }

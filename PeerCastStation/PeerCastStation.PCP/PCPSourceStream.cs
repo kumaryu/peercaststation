@@ -142,7 +142,7 @@ namespace PeerCastStation.PCP
       try {
         client = new TcpClient(endpoint.AddressFamily);
         var connection = new SourceConnectionClient(client);
-        await client.ConnectAsync(endpoint.Address, endpoint.Port);
+        await client.ConnectAsync(endpoint.Address, endpoint.Port).ConfigureAwait(false);
         connection.Stream.ReadTimeout  = 30000;
         connection.Stream.WriteTimeout = 8000;
         remoteHost = endpoint;
@@ -164,11 +164,11 @@ namespace PeerCastStation.PCP
             source.HostNameType==UriHostNameType.IPv6) {
           var addr = IPAddress.Parse(source.Host);
           client = new TcpClient(addr.AddressFamily);
-          await client.ConnectAsync(addr, port);
+          await client.ConnectAsync(addr, port).ConfigureAwait(false);
         }
         else {
           client = new TcpClient(Channel.NetworkAddressFamily);
-          await client.ConnectAsync(source.DnsSafeHost, port);
+          await client.ConnectAsync(source.DnsSafeHost, port).ConfigureAwait(false);
         }
         var connection = new SourceConnectionClient(client);
         connection.Stream.ReadTimeout  = 30000;
@@ -188,7 +188,7 @@ namespace PeerCastStation.PCP
     {
       if (uphost==from) return;
       try {
-        await connection.Stream.WriteAsync(packet);
+        await connection.Stream.WriteAsync(packet).ConfigureAwait(false);
       }
       catch (IOException e) {
         Logger.Info(e);
@@ -202,16 +202,16 @@ namespace PeerCastStation.PCP
     protected override async Task DoProcess(CancellationToken cancel_token)
     {
       this.Status = ConnectionStatus.Connecting;
-      await ProcessRelayRequest(cancel_token);
+      await ProcessRelayRequest(cancel_token).ConfigureAwait(false);
       if (IsStopped) goto Stopped;
-      await ProcessHandshake(cancel_token);
+      await ProcessHandshake(cancel_token).ConfigureAwait(false);
       if (IsStopped) goto Stopped;
       if (relayResponse.StatusCode==503) {
-        await ProcessHosts(cancel_token);
+        await ProcessHosts(cancel_token).ConfigureAwait(false);
       }
       else {
         this.Status = ConnectionStatus.Connected;
-        await ProcessBody(cancel_token);
+        await ProcessBody(cancel_token).ConfigureAwait(false);
       }
 Stopped:
       Logger.Debug("Disconnected");
@@ -223,7 +223,7 @@ Stopped:
       var responses = new List<string>();
       var buf = new List<byte>();
       while (line!="") {
-        var value = await stream.ReadByteAsync(cancel_token);
+        var value = await stream.ReadByteAsync(cancel_token).ConfigureAwait(false);
         if (value<0) throw new IOException();
         buf.Add((byte)value);
         if (buf.Count>=2 && buf[buf.Count-2] == '\r' && buf[buf.Count-1] == '\n') {
@@ -252,8 +252,8 @@ Stopped:
         $"\r\n"
       );
       try {
-        await connection.Stream.WriteAsync(req, cancel_token);
-        relayResponse = await ReadRequestResponseAsync(connection.Stream, cancel_token);
+        await connection.Stream.WriteAsync(req, cancel_token).ConfigureAwait(false);
+        relayResponse = await ReadRequestResponseAsync(connection.Stream, cancel_token).ConfigureAwait(false);
         Logger.Debug("Relay response: {0}", relayResponse.StatusCode);
         if (relayResponse.StatusCode==200 || relayResponse.StatusCode==503) {
           return;
@@ -305,11 +305,11 @@ Stopped:
       Logger.Debug("Handshake Started");
       var helo = CreatePCPHelo();
       try {
-        await connection.Stream.WriteAsync(helo, cancel_token);
+        await connection.Stream.WriteAsync(helo, cancel_token).ConfigureAwait(false);
         var handshake_finished = false;
         while (!handshake_finished) {
           cancel_token.ThrowIfCancellationRequested();
-          var atom = await connection.Stream.ReadAtomAsync(cancel_token);
+          var atom = await connection.Stream.ReadAtomAsync(cancel_token).ConfigureAwait(false);
           if (atom.Name==Atom.PCP_OLEH) {
             OnPCPOleh(atom);
             Logger.Debug("Handshake Finished");
@@ -341,7 +341,7 @@ Stopped:
           if (CheckHostInfoUpdate()) {
             BroadcastHostInfo();
           }
-          var atom = await connection.Stream.ReadAtomAsync(cancel_token);
+          var atom = await connection.Stream.ReadAtomAsync(cancel_token).ConfigureAwait(false);
           ProcessAtom(atom);
         }
       }
@@ -359,7 +359,7 @@ Stopped:
     {
       try {
         while (!cancel_token.IsCancellationRequested) {
-          var atom = await connection.Stream.ReadAtomAsync(cancel_token);
+          var atom = await connection.Stream.ReadAtomAsync(cancel_token).ConfigureAwait(false);
           ProcessAtom(atom);
         }
       }

@@ -17,10 +17,10 @@ namespace PeerCastStation.Core
 
     public async Task<T> DequeueAsync(CancellationToken cancellationToken)
     {
-      await locker.WaitAsync(cancellationToken);
+      await locker.WaitAsync(cancellationToken).ConfigureAwait(false);
       T result;
       while (!queue.TryDequeue(out result)) {
-        await locker.WaitAsync(cancellationToken);
+        await locker.WaitAsync(cancellationToken).ConfigureAwait(false);
       }
       return result;
     }

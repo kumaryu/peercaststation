@@ -149,23 +149,23 @@ namespace PeerCastStation.Core
       try {
         Logger.Debug("Starting");
         try {
-          await OnStarted(isStopped.Token);
+          await OnStarted(isStopped.Token).ConfigureAwait(false);
           try {
-            Stop(await DoProcess(isStopped.Token));
+            Stop(await DoProcess(isStopped.Token).ConfigureAwait(false));
           }
           catch (IOException err) {
-            await OnError(err, isStopped.Token);
+            await OnError(err, isStopped.Token).ConfigureAwait(false);
           }
           catch (OperationCanceledException) {
           }
-          await OnStopped(isStopped.Token);
+          await OnStopped(isStopped.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException) {
         }
         finally {
           var timeout_source = new CancellationTokenSource(TimeSpan.FromMilliseconds(connection.WriteTimeout));
           if (HandlerResult!=HandlerResult.Continue) {
-            await connection.CloseAsync(timeout_source.Token);
+            await connection.CloseAsync(timeout_source.Token).ConfigureAwait(false);
           }
         }
         Logger.Debug("Finished");

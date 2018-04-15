@@ -62,8 +62,8 @@ namespace PeerCastStation.UI.PortMapper
           BinaryAccessor.PutUInt16BE(bytes, 6, port);
           BinaryAccessor.PutUInt32BE(bytes, 8, lifetime);
 
-          await client.SendAsync(bytes, bytes.Length, new IPEndPoint(this.DeviceAddress, PMPPort));
-          var msg = await client.ReceiveAsync();
+          await client.SendAsync(bytes, bytes.Length, new IPEndPoint(this.DeviceAddress, PMPPort)).ConfigureAwait(false);
+          var msg = await client.ReceiveAsync().ConfigureAwait(false);
           if (!msg.RemoteEndPoint.Address.Equals(this.DeviceAddress) || msg.Buffer.Length<16) {
             if (tries++<PMPTries) goto retry;
             throw new PortMappingException();
@@ -118,7 +118,7 @@ namespace PeerCastStation.UI.PortMapper
         CancellationToken cancel_token)
     {
       try {
-        await MapAsyncInternal(protocol, port, 0, cancel_token);
+        await MapAsyncInternal(protocol, port, 0, cancel_token).ConfigureAwait(false);
       }
       catch (PortMappingException) {
       }
@@ -150,8 +150,8 @@ namespace PeerCastStation.UI.PortMapper
         cancel.Register(() => client.Close(), false);
         try {
           var bytes = new byte[] { PMPVersion, PMPOpExternalPort };
-          await client.SendAsync(bytes, bytes.Length, new IPEndPoint(this.DeviceAddress, PMPPort));
-          var msg = await client.ReceiveAsync();
+          await client.SendAsync(bytes, bytes.Length, new IPEndPoint(this.DeviceAddress, PMPPort)).ConfigureAwait(false);
+          var msg = await client.ReceiveAsync().ConfigureAwait(false);
           if (!msg.RemoteEndPoint.Address.Equals(this.DeviceAddress) || msg.Buffer.Length<12) {
             if (tries++<PMPTries) goto retry;
             return null;
@@ -196,7 +196,7 @@ namespace PeerCastStation.UI.PortMapper
       var devices = new List<NatPmpDevice>();
       foreach (var gateway in GetGatewayAddresses()) {
         var dev = new NatPmpDevice(gateway);
-        var external_address = await dev.GetExternalAddressAsync(cancel_token);
+        var external_address = await dev.GetExternalAddressAsync(cancel_token).ConfigureAwait(false);
         if (external_address!=null) devices.Add(dev);
       }
       return devices;

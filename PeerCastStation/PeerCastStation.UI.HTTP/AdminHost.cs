@@ -58,13 +58,13 @@ namespace PeerCastStation.UI.HTTP
         if (query.TryGetValue("cmd", out value)) {
           switch (value) {
           case "viewxml": //リレー情報XML出力
-            await OnViewXML(env, query, cancel_token);
+            await OnViewXML(env, query, cancel_token).ConfigureAwait(false);
             break;
           case "stop": //チャンネル停止
-            await OnStop(env, query, cancel_token);
+            await OnStop(env, query, cancel_token).ConfigureAwait(false);
             break;
           case "bump": //チャンネル再接続
-            await OnBump(env, query, cancel_token);
+            await OnBump(env, query, cancel_token).ConfigureAwait(false);
             break;
           default:
             throw new HTTPError(HttpStatusCode.BadRequest);
@@ -205,7 +205,7 @@ namespace PeerCastStation.UI.HTTP
       env.SetResponseHeader("Content-Type", "text/xml");
       env.SetResponseHeader("Content-Length", data.Length.ToString());
       if (env.RequestMethod!="HEAD") {
-        await env.ResponseBody.WriteAsync(data, 0, data.Length, cancel_token);
+        await env.ResponseBody.WriteAsync(data, 0, data.Length, cancel_token).ConfigureAwait(false);
       }
     }
 
@@ -235,11 +235,11 @@ namespace PeerCastStation.UI.HTTP
       if (channel!=null) {
         channel.Reconnect();
         env.SetResponseStatusCode(HttpStatusCode.OK);
-        await env.SetResponseBodyAsync("OK", cancel_token);
+        await env.SetResponseBodyAsync("OK", cancel_token).ConfigureAwait(false);
       }
       else {
         env.SetResponseStatusCode(HttpStatusCode.NotFound);
-        await env.SetResponseBodyAsync("Channel NotFound", cancel_token);
+        await env.SetResponseBodyAsync("Channel NotFound", cancel_token).ConfigureAwait(false);
       }
     }
 
@@ -249,11 +249,11 @@ namespace PeerCastStation.UI.HTTP
       if (channel!=null) {
         Application.PeerCast.CloseChannel(channel);
         env.SetResponseStatusCode(HttpStatusCode.OK);
-        await env.SetResponseBodyAsync("OK", cancel_token);
+        await env.SetResponseBodyAsync("OK", cancel_token).ConfigureAwait(false);
       }
       else {
         env.SetResponseStatusCode(HttpStatusCode.NotFound);
-        await env.SetResponseBodyAsync("Channel NotFound", cancel_token);
+        await env.SetResponseBodyAsync("Channel NotFound", cancel_token).ConfigureAwait(false);
       }
     }
 

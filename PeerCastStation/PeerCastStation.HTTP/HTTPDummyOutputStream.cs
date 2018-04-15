@@ -103,7 +103,7 @@ namespace PeerCastStation.HTTP
     {
       var response = "HTTP/1.0 404 NotFound\r\n\r\n";
       var bytes = System.Text.Encoding.UTF8.GetBytes(response);
-      await Connection.WriteAsync(bytes, cancel_token);
+      await Connection.WriteAsync(bytes, cancel_token).ConfigureAwait(false);
       return StopReason.OffAir;
     }
 

@@ -19,7 +19,7 @@ namespace PeerCastStation.FLV.RTMP
     public async Task<T> DequeueAsync(CancellationToken cancel_token)
     {
     retry:
-      await filledLock.WaitAsync(cancel_token);
+      await filledLock.WaitAsync(cancel_token).ConfigureAwait(false);
       T value;
       if (!queue.TryDequeue(out value)) {
         goto retry;

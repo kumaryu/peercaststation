@@ -701,7 +701,7 @@ namespace PeerCastStation.Core
         this.ChannelInfoChanged += channel_info_changed;
         var channel_info = this.ChannelInfo;
         if (channel_info!=null && !String.IsNullOrEmpty(channel_info.ContentType)) return;
-        await task.Task;
+        await task.Task.ConfigureAwait(false);
       }
       finally {
         this.ChannelInfoChanged -= channel_info_changed;

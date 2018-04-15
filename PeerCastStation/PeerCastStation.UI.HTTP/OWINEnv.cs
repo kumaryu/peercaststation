@@ -125,10 +125,10 @@ namespace PeerCastStation.UI.HTTP
       this.ResponseStatusCode = (int)status_code;
     }
 
-    public async Task SetResponseBodyAsync(string str, CancellationToken cancel_token)
+    public Task SetResponseBodyAsync(string str, CancellationToken cancel_token)
     {
       SetResponseHeader("Content-Type", "text/plain; charset=utf-8");
-      await this.ResponseBody.WriteUTF8Async(str, cancel_token);
+      return this.ResponseBody.WriteUTF8Async(str, cancel_token);
     }
 
   }

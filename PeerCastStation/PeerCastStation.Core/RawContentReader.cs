@@ -32,7 +32,7 @@ namespace PeerCastStation.Core
       bool eof = false;
       do {
         var buf = new byte[8192];
-        var sz = await stream.ReadAsync(buf, 0, buf.Length, cancel_token);
+        var sz = await stream.ReadAsync(buf, 0, buf.Length, cancel_token).ConfigureAwait(false);
         if (sz>0) {
           sink.OnContent(new Content(streamIndex, DateTime.Now-streamOrigin, pos, buf.Take(sz).ToArray()));
           pos += sz;

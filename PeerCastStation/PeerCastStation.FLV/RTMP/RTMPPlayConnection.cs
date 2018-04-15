@@ -124,7 +124,7 @@ namespace PeerCastStation.FLV.RTMP
       if (channel==null) return null;
       await Task.WhenAny(
         Task.Delay(10000),
-        channel.WaitForReadyContentTypeAsync(cancel_token));
+        channel.WaitForReadyContentTypeAsync(cancel_token)).ConfigureAwait(false);
       if (channel.ChannelInfo==null ||
           String.IsNullOrEmpty(channel.ChannelInfo.ContentType) ||
           channel.ChannelInfo.ContentType!="FLV") {
@@ -154,7 +154,7 @@ namespace PeerCastStation.FLV.RTMP
 					{ "description", description },
 				})
 			);
-			await SendMessage(3, status_command, cancel_token);
+			await SendMessage(3, status_command, cancel_token).ConfigureAwait(false);
 		}
 
     protected override async Task OnCommandPlay(CommandMessage msg, CancellationToken cancel_token)
@@ -165,9 +165,9 @@ namespace PeerCastStation.FLV.RTMP
       var reset       = msg.Arguments.Count>3 ? (bool)msg.Arguments[3] : false;
       logger.Debug("Play: {0}, {1}, {2}, {3}", stream_name.ToString(), start, duration, reset);
       if (owner.CheckAuthotization(stream_name.GetParameter("auth"))) {
-        this.Channel = await RequestChannel(stream_name, cancel_token);
+        this.Channel = await RequestChannel(stream_name, cancel_token).ConfigureAwait(false);
         this.StreamId = msg.StreamId;
-        await SendMessage(2, new UserControlMessage.StreamBeginMessage(this.Now, 0, msg.StreamId), cancel_token);
+        await SendMessage(2, new UserControlMessage.StreamBeginMessage(this.Now, 0, msg.StreamId), cancel_token).ConfigureAwait(false);
         if (this.Channel!=null) {
           await SendOnStatus(
             this.StreamId,
@@ -175,7 +175,7 @@ namespace PeerCastStation.FLV.RTMP
             "status",
             "NetStream.Play.Start",
             stream_name.ToString(),
-            cancel_token);
+            cancel_token).ConfigureAwait(false);
           if (reset) {
             await SendOnStatus(
               this.StreamId,
@@ -183,7 +183,7 @@ namespace PeerCastStation.FLV.RTMP
               "status",
               "NetStream.Play.Reset",
               stream_name.ToString(),
-              cancel_token);
+              cancel_token).ConfigureAwait(false);
           }
         }
         else {
@@ -193,7 +193,7 @@ namespace PeerCastStation.FLV.RTMP
             "error",
             "NetStream.Play.FileNotFound",
             stream_name.ToString(),
-            cancel_token);
+            cancel_token).ConfigureAwait(false);
         }
       }
       else {
@@ -203,7 +203,7 @@ namespace PeerCastStation.FLV.RTMP
           "error",
           "NetStream.Play.Failed",
           "auth failed",
-          cancel_token);
+          cancel_token).ConfigureAwait(false);
       }
       if (msg.TransactionId!=0) {
         var result = CommandMessage.Create(
@@ -214,10 +214,10 @@ namespace PeerCastStation.FLV.RTMP
           msg.TransactionId,
           null
         );
-        await SendMessage(3, result, cancel_token);
+        await SendMessage(3, result, cancel_token).ConfigureAwait(false);
       }
       if (this.Channel!=null) {
-        await base.OnCommandPlay(msg, cancel_token);
+        await base.OnCommandPlay(msg, cancel_token).ConfigureAwait(false);
         this.Channel.ContentChanged += OnContentChanged;
         OnContentChanged(this, new EventArgs());
       }

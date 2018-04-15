@@ -164,7 +164,7 @@ namespace PeerCastStation.UI.HTTP
         switch (env.RequestMethod) {
         case "HEAD":
         case "GET":
-          await SendJson(env, ctx.GetVersionInfo(), env.RequestMethod!="HEAD", cancel_token);
+          await SendJson(env, ctx.GetVersionInfo(), env.RequestMethod!="HEAD", cancel_token).ConfigureAwait(false);
           break;
         case "POST":
           {
@@ -182,11 +182,11 @@ namespace PeerCastStation.UI.HTTP
 
             try {
               var timeout_token = new CancellationTokenSource(TimeoutLimit);
-              var buf = await body.ReadBytesAsync((int)len, CancellationTokenSource.CreateLinkedTokenSource(cancel_token, timeout_token.Token).Token);
+              var buf = await body.ReadBytesAsync((int)len, CancellationTokenSource.CreateLinkedTokenSource(cancel_token, timeout_token.Token).Token).ConfigureAwait(false);
               var request_str = System.Text.Encoding.UTF8.GetString(buf);
               JToken res = rpc_host.ProcessRequest(request_str);
               if (res!=null) {
-                await SendJson(env, res, true, cancel_token);
+                await SendJson(env, res, true, cancel_token).ConfigureAwait(false);
               }
               else {
                 throw new HTTPError(HttpStatusCode.NoContent);
@@ -216,7 +216,7 @@ namespace PeerCastStation.UI.HTTP
       env.AddResponseHeader("Content-Length", body.Length.ToString());
       env.ResponseStatusCode = (int)HttpStatusCode.OK;
       if (send_body) {
-        await env.ResponseBody.WriteAsync(body, 0, body.Length, cancel_token);
+        await env.ResponseBody.WriteAsync(body, 0, body.Length, cancel_token).ConfigureAwait(false);
       }
     }
 

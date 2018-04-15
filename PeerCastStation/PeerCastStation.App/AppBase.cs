@@ -76,7 +76,7 @@ namespace PeerCastStation.App
       foreach (var plugin in Plugins) {
         plugin.Start();
       }
-      var result = await stopTask.Task;
+      var result = await stopTask.Task.ConfigureAwait(false);
       foreach (var plugin in Plugins) {
         plugin.Stop();
       }

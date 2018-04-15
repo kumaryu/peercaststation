@@ -48,9 +48,9 @@ namespace PeerCastStation.UI
 
 		private Task<IEnumerable<IYellowPageChannel>> updateTask;
 		private CancellationTokenSource updateCancel = new CancellationTokenSource();
-		public async Task<IEnumerable<IYellowPageChannel>> UpdateAsync()
+		public Task<IEnumerable<IYellowPageChannel>> UpdateAsync()
 		{
-			if (updateTimer.IsRunning && updateTimer.ElapsedMilliseconds<18000) return Channels;
+			if (updateTimer.IsRunning && updateTimer.ElapsedMilliseconds<18000) return Task.FromResult(Channels.AsEnumerable());
 			updateCancel = new CancellationTokenSource(5000);
 			updateTask = Task.WhenAll(this.Application.PeerCast.YellowPages.Select(yp => yp.GetChannelsAsync(updateCancel.Token)))
 				.ContinueWith(task => {
@@ -59,7 +59,7 @@ namespace PeerCastStation.UI
 					Channels = task.Result.SelectMany(result => result).ToList();
 					return Channels;
 				});
-			return await updateTask;
+			return updateTask;
 		}
 	}
 

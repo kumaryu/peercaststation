@@ -96,7 +96,7 @@ namespace PeerCastStation.PCP
       private async Task PCPHandshake(Stream stream, IPEndPoint remoteEndPoint, CancellationToken ct)
       {
         logger.Debug("Sending Handshake");
-        await stream.WriteAsync(new Atom(new ID4("pcp\n"), PCPVersion.GetPCPVersionForNetworkType(networkType)), ct);
+        await stream.WriteAsync(new Atom(new ID4("pcp\n"), PCPVersion.GetPCPVersionForNetworkType(networkType)), ct).ConfigureAwait(false);
         var helo = new AtomCollection();
         helo.SetHeloAgent(peerCast.AgentName);
         helo.SetHeloVersion(PCPVersion.ServantVersion);
@@ -128,9 +128,9 @@ namespace PeerCastStation.PCP
           }
           break;
         }
-        await stream.WriteAsync(new Atom(Atom.PCP_HELO, helo), ct);
+        await stream.WriteAsync(new Atom(Atom.PCP_HELO, helo), ct).ConfigureAwait(false);
         while (!ct.IsCancellationRequested) {
-          var atom = await stream.ReadAtomAsync(ct);
+          var atom = await stream.ReadAtomAsync(ct).ConfigureAwait(false);
           if (atom.Name==Atom.PCP_OLEH) {
             OnPCPOleh(atom);
             break;
@@ -166,7 +166,7 @@ namespace PeerCastStation.PCP
       private async Task ReceiveAndProcessAtomAsync(Stream stream, CancellationToken ct)
       {
         do {
-          var atom = await stream.ReadAtomAsync(ct);
+          var atom = await stream.ReadAtomAsync(ct).ConfigureAwait(false);
           ProcessAtom(atom);
         } while (refCount>0 && !ct.IsCancellationRequested);
       }
@@ -191,15 +191,15 @@ namespace PeerCastStation.PCP
       private async Task DequeueAndUpdateChannelAsync(Stream stream, CancellationToken ct)
       {
         do {
-          var updatedChannel = await updateQueue.DequeueAsync(ct);
-          await stream.WriteAsync(CreateChannelBcst(updatedChannel.Channel, updatedChannel.Playing));
+          var updatedChannel = await updateQueue.DequeueAsync(ct).ConfigureAwait(false);
+          await stream.WriteAsync(CreateChannelBcst(updatedChannel.Channel, updatedChannel.Playing)).ConfigureAwait(false);
         } while (refCount>0 && !ct.IsCancellationRequested);
       }
 
       private async Task CancelIfCompletedTask(Task task, CancellationTokenSource cts)
       {
         try {
-          await task;
+          await task.ConfigureAwait(false);
           cts.Cancel();
         }
         catch (Exception) {
@@ -296,10 +296,10 @@ namespace PeerCastStation.PCP
         remoteSessionID = null;
         try {
           using (var client=new TcpClient()) {
-            await client.ConnectAsync(host, port);
+            await client.ConnectAsync(host, port).ConfigureAwait(false);
             using (var stream=new ConnectionStream(client.GetStream())) {
               remoteEndPoint = (IPEndPoint)client.Client.RemoteEndPoint;
-              await PCPHandshake(stream, remoteEndPoint, ct);
+              await PCPHandshake(stream, remoteEndPoint, ct).ConfigureAwait(false);
               logger.Debug("Handshake succeeded");
               status = ConnectionStatus.Connected;
               var subCancellationSource = new CancellationTokenSource();
@@ -310,12 +310,12 @@ namespace PeerCastStation.PCP
               try {
                 await TaskWhenAllForAwait(
                   CancelIfCompletedTask(ReceiveAndProcessAtomAsync(stream, subCt), subCancellationSource),
-                  CancelIfCompletedTask(DequeueAndUpdateChannelAsync(stream, subCt), subCancellationSource));
+                  CancelIfCompletedTask(DequeueAndUpdateChannelAsync(stream, subCt), subCancellationSource)).ConfigureAwait(false);
               }
               catch (TaskCanceledException) {
               }
               logger.Debug("Closing connection");
-              await stream.WriteAsync(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT));
+              await stream.WriteAsync(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT)).ConfigureAwait(false);
               result = ConnectionResult.Stopped;
               status = ConnectionStatus.Idle;
             }
@@ -337,10 +337,10 @@ namespace PeerCastStation.PCP
 
       private void CheckConnection() {
         async Task startConnection(Task prevTask) {
-          await prevTask;
+          await prevTask.ConfigureAwait(false);
           int retryWait = 1000;
         retry:
-          var result = await ConnectionProc(host, disposedCancellation.Token);
+          var result = await ConnectionProc(host, disposedCancellation.Token).ConfigureAwait(false);
           switch (result) {
           case ConnectionResult.Banned:
           case ConnectionResult.ServerQuit:
@@ -350,7 +350,7 @@ namespace PeerCastStation.PCP
             break;
           case ConnectionResult.Error:
             if (refCount>0 && !disposedCancellation.IsCancellationRequested) {
-              await Task.Delay(retryWait, disposedCancellation.Token);
+              await Task.Delay(retryWait, disposedCancellation.Token).ConfigureAwait(false);
               retryWait = Math.Min(retryWait * 3 / 2, 30000);
               goto retry;
             }
@@ -512,7 +512,7 @@ namespace PeerCastStation.PCP
         updateTask = Task.Run(async () => {
           try {
             while (!ct.IsCancellationRequested) {
-              await Task.Delay(UpdateTimeSpan, ct);
+              await Task.Delay(UpdateTimeSpan, ct).ConfigureAwait(false);
               UpdateChannels();
             }
           }
@@ -964,7 +964,7 @@ namespace PeerCastStation.PCP
 			client.Encoding = System.Text.Encoding.UTF8;
 			cancel_token.Register(() => client.CancelAsync());
 			try {
-				using (var reader=new StringReader(await client.DownloadStringTaskAsync(this.ChannelsUri))) {
+				using (var reader=new StringReader(await client.DownloadStringTaskAsync(this.ChannelsUri).ConfigureAwait(false))) {
 					var results = new List<IYellowPageChannel>();
 					var line = reader.ReadLine();
 					while (line!=null) {

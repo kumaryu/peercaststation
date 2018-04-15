@@ -23,10 +23,10 @@ namespace PeerCastStation.FLV
     public Channel Channel { get; private set; }
     private FLVFileParser fileParser = new FLVFileParser();
 
-    public async Task ReadAsync(IContentSink sink, Stream stream, CancellationToken cancel_token)
+    public Task ReadAsync(IContentSink sink, Stream stream, CancellationToken cancel_token)
     {
       var buffered_sink = new FLVContentBuffer(this.Channel, sink);
-      await fileParser.ReadAsync(stream, buffered_sink, cancel_token);
+      return fileParser.ReadAsync(stream, buffered_sink, cancel_token);
     }
   }
 

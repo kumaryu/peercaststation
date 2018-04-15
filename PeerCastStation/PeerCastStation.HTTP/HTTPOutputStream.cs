@@ -62,7 +62,7 @@ namespace PeerCastStation.HTTP
       var requests = new List<string>();
       var buf = new List<byte>();
       while (line!="") {
-        var value = await stream.ReadByteAsync(cancel_token);
+        var value = await stream.ReadByteAsync(cancel_token).ConfigureAwait(false);
         if (value<0) return null;
         buf.Add((byte)value);
         if (buf.Count >= 2 && buf[buf.Count - 2] == '\r' && buf[buf.Count - 1] == '\n') {
@@ -310,10 +310,10 @@ namespace PeerCastStation.HTTP
 
       public async Task<T> DequeueAsync(CancellationToken cancellationToken)
       {
-        await locker.WaitAsync(cancellationToken);
+        await locker.WaitAsync(cancellationToken).ConfigureAwait(false);
         T result;
         while (!queue.TryDequeue(out result)) {
-          await locker.WaitAsync(cancellationToken);
+          await locker.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
         return result;
       }
@@ -502,7 +502,7 @@ namespace PeerCastStation.HTTP
       await Task.WhenAny(
         Task.Delay(10000),
         this.channelInfoReadyTaskSource.Task,
-        WaitForStoppedAsync());
+        WaitForStoppedAsync()).ConfigureAwait(false);
       if (channelInfo==null) {
         throw new HTTPError(HttpStatusCode.ServiceUnavailable);
       }
@@ -513,7 +513,7 @@ namespace PeerCastStation.HTTP
     {
       var response_header = CreateResponseHeader();
       var bytes = System.Text.Encoding.UTF8.GetBytes(response_header + "\r\n");
-      await Connection.WriteAsync(bytes);
+      await Connection.WriteAsync(bytes).ConfigureAwait(false);
       Logger.Debug("Header: {0}", response_header);
     }
 
@@ -544,11 +544,11 @@ namespace PeerCastStation.HTTP
       Content sent_packet = null;
       try {
         while (!IsStopped) {
-          var packet = await GetPacket(cancel_token);
+          var packet = await GetPacket(cancel_token).ConfigureAwait(false);
           switch (packet.Type) {
           case Packet.ContentType.Header:
             if (sent_header!=packet.Content && packet.Content!=null) {
-              await Connection.WriteAsync(packet.Content.Data, cancel_token);
+              await Connection.WriteAsync(packet.Content.Data, cancel_token).ConfigureAwait(false);
               Logger.Debug("Sent ContentHeader pos {0}", packet.Content.Position);
               sent_header = packet.Content;
               sent_packet = packet.Content;
@@ -559,7 +559,7 @@ namespace PeerCastStation.HTTP
             var c = packet.Content;
             if (c.Timestamp>sent_packet.Timestamp ||
                 (c.Timestamp==sent_packet.Timestamp && c.Position>sent_packet.Position)) {
-              await Connection.WriteAsync(c.Data, cancel_token);
+              await Connection.WriteAsync(c.Data, cancel_token).ConfigureAwait(false);
               sent_packet = c;
             }
             break;
@@ -583,10 +583,10 @@ namespace PeerCastStation.HTTP
         var parameters = new Dictionary<string, string>() {
           { "auth", HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey) },
         };
-        await Connection.WriteAsync(pls.CreatePlayList(baseuri, parameters), cancel_token);
+        await Connection.WriteAsync(pls.CreatePlayList(baseuri, parameters), cancel_token).ConfigureAwait(false);
       }
       else {
-        await Connection.WriteAsync(pls.CreatePlayList(baseuri, Enumerable.Empty<KeyValuePair<string,string>>()), cancel_token);
+        await Connection.WriteAsync(pls.CreatePlayList(baseuri, Enumerable.Empty<KeyValuePair<string,string>>()), cancel_token).ConfigureAwait(false);
       }
 
     }
@@ -597,10 +597,10 @@ namespace PeerCastStation.HTTP
       case BodyType.None:
         break;
       case BodyType.Content:
-        await SendContents(cancel_token);
+        await SendContents(cancel_token).ConfigureAwait(false);
         break;
       case BodyType.Playlist:
-        await SendPlaylist(cancel_token);
+        await SendPlaylist(cancel_token).ConfigureAwait(false);
         break;
       }
     }
@@ -608,14 +608,14 @@ namespace PeerCastStation.HTTP
     private async Task Unauthorized()
     {
       var response_header = HTTPUtils.CreateResponseHeader(HttpStatusCode.Unauthorized, new Dictionary<string,string>());
-      await Connection.WriteAsync(System.Text.Encoding.UTF8.GetBytes(response_header));
+      await Connection.WriteAsync(System.Text.Encoding.UTF8.GetBytes(response_header)).ConfigureAwait(false);
       Logger.Debug("Header: {0}", response_header);
     }
 
     private async Task SendErrorResponse(HttpStatusCode code)
     {
       var response_header = HTTPUtils.CreateResponseHeader(code, new Dictionary<string,string>());
-      await Connection.WriteAsync(System.Text.Encoding.UTF8.GetBytes(response_header));
+      await Connection.WriteAsync(System.Text.Encoding.UTF8.GetBytes(response_header)).ConfigureAwait(false);
       Logger.Debug("Header: {0}", response_header);
     }
 
@@ -652,15 +652,15 @@ namespace PeerCastStation.HTTP
         if (!HTTPUtils.CheckAuthorization(request, AccessControlInfo)) {
           throw new HTTPError(HttpStatusCode.Unauthorized);
         }
-        await WaitChannelReceived();
-        await SendResponseHeader();
+        await WaitChannelReceived().ConfigureAwait(false);
+        await SendResponseHeader().ConfigureAwait(false);
         if (request.Method=="GET") {
-          await SendReponseBody(cancel_token);
+          await SendReponseBody(cancel_token).ConfigureAwait(false);
         }
         return StopReason.OffAir;
       }
       catch (HTTPError err) {
-        await SendErrorResponse(err.StatusCode);
+        await SendErrorResponse(err.StatusCode).ConfigureAwait(false);
         return StopReason.OffAir;
       }
     }

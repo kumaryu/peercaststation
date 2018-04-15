@@ -390,7 +390,7 @@ namespace PeerCastStation.Core
           foreach (var monitor in ChannelMonitors) {
             monitor.OnTimer();
           }
-          await Task.Delay(5000, cancel_token);
+          await Task.Delay(5000, cancel_token).ConfigureAwait(false);
         }
       }
       catch (OperationCanceledException) {
