@@ -45,7 +45,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// コンテントのContentCollectionへ追加された順番を取得および設定します
     /// </summary>
-    public long Serial { get; set; } 
+    public long Serial { get; private set; } 
 
     /// <summary>
     /// コンテントのストリーム番号、時刻、位置、内容を指定して初期化します
@@ -71,6 +71,15 @@ namespace PeerCastStation.Core
       Data      = new byte[length];
       Array.Copy(data, offset, this.Data, 0, length);
       Serial    = -1;
+    }
+
+    public Content(Content other, long serial)
+    {
+      Stream    = other.Stream;
+      Timestamp = other.Timestamp;
+      Position  = other.Position;
+      Data      = other.Data;
+      Serial    = serial;
     }
   }
 
@@ -125,9 +134,7 @@ namespace PeerCastStation.Core
       bool added = false;
       lock (list) {
         try {
-          item.Serial = serial;
-          list.Add(new ContentKey(item.Stream, item.Timestamp, item.Position), item);
-          serial += 1;
+          list.Add(new ContentKey(item.Stream, item.Timestamp, item.Position), new Content(item, serial++));
           added = true;
         }
         catch (ArgumentException) {}
