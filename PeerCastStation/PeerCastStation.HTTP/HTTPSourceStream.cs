@@ -26,7 +26,7 @@ namespace PeerCastStation.HTTP
       var buf = new List<byte>();
       var length = 0;
       while (line!="") {
-        var value = await stream.ReadByteAsync(cancel_token);
+        var value = await stream.ReadByteAsync(cancel_token).ConfigureAwait(false);
         if (value<0) {
           throw new EndOfStreamException();
         }
@@ -112,10 +112,10 @@ namespace PeerCastStation.HTTP
         var client = new TcpClient();
         if (source.HostNameType==UriHostNameType.IPv4 ||
             source.HostNameType==UriHostNameType.IPv6) {
-          await client.ConnectAsync(IPAddress.Parse(source.Host), source.Port);
+          await client.ConnectAsync(IPAddress.Parse(source.Host), source.Port).ConfigureAwait(false);
         }
         else {
-          await client.ConnectAsync(source.DnsSafeHost, source.Port);
+          await client.ConnectAsync(source.DnsSafeHost, source.Port).ConfigureAwait(false);
         }
         var connection = new SourceConnectionClient(client);
         connection.Stream.ReadTimeout  = 10000;
@@ -146,18 +146,18 @@ namespace PeerCastStation.HTTP
             SourceUri.PathAndQuery,
             host,
             PeerCast.AgentName);
-        await connection.Stream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(request));
+        await connection.Stream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(request)).ConfigureAwait(false);
         Logger.Debug("Sending request:\n" + request);
 
         response = null;
-        response = await HTTPResponseReader.ReadAsync(connection.Stream, cancel_token);
+        response = await HTTPResponseReader.ReadAsync(connection.Stream, cancel_token).ConfigureAwait(false);
         if (response.Status!=200) {
           Logger.Error("Server responses {0} to GET {1}", response.Status, SourceUri.PathAndQuery);
           Stop(response.Status==404 ? StopReason.OffAir : StopReason.UnavailableError);
         }
 
         this.Status = ConnectionStatus.Connected;
-        await contentReader.ReadAsync(contentSink, connection.Stream, cancel_token);
+        await contentReader.ReadAsync(contentSink, connection.Stream, cancel_token).ConfigureAwait(false);
         Stop(StopReason.OffAir);
       }
       catch (InvalidDataException) {

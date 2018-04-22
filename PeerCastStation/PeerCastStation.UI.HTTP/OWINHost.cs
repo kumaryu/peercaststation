@@ -91,7 +91,7 @@ namespace PeerCastStation.UI.HTTP
       int length;
       if (request.Headers.TryGetValue("Content-Length", out value) && 
           Int32.TryParse(value, out length)) {
-        var bytes = await this.Connection.ReadBytesAsync(length, cancel_token);
+        var bytes = await this.Connection.ReadBytesAsync(length, cancel_token).ConfigureAwait(false);
         env["owin.RequestBody"] = new MemoryStream(bytes);
       }
       else if (request.ChunkedEncoding) {
@@ -193,18 +193,18 @@ namespace PeerCastStation.UI.HTTP
         }
       }
       header.Append("\r\n");
-      await Connection.WriteUTF8Async(header.ToString(), cancel_token);
+      await Connection.WriteUTF8Async(header.ToString(), cancel_token).ConfigureAwait(false);
       if (body_ary.Length>0) {
-        await Connection.WriteAsync(body_ary, cancel_token);
+        await Connection.WriteAsync(body_ary, cancel_token).ConfigureAwait(false);
       }
     }
 
     protected override async Task<StopReason> DoProcess(CancellationToken cancel_token)
     {
       try {
-        var env = await CreateOWINEnvironment(cancel_token);
-        await application.AppFunc.Invoke(env);
-        await ProcessResponse(env, cancel_token);
+        var env = await CreateOWINEnvironment(cancel_token).ConfigureAwait(false);
+        await application.AppFunc.Invoke(env).ConfigureAwait(false);
+        await ProcessResponse(env, cancel_token).ConfigureAwait(false);
         if (request.KeepAlive) {
           this.HandlerResult = HandlerResult.Continue;
         }
@@ -215,7 +215,7 @@ namespace PeerCastStation.UI.HTTP
       catch (Exception) {
         await Connection.WriteUTF8Async(
           HTTPUtils.CreateResponseHeader(HttpStatusCode.InternalServerError),
-          cancel_token);
+          cancel_token).ConfigureAwait(false);
       }
       return StopReason.OffAir;
     }

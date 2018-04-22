@@ -131,7 +131,7 @@ namespace PeerCastStation.HTTP
           Logger.Debug("Listening on {0}", listener.LocalEndpoint);
           return listener.AcceptTcpClientAsync();
         }).Concat(Enumerable.Repeat(cancel_task, 1)).ToArray();
-        var result = await Task.WhenAny(tasks);
+        var result = await Task.WhenAny(tasks).ConfigureAwait(false);
         if (!result.IsCanceled) {
           client = result.Result;
           Logger.Debug("Client accepted");
@@ -160,7 +160,7 @@ namespace PeerCastStation.HTTP
     private bool chunked = false;
     private async Task Handshake(CancellationToken cancel_token)
     {
-      var request = await HTTPRequestReader.ReadAsync(connection.Stream, cancel_token);
+      var request = await HTTPRequestReader.ReadAsync(connection.Stream, cancel_token).ConfigureAwait(false);
       if (request==null) new HTTPError(HttpStatusCode.BadRequest);
       if (request.Method!="POST") new HTTPError(HttpStatusCode.MethodNotAllowed);
       Logger.Debug("POST requested");
@@ -198,7 +198,7 @@ namespace PeerCastStation.HTTP
       this.state = ConnectionState.Connected;
       var stream = GetChunkedStream(connection.Stream);
       this.state = ConnectionState.Receiving;
-      await ContentReader.ReadAsync(contentSink, stream, cancel_token);
+      await ContentReader.ReadAsync(contentSink, stream, cancel_token).ConfigureAwait(false);
       Stop(StopReason.OffAir);
     }
 
@@ -207,13 +207,13 @@ namespace PeerCastStation.HTTP
       this.state = ConnectionState.Waiting;
       try {
         if (connection!=null && !IsStopped) {
-          await Handshake(cancellationToken);
-          await ReadContents(cancellationToken);
+          await Handshake(cancellationToken).ConfigureAwait(false);
+          await ReadContents(cancellationToken).ConfigureAwait(false);
         }
         this.state = ConnectionState.Closed;
       }
       catch (HTTPError e) {
-        await connection.Stream.WriteUTF8Async(HTTPUtils.CreateResponseHeader(e.StatusCode));
+        await connection.Stream.WriteUTF8Async(HTTPUtils.CreateResponseHeader(e.StatusCode)).ConfigureAwait(false);
         Stop(StopReason.BadAgentError);
         this.state = ConnectionState.Error;
       }

@@ -102,8 +102,8 @@ namespace PeerCastStation.FLV
 
       public async Task<bool> ReadTagBodyAsync(Stream stream, CancellationToken cancel_token)
       {
-        this.Body   = await stream.ReadBytesAsync(this.DataSize, cancel_token);
-        this.Footer = await stream.ReadBytesAsync(4, cancel_token);
+        this.Body   = await stream.ReadBytesAsync(this.DataSize, cancel_token).ConfigureAwait(false);
+        this.Footer = await stream.ReadBytesAsync(4, cancel_token).ConfigureAwait(false);
         return IsValidFooter;
       }
 
@@ -238,7 +238,7 @@ namespace PeerCastStation.FLV
       int len = 0;
       var bin = new byte[13];
       try {
-        len += await stream.ReadBytesAsync(bin, len, 13-len, cancel_token);
+        len += await stream.ReadBytesAsync(bin, len, 13-len, cancel_token).ConfigureAwait(false);
       }
       catch (EndOfStreamException) {
         return;
@@ -251,11 +251,11 @@ namespace PeerCastStation.FLV
       bool eos = false;
       while (!eos) {
         try {
-          len += await stream.ReadBytesAsync(bin, len, 11-len, cancel_token);
+          len += await stream.ReadBytesAsync(bin, len, 11-len, cancel_token).ConfigureAwait(false);
           var read_valid = false;
           var body = new FLVTag(this, bin);
           if (body.IsValidHeader) {
-            if (await body.ReadTagBodyAsync(stream, cancel_token)) {
+            if (await body.ReadTagBodyAsync(stream, cancel_token).ConfigureAwait(false)) {
               len = 0;
               read_valid = true;
               switch (body.Type) {
@@ -272,7 +272,7 @@ namespace PeerCastStation.FLV
             }
           }
           else {
-            len += await stream.ReadBytesAsync(bin, len, 13-len, cancel_token);
+            len += await stream.ReadBytesAsync(bin, len, 13-len, cancel_token).ConfigureAwait(false);
             var new_header = new FLVFileHeader(bin);
             if (new_header.IsValid) {
               read_valid = true;

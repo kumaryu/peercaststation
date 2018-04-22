@@ -160,9 +160,9 @@ namespace PeerCastStation.UI
       cancel_token.ThrowIfCancellationRequested();
       try {
         var new_devices = new HashSet<NatDevice>(await Task.WhenAll(
-          (await discoverer.DiscoverAsync(cancel_token))
-          .Select(async dev => new NatDevice(dev, await dev.GetExternalAddressAsync(cancel_token)))
-        ));
+          (await discoverer.DiscoverAsync(cancel_token).ConfigureAwait(false))
+          .Select(async dev => new NatDevice(dev, await dev.GetExternalAddressAsync(cancel_token).ConfigureAwait(false)))
+        ).ConfigureAwait(false));
         foreach (var device in new_devices) {
           if (devices.Contains(device)) continue;
           foreach (var port in ports) {

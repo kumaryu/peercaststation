@@ -63,7 +63,7 @@ namespace PeerCastStation.TS
       {
         while (!cancel_token.IsCancellationRequested)
         {
-          bytes188 = await stream.ReadBytesAsync(188, cancel_token);
+          bytes188 = await stream.ReadBytesAsync(188, cancel_token).ConfigureAwait(false);
           TSPacket packet = new TSPacket(bytes188);
           if (packet.sync_byte != 0x47) throw new Exception();
           if (packet.payload_unit_start_indicator > 0)

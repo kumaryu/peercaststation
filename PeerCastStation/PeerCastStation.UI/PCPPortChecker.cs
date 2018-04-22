@@ -72,7 +72,7 @@ namespace PeerCastStation.UI
           var checker = new PCPPortChecker(peercast.SessionID, target, group.Key, group.Select(ep => ep.Port));
           return checker.RunAsync();
         })
-      );
+      ).ConfigureAwait(false);
     }
   }
 
@@ -120,7 +120,7 @@ namespace PeerCastStation.UI
         stopwatch.Start();
         var body = System.Text.Encoding.UTF8.GetBytes(data.ToString());
         response_body = System.Text.Encoding.UTF8.GetString(
-          await client.UploadDataTaskAsync(Target, body)
+          await client.UploadDataTaskAsync(Target, body).ConfigureAwait(false)
         );
         stopwatch.Stop();
         succeeded = true;

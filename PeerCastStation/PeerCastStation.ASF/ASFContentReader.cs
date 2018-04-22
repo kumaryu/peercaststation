@@ -78,7 +78,7 @@ namespace PeerCastStation.ASF
       var bytes = new byte[sz];
       var pos = 0;
       while (pos<sz) {
-        var read = await s.ReadAsync(bytes, 0, bytes.Length, cancel_token);
+        var read = await s.ReadAsync(bytes, 0, bytes.Length, cancel_token).ConfigureAwait(false);
         if (read<=0) throw new EndOfStreamException();
         pos += read;
       }
@@ -100,7 +100,7 @@ namespace PeerCastStation.ASF
     public static async Task<byte[]> ReadBytesLEAsync(Stream s, int sz, CancellationToken cancel_token)
     {
       if (BitConverter.IsLittleEndian) {
-        return await ReadBytesAsync(s, sz, cancel_token);
+        return await ReadBytesAsync(s, sz, cancel_token).ConfigureAwait(false);
       }
       else {
         var bytes = ReadBytes(s, sz);
@@ -118,7 +118,7 @@ namespace PeerCastStation.ASF
 
     public static async Task<byte> ReadUInt8Async(Stream s, CancellationToken cancel_token)
     {
-      int b = await s.ReadByteAsync();
+      int b = await s.ReadByteAsync().ConfigureAwait(false);
       if (b<0) throw new EndOfStreamException();
       return (byte)b;
     }
@@ -130,7 +130,7 @@ namespace PeerCastStation.ASF
 
     public static async Task<short> ReadInt16LEAsync(Stream s, CancellationToken cancel_token)
     {
-      return BitConverter.ToInt16(await ReadBytesLEAsync(s, 2, cancel_token), 0);
+      return BitConverter.ToInt16(await ReadBytesLEAsync(s, 2, cancel_token).ConfigureAwait(false), 0);
     }
 
     public static short GetInt16LE(byte[] bytes, int offset)
@@ -150,7 +150,7 @@ namespace PeerCastStation.ASF
 
     public static async Task<ushort> ReadUInt16LEAsync(Stream s, CancellationToken cancel_token)
     {
-      return BitConverter.ToUInt16(await ReadBytesLEAsync(s, 2, cancel_token), 0);
+      return BitConverter.ToUInt16(await ReadBytesLEAsync(s, 2, cancel_token).ConfigureAwait(false), 0);
     }
 
     public static ushort GetUInt16LE(byte[] bytes, int offset)
@@ -170,7 +170,7 @@ namespace PeerCastStation.ASF
 
     public static async Task<int> ReadInt32LEAsync(Stream s, CancellationToken cancel_token)
     {
-      return BitConverter.ToInt32(await ReadBytesLEAsync(s, 4, cancel_token), 0);
+      return BitConverter.ToInt32(await ReadBytesLEAsync(s, 4, cancel_token).ConfigureAwait(false), 0);
     }
 
     public static int GetInt32LE(byte[] bytes, int offset)
@@ -192,7 +192,7 @@ namespace PeerCastStation.ASF
 
     public static async Task<uint> ReadUInt32LEAsync(Stream s, CancellationToken cancel_token)
     {
-      return BitConverter.ToUInt32(await ReadBytesLEAsync(s, 4, cancel_token), 0);
+      return BitConverter.ToUInt32(await ReadBytesLEAsync(s, 4, cancel_token).ConfigureAwait(false), 0);
     }
 
     public static uint GetUInt32LE(byte[] bytes, int offset)
@@ -214,7 +214,7 @@ namespace PeerCastStation.ASF
 
     public static async Task<long> ReadInt64LEAsync(Stream s, CancellationToken cancel_token)
     {
-      return BitConverter.ToInt64(await ReadBytesLEAsync(s, 8, cancel_token), 0);
+      return BitConverter.ToInt64(await ReadBytesLEAsync(s, 8, cancel_token).ConfigureAwait(false), 0);
     }
 
     public static long GetInt64LE(byte[] bytes, int offset)
@@ -237,7 +237,7 @@ namespace PeerCastStation.ASF
 
     public static async Task<ulong> ReadUInt64LEAsync(Stream s, CancellationToken cancel_token)
     {
-      return BitConverter.ToUInt64(await ReadBytesLEAsync(s, 8, cancel_token), 0);
+      return BitConverter.ToUInt64(await ReadBytesLEAsync(s, 8, cancel_token).ConfigureAwait(false), 0);
     }
 
     public static ulong GetUInt64LE(byte[] bytes, int offset)
@@ -336,17 +336,17 @@ namespace PeerCastStation.ASF
 
     public static async Task<ASFChunk> ReadAsync(Stream stream, CancellationToken cancel_token)
     {
-      var type = await BinaryReader.ReadUInt16LEAsync(stream, cancel_token);
-      var len  = await BinaryReader.ReadUInt16LEAsync(stream, cancel_token);
+      var type = await BinaryReader.ReadUInt16LEAsync(stream, cancel_token).ConfigureAwait(false);
+      var len  = await BinaryReader.ReadUInt16LEAsync(stream, cancel_token).ConfigureAwait(false);
       if (len<8) {
-        var data = await BinaryReader.ReadBytesAsync(stream, len, cancel_token);
+        var data = await BinaryReader.ReadBytesAsync(stream, len, cancel_token).ConfigureAwait(false);
         return new ASFChunk(type, len, 0, 0, 0, data);
       }
       else {
-        var seq_num = await BinaryReader.ReadUInt32LEAsync(stream, cancel_token);
-        var v1      = await BinaryReader.ReadUInt16LEAsync(stream, cancel_token);
-        var v2      = await BinaryReader.ReadUInt16LEAsync(stream, cancel_token);
-        var data    = await BinaryReader.ReadBytesAsync(stream, len-8, cancel_token);
+        var seq_num = await BinaryReader.ReadUInt32LEAsync(stream, cancel_token).ConfigureAwait(false);
+        var v1      = await BinaryReader.ReadUInt16LEAsync(stream, cancel_token).ConfigureAwait(false);
+        var v2      = await BinaryReader.ReadUInt16LEAsync(stream, cancel_token).ConfigureAwait(false);
+        var data    = await BinaryReader.ReadBytesAsync(stream, len-8, cancel_token).ConfigureAwait(false);
         return new ASFChunk(type, len, seq_num, v1, v2, data);
       }
     }
@@ -492,7 +492,7 @@ namespace PeerCastStation.ASF
       do {
         ASFChunk chunk = null;
         try {
-          chunk = await ASFChunk.ReadAsync(stream, cancel_token);
+          chunk = await ASFChunk.ReadAsync(stream, cancel_token).ConfigureAwait(false);
         }
         catch (EndOfStreamException) {
           eof = true;

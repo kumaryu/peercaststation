@@ -207,7 +207,7 @@ namespace PeerCastStation.Core
             server.Stop();
           });
           while (!cancel_token.IsCancellationRequested) {
-            var client = await server.AcceptTcpClientAsync();
+            var client = await server.AcceptTcpClientAsync().ConfigureAwait(false);
             logger.Info("Client connected {0}", client.Client.RemoteEndPoint);
             var client_task = ConnectionHandler.HandleClient(
               client,
@@ -264,10 +264,10 @@ namespace PeerCastStation.Core
         stream.WriteTimeout = 3000;
         stream.ReadTimeout  = 3000;
         var remote_endpoint = (IPEndPoint)client.Client.RemoteEndPoint;
-        var handler = await CreateMatchedHandler(remote_endpoint, stream, acinfo);
+        var handler = await CreateMatchedHandler(remote_endpoint, stream, acinfo).ConfigureAwait(false);
         if (handler!=null) {
           logger.Debug("Output stream started {0}", trying);
-          var result = await handler.Start();
+          var result = await handler.Start().ConfigureAwait(false);
           switch (result) {
           case HandlerResult.Continue:
             trying++;
@@ -302,7 +302,7 @@ namespace PeerCastStation.Core
         cancel_token.Register(() => stream.Close());
         try {
           while (offset<header.Length) {
-            var len = await stream.ReadAsync(header, offset, header.Length-offset);
+            var len = await stream.ReadAsync(header, offset, header.Length-offset).ConfigureAwait(false);
             if (len==0) break;
             offset += len;
             var header_ary = header.Take(offset).ToArray();

@@ -287,6 +287,11 @@ namespace PeerCastStation.Core
       get { return !this.PeerCast.AccessController.IsChannelPlayable(this); }
     }
 
+    public virtual bool IsPlayable(IOutputStream sink)
+    {
+      return this.PeerCast.AccessController.IsChannelPlayable(this, sink);
+    }
+
     /// <summary>
     /// チャンネルの連続接続時間を取得します
     /// </summary>
@@ -696,7 +701,7 @@ namespace PeerCastStation.Core
         this.ChannelInfoChanged += channel_info_changed;
         var channel_info = this.ChannelInfo;
         if (channel_info!=null && !String.IsNullOrEmpty(channel_info.ContentType)) return;
-        await task.Task;
+        await task.Task.ConfigureAwait(false);
       }
       finally {
         this.ChannelInfoChanged -= channel_info_changed;

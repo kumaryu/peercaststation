@@ -61,7 +61,7 @@ namespace PeerCastStation.UI.HTTP
       }
       env.ResponseStatusCode = (int)HttpStatusCode.Moved;
       if (env.RequestMethod=="GET") {
-        await env.ResponseBody.WriteAsync(content, 0, content.Length, cancel_token);
+        await env.ResponseBody.WriteAsync(content, 0, content.Length, cancel_token).ConfigureAwait(false);
       }
     }
 
@@ -118,7 +118,7 @@ namespace PeerCastStation.UI.HTTP
 
     private async Task SendResponseChannelList(OWINEnv env, CancellationToken cancel_token)
     {
-      var channel_list = await GetYPChannels();
+      var channel_list = await GetYPChannels().ConfigureAwait(false);
       var contents     = System.Text.Encoding.UTF8.GetBytes(ChannelsToIndex(channel_list));
       env.SetResponseHeader("Content-Type", "text/plain;charset=utf-8");
       env.SetResponseHeader("Content-Length", contents.Length.ToString());
@@ -126,7 +126,7 @@ namespace PeerCastStation.UI.HTTP
         env.SetResponseHeader("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(env.AccessControlInfo.AuthenticationKey));
       }
       if (env.RequestMethod=="GET") {
-        await env.ResponseBody.WriteAsync(contents, 0, contents.Length, cancel_token);
+        await env.ResponseBody.WriteAsync(contents, 0, contents.Length, cancel_token).ConfigureAwait(false);
       }
     }
 
@@ -141,7 +141,7 @@ namespace PeerCastStation.UI.HTTP
         if (env.RequestMethod!="HEAD" && env.RequestMethod!="GET") {
           throw new HTTPError(HttpStatusCode.MethodNotAllowed);
         }
-        await SendResponseChannelList(env, cancel_token);
+        await SendResponseChannelList(env, cancel_token).ConfigureAwait(false);
       }
       catch (HTTPError err) {
         env.ResponseStatusCode = (int)err.StatusCode;

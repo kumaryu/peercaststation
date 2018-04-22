@@ -36,12 +36,12 @@ namespace PeerCastStation.MKV
 
     public static async Task<VInt> ReadUIntAsync(Stream s, CancellationToken cancel_token)
     {
-      int first = await s.ReadByteAsync();
+      int first = await s.ReadByteAsync().ConfigureAwait(false);
       if (first<0) throw new EndOfStreamException();
       int len = CheckLength(first);
       var bin = new byte[len];
       bin[0] = (byte)first;
-      await s.ReadBytesAsync(bin, 1, len-1, cancel_token);
+      await s.ReadBytesAsync(bin, 1, len-1, cancel_token).ConfigureAwait(false);
       long res = bin.Aggregate(0L, (r, b) => (r<<8) | b);
       res &= (1<<(7*len))-1;
       return new VInt(res, bin);
@@ -101,7 +101,7 @@ namespace PeerCastStation.MKV
     public async Task ReadBodyAsync(Stream s, CancellationToken cancel_token)
     {
       if (this.Size.IsUnknown) return;
-      this.Data = await s.ReadBytesAsync((int)this.Size.Value, cancel_token);
+      this.Data = await s.ReadBytesAsync((int)this.Size.Value, cancel_token).ConfigureAwait(false);
     }
 
     public void Write(Stream s)
@@ -139,8 +139,8 @@ namespace PeerCastStation.MKV
 
     public static async Task<Element> ReadHeaderAsync(Stream s, CancellationToken cancel_token)
     {
-      var id  = await VInt.ReadUIntAsync(s, cancel_token);
-      var sz  = await VInt.ReadUIntAsync(s, cancel_token);
+      var id  = await VInt.ReadUIntAsync(s, cancel_token).ConfigureAwait(false);
+      var sz  = await VInt.ReadUIntAsync(s, cancel_token).ConfigureAwait(false);
       return new Element(id, sz);
     }
 
@@ -299,7 +299,7 @@ namespace PeerCastStation.MKV
       var eos = false;
       while (!eos) {
         try {
-          var elt = await Element.ReadHeaderAsync(stream, cancel_token);
+          var elt = await Element.ReadHeaderAsync(stream, cancel_token).ConfigureAwait(false);
           if (ebml.MaxIDLength  <elt.ID.Length ||
               ebml.MaxSizeLength<elt.Size.Length) {
             throw new BadDataException();
@@ -308,7 +308,7 @@ namespace PeerCastStation.MKV
           switch (state) {
           case ReaderState.EBML:
             if (elt.ID.BinaryEquals(Elements.EBML)) {
-              await elt.ReadBodyAsync(stream, cancel_token);
+              await elt.ReadBodyAsync(stream, cancel_token).ConfigureAwait(false);
               headers.Clear();
               headers.Add(elt);
               ebml = new EBML(elt);
@@ -329,7 +329,7 @@ namespace PeerCastStation.MKV
             }
             else if (elt.ID.BinaryEquals(Elements.Void) ||
                      elt.ID.BinaryEquals(Elements.CRC32)) {
-              await elt.ReadBodyAsync(stream, cancel_token);
+              await elt.ReadBodyAsync(stream, cancel_token).ConfigureAwait(false);
               headers.Add(elt);
             }
             else {
@@ -379,7 +379,7 @@ namespace PeerCastStation.MKV
               goto parse_retry;
             }
             else if (elt.ID.BinaryEquals(Elements.Info)) {
-              await elt.ReadBodyAsync(stream, cancel_token);
+              await elt.ReadBodyAsync(stream, cancel_token).ConfigureAwait(false);
               var s = new MemoryStream(elt.Data);
               while (s.Position<s.Length) {
                 var child = Element.ReadHeader(s);
@@ -393,7 +393,7 @@ namespace PeerCastStation.MKV
               headers.Add(elt);
             }
             else {
-              await elt.ReadBodyAsync(stream, cancel_token);
+              await elt.ReadBodyAsync(stream, cancel_token).ConfigureAwait(false);
               headers.Add(elt);
             }
             break;
@@ -428,7 +428,7 @@ namespace PeerCastStation.MKV
             }
             else if (elt.ID.BinaryEquals(Elements.Void) ||
                      elt.ID.BinaryEquals(Elements.CRC32)) {
-              await elt.ReadBodyAsync(stream, cancel_token);
+              await elt.ReadBodyAsync(stream, cancel_token).ConfigureAwait(false);
               sink.OnContent(
                 new Content(stream_index, DateTime.Now-stream_origin, position, elt.ToArray())
               );
@@ -457,7 +457,7 @@ namespace PeerCastStation.MKV
               goto parse_retry;
             }
             else if (elt.ID.BinaryEquals(Elements.Timecode)) {
-              await elt.ReadBodyAsync(stream, cancel_token);
+              await elt.ReadBodyAsync(stream, cancel_token).ConfigureAwait(false);
               if (clusters.Last!=null) {
                 clusters.Last.Value.Timecode =
                   Element.ReadUInt(new MemoryStream(elt.Data), elt.Data.Length)*(timecode_scale/1000000000.0);
@@ -472,7 +472,7 @@ namespace PeerCastStation.MKV
               state = ReaderState.Block;
             }
             else {
-              await elt.ReadBodyAsync(stream, cancel_token);
+              await elt.ReadBodyAsync(stream, cancel_token).ConfigureAwait(false);
               sink.OnContent(
                 new Content(stream_index, DateTime.Now-stream_origin, position, elt.ToArray())
               );
@@ -496,7 +496,7 @@ namespace PeerCastStation.MKV
                       elt.ID.BinaryEquals(Elements.BlockGroup)) &&
                      (clusters.Last.Value.BlockID==null ||
                       elt.ID.BinaryEquals(clusters.Last.Value.BlockID))) {
-              await elt.ReadBodyAsync(stream, cancel_token);
+              await elt.ReadBodyAsync(stream, cancel_token).ConfigureAwait(false);
               clusters.Last.Value.BlockSize += elt.Size.Value;
               clusters.Last.Value.BlockID    = elt.ID.Binary;
               sink.OnContent(
@@ -505,7 +505,7 @@ namespace PeerCastStation.MKV
               position += elt.ByteSize;
             }
             else if (clusters.Last.Value.BlockID==null) {
-              await elt.ReadBodyAsync(stream, cancel_token);
+              await elt.ReadBodyAsync(stream, cancel_token).ConfigureAwait(false);
               sink.OnContent(
                 new Content(stream_index, DateTime.Now-stream_origin, position, elt.ToArray())
               );

@@ -139,7 +139,7 @@ namespace PeerCastStation.UI.PortMapper
     {
       if (msg.IsSuccessStatusCode) {
         logger.Info("UPnP Action {0} Success", action);
-        var doc = XDocument.Load(await msg.Content.ReadAsStreamAsync());
+        var doc = XDocument.Load(await msg.Content.ReadAsStreamAsync().ConfigureAwait(false));
         var results = doc.Descendants()
           .Where(node => node.Parent!=null)
           .Where(node => node.Parent.Name==XName.Get(action+"Response", this.ServiceDescription.ServiceType));
@@ -151,7 +151,7 @@ namespace PeerCastStation.UI.PortMapper
         return new ActionResult(action, parameters);
       }
       else if (msg.StatusCode==HttpStatusCode.InternalServerError) {
-        var doc = XDocument.Load(await msg.Content.ReadAsStreamAsync());
+        var doc = XDocument.Load(await msg.Content.ReadAsStreamAsync().ConfigureAwait(false));
         var error_code = doc.Descendants(XName.Get("errorCode", "urn:schemas-upnp-org:control-1-0")).Single();
         var error_description = doc.Descendants(XName.Get("errorDescription", "urn:schemas-upnp-org:control-1-0")).Single();
         logger.Info("UPnP Action {0} Error, code:{1}, descripion:{2}", action, error_code, error_description);
@@ -177,7 +177,7 @@ namespace PeerCastStation.UI.PortMapper
           using (var client=new HttpClient()) {
             return await ParseActionResponse(
                 action,
-                await client.PostAsync(this.ServiceDescription.ControlUrl, content, cancel_token));
+                await client.PostAsync(this.ServiceDescription.ControlUrl, content, cancel_token).ConfigureAwait(false)).ConfigureAwait(false);
           }
         }
         catch (Exception e) {
@@ -239,7 +239,7 @@ namespace PeerCastStation.UI.PortMapper
 
     private async Task<IPAddress> GetInternalAddressAsync()
     {
-      var dev_addr = (await Dns.GetHostAddressesAsync(ServiceDescription.ControlUrl.DnsSafeHost))
+      var dev_addr = (await Dns.GetHostAddressesAsync(ServiceDescription.ControlUrl.DnsSafeHost).ConfigureAwait(false))
         .Where(addr => addr.AddressFamily==AddressFamily.InterNetwork)
         .First();
       return NetworkInterface.GetAllNetworkInterfaces()
@@ -259,7 +259,7 @@ namespace PeerCastStation.UI.PortMapper
 
     public async Task<IPAddress> GetExternalAddressAsync(CancellationToken cancel_token)
     {
-      var result = await SendActionAsync("GetExternalIPAddress", cancel_token);
+      var result = await SendActionAsync("GetExternalIPAddress", cancel_token).ConfigureAwait(false);
       string value;
       IPAddress addr;
       if (result.IsSucceeded &&
@@ -279,12 +279,12 @@ namespace PeerCastStation.UI.PortMapper
         { "NewExternalPort",   port.ToString() },
         { "NewProtocol",       protocol==MappingProtocol.TCP ? "TCP" : "UDP" },
         { "NewInternalPort",   port.ToString() },
-        { "NewInternalClient", (await GetInternalAddressAsync()).ToString() },
+        { "NewInternalClient", (await GetInternalAddressAsync().ConfigureAwait(false)).ToString() },
         { "NewEnabled",        "1" },
         { "NewPortMappingDescription", PortMappingDescription },
         { "NewLeaseDuration",  "0" },
       };
-      var result = await SendActionAsync("AddPortMapping", parameters, cancel_token);
+      var result = await SendActionAsync("AddPortMapping", parameters, cancel_token).ConfigureAwait(false);
       if (result.IsSucceeded) {
         if (lifetime==Timeout.InfiniteTimeSpan) {
           return new MappedPort(this, protocol, port, port, DateTime.Now+TimeSpan.FromSeconds(604800));
@@ -305,7 +305,7 @@ namespace PeerCastStation.UI.PortMapper
         { "NewExternalPort", port.ToString() },
         { "NewProtocol",     protocol==MappingProtocol.TCP ? "TCP" : "UDP" },
       };
-      await SendActionAsync("DeletePortMapping", parameters, cancel_token);
+      await SendActionAsync("DeletePortMapping", parameters, cancel_token).ConfigureAwait(false);
     }
   }
 
@@ -354,7 +354,7 @@ namespace PeerCastStation.UI.PortMapper
 
     public async Task<CommonLinkProperties> GetCommonLinkProperties(CancellationToken cancel_token)
     {
-      var result = await SendActionAsync("GetCommonLinkProperties", cancel_token);
+      var result = await SendActionAsync("GetCommonLinkProperties", cancel_token).ConfigureAwait(false);
       if (!result.IsSucceeded) return null;
       string value;
       WANAccessType wan_access_type = WANAccessType.Unknown;
@@ -429,13 +429,13 @@ namespace PeerCastStation.UI.PortMapper
       try {
         using (var client=new UdpClient(new IPEndPoint(bind_addr, 0))) {
           for (int i=0; i<3; i++) {
-            await client.SendAsync(msg, msg.Length, SSDPEndpoint);
+            await client.SendAsync(msg, msg.Length, SSDPEndpoint).ConfigureAwait(false);
           }
           for (int i=0; i<10 && client.Available==0 && !cancel_token.IsCancellationRequested; i++) {
-            await Task.Delay(100, cancel_token);
+            await Task.Delay(100, cancel_token).ConfigureAwait(false);
           }
           while (client.Available>0 && !cancel_token.IsCancellationRequested) {
-            var result = await client.ReceiveAsync();
+            var result = await client.ReceiveAsync().ConfigureAwait(false);
             var response = System.Text.Encoding.ASCII.GetString(result.Buffer).Split(new string[] { "\r\n" }, StringSplitOptions.None);
             if (response.Length<0) continue;
             if (response[0].IndexOf("HTTP/1.1 200")!=0) continue;
@@ -453,7 +453,7 @@ namespace PeerCastStation.UI.PortMapper
             logger.Debug("SSDP Found {0} at {1}", rsp.ST, rsp.Location);
             responses.Add(rsp);
             if (client.Available==0 && !cancel_token.IsCancellationRequested) {
-              await Task.Delay(100, cancel_token);
+              await Task.Delay(100, cancel_token).ConfigureAwait(false);
             }
           }
         }
@@ -491,8 +491,8 @@ namespace PeerCastStation.UI.PortMapper
     public async Task<IEnumerable<UPnPServiceDescription>> GetUPnPServiceAsync(string location, CancellationToken cancel_token)
     {
       using (var client=new HttpClient()) {
-        var response = await client.GetAsync(location, cancel_token);
-        var doc = XDocument.Load(await response.Content.ReadAsStreamAsync());
+        var response = await client.GetAsync(location, cancel_token).ConfigureAwait(false);
+        var doc = XDocument.Load(await response.Content.ReadAsStreamAsync().ConfigureAwait(false));
         var urlbase = doc.Descendants(DeviceNS+"URLBase").SingleOrDefault();
         var baseurl = urlbase==null ? location : urlbase.Value;
         var devices = doc.Descendants(DeviceNS+"device");
@@ -517,7 +517,7 @@ namespace PeerCastStation.UI.PortMapper
       return (await Task.WhenAll(
         GetInternalAddresses()
         .Select(addr => SSDPAsync(addr, cancel_token))
-      )).SelectMany(seq => seq);
+      ).ConfigureAwait(false)).SelectMany(seq => seq);
     }
 
     class SupportedService {
@@ -561,11 +561,11 @@ namespace PeerCastStation.UI.PortMapper
     static readonly Type[] constructorArgs = new Type[] { typeof(UPnPServiceDescription) };
     public async Task<IEnumerable<UPnPService>> DiscoverAsync(CancellationToken cancel_token)
     {
-      var responses = (await SSDPAsync(cancel_token)).Distinct();
+      var responses = (await SSDPAsync(cancel_token).ConfigureAwait(false)).Distinct();
       var services = (await Task.WhenAll(
             responses.Select(async rsp => {
               try {
-                return await GetUPnPServiceAsync(rsp.Location, cancel_token);
+                return await GetUPnPServiceAsync(rsp.Location, cancel_token).ConfigureAwait(false);
               }
               catch (OperationCanceledException) {
                 throw;
@@ -574,7 +574,7 @@ namespace PeerCastStation.UI.PortMapper
                 return Enumerable.Empty<UPnPServiceDescription>();
               }
             })
-          )
+          ).ConfigureAwait(false)
         )
         .SelectMany(svcs => svcs)
         .Distinct()
@@ -595,7 +595,7 @@ namespace PeerCastStation.UI.PortMapper
   {
     public async Task<IEnumerable<INatDevice>> DiscoverAsync(CancellationToken cancel_token)
     {
-      var services = await (new SSDPDiscoverer()).DiscoverAsync(cancel_token);
+      var services = await (new SSDPDiscoverer()).DiscoverAsync(cancel_token).ConfigureAwait(false);
       return services
         .Select(svc => svc as WANConnectionService)
         .Where(svc => svc!= null);

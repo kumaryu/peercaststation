@@ -34,7 +34,7 @@ namespace PeerCastStation.UI
       var client = new WebClient();
       client.Headers.Add(HttpRequestHeader.AcceptEncoding, "deflate, gzip");
       cancel_token.Register(() => client.CancelAsync());
-      var body = await client.DownloadDataTaskAsync(source);
+      var body = await client.DownloadDataTaskAsync(source).ConfigureAwait(false);
       return ParseResponse(client.ResponseHeaders, body);
     }
 

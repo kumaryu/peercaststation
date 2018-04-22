@@ -99,8 +99,8 @@ namespace PeerCastStation.PCP
         new CancellationTokenSource(3000).Token,
         cancel_token);
       while (!timeout_source.IsCancellationRequested) {
-        var atom = await Connection.ReadAtomAsync(timeout_source.Token);
-        await ProcessAtom(atom, cancel_token);
+        var atom = await Connection.ReadAtomAsync(timeout_source.Token).ConfigureAwait(false);
+        await ProcessAtom(atom, cancel_token).ConfigureAwait(false);
       }
       return StopReason.OffAir;
     }
@@ -118,7 +118,7 @@ namespace PeerCastStation.PCP
       RemoteSessionID = session_id;
       var oleh = new AtomCollection();
       oleh.SetHeloSessionID(PeerCast.SessionID);
-      await Connection.WriteAsync(new Atom(Atom.PCP_OLEH, oleh));
+      await Connection.WriteAsync(new Atom(Atom.PCP_OLEH, oleh)).ConfigureAwait(false);
       if (session_id==null) {
         Logger.Info("Helo has no SessionID");
         Stop(StopReason.NotIdentifiedError);

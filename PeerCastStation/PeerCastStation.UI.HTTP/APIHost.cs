@@ -164,7 +164,7 @@ namespace PeerCastStation.UI.HTTP
         switch (env.RequestMethod) {
         case "HEAD":
         case "GET":
-          await SendJson(env, ctx.GetVersionInfo(), env.RequestMethod!="HEAD", cancel_token);
+          await SendJson(env, ctx.GetVersionInfo(), env.RequestMethod!="HEAD", cancel_token).ConfigureAwait(false);
           break;
         case "POST":
           {
@@ -182,11 +182,11 @@ namespace PeerCastStation.UI.HTTP
 
             try {
               var timeout_token = new CancellationTokenSource(TimeoutLimit);
-              var buf = await body.ReadBytesAsync((int)len, CancellationTokenSource.CreateLinkedTokenSource(cancel_token, timeout_token.Token).Token);
+              var buf = await body.ReadBytesAsync((int)len, CancellationTokenSource.CreateLinkedTokenSource(cancel_token, timeout_token.Token).Token).ConfigureAwait(false);
               var request_str = System.Text.Encoding.UTF8.GetString(buf);
               JToken res = rpc_host.ProcessRequest(request_str);
               if (res!=null) {
-                await SendJson(env, res, true, cancel_token);
+                await SendJson(env, res, true, cancel_token).ConfigureAwait(false);
               }
               else {
                 throw new HTTPError(HttpStatusCode.NoContent);
@@ -216,7 +216,7 @@ namespace PeerCastStation.UI.HTTP
       env.AddResponseHeader("Content-Length", body.Length.ToString());
       env.ResponseStatusCode = (int)HttpStatusCode.OK;
       if (send_body) {
-        await env.ResponseBody.WriteAsync(body, 0, body.Length, cancel_token);
+        await env.ResponseBody.WriteAsync(body, 0, body.Length, cancel_token).ConfigureAwait(false);
       }
     }
 
@@ -374,13 +374,19 @@ namespace PeerCastStation.UI.HTTP
       private JToken GetSettings()
       {
         var res = new JObject();
-        res["maxRelays"]                 = PeerCast.AccessController.MaxRelays;
-        res["maxRelaysPerChannel"]       = PeerCast.AccessController.MaxRelaysPerChannel;
-        res["maxDirects"]                = PeerCast.AccessController.MaxPlays;
-        res["maxDirectsPerChannel"]      = PeerCast.AccessController.MaxPlaysPerChannel;
-        res["maxUpstreamRate"]           = PeerCast.AccessController.MaxUpstreamRate;
-        res["maxUpstreamRateIPv6"]       = PeerCast.AccessController.MaxUpstreamRateIPv6;
-        res["maxUpstreamRatePerChannel"] = PeerCast.AccessController.MaxUpstreamRatePerChannel;
+        res["maxRelays"]                     = PeerCast.AccessController.MaxRelays;
+        res["maxRelaysPerChannel"]           = PeerCast.AccessController.MaxRelaysPerBroadcastChannel;
+        res["maxRelaysPerBroadcastChannel"]  = PeerCast.AccessController.MaxRelaysPerBroadcastChannel;
+        res["maxRelaysPerRelayChannel"]      = PeerCast.AccessController.MaxRelaysPerRelayChannel;
+        res["maxDirects"]                    = PeerCast.AccessController.MaxPlays;
+        res["maxDirectsPerChannel"]          = PeerCast.AccessController.MaxPlaysPerBroadcastChannel;
+        res["maxDirectsPerBroadcastChannel"] = PeerCast.AccessController.MaxPlaysPerBroadcastChannel;
+        res["maxDirectsPerRelayChannel"]     = PeerCast.AccessController.MaxPlaysPerRelayChannel;
+        res["maxUpstreamRate"]               = PeerCast.AccessController.MaxUpstreamRate;
+        res["maxUpstreamRateIPv6"]           = PeerCast.AccessController.MaxUpstreamRateIPv6;
+        res["maxUpstreamRatePerChannel"]     = PeerCast.AccessController.MaxUpstreamRatePerBroadcastChannel;
+        res["maxUpstreamRatePerBroadcastChannel"] = PeerCast.AccessController.MaxUpstreamRatePerBroadcastChannel;
+        res["maxUpstreamRatePerRelayChannel"]     = PeerCast.AccessController.MaxUpstreamRatePerRelayChannel;
         var channelCleaner = new JObject();
         channelCleaner["mode"]          = (int)ChannelCleaner.Mode;
         channelCleaner["inactiveLimit"] = ChannelCleaner.InactiveLimit;
@@ -398,13 +404,28 @@ namespace PeerCastStation.UI.HTTP
       private void SetSettings(JObject settings)
       {
         var acc = PeerCast.AccessController;
-        settings.TryGetThen("maxRelays",                 v => acc.MaxRelays = v);
-        settings.TryGetThen("maxRelaysPerChannel",       v => acc.MaxRelaysPerChannel = v);
+        settings.TryGetThen("maxRelays",           v => acc.MaxRelays = v);
+        settings.TryGetThen("maxRelaysPerChannel", v => {
+          acc.MaxRelaysPerBroadcastChannel = v;
+          acc.MaxRelaysPerRelayChannel     = v;
+        });
+        settings.TryGetThen("maxRelaysPerBroadcastChannel", v => acc.MaxRelaysPerBroadcastChannel = v);
+        settings.TryGetThen("maxRelaysPerRelayChannel",     v => acc.MaxRelaysPerRelayChannel = v);
         settings.TryGetThen("maxDirects",                v => acc.MaxPlays = v);
-        settings.TryGetThen("maxDirectsPerChannel",      v => acc.MaxPlaysPerChannel = v);
+        settings.TryGetThen("maxDirectsPerChannel", v => {
+          acc.MaxPlaysPerBroadcastChannel = v;
+          acc.MaxPlaysPerRelayChannel = v;
+        });
+        settings.TryGetThen("maxDirectsPerBroadcastChannel", v => acc.MaxPlaysPerBroadcastChannel = v);
+        settings.TryGetThen("maxDirectsPerRelayChannel",     v => acc.MaxPlaysPerRelayChannel = v);
         settings.TryGetThen("maxUpstreamRate",           v => acc.MaxUpstreamRate = v);
         settings.TryGetThen("maxUpstreamRateIPv6",       v => acc.MaxUpstreamRateIPv6 = v);
-        settings.TryGetThen("maxUpstreamRatePerChannel", v => acc.MaxUpstreamRatePerChannel = v);
+        settings.TryGetThen("maxUpstreamRatePerChannel", v => {
+          acc.MaxUpstreamRatePerBroadcastChannel = v;
+          acc.MaxUpstreamRatePerRelayChannel = v;
+        });
+        settings.TryGetThen("maxUpstreamRatePerBroadcastChannel", v => acc.MaxUpstreamRatePerBroadcastChannel = v);
+        settings.TryGetThen("maxUpstreamRatePerRelayChannel",     v => acc.MaxUpstreamRatePerRelayChannel = v);
         settings.TryGetThen("channelCleaner", (JObject channel_cleaner) => {
           channel_cleaner.TryGetThen("inactiveLimit", v => ChannelCleaner.InactiveLimit = v);
           channel_cleaner.TryGetThen("mode", v => ChannelCleaner.Mode = (ChannelCleaner.CleanupMode)v);

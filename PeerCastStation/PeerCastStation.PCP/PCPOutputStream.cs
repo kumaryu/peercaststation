@@ -341,7 +341,7 @@ namespace PeerCastStation.PCP
     protected async Task SendRelayResponse(CancellationToken cancel_token)
     {
       var response = CreateRelayResponse();
-      await Connection.WriteUTF8Async(response, cancel_token);
+      await Connection.WriteUTF8Async(response, cancel_token).ConfigureAwait(false);
       Logger.Debug("SendingRelayResponse: {0}", response);
     }
 
@@ -399,7 +399,7 @@ namespace PeerCastStation.PCP
       Content last_header = null;
       Content last_content = null;
       while (!cancel_token.IsCancellationRequested) {
-        await changedEvent.WaitAsync(cancel_token);
+        await changedEvent.WaitAsync(cancel_token).ConfigureAwait(false);
         bool skipped = false;
         var atoms = Enumerable.Empty<Atom>();
         if (Channel.ContentHeader!=null &&
@@ -440,7 +440,7 @@ namespace PeerCastStation.PCP
           }
         }
         foreach (var atom in atoms) {
-          await Connection.WriteAsync(atom, cancel_token);
+          await Connection.WriteAsync(atom, cancel_token).ConfigureAwait(false);
         }
         if (skipped) {
           Stop(StopReason.SendTimeoutError);
@@ -450,7 +450,7 @@ namespace PeerCastStation.PCP
 
     protected override async Task OnStarted(CancellationToken cancel_token)
     {
-      await base.OnStarted(cancel_token);
+      await base.OnStarted(cancel_token).ConfigureAwait(false);
       if (Channel!=null) {
         Channel.ContentChanged += new EventHandler(Channel_ContentChanged);
         if (Channel.IsBroadcasting) {
@@ -458,7 +458,7 @@ namespace PeerCastStation.PCP
           Channel.ChannelTrackChanged += Channel_ChannelPropertyChanged;
         }
       }
-      await SendRelayResponse(cancel_token);
+      await SendRelayResponse(cancel_token).ConfigureAwait(false);
     }
 
     private void Channel_ChannelPropertyChanged(object sender, EventArgs e)
@@ -492,8 +492,8 @@ namespace PeerCastStation.PCP
     private async Task ReadAndProcessAtom(CancellationToken cancel_token)
     {
       while (!cancel_token.IsCancellationRequested) {
-        var atom = await Connection.ReadAtomAsync(cancel_token);
-        await ProcessAtom(atom, cancel_token);
+        var atom = await Connection.ReadAtomAsync(cancel_token).ConfigureAwait(false);
+        await ProcessAtom(atom, cancel_token).ConfigureAwait(false);
       }
     }
 
@@ -507,9 +507,9 @@ namespace PeerCastStation.PCP
           //Handshakeが5秒以内に完了しなければ切る
           //HELOでセッションIDを受け取るまでは他のパケットは無視
           try {
-            var atom = await Connection.ReadAtomAsync(unified_cancel.Token);
+            var atom = await Connection.ReadAtomAsync(unified_cancel.Token).ConfigureAwait(false);
             if (atom.Name==Atom.PCP_HELO) {
-              await OnPCPHelo(atom, unified_cancel.Token);
+              await OnPCPHelo(atom, unified_cancel.Token).ConfigureAwait(false);
             }
           }
           catch (OperationCanceledException) {
@@ -529,16 +529,16 @@ namespace PeerCastStation.PCP
           await Task.WhenAll(
             ReadAndProcessAtom(cancel_token),
             SendRelayBody(cancel_token)
-          );
+          ).ConfigureAwait(false);
         }
         return StopReason.OffAir;
       }
       catch (InvalidDataException e) {
-        await OnError(e, cancel_token);
+        await OnError(e, cancel_token).ConfigureAwait(false);
         return StopReason.NotIdentifiedError;
       }
       catch (IOException e) {
-        await OnError(e, cancel_token);
+        await OnError(e, cancel_token).ConfigureAwait(false);
         return StopReason.ConnectionError;
       }
     }
@@ -621,22 +621,22 @@ namespace PeerCastStation.PCP
     protected override async Task DoPost(Host from, Atom packet, CancellationToken cancel_token)
     {
       if (Downhost!=null && Downhost!=from) {
-        await Connection.WriteAsync(packet, cancel_token);
+        await Connection.WriteAsync(packet, cancel_token).ConfigureAwait(false);
       }
     }
 
     private async Task ProcessAtom(Atom atom, CancellationToken cancel_token)
     {
-           if (atom.Name==Atom.PCP_HELO)       await OnPCPHelo(atom, cancel_token);
-      else if (atom.Name==Atom.PCP_OLEH)       await OnPCPOleh(atom, cancel_token);
-      else if (atom.Name==Atom.PCP_OK)         await OnPCPOk(atom, cancel_token);
-      else if (atom.Name==Atom.PCP_CHAN)       await OnPCPChan(atom, cancel_token);
-      else if (atom.Name==Atom.PCP_CHAN_PKT)   await OnPCPChanPkt(atom, cancel_token);
-      else if (atom.Name==Atom.PCP_CHAN_INFO)  await OnPCPChanInfo(atom, cancel_token);
-      else if (atom.Name==Atom.PCP_CHAN_TRACK) await OnPCPChanTrack(atom, cancel_token);
-      else if (atom.Name==Atom.PCP_BCST)       await OnPCPBcst(atom, cancel_token);
-      else if (atom.Name==Atom.PCP_HOST)       await OnPCPHost(atom, cancel_token);
-      else if (atom.Name==Atom.PCP_QUIT)       await OnPCPQuit(atom, cancel_token);
+           if (atom.Name==Atom.PCP_HELO)       await OnPCPHelo(atom, cancel_token).ConfigureAwait(false);
+      else if (atom.Name==Atom.PCP_OLEH)       await OnPCPOleh(atom, cancel_token).ConfigureAwait(false);
+      else if (atom.Name==Atom.PCP_OK)         await OnPCPOk(atom, cancel_token).ConfigureAwait(false);
+      else if (atom.Name==Atom.PCP_CHAN)       await OnPCPChan(atom, cancel_token).ConfigureAwait(false);
+      else if (atom.Name==Atom.PCP_CHAN_PKT)   await OnPCPChanPkt(atom, cancel_token).ConfigureAwait(false);
+      else if (atom.Name==Atom.PCP_CHAN_INFO)  await OnPCPChanInfo(atom, cancel_token).ConfigureAwait(false);
+      else if (atom.Name==Atom.PCP_CHAN_TRACK) await OnPCPChanTrack(atom, cancel_token).ConfigureAwait(false);
+      else if (atom.Name==Atom.PCP_BCST)       await OnPCPBcst(atom, cancel_token).ConfigureAwait(false);
+      else if (atom.Name==Atom.PCP_HOST)       await OnPCPHost(atom, cancel_token).ConfigureAwait(false);
+      else if (atom.Name==Atom.PCP_QUIT)       await OnPCPQuit(atom, cancel_token).ConfigureAwait(false);
     }
 
     private async Task<bool> PingHost(IPEndPoint target, Guid remote_session_id, CancellationToken cancel_token)
@@ -647,13 +647,13 @@ namespace PeerCastStation.PCP
         var client = new System.Net.Sockets.TcpClient(target.AddressFamily);
         client.ReceiveTimeout = 2000;
         client.SendTimeout    = 2000;
-        await client.ConnectAsync(target.Address, target.Port);
+        await client.ConnectAsync(target.Address, target.Port).ConfigureAwait(false);
         var stream = client.GetStream();
-        await stream.WriteAsync(new Atom(Atom.PCP_CONNECT, 1), cancel_token);
+        await stream.WriteAsync(new Atom(Atom.PCP_CONNECT, 1), cancel_token).ConfigureAwait(false);
         var helo = new AtomCollection();
         helo.SetHeloSessionID(PeerCast.SessionID);
-        await stream.WriteAsync(new Atom(Atom.PCP_HELO, helo), cancel_token);
-        var res = await stream.ReadAtomAsync(cancel_token);
+        await stream.WriteAsync(new Atom(Atom.PCP_HELO, helo), cancel_token).ConfigureAwait(false);
+        var res = await stream.ReadAtomAsync(cancel_token).ConfigureAwait(false);
         if (res.Name==Atom.PCP_OLEH) {
           var session_id = res.Children.GetHeloSessionID();
           if (session_id.HasValue && session_id.Value==remote_session_id) {
@@ -664,7 +664,7 @@ namespace PeerCastStation.PCP
             Logger.Debug("Ping failed. Remote SessionID mismatched");
           }
         }
-        await stream.WriteAsync(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT), cancel_token);
+        await stream.WriteAsync(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT), cancel_token).ConfigureAwait(false);
         stream.Close();
         client.Close();
       }
@@ -726,7 +726,7 @@ namespace PeerCastStation.PCP
         }
         else if (ping!=null) {
           if (IsPingTarget(((IPEndPoint)RemoteEndPoint).Address) &&
-              await PingHost(new IPEndPoint(((IPEndPoint)RemoteEndPoint).Address, ping.Value), session_id.Value, cancel_token)) {
+              await PingHost(new IPEndPoint(((IPEndPoint)RemoteEndPoint).Address, ping.Value), session_id.Value, cancel_token).ConfigureAwait(false)) {
             remote_port = ping.Value;
           }
           else {
@@ -758,7 +758,7 @@ namespace PeerCastStation.PCP
       oleh.SetHeloSessionID(PeerCast.SessionID);
       oleh.SetHeloRemotePort(remote_port);
       PCPVersion.SetHeloVersion(oleh);
-      await Connection.WriteAsync(new Atom(Atom.PCP_OLEH, oleh), cancel_token);
+      await Connection.WriteAsync(new Atom(Atom.PCP_OLEH, oleh), cancel_token).ConfigureAwait(false);
       if (Downhost==null) {
         Logger.Info("Helo has no SessionID");
         //セッションIDが無かった
@@ -775,7 +775,7 @@ namespace PeerCastStation.PCP
       }
       else {
         Logger.Debug("Handshake succeeded {0}({1})", Downhost.GlobalEndPoint, Downhost.SessionID.ToString("N"));
-        await Connection.WriteAsync(new Atom(Atom.PCP_OK, (int)1), cancel_token);
+        await Connection.WriteAsync(new Atom(Atom.PCP_OK, (int)1), cancel_token).ConfigureAwait(false);
       }
     }
 
@@ -830,7 +830,7 @@ namespace PeerCastStation.PCP
       }
       if (dest==null || dest==PeerCast.SessionID) {
         Logger.Debug("Processing BCST({0})", dest==null ? "(null)" : dest.Value.ToString("N"));
-        foreach (var c in atom.Children) await ProcessAtom(c, cancel_token);
+        foreach (var c in atom.Children) await ProcessAtom(c, cancel_token).ConfigureAwait(false);
       }
     }
 

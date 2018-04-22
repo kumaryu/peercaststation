@@ -10,7 +10,7 @@ namespace PeerCastStation.Core
     public static async Task<int> ReadByteAsync(this Stream stream, CancellationToken cancel_token)
     {
       var buf = new byte[1];
-      var len = await stream.ReadAsync(buf, 0, 1, cancel_token);
+      var len = await stream.ReadAsync(buf, 0, 1, cancel_token).ConfigureAwait(false);
       if (len==0) return -1;
       else        return buf[0];
     }
@@ -44,7 +44,7 @@ namespace PeerCastStation.Core
       int pos = 0;
       while (pos<length) {
         cancel_token.ThrowIfCancellationRequested();
-        var r = await stream.ReadAsync(bytes, pos, length-pos, cancel_token);
+        var r = await stream.ReadAsync(bytes, pos, length-pos, cancel_token).ConfigureAwait(false);
         if (r<=0) throw new EndOfStreamException();
         pos += r;
       }
@@ -56,7 +56,7 @@ namespace PeerCastStation.Core
       int pos = 0;
       while (pos<length) {
         cancel_token.ThrowIfCancellationRequested();
-        var r = await stream.ReadAsync(buffer, offset+pos, length-pos, cancel_token);
+        var r = await stream.ReadAsync(buffer, offset+pos, length-pos, cancel_token).ConfigureAwait(false);
         if (r<=0) throw new EndOfStreamException();
         pos += r;
       }
@@ -99,7 +99,7 @@ namespace PeerCastStation.Core
       var bufstream = new MemoryStream();
       bufstream.Write(atom);
       var buf = bufstream.ToArray();
-      await stream.WriteAsync(buf, 0, buf.Length, cancel_token);
+      await stream.WriteAsync(buf, 0, buf.Length, cancel_token).ConfigureAwait(false);
     }
 
     static public Task WriteAsync(this Stream stream, Atom atom)
@@ -156,7 +156,7 @@ namespace PeerCastStation.Core
 
     static public async Task<Atom> ReadAtomAsync(this Stream stream, CancellationToken cancel_token)
     {
-      var header = await stream.ReadBytesAsync(8, cancel_token);
+      var header = await stream.ReadBytesAsync(8, cancel_token).ConfigureAwait(false);
       var name = new ID4(header, 0);
       if (!BitConverter.IsLittleEndian) Array.Reverse(header, 4, 4);
       uint len = BitConverter.ToUInt32(header, 4);
@@ -166,7 +166,7 @@ namespace PeerCastStation.Core
         }
         var children = new AtomCollection();
         for (var i=0; i<(len&0x7FFFFFFF); i++) {
-          children.Add(await stream.ReadAtomAsync(cancel_token));
+          children.Add(await stream.ReadAtomAsync(cancel_token).ConfigureAwait(false));
         }
         return new Atom(name, children);
       }
@@ -174,7 +174,7 @@ namespace PeerCastStation.Core
         if (len>1024*1024) {
           throw new InvalidDataException("Atom length too long");
         }
-        var value = await stream.ReadBytesAsync((int)len, cancel_token);
+        var value = await stream.ReadBytesAsync((int)len, cancel_token).ConfigureAwait(false);
         return new Atom(name, value);
       }
     }
@@ -193,7 +193,7 @@ namespace PeerCastStation.Core
     static public async Task WriteUTF8Async(this Stream stream, string value, CancellationToken cancel_token)
     {
       var bytes = System.Text.Encoding.UTF8.GetBytes(value);
-      await stream.WriteAsync(bytes, 0, bytes.Length, cancel_token);
+      await stream.WriteAsync(bytes, 0, bytes.Length, cancel_token).ConfigureAwait(false);
     }
 
     static public Task WriteUTF8Async(this Stream stream, string value)

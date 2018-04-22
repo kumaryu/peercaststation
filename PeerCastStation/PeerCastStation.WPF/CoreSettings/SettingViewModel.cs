@@ -632,10 +632,16 @@ namespace PeerCastStation.WPF.CoreSettings
       set { SetProperty("MaxRelays", ref maxRelays, value); }
     }
 
-    private int maxRelaysPerChannel;
-    public int MaxRelaysPerChannel {
-      get { return maxRelaysPerChannel; }
-      set { SetProperty("MaxRelaysPerChannel", ref maxRelaysPerChannel, value); }
+    private int maxRelaysPerBroadcastChannel;
+    public int MaxRelaysPerBroadcastChannel {
+      get { return maxRelaysPerBroadcastChannel; }
+      set { SetProperty(nameof(MaxRelaysPerBroadcastChannel), ref maxRelaysPerBroadcastChannel, value); }
+    }
+
+    private int maxRelaysPerRelayChannel;
+    public int MaxRelaysPerRelayChannel {
+      get { return maxRelaysPerRelayChannel; }
+      set { SetProperty(nameof(MaxRelaysPerRelayChannel), ref maxRelaysPerRelayChannel, value); }
     }
 
     private int maxPlays;
@@ -644,10 +650,16 @@ namespace PeerCastStation.WPF.CoreSettings
       set { SetProperty("MaxPlays", ref maxPlays, value); }
     }
 
-    private int maxPlaysPerChannel;
-    public int MaxPlaysPerChannel {
-      get { return maxPlaysPerChannel; }
-      set { SetProperty("MaxPlaysPerChannel", ref maxPlaysPerChannel, value); }
+    private int maxPlaysPerBroadcastChannel;
+    public int MaxPlaysPerBroadcastChannel {
+      get { return maxPlaysPerBroadcastChannel; }
+      set { SetProperty(nameof(MaxPlaysPerBroadcastChannel), ref maxPlaysPerBroadcastChannel, value); }
+    }
+
+    private int maxPlaysPerRelayChannel;
+    public int MaxPlaysPerRelayChannel {
+      get { return maxPlaysPerRelayChannel; }
+      set { SetProperty(nameof(MaxPlaysPerRelayChannel), ref maxPlaysPerRelayChannel, value); }
     }
 
     private int maxUpstreamRate;
@@ -662,10 +674,16 @@ namespace PeerCastStation.WPF.CoreSettings
       set { SetProperty(nameof(MaxUpstreamRateIPv6), ref maxUpstreamRateIPv6, value); }
     }
 
-    private int maxUpstreamRatePerChannel;
-    public int MaxUpstreamRatePerChannel {
-      get { return maxUpstreamRatePerChannel; }
-      set { SetProperty("MaxUpstreamRatePerChannel", ref maxUpstreamRatePerChannel, value); }
+    private int maxUpstreamRatePerBroadcastChannel;
+    public int MaxUpstreamRatePerBroadcastChannel {
+      get { return maxUpstreamRatePerBroadcastChannel; }
+      set { SetProperty(nameof(MaxUpstreamRatePerBroadcastChannel), ref maxUpstreamRatePerBroadcastChannel, value); }
+    }
+
+    private int maxUpstreamRatePerRelayChannel;
+    public int MaxUpstreamRatePerRelayChannel {
+      get { return maxUpstreamRatePerRelayChannel; }
+      set { SetProperty(nameof(MaxUpstreamRatePerRelayChannel), ref maxUpstreamRatePerRelayChannel, value); }
     }
 
     private bool isShowWindowOnStartup;
@@ -706,13 +724,16 @@ namespace PeerCastStation.WPF.CoreSettings
       this.RemoveYellowPageCommand = new Command(() => RemoveYellowPage(), () => SelectedYellowPage!=null);
       channelCleanupMode = ChannelCleaner.Mode;
       channelCleanupInactiveLimit = ChannelCleaner.InactiveLimit/60000;
-      maxRelays           = peerCast.AccessController.MaxRelays;
-      maxRelaysPerChannel = peerCast.AccessController.MaxRelaysPerChannel;
-      maxPlays            = peerCast.AccessController.MaxPlays;
-      maxPlaysPerChannel  = peerCast.AccessController.MaxPlaysPerChannel;
-      maxUpstreamRate           = peerCast.AccessController.MaxUpstreamRate;
-      maxUpstreamRateIPv6       = peerCast.AccessController.MaxUpstreamRateIPv6;
-      maxUpstreamRatePerChannel = peerCast.AccessController.MaxUpstreamRatePerChannel;
+      maxRelays                    = peerCast.AccessController.MaxRelays;
+      maxRelaysPerBroadcastChannel = peerCast.AccessController.MaxRelaysPerBroadcastChannel;
+      maxRelaysPerRelayChannel     = peerCast.AccessController.MaxRelaysPerRelayChannel;
+      maxPlays                     = peerCast.AccessController.MaxPlays;
+      maxPlaysPerBroadcastChannel  = peerCast.AccessController.MaxPlaysPerBroadcastChannel;
+      maxPlaysPerRelayChannel      = peerCast.AccessController.MaxPlaysPerRelayChannel;
+      maxUpstreamRate                    = peerCast.AccessController.MaxUpstreamRate;
+      maxUpstreamRateIPv6                = peerCast.AccessController.MaxUpstreamRateIPv6;
+      maxUpstreamRatePerBroadcastChannel = peerCast.AccessController.MaxUpstreamRatePerBroadcastChannel;
+      maxUpstreamRatePerRelayChannel     = peerCast.AccessController.MaxUpstreamRatePerRelayChannel;
       isShowWindowOnStartup = pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup;
       isShowNotifications   = pecaApp.Settings.Get<WPFSettings>().ShowNotifications;
       remoteNodeName        = pecaApp.Settings.Get<WPFSettings>().RemoteNodeName;
@@ -893,12 +914,15 @@ namespace PeerCastStation.WPF.CoreSettings
       ChannelCleaner.Mode = channelCleanupMode;
       ChannelCleaner.InactiveLimit = channelCleanupInactiveLimit*60000;
       peerCast.AccessController.MaxRelays = maxRelays;
-      peerCast.AccessController.MaxRelaysPerChannel = maxRelaysPerChannel;
+      peerCast.AccessController.MaxRelaysPerBroadcastChannel = maxRelaysPerBroadcastChannel;
+      peerCast.AccessController.MaxRelaysPerRelayChannel     = maxRelaysPerRelayChannel;
       peerCast.AccessController.MaxPlays = maxPlays;
-      peerCast.AccessController.MaxPlaysPerChannel = maxPlaysPerChannel;
+      peerCast.AccessController.MaxPlaysPerBroadcastChannel = maxPlaysPerBroadcastChannel;
+      peerCast.AccessController.MaxPlaysPerRelayChannel     = maxPlaysPerRelayChannel;
       peerCast.AccessController.MaxUpstreamRate = maxUpstreamRate;
       peerCast.AccessController.MaxUpstreamRateIPv6 = maxUpstreamRateIPv6;
-      peerCast.AccessController.MaxUpstreamRatePerChannel = maxUpstreamRatePerChannel;
+      peerCast.AccessController.MaxUpstreamRatePerBroadcastChannel = maxUpstreamRatePerBroadcastChannel;
+      peerCast.AccessController.MaxUpstreamRatePerRelayChannel     = maxUpstreamRatePerRelayChannel;
       pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup = isShowWindowOnStartup;
       pecaApp.Settings.Get<WPFSettings>().ShowNotifications = isShowNotifications;
       pecaApp.Settings.Get<WPFSettings>().RemoteNodeName = remoteNodeName;

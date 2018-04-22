@@ -175,7 +175,7 @@ namespace PeerCastStation.Core
     {
       if (closedCancelSource.IsCancellationRequested) throw new ObjectDisposedException(GetType().Name);
       using (var cancelsource = LinkTimeoutCancelTokenSource(ReadTimeout, cancel_token)) {
-        var len = await WaitOrCancelTask(ReadStream.ReadAsync(buf, offset, length, cancelsource.Token), cancelsource.Token);
+        var len = await WaitOrCancelTask(ReadStream.ReadAsync(buf, offset, length, cancelsource.Token), cancelsource.Token).ConfigureAwait(false);
         readBytesCounter.Add(len);
         return len;
       }
@@ -189,7 +189,7 @@ namespace PeerCastStation.Core
         var offset = 0;
         while (offset<length) {
           cancelsource.Token.ThrowIfCancellationRequested();
-          var len = await WaitOrCancelTask(ReadStream.ReadAsync(buf, offset, length-offset, cancelsource.Token), cancelsource.Token);
+          var len = await WaitOrCancelTask(ReadStream.ReadAsync(buf, offset, length-offset, cancelsource.Token), cancelsource.Token).ConfigureAwait(false);
           if (len==0) throw new EndOfStreamException();
           else {
             offset += len;
@@ -211,7 +211,7 @@ namespace PeerCastStation.Core
       using (var cancelsource = LinkTimeoutCancelTokenSource(ReadTimeout, cancel_token)) {
         cancelsource.Token.ThrowIfCancellationRequested();
         var buf = new byte[1];
-        var len = await WaitOrCancelTask(ReadStream.ReadAsync(buf, 0, 1, cancelsource.Token), cancelsource.Token);
+        var len = await WaitOrCancelTask(ReadStream.ReadAsync(buf, 0, 1, cancelsource.Token), cancelsource.Token).ConfigureAwait(false);
         if (len==0) return -1;
         readBytesCounter.Add(1);
         return buf[0];
@@ -227,7 +227,7 @@ namespace PeerCastStation.Core
     {
       if (closedCancelSource.IsCancellationRequested) throw new ObjectDisposedException(GetType().Name);
       using (var cancelsource = LinkTimeoutCancelTokenSource(WriteTimeout, cancel_token)) {
-        await WaitOrCancelTask(WriteStream.WriteAsync(buf, offset, length, cancelsource.Token), cancelsource.Token);
+        await WaitOrCancelTask(WriteStream.WriteAsync(buf, offset, length, cancelsource.Token), cancelsource.Token).ConfigureAwait(false);
         if (!cancelsource.IsCancellationRequested) {
           writeBytesCounter.Add(length);
         }

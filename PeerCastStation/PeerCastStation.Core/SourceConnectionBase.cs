@@ -109,7 +109,7 @@ namespace PeerCastStation.Core
     {
       this.Status = ConnectionStatus.Connecting;
       try {
-        connection = await DoConnect(SourceUri, isStopped.Token);
+        connection = await DoConnect(SourceUri, isStopped.Token).ConfigureAwait(false);
         if (connection==null) {
           Stop(StopReason.ConnectionError);
         }
@@ -126,14 +126,14 @@ namespace PeerCastStation.Core
       if (!IsStopped) {
         OnStarted();
         try {
-          await DoProcess(isStopped.Token);
+          await DoProcess(isStopped.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException) {
         }
         OnStopped();
       }
       if (connection!=null) {
-        await DoClose(connection);
+        await DoClose(connection).ConfigureAwait(false);
       }
       return StoppedReason;
     }
@@ -158,7 +158,7 @@ namespace PeerCastStation.Core
 
     protected virtual async Task DoClose(SourceConnectionClient connection)
     {
-      await connection.Stream.FlushAsync();
+      await connection.Stream.FlushAsync().ConfigureAwait(false);
       connection.Dispose();
       Logger.Debug("closed");
       this.Status = ConnectionStatus.Error;

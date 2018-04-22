@@ -69,7 +69,7 @@ namespace PeerCastStation.UI.PortMapper
     {
       var results = Enumerable.Empty<INatDevice>();
       foreach (var discoverer in this.Discoverers) {
-        results = results.Concat(await discoverer.DiscoverAsync(cancel_token));
+        results = results.Concat(await discoverer.DiscoverAsync(cancel_token).ConfigureAwait(false));
       }
       return results;
     }

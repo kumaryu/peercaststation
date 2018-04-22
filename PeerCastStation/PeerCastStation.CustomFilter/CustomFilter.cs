@@ -111,10 +111,10 @@ namespace PeerCastStation.CustomFilter
 
       public async Task<T> DequeueAsync(CancellationToken cancellationToken)
       {
-        await locker.WaitAsync(cancellationToken);
+        await locker.WaitAsync(cancellationToken).ConfigureAwait(false);
         T result;
         while (!queue.TryDequeue(out result)) {
-          await locker.WaitAsync(cancellationToken);
+          await locker.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
         return result;
       }
@@ -159,7 +159,7 @@ namespace PeerCastStation.CustomFilter
         try {
           Logger logger = new Logger(typeof(CustomFilterContentSink), this.Description.Name);
           while (!cancel.IsCancellationRequested) {
-            var line = await stderr.ReadLineAsync();
+            var line = await stderr.ReadLineAsync().ConfigureAwait(false);
             if (line==null) break;
             if (Description.Logging) {
               logger.Debug(line);
@@ -177,7 +177,7 @@ namespace PeerCastStation.CustomFilter
           long pos = 0;
           var buffer = new byte[1024*15];
           while (!cancel.IsCancellationRequested) {
-            var len = await stdout.ReadAsync(buffer, 0, buffer.Length, cancel);
+            var len = await stdout.ReadAsync(buffer, 0, buffer.Length, cancel).ConfigureAwait(false);
             System.Console.WriteLine("stdout {0}", len);
             if (len<=0) break;
             Sink.OnContent(new Content(lastContent.Stream, lastContent.Timestamp, pos, buffer, 0, len));
@@ -197,11 +197,11 @@ namespace PeerCastStation.CustomFilter
       stdInTask = Task.Run(async () => {
         try {
           while (!cancel.IsCancellationRequested) {
-            var packet = await pipePackets.DequeueAsync(cancel);
+            var packet = await pipePackets.DequeueAsync(cancel).ConfigureAwait(false);
             if (packet!=null) {
-              await stdin.WriteAsync(packet, 0, packet.Length, cancel);
+              await stdin.WriteAsync(packet, 0, packet.Length, cancel).ConfigureAwait(false);
               if (pipePackets.IsEmpty) {
-                await stdin.FlushAsync();
+                await stdin.FlushAsync().ConfigureAwait(false);
               }
             }
             else {

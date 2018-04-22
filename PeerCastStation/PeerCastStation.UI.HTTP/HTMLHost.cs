@@ -121,7 +121,7 @@ namespace PeerCastStation.UI.HTTP
       }
       env.ResponseStatusCode = (int)HttpStatusCode.Moved;
       if (env.RequestMethod=="GET") {
-        await env.ResponseBody.WriteAsync(content, 0, content.Length, cancel_token);
+        await env.ResponseBody.WriteAsync(content, 0, content.Length, cancel_token).ConfigureAwait(false);
       }
     }
 
@@ -142,7 +142,7 @@ namespace PeerCastStation.UI.HTTP
           env.SetResponseHeader("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(env.AccessControlInfo.AuthenticationKey));
         }
         if (env.RequestMethod=="GET") {
-          await env.ResponseBody.WriteAsync(contents, 0, contents.Length, cancel_token);
+          await env.ResponseBody.WriteAsync(contents, 0, contents.Length, cancel_token).ConfigureAwait(false);
         }
       }
       else {
@@ -161,7 +161,7 @@ namespace PeerCastStation.UI.HTTP
         if (env.RequestMethod!="HEAD" && env.RequestMethod!="GET") {
           throw new HTTPError(HttpStatusCode.MethodNotAllowed);
         }
-        await SendResponseFileContent(env, cancel_token);
+        await SendResponseFileContent(env, cancel_token).ConfigureAwait(false);
       }
       catch (HTTPError err) {
         env.ResponseStatusCode = (int)err.StatusCode;
@@ -182,7 +182,7 @@ namespace PeerCastStation.UI.HTTP
         if (env.RequestMethod!="HEAD" && env.RequestMethod!="GET") {
           throw new HTTPError(HttpStatusCode.MethodNotAllowed);
         }
-        await SendResponseMoveToIndex(env, cancel_token);
+        await SendResponseMoveToIndex(env, cancel_token).ConfigureAwait(false);
       }
       catch (HTTPError err) {
         env.ResponseStatusCode = (int)err.StatusCode;
