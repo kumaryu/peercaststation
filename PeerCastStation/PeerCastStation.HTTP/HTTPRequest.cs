@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
@@ -24,6 +25,8 @@ namespace PeerCastStation.HTTP
     public Dictionary<string, string> Headers { get; private set; }
     public Dictionary<string, string> Parameters { get; private set; }
     public Dictionary<string, string> Cookies { get; private set; }
+    public IList<string> Pragmas { get; private set; }
+    private static readonly string[] emptyPragmas = new string[0];
 
     public bool KeepAlive {
       get {
@@ -75,6 +78,7 @@ namespace PeerCastStation.HTTP
       Headers    = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
       Parameters = new Dictionary<string, string>();
       Cookies    = new Dictionary<string, string>();
+      List<string> pragmas = null;
       Protocol   = "HTTP/1.0";
       string host = "localhost";
       string path = "/";
@@ -97,13 +101,14 @@ namespace PeerCastStation.HTTP
             }
           }
         }
+        else if ((match = Regex.Match(req, @"^Pragma:(.+)$", RegexOptions.IgnoreCase)).Success) {
+          if (pragmas==null) {
+            pragmas = new List<string>();
+          }
+          pragmas.AddRange(match.Groups[1].Value.Split(',').Select(token => token.Trim().ToLowerInvariant()));
+        }
         else if ((match = Regex.Match(req, @"^(\S*):(.+)$", RegexOptions.IgnoreCase)).Success) {
-          if (match.Groups[1].Value.ToUpper() == "PRAGMA" && Headers.ContainsKey("PRAGMA")) {
-            Headers["PRAGMA"] += "\n" + match.Groups[2].Value.Trim();
-          }
-          else {
-            Headers[match.Groups[1].Value.ToUpper()] = match.Groups[2].Value.Trim();
-          }
+          Headers[match.Groups[1].Value.ToUpper()] = match.Groups[2].Value.Trim();
         }
       }
       Uri uri;
@@ -117,6 +122,12 @@ namespace PeerCastStation.HTTP
       }
       else {
         this.Uri = null;
+      }
+      if (pragmas!=null) {
+        Pragmas = pragmas;
+      }
+      else {
+        Pragmas = emptyPragmas;
       }
     }
 

@@ -297,6 +297,47 @@ namespace PeerCastStation.HTTP
       IsPlayable = channel!=null ? channel.IsPlayable(this) : false;
     }
 
+    private bool IsChannelASF {
+      get {
+        return
+          channelInfo.ContentType=="WMV" ||
+          channelInfo.ContentType=="WMA" ||
+          channelInfo.ContentType=="ASX";
+      }
+    }
+
+    private enum RequestType {
+      Unknown,
+      HttpGet,
+      HttpHead,
+      WMSPDescribe,
+      WMSPPlay,
+    }
+
+    private RequestType RequestMode {
+      get {
+        switch (request.Method) {
+        case "HEAD":
+          return RequestType.HttpHead;
+        case "GET":
+          if (IsChannelASF) {
+            if (request.Pragmas.Contains("xplaystrm=1")) {
+              return RequestType.WMSPPlay;
+            }
+            else {
+              return RequestType.WMSPDescribe;
+            }
+          }
+          else {
+            return RequestType.HttpGet;
+          }
+        default:
+          return RequestType.Unknown;
+        }
+
+      }
+    }
+
     class WaitableQueue<T>
     {
       private SemaphoreSlim locker = new SemaphoreSlim(0);
@@ -379,12 +420,12 @@ namespace PeerCastStation.HTTP
 
     private IPlayList CreateDefaultPlaylist()
     {
-      bool mms = 
-        channelInfo.ContentType=="WMV" ||
-        channelInfo.ContentType=="WMA" ||
-        channelInfo.ContentType=="ASX";
-      if (mms) return new ASXPlayList();
-      else     return new M3UPlayList();
+      if (IsChannelASF) {
+        return new ASXPlayList();
+      }
+      else {
+        return new M3UPlayList();
+      }
     }
 
     private IPlayList CreatePlaylist()
@@ -420,40 +461,32 @@ namespace PeerCastStation.HTTP
       case BodyType.None:
         return "HTTP/1.0 404 NotFound\r\n";
       case BodyType.Content:
-        {
-          bool mms = 
-            channelInfo.ContentType=="WMV" ||
-            channelInfo.ContentType=="WMA" ||
-            channelInfo.ContentType=="ASX";
-          if (mms) {
-            if ((request.Headers.ContainsKey("PRAGMA") && request.Headers["PRAGMA"].Contains("stream-switch")) ||
-                (request.Headers.ContainsKey("USER-AGENT") && request.Headers["USER-AGENT"].Contains("Kagamin2"))) {
-              return
-                "HTTP/1.0 200 OK\r\n"                         +
-                "Server: Rex/9.0.2980\r\n"                    +
-                "Cache-Control: no-cache\r\n"                 +
-                "Pragma: no-cache\r\n"                        +
-                "Pragma: features=\"seekable,stridable\"\r\n" +
-                "Content-Type: application/x-mms-framed\r\n";
-            }
-            else {
-              return
-                "HTTP/1.0 200 OK\r\n"                                +
-                "Server: Rex/9.0.2980\r\n"                           +
-                "Cache-Control: no-cache\r\n"                        +
-                "Pragma: no-cache\r\n"                               +
-                "Pragma: features=\"seekable,stridable\"\r\n"        +
-                "Content-Type: application/vnd.ms.wms-hdr.asfv1\r\n" +
-                $"Content-Length: {headerContent.Data.Length}\r\n"   +
-                "Connection: Keep-Alive\r\n";
-            }
-          }
-          else {
+        switch (RequestMode) {
+        case RequestType.WMSPDescribe:
             return
-              $"HTTP/1.0 200 OK\r\n" +
-              $"Server: {PeerCast.AgentName}\r\n" +
-              $"Content-Type: {channelInfo.MIMEType}\r\n";
-          }
+              "HTTP/1.0 200 OK\r\n"                                +
+              "Server: Rex/9.0.2980\r\n"                           +
+              "Cache-Control: no-cache\r\n"                        +
+              "Pragma: no-cache\r\n"                               +
+              "Pragma: features=\"seekable,stridable\"\r\n"        +
+              "Content-Type: application/vnd.ms.wms-hdr.asfv1\r\n" +
+              $"Content-Length: {headerContent.Data.Length}\r\n"   +
+              "Connection: Keep-Alive\r\n";
+        case RequestType.WMSPPlay:
+            return
+              "HTTP/1.0 200 OK\r\n"                         +
+              "Server: Rex/9.0.2980\r\n"                    +
+              "Cache-Control: no-cache\r\n"                 +
+              "Pragma: no-cache\r\n"                        +
+              "Pragma: features=\"seekable,stridable\"\r\n" +
+              "Content-Type: application/x-mms-framed\r\n";
+        case RequestType.HttpGet:
+        case RequestType.HttpHead:
+        default:
+          return
+            $"HTTP/1.0 200 OK\r\n" +
+            $"Server: {PeerCast.AgentName}\r\n" +
+            $"Content-Type: {channelInfo.MIMEType}\r\n";
         }
       case BodyType.Playlist:
         {
@@ -551,6 +584,23 @@ namespace PeerCastStation.HTTP
       return contentPacketQueue.DequeueAsync(cancel_token);
     }
 
+    private async Task SendHeaderContent(CancellationToken cancel_token)
+    {
+      Logger.Debug("Sending Contents");
+      try {
+        Packet packet = null;
+        do {
+          packet = await GetPacket(cancel_token).ConfigureAwait(false);
+          if (packet.Type!=Packet.ContentType.Header || packet.Content==null) continue;
+          await Connection.WriteAsync(packet.Content.Data, cancel_token).ConfigureAwait(false);
+          Logger.Debug("Sent ContentHeader pos {0}", packet.Content.Position);
+        }
+        while (!IsStopped && packet.Type!=Packet.ContentType.Header || packet.Content==null);
+      }
+      catch (OperationCanceledException) {
+      }
+    }
+
     private async Task SendContents(CancellationToken cancel_token)
     {
       Logger.Debug("Sending Contents");
@@ -567,16 +617,6 @@ namespace PeerCastStation.HTTP
               sent_header = packet.Content;
               sent_packet = packet.Content;
             }
-
-            bool mms =
-              Channel.ChannelInfo.ContentType == "WMV" ||
-              Channel.ChannelInfo.ContentType == "WMA" ||
-              Channel.ChannelInfo.ContentType == "ASX";
-
-            if (mms && !((request.Headers.ContainsKey("PRAGMA") && request.Headers["PRAGMA"].Contains("stream-switch")) ||
-                         (request.Headers.ContainsKey("USER-AGENT") && request.Headers["USER-AGENT"].Contains("Kagamin2"))))
-              return;
-
             break;
           case Packet.ContentType.Body:
             if (sent_header==null) continue;
@@ -613,6 +653,20 @@ namespace PeerCastStation.HTTP
         await Connection.WriteAsync(pls.CreatePlayList(baseuri, Enumerable.Empty<KeyValuePair<string,string>>()), cancel_token).ConfigureAwait(false);
       }
 
+    }
+
+    private async Task SendReponseBodyHeaderOnly(CancellationToken cancel_token)
+    {
+      switch (GetBodyType()) {
+      case BodyType.None:
+        break;
+      case BodyType.Content:
+        await SendHeaderContent(cancel_token).ConfigureAwait(false);
+        break;
+      case BodyType.Playlist:
+        await SendPlaylist(cancel_token).ConfigureAwait(false);
+        break;
+      }
     }
 
     private async Task SendReponseBody(CancellationToken cancel_token)
@@ -678,8 +732,15 @@ namespace PeerCastStation.HTTP
         }
         await WaitChannelReceived().ConfigureAwait(false);
         await SendResponseHeader().ConfigureAwait(false);
-        if (request.Method=="GET") {
+        switch (RequestMode) {
+        case RequestType.WMSPDescribe:
+          await SendReponseBodyHeaderOnly(cancel_token).ConfigureAwait(false);
+          break;
+        case RequestType.HttpGet:
+        case RequestType.WMSPPlay:
+        default:
           await SendReponseBody(cancel_token).ConfigureAwait(false);
+          break;
         }
         return StopReason.OffAir;
       }
