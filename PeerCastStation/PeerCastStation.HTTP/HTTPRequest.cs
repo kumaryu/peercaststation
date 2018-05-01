@@ -98,7 +98,12 @@ namespace PeerCastStation.HTTP
           }
         }
         else if ((match = Regex.Match(req, @"^(\S*):(.+)$", RegexOptions.IgnoreCase)).Success) {
-          Headers[match.Groups[1].Value.ToUpper()] = match.Groups[2].Value.Trim();
+          if (match.Groups[1].Value.ToUpper() == "PRAGMA" && Headers.ContainsKey("PRAGMA")) {
+            Headers["PRAGMA"] += "\n" + match.Groups[2].Value.Trim();
+          }
+          else {
+            Headers[match.Groups[1].Value.ToUpper()] = match.Groups[2].Value.Trim();
+          }
         }
       }
       Uri uri;

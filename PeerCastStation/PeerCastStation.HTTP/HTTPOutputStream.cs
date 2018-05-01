@@ -426,13 +426,27 @@ namespace PeerCastStation.HTTP
             channelInfo.ContentType=="WMA" ||
             channelInfo.ContentType=="ASX";
           if (mms) {
-            return
-              "HTTP/1.0 200 OK\r\n"                         +
-              "Server: Rex/9.0.2980\r\n"                    +
-              "Cache-Control: no-cache\r\n"                 +
-              "Pragma: no-cache\r\n"                        +
-              "Pragma: features=\"broadcast,playlist\"\r\n" +
-              "Content-Type: application/x-mms-framed\r\n";
+            if ((request.Headers.ContainsKey("PRAGMA") && request.Headers["PRAGMA"].Contains("stream-switch")) ||
+                (request.Headers.ContainsKey("USER-AGENT") && request.Headers["USER-AGENT"].Contains("Kagamin2"))) {
+              return
+                "HTTP/1.0 200 OK\r\n"                         +
+                "Server: Rex/9.0.2980\r\n"                    +
+                "Cache-Control: no-cache\r\n"                 +
+                "Pragma: no-cache\r\n"                        +
+                "Pragma: features=\"seekable,stridable\"\r\n" +
+                "Content-Type: application/x-mms-framed\r\n";
+            }
+            else {
+              return
+                "HTTP/1.0 200 OK\r\n"                                +
+                "Server: Rex/9.0.2980\r\n"                           +
+                "Cache-Control: no-cache\r\n"                        +
+                "Pragma: no-cache\r\n"                               +
+                "Pragma: features=\"seekable,stridable\"\r\n"        +
+                "Content-Type: application/vnd.ms.wms-hdr.asfv1\r\n" +
+                $"Content-Length: {headerContent.Data.Length}\r\n"   +
+                "Connection: Keep-Alive\r\n";
+            }
           }
           else {
             return
@@ -553,6 +567,16 @@ namespace PeerCastStation.HTTP
               sent_header = packet.Content;
               sent_packet = packet.Content;
             }
+
+            bool mms =
+              Channel.ChannelInfo.ContentType == "WMV" ||
+              Channel.ChannelInfo.ContentType == "WMA" ||
+              Channel.ChannelInfo.ContentType == "ASX";
+
+            if (mms && !((request.Headers.ContainsKey("PRAGMA") && request.Headers["PRAGMA"].Contains("stream-switch")) ||
+                         (request.Headers.ContainsKey("USER-AGENT") && request.Headers["USER-AGENT"].Contains("Kagamin2"))))
+              return;
+
             break;
           case Packet.ContentType.Body:
             if (sent_header==null) continue;
