@@ -70,7 +70,7 @@ namespace PeerCastStation.Core
     protected ISourceConnection sourceConnection;
     protected Task              sourceConnectionTask;
     private Task eventTask = Task.Delay(0);
-    private TaskCompletionSource<StopReason> ranTaskSource;
+    private TaskCompletionSource<StopReason> ranTaskSource = new TaskCompletionSource<StopReason>();
     private bool disposed = false;
 
     protected Task Queue(Action action)
