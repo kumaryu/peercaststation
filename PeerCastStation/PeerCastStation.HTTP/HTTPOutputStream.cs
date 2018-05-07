@@ -468,7 +468,7 @@ namespace PeerCastStation.HTTP
               "Server: Rex/9.0.2980\r\n"                           +
               "Cache-Control: no-cache\r\n"                        +
               "Pragma: no-cache\r\n"                               +
-              "Pragma: features=\"seekable,stridable\"\r\n"        +
+              "Pragma: features=\"broadcast,playlist\"\r\n"        +
               "Content-Type: application/vnd.ms.wms-hdr.asfv1\r\n" +
               $"Content-Length: {headerContent.Data.Length}\r\n"   +
               "Connection: Keep-Alive\r\n";
@@ -478,7 +478,7 @@ namespace PeerCastStation.HTTP
               "Server: Rex/9.0.2980\r\n"                    +
               "Cache-Control: no-cache\r\n"                 +
               "Pragma: no-cache\r\n"                        +
-              "Pragma: features=\"seekable,stridable\"\r\n" +
+              "Pragma: features=\"broadcast,playlist\"\r\n" +
               "Content-Type: application/x-mms-framed\r\n";
         case RequestType.HttpGet:
         case RequestType.HttpHead:
