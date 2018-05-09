@@ -1,4 +1,62 @@
 ---
+- name: Version 2.5.1 (2018年05月10日開発版)
+  version: 2.5.1
+  channel: dev
+  notes: |
+    配信時と視聴時のリレー数上限を別に設定できるようにしました。あとはバグ修正です。
+
+    * 最大リレー数・視聴数・上り帯域のそれぞれについて、配信時と視聴時を別に設定できるようにしました。
+      配信時は自分で配信しているチャンネルにのみ適用される上限で、
+      視聴時はリレーしているチャンネルにのみ適用される上限です。
+      複数のチャンネルを視聴する時は一つのチャンネルで帯域を占有しないようにしたいが、
+      自分で配信している時はせいぜいチャンネル一つなので帯域を占有しても良い場合などに設定できます。
+      GUIでは詳細設定にて設定してください。
+    * 視聴数の上限設定が効いていなかったのを修正しました。
+    * 配信時のソースに「他のチャンネル」を指定すると、元のチャンネルも含めて正しくリレーできなくなっていたのを修正しました。
+    * Windows Media FoundationでのWMV再生について互換性が改善されたかもしれません。(by shinji3)
+    * タイミングによってクラッシュする可能性がある不具合を修正しました。
+    * パフォーマンスの改善が期待できる修正を入れました。
+  date: 2018-05-10T01:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.5.1.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.5.1.zip
+    length: 2137884
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.5.1.exe
+    length: 2341639
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.5.1.msi
+    length: 2024226
+
+- name: Version 2.5.0 (2018年03月12日開発版)
+  version: 2.5.0
+  channel: dev
+  notes: |
+    IPv6に対応しました。バグ修正もしました。
+
+    * IPv6での配信・リレーができるようになりました。
+      IPv6のチャンネルはIPv6でのみ、IPv4のチャンネル(従来の普通のやつ)はIPv4でのみリレーができます。
+      IPv6のチャンネル掲載にはYP側もIPv6対応する必要があります。
+    * 配信時にソースとして既に配信中の他のチャンネルを選択できるようになりました。
+      チャンネル名と掲載先のYP以外は、元のチャンネルデータを使用します。
+      主にIPv4とIPv6で同じ内容のチャンネルを建てるのに使うことを想定しています。
+      IPv4同士でも同じ内容で他のYPにも掲載といったようなこともできます。
+    * 2.3.9で視聴時に一部データの順番が入れ替わって壊れる場合があったのを修正しました。
+    * 設定に読み込めないデータがあった時に落ちる場合があったのを修正しました。
+  date: 2018-03-12T01:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.5.0.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.5.0.zip
+    length: 1660700
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.5.0.exe
+    length: 2337995
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.5.0.msi
+    length: 2024226
+
 - name: Version 2.3.9 (2017年10月15日開発版)
   version: 2.3.9
   channel: dev
