@@ -407,6 +407,17 @@ namespace PeerCastStation.HTTP
       }
     }
 
+    private string GetPlaylistScheme()
+    {
+      string scheme;
+      if (request.Parameters.TryGetValue("scheme", out scheme)) {
+        return scheme;
+      }
+      else {
+        return null;
+      }
+    }
+
     private string GetPlaylistFormat()
     {
       string fmt;
@@ -418,27 +429,28 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    private IPlayList CreateDefaultPlaylist()
+    private IPlayList CreateDefaultPlaylist(string scheme)
     {
       if (IsChannelASF) {
-        return new ASXPlayList();
+        return new ASXPlayList(scheme);
       }
       else {
-        return new M3UPlayList();
+        return new M3UPlayList(scheme);
       }
     }
 
     private IPlayList CreatePlaylist()
     {
+      var scheme = GetPlaylistScheme();
       var fmt = GetPlaylistFormat();
       if (String.IsNullOrEmpty(fmt)) {
-        return CreateDefaultPlaylist();
+        return CreateDefaultPlaylist(scheme);
       }
       else {
         switch (fmt.ToLowerInvariant()) {
-        case "asx": return new ASXPlayList();
-        case "m3u": return new M3UPlayList();
-        default:    return CreateDefaultPlaylist();
+        case "asx": return new ASXPlayList(scheme);
+        case "m3u": return new M3UPlayList(scheme);
+        default:    return CreateDefaultPlaylist(scheme);
         }
       }
     }

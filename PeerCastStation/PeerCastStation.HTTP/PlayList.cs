@@ -49,11 +49,13 @@ namespace PeerCastStation.HTTP
   public class M3UPlayList
     : IPlayList
   {
+    public string scheme;
     public string MIMEType { get { return "audio/x-mpegurl"; } }
     public IList<Channel> Channels { get; private set; }
 
-    public M3UPlayList()
+    public M3UPlayList(string scheme)
     {
+      this.scheme = String.IsNullOrEmpty(scheme) ? "mms" : scheme.ToLowerInvariant();
       Channels = new List<Channel>();
     }
 
@@ -68,7 +70,7 @@ namespace PeerCastStation.HTTP
           c.ChannelInfo.ContentType=="WMA" ||
           c.ChannelInfo.ContentType=="ASX";
         if (mms) {
-          url.Scheme = "mms";
+          url.Scheme = scheme;
         }
         if (queries!="") {
           url.Query = queries;
@@ -85,11 +87,13 @@ namespace PeerCastStation.HTTP
   public class ASXPlayList
     : IPlayList
   {
+    public string scheme;
     public string MIMEType { get { return "video/x-ms-asf"; } }
     public IList<Channel> Channels { get; private set; }
 
-    public ASXPlayList()
+    public ASXPlayList(string scheme)
     {
+      this.scheme = String.IsNullOrEmpty(scheme) ? "mms" : scheme.ToLowerInvariant();
       Channels = new List<Channel>();
     }
 
@@ -111,7 +115,7 @@ namespace PeerCastStation.HTTP
           contact_url = c.ChannelInfo.URL;
         }
         var stream_url = new UriBuilder(baseuri);
-        stream_url.Scheme = "mms";
+        stream_url.Scheme = scheme;
         if (stream_url.Path[stream_url.Path.Length-1]!='/') {
           stream_url.Path += '/';
         }
