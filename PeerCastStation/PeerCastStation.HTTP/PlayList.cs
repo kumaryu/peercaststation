@@ -55,7 +55,7 @@ namespace PeerCastStation.HTTP
 
     public M3UPlayList(string scheme)
     {
-      this.scheme = String.IsNullOrEmpty(scheme) ? "mms" : scheme.ToLowerInvariant();
+      this.scheme = String.IsNullOrEmpty(scheme) ? "http" : scheme.ToLowerInvariant();
       Channels = new List<Channel>();
     }
 
@@ -65,13 +65,7 @@ namespace PeerCastStation.HTTP
       var queries = String.Join("&", parameters.Select(kv => Uri.EscapeDataString(kv.Key) + "=" + Uri.EscapeDataString(kv.Value)));
       foreach (var c in Channels) {
         var url = new UriBuilder(new Uri(baseuri, c.ChannelID.ToString("N").ToUpper() + c.ChannelInfo.ContentExtension));
-        bool mms = 
-          c.ChannelInfo.ContentType=="WMV" ||
-          c.ChannelInfo.ContentType=="WMA" ||
-          c.ChannelInfo.ContentType=="ASX";
-        if (mms) {
-          url.Scheme = scheme;
-        }
+        url.Scheme = scheme;
         if (queries!="") {
           url.Query = queries;
         }
