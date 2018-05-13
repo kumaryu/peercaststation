@@ -1,72 +1,21 @@
 ﻿using System;
-using System.Runtime.Remoting.Lifetime;
+using PeerCastStation.App;
 
 namespace PeerCastStation.Main
 {
   public class PeerCastStation
   {
-    class ResultContainer : MarshalByRefObject
-    {
-      public override Object InitializeLifetimeService()
-      {
-        var lease = (ILease)base.InitializeLifetimeService();
-        if (lease.CurrentState==LeaseState.Initial) {
-          lease.InitialLeaseTime = TimeSpan.Zero;
-        }
-        return lease;
-      }
-
-      public int ExitCode;
-    }
-
-    [Serializable]
-    class StartUpContext
-    {
-      public string   BasePath;
-      public string[] Args;
-      public ResultContainer Result;
-
-      public void Run()
-      {
-        var asm = System.Reflection.Assembly.LoadFrom(System.IO.Path.Combine(this.BasePath, "PeerCastStation.App.dll"));
-        var type = asm.GetType("PeerCastStation.App.StandaloneApp");
-        var result = type.InvokeMember("Run",
-          System.Reflection.BindingFlags.Public |
-          System.Reflection.BindingFlags.Static |
-          System.Reflection.BindingFlags.InvokeMethod,
-          null,
-          null,
-          new object[] { this.BasePath, this.Args });
-        if (result is Int32) {
-          this.Result.ExitCode = (int)result;
-        }
-      }
-
-    }
-
     [STAThread]
     static int Main(string[] args)
     {
-    start:
       var basepath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
-      var appdomain = AppDomain.CreateDomain(
-        "PeerCastStaion.App",
-        null,
-        AppDomain.CurrentDomain.BaseDirectory,
-        AppDomain.CurrentDomain.RelativeSearchPath,
-        true);
-      var ctx = new StartUpContext() {
-        BasePath = basepath,
-        Args     = args,
-        Result   = new ResultContainer { ExitCode = 1 },
-      };
-      var d = new CrossAppDomainDelegate(ctx.Run);
-      appdomain.DoCallBack(d);
-      switch (ctx.Result.ExitCode) {
+      var result = StandaloneApp.Run(basepath, args);
+      switch (result) {
       case -1:
-        goto start;
+        //TODO:ダウンロードしたアップデートの位置をUpdaterに渡して起動する
+        return 0;
       default:
-        return ctx.Result.ExitCode;
+        return result;
       }
     }
 
