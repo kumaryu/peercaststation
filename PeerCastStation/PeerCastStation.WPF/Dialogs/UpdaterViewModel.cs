@@ -131,10 +131,9 @@ namespace PeerCastStation.WPF.Dialogs
         break;
       case ".zip":
         try {
-          Updater.InplaceUpdate(
+          Updater.ExecUpdater(
             PeerCastApplication.Current.BasePath,
-            downloadPath,
-            new string[] { "PeerCastStation.exe", "PecaStationd.exe" });
+            downloadPath);
           PeerCastApplication.Current.Stop(-1);
         }
         catch (Exception) {

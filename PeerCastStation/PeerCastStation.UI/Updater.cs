@@ -99,6 +99,28 @@ namespace PeerCastStation.UI
       }
     }
 
+    static string ShellEscape(string arg)
+    {
+      if (arg.Contains(" ") && !arg.StartsWith("\"") && !arg.EndsWith("\"")) {
+        return "\"" + arg + "\"";
+      }
+      else {
+        return arg;
+      }
+    }
+
+    public static void ExecUpdater(string destpath, string filename)
+    {
+      var pid = System.Diagnostics.Process.GetCurrentProcess().Id;
+      var entry = System.IO.Path.GetFileName(Environment.GetCommandLineArgs()[0]);
+      var args = String.Join(" ", Environment.GetCommandLineArgs().Skip(1).Select(ShellEscape));
+
+      System.Diagnostics.Process.Start(
+        "PeerCastStation.Updater.exe",
+        $"{pid} {ShellEscape(filename)} {ShellEscape(destpath)} {ShellEscape(entry)} {args}"
+      );
+    }
+
     public static void InplaceUpdate(string destpath, string filename, string[] excludes)
     {
       destpath = System.IO.Path.GetFullPath(destpath);
@@ -200,10 +222,10 @@ namespace PeerCastStation.UI
         switch (downloaded.Enclosure.InstallerType) {
         case InstallerType.Archive:
         case InstallerType.ServiceArchive:
-          Updater.InplaceUpdate(
+          Updater.ExecUpdater(
             PeerCastApplication.Current.BasePath,
-            downloaded.FilePath,
-            new string[] { "PeerCastStation.exe", "PecaStationd.exe" });
+            downloaded.FilePath
+          );
           PeerCastApplication.Current.Stop(-1);
           break;
         case InstallerType.Installer:

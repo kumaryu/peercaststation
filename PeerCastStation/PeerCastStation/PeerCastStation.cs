@@ -12,7 +12,6 @@ namespace PeerCastStation.Main
       var result = StandaloneApp.Run(basepath, args);
       switch (result) {
       case -1:
-        //TODO:ダウンロードしたアップデートの位置をUpdaterに渡して起動する
         return 0;
       default:
         return result;

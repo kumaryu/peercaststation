@@ -106,6 +106,10 @@
       <Project>{5988fbaf-37c4-4997-8389-55f2ebbb9511}</Project>
       <Name>PeerCastStation.UI</Name>
     </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.Updater\PeerCastStation.Updater.csproj">
+      <Project>{be5fd77b-d20e-40f6-b198-c7fd97e41274}</Project>
+      <Name>PeerCastStation.Updater</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.WPF\PeerCastStation.WPF.csproj">
       <Project>{5ea68141-ac06-428b-9526-a6835e0cc2b2}</Project>
       <Name>PeerCastStation.WPF</Name>
