@@ -111,12 +111,13 @@ namespace PeerCastStation.UI
 
     public static void ExecUpdater(string destpath, string filename)
     {
+      var updater = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), "PeerCastStation.Updater.exe");
       var pid = System.Diagnostics.Process.GetCurrentProcess().Id;
       var entry = System.IO.Path.GetFileName(Environment.GetCommandLineArgs()[0]);
       var args = String.Join(" ", Environment.GetCommandLineArgs().Skip(1).Select(ShellEscape));
 
       System.Diagnostics.Process.Start(
-        "PeerCastStation.Updater.exe",
+        updater,
         $"{pid} {ShellEscape(filename)} {ShellEscape(destpath)} {ShellEscape(entry)} {args}"
       );
     }
