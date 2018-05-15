@@ -33,7 +33,7 @@ namespace PeerCastStation.Updater
           rootpath = root.FullName;
         }
         foreach (var ent in entries) {
-          var path = System.IO.Path.Combine(destpath, ent.FullName.Substring(rootpath.Length).Replace('/', '\\'));
+          var path = System.IO.Path.Combine(destpath, ent.FullName.Substring(rootpath.Length).Replace('\\', '/'));
           if (ent.FullName.EndsWith("/")) {
             var info = System.IO.Directory.CreateDirectory(path);
             try {
@@ -64,7 +64,7 @@ namespace PeerCastStation.Updater
         var newentries = entries
           .Select(ent => ent.FullName)
           .Where(ent => !ent.EndsWith("/"))
-          .Select(ent => System.IO.Path.Combine(destpath, ent.Substring(rootpath.Length).Replace('/', '\\'))) 
+          .Select(ent => System.IO.Path.Combine(destpath, ent.Substring(rootpath.Length).Replace('\\', '/'))) 
           .ToArray();
         foreach (var old in oldentries.Except(newentries)) {
           try {
