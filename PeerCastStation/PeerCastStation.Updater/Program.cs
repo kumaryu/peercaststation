@@ -44,7 +44,7 @@ namespace PeerCastStation.Updater
           }
           else {
             try {
-              using (var dst = System.IO.File.OpenWrite(path))
+              using (var dst = System.IO.File.Create(path))
               using (var src = ent.Open()) {
                 src.CopyTo(dst);
               }
