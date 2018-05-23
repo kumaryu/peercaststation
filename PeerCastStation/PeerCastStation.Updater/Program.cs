@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.Updater
 {
@@ -44,6 +46,7 @@ namespace PeerCastStation.Updater
           }
           else {
             try {
+              System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
               using (var dst = System.IO.File.Create(path))
               using (var src = ent.Open()) {
                 src.CopyTo(dst);
@@ -78,59 +81,56 @@ namespace PeerCastStation.Updater
 
     static bool DoUpdate(string dest_dir, string source_path)
     {
-      InplaceUpdate(dest_dir, source_path, new string[0]);
+      InplaceUpdate(dest_dir, source_path, new string[] { "PeerCastStation.exe", "PecaStationd.exe" });
       return true;
     }
 
-    static string ShellEscape(string arg)
+    static async Task<string> DoDownload(Uri source, string dstpath)
     {
-      if (arg.Contains(" ") && !arg.StartsWith("\"") && !arg.EndsWith("\"")) {
-        return "\"" + arg + "\"";
-      }
-      else {
-        return arg;
+      int progress = -1;
+      var appcastReader = new AppCastReader();
+      var versions = await appcastReader.DownloadVersionInfoTaskAsync(source, CancellationToken.None).ConfigureAwait(false);
+      var version   = versions.OrderByDescending(ver => ver.PublishDate).First();
+      var enclosure = version.Enclosures.Where(enc => enc.InstallerType==InstallerType.Archive).First();
+      using (var client = new System.Net.WebClient()) {
+        var locker = new Object();
+        client.DownloadProgressChanged += (sender, args) => {
+          lock (locker) {
+            if (args.ProgressPercentage>progress) {
+              progress = args.ProgressPercentage;
+              Console.WriteLine($"Downloading... {progress}%");
+            }
+          }
+        };
+        var filepath =
+          System.IO.Path.Combine(
+            dstpath,
+            System.IO.Path.GetFileName(enclosure.Url.AbsolutePath));
+        await client.DownloadFileTaskAsync(enclosure.Url.ToString(), filepath).ConfigureAwait(false);
+        return filepath;
       }
     }
 
     static int Main(string[] args)
     {
-      if (args.Length<4) {
-        System.Console.Error.WriteLine("USAGE: PeerCastStation.Updater.exe PID SOURCE.ZIP DESTDIR PEERCASTSTATION.EXE [ARGS...]");
+      if (args.Length<3) {
+        Console.Error.WriteLine("USAGE: PeerCastStation.Updater.exe UPDATERURL TMPDIR DESTDIR");
         return 1;
       }
 
-      int parent_pid = 0;
-      if (!Int32.TryParse(args[0], out parent_pid)) {
-        System.Console.Error.WriteLine("USAGE: PeerCastStation.Updater.exe PID SOURCE.ZIP DESTDIR PEERCASTSTATION.EXE [ARGS...]");
+      Uri updateruri;
+      if (!Uri.TryCreate(args[0], UriKind.Absolute, out updateruri)) {
+        Console.Error.WriteLine("USAGE: PeerCastStation.Updater.exe UPDATERURL TMPDIR DESTDIR");
         return 1;
       }
-      string source_path = args[1];
-      string dest_dir = System.IO.Path.GetFullPath(args[2]);
-      if (System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)==dest_dir) {
-        var path = System.IO.Path.Combine(
-          System.IO.Path.GetTempPath(),
-          "PeerCastStation.Updater.exe"
-        );
-        System.IO.File.Copy(System.Reflection.Assembly.GetExecutingAssembly().Location, path, true);
-        System.Diagnostics.Process.Start(path, String.Join(" ", args.Select(ShellEscape)));
-        return 0;
-      }
 
-      if (parent_pid!=0) {
-        try {
-          var process = System.Diagnostics.Process.GetProcessById(parent_pid);
-          process.WaitForExit(3000);
-        }
-        catch (ArgumentException) {
-          //Process not found
-        }
-        catch (SystemException) {
-          //Process not found
-        }
-      }
+      var source_path = args[1];
+      var dest_dir = System.IO.Path.GetFullPath(args[2]);
 
-      if (DoUpdate(dest_dir, source_path)) {
-        System.Diagnostics.Process.Start(System.IO.Path.Combine(dest_dir, args[3]), String.Join(" ", args.Skip(4)));
+      var download = DoDownload(updateruri, source_path);
+      download.Wait();
+
+      if (DoUpdate(dest_dir, download.Result)) {
         return 0;
       }
       else {

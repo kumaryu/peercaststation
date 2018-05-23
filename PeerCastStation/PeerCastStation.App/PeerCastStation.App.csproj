@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{C8B4E4DC-BE2B-4FC5-94D2-A22FF754C9A7}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>PeerCastStation.App</RootNamespace>
     <AssemblyName>PeerCastStation.App</AssemblyName>
@@ -35,6 +35,9 @@
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>..\PeerCastStation.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -45,6 +48,7 @@
     <Compile Include="AppBase.cs" />
     <Compile Include="ChannelNotifier.cs" />
     <Compile Include="PeerCastStationSettings.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServiceApp.cs" />
     <Compile Include="StandaloneApp.cs" />
@@ -53,11 +57,52 @@
     <None Include="..\PeerCastStation.snk">
       <Link>PeerCastStation.snk</Link>
     </None>
+    <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\PeerCastStation.ASF\PeerCastStation.ASF.csproj">
+      <Project>{dee84338-9849-4a90-8f1c-7bd6d88e3c2d}</Project>
+      <Name>PeerCastStation.ASF</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj">
       <Project>{387996f5-e31d-4d92-bd86-8983c599f748}</Project>
       <Name>PeerCastStation.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.CustomFilter\PeerCastStation.CustomFilter.csproj">
+      <Project>{e45e0a0a-4acc-4b46-a4b4-e2d836bde3dd}</Project>
+      <Name>PeerCastStation.CustomFilter</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.FLV\PeerCastStation.FLV.csproj">
+      <Project>{895d4df8-a8b2-43a0-85e4-ed74152e73b2}</Project>
+      <Name>PeerCastStation.FLV</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.HTTP\PeerCastStation.HTTP.csproj">
+      <Project>{db3bbed9-6f4b-456c-910d-e1801c94a110}</Project>
+      <Name>PeerCastStation.HTTP</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.MKV\PeerCastStation.MKV.csproj">
+      <Project>{c8f8baec-67bc-41f3-a1a4-56308cd2cab7}</Project>
+      <Name>PeerCastStation.MKV</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.PCP\PeerCastStation.PCP.csproj">
+      <Project>{f9d126c6-76b7-45e2-b62e-6ac35ee285cd}</Project>
+      <Name>PeerCastStation.PCP</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.TS\PeerCastStation.TS.csproj">
+      <Project>{0f0123ae-e500-45ca-b69d-4fbdbb88b752}</Project>
+      <Name>PeerCastStation.TS</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.UI.HTTP\PeerCastStation.UI.HTTP.csproj">
+      <Project>{bf5e0b6d-961a-4216-bacf-01d80ab3d6bb}</Project>
+      <Name>PeerCastStation.UI.HTTP</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.UI\PeerCastStation.UI.csproj">
+      <Project>{5988fbaf-37c4-4997-8389-55f2ebbb9511}</Project>
+      <Name>PeerCastStation.UI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.WPF\PeerCastStation.WPF.csproj">
+      <Project>{5ea68141-ac06-428b-9526-a6835e0cc2b2}</Project>
+      <Name>PeerCastStation.WPF</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
