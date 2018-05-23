@@ -5,7 +5,8 @@
     </Fragment>
     <Fragment>
         <ComponentGroup Id="PeerCastStation.App.Binaries">
-            <ComponentRef Id="cmpAB879AB612CD4A61A9372BBB25E6FC9A" />
+            <ComponentRef Id="cmpBC5645B4F70C1ED94C4CED7EC4AB5521" />
+            <ComponentRef Id="cmp5FC966311E43EA86278A3D0A5F95535B" />
         </ComponentGroup>
     </Fragment>
     <Fragment>
@@ -16,8 +17,11 @@
     </Fragment>
     <Fragment>
         <ComponentGroup Id="PeerCastStation.App">
-            <Component Id="cmpAB879AB612CD4A61A9372BBB25E6FC9A" Directory="INSTALLFOLDER" Guid="*">
-                <File Id="filF2F311A61DE47E46DB3138C387AE272D" Source="$(var.PeerCastStation.App.TargetDir)\PeerCastStation.App.dll" />
+            <Component Id="cmpBC5645B4F70C1ED94C4CED7EC4AB5521" Directory="INSTALLFOLDER" Guid="*">
+                <File Id="fil6C3108EC436678F99652BBCEEF34A130" Source="$(var.PeerCastStation.App.TargetDir)\PeerCastStation.App.exe" />
+            </Component>
+            <Component Id="cmp5FC966311E43EA86278A3D0A5F95535B" Directory="INSTALLFOLDER" Guid="*">
+                <File Id="fil0C1290F17409410978822449B3725F74" Source="$(var.PeerCastStation.App.TargetDir)\PeerCastStation.App.exe.config" />
             </Component>
         </ComponentGroup>
     </Fragment>
