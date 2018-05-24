@@ -130,14 +130,7 @@ namespace PeerCastStation.WPF.Dialogs
         PeerCastApplication.Current.Stop();
         break;
       case ".zip":
-        try {
-          Updater.ExecUpdater(
-            PeerCastApplication.Current.BasePath,
-            downloadPath);
-          PeerCastApplication.Current.Stop(-1);
-        }
-        catch (Exception) {
-        }
+        PeerCastApplication.Current.Stop(3);
         break;
       default:
         Process.Start("explorer.exe", $"/select,\"{downloadPath}\"");
