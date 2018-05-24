@@ -72,11 +72,11 @@ namespace PeerCastStation.Main
       int appresult;
       do {
         appresult = ProcessApp(basepath, args);
-        if (appresult==-1) {
+        if (appresult==3) {
           var updateresult = ProcessUpdater(basepath);
           if (updateresult!=0) return updateresult;
         }
-      } while (appresult==-1);
+      } while (appresult==3);
       return appresult;
     }
 
