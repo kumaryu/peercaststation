@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace PeerCastStation.Updater
 {
-  class Program
+  public static class UpdaterApp
   {
     private static IEnumerable<string> Glob(string path)
     {
@@ -111,32 +111,24 @@ namespace PeerCastStation.Updater
       }
     }
 
-    static int Main(string[] args)
+    public static int Run(Uri updaterUri, string tempPath, string destDir)
     {
-      if (args.Length<3) {
-        Console.Error.WriteLine("USAGE: PeerCastStation.Updater.exe UPDATERURL TMPDIR DESTDIR");
-        return 1;
-      }
-
-      Uri updateruri;
-      if (!Uri.TryCreate(args[0], UriKind.Absolute, out updateruri)) {
-        Console.Error.WriteLine("USAGE: PeerCastStation.Updater.exe UPDATERURL TMPDIR DESTDIR");
-        return 1;
-      }
-
-      var source_path = args[1];
-      var dest_dir = System.IO.Path.GetFullPath(args[2]);
-
-      var download = DoDownload(updateruri, source_path);
+      var download = DoDownload(updaterUri, tempPath);
       download.Wait();
 
-      if (DoUpdate(dest_dir, download.Result)) {
+      try {
+      if (DoUpdate(System.IO.Path.GetFullPath(destDir), download.Result)) {
         return 0;
       }
       else {
         return 2;
       }
+      }
+      finally {
+        Thread.Sleep(10000);
+      }
     }
+
   }
 
 }

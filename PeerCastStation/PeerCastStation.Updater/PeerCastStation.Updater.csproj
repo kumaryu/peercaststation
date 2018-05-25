@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{BE5FD77B-D20E-40F6-B198-C7FD97E41274}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <RootNamespace>PeerCastStation.Updater</RootNamespace>
     <AssemblyName>PeerCastStation.Updater</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
@@ -41,11 +41,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppCastReader.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="UpdaterApp.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{C8B4E4DC-BE2B-4FC5-94D2-A22FF754C9A7}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>PeerCastStation.App</RootNamespace>
     <AssemblyName>PeerCastStation.App</AssemblyName>
@@ -57,7 +57,6 @@
     <None Include="..\PeerCastStation.snk">
       <Link>PeerCastStation.snk</Link>
     </None>
-    <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PeerCastStation.ASF\PeerCastStation.ASF.csproj">
