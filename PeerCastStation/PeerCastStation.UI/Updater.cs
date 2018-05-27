@@ -107,6 +107,11 @@ namespace PeerCastStation.UI
 
     public static async Task<DownloadResult> DownloadAsync(VersionDescription version, Action<float> onprogress, CancellationToken ct)
     {
+      var enclosure = version.Enclosures.First(e => e.InstallerType==Updater.CurrentInstallerType);
+      if (Updater.CurrentInstallerType==InstallerType.Archive || 
+          Updater.CurrentInstallerType==InstallerType.ServiceArchive) {
+        return new DownloadResult(null, version, enclosure);
+      }
       using (var client = new System.Net.WebClient()) {
         if (onprogress!=null) {
           client.DownloadProgressChanged += (sender, args) => {
@@ -114,7 +119,6 @@ namespace PeerCastStation.UI
           };
         }
         ct.Register(() => { client.CancelAsync(); }, true);
-        var enclosure = version.Enclosures.First(e => e.InstallerType==Updater.CurrentInstallerType);
         var filepath =
           System.IO.Path.Combine(
             GetDownloadPath(),

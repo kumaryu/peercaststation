@@ -81,7 +81,15 @@ namespace PeerCastStation.WPF.Dialogs
 				var results = await versionChecker.CheckVersionTaskAsync(cancelSource.Token);
 				this.VersionInfo = results;
 				if (results!=null && results.Count()>0) {
-					this.State = UpdateActionState.NewVersionFound;
+          if (Updater.CurrentInstallerType==InstallerType.Archive ||
+              Updater.CurrentInstallerType==InstallerType.ServiceArchive) {
+            var enclosure = VersionInfo.First().Enclosures.First(e => e.InstallerType==Updater.CurrentInstallerType);
+            downloadPath = enclosure.Url.AbsolutePath;
+            this.State = UpdateActionState.Downloaded;
+          }
+          else {
+            this.State = UpdateActionState.NewVersionFound;
+          }
 				}
 				else {
 					this.State = UpdateActionState.NoUpdates;
@@ -97,6 +105,13 @@ namespace PeerCastStation.WPF.Dialogs
     private string downloadPath;
     public async Task DoDownload()
     {
+      var enclosure = VersionInfo.First().Enclosures.First(e => e.InstallerType==Updater.CurrentInstallerType);
+      if (Updater.CurrentInstallerType==InstallerType.Archive ||
+          Updater.CurrentInstallerType==InstallerType.ServiceArchive) {
+        downloadPath = enclosure.Url.AbsolutePath;
+        this.State = UpdateActionState.Downloaded;
+        return;
+      }
       var client = new System.Net.WebClient();
       client.DownloadProgressChanged += (sender, args) => {
         this.Progress = args.ProgressPercentage/100.0;
@@ -106,7 +121,6 @@ namespace PeerCastStation.WPF.Dialogs
       }, true);
       this.State = UpdateActionState.Downloading;
       try {
-        var enclosure = VersionInfo.First().Enclosures.First(e => e.InstallerType==Updater.CurrentInstallerType);
         downloadPath = System.IO.Path.Combine(
           Shell.GetKnownFolder(Shell.KnownFolder.Downloads),
           System.IO.Path.GetFileName(enclosure.Url.AbsolutePath));
