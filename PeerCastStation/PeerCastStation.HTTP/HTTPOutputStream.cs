@@ -483,6 +483,7 @@ namespace PeerCastStation.HTTP
               "Pragma: features=\"broadcast,playlist\"\r\n"        +
               "Content-Type: application/vnd.ms.wms-hdr.asfv1\r\n" +
               $"Content-Length: {headerContent.Data.Length}\r\n"   +
+              "Access-Control-Allow-Origin: *\r\n" +
               "Connection: Keep-Alive\r\n";
         case RequestType.WMSPPlay:
             return
@@ -491,12 +492,14 @@ namespace PeerCastStation.HTTP
               "Cache-Control: no-cache\r\n"                 +
               "Pragma: no-cache\r\n"                        +
               "Pragma: features=\"broadcast,playlist\"\r\n" +
+              "Access-Control-Allow-Origin: *\r\n" +
               "Content-Type: application/x-mms-framed\r\n";
         case RequestType.HttpGet:
         case RequestType.HttpHead:
         default:
           return
             $"HTTP/1.0 200 OK\r\n" +
+            "Access-Control-Allow-Origin: *\r\n" +
             $"Server: {PeerCast.AgentName}\r\n" +
             $"Content-Type: {channelInfo.MIMEType}\r\n";
         }
@@ -509,6 +512,7 @@ namespace PeerCastStation.HTTP
             "Cache-Control: private\r\n"      +
             "Content-Disposition: inline\r\n" +
             "Connection: close\r\n"           +
+            "Access-Control-Allow-Origin: *\r\n" +
             "Content-Type: {1}\r\n",
             PeerCast.AgentName,
             pls.MIMEType);
