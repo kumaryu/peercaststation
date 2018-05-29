@@ -91,8 +91,11 @@ namespace PeerCastStation.App
     IEnumerable<Type> LoadPluginAssemblies()
     {
       return
-        System.IO.Directory.GetFiles(BasePath, "*.dll").SelectMany(dll =>
-          LoadPluginAssembly(System.Reflection.Assembly.LoadFrom(dll)));
+        LoadPluginAssembly(System.Reflection.Assembly.GetEntryAssembly())
+        .Concat(
+          System.IO.Directory.GetFiles(BasePath, "*.dll")
+            .SelectMany(dll => LoadPluginAssembly(System.Reflection.Assembly.LoadFrom(dll)))
+        );
     }
 
     IEnumerable<Type> LoadPluginAssembly(System.Reflection.Assembly asm)

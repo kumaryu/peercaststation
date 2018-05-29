@@ -85,76 +85,6 @@ namespace PeerCastStation.UI
       });
     }
 
-    private static IEnumerable<string> Glob(string path)
-    {
-      try {
-        return
-          System.IO.Directory.GetFiles(path)
-          .Concat(
-            System.IO.Directory.GetDirectories(path).SelectMany(subpath => Glob(subpath)))
-          .Select(subpath => System.IO.Path.GetFullPath(subpath));
-      }
-      catch (Exception) {
-        return Enumerable.Empty<string>();
-      }
-    }
-
-    public static void InplaceUpdate(string destpath, string filename, string[] excludes)
-    {
-      destpath = System.IO.Path.GetFullPath(destpath);
-      using (var file = System.IO.File.OpenRead(filename))
-      using (var archive = new System.IO.Compression.ZipArchive(file, System.IO.Compression.ZipArchiveMode.Read)) {
-        var entries = archive.Entries.OrderBy(ent => ent.FullName);
-        var root = entries.First();
-        string rootpath = "";
-        if (root.FullName.EndsWith("/") &&
-            entries.All(ent => ent.FullName.StartsWith(root.FullName))) {
-          rootpath = root.FullName;
-        }
-        foreach (var ent in entries) {
-          var path = System.IO.Path.Combine(destpath, ent.FullName.Substring(rootpath.Length).Replace('/', '\\'));
-          if (ent.FullName.EndsWith("/")) {
-            var info = System.IO.Directory.CreateDirectory(path);
-            try {
-              info.LastWriteTime = ent.LastWriteTime.DateTime;
-            }
-            catch (System.IO.IOException) {
-            }
-          }
-          else {
-            try {
-              using (var dst = System.IO.File.OpenWrite(path))
-              using (var src = ent.Open()) {
-                src.CopyTo(dst);
-              }
-              var info = new System.IO.FileInfo(path);
-              try {
-                info.LastWriteTime = ent.LastWriteTime.DateTime;
-              }
-              catch (System.IO.IOException) {
-              }
-            }
-            catch (System.IO.IOException) {
-              if (!excludes.Contains(ent.Name)) throw;
-            }
-          }
-        }
-        var oldentries = Glob(destpath).ToArray();
-        var newentries = entries
-          .Select(ent => ent.FullName)
-          .Where(ent => !ent.EndsWith("/"))
-          .Select(ent => System.IO.Path.Combine(destpath, ent.Substring(rootpath.Length).Replace('/', '\\'))) 
-          .ToArray();
-        foreach (var old in oldentries.Except(newentries)) {
-          try {
-            System.IO.File.Delete(old);
-          }
-          catch (System.IO.IOException) {
-          }
-        }
-      }
-    }
-
     public static string GetDownloadPath()
     {
       return
@@ -177,6 +107,11 @@ namespace PeerCastStation.UI
 
     public static async Task<DownloadResult> DownloadAsync(VersionDescription version, Action<float> onprogress, CancellationToken ct)
     {
+      var enclosure = version.Enclosures.First(e => e.InstallerType==Updater.CurrentInstallerType);
+      if (Updater.CurrentInstallerType==InstallerType.Archive || 
+          Updater.CurrentInstallerType==InstallerType.ServiceArchive) {
+        return new DownloadResult(null, version, enclosure);
+      }
       using (var client = new System.Net.WebClient()) {
         if (onprogress!=null) {
           client.DownloadProgressChanged += (sender, args) => {
@@ -184,7 +119,6 @@ namespace PeerCastStation.UI
           };
         }
         ct.Register(() => { client.CancelAsync(); }, true);
-        var enclosure = version.Enclosures.First(e => e.InstallerType==Updater.CurrentInstallerType);
         var filepath =
           System.IO.Path.Combine(
             GetDownloadPath(),
@@ -200,11 +134,7 @@ namespace PeerCastStation.UI
         switch (downloaded.Enclosure.InstallerType) {
         case InstallerType.Archive:
         case InstallerType.ServiceArchive:
-          Updater.InplaceUpdate(
-            PeerCastApplication.Current.BasePath,
-            downloaded.FilePath,
-            new string[] { "PeerCastStation.exe", "PecaStationd.exe" });
-          PeerCastApplication.Current.Stop(-1);
+          PeerCastApplication.Current.Stop(3);
           break;
         case InstallerType.Installer:
           System.Diagnostics.Process.Start(downloaded.FilePath);

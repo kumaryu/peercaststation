@@ -83,6 +83,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.CustomFilte
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.App", "PeerCastStation.App\PeerCastStation.App.csproj", "{C8B4E4DC-BE2B-4FC5-94D2-A22FF754C9A7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Updater", "PeerCastStation.Updater\PeerCastStation.Updater.csproj", "{BE5FD77B-D20E-40F6-B198-C7FD97E41274}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -172,6 +174,10 @@ Global
 		{C8B4E4DC-BE2B-4FC5-94D2-A22FF754C9A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C8B4E4DC-BE2B-4FC5-94D2-A22FF754C9A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C8B4E4DC-BE2B-4FC5-94D2-A22FF754C9A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE5FD77B-D20E-40F6-B198-C7FD97E41274}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE5FD77B-D20E-40F6-B198-C7FD97E41274}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE5FD77B-D20E-40F6-B198-C7FD97E41274}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE5FD77B-D20E-40F6-B198-C7FD97E41274}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

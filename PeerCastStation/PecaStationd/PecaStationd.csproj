@@ -89,6 +89,10 @@
       <Project>{387996f5-e31d-4d92-bd86-8983c599f748}</Project>
       <Name>PeerCastStation.Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.CustomFilter\PeerCastStation.CustomFilter.csproj">
+      <Project>{e45e0a0a-4acc-4b46-a4b4-e2d836bde3dd}</Project>
+      <Name>PeerCastStation.CustomFilter</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.FLV\PeerCastStation.FLV.csproj">
       <Project>{895d4df8-a8b2-43a0-85e4-ed74152e73b2}</Project>
       <Name>PeerCastStation.FLV</Name>
@@ -105,6 +109,10 @@
       <Project>{f9d126c6-76b7-45e2-b62e-6ac35ee285cd}</Project>
       <Name>PeerCastStation.PCP</Name>
     </ProjectReference>
+    <ProjectReference Include="..\PeerCastStation.TS\PeerCastStation.TS.csproj">
+      <Project>{0f0123ae-e500-45ca-b69d-4fbdbb88b752}</Project>
+      <Name>PeerCastStation.TS</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.UI.HTTP\PeerCastStation.UI.HTTP.csproj">
       <Project>{bf5e0b6d-961a-4216-bacf-01d80ab3d6bb}</Project>
       <Name>PeerCastStation.UI.HTTP</Name>
@@ -113,9 +121,9 @@
       <Project>{5988fbaf-37c4-4997-8389-55f2ebbb9511}</Project>
       <Name>PeerCastStation.UI</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.WPF\PeerCastStation.WPF.csproj">
-      <Project>{5ea68141-ac06-428b-9526-a6835e0cc2b2}</Project>
-      <Name>PeerCastStation.WPF</Name>
+    <ProjectReference Include="..\PeerCastStation.Updater\PeerCastStation.Updater.csproj">
+      <Project>{be5fd77b-d20e-40f6-b198-c7fd97e41274}</Project>
+      <Name>PeerCastStation.Updater</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

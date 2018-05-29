@@ -1,73 +1,134 @@
 ﻿using System;
-using System.Runtime.Remoting.Lifetime;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 
 namespace PeerCastStation.Main
 {
-  public class PeerCastStation
+  internal class TempDir
+    : IDisposable
   {
-    class ResultContainer : MarshalByRefObject
+    public TempDir(string prefix)
     {
-      public override Object InitializeLifetimeService()
-      {
-        var lease = (ILease)base.InitializeLifetimeService();
-        if (lease.CurrentState==LeaseState.Initial) {
-          lease.InitialLeaseTime = TimeSpan.Zero;
-        }
-        return lease;
-      }
-
-      public int ExitCode;
+      string tmppath;
+      do {
+        tmppath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"{prefix}.{Guid.NewGuid()}");
+      } while (Directory.Exists(tmppath));
+      Directory.CreateDirectory(tmppath);
+      Path = tmppath;
     }
 
-    [Serializable]
-    class StartUpContext
+    public void Dispose()
     {
-      public string   BasePath;
-      public string[] Args;
-      public ResultContainer Result;
+      Directory.Delete(Path, true);
+    }
 
-      public void Run()
-      {
-        var asm = System.Reflection.Assembly.LoadFrom(System.IO.Path.Combine(this.BasePath, "PeerCastStation.App.dll"));
-        var type = asm.GetType("PeerCastStation.App.StandaloneApp");
-        var result = type.InvokeMember("Run",
-          System.Reflection.BindingFlags.Public |
-          System.Reflection.BindingFlags.Static |
-          System.Reflection.BindingFlags.InvokeMethod,
-          null,
-          null,
-          new object[] { this.BasePath, this.Args });
-        if (result is Int32) {
-          this.Result.ExitCode = (int)result;
-        }
+    public string Path { get; private set; }
+  }
+
+  public class PeerCastStation
+  {
+    struct SubAppDescription
+    {
+      public string AssemblyName;
+      public string AppType;
+    }
+    static readonly SubAppDescription MainAppDesc = new SubAppDescription {
+      AssemblyName = "PeerCastStation.App.dll",
+      AppType      = "PeerCastStation.App.StandaloneApp",
+    };
+    static readonly SubAppDescription UpdaterAppDesc = new SubAppDescription {
+      AssemblyName = "PeerCastStation.Updater.dll",
+      AppType      = "PeerCastStation.Updater.UpdaterApp",
+    };
+
+    static string ShellEscape(string arg)
+    {
+      if (arg.Contains(" ") && !arg.StartsWith("\"") && !arg.EndsWith("\"")) {
+        return "\"" + arg + "\"";
       }
+      else {
+        return arg;
+      }
+    }
 
+    static string ShellEscape(params string[] args)
+    {
+      return String.Join(" ", args.Select(ShellEscape));
+    }
+
+    static int ProcessMain(string basepath, string[] args)
+    {
+      var asm = Assembly.LoadFrom(Path.Combine(basepath, MainAppDesc.AssemblyName));
+      var type = asm.GetType(MainAppDesc.AppType);
+      var result = type.InvokeMember("Run",
+        BindingFlags.Public |
+        BindingFlags.Static |
+        BindingFlags.InvokeMethod,
+        null,
+        null,
+        new object[] { basepath, args });
+      return (int)result;
+    }
+
+    static int ProcessUpdate(string basepath, string tmpdir, string[] args)
+    {
+      Directory.CreateDirectory(tmpdir);
+      var updateurl = new Uri(System.Configuration.ConfigurationManager.AppSettings["UpdateUrl"], UriKind.Absolute);
+      var updaterpath = Path.Combine(basepath, UpdaterAppDesc.AssemblyName);
+      var tmppath = Path.Combine(tmpdir, UpdaterAppDesc.AssemblyName);
+      File.Copy(updaterpath, tmppath, true);
+      var asm = Assembly.LoadFrom(tmppath);
+      var type = asm.GetType(UpdaterAppDesc.AppType);
+      var result = type.InvokeMember(
+        "Run",
+        BindingFlags.Public |
+        BindingFlags.Static |
+        BindingFlags.InvokeMethod,
+        null,
+        null,
+        new object[] { updateurl, tmpdir, basepath });
+      return (int)result;
+    }
+
+    static int InvokeApp(string method, params string[] args)
+    {
+      var proc = System.Diagnostics.Process.Start(
+        Assembly.GetEntryAssembly().Location,
+        String.Join(" ", Enumerable.Repeat(method, 1).Concat(args).Select(ShellEscape))
+      );
+      proc.WaitForExit();
+      return proc.ExitCode;
     }
 
     [STAThread]
     static int Main(string[] args)
     {
-    start:
-      var basepath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
-      var appdomain = AppDomain.CreateDomain(
-        "PeerCastStaion.App",
-        null,
-        AppDomain.CurrentDomain.BaseDirectory,
-        AppDomain.CurrentDomain.RelativeSearchPath,
-        true);
-      var ctx = new StartUpContext() {
-        BasePath = basepath,
-        Args     = args,
-        Result   = new ResultContainer { ExitCode = 1 },
-      };
-      var d = new CrossAppDomainDelegate(ctx.Run);
-      appdomain.DoCallBack(d);
-      switch (ctx.Result.ExitCode) {
-      case -1:
-        goto start;
-      default:
-        return ctx.Result.ExitCode;
+      var basepath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+      if (args.Length>0) {
+        switch (args[0]) {
+        case "main":
+          return ProcessMain(basepath, args.Skip(1).ToArray());
+        case "update":
+          if (args.Length<2) {
+            Console.WriteLine("USAGE: PeerCastStation.exe update TMPPATH");
+            return 1;
+          }
+          return ProcessUpdate(basepath, args[1], args.Skip(2).ToArray());
+        }
       }
+
+      int appresult;
+      do {
+        appresult = InvokeApp("main", args);
+        if (appresult==3) {
+          using (var tmpdir=new TempDir("PeerCastStation.Updater")) {
+            var updateresult = InvokeApp("update", tmpdir.Path);
+            if (updateresult!=0) return updateresult;
+          }
+        }
+      } while (appresult==3);
+      return appresult;
     }
 
   }
