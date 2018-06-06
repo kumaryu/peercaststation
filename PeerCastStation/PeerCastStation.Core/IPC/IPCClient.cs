@@ -8,11 +8,11 @@ namespace PeerCastStation.Core.IPC
   public abstract class IPCClient
     : IDisposable
   {
-    public string Path { get; private set; }
+    public IPCEndPoint RemoteEndPoint { get; private set; }
     public abstract bool Connected { get; }
-    public IPCClient(string path)
+    public IPCClient(IPCEndPoint remote_endpoint)
     {
-      Path = path;
+      RemoteEndPoint = remote_endpoint;
     }
 
     public abstract Task ConnectAsync(CancellationToken cancellationToken);
@@ -27,19 +27,25 @@ namespace PeerCastStation.Core.IPC
 
     public static IPCClient Create(string path)
     {
+      return Create(new IPCEndPoint(path));
+    }
+
+    public static IPCClient Create(IPCEndPoint remote_endpoint)
+    {
       switch (Environment.OSVersion.Platform) {
       case PlatformID.Win32NT:
       case PlatformID.Win32S:
       case PlatformID.Win32Windows:
       case PlatformID.WinCE:
       case PlatformID.Xbox:
-        return new NamedPipeIPCClient(path);
+        return new NamedPipeIPCClient(remote_endpoint);
       case PlatformID.MacOSX:
       case PlatformID.Unix:
       default:
-        return new UnixSocketIPCClient(path);
+        return new UnixSocketIPCClient(remote_endpoint);
       }
     }
+
   }
 
 }

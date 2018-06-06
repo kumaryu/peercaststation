@@ -9,20 +9,20 @@ namespace PeerCastStation.Core.IPC
   public class NamedPipeIPCClient
     : IPCClient
   {
-    private PipeStream baseStream;
+    private WrappedPipeStream baseStream;
 
     public override bool Connected {
       get { return baseStream!=null && baseStream.IsConnected; }
     }
 
-    internal NamedPipeIPCClient(string path, PipeStream baseStream)
-      : base(path)
+    internal NamedPipeIPCClient(IPCEndPoint remote_endpoint, PipeStream baseStream)
+      : base(remote_endpoint)
     {
-      this.baseStream = baseStream;
+      this.baseStream = new WrappedPipeStream(baseStream);
     }
 
-    public NamedPipeIPCClient(string path)
-      : base(path)
+    public NamedPipeIPCClient(IPCEndPoint remote_endpoint)
+      : base(remote_endpoint)
     {
       this.baseStream = null;
     }
@@ -43,7 +43,7 @@ namespace PeerCastStation.Core.IPC
       if (baseStream!=null) throw new InvalidOperationException("Already connected");
       var stream = new NamedPipeClientStream(
         ".",
-        Path,
+        RemoteEndPoint.Path,
         PipeDirection.InOut,
         PipeOptions.Asynchronous);
       await Task.Run(() => {
@@ -56,7 +56,7 @@ namespace PeerCastStation.Core.IPC
           }
         } while (!stream.IsConnected);
       }, cancellationToken).ConfigureAwait(false);
-      baseStream = stream;
+      baseStream = new WrappedPipeStream(stream);
     }
 
   }

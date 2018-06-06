@@ -20,11 +20,11 @@ namespace PeerCastStation.Core
     public override bool CanRead { get { return ReadStream!=null; } }
     public override int ReadTimeout {
       get {
-        if (!CanTimeout) throw new InvalidOperationException();
+        //if (!CanTimeout) throw new InvalidOperationException();
         return readTimeout;
       }
       set {
-        if (!CanTimeout) throw new InvalidOperationException();
+        //if (!CanTimeout) throw new InvalidOperationException();
         readTimeout = value;
         if (ReadStream!=null && ReadStream.CanTimeout) {
           ReadStream.ReadTimeout = readTimeout;
@@ -39,11 +39,11 @@ namespace PeerCastStation.Core
     }
     public override int WriteTimeout {
       get {
-        if (!CanTimeout) throw new InvalidOperationException();
+        //if (!CanTimeout) throw new InvalidOperationException();
         return writeTimeout;
       }
       set {
-        if (!CanTimeout) throw new InvalidOperationException();
+        //if (!CanTimeout) throw new InvalidOperationException();
         writeTimeout = value;
         if (WriteStream!=null && WriteStream.CanTimeout) {
           WriteStream.WriteTimeout = writeTimeout;

@@ -7,37 +7,12 @@ using System.Threading.Tasks;
 
 namespace PeerCastStation.Core.IPC
 {
-  internal class UnixEndPoint
-    : EndPoint
-  {
-    private string path;
-    public UnixEndPoint(string path)
-    {
-      this.path = path;
-    }
-
-    public override AddressFamily AddressFamily {
-      get { return AddressFamily.Unix; }
-    }
-
-    public override SocketAddress Serialize()
-    {
-      var pathBytes = System.Text.Encoding.Default.GetBytes(path);
-      var addr = new SocketAddress(this.AddressFamily, 2+pathBytes.Length+1);
-      for (var i=0; i<pathBytes.Length; i++) {
-        addr[2+i] = pathBytes[i];
-      }
-      addr[2+pathBytes.Length] = 0;
-      return addr;
-    }
-  }
-
   public class UnixSocketIPCServer
     : IPCServer
   {
     private Socket socket;
-    public UnixSocketIPCServer(string path)
-      : base(path)
+    public UnixSocketIPCServer(IPCEndPoint local_endpoint)
+      : base(local_endpoint)
     {
     }
 
@@ -47,7 +22,7 @@ namespace PeerCastStation.Core.IPC
         await new TaskFactory(cancellationToken)
         .FromAsync(socket.BeginAccept, socket.EndAccept, null)
         .ConfigureAwait(false);
-      return new UnixSocketIPCClient(Path, new NetworkStream(sock, true));
+      return new UnixSocketIPCClient(LocalEndPoint, sock);
     }
 
     public override void Dispose()
@@ -59,7 +34,7 @@ namespace PeerCastStation.Core.IPC
     {
       Stop();
       socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-      socket.Bind(new UnixEndPoint(Path));
+      socket.Bind(LocalEndPoint);
       socket.Listen(255);
     }
 
@@ -67,7 +42,7 @@ namespace PeerCastStation.Core.IPC
     {
       if (socket==null) return;
       try {
-        File.Delete(Path);
+        File.Delete(LocalEndPoint.Path);
       }
       catch (IOException) {
       }
@@ -76,6 +51,7 @@ namespace PeerCastStation.Core.IPC
       socket.Close();
       socket = null;
     }
+
   }
 
 }

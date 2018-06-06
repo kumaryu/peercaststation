@@ -71,11 +71,13 @@
     <Compile Include="HostTree.cs" />
     <Compile Include="IPAddressExtension.cs" />
     <Compile Include="IPC\IPCClient.cs" />
+    <Compile Include="IPC\IPCEndPoint.cs" />
     <Compile Include="IPC\IPCServer.cs" />
     <Compile Include="IPC\NamedPipeIPCClient.cs" />
     <Compile Include="IPC\NamedPipeIPCServer.cs" />
     <Compile Include="IPC\UnixSocketIPCClient.cs" />
     <Compile Include="IPC\UnixSocketIPCServer.cs" />
+    <Compile Include="IPC\WrappedPipeStream.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="LogWriter.cs" />
     <Compile Include="LoopbackSourceStream.cs" />

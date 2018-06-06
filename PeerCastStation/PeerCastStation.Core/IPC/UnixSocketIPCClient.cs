@@ -15,14 +15,14 @@ namespace PeerCastStation.Core.IPC
       get { return baseStream!=null; }
     }
 
-    internal UnixSocketIPCClient(string path, NetworkStream baseStream)
-      : base(path)
+    internal UnixSocketIPCClient(IPCEndPoint remote_endpoint, Socket socket)
+      : base(remote_endpoint)
     {
-      this.baseStream = baseStream;
+      this.baseStream = new NetworkStream(socket, true);
     }
 
-    public UnixSocketIPCClient(string path)
-      : base(path)
+    public UnixSocketIPCClient(IPCEndPoint remote_endpoint)
+      : base(remote_endpoint)
     {
       this.baseStream = null;
     }
@@ -42,7 +42,7 @@ namespace PeerCastStation.Core.IPC
     {
       if (Connected) throw new InvalidOperationException("Already connected");
       var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-      await Task.Factory.FromAsync(socket.BeginConnect, socket.EndConnect, new UnixEndPoint(Path), null).ConfigureAwait(false);
+      await Task.Factory.FromAsync(socket.BeginConnect, socket.EndConnect, RemoteEndPoint, null).ConfigureAwait(false);
       baseStream = new NetworkStream(socket, true);
     }
 
