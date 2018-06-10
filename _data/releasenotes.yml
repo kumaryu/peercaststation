@@ -1,4 +1,28 @@
 ---
+- name: Version 2.5.2 (2018年06月11日開発版)
+  version: 2.5.2
+  channel: dev
+  notes: |
+    細かい機能追加とZIP版アップデートの修正です。
+
+    * ZIP版でアップデートが上手く動いていなかったのを修正しました。
+      今後のアップデートではアップデートボタンを押すだけでアップデートして再起動が上手く行くようになったと期待されます。
+    * 起動時のオプションで設定ファイルの場所を変更できるようになりました。`--settings=設定ファイル名`もしくは`-s 設定ファイル名`の指定をつけると、指定した設定ファイルを使用します。
+    * HTTPでの視聴時に`Access-Control-Allow-Origin:*`を返すようにしました(動画/プレイリスト共に)。
+    * プレイリストのURLに`scheme=～`パラメータを追加することで、プレイリスト内の動画URLのschemeを指定できるようになりました。WMVの時にmmsやhttpを指定したり、FLVの時にrtmpを指定することができます。 (by shinji3)
+  date: 2018-06-11T01:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.5.2.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.5.2.zip
+    length: 2155374
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.5.2.exe
+    length: 2353397
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.5.2.msi
+    length: 2036662
+
 - name: Version 2.5.1 (2018年05月10日開発版)
   version: 2.5.1
   channel: dev
