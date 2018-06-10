@@ -9,7 +9,7 @@ namespace PeerCastStation.PCP
     public static readonly int    ServantVersion         = 1218;
     public static readonly int    ServantVersionVP       = 27;
     public static readonly byte[] ServantVersionEXPrefix = new byte[] { (byte)'S', (byte)'T' };
-    public static readonly short  ServantVersionEXNumber = 251;
+    public static readonly short  ServantVersionEXNumber = 252;
     public static readonly int    ProtocolVersionIPv4    = 1;
     public static readonly int    ProtocolVersionIPv6    = 100;
 
