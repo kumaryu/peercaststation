@@ -47,6 +47,7 @@
   <ItemGroup>
     <Compile Include="AppBase.cs" />
     <Compile Include="ChannelNotifier.cs" />
+    <Compile Include="OptionParser.cs" />
     <Compile Include="PeerCastStationSettings.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

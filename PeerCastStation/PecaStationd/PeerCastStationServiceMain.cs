@@ -11,7 +11,7 @@ namespace PecaStationd
     public void Start(string[] args)
     {
       var basepath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
-      application = new ServiceApp(basepath);
+      application = new ServiceApp(basepath, args);
       appTask = application.Start();
     }
 

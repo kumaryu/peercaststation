@@ -15,7 +15,9 @@ namespace PeerCastStation.App
       get { return plugins.Where(p => p.IsUsable); }
     }
 
-    private PecaSettings settings = new PecaSettings(PecaSettings.DefaultFileName);
+    public string SettingsFileName { get; private set; }
+
+    private PecaSettings settings;
     public override PecaSettings Settings
     {
       get { return settings; }
@@ -26,9 +28,22 @@ namespace PeerCastStation.App
       get { return basePath; }
     }
 
-    public AppBase(string basepath)
+    private static readonly OptionParser optionParser = new OptionParser {
+      {"--settings", "-s", OptionArg.Required },
+    };
+
+    public AppBase(string basepath, string[] args)
     {
       basePath = basepath;
+      var opts = optionParser.Parse(args);
+      var optSettings = opts.FirstOrDefault(opt => opt.LongName=="--settings");
+      if (optSettings!=null) {
+        SettingsFileName = optSettings.Arguments[0];
+      }
+      else {
+        SettingsFileName = PecaSettings.DefaultFileName;
+      }
+      settings = new PecaSettings(SettingsFileName);
       peerCast.AgentName = AppSettingsReader.GetString("AgentName", "PeerCastStation");
       LoadPlugins();
     }
