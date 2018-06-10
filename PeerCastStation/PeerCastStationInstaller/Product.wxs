@@ -26,6 +26,7 @@
 			<ComponentGroupRef Id="PeerCastStation.WPF"/>
 			<ComponentGroupRef Id="PeerCastStation.TS"/>
 			<ComponentGroupRef Id="PeerCastStation.CustomFilter"/>
+			<ComponentGroupRef Id="PeerCastStation.Updater"/>
 		</Feature>
 
 		<Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />

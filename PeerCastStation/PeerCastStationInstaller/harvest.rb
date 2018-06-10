@@ -12,6 +12,7 @@ PeerCastStation.CustomFilter
 PeerCastStation.HTTP
 PeerCastStation.PCP
 PeerCastStation.UI
+PeerCastStation.Updater
 PeerCastStation.UI.HTTP
 PeerCastStation.WPF
 )
