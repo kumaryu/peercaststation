@@ -8,8 +8,8 @@ namespace PeerCastStation.App
   public class StandaloneApp
     : AppBase
   {
-    public StandaloneApp(string basepath)
-      : base(basepath)
+    public StandaloneApp(string basepath, string[] args)
+      : base(basepath, args)
     {
     }
 
@@ -61,14 +61,14 @@ namespace PeerCastStation.App
       AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
       var first_instance = CheckIsFirstInstance(basepath, ref killWaitHandle);
       using (killWaitHandle) {
-        if (args.Contains("-kill")) {
+        if (args.Contains("-kill") || args.Contains("--kill")) {
           killWaitHandle.Set();
           return 0;
         }
-        if (!first_instance && !args.Contains("-multi")) {
+        if (!first_instance && !(args.Contains("-multi") || args.Contains("--multi"))) {
           return 1;
         }
-        return (new StandaloneApp(basepath)).Run();
+        return (new StandaloneApp(basepath, args)).Run();
       }
     }
 
