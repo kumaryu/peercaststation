@@ -21,15 +21,15 @@ namespace PeerCastStation.App
     public OptionDesc(string optLong, string optShort, OptionArg arg)
     {
       LongName = optLong;
-      ShortName = optShort;
+      ShortName = optShort ?? optLong;
       Argument = arg;
       switch (Argument) {
       case OptionArg.None:
-        Regex = new System.Text.RegularExpressions.Regex($"^(?:{ShortName})|(?:{LongName})$");
+        Regex = new System.Text.RegularExpressions.Regex($"^(?:{ShortName}|{LongName})$");
         break;
       case OptionArg.Optional:
       case OptionArg.Required:
-        Regex = new System.Text.RegularExpressions.Regex($"^(?:{ShortName})|(?:{LongName})(?:=(.*))?$");
+        Regex = new System.Text.RegularExpressions.Regex($"^(?:{ShortName}|{LongName})(?:=(.*))?$");
         break;
       }
     }

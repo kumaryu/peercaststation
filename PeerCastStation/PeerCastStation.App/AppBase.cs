@@ -23,6 +23,8 @@ namespace PeerCastStation.App
       get { return settings; }
     }
 
+    public System.Diagnostics.Process LinkProcess { get; private set; }
+
     private string basePath;
     public override string BasePath {
       get { return basePath; }
@@ -30,6 +32,9 @@ namespace PeerCastStation.App
 
     private static readonly OptionParser optionParser = new OptionParser {
       {"--settings", "-s", OptionArg.Required },
+      {"--linkPID", null, OptionArg.Required },
+      {"--kill", "-kill", OptionArg.None },
+      {"--multi", "-multi", OptionArg.None },
     };
 
     public AppBase(string basepath, string[] args)
@@ -42,6 +47,21 @@ namespace PeerCastStation.App
       }
       else {
         SettingsFileName = PecaSettings.DefaultFileName;
+      }
+      var optLinkPID = opts.FirstOrDefault(opt => opt.LongName=="--linkPID");
+      if (optLinkPID!=null) {
+        int pid = 0;
+        if (Int32.TryParse(optLinkPID.Arguments[0], out pid)) {
+          try {
+            LinkProcess = System.Diagnostics.Process.GetProcessById(pid);
+            LinkProcess.Exited += (sender, ev) => {
+              Stop();
+            };
+            LinkProcess.EnableRaisingEvents = true;
+          }
+          catch (Exception) {
+          }
+        }
       }
       settings = new PecaSettings(SettingsFileName);
       peerCast.AgentName = AppSettingsReader.GetString("AgentName", "PeerCastStation");
