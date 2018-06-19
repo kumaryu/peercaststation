@@ -120,7 +120,7 @@ namespace PeerCastStation.Main
 
       int appresult;
       do {
-        appresult = InvokeApp("main", args);
+        appresult = InvokeApp("main", new string[] { $"--linkPID={System.Diagnostics.Process.GetCurrentProcess().Id}" }.Concat(args).ToArray());
         if (appresult==3) {
           using (var tmpdir=new TempDir("PeerCastStation.Updater")) {
             var updateresult = InvokeApp("update", tmpdir.Path);
