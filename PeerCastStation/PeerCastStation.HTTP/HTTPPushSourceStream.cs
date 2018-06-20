@@ -123,7 +123,13 @@ namespace PeerCastStation.HTTP
         this.state = ConnectionState.Error;
         throw new BindErrorException(String.Format("Cannot resolve bind address: {0}", source.DnsSafeHost));
       }
-      var listeners = bind_addr.Select(addr => new TcpListener(addr)).ToArray();
+      var listeners = bind_addr.Select(addr => { 
+        var listener = new TcpListener(addr);
+        if (addr.AddressFamily==AddressFamily.InterNetworkV6) {
+          listener.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, true);
+        }
+        return listener;
+      }).ToArray();
       try {
         var cancel_task = cancellationToken.CreateCancelTask<TcpClient>();
         var tasks = listeners.Select(listener => {
