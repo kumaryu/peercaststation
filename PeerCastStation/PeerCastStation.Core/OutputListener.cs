@@ -174,6 +174,9 @@ namespace PeerCastStation.Core
         //Windows以外は明示的には付けないようにした。
         server.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
       }
+      if (ip.AddressFamily==AddressFamily.InterNetworkV6) {
+        server.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, true);
+      }
       server.Start(MaxPendingConnections);
       listenTask = StartListen(server, cancellationSource.Token);
     }
