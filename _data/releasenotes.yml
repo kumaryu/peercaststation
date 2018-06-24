@@ -1,4 +1,25 @@
 ---
+- name: Version 2.5.3 (2018年06月25日開発版)
+  version: 2.5.3
+  channel: dev
+  notes: |
+    不具合修正です。
+
+    * 起動プロセスが終了してもメインプロセスが残ってしまうのを修正しました。PeCaRecorderなどで一緒に終了が動かないのが直りました。
+    * LinuxなどでIPv6の接続待ち受けが正しく行えないのを修正しました。
+  date: 2018-06-25T01:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.5.3.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.5.3.zip
+    length: 2156465
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.5.3.exe
+    length: 2354248
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.5.3.msi
+    length: 2036662
+
 - name: Version 2.5.2 (2018年06月11日開発版)
   version: 2.5.2
   channel: dev
