@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="robots" content="noindex,nofollow">
+    <title>{{ page.title }}</title>
+    <link type="text/css" href="bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <script type="text/javascript" src="jquery/jquery-1.8.3.min.js"></script>
+    <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
+    <style type="text/css">img { max-width:none; }</style>
+    <script type="text/javascript">
+      $(function() {
+        $('.dropdown-toggle').dropdown();
+      });
+    </script>
+  </head>
+  <body data-spy="scroll" data-target="#nav-contents" >
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <a class="brand" href="#">PeerCastStation</a>
+          <ul class="nav">
+            <li><a href="/html/index.html">情報</a></li>
+            <li><a href="/html/channels.html">Yellow Page</a></li>
+            <li><a href="/html/relays.html">リレー</a></li>
+            <li><a href="/html/settings.html">設定</a></li>
+            <li><a href="/html/logs.html">ログ</a></li>
+            <li class="active"><a href="index.html">ヘルプ</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container-fluid">
+      <div class="row-fluid">
+      </div>
+    </div>
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span3">
+        <ul class="nav nav-list">
+{% for sitecontent in site.data.sitecontents %}
+          <li class="nav-header">{{ sitecontent.category }}</li>
+{% for docfile in sitecontent.docs %}
+{% assign p = site.pages | where:"path", docfile | first %}
+<li class="{% if docfile == page.path %}active{% endif %}"><a href="/help{{ p.url }}">{{ p.title }}</a></li>
+{% if docfile == page.path %}
+          <ul id="nav-contents" class="nav nav-list">
+            {{ content | build_contents }}
+          </ul>
+{% endif %}
+{% endfor %}
+{% endfor %}
+        </ul>
+        </div>
+        <div class="span9">
+          {{ content }}
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

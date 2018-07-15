@@ -1,6 +1,7 @@
 ---
 layout: default
-title: YPブラウザの使い方 - PeerCastStation
+category: usage
+title: YPブラウザの使い方
 name: ypbrowser
 ---
 

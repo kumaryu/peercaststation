@@ -1,0 +1,63 @@
+---
+layout: default
+category: misc
+title: その他
+name: misc
+---
+
+その他
+======
+
+設定の保存先
+------------
+急に起動しなくなった、そんな時は設定ファイルの削除を試してください。
+
+Windows(Vista以降)では
+
+    C:\Users\(ユーザ名)\AppData\Roaming\PeerCastStation
+
+に入っています。(ユーザ名)のところはログインしているユーザ名で置き換えてください。削除する場合はPeerCastStationフォルダごと削除してしまってください。
+
+古い設定ファイルは
+
+    C:\Users\(ユーザ名)\AppData\Local\PeerCastStation
+
+に入っています。起動しない場合はこちらのファイルに不具合がある可能性があるのでフォルダごと削除してみてください。
+
+Windows以外(mono)では
+
+    ~/.config/PeerCastStation
+
+に入っています。こちらも削除する時はPeerCastStationディレクトリごと削除してください。
+
+設定ファイルを削除すると当然次回起動時には各種設定が初期値に戻っています。上り帯域などを適切に設定しなおすようにしてください。
+
+落ちた時は
+----------
+PeerCastStationも所詮人の手によって作られしものなのでたまに落ちます。そんな時は再度起動してください。
+
+落ちると上記の設定ファイルと同じ場所にexceptions.logというファイルが出来ています。
+Issueへ問題の報告(下記参照)をする時にはexceptions.logの内容を貼ってもらえると早く解決できる可能性が高まります。
+
+問題の報告・要望の連絡先について
+--------------------------------
+[githubのIssueに報告してください。](https://github.com/kumaryu/peercaststation)
+
+報告するにもgithubのアカウントが必要ですがそのくらい取りましょう。
+連絡が取れないと困るので匿名での報告経路は用意していません。
+
+ソース・ライセンス
+------------------
+[githubにてソース公開しています。](https://github.com/kumaryu/peercaststation)
+
+ライセンスはGPLv3です。
+使用しているライブラリ等のライセンスに関しては同梱のLICENSE.txtを見てください。
+
+開発に参加したい場合
+--------------------
+PeerCastStationの開発を手伝いたいけど何をしていいかわからない、
+こんな時はまずPeerCastStationを使って、不具合や不満点があればgithubのIssueに上げてください。
+要望だけでも歓迎です。
+
+コードの改善をしたい場合はgithubでforkしてpull requestを送ってください。
+

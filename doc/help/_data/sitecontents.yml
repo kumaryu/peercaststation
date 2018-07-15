@@ -1,0 +1,17 @@
+---
+- category: PeerCastStationについて
+  docs:
+    - index.mkd
+- category: 使い方
+  docs:
+    - usage.mkd
+    - ypbrowser.mkd
+- category: 設定
+  docs:
+    - settings.mkd
+- category: 配信
+  docs:
+    - broadcast.mkd
+- category: その他
+  docs:
+    - misc.mkd

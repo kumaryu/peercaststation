@@ -1,7 +1,5 @@
 
 encoding:    utf-8
-source:      ../src
-plugins_dir: ../plugins
 destination: ../../PeerCastStation/PeerCastStation.UI.HTTP/help
 markdown:    kramdown
 target:      help
