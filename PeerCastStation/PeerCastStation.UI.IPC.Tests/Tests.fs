@@ -139,8 +139,8 @@ type IPCRequest =
     | ArgsByLocation of method:string * args:string array
 
 type PeerCastStationUIIPCTests () =
-    let path = "/var/run/peercaststation.sock"
-    let app = new TestApp([OWINHost(); APIHost(); HTMLHost(); IPCOutputListener()])
+    let ipcListener = IPCOutputListener()
+    let app = new TestApp([OWINHost(); APIHost(); HTMLHost(); ipcListener])
     do
         app.Start()
 
@@ -173,7 +173,7 @@ type PeerCastStationUIIPCTests () =
 
     let invokeAPIAsync requestPath req =
         async {
-            use client = IPCClient.Create(path)
+            use client = IPCClient.Create(ipcListener.IPCPath)
             do!
                 client.ConnectAsync(Async.DefaultCancellationToken)
                 |> Async.AwaitTask
@@ -192,7 +192,7 @@ type PeerCastStationUIIPCTests () =
 
     let invokeGETAsync requestPath =
         async {
-            use client = IPCClient.Create(path)
+            use client = IPCClient.Create(ipcListener.IPCPath)
             do!
                 client.ConnectAsync(Async.DefaultCancellationToken)
                 |> Async.AwaitTask
@@ -200,6 +200,11 @@ type PeerCastStationUIIPCTests () =
             return! getTextAsync stream requestPath ""
         }
 
+    [<Fact>]
+    let ``ユーザーのIPCパスが使われる`` () =
+        let path = PeerCastStation.Core.IPC.IPCEndPoint.GetDefaultPath(PeerCastStation.Core.IPC.IPCEndPoint.PathType.User, "peercaststation")
+        Assert.Equal(path, ipcListener.IPCPath)
+        
     [<Fact>]
     let ``JSON RPCのgetVersionInfoでバージョン情報が取れる`` () =
         let result = invokeAPIAsync "/api/1" (WithoutArgs "getVersionInfo") |> Async.RunSynchronously
@@ -223,7 +228,7 @@ type PeerCastStationUIIPCTests () =
             typeof<EndOfStreamException>,
             fun () ->
                 async {
-                    use client = IPCClient.Create(path)
+                    use client = IPCClient.Create(ipcListener.IPCPath)
                     do!
                         client.ConnectAsync(Async.DefaultCancellationToken)
                         |> Async.AwaitTask
@@ -247,7 +252,7 @@ type PeerCastStationUIIPCTests () =
             typeof<EndOfStreamException>,
             fun () ->
                 async {
-                    use client = IPCClient.Create(path)
+                    use client = IPCClient.Create(ipcListener.IPCPath)
                     do!
                         client.ConnectAsync(Async.DefaultCancellationToken)
                         |> Async.AwaitTask

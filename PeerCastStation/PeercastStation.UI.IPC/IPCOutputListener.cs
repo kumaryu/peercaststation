@@ -14,6 +14,7 @@ namespace PeerCastStation.UI.IPC
   {
     public static readonly AccessControlInfo IPCAccessControlInfo = new AccessControlInfo(OutputStreamType.Interface | OutputStreamType.Metadata | OutputStreamType.Play, false, null);
     override public string Name { get { return "IPC Output Listener"; } }
+    public string IPCPath { get; private set; } = IPCEndPoint.GetDefaultPath(IPCEndPoint.PathType.User, "peercaststation");
     private IPCServer server;
     private CancellationTokenSource cancellationSource = new CancellationTokenSource();
     private Logger logger = new Logger(nameof(IPCOutputListener));
@@ -22,7 +23,7 @@ namespace PeerCastStation.UI.IPC
     override protected void OnAttach()
     {
       cancellationSource = new CancellationTokenSource();
-      server = IPCServer.Create("/var/run/peercaststation.sock");
+      server = IPCServer.Create(IPCPath);
     }
 
     private async Task<IOutputStream> CreateMatchedHandler(IPCEndPoint endpoint, Stream stream, CancellationToken cancellationToken)
