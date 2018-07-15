@@ -121,7 +121,14 @@ namespace PeerCastStation.UI.IPC
     {
       server.Stop();
       cancellationSource.Cancel();
-      serverTask.Wait();
+      try {
+        serverTask.Wait();
+      }
+      catch (AggregateException ex) {
+        if (!(ex.InnerException is OperationCanceledException)) {
+          logger.Error(ex);
+        }
+      }
     }
 
     protected override void OnDetach()
