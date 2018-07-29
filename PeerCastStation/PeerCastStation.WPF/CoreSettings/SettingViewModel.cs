@@ -541,7 +541,7 @@ namespace PeerCastStation.WPF.CoreSettings
 
     public string PortMapperExternalAddresses { 
       get {
-        var port_mapper = pecaApp.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
+        var port_mapper = Application.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
         if (port_mapper!=null) {
           return String.Join(",", port_mapper.GetExternalAddresses().Select(addr => addr.ToString()));
         }
@@ -713,10 +713,10 @@ namespace PeerCastStation.WPF.CoreSettings
       set { SetProperty(nameof(RemoteNodeName), ref remoteNodeName, value); }
     }
 
-    PeerCastApplication pecaApp;
+    public PeerCastApplication Application { get; private set; }
     internal SettingViewModel(PeerCastApplication peca_app)
     {
-      this.pecaApp = peca_app;
+      this.Application = peca_app;
       this.peerCast = peca_app.PeerCast;
       this.AddPortCommand = new Command(() => AddPort(PrimaryPort, NetworkType.IPv4));
       this.RemovePortCommand = new Command(() => RemovePort(), () => SelectedPort!=null);
@@ -734,9 +734,9 @@ namespace PeerCastStation.WPF.CoreSettings
       maxUpstreamRateIPv6                = peerCast.AccessController.MaxUpstreamRateIPv6;
       maxUpstreamRatePerBroadcastChannel = peerCast.AccessController.MaxUpstreamRatePerBroadcastChannel;
       maxUpstreamRatePerRelayChannel     = peerCast.AccessController.MaxUpstreamRatePerRelayChannel;
-      isShowWindowOnStartup = pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup;
-      isShowNotifications   = pecaApp.Settings.Get<WPFSettings>().ShowNotifications;
-      remoteNodeName        = pecaApp.Settings.Get<WPFSettings>().RemoteNodeName;
+      isShowWindowOnStartup = Application.Settings.Get<WPFSettings>().ShowWindowOnStartup;
+      isShowNotifications   = Application.Settings.Get<WPFSettings>().ShowNotifications;
+      remoteNodeName        = Application.Settings.Get<WPFSettings>().RemoteNodeName;
       ports = new ObservableCollection<OutputListenerViewModel>(
         peerCast.OutputListeners
         .Select(listener => new OutputListenerViewModel(this, listener))
@@ -749,7 +749,7 @@ namespace PeerCastStation.WPF.CoreSettings
         peerCast.YellowPages
         .Select(yp => new YellowPageClientViewModel(this, yp))
       );
-      var port_mapper = pecaApp.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
+      var port_mapper = Application.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
       if (port_mapper!=null) {
         portMapperEnabled = port_mapper.Enabled;
         port_mapper.DiscoverAsync()
@@ -781,7 +781,7 @@ namespace PeerCastStation.WPF.CoreSettings
 
     private async Task<PortCheckResult> CheckPortAsync()
     {
-      var port_checker = pecaApp.Plugins.GetPlugin<PeerCastStation.UI.PCPPortCheckerPlugin>();
+      var port_checker = Application.Plugins.GetPlugin<PeerCastStation.UI.PCPPortCheckerPlugin>();
       if (port_checker==null) return PortCheckResult.Failed;
       var results = await port_checker.CheckAsync();
       foreach (var result in results) {
@@ -923,9 +923,9 @@ namespace PeerCastStation.WPF.CoreSettings
       peerCast.AccessController.MaxUpstreamRateIPv6 = maxUpstreamRateIPv6;
       peerCast.AccessController.MaxUpstreamRatePerBroadcastChannel = maxUpstreamRatePerBroadcastChannel;
       peerCast.AccessController.MaxUpstreamRatePerRelayChannel     = maxUpstreamRatePerRelayChannel;
-      pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup = isShowWindowOnStartup;
-      pecaApp.Settings.Get<WPFSettings>().ShowNotifications = isShowNotifications;
-      pecaApp.Settings.Get<WPFSettings>().RemoteNodeName = remoteNodeName;
+      Application.Settings.Get<WPFSettings>().ShowWindowOnStartup = isShowWindowOnStartup;
+      Application.Settings.Get<WPFSettings>().ShowNotifications = isShowNotifications;
+      Application.Settings.Get<WPFSettings>().RemoteNodeName = remoteNodeName;
       if (IsListenersModified) {
         foreach (var listener in peerCast.OutputListeners.ToArray()) {
           peerCast.StopListen(listener);
@@ -951,7 +951,7 @@ namespace PeerCastStation.WPF.CoreSettings
         }
         isYellowPagesModified = false;
       }
-      var port_mapper = pecaApp.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
+      var port_mapper = Application.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
       if (port_mapper!=null) {
         port_mapper.Enabled = portMapperEnabled;
         port_mapper.DiscoverAsync()
@@ -971,7 +971,7 @@ namespace PeerCastStation.WPF.CoreSettings
           peerCast.SetPortStatus(System.Net.Sockets.AddressFamily.InterNetworkV6, prev.Result.ResultV6==PortCheckStatus.Opened ? PortStatus.Open : PortStatus.Firewalled);
         }
       });
-      pecaApp.SaveSettings();
+      Application.SaveSettings();
     }
 
   }

@@ -20,13 +20,14 @@ namespace PeerCastStation.UI.HTTP
     override public string Name { get { return "HTTP API Host UI"; } }
     public LogWriter LogWriter { get { return logWriter; } }
     private LogWriter logWriter = new LogWriter(1000);
-    private Updater updater = new Updater();
+    private Updater updater;
     private IEnumerable<VersionDescription> newVersions = Enumerable.Empty<VersionDescription>();
     private OWINApplication application;
 
     private ObjectIdRegistry idRegistry = new ObjectIdRegistry();
     override protected void OnAttach()
     {
+      updater = new Updater(Application);
     }
 
     protected override void OnStart()
@@ -98,9 +99,10 @@ namespace PeerCastStation.UI.HTTP
           .OrderByDescending(v => v.PublishDate)
           .FirstOrDefault();
       if (latest==null) return null;
+      var updater = new Updater(Application);
       var status = new UpdateStatus { UpdateTask = null, Progress = 0.0f };
       status.UpdateTask = 
-        Updater.DownloadAsync(latest, progress => status.Progress = progress, CancellationToken.None)
+        updater.DownloadAsync(latest, progress => status.Progress = progress, CancellationToken.None)
           .ContinueWith(prev => {
             if (prev.IsFaulted || prev.IsCanceled) return;
             Updater.Install(prev.Result);
@@ -1214,7 +1216,7 @@ namespace PeerCastStation.UI.HTTP
           break;
         }
         Uri target_uri;
-        if (AppSettingsReader.TryGetUri(uri_key, out target_uri)) {
+        if (owner.Application.Configurations.TryGetUri(uri_key, out target_uri)) {
           var checker = new BandwidthChecker(target_uri);
           checker.BandwidthCheckCompleted += (sender, args) => {
             if (args.Success) {

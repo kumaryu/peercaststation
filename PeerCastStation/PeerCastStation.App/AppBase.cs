@@ -17,9 +17,13 @@ namespace PeerCastStation.App
 
     public string SettingsFileName { get; private set; }
 
+    private PecaConfigurations configurations = new PecaConfigurations();
+    public override IAppConfigurations Configurations {
+      get { return configurations; }
+    }
+
     private PecaSettings settings;
-    public override PecaSettings Settings
-    {
+    public override PecaSettings Settings {
       get { return settings; }
     }
 
@@ -30,26 +34,25 @@ namespace PeerCastStation.App
       get { return basePath; }
     }
 
-    private static readonly OptionParser optionParser = new OptionParser {
-      {"--settings", "-s", OptionArg.Required },
-      {"--linkPID", null, OptionArg.Required },
-      {"--kill", "-kill", OptionArg.None },
-      {"--multi", "-multi", OptionArg.None },
-    };
-
-    public AppBase(string basepath, string[] args)
+    private void HandleOptions(string[] args)
     {
-      basePath = basepath;
-      var opts = optionParser.Parse(args);
-      var optSettings = opts.FirstOrDefault(opt => opt.LongName=="--settings");
-      if (optSettings!=null) {
+      var parser = new OptionParser {
+        {"--settings", "-s", OptionArg.Required },
+        {"--linkPID", null, OptionArg.Required },
+        {"--kill", "-kill", OptionArg.None },
+        {"--multi", "-multi", OptionArg.None },
+      };
+      foreach (var key in configurations.Keys) {
+        parser.Add("--config:"+key, null, OptionArg.Required);
+      }
+      var opts = parser.Parse(args);
+      if (opts.TryGetValue("--settings", out var optSettings)) {
         SettingsFileName = optSettings.Arguments[0];
       }
       else {
         SettingsFileName = PecaSettings.DefaultFileName;
       }
-      var optLinkPID = opts.FirstOrDefault(opt => opt.LongName=="--linkPID");
-      if (optLinkPID!=null) {
+      if (opts.TryGetValue("--linkPID", out var optLinkPID)) {
         int pid = 0;
         if (Int32.TryParse(optLinkPID.Arguments[0], out pid)) {
           try {
@@ -63,8 +66,19 @@ namespace PeerCastStation.App
           }
         }
       }
+      foreach (var key in configurations.Keys.ToArray()) {
+        if (opts.TryGetValue("--config:"+key, out var opt)) {
+          configurations.SetValue(key, opt.Arguments[0]);
+        }
+      }
+    }
+
+    public AppBase(string basepath, string[] args)
+    {
+      basePath = basepath;
+      HandleOptions(args);
       settings = new PecaSettings(SettingsFileName);
-      peerCast.AgentName = AppSettingsReader.GetString("AgentName", "PeerCastStation");
+      peerCast.AgentName = configurations.GetString("AgentName", "PeerCastStation");
       LoadPlugins();
     }
 
@@ -178,7 +192,7 @@ namespace PeerCastStation.App
     void LoadConfigurations()
     {
       int backlog;
-      if (AppSettingsReader.TryGetInt("MaxPendingConnections", out backlog) && backlog>0) {
+      if (configurations.TryGetInt("MaxPendingConnections", out backlog) && backlog>0) {
         OutputListener.MaxPendingConnections = backlog;
       }
     }
@@ -224,8 +238,8 @@ namespace PeerCastStation.App
         if (peerCast.OutputListeners.Count==0) {
           var endpoint =
             new System.Net.IPEndPoint(
-              AppSettingsReader.GetIPAddress("DefaultListenAddress", System.Net.IPAddress.Any),
-              AppSettingsReader.GetInt("DefaultListenPort", 7144)
+              configurations.GetIPAddress("DefaultListenAddress", System.Net.IPAddress.Any),
+              configurations.GetInt("DefaultListenPort", 7144)
             );
           try {
             peerCast.StartListen(

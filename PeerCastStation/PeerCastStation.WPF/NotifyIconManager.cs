@@ -53,7 +53,7 @@ namespace PeerCastStation.WPF
       notifyIcon.DoubleClick += (sender, args) => this.owner.ShowWindow();
       notifyIcon.BalloonTipClicked += (sender, e) => {
         if (newVersionInfo==null) return;
-        new UpdaterWindow().Show();
+        new UpdaterWindow(appViewModel.Updater).Show();
       };
     }
 
@@ -112,7 +112,7 @@ namespace PeerCastStation.WPF
     {
       var item = new System.Windows.Forms.ToolStripMenuItem();
       item.Text = "アップデートのチェック(&U)";
-      item.Click += (sender, args) => new UpdaterWindow().Show();
+      item.Click += (sender, args) => new UpdaterWindow(appViewModel.Updater).Show();
       return item;
     }
 

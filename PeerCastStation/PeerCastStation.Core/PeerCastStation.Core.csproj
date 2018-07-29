@@ -51,7 +51,6 @@
   <ItemGroup>
     <Compile Include="AccessController.cs" />
     <Compile Include="Application.cs" />
-    <Compile Include="AppSettingsReader.cs" />
     <Compile Include="AsynchronousContentSink.cs" />
     <Compile Include="Atom.cs" />
     <Compile Include="AtomCollectionExtensions.cs" />
@@ -83,6 +82,7 @@
     <Compile Include="LoopbackSourceStream.cs" />
     <Compile Include="OutputListener.cs" />
     <Compile Include="OutputStreamBase.cs" />
+    <Compile Include="PecaConfigurations.cs" />
     <Compile Include="PeerCast.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="PrependedStream.cs" />

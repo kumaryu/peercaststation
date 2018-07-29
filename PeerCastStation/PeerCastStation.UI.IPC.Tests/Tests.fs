@@ -14,6 +14,7 @@ open System.Diagnostics
 type TestApp(plugins:IPlugin list) as self =
     inherit PeerCastApplication()
 
+    let configurations = PecaConfigurations()
     let settings = PecaSettings("settings.xml")
     let peercast = PeerCast()
 
@@ -32,6 +33,7 @@ type TestApp(plugins:IPlugin list) as self =
         for plugin in plugins do
             plugin.Stop()
 
+    override self.Configurations = configurations :> IAppConfigurations
     override self.Settings = settings
     override self.Plugins = plugins |> Seq.ofList
     override self.PeerCast = peercast

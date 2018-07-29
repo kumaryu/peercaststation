@@ -70,20 +70,21 @@ namespace PeerCastStation.WPF.Dialogs
 			}
 		}
 
-		public UpdaterViewModel()
+		public UpdaterViewModel(Updater updater)
 		{
+      versionChecker = updater;
 		}
 
-		private Updater versionChecker = new Updater();
+		private Updater versionChecker;
 		public async Task<IEnumerable<VersionDescription>> DoCheckUpdate()
 		{
 			try {
 				var results = await versionChecker.CheckVersionTaskAsync(cancelSource.Token);
 				this.VersionInfo = results;
 				if (results!=null && results.Count()>0) {
-          if (Updater.CurrentInstallerType==InstallerType.Archive ||
-              Updater.CurrentInstallerType==InstallerType.ServiceArchive) {
-            var enclosure = VersionInfo.First().Enclosures.First(e => e.InstallerType==Updater.CurrentInstallerType);
+          if (versionChecker.CurrentInstallerType==InstallerType.Archive ||
+              versionChecker.CurrentInstallerType==InstallerType.ServiceArchive) {
+            var enclosure = VersionInfo.First().Enclosures.First(e => e.InstallerType==versionChecker.CurrentInstallerType);
             downloadPath = enclosure.Url.AbsolutePath;
             this.State = UpdateActionState.Downloaded;
           }
@@ -105,9 +106,9 @@ namespace PeerCastStation.WPF.Dialogs
     private string downloadPath;
     public async Task DoDownload()
     {
-      var enclosure = VersionInfo.First().Enclosures.First(e => e.InstallerType==Updater.CurrentInstallerType);
-      if (Updater.CurrentInstallerType==InstallerType.Archive ||
-          Updater.CurrentInstallerType==InstallerType.ServiceArchive) {
+      var enclosure = VersionInfo.First().Enclosures.First(e => e.InstallerType==versionChecker.CurrentInstallerType);
+      if (versionChecker.CurrentInstallerType==InstallerType.Archive ||
+          versionChecker.CurrentInstallerType==InstallerType.ServiceArchive) {
         downloadPath = enclosure.Url.AbsolutePath;
         this.State = UpdateActionState.Downloaded;
         return;

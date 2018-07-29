@@ -27,11 +27,11 @@ namespace PeerCastStation.UI
     {
       var target_uri = TargetUriV4;
       if (target_uri==null &&
-          AppSettingsReader.TryGetUri("PCPPortChecker", out target_uri)) {
+          Application.Configurations.TryGetUri("PCPPortChecker", out target_uri)) {
         TargetUriV4 = target_uri;
       }
       if (TargetUriV6==null &&
-          AppSettingsReader.TryGetUri("PCPPortCheckerV6", out target_uri)) {
+          Application.Configurations.TryGetUri("PCPPortCheckerV6", out target_uri)) {
         TargetUriV6 = target_uri;
       }
       base.OnStart();

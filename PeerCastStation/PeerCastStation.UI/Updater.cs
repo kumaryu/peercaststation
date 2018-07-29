@@ -45,19 +45,21 @@ namespace PeerCastStation.UI
 
   public class Updater
   {
+    private PeerCastApplication application;
     private Uri url;
     private DateTime currentVersion;
     private AppCastReader appcastReader = new AppCastReader();
-    public Updater()
+    public Updater(PeerCastApplication app)
     {
-      this.url            = AppSettingsReader.GetUri("UpdateUrl", new Uri("http://www.pecastation.org/files/appcast.xml"));
-      this.currentVersion = AppSettingsReader.GetDate("CurrentVersion", DateTime.Today);
+      application = app;
+      this.url            = application.Configurations.GetUri("UpdateUrl", new Uri("http://www.pecastation.org/files/appcast.xml"));
+      this.currentVersion = application.Configurations.GetDate("CurrentVersion", DateTime.Today);
     }
 
-		public static InstallerType CurrentInstallerType {
+		public InstallerType CurrentInstallerType {
 			get {
 				InstallerType result;
-				if (!Enum.TryParse<InstallerType>(AppSettingsReader.GetString("InstallerType", "unknwon"), true, out result)) {
+				if (!Enum.TryParse<InstallerType>(application.Configurations.GetString("InstallerType", "unknwon"), true, out result)) {
 					return InstallerType.Unknown;
 				}
 				return result;
@@ -105,11 +107,11 @@ namespace PeerCastStation.UI
       }
     }
 
-    public static async Task<DownloadResult> DownloadAsync(VersionDescription version, Action<float> onprogress, CancellationToken ct)
+    public async Task<DownloadResult> DownloadAsync(VersionDescription version, Action<float> onprogress, CancellationToken ct)
     {
-      var enclosure = version.Enclosures.First(e => e.InstallerType==Updater.CurrentInstallerType);
-      if (Updater.CurrentInstallerType==InstallerType.Archive || 
-          Updater.CurrentInstallerType==InstallerType.ServiceArchive) {
+      var enclosure = version.Enclosures.First(e => e.InstallerType==CurrentInstallerType);
+      if (CurrentInstallerType==InstallerType.Archive || 
+          CurrentInstallerType==InstallerType.ServiceArchive) {
         return new DownloadResult(null, version, enclosure);
       }
       using (var client = new System.Net.WebClient()) {

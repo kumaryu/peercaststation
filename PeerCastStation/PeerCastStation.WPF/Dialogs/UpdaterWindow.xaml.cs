@@ -35,9 +35,10 @@ namespace PeerCastStation.WPF.Dialogs
   {
     System.Windows.Forms.WebBrowser webBrowser = new System.Windows.Forms.WebBrowser();
 
-    public UpdaterWindow()
+    internal UpdaterWindow(UpdaterViewModel updater)
     {
       InitializeComponent();
+      DataContext = updater;
 
       FormsHost.Child = webBrowser;
       FormsHost.DataContextChanged += (sender, e)
@@ -56,9 +57,7 @@ namespace PeerCastStation.WPF.Dialogs
 
 		private void Window_Loaded(object sender, RoutedEventArgs e)
 		{
-			var viewmodel = new UpdaterViewModel();
-			this.DataContext = viewmodel;
-			viewmodel.Execute();
+			((UpdaterViewModel)this.DataContext).Execute();
 		}
 
   }
