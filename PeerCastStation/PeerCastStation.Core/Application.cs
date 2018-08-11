@@ -91,7 +91,13 @@ namespace PeerCastStation.Core
 
   public abstract class PeerCastApplication
   {
+    public enum AppType {
+      Unspecified = 0,
+      Standalone = 1,
+      Service = 2,
+    }
     public static PeerCastApplication Current { get; set; }
+    public abstract AppType Type { get; }
     public abstract IAppConfigurations Configurations { get; }
     public abstract PecaSettings Settings { get; }
     public abstract IEnumerable<IPlugin> Plugins { get; }

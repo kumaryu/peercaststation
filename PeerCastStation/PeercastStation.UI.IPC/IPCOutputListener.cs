@@ -22,6 +22,15 @@ namespace PeerCastStation.UI.IPC
 
     override protected void OnAttach()
     {
+      if (Application.Configurations.TryGetString("IPCPath", out var ipcpath) && !String.IsNullOrWhiteSpace(ipcpath)) {
+        IPCPath = ipcpath;
+      }
+      else if (Application.Type==PeerCastApplication.AppType.Service) {
+        IPCPath = IPCEndPoint.GetDefaultPath(IPCEndPoint.PathType.System, "peercaststation");
+      }
+      else {
+        IPCPath = IPCEndPoint.GetDefaultPath(IPCEndPoint.PathType.User, "peercaststation");
+      }
       cancellationSource = new CancellationTokenSource();
       server = IPCServer.Create(IPCPath);
     }

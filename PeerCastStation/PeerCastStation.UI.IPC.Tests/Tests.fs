@@ -11,7 +11,7 @@ open Newtonsoft.Json.Linq
 open System.IO
 open System.Diagnostics
 
-type TestApp(plugins:IPlugin list) as self =
+type TestApp(appType, plugins:IPlugin list) as self =
     inherit PeerCastApplication()
 
     let configurations = PecaConfigurations()
@@ -33,6 +33,7 @@ type TestApp(plugins:IPlugin list) as self =
         for plugin in plugins do
             plugin.Stop()
 
+    override self.Type = appType
     override self.Configurations = configurations :> IAppConfigurations
     override self.Settings = settings
     override self.Plugins = plugins |> Seq.ofList
@@ -142,7 +143,7 @@ type IPCRequest =
 
 type PeerCastStationUIIPCTests () =
     let ipcListener = IPCOutputListener()
-    let app = new TestApp([OWINHost(); APIHost(); HTMLHost(); ipcListener])
+    let app = new TestApp(PeerCastApplication.AppType.Standalone, [OWINHost(); APIHost(); HTMLHost(); ipcListener])
     do
         app.Start()
 
@@ -203,9 +204,21 @@ type PeerCastStationUIIPCTests () =
         }
 
     [<Fact>]
-    let ``ユーザーのIPCパスが使われる`` () =
+    let ``Standalone扱いのアプリではユーザー毎のIPCパスが使われる`` () =
         let path = PeerCastStation.Core.IPC.IPCEndPoint.GetDefaultPath(PeerCastStation.Core.IPC.IPCEndPoint.PathType.User, "peercaststation")
         Assert.Equal(path, ipcListener.IPCPath)
+        
+    [<Fact>]
+    let ``Service扱いのアプリではシステム共通のIPCパスが使われる`` () =
+        let ipcListener = IPCOutputListener()
+        let app = new TestApp(PeerCastApplication.AppType.Service, [OWINHost(); APIHost(); HTMLHost(); ipcListener])
+        try
+            app.Start()
+            let path = PeerCastStation.Core.IPC.IPCEndPoint.GetDefaultPath(PeerCastStation.Core.IPC.IPCEndPoint.PathType.System, "peercaststation")
+            Assert.Equal(path, ipcListener.IPCPath)
+        finally
+            app.Stop()
+            (app :> IDisposable).Dispose()
         
     [<Fact>]
     let ``JSON RPCのgetVersionInfoでバージョン情報が取れる`` () =

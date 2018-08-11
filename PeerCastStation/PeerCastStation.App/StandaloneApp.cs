@@ -8,6 +8,10 @@ namespace PeerCastStation.App
   public class StandaloneApp
     : AppBase
   {
+    public override AppType Type {
+      get { return AppType.Standalone; }
+    }
+
     public StandaloneApp(string basepath, string[] args)
       : base(basepath, args)
     {

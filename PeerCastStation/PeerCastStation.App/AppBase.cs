@@ -6,7 +6,7 @@ using PeerCastStation.Core;
 
 namespace PeerCastStation.App
 {
-  public class AppBase
+  public abstract class AppBase
     : PeerCastApplication
   {
     private static Logger logger = new Logger(typeof(AppBase));
@@ -177,7 +177,7 @@ namespace PeerCastStation.App
     void LoadPlugins()
     {
       plugins = LoadPluginAssemblies().Select(type => {
-        var constructor = type.GetConstructor(Type.EmptyTypes);
+        var constructor = type.GetConstructor(System.Type.EmptyTypes);
         if (constructor!=null) {
           return constructor.Invoke(null) as IPlugin;
         }
