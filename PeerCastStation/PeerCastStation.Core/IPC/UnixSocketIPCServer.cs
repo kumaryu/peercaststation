@@ -11,8 +11,8 @@ namespace PeerCastStation.Core.IPC
     : IPCServer
   {
     private Socket socket;
-    public UnixSocketIPCServer(IPCEndPoint local_endpoint)
-      : base(local_endpoint)
+    public UnixSocketIPCServer(IPCEndPoint local_endpoint, IPCOption options)
+      : base(local_endpoint, options)
     {
     }
 

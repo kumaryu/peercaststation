@@ -8,9 +8,12 @@ namespace PeerCastStation.Core.IPC
     : IDisposable
   {
     public IPCEndPoint LocalEndPoint { get; private set; }
-    public IPCServer(IPCEndPoint local_endpoint)
+    public IPCOption Options { get; private set; }
+
+    public IPCServer(IPCEndPoint local_endpoint, IPCOption options)
     {
       LocalEndPoint = local_endpoint;
+      Options = options;
     }
 
     public abstract void Start();
@@ -23,10 +26,20 @@ namespace PeerCastStation.Core.IPC
 
     public static IPCServer Create(string path)
     {
-      return Create(new IPCEndPoint(path));
+      return Create(new IPCEndPoint(path), IPCOption.None);
+    }
+
+    public static IPCServer Create(string path, IPCOption options)
+    {
+      return Create(new IPCEndPoint(path), options);
     }
 
     public static IPCServer Create(IPCEndPoint local_endpoint)
+    {
+      return Create(local_endpoint, IPCOption.None);
+    }
+
+    public static IPCServer Create(IPCEndPoint local_endpoint, IPCOption options)
     {
       switch (Environment.OSVersion.Platform) {
       case PlatformID.Win32NT:
@@ -34,11 +47,11 @@ namespace PeerCastStation.Core.IPC
       case PlatformID.Win32Windows:
       case PlatformID.WinCE:
       case PlatformID.Xbox:
-        return new NamedPipeIPCServer(local_endpoint);
+        return new NamedPipeIPCServer(local_endpoint, options);
       case PlatformID.MacOSX:
       case PlatformID.Unix:
       default:
-        return new UnixSocketIPCServer(local_endpoint);
+        return new UnixSocketIPCServer(local_endpoint, options);
       }
     }
 

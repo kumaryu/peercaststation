@@ -71,6 +71,7 @@
     <Compile Include="IPAddressExtension.cs" />
     <Compile Include="IPC\IPCClient.cs" />
     <Compile Include="IPC\IPCEndPoint.cs" />
+    <Compile Include="IPC\IPCOption.cs" />
     <Compile Include="IPC\IPCServer.cs" />
     <Compile Include="IPC\NamedPipeIPCClient.cs" />
     <Compile Include="IPC\NamedPipeIPCServer.cs" />

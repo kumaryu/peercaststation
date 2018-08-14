@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO.Pipes;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,8 +11,8 @@ namespace PeerCastStation.Core.IPC
     : IPCServer
   {
     private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-    public NamedPipeIPCServer(IPCEndPoint local_endpoint)
-      : base(local_endpoint)
+    public NamedPipeIPCServer(IPCEndPoint local_endpoint, IPCOption options)
+      : base(local_endpoint, options)
     {
     }
 
@@ -23,12 +25,22 @@ namespace PeerCastStation.Core.IPC
 
     public override async Task<IPCClient> AcceptAsync(CancellationToken cancellationToken)
     {
+      PipeSecurity sec = null;
+      if (Options.HasFlag(IPCOption.AcceptAnyUsers)) {
+        sec = new PipeSecurity();
+        sec.AddAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null), PipeAccessRights.ReadWrite, AccessControlType.Allow));
+        sec.AddAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.ServiceSid, null), PipeAccessRights.ReadWrite, AccessControlType.Allow));
+      }
       var pipe = new NamedPipeServerStream(
         LocalEndPoint.Path,
         PipeDirection.InOut,
         NamedPipeServerStream.MaxAllowedServerInstances,
         PipeTransmissionMode.Byte,
-        PipeOptions.Asynchronous);
+        PipeOptions.Asynchronous,
+        0,
+        0,
+        sec,
+        System.IO.HandleInheritability.None);
       using (var cts=CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cancellationTokenSource.Token)) {
         cts.Token.Register(pipe.Close);
         try {
