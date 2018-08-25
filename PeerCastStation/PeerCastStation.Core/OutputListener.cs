@@ -231,8 +231,8 @@ namespace PeerCastStation.Core
     public void Stop()
     {
       logger.Debug("Stopping listener");
-      cancellationSource.Cancel();
       IsClosed = true;
+      cancellationSource.Cancel();
       server.Stop();
       listenTask.Wait();
     }
