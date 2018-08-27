@@ -471,6 +471,7 @@ Stopped:
 
     private void BroadcastHostInfo()
     {
+      if (connection==null) return;
       lock (hostInfoUpdateTimer) {
         Channel.Broadcast(null, CreatePCPBCST(BroadcastGroup.Trackers, CreatePCPHOST()), BroadcastGroup.Trackers);
         hostInfoUpdateTimer.Reset();
