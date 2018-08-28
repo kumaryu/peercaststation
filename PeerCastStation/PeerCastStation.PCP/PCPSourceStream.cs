@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 using PeerCastStation.Core;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
+using System.Collections.Concurrent;
 
 namespace PeerCastStation.PCP
 {
@@ -184,18 +185,35 @@ namespace PeerCastStation.PCP
       }
     }
 
-    protected override async void DoPost(Host from, Atom packet)
+    protected override void DoPost(Host from, Atom packet)
     {
       if (uphost==from) return;
-      try {
-        await connection.Stream.WriteAsync(packet).ConfigureAwait(false);
+      if (postedAtoms.TryAdd(packet)) {
+        postedAtomsEvent.Release();
       }
-      catch (IOException e) {
-        Logger.Info(e);
-        Stop(StopReason.ConnectionError);
-      }
-      catch (Exception e) {
-        Logger.Info(e);
+    }
+
+    private BlockingCollection<Atom> postedAtoms = new BlockingCollection<Atom>(110);
+    private SemaphoreSlim postedAtomsEvent = new SemaphoreSlim(0);
+    private async Task ProcessPost(CancellationToken cancel_token)
+    {
+      while (!cancel_token.IsCancellationRequested) {
+        int delay = 0;
+        await postedAtomsEvent.WaitAsync(cancel_token).ConfigureAwait(false);
+        while (postedAtoms.TryTake(out var atom) && !cancel_token.IsCancellationRequested) {
+          await Task.Delay(delay).ConfigureAwait(false);
+          delay = Math.Min(delay+10, 90);
+          try {
+            await connection.Stream.WriteAsync(atom, cancel_token).ConfigureAwait(false);
+          }
+          catch (IOException e) {
+            Logger.Info(e);
+            Stop(StopReason.ConnectionError);
+          }
+          catch (Exception e) {
+            Logger.Info(e);
+          }
+        }
       }
     }
 
@@ -211,7 +229,10 @@ namespace PeerCastStation.PCP
       }
       else {
         this.Status = ConnectionStatus.Connected;
-        await ProcessBody(cancel_token).ConfigureAwait(false);
+        await Task.WhenAll(
+          ProcessBody(cancel_token),
+          ProcessPost(cancel_token)
+        ).ConfigureAwait(false);
       }
 Stopped:
       Logger.Debug("Disconnected");
@@ -450,6 +471,7 @@ Stopped:
 
     private void BroadcastHostInfo()
     {
+      if (connection==null) return;
       lock (hostInfoUpdateTimer) {
         Channel.Broadcast(null, CreatePCPBCST(BroadcastGroup.Trackers, CreatePCPHOST()), BroadcastGroup.Trackers);
         hostInfoUpdateTimer.Reset();

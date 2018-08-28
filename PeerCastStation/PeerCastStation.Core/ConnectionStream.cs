@@ -114,7 +114,7 @@ namespace PeerCastStation.Core
     {
       if (closedCancelSource.IsCancellationRequested) throw new ObjectDisposedException(GetType().Name);
       if (WriteStream==null) return Task.FromResult(0);
-      return WaitOrCancelTask(WriteStream.FlushAsync(cancellationToken), cancellationToken);
+      return WaitOrCancelTask(ct => WriteStream.FlushAsync(ct), WriteTimeout, cancellationToken);
     }
 
     public override int Read(byte[] buffer, int offset, int count)
@@ -137,59 +137,88 @@ namespace PeerCastStation.Core
       WriteAsync(buffer, offset, count).Wait();
     }
 
-    private Task<int> WaitOrCancelTask(Task<int> task, CancellationToken cancel_token)
+    private async Task<T> WaitOrCancelTask<T>(Func<CancellationToken, Task<T>> func, int timeout, CancellationToken cancel_token)
     {
-      return task.ContinueWith(prev => {
-        if (prev.IsCanceled) throw new OperationCanceledException();
-        if (prev.IsFaulted)  throw prev.Exception.InnerException;
-        return prev.Result;
-      }, cancel_token);
-    }
-
-    private Task WaitOrCancelTask(Task task, CancellationToken cancel_token)
-    {
-      return task.ContinueWith(prev => {
-        if (prev.IsCanceled) throw new OperationCanceledException();
-        if (prev.IsFaulted)  throw prev.Exception.InnerException;
-      }, cancel_token);
-    }
-
-    private CancellationTokenSource LinkTimeoutCancelTokenSource(int timeout, CancellationToken cancel_token)
-    {
-      if (timeout>0) {
-        return CancellationTokenSource.CreateLinkedTokenSource(
-          closedCancelSource.Token,
-          (new CancellationTokenSource(timeout)).Token,
-          cancel_token
-        );
+      using (var cancellation=CancellationTokenSource.CreateLinkedTokenSource(closedCancelSource.Token, cancel_token)) {
+        var timeoutTask = Task.Delay(timeout, cancellation.Token);
+        var mainTask = func(cancellation.Token);
+        var completed = await Task.WhenAny(timeoutTask, mainTask).ConfigureAwait(false);
+        if (completed==mainTask) {
+          if (mainTask.IsCanceled) {
+            if (closedCancelSource.IsCancellationRequested) {
+              new ObjectDisposedException(GetType().Name);
+            }
+            throw new OperationCanceledException();
+          }
+          if (mainTask.IsFaulted) {
+            throw mainTask.Exception.InnerException;
+          }
+          return mainTask.Result;
+        }
+        else {
+          if (timeoutTask.IsCanceled) {
+            if (closedCancelSource.IsCancellationRequested) {
+              new ObjectDisposedException(GetType().Name);
+            }
+            throw new OperationCanceledException();
+          }
+          if (timeoutTask.IsFaulted) {
+            throw timeoutTask.Exception.InnerException;
+          }
+          throw new IOException();
+        }
       }
-      else {
-        return CancellationTokenSource.CreateLinkedTokenSource(
-          closedCancelSource.Token,
-          cancel_token
-        );
+    }
+
+    private async Task WaitOrCancelTask(Func<CancellationToken, Task> func, int timeout, CancellationToken cancel_token)
+    {
+      using (var cancellation=CancellationTokenSource.CreateLinkedTokenSource(closedCancelSource.Token, cancel_token)) {
+        var timeoutTask = Task.Delay(timeout, cancellation.Token);
+        var mainTask = func(cancellation.Token);
+        var completed = await Task.WhenAny(timeoutTask, mainTask).ConfigureAwait(false);
+        if (completed==mainTask) {
+          if (mainTask.IsCanceled) {
+            if (closedCancelSource.IsCancellationRequested) {
+              new ObjectDisposedException(GetType().Name);
+            }
+            throw new OperationCanceledException();
+          }
+          if (mainTask.IsFaulted) {
+            throw mainTask.Exception.InnerException;
+          }
+        }
+        else {
+          if (timeoutTask.IsCanceled) {
+            if (closedCancelSource.IsCancellationRequested) {
+              new ObjectDisposedException(GetType().Name);
+            }
+            throw new OperationCanceledException();
+          }
+          if (timeoutTask.IsFaulted) {
+            throw timeoutTask.Exception.InnerException;
+          }
+          throw new IOException();
+        }
       }
     }
 
     public override async Task<int> ReadAsync(byte[] buf, int offset, int length, CancellationToken cancel_token)
     {
       if (closedCancelSource.IsCancellationRequested) throw new ObjectDisposedException(GetType().Name);
-      using (var cancelsource = LinkTimeoutCancelTokenSource(ReadTimeout, cancel_token)) {
-        var len = await WaitOrCancelTask(ReadStream.ReadAsync(buf, offset, length, cancelsource.Token), cancelsource.Token).ConfigureAwait(false);
-        readBytesCounter.Add(len);
-        return len;
-      }
+      var len = await WaitOrCancelTask(ct => ReadStream.ReadAsync(buf, offset, length, ct), ReadTimeout, cancel_token).ConfigureAwait(false);
+      readBytesCounter.Add(len);
+      return len;
     }
 
-    public async Task<byte[]> ReadAsync(int length, CancellationToken cancel_token)
+    public Task<byte[]> ReadAsync(int length, CancellationToken cancel_token)
     {
       if (closedCancelSource.IsCancellationRequested) throw new ObjectDisposedException(GetType().Name);
-      using (var cancelsource = LinkTimeoutCancelTokenSource(ReadTimeout, cancel_token)) {
+      return WaitOrCancelTask(async (ct) => {
         var buf = new byte[length];
         var offset = 0;
         while (offset<length) {
-          cancelsource.Token.ThrowIfCancellationRequested();
-          var len = await WaitOrCancelTask(ReadStream.ReadAsync(buf, offset, length-offset, cancelsource.Token), cancelsource.Token).ConfigureAwait(false);
+          ct.ThrowIfCancellationRequested();
+          var len = await ReadStream.ReadAsync(buf, offset, length-offset, ct).ConfigureAwait(false);
           if (len==0) throw new EndOfStreamException();
           else {
             offset += len;
@@ -197,7 +226,7 @@ namespace PeerCastStation.Core
           }
         }
         return buf;
-      }
+      }, ReadTimeout, cancel_token);
     }
 
     public Task<byte[]> ReadAsync(int length)
@@ -205,17 +234,17 @@ namespace PeerCastStation.Core
       return ReadAsync(length, CancellationToken.None);
     }
 
-    public async Task<int> ReadByteAsync(CancellationToken cancel_token)
+    public Task<int> ReadByteAsync(CancellationToken cancel_token)
     {
       if (closedCancelSource.IsCancellationRequested) throw new ObjectDisposedException(GetType().Name);
-      using (var cancelsource = LinkTimeoutCancelTokenSource(ReadTimeout, cancel_token)) {
-        cancelsource.Token.ThrowIfCancellationRequested();
+      return WaitOrCancelTask(async (ct) => {
+        ct.ThrowIfCancellationRequested();
         var buf = new byte[1];
-        var len = await WaitOrCancelTask(ReadStream.ReadAsync(buf, 0, 1, cancelsource.Token), cancelsource.Token).ConfigureAwait(false);
+        var len = await ReadStream.ReadAsync(buf, 0, 1, ct).ConfigureAwait(false);
         if (len==0) return -1;
         readBytesCounter.Add(1);
         return buf[0];
-      }
+      }, ReadTimeout, cancel_token);
     }
 
     public Task<int> ReadByteAsync()
@@ -226,11 +255,9 @@ namespace PeerCastStation.Core
     public override async Task WriteAsync(byte[] buf, int offset, int length, CancellationToken cancel_token)
     {
       if (closedCancelSource.IsCancellationRequested) throw new ObjectDisposedException(GetType().Name);
-      using (var cancelsource = LinkTimeoutCancelTokenSource(WriteTimeout, cancel_token)) {
-        await WaitOrCancelTask(WriteStream.WriteAsync(buf, offset, length, cancelsource.Token), cancelsource.Token).ConfigureAwait(false);
-        if (!cancelsource.IsCancellationRequested) {
-          writeBytesCounter.Add(length);
-        }
+      await WaitOrCancelTask(ct => WriteStream.WriteAsync(buf, offset, length, ct), WriteTimeout, cancel_token).ConfigureAwait(false);
+      if (!closedCancelSource.IsCancellationRequested && !cancel_token.IsCancellationRequested) {
+        writeBytesCounter.Add(length);
       }
     }
 
