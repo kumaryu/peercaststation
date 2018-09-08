@@ -102,11 +102,14 @@ namespace PeerCastStation.FLV.RTMP
       var local_cancel = new CancellationTokenSource();
       cancel_token.Register(() => local_cancel.Cancel());
       var recv_message_task = Task.Run(async () => {
-        while (!local_cancel.IsCancellationRequested) {
-          await RecvMessage(messageQueue, local_cancel.Token).ConfigureAwait(false);
+        try {
+          while (!local_cancel.IsCancellationRequested) {
+            await RecvMessage(messageQueue, local_cancel.Token).ConfigureAwait(false);
+          }
         }
-      }).ContinueWith(prev => {
-        local_cancel.Cancel();
+        finally {
+          local_cancel.Cancel();
+        }
       });
       while (!local_cancel.IsCancellationRequested) {
         var msg = await messageQueue.DequeueAsync(local_cancel.Token).ConfigureAwait(false);

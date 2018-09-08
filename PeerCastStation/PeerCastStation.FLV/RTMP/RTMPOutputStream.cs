@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using PeerCastStation.Core;
+using System.Threading;
 
 namespace PeerCastStation.FLV.RTMP
 {
@@ -72,13 +73,26 @@ namespace PeerCastStation.FLV.RTMP
 				return bufread;
 			}
 			var buf = new byte[bufferStream.Capacity];
-			var baseread = baseStream.Read(buf, 0, buf.Length);
-			bufferStream.Write(buf, 0, baseread);
-			var bufread2 = bufferStream.Read(buffer, bufread+offset, count-bufread);
-			return bufread + bufread2;
+      var baseread = baseStream.Read(buf, 0, buf.Length);
+      bufferStream.Write(buf, 0, baseread);
+      var bufread2 = bufferStream.Read(buffer, bufread+offset, count-bufread);
+      return bufread + bufread2;
 		}
 
-		public override long Seek(long offset, System.IO.SeekOrigin origin)
+    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    {
+      var bufread = await bufferStream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+      if (bufread>=count) {
+        return bufread;
+      }
+      var buf = new byte[bufferStream.Capacity];
+      var baseread = baseStream.Read(buf, 0, buf.Length);
+      bufferStream.Write(buf, 0, baseread);
+      var bufread2 = await bufferStream.ReadAsync(buffer, bufread+offset, count-bufread, cancellationToken).ConfigureAwait(false);
+      return bufread + bufread2;
+    }
+
+    public override long Seek(long offset, System.IO.SeekOrigin origin)
 		{
 			throw new NotSupportedException();
 		}
