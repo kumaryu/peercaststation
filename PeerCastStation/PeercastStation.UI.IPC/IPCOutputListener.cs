@@ -19,13 +19,13 @@ namespace PeerCastStation.UI.IPC
     private IPCServer server;
     private CancellationTokenSource cancellationSource = new CancellationTokenSource();
     private Logger logger = new Logger(nameof(IPCOutputListener));
-    private Task serverTask;
+    private Task serverTask = Task.Delay(0);
 
     override protected void OnAttach()
     {
+      options = IPCOption.None;
       if (Application.Configurations.TryGetString("IPCPath", out var ipcpath) && !String.IsNullOrWhiteSpace(ipcpath)) {
         IPCPath = ipcpath;
-        options = IPCOption.AcceptAnyUsers;
       }
       else if (Application.Type==PeerCastApplication.AppType.Service) {
         IPCPath = IPCEndPoint.GetDefaultPath(IPCEndPoint.PathType.System, "peercaststation");
@@ -34,6 +34,14 @@ namespace PeerCastStation.UI.IPC
       else {
         IPCPath = IPCEndPoint.GetDefaultPath(IPCEndPoint.PathType.User, "peercaststation");
         options = IPCOption.None;
+      }
+      if (Application.Configurations.TryGetBool("IPCAcceptAnyUsers", out var ipcany)) {
+        if (ipcany) {
+          options = IPCOption.AcceptAnyUsers;
+        }
+        else {
+          options = IPCOption.None;
+        }
       }
       cancellationSource = new CancellationTokenSource();
       server = IPCServer.Create(IPCPath, options);

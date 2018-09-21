@@ -87,6 +87,44 @@ namespace PeerCastStation.Core
       if (TryGetInt(config, key, out var res)) return res;
       else return default_value;
     }
+
+    public static bool TryGetBool(this IAppConfigurations config, string key, out bool value)
+    {
+      if (config.TryGetString(key, out var v)) {
+        if (Boolean.TryParse(v, out value)) {
+          return true;
+        }
+        else {
+          switch (v.ToLowerInvariant()) {
+          case "true":
+          case "on":
+          case "yes":
+          case "1":
+            value = true;
+            return true;
+          case "false":
+          case "off":
+          case "no":
+          case "0":
+            value = false;
+            return true;
+          default:
+            value = false;
+            return false;
+          }
+        }
+      }
+      else {
+        value = false;
+        return false;
+      }
+    }
+
+    public static bool GetBool(this IAppConfigurations config, string key, bool default_value)
+    {
+      if (TryGetBool(config, key, out var res)) return res;
+      else return default_value;
+    }
   }
 
   public abstract class PeerCastApplication

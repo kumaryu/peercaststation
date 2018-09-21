@@ -30,8 +30,9 @@ namespace PeerCastStation.Core.IPC
 
     private static long UID()
     {
-      var startinfo = new System.Diagnostics.ProcessStartInfo("uid", "-u") {
+      var startinfo = new System.Diagnostics.ProcessStartInfo("id", "-u") {
         CreateNoWindow = true,
+        UseShellExecute = false,
         RedirectStandardError = true,
         RedirectStandardOutput = true
       };
@@ -45,6 +46,7 @@ namespace PeerCastStation.Core.IPC
     {
       var startinfo = new System.Diagnostics.ProcessStartInfo("uname", "-a") {
         CreateNoWindow = true,
+        UseShellExecute = false,
         RedirectStandardError = true,
         RedirectStandardOutput = true
       };
