@@ -71,7 +71,7 @@ namespace PeerCastStation.Core.IPC
       }
       socket.Bind(LocalEndPoint);
       createdPath = LocalEndPoint.Path;
-      if (Options.HasFlag(IPCOption.AcceptAnyUsers)) {
+      if (Options.HasFlag(IPCOption.AcceptAnyUser)) {
         Chmod("a+rw", createdPath);
       }
       socket.Listen(255);

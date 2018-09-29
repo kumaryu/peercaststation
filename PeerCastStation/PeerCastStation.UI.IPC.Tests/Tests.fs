@@ -221,6 +221,41 @@ type PeerCastStationUIIPCTests () =
             (app :> IDisposable).Dispose()
         
     [<Fact>]
+    let ``ConfigurationsのIPCPathでIPCパスを上書きできる`` () =
+        let ipcListener = IPCOutputListener()
+        let app = new TestApp(PeerCastApplication.AppType.Service, [OWINHost(); APIHost(); HTMLHost(); ipcListener])
+        (app.Configurations :?> PecaConfigurations).SetValue("IPCPath", "hoge")
+        try
+            app.Start()
+            Assert.Equal("hoge", ipcListener.IPCPath)
+        finally
+            app.Stop()
+            (app :> IDisposable).Dispose()
+        
+    [<Fact>]
+    let ``標準では他ユーザーからの接続を許可しない`` () =
+        let ipcListener = IPCOutputListener()
+        let app = new TestApp(PeerCastApplication.AppType.Service, [OWINHost(); APIHost(); HTMLHost(); ipcListener])
+        try
+            app.Start()
+            Assert.False(ipcListener.IPCOptions.HasFlag(PeerCastStation.Core.IPC.IPCOption.AcceptAnyUser))
+        finally
+            app.Stop()
+            (app :> IDisposable).Dispose()
+        
+    [<Fact>]
+    let ``ConfigurationsのIPCAcceptAnyUserで他ユーザーからの接続を許可できる`` () =
+        let ipcListener = IPCOutputListener()
+        let app = new TestApp(PeerCastApplication.AppType.Standalone, [OWINHost(); APIHost(); HTMLHost(); ipcListener])
+        (app.Configurations :?> PecaConfigurations).SetValue("IPCAcceptAnyUser", "true")
+        try
+            app.Start()
+            Assert.True(ipcListener.IPCOptions.HasFlag(PeerCastStation.Core.IPC.IPCOption.AcceptAnyUser))
+        finally
+            app.Stop()
+            (app :> IDisposable).Dispose()
+        
+    [<Fact>]
     let ``JSON RPCのgetVersionInfoでバージョン情報が取れる`` () =
         let result = invokeAPIAsync "/api/1" (WithoutArgs "getVersionInfo") |> Async.RunSynchronously
         let mutable value : JToken = null

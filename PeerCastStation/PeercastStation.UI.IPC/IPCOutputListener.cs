@@ -15,7 +15,7 @@ namespace PeerCastStation.UI.IPC
     public static readonly AccessControlInfo IPCAccessControlInfo = new AccessControlInfo(OutputStreamType.Interface | OutputStreamType.Metadata | OutputStreamType.Play, false, null);
     override public string Name { get { return "IPC Output Listener"; } }
     public string IPCPath { get; private set; } = IPCEndPoint.GetDefaultPath(IPCEndPoint.PathType.User, "peercaststation");
-    private IPCOption options;
+    public IPCOption IPCOptions { get; private set; }
     private IPCServer server;
     private CancellationTokenSource cancellationSource = new CancellationTokenSource();
     private Logger logger = new Logger(nameof(IPCOutputListener));
@@ -23,28 +23,26 @@ namespace PeerCastStation.UI.IPC
 
     override protected void OnAttach()
     {
-      options = IPCOption.None;
+      IPCOptions = IPCOption.None;
       if (Application.Configurations.TryGetString("IPCPath", out var ipcpath) && !String.IsNullOrWhiteSpace(ipcpath)) {
         IPCPath = ipcpath;
       }
       else if (Application.Type==PeerCastApplication.AppType.Service) {
         IPCPath = IPCEndPoint.GetDefaultPath(IPCEndPoint.PathType.System, "peercaststation");
-        options = IPCOption.AcceptAnyUsers;
       }
       else {
         IPCPath = IPCEndPoint.GetDefaultPath(IPCEndPoint.PathType.User, "peercaststation");
-        options = IPCOption.None;
       }
-      if (Application.Configurations.TryGetBool("IPCAcceptAnyUsers", out var ipcany)) {
+      if (Application.Configurations.TryGetBool("IPCAcceptAnyUser", out var ipcany)) {
         if (ipcany) {
-          options = IPCOption.AcceptAnyUsers;
+          IPCOptions |= IPCOption.AcceptAnyUser;
         }
         else {
-          options = IPCOption.None;
+          IPCOptions &= ~IPCOption.AcceptAnyUser;
         }
       }
       cancellationSource = new CancellationTokenSource();
-      server = IPCServer.Create(IPCPath, options);
+      server = IPCServer.Create(IPCPath, IPCOptions);
     }
 
     private async Task<IOutputStream> CreateMatchedHandler(IPCEndPoint endpoint, Stream stream, CancellationToken cancellationToken)

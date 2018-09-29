@@ -26,7 +26,7 @@ namespace PeerCastStation.Core.IPC
     public override async Task<IPCClient> AcceptAsync(CancellationToken cancellationToken)
     {
       PipeSecurity sec = null;
-      if (Options.HasFlag(IPCOption.AcceptAnyUsers)) {
+      if (Options.HasFlag(IPCOption.AcceptAnyUser)) {
         sec = new PipeSecurity();
         sec.AddAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null), PipeAccessRights.ReadWrite, AccessControlType.Allow));
         sec.AddAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.ServiceSid, null), PipeAccessRights.ReadWrite, AccessControlType.Allow));
