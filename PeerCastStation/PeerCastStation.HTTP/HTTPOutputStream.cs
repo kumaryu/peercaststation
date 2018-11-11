@@ -306,6 +306,16 @@ namespace PeerCastStation.HTTP
       }
     }
 
+    private bool IsM3u8Play {
+      get {
+        if (Regex.IsMatch(request.Uri.AbsolutePath, @"^/pls/([0-9A-Fa-f]{32})\.m3u8.*$")) {
+            return true;
+        }
+        var fmt = GetPlaylistFormat();
+        return (fmt != null) && fmt.ToLowerInvariant().Equals("m3u8");
+      }
+    }
+
     private enum RequestType {
       Unknown,
       HttpGet,
@@ -378,6 +388,10 @@ namespace PeerCastStation.HTTP
       /// </summary>
       Content,
       /// <summary>
+      /// HLSセグメント
+      /// </summary>
+      Segment,
+      /// <summary>
       /// プレイリスト
       /// </summary>
       Playlist,
@@ -396,6 +410,9 @@ namespace PeerCastStation.HTTP
       if (Channel==null || Channel.Status==SourceStreamStatus.Error || !IsPlayable) {
         return BodyType.None;
       }
+      else if (Regex.IsMatch(request.Uri.AbsolutePath, @"^/stream/[0-9A-Fa-f]{32}_([0-9]{5}).*$")) {
+        return BodyType.Segment;
+      }
       else if (Regex.IsMatch(request.Uri.AbsolutePath, @"^/stream/[0-9A-Fa-f]{32}.*$")) {
         return BodyType.Content;
       }
@@ -405,6 +422,17 @@ namespace PeerCastStation.HTTP
       else {
         return BodyType.None;
       }
+    }
+
+    private int GetHlsSegmentIndex() {
+      Match match = null;
+      if ((match = Regex.Match(request.Uri.AbsolutePath, @"^/stream/([0-9A-Fa-f]{32})_([0-9]{5}).*$")).Success) {
+        int i;
+        if(int.TryParse(match.Groups[2].Value, out i)){
+          return i;
+        }
+      }
+      return -1;
     }
 
     private string GetPlaylistFormat()
@@ -423,6 +451,9 @@ namespace PeerCastStation.HTTP
       if (IsChannelASF) {
         return new ASXPlayList();
       }
+      else if(IsM3u8Play) {
+        return new M3U8PlayList();
+      }
       else {
         return new M3UPlayList();
       }
@@ -438,6 +469,7 @@ namespace PeerCastStation.HTTP
         switch (fmt.ToLowerInvariant()) {
         case "asx": return new ASXPlayList();
         case "m3u": return new M3UPlayList();
+        case "m3u8": return new M3U8PlayList();
         default:    return CreateDefaultPlaylist();
         }
       }
@@ -487,6 +519,20 @@ namespace PeerCastStation.HTTP
             $"HTTP/1.0 200 OK\r\n" +
             $"Server: {PeerCast.AgentName}\r\n" +
             $"Content-Type: {channelInfo.MIMEType}\r\n";
+        }
+      case BodyType.Segment:
+        int i = GetHlsSegmentIndex();
+        byte[] segmentData = Channel.Hls.GetSegmentData(i);
+        if (segmentData == null) {
+            return "HTTP/1.0 404 NotFound\r\n";
+        } else {
+            return
+              $"HTTP/1.0 200 OK\r\n"                      +
+              $"Server: Rex/9.0.2980\r\n"                 +
+              $"Cache-Control: no-cache\r\n"              +
+              $"Pragma: no-cache\r\n"                     +
+              $"Content-Length: {segmentData.Length}\r\n" +
+              $"Content-Type: video/mp2t\r\n";
         }
       case BodyType.Playlist:
         {
@@ -634,6 +680,20 @@ namespace PeerCastStation.HTTP
       }
     }
 
+    private async Task SendSegmentContents(CancellationToken cancel_token)
+    {
+      Logger.Debug("Sending Contents");
+      try {
+        int i = GetHlsSegmentIndex();
+        byte[] segmentData = Channel.Hls.GetSegmentData(i);
+        if (segmentData != null) {
+          await Connection.WriteAsync(segmentData, cancel_token).ConfigureAwait(false);
+        }
+      }
+      catch (OperationCanceledException) {
+      }
+    }
+
     private async Task SendPlaylist(CancellationToken cancel_token)
     {
       Logger.Debug("Sending Playlist");
@@ -663,6 +723,8 @@ namespace PeerCastStation.HTTP
       case BodyType.Content:
         await SendHeaderContent(cancel_token).ConfigureAwait(false);
         break;
+      case BodyType.Segment:
+        break;
       case BodyType.Playlist:
         await SendPlaylist(cancel_token).ConfigureAwait(false);
         break;
@@ -676,6 +738,9 @@ namespace PeerCastStation.HTTP
         break;
       case BodyType.Content:
         await SendContents(cancel_token).ConfigureAwait(false);
+        break;
+      case BodyType.Segment:
+        await SendSegmentContents(cancel_token).ConfigureAwait(false);
         break;
       case BodyType.Playlist:
         await SendPlaylist(cancel_token).ConfigureAwait(false);
@@ -701,6 +766,11 @@ namespace PeerCastStation.HTTP
     protected override Task OnStarted(CancellationToken cancel_token)
     {
       if (this.Channel!=null) {
+        if (IsM3u8Play && Channel.Hls == null) {
+          HTTPLiveStreamingSegmenter hls = new HTTPLiveStreamingSegmenter(Channel);
+          Channel.Hls = hls;
+        }
+
         string filters;
         sink = this;
         if (request.Parameters.TryGetValue("filters", out filters)) {

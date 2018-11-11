@@ -80,6 +80,44 @@ namespace PeerCastStation.HTTP
   }
 
   /// <summary>
+  /// URLを列挙するだけの簡単なプレイリストを作成するクラスです
+  /// </summary>
+  public class M3U8PlayList
+    : IPlayList
+    {
+    public string MIMEType { get { return "application/vnd.apple.mpegurl"; } }
+    public IList<Channel> Channels { get; private set; }
+
+    public M3U8PlayList()
+    {
+      Channels = new List<Channel>();
+    }
+
+    public byte[] CreatePlayList(Uri baseuri, IEnumerable<KeyValuePair<string,string>> parameters)
+    {
+      var c = Channels.FirstOrDefault();
+      var res = new System.Text.StringBuilder();
+      res.AppendLine("#EXTM3U");
+      res.AppendLine("#EXT-X-VERSION:3");
+      res.AppendLine("#EXT-X-ALLOW-CACHE:NO");
+      res.AppendLine("#EXT-X-TARGETDURATION:2");
+      res.AppendLine("#EXT-X-MEDIA-SEQUENCE:" + c.Hls.GetSegmentStartIndex());
+      var queries = String.Join("&", parameters.Select(kv => Uri.EscapeDataString(kv.Key) + "=" + Uri.EscapeDataString(kv.Value)));
+      var s = c.Hls.GetSegmentStartIndex();
+      var e = c.Hls.GetSegmentEndIndex();
+      for (int j = s; j <= e; j++) {
+        var url = new UriBuilder(new Uri(baseuri, c.ChannelID.ToString("N").ToUpper() + String.Format("_{0:00000}.ts", j)));
+        if (queries!="") {
+          url.Query = queries;
+        }
+        res.AppendLine("#EXTINF:3,");
+        res.AppendLine(url.ToString());
+      }
+      return System.Text.Encoding.UTF8.GetBytes(res.ToString());
+    }
+  }
+
+  /// <summary>
   /// ASX形式のプレイリストを作成するクラスです
   /// </summary>
   public class ASXPlayList
