@@ -260,8 +260,9 @@ namespace PeerCastStation.HTTP
 
     public override ConnectionInfo GetConnectionInfo()
     {
-      if (sourceConnection!=null) {
-        return sourceConnection.GetConnectionInfo();
+      var conn = sourceConnection;
+      if (!conn.IsCompleted) {
+        return conn.Connection.GetConnectionInfo();
       }
       else {
         ConnectionStatus status;
@@ -290,19 +291,15 @@ namespace PeerCastStation.HTTP
       return new HTTPPushSourceConnection(PeerCast, Channel, source_uri, ContentReader, UseContentBitrate);
     }
 
-    protected override void OnConnectionStopped(ISourceConnection connection, StopReason reason)
+    protected override void OnConnectionStopped(ISourceConnection connection, ConnectionStoppedArgs args)
     {
-      switch (reason) {
+      switch (args.Reason) {
       case StopReason.UserReconnect:
-        break;
       case StopReason.UserShutdown:
-        Stop(reason);
-        break;
       case StopReason.NoHost:
-        Stop(reason);
         break;
       default:
-        Reconnect();
+        args.Reconnect = true;
         break;
       }
     }

@@ -752,7 +752,7 @@ Stopped:
     /// 一度無視されたノードは一定時間経過した後、再度選択されるようになります
     /// </summary>
     /// <param name="uri">接続先として選択されないようにするノードのURI</param>
-    private void IgnoreNode(Uri uri)
+    protected override void IgnoreSourceHost(Uri uri)
     {
       lock (ignoredNodes) {
         Logger.Debug("Host {0} is ignored", uri);
@@ -799,7 +799,7 @@ Stopped:
       }
     }
 
-    private Uri SelectSourceHost()
+    protected override Uri SelectSourceHost()
     {
       var rnd = new Random();
       var res = GetConnectableNodes().OrderByDescending(n =>
@@ -827,8 +827,9 @@ Stopped:
 
     public override ConnectionInfo GetConnectionInfo()
     {
-      if (sourceConnection!=null && !sourceConnection.IsStopped) {
-        return sourceConnection.GetConnectionInfo();
+      var conn = sourceConnection;
+      if (!conn.IsCompleted) {
+        return conn.Connection.GetConnectionInfo();
       }
       ConnectionStatus status = ConnectionStatus.Idle;
       switch (StoppedReason) {
@@ -860,28 +861,19 @@ Stopped:
       }
     }
 
-    protected override void OnConnectionStopped(ISourceConnection connection, StopReason reason)
+    protected override void OnConnectionStopped(ISourceConnection connection, ConnectionStoppedArgs args)
     {
-      switch (reason) {
+      switch (args.Reason) {
       case StopReason.UnavailableError:
-        IgnoreNode(connection.SourceUri);
-        Reconnect(SelectSourceHost());
+        args.IgnoreSource = connection.SourceUri;
+        args.Reconnect = true;
         break;
       case StopReason.ConnectionError:
       case StopReason.OffAir:
-        if (connection.SourceUri==this.SourceUri) {
-          Stop(reason);
+        if (connection.SourceUri!=this.SourceUri) {
+          args.IgnoreSource = connection.SourceUri;
+          args.Reconnect = true;
         }
-        else {
-          IgnoreNode(connection.SourceUri);
-          Reconnect(SelectSourceHost());
-        }
-        break;
-      case StopReason.UserReconnect:
-        break;
-      case StopReason.UserShutdown:
-      default:
-        Stop(reason);
         break;
       }
     }
@@ -889,14 +881,9 @@ Stopped:
     protected override void DoReconnect()
     {
       if (this.sourceConnection.SourceUri!=this.SourceUri) {
-        IgnoreNode(this.sourceConnection.SourceUri);
+        IgnoreSourceHost(this.sourceConnection.SourceUri);
       }
-      Reconnect(SelectSourceHost());
-    }
-
-    private void Reconnect(Uri new_source)
-    {
-      StartConnection(new_source);
+      base.DoReconnect();
     }
 
     public override SourceStreamType Type {

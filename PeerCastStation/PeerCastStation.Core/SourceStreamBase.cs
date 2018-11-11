@@ -63,28 +63,110 @@ namespace PeerCastStation.Core
     public Uri      SourceUri { get; private set; }
     public StopReason StoppedReason { get; private set; }
     public bool       IsStopped { get { return StoppedReason!=StopReason.None; } }
-    public float SendRate { get { return sourceConnection!=null ? sourceConnection.SendRate : 0.0f; } }
-    public float RecvRate { get { return sourceConnection!=null ? sourceConnection.RecvRate : 0.0f; } }
+    public float SendRate { get { return sourceConnection.SendRate; } }
+    public float RecvRate { get { return sourceConnection.RecvRate; } }
+
+    protected class ConnectionWrapper
+    {
+      public ISourceConnection Connection { get; private set; }
+      public Uri SourceUri { get { return Connection?.SourceUri; } }
+      public Task Task { get; private set; }
+      public bool IsCompleted { get { return Task.IsCompleted; } }
+      public float SendRate { get { return Task.IsCompleted ? 0.0f : Connection.SendRate; } }
+      public float RecvRate { get { return Task.IsCompleted ? 0.0f : Connection.RecvRate; } }
+
+      public ConnectionWrapper()
+      {
+        Connection = null;
+        Task = Task.FromResult(StopReason.NotIdentifiedError);
+      }
+
+      private ConnectionWrapper(ISourceConnection connection, Func<ConnectionWrapper,Task<StopReason>,Task> taskFunc)
+      {
+        Connection = connection;
+        Task = taskFunc(this, connection.Run());
+      }
+
+      public void StopAndWait(StopReason reason)
+      {
+        if (IsCompleted) return;
+        Connection.Stop(reason);
+        Task.Wait();
+      }
+
+      public void Post(Host from, Atom message)
+      {
+        if (IsCompleted) return;
+        Connection.Post(from, message);
+      }
+
+      static public ConnectionWrapper Run(ISourceConnection connection, Func<ConnectionWrapper,Task<StopReason>,Task> taskFunc)
+      {
+        return new ConnectionWrapper(connection, taskFunc);
+      }
+    }
 
     protected Logger Logger { get; private set; }
-    protected ISourceConnection sourceConnection;
-    protected Task              sourceConnectionTask;
-    private Task eventTask = Task.Delay(0);
+    protected ConnectionWrapper sourceConnection = new ConnectionWrapper();
     private TaskCompletionSource<StopReason> ranTaskSource = new TaskCompletionSource<StopReason>();
     private bool disposed = false;
 
-    protected Task Queue(Action action)
+    protected class ActionQueue
     {
-      eventTask = eventTask.ContinueWith(prev => {
-        if (prev.IsFaulted) return;
-        action.Invoke();
-      });
-      return eventTask;
+      private Task lastTask = Task.Delay(0);
+      public Task Queue(Action action)
+      {
+        lock (this) {
+          lastTask = lastTask.ContinueWith(prev => {
+            if (prev.IsFaulted) return;
+            action.Invoke();
+          });
+          return lastTask;
+        }
+      }
+
+      public Task Queue(Func<Task> action)
+      {
+        lock (this) {
+          lastTask = lastTask.ContinueWith(prev => {
+            if (prev.IsFaulted) return prev;
+            return action.Invoke();
+          });
+          return lastTask;
+        }
+      }
+    }
+    private ActionQueue actionQueue = new ActionQueue();
+
+    protected void Queue(Action action)
+    {
+      actionQueue.Queue(action);
+    }
+
+    protected void QueueAndWait(Action action)
+    {
+      actionQueue.Queue(action).Wait();
+    }
+
+    protected void Queue(Func<Task> action)
+    {
+      actionQueue.Queue(action);
     }
 
     public abstract ConnectionInfo GetConnectionInfo();
     protected abstract ISourceConnection CreateConnection(Uri source_uri);
-    protected abstract void OnConnectionStopped(ISourceConnection connection, StopReason reason);
+
+    public class ConnectionStoppedArgs
+    {
+      public StopReason Reason { get; set; }
+      public int Delay { get; set; } = 0;
+      public Uri IgnoreSource { get; set; } = null;
+      public bool Reconnect { get; set; } = false;
+    }
+
+    protected virtual void OnConnectionStopped(ISourceConnection connection, ConnectionStoppedArgs args)
+    {
+    }
 
     public SourceStreamBase(
       PeerCast peercast,
@@ -101,48 +183,69 @@ namespace PeerCastStation.Core
     public void Dispose()
     {
       disposed = true;
-      Queue(() => { DoStop(StopReason.UserShutdown); }).Wait();
+      QueueAndWait(() => { DoStopStream(StopReason.UserShutdown); });
     }
 
     protected void StartConnection(Uri source_uri)
     {
-      if (sourceConnection!=null) {
-        StopConnection(StopReason.UserReconnect);
-      }
-      var conn = CreateConnection(source_uri);
-      sourceConnection = conn;
-      sourceConnectionTask = sourceConnection
-        .Run()
-        .ContinueWith(prev => {
-          if (prev.IsFaulted) {
-            Queue(() => { OnConnectionStopped(conn, StopReason.NotIdentifiedError); });
+      if (!sourceConnection.IsCompleted) throw new InvalidOperationException("Connection is already started");
+      sourceConnection = ConnectionWrapper.Run(CreateConnection(source_uri), async (conn,prev) => {
+        var args = new ConnectionStoppedArgs();
+        try {
+          var result = await prev.ConfigureAwait(false);
+          args.Reason = result;
+        }
+        catch (TaskCanceledException) {
+          args.Reason = StopReason.UserShutdown;
+        }
+        catch (Exception) {
+          args.Reason = StopReason.NotIdentifiedError;
+        }
+        Queue(async () => {
+          OnConnectionStopped(conn.Connection, args);
+          if (args.Delay>0) {
+            await Task.Delay(args.Delay).ConfigureAwait(false);
           }
-          else if (prev.IsCanceled) {
-            Queue(() => { OnConnectionStopped(conn, StopReason.UserShutdown); });
-          }
-          else {
-            Queue(() => { OnConnectionStopped(conn, prev.Result); });
+          if (sourceConnection==conn) {
+            if (args.IgnoreSource!=null) {
+              IgnoreSourceHost(args.IgnoreSource);
+            }
+            if (args.Reconnect) {
+              DoReconnect();
+            }
+            else if (args.Reason!=StopReason.UserReconnect) {
+              DoStopStream(args.Reason);
+            }
           }
         });
+      });
     }
 
     protected void StopConnection(StopReason reason)
     {
-      if (sourceConnection==null) return;
-      sourceConnection.Stop(reason);
-      sourceConnectionTask.Wait();
+      sourceConnection.StopAndWait(reason);
     }
 
-    protected virtual void DoStart()
+    protected virtual Uri SelectSourceHost()
     {
-      if (this.SourceUri==null) {
-        Stop(StopReason.NoHost);
+      return SourceUri;
+    }
+
+    protected virtual void IgnoreSourceHost(Uri source)
+    {
+    }
+
+    protected virtual void DoStartStream()
+    {
+      var source = SelectSourceHost();
+      if (source==null) {
+        DoStopStream(StopReason.NoHost);
         return;
       }
-      StartConnection(this.SourceUri);
+      StartConnection(source);
     }
 
-    protected virtual void DoStop(StopReason reason)
+    protected virtual void DoStopStream(StopReason reason)
     {
       StoppedReason = reason;
       StopConnection(reason);
@@ -151,23 +254,20 @@ namespace PeerCastStation.Core
 
     protected virtual void DoPost(Host from, Atom message)
     {
-      if (sourceConnection==null || sourceConnection.IsStopped) return;
       sourceConnection.Post(from, message);
     }
 
     protected virtual void DoReconnect()
     {
-      if (sourceConnection!=null) {
-        StopConnection(StopReason.UserReconnect);
-      }
-      DoStart();
+      StopConnection(StopReason.UserReconnect);
+      DoStartStream();
     }
 
     public Task<StopReason> Run()
     {
       if (disposed) throw new ObjectDisposedException(this.GetType().Name);
       ranTaskSource = new TaskCompletionSource<StopReason>();
-      Queue(() => { DoStart(); });
+      Queue(() => { DoStartStream(); });
       return ranTaskSource.Task;
     }
 
@@ -179,7 +279,7 @@ namespace PeerCastStation.Core
 
     protected void Stop(StopReason reason)
     {
-      Queue(() => { DoStop(reason); });
+      Queue(() => { DoStopStream(reason); });
     }
 
     public void Reconnect()
