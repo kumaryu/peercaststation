@@ -532,6 +532,7 @@ namespace PeerCastStation.HTTP
               $"Cache-Control: no-cache\r\n"              +
               $"Pragma: no-cache\r\n"                     +
               $"Content-Length: {segmentData.Length}\r\n" +
+              $"Connection: close\r\n"                    +
               $"Content-Type: video/mp2t\r\n";
         }
       case BodyType.Playlist:

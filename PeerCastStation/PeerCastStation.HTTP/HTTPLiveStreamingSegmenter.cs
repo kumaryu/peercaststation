@@ -54,10 +54,9 @@ namespace PeerCastStation.HTTP
           if (Cache.Length > 0) {
             Cache.Close();
             byte[] data = Cache.ToArray();
-            Segments.Insert(0, data);
+            Segments.Add(data);
             Cache = new MemoryStream();
-            Logger.Debug("segment size: {0}", data.Length.ToString());
-            Logger.Debug("segment index: {0}", SegmentIndex.ToString());
+            Logger.Debug("segment index:{0} size:{1}", SegmentIndex.ToString(), data.Length.ToString());
             SegmentIndex++;
           }
           Drop = false;
@@ -97,13 +96,14 @@ namespace PeerCastStation.HTTP
 
     public byte[] GetSegmentData(int i)
     {
-      if (GetSegmentStartIndex()<=i && i <= GetSegmentEndIndex()) { 
-        //segment_00007.ts segments[0]
+        //segment_00007.ts segments[2]
         //segment_00006.ts segments[1]
-        //segment_00005.ts segments[2]
+        //segment_00005.ts segments[0]
         int j = GetSegmentEndIndex() - i;
-        return Segments[j];
-      }
+        int k = Segments.Count - j - 1;
+        if (0<=k && k<Segments.Count) {
+            return Segments[k];
+        }
       return null;
     }
   }
