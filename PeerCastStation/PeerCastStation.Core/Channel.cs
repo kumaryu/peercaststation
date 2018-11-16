@@ -610,6 +610,7 @@ namespace PeerCastStation.Core
     {
       int GetSegmentEndIndex();
       int GetSegmentStartIndex();
+      double GetDuration(int i);
       byte[] GetSegmentData(int i);
     }
 

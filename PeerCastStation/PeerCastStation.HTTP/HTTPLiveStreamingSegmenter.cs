@@ -14,8 +14,10 @@ namespace PeerCastStation.HTTP
     public Channel Channel { get; private set; }
     private int SegmentIndex = 1;
     private bool Drop = true;
+    private double lastPcr = 0;
     private byte[] HeaderData { get; set; }
     private Ringbuffer<byte[]> Segments = new Ringbuffer<byte[]>(5);
+    private Ringbuffer<double> Durations = new Ringbuffer<double>(5);
     private MemoryStream Cache = new MemoryStream();
 
     public HTTPLiveStreamingSegmenter(Channel channel)
@@ -54,9 +56,11 @@ namespace PeerCastStation.HTTP
           if (Cache.Length > 0) {
             Cache.Close();
             byte[] data = Cache.ToArray();
-            Segments.Add(data);
             Cache = new MemoryStream();
             Logger.Debug("segment index:{0} size:{1}", SegmentIndex.ToString(), data.Length.ToString());
+            Durations.Add(tsPacket.program_clock_reference - lastPcr);
+            lastPcr = tsPacket.program_clock_reference;
+            Segments.Add(data);
             SegmentIndex++;
           }
           Drop = false;
@@ -92,6 +96,16 @@ namespace PeerCastStation.HTTP
     public int GetSegmentEndIndex()
     {
       return SegmentIndex;
+    }
+    
+    public double GetDuration(int i)
+    {
+        int j = GetSegmentEndIndex() - i;
+        int k = Durations.Count - j - 1;
+        if (0<=k && k<Durations.Count) {
+            return Durations[k];
+        }
+      return 0.0;
     }
 
     public byte[] GetSegmentData(int i)

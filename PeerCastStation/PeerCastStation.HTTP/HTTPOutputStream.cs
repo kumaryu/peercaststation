@@ -526,14 +526,16 @@ namespace PeerCastStation.HTTP
         if (segmentData == null) {
             return "HTTP/1.0 404 NotFound\r\n";
         } else {
-            return
-              $"HTTP/1.0 200 OK\r\n"                      +
-              $"Server: Rex/9.0.2980\r\n"                 +
-              $"Cache-Control: no-cache\r\n"              +
-              $"Pragma: no-cache\r\n"                     +
-              $"Content-Length: {segmentData.Length}\r\n" +
-              $"Connection: close\r\n"                    +
-              $"Content-Type: video/mp2t\r\n";
+          return String.Format(
+              "HTTP/1.0 200 OK\r\n"         +
+              "Server: {0}\r\n"             +
+              "Cache-Control: no-cache\r\n" +
+              "Pragma: no-cache\r\n"        +
+              "Content-Length: {1}\r\n"     +
+              "Connection: close\r\n"       +
+              "Content-Type: video/mp2t\r\n",
+            PeerCast.AgentName,
+            segmentData.Length);
         }
       case BodyType.Playlist:
         {

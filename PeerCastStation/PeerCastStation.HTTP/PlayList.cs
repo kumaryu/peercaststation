@@ -110,7 +110,7 @@ namespace PeerCastStation.HTTP
         if (queries!="") {
           url.Query = queries;
         }
-        res.AppendLine("#EXTINF:3,");
+        res.AppendLine("#EXTINF:" + c.Hls.GetDuration(j).ToString("F2") + ",");
         res.AppendLine(url.ToString());
       }
       return System.Text.Encoding.UTF8.GetBytes(res.ToString());
