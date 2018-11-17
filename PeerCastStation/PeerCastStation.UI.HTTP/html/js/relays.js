@@ -517,7 +517,8 @@ var ChannelViewModel = function(owner, initial_value) {
     });
   self.playlistUrl = ko.computed(
     function () {
-      var url = '/pls/' + self.channelId();
+      var ext = initial_value.info.contentType == "FLV" ? ".m3u8" : "";
+      var url = '/pls/' + self.channelId() + ext;
       var auth_token = owner.authToken();
       return auth_token ? url + '?auth=' + auth_token : url;
     });
