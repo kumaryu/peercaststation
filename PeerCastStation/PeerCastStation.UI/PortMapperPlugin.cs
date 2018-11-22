@@ -204,13 +204,11 @@ namespace PeerCastStation.UI
     private void AddPortOnDevice(NatDevice device, int port)
     {
       device.MapAsync(MappingProtocol.TCP, port, TimeSpan.FromSeconds(7200), cancelSource.Token);
-      device.MapAsync(MappingProtocol.UDP, port, TimeSpan.FromSeconds(7200), cancelSource.Token);
     }
 
     private void RemovePortOnDevice(NatDevice device, int port)
     {
       device.UnmapAsync(MappingProtocol.TCP, port, cancelSource.Token);
-      device.UnmapAsync(MappingProtocol.UDP, port, cancelSource.Token);
     }
 
     private void AddPort(int port)
