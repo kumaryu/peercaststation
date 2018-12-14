@@ -157,8 +157,9 @@ namespace PeerCastStation.Core
 
     public override ConnectionInfo GetConnectionInfo()
     {
-      if (sourceConnection!=null) {
-        return sourceConnection.GetConnectionInfo();
+      var conn = sourceConnection;
+      if (!conn.IsCompleted) {
+        return conn.Connection.GetConnectionInfo();
       }
       else {
         return new ConnectionInfoBuilder {
@@ -187,13 +188,6 @@ namespace PeerCastStation.Core
     protected override ISourceConnection CreateConnection(Uri source_uri)
     {
       return new LoopbackSourceConnection(PeerCast, Channel, source_uri, GetSourceChannel(source_uri));
-    }
-
-    protected override void OnConnectionStopped(ISourceConnection connection, StopReason reason)
-    {
-      if (reason!=StopReason.UserReconnect) {
-        Stop(reason);
-      }
     }
 
   }
