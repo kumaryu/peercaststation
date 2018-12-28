@@ -30,21 +30,23 @@ namespace PeerCastStation.WPF.CoreSettings
 
     private void BandwidthCheckButton_Click(object sender, RoutedEventArgs args)
     {
-      var dialog = new BandwidthCheckDialog(Core.NetworkType.IPv4);
+      var viewmodel =((SettingViewModel)this.DataContext);
+      var dialog = new BandwidthCheckDialog(viewmodel.Application, Core.NetworkType.IPv4);
       dialog.Owner = Window.GetWindow(this);
       dialog.ShowDialog();
       if (dialog.Result.HasValue) {
-        ((SettingViewModel)this.DataContext).MaxUpstreamRate = dialog.Result.Value;
+        viewmodel.MaxUpstreamRate = dialog.Result.Value;
       }
     }
 
     private void BandwidthCheckButtonIPv6_Click(object sender, RoutedEventArgs args)
     {
-      var dialog = new BandwidthCheckDialog(Core.NetworkType.IPv6);
+      var viewmodel =((SettingViewModel)this.DataContext);
+      var dialog = new BandwidthCheckDialog(viewmodel.Application, Core.NetworkType.IPv6);
       dialog.Owner = Window.GetWindow(this);
       dialog.ShowDialog();
       if (dialog.Result.HasValue) {
-        ((SettingViewModel)this.DataContext).MaxUpstreamRateIPv6 = dialog.Result.Value;
+        viewmodel.MaxUpstreamRateIPv6 = dialog.Result.Value;
       }
     }
 

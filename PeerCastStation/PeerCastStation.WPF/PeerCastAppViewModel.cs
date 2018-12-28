@@ -23,6 +23,7 @@ using PeerCastStation.WPF.Dialogs;
 using PeerCastStation.WPF.Logs;
 using System.Windows;
 using System.Net.Sockets;
+using PeerCastStation.UI;
 
 namespace PeerCastStation.WPF
 {
@@ -30,6 +31,7 @@ namespace PeerCastStation.WPF
   {
     private readonly PeerCastApplication application;
     public PeerCastApplication Model { get { return application; } }
+    public UpdaterViewModel Updater { get; private set; }
 
     private string GetPortStatus(AddressFamily family)
     {
@@ -81,6 +83,7 @@ namespace PeerCastStation.WPF
     internal PeerCastAppViewModel(PeerCastApplication application)
     {
       this.application = application;
+      Updater = new UpdaterViewModel(new Updater(application));
       var peerCast = application.PeerCast;
       channelList = new ChannelListViewModel(peerCast);
       setting = new SettingViewModel(application);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace PeerCastStation.HTTP
@@ -82,14 +83,19 @@ namespace PeerCastStation.HTTP
       Protocol   = "HTTP/1.0";
       string host = "localhost";
       string path = "/";
-      foreach (var req in requests) {
-        Match match = null;
-        if ((match = Regex.Match(req, @"^(\w+) +(\S+) +(HTTP/1.\d)$", RegexOptions.IgnoreCase)).Success) {
-          this.Method = match.Groups[1].Value.ToUpper();
-          path = match.Groups[2].Value;
-          Protocol = match.Groups[3].Value;
-        }
-        else if ((match = Regex.Match(req, @"^Host:(.+)$", RegexOptions.IgnoreCase)).Success) {
+      var fst = requests.First();
+      Match match = null;
+      if ((match = Regex.Match(fst, @"^(\w+) +(\S+) +(HTTP/1.\d)$", RegexOptions.IgnoreCase)).Success) {
+        this.Method = match.Groups[1].Value.ToUpper();
+        path = match.Groups[2].Value;
+        Protocol = match.Groups[3].Value;
+      }
+      else {
+        this.Uri = null;
+        return;
+      }
+      foreach (var req in requests.Skip(1)) {
+        if ((match = Regex.Match(req, @"^Host:(.+)$", RegexOptions.IgnoreCase)).Success) {
           host = match.Groups[1].Value.Trim();
           Headers["HOST"] = host;
         }

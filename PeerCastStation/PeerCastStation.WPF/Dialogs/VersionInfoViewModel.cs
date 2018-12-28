@@ -26,7 +26,7 @@ namespace PeerCastStation.WPF.Dialogs
 
     public VersionInfoViewModel(PeerCastApplication app)
     {
-      this.AgentName = AppSettingsReader.GetString("AgentName", "PeerCastStation/Unknown");
+      this.AgentName = app.Configurations.GetString("AgentName", "PeerCastStation/Unknown");
       items = app.Plugins.Select(plugin => {
         var info = plugin.GetVersionInfo();
         return new {

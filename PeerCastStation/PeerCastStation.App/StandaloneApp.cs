@@ -8,6 +8,10 @@ namespace PeerCastStation.App
   public class StandaloneApp
     : AppBase
   {
+    public override AppType Type {
+      get { return AppType.Standalone; }
+    }
+
     public StandaloneApp(string basepath, string[] args)
       : base(basepath, args)
     {
@@ -68,20 +72,20 @@ namespace PeerCastStation.App
         if (!first_instance && !(args.Contains("-multi") || args.Contains("--multi"))) {
           return 1;
         }
-        return (new StandaloneApp(basepath, args)).Run();
+        var app = new StandaloneApp(basepath, args);
+        logPostfix = $"{app.Configurations.GetString("AgentName", "PeerCastStation")} (OS:{Environment.OSVersion} CLR:{Environment.Version})";
+        return app.Run();
       }
     }
+
+    private static string logPostfix = $"PeerCastStation (OS:{Environment.OSVersion} CLR:{Environment.Version})";
 
     private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs args)
     {
       var dir = System.IO.Path.GetDirectoryName(PecaSettings.DefaultFileName);
       System.IO.Directory.CreateDirectory(dir);
       using (var file=System.IO.File.AppendText(System.IO.Path.Combine(dir, "exception.log"))) {
-        file.WriteLine("{0}: {1} (OS:{2}, CLR:{3})",
-          DateTime.Now,
-          AppSettingsReader.GetString("AgentName", "PeerCastStation"),
-          Environment.OSVersion,
-          Environment.Version);
+        file.WriteLine("{0}: {1}", DateTime.Now, logPostfix);
         file.WriteLine(args.ExceptionObject);
       }
     }

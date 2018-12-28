@@ -33,6 +33,11 @@ namespace PeerCastStation.WPF
     private DispatcherTimer timer;
     private System.Windows.Interop.WindowInteropHelper hwnd;
     private System.Windows.Interop.HwndSource nativeSource;
+
+    private PeerCastAppViewModel ViewModel {
+      get { return (PeerCastAppViewModel)DataContext; }
+    }
+
     public MainWindow(PeerCastAppViewModel viewmodel)
     {
       InitializeComponent();
@@ -80,17 +85,17 @@ namespace PeerCastStation.WPF
 
     private void OnOpenBrowserUI(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
     {
-      ((PeerCastAppViewModel)this.DataContext).OpenBrowserUI();
+      ViewModel.OpenBrowserUI();
     }
 
     private void OnOpenHelp(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
     {
-      ((PeerCastAppViewModel)this.DataContext).OpenHelp();
+      ViewModel.OpenHelp();
     }
 
     private void OnQuit(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
     {
-      ((PeerCastAppViewModel)this.DataContext).Quit();
+      ViewModel.Quit();
     }
 
     private void OnAbout(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
@@ -104,7 +109,7 @@ namespace PeerCastStation.WPF
 
 		private void UpdateCheck_Click(object sender, RoutedEventArgs e)
 		{
-			var dialog = new UpdaterWindow();
+			var dialog = new UpdaterWindow(ViewModel.Updater);
 			dialog.Owner = this;
 			dialog.ShowDialog();
 		}
@@ -113,14 +118,14 @@ namespace PeerCastStation.WPF
     private void OnShowLogs(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
     {
       if (logWindow==null) {
-        logWindow = new LogWindow { DataContext=((PeerCastAppViewModel)this.DataContext).Log };
+        logWindow = new LogWindow { DataContext=ViewModel.Log };
       }
       logWindow.Show();
     }
 
     private void OnOpenSettings(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
     {
-      SettingsDialog.ShowDialog(this, ((PeerCastAppViewModel)this.DataContext).Model);
+      SettingsDialog.ShowDialog(this, ViewModel.Model);
     }
 
     protected override void OnActivated(EventArgs e)

@@ -76,7 +76,6 @@ namespace PeerCastStation.App
   public class OptionParser
     : IEnumerable<OptionDesc>
   {
-
     public static readonly string OtherArguments = "";
 
     private List<OptionDesc> options = new List<OptionDesc>();
@@ -92,7 +91,7 @@ namespace PeerCastStation.App
       options.Add(new OptionDesc(optLong, optShort, argc));
     }
 
-    public IReadOnlyList<ParsedOption> Parse(string[] args)
+    public IDictionary<string,ParsedOption> Parse(string[] args)
     {
       var results = new List<ParsedOption>();
       var others = new List<string>();
@@ -144,7 +143,7 @@ namespace PeerCastStation.App
         pos += 1;
       }
       results.Add(new ParsedOption(OtherArguments, others.ToArray()));
-      return results;
+      return results.ToDictionary(opt => opt.LongName);
     }
 
     public IEnumerator<OptionDesc> GetEnumerator()

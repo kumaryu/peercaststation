@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.16
+VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Core", "PeerCastStation.Core\PeerCastStation.Core.csproj", "{387996F5-E31D-4D92-BD86-8983C599F748}"
 EndProject
@@ -84,6 +84,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.App", "PeerCastStation.App\PeerCastStation.App.csproj", "{C8B4E4DC-BE2B-4FC5-94D2-A22FF754C9A7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Updater", "PeerCastStation.Updater\PeerCastStation.Updater.csproj", "{BE5FD77B-D20E-40F6-B198-C7FD97E41274}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.UI.IPC", "PeercastStation.UI.IPC\PeerCastStation.UI.IPC.csproj", "{69EFC27A-EC79-4D89-98DC-10E109453BD1}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "PeerCastStation.UI.IPC.Tests", "PeerCastStation.UI.IPC.Tests\PeerCastStation.UI.IPC.Tests.fsproj", "{15B3A645-6688-4C9F-84CF-CD0D9B4754F0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -178,6 +182,14 @@ Global
 		{BE5FD77B-D20E-40F6-B198-C7FD97E41274}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE5FD77B-D20E-40F6-B198-C7FD97E41274}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE5FD77B-D20E-40F6-B198-C7FD97E41274}.Release|Any CPU.Build.0 = Release|Any CPU
+		{69EFC27A-EC79-4D89-98DC-10E109453BD1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69EFC27A-EC79-4D89-98DC-10E109453BD1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69EFC27A-EC79-4D89-98DC-10E109453BD1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69EFC27A-EC79-4D89-98DC-10E109453BD1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15B3A645-6688-4C9F-84CF-CD0D9B4754F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15B3A645-6688-4C9F-84CF-CD0D9B4754F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15B3A645-6688-4C9F-84CF-CD0D9B4754F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15B3A645-6688-4C9F-84CF-CD0D9B4754F0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

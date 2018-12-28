@@ -49,7 +49,7 @@ namespace PeerCastStation.WPF
     override protected void OnStart()
     {
       appViewModel = new PeerCastAppViewModel(Application);
-      versionChecker = new PeerCastStation.UI.Updater();
+      versionChecker = new PeerCastStation.UI.Updater(Application);
       notifyIconThread = new Thread(() => {
         notifyIconManager = new NotifyIconManager(appViewModel, this);
         versionChecker.NewVersionFound += (sender, e) => {
