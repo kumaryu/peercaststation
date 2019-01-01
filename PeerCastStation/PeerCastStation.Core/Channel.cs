@@ -606,6 +606,24 @@ namespace PeerCastStation.Core
       }
     }
 
+    public interface IHTTPLiveStreaming
+    {
+      int GetSegmentEndIndex();
+      int GetSegmentStartIndex();
+      double GetDuration(int i);
+      byte[] GetSegmentData(int i);
+    }
+
+    private IHTTPLiveStreaming hls = null;
+    public IHTTPLiveStreaming Hls {
+      get { return hls; }
+      set {
+        if (hls == null) {
+          hls = value;
+        }
+      }
+    }
+
     protected void AddSourceStream(ISourceStream source_stream)
     {
       var old = Interlocked.Exchange(ref sourceStream, source_stream);

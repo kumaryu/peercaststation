@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="HTTPChunkedContentStream.cs" />
     <Compile Include="HTTPDummyOutputStream.cs" />
+    <Compile Include="HTTPLiveStreamingSegmenter.cs" />
     <Compile Include="HTTPOutputStream.cs" />
     <Compile Include="HTTPPushSourceStream.cs" />
     <Compile Include="HTTPRequest.cs" />
@@ -60,6 +61,7 @@
     <Compile Include="HTTPUtils.cs" />
     <Compile Include="PlayList.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TsPacket.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj">
