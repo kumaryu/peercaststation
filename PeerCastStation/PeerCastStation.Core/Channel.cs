@@ -606,12 +606,21 @@ namespace PeerCastStation.Core
       }
     }
 
+    public struct HLSSegment {
+      public readonly int Index;
+      public readonly byte[] Data;
+      public readonly double Duration;
+      public HLSSegment(int index, byte[] data, double duration)
+      {
+        Index = index;
+        Data = data;
+        Duration = duration;
+      }
+    }
+
     public interface IHTTPLiveStreaming
     {
-      int GetSegmentEndIndex();
-      int GetSegmentStartIndex();
-      double GetDuration(int i);
-      byte[] GetSegmentData(int i);
+      IList<HLSSegment> GetSegments();
     }
 
     private IHTTPLiveStreaming hls = null;

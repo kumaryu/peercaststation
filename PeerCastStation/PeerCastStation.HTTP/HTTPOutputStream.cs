@@ -536,21 +536,23 @@ namespace PeerCastStation.HTTP
             $"Content-Type: {channelInfo.MIMEType}\r\n";
         }
       case BodyType.Segment:
-        int i = GetHlsSegmentIndex();
-        byte[] segmentData = Channel.Hls.GetSegmentData(i);
-        if (segmentData == null) {
-            return "HTTP/1.0 404 NotFound\r\n";
-        } else {
-          return String.Format(
-              "HTTP/1.0 200 OK\r\n"         +
-              "Server: {0}\r\n"             +
-              "Cache-Control: no-cache\r\n" +
-              "Pragma: no-cache\r\n"        +
-              "Content-Length: {1}\r\n"     +
-              "Connection: close\r\n"       +
-              "Content-Type: video/mp2t\r\n",
-            PeerCast.AgentName,
-            segmentData.Length);
+        {
+          int idx = GetHlsSegmentIndex();
+          var seg = Channel.Hls.GetSegments().FirstOrDefault(s => s.Index==idx);
+          if (seg.Data == null) {
+              return "HTTP/1.0 404 NotFound\r\n";
+          } else {
+            return String.Format(
+                "HTTP/1.0 200 OK\r\n"         +
+                "Server: {0}\r\n"             +
+                "Cache-Control: no-cache\r\n" +
+                "Pragma: no-cache\r\n"        +
+                "Content-Length: {1}\r\n"     +
+                "Connection: close\r\n"       +
+                "Content-Type: video/mp2t\r\n",
+              PeerCast.AgentName,
+              seg.Data.Length);
+          }
         }
       case BodyType.Playlist:
         {
@@ -703,10 +705,10 @@ namespace PeerCastStation.HTTP
     {
       Logger.Debug("Sending Contents");
       try {
-        int i = GetHlsSegmentIndex();
-        byte[] segmentData = Channel.Hls.GetSegmentData(i);
-        if (segmentData != null) {
-          await Connection.WriteAsync(segmentData, cancel_token).ConfigureAwait(false);
+        int idx = GetHlsSegmentIndex();
+        var seg = Channel.Hls.GetSegments().FirstOrDefault(s => s.Index==idx);
+        if (seg.Data!=null) {
+          await Connection.WriteAsync(seg.Data, cancel_token).ConfigureAwait(false);
         }
       }
       catch (OperationCanceledException) {
