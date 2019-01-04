@@ -787,38 +787,49 @@ namespace PeerCastStation.FLV
       private void OnAVCBody(RTMPMessage msg, bool keyframe)
       {
         var pts = msg.Timestamp - Math.Max(0, ptsBase);
-        long? dts = null;
         var cts = msg.Body.Skip(2).Take(3).Aggregate(0, (r,v) => (r<<8) | v);
         if (cts>=0x800000) {
           cts = 0x1000000 - cts;
         }
-        if (cts!=0) {
-          dts = pts;
-          pts = pts + cts;
-        }
-        var len = msg.Body.Skip(5).Take(nalSizeLen).Aggregate(0, (r,v) => (r<<8) | v);
-        var nalu = NALUnit.ReadFrom(new MemoryStream(msg.Body, 5+nalSizeLen, len), len);
-        var idr = nalu.NALUnitType==5;
+        var dts = pts;
+        pts = pts + cts;
+        var access_unit_delimiter = false;
+        var idr = false;
         var nalbytestream = new MemoryStream();
-        using (nalbytestream) {
-          NALUnit.WriteToByteStream(nalbytestream, NALUnit.AccessUnitDelimiter);
-          if (idr) {
-            foreach (var unit in sps) {
-              NALUnit.WriteToByteStream(nalbytestream, unit);
+        int units = 0;
+        using (nalbytestream)
+        using (var body=new MemoryStream(msg.Body, 0, msg.Body.Length)) {
+          body.Seek(5, SeekOrigin.Begin);
+          while (body.Position<body.Length) {
+            var len = body.ReadBytes(nalSizeLen).Aggregate(0, (r,v) => (r<<8) | v);
+            var nalu = NALUnit.ReadFrom(body, len);
+            if (nalu.NALUnitType==9) {
+              access_unit_delimiter = true;
             }
-            foreach (var unit in pps) {
-              NALUnit.WriteToByteStream(nalbytestream, unit);
+            if (!access_unit_delimiter) {
+              NALUnit.WriteToByteStream(nalbytestream, NALUnit.AccessUnitDelimiter);
+              access_unit_delimiter = true;
             }
-            foreach (var unit in spsExt) {
-              NALUnit.WriteToByteStream(nalbytestream, unit);
+            if (nalu.NALUnitType==5) {
+              idr = true;
+              foreach (var unit in sps) {
+                NALUnit.WriteToByteStream(nalbytestream, unit);
+              }
+              foreach (var unit in pps) {
+                NALUnit.WriteToByteStream(nalbytestream, unit);
+              }
+              foreach (var unit in spsExt) {
+                NALUnit.WriteToByteStream(nalbytestream, unit);
+              }
             }
+            NALUnit.WriteToByteStream(nalbytestream, nalu);
+            units += 1;
           }
-          NALUnit.WriteToByteStream(nalbytestream, nalu);
         }
         var pes = new PESPacket(
           0xE0,
           TSTimeStamp.FromMilliseconds(pts),
-          dts.HasValue ? (TSTimeStamp?)TSTimeStamp.FromMilliseconds(dts.Value) : null,
+          TSTimeStamp.FromMilliseconds(dts),
           nalbytestream.ToArray()
         );
         var pes_packet = new MemoryStream();
@@ -828,7 +839,7 @@ namespace PeerCastStation.FLV
         writer.WriteTSPackets(
           VideoPID,
           msg.IsKeyFrame() || idr,
-          idr && dts.HasValue ? (TSTimeStamp?)TSTimeStamp.FromMilliseconds(dts.Value) : null,
+          idr ? (TSTimeStamp?)TSTimeStamp.FromMilliseconds(dts) : null,
           pes_packet.ToArray()
         );
       }
