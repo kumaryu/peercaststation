@@ -56,11 +56,11 @@ namespace PeerCastStation.TS
             this.program_clock_reference = (program_clock_reference_base * 300 + program_clock_reference_extension) / 27000000.0;
           }
           int i = 5 + adaptation_field_length;
-          if (packet[i] == 0x0 && packet[i + 1] == 0x0 && packet[i + 2] == 0x1 && packet[i + 3] == 0xC0)
+          if (i+3<packet.Length && packet[i] == 0x0 && packet[i + 1] == 0x0 && packet[i + 2] == 0x1 && packet[i + 3] == 0xC0)
           {
             this.audio_block = true;
           }
-          if (packet[i] == 0x0 && packet[i + 1] == 0x0 && packet[i + 2] == 0x1 && packet[i + 3] == 0xE0)
+          if (i+3<packet.Length && packet[i] == 0x0 && packet[i + 1] == 0x0 && packet[i + 2] == 0x1 && packet[i + 3] == 0xE0)
           {
             this.video_block = true;
           }
