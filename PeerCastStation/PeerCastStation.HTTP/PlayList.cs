@@ -17,6 +17,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using PeerCastStation.Core;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.HTTP
 {
@@ -39,8 +41,10 @@ namespace PeerCastStation.HTTP
     /// Channelsを参照してプレイリストを作成し文字列で返します
     /// </summary>
     /// <param name="baseuri">ベースとなるURI</param>
+    /// <param name="parameters">追加パラメータのリスト</param>
+    /// <param name="cancellationToken">キャンセルトークン</param>
     /// <returns>作成したプレイリスト</returns>
-    byte[] CreatePlayList(Uri baseuri, IEnumerable<KeyValuePair<string,string>> parameters);
+    Task<byte[]> CreatePlayListAsync(Uri baseuri, IEnumerable<KeyValuePair<string,string>> parameters, CancellationToken cancellationToken);
   }
 
   /// <summary>
@@ -53,13 +57,13 @@ namespace PeerCastStation.HTTP
     public string MIMEType { get { return "audio/x-mpegurl"; } }
     public IList<Channel> Channels { get; private set; }
 
-    public M3UPlayList(string scheme)
+    public M3UPlayList(string scheme, Channel channel)
     {
       this.scheme = String.IsNullOrEmpty(scheme) ? "http" : scheme.ToLowerInvariant();
-      Channels = new List<Channel>();
+      Channels = new List<Channel> { channel };
     }
 
-    public byte[] CreatePlayList(Uri baseuri, IEnumerable<KeyValuePair<string,string>> parameters)
+    public Task<byte[]> CreatePlayListAsync(Uri baseuri, IEnumerable<KeyValuePair<string,string>> parameters, CancellationToken cancellationToken)
     {
       var res = new System.Text.StringBuilder();
       var queries = String.Join("&", parameters.Select(kv => Uri.EscapeDataString(kv.Key) + "=" + Uri.EscapeDataString(kv.Value)));
@@ -71,31 +75,28 @@ namespace PeerCastStation.HTTP
         }
         res.AppendLine(url.ToString());
       }
-      return System.Text.Encoding.UTF8.GetBytes(res.ToString());
+      return Task.FromResult(System.Text.Encoding.UTF8.GetBytes(res.ToString()));
     }
   }
 
-  /// <summary>
-  /// URLを列挙するだけの簡単なプレイリストを作成するクラスです
-  /// </summary>
   public class M3U8PlayList
     : IPlayList
-    {
+  {
     private string scheme;
     public string MIMEType { get { return "application/vnd.apple.mpegurl"; } }
     public IList<Channel> Channels { get; private set; }
 
-    public M3U8PlayList(string scheme)
+    public M3U8PlayList(string scheme, Channel channel)
     {
       this.scheme = String.IsNullOrEmpty(scheme) ? "http" : scheme.ToLowerInvariant();
-      Channels = new List<Channel>();
+      Channels = new List<Channel> { channel };
     }
 
-    public byte[] CreatePlayList(Uri baseuri, IEnumerable<KeyValuePair<string,string>> parameters)
+    public async Task<byte[]> CreatePlayListAsync(Uri baseuri, IEnumerable<KeyValuePair<string,string>> parameters, CancellationToken cancellationToken)
     {
       var c = Channels.FirstOrDefault();
       var res = new System.Text.StringBuilder();
-      var segments = c.Hls.GetSegments();
+      var segments = await c.Hls.GetSegmentsAsync(cancellationToken).ConfigureAwait(false);
       res.AppendLine("#EXTM3U");
       res.AppendLine("#EXT-X-VERSION:3");
       res.AppendLine("#EXT-X-ALLOW-CACHE:NO");
@@ -125,13 +126,13 @@ namespace PeerCastStation.HTTP
     public string MIMEType { get { return "video/x-ms-asf"; } }
     public IList<Channel> Channels { get; private set; }
 
-    public ASXPlayList(string scheme)
+    public ASXPlayList(string scheme, Channel channel)
     {
       this.scheme = String.IsNullOrEmpty(scheme) ? "mms" : scheme.ToLowerInvariant();
-      Channels = new List<Channel>();
+      Channels = new List<Channel> { channel };
     }
 
-    public byte[] CreatePlayList(Uri baseuri, IEnumerable<KeyValuePair<string,string>> parameters)
+    public Task<byte[]> CreatePlayListAsync(Uri baseuri, IEnumerable<KeyValuePair<string,string>> parameters, CancellationToken cancellationToken)
     {
       var queries = String.Join("&", parameters.Select(kv => Uri.EscapeDataString(kv.Key) + "=" + Uri.EscapeDataString(kv.Value)));
       var stream = new System.IO.StringWriter();
@@ -175,11 +176,12 @@ namespace PeerCastStation.HTTP
       xml.Close();
       var res = stream.ToString();
       try {
-        return System.Text.Encoding.GetEncoding(932).GetBytes(res);
+        return Task.FromResult(System.Text.Encoding.GetEncoding(932).GetBytes(res));
       }
       catch (System.Text.EncoderFallbackException) {
-        return System.Text.Encoding.UTF8.GetBytes(res);
+        return Task.FromResult(System.Text.Encoding.UTF8.GetBytes(res));
       }
     }
   }
 }
+

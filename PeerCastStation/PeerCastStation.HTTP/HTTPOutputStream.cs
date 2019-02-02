@@ -457,32 +457,32 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    private IPlayList CreateDefaultPlaylist(string scheme)
+    private IPlayList CreateDefaultPlaylist(string scheme, Channel channel)
     {
       if (IsChannelASF) {
-        return new ASXPlayList(scheme);
+        return new ASXPlayList(scheme, channel);
       }
       else if(IsM3u8Play) {
-        return new M3U8PlayList(scheme);
+        return new M3U8PlayList(scheme, channel);
       }
       else {
-        return new M3UPlayList(scheme);
+        return new M3UPlayList(scheme, channel);
       }
     }
 
-    private IPlayList CreatePlaylist()
+    private IPlayList CreatePlaylist(Channel channel)
     {
       var scheme = GetPlaylistScheme();
       var fmt = GetPlaylistFormat();
       if (String.IsNullOrEmpty(fmt)) {
-        return CreateDefaultPlaylist(scheme);
+        return CreateDefaultPlaylist(scheme, channel);
       }
       else {
         switch (fmt.ToLowerInvariant()) {
-        case "asx": return new ASXPlayList(scheme);
-        case "m3u": return new M3UPlayList(scheme);
-        case "m3u8": return new M3U8PlayList(scheme);
-        default:    return CreateDefaultPlaylist(scheme);
+        case "asx": return new ASXPlayList(scheme, channel);
+        case "m3u": return new M3UPlayList(scheme, channel);
+        case "m3u8": return new M3U8PlayList(scheme, channel);
+        default:    return CreateDefaultPlaylist(scheme, channel);
         }
       }
     }
@@ -493,7 +493,7 @@ namespace PeerCastStation.HTTP
     /// <returns>
     /// コンテント毎のHTTPレスポンスヘッダ
     /// </returns>
-    protected string CreateResponseHeader()
+    protected async Task<string> CreateResponseHeaderAsync(CancellationToken cancellationToken)
     {
       if (Channel==null) {
         return "HTTP/1.0 404 NotFound\r\n";
@@ -538,7 +538,7 @@ namespace PeerCastStation.HTTP
       case BodyType.Segment:
         {
           int idx = GetHlsSegmentIndex();
-          var seg = Channel.Hls.GetSegments().FirstOrDefault(s => s.Index==idx);
+          var seg = (await Channel.Hls.GetSegmentsAsync(cancellationToken).ConfigureAwait(false)).FirstOrDefault(s => s.Index==idx);
           if (seg.Data == null) {
               return "HTTP/1.0 404 NotFound\r\n";
           } else {
@@ -556,7 +556,7 @@ namespace PeerCastStation.HTTP
         }
       case BodyType.Playlist:
         {
-          var pls = CreatePlaylist();
+          var pls = CreatePlaylist(Channel);
           return String.Format(
             "HTTP/1.0 200 OK\r\n"             +
             "Server: {0}\r\n"                 +
@@ -623,9 +623,9 @@ namespace PeerCastStation.HTTP
       Logger.Debug("ContentType: {0}", channelInfo.ContentType);
     }
 
-    private async Task SendResponseHeader()
+    private async Task SendResponseHeader(CancellationToken cancellationToken)
     {
-      var response_header = CreateResponseHeader();
+      var response_header = await CreateResponseHeaderAsync(cancellationToken).ConfigureAwait(false);
       var bytes = System.Text.Encoding.UTF8.GetBytes(response_header + "\r\n");
       await Connection.WriteAsync(bytes).ConfigureAwait(false);
       Logger.Debug("Header: {0}", response_header);
@@ -706,7 +706,7 @@ namespace PeerCastStation.HTTP
       Logger.Debug("Sending Contents");
       try {
         int idx = GetHlsSegmentIndex();
-        var seg = Channel.Hls.GetSegments().FirstOrDefault(s => s.Index==idx);
+        var seg = (await Channel.Hls.GetSegmentsAsync(cancel_token).ConfigureAwait(false)).FirstOrDefault(s => s.Index==idx);
         if (seg.Data!=null) {
           await Connection.WriteAsync(seg.Data, cancel_token).ConfigureAwait(false);
         }
@@ -718,22 +718,31 @@ namespace PeerCastStation.HTTP
     private async Task SendPlaylist(CancellationToken cancel_token)
     {
       Logger.Debug("Sending Playlist");
-      var pls = CreatePlaylist();
-      pls.Channels.Add(Channel);
-      var baseuri = new Uri(
-        new Uri(request.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped)),
-        "stream/");
+      var pls = CreatePlaylist(Channel);
+      try {
+        using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancel_token)) {
+          cts.CancelAfter(TimeSpan.FromSeconds(10));
+          var baseuri = new Uri(
+            new Uri(request.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped)),
+            "stream/");
 
-      if (AccessControlInfo.AuthenticationKey!=null) {
-        var parameters = new Dictionary<string, string>() {
-          { "auth", HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey) },
-        };
-        await Connection.WriteAsync(pls.CreatePlayList(baseuri, parameters), cancel_token).ConfigureAwait(false);
+          if (AccessControlInfo.AuthenticationKey!=null) {
+            var parameters = new Dictionary<string, string>() {
+              { "auth", HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey) },
+            };
+            var playlist = await pls.CreatePlayListAsync(baseuri, parameters, cts.Token).ConfigureAwait(false);
+            await Connection.WriteAsync(playlist, cancel_token).ConfigureAwait(false);
+          }
+          else {
+            var playlist = await pls.CreatePlayListAsync(baseuri, Enumerable.Empty<KeyValuePair<string,string>>(), cts.Token).ConfigureAwait(false);
+            await Connection.WriteAsync(playlist, cancel_token).ConfigureAwait(false);
+          }
+        }
       }
-      else {
-        await Connection.WriteAsync(pls.CreatePlayList(baseuri, Enumerable.Empty<KeyValuePair<string,string>>()), cancel_token).ConfigureAwait(false);
+      catch (OperationCanceledException) {
+        cancel_token.ThrowIfCancellationRequested();
+        throw new HTTPError(HttpStatusCode.ServiceUnavailable);
       }
-
     }
 
     private async Task SendReponseBodyHeaderOnly(CancellationToken cancel_token)
@@ -822,7 +831,7 @@ namespace PeerCastStation.HTTP
           throw new HTTPError(HttpStatusCode.Unauthorized);
         }
         await WaitChannelReceived().ConfigureAwait(false);
-        await SendResponseHeader().ConfigureAwait(false);
+        await SendResponseHeader(cancel_token).ConfigureAwait(false);
         switch (RequestMode) {
         case RequestType.WMSPDescribe:
           await SendReponseBodyHeaderOnly(cancel_token).ConfigureAwait(false);

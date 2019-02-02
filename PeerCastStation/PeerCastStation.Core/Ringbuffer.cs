@@ -52,6 +52,13 @@ namespace PeerCastStation.Core
       }
     }
 
+    public T[] ToArray()
+    {
+      var arr = new T[count];
+      CopyTo(arr, 0);
+      return arr;
+    }
+
     public int Count { get { return count; } }
     public bool IsReadOnly { get { return false; } }
 

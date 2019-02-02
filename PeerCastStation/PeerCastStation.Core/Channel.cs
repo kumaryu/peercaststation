@@ -620,7 +620,7 @@ namespace PeerCastStation.Core
 
     public interface IHTTPLiveStreaming
     {
-      IList<HLSSegment> GetSegments();
+      Task<IList<HLSSegment>> GetSegmentsAsync(CancellationToken cancellationToken);
     }
 
     private IHTTPLiveStreaming hls = null;
