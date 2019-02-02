@@ -21,6 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.ObjectModel;
+using Owin;
 
 namespace PeerCastStation.Core
 {
@@ -120,6 +121,7 @@ namespace PeerCastStation.Core
     /// 登録されているIContentReaderFactoryのリストを取得します
     /// </summary>
     public IList<IContentReaderFactory> ContentReaderFactories { get; private set; }
+    public IList<Action<IAppBuilder>> HttpApplicationFactories { get; private set; } = new List<Action<IAppBuilder>>();
     public IList<IContentFilter> ContentFilters { get; private set; }
     /// <summary>
     /// 接続しているチャンネルの読み取り専用リストを取得します
