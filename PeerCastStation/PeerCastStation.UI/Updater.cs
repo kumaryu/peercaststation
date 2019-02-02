@@ -112,13 +112,13 @@ namespace PeerCastStation.UI
           Updater.CurrentInstallerType==InstallerType.ServiceArchive) {
         return new DownloadResult(null, version, enclosure);
       }
-      using (var client = new System.Net.WebClient()) {
+      using (var client = new System.Net.WebClient())
+      using (ct.Register(() => client.CancelAsync(), false)) {
         if (onprogress!=null) {
           client.DownloadProgressChanged += (sender, args) => {
             onprogress(args.ProgressPercentage/100.0f);
           };
         }
-        ct.Register(() => { client.CancelAsync(); }, true);
         var filepath =
           System.IO.Path.Combine(
             GetDownloadPath(),

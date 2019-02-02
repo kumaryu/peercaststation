@@ -31,11 +31,12 @@ namespace PeerCastStation.UI
       Uri source,
       CancellationToken cancel_token)
     {
-      var client = new WebClient();
-      client.Headers.Add(HttpRequestHeader.AcceptEncoding, "deflate, gzip");
-      cancel_token.Register(() => client.CancelAsync());
-      var body = await client.DownloadDataTaskAsync(source).ConfigureAwait(false);
-      return ParseResponse(client.ResponseHeaders, body);
+      using (var client=new WebClient())
+      using (cancel_token.Register(() => client.CancelAsync(), false)) {
+        client.Headers.Add(HttpRequestHeader.AcceptEncoding, "deflate, gzip");
+        var body = await client.DownloadDataTaskAsync(source).ConfigureAwait(false);
+        return ParseResponse(client.ResponseHeaders, body);
+      }
     }
 
     private class ParseErrorException : ApplicationException {}

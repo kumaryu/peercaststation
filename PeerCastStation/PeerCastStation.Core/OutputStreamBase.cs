@@ -202,21 +202,6 @@ namespace PeerCastStation.Core
       isStopped.Cancel();
     }
 
-    public Task WaitForStoppedAsync()
-    {
-      var task = new TaskCompletionSource<bool>();
-      isStopped.Token.Register(() => task.TrySetResult(true));
-      return task.Task;
-    }
-
-    public Task WaitForStoppedAsync(CancellationToken cancel_token)
-    {
-      var task = new TaskCompletionSource<bool>();
-      cancel_token.Register(() => task.TrySetCanceled());
-      isStopped.Token.Register(() => task.TrySetResult(true));
-      return task.Task;
-    }
-
     private static string ParseEndPoint(string text)
     {
       var ipv4port = System.Text.RegularExpressions.Regex.Match(text, @"\A(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})\z");

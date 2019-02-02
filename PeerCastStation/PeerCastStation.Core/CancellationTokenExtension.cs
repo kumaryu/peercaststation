@@ -8,14 +8,14 @@ namespace PeerCastStation.Core
     public static Task CreateCancelTask(this CancellationToken cancellationToken)
     {
       var cancel_task = new TaskCompletionSource<bool>();
-      cancellationToken.Register(() => cancel_task.TrySetCanceled());
+      cancellationToken.Register(() => cancel_task.TrySetCanceled(), false);
       return cancel_task.Task;
     }
 
     public static Task<T> CreateCancelTask<T>(this CancellationToken cancellationToken)
     {
       var cancel_task = new TaskCompletionSource<T>();
-      cancellationToken.Register(() => cancel_task.TrySetCanceled());
+      cancellationToken.Register(() => cancel_task.TrySetCanceled(), false);
       return cancel_task.Task;
     }
   }

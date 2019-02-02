@@ -206,15 +206,14 @@ namespace PeerCastStation.Core
       server.Start();
       return Task<Task>.Factory.StartNew(async () => {
         try {
-          cancel_token.Register(() => {
-            server.Stop();
-          });
-          while (!cancel_token.IsCancellationRequested) {
-            var client = await server.AcceptTcpClientAsync().ConfigureAwait(false);
-            logger.Info("Client connected {0}", client.Client.RemoteEndPoint);
-            var client_task = ConnectionHandler.HandleClient(
-              client,
-              GetAccessControlInfo(client.Client.RemoteEndPoint as IPEndPoint));
+          using (cancel_token.Register(() => server.Stop(), false)) {
+            while (!cancel_token.IsCancellationRequested) {
+              var client = await server.AcceptTcpClientAsync().ConfigureAwait(false);
+              logger.Info("Client connected {0}", client.Client.RemoteEndPoint);
+              var client_task = ConnectionHandler.HandleClient(
+                client,
+                GetAccessControlInfo(client.Client.RemoteEndPoint as IPEndPoint));
+            }
           }
         }
         catch (SocketException) {
@@ -300,9 +299,8 @@ namespace PeerCastStation.Core
       var output_factories = PeerCast.OutputStreamFactories.OrderBy(factory => factory.Priority);
       var header = new byte[4096];
       int offset = 0;
-      using (var cancel_source=new CancellationTokenSource(TimeSpan.FromMilliseconds(3000))) {
-        var cancel_token = cancel_source.Token;
-        cancel_token.Register(() => stream.Close());
+      using (var cancel_source=new CancellationTokenSource(TimeSpan.FromMilliseconds(3000)))
+      using (cancel_source.Token.Register(() => stream.Close(), false)) {
         try {
           while (offset<header.Length) {
             var len = await stream.ReadAsync(header, offset, header.Length-offset).ConfigureAwait(false);

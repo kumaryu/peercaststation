@@ -718,20 +718,21 @@ namespace PeerCastStation.Core
     public async Task WaitForReadyContentTypeAsync(CancellationToken cancel_token)
     {
       var task = new TaskCompletionSource<bool>();
-      cancel_token.Register(() => task.TrySetCanceled());
-      var channel_info_changed = new EventHandler<ChannelInfoEventArgs>((sender, e) => {
-        if (e.ChannelInfo!=null && !String.IsNullOrEmpty(e.ChannelInfo.ContentType)) {
-          task.TrySetResult(true);
+      using (cancel_token.Register(() => task.TrySetCanceled(), false)) {
+        var channel_info_changed = new EventHandler<ChannelInfoEventArgs>((sender, e) => {
+          if (e.ChannelInfo!=null && !String.IsNullOrEmpty(e.ChannelInfo.ContentType)) {
+            task.TrySetResult(true);
+          }
+        });
+        try {
+          this.ChannelInfoChanged += channel_info_changed;
+          var channel_info = this.ChannelInfo;
+          if (channel_info!=null && !String.IsNullOrEmpty(channel_info.ContentType)) return;
+          await task.Task.ConfigureAwait(false);
         }
-      });
-      try {
-        this.ChannelInfoChanged += channel_info_changed;
-        var channel_info = this.ChannelInfo;
-        if (channel_info!=null && !String.IsNullOrEmpty(channel_info.ContentType)) return;
-        await task.Task.ConfigureAwait(false);
-      }
-      finally {
-        this.ChannelInfoChanged -= channel_info_changed;
+        finally {
+          this.ChannelInfoChanged -= channel_info_changed;
+        }
       }
     }
 

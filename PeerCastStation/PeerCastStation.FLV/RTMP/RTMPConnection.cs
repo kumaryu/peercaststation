@@ -99,31 +99,31 @@ namespace PeerCastStation.FLV.RTMP
 
     protected async Task RecvAndProcessMessages(CancellationToken cancel_token)
     {
-      var local_cancel = new CancellationTokenSource();
-      cancel_token.Register(() => local_cancel.Cancel());
-      var recv_message_task = Task.Run(async () => {
-        try {
-          while (!local_cancel.IsCancellationRequested) {
-            await RecvMessage(messageQueue, local_cancel.Token).ConfigureAwait(false);
+      using (var local_cancel=CancellationTokenSource.CreateLinkedTokenSource(cancel_token)) {
+        var recv_message_task = Task.Run(async () => {
+          try {
+            while (!local_cancel.IsCancellationRequested) {
+              await RecvMessage(messageQueue, local_cancel.Token).ConfigureAwait(false);
+            }
+          }
+          finally {
+            local_cancel.Cancel();
+          }
+        });
+        while (!local_cancel.IsCancellationRequested) {
+          var msg = await messageQueue.DequeueAsync(local_cancel.Token).ConfigureAwait(false);
+          switch (msg.Direction) {
+          case QueuedMessage.MessageDirection.In:
+            await ProcessMessage(msg.Message, local_cancel.Token).ConfigureAwait(false);
+            FlushBuffer();
+            break;
+          case QueuedMessage.MessageDirection.Out:
+            await SendMessage(msg.ChunkStreamId, msg.Message, local_cancel.Token).ConfigureAwait(false);
+            break;
           }
         }
-        finally {
-          local_cancel.Cancel();
-        }
-      });
-      while (!local_cancel.IsCancellationRequested) {
-        var msg = await messageQueue.DequeueAsync(local_cancel.Token).ConfigureAwait(false);
-        switch (msg.Direction) {
-        case QueuedMessage.MessageDirection.In:
-          await ProcessMessage(msg.Message, local_cancel.Token).ConfigureAwait(false);
-          FlushBuffer();
-          break;
-        case QueuedMessage.MessageDirection.Out:
-          await SendMessage(msg.ChunkStreamId, msg.Message, local_cancel.Token).ConfigureAwait(false);
-          break;
-        }
+        await recv_message_task.ConfigureAwait(false);
       }
-      await recv_message_task.ConfigureAwait(false);
     }
 
     System.Diagnostics.Stopwatch timestampTimer = new System.Diagnostics.Stopwatch();

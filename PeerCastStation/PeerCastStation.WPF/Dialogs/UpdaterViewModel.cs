@@ -112,25 +112,24 @@ namespace PeerCastStation.WPF.Dialogs
         this.State = UpdateActionState.Downloaded;
         return;
       }
-      var client = new System.Net.WebClient();
-      client.DownloadProgressChanged += (sender, args) => {
-        this.Progress = args.ProgressPercentage/100.0;
-      };
-      cancelSource.Token.Register(() => {
-        client.CancelAsync();
-      }, true);
-      this.State = UpdateActionState.Downloading;
-      try {
-        downloadPath = System.IO.Path.Combine(
-          Shell.GetKnownFolder(Shell.KnownFolder.Downloads),
-          System.IO.Path.GetFileName(enclosure.Url.AbsolutePath));
-        await client.DownloadFileTaskAsync(
-          enclosure.Url.ToString(),
-          downloadPath);
-        this.State = UpdateActionState.Downloaded;
-      }
-      catch (System.Net.WebException) {
-        this.State = UpdateActionState.Aborted;
+      using (var client=new System.Net.WebClient())
+      using (cancelSource.Token.Register(() => client.CancelAsync(), true)) {
+        client.DownloadProgressChanged += (sender, args) => {
+          this.Progress = args.ProgressPercentage/100.0;
+        };
+        this.State = UpdateActionState.Downloading;
+        try {
+          downloadPath = System.IO.Path.Combine(
+            Shell.GetKnownFolder(Shell.KnownFolder.Downloads),
+            System.IO.Path.GetFileName(enclosure.Url.AbsolutePath));
+          await client.DownloadFileTaskAsync(
+            enclosure.Url.ToString(),
+            downloadPath);
+          this.State = UpdateActionState.Downloaded;
+        }
+        catch (System.Net.WebException) {
+          this.State = UpdateActionState.Aborted;
+        }
       }
     }
 

@@ -610,13 +610,13 @@ namespace PeerCastStation.HTTP
       }.Build();
     }
 
-    public async Task WaitChannelReceived()
+    public async Task WaitChannelReceived(CancellationToken cancellationToken)
     {
       if (Channel==null) return;
       await Task.WhenAny(
         Task.Delay(10000),
         this.channelInfoReadyTaskSource.Task,
-        WaitForStoppedAsync()).ConfigureAwait(false);
+        cancellationToken.CreateCancelTask()).ConfigureAwait(false);
       if (channelInfo==null) {
         throw new HTTPError(HttpStatusCode.ServiceUnavailable);
       }
@@ -830,7 +830,7 @@ namespace PeerCastStation.HTTP
         if (!HTTPUtils.CheckAuthorization(request, AccessControlInfo)) {
           throw new HTTPError(HttpStatusCode.Unauthorized);
         }
-        await WaitChannelReceived().ConfigureAwait(false);
+        await WaitChannelReceived(cancel_token).ConfigureAwait(false);
         await SendResponseHeader(cancel_token).ConfigureAwait(false);
         switch (RequestMode) {
         case RequestType.WMSPDescribe:

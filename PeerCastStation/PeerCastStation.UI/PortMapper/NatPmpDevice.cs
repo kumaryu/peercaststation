@@ -40,12 +40,10 @@ namespace PeerCastStation.UI.PortMapper
       int tries = 1;
     retry:
       cancel_token.ThrowIfCancellationRequested();
-      using (var client = new UdpClient()) {
-        var cancel_source = CancellationTokenSource.CreateLinkedTokenSource(
-          new CancellationTokenSource(250*tries).Token,
-          cancel_token);
-        var cancel = cancel_source.Token;
-        cancel.Register(() => client.Close(), false);
+      using (var client = new UdpClient())
+      using (var cancel_source=CancellationTokenSource.CreateLinkedTokenSource(cancel_token))
+      using (cancel_source.Token.Register(() => client.Close(), false)) {
+        cancel_source.CancelAfter(250*tries);
         try {
           var bytes = new byte[12];
           BinaryAccessor.PutByte(bytes, 0, PMPVersion);
@@ -142,12 +140,10 @@ namespace PeerCastStation.UI.PortMapper
       int tries = 1;
     retry:
       cancel_token.ThrowIfCancellationRequested();
-      using (var client = new UdpClient()) {
-        var cancel_source = CancellationTokenSource.CreateLinkedTokenSource(
-          new CancellationTokenSource(250*tries).Token,
-          cancel_token);
-        var cancel = cancel_source.Token;
-        cancel.Register(() => client.Close(), false);
+      using (var client = new UdpClient())
+      using (var cancel_source = CancellationTokenSource.CreateLinkedTokenSource(cancel_token))
+      using (cancel_source.Token.Register(() => client.Close(), false)){
+        cancel_source.CancelAfter(250*tries);
         try {
           var bytes = new byte[] { PMPVersion, PMPOpExternalPort };
           await client.SendAsync(bytes, bytes.Length, new IPEndPoint(this.DeviceAddress, PMPPort)).ConfigureAwait(false);
