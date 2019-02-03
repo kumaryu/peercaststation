@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -19,16 +20,21 @@ namespace PeerCastStation.WPF.CoreSettings
   /// </summary>
   public partial class BandwidthCheckDialog : Window
   {
-    private BandwidthChecker checker;
+    private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
     public NetworkType NetworkType { get; private set; }
     public BandwidthCheckDialog(NetworkType networkType)
     {
       InitializeComponent();
       this.DataContext = this;
       this.NetworkType = networkType;
+    }
+
+    protected override async void OnInitialized(EventArgs e)
+    {
+      base.OnInitialized(e);
       Uri target_uri;
       string uri_key;
-      switch (networkType) {
+      switch (NetworkType) {
       case NetworkType.IPv6:
         uri_key = "BandwidthCheckerV6";
         break;
@@ -38,10 +44,21 @@ namespace PeerCastStation.WPF.CoreSettings
         break;
       }
       if (AppSettingsReader.TryGetUri(uri_key, out target_uri)) {
-        this.checker = new BandwidthChecker(target_uri);
-        this.checker.BandwidthCheckCompleted += checker_BandwidthCheckCompleted;
-        this.checker.RunAsync();
-        this.Status = "帯域測定中";
+        Status = "帯域測定中";
+        IsChecking = true;
+        cancellationTokenSource = new CancellationTokenSource();
+        var checker = new BandwidthChecker(target_uri, NetworkType);
+        var result = await checker.RunAsync(cancellationTokenSource.Token);
+        if (result.Succeeded) {
+          Result = (int)((result.Bitrate / 1000) * 0.8 / 100) * 100;
+          Status = String.Format("帯域測定完了: {0}kbps, 設定推奨値: {1}kbps",
+            result.Bitrate/1000,
+            (int)((result.Bitrate / 1000) * 0.8 / 100) * 100);
+        }
+        else {
+          Status = "帯域測定失敗。接続できませんでした";
+        }
+        IsChecking = false;
       }
       else {
         this.IsChecking = false;
@@ -65,25 +82,10 @@ namespace PeerCastStation.WPF.CoreSettings
 
     public int? Result { get; private set; }
 
-    private void checker_BandwidthCheckCompleted(
-        object sender,
-        BandwidthCheckCompletedEventArgs args)
-    {
-      if (args.Success) {
-        Result = (int)((args.Bitrate / 1000) * 0.8 / 100) * 100;
-        Status = String.Format("帯域測定完了: {0}kbps, 設定推奨値: {1}kbps",
-          args.Bitrate/1000,
-          (int)((args.Bitrate / 1000) * 0.8 / 100) * 100);
-      }
-      else {
-        Status = "帯域測定失敗。接続できませんでした";
-      }
-      IsChecking = false;
-    }
-
     private void Button_Click(object sender, RoutedEventArgs e)
     {
-      this.Close();
+      cancellationTokenSource.Cancel();
+      Close();
     }
 
   }
