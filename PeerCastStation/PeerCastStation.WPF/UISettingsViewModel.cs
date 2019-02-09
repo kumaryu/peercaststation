@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using PeerCastStation.Core;
+using PeerCastStation.UI;
 
 namespace PeerCastStation.WPF
 {
@@ -11,13 +12,14 @@ namespace PeerCastStation.WPF
     : INotifyPropertyChanged
   {
     public ObservableCollection<BroadcastInfoViewModel> BroadcastHistory { get; private set; }
+    public PlayProtocol FLVPlayProtocol { get; set; }
 
     private PeerCastStation.Core.PecaSettings settings;
     public UISettingsViewModel(PeerCastStation.Core.PecaSettings settings)
     {
       this.settings = settings;
       var wpf = settings.Get<WPFSettings>();
-      var ui = settings.Get<PeerCastStation.UI.UISettings>();
+      var ui = settings.Get<UISettings>();
       if (ui.BroadcastHistory.Length>0) {
         BroadcastHistory = new ObservableCollection<BroadcastInfoViewModel>(
           ui.BroadcastHistory.Select(info => new BroadcastInfoViewModel(info)));
@@ -26,13 +28,20 @@ namespace PeerCastStation.WPF
         BroadcastHistory = new ObservableCollection<BroadcastInfoViewModel>(
           wpf.BroadcastHistory.Select(info => new BroadcastInfoViewModel(info)));
       }
+      if (ui.DefaultPlayProtocols.TryGetValue("FLV", out var protocol)) {
+        FLVPlayProtocol = protocol;
+      }
+      else {
+        FLVPlayProtocol = PlayProtocol.Unknown;
+      }
     }
 
     public void Save()
     {
       var wpf = settings.Get<WPFSettings>();
-      var ui = settings.Get<PeerCastStation.UI.UISettings>();
+      var ui = settings.Get<UISettings>();
       ui.BroadcastHistory = BroadcastHistory.Select(info => info.Save()).ToArray();
+      ui.DefaultPlayProtocols["FLV"] = FLVPlayProtocol;
       wpf.BroadcastHistory = new BroadcastInfo[0];
       PeerCastStation.Core.PeerCastApplication.Current.SaveSettings();
     }

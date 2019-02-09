@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using PeerCastStation.Core;
+using PeerCastStation.UI;
 using PeerCastStation.WPF.Commons;
 using System.ComponentModel;
 using System.Threading.Tasks;
@@ -699,11 +700,12 @@ namespace PeerCastStation.WPF.CoreSettings
       set { SetProperty("IsShowNotifications", ref isShowNotifications, value); }
     }
 
-    private static readonly Tuple<string, RemoteNodeName>[] remoteNodeNameItems = new Tuple<string, RemoteNodeName>[] {
-      new Tuple<string, RemoteNodeName>("セッションID", RemoteNodeName.SessionID),
-      new Tuple<string, RemoteNodeName>("アドレス", RemoteNodeName.Uri),
-    };
-    public IEnumerable<Tuple<string,RemoteNodeName>> RemoteNodeNameItems {
+    private static readonly NamedValueList<RemoteNodeName> remoteNodeNameItems =
+      new NamedValueList<RemoteNodeName> {
+        { "セッションID", RemoteNodeName.SessionID },
+        { "アドレス", RemoteNodeName.Uri },
+      };
+    public IEnumerable<NamedValue<RemoteNodeName>> RemoteNodeNameItems {
       get { return remoteNodeNameItems; }
     }
 
@@ -712,6 +714,25 @@ namespace PeerCastStation.WPF.CoreSettings
       get { return remoteNodeName; }
       set { SetProperty(nameof(RemoteNodeName), ref remoteNodeName, value); }
     }
+
+    private static readonly Dictionary<string, NamedValueList<PlayProtocol>> playProtocols =
+      new Dictionary<string, NamedValueList<PlayProtocol>> {
+        {
+          "FLV",
+          new NamedValueList<PlayProtocol> {
+            { "既定", PlayProtocol.Unknown },
+            { "HTTP", PlayProtocol.HTTP },
+            { "RTMP", PlayProtocol.RTMP },
+            { "HTTP Live Streaming", PlayProtocol.HLS },
+          }
+        },
+      };
+
+    public IDictionary<string, NamedValueList<PlayProtocol>> PlayProtocols {
+      get { return playProtocols; }
+    }
+
+    public ObservableDictionary<string, PlayProtocol> DefaultPlayProtocols { get; private set; }
 
     PeerCastApplication pecaApp;
     internal SettingViewModel(PeerCastApplication peca_app)
@@ -767,6 +788,10 @@ namespace PeerCastStation.WPF.CoreSettings
           PortCheckV6Status = prev.Result.ResultV6;
         }
       });
+      DefaultPlayProtocols = new ObservableDictionary<string, PlayProtocol>(new Dictionary<string, PlayProtocol>(pecaApp.Settings.Get<UISettings>().DefaultPlayProtocols).WithDefaultValue());
+      DefaultPlayProtocols.ItemChanged += (sender, args) => {
+        OnPropertyChanged(nameof(DefaultPlayProtocols));
+      };
     }
 
     private class PortCheckResult {
@@ -951,7 +976,7 @@ namespace PeerCastStation.WPF.CoreSettings
         }
         isYellowPagesModified = false;
       }
-      var port_mapper = pecaApp.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
+      var port_mapper = pecaApp.Plugins.GetPlugin<PortMapperPlugin>();
       if (port_mapper!=null) {
         port_mapper.Enabled = portMapperEnabled;
         port_mapper.DiscoverAsync()
@@ -971,6 +996,7 @@ namespace PeerCastStation.WPF.CoreSettings
           peerCast.SetPortStatus(System.Net.Sockets.AddressFamily.InterNetworkV6, prev.Result.ResultV6==PortCheckStatus.Opened ? PortStatus.Open : PortStatus.Firewalled);
         }
       });
+      pecaApp.Settings.Get<UISettings>().DefaultPlayProtocols = new Dictionary<string, PlayProtocol>(DefaultPlayProtocols);
       pecaApp.SaveSettings();
     }
 
