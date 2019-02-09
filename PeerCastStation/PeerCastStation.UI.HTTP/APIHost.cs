@@ -1204,7 +1204,8 @@ namespace PeerCastStation.UI.HTTP
       {
         int? result = null;
         string uri_key;
-        switch (ParseNetworkType(networkType)) {
+        var network = ParseNetworkType(networkType);
+        switch (network) {
         case NetworkType.IPv6:
           uri_key = "BandwidthCheckerV6";
           break;
@@ -1215,13 +1216,11 @@ namespace PeerCastStation.UI.HTTP
         }
         Uri target_uri;
         if (AppSettingsReader.TryGetUri(uri_key, out target_uri)) {
-          var checker = new BandwidthChecker(target_uri);
-          checker.BandwidthCheckCompleted += (sender, args) => {
-            if (args.Success) {
-              result = (int)args.Bitrate/1000;
-            }
-          };
-          checker.Run();
+          var checker = new BandwidthChecker(target_uri, network);
+          var res = checker.Run();
+          if (res.Succeeded) {
+            result = (int)res.Bitrate/1000;
+          }
         }
         return result;
       }
