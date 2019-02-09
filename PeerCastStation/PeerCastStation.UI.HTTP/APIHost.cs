@@ -23,6 +23,7 @@ namespace PeerCastStation.UI.HTTP
     private Updater updater = new Updater();
     private IEnumerable<VersionDescription> newVersions = Enumerable.Empty<VersionDescription>();
     private OWINApplication application;
+    private object locker = new object();
 
     private ObjectIdRegistry idRegistry = new ObjectIdRegistry();
     override protected void OnAttach()
@@ -56,6 +57,18 @@ namespace PeerCastStation.UI.HTTP
 
     protected override void OnDetach()
     {
+    }
+
+    private Task saveSettingsTask = Task.Delay(0);
+    private void SaveSettings()
+    {
+      lock (locker) {
+        if (!saveSettingsTask.IsCompleted) return;
+        saveSettingsTask =
+          Task.Delay(100).ContinueWith(_ => {
+            Application.SaveSettings();
+          });
+      }
     }
 
     void OnNewVersionFound(object sender, NewVersionFoundEventArgs args)
@@ -437,7 +450,7 @@ namespace PeerCastStation.UI.HTTP
             port_mapper.DiscoverAsync();
           }
         });
-        owner.Application.SaveSettings();
+        owner.SaveSettings();
       }
 
       [RPCMethod("getLogSettings")]
@@ -453,7 +466,7 @@ namespace PeerCastStation.UI.HTTP
       {
         settings.TryGetThen("level", v => {
           Logger.Level = (LogLevel)v;
-          owner.Application.SaveSettings();
+          owner.SaveSettings();
         });
       }
 
@@ -877,7 +890,7 @@ namespace PeerCastStation.UI.HTTP
 					throw new RPCError(RPCErrorCode.InvalidParams, "Invalid uri");
 				}
         var yp = PeerCast.AddYellowPage(factory.Protocol, name, announce_uri, channels_uri);
-        owner.Application.SaveSettings();
+        owner.SaveSettings();
         var res = new JObject();
         res["yellowPageId"] = GetObjectId(yp);
         res["name"]         = yp.Name;
@@ -894,7 +907,7 @@ namespace PeerCastStation.UI.HTTP
         var yp = PeerCast.YellowPages.FirstOrDefault(p => GetObjectId(p)==yellowPageId);
         if (yp!=null) {
           PeerCast.RemoveYellowPage(yp);
-          owner.Application.SaveSettings();
+          owner.SaveSettings();
         }
       }
 
@@ -1002,7 +1015,7 @@ namespace PeerCastStation.UI.HTTP
         listener = PeerCast.StartListen(endpoint, (OutputStreamType)localAccepts, (OutputStreamType)globalAccepts);
         listener.LocalAuthorizationRequired  = localAuthorizationRequired;
         listener.GlobalAuthorizationRequired = globalAuthorizationRequired;
-        owner.Application.SaveSettings();
+        owner.SaveSettings();
         return GetListener(listener);
       }
 
@@ -1011,7 +1024,7 @@ namespace PeerCastStation.UI.HTTP
       {
         var listener = PeerCast.OutputListeners.Where(ol => GetObjectId(ol)==listenerId).FirstOrDefault();
         if (listener!=null) {
-          owner.Application.SaveSettings();
+          owner.SaveSettings();
           listener.ResetAuthenticationKey();
           return GetListener(listener);
         }
@@ -1026,7 +1039,7 @@ namespace PeerCastStation.UI.HTTP
         foreach (var listener in PeerCast.OutputListeners.Where(ol => GetObjectId(ol)==listenerId)) {
           PeerCast.StopListen(listener);
         }
-        owner.Application.SaveSettings();
+        owner.SaveSettings();
       }
 
       [RPCMethod("setListenerAccepts")]
@@ -1036,7 +1049,7 @@ namespace PeerCastStation.UI.HTTP
           listener.LocalOutputAccepts = (OutputStreamType)localAccepts;
           listener.GlobalOutputAccepts = (OutputStreamType)globalAccepts;
         }
-        owner.Application.SaveSettings();
+        owner.SaveSettings();
       }
 
       [RPCMethod("setListenerAuthorizationRequired")]
@@ -1046,7 +1059,7 @@ namespace PeerCastStation.UI.HTTP
           listener.LocalAuthorizationRequired = localAuthorizationRequired;
           listener.GlobalAuthorizationRequired = globalAuthorizationRequired;
         }
-        owner.Application.SaveSettings();
+        owner.SaveSettings();
       }
 
       [RPCMethod("broadcastChannel")]
@@ -1383,32 +1396,73 @@ namespace PeerCastStation.UI.HTTP
 				return YPChannelsToArray(owner.UpdateYPChannels());
 			}
 
-			[RPCMethod("setUserConfig")]
-			public void SetUserConfig(string user, string key, JObject value)
-			{
-				var settings = owner.Application.Settings.Get<UISettings>();
-				Dictionary<string, string> user_config;
-				if (!settings.UserConfig.TryGetValue(user, out user_config)) {
-					user_config = new Dictionary<string, string>();
-					settings.UserConfig[user] = user_config;
-				}
-				user_config[key] = value.ToString();
-				owner.Application.SaveSettings();
-			}
+      private bool TrySetUIConfig(UISettings settings, string key, JObject value)
+      {
+        switch (key) {
+        case "defaultPlayProtocol":
+          settings.DefaultPlayProtocols =
+            value
+            .Properties()
+            .ToDictionary(
+              prop => prop.Name,
+              prop => Enum.TryParse<PlayProtocol>(prop.Value.ToString(), out var v) ? v : PlayProtocol.Unknown
+            );
+          return true;
+        default:
+          return false;
+        }
+      }
 
-			[RPCMethod("getUserConfig")]
-			public JToken GetUserConfig(string user, string key)
-			{
-				var settings = owner.Application.Settings.Get<UISettings>();
-				Dictionary<string, string> user_config;
-				if (!settings.UserConfig.TryGetValue(user, out user_config)) {
-					return null;
-				}
-				if (!user_config.ContainsKey(key)) {
-					return null;
-				}
-				return JToken.Parse(user_config[key]);
-			}
+      [RPCMethod("setUserConfig")]
+      public void SetUserConfig(string user, string key, JObject value)
+      {
+        var settings = owner.Application.Settings.Get<UISettings>();
+        if (!TrySetUIConfig(settings, key, value)) {
+          Dictionary<string, string> user_config;
+          if (!settings.UserConfig.TryGetValue(user, out user_config)) {
+            user_config = new Dictionary<string, string>();
+            settings.UserConfig[user] = user_config;
+          }
+          user_config[key] = value.ToString();
+        }
+        owner.SaveSettings();
+      }
+
+      private bool TryGetUIConfig(UISettings settings, string key, out JToken value)
+      {
+        switch (key) {
+        case "defaultPlayProtocol":
+          {
+            var obj = new JObject();
+            foreach (var kv in settings.DefaultPlayProtocols) {
+              obj[kv.Key] = kv.Value.ToString();
+            }
+            value = obj;
+            return true;
+          }
+        default:
+          value = null;
+          return false;
+        }
+      }
+
+      [RPCMethod("getUserConfig")]
+      public JToken GetUserConfig(string user, string key)
+      {
+        var settings = owner.Application.Settings.Get<UISettings>();
+        if (TryGetUIConfig(settings, key, out var value)) {
+          return value;
+        }
+        else {
+          if (settings.UserConfig.TryGetValue(user, out var user_config) &&
+              user_config.TryGetValue(key, out var str)) {
+            return JToken.Parse(str);
+          }
+          else {
+            return null;
+          }
+        }
+      }
 
     }
 

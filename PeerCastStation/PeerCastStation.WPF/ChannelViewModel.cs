@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Windows.Media.Imaging;
 using PeerCastStation.Core;
+using PeerCastStation.UI;
 using System.ComponentModel;
 using System.Collections.Generic;
 using PeerCastStation.WPF.ChannelLists.ConnectionLists;
@@ -24,23 +25,55 @@ namespace PeerCastStation.WPF
     : INotifyPropertyChanged
   {
     public Channel Model { get; private set; }
+    public UISettings UISettings { get; private set; }
     public ChannelViewModel(Channel model)
     {
       this.Model = model;
+      this.UISettings = PeerCastApplication.Current.Settings.Get<UISettings>();
+    }
+
+    private PlayProtocol GetProtocol()
+    {
+      if (UISettings.DefaultPlayProtocols.TryGetValue(Model.ChannelInfo.ContentType, out var protocol)) {
+        return protocol;
+      }
+      else {
+        return PlayProtocol.Unknown;
+      }
     }
 
     public Uri PlayListUri {
       get {
-        var ext = (Model.ChannelInfo.ContentType=="WMV" ||
-                   Model.ChannelInfo.ContentType=="WMA" ||
-                   Model.ChannelInfo.ContentType=="ASX") ? ".asx" : ".m3u";
         var endpoint = Model.PeerCast.GetLocalEndPoint(System.Net.Sockets.AddressFamily.InterNetwork, OutputStreamType.Play);
         if (endpoint==null) return null;
+        var parameters = new List<string>();
+        var ext = "";
+        switch (GetProtocol()) {
+        case PlayProtocol.Unknown:
+          break;
+        case PlayProtocol.MSWMSP:
+          parameters.Add("fmt=asx");
+          ext = ".asx";
+          break;
+        case PlayProtocol.HTTP:
+          parameters.Add("scheme=http");
+          ext = ".m3u";
+          break;
+        case PlayProtocol.RTMP:
+          parameters.Add("scheme=rtmp");
+          ext = ".m3u";
+          break;
+        case PlayProtocol.HLS:
+          parameters.Add("fmt=m3u8");
+          ext = ".m3u8";
+          break;
+        }
+        var query = parameters.Count==0 ? "" : $"?{String.Join("&", parameters)}";
         if (endpoint.Address.Equals(System.Net.IPAddress.Any)) {
-          return new Uri(String.Format("http://localhost:{0}/pls/{1}{2}", endpoint.Port, Model.ChannelID.ToString("N"), ext));
+          return new Uri($"http://localhost:{endpoint.Port}/pls/{Model.ChannelID.ToString("N")}{ext}{query}");
         }
         else {
-          return new Uri(String.Format("http://{0}/pls/{1}{2}", endpoint.ToString(), Model.ChannelID.ToString("N"), ext));
+          return new Uri($"http://{endpoint}/pls/{Model.ChannelID.ToString("N")}{ext}{query}");
         }
       }
     }

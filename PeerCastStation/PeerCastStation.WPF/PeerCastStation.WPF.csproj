@@ -63,9 +63,12 @@
     <Compile Include="CoreSettings\BandwidthCheckDialog.xaml.cs">
       <DependentUpon>BandwidthCheckDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="DictionaryExtension.cs" />
     <Compile Include="LogWindow.xaml.cs">
       <DependentUpon>LogWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="NamedValueList.cs" />
+    <Compile Include="ObservableDictionary.cs" />
     <Compile Include="PeerCastCommands.cs" />
     <Compile Include="ChannelConnectionViewModel.cs" />
     <Compile Include="ChannelLists\ConnectionLists\ConnectionListViewModel.cs" />

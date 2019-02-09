@@ -5,6 +5,15 @@ using System.Linq;
 namespace PeerCastStation.UI
 {
   [PeerCastStation.Core.PecaSettings]
+  public enum PlayProtocol {
+    Unknown = 0,
+    HTTP,
+    MSWMSP,
+    HLS,
+    RTMP,
+  }
+
+  [PeerCastStation.Core.PecaSettings]
   public class UISettings
   {
     private BroadcastInfo[] broadcastHistory = new BroadcastInfo[0];
@@ -12,6 +21,8 @@ namespace PeerCastStation.UI
       get { return broadcastHistory; }
       set { broadcastHistory = value; }
     }
+
+    public Dictionary<string, PlayProtocol> DefaultPlayProtocols { get; set; } = new Dictionary<string, PlayProtocol>();
 
 		public Dictionary<string, Dictionary<string, string>> UserConfig { get; set; }
 
