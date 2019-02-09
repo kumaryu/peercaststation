@@ -1,4 +1,39 @@
 
+var UserConfig = new function () {
+  var self = this;
+  var loading = false;
+  self.remoteNodeName = ko.observable("sessionId");
+  self.defaultPlayProtocol = ko.observable({});
+
+  self.loadConfig = function() {
+    PeerCast.getUserConfig('default', 'ui', function (config) {
+      if (!config) return;
+      loading = true;
+      if (config.remoteNodeName) self.remoteNodeName(config.remoteNodeName);
+      loading = false;
+    });
+    PeerCast.getUserConfig('default', 'defaultPlayProtocol', function (value) {
+      if (!value) return;
+      loading = true;
+      self.defaultPlayProtocol(value);
+      loading = false;
+    });
+  };
+
+  self.saveConfig = function() {
+    if (loading) return;
+    var ui = {
+      remoteNodeName: self.remoteNodeName()
+    };
+    PeerCast.setUserConfig('default', 'ui', ui);
+    PeerCast.setUserConfig('default', 'defaultPlayProtocol', self.defaultPlayProtocol());
+  };
+
+  $(function () {
+    self.loadConfig();
+  });
+}
+
 var tagsEditDialog = new function() {
   var self = this;
   var dialog = null;
@@ -231,9 +266,33 @@ var YPChannelViewModel = function(owner, initial_value, new_channel) {
     return auth_token ? url + '&auth=' + auth_token : url;
   });
   self.playlistUrl     = ko.computed(function() {
-    var url = '/pls/' + self.channelId() + "?tip=" + self.tracker();
+    var ext = "";
+    var parameters = ["tip=" + self.tracker()];
+    var protocol = UserConfig.defaultPlayProtocol()[self.infoContentType()] || 'Unknown';
+    switch (protocol) {
+    case 'Unknown':
+      break;
+    case 'MSWMSP':
+      parameters.push("fmt=asx");
+      ext = ".asx";
+      break;
+    case 'HTTP':
+      parameters.push("scheme=http");
+      ext = ".m3u";
+      break;
+    case 'RTMP':
+      parameters.push("scheme=rtmp");
+      ext = ".m3u";
+      break;
+    case 'HLS':
+      parameters.push("fmt=m3u8");
+      ext = ".m3u8";
+      break;
+    }
     var auth_token = owner.authToken();
-    return auth_token ? url + '&auth=' + auth_token : url;
+    if (auth_token) parameters.push('auth=' + auth_token);
+    var query = parameters.Length === 0 ? "" : ("?" + parameters.join('&'));
+    return '/pls/' + self.channelId() + ext + query;
   });
   self.uptimeReadable  = ko.computed(function() {
     var seconds = self.uptime();

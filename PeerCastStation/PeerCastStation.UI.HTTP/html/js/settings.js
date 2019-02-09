@@ -1,20 +1,32 @@
 ﻿
 var UserConfig = new function () {
   var self = this;
+  var loading = false;
   self.remoteNodeName = ko.observable("sessionId");
+  self.defaultPlayProtocol = ko.observable({});
 
   self.loadConfig = function() {
     PeerCast.getUserConfig('default', 'ui', function (config) {
       if (!config) return;
+      loading = true;
       if (config.remoteNodeName) self.remoteNodeName(config.remoteNodeName);
+      loading = false;
+    });
+    PeerCast.getUserConfig('default', 'defaultPlayProtocol', function (value) {
+      if (!value) return;
+      loading = true;
+      self.defaultPlayProtocol(value);
+      loading = false;
     });
   };
 
   self.saveConfig = function() {
+    if (loading) return;
     var ui = {
       remoteNodeName: self.remoteNodeName()
     };
     PeerCast.setUserConfig('default', 'ui', ui);
+    PeerCast.setUserConfig('default', 'defaultPlayProtocol', self.defaultPlayProtocol());
   };
 
   $(function () {
@@ -292,6 +304,14 @@ var SettingsViewModel = new function() {
   self.listeners                 = ko.observableArray();
   self.yellowPages               = ko.observableArray();
   self.remoteNodeName            = UserConfig.remoteNodeName;
+  self.defaultPlayProtocolFLV    = ko.computed({
+    read: function() { return UserConfig.defaultPlayProtocol()['FLV'] || 'Unknown'; },
+    write: function(value) {
+      var obj = UserConfig.defaultPlayProtocol();
+      obj['FLV'] = value;
+      UserConfig.defaultPlayProtocol(obj);
+    }
+  });
 
   $.each([
     self.maxRelays,
@@ -333,6 +353,7 @@ var SettingsViewModel = new function() {
     PeerCast.setSettings(settings);
   };
   $.each([
+    UserConfig.defaultPlayProtocol,
     self.remoteNodeName
   ], function (i, o) {
     o.subscribe(function (new_value) { if (!updating) self.submitUserConfig(); });

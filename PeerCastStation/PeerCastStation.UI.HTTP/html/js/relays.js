@@ -1,19 +1,39 @@
 
 var UserConfig = new function () {
   var self = this;
+  var loading = false;
   self.remoteNodeName = ko.observable("sessionId");
+  self.defaultPlayProtocol = ko.observable({});
 
   self.loadConfig = function() {
     PeerCast.getUserConfig('default', 'ui', function (config) {
       if (!config) return;
+      loading = true;
       if (config.remoteNodeName) self.remoteNodeName(config.remoteNodeName);
+      loading = false;
     });
+    PeerCast.getUserConfig('default', 'defaultPlayProtocol', function (value) {
+      if (!value) return;
+      loading = true;
+      self.defaultPlayProtocol(value);
+      loading = false;
+    });
+  };
+
+  self.saveConfig = function() {
+    if (loading) return;
+    var ui = {
+      remoteNodeName: self.remoteNodeName()
+    };
+    PeerCast.setUserConfig('default', 'ui', ui);
+    PeerCast.setUserConfig('default', 'defaultPlayProtocol', self.defaultPlayProtocol());
   };
 
   $(function () {
     self.loadConfig();
   });
 }
+
 
 var ChannelEditDialog = new function() {
   var self = this;
@@ -510,18 +530,6 @@ var ChannelYellowPageViewModel = function(owner, initial_value) {
 var ChannelViewModel = function(owner, initial_value) {
   var self = this;
   self.channelId       = ko.observable(initial_value.channelId);
-  self.streamUrl = ko.computed(function () {
-      var url = '/stream/' + self.channelId();
-      var auth_token = owner.authToken();
-      return auth_token ? url + '?auth=' + auth_token : url;
-    });
-  self.playlistUrl = ko.computed(
-    function () {
-      var ext = initial_value.info.contentType == "FLV" ? ".m3u8" : "";
-      var url = '/pls/' + self.channelId() + ext;
-      var auth_token = owner.authToken();
-      return auth_token ? url + '?auth=' + auth_token : url;
-    });
   self.infoName        = ko.observable(initial_value.info.name);
   self.infoUrl         = ko.observable(initial_value.info.url);
   self.infoBitrate     = ko.observable(initial_value.info.bitrate);
@@ -556,6 +564,40 @@ var ChannelViewModel = function(owner, initial_value) {
   self.isRelayFull     = ko.observable(initial_value.status.isRelayFull);
   self.isDirectFull    = ko.observable(initial_value.status.isDirectFull);
   self.isReceiving     = ko.observable(initial_value.status.isReceiving);
+  self.streamUrl = ko.computed(function () {
+    var url = '/stream/' + self.channelId();
+    var auth_token = owner.authToken();
+    return auth_token ? url + '?auth=' + auth_token : url;
+  });
+  self.playlistUrl = ko.computed(function () {
+    var ext = "";
+    var parameters = [];
+    var protocol = UserConfig.defaultPlayProtocol()[self.infoContentType()] || 'Unknown';
+    switch (protocol) {
+    case 'Unknown':
+      break;
+    case 'MSWMSP':
+      parameters.push("fmt=asx");
+      ext = ".asx";
+      break;
+    case 'HTTP':
+      parameters.push("scheme=http");
+      ext = ".m3u";
+      break;
+    case 'RTMP':
+      parameters.push("scheme=rtmp");
+      ext = ".m3u";
+      break;
+    case 'HLS':
+      parameters.push("fmt=m3u8");
+      ext = ".m3u8";
+      break;
+    }
+    var auth_token = owner.authToken();
+    if (auth_token) parameters.push('auth=' + auth_token);
+    var query = parameters.Length === 0 ? "" : ("?" + parameters.join('&'));
+    return '/pls/' + self.channelId() + ext + query;
+  });
   self.connections     = ko.observableArray();
   self.nodes           = ko.observableArray();
   self.yellowPages     = ko.observableArray($.map(initial_value.yellowPages, function(yp) {
