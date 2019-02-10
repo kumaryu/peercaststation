@@ -1,6 +1,6 @@
 ---
 image: Visual Studio 2017
-version: 2.5.3.{build}
+version: 2.5.4.{build}
 configuration: Release
 install:
 - cmd: |-
