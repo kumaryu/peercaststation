@@ -1,4 +1,28 @@
 ---
+- name: Version 2.5.4 (2019年02月11日開発版)
+  version: 2.5.4
+  channel: dev
+  notes: |
+    いろいろあった。
+
+    * リレーや視聴の安定度を上げるために細かい修正をいろいろ入れました。
+    * FLV→MPEG-2 TS変換が上手くいかない場合があったのを修正しました。
+    * 帯域計測を高帯域まで計れるように変更しました。固定のデータ量を何秒間で送れるか計測していたのを、10秒間全力で送れるデータ量によって計測するようにしました。
+    * FLVのチャンネルについて、GUIやHTML UIでプレイリストを開く時の視聴プロトコルを設定できるようにしました。
+    * FLVのチャンネルをHTTP Live Streamingで視聴できるようにしました(β版くらいの機能)。プレイリストの末尾を.m3u8にするとHTTP Live Streamingで視聴できます。(thanks niwakazoider)
+  date: 2019-02-11T03:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.5.4.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.5.4.zip
+    length: 2189723
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.5.4.exe
+    length: 2369233
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.5.4.msi
+    length: 2044854
+
 - name: Version 2.5.3 (2018年06月25日開発版)
   version: 2.5.3
   channel: dev
