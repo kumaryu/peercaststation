@@ -14,10 +14,10 @@ namespace PeerCastStation.Core
   public struct BandwidthCheckResult
   {
     public bool     Succeeded;
-    public int      DataSize;
+    public long     DataSize;
     public TimeSpan ElapsedTime;
-    public int Bitrate {
-      get { return (int)(DataSize*8 / ElapsedTime.TotalSeconds); }
+    public long Bitrate {
+      get { return (long)(DataSize*8 / ElapsedTime.TotalSeconds); }
     }
   }
 
@@ -134,7 +134,7 @@ namespace PeerCastStation.Core
       data = CreateChunk(data);
       var stopwatch = new System.Diagnostics.Stopwatch();
       try {
-        int sz = 0;
+        long sz = 0;
         stopwatch.Start();
         await PostAsync(async (s, ct) => {
           while (stopwatch.ElapsedMilliseconds<10000) {
