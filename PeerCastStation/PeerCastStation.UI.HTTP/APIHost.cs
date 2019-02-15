@@ -1232,7 +1232,7 @@ namespace PeerCastStation.UI.HTTP
           var checker = new BandwidthChecker(target_uri, network);
           var res = checker.Run();
           if (res.Succeeded) {
-            result = (int)res.Bitrate/1000;
+            result = (int)(res.Bitrate/1000);
           }
         }
         return result;
