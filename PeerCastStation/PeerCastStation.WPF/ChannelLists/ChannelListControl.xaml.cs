@@ -69,7 +69,9 @@ namespace PeerCastStation.WPF.ChannelLists
       var channel = ((ChannelListViewModel)DataContext).SelectedChannel;
       if (channel==null) return;
       var uri = channel.ContactUri;
-      if (uri!=null) System.Diagnostics.Process.Start(uri.ToString());
+      if (uri!=null && (uri.Scheme=="http" || uri.Scheme=="https")) {
+        System.Diagnostics.Process.Start(uri.ToString());
+      }
     }
 
     private void OnCopyContactUrlExecuted(object sender, ExecutedRoutedEventArgs e)
