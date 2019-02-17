@@ -75,7 +75,7 @@ namespace PeerCastStation.Core
 
     public static Task WriteBytesAsync(this Stream stream, byte[] data, CancellationToken cancel_token)
     {
-      return stream.WriteAsync(data, 0, data.Length);
+      return stream.WriteAsync(data, 0, data.Length, cancel_token);
     }
 
     static public void Write(this Stream stream, Atom atom)

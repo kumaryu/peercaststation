@@ -48,15 +48,20 @@ namespace PeerCastStation.WPF.CoreSettings
         IsChecking = true;
         cancellationTokenSource = new CancellationTokenSource();
         var checker = new BandwidthChecker(target_uri, NetworkType);
-        var result = await checker.RunAsync(cancellationTokenSource.Token);
-        if (result.Succeeded) {
-          Result = (int)((result.Bitrate / 1000) * 0.8 / 100) * 100;
-          Status = String.Format("帯域測定完了: {0}kbps, 設定推奨値: {1}kbps",
-            result.Bitrate/1000,
-            (int)((result.Bitrate / 1000) * 0.8 / 100) * 100);
+        try {
+          var result = await checker.RunAsync(cancellationTokenSource.Token);
+          if (result.Succeeded) {
+            Result = (int)((result.Bitrate / 1000) * 0.8 / 100) * 100;
+            Status = String.Format("帯域測定完了: {0}kbps, 設定推奨値: {1}kbps",
+              result.Bitrate/1000,
+              (int)((result.Bitrate / 1000) * 0.8 / 100) * 100);
+          }
+          else {
+            Status = "帯域測定失敗。接続できませんでした";
+          }
         }
-        else {
-          Status = "帯域測定失敗。接続できませんでした";
+        catch (OperationCanceledException) {
+          Status = "キャンセルされました";
         }
         IsChecking = false;
       }
