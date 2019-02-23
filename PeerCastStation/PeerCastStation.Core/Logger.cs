@@ -17,6 +17,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace PeerCastStation.Core
 {
@@ -70,6 +72,58 @@ namespace PeerCastStation.Core
       if (defaultListener==null) {
         defaultListener = new DefaultTraceListener();
         Trace.Listeners.Add(defaultListener);
+      }
+      outputThread = new Thread(DoOutputThread);
+      outputThread.IsBackground = true;
+      outputThread.Priority = ThreadPriority.Lowest;
+      outputThread.Start();
+    }
+
+    private struct LogEntry {
+      public LogLevel Level;
+      public string Message;
+      public string Source;
+    }
+    private static WaitableQueue<LogEntry> outputQueue = new WaitableQueue<LogEntry>();
+    private static Thread outputThread;
+    private static void DoOutputThread()
+    {
+      var builder = new System.Text.StringBuilder();
+      while (true) {
+        var entry = outputQueue.DequeueAsync(CancellationToken.None).Result;
+        do {
+          try {
+            switch (entry.Level) {
+            case LogLevel.Debug:
+              builder.AppendFormat("{0:s} DEBUG - {1}", DateTime.Now, entry.Message);
+              Trace.WriteLineIf(GeneralSwitch.TraceVerbose, builder.ToString(), entry.Source);
+              break;
+            case LogLevel.Info:
+              builder.AppendFormat("{0:s} INFO - {1}", DateTime.Now, entry.Message);
+              Trace.WriteLineIf(GeneralSwitch.TraceInfo, builder.ToString(), entry.Source);
+              break;
+            case LogLevel.Warn:
+              builder.AppendFormat("{0:s} WARN - {1}", DateTime.Now, entry.Message);
+              Trace.WriteLineIf(GeneralSwitch.TraceWarning, builder.ToString(), entry.Source);
+              break;
+            case LogLevel.Error:
+              builder.AppendFormat("{0:s} ERROR - {1}", DateTime.Now, entry.Message);
+              Trace.WriteLineIf(GeneralSwitch.TraceError, builder.ToString(), entry.Source);
+              break;
+            case LogLevel.Fatal:
+              builder.AppendFormat("{0:s} FATAL - {1}", DateTime.Now, entry.Message);
+              Trace.WriteLineIf(GeneralSwitch.TraceError, builder.ToString(), entry.Source);
+              break;
+            default:
+              builder.AppendFormat("{0:s} - {1}", DateTime.Now, entry.Message);
+              Trace.WriteLineIf(GeneralSwitch.TraceVerbose, builder.ToString(), entry.Source);
+              break;
+            }
+            builder.Clear();
+          }
+          catch (FormatException) {
+          }
+        } while (outputQueue.TryDequeue(out entry));
       }
     }
 
@@ -224,41 +278,7 @@ namespace PeerCastStation.Core
 
     static private void Output(LogLevel level, string source, string format, params object[] args)
     {
-      string[] level_name = {
-        "",
-        "FATAL",
-        "ERROR",
-        "WARN",
-        "INFO",
-        "DEBUG",
-      };
-      try {
-        var message =  
-          String.Format("{0:s} {1} - {2}",
-            DateTime.Now,
-            level_name[(int)level],
-            String.Format(format, args));
-        switch (level) {
-        case LogLevel.Debug:
-          Trace.WriteLineIf(GeneralSwitch.TraceVerbose, message, source);
-          break;
-        case LogLevel.Info:
-          Trace.WriteLineIf(GeneralSwitch.TraceInfo, message, source);
-          break;
-        case LogLevel.Warn:
-          Trace.WriteLineIf(GeneralSwitch.TraceWarning, message, source);
-          break;
-        case LogLevel.Error:
-        case LogLevel.Fatal:
-          Trace.WriteLineIf(GeneralSwitch.TraceError, message, source);
-          break;
-        default:
-          Trace.WriteLineIf(GeneralSwitch.TraceVerbose, message, source);
-          break;
-        }
-      }
-      catch (FormatException) {
-      }
+      outputQueue.Enqueue(new LogEntry { Level = level, Source = source, Message = String.Format(format, args) });
     }
 
     static private void Output(LogLevel level, string source, Exception e)
