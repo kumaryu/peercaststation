@@ -73,7 +73,10 @@ namespace PeerCastStation.Core
         defaultListener = new DefaultTraceListener();
         Trace.Listeners.Add(defaultListener);
       }
-      outputTask = DoOutput();
+      outputThread = new Thread(DoOutputThread);
+      outputThread.IsBackground = true;
+      outputThread.Priority = ThreadPriority.Lowest;
+      outputThread.Start();
     }
 
     private struct LogEntry {
@@ -82,12 +85,12 @@ namespace PeerCastStation.Core
       public string Source;
     }
     private static WaitableQueue<LogEntry> outputQueue = new WaitableQueue<LogEntry>();
-    private static Task outputTask;
-    private static async Task DoOutput()
+    private static Thread outputThread;
+    private static void DoOutputThread()
     {
       var builder = new System.Text.StringBuilder();
       while (true) {
-        var entry = await outputQueue.DequeueAsync(CancellationToken.None).ConfigureAwait(false);
+        var entry = outputQueue.DequeueAsync(CancellationToken.None).Result;
         do {
           try {
             switch (entry.Level) {
