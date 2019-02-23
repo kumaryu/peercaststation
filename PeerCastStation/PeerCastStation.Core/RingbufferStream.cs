@@ -50,6 +50,7 @@ namespace PeerCastStation.Core
     public override int WriteTimeout { get; set; } = Timeout.Infinite;
 
     public int Capacity { get { return internalBuffer.Length; } }
+    public long Available { get { return length; } }
     public override bool CanRead { get { return true; } }
     public override bool CanSeek { get { return false; } }
     public override bool CanWrite { get { return true; } }

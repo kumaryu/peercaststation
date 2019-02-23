@@ -47,6 +47,7 @@ namespace PeerCastStation.Core
       }
     }
 
+    private ManualResetWaitableEvent flushEvent = new ManualResetWaitableEvent(false);
     private async Task ProcessWrite(Stream s)
     {
       writeBuffer.ReadTimeout = Timeout.Infinite;
@@ -54,9 +55,15 @@ namespace PeerCastStation.Core
       var cts = closedCancelSource;
       try {
         using (cts.Token.Register(() => s.Close())) {
+          if (writeBuffer.Available==0) {
+            flushEvent.Set();
+          }
           var len = await writeBuffer.ReadAsync(buf, 0, buf.Length, cts.Token).ConfigureAwait(false);
           while (len>0) {
             await s.WriteAsync(buf, 0, len, cts.Token).ConfigureAwait(false);
+            if (writeBuffer.Available==0) {
+              flushEvent.Set();
+            }
             len = await writeBuffer.ReadAsync(buf, 0, buf.Length, cts.Token).ConfigureAwait(false);
           }
         }
@@ -181,11 +188,11 @@ namespace PeerCastStation.Core
 
     public override Task FlushAsync(CancellationToken cancellationToken)
     {
-      //if (closedCancelSource.IsCancellationRequested) throw new ObjectDisposedException(GetType().Name);
-      //if (WriteStream==null) return Task.FromResult(0);
-      //return WaitOrCancelTask(ct => WriteStream.FlushAsync(ct), WriteTimeout, cancellationToken);
-      CheckException();
-      return Task.FromResult(0);
+      if (closedCancelSource.IsCancellationRequested) throw new ObjectDisposedException(GetType().Name);
+      if (WriteStream==null) return Task.FromResult(0);
+      if (writeBuffer.Available==0) return Task.FromResult(0);
+      flushEvent.Reset();
+      return flushEvent.WaitAsync(cancellationToken);
     }
 
     public override int Read(byte[] buffer, int offset, int count)
