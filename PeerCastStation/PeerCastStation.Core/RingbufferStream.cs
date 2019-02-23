@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Linq;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -80,7 +80,7 @@ namespace PeerCastStation.Core
     retry:
       while (length==0 && !writeClosed) {
         if (!await readSemaphore.WaitAsync(ReadTimeout, cancellationToken).ConfigureAwait(false)) {
-          throw new TimeoutException();
+          throw new IOTimeoutException();
         }
         if (readClosed) throw new ObjectDisposedException("ReadClosed");
       }
@@ -147,7 +147,7 @@ namespace PeerCastStation.Core
       count  -= len;
       while (count>0 && !readClosed) {
         if (!await writeSemaphore.WaitAsync(WriteTimeout, cancellationToken).ConfigureAwait(false)) {
-          throw new TimeoutException();
+          throw new IOTimeoutException();
         }
         if (writeClosed) throw new ObjectDisposedException("WriteClosed");
         len = WriteInternal(buffer, offset, count);
