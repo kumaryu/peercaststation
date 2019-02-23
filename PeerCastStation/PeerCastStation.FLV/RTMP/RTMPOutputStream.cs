@@ -8,106 +8,6 @@ using System.Threading;
 
 namespace PeerCastStation.FLV.RTMP
 {
-	public class BufferedReadStream
-		: System.IO.Stream
-	{
-		private RingbufferStream bufferStream;
-		private Stream baseStream;
-		public BufferedReadStream(Stream base_stream)
-			: this(base_stream, 8192)
-		{
-		}
-
-		public BufferedReadStream(Stream base_stream, int buffer_length)
-			: this(base_stream, buffer_length, null)
-		{
-		}
-
-		public BufferedReadStream(Stream base_stream, int buffer_length, byte[] header)
-		{
-			this.baseStream = base_stream;
-			this.bufferStream = new RingbufferStream(buffer_length);
-			if (header!=null) {
-				this.bufferStream.Write(header, 0, header.Length);
-			}
-		}
-
-    protected override void Dispose(bool disposing)
-    {
-      base.Dispose(disposing);
-      if (disposing) {
-        baseStream.Dispose();
-      }
-    }
-
-		public override bool CanRead {
-			get { return true; }
-		}
-
-		public override bool CanSeek {
-			get { return false; }
-		}
-
-		public override bool CanWrite {
-			get { return false; }
-		}
-
-		public override void Flush()
-		{
-			baseStream.Flush();
-		}
-
-		public override long Length {
-			get { throw new NotSupportedException(); }
-		}
-
-		public override long Position {
-			get { throw new NotSupportedException(); }
-			set { throw new NotSupportedException(); }
-		}
-
-		public override int Read(byte[] buffer, int offset, int count)
-		{
-			var bufread = bufferStream.Read(buffer, offset, count);
-			if (bufread>=count) {
-				return bufread;
-			}
-			var buf = new byte[bufferStream.Capacity];
-      var baseread = baseStream.Read(buf, 0, buf.Length);
-      bufferStream.Write(buf, 0, baseread);
-      var bufread2 = bufferStream.Read(buffer, bufread+offset, count-bufread);
-      return bufread + bufread2;
-		}
-
-    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-    {
-      var bufread = await bufferStream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
-      if (bufread>=count) {
-        return bufread;
-      }
-      var buf = new byte[bufferStream.Capacity];
-      var baseread = baseStream.Read(buf, 0, buf.Length);
-      bufferStream.Write(buf, 0, baseread);
-      var bufread2 = await bufferStream.ReadAsync(buffer, bufread+offset, count-bufread, cancellationToken).ConfigureAwait(false);
-      return bufread + bufread2;
-    }
-
-    public override long Seek(long offset, System.IO.SeekOrigin origin)
-		{
-			throw new NotSupportedException();
-		}
-
-		public override void SetLength(long value)
-		{
-			throw new NotSupportedException();
-		}
-
-		public override void Write(byte[] buffer, int offset, int count)
-		{
-			throw new NotSupportedException();
-		}
-	}
-
 	public class RTMPOutputStream
 		: IOutputStream
 	{
@@ -132,7 +32,7 @@ namespace PeerCastStation.FLV.RTMP
 		{
 			input_stream.ReadTimeout = System.Threading.Timeout.Infinite;
 			this.peerCast       = peercast;
-      var stream = new ConnectionStream(new BufferedReadStream(input_stream, 8192, header), output_stream);
+      var stream = new ConnectionStream(input_stream, output_stream, header);
 			this.inputStream    = stream;
 			this.outputStream   = stream;
       stream.WriteTimeout = 10000;
