@@ -110,6 +110,7 @@ namespace PeerCastStation.UI.HTTP
       env["owin.ResponseStatusCode"] = 200;
       env["owin.ResponseProtocol"]   = this.request.Protocol;
       SetHeader(response_headers, "Server", PeerCast.AgentName);
+      SetHeader(response_headers, "Connection", "close");
       return env;
     }
 
@@ -205,9 +206,6 @@ namespace PeerCastStation.UI.HTTP
         var env = await CreateOWINEnvironment(cancel_token).ConfigureAwait(false);
         await application.AppFunc.Invoke(env).ConfigureAwait(false);
         await ProcessResponse(env, cancel_token).ConfigureAwait(false);
-        if (request.KeepAlive) {
-          this.HandlerResult = HandlerResult.Continue;
-        }
       }
       catch (IOException) {
         return StopReason.ConnectionError;
