@@ -52,11 +52,6 @@ namespace PeerCastStation.Main
       }
     }
 
-    static string ShellEscape(params string[] args)
-    {
-      return String.Join(" ", args.Select(ShellEscape));
-    }
-
     static int ProcessMain(string basepath, string[] args)
     {
       var asm = Assembly.LoadFrom(Path.Combine(basepath, MainAppDesc.AssemblyName));
