@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using PeerCastStation.Core;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace PeerCastStation.UI
 {
@@ -115,13 +116,17 @@ namespace PeerCastStation.UI
       data["ports"] = new JArray(this.Ports);
       var succeeded = false;
       var stopwatch = new System.Diagnostics.Stopwatch();
+      var cancel = new CancellationTokenSource();
       string response_body = null;
       try {
         stopwatch.Start();
         var body = System.Text.Encoding.UTF8.GetBytes(data.ToString());
-        response_body = System.Text.Encoding.UTF8.GetString(
-          await client.UploadDataTaskAsync(Target, body).ConfigureAwait(false)
-        );
+        using (cancel.Token.Register(() => client.CancelAsync())) {
+          cancel.CancelAfter(5000);
+          response_body = System.Text.Encoding.UTF8.GetString(
+            await client.UploadDataTaskAsync(Target, body).ConfigureAwait(false)
+          );
+        }
         stopwatch.Stop();
         succeeded = true;
         var response = JToken.Parse(response_body);
