@@ -371,7 +371,7 @@ var SettingsViewModel = new function() {
 
   self.addYellowPage = function() {
     YellowPageEditDialog.clear();
-    YellowPageEditDialog.show(function(yp) {
+    YellowPageEditDialog.show(function onOK(yp) {
       var announce_uri = yp.announceUri();
       if (announce_uri==null || announce_uri==="") {
         announce_uri = null;
@@ -386,6 +386,7 @@ var SettingsViewModel = new function() {
       PeerCast.addYellowPage(yp.protocol(), yp.name(), announce_uri, channels_uri, function(res, err) {
         if (err) {
           alert("YPの追加に失敗しました: " + err.message);
+          YellowPageEditDialog.show(onOK);
           return;
         }
         self.update();
@@ -418,7 +419,7 @@ var SettingsViewModel = new function() {
     YellowPageEditDialog.channelsUri(target.channelsUri());
     YellowPageEditDialog.protocol(target.protocol());
 
-    YellowPageEditDialog.show(function(yp) {
+    YellowPageEditDialog.show(function onOK(yp) {
       var announce_uri = yp.announceUri();
       if (announce_uri==null || announce_uri==="") {
         announce_uri = null;
@@ -433,6 +434,7 @@ var SettingsViewModel = new function() {
       PeerCast.addYellowPage(yp.protocol(), yp.name(), announce_uri, channels_uri, function(res, err) {
         if (err) {
           alert("YPの追加に失敗しました: " + err.message);
+          YellowPageEditDialog.show(onOK);
           return;
         }
         PeerCast.removeYellowPage(target.id(), function() {
