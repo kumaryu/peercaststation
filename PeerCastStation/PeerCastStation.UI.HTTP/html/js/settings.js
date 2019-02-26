@@ -66,6 +66,13 @@ var YellowPageEditDialog = new function() {
     self.onOK(self);
     dialog.modal('hide');
   };
+
+  self.clear = function() {
+    self.name("");
+    self.protocol("");
+    self.announceUri("");
+    self.channelsUri("");
+  };
 };
 
 var ListenerEditDialog = new function() {
@@ -363,6 +370,7 @@ var SettingsViewModel = new function() {
   };
 
   self.addYellowPage = function() {
+    YellowPageEditDialog.clear();
     YellowPageEditDialog.show(function(yp) {
       var announce_uri = yp.announceUri();
       if (announce_uri==null || announce_uri==="") {
