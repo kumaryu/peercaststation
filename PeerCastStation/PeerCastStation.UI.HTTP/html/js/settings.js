@@ -383,7 +383,11 @@ var SettingsViewModel = new function() {
       if (channels_uri==null || channels_uri==="") {
         channels_uri = null;
       }
-      PeerCast.addYellowPage(yp.protocol(), yp.name(), announce_uri, channels_uri, function() {
+      PeerCast.addYellowPage(yp.protocol(), yp.name(), announce_uri, channels_uri, function(res, err) {
+        if (err) {
+          alert("YPの追加に失敗しました: " + err.message);
+          return;
+        }
         self.update();
       });
     });
