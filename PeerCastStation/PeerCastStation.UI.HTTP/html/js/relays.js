@@ -363,7 +363,10 @@ var BroadcastDialog = new function() {
         contentReader,
         info,
         track,
-        function() {
+        function(res, err) {
+          if (err) {
+            alert("エラー: " + err.message);
+          }
           refresh();
           dialog.modal('hide');
         });
