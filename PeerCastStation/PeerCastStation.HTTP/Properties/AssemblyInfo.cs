@@ -48,6 +48,6 @@ using System.Runtime.InteropServices;
 // 既定値にすることができます:
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("2.6.0.0")]
-[assembly: AssemblyInformationalVersion("2.6.0.0")]
+[assembly: AssemblyFileVersion("2.7.0.0")]
+[assembly: AssemblyInformationalVersion("2.7.0.0")]
 
