@@ -1,4 +1,113 @@
 ---
+- name: Version 2.7.0 (2019年03月02日開発版)
+  version: 2.7.0
+  channel: dev
+  notes: |
+    軽くしたり不具合を修正しました。
+
+    ## 改善点
+    * データの送受信に余計にCPUを使っていたのを改善しました。
+    * ログ出力を低優先度で行うようにしました。ログが沢山出ても安定はしますが、すぐにはログが出なくなっています。
+    * 表示スケールの異なるモニターが複数接続されている時に、GUIがどのモニターでもぼやけないようにしました。
+    * GUIからコンタクトURLを開くを選んだ時にhttpかhttps以外のURLが設定されていた場合は開かないようにしました。
+    * HTML UIの一部スタイルを修正しました。(by plonk)
+    ## 不具合修正
+    * ポート開放チェックがいつまでも終わらない場合があったのを5秒でタイムアウトするようにしました。
+    * 帯域計測時に約256Mbpsを越えると負数になってしまっていたのを修正しました。
+  date: 2019-03-02T14:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.7.0.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.7.0.zip
+    length: 2191799
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.7.0.exe
+    length: 2371903
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.7.0.msi
+    length: 2048950
+
+- name: Version 2.6.0 (2019年02月11日安定版)
+  version: 2.6.0
+  channel: stable
+  notes: |
+    開発版の変更を取り込みました。
+
+    ## 新機能
+    * IPv6での配信・リレーができるようになりました。
+      IPv6のチャンネルはIPv6でのみ、IPv4のチャンネル(従来の普通のやつ)はIPv4でのみリレーができます。
+      IPv6のチャンネル掲載にはYP側もIPv6対応する必要があります。
+    * 配信時にソースとして既に配信中の他のチャンネルを選択できるようになりました。
+      チャンネル名と掲載先のYP以外は、元のチャンネルデータを使用します。
+      主にIPv4とIPv6で同じ内容のチャンネルを建てるのに使うことを想定しています。
+      IPv4同士でも同じ内容で他のYPにも掲載といったようなこともできます。
+    * 最大リレー数・視聴数・上り帯域のそれぞれについて、配信時と視聴時を別に設定できるようにしました。
+      配信時は自分で配信しているチャンネルにのみ適用される上限で、
+      視聴時はリレーしているチャンネルにのみ適用される上限です。
+      複数のチャンネルを視聴する時は一つのチャンネルで帯域を占有しないようにしたいが、
+      自分で配信している時はせいぜいチャンネル一つなので帯域を占有しても良い場合などに設定できます。
+      GUIでは詳細設定にて設定してください。
+    * FLVのチャンネルをHTTP Live Streamingで視聴できるようにしました(β版くらいの機能)。プレイリストの末尾を.m3u8にするとHTTP Live Streamingで視聴できます。(thanks niwakazoider)
+    * プレイリストのURLに`scheme=～`パラメータを追加することで、プレイリスト内の動画URLのschemeを指定できるようになりました。WMVの時にmmsやhttpを指定したり、FLVの時にrtmpを指定することができます。 (by shinji3)
+    * ZIP版でダウンロードから展開と置き換えと再起動まで自動でアップデートできるようにしました。
+      次のアップデートから有効になります。
+      インストーラ版は従来通りインストーラでアップデートします。
+    * GUIの設定で通知を出さないよう設定できるようにしました。
+    * YPからのチャンネル情報取得を設定している場合に http://localhost:7144/ypchannels/index.txt でindex.txtの再配信がされるようにしました。
+    * 視聴時に外部コマンドにコンテンツ自体を通すことができるCustomFilterを追加しました。
+    * FLVからMPEG-2 TSに変換しつつ視聴する機能を追加しました。FLV配信視聴時にストリームURLに"&filters=flvtots"をつけると中身はそのままに、コンテナだけMPEG-2 TSに変換して出力します。
+    * RTMPからMPEG-2 TSに変換しつつ配信する機能を追加しました。RTMP配信開始時にURLに"&filters=flvtots"をつけるとFLVでなくMPEG-2 TSに入れて配信します。
+    * HTTP配信(Pull/Push共に)でMPEG-2 TSを配信できるようにしました。(thanks niwakazoider)
+
+    ## 大きな変更点
+    * リレーの接続先表示をIPアドレスでなくセッションIDで表示するようにしました。
+      設定画面のUI設定で元のアドレス表示とセッションID表示を切り替えられます。
+    * RTMP視聴接続を作り直して多少安定するようにしました。
+    * HTML UIなどにHTTP 1.1を使うようにしました。HTML UIの反応が早くなりました。
+    * HTTPでの視聴時に`Access-Control-Allow-Origin:*`を返すようにしました(動画/プレイリスト共に)。
+    * 起動時のオプションで設定ファイルの場所を変更できるようになりました。`--settings=設定ファイル名`もしくは`-s 設定ファイル名`の指定をつけると、指定した設定ファイルを使用します。
+
+    ## 細かい変更点
+    * Windows Media FoundationでのWMV再生について互換性が改善されたかもしれません。(by shinji3)
+    * 大量の接続要求が来た時の待ち受け数に制限を設けました。接続受け付けの処理が間に合ってない時には5本だけ待たせといて、それ以上はすぐ拒否するようにしました。
+    * viewxmlにセッションIDが載るようになりました。
+    * GUIでの起動中のアップデートチェック間隔を2時間から24時間にしました。
+    * アップデートチェック時の転送量を減らしました。
+    * 起動時のポート開放確認で、ポート開放確認自体に失敗した時に未開放扱いになってしまっていたのを開放状態不明のままになるようにしました。
+    * 配信開始時のビットレートに負数や空文字を設定するとビットレートが正しく設定されないのを修正しました。
+    * zip版でunblock.batで一部DLLのブロックが解除されなかったのを修正しました。
+    * zip版にデバッグ用のpdbを追加しました。
+    * チャンネルのリレーツリーを覚えてるノード情報全てではなく、今実際に繋がってるリレー接続を加味して作るようにしました。
+    * 接続待ち受け設定の認証情報を既定では非表示にしました。
+    * HTML UIやAPI経由で配信する時にビットレートの手動設定が無視されるのを修正しました。 (by ha2ne2)
+    * MKV配信のコンテンツ位置が正しく出力されず不安定になるのを修正しました。(by Yoteichi)
+    * HTTPで404を返す時に0バイトのContent-Lengthが付いてなかったのを修正しました。
+    * YPからのチャンネル一覧取得のタイムアウトを5秒に設定しました。
+    * RTMP視聴接続で認証が不要な場合でも認証要求していたのを修正しました。
+    * RTMP配信・HTTP PUSH配信時の接続待ち受けが正しくキャンセルされていなかったのを修正しました。
+    * GUIの設定画面でYPの掲載用URI設定がおかしかったのを修正しました。
+    * リレーでUNKNOWNのContentTypeを受け取った時のContentType推定が上手く動かない場合があったのを修正しました。
+    * 古いバージョン(1.2.0より前)の設定ファイルの読み込みを削除しました。
+    * 非同期処理にあまりスレッドを立ち上げないようにしました。
+      実行スレッド数が少ないCPUでの処理性能の改善が期待できる……かも？
+    * MKV配信がPeerCastでリレーしづらかったのを修正しました。
+    * GUIのリレー接続にUser-Agentが表示されてなかったのを修正しました。
+    * HTTPの接続時にUser-Agent/Serverヘッダを出力するようにしました。
+    * 出力接続にNoDelayを設定するようにしました。
+    * リレー時に古いPosition指定があるとリレーが切れやすかったのを修正しました。
+  date: 2019-02-11T21:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.6.0.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.6.0.zip
+    length: 2189692
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.6.0.exe
+    length: 2369207
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.6.0.msi
+    length: 2044854
+
 - name: Version 2.5.4 (2019年02月11日開発版)
   version: 2.5.4
   channel: dev
