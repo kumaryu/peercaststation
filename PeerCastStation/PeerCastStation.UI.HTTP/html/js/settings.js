@@ -160,10 +160,14 @@ var ListenerViewModel = function(value) {
   self.authenticationInfoVisibility = ko.observable(false);
   self.authUrl = ko.computed(function () {
     var addr = self.address();
-    if (addr=='0.0.0.0' || addr=='0::0') {
-      addr = window.location.hostname;
+    var ipv6 = !!addr.match(/\:/);
+    if (addr=='0.0.0.0' || addr=='0::0' || addr=='::') {
+      return "http://" + window.location.hostname + ":" + self.port() + "/?auth=" + self.authToken();
+    } else if (ipv6) {
+      return "http://[" + addr + "]:" + self.port() + "/?auth=" + self.authToken();
+    } else {
+      return "http://" + addr + ":" + self.port() + "/?auth=" + self.authToken();
     }
-    return "http://" + addr + ":" + self.port() + "/?auth=" + self.authToken();
   });
   self.portStatus = ko.computed(function() {
     switch (self.isOpened()) {
