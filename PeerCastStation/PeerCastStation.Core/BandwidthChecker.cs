@@ -51,10 +51,16 @@ namespace PeerCastStation.Core
 
     private async Task<byte[]> PostAsync(Func<Stream,CancellationToken,Task> post_body, CancellationToken cancellationToken)
     {
-      var targetAddress =
-        (await Dns.GetHostAddressesAsync(Target.DnsSafeHost).ConfigureAwait(false))
-          .Where(addr => addr.AddressFamily==AddressFamily)
+      IPAddress targetAddress;
+      try {
+        targetAddress = (await Dns.GetHostAddressesAsync(Target.DnsSafeHost).ConfigureAwait(false))
+          .Where(addr => addr.AddressFamily == AddressFamily)
           .FirstOrDefault();
+      }
+      catch (SocketException e) {
+        new Logger(typeof(BandwidthChecker)).Error(e);
+        targetAddress = null;
+      }
       if (targetAddress==null) throw new WebException();
       using (var client=new TcpClient(AddressFamily)) {
         client.NoDelay = true;
