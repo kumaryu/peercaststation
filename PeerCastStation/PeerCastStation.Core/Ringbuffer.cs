@@ -44,7 +44,7 @@ namespace PeerCastStation.Core
     {
       if (array==null) throw new ArgumentNullException("array");
       if (arrayIndex<0) throw new ArgumentOutOfRangeException("arrayIndex");
-      if (array.Length-arrayIndex>count) throw new ArgumentException();
+      if (array.Length-arrayIndex<count) throw new ArgumentException("array not long enough");
       var firsthalf = Math.Min(Capacity-top, count);
       Array.Copy(buffer, top, array, arrayIndex, firsthalf);
       if (firsthalf<count) {
