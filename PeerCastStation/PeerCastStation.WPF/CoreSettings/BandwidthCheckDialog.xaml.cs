@@ -24,9 +24,9 @@ namespace PeerCastStation.WPF.CoreSettings
     public NetworkType NetworkType { get; private set; }
     public BandwidthCheckDialog(NetworkType networkType)
     {
-      InitializeComponent();
       this.DataContext = this;
       this.NetworkType = networkType;
+      InitializeComponent();
     }
 
     protected override async void OnInitialized(EventArgs e)
