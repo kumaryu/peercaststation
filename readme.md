@@ -15,7 +15,7 @@ Test～プロジェクト群が開けないと言われますが気にしなく�
 WPF GUIのプロジェクトをなんとか外せばMonoでもxbuildでビルドできます。
 MonoDevelopは試してないのでわかりません。
 
-ドキュメントはruby(2.0以降がよさげ)とjekyllを入れてdoc/siteやdoc/helpで`jekyll build`を実行してください。
+ドキュメントはruby(2.0以降がよさげ)とjekyllを入れてdoc/helpで`jekyll build`を実行してください。
 RUBYOPT環境変数に`-Eutf-8`を付けておかないとエラーが出るかもしれません。
 
     gem install bundler
