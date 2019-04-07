@@ -124,7 +124,14 @@ namespace PeerCastStation.WPF
     {
       int value;
       if (Int32.TryParse(valueTextBox.Text, out value)) {
-        this.Value = Math.Max(this.Minimum, Math.Min(this.Maximum, value));
+        var clamped = Math.Max(this.Minimum, Math.Min(this.Maximum, value));
+        if (clamped != this.Value) {
+          this.Value = clamped;
+        }
+        else {
+          // 実際の値が変化しなかった場合も表示を更新する。
+          OnPropertyChanged(clamped);
+        }
       }
       else if (MinimumText!=null && valueTextBox.Text==MinimumText) {
         this.Value = this.Minimum;
