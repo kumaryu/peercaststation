@@ -25,6 +25,7 @@
             $this.tooltip('show');
           }
         });
+        $(".hastooltip").tooltip();
         var pageViewModel = {
           list: channelsViewModel,
           ui:   UIViewModel
@@ -69,8 +70,8 @@
       <div class="toolbar" data-spy="affix" data-offset-top="42">
         <div class="toolbar-inner">
           <div class="pull-left" style="margin-left:8px">
-            <a class="btn" title="再生" data-bind="attr: { href: channelPlaylistUrl }, css: { disabled: !channelPlayable() }" href="#"><i class="icon-play"></i></a>
-            <a class="btn" title="お気に入り" data-bind="css: { disabled: !isChannelSelected() }, click: favChannel" href="#"><i class="icon-heart"></i></a>
+            <a class="btn hastooltip" title="再生" data-placement="right" data-container="body" data-bind="attr: { href: channelPlaylistUrl }, css: { disabled: !channelPlayable() }" href="#"><i class="icon-play"></i></a>
+            <a class="btn hastooltip" title="お気に入り" data-placement="right" data-container="body" data-bind="css: { disabled: !isChannelSelected() }, click: favChannel" href="#"><i class="icon-heart"></i></a>
           </div>
           <div class="pull-left" style="margin-left:8px">
             <ul class="filter-tabs nav nav-tabs" data-bind="foreach: filters">
@@ -81,7 +82,7 @@
             <a id="update_button" class="btn btn-primary" data-loading-text="更新中" href="#" data-bind="click: update"><i class="icon-refresh icon-white"></i> 更新</a>
           </div>
           <form class="pull-right">
-            <a class="btn" title="設定" href="#" data-bind="click: editFilters"><i class="icon-cog"></i></a>
+            <a class="btn hastooltip" title="設定" data-placement="right" data-container="body" href="#" data-bind="click: editFilters"><i class="icon-cog"></i></a>
             <input style="width:100px" type="text" class="search-query" placeholder="検索" data-bind="value: searchText, valueUpdate: 'afterkeydown'">
           </form>
         </div>
@@ -89,7 +90,7 @@
       <table class="table table-striped table-hover table-condensed channel-list">
         <thead class="theader" data-spy="affix" data-offset-top="42">
           <tr>
-            <th class="column-play dropdown"><a title="項目表示切り替え" data-toggle="dropdown" href="#">...</a>
+            <th class="column-play dropdown"><a class="hastooltip" title="列の選択" data-placement="right" data-toggle="dropdown" href="#">...</a>
               <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
                 <li><a href="#" data-bind="click: toggleColumnVisibility('name')"><i data-bind="css:{ 'icon-white': !columnVisibilities.name(), 'icon-ok': columnVisibilities.name() }"></i> チャンネル名</a></li>
                 <li><a href="#" data-bind="click: toggleColumnVisibility('genre')"><i data-bind="css:{ 'icon-white': !columnVisibilities.genre(), 'icon-ok': columnVisibilities.genre() }"></i> ジャンル</a></li>
