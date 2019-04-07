@@ -739,7 +739,7 @@ namespace PeerCastStation.WPF.CoreSettings
     {
       this.pecaApp = peca_app;
       this.peerCast = peca_app.PeerCast;
-      this.AddPortCommand = new Command(() => AddPort(PrimaryPort, NetworkType.IPv4));
+      this.AddPortCommand = new Command(() => AddPort(7144, NetworkType.IPv4));
       this.RemovePortCommand = new Command(() => RemovePort(), () => SelectedPort!=null);
       this.AddYellowPageCommand = new Command(() => AddYellowPage());
       this.RemoveYellowPageCommand = new Command(() => RemoveYellowPage(), () => SelectedYellowPage!=null);
