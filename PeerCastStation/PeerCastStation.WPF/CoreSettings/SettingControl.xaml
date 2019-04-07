@@ -126,7 +126,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                   </Grid.ColumnDefinitions>
-                  <peca:IntegerUpDown Minimum="1" Increment="1" Value="{Binding PrimaryPort}"/>
+                  <peca:IntegerUpDown Minimum="1" Maximum="65535" Increment="1" Value="{Binding PrimaryPort}"/>
                   <CheckBox Grid.Column="1" Margin="2" VerticalAlignment="Center" Content="IPv6も使う" IsChecked="{Binding IPv6Enabled}"/>
                 </Grid>
                 <Label     Grid.Column="0" Grid.Row="1" Content="ポート自動開放:"/>
