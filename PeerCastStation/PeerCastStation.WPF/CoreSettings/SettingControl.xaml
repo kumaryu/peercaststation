@@ -249,7 +249,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                     <RowDefinition Height="Auto"/>
                   </Grid.RowDefinitions>
                   <Label    Grid.Row="0" Grid.Column="0" Content="アドレス:"/>
-                  <ComboBox Grid.Row="0" Grid.Column="1" IsEditable="True" Text="{Binding Address}">
+                  <ComboBox Grid.Row="0" Grid.Column="1" IsEditable="True">
+                    <ComboBox.Text>
+                      <Binding Path="Address">
+                        <Binding.ValidationRules>
+                          <l:BindableAddressValidationRule />
+                        </Binding.ValidationRules>
+                      </Binding>
+                    </ComboBox.Text>
                     <ComboBoxItem Content="IPv4 Any"/>
                     <ComboBoxItem Content="IPv6 Any"/>
                   </ComboBox>

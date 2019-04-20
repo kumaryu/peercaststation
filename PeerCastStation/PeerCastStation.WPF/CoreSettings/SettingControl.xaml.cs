@@ -13,6 +13,8 @@
 // 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+using System.Linq;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -54,4 +56,49 @@ namespace PeerCastStation.WPF.CoreSettings
     }
 
   }
+
+  public class BindableAddressValidationRule
+    : ValidationRule
+  {
+    public override ValidationResult Validate(object value, CultureInfo cultureInfo)
+    {
+      var str = value as string;
+      if (str==null) return new ValidationResult(false, "Invalid Address");
+      switch (str) {
+      case "IPv4 Any":
+      case "IPv6 Any":
+        return new ValidationResult(true, null);
+      default:
+        if (System.Net.IPAddress.TryParse(str, out var addr)) {
+          if (System.Net.IPAddress.IsLoopback(addr) ||
+              System.Net.IPAddress.IPv6Any.Equals(addr) ||
+              System.Net.IPAddress.Any.Equals(addr)) {
+            return new ValidationResult(true, null);
+          }
+          else {
+            var localAddresses =
+              System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+              .Where(intf => !intf.IsReceiveOnly)
+              .Where(intf => intf.OperationalStatus==System.Net.NetworkInformation.OperationalStatus.Up)
+              .Where(intf => intf.NetworkInterfaceType!=System.Net.NetworkInformation.NetworkInterfaceType.Loopback)
+              .Select(intf => intf.GetIPProperties())
+              .SelectMany(prop => prop.UnicastAddresses).ToArray();
+            var valid = localAddresses.Any(uaddr => uaddr.Address.Equals(addr));
+            if (valid) {
+              return new ValidationResult(true, null);
+            }
+            else {
+              return new ValidationResult(false, "Invalid Address");
+            }
+          }
+        }
+        else {
+          return new ValidationResult(false, "Invalid Address");
+        }
+      }
+    }
+
+  }
+
 }
+
