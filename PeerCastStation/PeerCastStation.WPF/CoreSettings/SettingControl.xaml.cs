@@ -13,6 +13,7 @@
 // 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+using System;
 using System.Linq;
 using System.Globalization;
 using System.Windows;
@@ -63,7 +64,7 @@ namespace PeerCastStation.WPF.CoreSettings
     public override ValidationResult Validate(object value, CultureInfo cultureInfo)
     {
       var str = value as string;
-      if (str==null) return new ValidationResult(false, "Invalid Address");
+      if (String.IsNullOrWhiteSpace(str)) return new ValidationResult(false, "アドレスを入力してください");
       switch (str) {
       case "IPv4 Any":
       case "IPv6 Any":
@@ -88,12 +89,12 @@ namespace PeerCastStation.WPF.CoreSettings
               return new ValidationResult(true, null);
             }
             else {
-              return new ValidationResult(false, "Invalid Address");
+              return new ValidationResult(false, "接続待ち受けに使用できないアドレスです");
             }
           }
         }
         else {
-          return new ValidationResult(false, "Invalid Address");
+          return new ValidationResult(false, "アドレスの形式が正しくありません");
         }
       }
     }
