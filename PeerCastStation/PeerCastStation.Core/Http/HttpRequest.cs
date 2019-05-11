@@ -32,11 +32,79 @@ namespace PeerCastStation.Core.Http
       }
     }
 
+    public class RequestHeaders
+    {
+      private Dictionary<string, List<string>> headers = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+      public bool TryGetValue(string name, out string[] value)
+      {
+        if (headers.TryGetValue(name, out var lst) && lst.Count>0) {
+          value = lst.ToArray();
+          return true;
+        }
+        else {
+          value = default(string[]);
+          return false;
+        }
+      }
+
+      public bool ContainsKey(string name)
+      {
+        return headers.ContainsKey(name);
+      }
+
+      public bool TryGetValue(string name, out string value)
+      {
+        if (headers.TryGetValue(name, out var lst) && lst.Count>0) {
+          value = lst[lst.Count-1];
+          return true;
+        }
+        else {
+          value = default(string);
+          return false;
+        }
+      }
+
+      public void Add(string name, string value)
+      {
+        if (headers.TryGetValue(name, out var lst)) {
+          lst.Add(value);
+        }
+        else {
+          headers.Add(name, new List<string> { value });
+        }
+      }
+
+      public void Add(string name, IEnumerable<string> value)
+      {
+        if (headers.TryGetValue(name, out var lst)) {
+          lst.AddRange(value);
+        }
+        else {
+          headers.Add(name, new List<string>(value));
+        }
+      }
+
+      public void Set(string name, string value)
+      {
+        headers[name] = new List<string> { value };
+      }
+
+      public void Set(string name, IEnumerable<string> value)
+      {
+        headers[name] = new List<string>(value);
+      }
+
+      public IDictionary<string, string[]> ToDictionary()
+      {
+        return headers.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray());
+      }
+    }
 
     /// <summary>
     /// リクエストヘッダの値のコレクション取得します
     /// </summary>
-    public IReadOnlyDictionary<string, string> Headers { get; private set; }
+    public RequestHeaders Headers { get; private set; }
 
     private string path = null;
     public string Path {
@@ -54,7 +122,19 @@ namespace PeerCastStation.Core.Http
       }
     }
 
-    private static readonly Regex QueryParameterRegex = new Regex(@"(&|\?)([^&=]+)=([^&=]+)");
+    public string QueryString {
+      get {
+        var idx = PathAndQuery.IndexOf('?');
+        if (idx>=0) {
+          return PathAndQuery.Substring(idx+1);
+        }
+        else {
+          return String.Empty;
+        }
+      }
+    }
+
+    private static readonly Regex QueryParameterRegex = new Regex(@"(&|\?)([^&=]+)=([^&=]+)", RegexOptions.Compiled);
     private Dictionary<string, string> queryParameters = null;
     public IReadOnlyDictionary<string, string> QueryParameters {
       get {
@@ -77,7 +157,16 @@ namespace PeerCastStation.Core.Http
     }
 
     public IReadOnlyDictionary<string, string> Cookies { get; private set; }
-    public IReadOnlyList<string> Pragmas { get; private set; }
+    public IReadOnlyList<string> Pragmas {
+      get {
+        if (Headers.TryGetValue("Pragma", out string[] value)) {
+          return value;
+        }
+        else {
+          return emptyPragmas;
+        }
+      }
+    }
     private static readonly string[] emptyPragmas = new string[0];
 
     public bool KeepAlive {
@@ -85,8 +174,7 @@ namespace PeerCastStation.Core.Http
         switch (Protocol) {
         case "HTTP/1.1":
           {
-            string value;
-            if (Headers.TryGetValue("CONNECTION", out value) && value.ToUpperInvariant()=="CLOSE") {
+            if (Headers.TryGetValue("CONNECTION", out string value) && StringComparer.OrdinalIgnoreCase.Equals(value, "close")) {
               return false;
             }
             else {
@@ -94,15 +182,7 @@ namespace PeerCastStation.Core.Http
             }
           }
         case "HTTP/1.0":
-          {
-            string value;
-            if (Headers.TryGetValue("CONNECTION", out value) && value.ToUpperInvariant()=="KEEP-ALIVE") {
-              return true;
-            }
-            else {
-              return false;
-            }
-          }
+          return Headers.ContainsKey("Keep-Alive");
         default:
           return false;
         }
@@ -121,11 +201,12 @@ namespace PeerCastStation.Core.Http
       }
     }
 
-    private static readonly Regex RequestLineRegex = new Regex(@"^(\w+) +(\S+) +(HTTP/1.\d)$", RegexOptions.IgnoreCase);
-    private static readonly Regex CookieHeaderRegex = new Regex(@"^Cookie:(\s*)(.+)(\s*)$", RegexOptions.IgnoreCase);
-    private static readonly Regex CookieEntryRegex = new Regex(@"^([A-Za-z0-9!#$%^&*_\-+|~`'"".]+)=(.*)$");
-    private static readonly Regex PragmaHeaderRegex = new Regex(@"^Pragma:(\s*)(.+)(\s*)$", RegexOptions.IgnoreCase);
-    private static readonly Regex OtherHeaderRegex = new Regex(@"^(\S*):(.+)$", RegexOptions.IgnoreCase);
+    private static readonly Regex RequestLineRegex = new Regex(@"^(\w+) +(\S+) +(HTTP/1\.\d)$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+    private static readonly Regex CookieHeaderRegex = new Regex(@"^Cookie:(\s*)(.+)(\s*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+    private static readonly Regex CookieEntryRegex = new Regex(@"^([A-Za-z0-9!#$%^&*_\-+|~`'"".]+)=(.*)$", RegexOptions.Compiled | RegexOptions.Singleline);
+    private static readonly Regex PragmaHeaderRegex = new Regex(@"^Pragma:(\s*)(.+)(\s*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+    private static readonly Regex OtherHeaderRegex = new Regex(@"^(\S*):(.+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
     /// <summary>
     /// HTTPリクエスト文字列からHTTPRequestオブジェクトを構築します
     /// </summary>
@@ -135,9 +216,8 @@ namespace PeerCastStation.Core.Http
       Method = reqLine.Method;
       Protocol = reqLine.Protocol;
       PathAndQuery = reqLine.PathAndQuery;
-      List<string> pragmas = null;
-      var headers = new Dictionary<string,string>();
-      var cookies = new Dictionary<string,string>();
+      var headers = new RequestHeaders();
+      var cookies = new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);
       foreach (var req in requests) {
         Match match = null;
         if ((match = CookieHeaderRegex.Match(req)).Success) {
@@ -149,23 +229,14 @@ namespace PeerCastStation.Core.Http
           }
         }
         else if ((match = PragmaHeaderRegex.Match(req)).Success) {
-          if (pragmas==null) {
-            pragmas = new List<string>();
-          }
-          pragmas.AddRange(match.Groups[1].Value.Split(',').Select(token => token.Trim().ToLowerInvariant()));
+          headers.Add("Pragma", match.Groups[1].Value.Split(',').Select(token => token.Trim().ToLowerInvariant()));
         }
         else if ((match = OtherHeaderRegex.Match(req)).Success) {
-          headers[match.Groups[1].Value.ToUpperInvariant()] = match.Groups[2].Value.Trim();
+          headers.Add(match.Groups[1].Value, match.Groups[2].Value.Trim());
         }
       }
       Headers = headers;
       Cookies = cookies;
-      if (pragmas!=null) {
-        Pragmas = pragmas;
-      }
-      else {
-        Pragmas = emptyPragmas;
-      }
     }
 
     public class HttpRequestLine {

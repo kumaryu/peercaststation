@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net462</TargetFramework>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
+    <PackageReference Include="Microsoft.Owin" Version="4.0.1" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PeerCastStation.App\PeerCastStation.App.csproj" />
+    <ProjectReference Include="..\PeerCastStation.ASF\PeerCastStation.ASF.csproj" />
+    <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj" />
+    <ProjectReference Include="..\PeerCastStation.CustomFilter\PeerCastStation.CustomFilter.csproj" />
+    <ProjectReference Include="..\PeerCastStation.FLV\PeerCastStation.FLV.csproj" />
+    <ProjectReference Include="..\PeerCastStation.HTTP\PeerCastStation.HTTP.csproj" />
+    <ProjectReference Include="..\PeerCastStation.MKV\PeerCastStation.MKV.csproj" />
+    <ProjectReference Include="..\PeerCastStation.PCP\PeerCastStation.PCP.csproj" />
+    <ProjectReference Include="..\PeerCastStation.TS\PeerCastStation.TS.csproj" />
+    <ProjectReference Include="..\PeerCastStation.UI.HTTP\PeerCastStation.UI.HTTP.csproj" />
+    <ProjectReference Include="..\PeerCastStation.UI\PeerCastStation.UI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="4.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Tests.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+</Project>
