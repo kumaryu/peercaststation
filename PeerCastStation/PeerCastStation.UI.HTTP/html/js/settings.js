@@ -66,6 +66,13 @@ var YellowPageEditDialog = new function() {
     self.onOK(self);
     dialog.modal('hide');
   };
+
+  self.clear = function() {
+    self.name("");
+    self.protocol("");
+    self.announceUri("");
+    self.channelsUri("");
+  };
 };
 
 var ListenerEditDialog = new function() {
@@ -367,7 +374,8 @@ var SettingsViewModel = new function() {
   };
 
   self.addYellowPage = function() {
-    YellowPageEditDialog.show(function(yp) {
+    YellowPageEditDialog.clear();
+    YellowPageEditDialog.show(function onOK(yp) {
       var announce_uri = yp.announceUri();
       if (announce_uri==null || announce_uri==="") {
         announce_uri = null;
@@ -379,7 +387,12 @@ var SettingsViewModel = new function() {
       if (channels_uri==null || channels_uri==="") {
         channels_uri = null;
       }
-      PeerCast.addYellowPage(yp.protocol(), yp.name(), announce_uri, channels_uri, function() {
+      PeerCast.addYellowPage(yp.protocol(), yp.name(), announce_uri, channels_uri, function(res, err) {
+        if (err) {
+          alert("YPの追加に失敗しました: " + err.message);
+          YellowPageEditDialog.show(onOK);
+          return;
+        }
         self.update();
       });
     });
@@ -389,6 +402,49 @@ var SettingsViewModel = new function() {
     var removed = self.yellowPages.remove(function(yp) { return yp.checked(); });
     $.each(removed, function(i, yp) {
       PeerCast.removeYellowPage(yp.id(), function() { self.update(); });
+    });
+  }
+
+  self.editYellowPage = function() {
+    var checkedItems = self.yellowPages().filter(function (yp) { return yp.checked(); });
+
+    if (checkedItems.length == 0) {
+      alert("編集するYPを1つ選択してください。");
+      return;
+    }
+    if (checkedItems.length > 1) {
+      alert("選択するYPは1つにしてください。");
+      return;
+    }
+
+    var target = checkedItems[0];
+    YellowPageEditDialog.name(target.name());
+    YellowPageEditDialog.announceUri(target.announceUri());
+    YellowPageEditDialog.channelsUri(target.channelsUri());
+    YellowPageEditDialog.protocol(target.protocol());
+
+    YellowPageEditDialog.show(function onOK(yp) {
+      var announce_uri = yp.announceUri();
+      if (announce_uri==null || announce_uri==="") {
+        announce_uri = null;
+      }
+      else if (!announce_uri.match(/^\w+:\/\//)) {
+        announce_uri = yp.protocol() + '://' + yp.announceUri();
+      }
+      var channels_uri = yp.channelsUri();
+      if (channels_uri==null || channels_uri==="") {
+        channels_uri = null;
+      }
+      PeerCast.addYellowPage(yp.protocol(), yp.name(), announce_uri, channels_uri, function(res, err) {
+        if (err) {
+          alert("YPの追加に失敗しました: " + err.message);
+          YellowPageEditDialog.show(onOK);
+          return;
+        }
+        PeerCast.removeYellowPage(target.id(), function() {
+          self.update();
+        });
+      });
     });
   }
 
