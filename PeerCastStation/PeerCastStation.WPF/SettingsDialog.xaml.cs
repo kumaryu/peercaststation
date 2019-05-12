@@ -1,4 +1,6 @@
-﻿using System.Windows;
+﻿using System.Collections.Generic;
+using System.Windows;
+using System.Windows.Controls;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.CoreSettings;
 
@@ -15,8 +17,32 @@ namespace PeerCastStation.WPF
       var viewmodel = new SettingViewModel(app);
       this.viewModel = viewmodel;
       this.DataContext = viewmodel;
+      OKCommand = new Commons.Command(() => {
+        viewModel.Apply();
+        this.Close();
+      }, () => errorControls.Count==0);
+      CancelCommand = new Commons.Command(() => {
+        this.Close();
+      });
+      ApplyCommand = new Commons.Command(() => {
+        viewModel.Apply();
+      }, () => viewModel.IsModified && errorControls.Count==0);
+      viewModel.PropertyChanged += ViewModel_PropertyChanged;
       InitializeComponent();
     }
+
+    private void ViewModel_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+      switch (e.PropertyName) {
+      case nameof(SettingViewModel.IsModified):
+        ApplyCommand.OnCanExecuteChanged();
+        break;
+      }
+    }
+
+    public Commons.Command OKCommand { get; private set; }
+    public Commons.Command CancelCommand { get; private set; }
+    public Commons.Command ApplyCommand { get; private set; }
 
     internal static void ShowDialog(Window owner, PeerCastApplication app)
     {
@@ -25,20 +51,45 @@ namespace PeerCastStation.WPF
       window.ShowDialog();
     }
 
-    private void CancelButton_Click(object sender, RoutedEventArgs e)
+    private HashSet<DependencyObject> errorControls = new HashSet<DependencyObject>();
+
+    private void Window_Error(object sender, ValidationErrorEventArgs e)
     {
-      this.Close();
+      var src = (DependencyObject)e.OriginalSource;
+      switch (e.Action) {
+      case ValidationErrorEventAction.Added:
+        if (errorControls.Add(src)) {
+          OKCommand.OnCanExecuteChanged();
+          ApplyCommand.OnCanExecuteChanged();
+          if (e.OriginalSource is FrameworkElement) {
+            ((FrameworkElement)e.OriginalSource).Unloaded += Control_Unloaded;
+          }
+        }
+        break;
+      case ValidationErrorEventAction.Removed:
+        if (!Validation.GetHasError((DependencyObject)e.OriginalSource)) {
+          if (errorControls.Remove(src)) {
+            OKCommand.OnCanExecuteChanged();
+            ApplyCommand.OnCanExecuteChanged();
+            if (e.OriginalSource is FrameworkElement) {
+              ((FrameworkElement)e.OriginalSource).Unloaded -= Control_Unloaded;
+            }
+          }
+        }
+        break;
+      }
     }
 
-    private void OKButton_Click(object sender, RoutedEventArgs e)
+    private void Control_Unloaded(object sender, RoutedEventArgs e)
     {
-      viewModel.Apply();
-      this.Close();
+      if (sender is FrameworkElement) {
+        ((FrameworkElement)sender).Unloaded -= Control_Unloaded;
+      }
+      errorControls.Remove((DependencyObject)sender);
+      OKCommand.OnCanExecuteChanged();
+      ApplyCommand.OnCanExecuteChanged();
     }
 
-    private void ApplyButton_Click(object sender, RoutedEventArgs e)
-    {
-      viewModel.Apply();
-    }
   }
+
 }
