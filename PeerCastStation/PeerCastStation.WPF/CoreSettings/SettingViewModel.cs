@@ -346,21 +346,23 @@ namespace PeerCastStation.WPF.CoreSettings
           if (String.IsNullOrEmpty(value)) {
             if (announceUri==null) return;
             announceUri = null;
-            OnPropertyChanged("AnnounceUri");
+            OnPropertyChanged(nameof(AnnounceUri));
             return;
           }
           if (protocol==null) new ArgumentException("プロトコルが選択されていません");
-          Uri newvalue;
-          if (System.Uri.TryCreate(value, UriKind.Absolute, out newvalue) &&
-              (newvalue.Scheme=="http" || newvalue.Scheme=="file")) {
-            throw new ArgumentException("指定したプロトコルでは使用できないURLです");
-          }
-          else if (
-              (System.Uri.TryCreate(value, UriKind.Absolute, out newvalue) && newvalue.Scheme=="pcp") ||
-              (System.Uri.TryCreate("pcp://"+value, UriKind.Absolute, out newvalue))) {
-            if (announceUri==newvalue || (announceUri!=null && announceUri.Equals(newvalue))) return;
-            announceUri = newvalue;
-            OnPropertyChanged("AnnounceUri");
+          if (Uri.TryCreate(value, UriKind.RelativeOrAbsolute, out var uri)) {
+            var result = protocol.ValidateUriAsync(YellowPageUriType.Announce, uri).Result;
+            if (result.IsValid) {
+              announceUri = uri;
+              OnPropertyChanged(nameof(AnnounceUri));
+            }
+            else if (!result.IsValid && result.Candidate!=null) {
+              announceUri = result.Candidate;
+              OnPropertyChanged(nameof(AnnounceUri));
+            }
+            else {
+              throw new ArgumentException(result.Message);
+            }
           }
           else {
             throw new ArgumentException("正しいURLが指定されていません");
@@ -371,13 +373,29 @@ namespace PeerCastStation.WPF.CoreSettings
       public string ChannelsUri {
         get { return channelsUri==null ? null : channelsUri.ToString(); }
         set {
-          if (String.IsNullOrEmpty(value)) return;
+          if (String.IsNullOrEmpty(value)) {
+            if (channelsUri==null) return;
+            channelsUri = null;
+            OnPropertyChanged(nameof(ChannelsUri));
+            return;
+          }
           if (protocol==null) new ArgumentException("プロトコルが選択されていません");
-          Uri newvalue;
-          if (System.Uri.TryCreate(value, UriKind.Absolute, out newvalue)) {
-            if (channelsUri==newvalue || (channelsUri!=null && channelsUri.Equals(newvalue))) return;
-            channelsUri = newvalue;
-            OnPropertyChanged("ChannelsUri");
+          if (Uri.TryCreate(value, UriKind.RelativeOrAbsolute, out var uri)) {
+            var result = protocol.ValidateUriAsync(YellowPageUriType.Channels, uri).Result;
+            if (result.IsValid) {
+              channelsUri = uri;
+              OnPropertyChanged(nameof(ChannelsUri));
+            }
+            else if (!result.IsValid && result.Candidate!=null) {
+              channelsUri = result.Candidate;
+              OnPropertyChanged(nameof(ChannelsUri));
+            }
+            else {
+              throw new ArgumentException(result.Message);
+            }
+          }
+          else {
+            throw new ArgumentException("正しいURLが指定されていません");
           }
         }
       }
