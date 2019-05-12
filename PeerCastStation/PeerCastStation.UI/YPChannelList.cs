@@ -34,9 +34,6 @@ namespace PeerCastStation.UI
 		{
 			base.OnStop();
 			updateCancel.Cancel();
-			if (updateTask!=null) {
-				updateTask.Wait();
-			}
 		}
 
 		public IEnumerable<IYellowPageChannel> Update()
@@ -46,21 +43,37 @@ namespace PeerCastStation.UI
 			return task.Result;
 		}
 
-		private Task<IEnumerable<IYellowPageChannel>> updateTask;
-		private CancellationTokenSource updateCancel = new CancellationTokenSource();
-		public Task<IEnumerable<IYellowPageChannel>> UpdateAsync()
-		{
-			if (updateTimer.IsRunning && updateTimer.ElapsedMilliseconds<18000) return Task.FromResult(Channels.AsEnumerable());
-			updateCancel = new CancellationTokenSource(5000);
-			updateTask = Task.WhenAll(this.Application.PeerCast.YellowPages.Select(yp => yp.GetChannelsAsync(updateCancel.Token)))
-				.ContinueWith(task => {
-					updateTimer.Restart();
-					if (task.IsCanceled || task.IsFaulted) return Enumerable.Empty<IYellowPageChannel>();
-					Channels = task.Result.SelectMany(result => result).ToList();
-					return Channels;
-				});
-			return updateTask;
-		}
+    private CancellationTokenSource updateCancel = new CancellationTokenSource();
+    public async Task<IEnumerable<IYellowPageChannel>> UpdateAsync()
+    {
+      try {
+        if (updateTimer.IsRunning && updateTimer.ElapsedMilliseconds<18000) {
+          return Channels.AsEnumerable();
+        }
+        updateCancel = new CancellationTokenSource(5000);
+        var channels = await Task.WhenAll(this.Application.PeerCast.YellowPages.Select(async yp => {
+          try {
+            return await yp.GetChannelsAsync(updateCancel.Token).ConfigureAwait(false);
+          }
+          catch (Exception) {
+            var msg = new NotificationMessage(
+              yp.Name,
+              "チャンネル一覧を取得できませんでした。",
+              NotificationMessageType.Error);
+            foreach (var ui in this.Application.Plugins.Where(p => p is IUserInterfacePlugin)) {
+              ((IUserInterfacePlugin)ui).ShowNotificationMessage(msg);
+            }
+            return Enumerable.Empty<IYellowPageChannel>();
+          }
+        })).ConfigureAwait(false);
+        updateTimer.Restart();
+        Channels = channels.SelectMany(result => result).ToList();
+        return Channels;
+      }
+      catch (Exception) {
+        return Enumerable.Empty<IYellowPageChannel>();
+      }
+    }
 	}
 
 }
