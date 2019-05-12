@@ -505,7 +505,7 @@ Stopped:
       }
       var port = atom.Children.GetHeloPort();
       if (port.HasValue) {
-        PeerCast.SetPortStatus(rip.AddressFamily, port.Value!=0 ? PortStatus.Open : PortStatus.Firewalled);
+        PeerCast.SetPortStatus(((IPEndPoint)connection.Client.Client.LocalEndPoint).Address, rip, port.Value!=0 ? PortStatus.Open : PortStatus.Firewalled);
       }
       var sid = atom.Children.GetHeloSessionID();
       if (sid.HasValue) {

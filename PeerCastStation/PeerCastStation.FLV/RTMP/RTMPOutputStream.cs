@@ -32,7 +32,7 @@ namespace PeerCastStation.FLV.RTMP
 		{
 			input_stream.ReadTimeout = System.Threading.Timeout.Infinite;
 			this.peerCast       = peercast;
-      var stream = new ConnectionStream(input_stream, output_stream, header);
+      var stream = new ConnectionStream(input_stream, output_stream, header, null, remote_endpoint as System.Net.IPEndPoint);
 			this.inputStream    = stream;
 			this.outputStream   = stream;
       stream.WriteTimeout = 10000;

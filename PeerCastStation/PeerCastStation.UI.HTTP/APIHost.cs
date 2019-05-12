@@ -1259,7 +1259,7 @@ namespace PeerCastStation.UI.HTTP
           task.Wait();
           foreach (var result in task.Result) {
             if (!result.Success) continue;
-            PeerCast.SetPortStatus(result.LocalAddress.AddressFamily, result.IsOpen ? PortStatus.Open : PortStatus.Firewalled);
+            PeerCast.SetPortStatus(result.LocalAddress, result.GlobalAddress, result.IsOpen ? PortStatus.Open : PortStatus.Firewalled);
             switch (result.LocalAddress.AddressFamily) {
             case System.Net.Sockets.AddressFamily.InterNetwork:
               owner.OpenedPortsV4 = result.Ports;

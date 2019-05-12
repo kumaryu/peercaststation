@@ -52,9 +52,10 @@ namespace PeerCastStation.Core
   public delegate void ChannelChangedEventHandler(object sender, ChannelChangedEventArgs e);
 
   public enum PortStatus {
-    Unknown,
-    Open,
-    Firewalled,
+    Unavailable = 0,
+    Unknown     = 1,
+    Firewalled  = 2,
+    Open        = 3,
   }
 
   /// <summary>
@@ -413,9 +414,6 @@ namespace PeerCastStation.Core
     public Guid SessionID { get; private set; }
     public Guid BroadcastID { get; set; }
 
-    private PortStatus portStatusV4 = PortStatus.Unknown;
-    private PortStatus portStatusV6 = PortStatus.Unknown;
-
     public PortStatus GetPortStatus(NetworkType type)
     {
       return GetPortStatus(type.GetAddressFamily());
@@ -423,32 +421,32 @@ namespace PeerCastStation.Core
 
     public PortStatus GetPortStatus(AddressFamily family)
     {
-      switch (family) {
-      case AddressFamily.InterNetwork:
-        return portStatusV4;
-      case AddressFamily.InterNetworkV6:
-        return portStatusV6;
-      default:
-        throw new NotSupportedException();
+      return outputListeners
+          .Where(port => port.LocalEndPoint.AddressFamily==family)
+          .Where(port => port.GlobalOutputAccepts.HasFlag(OutputStreamType.Relay))
+          .Select(port => port.Status)
+          .OrderByDescending(status => (int)status)
+          .FirstOrDefault();
+    }
+
+    private bool IsIPAddressMatch(IPAddress a, IPAddress b)
+    {
+      if (a==null || b==null) return false;
+      if (a.AddressFamily!=b.AddressFamily) return false;
+      if (a.Equals(IPAddress.Any) || b.Equals(IPAddress.Any) ||
+          a.Equals(IPAddress.IPv6Any) || b.Equals(IPAddress.IPv6Any)) {
+        return true;
       }
+      return a.Equals(b);
     }
 
-    public void SetPortStatus(NetworkType type, PortStatus value)
+    public void SetPortStatus(IPAddress localAddress, IPAddress globalAddress, PortStatus value)
     {
-      SetPortStatus(type.GetAddressFamily(), value);
-    }
-
-    public void SetPortStatus(AddressFamily family, PortStatus value)
-    {
-      switch (family) {
-      case AddressFamily.InterNetwork:
-        portStatusV4 = value;
-        break;
-      case AddressFamily.InterNetworkV6:
-        portStatusV6 = value;
-        break;
-      default:
-        throw new NotSupportedException();
+      foreach (var listener in OutputListeners.Where(port => IsIPAddressMatch(port.LocalEndPoint.Address, localAddress))) {
+        if (globalAddress!=null) {
+          listener.GlobalAddress = globalAddress;
+        }
+        listener.Status = value;
       }
     }
 
@@ -549,9 +547,6 @@ namespace PeerCastStation.Core
           new_collection.Add(res);
           return new_collection;
         });
-        if ((global_accepts & OutputStreamType.Relay)!=0) {
-          OnListenPortOpened();
-        }
       }
       catch (System.Net.Sockets.SocketException e) {
         logger.Error("Listen failed: {0}", ip);
@@ -575,29 +570,6 @@ namespace PeerCastStation.Core
         new_collection.Remove(listener);
         return new_collection;
       });
-      if ((listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0) {
-        OnListenPortClosed();
-      }
-    }
-
-    internal void OnListenPortOpened()
-    {
-      if (GetPortStatus(AddressFamily.InterNetwork)==PortStatus.Firewalled) {
-        SetPortStatus(AddressFamily.InterNetwork, PortStatus.Unknown);
-      }
-      if (GetPortStatus(AddressFamily.InterNetworkV6)==PortStatus.Firewalled) {
-        SetPortStatus(AddressFamily.InterNetworkV6, PortStatus.Unknown);
-      }
-    }
-
-    internal void OnListenPortClosed()
-    {
-      if (GetPortStatus(AddressFamily.InterNetwork)==PortStatus.Open) {
-        SetPortStatus(AddressFamily.InterNetwork, PortStatus.Unknown);
-      }
-      if (GetPortStatus(AddressFamily.InterNetworkV6)==PortStatus.Open) {
-        SetPortStatus(AddressFamily.InterNetworkV6, PortStatus.Unknown);
-      }
     }
 
     public IPEndPoint GetGlobalEndPoint(AddressFamily addr_family, OutputStreamType connection_type)
