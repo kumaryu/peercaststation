@@ -25,6 +25,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
   <Grid>
     <Grid.Resources>
       <BooleanToVisibilityConverter x:Key="visibilityConverter"/>
+      <Style TargetType="ComboBox">
+        <Style.Triggers>
+          <Trigger Property="Validation.HasError" Value="true">
+            <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource Self}, Path=(Validation.Errors)[0].ErrorContent}"/>
+          </Trigger>
+        </Style.Triggers>
+      </Style>
       <Style TargetType="TextBox">
         <Style.Triggers>
           <Trigger Property="Validation.HasError" Value="true">
@@ -126,7 +133,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                   </Grid.ColumnDefinitions>
-                  <peca:IntegerUpDown Minimum="1" Maximum="65535" Increment="1" Value="{Binding PrimaryPort}"/>
+                  <peca:IntegerUpDown Minimum="1024" Maximum="65535" Increment="1" Value="{Binding PrimaryPort}"/>
                   <CheckBox Grid.Column="1" Margin="2" VerticalAlignment="Center" Content="IPv6も使う" IsChecked="{Binding IPv6Enabled}"/>
                 </Grid>
                 <Label     Grid.Column="0" Grid.Row="1" Content="ポート自動開放:"/>
@@ -249,7 +256,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                     <RowDefinition Height="Auto"/>
                   </Grid.RowDefinitions>
                   <Label    Grid.Row="0" Grid.Column="0" Content="アドレス:"/>
-                  <ComboBox Grid.Row="0" Grid.Column="1" IsEditable="True" Text="{Binding Address}">
+                  <ComboBox Grid.Row="0" Grid.Column="1" IsEditable="True">
+                    <ComboBox.Text>
+                      <Binding Path="Address" NotifyOnValidationError="True">
+                        <Binding.ValidationRules>
+                          <l:BindableAddressValidationRule />
+                        </Binding.ValidationRules>
+                      </Binding>
+                    </ComboBox.Text>
                     <ComboBoxItem Content="IPv4 Any"/>
                     <ComboBoxItem Content="IPv6 Any"/>
                   </ComboBox>
@@ -481,8 +495,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                   </Grid.ColumnDefinitions>
                   <TextBox  Grid.Column="1" Text="{Binding Name}"/>
                   <ComboBox Grid.Column="2" SelectedItem="{Binding Protocol}" ItemsSource="{Binding Protocols}" DisplayMemberPath="Name"/>
-                  <TextBox  Grid.Column="3" Text="{Binding Path=AnnounceUri,ValidatesOnExceptions=True}" InputScope="Url"/>
-                  <TextBox  Grid.Column="4" Text="{Binding Path=ChannelsUri,ValidatesOnExceptions=True}" InputScope="Url"/>
+                  <TextBox  Grid.Column="3" Text="{Binding Path=AnnounceUri,ValidatesOnExceptions=True,NotifyOnValidationError=True}" InputScope="Url"/>
+                  <TextBox  Grid.Column="4" Text="{Binding Path=ChannelsUri,ValidatesOnExceptions=True,NotifyOnValidationError=True}" InputScope="Url"/>
                 </Grid>
               </DataTemplate>
             </ListBox.ItemTemplate>

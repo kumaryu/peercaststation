@@ -17,14 +17,158 @@ namespace PeerCastStation.PCP
     public string Name { get { return "PCP"; } }
     public string Protocol { get { return "pcp"; } }
 
-		public IYellowPageClient Create(string name, Uri announce_uri, Uri channels_uri)
-		{
-			return new PCPYellowPageClient(PeerCast, name, announce_uri, channels_uri);
-		}
-
-    public bool CheckURI(Uri uri)
+    public IYellowPageClient Create(string name, Uri announce_uri, Uri channels_uri)
     {
-      return PCPYellowPageClient.IsValidUri(uri);
+      return new PCPYellowPageClient(PeerCast, name, announce_uri, channels_uri);
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex indexTxtEntryRegex =
+      new System.Text.RegularExpressions.Regex(@"\A(^((.*<>)+.*)?$\n?)+\Z", System.Text.RegularExpressions.RegexOptions.Compiled | System.Text.RegularExpressions.RegexOptions.Multiline);
+
+    private enum IndexTxtResult {
+      Success,
+      ConnectionError,
+      DownloadError,
+      ParseError,
+    }
+    private async Task<IndexTxtResult> CheckIndexTxtAsync(Uri uri)
+    {
+      try {
+        var req = WebRequest.Create(uri);
+        var res = await req.GetResponseAsync().ConfigureAwait(false);
+        using (var reader = new StreamReader(res.GetResponseStream(), System.Text.Encoding.UTF8)) {
+          var str = await reader.ReadToEndAsync().ConfigureAwait(false);
+          if (indexTxtEntryRegex.IsMatch(str)) {
+            return IndexTxtResult.Success;
+          }
+          else {
+            return IndexTxtResult.ParseError;
+          }
+        }
+      }
+      catch (WebException ex) {
+        if (ex.Status==WebExceptionStatus.ProtocolError) {
+          return IndexTxtResult.DownloadError;
+        }
+        else {
+          return IndexTxtResult.ConnectionError;
+        }
+      }
+    }
+
+    public async Task<YellowPageUriValidationResult> ValidateUriAsync(YellowPageUriType type, Uri uri)
+    {
+      if (uri==null) throw new ArgumentNullException(nameof(uri));
+      switch (type) {
+      case YellowPageUriType.Announce:
+        if (!uri.IsAbsoluteUri) {
+          var builder = new UriBuilder();
+          builder.Scheme = "pcp";
+          var pathidx = uri.OriginalString.IndexOf('/');
+          if (pathidx==0) {
+            return new YellowPageUriValidationResult(false, null, "ホスト名を指定してください");
+          }
+          else if (pathidx>0) {
+            builder.Host = uri.OriginalString.Substring(0, pathidx);
+            builder.Path = uri.OriginalString.Substring(pathidx);
+          }
+          else {
+            builder.Host = uri.OriginalString;
+            builder.Path = "";
+          }
+          builder.Query = "";
+          return new YellowPageUriValidationResult(false, builder.Uri, "pcp:で始まるURIを指定してください");
+        }
+        else if (uri.Scheme!="pcp") {
+          var builder = new UriBuilder(uri);
+          builder.Scheme = "pcp";
+          builder.Path = "";
+          builder.Query = "";
+          var portStr = uri.AbsolutePath;
+          var pathidx = portStr.IndexOf('/');
+          if (pathidx==0) {
+            return new YellowPageUriValidationResult(false, null, $"{uri.Scheme}で始まるURIは使用できません");
+          }
+          else if (pathidx>0) {
+            portStr = uri.AbsolutePath.Substring(0, pathidx);
+          }
+          if (String.IsNullOrEmpty(uri.Host) && Int32.TryParse(portStr, out var port)) {
+            builder.Host = uri.Scheme;
+            builder.Port = port;
+            return new YellowPageUriValidationResult(false, builder.Uri, $"{uri.Scheme}で始まるURIは使用できません");
+          }
+          else {
+            return new YellowPageUriValidationResult(false, null, $"{uri.Scheme}で始まるURIは使用できません");
+          }
+        }
+        else if (String.IsNullOrWhiteSpace(uri.Host)) {
+          return new YellowPageUriValidationResult(false, null, "ホスト名を指定してください");
+        }
+        else if (!String.IsNullOrWhiteSpace(uri.PathAndQuery) || uri.PathAndQuery!="/") {
+          var builder = new UriBuilder(uri);
+          builder.Path = "";
+          builder.Query = "";
+          return new YellowPageUriValidationResult(false, builder.Uri, $"パスは指定できません");
+        }
+        else {
+          return new YellowPageUriValidationResult(true, null, null);
+        }
+      case YellowPageUriType.Channels:
+        if (!uri.IsAbsoluteUri) {
+          var builder = new UriBuilder();
+          builder.Scheme = "http";
+          builder.Path = "";
+          builder.Query = "";
+          if (String.IsNullOrEmpty(builder.Host)) {
+            return new YellowPageUriValidationResult(false, null, "ホスト名を指定してください");
+          }
+          return new YellowPageUriValidationResult(false, builder.Uri, "http:またはhttps:で始まるURIを指定してください");
+        }
+        else if (uri.Scheme!="http" && uri.Scheme!="https") {
+          var builder = new UriBuilder(uri);
+          builder.Scheme = "http";
+          builder.Path = "";
+          builder.Query = "";
+          return new YellowPageUriValidationResult(false, builder.Uri, "http:またはhttps:で始まるURIを指定してください");
+        }
+        else {
+          var result = await CheckIndexTxtAsync(uri).ConfigureAwait(false);
+          switch (result) {
+          case IndexTxtResult.Success:
+            return new YellowPageUriValidationResult(true, null, null);
+          case IndexTxtResult.DownloadError:
+          case IndexTxtResult.ParseError:
+            {
+              var builder = new UriBuilder(uri);
+              if (String.IsNullOrEmpty(builder.Path)) {
+                builder.Path = "/index.txt";
+              }
+              else if (!builder.Path.EndsWith("/")) {
+                builder.Path += "/index.txt";
+              }
+              else {
+                builder.Path += "index.txt";
+              }
+              var result2 = await CheckIndexTxtAsync(builder.Uri).ConfigureAwait(false);
+              switch (result2) {
+              case IndexTxtResult.Success:
+                return new YellowPageUriValidationResult(false, builder.Uri, "index.txtを指定してください");
+              case IndexTxtResult.ParseError:
+                return new YellowPageUriValidationResult(false, null, "index.txtを指定してください");
+              case IndexTxtResult.DownloadError:
+              case IndexTxtResult.ConnectionError:
+              default:
+                return new YellowPageUriValidationResult(false, null, "チャンネル情報が取得できません");
+              }
+            }
+          case IndexTxtResult.ConnectionError:
+          default:
+            return new YellowPageUriValidationResult(false, null, "チャンネル情報が取得できません");
+          }
+        }
+      default:
+        throw new ArgumentOutOfRangeException(nameof(type));
+      }
     }
 
     public PCPYellowPageClientFactory(PeerCast peercast)

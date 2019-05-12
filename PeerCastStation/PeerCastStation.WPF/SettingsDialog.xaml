@@ -8,6 +8,7 @@
         Height="480"
         ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterOwner"
+        Validation.Error="Window_Error"
         Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
   <Grid Margin="4">
     <Grid.RowDefinitions>
@@ -16,9 +17,9 @@
     </Grid.RowDefinitions>
     <settings:SettingControl Grid.Row="0"/>
     <UniformGrid Grid.Row="1" HorizontalAlignment="Right" Rows="1" Columns="3">
-      <Button Margin="4" Padding="4" Content="OK" Click="OKButton_Click"/>
-      <Button Margin="4" Padding="4" Content="キャンセル" Click="CancelButton_Click"/>
-      <Button Margin="4" Padding="4" Content="適用" IsEnabled="{Binding IsModified}" Click="ApplyButton_Click"/>
+      <Button Margin="4" Padding="4" Content="OK" Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorType=Window}, Path=OKCommand}"/>
+      <Button Margin="4" Padding="4" Content="キャンセル" Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorType=Window}, Path=CancelCommand}"/>
+      <Button Margin="4" Padding="4" Content="適用" Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorType=Window}, Path=ApplyCommand}"/>
     </UniformGrid>
   </Grid>
 </Window>

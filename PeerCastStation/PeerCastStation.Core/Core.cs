@@ -159,6 +159,24 @@ namespace PeerCastStation.Core
 		Task<IEnumerable<IYellowPageChannel>> GetChannelsAsync(CancellationToken cancel_token);
   }
 
+  public class YellowPageUriValidationResult
+  {
+    public bool IsValid { get; private set; }
+    public Uri Candidate { get; private set; }
+    public string Message { get; private set; }
+    public YellowPageUriValidationResult(bool isValid, Uri candidate, string message)
+    {
+      IsValid = isValid;
+      Candidate = candidate;
+      Message = message;
+    }
+  }
+
+  public enum YellowPageUriType {
+    Announce,
+    Channels,
+  }
+
   /// <summary>
   /// YellowPageクライアントのインスタンスを作成するためのファクトリインターフェースです
   /// </summary>
@@ -183,9 +201,10 @@ namespace PeerCastStation.Core
     /// <summary>
     /// URIがこのYellowPageFactoryで扱えるかどうかを返します
     /// </summary>
+    /// <param name="type">チェックするURIのタイプ</param>
     /// <param name="uri">チェックするURI</param>
-    /// <returns>扱えるURIの場合はtrue、それ以外はfalse</returns>
-    bool CheckURI(Uri uri);
+    /// <returns>扱えるURIの場合はIsValidがtrueとなるYellowPageUriValidationResult</returns>
+    Task<YellowPageUriValidationResult> ValidateUriAsync(YellowPageUriType type, Uri uri);
   }
 
   [Flags]

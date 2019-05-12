@@ -169,13 +169,6 @@ namespace PeerCastStation.FLV.RTMP
         this.StreamId = msg.StreamId;
         await SendMessage(2, new UserControlMessage.StreamBeginMessage(this.Now, 0, msg.StreamId), cancel_token).ConfigureAwait(false);
         if (this.Channel!=null) {
-          await SendOnStatus(
-            this.StreamId,
-            msg.TransactionId+1,
-            "status",
-            "NetStream.Play.Start",
-            stream_name.ToString(),
-            cancel_token).ConfigureAwait(false);
           if (reset) {
             await SendOnStatus(
               this.StreamId,
@@ -185,13 +178,20 @@ namespace PeerCastStation.FLV.RTMP
               stream_name.ToString(),
               cancel_token).ConfigureAwait(false);
           }
+          await SendOnStatus(
+            this.StreamId,
+            msg.TransactionId+1,
+            "status",
+            "NetStream.Play.Start",
+            stream_name.ToString(),
+            cancel_token).ConfigureAwait(false);
         }
         else {
           await SendOnStatus(
             this.StreamId,
             msg.TransactionId+1,
             "error",
-            "NetStream.Play.FileNotFound",
+            "NetStream.Play.StreamNotFound",
             stream_name.ToString(),
             cancel_token).ConfigureAwait(false);
         }
