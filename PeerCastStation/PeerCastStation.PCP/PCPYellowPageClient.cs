@@ -1108,22 +1108,24 @@ namespace PeerCastStation.PCP
           while (line!=null) {
             var tokens = line.Split(new string[] { "<>" }, StringSplitOptions.None);
             var channel = new PCPYellowPageChannel(this);
-            if (tokens.Length> 0) channel.Name        = ParseStr(tokens[0]);  //1 CHANNEL_NAME チャンネル名
-            if (tokens.Length> 1) channel.ChannelId   = ParseGuid(tokens[1]);  //2 ID ID ユニーク値16進数32桁、制限チャンネルは全て0埋め
-            if (tokens.Length> 2) channel.Tracker     = ParseStr(tokens[2]);  //3 TIP TIP ポートも含む。Push配信時はブランク、制限チャンネルは127.0.0.1
-            if (tokens.Length> 3) channel.ContactUrl  = ParseStr(tokens[3]);  //4 CONTACT_URL コンタクトURL 基本的にURL、任意の文字列も可 CONTACT_URL
-            if (tokens.Length> 4) channel.Genre       = ParseStr(tokens[4]);  //5 GENRE ジャンル
-            if (tokens.Length> 5) channel.Description = ParseStr(tokens[5]);  //6 DETAIL 詳細
-            if (tokens.Length> 6) channel.Listeners   = ParseInt(tokens[6]);  //7 LISTENER_NUM Listener数 -1は非表示、-1未満はサーバのメッセージ。ブランクもあるかも
-            if (tokens.Length> 7) channel.Relays      = ParseInt(tokens[7]);  //8 RELAY_NUM Relay数 同上 
-            if (tokens.Length> 8) channel.Bitrate     = ParseInt(tokens[8]);  //9 BITRATE Bitrate 単位は kbps 
-            if (tokens.Length> 9) channel.ContentType = ParseStr(tokens[9]);  //10 TYPE Type たぶん大文字 
-            if (tokens.Length>10) channel.Artist      = ParseStr(tokens[10]); //11 TRACK_ARTIST トラック アーティスト 
-            if (tokens.Length>11) channel.Album       = ParseStr(tokens[11]); //12 TRACK_ALBUM トラック アルバム 
-            if (tokens.Length>12) channel.TrackTitle  = ParseStr(tokens[12]); //13 TRACK_TITLE トラック タイトル 
-            if (tokens.Length>13) channel.TrackUrl    = ParseStr(tokens[13]); //14 TRACK_CONTACT_URL トラック コンタクトURL 基本的にURL、任意の文字列も可 
-            if (tokens.Length>15) channel.Uptime      = ParseUptime(tokens[15]); //16 BROADCAST_TIME 配信時間 000〜99999 
-            if (tokens.Length>17) channel.Comment     = ParseStr(tokens[17]); //18 COMMENT コメント 
+            if (tokens.Count() != 19)
+                throw new InvalidDataException($"Format error in line {results.Count()+1} of {this.ChannelsUri.ToString()}");
+            channel.Name        = ParseStr(tokens[0]);  //1 CHANNEL_NAME チャンネル名
+            channel.ChannelId   = ParseGuid(tokens[1]);  //2 ID ID ユニーク値16進数32桁、制限チャンネルは全て0埋め
+            channel.Tracker     = ParseStr(tokens[2]);  //3 TIP TIP ポートも含む。Push配信時はブランク、制限チャンネルは127.0.0.1
+            channel.ContactUrl  = ParseStr(tokens[3]);  //4 CONTACT_URL コンタクトURL 基本的にURL、任意の文字列も可 CONTACT_URL
+            channel.Genre       = ParseStr(tokens[4]);  //5 GENRE ジャンル
+            channel.Description = ParseStr(tokens[5]);  //6 DETAIL 詳細
+            channel.Listeners   = ParseInt(tokens[6]);  //7 LISTENER_NUM Listener数 -1は非表示、-1未満はサーバのメッセージ。ブランクもあるかも
+            channel.Relays      = ParseInt(tokens[7]);  //8 RELAY_NUM Relay数 同上 
+            channel.Bitrate     = ParseInt(tokens[8]);  //9 BITRATE Bitrate 単位は kbps 
+            channel.ContentType = ParseStr(tokens[9]);  //10 TYPE Type たぶん大文字 
+            channel.Artist      = ParseStr(tokens[10]); //11 TRACK_ARTIST トラック アーティスト 
+            channel.Album       = ParseStr(tokens[11]); //12 TRACK_ALBUM トラック アルバム 
+            channel.TrackTitle  = ParseStr(tokens[12]); //13 TRACK_TITLE トラック タイトル 
+            channel.TrackUrl    = ParseStr(tokens[13]); //14 TRACK_CONTACT_URL トラック コンタクトURL 基本的にURL、任意の文字列も可 
+            channel.Uptime      = ParseUptime(tokens[15]); //16 BROADCAST_TIME 配信時間 000〜99999 
+            channel.Comment     = ParseStr(tokens[17]); //18 COMMENT コメント 
             results.Add(channel);
             line = reader.ReadLine();
           }
@@ -1132,7 +1134,12 @@ namespace PeerCastStation.PCP
       }
       catch (Exception e) {
         Logger.Error(e);
-        return Enumerable.Empty<IYellowPageChannel>();
+        var channel = new PCPYellowPageChannel(this);
+        channel.Name = "ERROR";
+        channel.Listeners = -99;
+        channel.Relays = -99;
+        channel.Description = e.Message;
+        return new IYellowPageChannel[] { channel };
       }
     }
 
