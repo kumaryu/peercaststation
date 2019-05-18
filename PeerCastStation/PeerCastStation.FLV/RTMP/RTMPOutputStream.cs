@@ -17,8 +17,7 @@ namespace PeerCastStation.FLV.RTMP
 		private System.Net.EndPoint remoteEndPoint;
 		private AccessControlInfo accessControl;
 		private RTMPPlayConnection connection;
-		private System.Threading.Tasks.Task<HandlerResult> connectionTask;
-		private System.Threading.CancellationTokenSource cancelSource = new System.Threading.CancellationTokenSource();
+		private CancellationTokenSource isStopped = new CancellationTokenSource();
 		private Channel channel;
 
 		public RTMPOutputStream(
@@ -89,34 +88,32 @@ namespace PeerCastStation.FLV.RTMP
 			}
 		}
 
-		public Task<HandlerResult> Start()
-		{
-			connectionTask =
-				connection.Run(cancelSource.Token)
-				.ContinueWith(task => {
-					if (this.channel!=null) {
-						this.channel.RemoveOutputStream(this);
-					}
-          return HandlerResult.Close;
-				});
-      return connectionTask;
-		}
+    public async Task<HandlerResult> Start(CancellationToken cancellationToken)
+    {
+      using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, isStopped.Token)) {
+        await connection.Run(cts.Token).ConfigureAwait(false);
+        if (this.channel!=null) {
+          this.channel.RemoveOutputStream(this);
+        }
+        return HandlerResult.Close;
+      }
+    }
 
-		public void Post(Host from, Atom packet)
-		{
-		}
+    public void Post(Host from, Atom packet)
+    {
+    }
 
-		private StopReason stopReason = StopReason.None;
-		public void Stop()
-		{
-			Stop(StopReason.UserShutdown);
-		}
+    private StopReason stopReason = StopReason.None;
+    public void Stop()
+    {
+      Stop(StopReason.UserShutdown);
+    }
 
-		public void Stop(StopReason reason)
-		{
-			stopReason = reason;
-			cancelSource.Cancel();
-		}
+    public void Stop(StopReason reason)
+    {
+      stopReason = reason;
+      isStopped.Cancel();
+    }
 
     public bool CheckAuthotization(string auth)
     {

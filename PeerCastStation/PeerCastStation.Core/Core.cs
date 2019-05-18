@@ -566,7 +566,8 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 元になるストリームへチャンネルのContentを流しはじめます
     /// </summary>
-    Task<HandlerResult> Start();
+    /// <param name="cancellationToken">接続待ち受けを終了した時にキャンセルされるトークン</param>
+    Task<HandlerResult> Start(CancellationToken cancellationToken);
     /// <summary>
     /// ストリームへパケットを送信します
     /// </summary>

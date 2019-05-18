@@ -142,39 +142,41 @@ namespace PeerCastStation.Core
 
     protected HandlerResult HandlerResult { get; set; }
 
-    public virtual async Task<HandlerResult> Start()
+    public virtual async Task<HandlerResult> Start(CancellationToken cancellationToken)
     {
-      try {
-        Logger.Debug("Starting");
+      using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, isStopped.Token)) {
         try {
-          await OnStarted(isStopped.Token).ConfigureAwait(false);
+          Logger.Debug("Starting");
           try {
-            Stop(await DoProcess(isStopped.Token).ConfigureAwait(false));
-          }
-          catch (IOException err) {
-            await OnError(err, isStopped.Token).ConfigureAwait(false);
+            await OnStarted(cts.Token).ConfigureAwait(false);
+            try {
+              Stop(await DoProcess(cts.Token).ConfigureAwait(false));
+            }
+            catch (IOException err) {
+              await OnError(err, cts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) {
+            }
+            await OnStopped(cts.Token).ConfigureAwait(false);
           }
           catch (OperationCanceledException) {
           }
-          await OnStopped(isStopped.Token).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) {
-        }
-        finally {
-          var timeout_source = new CancellationTokenSource(TimeSpan.FromMilliseconds(connection.WriteTimeout));
-          if (HandlerResult!=HandlerResult.Continue) {
-            await connection.CloseAsync(timeout_source.Token).ConfigureAwait(false);
+          finally {
+            var timeout_source = new CancellationTokenSource(TimeSpan.FromMilliseconds(connection.WriteTimeout));
+            if (HandlerResult!=HandlerResult.Continue) {
+              await connection.CloseAsync(timeout_source.Token).ConfigureAwait(false);
+            }
           }
+          Logger.Debug("Finished");
+          return HandlerResult;
         }
-        Logger.Debug("Finished");
-        return HandlerResult;
-      }
-      catch (Exception e) {
-        Logger.Error(e);
-        if (StoppedReason==StopReason.None) {
-          StoppedReason = StopReason.NotIdentifiedError;
+        catch (Exception e) {
+          Logger.Error(e);
+          if (StoppedReason==StopReason.None) {
+            StoppedReason = StopReason.NotIdentifiedError;
+          }
+          return HandlerResult.Error;
         }
-        return HandlerResult.Error;
       }
     }
 
