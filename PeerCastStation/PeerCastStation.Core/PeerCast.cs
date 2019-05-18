@@ -63,6 +63,7 @@ namespace PeerCastStation.Core
   /// PeerCastStationの主要な動作を行ない、管理するクラスです
   /// </summary>
   public class PeerCast
+    : IDisposable
   {
     /// <summary>
     /// UserAgentやServerとして名乗る名前を取得および設定します。
@@ -652,6 +653,12 @@ namespace PeerCastStation.Core
       channels = new List<Channel>();
       uptime.Stop();
       logger.Info("PeerCast Stopped");
+    }
+
+    public void Dispose()
+    {
+      if (cancelSource.IsCancellationRequested) return;
+      Stop();
     }
 
     private static Logger logger = new Logger(typeof(PeerCast));
