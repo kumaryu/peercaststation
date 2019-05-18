@@ -14,6 +14,7 @@ namespace PeerCastStation.FLV.RTMP
 		private PeerCast peerCast;
 		private ConnectionStream inputStream;
 		private ConnectionStream outputStream;
+		private System.Net.EndPoint localEndPoint;
 		private System.Net.EndPoint remoteEndPoint;
 		private AccessControlInfo accessControl;
 		private RTMPPlayConnection connection;
@@ -24,6 +25,7 @@ namespace PeerCastStation.FLV.RTMP
 				PeerCast peercast,
 				System.IO.Stream input_stream,
 				System.IO.Stream output_stream,
+				System.Net.EndPoint local_endpoint,
 				System.Net.EndPoint remote_endpoint,
 				AccessControlInfo access_control,
 				Guid channel_id,
@@ -35,6 +37,7 @@ namespace PeerCastStation.FLV.RTMP
 			this.inputStream    = stream;
 			this.outputStream   = stream;
       stream.WriteTimeout = 10000;
+			this.localEndPoint  = local_endpoint;
 			this.remoteEndPoint = remote_endpoint;
 			this.accessControl  = access_control;
 			this.connection = new RTMPPlayConnection(this, this.inputStream, this.outputStream);
@@ -158,6 +161,7 @@ namespace PeerCastStation.FLV.RTMP
 		public override IOutputStream Create(
 				System.IO.Stream input_stream,
 				System.IO.Stream output_stream,
+				System.Net.EndPoint local_endpoint,
 				System.Net.EndPoint remote_endpoint,
 				AccessControlInfo access_control,
 				Guid channel_id,
@@ -167,6 +171,7 @@ namespace PeerCastStation.FLV.RTMP
 					PeerCast,
 					input_stream,
 					output_stream,
+					local_endpoint,
 					remote_endpoint,
 					access_control,
 					channel_id,

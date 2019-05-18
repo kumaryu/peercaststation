@@ -619,6 +619,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="input_stream">接続先の受信ストリーム</param>
     /// <param name="output_stream">接続先の送信ストリーム</param>
+    /// <param name="local_endpoint">接続を待ち受けたエンドポイント。無ければnull</param>
     /// <param name="remote_endpoint">接続先。無ければnull</param>
     /// <param name="access_control">アクセスの可否および認証に必要な情報</param>
     /// <param name="channel_id">所属するチャンネルのチャンネルID</param>
@@ -627,6 +628,7 @@ namespace PeerCastStation.Core
     IOutputStream Create(
       Stream input_stream,
       Stream output_stream,
+      EndPoint local_endpoint,
       EndPoint remote_endpoint,
       AccessControlInfo access_control,
       Guid channel_id,

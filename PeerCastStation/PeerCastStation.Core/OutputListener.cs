@@ -26,7 +26,7 @@ namespace PeerCastStation.Core
 {
   public interface IConnectionHandler
   {
-    Task HandleClient(TcpClient client, AccessControlInfo acinfo, CancellationToken cancellationToken);
+    Task HandleClient(IPEndPoint localEndPoint, TcpClient client, AccessControlInfo acinfo, CancellationToken cancellationToken);
   }
 
   /// <summary>
@@ -223,6 +223,7 @@ namespace PeerCastStation.Core
             var client = await server.AcceptTcpClientAsync().ConfigureAwait(false);
             logger.Info("Client connected {0}", client.Client.RemoteEndPoint);
             var client_task = ConnectionHandler.HandleClient(
+              server.LocalEndpoint as IPEndPoint,
               client,
               GetAccessControlInfo(client.Client.RemoteEndPoint as IPEndPoint),
               cancel_token);
@@ -266,7 +267,11 @@ namespace PeerCastStation.Core
       this.PeerCast = peercast;
     }
 
-    public async Task HandleClient(TcpClient client, AccessControlInfo acinfo, CancellationToken cancellationToken)
+    public async Task HandleClient(
+      IPEndPoint localEndPoint,
+      TcpClient client,
+      AccessControlInfo acinfo,
+      CancellationToken cancellationToken)
     {
       logger.Debug("Output thread started");
       client.ReceiveBufferSize = 256*1024;
@@ -278,8 +283,12 @@ namespace PeerCastStation.Core
         retry:
         stream.WriteTimeout = 3000;
         stream.ReadTimeout  = 3000;
-        var remote_endpoint = (IPEndPoint)client.Client.RemoteEndPoint;
-        var handler = await CreateMatchedHandler(remote_endpoint, stream, acinfo, cancellationToken).ConfigureAwait(false);
+        var handler = await CreateMatchedHandler(
+          localEndPoint,
+          client.Client.RemoteEndPoint as IPEndPoint,
+          stream,
+          acinfo,
+          cancellationToken).ConfigureAwait(false);
         if (handler!=null) {
           logger.Debug("Output stream started {0}", trying);
           var result = await handler.Start(cancellationToken).ConfigureAwait(false);
@@ -307,6 +316,7 @@ namespace PeerCastStation.Core
     }
 
     private async Task<IOutputStream> CreateMatchedHandler(
+        IPEndPoint local_endpoint,
         IPEndPoint remote_endpoint,
         NetworkStream stream,
         AccessControlInfo acinfo,
@@ -331,6 +341,7 @@ namespace PeerCastStation.Core
                 return factory.Create(
                   stream,
                   stream,
+                  local_endpoint,
                   remote_endpoint,
                   acinfo,
                   channel_id.Value,

@@ -42,12 +42,13 @@ namespace PeerCastStation.UI.HTTP
       PeerCast peercast,
       Stream input_stream,
       Stream output_stream,
+      EndPoint local_endpoint,
       EndPoint remote_endpoint,
       AccessControlInfo access_control,
       HTTPRequest request,
       byte[] header,
       OWINApplication application)
-      : base(peercast, input_stream, output_stream, remote_endpoint, access_control, null, header)
+      : base(peercast, input_stream, output_stream, local_endpoint, remote_endpoint, access_control, null, header)
     {
       this.request = request;
       this.application = application;
@@ -273,6 +274,7 @@ namespace PeerCastStation.UI.HTTP
     public override IOutputStream Create(
       Stream input_stream,
       Stream output_stream,
+      EndPoint local_endpoint,
       EndPoint remote_endpoint,
       AccessControlInfo access_control,
       Guid channel_id,
@@ -286,6 +288,7 @@ namespace PeerCastStation.UI.HTTP
           PeerCast,
           input_stream,
           output_stream,
+          local_endpoint,
           remote_endpoint,
           access_control,
           req,

@@ -127,3 +127,51 @@ let ``EnvにAccessControlInfoが入ってくる`` () =
     Assert.NotNull(acinfo)
     Assert.IsType(typeof<AccessControlInfo>, acinfo)
 
+[<Fact>]
+let ``EnvにLocalEndPointが入ってくる`` () =
+    let mutable localaddr : string = ""
+    let mutable localport : int option = Some -1
+    use peca =
+        pecaWithOwinHost endpoint (
+            registerApp "/index.txt" (fun env ->
+                async {
+                    localaddr <- env.Request.LocalIpAddress
+                    localport <- env.Request.LocalPort |> Option.ofNullable
+                    env.Response.ContentType <- "text/plain"
+                    env.Response.Write ""
+                }
+            )
+        )
+    let req =
+        sprintf "http://%s/index.txt" (endpoint.ToString())
+        |> WebRequest.CreateHttp
+    let result = req.GetResponse()
+    use strm = new System.IO.StreamReader(result.GetResponseStream())
+    Assert.Equal("", strm.ReadToEnd())
+    Assert.Equal(endpoint.Address.ToString(), localaddr)
+    Assert.Equal(endpoint.Port, localport |> Option.defaultValue 80)
+
+[<Fact>]
+let ``EnvにRemoteEndPointが入ってくる`` () =
+    let mutable remoteaddr : string = ""
+    let mutable remoteport : int option = Some -1
+    use peca =
+        pecaWithOwinHost endpoint (
+            registerApp "/index.txt" (fun env ->
+                async {
+                    remoteaddr <- env.Request.RemoteIpAddress
+                    remoteport <- env.Request.RemotePort |> Option.ofNullable
+                    env.Response.ContentType <- "text/plain"
+                    env.Response.Write ""
+                }
+            )
+        )
+    let req =
+        sprintf "http://%s/index.txt" (endpoint.ToString())
+        |> WebRequest.CreateHttp
+    let result = req.GetResponse()
+    use strm = new System.IO.StreamReader(result.GetResponseStream())
+    Assert.Equal("", strm.ReadToEnd())
+    Assert.Equal(endpoint.Address.ToString(), remoteaddr)
+    Assert.NotEqual(endpoint.Port, remoteport |> Option.defaultValue 80)
+

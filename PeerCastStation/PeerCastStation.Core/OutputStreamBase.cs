@@ -33,7 +33,14 @@ namespace PeerCastStation.Core
     public abstract string Name { get; }
     public abstract OutputStreamType OutputStreamType { get; }
     public virtual int Priority { get { return 0; } }
-    public abstract IOutputStream Create(Stream input_stream, Stream output_stream, EndPoint remote_endpoint, AccessControlInfo access_control, Guid channel_id, byte[] header);
+    public abstract IOutputStream Create(
+      Stream input_stream,
+      Stream output_stream,
+      EndPoint local_endpoint,
+      EndPoint remote_endpoint,
+      AccessControlInfo access_control,
+      Guid channel_id,
+      byte[] header);
     public abstract Guid? ParseChannelID(byte[] header);
   }
 
@@ -45,6 +52,7 @@ namespace PeerCastStation.Core
     protected Logger Logger { get; private set; }
     public Channel Channel { get; private set; }
     public PeerCast PeerCast { get; private set; }
+    public EndPoint LocalEndPoint { get; private set; }
     public EndPoint RemoteEndPoint { get; private set; }
     public AccessControlInfo AccessControlInfo { get; private set; }
 
@@ -54,6 +62,7 @@ namespace PeerCastStation.Core
     /// <param name="peercast">所属するPeerCast</param>
     /// <param name="input_stream">元になる受信ストリーム</param>
     /// <param name="output_stream">元になる送信ストリーム</param>
+    /// <param name="local_endpoint">接続を待ち受けたアドレス</param>
     /// <param name="remote_endpoint">接続先のアドレス</param>
     /// <param name="access_control">接続可否および認証の情報</param>
     /// <param name="channel">所属するチャンネル。無い場合はnull</param>
@@ -62,6 +71,7 @@ namespace PeerCastStation.Core
       PeerCast peercast,
       Stream input_stream,
       Stream output_stream,
+      EndPoint local_endpoint,
       EndPoint remote_endpoint,
       AccessControlInfo access_control,
       Channel channel,
@@ -72,6 +82,7 @@ namespace PeerCastStation.Core
       this.connection.ReadTimeout = 10000;
       this.connection.WriteTimeout = 10000;
       this.PeerCast = peercast;
+      this.LocalEndPoint = local_endpoint;
       this.RemoteEndPoint = remote_endpoint;
       this.AccessControlInfo = access_control;
       this.Channel = channel;

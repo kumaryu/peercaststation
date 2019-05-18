@@ -45,6 +45,7 @@ namespace PeerCastStation.HTTP
     public override IOutputStream Create(
       Stream input_stream,
       Stream output_stream,
+      EndPoint local_endpoint,
       EndPoint remote_endpoint,
       AccessControlInfo access_control,
       Guid channel_id,
@@ -56,6 +57,7 @@ namespace PeerCastStation.HTTP
           PeerCast,
           input_stream,
           output_stream,
+          local_endpoint,
           remote_endpoint,
           access_control,
           req);
@@ -90,10 +92,11 @@ namespace PeerCastStation.HTTP
       PeerCast peercast,
       Stream input_stream,
       Stream output_stream,
+      EndPoint local_endpoint,
       EndPoint remote_endpoint,
       AccessControlInfo access_control,
       HTTPRequest req)
-      : base(peercast, input_stream, output_stream, remote_endpoint, access_control, null, null)
+      : base(peercast, input_stream, output_stream, local_endpoint, remote_endpoint, access_control, null, null)
     {
       Logger.Debug("Initialized: Remote {0}", remote_endpoint);
       this.request = req;
