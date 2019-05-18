@@ -1,4 +1,4 @@
-module Tests
+﻿module Tests
 
 open Xunit
 open System
@@ -12,32 +12,71 @@ open Owin
 let helloWorldApp (owinHost:PeerCastStation.Core.Http.OwinHost) =
     owinHost.Register(
         fun builder ->
-            builder.Run (fun env ->
-                async {
-                    env.Response.ContentType <- "text/plain"
-                    env.Response.Write "Hello World!"
-                }
-                |> Async.StartAsTask
-                :> System.Threading.Tasks.Task
+            builder.Map(
+                "/index.txt",
+                fun builder ->
+                    builder.Run (fun env ->
+                        async {
+                            env.Response.ContentType <- "text/plain"
+                            env.Response.Write "Hello World!"
+                        }
+                        |> Async.StartAsTask
+                        :> System.Threading.Tasks.Task
+                    )
             )
+            |> ignore
     )
 
 [<Fact>]
-let ``My test`` () =
+let ``アプリからテキストを取得できる`` () =
+    let test port =
+        let peca = PeerCast()
+        use owinHost = new PeerCastStation.Core.Http.OwinHost(null, peca)
+        use app = helloWorldApp owinHost
+        peca.OutputStreamFactories.Add(PeerCastStation.Core.Http.OwinHostOutputStreamFactory(peca, owinHost))
+        let listener =
+            peca.StartListen(
+                IPEndPoint(IPAddress.Parse("127.0.0.1"), port),
+                OutputStreamType.All,
+                OutputStreamType.All
+            )
+        let req =
+            sprintf "http://127.0.0.1:%d/index.txt" port
+            |> WebRequest.CreateHttp
+        req.KeepAlive <- false
+        let result = req.GetResponse()
+        use strm = new System.IO.StreamReader(result.GetResponseStream())
+        Assert.Equal("Hello World!", strm.ReadToEnd())
+        listener.Stop()
+        peca.Stop()
+    test 8080
+    test 8080
+
+[<Fact>]
+let ``アプリで処理されなかったら404が返る`` () =
+    let port = 8080
     let peca = PeerCast()
     use owinHost = new PeerCastStation.Core.Http.OwinHost(null, peca)
     use app = helloWorldApp owinHost
     peca.OutputStreamFactories.Add(PeerCastStation.Core.Http.OwinHostOutputStreamFactory(peca, owinHost))
     let listener =
         peca.StartListen(
-            IPEndPoint(IPAddress.Parse("127.0.0.1"), 8080),
+            IPEndPoint(IPAddress.Parse("127.0.0.1"), port),
             OutputStreamType.All,
             OutputStreamType.All
         )
-    let req = WebRequest.CreateHttp "http://127.0.0.1:8080/"
-    let result =
-        req.GetResponseAsync()
-        |> Async.AwaitTask
-        |> Async.RunSynchronously
-    use strm = new System.IO.StreamReader(result.GetResponseStream())
-    Assert.Equal("Hello World!", strm.ReadToEnd())
+    let req =
+        sprintf "http://127.0.0.1:%d/index.html" port
+        |> WebRequest.CreateHttp
+    req.KeepAlive <- false
+    try
+        req.GetResponse() |> ignore
+        Assert.True(false)
+    with
+    | :? WebException as ex ->
+        Assert.Equal(WebExceptionStatus.ProtocolError, ex.Status)
+        Assert.Equal(HttpStatusCode.NotFound, (ex.Response :?> HttpWebResponse).StatusCode)
+    listener.Stop()
+    peca.Stop()
+
+
