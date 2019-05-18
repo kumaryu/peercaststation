@@ -69,7 +69,10 @@
     <Compile Include="ChannelInfo.cs" />
     <Compile Include="Http\ChunkedContentStream.cs" />
     <Compile Include="Http\HttpErrorException.cs" />
+    <Compile Include="Http\HttpReasonPhrase.cs" />
     <Compile Include="Http\HttpRequestReader.cs" />
+    <Compile Include="Http\OwinEnvironment.cs" />
+    <Compile Include="Http\OwinHost.cs" />
     <Compile Include="Http\OwinRequestBodyStream.cs" />
     <Compile Include="Http\OwinResponseBodyStream.cs" />
     <Compile Include="WaitableEvent.cs" />
