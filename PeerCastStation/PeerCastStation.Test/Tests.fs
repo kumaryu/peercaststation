@@ -6,16 +6,16 @@ open System.Net
 open PeerCastStation.Core
 open Owin
 
-let helloWorldApp (owinHost:PeerCastStation.Core.Http.OwinHost) =
+let messageApp path msg (owinHost:PeerCastStation.Core.Http.OwinHost) =
     owinHost.Register(
         fun builder ->
             builder.Map(
-                "/index.txt",
+                string path,
                 fun builder ->
                     builder.Run (fun env ->
                         async {
                             env.Response.ContentType <- "text/plain"
-                            env.Response.Write "Hello World!"
+                            env.Response.Write (string msg)
                         }
                         |> Async.StartAsTask
                         :> System.Threading.Tasks.Task
@@ -24,13 +24,16 @@ let helloWorldApp (owinHost:PeerCastStation.Core.Http.OwinHost) =
             |> ignore
     )
 
+let helloWorldApp path (owinHost:PeerCastStation.Core.Http.OwinHost) =
+    messageApp path "Hello World!" owinHost
+
 let endpoint = IPEndPoint(IPAddress.Loopback, 8080)
 
 [<Fact>]
 let ``アプリからテキストを取得できる`` () =
     let peca = PeerCast()
     use owinHost = new PeerCastStation.Core.Http.OwinHost(null, peca)
-    use app = helloWorldApp owinHost
+    use app = helloWorldApp "/index.txt" owinHost
     peca.OutputStreamFactories.Add(PeerCastStation.Core.Http.OwinHostOutputStreamFactory(peca, owinHost))
     let listener =
         peca.StartListen(
@@ -51,7 +54,7 @@ let ``アプリからテキストを取得できる`` () =
 let ``アプリで処理されなかったら404が返る`` () =
     let peca = PeerCast()
     use owinHost = new PeerCastStation.Core.Http.OwinHost(null, peca)
-    use app = helloWorldApp owinHost
+    use app = helloWorldApp "/index.txt" owinHost
     peca.OutputStreamFactories.Add(PeerCastStation.Core.Http.OwinHostOutputStreamFactory(peca, owinHost))
     let listener =
         peca.StartListen(
@@ -76,7 +79,8 @@ let ``アプリで処理されなかったら404が返る`` () =
 let ``複数回リクエストしても正しく返ってくる`` () =
     let peca = PeerCast()
     use owinHost = new PeerCastStation.Core.Http.OwinHost(null, peca)
-    use app = helloWorldApp owinHost
+    use app = messageApp "/index.txt" "Hello World!" owinHost
+    use app = messageApp "/index.html" "<html><body>Hello World!</body></html>" owinHost
     peca.OutputStreamFactories.Add(PeerCastStation.Core.Http.OwinHostOutputStreamFactory(peca, owinHost))
     let listener =
         peca.StartListen(
@@ -84,16 +88,16 @@ let ``複数回リクエストしても正しく返ってくる`` () =
             OutputStreamType.All,
             OutputStreamType.All
         )
-    let testRequest () =
+    let testRequest path expected =
         let req =
-            sprintf "http://%s/index.txt" (endpoint.ToString())
+            sprintf "http://%s%s" (endpoint.ToString()) path
             |> WebRequest.CreateHttp
         let result = req.GetResponse()
         use strm = new System.IO.StreamReader(result.GetResponseStream())
-        Assert.Equal("Hello World!", strm.ReadToEnd())
-    testRequest ()
-    testRequest ()
-    testRequest ()
+        Assert.Equal(expected, strm.ReadToEnd())
+    testRequest "/index.txt" "Hello World!"
+    testRequest "/index.html" "<html><body>Hello World!</body></html>"
+    testRequest "/index.txt" "Hello World!"
     listener.Stop()
     peca.Stop()
 
@@ -102,7 +106,7 @@ let ``再起動後のリクエストも正しく処理される`` () =
     let test () =
         let peca = PeerCast()
         use owinHost = new PeerCastStation.Core.Http.OwinHost(null, peca)
-        use app = helloWorldApp owinHost
+        use app = helloWorldApp "/index.txt" owinHost
         peca.OutputStreamFactories.Add(PeerCastStation.Core.Http.OwinHostOutputStreamFactory(peca, owinHost))
         let listener =
             peca.StartListen(
