@@ -67,9 +67,6 @@ namespace PeerCastStation.WPF
     private readonly ChannelListViewModel channelList;
     public ChannelListViewModel ChannelList { get { return channelList; } }
 
-    private readonly SettingViewModel setting;
-    public SettingViewModel Setting { get { return setting; } }
-
     public string Version { get { return this.application.PeerCast.AgentName; } }
 
     private readonly LogViewModel log = new LogViewModel();
@@ -85,7 +82,6 @@ namespace PeerCastStation.WPF
       this.application = application;
       var peerCast = application.PeerCast;
       channelList = new ChannelListViewModel(peerCast);
-      setting = new SettingViewModel(application);
 
       peerCast.ChannelAdded += OnChannelChanged;
       peerCast.ChannelRemoved += OnChannelChanged;
