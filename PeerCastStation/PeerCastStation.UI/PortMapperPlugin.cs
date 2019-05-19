@@ -64,10 +64,25 @@ namespace PeerCastStation.UI
     protected override void OnStart()
     {
       base.OnStart();
-      if (!enabled) return;
-      monitor = new PortMapperMonitor(Application.PeerCast);
-      Application.PeerCast.AddChannelMonitor(monitor);
-      DiscoverAsync();
+      if (enabled) {
+        monitor = new PortMapperMonitor(Application.PeerCast);
+        Application.PeerCast.AddChannelMonitor(monitor);
+      }
+      Task.Run(async () => {
+        if (enabled) {
+          await DiscoverAsync().ConfigureAwait(false);
+        }
+        var results = await CheckPortAsync().ConfigureAwait(false);
+        foreach (var result in results) {
+          if (!result.Success) continue;
+          if (result.IsOpen) {
+            Application.PeerCast.SetPortStatus(result.LocalAddress, result.GlobalAddress, PortStatus.Open);
+          }
+          else {
+            Application.PeerCast.SetPortStatus(result.LocalAddress, result.GlobalAddress, PortStatus.Firewalled);
+          }
+        }
+      });
     }
 
     protected override void OnStop()
@@ -88,6 +103,14 @@ namespace PeerCastStation.UI
       discoverTask = monitor.DiscoverAsync();
       return discoverTask;
     }
+
+    private async Task<PortCheckResult[]> CheckPortAsync()
+    {
+      var checker = Application.Plugins.GetPlugin<PCPPortCheckerPlugin>();
+      if (checker==null) return new PortCheckResult[0];
+      return await checker.CheckAsync().ConfigureAwait(false);
+    }
+
   }
 
   [PecaSettings]
