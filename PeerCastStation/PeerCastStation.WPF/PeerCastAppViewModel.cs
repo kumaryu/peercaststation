@@ -38,6 +38,8 @@ namespace PeerCastStation.WPF
         return "開放";
       case Core.PortStatus.Firewalled:
         return "未開放";
+      case Core.PortStatus.Unavailable:
+        return "利用不可";
       case Core.PortStatus.Unknown:
       default:
         return "開放状態不明";

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Net;
+using System.Net.Sockets;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +20,9 @@ namespace PeerCastStation.Core
     private RingbufferStream writeBuffer = new RingbufferStream(64*1024);
     private Task writeTask;
     private Task readTask;
+
+    public IPEndPoint LocalEndPoint { get; private set; }
+    public IPEndPoint RemoteEndPoint { get; private set; }
 
     private async Task ProcessRead(Stream s)
     {
@@ -146,15 +151,19 @@ namespace PeerCastStation.Core
     }
 
     public ConnectionStream(Stream read_stream, Stream write_stream)
-      : this(read_stream, write_stream, null)
+      : this(read_stream, write_stream, null, null, null)
     {
     }
 
     public ConnectionStream(
       Stream read_stream,
       Stream write_stream,
-      byte[] header)
+      byte[] header,
+      IPEndPoint localEndPoint,
+      IPEndPoint remoteEndPoint)
     {
+      LocalEndPoint = localEndPoint;
+      RemoteEndPoint = remoteEndPoint;
       ReadStream  = read_stream;
       WriteStream = write_stream;
       if (ReadStream!=null && ReadStream.CanTimeout) {
@@ -173,8 +182,8 @@ namespace PeerCastStation.Core
       writeTask = ProcessWrite(WriteStream);
     }
 
-    public ConnectionStream(Stream base_stream)
-      : this(base_stream, base_stream)
+    public ConnectionStream(Socket socket, Stream base_stream)
+      : this(base_stream, base_stream, null, socket.LocalEndPoint as IPEndPoint, socket.RemoteEndPoint as IPEndPoint)
     {
     }
 

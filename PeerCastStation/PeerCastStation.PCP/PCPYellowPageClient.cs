@@ -237,7 +237,7 @@ namespace PeerCastStation.PCP
       private IPEndPoint remoteEndPoint;
       private Guid? remoteSessionID;
 
-      private async Task PCPHandshake(Stream stream, IPEndPoint remoteEndPoint, CancellationToken ct)
+      private async Task PCPHandshake(ConnectionStream stream, CancellationToken ct)
       {
         logger.Debug("Sending Handshake");
         await stream.WriteAsync(new Atom(new ID4("pcp\n"), PCPVersion.GetPCPVersionForNetworkType(networkType)), ct).ConfigureAwait(false);
@@ -251,7 +251,7 @@ namespace PeerCastStation.PCP
           {
             var listener = peerCast.FindListener(
               networkType.GetAddressFamily(),
-              remoteEndPoint.Address,
+              stream.RemoteEndPoint.Address,
               OutputStreamType.Relay | OutputStreamType.Metadata);
             if (listener!=null) {
               helo.SetHeloPort(listener.LocalEndPoint.Port);
@@ -264,7 +264,7 @@ namespace PeerCastStation.PCP
           {
             var listener = peerCast.FindListener(
               networkType.GetAddressFamily(),
-              remoteEndPoint.Address,
+              stream.RemoteEndPoint.Address,
               OutputStreamType.Relay | OutputStreamType.Metadata);
             if (listener!=null) {
               helo.SetHeloPing(listener.LocalEndPoint.Port);
@@ -276,7 +276,7 @@ namespace PeerCastStation.PCP
         while (!ct.IsCancellationRequested) {
           var atom = await stream.ReadAtomAsync(ct).ConfigureAwait(false);
           if (atom.Name==Atom.PCP_OLEH) {
-            OnPCPOleh(atom);
+            OnPCPOleh(stream, atom);
             break;
           }
           else if (atom.Name==Atom.PCP_QUIT) {
@@ -286,7 +286,7 @@ namespace PeerCastStation.PCP
         }
       }
 
-      private void OnPCPOleh(Atom atom)
+      private void OnPCPOleh(ConnectionStream stream, Atom atom)
       {
         remoteSessionID = atom.Children.GetHeloSessionID();
         var dis = atom.Children.GetHeloDisable();
@@ -303,7 +303,7 @@ namespace PeerCastStation.PCP
         }
         var port = atom.Children.GetHeloPort();
         if (port.HasValue) {
-          peerCast.SetPortStatus(rip.AddressFamily, port.Value!=0 ? PortStatus.Open : PortStatus.Firewalled);
+          peerCast.SetPortStatus(stream.LocalEndPoint.Address, rip, port.Value!=0 ? PortStatus.Open : PortStatus.Firewalled);
         }
       }
 
@@ -439,9 +439,8 @@ namespace PeerCastStation.PCP
         try {
           using (var client=new TcpClient()) {
             await client.ConnectAsync(host, port).ConfigureAwait(false);
-            using (var stream=new ConnectionStream(client.GetStream())) {
-              remoteEndPoint = (IPEndPoint)client.Client.RemoteEndPoint;
-              await PCPHandshake(stream, remoteEndPoint, ct).ConfigureAwait(false);
+            using (var stream=new ConnectionStream(client.Client, client.GetStream())) {
+              await PCPHandshake(stream, ct).ConfigureAwait(false);
               logger.Debug("Handshake succeeded");
               status = ConnectionStatus.Connected;
               using (var subCancellationSource=CancellationTokenSource.CreateLinkedTokenSource(ct)) {

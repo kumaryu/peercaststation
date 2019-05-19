@@ -971,26 +971,17 @@ namespace PeerCastStation.UI.HTTP
         res["authenticationId"]       = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Id : null;
         res["authenticationPassword"] = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Password : null;
         res["authToken"]     = listener.AuthenticationKey!=null ? HTTPUtils.CreateAuthorizationToken(listener.AuthenticationKey) : null;
-        switch (listener.LocalEndPoint.AddressFamily) {
-        case System.Net.Sockets.AddressFamily.InterNetwork:
-          if ((listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 && owner.OpenedPortsV4!=null) {
-            res["isOpened"] = (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 &&
-                              owner.OpenedPortsV4.Contains(listener.LocalEndPoint.Port);
-          }
-          else {
-            res["isOpened"] = null;
-          }
+        res["portStatus"]    = (int)listener.Status;
+        switch (listener.Status) {
+        case PortStatus.Firewalled:
+        case PortStatus.Unavailable:
+          res["isOpened"] = false;
           break;
-        case System.Net.Sockets.AddressFamily.InterNetworkV6:
-          if ((listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 && owner.OpenedPortsV6!=null) {
-            res["isOpened"] = (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 &&
-                              owner.OpenedPortsV6.Contains(listener.LocalEndPoint.Port);
-          }
-          else {
-            res["isOpened"] = null;
-          }
+        case PortStatus.Open:
+          res["isOpened"] = true;
           break;
-        default:
+        case PortStatus.Unknown:
+          res["isOpened"] = null;
           break;
         }
         return res;
@@ -1259,7 +1250,7 @@ namespace PeerCastStation.UI.HTTP
           task.Wait();
           foreach (var result in task.Result) {
             if (!result.Success) continue;
-            PeerCast.SetPortStatus(result.LocalAddress.AddressFamily, result.IsOpen ? PortStatus.Open : PortStatus.Firewalled);
+            PeerCast.SetPortStatus(result.LocalAddress, result.GlobalAddress, result.IsOpen ? PortStatus.Open : PortStatus.Firewalled);
             switch (result.LocalAddress.AddressFamily) {
             case System.Net.Sockets.AddressFamily.InterNetwork:
               owner.OpenedPortsV4 = result.Ports;

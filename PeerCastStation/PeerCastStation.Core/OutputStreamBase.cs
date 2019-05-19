@@ -68,7 +68,7 @@ namespace PeerCastStation.Core
       byte[] header)
     {
       this.Logger = new Logger(this.GetType(), remote_endpoint!=null ? remote_endpoint.ToString() : "");
-      this.connection = new ConnectionStream(input_stream, output_stream, header);
+      this.connection = new ConnectionStream(input_stream, output_stream, header, null, remote_endpoint as IPEndPoint);
       this.connection.ReadTimeout = 10000;
       this.connection.WriteTimeout = 10000;
       this.PeerCast = peercast;
