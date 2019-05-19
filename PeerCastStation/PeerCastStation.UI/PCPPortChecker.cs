@@ -36,19 +36,6 @@ namespace PeerCastStation.UI
         TargetUriV6 = target_uri;
       }
       base.OnStart();
-      CheckAsync()
-        .ContinueWith(prev => {
-          if (prev.IsCanceled || prev.IsFaulted) return;
-          foreach (var result in prev.Result) {
-            if (!result.Success) continue;
-            if (result.IsOpen) {
-              this.Application.PeerCast.SetPortStatus(result.LocalAddress, result.GlobalAddress, PortStatus.Open);
-            }
-            else {
-              this.Application.PeerCast.SetPortStatus(result.LocalAddress, result.GlobalAddress, PortStatus.Firewalled);
-            }
-          }
-        });
     }
 
     public async Task<PortCheckResult[]> CheckAsync()
