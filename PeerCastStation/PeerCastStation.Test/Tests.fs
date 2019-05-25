@@ -97,6 +97,18 @@ let ``アプリからテキストを取得できる`` () =
     Assert.Equal("Hello World!", strm.ReadToEnd())
 
 [<Fact>]
+let ``Dateヘッダがレスポンスに入ってくる`` () =
+    use peca = pecaWithOwinHost endpoint (helloWorldApp "/index.txt")
+    let req =
+        sprintf "http://%s/index.txt" (endpoint.ToString())
+        |> WebRequest.CreateHttp
+    let result = req.GetResponse()
+    use strm = new System.IO.StreamReader(result.GetResponseStream())
+    Assert.Equal("Hello World!", strm.ReadToEnd())
+    let date = DateTimeOffset.ParseExact(result.Headers.["Date"], "R", System.Globalization.CultureInfo.InvariantCulture)
+    Assert.InRange((DateTimeOffset.Now - date).TotalSeconds, 0.0, 10.0)
+
+[<Fact>]
 let ``アプリで処理されなかったら404が返る`` () =
     use peca = pecaWithOwinHost endpoint (helloWorldApp "/index.txt")
     let req =

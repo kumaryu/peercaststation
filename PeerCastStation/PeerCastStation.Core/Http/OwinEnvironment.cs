@@ -279,6 +279,30 @@ namespace PeerCastStation.Core.Http
       }
     }
 
+    public void SetResponseHeaderOptional(string key, Func<string> generator)
+    {
+      if (TryGetValue<IDictionary<string,string[]>>(Owin.ResponseHeaders, out var headers) &&
+          !headers.ContainsKey(key)) {
+        headers[key] = new string[] { generator() };
+      }
+    }
+
+    public void SetResponseHeaderOptional(string key, Func<string[]> generator)
+    {
+      if (TryGetValue<IDictionary<string,string[]>>(Owin.ResponseHeaders, out var headers) &&
+          !headers.ContainsKey(key)) {
+        headers[key] = generator();
+      }
+    }
+
+    public void SetResponseHeaderOptional(string key, string value)
+    {
+      if (TryGetValue<IDictionary<string,string[]>>(Owin.ResponseHeaders, out var headers) &&
+          !headers.ContainsKey(key)) {
+        headers[key] = new string[] { value };
+      }
+    }
+
     public string Get(string name, string defval)
     {
       if (Environment.TryGetValue(name, out var val) && val!=null) {

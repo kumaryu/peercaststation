@@ -139,6 +139,7 @@ namespace PeerCastStation.Core.Http
       var response_protocol = Environment.Get(OwinEnvironment.Owin.ResponseProtocol, Environment.Get(OwinEnvironment.Owin.RequestProtocol, "HTTP/1.0"));
       var status_code = Environment.Get(OwinEnvironment.Owin.ResponseStatusCode, 200);
       var reason_phrase = Environment.Get(OwinEnvironment.Owin.ResponseReasonPhrase, HttpReasonPhrase.GetReasonPhrase(status_code));
+      Environment.SetResponseHeaderOptional("Date", () => DateTimeOffset.Now.ToString("R"));
       using (var writer=new StreamWriter(BaseStream, System.Text.Encoding.ASCII, 2048, true)) {
         writer.NewLine = "\r\n";
         await writer.WriteAsync(response_protocol).ConfigureAwait(false);
