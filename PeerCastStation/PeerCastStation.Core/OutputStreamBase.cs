@@ -41,6 +41,13 @@ namespace PeerCastStation.Core
       AccessControlInfo access_control,
       Guid channel_id,
       byte[] header);
+
+    public virtual Guid? ParseChannelID(byte[] header, AccessControlInfo acinfo)
+    {
+      if ((acinfo.Accepts & OutputStreamType)==0) return null;
+      return ParseChannelID(header);
+    }
+
     public abstract Guid? ParseChannelID(byte[] header);
   }
 

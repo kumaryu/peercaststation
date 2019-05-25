@@ -154,7 +154,7 @@ namespace PeerCastStation.Core
         this.authenticationKey);
     }
 
-    public AccessControlInfo  LoopbackAccessControlInfo  { get; private set; }
+    public AccessControlInfo  LoopbackAccessControlInfo  { get; set; }
     public AccessControlInfo  LocalAccessControlInfo  { get; private set; }
     public AccessControlInfo  GlobalAccessControlInfo { get; private set; }
     public IConnectionHandler ConnectionHandler { get; private set; }
@@ -335,8 +335,7 @@ namespace PeerCastStation.Core
             offset += len;
             var header_ary = header.Take(offset).ToArray();
             foreach (var factory in output_factories) {
-              if ((acinfo.Accepts & factory.OutputStreamType) == 0) continue;
-              var channel_id = factory.ParseChannelID(header_ary);
+              var channel_id = factory.ParseChannelID(header_ary, acinfo);
               if (channel_id.HasValue) {
                 return factory.Create(
                   stream,

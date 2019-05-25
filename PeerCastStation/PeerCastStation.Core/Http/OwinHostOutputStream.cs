@@ -57,7 +57,9 @@ namespace PeerCastStation.Core.Http
 
     public override int Priority { get { return -1; } }
 
-    public override OutputStreamType OutputStreamType { get { return OutputStreamType.Relay | OutputStreamType.Play | OutputStreamType.Interface | OutputStreamType.Metadata; } }
+    public override OutputStreamType OutputStreamType {
+      get { throw new NotSupportedException(); }
+    }
 
     private OwinHost owinHost;
 
@@ -73,7 +75,7 @@ namespace PeerCastStation.Core.Http
       return new OwinHostOutputStream(PeerCast, owinHost, input_stream, output_stream, local_endpoint, remote_endpoint, access_control, channel, header);
     }
 
-    public override Guid? ParseChannelID(byte[] header)
+    public override Guid? ParseChannelID(byte[] header, AccessControlInfo acinfo)
     {
       var idx = Array.IndexOf(header, (byte)'\r');
       if (idx<0 ||
@@ -93,6 +95,11 @@ namespace PeerCastStation.Core.Http
       catch (ArgumentException) {
         return null;
       }
+    }
+
+    public override Guid? ParseChannelID(byte[] header)
+    {
+      throw new NotSupportedException();
     }
 
   }

@@ -212,6 +212,54 @@ namespace PeerCastStation.Core.Http
       return GetHttpHeader(Owin.RequestHeaders, key, defval);
     }
 
+    private IReadOnlyDictionary<string,string> queryCache = null;
+    public IReadOnlyDictionary<string,string> GetQueryParameters()
+    {
+      if (queryCache!=null) return queryCache;
+      if (TryGetValue(Owin.RequestQueryString, out string query)) {
+        queryCache =
+          query
+          .Split('&')
+          .Where(pair => !String.IsNullOrWhiteSpace(pair))
+          .Select(pair => {
+            var idx = pair.IndexOf('=');
+            if (idx>=0) {
+              return new string [] { Uri.UnescapeDataString(pair.Substring(0,idx)), Uri.UnescapeDataString(pair.Substring(idx+1)) };
+            }
+            else {
+              return new string [] { Uri.UnescapeDataString(pair), "" };
+            }
+          })
+          .ToDictionary(kv => kv[0], kv => kv[1], StringComparer.OrdinalIgnoreCase);
+      }
+      else {
+        queryCache = new Dictionary<string,string>();
+      }
+      return queryCache;
+    }
+
+    private IReadOnlyDictionary<string,string> cookieCache = null;
+    public IReadOnlyDictionary<string,string> GetRequestCookies()
+    {
+      if (cookieCache!=null) return cookieCache;
+      var cookies = GetRequestHeader("Cookie", new string[0]);
+      cookieCache =
+        cookies
+        .SelectMany(ent => ent.Split(';'))
+        .Where(pair => !String.IsNullOrWhiteSpace(pair))
+        .Select(pair => {
+          var idx = pair.IndexOf('=');
+          if (idx>=0) {
+            return new string [] { Uri.UnescapeDataString(pair.Substring(0,idx).Trim()), Uri.UnescapeDataString(pair.Substring(idx+1).Trim()) };
+          }
+          else {
+            return new string [] { Uri.UnescapeDataString(pair.Trim()), "" };
+          }
+        })
+        .ToDictionary(kv => kv[0], kv => kv[1], StringComparer.OrdinalIgnoreCase);
+      return cookieCache;
+    }
+
     public bool RequestHeaderContainsKey(string key)
     {
       return TryGetValue<IDictionary<string,string[]>>(Owin.RequestHeaders, out var headers) &&

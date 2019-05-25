@@ -4,6 +4,7 @@ open Xunit
 open System
 open System.Net
 open PeerCastStation.Core
+open PeerCastStation.Core.Http
 open Owin
 
 let registerApp path appFunc (owinHost:PeerCastStation.Core.Http.OwinHost) =
@@ -19,7 +20,23 @@ let registerApp path appFunc (owinHost:PeerCastStation.Core.Http.OwinHost) =
                     )
             )
             |> ignore
-    )
+    ) |> ignore
+
+let registerAppWithType appType path appFunc (owinHost:PeerCastStation.Core.Http.OwinHost) =
+    owinHost.Register(
+        fun builder ->
+            builder.Map(
+                string path,
+                fun builder ->
+                    builder.UseAuth appType |> ignore
+                    builder.Run (fun env ->
+                        appFunc env
+                        |> Async.StartAsTask
+                        :> System.Threading.Tasks.Task
+                    )
+            )
+            |> ignore
+    ) |> ignore
 
 let messageApp path msg =
     registerApp path (fun env ->
@@ -36,19 +53,38 @@ let helloWorldApp path =
     messageApp path "Hello World!"
 
 let endpoint = IPEndPoint(IPAddress.Loopback, 8080)
+type AuthInfo = { id: string; pass: string }
+module AuthInfo =
+    let toToken info =
+        let { id=id; pass=pass } = info
+        sprintf "%s:%s" id pass
+        |> System.Text.Encoding.ASCII.GetBytes
+        |> Convert.ToBase64String
 
-let pecaWithOwinHost endpoint buildFunc =
+    let toKey info =
+        let { id=id; pass=pass } = info
+        AuthenticationKey(id, pass)
+
+let authinfo = { id="hoge"; pass="fuga" }
+
+let pecaWithOwinHostAccessControl acinfo endpoint buildFunc =
     let peca = new PeerCast()
     let owinHost = new PeerCastStation.Core.Http.OwinHost(null, peca)
     buildFunc owinHost
     |> ignore
     peca.OutputStreamFactories.Add(PeerCastStation.Core.Http.OwinHostOutputStreamFactory(peca, owinHost))
-    peca.StartListen(
-        endpoint,
-        OutputStreamType.All,
-        OutputStreamType.All
-    ) |> ignore
+    let listener =
+        peca.StartListen(
+            endpoint,
+            OutputStreamType.None,
+            OutputStreamType.None
+        )
+    listener.LoopbackAccessControlInfo <- acinfo
     peca
+
+let pecaWithOwinHost =
+    AccessControlInfo(OutputStreamType.All, false, null)
+    |> pecaWithOwinHostAccessControl
 
 [<Fact>]
 let ``アプリからテキストを取得できる`` () =
@@ -174,4 +210,140 @@ let ``EnvにRemoteEndPointが入ってくる`` () =
     Assert.Equal("", strm.ReadToEnd())
     Assert.Equal(endpoint.Address.ToString(), remoteaddr)
     Assert.NotEqual(endpoint.Port, remoteport |> Option.defaultValue 80)
+
+[<Fact>]
+let ``OutputStreamTypeが一致しないアプリは403を返す`` () =
+    let acinfo = AccessControlInfo(OutputStreamType.Relay, false, null)
+    use peca =
+        pecaWithOwinHostAccessControl acinfo endpoint (fun owinHost ->
+            registerAppWithType OutputStreamType.Interface "/index.txt" (fun env ->
+                async {
+                    env.Response.ContentType <- "text/plain"
+                    env.Response.Write "Hello World!"
+                }
+            ) owinHost |> ignore
+            registerAppWithType OutputStreamType.Relay "/relay.txt" (fun env ->
+                async {
+                    env.Response.ContentType <- "text/plain"
+                    env.Response.Write "Hello World!"
+                }
+            ) owinHost |> ignore
+        )
+    let req =
+        sprintf "http://%s/index.txt" (endpoint.ToString())
+        |> WebRequest.CreateHttp
+    try
+        req.GetResponse() |> ignore
+        Assert.True(false)
+    with
+    | :? WebException as ex ->
+        Assert.Equal(WebExceptionStatus.ProtocolError, ex.Status)
+        Assert.Equal(HttpStatusCode.Forbidden, (ex.Response :?> HttpWebResponse).StatusCode)
+
+    let req =
+        sprintf "http://%s/relay.txt" (endpoint.ToString())
+        |> WebRequest.CreateHttp
+    let result = req.GetResponse()
+    use strm = new System.IO.StreamReader(result.GetResponseStream())
+    Assert.Equal("Hello World!", strm.ReadToEnd())
+
+[<Fact>]
+let ``認証が必要であれば401を返す`` () =
+    let acinfo = AccessControlInfo(OutputStreamType.Relay, true, AuthInfo.toKey authinfo)
+    use peca =
+        pecaWithOwinHostAccessControl acinfo endpoint (fun owinHost ->
+            registerAppWithType OutputStreamType.Interface "/index.txt" (fun env ->
+                async {
+                    env.Response.ContentType <- "text/plain"
+                    env.Response.Write "Hello World!"
+                }
+            ) owinHost |> ignore
+            registerAppWithType OutputStreamType.Relay "/relay.txt" (fun env ->
+                async {
+                    env.Response.ContentType <- "text/plain"
+                    env.Response.Write "Hello World!"
+                }
+            ) owinHost |> ignore
+        )
+    let req =
+        sprintf "http://%s/index.txt" (endpoint.ToString())
+        |> WebRequest.CreateHttp
+    try
+        req.GetResponse() |> ignore
+        Assert.True(false)
+    with
+    | :? WebException as ex ->
+        Assert.Equal(WebExceptionStatus.ProtocolError, ex.Status)
+        Assert.Equal(HttpStatusCode.Forbidden, (ex.Response :?> HttpWebResponse).StatusCode)
+
+    let req =
+        sprintf "http://%s/relay.txt" (endpoint.ToString())
+        |> WebRequest.CreateHttp
+    try
+        req.GetResponse() |> ignore
+        Assert.True(false)
+    with
+    | :? WebException as ex ->
+        Assert.Equal(WebExceptionStatus.ProtocolError, ex.Status)
+        Assert.Equal(HttpStatusCode.Unauthorized, (ex.Response :?> HttpWebResponse).StatusCode)
+
+[<Fact>]
+let ``Basic認証で認証が通る`` () =
+    let acinfo = AccessControlInfo(OutputStreamType.Relay, true, AuthInfo.toKey authinfo)
+    use peca =
+        pecaWithOwinHostAccessControl acinfo endpoint (fun owinHost ->
+            registerAppWithType OutputStreamType.Relay "/relay.txt" (fun env ->
+                async {
+                    env.Response.ContentType <- "text/plain"
+                    env.Response.Write "Hello World!"
+                }
+            ) owinHost |> ignore
+        )
+    let req =
+        sprintf "http://%s/relay.txt" (endpoint.ToString())
+        |> WebRequest.CreateHttp
+    req.Credentials <- NetworkCredential(authinfo.id, authinfo.pass)
+    let result = req.GetResponse()
+    use strm = new System.IO.StreamReader(result.GetResponseStream())
+    Assert.Equal("Hello World!", strm.ReadToEnd())
+
+[<Fact>]
+let ``Cookieで認証が通る`` () =
+    let acinfo = AccessControlInfo(OutputStreamType.Relay, true, AuthInfo.toKey authinfo)
+    use peca =
+        pecaWithOwinHostAccessControl acinfo endpoint (fun owinHost ->
+            registerAppWithType OutputStreamType.Relay "/relay.txt" (fun env ->
+                async {
+                    env.Response.ContentType <- "text/plain"
+                    env.Response.Write "Hello World!"
+                }
+            ) owinHost |> ignore
+        )
+    let req =
+        sprintf "http://%s/relay.txt" (endpoint.ToString())
+        |> WebRequest.CreateHttp
+    req.CookieContainer <- CookieContainer()
+    req.CookieContainer.Add(sprintf "http://%s/relay.txt" (endpoint.ToString()) |> Uri, Cookie("auth", AuthInfo.toToken authinfo))
+    let result = req.GetResponse()
+    use strm = new System.IO.StreamReader(result.GetResponseStream())
+    Assert.Equal("Hello World!", strm.ReadToEnd())
+
+[<Fact>]
+let ``クエリパラメータで認証が通る`` () =
+    let acinfo = AccessControlInfo(OutputStreamType.Relay, true, AuthInfo.toKey authinfo)
+    use peca =
+        pecaWithOwinHostAccessControl acinfo endpoint (fun owinHost ->
+            registerAppWithType OutputStreamType.Relay "/relay.txt" (fun env ->
+                async {
+                    env.Response.ContentType <- "text/plain"
+                    env.Response.Write "Hello World!"
+                }
+            ) owinHost |> ignore
+        )
+    let req =
+        sprintf "http://%s/relay.txt?auth=%s" (endpoint.ToString()) (AuthInfo.toToken authinfo)
+        |> WebRequest.CreateHttp
+    let result = req.GetResponse()
+    use strm = new System.IO.StreamReader(result.GetResponseStream())
+    Assert.Equal("Hello World!", strm.ReadToEnd())
 

@@ -15,22 +15,6 @@ namespace PeerCastStation.Core.Http
     public string Method { get; private set; }
     public string PathAndQuery { get; private set; }
     public string Protocol { get; private set; }
-    /// <summary>
-    /// リクエストされたUriを取得および設定します
-    /// </summary>
-    private Uri uri = null;
-    public Uri Uri {
-      get {
-        if (uri==null) {
-          string host;
-          if (!Headers.TryGetValue("HOST", out host)) {
-            host = "localhost";
-          }
-          Uri.TryCreate("http://" + host + PathAndQuery, UriKind.Absolute, out uri);
-        }
-        return uri;
-      }
-    }
 
     public class RequestHeaders
     {
@@ -134,77 +118,7 @@ namespace PeerCastStation.Core.Http
       }
     }
 
-    private static readonly Regex QueryParameterRegex = new Regex(@"(&|\?)([^&=]+)=([^&=]+)", RegexOptions.Compiled);
-    private Dictionary<string, string> queryParameters = null;
-    public IReadOnlyDictionary<string, string> QueryParameters {
-      get {
-        var p = queryParameters;
-        if (p==null) {
-          p = new Dictionary<string, string>();
-          var idx = PathAndQuery.IndexOf('?');
-          if (idx>=0) {
-            var query = PathAndQuery.Substring(idx);
-            foreach (Match param in QueryParameterRegex.Matches(query)) {
-              p.Add(
-                Uri.UnescapeDataString(param.Groups[2].Value).ToLowerInvariant(),
-                Uri.UnescapeDataString(param.Groups[3].Value));
-            }
-          }
-          queryParameters = p;
-        }
-        return p;
-      }
-    }
-
-    public IReadOnlyDictionary<string, string> Cookies { get; private set; }
-    public IReadOnlyList<string> Pragmas {
-      get {
-        if (Headers.TryGetValue("Pragma", out string[] value)) {
-          return value;
-        }
-        else {
-          return emptyPragmas;
-        }
-      }
-    }
-    private static readonly string[] emptyPragmas = new string[0];
-
-    public bool KeepAlive {
-      get {
-        switch (Protocol) {
-        case "HTTP/1.1":
-          {
-            if (Headers.TryGetValue("CONNECTION", out string value) && StringComparer.OrdinalIgnoreCase.Equals(value, "close")) {
-              return false;
-            }
-            else {
-              return true;
-            }
-          }
-        case "HTTP/1.0":
-          return Headers.ContainsKey("Keep-Alive");
-        default:
-          return false;
-        }
-      }
-    }
-
-    public bool ChunkedEncoding {
-      get {
-        string value;
-        if (Headers.TryGetValue("TRANSFER-ENCODING", out value)) {
-          return value.ToUpperInvariant().Contains("CHUNKED");
-        }
-        else {
-          return false;
-        }
-      }
-    }
-
     private static readonly Regex RequestLineRegex = new Regex(@"^(\w+) +(\S+) +(HTTP/1\.\d)$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
-    private static readonly Regex CookieHeaderRegex = new Regex(@"^Cookie:(\s*)(.+)(\s*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
-    private static readonly Regex CookieEntryRegex = new Regex(@"^([A-Za-z0-9!#$%^&*_\-+|~`'"".]+)=(.*)$", RegexOptions.Compiled | RegexOptions.Singleline);
-    private static readonly Regex PragmaHeaderRegex = new Regex(@"^Pragma:(\s*)(.+)(\s*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
     private static readonly Regex OtherHeaderRegex = new Regex(@"^(\S*):(.+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
     /// <summary>
@@ -217,26 +131,13 @@ namespace PeerCastStation.Core.Http
       Protocol = reqLine.Protocol;
       PathAndQuery = reqLine.PathAndQuery;
       var headers = new RequestHeaders();
-      var cookies = new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);
       foreach (var req in requests) {
         Match match = null;
-        if ((match = CookieHeaderRegex.Match(req)).Success) {
-          foreach (var pair in match.Groups[2].Value.Split(';')) {
-            var md = CookieEntryRegex.Match(pair);
-            if (md.Success) {
-              cookies.Add(md.Groups[1].Value, md.Groups[2].Value);
-            }
-          }
-        }
-        else if ((match = PragmaHeaderRegex.Match(req)).Success) {
-          headers.Add("Pragma", match.Groups[1].Value.Split(',').Select(token => token.Trim().ToLowerInvariant()));
-        }
-        else if ((match = OtherHeaderRegex.Match(req)).Success) {
+        if ((match = OtherHeaderRegex.Match(req)).Success) {
           headers.Add(match.Groups[1].Value, match.Groups[2].Value.Trim());
         }
       }
       Headers = headers;
-      Cookies = cookies;
     }
 
     public class HttpRequestLine {

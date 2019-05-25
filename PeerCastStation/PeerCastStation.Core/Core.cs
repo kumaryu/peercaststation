@@ -611,10 +611,6 @@ namespace PeerCastStation.Core
     /// </remarks>
     int Priority { get; }
     /// <summary>
-    /// 作成される出力ストリームの種類を取得します
-    /// </summary>
-    OutputStreamType OutputStreamType { get; }
-    /// <summary>
     /// OutpuStreamのインスタンスを作成します
     /// </summary>
     /// <param name="input_stream">接続先の受信ストリーム</param>
@@ -638,7 +634,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="header">クライアントから受け取ったリクエスト</param>
     /// <returns>headerからチャンネルIDを取得できた場合はチャンネルID、できなかった場合はnull</returns>
-    Guid? ParseChannelID(byte[] header);
+    Guid? ParseChannelID(byte[] header, AccessControlInfo acinfo);
   }
 
   /// <summary>
