@@ -49,6 +49,12 @@ namespace PeerCastStation.Core.Http
       public const string PeerCast = "peercaststation.PeerCast";
       public const string AccessControlInfo = "peercaststation.AccessControlInfo";
     }
+    public static class Opaque {
+      public const string Version = "opaque.Version";
+      public const string Upgrade = "opaque.Upgrade";
+      public const string Stream = "opaque.Stream";
+      public const string CallCancelled = "opaque.CallCancelled";
+    }
 
     [Flags]
     public enum TransferEncoding {

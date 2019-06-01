@@ -38,6 +38,8 @@ namespace PeerCastStation.Core.Http
     {
       Application = app;
       PeerCast = peerCast;
+      Properties[OwinEnvironment.Owin.Version] = "1.0.1";
+      Properties[OwinEnvironment.Opaque.Version] = "1.0";
       Properties[OwinEnvironment.PeerCastStation.PeerCastApplication] = app;
       Properties[OwinEnvironment.PeerCastStation.PeerCast] = peerCast;
       Properties[OwinEnvironment.Server.OnInit] = new Action<Func<Task>>(func => onInitActions.Add(func));

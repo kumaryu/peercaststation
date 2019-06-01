@@ -30,6 +30,8 @@ namespace PeerCastStation.Core.Http
     public Stream RequestBody { get; private set; }
     public ResponseStream ResponseBody { get; private set; }
     public OnSendingHeaderCollection OnSendingHeaders { get; private set; } = new OnSendingHeaderCollection();
+    public ConnectionStream ConnectionStream { get; private set; }
+    private Func<IDictionary<string,object>, Task> opaqueHandler = null;
 
     public OwinContext(
       HttpRequest req,
@@ -39,8 +41,9 @@ namespace PeerCastStation.Core.Http
       AccessControlInfo accessControlInfo)
     {
       Environment = new OwinEnvironment();
-      RequestBody = new OwinRequestBodyStream(this, stream);
-      ResponseBody = new OwinResponseBodyStream(this, stream);
+      ConnectionStream = stream;
+      RequestBody = new OwinRequestBodyStream(this, ConnectionStream);
+      ResponseBody = new OwinResponseBodyStream(this, ConnectionStream);
       Environment.Environment[OwinEnvironment.Owin.Version] = "1.0.1";
       Environment.Environment[OwinEnvironment.Owin.RequestBody] = RequestBody;
       Environment.Environment[OwinEnvironment.Owin.RequestHeaders] = req.Headers.ToDictionary();
@@ -59,6 +62,12 @@ namespace PeerCastStation.Core.Http
       Environment.Environment[OwinEnvironment.Server.LocalPort] = localEndPoint.Port.ToString();
       Environment.Environment[OwinEnvironment.Server.OnSendingHeaders] = new Action<Action<object>,object>(OnSendingHeaders.Add);
       Environment.Environment[OwinEnvironment.PeerCastStation.AccessControlInfo] = accessControlInfo;
+      Environment.Environment[OwinEnvironment.Opaque.Upgrade] = new Action<IDictionary<string,object>, Func<IDictionary<string,object>, Task>>(OpaqueUpgrade);
+    }
+
+    public void OpaqueUpgrade(IDictionary<string,object> parameters, Func<IDictionary<string,object>, Task> func)
+    {
+      opaqueHandler = func;
     }
 
     public async Task Invoke(
@@ -67,11 +76,17 @@ namespace PeerCastStation.Core.Http
     {
       Environment.Environment[OwinEnvironment.Owin.CallCancelled] = cancellationToken;
       await func.Invoke(Environment.Environment).ConfigureAwait(false);
-      await ResponseBody.CompleteAsync(cancellationToken).ConfigureAwait(false);
+      if (opaqueHandler!=null) {
+        var opaqueEnv = new OpaqueEnvironment(ConnectionStream, cancellationToken);
+        await opaqueHandler.Invoke(opaqueEnv.Environment).ConfigureAwait(false);
+      }
+      else {
+        await ResponseBody.CompleteAsync(cancellationToken).ConfigureAwait(false);
+      }
     }
 
     public bool IsKeepAlive {
-      get { return Environment.IsKeepAlive(); }
+      get { return opaqueHandler!=null && Environment.IsKeepAlive(); }
     }
   }
 

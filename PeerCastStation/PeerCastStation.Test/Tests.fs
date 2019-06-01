@@ -52,6 +52,28 @@ let messageApp path msg =
 let helloWorldApp path =
     messageApp path "Hello World!"
 
+module Opaque =
+    open System.Collections.Generic
+    open System.Threading
+    open System.Threading.Tasks
+    let upgrade (env:IDictionary<string,obj>) handler =
+        let upgrade =
+            env.["opaque.Upgrade"]
+            :?> Action<IDictionary<string,obj>,Func<IDictionary<string,obj>,Task>>
+        upgrade.Invoke(
+            Dictionary<string,obj>(),
+            fun opaqueEnv ->
+                let ct =
+                    opaqueEnv.["opaque.CallCancelled"]
+                    :?> CancellationToken
+                Async.StartAsTask(handler opaqueEnv, TaskCreationOptions.None, ct)
+                :> Task
+        )
+
+    let stream (opaqueEnv:IDictionary<string,obj>) =
+        opaqueEnv.["opaque.Stream"]
+        :?> System.IO.Stream
+
 let endpoint = IPEndPoint(IPAddress.Loopback, 8080)
 type AuthInfo = { id: string; pass: string }
 module AuthInfo =
@@ -417,4 +439,41 @@ let ``OnSendingHeadersに登録したアクションでヘッダを書き換え�
     use strm = new System.IO.StreamReader(result.GetResponseStream())
     Assert.Equal("Hello World!", strm.ReadToEnd())
     Assert.Equal("fuga", result.Headers.Get("x-hoge"))
+
+[<Fact>]
+let ``opaque.Upgradeで好きなように通信できる`` () =
+    use peca =
+        pecaWithOwinHost endpoint (fun owinHost ->
+            registerApp "/opaque" (fun env ->
+                async {
+                    Opaque.upgrade env.Environment (fun opaqueEnv ->
+                        async {
+                            let stream = Opaque.stream opaqueEnv
+                            let! len = stream.AsyncRead(1)
+                            let! bytes = stream.AsyncRead(len.[0] |> int)
+                            do! stream.AsyncWrite(len)
+                            do! stream.AsyncWrite(bytes)
+                        }
+                    )
+                }
+            ) owinHost |> ignore
+        )
+    use conn = new System.Net.Sockets.TcpClient()
+    conn.Connect(endpoint)
+    let sendReq strm =
+        use writer = new System.IO.StreamWriter(strm, System.Text.Encoding.ASCII, 2048, true)
+        writer.NewLine <- "\r\n"
+        writer.WriteLine("GET /opaque HTTP/1.1")
+        writer.WriteLine(endpoint.ToString() |> sprintf "Host:%s")
+        writer.WriteLine()
+    let strm = conn.GetStream()
+    sendReq strm
+    let data = seq { 0uy..42uy } |> Array.ofSeq
+    strm.WriteByte(data.Length |> byte)
+    strm.Write(data, 0, data.Length)
+    let len = strm.ReadByte()
+    Assert.Equal(len, data.Length)
+    let buf = Array.create len 0uy
+    Assert.Equal(len, strm.Read(buf, 0, len))
+    Assert.Equal<byte>(data, buf)
 

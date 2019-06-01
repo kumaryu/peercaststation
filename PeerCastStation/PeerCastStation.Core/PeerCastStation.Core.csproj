@@ -72,6 +72,7 @@
     <Compile Include="Http\HttpErrorException.cs" />
     <Compile Include="Http\HttpReasonPhrase.cs" />
     <Compile Include="Http\HttpRequestReader.cs" />
+    <Compile Include="Http\OpaqueEnvironment.cs" />
     <Compile Include="Http\OwinContext.cs" />
     <Compile Include="Http\OwinEnvironment.cs" />
     <Compile Include="Http\OwinHost.cs" />
