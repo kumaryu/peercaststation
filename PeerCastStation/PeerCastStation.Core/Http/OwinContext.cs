@@ -39,7 +39,7 @@ namespace PeerCastStation.Core.Http
       AccessControlInfo accessControlInfo)
     {
       Environment = new OwinEnvironment();
-      RequestBody = new OwinRequestBodyStream(Environment.Environment, stream);
+      RequestBody = new OwinRequestBodyStream(this, stream);
       ResponseBody = new OwinResponseBodyStream(this, stream);
       Environment.Environment[OwinEnvironment.Owin.Version] = "1.0.1";
       Environment.Environment[OwinEnvironment.Owin.RequestBody] = RequestBody;

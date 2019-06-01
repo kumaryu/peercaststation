@@ -31,7 +31,10 @@ namespace PeerCastStation.Core.Http
       set { throw new NotSupportedException(); }
     }
 
-    public OwinEnvironment Environment { get; private set; }
+    public bool ContinueOnRead { get; set; } = true;
+
+    public OwinContext Context { get; private set; }
+    public OwinEnvironment Environment { get { return Context.Environment; } }
     public Stream BaseStream { get; private set; }
 
     private Stream bodyStream = null;
@@ -60,10 +63,35 @@ namespace PeerCastStation.Core.Http
       }
     }
 
-    public OwinRequestBodyStream(IDictionary<string,object> env, Stream baseStream)
+    public OwinRequestBodyStream(OwinContext ctx, Stream baseStream)
     {
-      Environment = new OwinEnvironment(env);
+      Context = ctx;
       BaseStream = baseStream;
+      Context.OnSendingHeaders.Add(state => {
+        ContinueOnRead = false;
+      }, null);
+    }
+
+    private async Task SendContinue(CancellationToken cancellationToken)
+    {
+      if (!ContinueOnRead) return;
+      if (StringComparer.OrdinalIgnoreCase.Compare(Environment.GetRequestHeader("Expect", ""), "100-continue")==0) {
+        var response_protocol = Environment.Get(OwinEnvironment.Owin.ResponseProtocol, Environment.Get(OwinEnvironment.Owin.RequestProtocol, "HTTP/1.0"));
+        if (response_protocol!="HTTP/1.0") {
+          var status_code = 100;
+          var reason_phrase = HttpReasonPhrase.GetReasonPhrase(100);
+          using (var writer=new StreamWriter(BaseStream, System.Text.Encoding.ASCII, 2048, true)) {
+            writer.NewLine = "\r\n";
+            await writer.WriteAsync(response_protocol).ConfigureAwait(false);
+            await writer.WriteAsync(' ').ConfigureAwait(false);
+            await writer.WriteAsync(status_code.ToString()).ConfigureAwait(false);
+            await writer.WriteAsync(' ').ConfigureAwait(false);
+            await writer.WriteLineAsync(reason_phrase).ConfigureAwait(false);
+            await writer.WriteLineAsync().ConfigureAwait(false);
+          }
+        }
+      }
+      ContinueOnRead = false;
     }
 
     public override void Flush()
@@ -76,9 +104,10 @@ namespace PeerCastStation.Core.Http
       return ReadAsync(buffer, offset, count, CancellationToken.None).Result;
     }
 
-    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
-      return BodyStream.ReadAsync(buffer, offset, count, cancellationToken);
+      await SendContinue(cancellationToken);
+      return await BodyStream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
     }
 
     public override long Seek(long offset, SeekOrigin origin)
