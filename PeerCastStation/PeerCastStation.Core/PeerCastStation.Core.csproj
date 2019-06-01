@@ -67,7 +67,8 @@
     <Compile Include="Channel.cs" />
     <Compile Include="ChannelCleaner.cs" />
     <Compile Include="ChannelInfo.cs" />
-    <Compile Include="Http\ChunkedContentStream.cs" />
+    <Compile Include="Http\ChunkedRequestStream.cs" />
+    <Compile Include="Http\ChunkedResponseStream.cs" />
     <Compile Include="Http\HttpErrorException.cs" />
     <Compile Include="Http\HttpReasonPhrase.cs" />
     <Compile Include="Http\HttpRequestReader.cs" />

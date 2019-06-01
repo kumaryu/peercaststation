@@ -7,12 +7,101 @@ using System.Threading.Tasks;
 
 namespace PeerCastStation.Core.Http
 {
-  internal class OwinResponseBodyStream
+  public abstract class ResponseStream
     : Stream
+  {
+    public abstract Task CompleteAsync(CancellationToken cancellationToken);
+  }
+
+  public class ResponseStreamWrapper
+    : ResponseStream
+  {
+    public Stream BaseStream { get; private set; }
+    public override bool CanRead { get { return false; } }
+    public override bool CanSeek { get { return false; } }
+    public override bool CanWrite { get { return true; } }
+    public override bool CanTimeout {
+      get { return BaseStream.CanTimeout; }
+    }
+
+    public override int ReadTimeout {
+      get { throw new NotSupportedException(); }
+      set { throw new NotSupportedException(); }
+    }
+
+    public override int WriteTimeout {
+      get { return BaseStream.WriteTimeout; }
+      set { BaseStream.WriteTimeout = value; }
+    }
+
+    public override long Length {
+      get { throw new NotSupportedException(); }
+    }
+
+    public override long Position {
+      get { throw new NotSupportedException(); }
+      set { throw new NotSupportedException(); }
+    }
+
+    public ResponseStreamWrapper(Stream baseStream)
+    {
+      BaseStream = baseStream;
+    }
+
+    public override Task CompleteAsync(CancellationToken cancellationToken)
+    {
+      return BaseStream.FlushAsync(cancellationToken);
+    }
+
+    public override void Flush()
+    {
+      BaseStream.Flush();
+    }
+
+    public override Task FlushAsync(CancellationToken cancellationToken)
+    {
+      return BaseStream.FlushAsync(cancellationToken);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+      if (disposing) {
+        BaseStream.Dispose();
+      }
+    }
+
+    public override int Read(byte[] buffer, int offset, int count)
+    {
+      throw new NotSupportedException();
+    }
+
+    public override long Seek(long offset, SeekOrigin origin)
+    {
+      throw new NotSupportedException();
+    }
+
+    public override void SetLength(long value)
+    {
+      throw new NotSupportedException();
+    }
+
+    public override void Write(byte[] buffer, int offset, int count)
+    {
+      BaseStream.Write(buffer, offset, count);
+    }
+
+    public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    {
+      return BaseStream.WriteAsync(buffer, offset, count, cancellationToken);
+    }
+  }
+
+  internal class OwinResponseBodyStream
+    : ResponseStream
   {
     public OwinEnvironment Environment { get; private set; }
     public Stream BaseStream { get; private set; }
-    public Stream BodyStream { get; private set; }
+    public ResponseStream BodyStream { get; private set; }
     public bool Submitted { get; private set; } = false;
 
     public override bool CanRead {
@@ -63,7 +152,7 @@ namespace PeerCastStation.Core.Http
     }
 
     private class DeferredResponseStream
-      : Stream
+      : ResponseStream
     {
       public override bool CanRead { get { return false; } }
       public override bool CanSeek { get { return false; } }
@@ -79,10 +168,10 @@ namespace PeerCastStation.Core.Http
       }
 
       public OwinResponseBodyStream Owner { get; private set; }
-      public Stream BaseStream { get; private set; }
+      public ResponseStream BaseStream { get; private set; }
       private MemoryStream bufferStream = new MemoryStream();
 
-      public DeferredResponseStream(OwinResponseBodyStream owner, Stream baseStream)
+      public DeferredResponseStream(OwinResponseBodyStream owner, ResponseStream baseStream)
       {
         Owner = owner;
         BaseStream = baseStream;
@@ -105,22 +194,12 @@ namespace PeerCastStation.Core.Http
 
       public override void Flush()
       {
-        bufferStream.Flush();
-        Owner.Environment.SetResponseHeader("Content-Length", bufferStream.Length.ToString());
-        Owner.SendResponseHeaderAsync(CancellationToken.None).Wait();
-        bufferStream.Seek(0, SeekOrigin.Begin);
-        bufferStream.CopyTo(BaseStream);
-        BaseStream.Flush();
+        FlushAsync(CancellationToken.None).Wait();
       }
 
       public override async Task FlushAsync(CancellationToken cancellationToken)
       {
         await bufferStream.FlushAsync(cancellationToken).ConfigureAwait(false);
-        Owner.Environment.SetResponseHeader("Content-Length", bufferStream.Length.ToString());
-        await Owner.SendResponseHeaderAsync(cancellationToken).ConfigureAwait(false);
-        bufferStream.Seek(0, SeekOrigin.Begin);
-        await bufferStream.CopyToAsync(BaseStream, 2048, cancellationToken).ConfigureAwait(false);
-        await BaseStream.FlushAsync(cancellationToken).ConfigureAwait(false);
       }
 
       public override void Write(byte[] buffer, int offset, int count)
@@ -131,6 +210,16 @@ namespace PeerCastStation.Core.Http
       public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
       {
         return bufferStream.WriteAsync(buffer, offset, count, cancellationToken);
+      }
+
+      public override async Task CompleteAsync(CancellationToken cancellationToken)
+      {
+        await bufferStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+        Owner.Environment.SetResponseHeader("Content-Length", bufferStream.Length.ToString());
+        await Owner.SendResponseHeaderAsync(cancellationToken).ConfigureAwait(false);
+        bufferStream.Seek(0, SeekOrigin.Begin);
+        await bufferStream.CopyToAsync(BaseStream, 2048, cancellationToken).ConfigureAwait(false);
+        await BaseStream.CompleteAsync(cancellationToken).ConfigureAwait(false);
       }
     }
 
@@ -166,16 +255,16 @@ namespace PeerCastStation.Core.Http
       Submitted = true;
     }
 
-    private async Task<Stream> GetBodyStreamAsync(CancellationToken cancellationToken)
+    private async Task<ResponseStream> GetBodyStreamAsync(CancellationToken cancellationToken)
     {
       if (BodyStream!=null) return BodyStream;
-      var strm = BaseStream;
+      var basestrm = Environment.GetRequestMethod()=="HEAD" ? Stream.Null : BaseStream;
       var encoding = Environment.GetResponseTransferEncoding();
       if (encoding.HasFlag(OwinEnvironment.TransferEncoding.Deflate)) {
-        strm = new System.IO.Compression.DeflateStream(strm, System.IO.Compression.CompressionMode.Compress, true);
+        basestrm = new System.IO.Compression.DeflateStream(basestrm, System.IO.Compression.CompressionMode.Compress, true);
       }
       if (encoding.HasFlag(OwinEnvironment.TransferEncoding.GZip)) {
-        strm = new System.IO.Compression.GZipStream(strm, System.IO.Compression.CompressionMode.Compress, true);
+        basestrm = new System.IO.Compression.GZipStream(basestrm, System.IO.Compression.CompressionMode.Compress, true);
       }
       if (encoding.HasFlag(OwinEnvironment.TransferEncoding.Compress) ||
           encoding.HasFlag(OwinEnvironment.TransferEncoding.Brotli) ||
@@ -183,15 +272,17 @@ namespace PeerCastStation.Core.Http
           encoding.HasFlag(OwinEnvironment.TransferEncoding.Unsupported)) {
         throw new HttpErrorException(HttpStatusCode.NotImplemented);
       }
+
+      ResponseStream strm = new ResponseStreamWrapper(basestrm);
       if (encoding.HasFlag(OwinEnvironment.TransferEncoding.Chunked)) {
         await SendResponseHeaderAsync(cancellationToken).ConfigureAwait(false);
-        strm = new ChunkedContentStream(strm, true);
+        strm = new ChunkedResponseStream(strm);
       }
       else if (!Environment.IsKeepAlive() || Environment.ResponseHeaderContainsKey("Content-Length")) {
         await SendResponseHeaderAsync(cancellationToken).ConfigureAwait(false);
       }
       else {
-        strm = new DeferredResponseStream(this, BaseStream);
+        strm = new DeferredResponseStream(this, strm);
       }
       BodyStream = strm;
       return BodyStream;
@@ -219,6 +310,13 @@ namespace PeerCastStation.Core.Http
       var strm = await GetBodyStreamAsync(cancellationToken).ConfigureAwait(false);
       await strm.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
     }
+
+    public override async Task CompleteAsync(CancellationToken cancellationToken)
+    {
+      var strm = await GetBodyStreamAsync(cancellationToken).ConfigureAwait(false);
+      await strm.CompleteAsync(cancellationToken).ConfigureAwait(false);
+    }
+
   }
 
 }

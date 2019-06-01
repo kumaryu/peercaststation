@@ -33,28 +33,37 @@ namespace PeerCastStation.Core.Http
 
     public OwinEnvironment Environment { get; private set; }
     public Stream BaseStream { get; private set; }
-    public OwinEnvironment.TransferEncoding Encoding { get; private set; }
+
+    private Stream bodyStream = null;
+    private Stream BodyStream {
+      get {
+        if (bodyStream==null) {
+          bodyStream = BaseStream;
+          var enc = Environment.GetRequestTransferEncoding();
+          if (enc.HasFlag(OwinEnvironment.TransferEncoding.Chunked)) {
+            bodyStream = new ChunkedRequestStream(bodyStream, true);
+          }
+          if (enc.HasFlag(OwinEnvironment.TransferEncoding.Deflate)) {
+            bodyStream = new System.IO.Compression.DeflateStream(bodyStream, System.IO.Compression.CompressionMode.Decompress, true);
+          }
+          if (enc.HasFlag(OwinEnvironment.TransferEncoding.GZip)) {
+            bodyStream = new System.IO.Compression.GZipStream(bodyStream, System.IO.Compression.CompressionMode.Decompress, true);
+          }
+          if (enc.HasFlag(OwinEnvironment.TransferEncoding.Compress) ||
+              enc.HasFlag(OwinEnvironment.TransferEncoding.Brotli) ||
+              enc.HasFlag(OwinEnvironment.TransferEncoding.Exi) ||
+              enc.HasFlag(OwinEnvironment.TransferEncoding.Unsupported)) {
+            throw new HttpErrorException(HttpStatusCode.NotImplemented);
+          }
+        }
+        return bodyStream;
+      }
+    }
 
     public OwinRequestBodyStream(IDictionary<string,object> env, Stream baseStream)
     {
       Environment = new OwinEnvironment(env);
       BaseStream = baseStream;
-      Encoding = Environment.GetRequestTransferEncoding();
-      if (Encoding.HasFlag(OwinEnvironment.TransferEncoding.Chunked)) {
-        BaseStream = new ChunkedContentStream(BaseStream, true);
-      }
-      if (Encoding.HasFlag(OwinEnvironment.TransferEncoding.Deflate)) {
-        BaseStream = new System.IO.Compression.DeflateStream(BaseStream, System.IO.Compression.CompressionMode.Decompress, true);
-      }
-      if (Encoding.HasFlag(OwinEnvironment.TransferEncoding.GZip)) {
-        BaseStream = new System.IO.Compression.GZipStream(BaseStream, System.IO.Compression.CompressionMode.Decompress, true);
-      }
-      if (Encoding.HasFlag(OwinEnvironment.TransferEncoding.Compress) ||
-          Encoding.HasFlag(OwinEnvironment.TransferEncoding.Brotli) ||
-          Encoding.HasFlag(OwinEnvironment.TransferEncoding.Exi) ||
-          Encoding.HasFlag(OwinEnvironment.TransferEncoding.Unsupported)) {
-        throw new HttpErrorException(HttpStatusCode.NotImplemented);
-      }
     }
 
     public override void Flush()
@@ -69,7 +78,7 @@ namespace PeerCastStation.Core.Http
 
     public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
-      return base.ReadAsync(buffer, offset, count, cancellationToken);
+      return BodyStream.ReadAsync(buffer, offset, count, cancellationToken);
     }
 
     public override long Seek(long offset, SeekOrigin origin)

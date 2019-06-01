@@ -44,7 +44,7 @@ let messageApp path msg =
             if env.Request.Path.HasValue then
                 env.Response.StatusCode <- 404
             else
-                env.Response.ContentType <- "text/plain"
+                env.Response.ContentType <- "text/plain;charset=utf-8"
                 env.Response.Write (string msg)
         }
     )
@@ -95,6 +95,18 @@ let ``アプリからテキストを取得できる`` () =
     let result = req.GetResponse()
     use strm = new System.IO.StreamReader(result.GetResponseStream())
     Assert.Equal("Hello World!", strm.ReadToEnd())
+
+[<Fact>]
+let ``HEADリクエストの場合はボディが返らない`` () =
+    use peca = pecaWithOwinHost endpoint (helloWorldApp "/index.txt")
+    let req =
+        sprintf "http://%s/index.txt" (endpoint.ToString())
+        |> WebRequest.CreateHttp
+    req.Method <- "HEAD"
+    let result = req.GetResponse()
+    use strm = new System.IO.StreamReader(result.GetResponseStream())
+    Assert.Equal("", strm.ReadToEnd())
+    Assert.Equal(12L, result.ContentLength)
 
 [<Fact>]
 let ``Dateヘッダがレスポンスに入ってくる`` () =
@@ -358,4 +370,31 @@ let ``クエリパラメータで認証が通る`` () =
     let result = req.GetResponse()
     use strm = new System.IO.StreamReader(result.GetResponseStream())
     Assert.Equal("Hello World!", strm.ReadToEnd())
+
+[<Fact>]
+let ``chunkedエンコーディングで送受信できる`` () =
+    use peca =
+        pecaWithOwinHost endpoint (fun owinHost ->
+            registerApp "/echo" (fun env ->
+                async {
+                    use strm = new System.IO.StreamReader(env.Request.Body, System.Text.Encoding.UTF8, false, 2048, true)
+                    let! req = strm.ReadToEndAsync() |> Async.AwaitTask
+                    env.Response.ContentType <- "text/plain"
+                    env.Response.Headers.Set("Transfer-Encoding", "chunked")
+                    env.Response.Write req
+                }
+            ) owinHost |> ignore
+        )
+    let req =
+        sprintf "http://%s/echo" (endpoint.ToString())
+        |> WebRequest.CreateHttp
+    req.Method <- "POST"
+    req.ContentType <- "text/plain"
+    req.SendChunked <- true
+    use reqstrm = req.GetRequestStream()
+    reqstrm.WriteUTF8("Hello ")
+    reqstrm.WriteUTF8("Hoge!")
+    let result = req.GetResponse()
+    use strm = new System.IO.StreamReader(result.GetResponseStream())
+    Assert.Equal("Hello Hoge!", strm.ReadToEnd())
 

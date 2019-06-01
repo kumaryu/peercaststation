@@ -55,7 +55,7 @@ namespace PeerCastStation.Core.Http
   {
     public override string Name { get { return nameof(OwinHostOutputStreamFactory); } }
 
-    public override int Priority { get { return -1; } }
+    public override int Priority { get { return 10; } }
 
     public override OutputStreamType OutputStreamType {
       get { throw new NotSupportedException(); }

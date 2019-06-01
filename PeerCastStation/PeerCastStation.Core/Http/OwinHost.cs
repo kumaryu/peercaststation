@@ -200,6 +200,7 @@ namespace PeerCastStation.Core.Http
       env[OwinEnvironment.Owin.RequestProtocol] = req.Protocol;
       env[OwinEnvironment.Owin.RequestQueryString] = req.QueryString;
       env[OwinEnvironment.Owin.RequestScheme] = "http";
+      env[OwinEnvironment.Owin.RequestMethod] = req.Method;
       env[OwinEnvironment.Owin.ResponseBody] = response;
       env[OwinEnvironment.Owin.ResponseHeaders] = new Dictionary<string,string[]>(StringComparer.OrdinalIgnoreCase);
       env[OwinEnvironment.Server.RemoteIpAddress] = remoteEndPoint.Address.ToString();
@@ -209,7 +210,7 @@ namespace PeerCastStation.Core.Http
       env[OwinEnvironment.Server.LocalPort] = localEndPoint.Port.ToString();
       env[OwinEnvironment.PeerCastStation.AccessControlInfo] = accessControlInfo;
       await func.Invoke(env).ConfigureAwait(false);
-      await response.FlushAsync(cancellationToken).ConfigureAwait(false);
+      await response.CompleteAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public Task Invoke(

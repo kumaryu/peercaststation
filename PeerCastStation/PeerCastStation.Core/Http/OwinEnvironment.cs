@@ -190,6 +190,16 @@ namespace PeerCastStation.Core.Http
       }
     }
 
+    public string GetRequestMethod()
+    {
+      if (TryGetValue<string>(Owin.RequestMethod, out var method)) {
+        return method;
+      }
+      else {
+        return "";
+      }
+    }
+
     public string GetRequestHeader(string key, string defval)
     {
       return GetHttpHeader(Owin.RequestHeaders, key, defval);
