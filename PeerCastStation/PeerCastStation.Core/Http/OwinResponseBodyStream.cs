@@ -99,7 +99,10 @@ namespace PeerCastStation.Core.Http
   internal class OwinResponseBodyStream
     : ResponseStream
   {
-    public OwinEnvironment Environment { get; private set; }
+    public OwinContext Context { get; private set; }
+    public OwinEnvironment Environment {
+      get { return Context.Environment; }
+    }
     public Stream BaseStream { get; private set; }
     public ResponseStream BodyStream { get; private set; }
     public bool Submitted { get; private set; } = false;
@@ -129,9 +132,9 @@ namespace PeerCastStation.Core.Http
       set { throw new NotSupportedException(); }
     }
 
-    public OwinResponseBodyStream(IDictionary<string,object> env, Stream baseStream)
+    public OwinResponseBodyStream(OwinContext ctx, Stream baseStream)
     {
-      Environment = new OwinEnvironment(env);
+      Context = ctx;
       BaseStream = baseStream;
       BodyStream = null;
     }
@@ -225,6 +228,7 @@ namespace PeerCastStation.Core.Http
 
     private async Task SendResponseHeaderAsync(CancellationToken cancellationToken)
     {
+      Context.OnSendingHeaders.Invoke();
       var response_protocol = Environment.Get(OwinEnvironment.Owin.ResponseProtocol, Environment.Get(OwinEnvironment.Owin.RequestProtocol, "HTTP/1.0"));
       var status_code = Environment.Get(OwinEnvironment.Owin.ResponseStatusCode, 200);
       var reason_phrase = Environment.Get(OwinEnvironment.Owin.ResponseReasonPhrase, HttpReasonPhrase.GetReasonPhrase(status_code));

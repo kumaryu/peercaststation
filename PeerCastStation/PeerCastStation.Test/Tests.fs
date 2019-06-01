@@ -398,3 +398,23 @@ let ``chunkedエンコーディングで送受信できる`` () =
     use strm = new System.IO.StreamReader(result.GetResponseStream())
     Assert.Equal("Hello Hoge!", strm.ReadToEnd())
 
+[<Fact>]
+let ``OnSendingHeadersに登録したアクションでヘッダを書き換えられる`` () =
+    use peca =
+        pecaWithOwinHost endpoint (fun owinHost ->
+            registerApp "/index.txt" (fun env ->
+                async {
+                    env.Response.OnSendingHeaders((fun _ -> env.Response.Headers.Set("x-hoge", "fuga")), ())
+                    env.Response.ContentType <- "text/plain"
+                    env.Response.Write "Hello World!"
+                }
+            ) owinHost |> ignore
+        )
+    let req =
+        sprintf "http://%s/index.txt" (endpoint.ToString())
+        |> WebRequest.CreateHttp
+    let result = req.GetResponse()
+    use strm = new System.IO.StreamReader(result.GetResponseStream())
+    Assert.Equal("Hello World!", strm.ReadToEnd())
+    Assert.Equal("fuga", result.Headers.Get("x-hoge"))
+

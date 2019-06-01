@@ -180,49 +180,16 @@ namespace PeerCastStation.Core.Http
       };
     }
 
-    private async Task Invoke(
-      Func<IDictionary<string,object>, Task> func,
-      HttpRequest req,
-      ConnectionStream stream,
-      IPEndPoint localEndPoint,
-      IPEndPoint remoteEndPoint,
-      AccessControlInfo accessControlInfo,
-      IDictionary<string,object> env,
-      CancellationToken cancellationToken)
-    {
-      var response = new OwinResponseBodyStream(env, stream);
-      env[OwinEnvironment.Owin.CallCancelled] = cancellationToken;
-      env[OwinEnvironment.Owin.Version] = "1.0.1";
-      env[OwinEnvironment.Owin.RequestBody] = new OwinRequestBodyStream(env, stream);
-      env[OwinEnvironment.Owin.RequestHeaders] = req.Headers.ToDictionary();
-      env[OwinEnvironment.Owin.RequestPath] = req.Path;
-      env[OwinEnvironment.Owin.RequestPathBase] = "/";
-      env[OwinEnvironment.Owin.RequestProtocol] = req.Protocol;
-      env[OwinEnvironment.Owin.RequestQueryString] = req.QueryString;
-      env[OwinEnvironment.Owin.RequestScheme] = "http";
-      env[OwinEnvironment.Owin.RequestMethod] = req.Method;
-      env[OwinEnvironment.Owin.ResponseBody] = response;
-      env[OwinEnvironment.Owin.ResponseHeaders] = new Dictionary<string,string[]>(StringComparer.OrdinalIgnoreCase);
-      env[OwinEnvironment.Server.RemoteIpAddress] = remoteEndPoint.Address.ToString();
-      env[OwinEnvironment.Server.RemotePort] = remoteEndPoint.Port.ToString();
-      env[OwinEnvironment.Server.IsLocal] = remoteEndPoint.Address.GetAddressLocality()==0;
-      env[OwinEnvironment.Server.LocalIpAddress] = localEndPoint.Address.ToString();
-      env[OwinEnvironment.Server.LocalPort] = localEndPoint.Port.ToString();
-      env[OwinEnvironment.PeerCastStation.AccessControlInfo] = accessControlInfo;
-      await func.Invoke(env).ConfigureAwait(false);
-      await response.CompleteAsync(cancellationToken).ConfigureAwait(false);
-    }
-
     public Task Invoke(
       HttpRequest req,
       ConnectionStream stream,
       IPEndPoint localEndPoint,
       IPEndPoint remoteEndPoint,
       AccessControlInfo accessControlInfo,
-      IDictionary<string,object> env,
       CancellationToken cancellationToken)
     {
-      return Invoke(OwinApp, req, stream, localEndPoint, remoteEndPoint, accessControlInfo, env, cancellationToken);
+      var ctx = new OwinContext(req, stream, localEndPoint, remoteEndPoint, accessControlInfo);
+      return ctx.Invoke(OwinApp, cancellationToken);
     }
   }
 

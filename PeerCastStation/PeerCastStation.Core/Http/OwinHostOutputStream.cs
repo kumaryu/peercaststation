@@ -34,15 +34,15 @@ namespace PeerCastStation.Core.Http
         using (var reader=new HttpRequestReader(Connection, true)) {
           req = await reader.ReadAsync(cancel_token).ConfigureAwait(false);
         }
-        var env = new OwinEnvironment();
+        var ctx = new OwinContext(req, Connection, LocalEndPoint as IPEndPoint, RemoteEndPoint as IPEndPoint, AccessControlInfo);
         try {
-          await owinHost.Invoke(req, Connection, LocalEndPoint as IPEndPoint, RemoteEndPoint as IPEndPoint, AccessControlInfo, env.Environment, cancel_token).ConfigureAwait(false);
+          await ctx.Invoke(owinHost.OwinApp, cancel_token).ConfigureAwait(false);
         }
         catch (Exception ex) {
           Logger.Error(ex);
           return StopReason.NotIdentifiedError;
         }
-        if (!env.IsKeepAlive()) {
+        if (!ctx.IsKeepAlive) {
           break;
         }
       }
