@@ -443,6 +443,7 @@ namespace PeerCastStation.PCP
               await PCPHandshake(stream, ct).ConfigureAwait(false);
               logger.Debug("Handshake succeeded");
               status = ConnectionStatus.Connected;
+              remoteEndPoint = stream.RemoteEndPoint;
               using (var subCancellationSource=CancellationTokenSource.CreateLinkedTokenSource(ct)) {
                 try {
                   await TaskWhenAllForAwait(
