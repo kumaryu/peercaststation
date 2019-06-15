@@ -65,6 +65,8 @@ namespace PeerCastStation.Core.Http
       Environment.Environment[OwinEnvironment.Server.OnSendingHeaders] = new Action<Action<object>,object>(OnSendingHeaders.Add);
       Environment.Environment[OwinEnvironment.PeerCastStation.PeerCast] = peerCast;
       Environment.Environment[OwinEnvironment.PeerCastStation.AccessControlInfo] = accessControlInfo;
+      Environment.Environment[OwinEnvironment.PeerCastStation.GetRecvRate] = new Func<float>(() => stream.ReadRate);
+      Environment.Environment[OwinEnvironment.PeerCastStation.GetSendRate] = new Func<float>(() => stream.WriteRate);
       Environment.Environment[OwinEnvironment.Opaque.Upgrade] = new Action<IDictionary<string,object>, Func<IDictionary<string,object>, Task>>(OpaqueUpgrade);
     }
 

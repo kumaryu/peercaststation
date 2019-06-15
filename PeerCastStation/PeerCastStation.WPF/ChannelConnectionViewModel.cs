@@ -136,8 +136,8 @@ namespace PeerCastStation.WPF
   class OutputChannelConnectionViewModel
     : ChannelConnectionViewModel
   {
-    private IOutputStream outputStream;
-    public OutputChannelConnectionViewModel(IOutputStream os)
+    private IChannelSink outputStream;
+    public OutputChannelConnectionViewModel(IChannelSink os)
     {
       outputStream = os;
     }

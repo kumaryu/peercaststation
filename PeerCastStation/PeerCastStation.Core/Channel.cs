@@ -16,6 +16,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
@@ -56,7 +57,7 @@ namespace PeerCastStation.Core
     protected static Logger logger = new Logger(typeof(Channel));
     private const int NodeLimit = 180000; //ms
     private ISourceStream sourceStream = null;
-    private List<IOutputStream> outputStreams = new List<IOutputStream>();
+    private ImmutableList<IChannelSink> sinks = ImmutableList<IChannelSink>.Empty;
     private List<Host> sourceNodes = new List<Host>();
     private List<Host> nodes = new List<Host>();
     private Content contentHeader = null;
@@ -108,35 +109,43 @@ namespace PeerCastStation.Core
     /// 自分のノードに直接つながっているリレー接続数を取得します
     /// </summary>
     public int LocalRelays {
-      get { return outputStreams.Count(x => (x.OutputStreamType & OutputStreamType.Relay) != 0); }
+      get { return sinks.Select(x => x.GetConnectionInfo()).Count(x => x.Type.HasFlag(ConnectionType.Relay)); }
     }
 
     /// <summary>
     /// 自分のノードに直接つながっている視聴接続数を取得します
     /// </summary>
     public int LocalDirects {
-      get { return outputStreams.Count(x => (x.OutputStreamType & OutputStreamType.Play) != 0); }
+      get { return sinks.Select(x => x.GetConnectionInfo()).Count(x => x.Type.HasFlag(ConnectionType.Direct)); }
     }
 
     /// <summary>
     /// 保持している全てのノードと自分ノードのリレー合計を取得します
     /// </summary>
     public int TotalRelays {
-      get { return LocalRelays + Nodes.Sum(n => n.RelayCount); }
+      get {
+        return sinks
+          .Select(x => x.GetConnectionInfo())
+          .Sum(x => (x.Type.HasFlag(ConnectionType.Relay) ? 1 : 0) + x.LocalRelays ?? 0);
+      }
     }
 
     /// <summary>
     /// 保持している全てのノードと自分ノードの視聴数合計を取得します
     /// </summary>
     public int TotalDirects {
-      get { return LocalDirects + Nodes.Sum(n => n.DirectCount); }
+      get {
+        return sinks
+          .Select(x => x.GetConnectionInfo())
+          .Sum(x => (x.Type.HasFlag(ConnectionType.Direct) ? 1 : 0) + x.LocalDirects ?? 0);
+      }
     }
 
     /// <summary>
     /// 出力ストリームの読み取り専用リストを取得します
     /// </summary>
-    public ReadOnlyCollection<IOutputStream> OutputStreams {
-      get { return new ReadOnlyCollection<IOutputStream>(outputStreams); }
+    public IReadOnlyCollection<IChannelSink> OutputStreams {
+      get { return sinks; }
     }
 
     public event EventHandler OutputStreamsChanged;
@@ -151,35 +160,49 @@ namespace PeerCastStation.Core
       } while (!replaced);
     }
 
+
+    private class ChannelSinkSubscription
+      : IDisposable
+    {
+      public Channel Channel;
+      public IChannelSink Sink;
+
+      public void Dispose()
+      {
+        Channel.RemoveOutputStream(Sink);
+      }
+    }
+
+
     /// <summary>
     /// 指定した出力ストリームを出力ストリームリストに追加します
     /// </summary>
     /// <param name="stream">追加する出力ストリーム</param>
-    public void AddOutputStream(IOutputStream stream)
+    public IDisposable AddOutputStream(IChannelSink stream)
     {
-      ReplaceCollection(ref outputStreams, orig => {
-        var new_collection = new List<IOutputStream>(orig);
-        new_collection.Add(stream);
-        return new_collection;
-      });
-      if (OutputStreamsChanged!=null) OutputStreamsChanged(this, new EventArgs());
+      ReplaceCollection(ref sinks, old => old.Add(stream));
+      OutputStreamsChanged?.Invoke(this, new EventArgs());
+      return new ChannelSinkSubscription { Channel=this, Sink=stream };
     }
 
     /// <summary>
     /// 指定した出力ストリームを出力ストリームリストから削除します
     /// </summary>
     /// <param name="stream">削除する出力ストリーム</param>
-    public void RemoveOutputStream(IOutputStream stream)
+    public void RemoveOutputStream(IChannelSink stream)
     {
-      bool removed = false;
-      ReplaceCollection(ref outputStreams, orig => {
-        var new_collection = new List<IOutputStream>(orig);
-        removed = new_collection.Remove(stream);
-        return new_collection;
-      });
-      if (removed) {
-        if (OutputStreamsChanged!=null) OutputStreamsChanged(this, new EventArgs());
-      }
+      ReplaceCollection(ref sinks, old => old.Remove(stream));
+      OutputStreamsChanged?.Invoke(this, new EventArgs());
+    }
+
+    public int GetUpstreamRate()
+    {
+      var connections = sinks
+        .Select(s => s.GetConnectionInfo())
+        .Where(i => i.RemoteEndPoint.Address.GetAddressLocality()!=0)
+        .Where(i => i.Type.HasFlag(ConnectionType.Direct) || i.Type.HasFlag(ConnectionType.Relay))
+        .Count();
+      return (ChannelInfo?.Bitrate ?? 0) * connections;
     }
 
     public int GenerateStreamID()
@@ -261,16 +284,15 @@ namespace PeerCastStation.Core
     public bool MakeRelayable(IOutputStream newoutput_stream)
     {
       if (IsRelayable(newoutput_stream)) return true;
-      var disconnects = new List<IOutputStream>();
-      foreach (var os in OutputStreams
-          .Where(os => os!=newoutput_stream)
-          .Where(os => !os.IsLocal)
-          .Where(os => (os.OutputStreamType & OutputStreamType.Relay)!=0)) {
+      var disconnects = new List<IChannelSink>();
+      foreach (var os in OutputStreams.Where(os => os!=newoutput_stream)) {
         var info = os.GetConnectionInfo();
+        if (!info.Type.HasFlag(ConnectionType.Relay)) continue;
+        if (info.RemoteEndPoint.Address.GetAddressLocality()==0) continue;
         var disconnect = false;
-        if ((info.RemoteHostStatus & RemoteHostStatus.Firewalled)!=0) disconnect = true;
-        if ((info.RemoteHostStatus & RemoteHostStatus.RelayFull)!=0 &&
-            (!info.LocalRelays.HasValue || info.LocalRelays.Value<1)) disconnect = true;
+        if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.Firewalled)) disconnect = true;
+        if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.RelayFull) &&
+            (info.LocalRelays ?? 0)<1) disconnect = true;
         if (disconnect) disconnects.Add(os);
       }
       foreach (var os in disconnects) {
@@ -673,7 +695,7 @@ namespace PeerCastStation.Core
       var old = Interlocked.CompareExchange(ref sourceStream, null, source_stream);
       if (old!=source_stream) return;
       old.Dispose();
-      var ostreams = Interlocked.Exchange(ref outputStreams, new List<IOutputStream>());
+      var ostreams = Interlocked.Exchange(ref sinks, ImmutableList<IChannelSink>.Empty);
       foreach (var os in ostreams) {
         os.OnStopped(reason);
       }
@@ -721,15 +743,15 @@ namespace PeerCastStation.Core
     /// <param name="group">送信先グループ</param>
     public virtual void Broadcast(Host from, Atom packet, BroadcastGroup group)
     {
-      if ((group & (BroadcastGroup.Trackers | BroadcastGroup.Relays))!=0) {
+      if (group.HasFlag(BroadcastGroup.Trackers | BroadcastGroup.Relays)) {
         var source = sourceStream;
         if (source!=null) {
           source.Post(from, packet);
         }
       }
-      if ((group & (BroadcastGroup.Relays))!=0) {
-        foreach (var outputStream in outputStreams) {
-          outputStream.OnBroadcast(from, packet);
+      if (group.HasFlag(BroadcastGroup.Relays)) {
+        foreach (var os in sinks) {
+          os.OnBroadcast(from, packet);
         }
       }
     }
@@ -769,7 +791,7 @@ namespace PeerCastStation.Core
       if (source!=null) {
         source.Dispose();
       }
-      var ostreams = Interlocked.Exchange(ref outputStreams, new List<IOutputStream>());
+      var ostreams = Interlocked.Exchange(ref sinks, ImmutableList<IChannelSink>.Empty);
       foreach (var os in ostreams) {
         os.OnStopped(StopReason.OffAir);
       }

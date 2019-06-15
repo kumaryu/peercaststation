@@ -170,7 +170,7 @@ namespace PeerCastStation.UI.HTTP
       var servent = new XElement("servent", new XAttribute("uptime", (int)peercast.Uptime.TotalSeconds));
       var bandwidth = new XElement("bandwidth",
         new XAttribute("in",  peercast.Channels.Sum(c => c.ChannelInfo.Bitrate)),
-        new XAttribute("out", peercast.Channels.Sum(c => c.OutputStreams.Sum(os => os.UpstreamRate))));
+        new XAttribute("out", peercast.Channels.Sum(c => c.GetUpstreamRate())));
       var connections = new XElement("connections",
         new XAttribute("total",  peercast.Channels.Sum(c => c.LocalDirects + c.LocalRelays)),
         new XAttribute("relays", peercast.Channels.Sum(c => c.LocalRelays)),

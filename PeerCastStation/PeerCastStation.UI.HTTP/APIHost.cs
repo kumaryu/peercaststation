@@ -639,7 +639,7 @@ namespace PeerCastStation.UI.HTTP
           var res = new JObject();
           res["outputId"] = GetObjectId(os);
           res["name"]     = os.ToString();
-          res["type"]     = (int)os.OutputStreamType;
+          res["type"]     = (int)os.GetConnectionInfo().Type;
           return res;
         }));
       }
@@ -660,7 +660,7 @@ namespace PeerCastStation.UI.HTTP
         return GetChannelConnection(ss, ss.GetConnectionInfo());
       }
 
-      private JObject GetChannelConnection(IOutputStream os)
+      private JObject GetChannelConnection(IChannelSink os)
       {
         return GetChannelConnection(os, os.GetConnectionInfo());
       }

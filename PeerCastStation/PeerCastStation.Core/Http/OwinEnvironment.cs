@@ -48,6 +48,8 @@ namespace PeerCastStation.Core.Http
       public const string PeerCastApplication = "peercaststation.PeerCastApplication";
       public const string PeerCast = "peercaststation.PeerCast";
       public const string AccessControlInfo = "peercaststation.AccessControlInfo";
+      public const string GetRecvRate = "peercaststation.GetRecvRate";
+      public const string GetSendRate = "peercaststation.GetSendRate";
     }
     public static class Opaque {
       public const string Version = "opaque.Version";

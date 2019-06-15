@@ -1075,6 +1075,32 @@ namespace PeerCastStation.HTTP
         public byte[] Data;
       }
       private WaitableQueue<ChannelMessage> queue = new WaitableQueue<ChannelMessage>();
+      private ConnectionInfoBuilder connectionInfo = new ConnectionInfoBuilder();
+      private Func<float> getRecvRate = null;
+      private Func<float> getSendRate = null;
+
+      public ChannelSink(IOwinContext ctx)
+      {
+        connectionInfo.AgentName = ctx.Request.Headers.Get("User-Agent");
+        connectionInfo.LocalDirects = null;
+        connectionInfo.LocalRelays = null;
+        connectionInfo.ProtocolName = "HTTP Direct";
+        connectionInfo.RecvRate = null;
+        connectionInfo.SendRate = null;
+        connectionInfo.ContentPosition = 0;
+        var remoteEndPoint = new IPEndPoint(IPAddress.Parse(ctx.Request.RemoteIpAddress), ctx.Request.RemotePort ?? 0);
+        connectionInfo.RemoteEndPoint = remoteEndPoint;
+        connectionInfo.RemoteName = remoteEndPoint.ToString();
+        connectionInfo.RemoteSessionID = null;
+        connectionInfo.RemoteHostStatus = RemoteHostStatus.Receiving;
+        if (ctx.Get<bool>(OwinEnvironment.Server.IsLocal)) {
+          connectionInfo.RemoteHostStatus |= RemoteHostStatus.Local;
+        }
+        connectionInfo.Status = ConnectionStatus.Connected;
+        connectionInfo.Type = ConnectionType.Direct;
+        getRecvRate = ctx.Get<Func<float>>(OwinEnvironment.PeerCastStation.GetRecvRate);
+        getSendRate = ctx.Get<Func<float>>(OwinEnvironment.PeerCastStation.GetSendRate);
+      }
 
       public Task<ChannelMessage> DequeueAsync(CancellationToken ct)
       {
@@ -1083,17 +1109,18 @@ namespace PeerCastStation.HTTP
 
       public ConnectionInfo GetConnectionInfo()
       {
-        throw new NotImplementedException();
+        connectionInfo.RecvRate = getRecvRate?.Invoke();
+        connectionInfo.SendRate = getSendRate?.Invoke();
+        return connectionInfo.Build();
       }
 
       public void OnBroadcast(Host from, Atom packet)
       {
-        throw new NotImplementedException();
       }
 
       public void OnStopped(StopReason reason)
       {
-        throw new NotImplementedException();
+        queue.Enqueue(new ChannelMessage { Type=ChannelMessage.MessageType.ChannelStopped, Content=null, Data=null });
       }
 
       public void OnChannelInfo(ChannelInfo channel_info)
@@ -1107,10 +1134,12 @@ namespace PeerCastStation.HTTP
       public void OnContent(Content content)
       {
         queue.Enqueue(new ChannelMessage { Type=ChannelMessage.MessageType.ContentBody, Content=content });
+        connectionInfo.ContentPosition = content.Position;
       }
 
       public void OnContentHeader(Content content_header)
       {
+        connectionInfo.ContentPosition = content_header.Position;
         queue.Enqueue(new ChannelMessage { Type=ChannelMessage.MessageType.ContentHeader, Content=content_header });
       }
 
@@ -1141,7 +1170,8 @@ namespace PeerCastStation.HTTP
         ctx.Response.StatusCode = (int)HttpStatusCode.NotFound;
         return;
       }
-      var sink = new ChannelSink();
+      var sink = new ChannelSink(ctx);
+      using (channel.AddOutputStream(sink))
       using (channel.AddContentSink(sink)) {
         ctx.Response.StatusCode = (int)HttpStatusCode.OK;
         bool asf =
