@@ -282,7 +282,7 @@ namespace PeerCastStation.Core.Http
         await SendResponseHeaderAsync(cancellationToken).ConfigureAwait(false);
         strm = new ChunkedResponseStream(strm);
       }
-      else if (!Environment.IsKeepAlive() || Environment.ResponseHeaderContainsKey("Content-Length")) {
+      else if (!Environment.IsKeepAlive() || Environment.ResponseHeaderContainsKey("Content-Length") || encoding!=OwinEnvironment.TransferEncoding.Identity) {
         await SendResponseHeaderAsync(cancellationToken).ConfigureAwait(false);
       }
       else {

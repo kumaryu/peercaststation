@@ -102,17 +102,12 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
-    public void Post(Host from, Atom packet)
+    public void OnBroadcast(Host from, Atom packet)
     {
     }
 
     private StopReason stopReason = StopReason.None;
-    public void Stop()
-    {
-      Stop(StopReason.UserShutdown);
-    }
-
-    public void Stop(StopReason reason)
+    public void OnStopped(StopReason reason)
     {
       stopReason = reason;
       isStopped.Cancel();

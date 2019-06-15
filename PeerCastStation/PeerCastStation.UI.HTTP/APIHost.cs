@@ -651,7 +651,7 @@ namespace PeerCastStation.UI.HTTP
         var output_stream = channel.OutputStreams.FirstOrDefault(os => GetObjectId(os)==outputId);
         if (output_stream!=null) {
           channel.RemoveOutputStream(output_stream);
-          output_stream.Stop();
+          output_stream.OnStopped(StopReason.UserShutdown);
         }
       }
 
@@ -723,7 +723,7 @@ namespace PeerCastStation.UI.HTTP
         var os = channel.OutputStreams.FirstOrDefault(s => GetObjectId(s)==connectionId);
         if (os!=null) {
           channel.RemoveOutputStream(os);
-          os.Stop();
+          os.OnStopped(StopReason.UserShutdown);
           return true;
         }
         foreach (var yp in PeerCast.YellowPages) {

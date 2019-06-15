@@ -446,7 +446,7 @@ namespace PeerCastStation.PCP
           await Connection.WriteAsync(atom, cancel_token).ConfigureAwait(false);
         }
         if (skipped) {
-          Stop(StopReason.SendTimeoutError);
+          OnStopped(StopReason.SendTimeoutError);
         }
       }
     }
@@ -765,16 +765,16 @@ namespace PeerCastStation.PCP
       if (Downhost==null) {
         Logger.Info("Helo has no SessionID");
         //セッションIDが無かった
-        Stop(StopReason.NotIdentifiedError);
+        OnStopped(StopReason.NotIdentifiedError);
       }
       else if ((Downhost.Extra.GetHeloVersion() ?? 0)<1200) {
         Logger.Info("Helo version {0} is too old", Downhost.Extra.GetHeloVersion() ?? 0);
         //クライアントバージョンが無かった、もしくは古すぎ
-        Stop(StopReason.BadAgentError);
+        OnStopped(StopReason.BadAgentError);
       }
       else if (IsRelayFull) {
         Logger.Debug("Handshake succeeded {0}({1}) but relay is full", Downhost.GlobalEndPoint, Downhost.SessionID.ToString("N"));
-        Stop(StopReason.UnavailableError);
+        OnStopped(StopReason.UnavailableError);
       }
       else {
         Logger.Debug("Handshake succeeded {0}({1})", Downhost.GlobalEndPoint, Downhost.SessionID.ToString("N"));
@@ -876,7 +876,7 @@ namespace PeerCastStation.PCP
     private Task OnPCPQuit(Atom atom, CancellationToken cancel_token)
     {
       Logger.Debug("Quit Received: {0}", atom.GetInt32());
-      Stop(StopReason.None);
+      OnStopped(StopReason.None);
       return Task.Delay(0);
     }
 

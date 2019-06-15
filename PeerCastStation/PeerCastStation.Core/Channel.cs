@@ -274,7 +274,7 @@ namespace PeerCastStation.Core
         if (disconnect) disconnects.Add(os);
       }
       foreach (var os in disconnects) {
-        os.Stop(StopReason.UnavailableError);
+        os.OnStopped(StopReason.UnavailableError);
         RemoveOutputStream(os);
       }
       return IsRelayable(newoutput_stream);
@@ -322,7 +322,25 @@ namespace PeerCastStation.Core
 
     private List<IContentSink> contentSinks = new List<IContentSink>();
 
-    public void AddContentSink(IContentSink sink)
+    private class ContentSinkSubscription
+      : IDisposable
+    {
+      private Channel channel;
+      private IContentSink sink;
+
+      public ContentSinkSubscription(Channel channel, IContentSink sink)
+      {
+        this.channel = channel;
+        this.sink = sink;
+      }
+
+      public void Dispose()
+      {
+        channel.RemoveContentSink(sink);
+      }
+    }
+
+    public IDisposable AddContentSink(IContentSink sink)
     {
       ReplaceCollection(ref contentSinks, orig => {
         var new_collection = new List<IContentSink>(orig);
@@ -345,6 +363,7 @@ namespace PeerCastStation.Core
           sink.OnContent(content);
         }
       }
+      return new ContentSinkSubscription(this, sink);
     }
 
     public bool RemoveContentSink(IContentSink sink)
@@ -656,7 +675,7 @@ namespace PeerCastStation.Core
       old.Dispose();
       var ostreams = Interlocked.Exchange(ref outputStreams, new List<IOutputStream>());
       foreach (var os in ostreams) {
-        os.Stop();
+        os.OnStopped(reason);
       }
       uptimeTimer.Stop();
       OnClosed(reason);
@@ -710,7 +729,7 @@ namespace PeerCastStation.Core
       }
       if ((group & (BroadcastGroup.Relays))!=0) {
         foreach (var outputStream in outputStreams) {
-          outputStream.Post(from, packet);
+          outputStream.OnBroadcast(from, packet);
         }
       }
     }
@@ -752,7 +771,7 @@ namespace PeerCastStation.Core
       }
       var ostreams = Interlocked.Exchange(ref outputStreams, new List<IOutputStream>());
       foreach (var os in ostreams) {
-        os.Stop();
+        os.OnStopped(StopReason.OffAir);
       }
     }
 

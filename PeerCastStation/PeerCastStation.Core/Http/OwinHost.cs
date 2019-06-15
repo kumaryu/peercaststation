@@ -190,7 +190,7 @@ namespace PeerCastStation.Core.Http
       AccessControlInfo accessControlInfo,
       CancellationToken cancellationToken)
     {
-      var ctx = new OwinContext(req, stream, localEndPoint, remoteEndPoint, accessControlInfo);
+      var ctx = new OwinContext(PeerCast, req, stream, localEndPoint, remoteEndPoint, accessControlInfo);
       return ctx.Invoke(OwinApp, cancellationToken);
     }
   }

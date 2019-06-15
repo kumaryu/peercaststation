@@ -23,6 +23,9 @@ using System.Text.RegularExpressions;
 using PeerCastStation.Core;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using Owin;
+using PeerCastStation.Core.Http;
+using Microsoft.Owin;
 
 namespace PeerCastStation.HTTP
 {
@@ -888,22 +891,355 @@ namespace PeerCastStation.HTTP
     }
   }
 
+  static class OwinContextExtensions
+  {
+    public static PeerCast GetPeerCast(this IOwinContext ctx)
+    {
+      if (ctx.Environment.TryGetValue(OwinEnvironment.PeerCastStation.PeerCast, out var obj)) {
+        return obj as PeerCast; 
+      }
+      else {
+        return null;
+      }
+    }
+
+    public static AccessControlInfo GetAccessControlInfo(this IOwinContext ctx)
+    {
+      if (ctx.Environment.TryGetValue(OwinEnvironment.PeerCastStation.AccessControlInfo, out var obj)) {
+        return obj as AccessControlInfo; 
+      }
+      else {
+        return null;
+      }
+    }
+  }
+
   [Plugin]
   class HTTPOutputStreamPlugin
     : PluginBase
   {
     override public string Name { get { return "HTTP Output"; } }
 
-    private HTTPOutputStreamFactory factory;
+    private IDisposable appRegistration = null;
     override protected void OnAttach()
     {
-      if (factory==null) factory = new HTTPOutputStreamFactory(Application.PeerCast);
-      Application.PeerCast.OutputStreamFactories.Add(factory);
+      var owin = Application.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
+      appRegistration = owin.OwinHost.Register(BuildApp);
+    }
+
+    private IPlayList CreatePlaylist(Channel channel, string fmt, string scheme)
+    {
+      IPlayList CreateDefaultPlaylist()
+      {
+        bool asf =
+          channel.ChannelInfo.ContentType=="WMV" ||
+          channel.ChannelInfo.ContentType=="WMA" ||
+          channel.ChannelInfo.ContentType=="ASX";
+        if (asf) {
+          return new ASXPlayList(scheme, channel);
+        }
+        else {
+          return new M3UPlayList(scheme, channel);
+        }
+      }
+
+      if (String.IsNullOrEmpty(fmt)) {
+        return CreateDefaultPlaylist();
+      }
+      else {
+        switch (fmt.ToLowerInvariant()) {
+        case "asx":  return new ASXPlayList(scheme, channel);
+        case "m3u":  return new M3UPlayList(scheme, channel);
+        case "m3u8": return new M3U8PlayList(scheme, channel);
+        default:     return CreateDefaultPlaylist();
+        }
+      }
+    }
+
+    private static readonly Regex ChannelIdPattern = new Regex(@"\A([0-9a-fA-F]{32})(?:\.(\w+))?\z", RegexOptions.Compiled);
+    private struct ParsedRequest
+    {
+      public HttpStatusCode Status;
+      public Guid ChannelId;
+      public string Extension;
+      public bool IsValid {
+        get { return Status==HttpStatusCode.OK; }
+      }
+      public static ParsedRequest Parse(IOwinContext ctx)
+      {
+        var req = new ParsedRequest();
+        var components = (ctx.Request.Path.HasValue ? ctx.Request.Path.Value : "/").Split('/');
+        if (components.Length>2) {
+          req.Status = HttpStatusCode.NotFound;
+          return req;
+        }
+        if (String.IsNullOrEmpty(components[1])) {
+          req.Status = HttpStatusCode.Forbidden;
+          return req;
+        }
+        var md = ChannelIdPattern.Match(components[1]);
+        if (!md.Success) {
+          req.Status = HttpStatusCode.NotFound;
+          return req;
+        }
+        var channelId = Guid.Parse(md.Groups[1].Value);
+        var ext = md.Groups[2].Success ? md.Groups[2].Value : null;
+        req.Status = HttpStatusCode.OK;
+        req.ChannelId = channelId;
+        req.Extension = ext;
+        return req;
+      }
+    }
+
+    private async Task<Channel> GetChannelAsync(IOwinContext ctx, ParsedRequest req, CancellationToken ct)
+    {
+      var tip = ctx.Request.Query.Get("tip");
+      var channel = ctx.GetPeerCast().RequestChannel(req.ChannelId, OutputStreamBase.CreateTrackerUri(req.ChannelId, tip), true);
+      if (channel==null) {
+        return null;
+      }
+      using (var cts=CancellationTokenSource.CreateLinkedTokenSource(ct)) {
+        await channel.WaitForReadyContentTypeAsync(cts.Token).ConfigureAwait(false);
+      }
+      return channel;
+    }
+
+    private async Task PlayListHandler(IOwinContext ctx)
+    {
+      var ct = ctx.Request.CallCancelled;
+      var req = ParsedRequest.Parse(ctx);
+      if (!req.IsValid) {
+        ctx.Response.StatusCode = (int)req.Status;
+        return;
+      }
+      Channel channel;
+      try {
+        channel = await GetChannelAsync(ctx, req, ct).ConfigureAwait(false);
+      }
+      catch (TaskCanceledException) {
+        ctx.Response.StatusCode = (int)HttpStatusCode.GatewayTimeout;
+        return;
+      }
+
+      var fmt = ctx.Request.Query.Get("pls") ?? req.Extension;
+      var scheme = ctx.Request.Query.Get("scheme");
+      var pls = CreatePlaylist(channel, fmt, scheme);
+      ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+      ctx.Response.Headers.Add("Cache-Control", new string [] { "private" });
+      ctx.Response.Headers.Add("Cache-Disposition", new string [] { "inline" });
+      ctx.Response.Headers.Add("Content-Type", new string [] { pls.MIMEType });
+      byte[] body;
+      try {
+        var baseuri = new Uri(
+          new Uri(ctx.Request.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped)),
+          "stream/");
+        var acinfo = ctx.GetAccessControlInfo();
+        using (var cts=CancellationTokenSource.CreateLinkedTokenSource(ct)) {
+          cts.CancelAfter(10000);
+          if (acinfo.AuthorizationRequired) {
+            var parameters = new Dictionary<string, string>() {
+              { "auth", HTTPUtils.CreateAuthorizationToken(acinfo.AuthenticationKey) },
+            };
+            body = await pls.CreatePlayListAsync(baseuri, parameters, cts.Token).ConfigureAwait(false);
+          }
+          else {
+            body = await pls.CreatePlayListAsync(baseuri, Enumerable.Empty<KeyValuePair<string,string>>(), cts.Token).ConfigureAwait(false);
+          }
+        }
+      }
+      catch (OperationCanceledException) {
+        ctx.Response.StatusCode = (int)HttpStatusCode.GatewayTimeout;
+        return;
+      }
+      ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+      await ctx.Response.WriteAsync(body, ct).ConfigureAwait(false);
+    }
+
+    class ChannelSink
+      : IChannelSink,
+        IContentSink
+    {
+      public class ChannelMessage
+      {
+        public enum MessageType {
+          Broadcast,
+          ChannelInfo,
+          ChannelTrack,
+          ContentHeader,
+          ContentBody,
+          ChannelStopped,
+        }
+
+        public MessageType Type;
+        public Content Content;
+        public byte[] Data;
+      }
+      private WaitableQueue<ChannelMessage> queue = new WaitableQueue<ChannelMessage>();
+
+      public Task<ChannelMessage> DequeueAsync(CancellationToken ct)
+      {
+        return queue.DequeueAsync(ct);
+      }
+
+      public ConnectionInfo GetConnectionInfo()
+      {
+        throw new NotImplementedException();
+      }
+
+      public void OnBroadcast(Host from, Atom packet)
+      {
+        throw new NotImplementedException();
+      }
+
+      public void OnStopped(StopReason reason)
+      {
+        throw new NotImplementedException();
+      }
+
+      public void OnChannelInfo(ChannelInfo channel_info)
+      {
+      }
+
+      public void OnChannelTrack(ChannelTrack channel_track)
+      {
+      }
+
+      public void OnContent(Content content)
+      {
+        queue.Enqueue(new ChannelMessage { Type=ChannelMessage.MessageType.ContentBody, Content=content });
+      }
+
+      public void OnContentHeader(Content content_header)
+      {
+        queue.Enqueue(new ChannelMessage { Type=ChannelMessage.MessageType.ContentHeader, Content=content_header });
+      }
+
+      public void OnStop(StopReason reason)
+      {
+        queue.Enqueue(new ChannelMessage { Type=ChannelMessage.MessageType.ChannelStopped, Content=null, Data=null });
+      }
+    }
+
+    private async Task StreamHandler(IOwinContext ctx)
+    {
+      var logger = new Logger(this.GetType(), $"{ctx.Request.RemoteIpAddress}:{ctx.Request.RemotePort}");
+      var ct = ctx.Request.CallCancelled;
+      var req = ParsedRequest.Parse(ctx);
+      if (!req.IsValid) {
+        ctx.Response.StatusCode = (int)req.Status;
+        return;
+      }
+      Channel channel;
+      try {
+        channel = await GetChannelAsync(ctx, req, ct).ConfigureAwait(false);
+      }
+      catch (TaskCanceledException) {
+        ctx.Response.StatusCode = (int)HttpStatusCode.GatewayTimeout;
+        return;
+      }
+      if (channel==null) {
+        ctx.Response.StatusCode = (int)HttpStatusCode.NotFound;
+        return;
+      }
+      var sink = new ChannelSink();
+      using (channel.AddContentSink(sink)) {
+        ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+        bool asf =
+          channel.ChannelInfo.ContentType=="WMV" ||
+          channel.ChannelInfo.ContentType=="WMA" ||
+          channel.ChannelInfo.ContentType=="ASX";
+
+        if (asf && ctx.Request.Headers.TryGetValue("Pragma", out var values) && values.Contains("xplaystrm=1")) {
+          ctx.Response.Headers.Add("Cache-Control", new string [] { "no-cache" });
+          ctx.Response.Headers.Add("Server", new string [] { "Rex/9.0.2980" });
+          ctx.Response.Headers.Add("Pragma", new string [] { "no-cache", @"features=""broadcast,playlist""" });
+          ctx.Response.ContentType = "application/vnd.ms.wms-hdr.asfv1";
+
+          try {
+            while (!ct.IsCancellationRequested) {
+              var packet = await sink.DequeueAsync(ct).ConfigureAwait(false);
+              if (packet.Type==ChannelSink.ChannelMessage.MessageType.ContentHeader) {
+                await ctx.Response.WriteAsync(packet.Data, ct).ConfigureAwait(false);
+                logger.Debug("Sent ContentHeader pos {0}", packet.Content.Position);
+                break;
+              }
+              else if (packet.Type==ChannelSink.ChannelMessage.MessageType.ChannelStopped) {
+                break;
+              }
+            }
+          }
+          catch (OperationCanceledException) {
+          }
+        }
+        else {
+          if (asf) {
+            ctx.Response.Headers.Add("Cache-Control", new string [] { "no-cache" });
+            ctx.Response.Headers.Add("Server", new string [] { "Rex/9.0.2980" });
+            ctx.Response.Headers.Add("Pragma", new string [] { "no-cache", @"features=""broadcast,playlist""" });
+            ctx.Response.ContentType = "application/x-mms-framed";
+            ctx.Response.Headers.Add("Connection", new string[] { "close" });
+          }
+          else {
+            ctx.Response.ContentType = channel.ChannelInfo.MIMEType;
+            ctx.Response.Headers.Add("Transfer-Encoding", new string [] { "chunked" });
+          }
+
+          Content sent_header = null;
+          Content sent_packet = null;
+          try {
+            while (!ct.IsCancellationRequested) {
+              var packet = await sink.DequeueAsync(ct).ConfigureAwait(false);
+              if (packet.Type==ChannelSink.ChannelMessage.MessageType.ContentHeader) {
+                if (sent_header!=packet.Content && packet.Content!=null) {
+                  await ctx.Response.WriteAsync(packet.Content.Data, ct).ConfigureAwait(false);
+                  logger.Debug("Sent ContentHeader pos {0}", packet.Content.Position);
+                  sent_header = packet.Content;
+                  sent_packet = packet.Content;
+                }
+              }
+              else if (packet.Type==ChannelSink.ChannelMessage.MessageType.ContentBody) {
+                if (sent_header==null) continue;
+                var c = packet.Content;
+                if (c.Timestamp>sent_packet.Timestamp ||
+                    (c.Timestamp==sent_packet.Timestamp && c.Position>sent_packet.Position)) {
+                  await ctx.Response.WriteAsync(c.Data, ct).ConfigureAwait(false);
+                  sent_packet = c;
+                }
+              }
+              else if (packet.Type==ChannelSink.ChannelMessage.MessageType.ChannelStopped) {
+                break;
+              }
+            }
+          }
+          catch (OperationCanceledException) {
+          }
+        }
+      }
+    }
+
+    private void BuildApp(IAppBuilder builder)
+    {
+      builder.Map("/pls", sub => {
+        sub.MapMethod("GET", withmethod => {
+          withmethod.UseAuth(OutputStreamType.Play);
+          withmethod.Run(PlayListHandler);
+        });
+      });
+      builder.Map("/stream", sub => {
+        sub.MapMethod("GET", withmethod => {
+          withmethod.UseAuth(OutputStreamType.Play);
+          withmethod.Run(StreamHandler);
+        });
+      });
     }
 
     override protected void OnDetach()
     {
-      Application.PeerCast.OutputStreamFactories.Remove(factory);
+      appRegistration?.Dispose();
+      appRegistration = null;
     }
+
   }
+
 }
+

@@ -123,17 +123,17 @@ namespace PeerCastStation.PCP
       await Connection.WriteAsync(new Atom(Atom.PCP_OLEH, oleh)).ConfigureAwait(false);
       if (session_id==null) {
         Logger.Info("Helo has no SessionID");
-        Stop(StopReason.NotIdentifiedError);
+        OnStopped(StopReason.NotIdentifiedError);
       }
       else {
         Logger.Debug("Helo from {0}", PeerCast.SessionID.ToString("N"));
-        Stop(StopReason.None);
+        OnStopped(StopReason.None);
       }
     }
 
     protected Task OnPCPQuit(Atom atom, CancellationToken cancel_token)
     {
-      Stop(StopReason.None);
+      OnStopped(StopReason.None);
       return Task.Delay(0);
     }
 

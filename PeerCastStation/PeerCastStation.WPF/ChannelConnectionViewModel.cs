@@ -145,7 +145,7 @@ namespace PeerCastStation.WPF
     public override bool IsDisconnectable { get { return true; } }
     public override void Disconnect()
     {
-      outputStream.Stop();
+      outputStream.OnStopped(StopReason.UserShutdown);
     }
 
     public override ConnectionStatus ConnectionStatus {

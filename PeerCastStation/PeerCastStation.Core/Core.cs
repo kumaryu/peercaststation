@@ -549,10 +549,31 @@ namespace PeerCastStation.Core
     All = 0x7FFFFFFF,
   }
 
+  public interface IChannelSink
+  {
+    /// <summary>
+    /// ストリームへパケットを送信します
+    /// </summary>
+    /// <param name="from">ブロードキャストパケットの送信元。無い場合はnull</param>
+    /// <param name="packet">送信するデータ</param>
+    void OnBroadcast(Host from, Atom packet);
+    /// <summary>
+    /// ストリームへの書き込みを終了します
+    /// </summary>
+    /// <param name="reason">書き込み終了の理由</param>
+    void OnStopped(StopReason reason);
+    /// <summary>
+    /// 現在の接続情報を取得します
+    /// </summary>
+    /// <returns>呼び出した時点の接続先情報</returns>
+    ConnectionInfo GetConnectionInfo();
+  }
+
   /// <summary>
   /// 下流にチャンネルのContentを流すストリームを表わすインターフェースです
   /// </summary>
   public interface IOutputStream
+    : IChannelSink
   {
     /// <summary>
     /// 送信先がローカルネットワークかどうかを取得します
@@ -569,29 +590,9 @@ namespace PeerCastStation.Core
     /// <param name="cancellationToken">接続待ち受けを終了した時にキャンセルされるトークン</param>
     Task<HandlerResult> Start(CancellationToken cancellationToken);
     /// <summary>
-    /// ストリームへパケットを送信します
-    /// </summary>
-    /// <param name="from">ブロードキャストパケットの送信元。無い場合はnull</param>
-    /// <param name="packet">送信するデータ</param>
-    void Post(Host from, Atom packet);
-    /// <summary>
-    /// ストリームへの書き込みを終了します
-    /// </summary>
-    void Stop();
-    /// <summary>
-    /// ストリームへの書き込みを終了します
-    /// </summary>
-    /// <param name="reason">書き込み終了の理由</param>
-    void Stop(StopReason reason);
-    /// <summary>
     /// 出力ストリームの種類を取得します
     /// </summary>
     OutputStreamType OutputStreamType { get; }
-    /// <summary>
-    /// 現在の接続情報を取得します
-    /// </summary>
-    /// <returns>呼び出した時点の接続先情報</returns>
-    ConnectionInfo GetConnectionInfo();
   }
 
   /// <summary>

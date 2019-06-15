@@ -34,7 +34,7 @@ namespace PeerCastStation.Core.Http
         using (var reader=new HttpRequestReader(Connection, true)) {
           req = await reader.ReadAsync(cancel_token).ConfigureAwait(false);
         }
-        var ctx = new OwinContext(req, Connection, LocalEndPoint as IPEndPoint, RemoteEndPoint as IPEndPoint, AccessControlInfo);
+        var ctx = new OwinContext(PeerCast, req, Connection, LocalEndPoint as IPEndPoint, RemoteEndPoint as IPEndPoint, AccessControlInfo);
         try {
           await ctx.Invoke(owinHost.OwinApp, cancel_token).ConfigureAwait(false);
         }

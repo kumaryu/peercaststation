@@ -34,6 +34,7 @@ namespace PeerCastStation.Core.Http
     private Func<IDictionary<string,object>, Task> opaqueHandler = null;
 
     public OwinContext(
+      PeerCast peerCast,
       HttpRequest req,
       ConnectionStream stream,
       IPEndPoint localEndPoint,
@@ -45,6 +46,7 @@ namespace PeerCastStation.Core.Http
       RequestBody = new OwinRequestBodyStream(this, ConnectionStream);
       ResponseBody = new OwinResponseBodyStream(this, ConnectionStream);
       Environment.Environment[OwinEnvironment.Owin.Version] = "1.0.1";
+      Environment.Environment[OwinEnvironment.Host.TraceOutput] = TextWriter.Null;
       Environment.Environment[OwinEnvironment.Owin.RequestBody] = RequestBody;
       Environment.Environment[OwinEnvironment.Owin.RequestHeaders] = req.Headers.ToDictionary();
       Environment.Environment[OwinEnvironment.Owin.RequestPath] = req.Path;
@@ -61,6 +63,7 @@ namespace PeerCastStation.Core.Http
       Environment.Environment[OwinEnvironment.Server.LocalIpAddress] = localEndPoint.Address.ToString();
       Environment.Environment[OwinEnvironment.Server.LocalPort] = localEndPoint.Port.ToString();
       Environment.Environment[OwinEnvironment.Server.OnSendingHeaders] = new Action<Action<object>,object>(OnSendingHeaders.Add);
+      Environment.Environment[OwinEnvironment.PeerCastStation.PeerCast] = peerCast;
       Environment.Environment[OwinEnvironment.PeerCastStation.AccessControlInfo] = accessControlInfo;
       Environment.Environment[OwinEnvironment.Opaque.Upgrade] = new Action<IDictionary<string,object>, Func<IDictionary<string,object>, Task>>(OpaqueUpgrade);
     }

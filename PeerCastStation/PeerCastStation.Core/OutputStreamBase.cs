@@ -145,7 +145,7 @@ namespace PeerCastStation.Core
     protected virtual Task OnError(Exception err, CancellationToken cancel_token)
     {
       HasError = true;
-      Stop(StopReason.ConnectionError);
+      OnStopped(StopReason.ConnectionError);
       HandlerResult = HandlerResult.Error;
       Logger.Info(err);
       return Task.Delay(0);
@@ -168,7 +168,7 @@ namespace PeerCastStation.Core
           try {
             await OnStarted(cts.Token).ConfigureAwait(false);
             try {
-              Stop(await DoProcess(cts.Token).ConfigureAwait(false));
+              OnStopped(await DoProcess(cts.Token).ConfigureAwait(false));
             }
             catch (IOException err) {
               await OnError(err, cts.Token).ConfigureAwait(false);
@@ -203,18 +203,13 @@ namespace PeerCastStation.Core
       return Task.Delay(0);
     }
 
-    public void Post(Host from, Atom packet)
+    public void OnBroadcast(Host from, Atom packet)
     {
       if (isStopped.IsCancellationRequested) return;
       DoPost(from, packet, isStopped.Token);
     }
 
-    public void Stop()
-    {
-      Stop(StopReason.UserShutdown);
-    }
-
-    public void Stop(StopReason reason)
+    public void OnStopped(StopReason reason)
     {
       StoppedReason = reason;
       isStopped.Cancel();

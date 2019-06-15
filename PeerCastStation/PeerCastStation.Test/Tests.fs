@@ -210,6 +210,28 @@ let ``EnvにAccessControlInfoが入ってくる`` () =
     Assert.IsType(typeof<AccessControlInfo>, acinfo)
 
 [<Fact>]
+let ``EnvにPeerCastが入ってくる`` () =
+    let mutable peercast : obj = null
+    use peca =
+        pecaWithOwinHost endpoint (
+            registerApp "/index.txt" (fun env ->
+                async {
+                    env.Environment.TryGetValue("peercaststation.PeerCast", &peercast) |> ignore
+                    env.Response.ContentType <- "text/plain"
+                    env.Response.Write ""
+                }
+            )
+        )
+    let req =
+        sprintf "http://%s/index.txt" (endpoint.ToString())
+        |> WebRequest.CreateHttp
+    let result = req.GetResponse()
+    use strm = new System.IO.StreamReader(result.GetResponseStream())
+    Assert.Equal("", strm.ReadToEnd())
+    Assert.NotNull(peercast)
+    Assert.IsType(typeof<PeerCast>, peercast)
+
+[<Fact>]
 let ``EnvにLocalEndPointが入ってくる`` () =
     let mutable localaddr : string = ""
     let mutable localport : int option = Some -1
