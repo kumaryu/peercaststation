@@ -1,23 +1,24 @@
 ---
-- name: Version 2.7.2 (2019年06月15日開発版)
-  version: 2.7.2
+- name: Version 2.7.2.1 (2019年06月15日開発版)
+  version: 2.7.2.1
   channel: dev
   notes: |
     2.7.1でYPへの配信の掲載ができなかったのを修正しました。
 
     ## 不具合修正
     * 配信をYPに掲載しようとした時にERRORになっていたのを修正しました。
+    * 2.7.2で最新を使ってるにもかかわらず更新通知が出てしまっていたのを修正しました。
   date: 2019-06-15T12:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.7.2.zip
+  url: http://www.pecastation.org/files/PeerCastStation-2.7.2.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.7.2.zip
-    length: 2205860
+    url: http://www.pecastation.org/files/PeerCastStation-2.7.2.1.zip
+    length: 2206440
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.7.2.exe
-    length: 2376712
+    url: http://www.pecastation.org/files/PeerCastStation-2.7.2.1.exe
+    length: 2376746
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.7.2.msi
+    url: http://www.pecastation.org/files/PecaStationd-2.7.2.1.msi
     length: 2053046
 
 - name: Version 2.7.1 (2019年05月25日開発版)
