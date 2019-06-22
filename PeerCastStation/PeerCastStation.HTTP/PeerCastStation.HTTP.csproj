@@ -62,9 +62,11 @@
     <Compile Include="HTTPOutputStream.cs" />
     <Compile Include="HTTPPushSourceStream.cs" />
     <Compile Include="HTTPRequest.cs" />
+    <Compile Include="HTTPRequestReader.cs" />
     <Compile Include="HTTPResponse.cs" />
     <Compile Include="HTTPSourceStream.cs" />
     <Compile Include="HTTPUtils.cs" />
+    <Compile Include="OwinContextExtensions.cs" />
     <Compile Include="PlayList.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TsPacket.cs" />

@@ -290,6 +290,16 @@ namespace PeerCastStation.Core.Http
              headers.ContainsKey(key);
     }
 
+    public string GetResponseHeader(string key, string defval)
+    {
+      return GetHttpHeader(Owin.ResponseHeaders, key, defval);
+    }
+
+    public IEnumerable<string> GetResponseHeader(string key, string[] defval)
+    {
+      return GetHttpHeader(Owin.ResponseHeaders, key, defval);
+    }
+
     public void SetResponseHeader(string key, string value)
     {
       if (TryGetValue<IDictionary<string,string[]>>(Owin.ResponseHeaders, out var headers)) {
@@ -401,7 +411,7 @@ namespace PeerCastStation.Core.Http
       if (Get(Owin.ResponseProtocol, "HTTP/1.1")=="HTTP/1.0") {
         return ResponseHeaderContainsKey("Keep-Alive");
       }
-      if (StringComparer.OrdinalIgnoreCase.Equals(GetRequestHeader("Connection", ""), "close")) {
+      if (StringComparer.OrdinalIgnoreCase.Equals(GetResponseHeader("Connection", ""), "close")) {
         return false;
       }
       return true;
