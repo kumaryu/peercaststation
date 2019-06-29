@@ -57,7 +57,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="HTTPChunkedContentStream.cs" />
-    <Compile Include="HTTPDummyOutputStream.cs" />
     <Compile Include="HTTPLiveStreamingSegmenter.cs" />
     <Compile Include="HTTPOutputStream.cs" />
     <Compile Include="HTTPPushSourceStream.cs" />

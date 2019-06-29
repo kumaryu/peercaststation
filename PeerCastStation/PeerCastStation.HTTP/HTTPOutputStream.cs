@@ -382,7 +382,7 @@ namespace PeerCastStation.HTTP
     override protected void OnAttach()
     {
       var owin = Application.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
-      appRegistration = owin.OwinHost.Register(HTTPDirectOwinApp.BuildApp);
+      appRegistration = owin?.OwinHost?.Register(HTTPDirectOwinApp.BuildApp);
     }
 
     override protected void OnDetach()
