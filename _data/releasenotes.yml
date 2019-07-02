@@ -1,4 +1,36 @@
 ---
+- name: Version 2.6.2 (2019年07月03日安定版)
+  version: 2.6.2
+  channel: stable
+  notes: |
+    主にUI関係の不具合を修正しました。
+
+    ## 改善点
+    * HTML UIのボタンにツールチップで説明が出るようにしました。 (by kumaryu and plonk)
+    * HTML UIのYPブラウザでチャンネル一覧取得の失敗時にエラー通知が出るようにしました。
+    * HTML UIの設定でYPの項目を編集できるようにしました。 (by plonk)
+    * YP設定の追加/編集時に、指定されたアドレスをできる限り自動修正するようにしました。
+    * ポートが他のプログラムで使われているなどで接続待ち受けができない場合に、ポートの開放状態に利用不可と表示されるようにしました。
+    ## 不具合修正
+    * GUIからIPv6の帯域計測が正しく行われなかったのを修正しました。 (by plonk)
+    * GUIの設定でポート番号に正しくない値を入力できたのを修正しました。 (by plonk)
+    * GUIの設定で接続待ち受けを追加時に一度に2つ追加される場合があったのを修正しました。 (by plonk)
+    * 帯域計測失敗時に落ちることがあったのを修正しました。 (by plonk)
+    * HTML UIのIPv6 Anyなポートの認証付きURLが不正になるのを修正しました。 (by plonk)
+    * UPnPでのポート開放をしていると、起動時にポートが未開放と表示されることがあったのを修正しました。
+  date: 2019-07-03T00:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.6.2.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.6.2.zip
+    length: 2205812
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.6.2.exe
+    length: 2376675
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.6.2.msi
+    length: 2053046
+
 - name: Version 2.7.2.1 (2019年06月15日開発版)
   version: 2.7.2.1
   channel: dev
