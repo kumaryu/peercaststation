@@ -36,19 +36,6 @@ namespace PeerCastStation.UI
         TargetUriV6 = target_uri;
       }
       base.OnStart();
-      CheckAsync()
-        .ContinueWith(prev => {
-          if (prev.IsCanceled || prev.IsFaulted) return;
-          foreach (var result in prev.Result) {
-            if (!result.Success) continue;
-            if (result.IsOpen) {
-              this.Application.PeerCast.SetPortStatus(result.LocalAddress.AddressFamily, PortStatus.Open);
-            }
-            else {
-              this.Application.PeerCast.SetPortStatus(result.LocalAddress.AddressFamily, PortStatus.Firewalled);
-            }
-          }
-        });
     }
 
     public async Task<PortCheckResult[]> CheckAsync()
@@ -82,15 +69,17 @@ namespace PeerCastStation.UI
     public bool      Success      { get; private set; }
     public int[]     Ports        { get; private set; }
     public IPAddress LocalAddress { get; private set; }
+    public IPAddress GlobalAddress { get; private set; }
     public TimeSpan  ElapsedTime  { get; private set; }
     public bool IsOpen { get { return Ports.Length>0; } }
 
-    public PortCheckResult(bool success, IPAddress address, int[] ports, TimeSpan elapsed)
+    public PortCheckResult(bool success, IPAddress address, IPAddress globalAddress, int[] ports, TimeSpan elapsed)
     {
-      this.Success      = success;
-      this.LocalAddress = address;
-      this.Ports        = ports;
-      this.ElapsedTime  = elapsed;
+      this.Success       = success;
+      this.LocalAddress  = address;
+      this.GlobalAddress = globalAddress;
+      this.Ports         = ports;
+      this.ElapsedTime   = elapsed;
     }
   }
 
@@ -130,10 +119,13 @@ namespace PeerCastStation.UI
         stopwatch.Stop();
         succeeded = true;
         var response = JToken.Parse(response_body);
+        IPAddress response_ip;
+        IPAddress.TryParse(response["ip"].ToString(), out response_ip);
         var response_ports = response["ports"].Select(token => (int)token);
         return new PortCheckResult(
             succeeded,
             LocalAddress,
+            response_ip,
             response_ports.ToArray(),
             stopwatch.Elapsed);
       }
@@ -142,6 +134,7 @@ namespace PeerCastStation.UI
         return new PortCheckResult(
             succeeded,
             LocalAddress,
+            null,
             new int[0],
             stopwatch.Elapsed);
       }
@@ -150,6 +143,7 @@ namespace PeerCastStation.UI
         return new PortCheckResult(
             succeeded,
             LocalAddress,
+            null,
             new int[0],
             stopwatch.Elapsed);
       }

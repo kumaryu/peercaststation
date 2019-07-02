@@ -861,34 +861,45 @@ namespace PeerCastStation.UI.HTTP
         var factory = PeerCast.YellowPageFactories.FirstOrDefault(p => protocol==p.Protocol);
         if (factory==null) throw new RPCError(RPCErrorCode.InvalidParams, "protocol Not Found");
         if (name==null) throw new RPCError(RPCErrorCode.InvalidParams, "name must be String");
-				Uri announce_uri = null;
-				try {
-					if (String.IsNullOrEmpty(uri)) uri = announceUri;
-					if (!String.IsNullOrEmpty(uri)) {
-						announce_uri = new Uri(uri, UriKind.Absolute);
-						if (!factory.CheckURI(announce_uri)) {
-							throw new RPCError(RPCErrorCode.InvalidParams, String.Format("Not suitable uri for {0}", protocol));
-						}
-					}
-				}
-				catch (ArgumentNullException) {
-					throw new RPCError(RPCErrorCode.InvalidParams, "uri must be String");
-				}
-				catch (UriFormatException) {
-					throw new RPCError(RPCErrorCode.InvalidParams, "Invalid uri");
-				}
-				Uri channels_uri = null;
-				try {
-					if (!String.IsNullOrEmpty(channelsUri)) {
-						channels_uri = new Uri(channelsUri, UriKind.Absolute);
-					}
-				}
-				catch (ArgumentNullException) {
-					throw new RPCError(RPCErrorCode.InvalidParams, "uri must be String");
-				}
-				catch (UriFormatException) {
-					throw new RPCError(RPCErrorCode.InvalidParams, "Invalid uri");
-				}
+        Uri announce_uri = null;
+        try {
+          if (String.IsNullOrEmpty(uri)) uri = announceUri;
+          if (!String.IsNullOrEmpty(uri)) {
+            announce_uri = new Uri(uri, UriKind.Absolute);
+            var validation_result = factory.ValidateUriAsync(YellowPageUriType.Announce, announce_uri).Result;
+            if (!validation_result.IsValid && validation_result.Candidate==null) {
+              throw new RPCError(RPCErrorCode.InvalidParams, $"Not suitable uri for {protocol}: {validation_result.Message}");
+            }
+            else if (validation_result.Candidate!=null) {
+              announce_uri = validation_result.Candidate;
+            }
+          }
+        }
+        catch (ArgumentNullException) {
+          throw new RPCError(RPCErrorCode.InvalidParams, "uri must be String");
+        }
+        catch (UriFormatException) {
+          throw new RPCError(RPCErrorCode.InvalidParams, "Invalid uri");
+        }
+        Uri channels_uri = null;
+        try {
+          if (!String.IsNullOrEmpty(channelsUri)) {
+            channels_uri = new Uri(channelsUri, UriKind.Absolute);
+            var validation_result = factory.ValidateUriAsync(YellowPageUriType.Channels, channels_uri).Result;
+            if (!validation_result.IsValid && validation_result.Candidate==null) {
+              throw new RPCError(RPCErrorCode.InvalidParams, $"Invalid channels uri: {validation_result.Message}");
+            }
+            else if (validation_result.Candidate!=null) {
+              channels_uri = validation_result.Candidate;
+            }
+          }
+        }
+        catch (ArgumentNullException) {
+          throw new RPCError(RPCErrorCode.InvalidParams, "uri must be String");
+        }
+        catch (UriFormatException) {
+          throw new RPCError(RPCErrorCode.InvalidParams, "Invalid uri");
+        }
         var yp = PeerCast.AddYellowPage(factory.Protocol, name, announce_uri, channels_uri);
         owner.SaveSettings();
         var res = new JObject();
@@ -960,26 +971,17 @@ namespace PeerCastStation.UI.HTTP
         res["authenticationId"]       = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Id : null;
         res["authenticationPassword"] = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Password : null;
         res["authToken"]     = listener.AuthenticationKey!=null ? HTTPUtils.CreateAuthorizationToken(listener.AuthenticationKey) : null;
-        switch (listener.LocalEndPoint.AddressFamily) {
-        case System.Net.Sockets.AddressFamily.InterNetwork:
-          if ((listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 && owner.OpenedPortsV4!=null) {
-            res["isOpened"] = (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 &&
-                              owner.OpenedPortsV4.Contains(listener.LocalEndPoint.Port);
-          }
-          else {
-            res["isOpened"] = null;
-          }
+        res["portStatus"]    = (int)listener.Status;
+        switch (listener.Status) {
+        case PortStatus.Firewalled:
+        case PortStatus.Unavailable:
+          res["isOpened"] = false;
           break;
-        case System.Net.Sockets.AddressFamily.InterNetworkV6:
-          if ((listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 && owner.OpenedPortsV6!=null) {
-            res["isOpened"] = (listener.GlobalOutputAccepts & OutputStreamType.Relay)!=0 &&
-                              owner.OpenedPortsV6.Contains(listener.LocalEndPoint.Port);
-          }
-          else {
-            res["isOpened"] = null;
-          }
+        case PortStatus.Open:
+          res["isOpened"] = true;
           break;
-        default:
+        case PortStatus.Unknown:
+          res["isOpened"] = null;
           break;
         }
         return res;
@@ -1248,7 +1250,7 @@ namespace PeerCastStation.UI.HTTP
           task.Wait();
           foreach (var result in task.Result) {
             if (!result.Success) continue;
-            PeerCast.SetPortStatus(result.LocalAddress.AddressFamily, result.IsOpen ? PortStatus.Open : PortStatus.Firewalled);
+            PeerCast.SetPortStatus(result.LocalAddress, result.GlobalAddress, result.IsOpen ? PortStatus.Open : PortStatus.Firewalled);
             switch (result.LocalAddress.AddressFamily) {
             case System.Net.Sockets.AddressFamily.InterNetwork:
               owner.OpenedPortsV4 = result.Ports;

@@ -17,14 +17,158 @@ namespace PeerCastStation.PCP
     public string Name { get { return "PCP"; } }
     public string Protocol { get { return "pcp"; } }
 
-		public IYellowPageClient Create(string name, Uri announce_uri, Uri channels_uri)
-		{
-			return new PCPYellowPageClient(PeerCast, name, announce_uri, channels_uri);
-		}
-
-    public bool CheckURI(Uri uri)
+    public IYellowPageClient Create(string name, Uri announce_uri, Uri channels_uri)
     {
-      return PCPYellowPageClient.IsValidUri(uri);
+      return new PCPYellowPageClient(PeerCast, name, announce_uri, channels_uri);
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex indexTxtEntryRegex =
+      new System.Text.RegularExpressions.Regex(@"\A(^((.*<>)+.*)?$\n?)+\Z", System.Text.RegularExpressions.RegexOptions.Compiled | System.Text.RegularExpressions.RegexOptions.Multiline);
+
+    private enum IndexTxtResult {
+      Success,
+      ConnectionError,
+      DownloadError,
+      ParseError,
+    }
+    private async Task<IndexTxtResult> CheckIndexTxtAsync(Uri uri)
+    {
+      try {
+        var req = WebRequest.Create(uri);
+        var res = await req.GetResponseAsync().ConfigureAwait(false);
+        using (var reader = new StreamReader(res.GetResponseStream(), System.Text.Encoding.UTF8)) {
+          var str = await reader.ReadToEndAsync().ConfigureAwait(false);
+          if (indexTxtEntryRegex.IsMatch(str)) {
+            return IndexTxtResult.Success;
+          }
+          else {
+            return IndexTxtResult.ParseError;
+          }
+        }
+      }
+      catch (WebException ex) {
+        if (ex.Status==WebExceptionStatus.ProtocolError) {
+          return IndexTxtResult.DownloadError;
+        }
+        else {
+          return IndexTxtResult.ConnectionError;
+        }
+      }
+    }
+
+    public async Task<YellowPageUriValidationResult> ValidateUriAsync(YellowPageUriType type, Uri uri)
+    {
+      if (uri==null) throw new ArgumentNullException(nameof(uri));
+      switch (type) {
+      case YellowPageUriType.Announce:
+        if (!uri.IsAbsoluteUri) {
+          var builder = new UriBuilder();
+          builder.Scheme = "pcp";
+          var pathidx = uri.OriginalString.IndexOf('/');
+          if (pathidx==0) {
+            return new YellowPageUriValidationResult(false, null, "ホスト名を指定してください");
+          }
+          else if (pathidx>0) {
+            builder.Host = uri.OriginalString.Substring(0, pathidx);
+            builder.Path = uri.OriginalString.Substring(pathidx);
+          }
+          else {
+            builder.Host = uri.OriginalString;
+            builder.Path = "";
+          }
+          builder.Query = "";
+          return new YellowPageUriValidationResult(false, builder.Uri, "pcp:で始まるURIを指定してください");
+        }
+        else if (uri.Scheme!="pcp") {
+          var builder = new UriBuilder(uri);
+          builder.Scheme = "pcp";
+          builder.Path = "";
+          builder.Query = "";
+          var portStr = uri.AbsolutePath;
+          var pathidx = portStr.IndexOf('/');
+          if (pathidx==0) {
+            return new YellowPageUriValidationResult(false, null, $"{uri.Scheme}で始まるURIは使用できません");
+          }
+          else if (pathidx>0) {
+            portStr = uri.AbsolutePath.Substring(0, pathidx);
+          }
+          if (String.IsNullOrEmpty(uri.Host) && Int32.TryParse(portStr, out var port)) {
+            builder.Host = uri.Scheme;
+            builder.Port = port;
+            return new YellowPageUriValidationResult(false, builder.Uri, $"{uri.Scheme}で始まるURIは使用できません");
+          }
+          else {
+            return new YellowPageUriValidationResult(false, null, $"{uri.Scheme}で始まるURIは使用できません");
+          }
+        }
+        else if (String.IsNullOrWhiteSpace(uri.Host)) {
+          return new YellowPageUriValidationResult(false, null, "ホスト名を指定してください");
+        }
+        else if (!String.IsNullOrWhiteSpace(uri.PathAndQuery) || uri.PathAndQuery!="/") {
+          var builder = new UriBuilder(uri);
+          builder.Path = "";
+          builder.Query = "";
+          return new YellowPageUriValidationResult(false, builder.Uri, $"パスは指定できません");
+        }
+        else {
+          return new YellowPageUriValidationResult(true, null, null);
+        }
+      case YellowPageUriType.Channels:
+        if (!uri.IsAbsoluteUri) {
+          var builder = new UriBuilder();
+          builder.Scheme = "http";
+          builder.Path = "";
+          builder.Query = "";
+          if (String.IsNullOrEmpty(builder.Host)) {
+            return new YellowPageUriValidationResult(false, null, "ホスト名を指定してください");
+          }
+          return new YellowPageUriValidationResult(false, builder.Uri, "http:またはhttps:で始まるURIを指定してください");
+        }
+        else if (uri.Scheme!="http" && uri.Scheme!="https") {
+          var builder = new UriBuilder(uri);
+          builder.Scheme = "http";
+          builder.Path = "";
+          builder.Query = "";
+          return new YellowPageUriValidationResult(false, builder.Uri, "http:またはhttps:で始まるURIを指定してください");
+        }
+        else {
+          var result = await CheckIndexTxtAsync(uri).ConfigureAwait(false);
+          switch (result) {
+          case IndexTxtResult.Success:
+            return new YellowPageUriValidationResult(true, null, null);
+          case IndexTxtResult.DownloadError:
+          case IndexTxtResult.ParseError:
+            {
+              var builder = new UriBuilder(uri);
+              if (String.IsNullOrEmpty(builder.Path)) {
+                builder.Path = "/index.txt";
+              }
+              else if (!builder.Path.EndsWith("/")) {
+                builder.Path += "/index.txt";
+              }
+              else {
+                builder.Path += "index.txt";
+              }
+              var result2 = await CheckIndexTxtAsync(builder.Uri).ConfigureAwait(false);
+              switch (result2) {
+              case IndexTxtResult.Success:
+                return new YellowPageUriValidationResult(false, builder.Uri, "index.txtを指定してください");
+              case IndexTxtResult.ParseError:
+                return new YellowPageUriValidationResult(false, null, "index.txtを指定してください");
+              case IndexTxtResult.DownloadError:
+              case IndexTxtResult.ConnectionError:
+              default:
+                return new YellowPageUriValidationResult(false, null, "チャンネル情報が取得できません");
+              }
+            }
+          case IndexTxtResult.ConnectionError:
+          default:
+            return new YellowPageUriValidationResult(false, null, "チャンネル情報が取得できません");
+          }
+        }
+      default:
+        throw new ArgumentOutOfRangeException(nameof(type));
+      }
     }
 
     public PCPYellowPageClientFactory(PeerCast peercast)
@@ -93,7 +237,7 @@ namespace PeerCastStation.PCP
       private IPEndPoint remoteEndPoint;
       private Guid? remoteSessionID;
 
-      private async Task PCPHandshake(Stream stream, IPEndPoint remoteEndPoint, CancellationToken ct)
+      private async Task PCPHandshake(ConnectionStream stream, CancellationToken ct)
       {
         logger.Debug("Sending Handshake");
         await stream.WriteAsync(new Atom(new ID4("pcp\n"), PCPVersion.GetPCPVersionForNetworkType(networkType)), ct).ConfigureAwait(false);
@@ -107,7 +251,7 @@ namespace PeerCastStation.PCP
           {
             var listener = peerCast.FindListener(
               networkType.GetAddressFamily(),
-              remoteEndPoint.Address,
+              stream.RemoteEndPoint.Address,
               OutputStreamType.Relay | OutputStreamType.Metadata);
             if (listener!=null) {
               helo.SetHeloPort(listener.LocalEndPoint.Port);
@@ -120,7 +264,7 @@ namespace PeerCastStation.PCP
           {
             var listener = peerCast.FindListener(
               networkType.GetAddressFamily(),
-              remoteEndPoint.Address,
+              stream.RemoteEndPoint.Address,
               OutputStreamType.Relay | OutputStreamType.Metadata);
             if (listener!=null) {
               helo.SetHeloPing(listener.LocalEndPoint.Port);
@@ -132,7 +276,7 @@ namespace PeerCastStation.PCP
         while (!ct.IsCancellationRequested) {
           var atom = await stream.ReadAtomAsync(ct).ConfigureAwait(false);
           if (atom.Name==Atom.PCP_OLEH) {
-            OnPCPOleh(atom);
+            OnPCPOleh(stream, atom);
             break;
           }
           else if (atom.Name==Atom.PCP_QUIT) {
@@ -142,7 +286,7 @@ namespace PeerCastStation.PCP
         }
       }
 
-      private void OnPCPOleh(Atom atom)
+      private void OnPCPOleh(ConnectionStream stream, Atom atom)
       {
         remoteSessionID = atom.Children.GetHeloSessionID();
         var dis = atom.Children.GetHeloDisable();
@@ -159,7 +303,7 @@ namespace PeerCastStation.PCP
         }
         var port = atom.Children.GetHeloPort();
         if (port.HasValue) {
-          peerCast.SetPortStatus(rip.AddressFamily, port.Value!=0 ? PortStatus.Open : PortStatus.Firewalled);
+          peerCast.SetPortStatus(stream.LocalEndPoint.Address, rip, port.Value!=0 ? PortStatus.Open : PortStatus.Firewalled);
         }
       }
 
@@ -295,11 +439,11 @@ namespace PeerCastStation.PCP
         try {
           using (var client=new TcpClient()) {
             await client.ConnectAsync(host, port).ConfigureAwait(false);
-            using (var stream=new ConnectionStream(client.GetStream())) {
-              remoteEndPoint = (IPEndPoint)client.Client.RemoteEndPoint;
-              await PCPHandshake(stream, remoteEndPoint, ct).ConfigureAwait(false);
+            using (var stream=new ConnectionStream(client.Client, client.GetStream())) {
+              await PCPHandshake(stream, ct).ConfigureAwait(false);
               logger.Debug("Handshake succeeded");
               status = ConnectionStatus.Connected;
+              remoteEndPoint = stream.RemoteEndPoint;
               using (var subCancellationSource=CancellationTokenSource.CreateLinkedTokenSource(ct)) {
                 try {
                   await TaskWhenAllForAwait(
@@ -955,40 +1099,34 @@ namespace PeerCastStation.PCP
     public async System.Threading.Tasks.Task<IEnumerable<IYellowPageChannel>> GetChannelsAsync(CancellationToken cancel_token)
     {
       if (ChannelsUri==null) return Enumerable.Empty<IYellowPageChannel>();
-      try {
-        using (var client=new WebClient { Encoding=System.Text.Encoding.UTF8 })
-        using (cancel_token.Register(() => client.CancelAsync(), false))
-        using (var reader=new StringReader(await client.DownloadStringTaskAsync(this.ChannelsUri).ConfigureAwait(false))) {
-          var results = new List<IYellowPageChannel>();
-          var line = reader.ReadLine();
-          while (line!=null) {
-            var tokens = line.Split(new string[] { "<>" }, StringSplitOptions.None);
-            var channel = new PCPYellowPageChannel(this);
-            if (tokens.Length> 0) channel.Name        = ParseStr(tokens[0]);  //1 CHANNEL_NAME チャンネル名
-            if (tokens.Length> 1) channel.ChannelId   = ParseGuid(tokens[1]);  //2 ID ID ユニーク値16進数32桁、制限チャンネルは全て0埋め
-            if (tokens.Length> 2) channel.Tracker     = ParseStr(tokens[2]);  //3 TIP TIP ポートも含む。Push配信時はブランク、制限チャンネルは127.0.0.1
-            if (tokens.Length> 3) channel.ContactUrl  = ParseStr(tokens[3]);  //4 CONTACT_URL コンタクトURL 基本的にURL、任意の文字列も可 CONTACT_URL
-            if (tokens.Length> 4) channel.Genre       = ParseStr(tokens[4]);  //5 GENRE ジャンル
-            if (tokens.Length> 5) channel.Description = ParseStr(tokens[5]);  //6 DETAIL 詳細
-            if (tokens.Length> 6) channel.Listeners   = ParseInt(tokens[6]);  //7 LISTENER_NUM Listener数 -1は非表示、-1未満はサーバのメッセージ。ブランクもあるかも
-            if (tokens.Length> 7) channel.Relays      = ParseInt(tokens[7]);  //8 RELAY_NUM Relay数 同上 
-            if (tokens.Length> 8) channel.Bitrate     = ParseInt(tokens[8]);  //9 BITRATE Bitrate 単位は kbps 
-            if (tokens.Length> 9) channel.ContentType = ParseStr(tokens[9]);  //10 TYPE Type たぶん大文字 
-            if (tokens.Length>10) channel.Artist      = ParseStr(tokens[10]); //11 TRACK_ARTIST トラック アーティスト 
-            if (tokens.Length>11) channel.Album       = ParseStr(tokens[11]); //12 TRACK_ALBUM トラック アルバム 
-            if (tokens.Length>12) channel.TrackTitle  = ParseStr(tokens[12]); //13 TRACK_TITLE トラック タイトル 
-            if (tokens.Length>13) channel.TrackUrl    = ParseStr(tokens[13]); //14 TRACK_CONTACT_URL トラック コンタクトURL 基本的にURL、任意の文字列も可 
-            if (tokens.Length>15) channel.Uptime      = ParseUptime(tokens[15]); //16 BROADCAST_TIME 配信時間 000〜99999 
-            if (tokens.Length>17) channel.Comment     = ParseStr(tokens[17]); //18 COMMENT コメント 
-            results.Add(channel);
-            line = reader.ReadLine();
-          }
-          return results;
+      using (var client=new WebClient { Encoding=System.Text.Encoding.UTF8 })
+      using (cancel_token.Register(() => client.CancelAsync(), false))
+      using (var reader=new StringReader(await client.DownloadStringTaskAsync(this.ChannelsUri).ConfigureAwait(false))) {
+        var results = new List<IYellowPageChannel>();
+        var line = reader.ReadLine();
+        while (line!=null) {
+          var tokens = line.Split(new string[] { "<>" }, StringSplitOptions.None);
+          var channel = new PCPYellowPageChannel(this);
+          if (tokens.Length> 0) channel.Name        = ParseStr(tokens[0]);  //1 CHANNEL_NAME チャンネル名
+          if (tokens.Length> 1) channel.ChannelId   = ParseGuid(tokens[1]);  //2 ID ID ユニーク値16進数32桁、制限チャンネルは全て0埋め
+          if (tokens.Length> 2) channel.Tracker     = ParseStr(tokens[2]);  //3 TIP TIP ポートも含む。Push配信時はブランク、制限チャンネルは127.0.0.1
+          if (tokens.Length> 3) channel.ContactUrl  = ParseStr(tokens[3]);  //4 CONTACT_URL コンタクトURL 基本的にURL、任意の文字列も可 CONTACT_URL
+          if (tokens.Length> 4) channel.Genre       = ParseStr(tokens[4]);  //5 GENRE ジャンル
+          if (tokens.Length> 5) channel.Description = ParseStr(tokens[5]);  //6 DETAIL 詳細
+          if (tokens.Length> 6) channel.Listeners   = ParseInt(tokens[6]);  //7 LISTENER_NUM Listener数 -1は非表示、-1未満はサーバのメッセージ。ブランクもあるかも
+          if (tokens.Length> 7) channel.Relays      = ParseInt(tokens[7]);  //8 RELAY_NUM Relay数 同上 
+          if (tokens.Length> 8) channel.Bitrate     = ParseInt(tokens[8]);  //9 BITRATE Bitrate 単位は kbps 
+          if (tokens.Length> 9) channel.ContentType = ParseStr(tokens[9]);  //10 TYPE Type たぶん大文字 
+          if (tokens.Length>10) channel.Artist      = ParseStr(tokens[10]); //11 TRACK_ARTIST トラック アーティスト 
+          if (tokens.Length>11) channel.Album       = ParseStr(tokens[11]); //12 TRACK_ALBUM トラック アルバム 
+          if (tokens.Length>12) channel.TrackTitle  = ParseStr(tokens[12]); //13 TRACK_TITLE トラック タイトル 
+          if (tokens.Length>13) channel.TrackUrl    = ParseStr(tokens[13]); //14 TRACK_CONTACT_URL トラック コンタクトURL 基本的にURL、任意の文字列も可 
+          if (tokens.Length>15) channel.Uptime      = ParseUptime(tokens[15]); //16 BROADCAST_TIME 配信時間 000〜99999 
+          if (tokens.Length>17) channel.Comment     = ParseStr(tokens[17]); //18 COMMENT コメント 
+          results.Add(channel);
+          line = reader.ReadLine();
         }
-      }
-      catch (Exception e) {
-        Logger.Error(e);
-        return Enumerable.Empty<IYellowPageChannel>();
+        return results;
       }
     }
 

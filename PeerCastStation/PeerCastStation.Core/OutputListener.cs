@@ -50,6 +50,27 @@ namespace PeerCastStation.Core
     /// </summary>
     public IPEndPoint LocalEndPoint { get { return (IPEndPoint)server.LocalEndpoint; } }
 
+    private IPAddress globalAddress = null;
+    public IPAddress GlobalAddress {
+      get { return globalAddress; }
+      set {
+        if (globalAddress==null || value==null || globalAddress.GetAddressLocality()<=value.GetAddressLocality()) {
+          globalAddress = value;
+        }
+      }
+    }
+    private bool bound = false;
+    private PortStatus portStatus = PortStatus.Unknown;
+    public PortStatus Status {
+      get {
+        if (!bound) return PortStatus.Unavailable;
+        return portStatus;
+      }
+      set {
+        portStatus = value;
+      }
+    }
+
     /// <summary>
     /// リンクローカルな接続先に許可する出力ストリームタイプを取得および設定します。
     /// </summary>
@@ -83,8 +104,7 @@ namespace PeerCastStation.Core
       get { return globalOutputAccepts; }
       set {
         if ((globalOutputAccepts & OutputStreamType.Relay)!=(value & OutputStreamType.Relay)) {
-          if ((value & OutputStreamType.Relay)!=0) PeerCast.OnListenPortOpened();
-          else                                     PeerCast.OnListenPortClosed();
+          Status = PortStatus.Unknown;
         }
         globalOutputAccepts = value;
         UpdateGlobalAccessControlInfo();
@@ -166,18 +186,9 @@ namespace PeerCastStation.Core
       UpdateGlobalAccessControlInfo();
       this.ConnectionHandler = connection_handler;
       server = new TcpListener(ip);
-      if (Environment.OSVersion.Platform==PlatformID.Win32NT) {
-        //Windowsの時だけReuseAddressをつける。
-        //Windows以外ではReuseAddressがSO_REUSEADDR+SO_REUSEPORT扱いになり
-        //monoの4.6ではLinuxでUDP以外にSO_REUSEPORTを付けようとすると失敗する。
-        //そのかわりmonoではSO_REUSEADDRが標準で付いてるようなので
-        //Windows以外は明示的には付けないようにした。
-        server.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-      }
       if (ip.AddressFamily==AddressFamily.InterNetworkV6) {
         server.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, true);
       }
-      server.Start(MaxPendingConnections);
       listenTask = StartListen(server, cancellationSource.Token);
     }
 
@@ -201,27 +212,27 @@ namespace PeerCastStation.Core
       }
     }
 
-    private Task StartListen(TcpListener server, CancellationToken cancel_token)
+    private async Task StartListen(TcpListener server, CancellationToken cancel_token)
     {
-      server.Start();
-      return Task<Task>.Factory.StartNew(async () => {
-        try {
-          using (cancel_token.Register(() => server.Stop(), false)) {
-            while (!cancel_token.IsCancellationRequested) {
-              var client = await server.AcceptTcpClientAsync().ConfigureAwait(false);
-              logger.Info("Client connected {0}", client.Client.RemoteEndPoint);
-              var client_task = ConnectionHandler.HandleClient(
-                client,
-                GetAccessControlInfo(client.Client.RemoteEndPoint as IPEndPoint));
-            }
+      try {
+        server.Start(MaxPendingConnections);
+        using (cancel_token.Register(() => server.Stop(), false)) {
+          while (!cancel_token.IsCancellationRequested) {
+            bound = true;
+            var client = await server.AcceptTcpClientAsync().ConfigureAwait(false);
+            logger.Info("Client connected {0}", client.Client.RemoteEndPoint);
+            var client_task = ConnectionHandler.HandleClient(
+              client,
+              GetAccessControlInfo(client.Client.RemoteEndPoint as IPEndPoint));
           }
         }
-        catch (SocketException) {
-          if (!IsClosed) throw;
-        }
-        catch (ObjectDisposedException) {
-        }
-      }).Unwrap();
+      }
+      catch (SocketException) {
+        bound = false;
+      }
+      catch (ObjectDisposedException) {
+        bound = false;
+      }
     }
 
     /// <summary>

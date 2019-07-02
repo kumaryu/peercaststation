@@ -346,21 +346,23 @@ namespace PeerCastStation.WPF.CoreSettings
           if (String.IsNullOrEmpty(value)) {
             if (announceUri==null) return;
             announceUri = null;
-            OnPropertyChanged("AnnounceUri");
+            OnPropertyChanged(nameof(AnnounceUri));
             return;
           }
           if (protocol==null) new ArgumentException("プロトコルが選択されていません");
-          Uri newvalue;
-          if (System.Uri.TryCreate(value, UriKind.Absolute, out newvalue) &&
-              (newvalue.Scheme=="http" || newvalue.Scheme=="file")) {
-            throw new ArgumentException("指定したプロトコルでは使用できないURLです");
-          }
-          else if (
-              (System.Uri.TryCreate(value, UriKind.Absolute, out newvalue) && newvalue.Scheme=="pcp") ||
-              (System.Uri.TryCreate("pcp://"+value, UriKind.Absolute, out newvalue))) {
-            if (announceUri==newvalue || (announceUri!=null && announceUri.Equals(newvalue))) return;
-            announceUri = newvalue;
-            OnPropertyChanged("AnnounceUri");
+          if (Uri.TryCreate(value, UriKind.RelativeOrAbsolute, out var uri)) {
+            var result = protocol.ValidateUriAsync(YellowPageUriType.Announce, uri).Result;
+            if (result.IsValid) {
+              announceUri = uri;
+              OnPropertyChanged(nameof(AnnounceUri));
+            }
+            else if (!result.IsValid && result.Candidate!=null) {
+              announceUri = result.Candidate;
+              OnPropertyChanged(nameof(AnnounceUri));
+            }
+            else {
+              throw new ArgumentException(result.Message);
+            }
           }
           else {
             throw new ArgumentException("正しいURLが指定されていません");
@@ -371,13 +373,29 @@ namespace PeerCastStation.WPF.CoreSettings
       public string ChannelsUri {
         get { return channelsUri==null ? null : channelsUri.ToString(); }
         set {
-          if (String.IsNullOrEmpty(value)) return;
+          if (String.IsNullOrEmpty(value)) {
+            if (channelsUri==null) return;
+            channelsUri = null;
+            OnPropertyChanged(nameof(ChannelsUri));
+            return;
+          }
           if (protocol==null) new ArgumentException("プロトコルが選択されていません");
-          Uri newvalue;
-          if (System.Uri.TryCreate(value, UriKind.Absolute, out newvalue)) {
-            if (channelsUri==newvalue || (channelsUri!=null && channelsUri.Equals(newvalue))) return;
-            channelsUri = newvalue;
-            OnPropertyChanged("ChannelsUri");
+          if (Uri.TryCreate(value, UriKind.RelativeOrAbsolute, out var uri)) {
+            var result = protocol.ValidateUriAsync(YellowPageUriType.Channels, uri).Result;
+            if (result.IsValid) {
+              channelsUri = uri;
+              OnPropertyChanged(nameof(ChannelsUri));
+            }
+            else if (!result.IsValid && result.Candidate!=null) {
+              channelsUri = result.Candidate;
+              OnPropertyChanged(nameof(ChannelsUri));
+            }
+            else {
+              throw new ArgumentException(result.Message);
+            }
+          }
+          else {
+            throw new ArgumentException("正しいURLが指定されていません");
           }
         }
       }
@@ -739,7 +757,7 @@ namespace PeerCastStation.WPF.CoreSettings
     {
       this.pecaApp = peca_app;
       this.peerCast = peca_app.PeerCast;
-      this.AddPortCommand = new Command(() => AddPort(PrimaryPort, NetworkType.IPv4));
+      this.AddPortCommand = new Command(() => AddPort(7144, NetworkType.IPv4));
       this.RemovePortCommand = new Command(() => RemovePort(), () => SelectedPort!=null);
       this.AddYellowPageCommand = new Command(() => AddYellowPage());
       this.RemoveYellowPageCommand = new Command(() => RemoveYellowPage(), () => SelectedYellowPage!=null);
@@ -784,8 +802,27 @@ namespace PeerCastStation.WPF.CoreSettings
           PortCheckV6Status = PortCheckStatus.Failed;
         }
         else {
-          PortCheckStatus = prev.Result.ResultV4;
-          PortCheckV6Status = prev.Result.ResultV6;
+          var results = prev.Result;
+          var rv4 = results.Where(r => r.LocalAddress.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork);
+          if (rv4.Any(r => !r.Success)) {
+            PortCheckStatus = PortCheckStatus.Failed;
+          }
+          else if (rv4.Any(r => r.IsOpen)) {
+            PortCheckStatus = PortCheckStatus.Opened;
+          }
+          else {
+            PortCheckStatus = PortCheckStatus.Closed;
+          }
+          var rv6 = results.Where(r => r.LocalAddress.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6);
+          if (rv6.Any(r => !r.Success)) {
+            PortCheckV6Status = PortCheckStatus.Failed;
+          }
+          else if (rv6.Any(r => r.IsOpen)) {
+            PortCheckV6Status = PortCheckStatus.Opened;
+          }
+          else {
+            PortCheckV6Status = PortCheckStatus.Closed;
+          }
         }
       });
       DefaultPlayProtocols = new ObservableDictionary<string, PlayProtocol>(new Dictionary<string, PlayProtocol>(pecaApp.Settings.Get<UISettings>().DefaultPlayProtocols).WithDefaultValue());
@@ -794,20 +831,10 @@ namespace PeerCastStation.WPF.CoreSettings
       };
     }
 
-    private class PortCheckResult {
-      public PortCheckStatus ResultV4 { get; set; }
-      public PortCheckStatus ResultV6 { get; set; }
-
-      public static readonly PortCheckResult Failed = new PortCheckResult {
-        ResultV4 = PortCheckStatus.Failed, 
-        ResultV6 = PortCheckStatus.Failed,
-      };
-    }
-
-    private async Task<PortCheckResult> CheckPortAsync()
+    private async Task<PortCheckResult[]> CheckPortAsync()
     {
       var port_checker = pecaApp.Plugins.GetPlugin<PeerCastStation.UI.PCPPortCheckerPlugin>();
-      if (port_checker==null) return PortCheckResult.Failed;
+      if (port_checker==null) return new PortCheckResult[0];
       var results = await port_checker.CheckAsync();
       foreach (var result in results) {
         if (!result.Success) continue;
@@ -816,30 +843,7 @@ namespace PeerCastStation.WPF.CoreSettings
           port.IsOpen = result.Ports.Contains(port.Port);
         }
       }
-      var r = new PortCheckResult();
-      var resultsv4 = 
-        results.Where(result => result.LocalAddress.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork);
-      if (resultsv4.All(result => !result.Success)) {
-        r.ResultV4 = PortCheckStatus.Failed;
-      }
-      else if (ports.Where(port => port.EndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork).Any(port => port.IsOpen.HasValue && port.IsOpen.Value)) {
-        r.ResultV4 = PortCheckStatus.Opened;
-      }
-      else {
-        r.ResultV4 = PortCheckStatus.Closed;
-      }
-      var resultsv6 = 
-        results.Where(result => result.LocalAddress.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6);
-      if (resultsv6.All(result => !result.Success)) {
-        r.ResultV6 = PortCheckStatus.Failed;
-      }
-      else if (ports.Where(port => port.EndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6).Any(port => port.IsOpen.HasValue && port.IsOpen.Value)) {
-        r.ResultV6 = PortCheckStatus.Opened;
-      }
-      else {
-        r.ResultV6 = PortCheckStatus.Closed;
-      }
-      return r;
+      return results;
     }
 
     public void AddPort(int port, NetworkType network)
@@ -905,8 +909,27 @@ namespace PeerCastStation.WPF.CoreSettings
           PortCheckV6Status = PortCheckStatus.Failed;
         }
         else {
-          PortCheckStatus = prev.Result.ResultV4;
-          PortCheckV6Status = prev.Result.ResultV6;
+          var results = prev.Result;
+          var rv4 = results.Where(r => r.LocalAddress.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork);
+          if (rv4.Any(r => !r.Success)) {
+            PortCheckStatus = PortCheckStatus.Failed;
+          }
+          else if (rv4.Any(r => r.IsOpen)) {
+            PortCheckStatus = PortCheckStatus.Opened;
+          }
+          else {
+            PortCheckStatus = PortCheckStatus.Closed;
+          }
+          var rv6 = results.Where(r => r.LocalAddress.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6);
+          if (rv6.Any(r => !r.Success)) {
+            PortCheckV6Status = PortCheckStatus.Failed;
+          }
+          else if (rv6.Any(r => r.IsOpen)) {
+            PortCheckV6Status = PortCheckStatus.Opened;
+          }
+          else {
+            PortCheckV6Status = PortCheckStatus.Closed;
+          }
         }
       });
     }
@@ -990,10 +1013,31 @@ namespace PeerCastStation.WPF.CoreSettings
           PortCheckV6Status = PortCheckStatus.Failed;
         }
         else {
-          PortCheckStatus = prev.Result.ResultV4;
-          PortCheckV6Status = prev.Result.ResultV6;
-          peerCast.SetPortStatus(System.Net.Sockets.AddressFamily.InterNetwork, prev.Result.ResultV4==PortCheckStatus.Opened ? PortStatus.Open : PortStatus.Firewalled);
-          peerCast.SetPortStatus(System.Net.Sockets.AddressFamily.InterNetworkV6, prev.Result.ResultV6==PortCheckStatus.Opened ? PortStatus.Open : PortStatus.Firewalled);
+          var results = prev.Result;
+          var rv4 = results.Where(r => r.LocalAddress.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork);
+          if (rv4.Any(r => !r.Success)) {
+            PortCheckStatus = PortCheckStatus.Failed;
+          }
+          else if (rv4.Any(r => r.IsOpen)) {
+            PortCheckStatus = PortCheckStatus.Opened;
+          }
+          else {
+            PortCheckStatus = PortCheckStatus.Closed;
+          }
+          var rv6 = results.Where(r => r.LocalAddress.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6);
+          if (rv6.Any(r => !r.Success)) {
+            PortCheckV6Status = PortCheckStatus.Failed;
+          }
+          else if (rv6.Any(r => r.IsOpen)) {
+            PortCheckV6Status = PortCheckStatus.Opened;
+          }
+          else {
+            PortCheckV6Status = PortCheckStatus.Closed;
+          }
+          foreach (var r in results) {
+            if (!r.Success) continue;
+            peerCast.SetPortStatus(r.LocalAddress, r.GlobalAddress, r.IsOpen ? PortStatus.Open : PortStatus.Firewalled);
+          }
         }
       });
       pecaApp.Settings.Get<UISettings>().DefaultPlayProtocols = new Dictionary<string, PlayProtocol>(DefaultPlayProtocols);
