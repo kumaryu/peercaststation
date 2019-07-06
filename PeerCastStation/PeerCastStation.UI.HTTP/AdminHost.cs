@@ -5,84 +5,40 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using System.Collections.Generic;
 using PeerCastStation.Core;
 using PeerCastStation.HTTP;
+using PeerCastStation.Core.Http;
+using Owin;
+using Microsoft.Owin;
 
 namespace PeerCastStation.UI.HTTP
 {
-  [Plugin]
-  public class AdminHost
-    : PluginBase
+  public static class AdminHostOwinApp
   {
-    override public string Name { get { return "HTTP Admin Host UI"; } }
-
-    private OWINApplication application;
-
-    protected override void OnStart()
+    private static async Task AdminHandler(IOwinContext ctx)
     {
-      base.OnStart();
-      var owinhost =
-        Application.PeerCast.OutputStreamFactories.FirstOrDefault(factory => factory is OWINHostOutputStreamFactory) as OWINHostOutputStreamFactory;
-      if (owinhost!=null) {
-        if (application!=null) {
-          owinhost.RemoveApplication(application);
-        }
-        application = owinhost.AddApplication("/admin", PathParameters.None, OnProcess);
-      }
-    }
-
-    protected override void OnStop()
-    {
-      var owinhost =
-        Application.PeerCast.OutputStreamFactories.FirstOrDefault(factory => factory is OWINHostOutputStreamFactory) as OWINHostOutputStreamFactory;
-      if (owinhost!=null && application!=null) {
-        owinhost.RemoveApplication(application);
-      }
-      base.OnStop();
-    }
-
-    private async Task OnProcess(IDictionary<string, object> owinenv)
-    {
-      var env = new OWINEnv(owinenv);
-      var cancel_token = env.CallCanlelled;
+      var cancel_token = ctx.Request.CallCancelled;
       try {
-        if (!HTTPUtils.CheckAuthorization(env.GetAuthorizationToken(), env.AccessControlInfo)) {
-          throw new HTTPError(HttpStatusCode.Unauthorized);
-        }
-        if (env.RequestMethod!="HEAD" && env.RequestMethod!="GET") {
-          throw new HTTPError(HttpStatusCode.MethodNotAllowed);
-        }
-        var query = env.RequestParameters;
-        string value;
-        if (query.TryGetValue("cmd", out value)) {
-          switch (value) {
-          case "viewxml": //リレー情報XML出力
-            await OnViewXML(env, query, cancel_token).ConfigureAwait(false);
-            break;
-          case "stop": //チャンネル停止
-            await OnStop(env, query, cancel_token).ConfigureAwait(false);
-            break;
-          case "bump": //チャンネル再接続
-            await OnBump(env, query, cancel_token).ConfigureAwait(false);
-            break;
-          default:
-            throw new HTTPError(HttpStatusCode.BadRequest);
-          }
-        }
-        else {
+        switch (ctx.Request.Query.Get("cmd")) {
+        case "viewxml": //リレー情報XML出力
+          await OnViewXML(ctx, cancel_token).ConfigureAwait(false);
+          break;
+        case "stop": //チャンネル停止
+          await OnStop(ctx, cancel_token).ConfigureAwait(false);
+          break;
+        case "bump": //チャンネル再接続
+          await OnBump(ctx, cancel_token).ConfigureAwait(false);
+          break;
+        default:
           throw new HTTPError(HttpStatusCode.BadRequest);
         }
       }
       catch (HTTPError err) {
-        env.ResponseStatusCode = (int)err.StatusCode;
-      }
-      catch (UnauthorizedAccessException) {
-        env.ResponseStatusCode = (int)HttpStatusCode.Forbidden;
+        ctx.Response.StatusCode = (int)err.StatusCode;
       }
     }
 
-    private XElement BuildChannelXml(Channel c)
+    private static XElement BuildChannelXml(Channel c)
     {
       XElement hits;
       if (c.Nodes.Count>0) {
@@ -162,9 +118,8 @@ namespace PeerCastStation.UI.HTTP
           new XAttribute("contact", c.ChannelTrack.URL ?? "")));
     }
 
-    private byte[] BuildViewXml()
+    private static byte[] BuildViewXml(PeerCast peercast)
     {
-      var peercast = Application.PeerCast;
       var root = new XElement("peercast");
       root.Add(new XAttribute("session", peercast.SessionID.ToString("N").ToUpperInvariant()));
       var servent = new XElement("servent", new XAttribute("uptime", (int)peercast.Uptime.TotalSeconds));
@@ -198,21 +153,20 @@ namespace PeerCastStation.UI.HTTP
       return res.ToArray();
     }
 
-    private async Task OnViewXML(OWINEnv env, Dictionary<string, string> query, CancellationToken cancel_token)
+    private static async Task OnViewXML(IOwinContext ctx, CancellationToken cancel_token)
     {
-      var data = BuildViewXml();
-      env.SetResponseStatusCode(HttpStatusCode.OK);
-      env.SetResponseHeader("Content-Type", "text/xml");
-      env.SetResponseHeader("Content-Length", data.Length.ToString());
-      if (env.RequestMethod!="HEAD") {
-        await env.ResponseBody.WriteAsync(data, 0, data.Length, cancel_token).ConfigureAwait(false);
-      }
+      var data = BuildViewXml(ctx.GetPeerCast());
+      ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+      ctx.Response.ContentType = "text/xml;charset=utf-8";
+      ctx.Response.ContentLength = data.LongLength;
+      await ctx.Response.WriteAsync(data, cancel_token).ConfigureAwait(false);
     }
 
-    private Channel FindChannelFromQuery(Dictionary<string, string> query)
+    private static Channel FindChannelFromQuery(IOwinContext ctx)
     {
-      string idstr;
-      if (query.TryGetValue("id", out idstr)) {
+      var peercast = ctx.GetPeerCast();
+      var idstr = ctx.Request.Query.Get("id");
+      if (peercast!=null && idstr!=null) {
         var md = System.Text.RegularExpressions.Regex.Match(idstr, @"([A-Fa-f0-9]{32})(\.\S+)?");
         var channel_id = Guid.Empty;
         if (md.Success) {
@@ -222,39 +176,72 @@ namespace PeerCastStation.UI.HTTP
           catch (Exception) {
           }
         }
-        return Application.PeerCast.Channels.FirstOrDefault(c => c.ChannelID==channel_id);
+        return peercast.Channels.FirstOrDefault(c => c.ChannelID==channel_id);
       }
       else {
         return null;
       }
     }
 
-    private async Task OnBump(OWINEnv env, Dictionary<string, string> query, CancellationToken cancel_token)
+    private static async Task OnBump(IOwinContext ctx, CancellationToken cancel_token)
     {
-      var channel = FindChannelFromQuery(query);
+      var channel = FindChannelFromQuery(ctx);
       if (channel!=null) {
         channel.Reconnect();
-        env.SetResponseStatusCode(HttpStatusCode.OK);
-        await env.SetResponseBodyAsync("OK", cancel_token).ConfigureAwait(false);
+        ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+        await ctx.Response.WriteAsync("OK", cancel_token).ConfigureAwait(false);
       }
       else {
-        env.SetResponseStatusCode(HttpStatusCode.NotFound);
-        await env.SetResponseBodyAsync("Channel NotFound", cancel_token).ConfigureAwait(false);
+        ctx.Response.StatusCode = (int)HttpStatusCode.NotFound;
+        await ctx.Response.WriteAsync("Channel NotFound", cancel_token).ConfigureAwait(false);
       }
     }
 
-    private async Task OnStop(OWINEnv env, Dictionary<string, string> query, CancellationToken cancel_token)
+    private static async Task OnStop(IOwinContext ctx, CancellationToken cancel_token)
     {
-      var channel = FindChannelFromQuery(query);
+      var peercast = ctx.GetPeerCast();
+      var channel = FindChannelFromQuery(ctx);
       if (channel!=null) {
-        Application.PeerCast.CloseChannel(channel);
-        env.SetResponseStatusCode(HttpStatusCode.OK);
-        await env.SetResponseBodyAsync("OK", cancel_token).ConfigureAwait(false);
+        peercast.CloseChannel(channel);
+        ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+        await ctx.Response.WriteAsync("OK", cancel_token).ConfigureAwait(false);
       }
       else {
-        env.SetResponseStatusCode(HttpStatusCode.NotFound);
-        await env.SetResponseBodyAsync("Channel NotFound", cancel_token).ConfigureAwait(false);
+        ctx.Response.StatusCode = (int)HttpStatusCode.NotFound;
+        await ctx.Response.WriteAsync("Channel NotFound", cancel_token).ConfigureAwait(false);
       }
+    }
+
+    public static void BuildApp(IAppBuilder builder)
+    {
+      builder.Map("/admin", sub => {
+        sub.MapMethod("GET", withmethod => {
+          withmethod.UseAuth(OutputStreamType.Interface);
+          withmethod.Run(AdminHandler);
+        });
+      });
+    }
+
+  }
+
+  [Plugin]
+  public class AdminHost
+    : PluginBase
+  {
+    override public string Name { get { return "HTTP Admin Host UI"; } }
+
+    private IDisposable appRegistration = null;
+
+    protected override void OnStart()
+    {
+      var owin = Application.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
+      appRegistration = owin?.OwinHost?.Register(AdminHostOwinApp.BuildApp);
+    }
+
+    protected override void OnStop()
+    {
+      appRegistration?.Dispose();
+      appRegistration = null;
     }
 
   }

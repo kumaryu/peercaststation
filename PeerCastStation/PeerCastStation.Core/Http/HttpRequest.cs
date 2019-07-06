@@ -81,7 +81,7 @@ namespace PeerCastStation.Core.Http
 
       public IDictionary<string, string[]> ToDictionary()
       {
-        return headers.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray());
+        return headers.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray(), StringComparer.OrdinalIgnoreCase);
       }
     }
 
