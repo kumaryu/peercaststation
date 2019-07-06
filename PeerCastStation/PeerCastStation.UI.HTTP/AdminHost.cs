@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using PeerCastStation.Core;
-using PeerCastStation.HTTP;
 using PeerCastStation.Core.Http;
 using Owin;
 using Microsoft.Owin;
@@ -18,23 +17,19 @@ namespace PeerCastStation.UI.HTTP
     private static async Task AdminHandler(IOwinContext ctx)
     {
       var cancel_token = ctx.Request.CallCancelled;
-      try {
-        switch (ctx.Request.Query.Get("cmd")) {
-        case "viewxml": //リレー情報XML出力
-          await OnViewXML(ctx, cancel_token).ConfigureAwait(false);
-          break;
-        case "stop": //チャンネル停止
-          await OnStop(ctx, cancel_token).ConfigureAwait(false);
-          break;
-        case "bump": //チャンネル再接続
-          await OnBump(ctx, cancel_token).ConfigureAwait(false);
-          break;
-        default:
-          throw new HTTPError(HttpStatusCode.BadRequest);
-        }
-      }
-      catch (HTTPError err) {
-        ctx.Response.StatusCode = (int)err.StatusCode;
+      switch (ctx.Request.Query.Get("cmd")) {
+      case "viewxml": //リレー情報XML出力
+        await OnViewXML(ctx, cancel_token).ConfigureAwait(false);
+        break;
+      case "stop": //チャンネル停止
+        await OnStop(ctx, cancel_token).ConfigureAwait(false);
+        break;
+      case "bump": //チャンネル再接続
+        await OnBump(ctx, cancel_token).ConfigureAwait(false);
+        break;
+      default:
+        ctx.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+        break;
       }
     }
 

@@ -72,10 +72,6 @@
       <Project>{387996F5-E31D-4D92-BD86-8983C599F748}</Project>
       <Name>PeerCastStation.Core</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.HTTP\PeerCastStation.HTTP.csproj">
-      <Project>{DB3BBED9-6F4B-456C-910D-E1801C94A110}</Project>
-      <Name>PeerCastStation.HTTP</Name>
-    </ProjectReference>
     <ProjectReference Include="..\PeerCastStation.UI\PeerCastStation.UI.csproj">
       <Project>{5988fbaf-37c4-4997-8389-55f2ebbb9511}</Project>
       <Name>PeerCastStation.UI</Name>

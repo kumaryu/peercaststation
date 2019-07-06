@@ -2,7 +2,6 @@
 using Owin;
 using PeerCastStation.Core;
 using PeerCastStation.Core.Http;
-using PeerCastStation.HTTP;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -82,7 +81,7 @@ namespace PeerCastStation.UI.HTTP
       ctx.Response.ContentLength = contents.LongLength;
       var acinfo = ctx.GetAccessControlInfo();
       if (acinfo?.AuthenticationKey!=null) {
-        ctx.Response.Headers.Append("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(acinfo.AuthenticationKey));
+        ctx.Response.Headers.Append("Set-Cookie", "auth=" + acinfo.AuthenticationKey.GetToken());
       }
       await ctx.Response.WriteAsync(contents, cancel_token).ConfigureAwait(false);
     }

@@ -312,6 +312,11 @@ namespace PeerCastStation.Core
         new String(Enumerable.Range(0, 16).Select(i => KeyCharTable[random.Next(KeyCharTable.Length)]).ToArray())
       );
     }
+
+    public string GetToken()
+    {
+      return Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes(Id + ":" + Password));
+    }
   }
 
   /// <summary>

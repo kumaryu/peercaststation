@@ -145,7 +145,7 @@ namespace PeerCastStation.HTTP
           cts.CancelAfter(10000);
           if (acinfo.AuthorizationRequired) {
             var parameters = new Dictionary<string, string>() {
-              { "auth", HTTPUtils.CreateAuthorizationToken(acinfo.AuthenticationKey) },
+              { "auth", acinfo.AuthenticationKey.GetToken() },
             };
             body = await pls.CreatePlayListAsync(baseuri, parameters, cts.Token).ConfigureAwait(false);
           }

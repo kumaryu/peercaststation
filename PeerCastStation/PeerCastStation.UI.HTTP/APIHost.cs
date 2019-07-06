@@ -3,7 +3,6 @@ using System.Linq;
 using System.Net;
 using System.Collections.Generic;
 using PeerCastStation.Core;
-using PeerCastStation.HTTP;
 using PeerCastStation.UI.HTTP.JSONRPC;
 using Newtonsoft.Json.Linq;
 using System.Threading;
@@ -180,12 +179,7 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("getAuthToken")]
       public string GetAuthToken()
       {
-        if (AccessControlInfo.AuthenticationKey!=null) {
-          return HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey);
-        }
-        else {
-          return null;
-        }
+        return AccessControlInfo.AuthenticationKey?.GetToken();
       }
 
       [RPCMethod("getPlugins")]
@@ -871,9 +865,9 @@ namespace PeerCastStation.UI.HTTP
         res["globalAccepts"] = (int)listener.GlobalOutputAccepts;
         res["localAuthorizationRequired"]  = listener.LocalAuthorizationRequired;
         res["globalAuthorizationRequired"] = listener.GlobalAuthorizationRequired;
-        res["authenticationId"]       = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Id : null;
-        res["authenticationPassword"] = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Password : null;
-        res["authToken"]     = listener.AuthenticationKey!=null ? HTTPUtils.CreateAuthorizationToken(listener.AuthenticationKey) : null;
+        res["authenticationId"]       = listener.AuthenticationKey?.Id;
+        res["authenticationPassword"] = listener.AuthenticationKey?.Password;
+        res["authToken"]              = listener.AuthenticationKey?.GetToken();
         res["portStatus"]    = (int)listener.Status;
         switch (listener.Status) {
         case PortStatus.Firewalled:
@@ -1376,39 +1370,37 @@ namespace PeerCastStation.UI.HTTP
     private async Task Invoke(IOwinContext ctx)
     {
       var cancel_token = ctx.Request.CallCancelled;
-      try {
-        var api = new APIContext(this, this.Application.PeerCast, ctx.GetAccessControlInfo());
-        var rpc_host = new JSONRPCHost(api);
-        if (!ctx.Request.Headers.ContainsKey("X-Requested-With")) {
-          throw new HTTPError(HttpStatusCode.BadRequest);
-        }
-        if (!Int32.TryParse(ctx.Request.Headers.Get("Content-Length"), out var len)) {
-          throw new HTTPError(HttpStatusCode.LengthRequired);
-        }
-        if (RequestLimit<len) {
-          throw new HTTPError(HttpStatusCode.RequestEntityTooLarge);
-        }
+      var api = new APIContext(this, this.Application.PeerCast, ctx.GetAccessControlInfo());
+      var rpc_host = new JSONRPCHost(api);
+      if (!ctx.Request.Headers.ContainsKey("X-Requested-With")) {
+        ctx.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+        return;
+      }
+      if (!Int32.TryParse(ctx.Request.Headers.Get("Content-Length"), out var len)) {
+        ctx.Response.StatusCode = (int)HttpStatusCode.LengthRequired;
+        return;
+      }
+      if (RequestLimit<len) {
+        ctx.Response.StatusCode = (int)HttpStatusCode.RequestEntityTooLarge;
+        return;
+      }
 
-        try {
-          using (var timeout=CancellationTokenSource.CreateLinkedTokenSource(cancel_token)) {
-            timeout.CancelAfter(TimeoutLimit);
-            var buf = await ctx.Request.Body.ReadBytesAsync(len, timeout.Token).ConfigureAwait(false);
-            var request_str = System.Text.Encoding.UTF8.GetString(buf);
-            JToken res = rpc_host.ProcessRequest(request_str);
-            if (res!=null) {
-              await SendJson(ctx, res, cancel_token).ConfigureAwait(false);
-            }
-            else {
-              ctx.Response.StatusCode = (int)HttpStatusCode.NoContent;
-            }
+      try {
+        using (var timeout=CancellationTokenSource.CreateLinkedTokenSource(cancel_token)) {
+          timeout.CancelAfter(TimeoutLimit);
+          var buf = await ctx.Request.Body.ReadBytesAsync(len, timeout.Token).ConfigureAwait(false);
+          var request_str = System.Text.Encoding.UTF8.GetString(buf);
+          JToken res = rpc_host.ProcessRequest(request_str);
+          if (res!=null) {
+            await SendJson(ctx, res, cancel_token).ConfigureAwait(false);
+          }
+          else {
+            ctx.Response.StatusCode = (int)HttpStatusCode.NoContent;
           }
         }
-        catch (OperationCanceledException) {
-          ctx.Response.StatusCode = (int)HttpStatusCode.RequestTimeout;
-        }
       }
-      catch (HTTPError err) {
-        ctx.Response.StatusCode = (int)err.StatusCode;
+      catch (OperationCanceledException) {
+        ctx.Response.StatusCode = (int)HttpStatusCode.RequestTimeout;
       }
     }
 
