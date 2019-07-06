@@ -273,7 +273,12 @@ namespace PeerCastStation.Core
 
     public virtual bool IsRelayable(IOutputStream sink)
     {
-      return this.PeerCast.AccessController.IsChannelRelayable(this, sink);
+      return this.PeerCast.AccessController.IsChannelRelayable(this, sink.IsLocal);
+    }
+
+    public virtual bool IsRelayable(bool local)
+    {
+      return this.PeerCast.AccessController.IsChannelRelayable(this, local);
     }
 
     /// <summary>
@@ -302,6 +307,27 @@ namespace PeerCastStation.Core
       return IsRelayable(newoutput_stream);
     }
 
+    public bool MakeRelayable(bool local)
+    {
+      if (IsRelayable(local)) return true;
+      var disconnects = new List<IChannelSink>();
+      foreach (var os in OutputStreams) {
+        var info = os.GetConnectionInfo();
+        if (!info.Type.HasFlag(ConnectionType.Relay)) continue;
+        if (info.RemoteEndPoint.Address.GetAddressLocality()==0) continue;
+        var disconnect = false;
+        if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.Firewalled)) disconnect = true;
+        if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.RelayFull) &&
+            (info.LocalRelays ?? 0)<1) disconnect = true;
+        if (disconnect) disconnects.Add(os);
+      }
+      foreach (var os in disconnects) {
+        os.OnStopped(StopReason.UnavailableError);
+        RemoveOutputStream(os);
+      }
+      return IsRelayable(local);
+    }
+
     /// <summary>
     /// 視聴接続がいっぱいかどうかを取得します
     /// </summary>
@@ -311,7 +337,7 @@ namespace PeerCastStation.Core
 
     public virtual bool IsPlayable(IOutputStream sink)
     {
-      return this.PeerCast.AccessController.IsChannelPlayable(this, sink);
+      return this.PeerCast.AccessController.IsChannelPlayable(this, sink.IsLocal);
     }
 
     /// <summary>
@@ -364,6 +390,11 @@ namespace PeerCastStation.Core
 
     public IDisposable AddContentSink(IContentSink sink)
     {
+      return AddContentSink(sink, -1);
+    }
+
+    public IDisposable AddContentSink(IContentSink sink, long requestPos)
+    {
       ReplaceCollection(ref contentSinks, orig => {
         var new_collection = new List<IContentSink>(orig);
         new_collection.Add(sink);
@@ -371,7 +402,6 @@ namespace PeerCastStation.Core
       });
       var header = contentHeader;
       if (header!=null) {
-        sink.OnContentHeader(header);
         var channel_info = ChannelInfo;
         if (channel_info!=null) {
           sink.OnChannelInfo(channel_info);
@@ -380,9 +410,12 @@ namespace PeerCastStation.Core
         if (channel_track!=null) {
           sink.OnChannelTrack(channel_track);
         }
+        sink.OnContentHeader(header);
         var contents = Contents.GetNewerContents(header.Stream, header.Timestamp, header.Position);
         foreach (var content in contents) {
-          sink.OnContent(content);
+          if (header.Position>=requestPos || content.Position>=requestPos) {
+            sink.OnContent(content);
+          }
         }
       }
       return new ContentSinkSubscription(this, sink);

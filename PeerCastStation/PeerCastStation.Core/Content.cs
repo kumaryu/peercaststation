@@ -112,12 +112,11 @@ namespace PeerCastStation.Core
 
     private long serial = 0;
     private SortedList<ContentKey, Content> list = new SortedList<ContentKey, Content>();
-    public TimeSpan PacketTimeLimit { get; set; }
+    public TimeSpan PacketTimeLimit { get; set; } = TimeSpan.FromSeconds(1);
     private Channel owner;
     public ContentCollection(Channel owner)
     {
       this.owner = owner;
-      PacketTimeLimit = TimeSpan.FromSeconds(5);
     }
 
     public int Count {

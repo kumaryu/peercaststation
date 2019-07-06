@@ -83,6 +83,7 @@
     <Compile Include="Http\OwinRequestBodyStream.cs" />
     <Compile Include="Http\OwinResponseBodyStream.cs" />
     <Compile Include="Http\AuthMiddleware.cs" />
+    <Compile Include="Timestamp.cs" />
     <Compile Include="WaitableEvent.cs" />
     <Compile Include="ConnectionInfoBuilder.cs" />
     <Compile Include="Content.cs" />
