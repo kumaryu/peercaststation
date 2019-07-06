@@ -26,7 +26,7 @@ namespace PeerCastStation.Core
 {
   public interface IConnectionHandler
   {
-    Task HandleClient(TcpClient client, AccessControlInfo acinfo);
+    Task HandleClient(IPEndPoint localEndPoint, TcpClient client, AccessControlInfo acinfo, CancellationToken cancellationToken);
   }
 
   /// <summary>
@@ -41,10 +41,11 @@ namespace PeerCastStation.Core
     /// 所属しているPeerCastオブジェクトを取得します
     /// </summary>
     public PeerCast PeerCast { get; private set; }
+    private int isClosed = 0;
     /// <summary>
     /// 待ち受けが閉じられたかどうかを取得します
     /// </summary>
-    public bool IsClosed { get; private set; }
+    public bool IsClosed { get { return isClosed!=0; } }
     /// <summary>
     /// 接続待ち受けをしているエンドポイントを取得します
     /// </summary>
@@ -153,7 +154,7 @@ namespace PeerCastStation.Core
         this.authenticationKey);
     }
 
-    public AccessControlInfo  LoopbackAccessControlInfo  { get; private set; }
+    public AccessControlInfo  LoopbackAccessControlInfo  { get; set; }
     public AccessControlInfo  LocalAccessControlInfo  { get; private set; }
     public AccessControlInfo  GlobalAccessControlInfo { get; private set; }
     public IConnectionHandler ConnectionHandler { get; private set; }
@@ -222,8 +223,10 @@ namespace PeerCastStation.Core
             var client = await server.AcceptTcpClientAsync().ConfigureAwait(false);
             logger.Info("Client connected {0}", client.Client.RemoteEndPoint);
             var client_task = ConnectionHandler.HandleClient(
+              server.LocalEndpoint as IPEndPoint,
               client,
-              GetAccessControlInfo(client.Client.RemoteEndPoint as IPEndPoint));
+              GetAccessControlInfo(client.Client.RemoteEndPoint as IPEndPoint),
+              cancel_token);
           }
         }
       }
@@ -240,8 +243,8 @@ namespace PeerCastStation.Core
     /// </summary>
     public void Stop()
     {
+      if (Interlocked.Exchange(ref isClosed, 1)!=0) return;
       logger.Debug("Stopping listener");
-      IsClosed = true;
       cancellationSource.Cancel();
       server.Stop();
       listenTask.Wait();
@@ -264,7 +267,11 @@ namespace PeerCastStation.Core
       this.PeerCast = peercast;
     }
 
-    public async Task HandleClient(TcpClient client, AccessControlInfo acinfo)
+    public async Task HandleClient(
+      IPEndPoint localEndPoint,
+      TcpClient client,
+      AccessControlInfo acinfo,
+      CancellationToken cancellationToken)
     {
       logger.Debug("Output thread started");
       client.ReceiveBufferSize = 256*1024;
@@ -276,11 +283,15 @@ namespace PeerCastStation.Core
         retry:
         stream.WriteTimeout = 3000;
         stream.ReadTimeout  = 3000;
-        var remote_endpoint = (IPEndPoint)client.Client.RemoteEndPoint;
-        var handler = await CreateMatchedHandler(remote_endpoint, stream, acinfo).ConfigureAwait(false);
+        var handler = await CreateMatchedHandler(
+          localEndPoint,
+          client.Client.RemoteEndPoint as IPEndPoint,
+          stream,
+          acinfo,
+          cancellationToken).ConfigureAwait(false);
         if (handler!=null) {
           logger.Debug("Output stream started {0}", trying);
-          var result = await handler.Start().ConfigureAwait(false);
+          var result = await handler.Start(cancellationToken).ConfigureAwait(false);
           switch (result) {
           case HandlerResult.Continue:
             trying++;
@@ -295,6 +306,8 @@ namespace PeerCastStation.Core
           logger.Debug("No protocol handler matched");
         }
       }
+      catch (OperationCanceledException) {
+      }
       finally {
         logger.Debug("Closing client connection");
         stream.Close();
@@ -303,28 +316,31 @@ namespace PeerCastStation.Core
     }
 
     private async Task<IOutputStream> CreateMatchedHandler(
+        IPEndPoint local_endpoint,
         IPEndPoint remote_endpoint,
         NetworkStream stream,
-        AccessControlInfo acinfo)
+        AccessControlInfo acinfo,
+        CancellationToken cancellationToken)
     {
       var output_factories = PeerCast.OutputStreamFactories.OrderBy(factory => factory.Priority);
       var header = new byte[4096];
       int offset = 0;
       using (var cancel_source=new CancellationTokenSource(TimeSpan.FromMilliseconds(3000)))
+      using (cancellationToken.Register(() => stream.Close(), false))
       using (cancel_source.Token.Register(() => stream.Close(), false)) {
         try {
           while (offset<header.Length) {
-            var len = await stream.ReadAsync(header, offset, header.Length-offset).ConfigureAwait(false);
+            var len = await stream.ReadAsync(header, offset, header.Length-offset, cancellationToken).ConfigureAwait(false);
             if (len==0) break;
             offset += len;
             var header_ary = header.Take(offset).ToArray();
             foreach (var factory in output_factories) {
-              if ((acinfo.Accepts & factory.OutputStreamType) == 0) continue;
-              var channel_id = factory.ParseChannelID(header_ary);
+              var channel_id = factory.ParseChannelID(header_ary, acinfo);
               if (channel_id.HasValue) {
                 return factory.Create(
                   stream,
                   stream,
+                  local_endpoint,
                   remote_endpoint,
                   acinfo,
                   channel_id.Value,

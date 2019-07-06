@@ -49,11 +49,6 @@ namespace PeerCastStation.HTTP
       return result;
     }
 
-    public static string CreateAuthorizationToken(PeerCastStation.Core.AuthenticationKey key)
-    {
-      return Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes(key.Id + ":" + key.Password));
-    }
-
     public static bool CheckAuthorization(string authorization_token, PeerCastStation.Core.AccessControlInfo acinfo)
     {
       if (!acinfo.AuthorizationRequired || acinfo.AuthenticationKey==null) return true;

@@ -136,8 +136,8 @@ namespace PeerCastStation.WPF
   class OutputChannelConnectionViewModel
     : ChannelConnectionViewModel
   {
-    private IOutputStream outputStream;
-    public OutputChannelConnectionViewModel(IOutputStream os)
+    private IChannelSink outputStream;
+    public OutputChannelConnectionViewModel(IChannelSink os)
     {
       outputStream = os;
     }
@@ -145,7 +145,7 @@ namespace PeerCastStation.WPF
     public override bool IsDisconnectable { get { return true; } }
     public override void Disconnect()
     {
-      outputStream.Stop();
+      outputStream.OnStopped(StopReason.UserShutdown);
     }
 
     public override ConnectionStatus ConnectionStatus {

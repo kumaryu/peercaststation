@@ -29,6 +29,11 @@ namespace PeerCastStation.Core
       return queue.TryDequeue(out result);
     }
 
+    public bool TryPeek(out T result)
+    {
+      return queue.TryPeek(out result);
+    }
+
   }
 
 }

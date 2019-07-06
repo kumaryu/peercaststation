@@ -61,9 +61,7 @@ namespace PeerCastStation.App
           messageExpireTimer.Start();
         }
         if (lastMessage==null || !lastMessage.Equals(msg)) {
-          foreach (var ui in this.app.Plugins.Where(p => p is IUserInterfacePlugin)) {
-            ((IUserInterfacePlugin)ui).ShowNotificationMessage(msg);
-          }
+          app.ShowNotificationMessage(msg);
           lastMessage = msg;
         }
       }

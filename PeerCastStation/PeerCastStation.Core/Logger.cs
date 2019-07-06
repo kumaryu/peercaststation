@@ -421,5 +421,28 @@ namespace PeerCastStation.Core
     {
       Output(LogLevel.Debug, this.Source, exception);
     }
+
+    /// <summary>
+    /// 指定したレベルのログとして整形したメッセージを出力します
+    /// </summary>
+    /// <param name="level">出力対象のログレベル</param>
+    /// <param name="format">出力するフォーマット文字列</param>
+    /// <param name="args">フォーマットへの引数</param>
+    [Conditional("TRACE")]
+    public void Write(LogLevel level, object format, params object[] args)
+    {
+      Output(LogLevel.Debug, this.Source, format.ToString(), args);
+    }
+
+    /// <summary>
+    /// 指定したレベルのログとして例外を整形して出力します
+    /// </summary>
+    /// <param name="level">出力対象のログレベル</param>
+    /// <param name="exception">出力する例外</param>
+    [Conditional("TRACE")]
+    public void Write(LogLevel level, Exception exception)
+    {
+      Output(level, this.Source, exception);
+    }
   }
 }

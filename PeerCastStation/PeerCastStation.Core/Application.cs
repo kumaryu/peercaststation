@@ -3,13 +3,20 @@ using System.Collections.Generic;
 
 namespace PeerCastStation.Core
 {
+  public class NotificationMessageEventArgs
+    : EventArgs
+  {
+    public NotificationMessage Message { get; private set; }
+    public NotificationMessageEventArgs(NotificationMessage message)
+    {
+      Message = message;
+    }
+  }
+  public delegate void NotificationMessageEventHandler(object sender, NotificationMessageEventArgs args);
+
   public abstract class PeerCastApplication
   {
-    private static PeerCastApplication current;
-    public static PeerCastApplication Current {
-      get { return current; }
-      set { current = value; }
-    }
+    public static PeerCastApplication Current { get; set; }
     public abstract PecaSettings Settings { get; }
     public abstract IEnumerable<IPlugin> Plugins { get; }
     public abstract PeerCast PeerCast { get; }
@@ -20,10 +27,16 @@ namespace PeerCastStation.Core
       Stop(0);
     }
 
+    public event NotificationMessageEventHandler MessageNotified;
+    public virtual void ShowNotificationMessage(NotificationMessage message)
+    {
+      MessageNotified?.Invoke(this, new NotificationMessageEventArgs(message));
+    }
+
     public abstract void SaveSettings();
     public PeerCastApplication()
     {
-      if (current==null) current = this;
+      if (Current==null) Current = this;
     }
   }
 }

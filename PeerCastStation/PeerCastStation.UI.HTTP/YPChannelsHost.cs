@@ -1,5 +1,7 @@
-﻿using PeerCastStation.Core;
-using PeerCastStation.HTTP;
+﻿using Microsoft.Owin;
+using Owin;
+using PeerCastStation.Core;
+using PeerCastStation.Core.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,70 +11,24 @@ using System.Threading.Tasks;
 
 namespace PeerCastStation.UI.HTTP
 {
-  [Plugin]
-  class YPChannelsHost
-    : PluginBase
+  public class YPChannelsHostOwinApp
   {
-    override public string Name { get { return "YP Channels Host"; } }
-
-    public YPChannelsHost()
+    public PeerCastApplication Application { get; private set; }
+    public YPChannelsHostOwinApp(PeerCastApplication application)
     {
+      Application = application;
     }
 
-    override protected void OnAttach()
-    {
-    }
-
-    private List<OWINApplication> applications = new List<OWINApplication>();
-    protected override void OnStart()
-    {
-      base.OnStart();
-      var owinhost =
-        Application.PeerCast.OutputStreamFactories.FirstOrDefault(factory => factory is OWINHostOutputStreamFactory) as OWINHostOutputStreamFactory;
-      if (owinhost!=null) {
-        applications.Add(owinhost.AddApplication("/ypchannels/index.txt", PathParameters.None, OnProcess));
-      }
-    }
-
-    protected override void OnStop()
-    {
-      var owinhost =
-        Application.PeerCast.OutputStreamFactories.FirstOrDefault(factory => factory is OWINHostOutputStreamFactory) as OWINHostOutputStreamFactory;
-      if (owinhost!=null) {
-        foreach (var app in applications) {
-          owinhost.RemoveApplication(app);
-        }
-      }
-      base.OnStop();
-    }
-
-    override protected void OnDetach()
-    {
-    }
-
-    private async Task SendResponseMoveToIndex(OWINEnv env, CancellationToken cancel_token)
-    {
-      var content = System.Text.Encoding.UTF8.GetBytes("Moving...");
-      env.SetResponseHeader("Content-Type",   "text/plain");
-      env.SetResponseHeader("Content-Length", content.Length.ToString());
-      env.SetResponseHeader("Location",       "/html/index.html");
-      if (env.AccessControlInfo.AuthenticationKey!=null) {
-        env.SetResponseHeader("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(env.AccessControlInfo.AuthenticationKey));
-      }
-      env.ResponseStatusCode = (int)HttpStatusCode.Moved;
-      if (env.RequestMethod=="GET") {
-        await env.ResponseBody.WriteAsync(content, 0, content.Length, cancel_token).ConfigureAwait(false);
-      }
-    }
-
-    public Task<IEnumerable<IYellowPageChannel>> GetYPChannels()
+    public Task<IEnumerable<IYellowPageChannel>> GetYPChannelsAsync(CancellationToken cancellationToken)
     {
       var channel_list = Application.Plugins.FirstOrDefault(plugin => plugin is YPChannelList) as YPChannelList;
-      if (channel_list==null) return Task.FromResult(Enumerable.Empty<IYellowPageChannel>());
-      return channel_list.UpdateAsync();
+      if (channel_list==null) {
+        return Task.FromResult(Enumerable.Empty<IYellowPageChannel>());
+      }
+      return channel_list.UpdateAsync(cancellationToken);
     }
 
-    public string FormatUptime(int? sec)
+    private static string FormatUptime(int? sec)
     {
       if (sec.HasValue) {
         var hours   = sec.Value/3600;
@@ -84,7 +40,7 @@ namespace PeerCastStation.UI.HTTP
       }
     }
 
-    public string ChannelsToIndex(IEnumerable<IYellowPageChannel> channels)
+    private static string ChannelsToIndex(IEnumerable<IYellowPageChannel> channels)
     {
       return String.Join("\n",
         channels.Select(channel =>
@@ -105,7 +61,7 @@ namespace PeerCastStation.UI.HTTP
               channel.TrackTitle,
               channel.Album,
               channel.TrackUrl,
-              System.Net.WebUtility.UrlEncode(channel.Name),
+              WebUtility.UrlEncode(channel.Name),
               FormatUptime(channel.Uptime),
               "click",
               channel.Comment,
@@ -116,40 +72,53 @@ namespace PeerCastStation.UI.HTTP
       ) + "\n";
     }
 
-    private async Task SendResponseChannelList(OWINEnv env, CancellationToken cancel_token)
+    private async Task Invoke(IOwinContext ctx)
     {
-      var channel_list = await GetYPChannels().ConfigureAwait(false);
+      var cancel_token = ctx.Request.CallCancelled;
+      var channel_list = await GetYPChannelsAsync(cancel_token).ConfigureAwait(false);
       var contents     = System.Text.Encoding.UTF8.GetBytes(ChannelsToIndex(channel_list));
-      env.SetResponseHeader("Content-Type", "text/plain;charset=utf-8");
-      env.SetResponseHeader("Content-Length", contents.Length.ToString());
-      if (env.AccessControlInfo.AuthenticationKey!=null) {
-        env.SetResponseHeader("Set-Cookie", "auth=" + HTTPUtils.CreateAuthorizationToken(env.AccessControlInfo.AuthenticationKey));
+      ctx.Response.ContentType = "text/plain;charset=utf-8";
+      ctx.Response.ContentLength = contents.LongLength;
+      var acinfo = ctx.GetAccessControlInfo();
+      if (acinfo?.AuthenticationKey!=null) {
+        ctx.Response.Headers.Append("Set-Cookie", "auth=" + acinfo.AuthenticationKey.GetToken());
       }
-      if (env.RequestMethod=="GET") {
-        await env.ResponseBody.WriteAsync(contents, 0, contents.Length, cancel_token).ConfigureAwait(false);
-      }
+      await ctx.Response.WriteAsync(contents, cancel_token).ConfigureAwait(false);
     }
 
-    private async Task OnProcess(IDictionary<string, object> owinenv)
+    public static void BuildApp(IAppBuilder builder, PeerCastApplication application)
     {
-      var env = new OWINEnv(owinenv);
-      var cancel_token = env.CallCanlelled;
-      try {
-        if (!HTTPUtils.CheckAuthorization(env.GetAuthorizationToken(), env.AccessControlInfo)) {
-          throw new HTTPError(HttpStatusCode.Unauthorized);
-        }
-        if (env.RequestMethod!="HEAD" && env.RequestMethod!="GET") {
-          throw new HTTPError(HttpStatusCode.MethodNotAllowed);
-        }
-        await SendResponseChannelList(env, cancel_token).ConfigureAwait(false);
-      }
-      catch (HTTPError err) {
-        env.ResponseStatusCode = (int)err.StatusCode;
-      }
-      catch (UnauthorizedAccessException) {
-        env.ResponseStatusCode = (int)HttpStatusCode.Forbidden;
-      }
+      var app = new YPChannelsHostOwinApp(application);
+      builder.Map("/ypchannels/index.txt", sub => {
+        sub.MapMethod("GET", withmethod => {
+          withmethod.UseAuth(OutputStreamType.Interface);
+          withmethod.Run(app.Invoke);
+        });
+      });
     }
 
   }
+
+  [Plugin]
+  public class YPChannelsHost
+    : PluginBase
+  {
+    override public string Name { get { return "YP Channels Host"; } }
+
+    private IDisposable appRegistration = null;
+
+    protected override void OnStart()
+    {
+      var owin = Application.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
+      appRegistration = owin?.OwinHost?.Register(builder => YPChannelsHostOwinApp.BuildApp(builder, Application));
+    }
+
+    protected override void OnStop()
+    {
+      appRegistration?.Dispose();
+      appRegistration = null;
+    }
+
+  }
+
 }

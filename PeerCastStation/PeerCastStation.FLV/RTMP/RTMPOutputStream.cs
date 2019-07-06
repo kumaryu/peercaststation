@@ -14,17 +14,18 @@ namespace PeerCastStation.FLV.RTMP
 		private PeerCast peerCast;
 		private ConnectionStream inputStream;
 		private ConnectionStream outputStream;
+		private System.Net.EndPoint localEndPoint;
 		private System.Net.EndPoint remoteEndPoint;
 		private AccessControlInfo accessControl;
 		private RTMPPlayConnection connection;
-		private System.Threading.Tasks.Task<HandlerResult> connectionTask;
-		private System.Threading.CancellationTokenSource cancelSource = new System.Threading.CancellationTokenSource();
+		private CancellationTokenSource isStopped = new CancellationTokenSource();
 		private Channel channel;
 
 		public RTMPOutputStream(
 				PeerCast peercast,
 				System.IO.Stream input_stream,
 				System.IO.Stream output_stream,
+				System.Net.EndPoint local_endpoint,
 				System.Net.EndPoint remote_endpoint,
 				AccessControlInfo access_control,
 				Guid channel_id,
@@ -36,6 +37,7 @@ namespace PeerCastStation.FLV.RTMP
 			this.inputStream    = stream;
 			this.outputStream   = stream;
       stream.WriteTimeout = 10000;
+			this.localEndPoint  = local_endpoint;
 			this.remoteEndPoint = remote_endpoint;
 			this.accessControl  = access_control;
 			this.connection = new RTMPPlayConnection(this, this.inputStream, this.outputStream);
@@ -89,34 +91,27 @@ namespace PeerCastStation.FLV.RTMP
 			}
 		}
 
-		public Task<HandlerResult> Start()
-		{
-			connectionTask =
-				connection.Run(cancelSource.Token)
-				.ContinueWith(task => {
-					if (this.channel!=null) {
-						this.channel.RemoveOutputStream(this);
-					}
-          return HandlerResult.Close;
-				});
-      return connectionTask;
-		}
+    public async Task<HandlerResult> Start(CancellationToken cancellationToken)
+    {
+      using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, isStopped.Token)) {
+        await connection.Run(cts.Token).ConfigureAwait(false);
+        if (this.channel!=null) {
+          this.channel.RemoveOutputStream(this);
+        }
+        return HandlerResult.Close;
+      }
+    }
 
-		public void Post(Host from, Atom packet)
-		{
-		}
+    public void OnBroadcast(Host from, Atom packet)
+    {
+    }
 
-		private StopReason stopReason = StopReason.None;
-		public void Stop()
-		{
-			Stop(StopReason.UserShutdown);
-		}
-
-		public void Stop(StopReason reason)
-		{
-			stopReason = reason;
-			cancelSource.Cancel();
-		}
+    private StopReason stopReason = StopReason.None;
+    public void OnStopped(StopReason reason)
+    {
+      stopReason = reason;
+      isStopped.Cancel();
+    }
 
     public bool CheckAuthotization(string auth)
     {
@@ -161,6 +156,7 @@ namespace PeerCastStation.FLV.RTMP
 		public override IOutputStream Create(
 				System.IO.Stream input_stream,
 				System.IO.Stream output_stream,
+				System.Net.EndPoint local_endpoint,
 				System.Net.EndPoint remote_endpoint,
 				AccessControlInfo access_control,
 				Guid channel_id,
@@ -170,6 +166,7 @@ namespace PeerCastStation.FLV.RTMP
 					PeerCast,
 					input_stream,
 					output_stream,
+					local_endpoint,
 					remote_endpoint,
 					access_control,
 					channel_id,

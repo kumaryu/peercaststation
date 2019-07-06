@@ -21,6 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.ObjectModel;
+using Owin;
 
 namespace PeerCastStation.Core
 {
@@ -62,6 +63,7 @@ namespace PeerCastStation.Core
   /// PeerCastStationの主要な動作を行ない、管理するクラスです
   /// </summary>
   public class PeerCast
+    : IDisposable
   {
     /// <summary>
     /// UserAgentやServerとして名乗る名前を取得および設定します。
@@ -120,6 +122,7 @@ namespace PeerCastStation.Core
     /// 登録されているIContentReaderFactoryのリストを取得します
     /// </summary>
     public IList<IContentReaderFactory> ContentReaderFactories { get; private set; }
+    public IList<Action<IAppBuilder>> HttpApplicationFactories { get; private set; } = new List<Action<IAppBuilder>>();
     public IList<IContentFilter> ContentFilters { get; private set; }
     /// <summary>
     /// 接続しているチャンネルの読み取り専用リストを取得します
@@ -650,6 +653,12 @@ namespace PeerCastStation.Core
       channels = new List<Channel>();
       uptime.Stop();
       logger.Info("PeerCast Stopped");
+    }
+
+    public void Dispose()
+    {
+      if (cancelSource.IsCancellationRequested) return;
+      Stop();
     }
 
     private static Logger logger = new Logger(typeof(PeerCast));

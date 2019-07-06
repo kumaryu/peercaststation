@@ -549,10 +549,31 @@ namespace PeerCastStation.Core
     All = 0x7FFFFFFF,
   }
 
+  public interface IChannelSink
+  {
+    /// <summary>
+    /// ストリームへパケットを送信します
+    /// </summary>
+    /// <param name="from">ブロードキャストパケットの送信元。無い場合はnull</param>
+    /// <param name="packet">送信するデータ</param>
+    void OnBroadcast(Host from, Atom packet);
+    /// <summary>
+    /// ストリームへの書き込みを終了します
+    /// </summary>
+    /// <param name="reason">書き込み終了の理由</param>
+    void OnStopped(StopReason reason);
+    /// <summary>
+    /// 現在の接続情報を取得します
+    /// </summary>
+    /// <returns>呼び出した時点の接続先情報</returns>
+    ConnectionInfo GetConnectionInfo();
+  }
+
   /// <summary>
   /// 下流にチャンネルのContentを流すストリームを表わすインターフェースです
   /// </summary>
   public interface IOutputStream
+    : IChannelSink
   {
     /// <summary>
     /// 送信先がローカルネットワークかどうかを取得します
@@ -566,31 +587,12 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 元になるストリームへチャンネルのContentを流しはじめます
     /// </summary>
-    Task<HandlerResult> Start();
-    /// <summary>
-    /// ストリームへパケットを送信します
-    /// </summary>
-    /// <param name="from">ブロードキャストパケットの送信元。無い場合はnull</param>
-    /// <param name="packet">送信するデータ</param>
-    void Post(Host from, Atom packet);
-    /// <summary>
-    /// ストリームへの書き込みを終了します
-    /// </summary>
-    void Stop();
-    /// <summary>
-    /// ストリームへの書き込みを終了します
-    /// </summary>
-    /// <param name="reason">書き込み終了の理由</param>
-    void Stop(StopReason reason);
+    /// <param name="cancellationToken">接続待ち受けを終了した時にキャンセルされるトークン</param>
+    Task<HandlerResult> Start(CancellationToken cancellationToken);
     /// <summary>
     /// 出力ストリームの種類を取得します
     /// </summary>
     OutputStreamType OutputStreamType { get; }
-    /// <summary>
-    /// 現在の接続情報を取得します
-    /// </summary>
-    /// <returns>呼び出した時点の接続先情報</returns>
-    ConnectionInfo GetConnectionInfo();
   }
 
   /// <summary>
@@ -610,14 +612,11 @@ namespace PeerCastStation.Core
     /// </remarks>
     int Priority { get; }
     /// <summary>
-    /// 作成される出力ストリームの種類を取得します
-    /// </summary>
-    OutputStreamType OutputStreamType { get; }
-    /// <summary>
     /// OutpuStreamのインスタンスを作成します
     /// </summary>
     /// <param name="input_stream">接続先の受信ストリーム</param>
     /// <param name="output_stream">接続先の送信ストリーム</param>
+    /// <param name="local_endpoint">接続を待ち受けたエンドポイント。無ければnull</param>
     /// <param name="remote_endpoint">接続先。無ければnull</param>
     /// <param name="access_control">アクセスの可否および認証に必要な情報</param>
     /// <param name="channel_id">所属するチャンネルのチャンネルID</param>
@@ -626,6 +625,7 @@ namespace PeerCastStation.Core
     IOutputStream Create(
       Stream input_stream,
       Stream output_stream,
+      EndPoint local_endpoint,
       EndPoint remote_endpoint,
       AccessControlInfo access_control,
       Guid channel_id,
@@ -635,7 +635,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="header">クライアントから受け取ったリクエスト</param>
     /// <returns>headerからチャンネルIDを取得できた場合はチャンネルID、できなかった場合はnull</returns>
-    Guid? ParseChannelID(byte[] header);
+    Guid? ParseChannelID(byte[] header, AccessControlInfo acinfo);
   }
 
   /// <summary>

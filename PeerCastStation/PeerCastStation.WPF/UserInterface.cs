@@ -23,8 +23,7 @@ namespace PeerCastStation.WPF
 {
   [Plugin(PluginType.GUI)]
   public class UserInterface
-    : PluginBase,
-      IUserInterfacePlugin
+    : PluginBase
   {
     override public string Name { get { return "GUI by WPF"; } }
     public override bool IsUsable {
@@ -71,6 +70,7 @@ namespace PeerCastStation.WPF
       mainThread.Name = "WPF UI Thread";
       mainThread.SetApartmentState(ApartmentState.STA);
       mainThread.Start();
+      Application.MessageNotified += OnMessageNotified;
     }
 
     public void ShowWindow()
@@ -98,6 +98,7 @@ namespace PeerCastStation.WPF
 
     override protected void OnStop()
     {
+      Application.MessageNotified -= OnMessageNotified;
       var timer_wait = new AutoResetEvent(false);
       versionCheckTimer.Dispose(timer_wait);
       timer_wait.WaitOne();
@@ -112,10 +113,10 @@ namespace PeerCastStation.WPF
       appViewModel.Dispose();
     }
 
-    public void ShowNotificationMessage(NotificationMessage msg)
+    public void OnMessageNotified(object sender, NotificationMessageEventArgs args)
     {
       if (notifyIconManager==null) return;
-      notifyIconManager.ShowNotificationMessage(msg);
+      notifyIconManager.ShowNotificationMessage(args.Message);
     }
   }
 }

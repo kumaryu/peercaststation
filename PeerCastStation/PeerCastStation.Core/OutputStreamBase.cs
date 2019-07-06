@@ -33,7 +33,21 @@ namespace PeerCastStation.Core
     public abstract string Name { get; }
     public abstract OutputStreamType OutputStreamType { get; }
     public virtual int Priority { get { return 0; } }
-    public abstract IOutputStream Create(Stream input_stream, Stream output_stream, EndPoint remote_endpoint, AccessControlInfo access_control, Guid channel_id, byte[] header);
+    public abstract IOutputStream Create(
+      Stream input_stream,
+      Stream output_stream,
+      EndPoint local_endpoint,
+      EndPoint remote_endpoint,
+      AccessControlInfo access_control,
+      Guid channel_id,
+      byte[] header);
+
+    public virtual Guid? ParseChannelID(byte[] header, AccessControlInfo acinfo)
+    {
+      if ((acinfo.Accepts & OutputStreamType)==0) return null;
+      return ParseChannelID(header);
+    }
+
     public abstract Guid? ParseChannelID(byte[] header);
   }
 
@@ -45,6 +59,7 @@ namespace PeerCastStation.Core
     protected Logger Logger { get; private set; }
     public Channel Channel { get; private set; }
     public PeerCast PeerCast { get; private set; }
+    public EndPoint LocalEndPoint { get; private set; }
     public EndPoint RemoteEndPoint { get; private set; }
     public AccessControlInfo AccessControlInfo { get; private set; }
 
@@ -54,6 +69,7 @@ namespace PeerCastStation.Core
     /// <param name="peercast">所属するPeerCast</param>
     /// <param name="input_stream">元になる受信ストリーム</param>
     /// <param name="output_stream">元になる送信ストリーム</param>
+    /// <param name="local_endpoint">接続を待ち受けたアドレス</param>
     /// <param name="remote_endpoint">接続先のアドレス</param>
     /// <param name="access_control">接続可否および認証の情報</param>
     /// <param name="channel">所属するチャンネル。無い場合はnull</param>
@@ -62,6 +78,7 @@ namespace PeerCastStation.Core
       PeerCast peercast,
       Stream input_stream,
       Stream output_stream,
+      EndPoint local_endpoint,
       EndPoint remote_endpoint,
       AccessControlInfo access_control,
       Channel channel,
@@ -72,6 +89,7 @@ namespace PeerCastStation.Core
       this.connection.ReadTimeout = 10000;
       this.connection.WriteTimeout = 10000;
       this.PeerCast = peercast;
+      this.LocalEndPoint = local_endpoint;
       this.RemoteEndPoint = remote_endpoint;
       this.AccessControlInfo = access_control;
       this.Channel = channel;
@@ -127,7 +145,7 @@ namespace PeerCastStation.Core
     protected virtual Task OnError(Exception err, CancellationToken cancel_token)
     {
       HasError = true;
-      Stop(StopReason.ConnectionError);
+      OnStopped(StopReason.ConnectionError);
       HandlerResult = HandlerResult.Error;
       Logger.Info(err);
       return Task.Delay(0);
@@ -142,39 +160,41 @@ namespace PeerCastStation.Core
 
     protected HandlerResult HandlerResult { get; set; }
 
-    public virtual async Task<HandlerResult> Start()
+    public virtual async Task<HandlerResult> Start(CancellationToken cancellationToken)
     {
-      try {
-        Logger.Debug("Starting");
+      using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, isStopped.Token)) {
         try {
-          await OnStarted(isStopped.Token).ConfigureAwait(false);
+          Logger.Debug("Starting");
           try {
-            Stop(await DoProcess(isStopped.Token).ConfigureAwait(false));
-          }
-          catch (IOException err) {
-            await OnError(err, isStopped.Token).ConfigureAwait(false);
+            await OnStarted(cts.Token).ConfigureAwait(false);
+            try {
+              OnStopped(await DoProcess(cts.Token).ConfigureAwait(false));
+            }
+            catch (IOException err) {
+              await OnError(err, cts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) {
+            }
+            await OnStopped(cts.Token).ConfigureAwait(false);
           }
           catch (OperationCanceledException) {
           }
-          await OnStopped(isStopped.Token).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) {
-        }
-        finally {
-          var timeout_source = new CancellationTokenSource(TimeSpan.FromMilliseconds(connection.WriteTimeout));
-          if (HandlerResult!=HandlerResult.Continue) {
-            await connection.CloseAsync(timeout_source.Token).ConfigureAwait(false);
+          finally {
+            var timeout_source = new CancellationTokenSource(TimeSpan.FromMilliseconds(connection.WriteTimeout));
+            if (HandlerResult!=HandlerResult.Continue) {
+              await connection.CloseAsync(timeout_source.Token).ConfigureAwait(false);
+            }
           }
+          Logger.Debug("Finished");
+          return HandlerResult;
         }
-        Logger.Debug("Finished");
-        return HandlerResult;
-      }
-      catch (Exception e) {
-        Logger.Error(e);
-        if (StoppedReason==StopReason.None) {
-          StoppedReason = StopReason.NotIdentifiedError;
+        catch (Exception e) {
+          Logger.Error(e);
+          if (StoppedReason==StopReason.None) {
+            StoppedReason = StopReason.NotIdentifiedError;
+          }
+          return HandlerResult.Error;
         }
-        return HandlerResult.Error;
       }
     }
 
@@ -183,18 +203,13 @@ namespace PeerCastStation.Core
       return Task.Delay(0);
     }
 
-    public void Post(Host from, Atom packet)
+    public void OnBroadcast(Host from, Atom packet)
     {
       if (isStopped.IsCancellationRequested) return;
       DoPost(from, packet, isStopped.Token);
     }
 
-    public void Stop()
-    {
-      Stop(StopReason.UserShutdown);
-    }
-
-    public void Stop(StopReason reason)
+    public void OnStopped(StopReason reason)
     {
       StoppedReason = reason;
       isStopped.Cancel();

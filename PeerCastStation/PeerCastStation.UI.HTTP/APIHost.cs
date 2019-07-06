@@ -1,62 +1,53 @@
 ﻿using System;
 using System.Linq;
-using System.IO;
 using System.Net;
 using System.Collections.Generic;
 using PeerCastStation.Core;
-using PeerCastStation.HTTP;
 using PeerCastStation.UI.HTTP.JSONRPC;
 using Newtonsoft.Json.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using PeerCastStation.Core.Http;
+using Owin;
+using Microsoft.Owin;
 
 namespace PeerCastStation.UI.HTTP
 {
-  [Plugin]
-  public class APIHost
-    : PluginBase,
-      IUserInterfacePlugin
+  public class APIHostOwinApp
+    : IDisposable
   {
-    override public string Name { get { return "HTTP API Host UI"; } }
-    public LogWriter LogWriter { get { return logWriter; } }
-    private LogWriter logWriter = new LogWriter(1000);
+    public LogWriter LogWriter { get; private set; } = new LogWriter(1000);
+    public PeerCastApplication Application { get; private set; }
+    public int[] OpenedPortsV4 { get; set; }
+    public int[] OpenedPortsV6 { get; set; }
+
     private Updater updater = new Updater();
     private IEnumerable<VersionDescription> newVersions = Enumerable.Empty<VersionDescription>();
-    private OWINApplication application;
     private object locker = new object();
-
     private ObjectIdRegistry idRegistry = new ObjectIdRegistry();
-    override protected void OnAttach()
-    {
-    }
 
-    protected override void OnStart()
+    public class UpdateStatus {
+      public Task UpdateTask;
+      public float Progress;
+      public bool IsCompleted { get { return UpdateTask.IsCompleted; } }
+      public bool IsFaulted { get { return UpdateTask.IsFaulted; } }
+      public bool IsSucceeded { get { return UpdateTask.IsCompleted && !UpdateTask.IsFaulted && !UpdateTask.IsCanceled; } }
+    }
+    private UpdateStatus updateStatus = null;
+
+    public APIHostOwinApp(PeerCastApplication application)
     {
-      Logger.AddWriter(logWriter);
+      Application = application;
+      Application.MessageNotified += OnMessageNotified;
+      Logger.AddWriter(LogWriter);
       updater.NewVersionFound += OnNewVersionFound;
       updater.CheckVersion();
-      var owinhost =
-        Application.PeerCast.OutputStreamFactories.FirstOrDefault(factory => factory is OWINHostOutputStreamFactory) as OWINHostOutputStreamFactory;
-      if (owinhost!=null) {
-        if (application!=null) {
-          owinhost.RemoveApplication(application);
-        }
-        application = owinhost.AddApplication("/api/1", PathParameters.None, OnProcess);
-      }
     }
 
-    protected override void OnStop()
+    public void Dispose()
     {
-      var owinhost =
-        Application.PeerCast.OutputStreamFactories.FirstOrDefault(factory => factory is OWINHostOutputStreamFactory) as OWINHostOutputStreamFactory;
-      if (owinhost!=null && application!=null) {
-        owinhost.RemoveApplication(application);
-      }
-      Logger.RemoveWriter(logWriter);
-    }
-
-    protected override void OnDetach()
-    {
+      Application.MessageNotified -= OnMessageNotified;
+      Logger.RemoveWriter(LogWriter);
     }
 
     private Task saveSettingsTask = Task.Delay(0);
@@ -73,16 +64,8 @@ namespace PeerCastStation.UI.HTTP
 
     void OnNewVersionFound(object sender, NewVersionFoundEventArgs args)
     {
-      foreach (var plugin in Application.Plugins
-          .Select(p => p as IUserInterfacePlugin)
-          .Where(p => p!=null)) {
-        plugin.ShowNotificationMessage(
-          new NewVersionNotificationMessage(args.VersionDescriptions));
-      }
+      Application.ShowNotificationMessage(new NewVersionNotificationMessage(args.VersionDescriptions));
     }
-
-    public int[] OpenedPortsV4 { get; set; }
-    public int[] OpenedPortsV6 { get; set; }
 
     public void CheckVersion()
     {
@@ -93,15 +76,6 @@ namespace PeerCastStation.UI.HTTP
     {
       return newVersions;
     }
-
-    public class UpdateStatus {
-      public Task UpdateTask;
-      public float Progress;
-      public bool IsCompleted { get { return UpdateTask.IsCompleted; } }
-      public bool IsFaulted { get { return UpdateTask.IsFaulted; } }
-      public bool IsSucceeded { get { return UpdateTask.IsCompleted && !UpdateTask.IsFaulted && !UpdateTask.IsCanceled; } }
-    }
-    private UpdateStatus updateStatus = null;
 
     public UpdateStatus UpdateAsync()
     {
@@ -128,12 +102,12 @@ namespace PeerCastStation.UI.HTTP
     }
 
     private List<NotificationMessage> notificationMessages = new List<NotificationMessage>();
-    public void ShowNotificationMessage(NotificationMessage msg)
+    public void OnMessageNotified(object sender, NotificationMessageEventArgs args)
     {
       lock (notificationMessages) {
-        notificationMessages.Add(msg);
-        if (msg is NewVersionNotificationMessage) {
-          newVersions = ((NewVersionNotificationMessage)msg).VersionDescriptions;
+        notificationMessages.Add(args.Message);
+        if (args.Message is NewVersionNotificationMessage) {
+          newVersions = ((NewVersionNotificationMessage)args.Message).VersionDescriptions;
         }
       }
     }
@@ -147,99 +121,27 @@ namespace PeerCastStation.UI.HTTP
       }
     }
 
+    private IEnumerable<IYellowPageChannel> channels = Enumerable.Empty<IYellowPageChannel>();
     public IEnumerable<IYellowPageChannel> GetYPChannels()
     {
-      var channel_list = Application.Plugins.FirstOrDefault(plugin => plugin is YPChannelList) as YPChannelList;
-      if (channel_list==null) return Enumerable.Empty<IYellowPageChannel>();
-      return channel_list.Channels;
+      return channels;
     }
 
     public IEnumerable<IYellowPageChannel> UpdateYPChannels()
     {
       var channel_list = Application.Plugins.FirstOrDefault(plugin => plugin is YPChannelList) as YPChannelList;
       if (channel_list==null) return Enumerable.Empty<IYellowPageChannel>();
-      return channel_list.Update();
-    }
-
-    public static readonly int RequestLimit = 64*1024;
-    public static readonly int TimeoutLimit = 5000;
-    private async Task OnProcess(IDictionary<string, object> owinenv)
-    {
-      var env = new OWINEnv(owinenv);
-      var cancel_token = env.CallCanlelled;
-      try {
-        
-        if (!HTTPUtils.CheckAuthorization(env.GetAuthorizationToken(), env.AccessControlInfo)) {
-          throw new HTTPError(HttpStatusCode.Unauthorized);
-        }
-        var ctx = new APIContext(this, this.Application.PeerCast, env.AccessControlInfo);
-        var rpc_host = new JSONRPCHost(ctx);
-        switch (env.RequestMethod) {
-        case "HEAD":
-        case "GET":
-          await SendJson(env, ctx.GetVersionInfo(), env.RequestMethod!="HEAD", cancel_token).ConfigureAwait(false);
-          break;
-        case "POST":
-          {
-            if (!env.RequestHeaders.ContainsKey("X-REQUESTED-WITH")) {
-              throw new HTTPError(HttpStatusCode.BadRequest);
-            }
-            if (!env.RequestHeaders.ContainsKey("CONTENT-LENGTH")) {
-              throw new HTTPError(HttpStatusCode.LengthRequired);
-            }
-            var body = env.RequestBody;
-            var len  = body.Length;
-            if (len<=0 || RequestLimit<len) {
-              throw new HTTPError(HttpStatusCode.BadRequest);
-            }
-
-            try {
-              var timeout_token = new CancellationTokenSource(TimeoutLimit);
-              var buf = await body.ReadBytesAsync((int)len, CancellationTokenSource.CreateLinkedTokenSource(cancel_token, timeout_token.Token).Token).ConfigureAwait(false);
-              var request_str = System.Text.Encoding.UTF8.GetString(buf);
-              JToken res = rpc_host.ProcessRequest(request_str);
-              if (res!=null) {
-                await SendJson(env, res, true, cancel_token).ConfigureAwait(false);
-              }
-              else {
-                throw new HTTPError(HttpStatusCode.NoContent);
-              }
-            }
-            catch (OperationCanceledException) {
-              throw new HTTPError(HttpStatusCode.RequestTimeout);
-            }
-          }
-          break;
-        default:
-          throw new HTTPError(HttpStatusCode.MethodNotAllowed);
-        }
-      }
-      catch (HTTPError err) {
-        env.ResponseStatusCode = (int)err.StatusCode;
-      }
-      catch (UnauthorizedAccessException) {
-        env.ResponseStatusCode = (int)HttpStatusCode.Forbidden;
-      }
-    }
-
-    private async Task SendJson(OWINEnv env, JToken token, bool send_body, CancellationToken cancel_token)
-    {
-      var body = System.Text.Encoding.UTF8.GetBytes(token.ToString());
-      env.AddResponseHeader("Content-Type",   "application/json");
-      env.AddResponseHeader("Content-Length", body.Length.ToString());
-      env.ResponseStatusCode = (int)HttpStatusCode.OK;
-      if (send_body) {
-        await env.ResponseBody.WriteAsync(body, 0, body.Length, cancel_token).ConfigureAwait(false);
-      }
+      channels = channel_list.Update();
+      return channels;
     }
 
     public class APIContext
     {
-      APIHost owner;
+      APIHostOwinApp owner;
       public PeerCast PeerCast { get; private set; }
       public AccessControlInfo AccessControlInfo { get; private set; }
       public APIContext(
-        APIHost owner,
+        APIHostOwinApp owner,
         PeerCast peercast,
         AccessControlInfo access_control)
       {
@@ -277,12 +179,7 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("getAuthToken")]
       public string GetAuthToken()
       {
-        if (AccessControlInfo.AuthenticationKey!=null) {
-          return HTTPUtils.CreateAuthorizationToken(AccessControlInfo.AuthenticationKey);
-        }
-        else {
-          return null;
-        }
+        return AccessControlInfo.AuthenticationKey?.GetToken();
       }
 
       [RPCMethod("getPlugins")]
@@ -639,7 +536,7 @@ namespace PeerCastStation.UI.HTTP
           var res = new JObject();
           res["outputId"] = GetObjectId(os);
           res["name"]     = os.ToString();
-          res["type"]     = (int)os.OutputStreamType;
+          res["type"]     = (int)os.GetConnectionInfo().Type;
           return res;
         }));
       }
@@ -651,7 +548,7 @@ namespace PeerCastStation.UI.HTTP
         var output_stream = channel.OutputStreams.FirstOrDefault(os => GetObjectId(os)==outputId);
         if (output_stream!=null) {
           channel.RemoveOutputStream(output_stream);
-          output_stream.Stop();
+          output_stream.OnStopped(StopReason.UserShutdown);
         }
       }
 
@@ -660,7 +557,7 @@ namespace PeerCastStation.UI.HTTP
         return GetChannelConnection(ss, ss.GetConnectionInfo());
       }
 
-      private JObject GetChannelConnection(IOutputStream os)
+      private JObject GetChannelConnection(IChannelSink os)
       {
         return GetChannelConnection(os, os.GetConnectionInfo());
       }
@@ -723,7 +620,7 @@ namespace PeerCastStation.UI.HTTP
         var os = channel.OutputStreams.FirstOrDefault(s => GetObjectId(s)==connectionId);
         if (os!=null) {
           channel.RemoveOutputStream(os);
-          os.Stop();
+          os.OnStopped(StopReason.UserShutdown);
           return true;
         }
         foreach (var yp in PeerCast.YellowPages) {
@@ -968,9 +865,9 @@ namespace PeerCastStation.UI.HTTP
         res["globalAccepts"] = (int)listener.GlobalOutputAccepts;
         res["localAuthorizationRequired"]  = listener.LocalAuthorizationRequired;
         res["globalAuthorizationRequired"] = listener.GlobalAuthorizationRequired;
-        res["authenticationId"]       = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Id : null;
-        res["authenticationPassword"] = listener.AuthenticationKey!=null ? listener.AuthenticationKey.Password : null;
-        res["authToken"]     = listener.AuthenticationKey!=null ? HTTPUtils.CreateAuthorizationToken(listener.AuthenticationKey) : null;
+        res["authenticationId"]       = listener.AuthenticationKey?.Id;
+        res["authenticationPassword"] = listener.AuthenticationKey?.Password;
+        res["authToken"]              = listener.AuthenticationKey?.GetToken();
         res["portStatus"]    = (int)listener.Status;
         switch (listener.Status) {
         case PortStatus.Firewalled:
@@ -1335,68 +1232,68 @@ namespace PeerCastStation.UI.HTTP
         }
       }
 
-			[RPCMethod("getNewVersions")]
-			public JArray GetNewVersions()
-			{
-				return new JArray(owner.GetNewVersions()
-					.OrderByDescending(v => v.PublishDate)
-					.Select(v => {
-						var obj = new JObject();
-						obj["title"]       = v.Title;
-						obj["publishDate"] = v.PublishDate;
-						obj["link"]        = v.Link;
-						obj["description"] = v.Description;
-						obj["enclosures"] = new JArray(v.Enclosures.Select(e => {
-							var enclosure = new JObject();
-							enclosure["title"] = e.Title;
-							enclosure["url"] = e.Url;
-							enclosure["length"] = e.Length;
-							enclosure["installerType"] = e.InstallerType.ToString().ToLowerInvariant();
-							enclosure["type"] = e.Type;
-							return enclosure;
-						}));
-					return obj;
-					})
-				);
-			}
+      [RPCMethod("getNewVersions")]
+      public JArray GetNewVersions()
+      {
+        return new JArray(owner.GetNewVersions()
+          .OrderByDescending(v => v.PublishDate)
+          .Select(v => {
+            var obj = new JObject();
+            obj["title"]       = v.Title;
+            obj["publishDate"] = v.PublishDate;
+            obj["link"]        = v.Link;
+            obj["description"] = v.Description;
+            obj["enclosures"] = new JArray(v.Enclosures.Select(e => {
+              var enclosure = new JObject();
+              enclosure["title"] = e.Title;
+              enclosure["url"] = e.Url;
+              enclosure["length"] = e.Length;
+              enclosure["installerType"] = e.InstallerType.ToString().ToLowerInvariant();
+              enclosure["type"] = e.Type;
+              return enclosure;
+            }));
+          return obj;
+          })
+        );
+      }
 
-			private JArray YPChannelsToArray(IEnumerable<IYellowPageChannel> channels)
-			{
-				return new JArray(channels.Select(v => {
-						var obj = new JObject();
-						obj["yellowPage"]  = v.Source.Name;
-						obj["name"]        = v.Name;
-						obj["channelId"]   = v.ChannelId.ToString("N").ToUpperInvariant();
-						obj["tracker"]     = v.Tracker;
-						obj["contactUrl"]  = v.ContactUrl;
-						obj["genre"]       = v.Genre;
-						obj["description"] = v.Description;
-						obj["comment"]     = v.Comment;
-						obj["bitrate"]     = v.Bitrate;
-						obj["contentType"] = v.ContentType;
-						obj["trackTitle"]  = v.TrackTitle;
-						obj["album"]       = v.Album;
-						obj["creator"]     = v.Artist;
-						obj["trackUrl"]    = v.TrackUrl;
-						obj["listeners"]   = v.Listeners;
-						obj["relays"]      = v.Relays;
-						obj["uptime"]      = v.Uptime;
-						return obj;
-					})
-				);
-			}
+      private JArray YPChannelsToArray(IEnumerable<IYellowPageChannel> channels)
+      {
+        return new JArray(channels.Select(v => {
+            var obj = new JObject();
+            obj["yellowPage"]  = v.Source.Name;
+            obj["name"]        = v.Name;
+            obj["channelId"]   = v.ChannelId.ToString("N").ToUpperInvariant();
+            obj["tracker"]     = v.Tracker;
+            obj["contactUrl"]  = v.ContactUrl;
+            obj["genre"]       = v.Genre;
+            obj["description"] = v.Description;
+            obj["comment"]     = v.Comment;
+            obj["bitrate"]     = v.Bitrate;
+            obj["contentType"] = v.ContentType;
+            obj["trackTitle"]  = v.TrackTitle;
+            obj["album"]       = v.Album;
+            obj["creator"]     = v.Artist;
+            obj["trackUrl"]    = v.TrackUrl;
+            obj["listeners"]   = v.Listeners;
+            obj["relays"]      = v.Relays;
+            obj["uptime"]      = v.Uptime;
+            return obj;
+          })
+        );
+      }
 
-			[RPCMethod("getYPChannels")]
-			public JArray GetYPChannels()
-			{
-				return YPChannelsToArray(owner.GetYPChannels());
-			}
+      [RPCMethod("getYPChannels")]
+      public JArray GetYPChannels()
+      {
+        return YPChannelsToArray(owner.GetYPChannels());
+      }
 
-			[RPCMethod("updateYPChannels")]
-			public JArray UpdateYPChannels()
-			{
-				return YPChannelsToArray(owner.UpdateYPChannels());
-			}
+      [RPCMethod("updateYPChannels")]
+      public JArray UpdateYPChannels()
+      {
+        return YPChannelsToArray(owner.UpdateYPChannels());
+      }
 
       private bool TrySetUIConfig(UISettings settings, string key, JObject value)
       {
@@ -1466,6 +1363,102 @@ namespace PeerCastStation.UI.HTTP
         }
       }
 
+    }
+
+    public static readonly int RequestLimit = 64*1024;
+    public static readonly int TimeoutLimit = 5000;
+    private async Task Invoke(IOwinContext ctx)
+    {
+      var cancel_token = ctx.Request.CallCancelled;
+      var api = new APIContext(this, this.Application.PeerCast, ctx.GetAccessControlInfo());
+      var rpc_host = new JSONRPCHost(api);
+      if (!ctx.Request.Headers.ContainsKey("X-Requested-With")) {
+        ctx.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+        return;
+      }
+      if (!Int32.TryParse(ctx.Request.Headers.Get("Content-Length"), out var len)) {
+        ctx.Response.StatusCode = (int)HttpStatusCode.LengthRequired;
+        return;
+      }
+      if (RequestLimit<len) {
+        ctx.Response.StatusCode = (int)HttpStatusCode.RequestEntityTooLarge;
+        return;
+      }
+
+      try {
+        using (var timeout=CancellationTokenSource.CreateLinkedTokenSource(cancel_token)) {
+          timeout.CancelAfter(TimeoutLimit);
+          var buf = await ctx.Request.Body.ReadBytesAsync(len, timeout.Token).ConfigureAwait(false);
+          var request_str = System.Text.Encoding.UTF8.GetString(buf);
+          JToken res = rpc_host.ProcessRequest(request_str);
+          if (res!=null) {
+            await SendJson(ctx, res, cancel_token).ConfigureAwait(false);
+          }
+          else {
+            ctx.Response.StatusCode = (int)HttpStatusCode.NoContent;
+          }
+        }
+      }
+      catch (OperationCanceledException) {
+        ctx.Response.StatusCode = (int)HttpStatusCode.RequestTimeout;
+      }
+    }
+
+    private async Task InvokeGet(IOwinContext ctx)
+    {
+      var cancel_token = ctx.Request.CallCancelled;
+      var api = new APIContext(this, this.Application.PeerCast, ctx.GetAccessControlInfo());
+      await SendJson(ctx, api.GetVersionInfo(), cancel_token).ConfigureAwait(false);
+    }
+
+    private async Task SendJson(IOwinContext ctx, JToken token, CancellationToken cancel_token)
+    {
+      var body = System.Text.Encoding.UTF8.GetBytes(token.ToString());
+      ctx.Response.ContentType = "application/json";
+      ctx.Response.ContentLength = body.Length;
+      ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+      await ctx.Response.WriteAsync(body, cancel_token).ConfigureAwait(false);
+    }
+
+    public static void BuildApp(IAppBuilder builder)
+    {
+      var app = new APIHostOwinApp(builder.Properties[OwinEnvironment.PeerCastStation.PeerCastApplication] as PeerCastApplication);
+      builder.Map("/api/1", sub => {
+        sub.MapMethod("POST", withmethod => {
+          withmethod.UseAuth(OutputStreamType.Interface);
+          withmethod.Run(app.Invoke);
+        });
+        sub.MapMethod("GET", withmethod => {
+          withmethod.UseAuth(OutputStreamType.Interface);
+          withmethod.Run(app.InvokeGet);
+        });
+      });
+      if (builder.Properties[OwinEnvironment.Server.OnDispose] is CancellationToken) {
+        var onDispose = (CancellationToken)builder.Properties[OwinEnvironment.Server.OnDispose];
+        onDispose.Register(() => app.Dispose());
+      }
+    }
+
+  }
+
+  [Plugin]
+  public class APIHost
+    : PluginBase
+  {
+    override public string Name { get { return "HTTP API Host UI"; } }
+
+    private IDisposable appRegistration = null;
+
+    protected override void OnStart()
+    {
+      var owin = Application.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
+      appRegistration = owin?.OwinHost?.Register(APIHostOwinApp.BuildApp);
+    }
+
+    protected override void OnStop()
+    {
+      appRegistration?.Dispose();
+      appRegistration = null;
     }
 
   }
