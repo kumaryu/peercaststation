@@ -55,39 +55,6 @@ namespace PeerCastStation.UI
       updateCancel.Cancel();
     }
 
-    private CancellationTokenSource updateCancel = new CancellationTokenSource();
-    public async Task<IEnumerable<IYellowPageChannel>> UpdateAsync()
-    {
-      try {
-        if (updateTimer.IsRunning && updateTimer.ElapsedMilliseconds<18000) {
-          return Channels.AsEnumerable();
-        }
-        updateCancel = new CancellationTokenSource(5000);
-        var channels = await Task.WhenAll(this.Application.PeerCast.YellowPages.Select(async yp => {
-          try {
-            return await yp.GetChannelsAsync(updateCancel.Token).ConfigureAwait(false);
-          }
-          catch (Exception) {
-            var msg = new NotificationMessage(
-              yp.Name,
-              "チャンネル一覧を取得できませんでした。",
-              NotificationMessageType.Error);
-            foreach (var ui in this.Application.Plugins.Where(p => p is IUserInterfacePlugin)) {
-              ((IUserInterfacePlugin)ui).ShowNotificationMessage(msg);
-            }
-            return Enumerable.Empty<IYellowPageChannel>();
-          }
-        })).ConfigureAwait(false);
-        updateTimer.Restart();
-        Channels = channels.SelectMany(result => result).ToList();
-        return Channels;
-      }
-      catch (Exception) {
-        return Enumerable.Empty<IYellowPageChannel>();
-      }
-    }
-	}
-
     public IEnumerable<IYellowPageChannel> Update()
     {
       var task = UpdateAsync();
@@ -107,19 +74,24 @@ namespace PeerCastStation.UI
       using (var cancel=CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, updateCancel.Token)) {
         cancel.CancelAfter(5000);
         try {
-          channels.Value = (await Task.WhenAll(Application.PeerCast.YellowPages.Select(yp => {
-            try {
-              return await yp.GetChannelsAsync(cancel.Token).ConfigureAwait(false);
-            }
-            catch (Exception) {
-              Application.ShowNotificationMessage(new NotificationMessage(
-                yp.Name,
-                "チャンネル一覧を取得できませんでした。",
-                NotificationMessageType.Error)
-              );
-              return Enumerable.Empty<IYellowPageChannel>();
-            }
-          })).ConfigureAwait(false))
+          channels.Value = 
+            (
+              await Task.WhenAll(
+                Application.PeerCast.YellowPages.Select(async yp => {
+                  try {
+                    return await yp.GetChannelsAsync(cancel.Token).ConfigureAwait(false);
+                  }
+                  catch (Exception) {
+                    Application.ShowNotificationMessage(new NotificationMessage(
+                      yp.Name,
+                      "チャンネル一覧を取得できませんでした。",
+                      NotificationMessageType.Error)
+                    );
+                    return Enumerable.Empty<IYellowPageChannel>();
+                  }
+                })
+              ).ConfigureAwait(false)
+            )
             .SelectMany(lst => lst)
             .ToArray();
           return channels.Value;
