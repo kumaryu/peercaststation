@@ -16,12 +16,10 @@ let allocateEndPoint localAddr =
         listener.Stop()
 
 type DummySourceStream (sstype) =
+    let runTask = System.Threading.Tasks.TaskCompletionSource<StopReason>()
     interface ISourceStream with 
         member this.Run () = 
-            async {
-                return StopReason.OffAir
-            }
-            |> Async.StartAsTask
+            runTask.Task
 
         member this.Reconnect () = ()
         member this.Post (from, packet) = ()
@@ -29,7 +27,8 @@ type DummySourceStream (sstype) =
         member this.Status = SourceStreamStatus.Receiving
         member this.GetConnectionInfo () =
             ConnectionInfo("dummy", ConnectionType.Source, ConnectionStatus.Connected, "", null, RemoteHostStatus.Local, Nullable(), Nullable 0L, Nullable 0.0f, Nullable 0.0f, Nullable(), Nullable(), "dummy")
-        member this.Dispose () = ()
+        member this.Dispose () =
+            runTask.TrySetResult(StopReason.UserShutdown) |> ignore
 
 type DummyBroadcastChannel (peercast, network, channelId) =
     inherit Channel(peercast, network, channelId)
@@ -127,6 +126,11 @@ let pecaWithOwinHostAccessControl acinfo endpoint buildFunc =
 
 let pecaWithOwinHost endpoint buildFunc =
     pecaWithOwinHostAccessControl (AccessControlInfo(OutputStreamType.All, false, null)) endpoint buildFunc
+
+module WebRequest =
+    let addHeader (header:string) value (req:WebRequest) =
+        req.Headers.Add(header, value)
+        req
 
 module Assert =
     let ExpectStatusCode code (req:WebRequest) =

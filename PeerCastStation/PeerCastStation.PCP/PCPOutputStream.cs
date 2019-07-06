@@ -879,7 +879,7 @@ namespace PeerCastStation.PCP
     {
       builder.Map("/channel", sub => {
         sub.MapMethod("GET", withmethod => {
-          withmethod.UseAuth(OutputStreamType.Play);
+          withmethod.UseAuth(OutputStreamType.Relay);
           withmethod.Run(PCPRelayHandler.Invoke);
         });
       });

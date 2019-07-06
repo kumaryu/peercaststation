@@ -38,6 +38,7 @@
     <Compile Include="TestCommon.fs" />
     <Compile Include="HttpTests.fs" />
     <Compile Include="Tests.fs" />
+    <Compile Include="PCPTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
