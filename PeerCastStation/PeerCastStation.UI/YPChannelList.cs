@@ -38,7 +38,7 @@ namespace PeerCastStation.UI
         }
         set {
           channels = value;
-          cacheTimer.Reset();
+          cacheTimer.Restart();
         }
       }
 
