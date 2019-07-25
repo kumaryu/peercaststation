@@ -776,7 +776,7 @@ namespace PeerCastStation.Core
     /// <param name="group">送信先グループ</param>
     public virtual void Broadcast(Host from, Atom packet, BroadcastGroup group)
     {
-      if (group.HasFlag(BroadcastGroup.Trackers | BroadcastGroup.Relays)) {
+      if (group.HasFlag(BroadcastGroup.Trackers) || group.HasFlag(BroadcastGroup.Relays)) {
         var source = sourceStream;
         if (source!=null) {
           source.Post(from, packet);
