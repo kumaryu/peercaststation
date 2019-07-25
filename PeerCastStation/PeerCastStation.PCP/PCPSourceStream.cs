@@ -456,27 +456,31 @@ Stopped:
       return new Atom(Atom.PCP_BCST, bcst);
     }
 
-    Stopwatch hostInfoUpdateTimer = new Stopwatch();
+    class LocalHostInfo
+    {
+      public Timestamp Timestamp;
+      public int LocalDirects;
+      public int LocalRelays;
+    }
+    LocalHostInfo lastHostInfo = new LocalHostInfo();
 
     private bool CheckHostInfoUpdate()
     {
-      lock (hostInfoUpdateTimer) {
-        if (!hostInfoUpdateTimer.IsRunning) {
-          hostInfoUpdateTimer.Reset();
-          hostInfoUpdateTimer.Start();
-        }
-        return hostInfoUpdateTimer.ElapsedMilliseconds>=120000;
-      }
+      return lastHostInfo.LocalDirects!=Channel.LocalDirects ||
+             lastHostInfo.LocalRelays!=Channel.LocalRelays ||
+             (Timestamp.Now-lastHostInfo.Timestamp).TotalMilliseconds>=120000;
     }
 
     private void BroadcastHostInfo()
     {
       if (connection==null) return;
-      lock (hostInfoUpdateTimer) {
-        Channel.Broadcast(null, CreatePCPBCST(BroadcastGroup.Trackers, CreatePCPHOST()), BroadcastGroup.Trackers);
-        hostInfoUpdateTimer.Reset();
-        hostInfoUpdateTimer.Start();
-      }
+      Channel.Broadcast(null, CreatePCPBCST(BroadcastGroup.Trackers, CreatePCPHOST()), BroadcastGroup.Trackers);
+      var hostInfo = new LocalHostInfo {
+        Timestamp = Timestamp.Now,
+        LocalDirects = Channel.LocalDirects,
+        LocalRelays = Channel.LocalRelays,
+      };
+      lastHostInfo = hostInfo;
     }
 
     protected bool ProcessAtom(Atom atom)
