@@ -126,7 +126,7 @@ namespace PeerCastStation.Core
       get {
         return sinks
           .Select(x => x.GetConnectionInfo())
-          .Sum(x => (x.Type.HasFlag(ConnectionType.Relay) ? 1 : 0) + x.LocalRelays ?? 0);
+          .Sum(x => (x.Type.HasFlag(ConnectionType.Relay) ? 1 : 0) + (x.LocalRelays ?? 0));
       }
     }
 
@@ -137,7 +137,7 @@ namespace PeerCastStation.Core
       get {
         return sinks
           .Select(x => x.GetConnectionInfo())
-          .Sum(x => (x.Type.HasFlag(ConnectionType.Direct) ? 1 : 0) + x.LocalDirects ?? 0);
+          .Sum(x => (x.Type.HasFlag(ConnectionType.Direct) ? 1 : 0) + (x.LocalDirects ?? 0));
       }
     }
 
