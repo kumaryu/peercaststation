@@ -91,7 +91,7 @@ namespace PeerCastStation.Core.Http
     }
 
     public bool IsKeepAlive {
-      get { return opaqueHandler!=null && Environment.IsKeepAlive(); }
+      get { return opaqueHandler==null && Environment.IsKeepAlive(); }
     }
   }
 
