@@ -32,15 +32,6 @@ namespace PeerCastStation.Core.Http
       BaseStream.Dispose();
     }
 
-    /// <summary>
-    /// ストリームからHTTPリクエストを読み取り解析します
-    /// </summary>
-    /// <returns>解析済みHTTPRequest</returns>
-    public HttpRequest Read()
-    {
-      return ReadAsync(CancellationToken.None).Result;
-    }
-
     public async Task<HttpRequest> ReadAsync(CancellationToken cancel_token)
     {
       var requests = new List<string>();

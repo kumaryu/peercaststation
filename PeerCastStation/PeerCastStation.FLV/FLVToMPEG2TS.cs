@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.FLV
 {
@@ -898,15 +900,108 @@ namespace PeerCastStation.FLV
     public class FLVToTSContentFilterSink
       : IContentSink
     {
-      private IContentSink targetSink;
-      private MemoryStream bufferStream = new MemoryStream();
-      private FLVToMPEG2TS.Context context;
-      private System.IO.MemoryStream contentBuffer = new System.IO.MemoryStream();
-      private FLVFileParser fileParser = new FLVFileParser();
+      private Task processorTask;
+      struct ContentMessage
+      {
+        public enum MessageType {
+          ChannelInfo,
+          ChannelTrack,
+          ContentHeader,
+          ContentBody,
+          Stop,
+        }
+        public MessageType  Type;
+        public StopReason   StopReason;
+        public Content      Content;
+        public ChannelInfo  ChannelInfo;
+        public ChannelTrack ChannelTrack;
+      }
+      private WaitableQueue<ContentMessage> msgQueue = new WaitableQueue<ContentMessage>();
+
       public FLVToTSContentFilterSink(IContentSink sink)
       {
-        targetSink = sink;
-        context = new FLVToMPEG2TS.Context(bufferStream);
+        processorTask = ProcessMessagesAsync(sink, CancellationToken.None);
+      }
+
+      private async Task ProcessMessagesAsync(IContentSink targetSink, CancellationToken cancellationToken)
+      {
+        var bufferStream = new MemoryStream();
+        var context = new FLVToMPEG2TS.Context(bufferStream);
+        var contentBuffer = new MemoryStream();
+        var fileParser = new FLVFileParser();
+        var msg = await msgQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
+        while (msg.Type!=ContentMessage.MessageType.Stop) {
+          switch (msg.Type) {
+          case ContentMessage.MessageType.ChannelInfo:
+            targetSink.OnChannelInfo(msg.ChannelInfo);
+            break;
+          case ContentMessage.MessageType.ChannelTrack:
+            targetSink.OnChannelTrack(msg.ChannelTrack);
+            break;
+          case ContentMessage.MessageType.ContentHeader:
+            {
+              var buffer = contentBuffer;
+              var pos = buffer.Position;
+              buffer.Seek(0, SeekOrigin.End);
+              buffer.Write(msg.Content.Data, 0, msg.Content.Data.Length);
+              buffer.Position = pos;
+              fileParser.Read(buffer, context);
+              if (buffer.Position!=0) {
+                var new_buf = new MemoryStream();
+                var trim_pos = buffer.Position;
+                buffer.Close();
+                var buf = buffer.ToArray();
+                new_buf.Write(buf, (int)trim_pos, (int)(buf.Length-trim_pos));
+                new_buf.Position = 0;
+                contentBuffer = new_buf;
+              }
+              if (bufferStream.Position!=0) {
+                targetSink.OnContentHeader(
+                  new Content(
+                    msg.Content.Stream,
+                    msg.Content.Timestamp,
+                    msg.Content.Position,
+                    bufferStream.ToArray()
+                  )
+                );
+                bufferStream.SetLength(0);
+              }
+            }
+            break;
+          case ContentMessage.MessageType.ContentBody:
+            {
+              var buffer = contentBuffer;
+              var pos = buffer.Position;
+              buffer.Seek(0, SeekOrigin.End);
+              buffer.Write(msg.Content.Data, 0, msg.Content.Data.Length);
+              buffer.Position = pos;
+              fileParser.Read(buffer, context);
+              if (buffer.Position!=0) {
+                var new_buf = new MemoryStream();
+                var trim_pos = buffer.Position;
+                buffer.Close();
+                var buf = buffer.ToArray();
+                new_buf.Write(buf, (int)trim_pos, (int)(buf.Length-trim_pos));
+                new_buf.Position = 0;
+                contentBuffer = new_buf;
+              }
+              if (bufferStream.Position!=0) {
+                targetSink.OnContent(
+                  new Content(
+                    msg.Content.Stream,
+                    msg.Content.Timestamp,
+                    msg.Content.Position,
+                    bufferStream.ToArray()
+                  )
+                );
+                bufferStream.SetLength(0);
+              }
+            }
+            break;
+          }
+          msg = await msgQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
+        }
+        targetSink.OnStop(msg.StopReason);
       }
 
       public void OnChannelInfo(ChannelInfo channel_info)
@@ -915,75 +1010,28 @@ namespace PeerCastStation.FLV
         info.SetChanInfoType("TS");
         info.SetChanInfoStreamType("video/mp2t");
         info.SetChanInfoStreamExt(".ts");
-        targetSink.OnChannelInfo(new ChannelInfo(info));
+        msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ChannelInfo, ChannelInfo=new ChannelInfo(info) });
       }
 
       public void OnChannelTrack(ChannelTrack channel_track)
       {
-        targetSink.OnChannelTrack(channel_track);
+        msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ChannelTrack, ChannelTrack=channel_track });
       }
 
       public void OnContent(Content content)
       {
-        var pos = contentBuffer.Position;
-        contentBuffer.Seek(0, System.IO.SeekOrigin.End);
-        contentBuffer.Write(content.Data, 0, content.Data.Length);
-        contentBuffer.Position = pos;
-        fileParser.Read(contentBuffer, context);
-        if (contentBuffer.Position!=0) {
-          var new_buf = new System.IO.MemoryStream();
-          var trim_pos = contentBuffer.Position;
-          contentBuffer.Close();
-          var buf = contentBuffer.ToArray();
-          new_buf.Write(buf, (int)trim_pos, (int)(buf.Length-trim_pos));
-          new_buf.Position = 0;
-          contentBuffer = new_buf;
-        }
-        if (bufferStream.Position!=0) {
-          targetSink.OnContent(
-            new Content(
-              content.Stream,
-              content.Timestamp,
-              content.Position,
-              bufferStream.ToArray()
-            )
-          );
-          bufferStream.SetLength(0);
-        }
+        msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ContentBody, Content=content });
       }
 
       public void OnContentHeader(Content content_header)
       {
-        var pos = contentBuffer.Position;
-        contentBuffer.Seek(0, System.IO.SeekOrigin.End);
-        contentBuffer.Write(content_header.Data, 0, content_header.Data.Length);
-        contentBuffer.Position = pos;
-        fileParser.Read(contentBuffer, context);
-        if (contentBuffer.Position!=0) {
-          var new_buf = new System.IO.MemoryStream();
-          var trim_pos = contentBuffer.Position;
-          contentBuffer.Close();
-          var buf = contentBuffer.ToArray();
-          new_buf.Write(buf, (int)trim_pos, (int)(buf.Length-trim_pos));
-          new_buf.Position = 0;
-          contentBuffer = new_buf;
-        }
-        if (bufferStream.Position!=0) {
-          targetSink.OnContentHeader(
-            new Content(
-              content_header.Stream,
-              content_header.Timestamp,
-              content_header.Position,
-              bufferStream.ToArray()
-            )
-          );
-          bufferStream.SetLength(0);
-        }
+        msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ContentHeader, Content=content_header });
       }
 
       public void OnStop(StopReason reason)
       {
-        targetSink.OnStop(reason);
+        msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.Stop, StopReason=reason });
+        processorTask.Wait();
       }
     }
 
