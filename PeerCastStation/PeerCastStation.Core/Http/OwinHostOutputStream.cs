@@ -28,23 +28,29 @@ namespace PeerCastStation.Core.Http
 
     protected override async Task<StopReason> DoProcess(CancellationToken cancel_token)
     {
-      var keep_count = 10;
-      while (!cancel_token.IsCancellationRequested && keep_count-->0) {
-        HttpRequest req;
-        using (var reader=new HttpRequestReader(Connection, true)) {
-          req = await reader.ReadAsync(cancel_token).ConfigureAwait(false);
+      try {
+        var keep_count = 1000;
+        while (!cancel_token.IsCancellationRequested && keep_count-->0) {
+          HttpRequest req;
+          using (var requestTimeout=CancellationTokenSource.CreateLinkedTokenSource(cancel_token))
+          using (var reader=new HttpRequestReader(Connection, true)) {
+            requestTimeout.CancelAfter(7000);
+            req = await reader.ReadAsync(requestTimeout.Token).ConfigureAwait(false);
+          }
+          var ctx = new OwinContext(PeerCast, req, Connection, LocalEndPoint as IPEndPoint, RemoteEndPoint as IPEndPoint, AccessControlInfo);
+          try {
+            await ctx.Invoke(owinHost.OwinApp, cancel_token).ConfigureAwait(false);
+          }
+          catch (Exception ex) {
+            Logger.Error(ex);
+            return StopReason.NotIdentifiedError;
+          }
+          if (!ctx.IsKeepAlive) {
+            break;
+          }
         }
-        var ctx = new OwinContext(PeerCast, req, Connection, LocalEndPoint as IPEndPoint, RemoteEndPoint as IPEndPoint, AccessControlInfo);
-        try {
-          await ctx.Invoke(owinHost.OwinApp, cancel_token).ConfigureAwait(false);
-        }
-        catch (Exception ex) {
-          Logger.Error(ex);
-          return StopReason.NotIdentifiedError;
-        }
-        if (!ctx.IsKeepAlive) {
-          break;
-        }
+      }
+      catch (OperationCanceledException) {
       }
       return StopReason.OffAir;
     }
