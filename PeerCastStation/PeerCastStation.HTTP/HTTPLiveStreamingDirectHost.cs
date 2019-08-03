@@ -59,11 +59,13 @@ namespace PeerCastStation.HTTP
       : IDisposable
     {
       public HTTPLiveStreamingSegmenter Segmenter { get; private set; } = new HTTPLiveStreamingSegmenter();
+      private HTTPLiveStreamingDirectOwinApp owner;
       private Channel channel;
       private IDisposable subscription;
       private int referenceCount = 0;
-      private HLSContentSink(Channel channel)
+      private HLSContentSink(HTTPLiveStreamingDirectOwinApp owner, Channel channel)
       {
+        this.owner = owner;
         this.channel = channel;
       }
 
@@ -85,23 +87,24 @@ namespace PeerCastStation.HTTP
         Task.Run(async () => {
           await Task.Delay(5000).ConfigureAwait(false);
           if (Interlocked.Decrement(ref referenceCount)==0) {
-            contentSinks.TryRemove(channel, out var s);
+            owner.contentSinks.TryRemove(channel, out var s);
             Interlocked.Exchange(ref subscription, null)?.Dispose();
           }
         });
       }
 
-      private static ConcurrentDictionary<Channel,HLSContentSink> contentSinks = new ConcurrentDictionary<Channel,HLSContentSink>();
-      public static HLSContentSink GetSubscription(Channel channel)
+      public static HLSContentSink GetSubscription(HTTPLiveStreamingDirectOwinApp owner, Channel channel)
       {
-        return contentSinks.GetOrAdd(channel, k => new HLSContentSink(channel)).AddRef();
+        return owner.contentSinks.GetOrAdd(channel, k => new HLSContentSink(owner, channel)).AddRef();
       }
     }
+    private ConcurrentDictionary<Channel,HLSContentSink> contentSinks = new ConcurrentDictionary<Channel,HLSContentSink>();
 
     class HLSChannelSink
       : IChannelSink,
         IDisposable
     {
+      private HTTPLiveStreamingDirectOwinApp owner;
       private ConnectionInfoBuilder connectionInfo = new ConnectionInfoBuilder();
       private Func<float> getRecvRate = null;
       private Func<float> getSendRate = null;
@@ -121,11 +124,10 @@ namespace PeerCastStation.HTTP
 
       public HLSContentSink GetContentSink()
       {
-        return HLSContentSink.GetSubscription(Channel);
+        return HLSContentSink.GetSubscription(owner, Channel);
       }
 
-      private static ConcurrentDictionary<Tuple<Channel,string>,HLSChannelSink> channelSinks = new ConcurrentDictionary<Tuple<Channel,string>, HLSChannelSink>();
-      public static HLSChannelSink GetSubscription(Channel channel, IOwinContext ctx, string session)
+      public static HLSChannelSink GetSubscription(HTTPLiveStreamingDirectOwinApp owner, Channel channel, IOwinContext ctx, string session)
       {
         if (String.IsNullOrWhiteSpace(session)) {
           var source = new IPEndPoint(IPAddress.Parse(ctx.Request.RemoteIpAddress), ctx.Request.RemotePort ?? 0).ToString();
@@ -137,14 +139,15 @@ namespace PeerCastStation.HTTP
               .ToString();
           }
         }
-        return channelSinks.GetOrAdd(new Tuple<Channel,string>(channel, session), k => new HLSChannelSink(ctx, k)).AddRef(ctx);
+        return owner.channelSinks.GetOrAdd(new Tuple<Channel,string>(channel, session), k => new HLSChannelSink(owner, ctx, k)).AddRef(ctx);
       }
 
       private IDisposable subscription;
       private int referenceCount = 0;
 
-      private HLSChannelSink(IOwinContext ctx, Tuple<Channel,string> session)
+      private HLSChannelSink(HTTPLiveStreamingDirectOwinApp owner, IOwinContext ctx, Tuple<Channel,string> session)
       {
+        this.owner = owner;
         this.session = session;
         connectionInfo.AgentName = ctx.Request.Headers.Get("User-Agent");
         connectionInfo.LocalDirects = null;
@@ -192,7 +195,7 @@ namespace PeerCastStation.HTTP
         Task.Run(async () => {
           await Task.Delay(5000).ConfigureAwait(false);
           if (Interlocked.Decrement(ref referenceCount)==0) {
-            channelSinks.TryRemove(session, out var s);
+            owner.channelSinks.TryRemove(session, out var s);
             Interlocked.Exchange(ref subscription, null)?.Dispose();
             stoppedCancellationTokenSource.Dispose();
           }
@@ -216,6 +219,7 @@ namespace PeerCastStation.HTTP
         Interlocked.Exchange(ref subscription, null)?.Dispose();
       }
     }
+    private ConcurrentDictionary<Tuple<Channel,string>,HLSChannelSink> channelSinks = new ConcurrentDictionary<Tuple<Channel,string>, HLSChannelSink>();
 
     private struct ParsedRequest
     {
@@ -264,7 +268,7 @@ namespace PeerCastStation.HTTP
       return channel;
     }
 
-    private static async Task PlayListHandler(IOwinContext ctx, ParsedRequest req, Channel channel)
+    private async Task PlayListHandler(IOwinContext ctx, ParsedRequest req, Channel channel)
     {
       var ct = ctx.Request.CallCancelled;
       var session = req.Session;
@@ -292,7 +296,7 @@ namespace PeerCastStation.HTTP
       ctx.Response.Headers.Add("Cache-Control", new string [] { "private" });
       ctx.Response.Headers.Add("Cache-Disposition", new string [] { "inline" });
       ctx.Response.Headers.Add("Content-Type", new string [] { pls.MIMEType });
-      using (var subscription=HLSChannelSink.GetSubscription(channel, ctx, session)) {
+      using (var subscription=HLSChannelSink.GetSubscription(this, channel, ctx, session)) {
         subscription.Stopped.ThrowIfCancellationRequested();
         byte[] body;
         try {
@@ -327,10 +331,10 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    private static async Task FragmentHandler(IOwinContext ctx, ParsedRequest req, Channel channel)
+    private async Task FragmentHandler(IOwinContext ctx, ParsedRequest req, Channel channel)
     {
       var ct = ctx.Request.CallCancelled;
-      using (var subscription=HLSChannelSink.GetSubscription(channel, ctx, req.Session)) {
+      using (var subscription=HLSChannelSink.GetSubscription(this, channel, ctx, req.Session)) {
         subscription.Stopped.ThrowIfCancellationRequested();
         using (var contents=subscription.GetContentSink())
         using (var cts=CancellationTokenSource.CreateLinkedTokenSource(ct, subscription.Stopped)) {
@@ -350,7 +354,7 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    private static async Task HLSHandler(IOwinContext ctx)
+    private async Task HLSHandler(IOwinContext ctx)
     {
       var ct = ctx.Request.CallCancelled;
       var req = ParsedRequest.Parse(ctx);
@@ -381,10 +385,11 @@ namespace PeerCastStation.HTTP
 
     public static void BuildApp(IAppBuilder builder)
     {
+      var app = new HTTPLiveStreamingDirectOwinApp();
       builder.Map("/hls", sub => {
         sub.MapMethod("GET", withmethod => {
           withmethod.UseAuth(OutputStreamType.Play);
-          withmethod.Run(HLSHandler);
+          withmethod.Run(app.HLSHandler);
         });
       });
     }
