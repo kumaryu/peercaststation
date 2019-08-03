@@ -4,18 +4,21 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using PeerCastStation.Core;
 
 namespace PeerCastStation.UI.HTTP.JSONRPC
 {
   public class RPCMethodInfo
   {
     public string Name { get; private set; }
+    public OutputStreamType Grant { get; private set; }
     private MethodInfo method;
     public RPCMethodInfo(MethodInfo method)
     {
       this.method = method;
       var attr = Attribute.GetCustomAttributes(method).First(a => a.GetType()==typeof(RPCMethodAttribute));
       this.Name = ((RPCMethodAttribute)attr).Name;
+      this.Grant = ((RPCMethodAttribute)attr).Grant;
     }
 
     private string JsonType(Type type)
@@ -197,9 +200,17 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
   public class RPCMethodAttribute : Attribute
   {
     public string Name { get; private set; }
+    public OutputStreamType Grant { get; private set; }
     public RPCMethodAttribute(string name)
     {
       this.Name = name;
+      this.Grant = OutputStreamType.Interface;
+    }
+
+    public RPCMethodAttribute(string name, OutputStreamType grant)
+    {
+      this.Name = name;
+      this.Grant = grant;
     }
   }
 
@@ -332,7 +343,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
 
   public class JSONRPCHost
   {
-    private void ProcessRequest(JArray results, JToken request)
+    private void ProcessRequest(JArray results, JToken request, Func<OutputStreamType,bool> authFunc)
     {
       RPCRequest req = null;
       try {
@@ -343,6 +354,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
         return;
       }
       try {
+        var methods = authFunc!=null ? this.methods.Where(method => authFunc(method.Grant)) : this.methods;
         var m = methods.FirstOrDefault(method => method.Name==req.Method);
         if (m!=null) {
           var res = m.Invoke(host, req.Parameters);
@@ -369,24 +381,24 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       }
     }
 
-    public JToken ProcessRequest(JToken req)
+    public JToken ProcessRequest(JToken req, Func<OutputStreamType,bool> authFunc)
     {
       if (req==null) return null;
       if (req.Type==JTokenType.Array) {
-        JArray results = new JArray();
+        var results = new JArray();
         foreach (var token in (JArray)req) {
-          ProcessRequest(results, token);
+          ProcessRequest(results, token, authFunc);
         }
         return results.Count>0 ? results : null;
       }
       else {
-        JArray results = new JArray();
-        ProcessRequest(results, req);
+        var results = new JArray();
+        ProcessRequest(results, req, authFunc);
         return results.Count>0 ? results.First : null;
       }
     }
 
-    public JToken ProcessRequest(string request_str)
+    public JToken ProcessRequest(string request_str, Func<OutputStreamType,bool> authFunc)
     {
       JToken req;
       try {
@@ -395,7 +407,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       catch (RPCError err) {
         return new RPCResponse(null, err).ToJson();
       }
-      return ProcessRequest(req);
+      return ProcessRequest(req, authFunc);
     }
 
     private object host;

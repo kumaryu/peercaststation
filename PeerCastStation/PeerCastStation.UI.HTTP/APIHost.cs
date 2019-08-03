@@ -166,7 +166,7 @@ namespace PeerCastStation.UI.HTTP
         }
       }
 
-      [RPCMethod("getVersionInfo")]
+      [RPCMethod("getVersionInfo", OutputStreamType.Interface | OutputStreamType.Play)]
       public JObject GetVersionInfo()
       {
         var res = new JObject();
@@ -176,7 +176,7 @@ namespace PeerCastStation.UI.HTTP
         return res;
       }
 
-      [RPCMethod("getAuthToken")]
+      [RPCMethod("getAuthToken", OutputStreamType.Interface | OutputStreamType.Play)]
       public string GetAuthToken()
       {
         return AccessControlInfo.AuthenticationKey?.GetToken();
@@ -201,7 +201,7 @@ namespace PeerCastStation.UI.HTTP
         return res;
       }
 
-      [RPCMethod("getStatus")]
+      [RPCMethod("getStatus", OutputStreamType.Interface | OutputStreamType.Play)]
       private JObject GetStatus()
       {
         var res = new JObject();
@@ -386,7 +386,7 @@ namespace PeerCastStation.UI.HTTP
         owner.LogWriter.Clear();
       }
 
-      [RPCMethod("getChannels")]
+      [RPCMethod("getChannels", OutputStreamType.Interface | OutputStreamType.Play)]
       private JArray GetChannels()
       {
         return new JArray(
@@ -423,7 +423,7 @@ namespace PeerCastStation.UI.HTTP
         }
       }
 
-      [RPCMethod("getChannelStatus")]
+      [RPCMethod("getChannelStatus", OutputStreamType.Interface | OutputStreamType.Play)]
       private JObject GetChannelStatus(string channelId)
       {
         var channel = GetChannel(channelId);
@@ -461,7 +461,7 @@ namespace PeerCastStation.UI.HTTP
         }));
       }
 
-      [RPCMethod("getChannelInfo")]
+      [RPCMethod("getChannelInfo", OutputStreamType.Interface | OutputStreamType.Play)]
       private JObject GetChannelInfo(string channelId)
       {
         var channel = GetChannel(channelId);
@@ -1365,12 +1365,71 @@ namespace PeerCastStation.UI.HTTP
 
     }
 
+    private struct AuthToken
+    {
+      public readonly string User;
+      public readonly string Password;
+      public bool IsValid {
+        get { return User!=null && Password!=null; }
+      }
+
+      public AuthToken(string user, string password)
+      {
+        User = user;
+        Password = password;
+      }
+
+      public bool CheckAuthorization(AccessControlInfo acinfo)
+      {
+        if (!acinfo.AuthorizationRequired || acinfo.AuthenticationKey==null) return true;
+        if (!IsValid) return false;
+        return acinfo.CheckAuthorization(User, Password);
+      }
+    }
+
+    private AuthToken GetAuthToken(IOwinContext ctx)
+    {
+      string token = null;
+      var auth = ctx.Request.Headers.Get("Authorization");
+      if (auth!=null) {
+        var md = System.Text.RegularExpressions.Regex.Match(
+          auth,
+          @"\s*Basic (\S+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (md.Success) {
+          token = md.Groups[1].Value;
+        }
+      }
+      if (token==null) {
+        token = ctx.Request.Query.Get("auth");
+      }
+      if (token==null) {
+        token = ctx.Request.Cookies["auth"];
+      }
+      if (token==null) {
+        return new AuthToken();
+      }
+      try {
+        token = System.Text.Encoding.ASCII.GetString(Convert.FromBase64String(token));
+        var idx = token.IndexOf(':');
+        if (idx>=0) {
+          return new AuthToken(token.Substring(0, idx), token.Substring(idx+1));
+        }
+      }
+      catch (FormatException) {
+      }
+      catch (ArgumentException) {
+      }
+      return new AuthToken();
+    }
+
     public static readonly int RequestLimit = 64*1024;
     public static readonly int TimeoutLimit = 5000;
     private async Task Invoke(IOwinContext ctx)
     {
       var cancel_token = ctx.Request.CallCancelled;
-      var api = new APIContext(this, this.Application.PeerCast, ctx.GetAccessControlInfo());
+      var acinfo = ctx.GetAccessControlInfo();
+      var authtoken = GetAuthToken(ctx);
+      var api = new APIContext(this, this.Application.PeerCast, acinfo);
       var rpc_host = new JSONRPCHost(api);
       if (!ctx.Request.Headers.ContainsKey("X-Requested-With")) {
         ctx.Response.StatusCode = (int)HttpStatusCode.BadRequest;
@@ -1390,7 +1449,10 @@ namespace PeerCastStation.UI.HTTP
           timeout.CancelAfter(TimeoutLimit);
           var buf = await ctx.Request.Body.ReadBytesAsync(len, timeout.Token).ConfigureAwait(false);
           var request_str = System.Text.Encoding.UTF8.GetString(buf);
-          JToken res = rpc_host.ProcessRequest(request_str);
+          var res = rpc_host.ProcessRequest(request_str, grant => {
+            if ((grant & acinfo.Accepts)==0) return false;
+            return authtoken.CheckAuthorization(acinfo);
+          });
           if (res!=null) {
             await SendJson(ctx, res, cancel_token).ConfigureAwait(false);
           }
@@ -1425,11 +1487,9 @@ namespace PeerCastStation.UI.HTTP
       var app = new APIHostOwinApp(builder.Properties[OwinEnvironment.PeerCastStation.PeerCastApplication] as PeerCastApplication);
       builder.Map("/api/1", sub => {
         sub.MapMethod("POST", withmethod => {
-          withmethod.UseAuth(OutputStreamType.Interface);
           withmethod.Run(app.Invoke);
         });
         sub.MapMethod("GET", withmethod => {
-          withmethod.UseAuth(OutputStreamType.Interface);
           withmethod.Run(app.InvokeGet);
         });
       });
