@@ -34,6 +34,8 @@ namespace PeerCastStation.UI.HTTP
       public bool IsSucceeded { get { return UpdateTask.IsCompleted && !UpdateTask.IsFaulted && !UpdateTask.IsCanceled; } }
     }
     private UpdateStatus updateStatus = null;
+    private APIContext apiContext;
+    private JSONRPCHost rpcHost;
 
     public APIHostOwinApp(PeerCastApplication application)
     {
@@ -42,6 +44,8 @@ namespace PeerCastStation.UI.HTTP
       Logger.AddWriter(LogWriter);
       updater.NewVersionFound += OnNewVersionFound;
       updater.CheckVersion();
+      apiContext = new APIContext(this, this.Application.PeerCast);
+      rpcHost = new JSONRPCHost(apiContext);
     }
 
     public void Dispose()
@@ -139,15 +143,12 @@ namespace PeerCastStation.UI.HTTP
     {
       APIHostOwinApp owner;
       public PeerCast PeerCast { get; private set; }
-      public AccessControlInfo AccessControlInfo { get; private set; }
       public APIContext(
         APIHostOwinApp owner,
-        PeerCast peercast,
-        AccessControlInfo access_control)
+        PeerCast peercast)
       {
         this.owner = owner;
         this.PeerCast = peercast;
-        this.AccessControlInfo = access_control;
       }
 
       private int GetObjectId(object obj)
@@ -177,9 +178,9 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("getAuthToken", OutputStreamType.Interface | OutputStreamType.Play)]
-      public string GetAuthToken()
+      public string GetAuthToken(IOwinContext ctx)
       {
-        return AccessControlInfo.AuthenticationKey?.GetToken();
+        return ctx.GetAccessControlInfo()?.AuthenticationKey?.GetToken();
       }
 
       [RPCMethod("getPlugins")]
@@ -1429,8 +1430,6 @@ namespace PeerCastStation.UI.HTTP
       var cancel_token = ctx.Request.CallCancelled;
       var acinfo = ctx.GetAccessControlInfo();
       var authtoken = GetAuthToken(ctx);
-      var api = new APIContext(this, this.Application.PeerCast, acinfo);
-      var rpc_host = new JSONRPCHost(api);
       if (!ctx.Request.Headers.ContainsKey("X-Requested-With")) {
         ctx.Response.StatusCode = (int)HttpStatusCode.BadRequest;
         return;
@@ -1449,7 +1448,7 @@ namespace PeerCastStation.UI.HTTP
           timeout.CancelAfter(TimeoutLimit);
           var buf = await ctx.Request.Body.ReadBytesAsync(len, timeout.Token).ConfigureAwait(false);
           var request_str = System.Text.Encoding.UTF8.GetString(buf);
-          var res = rpc_host.ProcessRequest(request_str, grant => {
+          var res = rpcHost.ProcessRequest(ctx, request_str, grant => {
             if ((grant & acinfo.Accepts)==0) return false;
             return authtoken.CheckAuthorization(acinfo);
           });
@@ -1469,8 +1468,7 @@ namespace PeerCastStation.UI.HTTP
     private async Task InvokeGet(IOwinContext ctx)
     {
       var cancel_token = ctx.Request.CallCancelled;
-      var api = new APIContext(this, this.Application.PeerCast, ctx.GetAccessControlInfo());
-      await SendJson(ctx, api.GetVersionInfo(), cancel_token).ConfigureAwait(false);
+      await SendJson(ctx, apiContext.GetVersionInfo(), cancel_token).ConfigureAwait(false);
     }
 
     private async Task SendJson(IOwinContext ctx, JToken token, CancellationToken cancel_token)
