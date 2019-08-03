@@ -79,43 +79,6 @@ namespace PeerCastStation.HTTP
     }
   }
 
-  public class M3U8PlayList
-    : IPlayList
-  {
-    private string scheme;
-    public string MIMEType { get { return "application/vnd.apple.mpegurl"; } }
-    public IList<Channel> Channels { get; private set; }
-
-    public M3U8PlayList(string scheme, Channel channel)
-    {
-      this.scheme = String.IsNullOrEmpty(scheme) ? "http" : scheme.ToLowerInvariant();
-      Channels = new List<Channel> { channel };
-    }
-
-    public async Task<byte[]> CreatePlayListAsync(Uri baseuri, IEnumerable<KeyValuePair<string,string>> parameters, CancellationToken cancellationToken)
-    {
-      var c = Channels.FirstOrDefault();
-      var res = new System.Text.StringBuilder();
-      var segments = await c.Hls.GetSegmentsAsync(cancellationToken).ConfigureAwait(false);
-      res.AppendLine("#EXTM3U");
-      res.AppendLine("#EXT-X-VERSION:3");
-      res.AppendLine("#EXT-X-ALLOW-CACHE:NO");
-      res.AppendLine("#EXT-X-TARGETDURATION:2");
-      res.AppendLine("#EXT-X-MEDIA-SEQUENCE:" + segments.First().Index);
-      var queries = String.Join("&", parameters.Select(kv => Uri.EscapeDataString(kv.Key) + "=" + Uri.EscapeDataString(kv.Value)));
-      foreach (var seg in segments) {
-        var url = new UriBuilder(new Uri(baseuri, c.ChannelID.ToString("N").ToUpper() + String.Format("_{0:00000}.ts", seg.Index)));
-        url.Scheme = scheme;
-        if (queries!="") {
-          url.Query = queries;
-        }
-        res.AppendLine("#EXTINF:" + seg.Duration.ToString("F2") + ",");
-        res.AppendLine(url.ToString());
-      }
-      return System.Text.Encoding.UTF8.GetBytes(res.ToString());
-    }
-  }
-
   /// <summary>
   /// ASX形式のプレイリストを作成するクラスです
   /// </summary>

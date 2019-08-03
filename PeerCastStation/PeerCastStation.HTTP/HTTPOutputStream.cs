@@ -18,9 +18,9 @@ using System.Linq;
 using System.Net;
 using System.Collections.Generic;
 using System.Threading;
-using System.Text.RegularExpressions;
 using PeerCastStation.Core;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using Owin;
 using PeerCastStation.Core.Http;
 using Microsoft.Owin;
@@ -52,15 +52,14 @@ namespace PeerCastStation.HTTP
         switch (fmt.ToLowerInvariant()) {
         case "asx":  return new ASXPlayList(scheme, channel);
         case "m3u":  return new M3UPlayList(scheme, channel);
-        case "m3u8": return new M3U8PlayList(scheme, channel);
         default:     return CreateDefaultPlaylist();
         }
       }
     }
 
-    private static readonly Regex ChannelIdPattern = new Regex(@"\A([0-9a-fA-F]{32})(?:\.(\w+))?\z", RegexOptions.Compiled);
     private struct ParsedRequest
     {
+      public static readonly Regex ChannelIdPattern = new Regex(@"\A([0-9a-fA-F]{32})(?:\.(\w+))?\z", RegexOptions.Compiled);
       public HttpStatusCode Status;
       public Guid ChannelId;
       public string Extension;
@@ -373,7 +372,7 @@ namespace PeerCastStation.HTTP
   }
 
   [Plugin]
-  class HTTPOutputStreamPlugin
+  public class HTTPOutputStreamPlugin
     : PluginBase
   {
     override public string Name { get { return "HTTP Output"; } }

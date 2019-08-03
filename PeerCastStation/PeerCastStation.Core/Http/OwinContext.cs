@@ -50,7 +50,7 @@ namespace PeerCastStation.Core.Http
       Environment.Environment[OwinEnvironment.Owin.RequestBody] = RequestBody;
       Environment.Environment[OwinEnvironment.Owin.RequestHeaders] = req.Headers.ToDictionary();
       Environment.Environment[OwinEnvironment.Owin.RequestPath] = req.Path;
-      Environment.Environment[OwinEnvironment.Owin.RequestPathBase] = "/";
+      Environment.Environment[OwinEnvironment.Owin.RequestPathBase] = "";
       Environment.Environment[OwinEnvironment.Owin.RequestProtocol] = req.Protocol;
       Environment.Environment[OwinEnvironment.Owin.RequestQueryString] = req.QueryString;
       Environment.Environment[OwinEnvironment.Owin.RequestScheme] = "http";

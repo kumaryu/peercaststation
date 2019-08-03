@@ -9,17 +9,31 @@ using System.Threading;
 
 namespace PeerCastStation.HTTP
 {
-  class HTTPLiveStreamingSegmenter : IContentSink, Channel.IHTTPLiveStreaming
+  public struct HLSSegment {
+    public readonly int Index;
+    public readonly byte[] Data;
+    public readonly double Duration;
+    public HLSSegment(int index, byte[] data, double duration)
+    {
+      Index = index;
+      Data = data;
+      Duration = duration;
+    }
+  }
+
+  class HTTPLiveStreamingSegmenter
+    : IContentSink
   {
     private class SegmentList
     {
       private HTTPLiveStreamingSegmenter owner;
       private Content header;
       private MemoryStream segmentBuffer = new MemoryStream();
-      private Ringbuffer<Channel.HLSSegment> segments = new Ringbuffer<Channel.HLSSegment>(5);
-      private TaskCompletionSource<Ringbuffer<Channel.HLSSegment>> readyEvent = new TaskCompletionSource<Ringbuffer<Channel.HLSSegment>>();
+      private Ringbuffer<HLSSegment> segments = new Ringbuffer<HLSSegment>(5);
+      private TaskCompletionSource<Ringbuffer<HLSSegment>> readyEvent = new TaskCompletionSource<Ringbuffer<HLSSegment>>();
       private bool keyframeFound = false;
       private double? lastPcr = null;
+      private bool completed = false;
 
       public SegmentList(HTTPLiveStreamingSegmenter owner, Content header)
       {
@@ -30,18 +44,19 @@ namespace PeerCastStation.HTTP
 
       private void FlushSegment(double duration)
       {
-        segmentBuffer.Close();
-        byte[] data = segmentBuffer.ToArray();
-        segmentBuffer = new MemoryStream();
-        segmentBuffer.Write(header.Data, 0, header.Data.Length);
+        var newbuf = new MemoryStream();
+        newbuf.Write(header.Data, 0, header.Data.Length);
+        var buf = Interlocked.Exchange(ref segmentBuffer, newbuf);
+        buf.Close();
         lock (segments) {
-          segments.Add(owner.AllocateSegment(data, duration));
+          segments.Add(owner.AllocateSegment(buf.ToArray(), duration));
           readyEvent.TrySetResult(segments);
         }
       }
 
       public void AddContent(Content content)
       {
+        if (completed) return;
         int r = 0;
         var bytes188 = new byte[188];
         while (r<content.Data.Length) {
@@ -65,10 +80,19 @@ namespace PeerCastStation.HTTP
         }
       }
 
-      public async Task<IList<Channel.HLSSegment>> GetSegmentsAsync(CancellationToken cancellationToken)
+      public void Complete()
+      {
+        lock (segments) {
+          segments.Add(new HLSSegment(segments.LastOrDefault().Index, null, 0.0));
+          readyEvent.TrySetResult(segments);
+          completed = true;
+        }
+      }
+
+      public async Task<IList<HLSSegment>> GetSegmentsAsync(CancellationToken cancellationToken)
       {
         var task = readyEvent.Task;
-        var result = await Task.WhenAny(task, cancellationToken.CreateCancelTask<Ringbuffer<Channel.HLSSegment>>()).ConfigureAwait(false);
+        var result = await Task.WhenAny(task, cancellationToken.CreateCancelTask<Ringbuffer<HLSSegment>>()).ConfigureAwait(false);
         var segments = await result.ConfigureAwait(false);
         lock (segments) {
           return segments.ToArray();
@@ -76,29 +100,45 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    protected Logger Logger { get; private set; }
-    public Channel Channel { get; private set; }
-    private int SegmentIndex = 1;
-    private SegmentList Segments = null;
+    protected Logger Logger { get; private set; } = new Logger(nameof(HTTPLiveStreamingSegmenter));
+    private int segmentIndex = 1;
 
-    private Channel.HLSSegment AllocateSegment(byte[] data, double duration)
+    class WaitableContainer<T>
     {
-      var index = SegmentIndex++;
-      Logger.Debug("HLSSegment: index:{0} duration:{1}", index, duration);
-      return new Channel.HLSSegment(index, data, duration);
+      private TaskCompletionSource<bool> initializedTask = new TaskCompletionSource<bool>();
+      private T value;
+      public async Task<T> GetAsync(CancellationToken cancellationToken)
+      {
+        var result = await Task.WhenAny(
+          initializedTask.Task,
+          cancellationToken.CreateCancelTask<bool>()
+          ).ConfigureAwait(false);
+        if (await result.ConfigureAwait(false)) {
+          return value;
+        }
+        else {
+          return default(T);
+        }
+      }
+
+      public void Set(T value)
+      {
+        this.value = value;
+        initializedTask.TrySetResult(true);
+      }
+
+      public T Peek()
+      {
+        return value;
+      }
     }
+    private WaitableContainer<SegmentList> segments = new WaitableContainer<SegmentList>();
 
-    public HTTPLiveStreamingSegmenter(Channel channel)
+    private HLSSegment AllocateSegment(byte[] data, double duration)
     {
-      Logger = new Logger(this.GetType());
-      this.Channel = channel;
-      IContentSink sink = this;
-      sink =
-          "flvtots".Split(',')
-          .Select(name => Channel.PeerCast.ContentFilters.FirstOrDefault(filter => filter.Name.ToLowerInvariant() == name.ToLowerInvariant()))
-          .Where(filter => filter != null)
-          .Aggregate(sink, (r, filter) => filter.Activate(r));
-      Channel.AddContentSink(sink);
+      var index = Interlocked.Increment(ref segmentIndex);
+      Logger.Debug("HLSSegment: index:{0} duration:{1}", index, duration);
+      return new HLSSegment(index, data, duration);
     }
 
     public void OnChannelInfo(ChannelInfo channel_info)
@@ -111,42 +151,31 @@ namespace PeerCastStation.HTTP
 
     public void OnContent(Content content)
     {
-      if (Segments==null) return;
-      Segments.AddContent(content);
+      segments.Peek()?.AddContent(content);
     }
 
     public void OnContentHeader(Content content_header)
     {
-      Segments = new SegmentList(this, content_header);
+      segments.Set(new SegmentList(this, content_header));
     }
 
     public void OnStop(StopReason reason)
     {
-      Channel.RemoveContentSink(this);
+      segments.Peek()?.Complete();
     }
 
-    public IList<Channel.HLSSegment> GetSegments()
+    public async Task<IList<HLSSegment>> GetSegmentsAsync(CancellationToken cancellationToken)
     {
-      var lst = Segments;
+      var lst = await segments.GetAsync(cancellationToken).ConfigureAwait(false);
       if (lst!=null) {
-        return lst.GetSegmentsAsync(CancellationToken.None).Result;
+        return await lst.GetSegmentsAsync(CancellationToken.None).ConfigureAwait(false);
       }
       else {
-        return new Channel.HLSSegment[0];
-      }
-    }
-
-    public Task<IList<Channel.HLSSegment>> GetSegmentsAsync(CancellationToken cancellationToken)
-    {
-      var lst = Segments;
-      if (lst!=null) {
-        return lst.GetSegmentsAsync(CancellationToken.None);
-      }
-      else {
-        return Task.FromResult<IList<Channel.HLSSegment>>(new Channel.HLSSegment[0]);
+        return new HLSSegment[0];
       }
     }
 
   }
 }
+
 
