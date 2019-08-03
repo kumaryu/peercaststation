@@ -13,7 +13,7 @@ namespace PeerCastStation.UI.HTTP
 {
   public static class HTMLHostOwinApp
   {
-    class HostApp
+    public class HostApp
     {
       public string LocalPath { get; private set; }
       public HostApp(string localPath)
@@ -53,10 +53,22 @@ namespace PeerCastStation.UI.HTTP
         }
       }
 
+      private string CombinePath(string a, string b)
+      {
+        if (String.IsNullOrEmpty(a)) return b;
+        if (String.IsNullOrEmpty(b)) return a;
+        if (b[0]=='/' || b[0]=='\\') {
+          return Path.Combine(a, b.Substring(1));
+        }
+        else {
+          return Path.Combine(a, b);
+        }
+      }
+
       public async Task Invoke(IOwinContext ctx)
       {
         var cancel_token = ctx.Request.CallCancelled;
-        var localpath = Path.GetFullPath(Path.Combine(LocalPath, ctx.Request.Path.Value.Substring(1)));
+        var localpath = Path.GetFullPath(CombinePath(LocalPath, ctx.Request.Path.Value));
         if (Directory.Exists(localpath)) {
           localpath = Path.Combine(localpath, "index.html");
           if (!File.Exists(localpath)) {
@@ -95,11 +107,11 @@ namespace PeerCastStation.UI.HTTP
       await ctx.Response.WriteAsync("Moving...", cancel_token).ConfigureAwait(false);
     }
 
-    public static void BuildPath(IAppBuilder builder, string mappath, string localpath)
+    public static void BuildPath(IAppBuilder builder, string mappath, OutputStreamType accepts, string localpath)
     {
       builder.Map(mappath, sub => {
         sub.MapMethod("GET", withmethod => {
-          withmethod.UseAuth(OutputStreamType.Interface);
+          withmethod.UseAuth(accepts);
           withmethod.Run(new HostApp(localpath).Invoke);
         });
       });
@@ -107,10 +119,14 @@ namespace PeerCastStation.UI.HTTP
 
     public static void BuildApp(IAppBuilder builder, string basepath)
     {
-      BuildPath(builder, "/html", Path.Combine(basepath, "html"));
-      BuildPath(builder, "/help", Path.Combine(basepath, "help"));
-      BuildPath(builder, "/Content", Path.Combine(basepath, "Content"));
-      BuildPath(builder, "/Scripts", Path.Combine(basepath, "Scripts"));
+      BuildPath(builder, "/html/play.html", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/play.html"));
+      BuildPath(builder, "/html/js", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/js"));
+      BuildPath(builder, "/html/css", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/css"));
+      BuildPath(builder, "/html/images", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/images"));
+      BuildPath(builder, "/html", OutputStreamType.Interface, Path.Combine(basepath, "html"));
+      BuildPath(builder, "/help", OutputStreamType.Interface, Path.Combine(basepath, "help"));
+      BuildPath(builder, "/Content", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "Content"));
+      BuildPath(builder, "/Scripts", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "Scripts"));
       builder.MapWhen(ctx => ctx.Request.Path.Value=="/", sub => {
         sub.MapMethod("GET", withmethod => {
           withmethod.UseAuth(OutputStreamType.Interface);
