@@ -5,6 +5,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using PeerCastStation.Core;
+using Microsoft.Owin;
 
 namespace PeerCastStation.UI.HTTP.JSONRPC
 {
@@ -118,7 +119,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       else                             return JToken.FromObject(value);
     }
 
-    public JToken Invoke(object receiver, JToken args)
+    public JToken Invoke(object receiver, IOwinContext ctx, JToken args)
     {
       var param_infos = method.GetParameters();
       if (param_infos.Length==0) {
@@ -131,45 +132,63 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
         }
       }
       else {
-        if (args==null) throw new RPCError(RPCErrorCode.InvalidParams, "parameters required");
+        int pos = 0;
+        int len = param_infos.Length;
         var arguments = new object[param_infos.Length];
+        if (param_infos[0].ParameterType==typeof(IOwinContext)) {
+          arguments[0] = ctx;
+          pos += 1;
+          len -= 1;
+        }
+        if (len==0) {
+          try {
+            var res = method.Invoke(receiver, arguments);
+            return FromObject(method.ReturnType, res);
+          }
+          catch (TargetInvocationException e) {
+            throw e.InnerException;
+          }
+        }
+        if (args==null) {
+          throw new RPCError(RPCErrorCode.InvalidParams, "parameters required");
+        }
         if (args.Type==JTokenType.Array) {
           var ary = (JArray)args;
-          if (param_infos.Length!=ary.Count) {
+          if (len!=ary.Count) {
             throw new RPCError(
               RPCErrorCode.InvalidParams, 
-              String.Format("Wrong number of arguments ({0} for {1})", param_infos.Length, ary.Count));
+              String.Format("Wrong number of arguments ({0} for {1})", len, ary.Count));
           }
-          for (var i=0; i<param_infos.Length; i++) {
+          for (var i=0; i<len; i++) {
             try {
-              arguments[i] = ToObject(param_infos[i].ParameterType, ary[i]);
+              arguments[i+pos] = ToObject(param_infos[i+pos].ParameterType, ary[i]);
             }
             catch (ArgumentException) {
               throw new RPCError(
                 RPCErrorCode.InvalidParams, 
-                String.Format("{0} must be {1})", param_infos[i].Name, JsonType(param_infos[i].ParameterType)));
+                String.Format("{0} must be {1})", param_infos[i+pos].Name, JsonType(param_infos[i+pos].ParameterType)));
             }
           }
         }
         else if (args.Type==JTokenType.Object) {
           var obj = (JObject)args;
-          for (var i=0; i<param_infos.Length; i++) {
+          for (var i=0; i<len; i++) {
             JToken value;
-            if (obj.TryGetValue(param_infos[i].Name, out value) && value.Type!=JTokenType.Undefined) {
+            if (obj.TryGetValue(param_infos[i+pos].Name, out value) && value.Type!=JTokenType.Undefined) {
               try {
-                arguments[i] = ToObject(param_infos[i].ParameterType, value);
+                arguments[i+pos] = ToObject(param_infos[i+pos].ParameterType, value);
               }
               catch (ArgumentException) {
                 throw new RPCError(
                   RPCErrorCode.InvalidParams, 
-                  String.Format("{0} must be {1})", param_infos[i].Name, JsonType(param_infos[i].ParameterType)));
+                  String.Format("{0} must be {1})", param_infos[i+pos].Name, JsonType(param_infos[i+pos].ParameterType)));
               }
             }
-            else if (param_infos[i].DefaultValue!=DBNull.Value) {
-              arguments[i] = param_infos[i].DefaultValue;
+            else if (param_infos[i+pos].DefaultValue!=DBNull.Value) {
+              arguments[i+pos] = param_infos[i+pos].DefaultValue;
             }
-            else if (param_infos[i].IsOptional) {
-              arguments[i] = null;
+            else if (param_infos[i+pos].IsOptional) {
+              arguments[i+pos] = null;
             }
             else {
               throw new RPCError(
@@ -343,7 +362,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
 
   public class JSONRPCHost
   {
-    private void ProcessRequest(JArray results, JToken request, Func<OutputStreamType,bool> authFunc)
+    private void ProcessRequest(IOwinContext ctx, JArray results, JToken request, Func<OutputStreamType,bool> authFunc)
     {
       RPCRequest req = null;
       try {
@@ -357,7 +376,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
         var methods = authFunc!=null ? this.methods.Where(method => authFunc(method.Grant)) : this.methods;
         var m = methods.FirstOrDefault(method => method.Name==req.Method);
         if (m!=null) {
-          var res = m.Invoke(host, req.Parameters);
+          var res = m.Invoke(host, ctx, req.Parameters);
           if (req.Id!=null) {
             results.Add(new RPCResponse(req.Id, res).ToJson());
           }
@@ -381,24 +400,24 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       }
     }
 
-    public JToken ProcessRequest(JToken req, Func<OutputStreamType,bool> authFunc)
+    public JToken ProcessRequest(IOwinContext ctx, JToken req, Func<OutputStreamType,bool> authFunc)
     {
       if (req==null) return null;
       if (req.Type==JTokenType.Array) {
         var results = new JArray();
         foreach (var token in (JArray)req) {
-          ProcessRequest(results, token, authFunc);
+          ProcessRequest(ctx, results, token, authFunc);
         }
         return results.Count>0 ? results : null;
       }
       else {
         var results = new JArray();
-        ProcessRequest(results, req, authFunc);
+        ProcessRequest(ctx, results, req, authFunc);
         return results.Count>0 ? results.First : null;
       }
     }
 
-    public JToken ProcessRequest(string request_str, Func<OutputStreamType,bool> authFunc)
+    public JToken ProcessRequest(IOwinContext ctx, string request_str, Func<OutputStreamType,bool> authFunc)
     {
       JToken req;
       try {
@@ -407,7 +426,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       catch (RPCError err) {
         return new RPCResponse(null, err).ToJson();
       }
-      return ProcessRequest(req, authFunc);
+      return ProcessRequest(ctx, req, authFunc);
     }
 
     private object host;
@@ -420,7 +439,9 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
         System.Reflection.BindingFlags.Public |
         System.Reflection.BindingFlags.NonPublic).Where(method =>
           Attribute.IsDefined(method, typeof(RPCMethodAttribute), true)
-        ).Select(method => new RPCMethodInfo(method));
+        )
+        .Select(method => new RPCMethodInfo(method))
+        .ToArray();
     }
   }
 }
