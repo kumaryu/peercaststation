@@ -94,9 +94,11 @@ namespace PeerCastStation.FLV.RTMP
     public async Task<HandlerResult> Start(CancellationToken cancellationToken)
     {
       using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, isStopped.Token)) {
-        await connection.Run(cts.Token).ConfigureAwait(false);
-        if (this.channel!=null) {
-          this.channel.RemoveOutputStream(this);
+        try {
+          await connection.Run(cts.Token).ConfigureAwait(false);
+        }
+        finally {
+          this.channel?.RemoveOutputStream(this);
         }
         return HandlerResult.Close;
       }
