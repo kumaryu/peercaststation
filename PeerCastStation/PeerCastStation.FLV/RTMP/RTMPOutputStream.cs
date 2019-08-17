@@ -51,7 +51,7 @@ namespace PeerCastStation.FLV.RTMP
         Status           = ConnectionStatus.Connected,
         RemoteName       = remoteEndPoint.ToString(),
         RemoteEndPoint   = remoteEndPoint as System.Net.IPEndPoint,
-        RemoteHostStatus = RemoteHostStatus.Receiving,
+        RemoteHostStatus = RemoteHostStatus.Receiving | (IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None),
         ContentPosition  = connection.ContentPosition,
         RecvRate         = (float)this.inputStream.ReadRate,
         SendRate         = (float)this.outputStream.WriteRate,
