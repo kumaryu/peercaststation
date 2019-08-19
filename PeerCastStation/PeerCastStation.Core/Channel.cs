@@ -199,7 +199,7 @@ namespace PeerCastStation.Core
     {
       var connections = sinks
         .Select(s => s.GetConnectionInfo())
-        .Where(i => i.RemoteEndPoint.Address.GetAddressLocality()!=0)
+        .Where(i => !i.RemoteHostStatus.HasFlag(RemoteHostStatus.Local))
         .Where(i => i.Type.HasFlag(ConnectionType.Direct) || i.Type.HasFlag(ConnectionType.Relay))
         .Count();
       return (ChannelInfo?.Bitrate ?? 0) * connections;
