@@ -293,7 +293,7 @@ namespace PeerCastStation.Core
       foreach (var os in OutputStreams.Where(os => os!=newoutput_stream)) {
         var info = os.GetConnectionInfo();
         if (!info.Type.HasFlag(ConnectionType.Relay)) continue;
-        if (info.RemoteEndPoint.Address.GetAddressLocality()==0) continue;
+        if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.Local)) continue;
         var disconnect = false;
         if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.Firewalled)) disconnect = true;
         if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.RelayFull) &&
@@ -314,7 +314,7 @@ namespace PeerCastStation.Core
       foreach (var os in OutputStreams) {
         var info = os.GetConnectionInfo();
         if (!info.Type.HasFlag(ConnectionType.Relay)) continue;
-        if (info.RemoteEndPoint.Address.GetAddressLocality()==0) continue;
+        if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.Local)) continue;
         var disconnect = false;
         if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.Firewalled)) disconnect = true;
         if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.RelayFull) &&
