@@ -41,7 +41,7 @@ namespace PeerCastStation.Core
           addr.IsIPv6SiteLocal ||
           addr.IsIPv6UniqueLocal() ||
           addr.IsIPv6Teredo ||
-          addr==IPAddress.IPv6Loopback;
+          addr.Equals(IPAddress.IPv6Loopback);
       default:
         return false;
       }
@@ -51,13 +51,13 @@ namespace PeerCastStation.Core
     {
       switch (addr.AddressFamily) {
       case System.Net.Sockets.AddressFamily.InterNetwork:
-        if (addr==IPAddress.Any || addr==IPAddress.None || addr==IPAddress.Broadcast) return -1;
-        if (addr==IPAddress.Loopback) return 0;
+        if (addr.Equals(IPAddress.Any) || addr.Equals(IPAddress.None) || addr.Equals(IPAddress.Broadcast)) return -1;
+        if (addr.Equals(IPAddress.Loopback)) return 0;
         if (IsSiteLocal(addr)) return 1;
         return 2;
       case System.Net.Sockets.AddressFamily.InterNetworkV6:
-        if (addr==IPAddress.IPv6Any || addr==IPAddress.IPv6None) return -1;
-        if (addr==IPAddress.IPv6Loopback) return 0;
+        if (addr.Equals(IPAddress.IPv6Any) || addr.Equals(IPAddress.IPv6None)) return -1;
+        if (addr.Equals(IPAddress.IPv6Loopback)) return 0;
         if (IsSiteLocal(addr)) return 1;
         return 2;
       default:
