@@ -274,12 +274,14 @@ namespace PeerCastStation.UI.PortMapper
 
     public async Task<MappedPort> MapAsync(MappingProtocol protocol, int port, TimeSpan lifetime, CancellationToken cancel_token)
     {
+      var internaladdr = await GetInternalAddressAsync().ConfigureAwait(false);
+      if (internaladdr==null) return null;
       var parameters = new Dictionary<string,string>() {
         { "NewRemoteHost",     "" },
         { "NewExternalPort",   port.ToString() },
         { "NewProtocol",       protocol==MappingProtocol.TCP ? "TCP" : "UDP" },
         { "NewInternalPort",   port.ToString() },
-        { "NewInternalClient", (await GetInternalAddressAsync().ConfigureAwait(false)).ToString() },
+        { "NewInternalClient", internaladdr.ToString() },
         { "NewEnabled",        "1" },
         { "NewPortMappingDescription", PortMappingDescription },
         { "NewLeaseDuration",  "0" },
