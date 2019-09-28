@@ -128,16 +128,6 @@ namespace PeerCastStation.Core
     /// 指定したチャンネルに新しいリレー接続ができるかどうかを取得します
     /// </summary>
     /// <param name="channel">リレー接続先のチャンネル</param>
-    /// <returns>リレー可能な場合はtrue、それ以外はfalse</returns>
-    public virtual bool IsChannelRelayable(Channel channel)
-    {
-      return IsChannelRelayable(channel, false);
-    }
-
-    /// <summary>
-    /// 指定したチャンネルに新しいリレー接続ができるかどうかを取得します
-    /// </summary>
-    /// <param name="channel">リレー接続先のチャンネル</param>
     /// <param name="local">接続しようとする接続がローカル接続かどうか</param>
     /// <returns>リレー可能な場合はtrue、それ以外はfalse</returns>
     public virtual bool IsChannelRelayable(Channel channel, bool local)
@@ -192,22 +182,6 @@ namespace PeerCastStation.Core
           (this.MaxRelaysPerRelayChannel<=0 || this.MaxRelaysPerRelayChannel>channel.LocalRelays) &&
           (this.MaxUpstreamRateIPv6<0 || this.MaxUpstreamRateIPv6>=total_upstream_rate+channel_bitrate) &&
           (this.MaxUpstreamRatePerRelayChannel<=0 || this.MaxUpstreamRatePerRelayChannel>=channel_upstream_rate+channel_bitrate);
-      }
-    }
-
-    /// <summary>
-    /// 指定したチャンネルに新しい視聴接続ができるかどうかを取得します
-    /// </summary>
-    /// <param name="channel">視聴接続先のチャンネル</param>
-    /// <returns>視聴可能な場合はtrue、それ以外はfalse</returns>
-    public virtual bool IsChannelPlayable(Channel channel)
-    {
-      switch (channel.Network) {
-      case NetworkType.IPv6:
-        return IsChannelPlayableIPv6(channel, false);
-      case NetworkType.IPv4:
-      default:
-        return IsChannelPlayableIPv4(channel, false);
       }
     }
 

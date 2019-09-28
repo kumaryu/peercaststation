@@ -300,13 +300,13 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 視聴接続がいっぱいかどうかを取得します
     /// </summary>
-    public virtual bool IsDirectFull {
-      get { return !this.PeerCast.AccessController.IsChannelPlayable(this); }
+    public bool IsDirectFull {
+      get { return !IsPlayable(false); }
     }
 
-    public virtual bool IsPlayable(IOutputStream sink)
+    public virtual bool IsPlayable(bool local)
     {
-      return this.PeerCast.AccessController.IsChannelPlayable(this, sink.IsLocal);
+      return this.PeerCast.AccessController.IsChannelPlayable(this, local);
     }
 
     /// <summary>
@@ -642,8 +642,8 @@ namespace PeerCastStation.Core
         host.IsFirewalled   = this.PeerCast.GetPortStatus(this.NetworkAddressFamily)!=PortStatus.Open;
         host.DirectCount    = this.LocalDirects;
         host.RelayCount     = this.LocalRelays;
-        host.IsDirectFull   = !this.PeerCast.AccessController.IsChannelPlayable(this);
-        host.IsRelayFull    = !this.PeerCast.AccessController.IsChannelRelayable(this);
+        host.IsDirectFull   = this.IsDirectFull;
+        host.IsRelayFull    = this.IsRelayFull;
         host.IsReceiving    = source!=null && (source.GetConnectionInfo().RecvRate ?? 0.0f)>0;
         return host.ToHost();
       }

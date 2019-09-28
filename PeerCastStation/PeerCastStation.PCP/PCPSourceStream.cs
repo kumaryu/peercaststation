@@ -428,8 +428,8 @@ Stopped:
       }
       PCPVersion.SetHostVersion(host);
       host.SetHostFlags1(
-        (PeerCast.AccessController.IsChannelRelayable(Channel) ? PCPHostFlags1.Relay : 0) |
-        (PeerCast.AccessController.IsChannelPlayable(Channel) ? PCPHostFlags1.Direct : 0) |
+        (Channel.IsRelayable(false) ? PCPHostFlags1.Relay : 0) |
+        (Channel.IsPlayable(false) ? PCPHostFlags1.Direct : 0) |
         ((PeerCast.GetPortStatus(connection.RemoteEndPoint.AddressFamily)!=PortStatus.Open) ? PCPHostFlags1.Firewalled : 0) |
         (RecvRate>0 ? PCPHostFlags1.Receiving : 0));
       host.SetHostUphostIP(connection.RemoteEndPoint.Address);

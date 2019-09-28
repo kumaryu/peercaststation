@@ -544,8 +544,8 @@ namespace PeerCastStation.PCP
           hostinfo.SetHostNewPos((uint)(channel.Contents.Newest.Position & 0xFFFFFFFFU));
         }
         PCPVersion.SetHostVersion(hostinfo);
-        var relayable = channel.PeerCast.AccessController.IsChannelRelayable(channel);
-        var playable  = channel.PeerCast.AccessController.IsChannelPlayable(channel) &&
+        var relayable = channel.IsRelayable(false);
+        var playable  = channel.IsPlayable(false) &&
                         channel.PeerCast.FindListener(remoteEndPoint.Address, OutputStreamType.Play)!=null;
         var firewalled = channel.PeerCast.GetPortStatus(networkType.GetAddressFamily())!=PortStatus.Open ||
                          channel.PeerCast.FindListener(remoteEndPoint.Address, OutputStreamType.Relay)==null;

@@ -207,6 +207,8 @@ module PCPRelayConnection =
         connection.response.stream.Write(value)
 
 module RelayTests =
+    let endpoint = allocateEndPoint IPAddress.Loopback
+
     [<Fact>]
     let ``503の時は他のリレー候補を返して切る`` () =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
