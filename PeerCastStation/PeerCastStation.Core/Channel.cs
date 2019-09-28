@@ -267,13 +267,8 @@ namespace PeerCastStation.Core
     /// <summary>
     /// リレー接続がいっぱいかどうかを取得します
     /// </summary>
-    public virtual bool IsRelayFull {
-      get { return !this.PeerCast.AccessController.IsChannelRelayable(this); }
-    }
-
-    public virtual bool IsRelayable(IOutputStream sink)
-    {
-      return this.PeerCast.AccessController.IsChannelRelayable(this, sink.IsLocal);
+    public bool IsRelayFull {
+      get { return !IsRelayable(false); }
     }
 
     public virtual bool IsRelayable(bool local)
@@ -281,33 +276,7 @@ namespace PeerCastStation.Core
       return this.PeerCast.AccessController.IsChannelRelayable(this, local);
     }
 
-    /// <summary>
-    ///  新しいOutputStreamがリレー可能になるようにリレー不可のOutputStreamを切断します
-    /// </summary>
-    /// <param name="newoutput_stream">新しくリレーしようとするOutputStream</param>
-    /// <returns>リレー可能になった場合はtrue、それ以外はfalse</returns>
-    public bool MakeRelayable(IOutputStream newoutput_stream)
-    {
-      if (IsRelayable(newoutput_stream)) return true;
-      var disconnects = new List<IChannelSink>();
-      foreach (var os in OutputStreams.Where(os => os!=newoutput_stream)) {
-        var info = os.GetConnectionInfo();
-        if (!info.Type.HasFlag(ConnectionType.Relay)) continue;
-        if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.Local)) continue;
-        var disconnect = false;
-        if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.Firewalled)) disconnect = true;
-        if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.RelayFull) &&
-            (info.LocalRelays ?? 0)<1) disconnect = true;
-        if (disconnect) disconnects.Add(os);
-      }
-      foreach (var os in disconnects) {
-        os.OnStopped(StopReason.UnavailableError);
-        RemoveOutputStream(os);
-      }
-      return IsRelayable(newoutput_stream);
-    }
-
-    public bool MakeRelayable(bool local)
+    public virtual bool MakeRelayable(bool local)
     {
       if (IsRelayable(local)) return true;
       var disconnects = new List<IChannelSink>();

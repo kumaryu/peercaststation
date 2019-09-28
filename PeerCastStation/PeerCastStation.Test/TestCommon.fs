@@ -33,6 +33,23 @@ type DummySourceStream (sstype) =
 type DummyBroadcastChannel (peercast, network, channelId) =
     inherit Channel(peercast, network, channelId)
 
+    let mutable relayable = true
+    member this.Relayable
+        with get ()    = relayable
+        and  set value = relayable <- value
+
+    override this.IsRelayable(local) =
+        if relayable then
+            base.IsRelayable(local)
+        else
+            false
+
+    override this.MakeRelayable(local) =
+        if relayable then
+            base.MakeRelayable(local)
+        else
+            false
+
     override this.IsBroadcasting = true
     override this.CreateSourceStream (source_uri) =
         new DummySourceStream(SourceStreamType.Broadcast)
@@ -147,3 +164,5 @@ module Assert =
         use strm = new System.IO.StreamReader(res.GetResponseStream())
         Assert.Equal(expected, strm.ReadToEnd())
 
+    let ExpectAtomName expected (atom:Atom) =
+        Assert.Equal(expected, atom.Name)
