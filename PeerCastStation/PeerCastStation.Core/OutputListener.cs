@@ -284,8 +284,7 @@ namespace PeerCastStation.Core
         stream.WriteTimeout = 3000;
         stream.ReadTimeout  = 3000;
         var handler = await CreateMatchedHandler(
-          localEndPoint,
-          client.Client.RemoteEndPoint as IPEndPoint,
+          client.Client,
           stream,
           acinfo,
           cancellationToken).ConfigureAwait(false);
@@ -309,6 +308,7 @@ namespace PeerCastStation.Core
       catch (OperationCanceledException) {
       }
       finally {
+        client.Client.Shutdown(SocketShutdown.Send);
         logger.Debug("Closing client connection");
         stream.Close();
         client.Close();
@@ -316,8 +316,7 @@ namespace PeerCastStation.Core
     }
 
     private async Task<IOutputStream> CreateMatchedHandler(
-        IPEndPoint local_endpoint,
-        IPEndPoint remote_endpoint,
+        Socket socket,
         NetworkStream stream,
         AccessControlInfo acinfo,
         CancellationToken cancellationToken)
@@ -337,21 +336,15 @@ namespace PeerCastStation.Core
             foreach (var factory in output_factories) {
               var channel_id = factory.ParseChannelID(header_ary, acinfo);
               if (channel_id.HasValue) {
-                return factory.Create(
-                  stream,
-                  stream,
-                  local_endpoint,
-                  remote_endpoint,
-                  acinfo,
-                  channel_id.Value,
-                  header_ary);
+                var connection = new ConnectionStream(socket, stream, header_ary);
+                return factory.Create(connection, acinfo, channel_id.Value);
               }
             }
           }
         }
-        catch (System.ObjectDisposedException) {
+        catch (ObjectDisposedException) {
         }
-        catch (System.IO.IOException) {
+        catch (IOException) {
         }
       }
       return null;

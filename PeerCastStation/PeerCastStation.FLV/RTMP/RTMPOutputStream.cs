@@ -1,6 +1,4 @@
 ﻿using System;
-using System.IO;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using PeerCastStation.Core;
@@ -8,88 +6,79 @@ using System.Threading;
 
 namespace PeerCastStation.FLV.RTMP
 {
-	public class RTMPOutputStream
-		: IOutputStream
-	{
-		private PeerCast peerCast;
-		private ConnectionStream inputStream;
-		private ConnectionStream outputStream;
-		private System.Net.EndPoint localEndPoint;
-		private System.Net.EndPoint remoteEndPoint;
-		private AccessControlInfo accessControl;
-		private RTMPPlayConnection connection;
-		private CancellationTokenSource isStopped = new CancellationTokenSource();
-		private Channel channel;
+  public class RTMPOutputStream
+    : IOutputStream
+  {
+    private PeerCast peerCast;
+    private ConnectionStream inputStream;
+    private ConnectionStream outputStream;
+    private AccessControlInfo accessControl;
+    private RTMPPlayConnection connection;
+    private CancellationTokenSource isStopped = new CancellationTokenSource();
+    private Channel channel;
 
-		public RTMPOutputStream(
-				PeerCast peercast,
-				System.IO.Stream input_stream,
-				System.IO.Stream output_stream,
-				System.Net.EndPoint local_endpoint,
-				System.Net.EndPoint remote_endpoint,
-				AccessControlInfo access_control,
-				Guid channel_id,
-				byte[] header)
-		{
-			input_stream.ReadTimeout = System.Threading.Timeout.Infinite;
-			this.peerCast       = peercast;
-      var stream = new ConnectionStream(input_stream, output_stream, header, null, remote_endpoint as System.Net.IPEndPoint);
-			this.inputStream    = stream;
-			this.outputStream   = stream;
-      stream.WriteTimeout = 10000;
-			this.localEndPoint  = local_endpoint;
-			this.remoteEndPoint = remote_endpoint;
-			this.accessControl  = access_control;
-			this.connection = new RTMPPlayConnection(this, this.inputStream, this.outputStream);
-		}
+    public RTMPOutputStream(
+        PeerCast peercast,
+        ConnectionStream connection,
+        AccessControlInfo access_control,
+        Guid channel_id)
+    {
+      connection.ReadTimeout = Timeout.Infinite;
+      connection.WriteTimeout = 10000;
+      this.peerCast       = peercast;
+      this.inputStream    = connection;
+      this.outputStream   = connection;
+      this.accessControl  = access_control;
+      this.connection = new RTMPPlayConnection(this, this.inputStream, this.outputStream);
+    }
 
-		public ConnectionInfo GetConnectionInfo()
-		{
+    public ConnectionInfo GetConnectionInfo()
+    {
       return new ConnectionInfoBuilder {
         ProtocolName     = "RTMP Output",
         Type             = ConnectionType.Direct,
         Status           = ConnectionStatus.Connected,
-        RemoteName       = remoteEndPoint.ToString(),
-        RemoteEndPoint   = remoteEndPoint as System.Net.IPEndPoint,
+        RemoteName       = inputStream.RemoteEndPoint.ToString(),
+        RemoteEndPoint   = inputStream.RemoteEndPoint as System.Net.IPEndPoint,
         RemoteHostStatus = RemoteHostStatus.Receiving | (IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None),
         ContentPosition  = connection.ContentPosition,
         RecvRate         = (float)this.inputStream.ReadRate,
         SendRate         = (float)this.outputStream.WriteRate,
         AgentName        = connection.ClientName
       }.Build();
-		}
+    }
 
-		public OutputStreamType OutputStreamType {
-			get { return Core.OutputStreamType.Play; }
-		}
+    public OutputStreamType OutputStreamType {
+      get { return Core.OutputStreamType.Play; }
+    }
 
-		public Channel RequestChannel(Guid channel_id, Uri tracker_uri)
-		{
-			var channel = peerCast.RequestChannel(channel_id, tracker_uri, true);
-			this.channel = channel;
-			if (channel!=null && channel.IsPlayable(IsLocal)) {
-				channel.AddOutputStream(this);
+    public Channel RequestChannel(Guid channel_id, Uri tracker_uri)
+    {
+      var channel = peerCast.RequestChannel(channel_id, tracker_uri, true);
+      this.channel = channel;
+      if (channel!=null && channel.IsPlayable(IsLocal)) {
+        channel.AddOutputStream(this);
         return channel;
-			}
+      }
       else {
         return null;
       }
-		}
+    }
 
-		public bool IsLocal {
-			get {
-				var endpoint = remoteEndPoint as System.Net.IPEndPoint;
-				if (endpoint==null) return false;
-				return endpoint.Address.IsSiteLocal();
-			}
-		}
+    public bool IsLocal {
+      get {
+        var endpoint = inputStream.RemoteEndPoint as System.Net.IPEndPoint;
+        if (endpoint==null) return false;
+        return endpoint.Address.IsSiteLocal();
+      }
+    }
 
-		public int UpstreamRate {
-			get {
-				if (IsLocal || channel==null) return 0;
-				return channel.ChannelInfo.Bitrate;
-			}
-		}
+    public int UpstreamRate {
+      get {
+        if (IsLocal || channel==null) return 0;
+        return channel.ChannelInfo.Bitrate;
+      }
+    }
 
     public async Task<HandlerResult> Start(CancellationToken cancellationToken)
     {
@@ -135,56 +124,49 @@ namespace PeerCastStation.FLV.RTMP
       return authorized;
     }
 
-	}
+  }
 
-	public class RTMPOutputStreamFactory
-		: OutputStreamFactoryBase
-	{
-		public RTMPOutputStreamFactory(PeerCast peercast)
-			: base(peercast)
-		{
-		}
+  public class RTMPOutputStreamFactory
+    : OutputStreamFactoryBase
+  {
+    public RTMPOutputStreamFactory(PeerCast peercast)
+      : base(peercast)
+    {
+    }
 
-		public override string Name
-		{
-			get { return "RTMP Output"; }
-		}
+    public override string Name
+    {
+      get { return "RTMP Output"; }
+    }
 
-		public override OutputStreamType OutputStreamType
-		{
-			get { return Core.OutputStreamType.Play; }
-		}
+    public override OutputStreamType OutputStreamType
+    {
+      get { return Core.OutputStreamType.Play; }
+    }
 
-		public override IOutputStream Create(
-				System.IO.Stream input_stream,
-				System.IO.Stream output_stream,
-				System.Net.EndPoint local_endpoint,
-				System.Net.EndPoint remote_endpoint,
-				AccessControlInfo access_control,
-				Guid channel_id,
-				byte[] header)
-		{
-			return new RTMPOutputStream(
-					PeerCast,
-					input_stream,
-					output_stream,
-					local_endpoint,
-					remote_endpoint,
-					access_control,
-					channel_id,
-					header);
-		}
+    public override IOutputStream Create(
+      ConnectionStream connection,
+      AccessControlInfo access_control,
+      Guid channel_id)
+    {
+      return new RTMPOutputStream(
+        PeerCast,
+        connection,
+        access_control,
+        channel_id
+      );
+    }
 
-		public override Guid? ParseChannelID(byte[] header)
-		{
-			if (header.Length>0 && header[0]==0x03) {
-				return Guid.Empty;
-			}
-			else {
-				return null;
-			}
-		}
-	}
+    public override Guid? ParseChannelID(byte[] header)
+    {
+      if (header.Length>0 && header[0]==0x03) {
+        return Guid.Empty;
+      }
+      else {
+        return null;
+      }
+    }
+  }
 
 	[Plugin]
 	public class RTMPOutputStreamPlugin

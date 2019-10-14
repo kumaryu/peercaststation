@@ -34,13 +34,9 @@ namespace PeerCastStation.Core
     public abstract OutputStreamType OutputStreamType { get; }
     public virtual int Priority { get { return 0; } }
     public abstract IOutputStream Create(
-      Stream input_stream,
-      Stream output_stream,
-      EndPoint local_endpoint,
-      EndPoint remote_endpoint,
+      ConnectionStream connection,
       AccessControlInfo access_control,
-      Guid channel_id,
-      byte[] header);
+      Guid channel_id);
 
     public virtual Guid? ParseChannelID(byte[] header, AccessControlInfo acinfo)
     {
@@ -54,47 +50,35 @@ namespace PeerCastStation.Core
   public abstract class OutputStreamBase
     : IOutputStream
   {
-    private ConnectionStream connection;
-    protected ConnectionStream Connection { get { return connection; } }
+    protected ConnectionStream Connection { get; private set; }
     protected Logger Logger { get; private set; }
     public Channel Channel { get; private set; }
     public PeerCast PeerCast { get; private set; }
-    public EndPoint LocalEndPoint { get; private set; }
-    public EndPoint RemoteEndPoint { get; private set; }
+    public EndPoint LocalEndPoint { get { return Connection.LocalEndPoint; } }
+    public EndPoint RemoteEndPoint { get { return Connection.RemoteEndPoint; } }
     public AccessControlInfo AccessControlInfo { get; private set; }
 
     /// <summary>
     /// 元になるストリーム、チャンネル、リクエストからHTTPOutputStreamを初期化します
     /// </summary>
     /// <param name="peercast">所属するPeerCast</param>
-    /// <param name="input_stream">元になる受信ストリーム</param>
-    /// <param name="output_stream">元になる送信ストリーム</param>
-    /// <param name="local_endpoint">接続を待ち受けたアドレス</param>
-    /// <param name="remote_endpoint">接続先のアドレス</param>
+    /// <param name="connection">元になるストリーム</param>
     /// <param name="access_control">接続可否および認証の情報</param>
     /// <param name="channel">所属するチャンネル。無い場合はnull</param>
-    /// <param name="request">クライアントからのリクエスト</param>
     public OutputStreamBase(
       PeerCast peercast,
-      Stream input_stream,
-      Stream output_stream,
-      EndPoint local_endpoint,
-      EndPoint remote_endpoint,
+      ConnectionStream connection,
       AccessControlInfo access_control,
-      Channel channel,
-      byte[] header)
+      Channel channel)
     {
-      this.Logger = new Logger(this.GetType(), remote_endpoint!=null ? remote_endpoint.ToString() : "");
-      this.connection = new ConnectionStream(input_stream, output_stream, header, null, remote_endpoint as IPEndPoint);
-      this.connection.ReadTimeout = 10000;
-      this.connection.WriteTimeout = 10000;
+      this.Logger = new Logger(this.GetType(), connection.RemoteEndPoint?.ToString() ?? "");
+      this.Connection = connection;
+      this.Connection.ReadTimeout = 10000;
+      this.Connection.WriteTimeout = 10000;
       this.PeerCast = peercast;
-      this.LocalEndPoint = local_endpoint;
-      this.RemoteEndPoint = remote_endpoint;
       this.AccessControlInfo = access_control;
       this.Channel = channel;
-      var ip = remote_endpoint as IPEndPoint;
-      this.IsLocal = ip!=null ? ip.Address.IsSiteLocal() : true;
+      this.IsLocal = (RemoteEndPoint as IPEndPoint)?.Address?.IsSiteLocal() ?? true;
     }
 
     public abstract OutputStreamType OutputStreamType { get; }
@@ -180,9 +164,9 @@ namespace PeerCastStation.Core
           catch (OperationCanceledException) {
           }
           finally {
-            var timeout_source = new CancellationTokenSource(TimeSpan.FromMilliseconds(connection.WriteTimeout));
+            var timeout_source = new CancellationTokenSource(TimeSpan.FromMilliseconds(Connection.WriteTimeout));
             if (HandlerResult!=HandlerResult.Continue) {
-              await connection.CloseAsync(timeout_source.Token).ConfigureAwait(false);
+              await Connection.CloseAsync(timeout_source.Token).ConfigureAwait(false);
             }
           }
           Logger.Debug("Finished");

@@ -219,20 +219,24 @@ namespace PeerCastStation.PCP
 
     protected override async Task DoProcess(CancellationToken cancel_token)
     {
-      this.Status = ConnectionStatus.Connecting;
-      await ProcessRelayRequest(cancel_token).ConfigureAwait(false);
-      if (IsStopped) goto Stopped;
-      await ProcessHandshake(cancel_token).ConfigureAwait(false);
-      if (IsStopped) goto Stopped;
-      if (relayResponse.StatusCode==503) {
-        await ProcessHosts(cancel_token).ConfigureAwait(false);
+      try {
+        this.Status = ConnectionStatus.Connecting;
+        await ProcessRelayRequest(cancel_token).ConfigureAwait(false);
+        if (IsStopped) goto Stopped;
+        await ProcessHandshake(cancel_token).ConfigureAwait(false);
+        if (IsStopped) goto Stopped;
+        if (relayResponse.StatusCode==503) {
+          await ProcessHosts(cancel_token).ConfigureAwait(false);
+        }
+        else {
+          this.Status = ConnectionStatus.Connected;
+          await Task.WhenAll(
+            ProcessBody(cancel_token),
+            ProcessPost(cancel_token)
+          ).ConfigureAwait(false);
+        }
       }
-      else {
-        this.Status = ConnectionStatus.Connected;
-        await Task.WhenAll(
-          ProcessBody(cancel_token),
-          ProcessPost(cancel_token)
-        ).ConfigureAwait(false);
+      catch (OperationCanceledException) {
       }
 Stopped:
       Logger.Debug("Disconnected");
@@ -358,13 +362,18 @@ Stopped:
     {
       try {
         BroadcastHostInfo();
-        while (!cancel_token.IsCancellationRequested) {
-          if (CheckHostInfoUpdate()) {
-            BroadcastHostInfo();
+        try {
+          while (!cancel_token.IsCancellationRequested) {
+            if (CheckHostInfoUpdate()) {
+              BroadcastHostInfo();
+            }
+            var atom = await connection.Stream.ReadAtomAsync(cancel_token).ConfigureAwait(false);
+            ProcessAtom(atom);
           }
-          var atom = await connection.Stream.ReadAtomAsync(cancel_token).ConfigureAwait(false);
-          ProcessAtom(atom);
         }
+        catch (OperationCanceledException) {
+        }
+        await SendQuit(connection.Stream, StopReason.UserShutdown, CancellationToken.None).ConfigureAwait(false);
       }
       catch (InvalidDataException e) {
         Logger.Error(e);
@@ -658,6 +667,38 @@ Stopped:
       }
       else {
         Stop(StopReason.OffAir);
+      }
+    }
+
+    private async Task SendQuit(Stream stream, StopReason code, CancellationToken cancellationToken)
+    {
+      switch (code) {
+      case StopReason.None:
+        break;
+      case StopReason.Any:
+        await stream.WriteAsync(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT), cancellationToken).ConfigureAwait(false);
+        break;
+      case StopReason.SendTimeoutError:
+        await stream.WriteAsync(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT + Atom.PCP_ERROR_SKIP), cancellationToken).ConfigureAwait(false);
+        break;
+      case StopReason.BadAgentError:
+        await stream.WriteAsync(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT + Atom.PCP_ERROR_BADAGENT), cancellationToken).ConfigureAwait(false);
+        break;
+      case StopReason.ConnectionError:
+        await stream.WriteAsync(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT + Atom.PCP_ERROR_READ), cancellationToken).ConfigureAwait(false);
+        break;
+      case StopReason.NotIdentifiedError:
+        await stream.WriteAsync(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT + Atom.PCP_ERROR_NOTIDENTIFIED), cancellationToken).ConfigureAwait(false);
+        break;
+      case StopReason.UnavailableError:
+        await stream.WriteAsync(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT + Atom.PCP_ERROR_UNAVAILABLE), cancellationToken).ConfigureAwait(false);
+        break;
+      case StopReason.OffAir:
+        await stream.WriteAsync(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT + Atom.PCP_ERROR_OFFAIR), cancellationToken).ConfigureAwait(false);
+        break;
+      case StopReason.UserShutdown:
+        await stream.WriteAsync(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT + Atom.PCP_ERROR_SHUTDOWN), cancellationToken).ConfigureAwait(false);
+        break;
       }
     }
 

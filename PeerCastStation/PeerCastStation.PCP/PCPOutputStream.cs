@@ -868,6 +868,7 @@ namespace PeerCastStation.PCP
         ctx.Upgrade(async opaqueEnv => {
           var ct = (CancellationToken)opaqueEnv[OwinEnvironment.Opaque.CallCancelled];
           var stream = (Stream)opaqueEnv[OwinEnvironment.Opaque.Stream];
+          stream.ReadTimeout = Timeout.Infinite;
           var handler = new PCPRelayHandler(channel, logger);
           await handler.ProcessStream(stream, remoteEndPoint, requestPos, ct).ConfigureAwait(false);
         });

@@ -20,6 +20,7 @@ namespace PeerCastStation.Core
     private RingbufferStream writeBuffer = new RingbufferStream(64*1024);
     private Task writeTask;
     private Task readTask;
+    private Socket socket;
 
     public IPEndPoint LocalEndPoint { get; private set; }
     public IPEndPoint RemoteEndPoint { get; private set; }
@@ -35,6 +36,7 @@ namespace PeerCastStation.Core
           await readBuffer.WriteAsync(buf, 0, len, cts.Token).ConfigureAwait(false);
           len = await s.ReadAsync(buf, 0, buf.Length, cts.Token).ConfigureAwait(false);
         }
+        socket.Shutdown(SocketShutdown.Receive);
       }
       catch (OperationCanceledException) {
       }
@@ -64,6 +66,8 @@ namespace PeerCastStation.Core
           await s.WriteAsync(buf, 0, len, ct).ConfigureAwait(false);
           len = await writeBuffer.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false);
         }
+        await s.FlushAsync(ct).ConfigureAwait(false);
+        socket.Shutdown(SocketShutdown.Send);
       }
       catch (IOException) {
         if (!ct.IsCancellationRequested) {
@@ -150,22 +154,16 @@ namespace PeerCastStation.Core
       set { throw new NotSupportedException(); }
     }
 
-    public ConnectionStream(Stream read_stream, Stream write_stream)
-      : this(read_stream, write_stream, null, null, null)
-    {
-    }
-
     public ConnectionStream(
-      Stream read_stream,
-      Stream write_stream,
-      byte[] header,
-      IPEndPoint localEndPoint,
-      IPEndPoint remoteEndPoint)
+      Socket socket,
+      Stream base_stream,
+      byte[] header)
     {
-      LocalEndPoint = localEndPoint;
-      RemoteEndPoint = remoteEndPoint;
-      ReadStream  = read_stream;
-      WriteStream = write_stream;
+      this.socket = socket;
+      LocalEndPoint = socket.LocalEndPoint as IPEndPoint;
+      RemoteEndPoint = socket.RemoteEndPoint as IPEndPoint;
+      ReadStream  = base_stream;
+      WriteStream = base_stream;
       if (ReadStream!=null && ReadStream.CanTimeout) {
         ReadStream.ReadTimeout = this.ReadTimeout;
       }
@@ -183,7 +181,7 @@ namespace PeerCastStation.Core
     }
 
     public ConnectionStream(Socket socket, Stream base_stream)
-      : this(base_stream, base_stream, null, socket.LocalEndPoint as IPEndPoint, socket.RemoteEndPoint as IPEndPoint)
+      : this(socket, base_stream, null)
     {
     }
 
@@ -295,18 +293,13 @@ namespace PeerCastStation.Core
         writeBuffer.CloseWrite();
         readBuffer.CloseRead();
         try {
-          writeTask.Wait();
+          Task.WhenAll(writeTask, readTask).Wait();
         }
         catch (AggregateException) {
         }
         closedCancelSource.Cancel();
         if (WriteStream!=null) WriteStream.Close();
         if (ReadStream!=null)  ReadStream.Close();
-        try {
-          readTask.Wait();
-        }
-        catch (AggregateException) {
-        }
       }
       base.Dispose(disposing);
     }
@@ -317,18 +310,13 @@ namespace PeerCastStation.Core
         writeBuffer.CloseWrite();
         readBuffer.CloseRead();
         try {
-          await writeTask.ConfigureAwait(false);
+          await Task.WhenAll(writeTask, readTask).ConfigureAwait(false);
         }
         catch (Exception) {
         }
         closedCancelSource.Cancel();
         if (WriteStream!=null) WriteStream.Close();
         if (ReadStream!=null)  ReadStream.Close();
-        try {
-          await readTask.ConfigureAwait(false);
-        }
-        catch (Exception) {
-        }
       }
       Close();
     }

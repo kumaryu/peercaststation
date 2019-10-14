@@ -54,7 +54,7 @@ namespace PeerCastStation.Core
         this.Client.ReceiveBufferSize = 256 * 1024;
         this.Client.SendBufferSize = 256 * 1024;
         var stream = client.GetStream();
-        this.Stream = new ConnectionStream(stream, stream);
+        this.Stream = new ConnectionStream(client.Client, stream);
         this.Stream.ReadTimeout = 10000;
         this.Stream.WriteTimeout = 10000;
       }

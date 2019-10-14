@@ -11,8 +11,8 @@ namespace PeerCastStation.Core.Http
     : OutputStreamBase
   {
     private OwinHost owinHost;
-    public OwinHostOutputStream(PeerCast peercast, OwinHost host, Stream input_stream, Stream output_stream, EndPoint local_endpoint, EndPoint remote_endpoint, AccessControlInfo access_control, Channel channel, byte[] header)
-      : base(peercast, input_stream, output_stream, local_endpoint, remote_endpoint, access_control, channel, header)
+    public OwinHostOutputStream(PeerCast peercast, OwinHost host, ConnectionStream connection, AccessControlInfo access_control, Channel channel)
+      : base(peercast, connection, access_control, channel)
     {
       owinHost = host;
     }
@@ -78,10 +78,10 @@ namespace PeerCastStation.Core.Http
       owinHost = host;
     }
 
-    public override IOutputStream Create(Stream input_stream, Stream output_stream, EndPoint local_endpoint, EndPoint remote_endpoint, AccessControlInfo access_control, Guid channel_id, byte[] header)
+    public override IOutputStream Create(ConnectionStream connection, AccessControlInfo access_control, Guid channel_id)
     {
       var channel = channel_id!=Guid.Empty ? PeerCast.Channels.FirstOrDefault(c => c.ChannelID==channel_id) : null;
-      return new OwinHostOutputStream(PeerCast, owinHost, input_stream, output_stream, local_endpoint, remote_endpoint, access_control, channel, header);
+      return new OwinHostOutputStream(PeerCast, owinHost, connection, access_control, channel);
     }
 
     public override Guid? ParseChannelID(byte[] header, AccessControlInfo acinfo)

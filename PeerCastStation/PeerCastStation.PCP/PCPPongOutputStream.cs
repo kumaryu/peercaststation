@@ -43,15 +43,11 @@ namespace PeerCastStation.PCP
     }
 
     public override IOutputStream Create(
-      Stream input_stream,
-      Stream output_stream,
-      EndPoint local_endpoint,
-      EndPoint remote_endpoint,
+      ConnectionStream connection,
       AccessControlInfo access_control,
-      Guid channel_id,
-      byte[] header)
+      Guid channel_id)
     {
-      return new PCPPongOutputStream(PeerCast, input_stream, output_stream, local_endpoint, (IPEndPoint)remote_endpoint, access_control, header);
+      return new PCPPongOutputStream(PeerCast, connection, access_control);
     }
 
     public override Guid? ParseChannelID(byte[] header)
@@ -84,15 +80,11 @@ namespace PeerCastStation.PCP
 
     public PCPPongOutputStream(
       PeerCast peercast,
-      Stream input_stream,
-      Stream output_stream,
-      EndPoint local_endpoint,
-      EndPoint remote_endpoint,
-      AccessControlInfo access_control,
-      byte[] header)
-      : base(peercast, input_stream, output_stream, local_endpoint, remote_endpoint, access_control, null, header)
+      ConnectionStream connection,
+      AccessControlInfo access_control)
+      : base(peercast, connection, access_control, null)
     {
-      Logger.Debug("Initialized: Remote {0}", remote_endpoint);
+      Logger.Debug("Initialized: Remote {0}", RemoteEndPoint);
     }
 
     protected override async Task<StopReason> DoProcess(CancellationToken cancel_token)
