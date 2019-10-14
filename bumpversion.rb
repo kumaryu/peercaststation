@@ -75,6 +75,10 @@ replace_files(File.join(BASE, '**/AssemblyInfo.cs')) do |f, line|
   end
 end
 
+if ENV['APPVEYOR'] then
+  replace_setting('PeerCastStation/PeerCastStation', 'InstallerType', "Archive")
+  replace_setting('PeerCastStation/PecaStationd', 'InstallerType', "Archive")
+end
 replace_setting('PeerCastStation/PeerCastStation', 'AgentName', "PeerCastStation/#{version}")
 replace_setting('PeerCastStation/PeerCastStation', 'UpdateURL', url)
 replace_setting('PeerCastStation/PeerCastStation', 'CurrentVersion', "#{date.year}-#{date.month}-#{date.day}")
