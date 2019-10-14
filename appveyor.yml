@@ -4,7 +4,7 @@ version: 2.7.2.{build}
 configuration: Release
 install:
 - cmd: |-
-    set PATH=C:\Ruby23\bin;%PATH%
+    set PATH=C:\Ruby26\bin;%PATH%
     gem install jekyll
 before_build:
 - cmd: |-
