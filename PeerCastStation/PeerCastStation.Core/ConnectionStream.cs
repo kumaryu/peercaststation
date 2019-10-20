@@ -81,6 +81,7 @@ namespace PeerCastStation.Core
       }
       finally {
         writeBuffer.CloseRead();
+        closedCancelSource.CancelAfter(4000);
       }
     }
 
@@ -300,6 +301,7 @@ namespace PeerCastStation.Core
         closedCancelSource.Cancel();
         if (WriteStream!=null) WriteStream.Close();
         if (ReadStream!=null)  ReadStream.Close();
+        closedCancelSource.Dispose();
       }
       base.Dispose(disposing);
     }
