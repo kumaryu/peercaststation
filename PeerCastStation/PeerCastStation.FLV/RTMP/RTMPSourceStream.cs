@@ -164,7 +164,9 @@ namespace PeerCastStation.FLV.RTMP
         }
       }
       if (client!=null) {
-        return new SourceConnectionClient(client);
+        var c = new SourceConnectionClient(client);
+        c.Stream.CloseTimeout = 0;
+        return c;
       }
       else {
         return null;

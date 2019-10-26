@@ -81,7 +81,7 @@ namespace PeerCastStation.Core
       }
       finally {
         writeBuffer.CloseRead();
-        closedCancelSource.CancelAfter(4000);
+        closedCancelSource.CancelAfter(CloseTimeout);
       }
     }
 
@@ -135,13 +135,15 @@ namespace PeerCastStation.Core
         writeBuffer.WriteTimeout = value;
       }
     }
+
+    public int CloseTimeout { get; set; } = 4000;
+
     public override bool CanTimeout {
       get {
         return (ReadStream!=null ? ReadStream.CanTimeout : false) ||
                (WriteStream!=null ? WriteStream.CanTimeout : false);
       }
     }
-
     public override bool CanSeek {
       get { return false; }
     }
