@@ -157,8 +157,37 @@ namespace PeerCastStation.FLV.RTMP
 			await SendMessage(3, status_command, cancel_token).ConfigureAwait(false);
 		}
 
+    protected override async Task OnStopAsync(CancellationToken cancel_token)
+    {
+      if (this.Channel==null) return;
+      await SendOnStatus(
+        this.StreamId,
+        0,
+        "status",
+        "NetStream.Play.UnpublishNotify",
+        "",
+        cancel_token).ConfigureAwait(false);
+    }
+
+    protected async Task OnCommandPlayStop(CommandMessage msg, CancellationToken cancel_token)
+    {
+      if (this.Channel==null) return;
+      await SendOnStatus(
+        this.StreamId,
+        msg.TransactionId+1,
+        "status",
+        "NetStream.Play.Stop",
+        "",
+        cancel_token).ConfigureAwait(false);
+      Close();
+    }
+
     protected override async Task OnCommandPlay(CommandMessage msg, CancellationToken cancel_token)
     {
+      if (msg.Arguments[0].Type==AMFValueType.Boolean && ((bool)msg.Arguments[0].Value)==false) {
+        await OnCommandPlayStop(msg, cancel_token);
+        return;
+      }
       var stream_name = StreamName.Parse((string)msg.Arguments[0]);
       var start       = msg.Arguments.Count>1 ? (int)msg.Arguments[1] : -2;
       var duration    = msg.Arguments.Count>2 ? (int)msg.Arguments[2] : -1;
@@ -224,6 +253,11 @@ namespace PeerCastStation.FLV.RTMP
       else {
         Close();
       }
+    }
+
+    protected override Task OnCommandClose(CommandMessage msg, CancellationToken cancel_token)
+    {
+      return base.OnCommandClose(msg, cancel_token);
     }
 
     private Content headerPacket = null;

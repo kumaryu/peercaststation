@@ -97,6 +97,11 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
+    protected virtual Task OnStopAsync(CancellationToken cancel_token)
+    {
+      return Task.Delay(0);
+    }
+
     protected async Task RecvAndProcessMessages(CancellationToken cancel_token)
     {
       using (var local_cancel=CancellationTokenSource.CreateLinkedTokenSource(cancel_token)) {
@@ -110,17 +115,24 @@ namespace PeerCastStation.FLV.RTMP
             local_cancel.Cancel();
           }
         });
-        while (!local_cancel.IsCancellationRequested) {
-          var msg = await messageQueue.DequeueAsync(local_cancel.Token).ConfigureAwait(false);
-          switch (msg.Direction) {
-          case QueuedMessage.MessageDirection.In:
-            await ProcessMessage(msg.Message, local_cancel.Token).ConfigureAwait(false);
-            FlushBuffer();
-            break;
-          case QueuedMessage.MessageDirection.Out:
-            await SendMessage(msg.ChunkStreamId, msg.Message, local_cancel.Token).ConfigureAwait(false);
-            break;
+        try {
+          while (!local_cancel.IsCancellationRequested) {
+            var msg = await messageQueue.DequeueAsync(local_cancel.Token).ConfigureAwait(false);
+            switch (msg.Direction) {
+            case QueuedMessage.MessageDirection.In:
+              await ProcessMessage(msg.Message, local_cancel.Token).ConfigureAwait(false);
+              FlushBuffer();
+              break;
+            case QueuedMessage.MessageDirection.Out:
+              await SendMessage(msg.ChunkStreamId, msg.Message, local_cancel.Token).ConfigureAwait(false);
+              break;
+            }
           }
+        }
+        catch (OperationCanceledException) {
+        }
+        if (cancel_token.IsCancellationRequested) {
+          await OnStopAsync(CancellationToken.None);
         }
         await recv_message_task.ConfigureAwait(false);
       }
