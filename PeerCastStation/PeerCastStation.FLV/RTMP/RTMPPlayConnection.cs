@@ -8,37 +8,35 @@ using PeerCastStation.FLV.AMF;
 
 namespace PeerCastStation.FLV.RTMP
 {
-	public class RTMPPlayConnection
-		: RTMPConnection
-	{
-		private static Logger logger = new Logger(typeof(RTMPPlayConnection));
-		public RTMPOutputStream owner;
-		public Channel  Channel  { get; private set; }
-		public long     StreamId { get; private set; }
+  public class RTMPPlayConnection
+    : RTMPConnection,
+      IContentSink
+  {
+    private static Logger logger = new Logger(typeof(RTMPPlayConnection));
+    public RTMPOutputStream owner;
+    public Channel  Channel  { get; private set; }
+    public long     StreamId { get; private set; }
+    private IDisposable channelSubscription;
 
-		public long? ContentPosition {
-			get {
-				if (lastPacket==null) return null;
-				return lastPacket.Position;
-			}
-		}
+    public long? ContentPosition { get; private set; }
 
-		public RTMPPlayConnection(
-			RTMPOutputStream owner,
-			System.IO.Stream input_stream,
-			System.IO.Stream output_stream)
-			: base(input_stream, output_stream)
-		{
-			this.owner = owner;
-		}
+    public RTMPPlayConnection(
+      RTMPOutputStream owner,
+      System.IO.Stream input_stream,
+      System.IO.Stream output_stream)
+      : base(input_stream, output_stream)
+    {
+      this.owner = owner;
+    }
 
-		protected override void OnClose()
-		{
-			base.OnClose();
-			if (this.Channel!=null) {
-				this.Channel.ContentChanged -= OnContentChanged;
-			}
-		}
+    protected override void OnClose()
+    {
+      base.OnClose();
+      if (channelSubscription!=null) {
+        channelSubscription.Dispose();
+        channelSubscription = null;
+      }
+    }
 
     private class StreamName
     {
@@ -133,29 +131,29 @@ namespace PeerCastStation.FLV.RTMP
       return channel;
     }
 
-		private async Task SendOnStatus(
-				long stream_id,
-				int transaction,
-				string level,
-				string code,
-				string description,
-				CancellationToken cancel_token)
-		{
-			var status_command = CommandMessage.Create(
-				this.ObjectEncoding,
-				this.Now,
-				stream_id,
-				"onStatus",
-				transaction,
-				null,
-				new AMFValue(new AMFObject {
-					{ "level",       level },
-					{ "code",        code },
-					{ "description", description },
-				})
-			);
-			await SendMessage(3, status_command, cancel_token).ConfigureAwait(false);
-		}
+    private async Task SendOnStatus(
+        long stream_id,
+        int transaction,
+        string level,
+        string code,
+        string description,
+        CancellationToken cancel_token)
+    {
+      var status_command = CommandMessage.Create(
+        this.ObjectEncoding,
+        this.Now,
+        stream_id,
+        "onStatus",
+        transaction,
+        null,
+        new AMFValue(new AMFObject {
+          { "level",       level },
+          { "code",        code },
+          { "description", description },
+        })
+      );
+      await SendMessage(3, status_command, cancel_token).ConfigureAwait(false);
+    }
 
     protected override async Task OnStopAsync(CancellationToken cancel_token)
     {
@@ -247,8 +245,7 @@ namespace PeerCastStation.FLV.RTMP
       }
       if (this.Channel!=null) {
         await base.OnCommandPlay(msg, cancel_token).ConfigureAwait(false);
-        this.Channel.ContentChanged += OnContentChanged;
-        OnContentChanged(this, new EventArgs());
+        channelSubscription = this.Channel.AddContentSink(this);
       }
       else {
         Close();
@@ -260,57 +257,33 @@ namespace PeerCastStation.FLV.RTMP
       return base.OnCommandClose(msg, cancel_token);
     }
 
-    private Content headerPacket = null;
-    private Content lastPacket = null;
-    private object locker = new object();
-    private void OnContentChanged(object sender, EventArgs args)
+    class RTMPContentSink
+      : IRTMPContentSink
     {
-      lock (locker) {
-        var new_header = Channel.ContentHeader;
-        if (new_header!=headerPacket) {
-          headerPacket = Channel.ContentHeader;
-          if (headerPacket!=null) {
-            PostContent(headerPacket);
-          }
-          lastPacket = headerPacket;
-        }
-        if (headerPacket==null) return;
-        IEnumerable<Content> contents;
-        contents = Channel.Contents.GetNewerContents(lastPacket.Stream, lastPacket.Timestamp, lastPacket.Position);
-        foreach (var content in contents) {
-          PostContent(content);
-          lastPacket = content;
-        }
+      private RTMPPlayConnection connection;
+      public RTMPContentSink(RTMPPlayConnection conn)
+      {
+        this.connection = conn;
       }
-    }
-
-		class RTMPContentSink
-			: IRTMPContentSink
-		{
-			private RTMPPlayConnection connection;
-			public RTMPContentSink(RTMPPlayConnection conn)
-			{
-				this.connection = conn;
-			}
 
       public void OnFLVHeader(FLVFileHeader header)
       {
       }
 
-			public void OnData(DataMessage msg)
-			{
-				this.connection.PostMessage(3,
-					new RTMPMessage(
-						msg.MessageType,
-						msg.Timestamp,
-						this.connection.StreamId,
-						msg.Body)
-				);
-			}
+      public void OnData(DataMessage msg)
+      {
+        this.connection.PostMessage(3,
+          new RTMPMessage(
+            msg.MessageType,
+            msg.Timestamp,
+            this.connection.StreamId,
+            msg.Body)
+        );
+      }
 
       private long timestampBase = -1;
-			public void OnVideo(RTMPMessage msg)
-			{
+      public void OnVideo(RTMPMessage msg)
+      {
         if (timestampBase<0 && msg.Timestamp>0) {
           timestampBase = msg.Timestamp;
         }
@@ -321,44 +294,68 @@ namespace PeerCastStation.FLV.RTMP
             this.connection.StreamId,
             msg.Body)
         );
-			}
+      }
 
-			public void OnAudio(RTMPMessage msg)
-			{
+      public void OnAudio(RTMPMessage msg)
+      {
         if (timestampBase<0 && msg.Timestamp>0) {
           timestampBase = msg.Timestamp;
         }
-				this.connection.PostMessage(3,
-					new RTMPMessage(
-						msg.MessageType,
+        this.connection.PostMessage(3,
+          new RTMPMessage(
+            msg.MessageType,
             msg.Timestamp - Math.Max(timestampBase, 0),
-						this.connection.StreamId,
-						msg.Body)
-				);
-			}
-		}
+            this.connection.StreamId,
+            msg.Body)
+        );
+      }
+    }
 
-		private System.IO.MemoryStream contentBuffer = new System.IO.MemoryStream();
-		private FLVFileParser fileParser = new FLVFileParser();
-		private RTMPContentSink contentSink;
-		private void PostContent(Content content)
-		{
-			var pos = contentBuffer.Position;
-			contentBuffer.Seek(0, System.IO.SeekOrigin.End);
-			contentBuffer.Write(content.Data, 0, content.Data.Length);
-			contentBuffer.Position = pos;
-			if (contentSink==null) contentSink = new RTMPContentSink(this);
-			fileParser.Read(contentBuffer, contentSink);
-			if (contentBuffer.Position!=0) {
-				var new_buf = new System.IO.MemoryStream();
-				var trim_pos = contentBuffer.Position;
-				contentBuffer.Close();
-				var buf = contentBuffer.ToArray();
-				new_buf.Write(buf, (int)trim_pos, (int)(buf.Length-trim_pos));
-				new_buf.Position = 0;
-				contentBuffer = new_buf;
-			}
-		}
+    private System.IO.MemoryStream contentBuffer = new System.IO.MemoryStream();
+    private FLVFileParser fileParser = new FLVFileParser();
+    private RTMPContentSink contentSink;
+    private void PostContent(Content content)
+    {
+      ContentPosition = content.Position;
+      var pos = contentBuffer.Position;
+      contentBuffer.Seek(0, System.IO.SeekOrigin.End);
+      contentBuffer.Write(content.Data, 0, content.Data.Length);
+      contentBuffer.Position = pos;
+      if (contentSink==null) contentSink = new RTMPContentSink(this);
+      fileParser.Read(contentBuffer, contentSink);
+      if (contentBuffer.Position!=0) {
+        var new_buf = new System.IO.MemoryStream();
+        var trim_pos = contentBuffer.Position;
+        contentBuffer.Close();
+        var buf = contentBuffer.ToArray();
+        new_buf.Write(buf, (int)trim_pos, (int)(buf.Length-trim_pos));
+        new_buf.Position = 0;
+        contentBuffer = new_buf;
+      }
+    }
 
-	}
+    public void OnChannelInfo(ChannelInfo channel_info)
+    {
+    }
+
+    public void OnChannelTrack(ChannelTrack channel_track)
+    {
+    }
+
+    public void OnContentHeader(Content content_header)
+    {
+      PostContent(content_header);
+    }
+
+    public void OnContent(Content content)
+    {
+      PostContent(content);
+    }
+
+    public void OnStop(StopReason reason)
+    {
+    }
+
+  }
+
 }
