@@ -39,6 +39,10 @@ namespace PeerCastStation.Core
     /// </summary>
     public long Position { get; private set; } 
     /// <summary>
+    /// コンテントパケットの属性を取得します
+    /// </summary>
+    public PCPChanPacketContinuation ContFlag {  get; private set; }
+    /// <summary>
     /// コンテントの内容を取得します
     /// </summary>
     public byte[] Data   { get; private set; } 
@@ -54,22 +58,25 @@ namespace PeerCastStation.Core
     /// <param name="timestamp">時刻</param>
     /// <param name="pos">バイト位置</param>
     /// <param name="data">内容</param>
-    public Content(int stream, TimeSpan timestamp, long pos, byte[] data)
+    /// <param name="cont">内容</param>
+    public Content(int stream, TimeSpan timestamp, long pos, byte[] data, PCPChanPacketContinuation cont)
     {
       Stream    = stream;
       Timestamp = timestamp;
       Position  = pos;
       Data      = data;
+      ContFlag  = cont;
       Serial    = -1;
     }
 
-    public Content(int stream, TimeSpan timestamp, long pos, byte[] data, int offset, int length)
+    public Content(int stream, TimeSpan timestamp, long pos, byte[] data, int offset, int length, PCPChanPacketContinuation cont)
     {
       Stream    = stream;
       Timestamp = timestamp;
       Position  = pos;
       Data      = new byte[length];
       Array.Copy(data, offset, this.Data, 0, length);
+      ContFlag  = cont;
       Serial    = -1;
     }
 
@@ -79,6 +86,7 @@ namespace PeerCastStation.Core
       Timestamp = other.Timestamp;
       Position  = other.Position;
       Data      = other.Data;
+      ContFlag  = other.ContFlag;
       Serial    = serial;
     }
   }
@@ -223,6 +231,38 @@ namespace PeerCastStation.Core
     {
       get {
         return list.Values.FirstOrDefault();
+      }
+    }
+
+    private Content GetFirstContent(int stream, TimeSpan t, long position)
+    {
+      lock (list) {
+        return list.Values.FirstOrDefault(c =>
+          c.Stream>stream ||
+          (c.Stream==stream &&
+           c.ContFlag==PCPChanPacketContinuation.None &&
+           (c.Timestamp>t ||
+            (c.Timestamp==t && c.Position>position)
+           )
+          )
+        ) ??
+        list.Values.FirstOrDefault(c =>
+          c.Stream>stream ||
+          (c.Stream==stream &&
+           (c.Timestamp>t ||
+            (c.Timestamp==t && c.Position>position)
+           )
+          )
+        );
+      }
+    }
+
+    public IList<Content> GetFirstContents(int stream, TimeSpan t, long position)
+    {
+      lock (list) {
+        var fst = GetFirstContent(stream, t, position);
+        if (fst==null) return new Content[0];
+        return Enumerable.Concat(new Content[] { fst }, GetNewerContents(fst.Stream, fst.Timestamp, fst.Position)).ToArray();
       }
     }
 

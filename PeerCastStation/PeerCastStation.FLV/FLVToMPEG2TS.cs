@@ -11,6 +11,8 @@ namespace PeerCastStation.FLV
 {
   internal enum FLVPacketType {
     Unknown,
+    AudioData,
+    VideoData,
     AACSequenceHeader,
     AACRawData,
     AVCSequenceHeader,
@@ -24,7 +26,7 @@ namespace PeerCastStation.FLV
     {
       switch (msg.MessageType) {
       case RTMPMessageType.Audio:
-        if (msg.Body.Length<2) return FLVPacketType.Unknown;
+        if (msg.Body.Length<2) return FLVPacketType.AudioData;
         switch ((msg.Body[0] & 0xF0)>>4) {
         case 10:
           if (msg.Body[1]==0) {
@@ -34,10 +36,10 @@ namespace PeerCastStation.FLV
             return FLVPacketType.AACRawData;
           }
         default:
-          return FLVPacketType.Unknown;
+          return FLVPacketType.AudioData;
         }
       case RTMPMessageType.Video:
-        if (msg.Body.Length<2) return FLVPacketType.Unknown;
+        if (msg.Body.Length<2) return FLVPacketType.VideoData;
         switch (msg.Body[0] & 0x0F) {
         case 7:
           switch (msg.Body[1]) {
@@ -54,10 +56,10 @@ namespace PeerCastStation.FLV
           case 2:
             return FLVPacketType.AVCEOS;
           default:
-            return FLVPacketType.Unknown;
+            return FLVPacketType.VideoData;
           }
         default:
-          return FLVPacketType.Unknown;
+          return FLVPacketType.VideoData;
         }
       default:
         return FLVPacketType.Unknown;
@@ -961,7 +963,8 @@ namespace PeerCastStation.FLV
                     msg.Content.Stream,
                     msg.Content.Timestamp,
                     msg.Content.Position,
-                    bufferStream.ToArray()
+                    bufferStream.ToArray(),
+                    msg.Content.ContFlag
                   )
                 );
                 bufferStream.SetLength(0);
@@ -991,7 +994,8 @@ namespace PeerCastStation.FLV
                     msg.Content.Stream,
                     msg.Content.Timestamp,
                     msg.Content.Position,
-                    bufferStream.ToArray()
+                    bufferStream.ToArray(),
+                    msg.Content.ContFlag
                   )
                 );
                 bufferStream.SetLength(0);

@@ -359,7 +359,7 @@ namespace PeerCastStation.MKV
               stream_origin = DateTime.Now;
               position = 0;
               sink.OnContentHeader(
-                new Content(stream_index, TimeSpan.Zero, 0, header.ToArray())
+                new Content(stream_index, TimeSpan.Zero, 0, header.ToArray(), PCPChanPacketContinuation.None)
               );
               position += header.ToArray().LongLength;
               var info = new AtomCollection();
@@ -421,7 +421,7 @@ namespace PeerCastStation.MKV
               var cluster = new Cluster(elt);
               clusters.AddLast(cluster);
               sink.OnContent(
-                new Content(stream_index, DateTime.Now-stream_origin, position, elt.ToArray())
+                new Content(stream_index, DateTime.Now-stream_origin, position, elt.ToArray(), PCPChanPacketContinuation.None)
               );
               position += elt.ByteSize;
               state = ReaderState.Timecode;
@@ -430,7 +430,7 @@ namespace PeerCastStation.MKV
                      elt.ID.BinaryEquals(Elements.CRC32)) {
               await elt.ReadBodyAsync(stream, cancel_token).ConfigureAwait(false);
               sink.OnContent(
-                new Content(stream_index, DateTime.Now-stream_origin, position, elt.ToArray())
+                new Content(stream_index, DateTime.Now-stream_origin, position, elt.ToArray(), PCPChanPacketContinuation.None)
               );
               position += elt.ByteSize;
             }
@@ -466,7 +466,7 @@ namespace PeerCastStation.MKV
                 }
               }
               sink.OnContent(
-                new Content(stream_index, DateTime.Now-stream_origin, position, elt.ToArray())
+                new Content(stream_index, DateTime.Now-stream_origin, position, elt.ToArray(), PCPChanPacketContinuation.None)
               );
               position += elt.ByteSize;
               state = ReaderState.Block;
@@ -474,7 +474,7 @@ namespace PeerCastStation.MKV
             else {
               await elt.ReadBodyAsync(stream, cancel_token).ConfigureAwait(false);
               sink.OnContent(
-                new Content(stream_index, DateTime.Now-stream_origin, position, elt.ToArray())
+                new Content(stream_index, DateTime.Now-stream_origin, position, elt.ToArray(), PCPChanPacketContinuation.None)
               );
               position += elt.ByteSize;
             }
@@ -500,14 +500,14 @@ namespace PeerCastStation.MKV
               clusters.Last.Value.BlockSize += elt.Size.Value;
               clusters.Last.Value.BlockID    = elt.ID.Binary;
               sink.OnContent(
-                new Content(stream_index, DateTime.Now-stream_origin, position, elt.ToArray())
+                new Content(stream_index, DateTime.Now-stream_origin, position, elt.ToArray(), PCPChanPacketContinuation.None)
               );
               position += elt.ByteSize;
             }
             else if (clusters.Last.Value.BlockID==null) {
               await elt.ReadBodyAsync(stream, cancel_token).ConfigureAwait(false);
               sink.OnContent(
-                new Content(stream_index, DateTime.Now-stream_origin, position, elt.ToArray())
+                new Content(stream_index, DateTime.Now-stream_origin, position, elt.ToArray(), PCPChanPacketContinuation.None)
               );
               position += elt.ByteSize;
             }

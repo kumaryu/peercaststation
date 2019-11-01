@@ -22,7 +22,7 @@ namespace PeerCastStation.Core
       long pos = 0;
       var streamIndex = Channel.GenerateStreamID();
       var streamOrigin = DateTime.Now;
-      sink.OnContentHeader(new Content(streamIndex, TimeSpan.Zero, pos, new byte[] { }));
+      sink.OnContentHeader(new Content(streamIndex, TimeSpan.Zero, pos, new byte[] { }, PCPChanPacketContinuation.None));
       var channel_info = new AtomCollection(Channel.ChannelInfo.Extra);
       channel_info.SetChanInfoType("RAW");
       channel_info.SetChanInfoStreamType("application/octet-stream");
@@ -34,7 +34,7 @@ namespace PeerCastStation.Core
         var buf = new byte[8192];
         var sz = await stream.ReadAsync(buf, 0, buf.Length, cancel_token).ConfigureAwait(false);
         if (sz>0) {
-          sink.OnContent(new Content(streamIndex, DateTime.Now-streamOrigin, pos, buf.Take(sz).ToArray()));
+          sink.OnContent(new Content(streamIndex, DateTime.Now-streamOrigin, pos, buf.Take(sz).ToArray(), PCPChanPacketContinuation.None));
           pos += sz;
         }
         else {

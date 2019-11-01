@@ -57,7 +57,7 @@ namespace PeerCastStation.TS
 
       streamIndex = Channel.GenerateStreamID();
       streamOrigin = DateTime.Now;
-      sink.OnContentHeader(new Content(streamIndex, TimeSpan.Zero, contentPosition, new byte[] {}));
+      sink.OnContentHeader(new Content(streamIndex, TimeSpan.Zero, contentPosition, new byte[] {}, PCPChanPacketContinuation.None));
       
       try
       {
@@ -86,7 +86,7 @@ namespace PeerCastStation.TS
               {
                 streamIndex = Channel.GenerateStreamID();
                 contentPosition = 0;
-                sink.OnContentHeader(new Content(streamIndex, DateTime.Now - streamOrigin, contentPosition, newHead));
+                sink.OnContentHeader(new Content(streamIndex, DateTime.Now - streamOrigin, contentPosition, newHead, PCPChanPacketContinuation.None));
                 contentPosition += newHead.Length;
                 latestHead = newHead;
               }
@@ -108,7 +108,7 @@ namespace PeerCastStation.TS
             if ((DateTime.Now - latestContentTime).Milliseconds > 50) {
               TryParseContent(packet, out contentData);
               if(contentData!=null) {
-                sink.OnContent(new Content(streamIndex, DateTime.Now - streamOrigin, contentPosition, contentData));
+                sink.OnContent(new Content(streamIndex, DateTime.Now - streamOrigin, contentPosition, contentData, PCPChanPacketContinuation.None));
                 contentPosition += contentData.Length;
                 latestContentTime = DateTime.Now;
               }
