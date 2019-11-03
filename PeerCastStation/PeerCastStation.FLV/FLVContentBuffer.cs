@@ -21,15 +21,13 @@ namespace PeerCastStation.FLV
     private RTMPMessage  audioHeader     = null;
     private RTMPMessage  videoHeader     = null;
     private MemoryStream bodyBuffer      = new MemoryStream();
-    private System.Diagnostics.Stopwatch flushTimer = new System.Diagnostics.Stopwatch();
 
     public FLVContentBuffer(
       Channel target_channel,
       IContentSink content_sink)
     {
       this.TargetChannel = target_channel;
-      this.ContentSink   = content_sink;
-      this.flushTimer.Start();
+      this.ContentSink   = new BufferedContentSink(content_sink);
     }
 
     private void SetDataFrame(DataMessage msg)
@@ -163,7 +161,6 @@ namespace PeerCastStation.FLV
 
     private void OnHeaderChanged(RTMPMessage msg)
     {
-      FlushContents();
       var s = new MemoryStream();
       using (s) {
         using (var writer=new RTMPBinaryWriter(s, true)) {
@@ -183,30 +180,42 @@ namespace PeerCastStation.FLV
       streamOrigin    = DateTime.Now;
       timestampOrigin = msg.Timestamp;
       var bytes = s.ToArray();
-      ContentSink.OnContentHeader(new Content(streamIndex, TimeSpan.Zero, position, bytes));
+      ContentSink.OnContentHeader(new Content(streamIndex, TimeSpan.Zero, position, bytes, PCPChanPacketContinuation.None));
       position += bytes.Length;
+    }
+
+    private PCPChanPacketContinuation GetContentFlags(RTMPMessage content)
+    {
+      var pkttype = content.GetPacketType();
+      switch (pkttype) {
+      case FLVPacketType.AudioData:
+      case FLVPacketType.AACRawData:
+        return PCPChanPacketContinuation.AudioFrame;
+      case FLVPacketType.AACSequenceHeader:
+        return PCPChanPacketContinuation.None;
+      case FLVPacketType.AVCNALUnitInterFrame:
+        return PCPChanPacketContinuation.IntraFrame;
+      case FLVPacketType.AVCEOS:
+      case FLVPacketType.AVCNALUnitKeyFrame:
+      case FLVPacketType.AVCSequenceHeader:
+      case FLVPacketType.VideoData:
+      default:
+        return PCPChanPacketContinuation.None;
+      }
     }
 
     private void OnContentChanged(RTMPMessage content)
     {
-      if (streamIndex<0) OnHeaderChanged(content);
-      WriteMessage(bodyBuffer, content, timestampOrigin);
-      if (bodyBuffer.Length>=7500 ||
-          flushTimer.ElapsedMilliseconds>=100) {
-        FlushContents();
+      if (streamIndex<0) {
+        OnHeaderChanged(content);
+        return;
       }
-    }
-
-    private void FlushContents()
-    {
+      WriteMessage(bodyBuffer, content, timestampOrigin);
       if (bodyBuffer.Length>0) {
-        ContentSink.OnContent(
-          new Content(streamIndex, DateTime.Now-streamOrigin, position, bodyBuffer.ToArray()));
+        ContentSink.OnContent(new Content(streamIndex, DateTime.Now-streamOrigin, position, bodyBuffer.ToArray(), GetContentFlags(content)));
         position += bodyBuffer.Length;
         bodyBuffer.SetLength(0);
       }
-      flushTimer.Reset();
-      flushTimer.Start();
     }
 
     private void OnChannelInfoChanged(AtomCollection info)

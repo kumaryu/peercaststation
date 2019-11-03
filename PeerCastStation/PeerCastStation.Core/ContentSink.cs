@@ -36,6 +36,7 @@ namespace PeerCastStation.Core
       private bool empty = true;
       private int stream;
       private long position;
+      private PCPChanPacketContinuation contFlag;
       private TimeSpan timestamp;
       private TimeSpan lastTimestamp;
       private MemoryStream dataBuffer = new MemoryStream(16*1024);
@@ -48,6 +49,7 @@ namespace PeerCastStation.Core
         if (empty) {
           stream = content.Stream;
           position = content.Position;
+          contFlag = content.ContFlag;
           timestamp = content.Timestamp;
           lastTimestamp = timestamp;
           dataBuffer.SetLength(0);
@@ -56,9 +58,10 @@ namespace PeerCastStation.Core
           return true;
         }
         else if (stream!=content.Stream ||
+                 contFlag!=content.ContFlag ||
                  position+dataBuffer.Length!=content.Position ||
                  Math.Abs((content.Timestamp-lastTimestamp).TotalMilliseconds)>100.0 ||
-                 dataBuffer.Length+content.Data.Length>15*1024) {
+                 dataBuffer.Length+content.Data.Length>8*1024) {
           return false;
         }
         else {
@@ -72,7 +75,7 @@ namespace PeerCastStation.Core
       {
         if (empty) return null;
         dataBuffer.Flush();
-        return new Content(stream, timestamp, position, dataBuffer.ToArray());
+        return new Content(stream, timestamp, position, dataBuffer.ToArray(), contFlag);
       }
 
       public void Clear()
