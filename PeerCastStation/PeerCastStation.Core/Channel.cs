@@ -380,7 +380,7 @@ namespace PeerCastStation.Core
           sink.OnChannelTrack(channel_track);
         }
         sink.OnContentHeader(header);
-        var contents = Contents.GetNewerContents(header.Stream, header.Timestamp, header.Position);
+        var contents = Contents.GetFirstContents(header.Stream, header.Timestamp, header.Position);
         foreach (var content in contents) {
           if (header.Position>=requestPos || content.Position>=requestPos) {
             sink.OnContent(content);
@@ -429,26 +429,6 @@ namespace PeerCastStation.Core
       DispatchSinkEvent(sink => {
         sink.OnContentHeader(header);
       });
-    }
-
-    private void OnContentChanged()
-    {
-      var header = contentHeader;
-      if (header!=null) {
-        OnContentHeaderChanged(header);
-        var channel_info = ChannelInfo;
-        if (channel_info!=null) {
-          OnChannelInfoChanged(channel_info);
-        }
-        var channel_track = ChannelTrack;
-        if (channel_track!=null) {
-          OnChannelTrackChanged(channel_track);
-        }
-        var contents = Contents.GetNewerContents(header.Stream, header.Timestamp, header.Position);
-        foreach (var content in contents) {
-          OnContentAdded(content);
-        }
-      }
     }
 
     internal void OnContentAdded(Content content)

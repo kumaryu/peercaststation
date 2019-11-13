@@ -524,7 +524,7 @@ namespace PeerCastStation.ASF
             streamOrigin = DateTime.Now;
             contentPosition = 0;
             var data = chunk.ToByteArray();
-            sink.OnContentHeader(new Content(streamIndex, TimeSpan.Zero, contentPosition, data));
+            sink.OnContentHeader(new Content(streamIndex, TimeSpan.Zero, contentPosition, data, PCPChanPacketContinuation.None));
             contentPosition += data.Length;
             break;
           }
@@ -532,7 +532,7 @@ namespace PeerCastStation.ASF
           {
             var data = chunk.ToByteArray();
             sink.OnContent(
-              new Content(streamIndex, DateTime.Now-streamOrigin, contentPosition, chunk.ToByteArray())
+              new Content(streamIndex, DateTime.Now-streamOrigin, contentPosition, chunk.ToByteArray(), PCPChanPacketContinuation.None)
             );
             contentPosition += data.Length;
           }

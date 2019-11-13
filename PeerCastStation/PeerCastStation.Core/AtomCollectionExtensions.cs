@@ -307,6 +307,11 @@ namespace PeerCastStation.Core
       return GetUIntFrom(collection, Atom.PCP_CHAN_PKT_POS);
     }
 
+    public static PCPChanPacketContinuation GetChanPktCont(this IAtomCollection collection)
+    {
+      return (PCPChanPacketContinuation)(GetByteFrom(collection, Atom.PCP_CHAN_PKT_CONTINUATION) ?? 0);
+    }
+
     public static byte[] GetChanPktData(this IAtomCollection collection)
     {
       return GetBytesFrom(collection, Atom.PCP_CHAN_PKT_DATA);
@@ -785,6 +790,11 @@ namespace PeerCastStation.Core
     public static void SetChanPktData(this IAtomCollection collection, byte[] value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_PKT_DATA, value));
+    }
+
+    public static void SetChanPktCont(this IAtomCollection collection, PCPChanPacketContinuation value)
+    {
+      SetAtomTo(collection, new Atom(Atom.PCP_CHAN_PKT_CONTINUATION, (byte)value));
     }
 
     public static void SetChanPktPos(this IAtomCollection collection, uint value)

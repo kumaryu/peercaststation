@@ -180,7 +180,7 @@ namespace PeerCastStation.CustomFilter
             var len = await stdout.ReadAsync(buffer, 0, buffer.Length, cancel).ConfigureAwait(false);
             System.Console.WriteLine("stdout {0}", len);
             if (len<=0) break;
-            Sink.OnContent(new Content(lastContent.Stream, lastContent.Timestamp, pos, buffer, 0, len));
+            Sink.OnContent(new Content(lastContent.Stream, lastContent.Timestamp, pos, buffer, 0, len, PCPChanPacketContinuation.None));
             pos += len;
           }
           stdout.Close();
@@ -235,7 +235,7 @@ namespace PeerCastStation.CustomFilter
 
     public void OnContentHeader(Content content_header)
     {
-      Sink.OnContentHeader(new Content(content_header.Stream, content_header.Timestamp, 0, new byte[0]));
+      Sink.OnContentHeader(new Content(content_header.Stream, content_header.Timestamp, 0, new byte[0], PCPChanPacketContinuation.None));
       OnContent(content_header);
     }
 

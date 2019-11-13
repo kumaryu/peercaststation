@@ -566,12 +566,13 @@ Stopped:
     {
       var pkt_type = atom.Children.GetChanPktType();
       var pkt_data = atom.Children.GetChanPktData();
+      var pkt_cont = atom.Children.GetChanPktCont();
       if (pkt_type!=null && pkt_data!=null) {
         if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_HEAD) {
           long pkt_pos = atom.Children.GetChanPktPos() ?? 0;
           streamIndex = Channel.GenerateStreamID();
           streamOrigin = DateTime.Now;
-          var header = new Content(streamIndex, TimeSpan.Zero, pkt_pos, pkt_data);
+          var header = new Content(streamIndex, TimeSpan.Zero, pkt_pos, pkt_data, pkt_cont);
           var info   = ResetContentType(lastInfo, header);
           contentSink.OnContentHeader(header);
           contentSink.OnChannelInfo(info);
@@ -582,7 +583,7 @@ Stopped:
         else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_DATA) {
           if (atom.Children.GetChanPktPos()!=null) {
             long pkt_pos = atom.Children.GetChanPktPos().Value;
-            contentSink.OnContent(new Content(streamIndex, DateTime.Now-streamOrigin, pkt_pos, pkt_data));
+            contentSink.OnContent(new Content(streamIndex, DateTime.Now-streamOrigin, pkt_pos, pkt_data, pkt_cont));
             lastPosition = pkt_pos;
           }
         }

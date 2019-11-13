@@ -157,6 +157,30 @@ namespace PeerCastStation.Core
   }
 
   /// <summary>
+  /// PCP_CHAN_PKT_CONTINUATIONに設定する値です
+  /// </summary>
+  [Flags]
+  public enum PCPChanPacketContinuation : byte
+  {
+    /// <summary>
+    /// 指定無し
+    /// </summary>
+    None          = 0x00,
+    /// <summary>
+    /// 分割されたパケットである
+    /// </summary>
+    Fragment      = 0x01,
+    /// <summary>
+    /// 中間フレームである
+    /// </summary>
+    IntraFrame    = 0x02,
+    /// <summary>
+    /// 音声パケットである
+    /// </summary>
+    AudioFrame    = 0x04,
+  }
+
+  /// <summary>
   /// PCPプロトコルの基本通信単位を表すクラスです。
   /// 4文字以下の名前と対応する値を保持します
   /// </summary>
@@ -186,6 +210,7 @@ namespace PeerCastStation.Core
     public static readonly ID4 PCP_CHAN_PKT_META          = new ID4("meta");
     public static readonly ID4 PCP_CHAN_PKT_POS           = new ID4("pos");
     public static readonly ID4 PCP_CHAN_PKT_DATA          = new ID4("data");
+    public static readonly ID4 PCP_CHAN_PKT_CONTINUATION  = new ID4("cont");
     public static readonly ID4 PCP_CHAN_PKT_TYPE_HEAD     = new ID4("head");
     public static readonly ID4 PCP_CHAN_PKT_TYPE_META     = new ID4("meta");
     public static readonly ID4 PCP_CHAN_PKT_TYPE_DATA     = new ID4("data");

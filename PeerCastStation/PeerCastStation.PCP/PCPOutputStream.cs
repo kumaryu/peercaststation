@@ -679,13 +679,16 @@ namespace PeerCastStation.PCP
         await stream.WriteAsync(new Atom(Atom.PCP_BCST, bcst), cancellationToken).ConfigureAwait(false);
       }
 
-      private Atom CreateContentBodyPacket(Guid channelId, long pos, IEnumerable<byte> data)
+      private Atom CreateContentBodyPacket(Guid channelId, long pos, IEnumerable<byte> data, PCPChanPacketContinuation contFlag)
       {
         var chan = new AtomCollection();
         chan.SetChanID(channelId);
         var chan_pkt = new AtomCollection();
         chan_pkt.SetChanPktType(Atom.PCP_CHAN_PKT_DATA);
         chan_pkt.SetChanPktPos((uint)(pos & 0xFFFFFFFFU));
+        if (contFlag!=PCPChanPacketContinuation.None) {
+          chan_pkt.SetChanPktCont(contFlag);
+        }
         chan_pkt.SetChanPktData(data.ToArray());
         chan.SetChanPkt(chan_pkt);
         return new Atom(Atom.PCP_CHAN, chan);
@@ -700,12 +703,13 @@ namespace PeerCastStation.PCP
               CreateContentBodyPacket(
                 channelId,
                 i*MaxBodyLength+content.Position,
-                content.Data.Skip(i*MaxBodyLength).Take(MaxBodyLength)
+                content.Data.Skip(i*MaxBodyLength).Take(MaxBodyLength),
+                content.ContFlag | (i==0 ? PCPChanPacketContinuation.None : PCPChanPacketContinuation.Fragment)
               )
             );
         }
         else {
-          return Enumerable.Repeat(CreateContentBodyPacket(channelId, content.Position, content.Data), 1);
+          return Enumerable.Repeat(CreateContentBodyPacket(channelId, content.Position, content.Data, content.ContFlag), 1);
         }
       }
 
