@@ -133,6 +133,15 @@ namespace PeerCastStation.HTTP
         ctx.Response.StatusCode = (int)HttpStatusCode.MovedPermanently;
         var location = new UriBuilder(ctx.Request.Uri);
         location.Path = $"/hls/{req.ChannelId.ToString("N")}";
+        if (location.Query.Contains("pls=m3u8")) {
+          var queries = location.Query.Substring(1).Split('&').Where(seg => seg!="pls=m3u8").ToArray();
+          if (queries.Length>0) {
+            location.Query = String.Join("&", queries);
+          }
+          else {
+            location.Query = null;
+          }
+        }
         ctx.Response.Headers.Add("Location", new string [] { location.Uri.ToString() });
         return;
       }

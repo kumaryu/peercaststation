@@ -132,3 +132,25 @@ module PlayList =
             |> Assert.ExpectResponse (pls entry)
         )
 
+    [<Fact>]
+    let ``m3u8のプレイリストを要求するとhlsのパスにリダイレクトされる`` () =
+        use peca = pecaWithOwinHost endpoint registerHttpDirect
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        peca.AddChannel channel
+        [
+            ("?pls=m3u8", "");
+            (".m3u8", "");
+            (".m3u8?hoge=fuga", "?hoge=fuga");
+            (".m3u8?hoge=fuga&pls=m3u8&foo=bar", "?hoge=fuga&foo=bar");
+        ]
+        |> List.iter (fun (postfix, query) ->
+            let req =
+                sprintf "http://%s/pls/%s%s" (endpoint.ToString()) (channel.ChannelID.ToString("N")) postfix
+                |> WebRequest.CreateHttp
+            req.AllowAutoRedirect <- false
+            let res = req.GetResponse() :?> HttpWebResponse
+            Assert.Equal(HttpStatusCode.MovedPermanently, res.StatusCode)
+            let hls = sprintf "http://%s/hls/%s%s" (endpoint.ToString()) (channel.ChannelID.ToString("N")) query
+            Assert.Equal(hls, res.GetResponseHeader("Location"))
+        )
