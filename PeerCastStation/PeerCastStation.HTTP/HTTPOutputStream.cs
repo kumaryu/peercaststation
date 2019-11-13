@@ -129,7 +129,7 @@ namespace PeerCastStation.HTTP
 
       var fmt = ctx.Request.Query.Get("pls") ?? req.Extension;
       //m3u8のプレイリストを要求された時はHLS用のパスに転送する
-      if (fmt.ToLowerInvariant()=="m3u8") {
+      if (fmt?.ToLowerInvariant()=="m3u8") {
         ctx.Response.StatusCode = (int)HttpStatusCode.MovedPermanently;
         var location = new UriBuilder(ctx.Request.Uri);
         location.Path = $"/hls/{req.ChannelId.ToString("N")}";
