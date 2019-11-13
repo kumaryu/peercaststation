@@ -161,7 +161,7 @@ namespace PeerCastStation.HTTP
         connectionInfo.RemoteName = remoteEndPoint.ToString();
         connectionInfo.RemoteSessionID = null;
         connectionInfo.RemoteHostStatus = RemoteHostStatus.Receiving;
-        if (ctx.Get<bool>(OwinEnvironment.Server.IsLocal)) {
+        if (remoteEndPoint.Address.GetAddressLocality()<2) {
           connectionInfo.RemoteHostStatus |= RemoteHostStatus.Local;
         }
         connectionInfo.Status = ConnectionStatus.Connected;
@@ -176,7 +176,7 @@ namespace PeerCastStation.HTTP
         var remoteEndPoint = new IPEndPoint(IPAddress.Parse(ctx.Request.RemoteIpAddress), ctx.Request.RemotePort ?? 0);
         connectionInfo.RemoteEndPoint = remoteEndPoint;
         connectionInfo.RemoteName = remoteEndPoint.ToString();
-        if (ctx.Get<bool>(OwinEnvironment.Server.IsLocal)) {
+        if (remoteEndPoint.Address.GetAddressLocality()<2) {
           connectionInfo.RemoteHostStatus |= RemoteHostStatus.Local;
         }
         else {
