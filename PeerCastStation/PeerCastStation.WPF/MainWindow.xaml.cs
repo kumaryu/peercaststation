@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Threading;
 using PeerCastStation.WPF.Dialogs;
@@ -36,33 +38,7 @@ namespace PeerCastStation.WPF
     public MainWindow(PeerCastAppViewModel viewmodel)
     {
       InitializeComponent();
-      var settings = PeerCastStation.Core.PeerCastApplication.Current.Settings.Get<WPFSettings>();
-      if (IsFinite(settings.WindowLeft))   this.Left   = settings.WindowLeft;
-      if (IsFinite(settings.WindowTop))    this.Top    = settings.WindowTop;
-      if (IsFinite(settings.WindowWidth))  this.Width  = settings.WindowWidth;
-      if (IsFinite(settings.WindowHeight)) this.Height = settings.WindowHeight;
-      if (IsFinite(this.Left) && IsFinite(this.Width)) {
-        if (this.Width>SystemParameters.VirtualScreenWidth) {
-          this.Width = SystemParameters.VirtualScreenWidth;
-        }
-        if (this.Left+this.Width/2<SystemParameters.VirtualScreenLeft) {
-          this.Left = SystemParameters.VirtualScreenLeft;
-        }
-        if (this.Left+this.Width/2>SystemParameters.VirtualScreenWidth+SystemParameters.VirtualScreenLeft) {
-          this.Left = SystemParameters.VirtualScreenWidth+SystemParameters.VirtualScreenLeft - this.Width;
-        }
-      }
-      if (IsFinite(this.Top) && IsFinite(this.Height)) {
-        if (this.Height>SystemParameters.VirtualScreenHeight) {
-          this.Height = SystemParameters.VirtualScreenHeight;
-        }
-        if (this.Top<SystemParameters.VirtualScreenTop) {
-          this.Top = SystemParameters.VirtualScreenTop;
-        }
-        if (this.Top+this.Height/2>SystemParameters.VirtualScreenHeight+SystemParameters.VirtualScreenTop) {
-          this.Top = SystemParameters.VirtualScreenHeight+SystemParameters.VirtualScreenTop - this.Height;
-        }
-      }
+      this.Loaded += MainWindow_Loaded;
       this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.OpenSettings, OnOpenSettings));
       this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.ShowLogs, OnShowLogs));
       this.CommandBindings.Add(new System.Windows.Input.CommandBinding(PeerCastCommands.About, OnAbout));
@@ -76,6 +52,72 @@ namespace PeerCastStation.WPF
         Application.Current.Dispatcher);
       this.DataContext = viewmodel;
 
+    }
+
+    private bool InitWindow()
+    {
+      if (hwnd?.Handle!=null && hwnd?.Handle!=IntPtr.Zero) {
+        return true;
+      }
+      else {
+        hwnd = new System.Windows.Interop.WindowInteropHelper(this);
+        if (hwnd.Handle!=null && hwnd.Handle!=IntPtr.Zero) {
+          nativeSource = System.Windows.Interop.HwndSource.FromHwnd(hwnd.Handle);
+          nativeSource.AddHook(OnWindowMessage);
+          var dpi = Screen.GetDpiForWindow(hwnd);
+          var settings = PeerCastStation.Core.PeerCastApplication.Current.Settings.Get<WPFSettings>();
+          var rect = new Rect(
+            IsFinite(settings.WindowLeft)   ? settings.WindowLeft   : (this.Left*dpi/96.0),
+            IsFinite(settings.WindowTop)    ? settings.WindowTop    : (this.Top*dpi/96.0),
+            IsFinite(settings.WindowWidth)  ? settings.WindowWidth  : (this.Width*dpi/96.0),
+            IsFinite(settings.WindowHeight) ? settings.WindowHeight : (this.Height*dpi/96.0)
+          );
+          var screens = Screen.GetAllScreen();
+          if (!screens.Any(s => s.PhysicalWorkingArea.Contains(rect))) {
+            var targetScreen =
+              screens.OrderByDescending(s => {
+                var r = Rect.Intersect(rect, s.PhysicalWorkingArea);
+                return r.IsEmpty ? 0.0 : r.Width * r.Height;
+              }).First();
+            var targetArea = targetScreen.PhysicalWorkingArea;
+            if (rect.Width>targetArea.Width) {
+              rect = new Rect(rect.Left, rect.Top, targetArea.Width, rect.Height);
+            }
+            if (rect.Height>targetArea.Height) {
+              rect = new Rect(rect.Left, rect.Top, rect.Width, targetArea.Height);
+            }
+            if (rect.Top<targetArea.Top) {
+              rect = new Rect(rect.Left, targetArea.Top, rect.Width, rect.Height);
+            }
+            if (rect.Top>=targetArea.Bottom) {
+              rect = new Rect(rect.Left, targetArea.Bottom-rect.Height/2, rect.Width, rect.Height);
+            }
+            if (rect.Left<=targetArea.Left-rect.Right) {
+              rect = new Rect(targetArea.Left-rect.Width/2, rect.Top, rect.Width, rect.Height);
+            }
+            if (rect.Left>=targetArea.Right) {
+              rect = new Rect(targetArea.Right-rect.Width/2, rect.Top, rect.Width, rect.Height);
+            }
+          }
+          dpi = Screen.GetDpiForWindow(this);
+          this.Top = rect.Top * 96.0 / dpi;
+          dpi = Screen.GetDpiForWindow(this);
+          this.Left = rect.Left * 96.0 / dpi;
+          dpi = Screen.GetDpiForWindow(this);
+          this.Width = rect.Width * 96.0 / dpi;
+          dpi = Screen.GetDpiForWindow(this);
+          this.Height = rect.Height * 96.0 / dpi;
+          return true;
+        }
+        else {
+          return false;
+        }
+      }
+    }
+
+    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+      InitWindow();
     }
 
     private void OnOpenBrowserUI(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
@@ -126,11 +168,6 @@ namespace PeerCastStation.WPF
     protected override void OnActivated(EventArgs e)
     {
       base.OnActivated(e);
-      hwnd = new System.Windows.Interop.WindowInteropHelper(this);
-      if (hwnd.Handle!=null && hwnd.Handle!=IntPtr.Zero) {
-        nativeSource = System.Windows.Interop.HwndSource.FromHwnd(hwnd.Handle);
-        nativeSource.AddHook(OnWindowMessage);
-      }
     }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
@@ -142,9 +179,12 @@ namespace PeerCastStation.WPF
 
     protected override void OnLocationChanged(EventArgs e)
     {
+      if (!InitWindow()) return;
       var settings = PeerCastStation.Core.PeerCastApplication.Current.Settings.Get<WPFSettings>();
       var bounds = RestoreBounds;
       if (!bounds.IsEmpty) {
+        var dpi = Screen.GetDpiForWindow(this);
+        bounds.Scale(dpi / 96.0, dpi / 96.0);
         settings.WindowLeft   = bounds.Left;
         settings.WindowTop    = bounds.Top;
         settings.WindowWidth  = bounds.Width;
@@ -156,9 +196,12 @@ namespace PeerCastStation.WPF
 
     protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
     {
+      if (!InitWindow()) return;
       var settings = PeerCastStation.Core.PeerCastApplication.Current.Settings.Get<WPFSettings>();
       var bounds = RestoreBounds;
       if (!bounds.IsEmpty) {
+        var dpi = Screen.GetDpiForWindow(this);
+        bounds.Scale(dpi / 96.0, dpi / 96.0);
         settings.WindowLeft   = bounds.Left;
         settings.WindowTop    = bounds.Top;
         settings.WindowWidth  = bounds.Width;
@@ -180,7 +223,6 @@ namespace PeerCastStation.WPF
       }
       return new IntPtr(0);
     }
-
 
   }
 }
