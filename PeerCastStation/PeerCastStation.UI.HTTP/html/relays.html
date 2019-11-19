@@ -221,6 +221,11 @@
           </div>
         </div>
       </div>
+      <div id="footer" data-bind="foreach: playPageUrls">
+        <div class="row-fluid">
+          <span class="pull-right"><a data-bind="attr: {href:url}">視聴専用ページ<span data-bind="text: family"></span></a></span> 
+        </div>
+      </div>
     </div>
 
     <div id="channelEditDialog" class="modal" style="display: none">

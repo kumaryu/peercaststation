@@ -856,6 +856,17 @@ namespace PeerCastStation.UI.HTTP
         }
       }
 
+      private JArray GetGlobalAddresses(OutputListener listener)
+      {
+        var addr = PeerCast.GetGlobalAddress(listener.LocalEndPoint.AddressFamily);
+        if (addr!=null) {
+          return new JArray(new string[] { addr.ToString() });
+        }
+        else {
+          return new JArray();
+        }
+      }
+
       private JObject GetListener(OutputListener listener)
       {
         var res = new JObject();
@@ -869,6 +880,7 @@ namespace PeerCastStation.UI.HTTP
         res["authenticationId"]       = listener.AuthenticationKey?.Id;
         res["authenticationPassword"] = listener.AuthenticationKey?.Password;
         res["authToken"]              = listener.AuthenticationKey?.GetToken();
+        res["globalAddresses"] = GetGlobalAddresses(listener);
         res["portStatus"]    = (int)listener.Status;
         switch (listener.Status) {
         case PortStatus.Firewalled:
