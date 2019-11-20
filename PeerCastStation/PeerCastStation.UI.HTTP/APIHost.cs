@@ -858,7 +858,7 @@ namespace PeerCastStation.UI.HTTP
 
       private JArray GetGlobalAddresses(OutputListener listener)
       {
-        var addr = PeerCast.GetGlobalAddress(listener.LocalEndPoint.AddressFamily);
+        var addr = listener.GlobalAddress;
         if (addr!=null) {
           return new JArray(new string[] { addr.ToString() });
         }
