@@ -48,6 +48,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
       <Label    Grid.Row="0" Grid.Column="0" Content="LAN内からの接続を許可:"/>
       <CheckBox Grid.Row="0" Grid.Column="1" Content="リレー" IsChecked="{Binding LocalRelay}"/>
@@ -59,6 +60,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
       <CheckBox Grid.Row="1" Grid.Column="2" Content="視聴"   IsChecked="{Binding GlobalPlay}"/>
       <CheckBox Grid.Row="1" Grid.Column="3" Content="操作"   IsChecked="{Binding GlobalInterface}"/>
       <CheckBox Grid.Row="1" Grid.Column="4" Content="要認証" IsChecked="{Binding GlobalAuthRequired}"/>
+      <StackPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Orientation="Horizontal">
+        <TextBlock Margin="4,0" Visibility="{Binding HtmlUIUrlVisibility}">
+          <Hyperlink Click="HtmlUIUrl_Click">
+            <Hyperlink.ContextMenu>
+              <ContextMenu>
+                <MenuItem Header="開く" Command="{Binding OpenHtmlUICommand}"/>
+                <MenuItem Header="コピー" Command="{Binding CopyHtmlUICommand}"/>
+              </ContextMenu>
+            </Hyperlink.ContextMenu>
+            操作用ページURL
+          </Hyperlink>
+        </TextBlock>
+        <TextBlock Margin="4,0" Visibility="{Binding PlayUIUrlVisibility}">
+          <Hyperlink Click="PlayUIUrl_Click">
+            <Hyperlink.ContextMenu>
+              <ContextMenu>
+                <MenuItem Header="開く" Command="{Binding OpenPlayUICommand}"/>
+                <MenuItem Header="コピー" Command="{Binding CopyPlayUICommand}"/>
+              </ContextMenu>
+            </Hyperlink.ContextMenu>
+            視聴専用ページURL
+          </Hyperlink>
+        </TextBlock>
+      </StackPanel>
     </Grid>
 
     <Expander Header="認証情報" Grid.Row="1" Grid.Column="0" Visibility="{Binding Path=AuthRequired, Converter={StaticResource VisibilityConverter}}">

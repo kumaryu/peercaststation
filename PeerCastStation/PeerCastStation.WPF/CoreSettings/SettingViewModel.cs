@@ -22,6 +22,9 @@ using PeerCastStation.UI;
 using PeerCastStation.WPF.Commons;
 using System.ComponentModel;
 using System.Threading.Tasks;
+using System.Windows.Input;
+using System.Windows;
+using System.Net;
 
 namespace PeerCastStation.WPF.CoreSettings
 {
@@ -144,6 +147,8 @@ namespace PeerCastStation.WPF.CoreSettings
           if (port==value) return;
           port = value;
           OnPropertyChanged("Port");
+          OnPropertyChanged(nameof(HtmlUIUrl));
+          OnPropertyChanged(nameof(PlayUIUrl));
         }
       }
 
@@ -192,6 +197,7 @@ namespace PeerCastStation.WPF.CoreSettings
           globalPlay = value;
           OnPropertyChanged("GlobalPlay");
           OnPropertyChanged("AuthRequired");
+          OnPropertyChanged(nameof(PlayUIUrlVisibility));
         }
       }
       public bool GlobalInterface {
@@ -201,6 +207,7 @@ namespace PeerCastStation.WPF.CoreSettings
           globalInterface = value;
           OnPropertyChanged("GlobalInterface");
           OnPropertyChanged("AuthRequired");
+          OnPropertyChanged(nameof(HtmlUIUrlVisibility));
         }
       }
 
@@ -289,16 +296,98 @@ namespace PeerCastStation.WPF.CoreSettings
         }
       }
 
+      public Visibility HtmlUIUrlVisibility {
+        get { return GlobalInterface && GlobalEndPoint!=null ? Visibility.Visible : Visibility.Collapsed; }
+      }
+
+      public string HtmlUIUrl {
+        get {
+          if (GlobalAuthRequired) {
+            return $"http://{GlobalEndPoint.ToString()}/html/index.html?auth={AuthenticationKey.GetToken()}";
+          }
+          else {
+            return $"http://{GlobalEndPoint.ToString()}/html/index.html";
+          }
+        }
+      }
+
+      public ICommand OpenHtmlUICommand {
+        get {
+          return new Command(() => {
+            System.Diagnostics.Process.Start(HtmlUIUrl);
+          });
+        }
+      }
+
+      public ICommand CopyHtmlUICommand {
+        get {
+          return new Command(() => {
+            try {
+              Clipboard.SetText(HtmlUIUrl);
+            }
+            catch (System.Runtime.InteropServices.COMException) {}
+          });
+        }
+      }
+
+      public Visibility PlayUIUrlVisibility {
+        get { return GlobalPlay && GlobalEndPoint!=null ? Visibility.Visible : Visibility.Collapsed; }
+      }
+
+      public string PlayUIUrl {
+        get {
+          if (GlobalAuthRequired) {
+            return $"http://{GlobalEndPoint.ToString()}/html/play.html?auth={AuthenticationKey.GetToken()}";
+          }
+          else {
+            return $"http://{GlobalEndPoint.ToString()}/html/play.html";
+          }
+        }
+      }
+
+      public ICommand OpenPlayUICommand {
+        get {
+          return new Command(() => {
+            System.Diagnostics.Process.Start(PlayUIUrl);
+          });
+        }
+      }
+
+      public ICommand CopyPlayUICommand {
+        get {
+          return new Command(() => {
+            try {
+              Clipboard.SetText(PlayUIUrl);
+            }
+            catch (System.Runtime.InteropServices.COMException) {}
+          });
+        }
+      }
+
       public bool? IsOpen {
         get { return isOpen; }
         set {
           if (isOpen==value) return;
           isOpen = value;
           OnPropertyChanged("IsOpen");
+          OnPropertyChanged(nameof(HtmlUIUrlVisibility));
+          OnPropertyChanged(nameof(PlayUIUrlVisibility));
         }
       }
 
-      public System.Windows.Input.ICommand RegenerateAuthKey { get; private set; }
+      public IPEndPoint globalEndPoint = null;
+      public IPEndPoint GlobalEndPoint {
+        get { return globalEndPoint; }
+        set {
+          if (globalEndPoint==value) return;
+          globalEndPoint = value;
+          OnPropertyChanged(nameof(GlobalEndPoint));
+          OnPropertyChanged(nameof(HtmlUIUrlVisibility));
+          OnPropertyChanged(nameof(PlayUIUrlVisibility));
+        }
+      }
+
+      public ICommand RegenerateAuthKey { get; private set; }
 
       private void DoRegenerateAuthKey()
       {
@@ -313,7 +402,10 @@ namespace PeerCastStation.WPF.CoreSettings
       {
         if (PropertyChanged!=null) PropertyChanged(this, new PropertyChangedEventArgs(name));
         switch (name) {
-        case "IsOpen":
+        case nameof(IsOpen):
+        case nameof(GlobalEndPoint):
+        case nameof(HtmlUIUrlVisibility):
+        case nameof(PlayUIUrlVisibility):
           break;
         default:
           owner.IsListenersModified = true;
@@ -840,6 +932,12 @@ namespace PeerCastStation.WPF.CoreSettings
         if (!result.Success) continue;
         foreach (var port in ports) {
           if (!port.EndPoint.Address.Equals(result.LocalAddress)) continue;
+          if (result.Ports.Contains(port.Port)) {
+            port.GlobalEndPoint = new IPEndPoint(result.GlobalAddress, port.Port);
+          }
+          else {
+            port.GlobalEndPoint = null;
+          }
           port.IsOpen = result.Ports.Contains(port.Port);
         }
       }

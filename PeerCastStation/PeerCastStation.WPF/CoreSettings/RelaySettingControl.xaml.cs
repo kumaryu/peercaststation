@@ -38,5 +38,20 @@ namespace PeerCastStation.WPF.CoreSettings
     {
       InitializeComponent();
     }
+
+    private void HtmlUIUrl_Click(object sender, RoutedEventArgs e)
+    {
+      var menu = ((Hyperlink)sender).ContextMenu;
+      menu.DataContext = this.DataContext;
+      menu.IsOpen = true;
+    }
+
+    private void PlayUIUrl_Click(object sender, RoutedEventArgs e)
+    {
+      var menu = ((Hyperlink)sender).ContextMenu;
+      menu.DataContext = this.DataContext;
+      menu.IsOpen = true;
+    }
+
   }
 }

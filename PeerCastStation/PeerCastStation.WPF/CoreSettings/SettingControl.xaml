@@ -240,7 +240,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
           </Grid.RowDefinitions>
-          <ListBox Grid.Row="0" Margin="2" ItemsSource="{Binding Ports}" SelectedItem="{Binding SelectedPort}" HorizontalContentAlignment="Stretch">
+          <ListBox Grid.Row="0" Margin="2" ItemsSource="{Binding Ports}" SelectedItem="{Binding SelectedPort}" HorizontalContentAlignment="Stretch" ScrollViewer.CanContentScroll="False">
             <ListBox.ItemTemplate>
               <DataTemplate>
                 <Grid>
