@@ -111,6 +111,7 @@
     <Compile Include="PeerCastAppViewModel.cs" />
     <Compile Include="CoreSettings\SettingViewModel.cs" />
     <Compile Include="NotifyIconManager.cs" />
+    <Compile Include="Screen.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="CoreSettings\SettingControl.xaml.cs">
       <DependentUpon>SettingControl.xaml</DependentUpon>
