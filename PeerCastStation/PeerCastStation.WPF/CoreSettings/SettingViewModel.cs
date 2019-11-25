@@ -228,6 +228,8 @@ namespace PeerCastStation.WPF.CoreSettings
           globalAuthRequired = value;
           OnPropertyChanged("GlobalAuthRequired");
           OnPropertyChanged("AuthRequired");
+          OnPropertyChanged(nameof(HtmlUIUrl));
+          OnPropertyChanged(nameof(PlayUIUrl));
         }
       }
       public bool LocalRelay {
@@ -311,25 +313,6 @@ namespace PeerCastStation.WPF.CoreSettings
         }
       }
 
-      public ICommand OpenHtmlUICommand {
-        get {
-          return new Command(() => {
-            System.Diagnostics.Process.Start(HtmlUIUrl);
-          });
-        }
-      }
-
-      public ICommand CopyHtmlUICommand {
-        get {
-          return new Command(() => {
-            try {
-              Clipboard.SetText(HtmlUIUrl);
-            }
-            catch (System.Runtime.InteropServices.COMException) {}
-          });
-        }
-      }
-
       public Visibility PlayUIUrlVisibility {
         get { return GlobalPlay && GlobalEndPoint!=null ? Visibility.Visible : Visibility.Collapsed; }
       }
@@ -342,25 +325,6 @@ namespace PeerCastStation.WPF.CoreSettings
           else {
             return $"http://{GlobalEndPoint.ToString()}/html/play.html";
           }
-        }
-      }
-
-      public ICommand OpenPlayUICommand {
-        get {
-          return new Command(() => {
-            System.Diagnostics.Process.Start(PlayUIUrl);
-          });
-        }
-      }
-
-      public ICommand CopyPlayUICommand {
-        get {
-          return new Command(() => {
-            try {
-              Clipboard.SetText(PlayUIUrl);
-            }
-            catch (System.Runtime.InteropServices.COMException) {}
-          });
         }
       }
 

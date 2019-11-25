@@ -120,6 +120,9 @@
     </Compile>
     <Compile Include="Shell.cs" />
     <Compile Include="UISettingsViewModel.cs" />
+    <Compile Include="UrlLink.xaml.cs">
+      <DependentUpon>UrlLink.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UserInterface.cs" />
     <Compile Include="Commons\ViewModelBase.cs" />
     <Compile Include="Dialogs\VersionInfoViewModel.cs" />
@@ -188,6 +191,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="SettingsDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UrlLink.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -17,7 +17,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:peca="clr-namespace:PeerCastStation.WPF"
              mc:Ignorable="d">
   <UserControl.Resources>
     <Style TargetType="CheckBox">
@@ -61,28 +62,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
       <CheckBox Grid.Row="1" Grid.Column="3" Content="操作"   IsChecked="{Binding GlobalInterface}"/>
       <CheckBox Grid.Row="1" Grid.Column="4" Content="要認証" IsChecked="{Binding GlobalAuthRequired}"/>
       <StackPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Orientation="Horizontal">
-        <TextBlock Margin="4,0" Visibility="{Binding HtmlUIUrlVisibility}">
-          <Hyperlink Click="HtmlUIUrl_Click">
-            <Hyperlink.ContextMenu>
-              <ContextMenu>
-                <MenuItem Header="開く" Command="{Binding OpenHtmlUICommand}"/>
-                <MenuItem Header="コピー" Command="{Binding CopyHtmlUICommand}"/>
-              </ContextMenu>
-            </Hyperlink.ContextMenu>
-            操作用ページURL
-          </Hyperlink>
-        </TextBlock>
-        <TextBlock Margin="4,0" Visibility="{Binding PlayUIUrlVisibility}">
-          <Hyperlink Click="PlayUIUrl_Click">
-            <Hyperlink.ContextMenu>
-              <ContextMenu>
-                <MenuItem Header="開く" Command="{Binding OpenPlayUICommand}"/>
-                <MenuItem Header="コピー" Command="{Binding CopyPlayUICommand}"/>
-              </ContextMenu>
-            </Hyperlink.ContextMenu>
-            視聴専用ページURL
-          </Hyperlink>
-        </TextBlock>
+        <peca:UrlLink Text="操作用ページURL" Url="{Binding HtmlUIUrl}" Margin="4,0" Visibility="{Binding HtmlUIUrlVisibility}" />
+        <peca:UrlLink Text="視聴専用ページURL" Url="{Binding PlayUIUrl}" Margin="4,0" Visibility="{Binding PlayUIUrlVisibility}" />
       </StackPanel>
     </Grid>
 
