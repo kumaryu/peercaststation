@@ -60,6 +60,7 @@
     <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CachedValue.cs" />
     <Compile Include="CoreSettings\BandwidthCheckDialog.xaml.cs">
       <DependentUpon>BandwidthCheckDialog.xaml</DependentUpon>
     </Compile>
@@ -129,6 +130,7 @@
     <Compile Include="Dialogs\VersionInfoWindow.xaml.cs">
       <DependentUpon>VersionInfoWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ViewModelCollection.cs" />
     <Compile Include="WPFSettings.cs" />
     <Page Include="ChannelLists\ChannelInfos\ChannelInfoControl.xaml">
       <SubType>Designer</SubType>
