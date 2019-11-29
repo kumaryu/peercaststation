@@ -837,7 +837,7 @@ var channelsViewModel = new function() {
               host = "[" + addresses[j] + "]:" + port.port;
               family = "(IPv6)";
             }
-            var url = "http://" + host + "/play.html";
+            var url = "http://" + host + "/html/play.html";
             if (port.globalAuthorizationRequired) {
               url = url + "?auth=" + port.authToken;
             }
