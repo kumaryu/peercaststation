@@ -110,6 +110,7 @@ namespace PeerCastStation.UI.HTTP
     public static void BuildPath(IAppBuilder builder, string mappath, OutputStreamType accepts, string localpath)
     {
       builder.Map(mappath, sub => {
+        sub.UseAllowMethods("GET");
         sub.MapMethod("GET", withmethod => {
           withmethod.UseAuth(accepts);
           withmethod.Run(new HostApp(localpath).Invoke);
@@ -128,6 +129,7 @@ namespace PeerCastStation.UI.HTTP
       BuildPath(builder, "/Content", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "Content"));
       BuildPath(builder, "/Scripts", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "Scripts"));
       builder.MapWhen(ctx => ctx.Request.Path.Value=="/", sub => {
+        sub.UseAllowMethods("GET");
         sub.MapMethod("GET", withmethod => {
           withmethod.UseAuth(OutputStreamType.Interface);
           withmethod.Run(InvokeRedirect);

@@ -1496,6 +1496,7 @@ namespace PeerCastStation.UI.HTTP
     {
       var app = new APIHostOwinApp(builder.Properties[OwinEnvironment.PeerCastStation.PeerCastApplication] as PeerCastApplication);
       builder.Map("/api/1", sub => {
+        sub.UseAllowMethods("POST", "GET");
         sub.MapMethod("POST", withmethod => {
           withmethod.Run(app.Invoke);
         });

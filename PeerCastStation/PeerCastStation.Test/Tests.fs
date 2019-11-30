@@ -1,9 +1,11 @@
 ﻿module Tests
 
 open Xunit
+open Owin
 open System
 open System.Net
 open PeerCastStation.Core
+open PeerCastStation.Core.Http
 open TestCommon
 
 let messageApp path msg =
@@ -295,6 +297,75 @@ let ``chunkedエンコーディングで送受信できる`` () =
     reqstrm.WriteUTF8("Hello ")
     reqstrm.WriteUTF8("Hoge!")
     Assert.ExpectResponse "Hello Hoge!" req
+
+[<Fact>]
+let ``許可されていないメソッドを実行すると405が返る`` () =
+    use peca =
+        pecaWithOwinHost endpoint (fun owinHost ->
+            owinHost.Register(
+                fun builder ->
+                    builder.Map(
+                        "/echo",
+                        fun builder ->
+                            builder.UseAllowMethods("POST", "GET") |> ignore
+                            builder.MapMethod(
+                                "POST",
+                                fun builder ->
+                                    builder.Run (fun env ->
+                                        async {
+                                            use strm = new System.IO.StreamReader(env.Request.Body, System.Text.Encoding.UTF8, false, 2048, true)
+                                            let! req = strm.ReadToEndAsync() |> Async.AwaitTask
+                                            env.Response.ContentType <- "text/plain"
+                                            env.Response.Headers.Set("Transfer-Encoding", "chunked")
+                                            env.Response.Write req
+                                        }
+                                        |> Async.StartAsTask
+                                        :> System.Threading.Tasks.Task
+                                    )
+                            )
+                            |> ignore
+                            builder.MapMethod(
+                                "GET",
+                                fun builder ->
+                                    builder.Run (fun env ->
+                                        async {
+                                            env.Response.ContentType <- "text/plain"
+                                            env.Response.Write "hello"
+                                        }
+                                        |> Async.StartAsTask
+                                        :> System.Threading.Tasks.Task
+                                    )
+                            )
+                            |> ignore
+                    )
+                    |> ignore
+            ) |> ignore
+        )
+    let req =
+        sprintf "http://%s/echo" (endpoint.ToString())
+        |> WebRequest.CreateHttp
+    req.Method <- "POST"
+    req.ContentType <- "text/plain"
+    req.SendChunked <- true
+    use reqstrm = req.GetRequestStream()
+    reqstrm.WriteUTF8("Hello ")
+    reqstrm.WriteUTF8("Hoge!")
+    Assert.ExpectResponse "Hello Hoge!" req
+    let req =
+        sprintf "http://%s/echo" (endpoint.ToString())
+        |> WebRequest.CreateHttp
+    req.Method <- "GET"
+    Assert.ExpectResponse "hello" req
+    let req =
+        sprintf "http://%s/hoge" (endpoint.ToString())
+        |> WebRequest.CreateHttp
+    req.Method <- "GET"
+    Assert.ExpectStatusCode HttpStatusCode.NotFound req
+    let req =
+        sprintf "http://%s/echo" (endpoint.ToString())
+        |> WebRequest.CreateHttp
+    req.Method <- "DELETE"
+    Assert.ExpectStatusCode HttpStatusCode.MethodNotAllowed req
 
 [<Fact>]
 let ``OnSendingHeadersに登録したアクションでヘッダを書き換えられる`` () =

@@ -90,6 +90,7 @@ namespace PeerCastStation.UI.HTTP
     {
       var app = new YPChannelsHostOwinApp(application);
       builder.Map("/ypchannels/index.txt", sub => {
+        sub.UseAllowMethods("GET");
         sub.MapMethod("GET", withmethod => {
           withmethod.UseAuth(OutputStreamType.Interface);
           withmethod.Run(app.Invoke);

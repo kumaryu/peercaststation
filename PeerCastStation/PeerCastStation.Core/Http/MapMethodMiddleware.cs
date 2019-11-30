@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Linq;
-using System.Net;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Owin;
@@ -41,28 +39,9 @@ namespace PeerCastStation.Core.Http
 
   public static class MapMethodExtentions
   {
-    private class NotAllowed
-    {
-      public string Methods { get; set; }
-      public Task Invoke(IDictionary<string, object> arg)
-      {
-        var env = new OwinEnvironment(arg);
-        env.Environment[OwinEnvironment.Owin.ResponseStatusCode] = (int)HttpStatusCode.MethodNotAllowed;
-        env.SetResponseHeader("Allow", Methods);
-        return Task.Delay(0);
-      }
-    }
-
     public static IAppBuilder MapMethod(this IAppBuilder appBuilder, IEnumerable<string> methods, Action<IAppBuilder> configuration)
     {
-      var allowedMethods = Enumerable.Empty<string>();
-      if (appBuilder.Properties.TryGetValue("mapMethod.Allow", out var allows) && allows is IEnumerable<string>) {
-        allowedMethods = (IEnumerable<string>)allows;
-      }
-      allowedMethods = allowedMethods.Concat(methods);
-      appBuilder.Properties["mapMethod.Allow"] = allowedMethods;
       var branchBuilder = appBuilder.New();
-      branchBuilder.Properties["builder.DefaultApp"] = new NotAllowed { Methods=String.Join(",", allowedMethods.Distinct()) };
       configuration(branchBuilder);
       return appBuilder.Use<MapMethodMiddleware>(new MapMethodOptions { MethodMatch=methods, Branch=(Func<IDictionary<string,object>, Task>)branchBuilder.Build(typeof(Func<IDictionary<string,object>, Task>)) });
     }
