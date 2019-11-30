@@ -707,7 +707,7 @@ namespace PeerCastStation.WPF.CoreSettings
     }
 
     public string PlayUIUrlIPv4 {
-      get { return ports.FirstOrDefault(p => p.NetworkType==NetworkType.IPv4 && p.PlayUIUrlVisibility==Visibility.Visible)?.HtmlUIUrl; }
+      get { return ports.FirstOrDefault(p => p.NetworkType==NetworkType.IPv4 && p.PlayUIUrlVisibility==Visibility.Visible)?.PlayUIUrl; }
     }
 
     public Visibility PlayUIUrlIPv6Visibility {
@@ -715,7 +715,7 @@ namespace PeerCastStation.WPF.CoreSettings
     }
 
     public string PlayUIUrlIPv6 {
-      get { return ports.FirstOrDefault(p => p.NetworkType==NetworkType.IPv6 && p.PlayUIUrlVisibility==Visibility.Visible)?.HtmlUIUrl; }
+      get { return ports.FirstOrDefault(p => p.NetworkType==NetworkType.IPv6 && p.PlayUIUrlVisibility==Visibility.Visible)?.PlayUIUrl; }
     }
 
     private ViewModelCollection<OutputListenerViewModel> ports =
