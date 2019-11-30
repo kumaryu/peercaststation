@@ -126,6 +126,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                   <RowDefinition Height="Auto"/>
                   <RowDefinition Height="Auto"/>
                   <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Label Grid.Column="0" Grid.Row="0" Content="ポート番号:"/>
                 <Grid Grid.Column="1" Grid.Row="0">
@@ -186,6 +187,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
                   <TextBlock Grid.Column="0" Grid.Row="1" VerticalAlignment="Center" Style="{StaticResource PortCheckV6StatusText}"/>
                   <Button    Grid.Column="1" Grid.RowSpan="2" Content="開放確認" Click="PortCheckButton_Click" Style="{StaticResource PortCheckButton}"/>
                 </Grid>
+
+                <Label Grid.Column="0" Grid.Row="4" Content="外からアクセス:"/>
+                <Grid Grid.Column="1" Grid.Row="4">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                  </Grid.ColumnDefinitions>
+                  <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                  </Grid.RowDefinitions>
+                  <CheckBox Grid.Column="0" Grid.Row="0" Margin="2" VerticalAlignment="Center" Content="視聴" IsChecked="{Binding GlobalPlayUIAccessEnabled}"/>
+                  <StackPanel Orientation="Horizontal" Grid.Column="1" Grid.Row="0" Margin="2">
+                    <peca:UrlLink Margin="4,0" Text="視聴専用ページURL" Url="{Binding PlayUIUrlIPv4}" Visibility="{Binding PlayUIUrlIPv4Visibility}"/> 
+                    <peca:UrlLink Margin="4,0" Text="視聴専用ページURL(IPv6)" Url="{Binding PlayUIUrlIPv6}" Visibility="{Binding PlayUIUrlIPv6Visibility}"/> 
+                  </StackPanel>
+                  <CheckBox Grid.Column="0"  Grid.Row="1" Margin="2" VerticalAlignment="Center" Content="操作" IsChecked="{Binding GlobalHtmlUIAccessEnabled}"/>
+                  <StackPanel Orientation="Horizontal" Grid.Column="1" Grid.Row="1" Margin="2">
+                    <peca:UrlLink Margin="4,0" Text="操作用ページURL" Url="{Binding HtmlUIUrlIPv4}" Visibility="{Binding HtmlUIUrlIPv4Visibility}"/> 
+                    <peca:UrlLink Margin="4,0" Text="操作用ページURL(IPv6)" Url="{Binding HtmlUIUrlIPv6}" Visibility="{Binding HtmlUIUrlIPv6Visibility}"/> 
+                  </StackPanel>
+                </Grid>
               </Grid>
             </GroupBox>
             <GroupBox Header="最大上り帯域">
@@ -240,7 +263,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
           </Grid.RowDefinitions>
-          <ListBox Grid.Row="0" Margin="2" ItemsSource="{Binding Ports}" SelectedItem="{Binding SelectedPort}" HorizontalContentAlignment="Stretch">
+          <ListBox Grid.Row="0" Margin="2" ItemsSource="{Binding Ports}" SelectedItem="{Binding SelectedPort}" HorizontalContentAlignment="Stretch" ScrollViewer.CanContentScroll="False">
             <ListBox.ItemTemplate>
               <DataTemplate>
                 <Grid>

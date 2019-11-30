@@ -807,10 +807,10 @@ var ChannelViewModel = function(owner, initial_value) {
 
 var channelsViewModel = new function() {
   var self = this;
-  self.currentChannel = ko.observable(null);
   self.isFirewalled = ko.observable(null);
   self.channels = ko.observableArray();
   self.authToken = ko.observable(null);
+  self.playPageUrls = ko.observableArray();
 
   self.update = function() {
     PeerCast.getStatus(function(result) {
@@ -821,6 +821,34 @@ var channelsViewModel = new function() {
     });
     PeerCast.getAuthToken(function(result) {
       if (result) self.authToken(result);
+    });
+    PeerCast.getListeners(function(result) {
+      if (result) {
+        var urls = [];
+        for (var i=0; i<result.length; i++) {
+          var port = result[i];
+          if ((port.globalAccepts & PeerCast.OutputStreamType.Play)===0) continue;
+          var addresses = port.globalAddresses;
+          if (addresses.length===0) continue;
+          for (var j=0; j<addresses.length; j++) {
+            var host = addresses[j] + ":" + port.port;
+            var family = "";
+            if (/:/.exec(addresses[j])) {
+              host = "[" + addresses[j] + "]:" + port.port;
+              family = "(IPv6)";
+            }
+            var url = "http://" + host + "/html/play.html";
+            if (port.globalAuthorizationRequired) {
+              url = url + "?auth=" + port.authToken;
+            }
+            urls.push({
+              url: url,
+              family: family
+            });
+          }
+        }
+      }
+      self.playPageUrls(urls);
     });
   };
 

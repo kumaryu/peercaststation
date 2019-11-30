@@ -22,6 +22,9 @@ using PeerCastStation.UI;
 using PeerCastStation.WPF.Commons;
 using System.ComponentModel;
 using System.Threading.Tasks;
+using System.Windows.Input;
+using System.Windows;
+using System.Net;
 
 namespace PeerCastStation.WPF.CoreSettings
 {
@@ -144,6 +147,8 @@ namespace PeerCastStation.WPF.CoreSettings
           if (port==value) return;
           port = value;
           OnPropertyChanged("Port");
+          OnPropertyChanged(nameof(HtmlUIUrl));
+          OnPropertyChanged(nameof(PlayUIUrl));
         }
       }
 
@@ -192,6 +197,7 @@ namespace PeerCastStation.WPF.CoreSettings
           globalPlay = value;
           OnPropertyChanged("GlobalPlay");
           OnPropertyChanged("AuthRequired");
+          OnPropertyChanged(nameof(PlayUIUrlVisibility));
         }
       }
       public bool GlobalInterface {
@@ -201,6 +207,7 @@ namespace PeerCastStation.WPF.CoreSettings
           globalInterface = value;
           OnPropertyChanged("GlobalInterface");
           OnPropertyChanged("AuthRequired");
+          OnPropertyChanged(nameof(HtmlUIUrlVisibility));
         }
       }
 
@@ -221,6 +228,8 @@ namespace PeerCastStation.WPF.CoreSettings
           globalAuthRequired = value;
           OnPropertyChanged("GlobalAuthRequired");
           OnPropertyChanged("AuthRequired");
+          OnPropertyChanged(nameof(HtmlUIUrl));
+          OnPropertyChanged(nameof(PlayUIUrl));
         }
       }
       public bool LocalRelay {
@@ -289,16 +298,60 @@ namespace PeerCastStation.WPF.CoreSettings
         }
       }
 
+      public Visibility HtmlUIUrlVisibility {
+        get { return GlobalInterface && GlobalEndPoint!=null ? Visibility.Visible : Visibility.Collapsed; }
+      }
+
+      public string HtmlUIUrl {
+        get {
+          if (GlobalAuthRequired) {
+            return $"http://{GlobalEndPoint?.ToString()}/html/index.html?auth={AuthenticationKey.GetToken()}";
+          }
+          else {
+            return $"http://{GlobalEndPoint?.ToString()}/html/index.html";
+          }
+        }
+      }
+
+      public Visibility PlayUIUrlVisibility {
+        get { return GlobalPlay && GlobalEndPoint!=null ? Visibility.Visible : Visibility.Collapsed; }
+      }
+
+      public string PlayUIUrl {
+        get {
+          if (GlobalAuthRequired) {
+            return $"http://{GlobalEndPoint?.ToString()}/html/play.html?auth={AuthenticationKey.GetToken()}";
+          }
+          else {
+            return $"http://{GlobalEndPoint?.ToString()}/html/play.html";
+          }
+        }
+      }
+
       public bool? IsOpen {
         get { return isOpen; }
         set {
           if (isOpen==value) return;
           isOpen = value;
           OnPropertyChanged("IsOpen");
+          OnPropertyChanged(nameof(HtmlUIUrlVisibility));
+          OnPropertyChanged(nameof(PlayUIUrlVisibility));
         }
       }
 
-      public System.Windows.Input.ICommand RegenerateAuthKey { get; private set; }
+      public IPEndPoint globalEndPoint = null;
+      public IPEndPoint GlobalEndPoint {
+        get { return globalEndPoint; }
+        set {
+          if (globalEndPoint==value) return;
+          globalEndPoint = value;
+          OnPropertyChanged(nameof(GlobalEndPoint));
+          OnPropertyChanged(nameof(HtmlUIUrlVisibility));
+          OnPropertyChanged(nameof(PlayUIUrlVisibility));
+        }
+      }
+
+      public ICommand RegenerateAuthKey { get; private set; }
 
       private void DoRegenerateAuthKey()
       {
@@ -313,7 +366,10 @@ namespace PeerCastStation.WPF.CoreSettings
       {
         if (PropertyChanged!=null) PropertyChanged(this, new PropertyChangedEventArgs(name));
         switch (name) {
-        case "IsOpen":
+        case nameof(IsOpen):
+        case nameof(GlobalEndPoint):
+        case nameof(HtmlUIUrlVisibility):
+        case nameof(PlayUIUrlVisibility):
           break;
         default:
           owner.IsListenersModified = true;
@@ -469,9 +525,17 @@ namespace PeerCastStation.WPF.CoreSettings
       }
     }
 
+    private OutputListenerViewModel PrimaryListenerV4 {
+      get { return ports.FirstOrDefault(port => port.NetworkType==NetworkType.IPv4); }
+    }
+
+    private OutputListenerViewModel PrimaryListenerV6 {
+      get { return ports.FirstOrDefault(port => port.NetworkType==NetworkType.IPv6); }
+    }
+
     public int PrimaryPort {
       get {
-        var listenerv4 = ports.FirstOrDefault(port => port.NetworkType==NetworkType.IPv4);
+        var listenerv4 = PrimaryListenerV4;
         if (listenerv4==null) {
           AddPort(7144, NetworkType.IPv4);
           return PrimaryPort;
@@ -482,7 +546,7 @@ namespace PeerCastStation.WPF.CoreSettings
       }
       set {
         bool changed = false;
-        var listenerv4 = ports.FirstOrDefault(port => port.NetworkType==NetworkType.IPv4);
+        var listenerv4 = PrimaryListenerV4;
         if (listenerv4==null) {
           AddPort(value, NetworkType.IPv4);
           changed = true;
@@ -492,7 +556,7 @@ namespace PeerCastStation.WPF.CoreSettings
           changed = true;
         }
 
-        var listenerv6 = ports.FirstOrDefault(port => port.NetworkType==NetworkType.IPv6);
+        var listenerv6 = PrimaryListenerV6;
         if (listenerv6!=null && listenerv6.Port!=value) {
           listenerv6.Port = value;
           changed = true;
@@ -528,8 +592,134 @@ namespace PeerCastStation.WPF.CoreSettings
       }
     }
 
-    private ObservableCollection<OutputListenerViewModel> ports =
-      new ObservableCollection<OutputListenerViewModel>();
+    public bool? GlobalHtmlUIAccessEnabled {
+      get {
+        var listener4 = PrimaryListenerV4;
+        var listener6 = PrimaryListenerV6;
+        if (listener4!=null && listener6!=null) {
+          if (listener4.GlobalInterface && listener6.GlobalInterface) {
+            return true;
+          }
+          else if (ports.Any(p => p.GlobalInterface)) {
+            return null;
+          }
+          else {
+            return false;
+          }
+        }
+        else if (listener4==null) {
+          return false;
+        }
+        else {
+          return listener4.GlobalInterface;
+        }
+      }
+      set {
+        if (!value.HasValue) return;
+        var listener4 = PrimaryListenerV4;
+        var listener6 = PrimaryListenerV6;
+        if (value.Value) {
+          if (listener4!=null && !listener4.GlobalInterface) {
+            listener4.GlobalInterface = true;
+            listener4.GlobalAuthRequired = true;
+          }
+          if (listener6!=null && !listener6.GlobalInterface) {
+            listener6.GlobalInterface = true;
+            listener6.GlobalAuthRequired = true;
+          }
+        }
+        else {
+          if (listener4!=null && listener4.GlobalInterface) {
+            listener4.GlobalInterface = false;
+          }
+          if (listener6!=null && listener6.GlobalInterface) {
+            listener6.GlobalInterface = false;
+          }
+        }
+      }
+    }
+
+    public Visibility HtmlUIUrlIPv4Visibility {
+      get { return ports.Any(p => p.NetworkType==NetworkType.IPv4 && p.HtmlUIUrlVisibility==Visibility.Visible) ? Visibility.Visible : Visibility.Collapsed; }
+    }
+
+    public string HtmlUIUrlIPv4 {
+      get { return ports.FirstOrDefault(p => p.NetworkType==NetworkType.IPv4 && p.HtmlUIUrlVisibility==Visibility.Visible)?.HtmlUIUrl; }
+    }
+
+    public Visibility HtmlUIUrlIPv6Visibility {
+      get { return ports.Any(p => p.NetworkType==NetworkType.IPv6 && p.HtmlUIUrlVisibility==Visibility.Visible) ? Visibility.Visible : Visibility.Collapsed; }
+    }
+
+    public string HtmlUIUrlIPv6 {
+      get { return ports.FirstOrDefault(p => p.NetworkType==NetworkType.IPv6 && p.HtmlUIUrlVisibility==Visibility.Visible)?.HtmlUIUrl; }
+    }
+
+    public bool? GlobalPlayUIAccessEnabled {
+      get {
+        var listener4 = PrimaryListenerV4;
+        var listener6 = PrimaryListenerV6;
+        if (listener4!=null && listener6!=null) {
+          if (listener4.GlobalPlay && listener6.GlobalPlay) {
+            return true;
+          }
+          else if (ports.Any(p => p.GlobalPlay)) {
+            return null;
+          }
+          else {
+            return false;
+          }
+        }
+        else if (listener4==null) {
+          return false;
+        }
+        else {
+          return listener4.GlobalPlay;
+        }
+      }
+      set {
+        if (!value.HasValue) return;
+        var listener4 = PrimaryListenerV4;
+        var listener6 = PrimaryListenerV6;
+        if (value.Value) {
+          if (listener4!=null && !listener4.GlobalPlay) {
+            listener4.GlobalPlay = true;
+            listener4.GlobalAuthRequired = true;
+          }
+          if (listener6!=null && !listener6.GlobalPlay) {
+            listener6.GlobalPlay = true;
+            listener6.GlobalAuthRequired = true;
+          }
+        }
+        else {
+          if (listener4!=null && listener4.GlobalPlay) {
+            listener4.GlobalPlay = false;
+          }
+          if (listener6!=null && listener6.GlobalPlay) {
+            listener6.GlobalPlay = false;
+          }
+        }
+      }
+    }
+
+    public Visibility PlayUIUrlIPv4Visibility {
+      get { return ports.Any(p => p.NetworkType==NetworkType.IPv4 && p.PlayUIUrlVisibility==Visibility.Visible) ? Visibility.Visible : Visibility.Collapsed; }
+    }
+
+    public string PlayUIUrlIPv4 {
+      get { return ports.FirstOrDefault(p => p.NetworkType==NetworkType.IPv4 && p.PlayUIUrlVisibility==Visibility.Visible)?.HtmlUIUrl; }
+    }
+
+    public Visibility PlayUIUrlIPv6Visibility {
+      get { return ports.Any(p => p.NetworkType==NetworkType.IPv6 && p.PlayUIUrlVisibility==Visibility.Visible) ? Visibility.Visible : Visibility.Collapsed; }
+    }
+
+    public string PlayUIUrlIPv6 {
+      get { return ports.FirstOrDefault(p => p.NetworkType==NetworkType.IPv6 && p.PlayUIUrlVisibility==Visibility.Visible)?.HtmlUIUrl; }
+    }
+
+    private ViewModelCollection<OutputListenerViewModel> ports =
+      new ViewModelCollection<OutputListenerViewModel>();
     public IEnumerable<OutputListenerViewModel> Ports {
       get { return ports; }
     }
@@ -570,9 +760,12 @@ namespace PeerCastStation.WPF.CoreSettings
       }
     }
 
+    private CachedValue<System.Net.NetworkInformation.NetworkInterface[]> networkInterfaces =
+      new CachedValue<System.Net.NetworkInformation.NetworkInterface[]>(() => System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces(), TimeSpan.FromSeconds(60.0));
+
     private System.Net.IPAddress[] EnumGlobalAddressesV6()
     {
-      return System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+      return networkInterfaces.Value
         .Where(intf => !intf.IsReceiveOnly)
         .Where(intf => intf.OperationalStatus==System.Net.NetworkInformation.OperationalStatus.Up)
         .Where(intf => intf.NetworkInterfaceType!=System.Net.NetworkInformation.NetworkInterfaceType.Loopback)
@@ -589,7 +782,8 @@ namespace PeerCastStation.WPF.CoreSettings
         var listeners = ports
           .Where(p =>
             p.GlobalAccepts!=OutputStreamType.None &&
-            p.EndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6);
+            p.EndPoint.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6)
+          .ToArray();
         var addresses = listeners
           .Select(p => p.EndPoint.Address)
           .Where(addr =>
@@ -776,13 +970,37 @@ namespace PeerCastStation.WPF.CoreSettings
       isShowWindowOnStartup = pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup;
       isShowNotifications   = pecaApp.Settings.Get<WPFSettings>().ShowNotifications;
       remoteNodeName        = pecaApp.Settings.Get<WPFSettings>().RemoteNodeName;
-      ports = new ObservableCollection<OutputListenerViewModel>(
+      ports = new ViewModelCollection<OutputListenerViewModel>(
         peerCast.OutputListeners
         .Select(listener => new OutputListenerViewModel(this, listener))
       );
+      ports.ItemChanged += (sender, args) => {
+        OnPropertyChanged(nameof(ExternalAddressesV6));
+        OnPropertyChanged(nameof(IPv6Enabled));
+        OnPropertyChanged(nameof(GlobalHtmlUIAccessEnabled));
+        OnPropertyChanged(nameof(GlobalPlayUIAccessEnabled));
+        OnPropertyChanged(nameof(HtmlUIUrlIPv4));
+        OnPropertyChanged(nameof(HtmlUIUrlIPv4Visibility));
+        OnPropertyChanged(nameof(PlayUIUrlIPv4));
+        OnPropertyChanged(nameof(PlayUIUrlIPv4Visibility));
+        OnPropertyChanged(nameof(HtmlUIUrlIPv6));
+        OnPropertyChanged(nameof(HtmlUIUrlIPv6Visibility));
+        OnPropertyChanged(nameof(PlayUIUrlIPv6));
+        OnPropertyChanged(nameof(PlayUIUrlIPv6Visibility));
+      };
       ports.CollectionChanged += (sender, args) => {
         OnPropertyChanged(nameof(ExternalAddressesV6));
         OnPropertyChanged(nameof(IPv6Enabled));
+        OnPropertyChanged(nameof(GlobalHtmlUIAccessEnabled));
+        OnPropertyChanged(nameof(GlobalPlayUIAccessEnabled));
+        OnPropertyChanged(nameof(HtmlUIUrlIPv4));
+        OnPropertyChanged(nameof(HtmlUIUrlIPv4Visibility));
+        OnPropertyChanged(nameof(PlayUIUrlIPv4));
+        OnPropertyChanged(nameof(PlayUIUrlIPv4Visibility));
+        OnPropertyChanged(nameof(HtmlUIUrlIPv6));
+        OnPropertyChanged(nameof(HtmlUIUrlIPv6Visibility));
+        OnPropertyChanged(nameof(PlayUIUrlIPv6));
+        OnPropertyChanged(nameof(PlayUIUrlIPv6Visibility));
       };
       yellowPages = new ObservableCollection<YellowPageClientViewModel>(
         peerCast.YellowPages
@@ -840,6 +1058,12 @@ namespace PeerCastStation.WPF.CoreSettings
         if (!result.Success) continue;
         foreach (var port in ports) {
           if (!port.EndPoint.Address.Equals(result.LocalAddress)) continue;
+          if (result.Ports.Contains(port.Port)) {
+            port.GlobalEndPoint = new IPEndPoint(result.GlobalAddress, port.Port);
+          }
+          else {
+            port.GlobalEndPoint = null;
+          }
           port.IsOpen = result.Ports.Contains(port.Port);
         }
       }
