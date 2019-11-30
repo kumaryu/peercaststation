@@ -261,7 +261,8 @@ namespace PeerCastStation.Core.Http
     {
       if (cookieCache!=null) return cookieCache;
       var cookies = GetRequestHeader("Cookie", new string[0]);
-      cookieCache =
+      var cache = new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);
+      var entries =
         cookies
         .SelectMany(ent => ent.Split(';'))
         .Where(pair => !String.IsNullOrWhiteSpace(pair))
@@ -273,8 +274,11 @@ namespace PeerCastStation.Core.Http
           else {
             return new string [] { Uri.UnescapeDataString(pair.Trim()), "" };
           }
-        })
-        .ToDictionary(kv => kv[0], kv => kv[1], StringComparer.OrdinalIgnoreCase);
+        });
+      foreach (var ent in entries) {
+        cache[ent[0]] = ent[1];
+      }
+      cookieCache = cache;
       return cookieCache;
     }
 
