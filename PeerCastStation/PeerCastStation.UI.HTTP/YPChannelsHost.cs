@@ -81,7 +81,7 @@ namespace PeerCastStation.UI.HTTP
       ctx.Response.ContentLength = contents.LongLength;
       var acinfo = ctx.GetAccessControlInfo();
       if (acinfo?.AuthenticationKey!=null) {
-        ctx.Response.Headers.Append("Set-Cookie", "auth=" + acinfo.AuthenticationKey.GetToken());
+        ctx.Response.Headers.Append("Set-Cookie", $"auth={acinfo.AuthenticationKey.GetToken()}; Path=/");
       }
       await ctx.Response.WriteAsync(contents, cancel_token).ConfigureAwait(false);
     }
