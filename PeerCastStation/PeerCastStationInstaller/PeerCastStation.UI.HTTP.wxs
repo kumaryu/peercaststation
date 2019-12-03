@@ -84,6 +84,7 @@
             <ComponentRef Id="cmpD70EF0BB33C371125545C675EE7D7039" />
             <ComponentRef Id="cmp5A205BE481C3CEA45C0DCA92C4DF9C41" />
             <ComponentRef Id="cmp5BE68DF71EB91036BC222DAAC6BC20D2" />
+            <ComponentRef Id="cmp3E2F874A644A3ABDE6323ADCD2F038D3" />
             <ComponentRef Id="cmp802DFE83DC97D5CABBC5AD65F18DDBAD" />
             <ComponentRef Id="cmp1D71034A96B25376AC3D5E0A73DC66ED" />
             <ComponentRef Id="cmp617C15CE237BDCC20037D182D8133BA4" />
@@ -102,6 +103,7 @@
             <ComponentRef Id="cmp1C2CDCEB3500C62AA811FE2FCA45C379" />
             <ComponentRef Id="cmpB194C5738F7F03000C482F2B1302D501" />
             <ComponentRef Id="cmpF4CB51FD983B82DEAB0115925FBF6D03" />
+            <ComponentRef Id="cmpBB6E71164F638A24689A8A7552DE3418" />
             <ComponentRef Id="cmp2B5B7E45667D2BA876923C4008AEBA48" />
             <ComponentRef Id="cmp9A2532F01663F38CBEF5F5B7916575F7" />
             <ComponentRef Id="cmp42EE2F08D4E3930EA43B5F08193F2103" />
@@ -308,6 +310,9 @@
             <Component Id="cmp5BE68DF71EB91036BC222DAAC6BC20D2" Directory="dirFC6FEC9877CD43BCEB77A3398D1F0E35" Guid="*">
                 <File Id="filC3343AD56F2552DD82B475909AE572A9" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\update.html" />
             </Component>
+            <Component Id="cmp3E2F874A644A3ABDE6323ADCD2F038D3" Directory="dirFC6FEC9877CD43BCEB77A3398D1F0E35" Guid="*">
+                <File Id="fil2B28E10BC5830333BBD6610BA97335BB" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\play.html" />
+            </Component>
             <Component Id="cmp802DFE83DC97D5CABBC5AD65F18DDBAD" Directory="dirD8459EFDDB049612C9D9B739F6EB670F" Guid="*">
                 <File Id="fil833267266D48BFA945CA8CEC8B3CC362" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\images\heart.png" />
             </Component>
@@ -361,6 +366,9 @@
             </Component>
             <Component Id="cmpF4CB51FD983B82DEAB0115925FBF6D03" Directory="dir625C6F3A60D2313D43971CB336A662F0" Guid="*">
                 <File Id="fil4BD6D40992AF2680C55C664BC93E4045" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\js\settings.js" />
+            </Component>
+            <Component Id="cmpBB6E71164F638A24689A8A7552DE3418" Directory="dir625C6F3A60D2313D43971CB336A662F0" Guid="*">
+                <File Id="fil88EC1C77AA5EB4D65B8BAADE2E7CE47E" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\js\play.js" />
             </Component>
             <Component Id="cmp2B5B7E45667D2BA876923C4008AEBA48" Directory="dir9EF0C8986094A5E2A7FEB0C142F52738" Guid="*">
                 <File Id="fil3057910986D82E82AEF4F027D48704C7" Source="$(var.PeerCastStation.UI.HTTP.ProjectDir)\html\css\index.css" />

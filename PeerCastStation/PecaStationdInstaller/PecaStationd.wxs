@@ -29,6 +29,12 @@
       <Component Id="Newtonsoft.Json.dll" Guid="*">
         <File Id="Newtonsoft.Json.dll" Source="$(var.PecaStationd.TargetDir)\Newtonsoft.Json.dll" />
       </Component>
+      <Component Id="Owin.dll" Guid="*">
+        <File Id="Owin.dll" Source="$(var.PecaStationd.TargetDir)\Owin.dll" />
+      </Component>
+      <Component Id="Microsoft.Owin.dll" Guid="*">
+        <File Id="Microsoft.Owin.dll" Source="$(var.PecaStationd.TargetDir)\Microsoft.Owin.dll" />
+      </Component>
       <Component Id="readme.txt" Guid="*">
         <File Id="readme.txt" Source="$(var.PeerCastStation.ProjectDir)\readme.txt" />
       </Component>
