@@ -12,8 +12,9 @@ title: 安定版のダウンロード - PeerCastStation
 
 動作環境とインストール方法
 ==========================
-Windowsの場合はWindows Vista以降と.NET Framework 4.5以降、
-Windows以外の場合はMono 3.0以降が必要です。
+Windowsの場合はWindows 7以降と.NET Framework 4.5以降、
+Windows以外の場合はMono 5.0以降(なるべく最新を推奨)が必要です。
+macOS 10.15 (Catalina)以降ではmono 6.4以降を使用してください。
 
 ダウンロードしたzipは展開前にプロパティからブロック解除しておくとあとで便利です。中身を適当な場所に置いてPeerCastStation.exeを起動してください。詳しい使い方はzip内のhelp\\index.htmlを開いてヘルプを見てください。
 

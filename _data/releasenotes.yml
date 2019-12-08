@@ -1,4 +1,42 @@
 ---
+- name: Version 2.9.0 (2019年12月09日開発版)
+  version: 2.9.0
+  channel: dev
+  notes: |
+    HTML UIに視聴専用ページを追加しました。
+
+    ## 新機能
+    * HTML UIに視聴権限だけあればリレー中のチャンネルを視聴できるページ(/html/play.html)を追加しました。
+      外部からの直接視聴を許可してアドレスを伝えれば、PeerCastが無い環境からでも直接視聴ができます。
+    * GUIの設定ダイアログで外部からの視聴・操作ページへのアクセスを簡単に許可できるようにしました。
+      アクセス用のURLもそこで取得できるようにしました。
+    * 外部からの直接視聴を許可している場合に、HTML UIのリレーページに視聴専用ページへのリンクを表示するようにしました。
+
+    ## 改善点
+    * チャンネルのコンテントパケットに非キーフレームフラグを持たせることで、キーフレームから再生できるようにしました。
+      つまり、なるべく画面が乱れないところから再生開始できるよう頑張るようにしました。
+    * HLS視聴用のURLを変更しました。`/hls/チャンネルID`でプレイリストを返します。
+      以前のURL(`/pls/チャンネルID.m3u8`)にアクセスされた場合は新しいアドレスにリダイレクトします。
+    * RTMP視聴中にチャンネルが終了した場合はプレイヤーにそのことを通知して切断するようにしました。
+
+    ## 修正点
+    * 拡大率の異なるマルチモニター環境で、起動時にウィンドウ位置が正しく復帰できていなかったのを修正しました。
+    * HTTPサーバーとの処理を全面的に整理しなおしました。
+    * その他いろいろと内部的な修正を行いました。
+
+  date: 2019-12-05T02:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.9.0.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.0.zip
+    length: 2490167
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.0.exe
+    length: 2619057
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.9.0.msi
+    length: 2291138
+
 - name: Version 2.6.2 (2019年07月03日安定版)
   version: 2.6.2
   channel: stable
