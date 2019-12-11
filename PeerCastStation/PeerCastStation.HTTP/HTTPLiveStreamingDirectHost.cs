@@ -295,7 +295,8 @@ namespace PeerCastStation.HTTP
       ctx.Response.StatusCode = (int)HttpStatusCode.OK;
       ctx.Response.Headers.Add("Cache-Control", new string [] { "private" });
       ctx.Response.Headers.Add("Cache-Disposition", new string [] { "inline" });
-      ctx.Response.Headers.Add("Content-Type", new string [] { pls.MIMEType });
+      ctx.Response.Headers.Add("Access-Control-Allow-Origin", new string[] { "*" });
+      ctx.Response.ContentType = pls.MIMEType;
       using (var subscription=HLSChannelSink.GetSubscription(this, channel, ctx, session)) {
         subscription.Stopped.ThrowIfCancellationRequested();
         byte[] body;
@@ -346,6 +347,7 @@ namespace PeerCastStation.HTTP
           }
           else {
             ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+            ctx.Response.Headers.Add("Access-Control-Allow-Origin", new string[] { "*" });
             ctx.Response.ContentType = "video/MP2T";
             ctx.Response.ContentLength = segment.Data.LongLength;
             await ctx.Response.WriteAsync(segment.Data, cts.Token).ConfigureAwait(false);

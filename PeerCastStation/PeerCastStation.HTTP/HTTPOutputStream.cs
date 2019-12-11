@@ -151,7 +151,8 @@ namespace PeerCastStation.HTTP
       ctx.Response.StatusCode = (int)HttpStatusCode.OK;
       ctx.Response.Headers.Add("Cache-Control", new string [] { "private" });
       ctx.Response.Headers.Add("Cache-Disposition", new string [] { "inline" });
-      ctx.Response.Headers.Add("Content-Type", new string [] { pls.MIMEType });
+      ctx.Response.Headers.Add("Access-Control-Allow-Origin", new string[] { "*" });
+      ctx.Response.ContentType = pls.MIMEType;
       byte[] body;
       try {
         var baseuri = new Uri(
@@ -307,6 +308,7 @@ namespace PeerCastStation.HTTP
           ctx.Response.Headers.Add("Cache-Control", new string [] { "no-cache" });
           ctx.Response.Headers.Add("Server", new string [] { "Rex/9.0.2980" });
           ctx.Response.Headers.Add("Pragma", new string [] { "no-cache", @"features=""broadcast,playlist""" });
+          ctx.Response.Headers.Add("Access-Control-Allow-Origin", new string[] { "*" });
           ctx.Response.ContentType = "application/vnd.ms.wms-hdr.asfv1";
 
           try {
@@ -330,6 +332,7 @@ namespace PeerCastStation.HTTP
             ctx.Response.Headers.Add("Cache-Control", new string [] { "no-cache" });
             ctx.Response.Headers.Add("Server", new string [] { "Rex/9.0.2980" });
             ctx.Response.Headers.Add("Pragma", new string [] { "no-cache", @"features=""broadcast,playlist""" });
+            ctx.Response.Headers.Add("Access-Control-Allow-Origin", new string[] { "*" });
             ctx.Response.ContentType = "application/x-mms-framed";
             ctx.Response.Headers.Add("Connection", new string[] { "close" });
           }
