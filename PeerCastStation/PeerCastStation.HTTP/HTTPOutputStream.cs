@@ -304,7 +304,7 @@ namespace PeerCastStation.HTTP
           channel.ChannelInfo.ContentType=="WMA" ||
           channel.ChannelInfo.ContentType=="ASX";
 
-        if (asf && ctx.Request.Headers.TryGetValue("Pragma", out var values) && values.Contains("xplaystrm=1")) {
+        if (asf && (!ctx.Request.Headers.TryGetValue("Pragma", out var values) || !values.Contains("xplaystrm=1", StringComparer.InvariantCultureIgnoreCase))) {
           ctx.Response.Headers.Add("Cache-Control", new string [] { "no-cache" });
           ctx.Response.Headers.Add("Server", new string [] { "Rex/9.0.2980" });
           ctx.Response.Headers.Add("Pragma", new string [] { "no-cache", @"features=""broadcast,playlist""" });
@@ -315,7 +315,7 @@ namespace PeerCastStation.HTTP
             while (!ct.IsCancellationRequested) {
               var packet = await sink.DequeueAsync(ct).ConfigureAwait(false);
               if (packet.Type==ChannelSink.ChannelMessage.MessageType.ContentHeader) {
-                await ctx.Response.WriteAsync(packet.Data, ct).ConfigureAwait(false);
+                await ctx.Response.WriteAsync(packet.Content.Data, ct).ConfigureAwait(false);
                 logger.Debug("Sent ContentHeader pos {0}", packet.Content.Position);
                 break;
               }
