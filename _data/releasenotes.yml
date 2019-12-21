@@ -1,4 +1,28 @@
 ---
+- name: Version 2.9.1 (2019年12月21日開発版)
+  version: 2.9.1
+  channel: dev
+  notes: |
+    2.9.0での不具合を修正しました。
+
+    ## 修正点
+    * 2.9.0でWMV(ASF)の視聴ができないのを修正しました。
+    * Pecastationd(サービス版)でIPv6の帯域チェックが行えないのを修正しました。
+    * 視聴時のCORSができなくなっていたのを修正しました。
+
+  date: 2019-12-21T23:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.9.1.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.1.zip
+    length: 2490159
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.1.exe
+    length: 2619063
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.9.1.msi
+    length: 2291138
+
 - name: Version 2.9.0 (2019年12月09日開発版)
   version: 2.9.0
   channel: dev
