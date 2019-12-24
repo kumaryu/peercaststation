@@ -78,7 +78,15 @@ namespace PeerCastStation.WPF
     public static int GetDpiForWindow(System.Windows.Interop.WindowInteropHelper hwnd)
     {
       if (hwnd.Handle!=null && hwnd.Handle!=IntPtr.Zero) {
-        return (int)User32.GetDpiForWindow(hwnd.Handle);
+        try {
+          return (int)User32.GetDpiForWindow(hwnd.Handle);
+        }
+        catch (DllNotFoundException) {
+          return 96;
+        }
+        catch (EntryPointNotFoundException) {
+          return 96;
+        }
       }
       else {
         throw new InvalidOperationException();
