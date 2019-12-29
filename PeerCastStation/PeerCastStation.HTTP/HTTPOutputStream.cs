@@ -332,7 +332,6 @@ namespace PeerCastStation.HTTP
             ctx.Response.Headers.Add("Cache-Control", new string [] { "no-cache" });
             ctx.Response.Headers.Add("Server", new string [] { "Rex/9.0.2980" });
             ctx.Response.Headers.Add("Pragma", new string [] { "no-cache", @"features=""broadcast,playlist""" });
-            ctx.Response.Headers.Add("Access-Control-Allow-Origin", new string[] { "*" });
             ctx.Response.ContentType = "application/x-mms-framed";
             ctx.Response.Headers.Add("Connection", new string[] { "close" });
           }
@@ -340,6 +339,7 @@ namespace PeerCastStation.HTTP
             ctx.Response.ContentType = channel.ChannelInfo.MIMEType;
             ctx.Response.Headers.Add("Transfer-Encoding", new string [] { "chunked" });
           }
+          ctx.Response.Headers.Add("Access-Control-Allow-Origin", new string[] { "*" });
 
           Content sent_header = null;
           Content sent_packet = null;
