@@ -34,8 +34,8 @@ namespace PeerCastStation.HTTP
         res.AppendLine("#EXTM3U");
         res.AppendLine("#EXT-X-VERSION:3");
         res.AppendLine("#EXT-X-ALLOW-CACHE:NO");
-        res.AppendLine("#EXT-X-TARGETDURATION:2");
-        res.AppendLine("#EXT-X-MEDIA-SEQUENCE:" + segments.FirstOrDefault().Index);
+        res.AppendLine($"#EXT-X-TARGETDURATION:{segmenter.TargetDuration}");
+        res.AppendLine($"#EXT-X-MEDIA-SEQUENCE:{segments.FirstOrDefault().Index}");
         var queries = String.Join("&", parameters.Select(kv => Uri.EscapeDataString(kv.Key) + "=" + Uri.EscapeDataString(kv.Value)));
         foreach (var seg in segments) {
           if (seg.Data==null) {
@@ -84,13 +84,10 @@ namespace PeerCastStation.HTTP
 
       public void Dispose()
       {
-        Task.Run(async () => {
-          await Task.Delay(5000).ConfigureAwait(false);
-          if (Interlocked.Decrement(ref referenceCount)==0) {
-            owner.contentSinks.TryRemove(channel, out var s);
-            Interlocked.Exchange(ref subscription, null)?.Dispose();
-          }
-        });
+        if (subscription!=null && Interlocked.Decrement(ref referenceCount)==0) {
+          owner.contentSinks.TryRemove(channel, out var s);
+          Interlocked.Exchange(ref subscription, null)?.Dispose();
+        }
       }
 
       public static HLSContentSink GetSubscription(HTTPLiveStreamingDirectOwinApp owner, Channel channel)
@@ -110,6 +107,7 @@ namespace PeerCastStation.HTTP
       private Func<float> getSendRate = null;
       private Tuple<Channel,string> session;
       private CancellationTokenSource stoppedCancellationTokenSource = new CancellationTokenSource();
+      private HLSContentSink contentSink = null;
 
       public string SessionId {
         get { return session.Item2; }
@@ -121,10 +119,8 @@ namespace PeerCastStation.HTTP
         get { return stoppedCancellationTokenSource.Token; }
       }
 
-
-      public HLSContentSink GetContentSink()
-      {
-        return HLSContentSink.GetSubscription(owner, Channel);
+      public HTTPLiveStreamingSegmenter Segmenter {
+        get { return contentSink?.Segmenter; }
       }
 
       public static HLSChannelSink GetSubscription(HTTPLiveStreamingDirectOwinApp owner, Channel channel, IOwinContext ctx, string session)
@@ -168,6 +164,7 @@ namespace PeerCastStation.HTTP
         connectionInfo.Type = ConnectionType.Direct;
         getRecvRate = ctx.Get<Func<float>>(OwinEnvironment.PeerCastStation.GetRecvRate);
         getSendRate = ctx.Get<Func<float>>(OwinEnvironment.PeerCastStation.GetSendRate);
+        contentSink = HLSContentSink.GetSubscription(owner, Channel);
       }
 
       private HLSChannelSink AddRef(IOwinContext ctx)
@@ -193,10 +190,11 @@ namespace PeerCastStation.HTTP
       public void Dispose()
       {
         Task.Run(async () => {
-          await Task.Delay(5000).ConfigureAwait(false);
+          await Task.Delay(TimeSpan.FromSeconds((contentSink?.Segmenter.TargetDuration ?? 10.0)/0.7)).ConfigureAwait(false);
           if (Interlocked.Decrement(ref referenceCount)==0) {
             owner.channelSinks.TryRemove(session, out var s);
             Interlocked.Exchange(ref subscription, null)?.Dispose();
+            Interlocked.Exchange(ref contentSink, null)?.Dispose();
             stoppedCancellationTokenSource.Dispose();
           }
         });
@@ -305,7 +303,6 @@ namespace PeerCastStation.HTTP
             new Uri(ctx.Request.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped)),
             "hls/");
           var acinfo = ctx.GetAccessControlInfo();
-          using (var contents=subscription.GetContentSink())
           using (var cts=CancellationTokenSource.CreateLinkedTokenSource(ct, subscription.Stopped)) {
             cts.CancelAfter(10000);
             if (acinfo.AuthorizationRequired) {
@@ -313,13 +310,13 @@ namespace PeerCastStation.HTTP
                 { "auth", acinfo.AuthenticationKey.GetToken() },
                 { "session", subscription.SessionId },
               };
-              body = await pls.CreatePlayListAsync(baseuri, parameters, contents.Segmenter, cts.Token).ConfigureAwait(false);
+              body = await pls.CreatePlayListAsync(baseuri, parameters, subscription.Segmenter, cts.Token).ConfigureAwait(false);
             }
             else {
               var parameters = new Dictionary<string, string>() {
                 { "session", subscription.SessionId },
               };
-              body = await pls.CreatePlayListAsync(baseuri, parameters, contents.Segmenter, cts.Token).ConfigureAwait(false);
+              body = await pls.CreatePlayListAsync(baseuri, parameters, subscription.Segmenter, cts.Token).ConfigureAwait(false);
             }
           }
         }
@@ -337,10 +334,9 @@ namespace PeerCastStation.HTTP
       var ct = ctx.Request.CallCancelled;
       using (var subscription=HLSChannelSink.GetSubscription(this, channel, ctx, req.Session)) {
         subscription.Stopped.ThrowIfCancellationRequested();
-        using (var contents=subscription.GetContentSink())
         using (var cts=CancellationTokenSource.CreateLinkedTokenSource(ct, subscription.Stopped)) {
           cts.CancelAfter(10000);
-          var segments = await contents.Segmenter.GetSegmentsAsync(cts.Token).ConfigureAwait(false);
+          var segments = await subscription.Segmenter.GetSegmentsAsync(cts.Token).ConfigureAwait(false);
           var segment = segments.FirstOrDefault(s => s.Index==req.FragmentNumber);
           if (segment.Index==0) {
             ctx.Response.StatusCode = (int)HttpStatusCode.NotFound;
