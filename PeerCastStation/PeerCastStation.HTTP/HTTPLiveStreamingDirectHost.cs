@@ -34,8 +34,8 @@ namespace PeerCastStation.HTTP
         res.AppendLine("#EXTM3U");
         res.AppendLine("#EXT-X-VERSION:3");
         res.AppendLine("#EXT-X-ALLOW-CACHE:NO");
-        res.AppendLine("#EXT-X-TARGETDURATION:2");
-        res.AppendLine("#EXT-X-MEDIA-SEQUENCE:" + segments.FirstOrDefault().Index);
+        res.AppendLine($"#EXT-X-TARGETDURATION:{(int)Math.Ceiling(segments.Max(seg => seg.Duration))}");
+        res.AppendLine($"#EXT-X-MEDIA-SEQUENCE:{segments.FirstOrDefault().Index}");
         var queries = String.Join("&", parameters.Select(kv => Uri.EscapeDataString(kv.Key) + "=" + Uri.EscapeDataString(kv.Value)));
         foreach (var seg in segments) {
           if (seg.Data==null) {
