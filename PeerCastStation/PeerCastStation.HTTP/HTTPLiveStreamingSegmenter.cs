@@ -100,9 +100,6 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    protected Logger Logger { get; private set; } = new Logger(nameof(HTTPLiveStreamingSegmenter));
-    private int segmentIndex = 1;
-
     class WaitableContainer<T>
     {
       private TaskCompletionSource<bool> initializedTask = new TaskCompletionSource<bool>();
@@ -132,11 +129,29 @@ namespace PeerCastStation.HTTP
         return value;
       }
     }
+
+    private double targetDuration = 2.0;
+    public double TargetDuration { get { return targetDuration; } }
+    protected Logger Logger { get; private set; } = new Logger(nameof(HTTPLiveStreamingSegmenter));
+    private int segmentIndex = 1;
+
     private WaitableContainer<SegmentList> segments = new WaitableContainer<SegmentList>();
+
+    private void InterlockedMax(ref double target, double duration)
+    {
+    retry:
+      var val = target;
+      if (val<duration) {
+        if (Interlocked.CompareExchange(ref target, duration, val)!=val) {
+          goto retry;
+        }
+      }
+    }
 
     private HLSSegment AllocateSegment(byte[] data, double duration)
     {
       var index = Interlocked.Increment(ref segmentIndex);
+      InterlockedMax(ref targetDuration, duration);
       Logger.Debug("HLSSegment: index:{0} duration:{1}", index, duration);
       return new HLSSegment(index, data, duration);
     }
