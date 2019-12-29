@@ -338,6 +338,7 @@ namespace PeerCastStation.HTTP
           }
           else {
             ctx.Response.ContentType = channel.ChannelInfo.MIMEType;
+            ctx.Response.Headers.Add("Access-Control-Allow-Origin", new string[] { "*" });
             ctx.Response.Headers.Add("Transfer-Encoding", new string [] { "chunked" });
           }
 
