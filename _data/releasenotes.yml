@@ -1,4 +1,28 @@
 ---
+- name: Version 2.9.2 (2019年12月30日開発版)
+  version: 2.9.2
+  channel: dev
+  notes: |
+    2.9.1での不具合を修正しました。
+
+    ## 修正点
+    * 2.9.0と2.9.1がWindows 10より前のWindowsで動かなくなっていたのを修正しました。
+    * 視聴時のCORSができなくなっていたのを再修正しました。
+    * キーフレーム間隔がある程度長い配信でHTTP Live Streamingの不具合があったのを修正しました。
+
+  date: 2019-12-30T02:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.9.2.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.2.zip
+    length: 2490180
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.2.exe
+    length: 2619071
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.9.2.msi
+    length: 2291138
+
 - name: Version 2.9.1 (2019年12月21日開発版)
   version: 2.9.1
   channel: dev
