@@ -1480,7 +1480,7 @@ namespace PeerCastStation.UI.HTTP
     private async Task InvokeGet(IOwinContext ctx)
     {
       var cancel_token = ctx.Request.CallCancelled;
-      await SendJson(ctx, apiContext.GetVersionInfo(), cancel_token).ConfigureAwait(false);
+      await SendJson(ctx, rpcHost.GenerateAPIDescription(), cancel_token).ConfigureAwait(false);
     }
 
     private async Task SendJson(IOwinContext ctx, JToken token, CancellationToken cancel_token)

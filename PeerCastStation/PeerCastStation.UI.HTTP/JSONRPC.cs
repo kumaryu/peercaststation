@@ -13,10 +13,12 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
   {
     public string Name { get; private set; }
     public OutputStreamType Grant { get; private set; }
-    private MethodInfo method;
-    public RPCMethodInfo(MethodInfo method)
+    public MethodInfo Method { get; private set; }
+    public object Receiver { get; private set; }
+    public RPCMethodInfo(object receiver, MethodInfo method)
     {
-      this.method = method;
+      this.Receiver = receiver;
+      this.Method = method;
       var attr = Attribute.GetCustomAttributes(method).First(a => a.GetType()==typeof(RPCMethodAttribute));
       this.Name = ((RPCMethodAttribute)attr).Name;
       this.Grant = ((RPCMethodAttribute)attr).Grant;
@@ -119,13 +121,13 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       else                             return JToken.FromObject(value);
     }
 
-    public JToken Invoke(object receiver, IOwinContext ctx, JToken args)
+    public JToken Invoke(IOwinContext ctx, JToken args)
     {
-      var param_infos = method.GetParameters();
+      var param_infos = Method.GetParameters();
       if (param_infos.Length==0) {
         try {
-          var res = method.Invoke(receiver, new object[] {});
-          return FromObject(method.ReturnType, res);
+          var res = Method.Invoke(Receiver, new object[] {});
+          return FromObject(Method.ReturnType, res);
         }
         catch (TargetInvocationException e) {
           throw e.InnerException;
@@ -142,8 +144,8 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
         }
         if (len==0) {
           try {
-            var res = method.Invoke(receiver, arguments);
-            return FromObject(method.ReturnType, res);
+            var res = Method.Invoke(Receiver, arguments);
+            return FromObject(Method.ReturnType, res);
           }
           catch (TargetInvocationException e) {
             throw e.InnerException;
@@ -201,8 +203,8 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
           throw new RPCError(RPCErrorCode.InvalidParams, "parameters must be Array or Object");
         }
         try {
-          var res = method.Invoke(receiver, arguments);
-          return FromObject(method.ReturnType, res);
+          var res = Method.Invoke(Receiver, arguments);
+          return FromObject(Method.ReturnType, res);
         }
         catch (TargetInvocationException e) {
           if (e.InnerException is RPCError) {
@@ -376,7 +378,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
         var methods = authFunc!=null ? this.methods.Where(method => authFunc(method.Grant)) : this.methods;
         var m = methods.FirstOrDefault(method => method.Name==req.Method);
         if (m!=null) {
-          var res = m.Invoke(host, ctx, req.Parameters);
+          var res = m.Invoke(ctx, req.Parameters);
           if (req.Id!=null) {
             results.Add(new RPCResponse(req.Id, res).ToJson());
           }
@@ -430,18 +432,106 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
     }
 
     private object host;
-    private IEnumerable<RPCMethodInfo> methods;
+    private RPCMethodInfo[] methods;
     public JSONRPCHost(object host)
     {
       this.host = host;
-      this.methods = host.GetType().GetMethods(
-        System.Reflection.BindingFlags.Instance |
-        System.Reflection.BindingFlags.Public |
-        System.Reflection.BindingFlags.NonPublic).Where(method =>
-          Attribute.IsDefined(method, typeof(RPCMethodAttribute), true)
+      this.methods =
+        Enumerable.Concat(
+          Enumerable.Repeat(this.GetType().GetMethod("GenerateAPIDescription"), 1)
+          .Select(method => new RPCMethodInfo(this, method)),
+          host.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+          .Where(method => Attribute.IsDefined(method, typeof(RPCMethodAttribute), true))
+          .Select(method => new RPCMethodInfo(host, method))
         )
-        .Select(method => new RPCMethodInfo(method))
         .ToArray();
     }
+
+    private JObject GenerateTypeSchema(Type t)
+    {
+      if (t.IsGenericType && t.GetGenericTypeDefinition()==typeof(Nullable<>)) {
+        return GenerateTypeSchema(t.GenericTypeArguments[0]);
+      }
+      else if (t==typeof(string)) {
+        return JObject.FromObject(new { type="string" });
+      }
+      else if (t==typeof(bool)) {
+        return JObject.FromObject(new { type="boolean" });
+      }
+      else if (t==typeof(int) ||
+               t==typeof(uint) ||
+               t==typeof(byte) ||
+               t==typeof(sbyte) ||
+               t==typeof(short) ||
+               t==typeof(ushort) ||
+               t==typeof(long) ||
+               t==typeof(ulong) ||
+               t==typeof(float) ||
+               t==typeof(double)) {
+        return JObject.FromObject(new { type="number" });
+      }
+      else if (t==typeof(JObject) || t==typeof(JToken)) {
+        return JObject.FromObject(new { type="object" });
+      }
+      else if (t==typeof(JArray)) {
+        return JObject.FromObject(new { type="array" });
+      }
+      else if (t==typeof(void)) {
+        return JObject.FromObject(new { type="null" });
+      }
+      else {
+        throw new InvalidCastException();
+      }
+    }
+
+    private JObject GenerateParameterDescription(string name, ParameterInfo param, Type t)
+    {
+      var schema = GenerateTypeSchema(t);
+      return JObject.FromObject(new { name, schema });
+    }
+
+    private JObject GenerateParameterDescription(string name, ParameterInfo param)
+    {
+      return GenerateParameterDescription(name, param, param.ParameterType);
+    }
+
+    private JObject GenerateParameterDescription(ParameterInfo param)
+    {
+      return GenerateParameterDescription(param.Name, param, param.ParameterType);
+    }
+
+    [RPCMethod("rpc.discover")]
+    public JToken GenerateAPIDescription()
+    {
+      var openrpc = "1.2.4";
+      var info = JObject.FromObject(new {
+        title = "PeerCastStation",
+        version = "1.0.0",
+      });
+      var methods =
+        new JArray(
+          this.methods
+            .Select(m => {
+              var name = m.Name;
+              var result = GenerateParameterDescription("result", m.Method.ReturnParameter);
+              var @params = new JArray(
+                m.Method.GetParameters()
+                .Where(p => p.ParameterType!=typeof(IOwinContext))
+                .Select(p => GenerateParameterDescription(p))
+                .ToArray()
+              );
+              return JObject.FromObject(new { name, result, @params });
+            })
+            .ToArray()
+        );
+      return JObject.FromObject(new {
+        openrpc,
+        info,
+        methods,
+      });
+    }
+
   }
+
 }
+
