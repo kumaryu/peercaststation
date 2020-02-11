@@ -36,6 +36,7 @@
 
   <ItemGroup>
     <Compile Include="TestCommon.fs" />
+    <Compile Include="CoreTests.fs" />
     <Compile Include="HttpTests.fs" />
     <Compile Include="Tests.fs" />
     <Compile Include="PCPTests.fs" />

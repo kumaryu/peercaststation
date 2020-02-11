@@ -123,22 +123,14 @@ namespace PeerCastStation.Core
     /// 保持している全てのノードと自分ノードのリレー合計を取得します
     /// </summary>
     public int TotalRelays {
-      get {
-        return sinks
-          .Select(x => x.GetConnectionInfo())
-          .Sum(x => (x.Type.HasFlag(ConnectionType.Relay) ? 1 : 0) + (x.LocalRelays ?? 0));
-      }
+      get { return LocalRelays + Nodes.Sum(n => n.RelayCount); }
     }
 
     /// <summary>
     /// 保持している全てのノードと自分ノードの視聴数合計を取得します
     /// </summary>
     public int TotalDirects {
-      get {
-        return sinks
-          .Select(x => x.GetConnectionInfo())
-          .Sum(x => (x.Type.HasFlag(ConnectionType.Direct) ? 1 : 0) + (x.LocalDirects ?? 0));
-      }
+      get { return LocalDirects + Nodes.Sum(n => n.DirectCount); }
     }
 
     /// <summary>
