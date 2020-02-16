@@ -21,6 +21,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections;
 
 namespace PeerCastStation.Core
 {
@@ -58,8 +59,8 @@ namespace PeerCastStation.Core
     private const int NodeLimit = 180000; //ms
     private ISourceStream sourceStream = null;
     private ImmutableList<IChannelSink> sinks = ImmutableList<IChannelSink>.Empty;
-    private List<Host> sourceNodes = new List<Host>();
-    private List<Host> nodes = new List<Host>();
+    private Host[] sourceNodes = new Host[0];
+    private Host[] nodes = new Host[0];
     private Content contentHeader = null;
     private ContentCollection contents;
     private System.Diagnostics.Stopwatch uptimeTimer = new System.Diagnostics.Stopwatch();
@@ -524,45 +525,53 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 接続先として選択できるノードの読み取り専用リストを取得します
     /// </summary>
-    public ReadOnlyCollection<Host> SourceNodes {
-      get {
+    public HostsView SourceNodes {
+      get { return new HostsView(sourceNodes); }
+    }
+
+    public class HostsView
+      : IEnumerable<Host>
+    {
+      private IEnumerable<Host> validNodes;
+      internal HostsView(Host[] hosts)
+      {
         var cur_time = Environment.TickCount;
-        ReplaceCollection(ref sourceNodes, orig => {
-          return new List<Host>(orig.Where(n => cur_time-n.LastUpdated<=NodeLimit));
-        });
-        return new ReadOnlyCollection<Host>(
-          sourceNodes.Except(nodes, new HostComparer()).ToArray()
-        );
+        validNodes = hosts.Where(n => cur_time-n.LastUpdated<=NodeLimit);
+      }
+
+      public int Count {
+        get { return validNodes.Count(); }
+      }
+
+      public IEnumerator<Host> GetEnumerator()
+      {
+        return validNodes.GetEnumerator();
+      }
+
+      IEnumerator IEnumerable.GetEnumerator()
+      {
+        return validNodes.GetEnumerator();
       }
     }
 
     /// <summary>
     /// このチャンネルに関連付けられたノードの読み取り専用リストを取得します
     /// </summary>
-    public ReadOnlyCollection<Host> Nodes
-    {
-      get {
-        var cur_time = Environment.TickCount;
-        ReplaceCollection(ref nodes, orig => {
-          return new List<Host>(orig.Where(n => cur_time-n.LastUpdated<=NodeLimit));
-        });
-        return new ReadOnlyCollection<Host>(nodes);
-      }
+    public HostsView Nodes {
+      get { return new HostsView(nodes); }
     }
 
     public event EventHandler NodesChanged;
     public void AddNode(Host host)
     {
       ReplaceCollection(ref nodes, orig => {
-        var new_collection = new List<Host>(orig);
-        var idx = new_collection.FindIndex(h => h.SessionID==host.SessionID);
-        if (idx>=0) {
-          new_collection[idx] = host;
-        }
-        else {
-          new_collection.Add(host);
-        }
-        return new_collection;
+        var cur_time = Environment.TickCount;
+        return 
+          orig
+            .Where(n => cur_time-n.LastUpdated<=NodeLimit)
+            .Where(n => n.SessionID!=host.SessionID)
+            .Concat(Enumerable.Repeat(host, 1))
+            .ToArray();
       });
       if (NodesChanged!=null) NodesChanged(this, new EventArgs());
     }
@@ -571,8 +580,8 @@ namespace PeerCastStation.Core
     {
       bool removed = false;
       ReplaceCollection(ref nodes, orig => {
-        var new_collection = new List<Host>(orig);
-        removed = new_collection.Remove(host);
+        var new_collection = orig.Where(n => n!=host).ToArray();
+        removed = new_collection.Length!=orig.Length;
         return new_collection;
       });
       if (removed) {
@@ -583,24 +592,20 @@ namespace PeerCastStation.Core
     public void AddSourceNode(Host host)
     {
       ReplaceCollection(ref sourceNodes, orig => {
-        var new_collection = new List<Host>(orig);
-        var idx = new_collection.FindIndex(h => h.SessionID==host.SessionID);
-        if (idx>=0) {
-          new_collection[idx] = host;
-        }
-        else {
-          new_collection.Add(host);
-        }
-        return new_collection;
+        var cur_time = Environment.TickCount;
+        return 
+          orig
+            .Where(n => cur_time-n.LastUpdated<=NodeLimit)
+            .Where(n => n.SessionID!=host.SessionID)
+            .Concat(Enumerable.Repeat(host, 1))
+            .ToArray();
       });
     }
 
     public void RemoveSourceNode(Host host)
     {
       ReplaceCollection(ref sourceNodes, orig => {
-        var new_collection = new List<Host>(orig);
-        new_collection.Remove(host);
-        return new_collection;
+        return orig.Where(n => n!=host).ToArray();
       });
     }
 
