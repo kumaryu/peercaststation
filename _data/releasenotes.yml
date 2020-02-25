@@ -1,4 +1,26 @@
 ---
+- name: Version 2.9.3 (2020年2月26日開発版)
+  version: 2.9.3
+  channel: dev
+  notes: |
+    チャンネルの合計視聴/リレー数がおかしかったのを修正しました。
+
+    ## 修正点
+    * 2.9.0以降でチャンネルの合計視聴/リレー数が少なく表示されていたのを修正しました。
+
+  date: 2020-02-26T00:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.9.3.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.3.zip
+    length: 2490533
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.3.exe
+    length: 2619051
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.9.3.msi
+    length: 2291138
+
 - name: Version 2.9.2 (2019年12月30日開発版)
   version: 2.9.2
   channel: dev
