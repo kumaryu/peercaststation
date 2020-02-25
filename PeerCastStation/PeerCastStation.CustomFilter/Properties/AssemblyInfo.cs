@@ -33,4 +33,4 @@ using System.Runtime.InteropServices;
 // 以下のように '*' を使用します:
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("2.9.2.0")]
+[assembly: AssemblyFileVersion("2.9.3.0")]
