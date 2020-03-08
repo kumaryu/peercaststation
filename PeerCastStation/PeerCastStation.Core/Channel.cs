@@ -272,7 +272,7 @@ namespace PeerCastStation.Core
     public virtual bool MakeRelayable(bool local)
     {
       if (IsRelayable(local)) return true;
-      var disconnects = new List<IChannelSink>();
+      var disconnects = new Queue<IChannelSink>();
       foreach (var os in OutputStreams) {
         var info = os.GetConnectionInfo();
         if (!info.Type.HasFlag(ConnectionType.Relay)) continue;
@@ -281,9 +281,10 @@ namespace PeerCastStation.Core
         if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.Firewalled)) disconnect = true;
         if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.RelayFull) &&
             (info.LocalRelays ?? 0)<1) disconnect = true;
-        if (disconnect) disconnects.Add(os);
+        if (disconnect) disconnects.Enqueue(os);
       }
-      foreach (var os in disconnects) {
+      while (!IsRelayable(local) && disconnects.Count>0) {
+        var os = disconnects.Dequeue();
         os.OnStopped(StopReason.UnavailableError);
         RemoveOutputStream(os);
       }

@@ -61,6 +61,13 @@ let createChannelInfo name contentType =
     info.SetChanInfoType contentType
     ChannelInfo info
 
+let createChannelInfoBitrate name contentType bitrate =
+    let info = AtomCollection()
+    info.SetChanInfoName name
+    info.SetChanInfoType contentType
+    info.SetChanInfoBitrate bitrate
+    ChannelInfo info
+
 let registerApp path appFunc (owinHost:PeerCastStation.Core.Http.OwinHost) =
     owinHost.Register(
         fun builder ->
