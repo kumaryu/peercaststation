@@ -800,7 +800,7 @@ namespace PeerCastStation.PCP
 
       public async Task ProcessStream(Stream stream, IPEndPoint remoteEndPoint, long requestPos, CancellationToken cancellationToken)
       {
-        var isRelayFull = !channel.MakeRelayable(remoteEndPoint.Address.IsSiteLocal());
+        var isRelayFull = !channel.MakeRelayable(remoteEndPoint.Address.ToString(), remoteEndPoint.Address.IsSiteLocal());
         PeerInfo peer = null;
         try {
           await stream.WriteBytesAsync(CreateRelayResponse(isRelayFull), cancellationToken).ConfigureAwait(false);
@@ -853,6 +853,8 @@ namespace PeerCastStation.PCP
       public async Task BeforeQuitAsync(Stream stream, ChannelSink channelSink, CancellationToken cancellationToken)
       {
         if (channelSink.StopReason==StopReason.UnavailableError) {
+          //一定時間BANする
+          channel.Ban(channelSink.Peer.RemoteEndPoint.Address.ToString(), DateTimeOffset.Now.AddSeconds(90));
           //次に接続するべきホストを送ってQUIT
           foreach (var node in SelectSourceHosts(channelSink.Peer.RemoteEndPoint)) {
             if (channelSink.Peer.Host.SessionID==node.SessionID) continue;

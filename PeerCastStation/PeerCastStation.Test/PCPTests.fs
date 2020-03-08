@@ -172,6 +172,7 @@ type PCPRelayConnection =
         channelId : Guid;
         connection : System.Net.Sockets.TcpClient;
         response: HTTPClient.Response;
+        localEndpoint : IPEndPoint;
     }
     interface IDisposable with
         member this.Dispose() =
@@ -189,7 +190,7 @@ module PCPRelayConnection =
         HTTPClient.sendGetRequest (sprintf "/channel/%s" <| channelId.ToString("N")) headers client
         match HTTPClient.recvResponse client with
         | Ok rsp ->
-            { endpoint=endpoint; channelId=channelId; connection=client; response=rsp }
+            { endpoint=endpoint; channelId=channelId; connection=client; response=rsp; localEndpoint=client.Client.LocalEndPoint :?> IPEndPoint }
         | Error err ->
             failwith err
 
@@ -224,6 +225,30 @@ module RelayTests =
         | None ->
             Threading.Thread.Sleep(100)
             waitForOutputStream channel
+    
+    let expectRelay503 (channel:Channel) =
+        use connection = PCPRelayConnection.connect endpoint channel.ChannelID
+        Assert.Equal(503, connection.response.status)
+        PCPRelayConnection.sendHelo connection
+        let oleh = PCPRelayConnection.recvAtom connection
+        Assert.Equal(Atom.PCP_OLEH, oleh.Name)
+        let hosts, last = recvHost connection []
+        Assert.ExpectAtomName Atom.PCP_QUIT last
+        hosts
+
+    let expectRelay200 (channel:Channel) stopReason =
+        use connection = PCPRelayConnection.connect endpoint channel.ChannelID
+        Assert.Equal(200, connection.response.status)
+        PCPRelayConnection.sendHelo connection
+        PCPRelayConnection.recvAtom connection
+        |> Assert.ExpectAtomName Atom.PCP_OLEH
+        PCPRelayConnection.recvAtom connection
+        |> Assert.ExpectAtomName Atom.PCP_OK
+        let os = waitForOutputStream channel
+        os.OnStopped(stopReason)
+        let hosts, last = recvHost connection []
+        Assert.ExpectAtomName Atom.PCP_QUIT last
+        hosts
 
     [<Fact>]
     let ``503の時は他のリレー候補を返して切る`` () =
@@ -235,15 +260,9 @@ module RelayTests =
         Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
         |> Seq.iter (channel.AddNode)
         peca.AddChannel channel
-        use connection = PCPRelayConnection.connect endpoint (channel.ChannelID)
-        Assert.Equal(503, connection.response.status)
-        PCPRelayConnection.sendHelo connection
-        let oleh = PCPRelayConnection.recvAtom connection
-        Assert.Equal(Atom.PCP_OLEH, oleh.Name)
-        let hosts, last = recvHost connection []
+        let hosts = expectRelay503 channel
         Assert.Equal(32, channel.Nodes.Count)
         Assert.Equal(8, List.length hosts)
-        Assert.ExpectAtomName Atom.PCP_QUIT last
 
     [<Fact>]
     let ``ブロードキャストされてきたホスト情報を保持する`` () =
@@ -296,19 +315,9 @@ module RelayTests =
         Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
         |> Seq.iter (channel.AddNode)
         peca.AddChannel channel
-        use connection = PCPRelayConnection.connect endpoint (channel.ChannelID)
-        Assert.Equal(200, connection.response.status)
-        PCPRelayConnection.sendHelo connection
-        PCPRelayConnection.recvAtom connection
-        |> Assert.ExpectAtomName Atom.PCP_OLEH
-        PCPRelayConnection.recvAtom connection
-        |> Assert.ExpectAtomName Atom.PCP_OK
-        let os = waitForOutputStream channel
-        os.OnStopped(StopReason.UnavailableError)
-        let hosts, last = recvHost connection []
+        let hosts = expectRelay200 channel StopReason.UnavailableError
         Assert.Equal(32, channel.Nodes.Count)
         Assert.Equal(8, List.length hosts)
-        Assert.ExpectAtomName Atom.PCP_QUIT last
 
     [<Fact>]
     let ``チャンネルがUserShutdownで終了した時には上のノードをリレー候補として返して切る`` () =
@@ -319,22 +328,19 @@ module RelayTests =
         Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
         |> Seq.iter (channel.AddNode)
         peca.AddChannel channel
-        use connection = PCPRelayConnection.connect endpoint (channel.ChannelID)
-        Assert.Equal(200, connection.response.status)
-        PCPRelayConnection.sendHelo connection
-        PCPRelayConnection.recvAtom connection
-        |> Assert.ExpectAtomName Atom.PCP_OLEH
-        PCPRelayConnection.recvAtom connection
-        |> Assert.ExpectAtomName Atom.PCP_OK
-        let os = waitForOutputStream channel
-        os.OnStopped(StopReason.UserShutdown)
-        let hosts, last = recvHost connection []
+        let hosts = expectRelay200 channel StopReason.UserShutdown
         Assert.Equal(32, channel.Nodes.Count)
         Assert.Equal(1, List.length hosts)
-        Assert.ExpectAtomName Atom.PCP_QUIT last
 
     [<Fact>]
     let ``チャンネルがその他のコードで終了した時にはリレー候補を送らずに切る`` () =
+        use peca = pecaWithOwinHost endpoint registerPCPRelay
+        let channel = DummyRelayChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        channel.Start(null)
+        Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
+        |> Seq.iter (channel.AddNode)
+        peca.AddChannel channel
         [
             StopReason.OffAir
             StopReason.Any
@@ -342,25 +348,36 @@ module RelayTests =
             StopReason.NoHost
         ]
         |> List.iter (fun status ->
-            use peca = pecaWithOwinHost endpoint registerPCPRelay
-            let channel = DummyRelayChannel(peca, NetworkType.IPv4, Guid.NewGuid())
-            channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
-            channel.Start(null)
-            Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
-            |> Seq.iter (channel.AddNode)
-            peca.AddChannel channel
-            use connection = PCPRelayConnection.connect endpoint (channel.ChannelID)
-            Assert.Equal(200, connection.response.status)
-            PCPRelayConnection.sendHelo connection
-            PCPRelayConnection.recvAtom connection
-            |> Assert.ExpectAtomName Atom.PCP_OLEH
-            PCPRelayConnection.recvAtom connection
-            |> Assert.ExpectAtomName Atom.PCP_OK
-            let os = waitForOutputStream channel
-            os.OnStopped(status)
-            let hosts, last = recvHost connection []
+            let hosts = expectRelay200 channel status
             Assert.Equal(32, channel.Nodes.Count)
             Assert.Equal(0, List.length hosts)
-            Assert.ExpectAtomName Atom.PCP_QUIT last
         )
+
+    [<Fact>]
+    let ``チャンネルがUnavailableで終了した時に接続していたIPアドレスが一定時間Banされる`` () =
+        use peca = pecaWithOwinHost endpoint registerPCPRelay
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        channel.Start(null)
+        Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
+        |> Seq.iter (channel.AddNode)
+        peca.AddChannel channel
+        expectRelay200 channel StopReason.UnavailableError |> ignore
+        Assert.True(channel.HasBanned("127.0.0.1"))
+
+    [<Fact>]
+    let ``BanされてるIPアドレスから接続すると一定時間503が返る`` () =
+        use peca = pecaWithOwinHost endpoint registerPCPRelay
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        channel.Start(null)
+        channel.Ban("127.0.0.1", DateTimeOffset.Now.AddMilliseconds(1000.0))
+        Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
+        |> Seq.iter (channel.AddNode)
+        peca.AddChannel channel
+        expectRelay503 channel |> ignore
+        Assert.True(channel.HasBanned("127.0.0.1"))
+        Threading.Thread.Sleep(1000)
+        expectRelay200 channel StopReason.UserShutdown |> ignore
+        Assert.False(channel.HasBanned("127.0.0.1"))
 

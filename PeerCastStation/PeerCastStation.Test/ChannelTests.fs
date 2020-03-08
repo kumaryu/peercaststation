@@ -92,4 +92,25 @@ let ``チャンネルがいっぱいの時にMakeRelayableで切れる分を切�
     Assert.Equal(false, channel.MakeRelayable(false))
     Assert.Equal(4, channel.LocalRelays)
 
+[<Fact>]
+let ``指定したキーをBanするとHasBannedがtrueを返す`` () =
+    use peca = new PeerCast()
+    let channel1 = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+    let channel2 = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+    channel1.Ban("hoge", DateTimeOffset.Now.AddMilliseconds(100.0))
+    channel2.Ban("fuga", DateTimeOffset.Now.AddMilliseconds(100.0))
+    channel1.Ban("piyo", DateTimeOffset.Now.AddMilliseconds(100.0))
+    Assert.True(channel1.HasBanned("hoge"))
+    Assert.False(channel1.HasBanned("fuga"))
+    Assert.True(channel1.HasBanned("piyo"))
+    Assert.False(channel2.HasBanned("hoge"))
+    Assert.True(channel2.HasBanned("fuga"))
+    Assert.False(channel2.HasBanned("piyo"))
+    Threading.Thread.Sleep(100);
+    Assert.False(channel1.HasBanned("hoge"))
+    Assert.False(channel1.HasBanned("fuga"))
+    Assert.False(channel1.HasBanned("piyo"))
+    Assert.False(channel2.HasBanned("hoge"))
+    Assert.False(channel2.HasBanned("fuga"))
+    Assert.False(channel2.HasBanned("piyo"))
 

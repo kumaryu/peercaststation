@@ -22,6 +22,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections;
+using System.Collections.Concurrent;
 
 namespace PeerCastStation.Core
 {
@@ -263,10 +264,37 @@ namespace PeerCastStation.Core
     public bool IsRelayFull {
       get { return !IsRelayable(false); }
     }
+    private ConcurrentDictionary<string, DateTimeOffset> banList = new ConcurrentDictionary<string, DateTimeOffset>();
+
+    public bool HasBanned(string key)
+    {
+      if (banList.TryGetValue(key, out var until)) {
+        if (DateTimeOffset.Now<until) {
+          return true;
+        }
+        else {
+          banList.TryRemove(key, out until);
+          return false;
+        }
+      }
+      else {
+        return false;
+      }
+    }
+
+    public void Ban(string key, DateTimeOffset until)
+    {
+      banList.AddOrUpdate(key, until, (k,v) => until);
+    }
 
     public virtual bool IsRelayable(bool local)
     {
       return this.PeerCast.AccessController.IsChannelRelayable(this, local);
+    }
+
+    public virtual bool MakeRelayable(string key, bool local)
+    {
+      return !HasBanned(key) && MakeRelayable(local);
     }
 
     public virtual bool MakeRelayable(bool local)
