@@ -26,7 +26,25 @@ type DummySourceStream (sstype) =
         member this.Type = sstype
         member this.Status = SourceStreamStatus.Receiving
         member this.GetConnectionInfo () =
-            ConnectionInfo("dummy", ConnectionType.Source, ConnectionStatus.Connected, "", null, RemoteHostStatus.Local, Nullable(), Nullable 0L, Nullable 0.0f, Nullable 0.0f, Nullable(), Nullable(), "dummy")
+            match sstype with
+            | SourceStreamType.Relay ->
+                ConnectionInfo(
+                    "dummy",
+                    ConnectionType.Source ||| ConnectionType.Relay,
+                    ConnectionStatus.Connected,
+                    "dummy source",
+                    IPEndPoint(IPAddress.Parse("203.0.113.1"), 7144),
+                    RemoteHostStatus.Receiving,
+                    Guid.NewGuid() |> Nullable,
+                    Nullable 0L,
+                    Nullable 0.0f,
+                    Nullable 0.0f,
+                    Nullable(),
+                    Nullable(),
+                    "PeerCastStation.Tests")
+            | _ ->
+                ConnectionInfo("dummy", ConnectionType.Source, ConnectionStatus.Connected, "", null, RemoteHostStatus.Local, Nullable(), Nullable 0L, Nullable 0.0f, Nullable 0.0f, Nullable(), Nullable(), "dummy")
+
         member this.Dispose () =
             runTask.TrySetResult(StopReason.UserShutdown) |> ignore
 
@@ -53,6 +71,14 @@ type DummyBroadcastChannel (peercast, network, channelId) =
     override this.IsBroadcasting = true
     override this.CreateSourceStream (source_uri) =
         new DummySourceStream(SourceStreamType.Broadcast)
+        :> ISourceStream
+
+type DummyRelayChannel (peercast, network, channelId) =
+    inherit Channel(peercast, network, channelId)
+
+    override this.IsBroadcasting = false
+    override this.CreateSourceStream (source_uri) =
+        new DummySourceStream(SourceStreamType.Relay)
         :> ISourceStream
 
 let createChannelInfo name contentType =

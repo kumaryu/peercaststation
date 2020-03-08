@@ -209,6 +209,22 @@ module PCPRelayConnection =
 module RelayTests =
     let endpoint = allocateEndPoint IPAddress.Loopback
 
+    let rec recvHost connection hosts =
+        let atom = PCPRelayConnection.recvAtom connection
+        if atom.Name = Atom.PCP_HOST then
+            atom :: hosts
+            |> recvHost connection
+        else
+            hosts, atom
+
+    let rec waitForOutputStream (channel:Channel) =
+        match Seq.tryHead channel.OutputStreams with
+        | Some os ->
+            os
+        | None ->
+            Threading.Thread.Sleep(100)
+            waitForOutputStream channel
+
     [<Fact>]
     let ``503の時は他のリレー候補を返して切る`` () =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
@@ -224,14 +240,7 @@ module RelayTests =
         PCPRelayConnection.sendHelo connection
         let oleh = PCPRelayConnection.recvAtom connection
         Assert.Equal(Atom.PCP_OLEH, oleh.Name)
-        let rec recvHost hosts =
-            let atom = PCPRelayConnection.recvAtom connection
-            if atom.Name = Atom.PCP_HOST then
-                atom :: hosts
-                |> recvHost
-            else
-                hosts, atom
-        let hosts, last = recvHost []
+        let hosts, last = recvHost connection []
         Assert.Equal(32, channel.Nodes.Count)
         Assert.Equal(8, List.length hosts)
         Assert.ExpectAtomName Atom.PCP_QUIT last
@@ -294,25 +303,64 @@ module RelayTests =
         |> Assert.ExpectAtomName Atom.PCP_OLEH
         PCPRelayConnection.recvAtom connection
         |> Assert.ExpectAtomName Atom.PCP_OK
-        let rec waitForOutputStream () =
-            match Seq.tryHead channel.OutputStreams with
-            | Some os ->
-                os
-            | None ->
-                Threading.Thread.Sleep(100)
-                waitForOutputStream()
-        let os = waitForOutputStream()
+        let os = waitForOutputStream channel
         os.OnStopped(StopReason.UnavailableError)
-        let rec recvHost hosts =
-            let atom = PCPRelayConnection.recvAtom connection
-            if atom.Name = Atom.PCP_HOST then
-                atom :: hosts
-                |> recvHost
-            else
-                hosts, atom
-        let hosts, last = recvHost []
+        let hosts, last = recvHost connection []
         Assert.Equal(32, channel.Nodes.Count)
         Assert.Equal(8, List.length hosts)
         Assert.ExpectAtomName Atom.PCP_QUIT last
 
+    [<Fact>]
+    let ``チャンネルがUserShutdownで終了した時には上のノードをリレー候補として返して切る`` () =
+        use peca = pecaWithOwinHost endpoint registerPCPRelay
+        let channel = DummyRelayChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        channel.Start(null)
+        Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
+        |> Seq.iter (channel.AddNode)
+        peca.AddChannel channel
+        use connection = PCPRelayConnection.connect endpoint (channel.ChannelID)
+        Assert.Equal(200, connection.response.status)
+        PCPRelayConnection.sendHelo connection
+        PCPRelayConnection.recvAtom connection
+        |> Assert.ExpectAtomName Atom.PCP_OLEH
+        PCPRelayConnection.recvAtom connection
+        |> Assert.ExpectAtomName Atom.PCP_OK
+        let os = waitForOutputStream channel
+        os.OnStopped(StopReason.UserShutdown)
+        let hosts, last = recvHost connection []
+        Assert.Equal(32, channel.Nodes.Count)
+        Assert.Equal(1, List.length hosts)
+        Assert.ExpectAtomName Atom.PCP_QUIT last
+
+    [<Fact>]
+    let ``チャンネルがその他のコードで終了した時にはリレー候補を送らずに切る`` () =
+        [
+            StopReason.OffAir
+            StopReason.Any
+            StopReason.ConnectionError
+            StopReason.NoHost
+        ]
+        |> List.iter (fun status ->
+            use peca = pecaWithOwinHost endpoint registerPCPRelay
+            let channel = DummyRelayChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+            channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+            channel.Start(null)
+            Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
+            |> Seq.iter (channel.AddNode)
+            peca.AddChannel channel
+            use connection = PCPRelayConnection.connect endpoint (channel.ChannelID)
+            Assert.Equal(200, connection.response.status)
+            PCPRelayConnection.sendHelo connection
+            PCPRelayConnection.recvAtom connection
+            |> Assert.ExpectAtomName Atom.PCP_OLEH
+            PCPRelayConnection.recvAtom connection
+            |> Assert.ExpectAtomName Atom.PCP_OK
+            let os = waitForOutputStream channel
+            os.OnStopped(status)
+            let hosts, last = recvHost connection []
+            Assert.Equal(32, channel.Nodes.Count)
+            Assert.Equal(0, List.length hosts)
+            Assert.ExpectAtomName Atom.PCP_QUIT last
+        )
 
