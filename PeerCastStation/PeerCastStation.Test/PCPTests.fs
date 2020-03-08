@@ -278,3 +278,41 @@ module RelayTests =
         Threading.Thread.Sleep(1000)
         Assert.Equal(32, channel.Nodes.Count)
 
+    [<Fact>]
+    let ``チャンネルがUnavailableで終了した時には他のリレー候補を返して切る`` () =
+        use peca = pecaWithOwinHost endpoint registerPCPRelay
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        channel.Start(null)
+        Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
+        |> Seq.iter (channel.AddNode)
+        peca.AddChannel channel
+        use connection = PCPRelayConnection.connect endpoint (channel.ChannelID)
+        Assert.Equal(200, connection.response.status)
+        PCPRelayConnection.sendHelo connection
+        PCPRelayConnection.recvAtom connection
+        |> Assert.ExpectAtomName Atom.PCP_OLEH
+        PCPRelayConnection.recvAtom connection
+        |> Assert.ExpectAtomName Atom.PCP_OK
+        let rec waitForOutputStream () =
+            match Seq.tryHead channel.OutputStreams with
+            | Some os ->
+                os
+            | None ->
+                Threading.Thread.Sleep(100)
+                waitForOutputStream()
+        let os = waitForOutputStream()
+        os.OnStopped(StopReason.UnavailableError)
+        let rec recvHost hosts =
+            let atom = PCPRelayConnection.recvAtom connection
+            if atom.Name = Atom.PCP_HOST then
+                atom :: hosts
+                |> recvHost
+            else
+                hosts, atom
+        let hosts, last = recvHost []
+        Assert.Equal(32, channel.Nodes.Count)
+        Assert.Equal(8, List.length hosts)
+        Assert.ExpectAtomName Atom.PCP_QUIT last
+
+
