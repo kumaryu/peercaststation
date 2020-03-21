@@ -22,7 +22,6 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections;
-using System.Collections.Concurrent;
 
 namespace PeerCastStation.Core
 {
@@ -264,17 +263,21 @@ namespace PeerCastStation.Core
     public bool IsRelayFull {
       get { return !IsRelayable(false); }
     }
-    private ConcurrentDictionary<string, DateTimeOffset> banList = new ConcurrentDictionary<string, DateTimeOffset>();
+    private ImmutableDictionary<string, DateTimeOffset> banList = ImmutableDictionary<string, DateTimeOffset>.Empty;
 
     public bool HasBanned(string key)
     {
-      if (banList.TryGetValue(key, out var until)) {
+    retry:
+      var list = banList;
+      if (list.TryGetValue(key, out var until)) {
         if (DateTimeOffset.Now<until) {
           return true;
         }
-        else {
-          banList.TryRemove(key, out until);
+        else if (Interlocked.CompareExchange(ref banList, list.Remove(key), list)==list) {
           return false;
+        }
+        else {
+          goto retry;
         }
       }
       else {
@@ -284,7 +287,18 @@ namespace PeerCastStation.Core
 
     public void Ban(string key, DateTimeOffset until)
     {
-      banList.AddOrUpdate(key, until, (k,v) => until);
+    retry:
+      var list = banList;
+      if (list.ContainsKey(key)) {
+        if (Interlocked.CompareExchange(ref banList, list.SetItem(key, until), list)!=list) {
+          goto retry;
+        }
+      }
+      else {
+        if (Interlocked.CompareExchange(ref banList, list.Add(key, until), list)!=list) {
+          goto retry;
+        }
+      }
     }
 
     public virtual bool IsRelayable(bool local)
