@@ -263,41 +263,31 @@ namespace PeerCastStation.Core
     public bool IsRelayFull {
       get { return !IsRelayable(false); }
     }
-    private ImmutableDictionary<string, DateTimeOffset> banList = ImmutableDictionary<string, DateTimeOffset>.Empty;
+
+    private Dictionary<string, DateTimeOffset> banList = new Dictionary<string, DateTimeOffset>();
 
     public bool HasBanned(string key)
     {
-    retry:
-      var list = banList;
-      if (list.TryGetValue(key, out var until)) {
-        if (DateTimeOffset.Now<until) {
-          return true;
-        }
-        else if (Interlocked.CompareExchange(ref banList, list.Remove(key), list)==list) {
-          return false;
+      lock (banList) {
+        if (banList.TryGetValue(key, out var until)) {
+          if (DateTimeOffset.Now<until) {
+            return true;
+          }
+          else {
+            banList.Remove(key);
+            return false;
+          }
         }
         else {
-          goto retry;
+          return false;
         }
-      }
-      else {
-        return false;
       }
     }
 
     public void Ban(string key, DateTimeOffset until)
     {
-    retry:
-      var list = banList;
-      if (list.ContainsKey(key)) {
-        if (Interlocked.CompareExchange(ref banList, list.SetItem(key, until), list)!=list) {
-          goto retry;
-        }
-      }
-      else {
-        if (Interlocked.CompareExchange(ref banList, list.Add(key, until), list)!=list) {
-          goto retry;
-        }
+      lock (banList) {
+        banList[key] = until;
       }
     }
 
