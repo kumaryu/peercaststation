@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
-using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -58,7 +57,7 @@ namespace PeerCastStation.Core
     protected static Logger logger = new Logger(typeof(Channel));
     private const int NodeLimit = 180000; //ms
     private ISourceStream sourceStream = null;
-    private ImmutableList<IChannelSink> sinks = ImmutableList<IChannelSink>.Empty;
+    private ImmutableArray<IChannelSink> sinks = ImmutableArray<IChannelSink>.Empty;
     private Host[] sourceNodes = new Host[0];
     private Host[] nodes = new Host[0];
     private Content contentHeader = null;
@@ -153,6 +152,15 @@ namespace PeerCastStation.Core
       } while (!replaced);
     }
 
+    private void ReplaceCollection<T>(ref ImmutableArray<T> collection, Func<ImmutableArray<T>, ImmutableArray<T>> newcollection_func) where T : class
+    {
+      bool replaced = false;
+      do {
+        var orig = collection;
+        var new_collection = newcollection_func(orig);
+        replaced = ImmutableInterlocked.InterlockedCompareExchange(ref collection, new_collection, orig)==orig;
+      } while (!replaced);
+    }
 
     private class ChannelSinkSubscription
       : IDisposable
@@ -304,23 +312,26 @@ namespace PeerCastStation.Core
     public virtual bool MakeRelayable(bool local)
     {
       if (IsRelayable(local)) return true;
-      var disconnects = new Queue<IChannelSink>();
-      foreach (var os in OutputStreams) {
-        var info = os.GetConnectionInfo();
-        if (!info.Type.HasFlag(ConnectionType.Relay)) continue;
-        if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.Local)) continue;
-        var disconnect = false;
-        if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.Firewalled)) disconnect = true;
-        if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.RelayFull) &&
-            (info.LocalRelays ?? 0)<1) disconnect = true;
-        if (disconnect) disconnects.Enqueue(os);
-      }
-      while (!IsRelayable(local) && disconnects.Count>0) {
-        var os = disconnects.Dequeue();
+      var disconnects =
+        sinks
+        .Where(os => {
+          var info = os.GetConnectionInfo();
+          return 
+            info.Type.HasFlag(ConnectionType.Relay) &&
+            !info.RemoteHostStatus.HasFlag(RemoteHostStatus.Local) &&
+            (
+              info.RemoteHostStatus.HasFlag(RemoteHostStatus.Firewalled) ||
+              (info.RemoteHostStatus.HasFlag(RemoteHostStatus.RelayFull) && (info.LocalRelays ?? 0)<1)
+            );
+        });
+      foreach (var os in disconnects) {
         os.OnStopped(StopReason.UnavailableError);
         RemoveOutputStream(os);
+        if (IsRelayable(local)) {
+          return true;
+        }
       }
-      return IsRelayable(local);
+      return false;
     }
 
     /// <summary>
@@ -363,7 +374,7 @@ namespace PeerCastStation.Core
     /// </summary>
     public ContentCollection Contents { get { return contents; } }
 
-    private List<IContentSink> contentSinks = new List<IContentSink>();
+    private ImmutableArray<IContentSink> contentSinks = ImmutableArray<IContentSink>.Empty;
 
     private class ContentSinkSubscription
       : IDisposable
@@ -390,11 +401,7 @@ namespace PeerCastStation.Core
 
     public IDisposable AddContentSink(IContentSink sink, long requestPos)
     {
-      ReplaceCollection(ref contentSinks, orig => {
-        var new_collection = new List<IContentSink>(orig);
-        new_collection.Add(sink);
-        return new_collection;
-      });
+      ReplaceCollection(ref contentSinks, orig => orig.Add(sink));
       var header = contentHeader;
       if (header!=null) {
         var channel_info = ChannelInfo;
@@ -418,13 +425,9 @@ namespace PeerCastStation.Core
 
     public bool RemoveContentSink(IContentSink sink)
     {
-      bool removed = false;
-      ReplaceCollection(ref contentSinks, orig => {
-        var new_collection = new List<IContentSink>(orig);
-        removed = new_collection.Remove(sink);
-        return new_collection;
-      });
-      return removed;
+      var sinks = contentSinks;
+      ReplaceCollection(ref contentSinks, orig => orig.Remove(sink));
+      return sinks.Length!=contentSinks.Length;
     }
 
     private Task lastTask = Task.Delay(0);
@@ -692,7 +695,7 @@ namespace PeerCastStation.Core
       var old = Interlocked.CompareExchange(ref sourceStream, null, source_stream);
       if (old!=source_stream) return;
       old.Dispose();
-      var ostreams = Interlocked.Exchange(ref sinks, ImmutableList<IChannelSink>.Empty);
+      var ostreams = ImmutableInterlocked.InterlockedExchange(ref sinks, ImmutableArray<IChannelSink>.Empty);
       foreach (var os in ostreams) {
         os.OnStopped(reason);
       }
@@ -788,7 +791,7 @@ namespace PeerCastStation.Core
       if (source!=null) {
         source.Dispose();
       }
-      var ostreams = Interlocked.Exchange(ref sinks, ImmutableList<IChannelSink>.Empty);
+      var ostreams = ImmutableInterlocked.InterlockedExchange(ref sinks, ImmutableArray<IChannelSink>.Empty);
       foreach (var os in ostreams) {
         os.OnStopped(StopReason.OffAir);
       }
