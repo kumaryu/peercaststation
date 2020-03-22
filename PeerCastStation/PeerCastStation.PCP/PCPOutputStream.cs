@@ -309,11 +309,11 @@ namespace PeerCastStation.PCP
         this.logger = logger;
       }
 
-      private class PCPException
+      private class HandshakeErrorException
         : Exception
       {
         public StopReason QuitCode { get; private set; }
-        public PCPException(StopReason code)
+        public HandshakeErrorException(StopReason code)
         {
           QuitCode = code;
         }
@@ -422,6 +422,7 @@ namespace PeerCastStation.PCP
       {
         switch (code) {
         case StopReason.None:
+        case StopReason.UserReconnect:
           break;
         case StopReason.Any:
           await stream.WriteAsync(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT), cancellationToken).ConfigureAwait(false);
@@ -441,6 +442,7 @@ namespace PeerCastStation.PCP
         case StopReason.UnavailableError:
           await stream.WriteAsync(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT + Atom.PCP_ERROR_UNAVAILABLE), cancellationToken).ConfigureAwait(false);
           break;
+        case StopReason.NoHost:
         case StopReason.OffAir:
           await stream.WriteAsync(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT + Atom.PCP_ERROR_OFFAIR), cancellationToken).ConfigureAwait(false);
           break;
@@ -477,52 +479,21 @@ namespace PeerCastStation.PCP
             if (peer==null) {
               logger.Info("Helo has no SessionID");
               //セッションIDが無かった
-              throw new PCPException(StopReason.NotIdentifiedError);
+              throw new HandshakeErrorException(StopReason.NotIdentifiedError);
             }
             else if ((peer.Host.Extra.GetHeloVersion() ?? 0)<1200) {
               logger.Info("Helo version {0} is too old", peer.Host.Extra.GetHeloVersion() ?? 0);
               //クライアントバージョンが無かった、もしくは古すぎ
-              throw new PCPException(StopReason.BadAgentError);
+              throw new HandshakeErrorException(StopReason.BadAgentError);
             }
             else if (isRelayFull) {
               logger.Debug("Handshake succeeded {0}({1}) but relay is full", peer.Host.GlobalEndPoint, peer.Host.SessionID.ToString("N"));
-              {
-                //次に接続するべきホストを送ってQUIT
-                foreach (var node in SelectSourceHosts(remoteEndPoint)) {
-                  if (peer.Host.SessionID==node.SessionID) continue;
-                  var host_atom = new AtomCollection(node.Extra);
-                  var ip = host_atom.FindByName(Atom.PCP_HOST_IP);
-                  while (ip!=null) {
-                    host_atom.Remove(ip);
-                    ip = host_atom.FindByName(Atom.PCP_HOST_IP);
-                  }
-                  var port = host_atom.FindByName(Atom.PCP_HOST_PORT);
-                  while (port!=null) {
-                    host_atom.Remove(port);
-                    port = host_atom.FindByName(Atom.PCP_HOST_PORT);
-                  }
-                  host_atom.SetHostSessionID(node.SessionID);
-                  var globalendpoint = node.GlobalEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
-                  host_atom.AddHostIP(globalendpoint.Address);
-                  host_atom.AddHostPort(globalendpoint.Port);
-                  var localendpoint  = node.LocalEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
-                  host_atom.AddHostIP(localendpoint.Address);
-                  host_atom.AddHostPort(localendpoint.Port);
-                  host_atom.SetHostNumRelays(node.RelayCount);
-                  host_atom.SetHostNumListeners(node.DirectCount);
-                  host_atom.SetHostChannelID(channel.ChannelID);
-                  host_atom.SetHostFlags1(
-                    (node.IsFirewalled ? PCPHostFlags1.Firewalled : PCPHostFlags1.None) |
-                    (node.IsTracker ? PCPHostFlags1.Tracker : PCPHostFlags1.None) |
-                    (node.IsRelayFull ? PCPHostFlags1.None : PCPHostFlags1.Relay) |
-                    (node.IsDirectFull ? PCPHostFlags1.None : PCPHostFlags1.Direct) |
-                    (node.IsReceiving ? PCPHostFlags1.Receiving : PCPHostFlags1.None) |
-                    (node.IsControlFull ? PCPHostFlags1.None : PCPHostFlags1.ControlIn));
-                  await stream.WriteAsync(new Atom(Atom.PCP_HOST, host_atom), cancellationToken).ConfigureAwait(false);
-                  logger.Debug("Sending Node: {0}({1})", globalendpoint, node.SessionID.ToString("N"));
-                }
+              //次に接続するべきホストを送ってQUIT
+              foreach (var node in SelectSourceHosts(remoteEndPoint)) {
+                if (peer.Host.SessionID==node.SessionID) continue;
+                await SendHost(stream, node, cancellationToken).ConfigureAwait(false);
               }
-              throw new PCPException(StopReason.UnavailableError);
+              throw new HandshakeErrorException(StopReason.UnavailableError);
             }
             else {
               logger.Debug("Handshake succeeded {0}({1})", peer.Host.GlobalEndPoint, peer.Host.SessionID.ToString("N"));
@@ -531,6 +502,40 @@ namespace PeerCastStation.PCP
           }
         }
         return peer;
+      }
+
+      private async Task SendHost(Stream stream, Host node, CancellationToken cancellationToken)
+      {
+        var host_atom = new AtomCollection(node.Extra);
+        var ip = host_atom.FindByName(Atom.PCP_HOST_IP);
+        while (ip!=null) {
+          host_atom.Remove(ip);
+          ip = host_atom.FindByName(Atom.PCP_HOST_IP);
+        }
+        var port = host_atom.FindByName(Atom.PCP_HOST_PORT);
+        while (port!=null) {
+          host_atom.Remove(port);
+          port = host_atom.FindByName(Atom.PCP_HOST_PORT);
+        }
+        host_atom.SetHostSessionID(node.SessionID);
+        var globalendpoint = node.GlobalEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
+        host_atom.AddHostIP(globalendpoint.Address);
+        host_atom.AddHostPort(globalendpoint.Port);
+        var localendpoint  = node.LocalEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
+        host_atom.AddHostIP(localendpoint.Address);
+        host_atom.AddHostPort(localendpoint.Port);
+        host_atom.SetHostNumRelays(node.RelayCount);
+        host_atom.SetHostNumListeners(node.DirectCount);
+        host_atom.SetHostChannelID(channel.ChannelID);
+        host_atom.SetHostFlags1(
+          (node.IsFirewalled ? PCPHostFlags1.Firewalled : PCPHostFlags1.None) |
+          (node.IsTracker ? PCPHostFlags1.Tracker : PCPHostFlags1.None) |
+          (node.IsRelayFull ? PCPHostFlags1.None : PCPHostFlags1.Relay) |
+          (node.IsDirectFull ? PCPHostFlags1.None : PCPHostFlags1.Direct) |
+          (node.IsReceiving ? PCPHostFlags1.Receiving : PCPHostFlags1.None) |
+          (node.IsControlFull ? PCPHostFlags1.None : PCPHostFlags1.ControlIn));
+        await stream.WriteAsync(new Atom(Atom.PCP_HOST, host_atom), cancellationToken).ConfigureAwait(false);
+        logger.Debug("Sending Node: {0}({1})", globalendpoint, node.SessionID.ToString("N"));
       }
 
       private Task OnPCPHelo(Stream stream, ChannelSink sink, Atom atom, CancellationToken cancel_token)
@@ -795,7 +800,7 @@ namespace PeerCastStation.PCP
 
       public async Task ProcessStream(Stream stream, IPEndPoint remoteEndPoint, long requestPos, CancellationToken cancellationToken)
       {
-        var isRelayFull = !channel.MakeRelayable(remoteEndPoint.Address.IsSiteLocal());
+        var isRelayFull = !channel.MakeRelayable(remoteEndPoint.Address.ToString(), remoteEndPoint.Address.IsSiteLocal());
         PeerInfo peer = null;
         try {
           await stream.WriteBytesAsync(CreateRelayResponse(isRelayFull), cancellationToken).ConfigureAwait(false);
@@ -804,10 +809,10 @@ namespace PeerCastStation.PCP
             try {
               peer = await DoHandshake(stream, remoteEndPoint, isRelayFull, handshakeCT.Token).ConfigureAwait(false);
             }
-            catch (TaskCanceledException) {
+            catch (OperationCanceledException) {
               if (!cancellationToken.IsCancellationRequested) {
                 logger.Info("Handshake timed out.");
-                throw new PCPException(StopReason.BadAgentError);
+                throw new HandshakeErrorException(StopReason.BadAgentError);
               }
               else {
                 throw;
@@ -825,14 +830,15 @@ namespace PeerCastStation.PCP
               ).ConfigureAwait(false);
             }
           }
-          catch (TaskCanceledException) {
+          catch (OperationCanceledException) {
           }
+          await BeforeQuitAsync(stream, sink, cancellationToken).ConfigureAwait(false);
           await SendQuit(stream, sink.StopReason, cancellationToken).ConfigureAwait(false);
         }
-        catch (TaskCanceledException) {
+        catch (OperationCanceledException) {
           await SendQuit(stream, StopReason.OffAir, cancellationToken).ConfigureAwait(false);
         }
-        catch (PCPException e) {
+        catch (HandshakeErrorException e) {
           await SendQuit(stream, e.QuitCode, cancellationToken).ConfigureAwait(false);
         }
         catch (InvalidDataException e) {
@@ -841,6 +847,40 @@ namespace PeerCastStation.PCP
         }
         catch (IOException e) {
           logger.Info(e);
+        }
+      }
+
+      public async Task BeforeQuitAsync(Stream stream, ChannelSink channelSink, CancellationToken cancellationToken)
+      {
+        if (channelSink.StopReason==StopReason.UnavailableError) {
+          //一定時間BANする
+          channel.Ban(channelSink.Peer.RemoteEndPoint.Address.ToString(), DateTimeOffset.Now.AddSeconds(90));
+          //次に接続するべきホストを送ってQUIT
+          foreach (var node in SelectSourceHosts(channelSink.Peer.RemoteEndPoint)) {
+            if (channelSink.Peer.Host.SessionID==node.SessionID) continue;
+            await SendHost(stream, node, cancellationToken).ConfigureAwait(false);
+          }
+        }
+        if (channelSink.StopReason==StopReason.UserShutdown) {
+          //つながっていたホストを送ってQUIT
+          var src = channel.SourceStream?.GetConnectionInfo();
+          if (!channel.IsBroadcasting &&
+              src!=null &&
+              src.RemoteEndPoint!=null &&
+              src.RemoteEndPoint.Address.GetAddressLocality()>=2 &&
+              src.RemoteSessionID.HasValue &&
+              src.RemoteSessionID.Value!=Guid.Empty) {
+            var node = new HostBuilder();
+            node.SessionID = src.RemoteSessionID.Value;
+            node.GlobalEndPoint = src.RemoteEndPoint;
+            node.IsReceiving = true;
+            node.IsFirewalled = false;
+            node.IsControlFull = false;
+            node.IsDirectFull = false;
+            node.IsRelayFull = false;
+            node.IsTracker = false;
+            await SendHost(stream, node.ToHost(), cancellationToken).ConfigureAwait(false);
+          }
         }
       }
 

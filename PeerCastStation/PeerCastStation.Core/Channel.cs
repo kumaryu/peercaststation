@@ -264,15 +264,47 @@ namespace PeerCastStation.Core
       get { return !IsRelayable(false); }
     }
 
+    private Dictionary<string, DateTimeOffset> banList = new Dictionary<string, DateTimeOffset>();
+
+    public bool HasBanned(string key)
+    {
+      lock (banList) {
+        if (banList.TryGetValue(key, out var until)) {
+          if (DateTimeOffset.Now<until) {
+            return true;
+          }
+          else {
+            banList.Remove(key);
+            return false;
+          }
+        }
+        else {
+          return false;
+        }
+      }
+    }
+
+    public void Ban(string key, DateTimeOffset until)
+    {
+      lock (banList) {
+        banList[key] = until;
+      }
+    }
+
     public virtual bool IsRelayable(bool local)
     {
       return this.PeerCast.AccessController.IsChannelRelayable(this, local);
     }
 
+    public virtual bool MakeRelayable(string key, bool local)
+    {
+      return !HasBanned(key) && MakeRelayable(local);
+    }
+
     public virtual bool MakeRelayable(bool local)
     {
       if (IsRelayable(local)) return true;
-      var disconnects = new List<IChannelSink>();
+      var disconnects = new Queue<IChannelSink>();
       foreach (var os in OutputStreams) {
         var info = os.GetConnectionInfo();
         if (!info.Type.HasFlag(ConnectionType.Relay)) continue;
@@ -281,9 +313,10 @@ namespace PeerCastStation.Core
         if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.Firewalled)) disconnect = true;
         if (info.RemoteHostStatus.HasFlag(RemoteHostStatus.RelayFull) &&
             (info.LocalRelays ?? 0)<1) disconnect = true;
-        if (disconnect) disconnects.Add(os);
+        if (disconnect) disconnects.Enqueue(os);
       }
-      foreach (var os in disconnects) {
+      while (!IsRelayable(local) && disconnects.Count>0) {
+        var os = disconnects.Dequeue();
         os.OnStopped(StopReason.UnavailableError);
         RemoveOutputStream(os);
       }
