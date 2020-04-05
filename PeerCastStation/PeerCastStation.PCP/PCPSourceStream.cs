@@ -92,7 +92,7 @@ namespace PeerCastStation.PCP
 
   public class PCPSourceConnection
     : SourceConnectionBase,
-      IChannelSource
+      IChannelMonitor
   {
     private TcpClient client = null;
     private RelayRequestResponse relayResponse = null;
@@ -102,7 +102,6 @@ namespace PeerCastStation.PCP
     private IContentSink contentSink;
     private Content     lastHeader = null;
     private ChannelInfo lastInfo = null;
-    private bool isStarted = false;
 
     public PCPSourceConnection(
         PeerCast peercast,
@@ -117,27 +116,18 @@ namespace PeerCastStation.PCP
 
     protected override void OnStarted()
     {
-      isStarted = true;
       Logger.Debug("Started");
-      Channel.ChannelInfoChanged  += Channel_HostInfoUpdated;
-      Channel.ChannelTrackChanged += Channel_HostInfoUpdated;
       lastInfo = Channel.ChannelInfo;
       lastHeader = Channel.ContentHeader;
+      Channel.AddMonitor(this);
       base.OnStarted();
     }
 
     protected override void OnStopped()
     {
-      isStarted = false;
-      Channel.ChannelInfoChanged  -= Channel_HostInfoUpdated;
-      Channel.ChannelTrackChanged -= Channel_HostInfoUpdated;
+      Channel.RemoveMonitor(this);
       Logger.Debug("Finished");
       base.OnStopped();
-    }
-
-    private void Channel_HostInfoUpdated(object sender, EventArgs e)
-    {
-      BroadcastHostInfo();
     }
 
     protected async Task<SourceConnectionClient> DoConnect(IPEndPoint endpoint)
@@ -733,10 +723,22 @@ Stopped:
       }.Build();
     }
 
+    public void OnContentChanged(ChannelContentType channelContentType)
+    {
+      if (CheckHostInfoUpdate()) {
+        BroadcastHostInfo();
+      }
+    }
+
     public void OnNodeChanged(ChannelNodeAction action, Host node)
     {
-      if (!isStarted) return;
-      BroadcastHostInfo();
+      if (CheckHostInfoUpdate()) {
+        BroadcastHostInfo();
+      }
+    }
+
+    public void OnStopped(StopReason reason)
+    {
     }
   }
 

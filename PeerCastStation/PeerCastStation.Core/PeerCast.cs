@@ -133,8 +133,8 @@ namespace PeerCastStation.Core
     /// <summary>
     /// チャンネル管理オブジェクトのリストを取得します
     /// </summary>
-    public ReadOnlyCollection<IChannelMonitor> ChannelMonitors { get { return channelMonitors.AsReadOnly(); } }
-    private List<IChannelMonitor> channelMonitors = new List<IChannelMonitor>();
+    public ReadOnlyCollection<IPeerCastMonitor> ChannelMonitors { get { return channelMonitors.AsReadOnly(); } }
+    private List<IPeerCastMonitor> channelMonitors = new List<IPeerCastMonitor>();
 
     /// <summary>
     /// チャンネルが追加された時に呼び出されます。
@@ -369,19 +369,19 @@ namespace PeerCastStation.Core
       monitorTask = StartMonitor(cancelSource.Token);
     }
 
-		public void AddChannelMonitor(IChannelMonitor monitor)
+		public void AddChannelMonitor(IPeerCastMonitor monitor)
 		{
 			ReplaceCollection(ref channelMonitors, orig => {
-				var new_monitors = new List<IChannelMonitor>(orig);
+				var new_monitors = new List<IPeerCastMonitor>(orig);
 				new_monitors.Add(monitor);
 				return new_monitors;
 			});
 		}
 
-		public void RemoveChannelMonitor(IChannelMonitor monitor)
+		public void RemoveChannelMonitor(IPeerCastMonitor monitor)
 		{
 			ReplaceCollection(ref channelMonitors, orig => {
-				var new_monitors = new List<IChannelMonitor>(orig);
+				var new_monitors = new List<IPeerCastMonitor>(orig);
 				new_monitors.Remove(monitor);
 				return new_monitors;
 			});

@@ -57,7 +57,7 @@ namespace PeerCastStation.Core
     protected static Logger logger = new Logger(typeof(Channel));
     private const int NodeLimit = 180000; //ms
     private ISourceStream sourceStream = null;
-    private ImmutableArray<IChannelSource> sources = ImmutableArray<IChannelSource>.Empty;
+    private ImmutableArray<IChannelMonitor> monitors = ImmutableArray<IChannelMonitor>.Empty;
     private ImmutableArray<IChannelSink> sinks = ImmutableArray<IChannelSink>.Empty;
     private Host[] sourceNodes = new Host[0];
     private Host[] nodes = new Host[0];
@@ -440,16 +440,17 @@ namespace PeerCastStation.Core
       });
     }
 
-    private void DispatchSourceEvent(Action<IChannelSource> action)
+    private void DispatchMonitorEvent(Action<IChannelMonitor> action)
     {
-      var sources = this.sources;
+      var monitors = this.monitors;
       lastTask = lastTask.ContinueWith(prev => {
-        sources.AsParallel().ForAll(action);
+        monitors.AsParallel().ForAll(action);
       });
     }
 
     private void OnChannelInfoChanged(ChannelInfo channel_info)
     {
+      DispatchMonitorEvent(mon => mon.OnContentChanged(ChannelContentType.ChannelInfo));
       DispatchSinkEvent(sink => {
         sink.OnChannelInfo(channel_info);
       });
@@ -457,6 +458,7 @@ namespace PeerCastStation.Core
 
     private void OnChannelTrackChanged(ChannelTrack channel_track)
     {
+      DispatchMonitorEvent(mon => mon.OnContentChanged(ChannelContentType.ChannelTrack));
       DispatchSinkEvent(sink => {
         sink.OnChannelTrack(channel_track);
       });
@@ -464,6 +466,7 @@ namespace PeerCastStation.Core
 
     private void OnContentHeaderChanged(Content header)
     {
+      DispatchMonitorEvent(mon => mon.OnContentChanged(ChannelContentType.ContentHeader));
       DispatchSinkEvent(sink => {
         sink.OnContentHeader(header);
       });
@@ -507,7 +510,6 @@ namespace PeerCastStation.Core
 
       public void OnStop(StopReason reason)
       {
-        owner.Closed?.Invoke(owner, new StreamStoppedEventArgs(reason));
       }
     }
 
@@ -537,10 +539,6 @@ namespace PeerCastStation.Core
       }
     }
 
-    /// <summary>
-    /// チャンネル接続が終了する時に発生するイベントです
-    /// </summary>
-    public event StreamStoppedEventHandler Closed;
     private void OnClosed(StopReason reason)
     {
       var sinks = contentSinks;
@@ -617,7 +615,7 @@ namespace PeerCastStation.Core
             .Concat(Enumerable.Repeat(host, 1))
             .ToArray();
       });
-      DispatchSourceEvent(src => src.OnNodeChanged(ChannelNodeAction.Updated, host));
+      DispatchMonitorEvent(mon => mon.OnNodeChanged(ChannelNodeAction.Updated, host));
     }
 
     public void RemoveNode(Host host)
@@ -629,7 +627,7 @@ namespace PeerCastStation.Core
         return new_collection;
       });
       if (removed) {
-        DispatchSourceEvent(src => src.OnNodeChanged(ChannelNodeAction.Removed, host));
+        DispatchMonitorEvent(mon => mon.OnNodeChanged(ChannelNodeAction.Removed, host));
       }
     }
 
@@ -691,13 +689,7 @@ namespace PeerCastStation.Core
         uptimeTimer.Restart();
       }
       else {
-        if (old is IChannelSource) {
-          ReplaceCollection(ref sources, orig => orig.Remove((IChannelSource)old));
-        }
         old.Dispose();
-      }
-      if (source_stream is IChannelSource) {
-        ReplaceCollection(ref sources, orig => orig.Add((IChannelSource)source_stream));
       }
       sourceStream.Run().ContinueWith(prev => {
         RemoveSourceStream(source_stream, prev.IsFaulted ? StopReason.NotIdentifiedError : prev.Result);
@@ -709,15 +701,50 @@ namespace PeerCastStation.Core
       var old = Interlocked.CompareExchange(ref sourceStream, null, source_stream);
       if (old!=source_stream) return;
       old.Dispose();
-      if (old is IChannelSource) {
-        ReplaceCollection(ref sources, orig => orig.Remove((IChannelSource)old));
-      }
       var ostreams = ImmutableInterlocked.InterlockedExchange(ref sinks, ImmutableArray<IChannelSink>.Empty);
       foreach (var os in ostreams) {
         os.OnStopped(reason);
       }
       uptimeTimer.Stop();
       OnClosed(reason);
+    }
+
+    private class MonitorSubscription
+      : IDisposable
+    {
+      private Channel channel;
+      private IChannelMonitor monitor;
+
+      public MonitorSubscription(Channel channel, IChannelMonitor monitor)
+      {
+        this.channel = channel;
+        this.monitor = monitor;
+      }
+
+      public void Dispose()
+      {
+        channel.RemoveMonitor(monitor);
+      }
+    }
+
+    public IDisposable AddMonitor(IChannelMonitor monitor)
+    {
+      ReplaceCollection(ref monitors, orig => orig.Add(monitor));
+      if (contentHeader!=null) {
+        if (ChannelInfo!=null) {
+          monitor.OnContentChanged(ChannelContentType.ChannelInfo);
+        }
+        if (ChannelTrack!=null) {
+          monitor.OnContentChanged(ChannelContentType.ChannelTrack);
+        }
+        monitor.OnContentChanged(ChannelContentType.ContentHeader);
+      }
+      return new MonitorSubscription(this, monitor);
+    }
+
+    public void RemoveMonitor(IChannelMonitor monitor)
+    {
+      ReplaceCollection(ref monitors, orig => orig.Remove(monitor));
     }
 
     public void Start(Uri source_uri)

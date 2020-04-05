@@ -125,7 +125,7 @@ namespace PeerCastStation.UI
   }
 
   public class PortMapperMonitor
-    : IChannelMonitor,
+    : IPeerCastMonitor,
       IDisposable
   {
     private class NatDevice

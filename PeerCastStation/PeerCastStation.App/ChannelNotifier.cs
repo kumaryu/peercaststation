@@ -6,7 +6,7 @@ using PeerCastStation.Core;
 namespace PeerCastStation.App
 {
   public class ChannelNotifier
-    : IChannelMonitor
+    : IPeerCastMonitor
   {
     private static TimeSpan messageExpires = TimeSpan.FromMinutes(1);
     public static TimeSpan MessageExpires {
@@ -20,18 +20,39 @@ namespace PeerCastStation.App
     {
       this.app = app;
       this.messageExpireTimer.Start();
-      this.app.PeerCast.ChannelAdded   += (sender, args) => {
-        args.Channel.Closed += OnChannelClosed;
-      };
-      this.app.PeerCast.ChannelRemoved += (sender, args) => {
-        args.Channel.Closed -= OnChannelClosed;
+      this.app.PeerCast.ChannelAdded += (sender, args) => {
+        args.Channel.AddMonitor(new Monitor(this, args.Channel));
       };
     }
 
-    public void OnChannelClosed(object sender, StreamStoppedEventArgs args)
+    class Monitor
+      : IChannelMonitor
     {
-      var channel = (Channel)sender;
-      switch (args.StopReason) {
+      public Channel Channel { get; }
+      public ChannelNotifier Owner { get; }
+      public Monitor(ChannelNotifier owner, Channel channel)
+      {
+        Owner = owner;
+        Channel = channel;
+      }
+
+      public void OnContentChanged(ChannelContentType channelContentType)
+      {
+      }
+
+      public void OnNodeChanged(ChannelNodeAction action, Host node)
+      {
+      }
+
+      public void OnStopped(StopReason reason)
+      {
+        Owner.OnChannelClosed(Channel, reason);
+      }
+    }
+
+    private void OnChannelClosed(Channel channel, StopReason reason)
+    {
+      switch (reason) {
       case StopReason.OffAir: {
           var msg = new NotificationMessage(
             channel.ChannelInfo.Name,
@@ -71,4 +92,5 @@ namespace PeerCastStation.App
     {
     }
   }
+
 }

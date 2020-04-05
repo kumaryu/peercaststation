@@ -607,7 +607,8 @@ namespace PeerCastStation.PCP
       : IDisposable
     {
       private class AnnouncingChannel
-        : IAnnouncingChannel
+        : IAnnouncingChannel,
+          IChannelMonitor
       {
         private PCPYellowPageClient yellowPageClient;
         private Channel channel;
@@ -626,6 +627,25 @@ namespace PeerCastStation.PCP
         public ConnectionInfo GetConnectionInfo()
         {
           return connection.GetConnectionInfo();
+        }
+
+        public void OnContentChanged(ChannelContentType channelContentType)
+        {
+          switch (channelContentType) {
+          case ChannelContentType.ChannelInfo:
+          case ChannelContentType.ChannelTrack:
+            connection.UpdateChannel(Channel);
+            break;
+          }
+        }
+
+        public void OnNodeChanged(ChannelNodeAction action, Host node)
+        {
+        }
+
+        public void OnStopped(StopReason reason)
+        {
+          connection.RemoveChannel(Channel);
         }
       }
 
@@ -706,10 +726,8 @@ namespace PeerCastStation.PCP
           if (Interlocked.CompareExchange(ref channels, newChannels, orig)!=orig) {
             goto start;
           }
-          channel.ChannelInfoChanged  += OnChannelPropertyChanged;
-          channel.ChannelTrackChanged += OnChannelPropertyChanged;
-          channel.Closed              += OnChannelClosed;
           connection.ChannelAdded(channel);
+          channel.AddMonitor(announcing);
           logger.Debug($"Start announce channel {channel.ChannelID.ToString("N")} to {name}");
           return announcing;
         }
@@ -723,15 +741,13 @@ namespace PeerCastStation.PCP
       {
       start:
         var orig = channels;
-        if (!orig.ContainsKey(channel)) return;
+        if (!orig.TryGetValue(channel, out var announcing)) return;
         var newChannels = new Dictionary<Channel, AnnouncingChannel>(orig);
         newChannels.Remove(channel);
         if (Interlocked.CompareExchange(ref channels, newChannels, orig)!=orig) {
           goto start;
         }
-        channel.Closed              -= OnChannelClosed;
-        channel.ChannelInfoChanged  -= OnChannelPropertyChanged;
-        channel.ChannelTrackChanged -= OnChannelPropertyChanged;
+        channel.RemoveMonitor(announcing);
         connection.ChannelRemoved(channel);
         logger.Debug($"Stop announce channel {channel.ChannelID.ToString("N")} from {name}");
       }
@@ -780,19 +796,6 @@ namespace PeerCastStation.PCP
         }
       }
 
-      private void OnChannelPropertyChanged(object sender, EventArgs e)
-      {
-        var channel = sender as Channel;
-        if (channel==null) return;
-        UpdateChannel(channel);
-      }
-
-      private void OnChannelClosed(object sender, EventArgs e)
-      {
-        var channel = sender as Channel;
-        if (channel==null) return;
-        RemoveChannel(channel);
-      }
     }
 
     private PCPYellowPageClient owner;

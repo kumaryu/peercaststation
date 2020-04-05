@@ -516,9 +516,18 @@ namespace PeerCastStation.Core
     Removed,
   }
 
-  public interface IChannelSource
+  public enum ChannelContentType
   {
+    ChannelInfo,
+    ChannelTrack,
+    ContentHeader,
+  }
+
+  public interface IChannelMonitor
+  {
+    void OnContentChanged(ChannelContentType channelContentType);
     void OnNodeChanged(ChannelNodeAction action, Host node);
+    void OnStopped(StopReason reason);
   }
 
   public enum HandlerResult {
@@ -729,9 +738,9 @@ namespace PeerCastStation.Core
   }
 
   /// <summary>
-  /// チャンネルを監視して管理するためのオブジェクトのインターフェースです
+  /// PeerCastオブジェクト内のいろいろを監視して管理するためのオブジェクトのインターフェースです
   /// </summary>
-  public interface IChannelMonitor
+  public interface IPeerCastMonitor
   {
     /// <summary>
     /// 定期的に呼び出されるメソッドです
