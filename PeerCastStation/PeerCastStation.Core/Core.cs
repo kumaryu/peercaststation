@@ -510,6 +510,17 @@ namespace PeerCastStation.Core
     ISourceStream Create(Channel channel, Uri source, IContentReader reader);
   }
 
+  public enum ChannelNodeAction
+  {
+    Updated,
+    Removed,
+  }
+
+  public interface IChannelSource
+  {
+    void OnNodeChanged(ChannelNodeAction action, Host node);
+  }
+
   public enum HandlerResult {
     Close    =  0,
     Continue =  1,

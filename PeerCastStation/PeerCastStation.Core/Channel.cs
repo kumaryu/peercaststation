@@ -57,6 +57,7 @@ namespace PeerCastStation.Core
     protected static Logger logger = new Logger(typeof(Channel));
     private const int NodeLimit = 180000; //ms
     private ISourceStream sourceStream = null;
+    private ImmutableArray<IChannelSource> sources = ImmutableArray<IChannelSource>.Empty;
     private ImmutableArray<IChannelSink> sinks = ImmutableArray<IChannelSink>.Empty;
     private Host[] sourceNodes = new Host[0];
     private Host[] nodes = new Host[0];
@@ -439,6 +440,14 @@ namespace PeerCastStation.Core
       });
     }
 
+    private void DispatchSourceEvent(Action<IChannelSource> action)
+    {
+      var sources = this.sources;
+      lastTask = lastTask.ContinueWith(prev => {
+        sources.AsParallel().ForAll(action);
+      });
+    }
+
     private void OnChannelInfoChanged(ChannelInfo channel_info)
     {
       DispatchSinkEvent(sink => {
@@ -597,7 +606,6 @@ namespace PeerCastStation.Core
       get { return new HostsView(nodes); }
     }
 
-    public event EventHandler NodesChanged;
     public void AddNode(Host host)
     {
       ReplaceCollection(ref nodes, orig => {
@@ -609,7 +617,7 @@ namespace PeerCastStation.Core
             .Concat(Enumerable.Repeat(host, 1))
             .ToArray();
       });
-      if (NodesChanged!=null) NodesChanged(this, new EventArgs());
+      DispatchSourceEvent(src => src.OnNodeChanged(ChannelNodeAction.Updated, host));
     }
 
     public void RemoveNode(Host host)
@@ -621,7 +629,7 @@ namespace PeerCastStation.Core
         return new_collection;
       });
       if (removed) {
-        if (NodesChanged!=null) NodesChanged(this, new EventArgs());
+        DispatchSourceEvent(src => src.OnNodeChanged(ChannelNodeAction.Removed, host));
       }
     }
 
@@ -683,7 +691,13 @@ namespace PeerCastStation.Core
         uptimeTimer.Restart();
       }
       else {
+        if (old is IChannelSource) {
+          ReplaceCollection(ref sources, orig => orig.Remove((IChannelSource)old));
+        }
         old.Dispose();
+      }
+      if (source_stream is IChannelSource) {
+        ReplaceCollection(ref sources, orig => orig.Add((IChannelSource)source_stream));
       }
       sourceStream.Run().ContinueWith(prev => {
         RemoveSourceStream(source_stream, prev.IsFaulted ? StopReason.NotIdentifiedError : prev.Result);
@@ -695,6 +709,9 @@ namespace PeerCastStation.Core
       var old = Interlocked.CompareExchange(ref sourceStream, null, source_stream);
       if (old!=source_stream) return;
       old.Dispose();
+      if (old is IChannelSource) {
+        ReplaceCollection(ref sources, orig => orig.Remove((IChannelSource)old));
+      }
       var ostreams = ImmutableInterlocked.InterlockedExchange(ref sinks, ImmutableArray<IChannelSink>.Empty);
       foreach (var os in ostreams) {
         os.OnStopped(reason);

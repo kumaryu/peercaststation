@@ -48,10 +48,14 @@ type DummySourceStream (sstype) =
         member this.Dispose () =
             runTask.TrySetResult(StopReason.UserShutdown) |> ignore
 
-type DummyBroadcastChannel (peercast, network, channelId) =
+type DummyBroadcastChannel (peercast, network, channelId, sourceStreamFactory) =
     inherit Channel(peercast, network, channelId)
 
     let mutable relayable = true
+
+    new (peercast, network, channelId) =
+        DummyBroadcastChannel(peercast, network, channelId, fun _ -> new DummySourceStream(SourceStreamType.Broadcast) :> ISourceStream)
+
     member this.Relayable
         with get ()    = relayable
         and  set value = relayable <- value
@@ -70,16 +74,17 @@ type DummyBroadcastChannel (peercast, network, channelId) =
 
     override this.IsBroadcasting = true
     override this.CreateSourceStream (source_uri) =
-        new DummySourceStream(SourceStreamType.Broadcast)
-        :> ISourceStream
+        sourceStreamFactory source_uri
 
-type DummyRelayChannel (peercast, network, channelId) =
+type DummyRelayChannel (peercast, network, channelId, sourceStreamFactory) =
     inherit Channel(peercast, network, channelId)
+
+    new (peercast, network, channelId) =
+        DummyRelayChannel(peercast, network, channelId, fun _ -> new DummySourceStream(SourceStreamType.Relay) :> ISourceStream)
 
     override this.IsBroadcasting = false
     override this.CreateSourceStream (source_uri) =
-        new DummySourceStream(SourceStreamType.Relay)
-        :> ISourceStream
+        sourceStreamFactory source_uri
 
 let createChannelInfo name contentType =
     let info = AtomCollection()

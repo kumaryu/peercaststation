@@ -91,7 +91,8 @@ namespace PeerCastStation.PCP
   }
 
   public class PCPSourceConnection
-    : SourceConnectionBase
+    : SourceConnectionBase,
+      IChannelSource
   {
     private TcpClient client = null;
     private RelayRequestResponse relayResponse = null;
@@ -101,6 +102,7 @@ namespace PeerCastStation.PCP
     private IContentSink contentSink;
     private Content     lastHeader = null;
     private ChannelInfo lastInfo = null;
+    private bool isStarted = false;
 
     public PCPSourceConnection(
         PeerCast peercast,
@@ -115,10 +117,10 @@ namespace PeerCastStation.PCP
 
     protected override void OnStarted()
     {
+      isStarted = true;
       Logger.Debug("Started");
       Channel.ChannelInfoChanged  += Channel_HostInfoUpdated;
       Channel.ChannelTrackChanged += Channel_HostInfoUpdated;
-      Channel.NodesChanged        += Channel_HostInfoUpdated;
       lastInfo = Channel.ChannelInfo;
       lastHeader = Channel.ContentHeader;
       base.OnStarted();
@@ -126,9 +128,9 @@ namespace PeerCastStation.PCP
 
     protected override void OnStopped()
     {
+      isStarted = false;
       Channel.ChannelInfoChanged  -= Channel_HostInfoUpdated;
       Channel.ChannelTrackChanged -= Channel_HostInfoUpdated;
-      Channel.NodesChanged        -= Channel_HostInfoUpdated;
       Logger.Debug("Finished");
       base.OnStopped();
     }
@@ -729,6 +731,12 @@ Stopped:
         SendRate         = SendRate,
         AgentName        = server_name,
       }.Build();
+    }
+
+    public void OnNodeChanged(ChannelNodeAction action, Host node)
+    {
+      if (!isStarted) return;
+      BroadcastHostInfo();
     }
   }
 
