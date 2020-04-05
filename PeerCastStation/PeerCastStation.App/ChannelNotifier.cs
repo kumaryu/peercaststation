@@ -20,9 +20,6 @@ namespace PeerCastStation.App
     {
       this.app = app;
       this.messageExpireTimer.Start();
-      this.app.PeerCast.ChannelAdded += (sender, args) => {
-        args.Channel.AddMonitor(new Monitor(this, args.Channel));
-      };
     }
 
     class Monitor
@@ -91,6 +88,16 @@ namespace PeerCastStation.App
     public void OnTimer()
     {
     }
+
+    public void OnChannelChanged(PeerCastChannelAction action, Channel channel)
+    {
+      switch (action) {
+      case PeerCastChannelAction.Added:
+        channel.AddMonitor(new Monitor(this, channel));
+        break;
+      }
+    }
+
   }
 
 }

@@ -737,11 +737,24 @@ namespace PeerCastStation.Core
     IContentSink Activate(IContentSink sink);
   }
 
+
+  public enum PeerCastChannelAction
+  {
+    Added,
+    Removed,
+  }
+
   /// <summary>
   /// PeerCastオブジェクト内のいろいろを監視して管理するためのオブジェクトのインターフェースです
   /// </summary>
   public interface IPeerCastMonitor
   {
+    /// <summary>
+    /// PeerCastオブジェクトのチャンネルが変更された時に呼び出されます
+    /// </summary>
+    /// <param name="action">変更内容</param>
+    /// <param name="channel">変更されたチャンネル</param>
+    void OnChannelChanged(PeerCastChannelAction action, Channel channel);
     /// <summary>
     /// 定期的に呼び出されるメソッドです
     /// </summary>

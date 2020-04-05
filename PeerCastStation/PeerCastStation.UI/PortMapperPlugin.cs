@@ -282,6 +282,10 @@ namespace PeerCastStation.UI
       }
     }
 
+    public void OnChannelChanged(PeerCastChannelAction action, Channel channel)
+    {
+    }
+
   }
 
 }

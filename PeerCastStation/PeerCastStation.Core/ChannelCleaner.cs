@@ -86,6 +86,11 @@ namespace PeerCastStation
         break;
       }
     }
+
+    public void OnChannelChanged(PeerCastChannelAction action, Channel channel)
+    {
+    }
+
   }
 
 }
