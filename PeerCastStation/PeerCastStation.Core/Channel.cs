@@ -374,7 +374,7 @@ namespace PeerCastStation.Core
     /// </summary>
     public ContentCollection Contents { get { return contents; } }
 
-    private ImmutableArray<IContentSink> contentSinks = ImmutableArray<IContentSink>.Empty;
+    private ImmutableArray<IContentSink> contentSinks;
 
     private class ContentSinkSubscription
       : IDisposable
@@ -808,7 +808,7 @@ namespace PeerCastStation.Core
       this.Network     = network;
       this.ChannelID   = channel_id;
       this.contents    = new ContentCollection(this);
-      this.contentSinks.Add(new ChannelEventInvoker(this));
+      this.contentSinks = ImmutableArray.Create<IContentSink>(new ChannelEventInvoker(this));
     }
   }
 
