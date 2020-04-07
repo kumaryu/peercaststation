@@ -86,7 +86,6 @@ namespace PeerCastStation.Core
         ReplaceCollection(ref yellowPages, org => {
           return new List<IYellowPageClient>(value);
         });
-        YellowPagesChanged(this, new EventArgs());
       }
     }
     private List<IYellowPageClient> yellowPages = new List<IYellowPageClient>();
@@ -100,11 +99,6 @@ namespace PeerCastStation.Core
         goto retry;
       }
     }
-
-    /// <summary>
-    /// YPリストが変更された時に呼び出されます。
-    /// </summary>
-    public event EventHandler YellowPagesChanged;
 
     /// <summary>
     /// 登録されているYellowPageファクトリのリストを取得します
@@ -131,19 +125,14 @@ namespace PeerCastStation.Core
     private List<Channel> channels = new List<Channel>();
 
     /// <summary>
-    /// チャンネル管理オブジェクトのリストを取得します
+    /// 監視オブジェクトのリストを取得します
     /// </summary>
-    public ReadOnlyCollection<IChannelMonitor> ChannelMonitors { get { return channelMonitors.AsReadOnly(); } }
-    private List<IChannelMonitor> channelMonitors = new List<IChannelMonitor>();
+    public ReadOnlyCollection<IPeerCastMonitor> Monitors { get { return monitors.AsReadOnly(); } }
+    private List<IPeerCastMonitor> monitors = new List<IPeerCastMonitor>();
+    private readonly Timer monitorTimer;
 
-    /// <summary>
-    /// チャンネルが追加された時に呼び出されます。
-    /// </summary>
-    public event ChannelChangedEventHandler ChannelAdded;
-    /// <summary>
-    /// チャンネルが削除された時に呼び出されます。
-    /// </summary>
-    public event ChannelChangedEventHandler ChannelRemoved;
+    private CancellationTokenSource cancelSource = new CancellationTokenSource();
+    private Task monitorTask = Task.Delay(0);
 
     /// <summary>
     /// チャンネルへのアクセス制御を行なうクラスの取得および設定をします
@@ -199,7 +188,7 @@ namespace PeerCastStation.Core
         new_collection.Add(channel);
         return new_collection;
       });
-      if (ChannelAdded!=null) ChannelAdded(this, new ChannelChangedEventArgs(channel));
+      DispatchMonitorEvent(mon => mon.OnChannelChanged(PeerCastChannelAction.Added, channel));
       return channel;
     }
 
@@ -264,7 +253,7 @@ namespace PeerCastStation.Core
         new_collection.Add(channel);
         return new_collection;
       });
-      if (ChannelAdded!=null) ChannelAdded(this, new ChannelChangedEventArgs(channel));
+      DispatchMonitorEvent(mon => mon.OnChannelChanged(PeerCastChannelAction.Added, channel));
       if (yp!=null) yp.Announce(channel);
       return channel;
     }
@@ -295,7 +284,7 @@ namespace PeerCastStation.Core
         return new_channels;
       });
       logger.Debug("Channel Removed: {0}", channel.ChannelID.ToString("N"));
-      if (ChannelRemoved!=null) ChannelRemoved(this, new ChannelChangedEventArgs(channel));
+      DispatchMonitorEvent(mon => mon.OnChannelChanged(PeerCastChannelAction.Removed, channel));
     }
 
     /// <summary>
@@ -323,7 +312,6 @@ namespace PeerCastStation.Core
         return new_yps;
       });
       logger.Debug("YP Added: {0}", yp.Name);
-      if (YellowPagesChanged!=null) YellowPagesChanged(this, new EventArgs());
       return yp;
     }
 
@@ -340,11 +328,8 @@ namespace PeerCastStation.Core
         return new_yps;
       });
       logger.Debug("YP Removed: {0}", yp.Name);
-      if (YellowPagesChanged!=null) YellowPagesChanged(this, new EventArgs());
     }
 
-    private CancellationTokenSource cancelSource = new CancellationTokenSource();
-    private Task monitorTask = null;
     /// <summary>
     /// PeerCastを初期化します
     /// </summary>
@@ -366,22 +351,46 @@ namespace PeerCastStation.Core
       this.OutputStreamFactories = new List<IOutputStreamFactory>();
       this.ContentReaderFactories = new List<IContentReaderFactory>();
       this.ContentFilters = new List<IContentFilter>();
-      monitorTask = StartMonitor(cancelSource.Token);
+      this.monitorTimer = new Timer(OnMonitorTimer, cancelSource.Token, 0, 5000);
     }
 
-		public void AddChannelMonitor(IChannelMonitor monitor)
+    private void OnMonitorTimer(object state)
+    {
+      var cs = (CancellationToken)state;
+      if (!cs.IsCancellationRequested) {
+        DispatchMonitorEvent(mon => mon.OnTimer(), cs);
+      }
+    }
+
+    private void DispatchMonitorEvent(Action<IPeerCastMonitor> monitorAction)
+    {
+      var monitors = this.monitors;
+      monitorTask = monitorTask.ContinueWith(prev => {
+        monitors.AsParallel().ForAll(monitorAction);
+      });
+    }
+
+    private void DispatchMonitorEvent(Action<IPeerCastMonitor> monitorAction, CancellationToken cs)
+    {
+      var monitors = this.monitors;
+      monitorTask = monitorTask.ContinueWith(prev => {
+        monitors.AsParallel().ForAll(monitorAction);
+      }, cs);
+    }
+
+		public void AddChannelMonitor(IPeerCastMonitor monitor)
 		{
-			ReplaceCollection(ref channelMonitors, orig => {
-				var new_monitors = new List<IChannelMonitor>(orig);
+			ReplaceCollection(ref monitors, orig => {
+				var new_monitors = new List<IPeerCastMonitor>(orig);
 				new_monitors.Add(monitor);
 				return new_monitors;
 			});
 		}
 
-		public void RemoveChannelMonitor(IChannelMonitor monitor)
+		public void RemoveChannelMonitor(IPeerCastMonitor monitor)
 		{
-			ReplaceCollection(ref channelMonitors, orig => {
-				var new_monitors = new List<IChannelMonitor>(orig);
+			ReplaceCollection(ref monitors, orig => {
+				var new_monitors = new List<IPeerCastMonitor>(orig);
 				new_monitors.Remove(monitor);
 				return new_monitors;
 			});
@@ -391,7 +400,7 @@ namespace PeerCastStation.Core
     {
       try {
         while (!cancel_token.IsCancellationRequested) {
-          foreach (var monitor in ChannelMonitors) {
+          foreach (var monitor in monitors) {
             monitor.OnTimer();
           }
           await Task.Delay(5000, cancel_token).ConfigureAwait(false);
@@ -639,12 +648,13 @@ namespace PeerCastStation.Core
     {
       logger.Info("Stopping PeerCast");
       cancelSource.Cancel();
+      monitorTimer.Dispose();
       foreach (var listener in outputListeners) {
         listener.Stop();
       }
       foreach (var channel in channels) {
         channel.Close();
-        if (ChannelRemoved!=null) ChannelRemoved(this, new ChannelChangedEventArgs(channel));
+        DispatchMonitorEvent(mon => mon.OnChannelChanged(PeerCastChannelAction.Removed, channel));
       }
       foreach (var ypclient in yellowPages) {
         ypclient.StopAnnounce();

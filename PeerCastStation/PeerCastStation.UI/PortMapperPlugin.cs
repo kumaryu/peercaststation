@@ -125,7 +125,7 @@ namespace PeerCastStation.UI
   }
 
   public class PortMapperMonitor
-    : IChannelMonitor,
+    : IPeerCastMonitor,
       IDisposable
   {
     private class NatDevice
@@ -280,6 +280,10 @@ namespace PeerCastStation.UI
         }
         ports = current_ports;
       }
+    }
+
+    public void OnChannelChanged(PeerCastChannelAction action, Channel channel)
+    {
     }
 
   }

@@ -6,7 +6,7 @@ using PeerCastStation.Core;
 namespace PeerCastStation
 {
   public class ChannelCleaner
-    : IChannelMonitor
+    : IPeerCastMonitor
   {
     private Dictionary<Channel, int> inactiveChannels  = new Dictionary<Channel,int>();
     private PeerCast peerCast;
@@ -86,6 +86,11 @@ namespace PeerCastStation
         break;
       }
     }
+
+    public void OnChannelChanged(PeerCastChannelAction action, Channel channel)
+    {
+    }
+
   }
 
 }

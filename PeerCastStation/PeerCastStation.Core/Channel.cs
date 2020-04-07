@@ -57,6 +57,7 @@ namespace PeerCastStation.Core
     protected static Logger logger = new Logger(typeof(Channel));
     private const int NodeLimit = 180000; //ms
     private ISourceStream sourceStream = null;
+    private ImmutableArray<IChannelMonitor> monitors = ImmutableArray<IChannelMonitor>.Empty;
     private ImmutableArray<IChannelSink> sinks = ImmutableArray<IChannelSink>.Empty;
     private Host[] sourceNodes = new Host[0];
     private Host[] nodes = new Host[0];
@@ -140,8 +141,6 @@ namespace PeerCastStation.Core
       get { return sinks; }
     }
 
-    public event EventHandler OutputStreamsChanged;
-
     private void ReplaceCollection<T>(ref T collection, Func<T,T> newcollection_func) where T : class
     {
       bool replaced = false;
@@ -182,7 +181,6 @@ namespace PeerCastStation.Core
     public IDisposable AddOutputStream(IChannelSink stream)
     {
       ReplaceCollection(ref sinks, old => old.Add(stream));
-      OutputStreamsChanged?.Invoke(this, new EventArgs());
       return new ChannelSinkSubscription { Channel=this, Sink=stream };
     }
 
@@ -193,7 +191,6 @@ namespace PeerCastStation.Core
     public void RemoveOutputStream(IChannelSink stream)
     {
       ReplaceCollection(ref sinks, old => old.Remove(stream));
-      OutputStreamsChanged?.Invoke(this, new EventArgs());
     }
 
     public int GetUpstreamRate()
@@ -221,7 +218,6 @@ namespace PeerCastStation.Core
       }
     }
 
-    public event EventHandler<ChannelInfoEventArgs> ChannelInfoChanged;
     private ChannelInfo channelInfo = new ChannelInfo(new AtomCollection());
     /// <summary>
     /// チャンネル情報を取得および設定します
@@ -248,7 +244,6 @@ namespace PeerCastStation.Core
       }
     }
 
-    public event EventHandler<ChannelTrackEventArgs> ChannelTrackChanged;
     private ChannelTrack channelTrack = new ChannelTrack(new AtomCollection());
     /// <summary>
     /// トラック情報を取得および設定します
@@ -439,8 +434,17 @@ namespace PeerCastStation.Core
       });
     }
 
+    private void DispatchMonitorEvent(Action<IChannelMonitor> action)
+    {
+      var monitors = this.monitors;
+      lastTask = lastTask.ContinueWith(prev => {
+        monitors.AsParallel().ForAll(action);
+      });
+    }
+
     private void OnChannelInfoChanged(ChannelInfo channel_info)
     {
+      DispatchMonitorEvent(mon => mon.OnContentChanged(ChannelContentType.ChannelInfo));
       DispatchSinkEvent(sink => {
         sink.OnChannelInfo(channel_info);
       });
@@ -448,6 +452,7 @@ namespace PeerCastStation.Core
 
     private void OnChannelTrackChanged(ChannelTrack channel_track)
     {
+      DispatchMonitorEvent(mon => mon.OnContentChanged(ChannelContentType.ChannelTrack));
       DispatchSinkEvent(sink => {
         sink.OnChannelTrack(channel_track);
       });
@@ -455,6 +460,7 @@ namespace PeerCastStation.Core
 
     private void OnContentHeaderChanged(Content header)
     {
+      DispatchMonitorEvent(mon => mon.OnContentChanged(ChannelContentType.ContentHeader));
       DispatchSinkEvent(sink => {
         sink.OnContentHeader(header);
       });
@@ -466,46 +472,6 @@ namespace PeerCastStation.Core
         sink.OnContent(content);
       });
     }
-
-    class ChannelEventInvoker
-      : IContentSink
-    {
-      private Channel owner;
-      public ChannelEventInvoker(Channel owner)
-      {
-        this.owner = owner;
-      }
-
-      public void OnChannelInfo(ChannelInfo channel_info)
-      {
-        owner.ChannelInfoChanged?.Invoke(owner, new ChannelInfoEventArgs(channel_info));
-      }
-
-      public void OnChannelTrack(ChannelTrack channel_track)
-      {
-        owner.ChannelTrackChanged?.Invoke(owner, new ChannelTrackEventArgs(channel_track));
-      }
-
-      public void OnContent(Content content)
-      {
-        owner.ContentChanged?.Invoke(owner, new EventArgs());
-      }
-
-      public void OnContentHeader(Content content_header)
-      {
-        owner.ContentChanged?.Invoke(owner, new EventArgs());
-      }
-
-      public void OnStop(StopReason reason)
-      {
-        owner.Closed?.Invoke(owner, new StreamStoppedEventArgs(reason));
-      }
-    }
-
-    /// <summary>
-    /// コンテントが追加および削除された時に発生するイベントです
-    /// </summary>
-    public event EventHandler ContentChanged;
 
     /// <summary>
     /// 保持している最後のコンテントの次のバイト位置を取得します
@@ -528,10 +494,6 @@ namespace PeerCastStation.Core
       }
     }
 
-    /// <summary>
-    /// チャンネル接続が終了する時に発生するイベントです
-    /// </summary>
-    public event StreamStoppedEventHandler Closed;
     private void OnClosed(StopReason reason)
     {
       var sinks = contentSinks;
@@ -597,7 +559,6 @@ namespace PeerCastStation.Core
       get { return new HostsView(nodes); }
     }
 
-    public event EventHandler NodesChanged;
     public void AddNode(Host host)
     {
       ReplaceCollection(ref nodes, orig => {
@@ -609,7 +570,7 @@ namespace PeerCastStation.Core
             .Concat(Enumerable.Repeat(host, 1))
             .ToArray();
       });
-      if (NodesChanged!=null) NodesChanged(this, new EventArgs());
+      DispatchMonitorEvent(mon => mon.OnNodeChanged(ChannelNodeAction.Updated, host));
     }
 
     public void RemoveNode(Host host)
@@ -621,7 +582,7 @@ namespace PeerCastStation.Core
         return new_collection;
       });
       if (removed) {
-        if (NodesChanged!=null) NodesChanged(this, new EventArgs());
+        DispatchMonitorEvent(mon => mon.OnNodeChanged(ChannelNodeAction.Removed, host));
       }
     }
 
@@ -703,6 +664,44 @@ namespace PeerCastStation.Core
       OnClosed(reason);
     }
 
+    private class MonitorSubscription
+      : IDisposable
+    {
+      private Channel channel;
+      private IChannelMonitor monitor;
+
+      public MonitorSubscription(Channel channel, IChannelMonitor monitor)
+      {
+        this.channel = channel;
+        this.monitor = monitor;
+      }
+
+      public void Dispose()
+      {
+        channel.RemoveMonitor(monitor);
+      }
+    }
+
+    public IDisposable AddMonitor(IChannelMonitor monitor)
+    {
+      ReplaceCollection(ref monitors, orig => orig.Add(monitor));
+      if (contentHeader!=null) {
+        if (ChannelInfo!=null) {
+          monitor.OnContentChanged(ChannelContentType.ChannelInfo);
+        }
+        if (ChannelTrack!=null) {
+          monitor.OnContentChanged(ChannelContentType.ChannelTrack);
+        }
+        monitor.OnContentChanged(ChannelContentType.ContentHeader);
+      }
+      return new MonitorSubscription(this, monitor);
+    }
+
+    public void RemoveMonitor(IChannelMonitor monitor)
+    {
+      ReplaceCollection(ref monitors, orig => orig.Remove(monitor));
+    }
+
     public void Start(Uri source_uri)
     {
       this.SourceUri = source_uri;
@@ -756,24 +755,47 @@ namespace PeerCastStation.Core
       }
     }
 
-    public async Task WaitForReadyContentTypeAsync(CancellationToken cancel_token)
+    class ChannelInfoMonitor
+      : IChannelMonitor
     {
-      var task = new TaskCompletionSource<bool>();
-      using (cancel_token.Register(() => task.TrySetCanceled(), false)) {
-        var channel_info_changed = new EventHandler<ChannelInfoEventArgs>((sender, e) => {
-          if (e.ChannelInfo!=null && !String.IsNullOrEmpty(e.ChannelInfo.ContentType)) {
-            task.TrySetResult(true);
-          }
-        });
-        try {
-          this.ChannelInfoChanged += channel_info_changed;
-          var channel_info = this.ChannelInfo;
-          if (channel_info!=null && !String.IsNullOrEmpty(channel_info.ContentType)) return;
+      Channel Channel { get; }
+      TaskCompletionSource<bool> task = new TaskCompletionSource<bool>();
+
+      public ChannelInfoMonitor(Channel channel)
+      {
+        Channel = channel;
+      }
+
+      public async Task WaitForReadyAsync(CancellationToken cancellationToken)
+      {
+        using (cancellationToken.Register(() => task.TrySetCanceled())) {
           await task.Task.ConfigureAwait(false);
         }
-        finally {
-          this.ChannelInfoChanged -= channel_info_changed;
+      }
+
+      public void OnContentChanged(ChannelContentType channelContentType)
+      {
+        if (channelContentType!=ChannelContentType.ChannelInfo) return;
+        if (!String.IsNullOrEmpty(Channel.ChannelInfo?.ContentType)) {
+          task.TrySetResult(true);
         }
+      }
+
+      public void OnNodeChanged(ChannelNodeAction action, Host node)
+      {
+      }
+
+      public void OnStopped(StopReason reason)
+      {
+      }
+    }
+
+    public async Task WaitForReadyContentTypeAsync(CancellationToken cancel_token)
+    {
+      var monitor = new ChannelInfoMonitor(this);
+      using (AddMonitor(monitor)) {
+        if (!String.IsNullOrEmpty(ChannelInfo?.ContentType)) return;
+        await monitor.WaitForReadyAsync(cancel_token).ConfigureAwait(false);
       }
     }
 
@@ -808,7 +830,7 @@ namespace PeerCastStation.Core
       this.Network     = network;
       this.ChannelID   = channel_id;
       this.contents    = new ContentCollection(this);
-      this.contentSinks = ImmutableArray.Create<IContentSink>(new ChannelEventInvoker(this));
+      this.contentSinks = ImmutableArray<IContentSink>.Empty;
     }
   }
 

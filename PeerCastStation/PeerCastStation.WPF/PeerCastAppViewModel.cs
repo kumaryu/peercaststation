@@ -26,7 +26,7 @@ using System.Net.Sockets;
 
 namespace PeerCastStation.WPF
 {
-  class PeerCastAppViewModel : ViewModelBase, IDisposable
+  class PeerCastAppViewModel : ViewModelBase, IDisposable, IPeerCastMonitor
   {
     private readonly PeerCastApplication application;
     public PeerCastApplication Model { get { return application; } }
@@ -82,15 +82,12 @@ namespace PeerCastStation.WPF
       this.application = application;
       var peerCast = application.PeerCast;
       channelList = new ChannelListViewModel(peerCast);
-
-      peerCast.ChannelAdded += OnChannelChanged;
-      peerCast.ChannelRemoved += OnChannelChanged;
+      peerCast.AddChannelMonitor(this);
     }
 
     public void Dispose()
     {
-      application.PeerCast.ChannelAdded   -= OnChannelChanged;
-      application.PeerCast.ChannelRemoved -= OnChannelChanged;
+      application.PeerCast.RemoveChannelMonitor(this);
       log.Dispose();
     }
 
@@ -101,11 +98,15 @@ namespace PeerCastStation.WPF
       log.UpdateLog();
     }
 
-    private void OnChannelChanged(object sender, EventArgs e)
+    public void OnChannelChanged(PeerCastChannelAction action, Channel channel)
     {
       Application.Current.Dispatcher.BeginInvoke(new Action(() => {
         channelList.UpdateChannelList();
       }));
+    }
+
+    public void OnTimer()
+    {
     }
 
     public void OpenBrowserUI()
