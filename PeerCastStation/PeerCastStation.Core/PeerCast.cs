@@ -20,8 +20,8 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
-using System.Collections.ObjectModel;
 using Owin;
+using System.Collections.Immutable;
 
 namespace PeerCastStation.Core
 {
@@ -76,29 +76,21 @@ namespace PeerCastStation.Core
     public TimeSpan Uptime { get { return uptime.Elapsed; } }
     private System.Diagnostics.Stopwatch uptime = System.Diagnostics.Stopwatch.StartNew();
 
+    private void ReplaceCollection<T>(ref ImmutableArray<T> collection, Func<ImmutableArray<T>, ImmutableArray<T>> newcollection_func)
+    {
+      bool replaced;
+      do {
+        var orig = collection;
+        replaced = ImmutableInterlocked.InterlockedCompareExchange(ref collection, newcollection_func(orig), orig)==orig;
+      } while (!replaced);
+    }
+
     /// <summary>
     /// 登録されているYellowPageリストを取得および設定します
     /// 取得は読み取り専用のリストを、設定は指定したリストのコピーを設定します
     /// </summary>
-    public IList<IYellowPageClient> YellowPages {
-      get { return yellowPages.AsReadOnly(); }
-      set {
-        ReplaceCollection(ref yellowPages, org => {
-          return new List<IYellowPageClient>(value);
-        });
-      }
-    }
-    private List<IYellowPageClient> yellowPages = new List<IYellowPageClient>();
-
-    private void ReplaceCollection<T>(ref T collection, Func<T,T> newcollection_func) where T : class
-    {
-    retry:
-      var prev = collection;
-      var new_collection = newcollection_func(prev);
-      if (!Object.ReferenceEquals(Interlocked.CompareExchange(ref collection, new_collection, prev), prev)) {
-        goto retry;
-      }
-    }
+    public IReadOnlyList<IYellowPageClient> YellowPages { get { return yellowPages; } }
+    private ImmutableArray<IYellowPageClient> yellowPages = ImmutableArray<IYellowPageClient>.Empty;
 
     /// <summary>
     /// 登録されているYellowPageファクトリのリストを取得します
@@ -121,14 +113,14 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 接続しているチャンネルの読み取り専用リストを取得します
     /// </summary>
-    public ReadOnlyCollection<Channel> Channels { get { return channels.AsReadOnly(); } }
-    private List<Channel> channels = new List<Channel>();
+    public IReadOnlyList<Channel> Channels { get { return channels; } }
+    private ImmutableArray<Channel> channels = ImmutableArray<Channel>.Empty;
 
     /// <summary>
     /// 監視オブジェクトのリストを取得します
     /// </summary>
-    public ReadOnlyCollection<IPeerCastMonitor> Monitors { get { return monitors.AsReadOnly(); } }
-    private List<IPeerCastMonitor> monitors = new List<IPeerCastMonitor>();
+    public IReadOnlyList<IPeerCastMonitor> Monitors { get { return monitors; } }
+    private ImmutableArray<IPeerCastMonitor> monitors = ImmutableArray<IPeerCastMonitor>.Empty;
     private readonly Timer monitorTimer;
 
     private CancellationTokenSource cancelSource = new CancellationTokenSource();
@@ -138,6 +130,12 @@ namespace PeerCastStation.Core
     /// チャンネルへのアクセス制御を行なうクラスの取得および設定をします
     /// </summary>
     public AccessController AccessController { get; set; }
+
+    private ImmutableArray<OutputListener> outputListeners = ImmutableArray<OutputListener>.Empty;
+    /// <summary>
+    /// 接続待ち受けスレッドのコレクションを取得します
+    /// </summary>
+    public IReadOnlyList<OutputListener> OutputListeners { get { return outputListeners; } }
 
     /// <summary>
     /// チャンネルIDを指定してチャンネルのリレーを開始します。
@@ -183,11 +181,7 @@ namespace PeerCastStation.Core
       logger.Debug("Requesting channel {0} from {1}", channel_id.ToString("N"), tracker);
       var channel = new RelayChannel(this, GetNetworkTypeFromUri(tracker), channel_id);
       channel.Start(tracker);
-      ReplaceCollection(ref channels, orig => {
-        var new_collection = new List<Channel>(orig);
-        new_collection.Add(channel);
-        return new_collection;
-      });
+      ReplaceCollection(ref channels, orig => orig.Add(channel));
       DispatchMonitorEvent(mon => mon.OnChannelChanged(PeerCastChannelAction.Added, channel));
       return channel;
     }
@@ -248,11 +242,7 @@ namespace PeerCastStation.Core
       logger.Debug("Broadcasting channel {0} from {1}", channel_id.ToString("N"), source);
       var channel = new BroadcastChannel(this, network, channel_id, channel_info, source_stream_factory, content_reader_factory);
       channel.Start(source);
-      ReplaceCollection(ref channels, orig => {
-        var new_collection = new List<Channel>(orig);
-        new_collection.Add(channel);
-        return new_collection;
-      });
+      ReplaceCollection(ref channels, orig => orig.Add(channel));
       DispatchMonitorEvent(mon => mon.OnChannelChanged(PeerCastChannelAction.Added, channel));
       if (yp!=null) yp.Announce(channel);
       return channel;
@@ -264,11 +254,7 @@ namespace PeerCastStation.Core
     /// <param name="channel">追加するチャンネル</param>
     public void AddChannel(Channel channel)
     {
-      ReplaceCollection(ref channels, orig => {
-        var new_channels = new List<Channel>(orig);
-        new_channels.Add(channel);
-        return new_channels;
-      });
+      ReplaceCollection(ref channels, orig => orig.Add(channel));
     }
 
     /// <summary>
@@ -278,11 +264,7 @@ namespace PeerCastStation.Core
     public void CloseChannel(Channel channel)
     {
       channel.Close();
-      ReplaceCollection(ref channels, orig => {
-        var new_channels = new List<Channel>(orig);
-        new_channels.Remove(channel);
-        return new_channels;
-      });
+      ReplaceCollection(ref channels, orig => orig.Remove(channel));
       logger.Debug("Channel Removed: {0}", channel.ChannelID.ToString("N"));
       DispatchMonitorEvent(mon => mon.OnChannelChanged(PeerCastChannelAction.Removed, channel));
     }
@@ -306,11 +288,7 @@ namespace PeerCastStation.Core
       if (yp==null) {
         throw new ArgumentException(String.Format("Protocol `{0}' is not found", protocol));
       }
-      ReplaceCollection(ref yellowPages, orig => {
-        var new_yps = new List<IYellowPageClient>(orig);
-        new_yps.Add(yp);
-        return new_yps;
-      });
+      ReplaceCollection(ref yellowPages, orig => orig.Add(yp));
       logger.Debug("YP Added: {0}", yp.Name);
       return yp;
     }
@@ -322,11 +300,7 @@ namespace PeerCastStation.Core
     public void RemoveYellowPage(IYellowPageClient yp)
     {
       yp.StopAnnounce();
-      ReplaceCollection(ref yellowPages, orig => {
-        var new_yps = new List<IYellowPageClient>(orig);
-        new_yps.Remove(yp);
-        return new_yps;
-      });
+      ReplaceCollection(ref yellowPages, orig => orig.Remove(yp));
       logger.Debug("YP Removed: {0}", yp.Name);
     }
 
@@ -380,20 +354,12 @@ namespace PeerCastStation.Core
 
 		public void AddChannelMonitor(IPeerCastMonitor monitor)
 		{
-			ReplaceCollection(ref monitors, orig => {
-				var new_monitors = new List<IPeerCastMonitor>(orig);
-				new_monitors.Add(monitor);
-				return new_monitors;
-			});
+			ReplaceCollection(ref monitors, orig => orig.Add(monitor));
 		}
 
 		public void RemoveChannelMonitor(IPeerCastMonitor monitor)
 		{
-			ReplaceCollection(ref monitors, orig => {
-				var new_monitors = new List<IPeerCastMonitor>(orig);
-				new_monitors.Remove(monitor);
-				return new_monitors;
-			});
+			ReplaceCollection(ref monitors, orig => orig.Remove(monitor));
 		}
 
     private async Task StartMonitor(CancellationToken cancel_token)
@@ -533,12 +499,6 @@ namespace PeerCastStation.Core
       }
     }
 
-    private List<OutputListener> outputListeners = new List<OutputListener>();
-    /// <summary>
-    /// 接続待ち受けスレッドのコレクションを取得します
-    /// </summary>
-    public IList<OutputListener> OutputListeners { get { return outputListeners.AsReadOnly(); } }
-
     /// <summary>
     /// 指定したエンドポイントで接続待ち受けを開始します
     /// </summary>
@@ -554,11 +514,7 @@ namespace PeerCastStation.Core
       logger.Info("starting listen at {0}", ip);
       try {
         res = new OutputListener(this, new ConnectionHandler(this), ip, local_accepts, global_accepts);
-        ReplaceCollection(ref outputListeners, orig => {
-          var new_collection = new List<OutputListener>(orig);
-          new_collection.Add(res);
-          return new_collection;
-        });
+        ReplaceCollection(ref outputListeners, orig => orig.Add(res));
       }
       catch (System.Net.Sockets.SocketException e) {
         logger.Error("Listen failed: {0}", ip);
@@ -577,11 +533,7 @@ namespace PeerCastStation.Core
     public void StopListen(OutputListener listener)
     {
       listener.Stop();
-      ReplaceCollection(ref outputListeners, orig => {
-        var new_collection = new List<OutputListener>(orig);
-        new_collection.Remove(listener);
-        return new_collection;
-      });
+      ReplaceCollection(ref outputListeners, orig => orig.Remove(listener));
     }
 
     public IPEndPoint GetGlobalEndPoint(AddressFamily addr_family, OutputStreamType connection_type)
@@ -659,8 +611,8 @@ namespace PeerCastStation.Core
       foreach (var ypclient in yellowPages) {
         ypclient.StopAnnounce();
       }
-      outputListeners = new List<OutputListener>();
-      channels = new List<Channel>();
+      outputListeners = outputListeners.Clear();
+      channels = channels.Clear();
       uptime.Stop();
       logger.Info("PeerCast Stopped");
     }
