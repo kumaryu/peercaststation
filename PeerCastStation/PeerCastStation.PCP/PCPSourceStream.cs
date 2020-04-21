@@ -130,45 +130,47 @@ namespace PeerCastStation.PCP
       base.OnStopped();
     }
 
-    protected async Task<SourceConnectionClient> DoConnect(IPEndPoint endpoint)
-    {
-      try {
-        client = new TcpClient(endpoint.AddressFamily);
-        var connection = new SourceConnectionClient(client);
-        await client.ConnectAsync(endpoint.Address, endpoint.Port).ConfigureAwait(false);
-        connection.Stream.ReadTimeout  = 30000;
-        connection.Stream.WriteTimeout = 8000;
-        remoteHost = endpoint;
-        Logger.Debug("Connected: {0}", endpoint);
-        return connection;
-      }
-      catch (SocketException e) {
-        Logger.Debug("Connection Failed: {0}", endpoint);
-        Logger.Debug(e);
-        return null;
-      }
-    }
-
     protected override async Task<SourceConnectionClient> DoConnect(Uri source, CancellationToken cancel_token)
     {
+      TcpClient client = null;
       try {
         var port = source.Port<0 ? PCPVersion.DefaultPort : source.Port;
         if (source.HostNameType==UriHostNameType.IPv4 ||
             source.HostNameType==UriHostNameType.IPv6) {
           var addr = IPAddress.Parse(source.Host);
           client = new TcpClient(addr.AddressFamily);
-          await client.ConnectAsync(addr, port).ConfigureAwait(false);
+          using (var cs = CancellationTokenSource.CreateLinkedTokenSource(cancel_token)) {
+            cs.CancelAfter(3000);
+            var task = await Task.WhenAny(
+              cs.Token.CreateCancelTask(),
+              client.ConnectAsync(addr, port)
+            ).ConfigureAwait(false);
+            await task.ConfigureAwait(false);
+          }
         }
         else {
           client = new TcpClient(Channel.NetworkAddressFamily);
-          await client.ConnectAsync(source.DnsSafeHost, port).ConfigureAwait(false);
+          using (var cs = CancellationTokenSource.CreateLinkedTokenSource(cancel_token)) {
+            cs.CancelAfter(3000);
+            var task = await Task.WhenAny(
+              cs.Token.CreateCancelTask(),
+              client.ConnectAsync(source.DnsSafeHost, port)
+            ).ConfigureAwait(false);
+            await task.ConfigureAwait(false);
+          }
         }
         var connection = new SourceConnectionClient(client);
         connection.Stream.ReadTimeout  = 30000;
         connection.Stream.WriteTimeout = 8000;
         remoteHost = new DnsEndPoint(source.Host, port);
         Logger.Debug("Connected: {0}", source);
+        this.client = client;
         return connection;
+      }
+      catch (OperationCanceledException) {
+        client?.Close();
+        Logger.Debug("Connection Cancelled: {0}", source);
+        return null;
       }
       catch (SocketException e) {
         Logger.Debug("Connection Failed: {0}", source);
