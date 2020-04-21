@@ -114,43 +114,48 @@ namespace PeerCastStation.Core
     protected class ActionQueue
     {
       private Task lastTask = Task.Delay(0);
-      public Task Queue(Action action)
+      private object lastTaskId = null;
+      public Task Queue(object taskId, Action action)
       {
         lock (this) {
+          if (Object.Equals(lastTaskId, taskId) && !lastTask.IsCompleted) return lastTask;
           lastTask = lastTask.ContinueWith(prev => {
             if (prev.IsFaulted) return;
             action.Invoke();
           });
+          lastTaskId = taskId;
           return lastTask;
         }
       }
 
-      public Task Queue(Func<Task> action)
+      public Task Queue(object taskId, Func<Task> action)
       {
         lock (this) {
+          if (Object.Equals(lastTaskId, taskId) && !lastTask.IsCompleted) return lastTask;
           lastTask = lastTask.ContinueWith(prev => {
             if (prev.IsFaulted) return prev;
             return action.Invoke();
           });
+          lastTaskId = taskId;
           return lastTask;
         }
       }
     }
     private ActionQueue actionQueue = new ActionQueue();
 
-    protected void Queue(Action action)
+    protected void Queue(object taskId, Action action)
     {
-      actionQueue.Queue(action);
+      actionQueue.Queue(taskId, action);
     }
 
-    protected void QueueAndWait(Action action)
+    protected void QueueAndWait(object taskId, Action action)
     {
-      actionQueue.Queue(action).Wait();
+      actionQueue.Queue(taskId, action).Wait();
     }
 
-    protected void Queue(Func<Task> action)
+    protected void Queue(object taskId, Func<Task> action)
     {
-      actionQueue.Queue(action);
+      actionQueue.Queue(taskId, action);
     }
 
     public abstract ConnectionInfo GetConnectionInfo();
@@ -183,7 +188,7 @@ namespace PeerCastStation.Core
     public void Dispose()
     {
       disposed = true;
-      QueueAndWait(() => { DoStopStream(StopReason.UserShutdown); });
+      QueueAndWait(StopReason.UserShutdown, () => { DoStopStream(StopReason.UserShutdown); });
     }
 
     protected void StartConnection(Uri source_uri)
@@ -201,7 +206,7 @@ namespace PeerCastStation.Core
         catch (Exception) {
           args.Reason = StopReason.NotIdentifiedError;
         }
-        Queue(async () => {
+        Queue("CONNECTION_CLEANUP", async () => {
           OnConnectionStopped(conn.Connection, args);
           if (args.Delay>0) {
             await Task.Delay(args.Delay).ConfigureAwait(false);
@@ -267,25 +272,25 @@ namespace PeerCastStation.Core
     {
       if (disposed) throw new ObjectDisposedException(this.GetType().Name);
       ranTaskSource = new TaskCompletionSource<StopReason>();
-      Queue(() => { DoStartStream(); });
+      Queue("SOURCESTREAM_RUN", () => { DoStartStream(); });
       return ranTaskSource.Task;
     }
 
     public void Post(Host from, Atom packet)
     {
       if (disposed) throw new ObjectDisposedException(this.GetType().Name);
-      Queue(() => { DoPost(from, packet); });
+      Queue(Tuple.Create(from, packet), () => { DoPost(from, packet); });
     }
 
     protected void Stop(StopReason reason)
     {
-      Queue(() => { DoStopStream(reason); });
+      Queue("SOURCESTREAM_STOP", () => { DoStopStream(reason); });
     }
 
     public void Reconnect()
     {
       if (disposed) throw new ObjectDisposedException(this.GetType().Name);
-      Queue(() => { DoReconnect(); });
+      Queue("SOURCESTREAM_RECONNECT", () => { DoReconnect(); });
     }
 
     public abstract SourceStreamType Type { get; }
