@@ -142,7 +142,7 @@ let ``ノード情報が変更されるとIChannelMonitorのOnNodeChangedが呼�
             waitForNotEmpty (cnt-1)
         else
             ()
-    waitForNotEmpty 10
+    waitForNotEmpty 100
     Assert.Equal(64, List.length nodes)
     Assert.True(Array.forall (fun h -> List.contains (ChannelNodeAction.Updated, h) nodes) hosts)
     Assert.True(Array.forall (fun h -> List.contains (ChannelNodeAction.Removed, h) nodes) hosts)
