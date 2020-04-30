@@ -1,0 +1,62 @@
+﻿<#@ template language="C#" #>
+<#@ import namespace="System.Linq" #>
+
+var JsonRPCClient = {
+  genId: function() {
+    return Math.floor(Math.random()*10000);
+  },
+  sendRequest: function(method, params) {
+    var request = {
+      jsonrpc: '2.0',
+      id: this.genId(),
+      method: method
+    };
+    if (params!=undefined && params!=null) {
+      request.params = params;
+    }
+    return new Promise(function (resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.addEventListener('load', function () { resolve(JSON.parse(xhr.response)) });
+      xhr.addEventListener('error', function () { reject('request error') });
+      xhr.addEventListener('abort', function () { reject('request aborted') });
+      xhr.addEventListener('timeout', function () { reject('request timed out') });
+      xhr.open('POST', '/api/1', true);
+      xhr.responseType = 'text';
+      xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.send(JSON.stringify(request));
+    });
+  }
+};
+
+PeerCastStation = {
+  SourceStreamType: {
+    None: 0,
+    Broadcast: 1,
+    Relay: 2,
+    All: 0x7FFFFFFF
+  },
+  OutputStreamType: {
+    None: 0,
+    Play: 1,
+    Relay: 2,
+    Metadata: 4,
+    Interface: 8,
+    All: 0x7FFFFFFF
+  },
+  <#
+  foreach (var method in methods) {
+    if (method.Args.Length>0) {
+  #>
+  <#= method.Name #>: function (<#= String.Join(", ", method.Args) #>) { return JsonRPCClient.sendRequest('<#= method.Name #>', { <#= String.Join(", ", method.Args.Select(arg => $"{arg}: {arg}")) #> }) },
+  <#
+    }
+    else {
+  #>
+  <#= method.Name #>: function () { return JsonRPCClient.sendRequest('<#= method.Name #>', null) },
+  <#
+    }
+  }
+  #>
+};
+

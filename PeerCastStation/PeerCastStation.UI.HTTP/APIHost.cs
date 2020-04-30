@@ -1504,6 +1504,13 @@ namespace PeerCastStation.UI.HTTP
           withmethod.Run(app.InvokeGet);
         });
       });
+      builder.Map("/api/peercaststation.js", sub => {
+        sub.UseAllowMethods("GET");
+        sub.MapMethod("GET", withmethod => {
+          withmethod.UseAuth(OutputStreamType.Interface | OutputStreamType.Play);
+          withmethod.Run(new PeerCastStationJSApp(typeof(APIContext)).Invoke);
+        });
+      });
       if (builder.Properties[OwinEnvironment.Server.OnDispose] is CancellationToken) {
         var onDispose = (CancellationToken)builder.Properties[OwinEnvironment.Server.OnDispose];
         onDispose.Register(() => app.Dispose());

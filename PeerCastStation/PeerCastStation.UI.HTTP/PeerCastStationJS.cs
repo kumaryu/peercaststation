@@ -1,0 +1,68 @@
+﻿using Microsoft.Owin;
+using PeerCastStation.UI.HTTP.JSONRPC;
+using System;
+using System.Linq;
+using System.Reflection;
+using System.Threading.Tasks;
+
+namespace PeerCastStation.UI.HTTP
+{
+  public partial class PeerCastStationJS : PeerCastStationJSBase
+  {
+    private Type hostType;
+    private RPCMethodInfo[] methods;
+    private class RPCMethodInfo
+    {
+      public string Name { get; }
+      public string[] Args { get; }
+
+      public RPCMethodInfo(MethodInfo method)
+      {
+        var attr = method.GetCustomAttribute<RPCMethodAttribute>();
+        Name = attr.Name;
+        Args = method.GetParameters()
+                .Where(p => p.ParameterType!=typeof(IOwinContext))
+                .Select(p => p.Name)
+                .ToArray();
+      }
+
+    }
+
+    public PeerCastStationJS(Type hostType)
+    {
+      this.hostType = hostType;
+      methods =
+        hostType
+        .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+        .Where(method => Attribute.IsDefined(method, typeof(RPCMethodAttribute), true))
+        .Select(method => new RPCMethodInfo(method))
+        .ToArray();
+    }
+  }
+
+  public class PeerCastStationJSApp
+  {
+    private byte[] contents;
+
+    public PeerCastStationJSApp(Type hostType)
+    {
+      var builder = new PeerCastStationJS(hostType);
+      contents = System.Text.Encoding.UTF8.GetBytes(builder.TransformText());
+    }
+    
+    public async Task Invoke(IOwinContext ctx)
+    {
+      var cancel_token = ctx.Request.CallCancelled;
+      ctx.Response.ContentType = "application/javascript";
+      ctx.Response.ContentLength = contents.LongLength;
+      var acinfo = ctx.GetAccessControlInfo();
+      if (acinfo?.AuthenticationKey!=null) {
+        ctx.Response.Headers.Append("Set-Cookie", $"auth={acinfo.AuthenticationKey.GetToken()}; Path=/");
+      }
+      await ctx.Response.WriteAsync(contents, cancel_token).ConfigureAwait(false);
+    }
+
+  }
+
+}
+
