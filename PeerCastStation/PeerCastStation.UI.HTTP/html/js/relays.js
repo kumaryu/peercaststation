@@ -489,6 +489,7 @@ var ChannelConnectionViewModel = function(owner, initial_value) {
     self.remoteEndpoint(value.remoteEndpoint);
     self.remoteHostStatus(value.remoteHostStatus);
     self.remoteName(value.remoteName);
+    self.remoteSessionId(value.remoteSessionId);
     return self;
   };
 
