@@ -5,7 +5,7 @@ configuration: Release
 install:
 - cmd: |-
     set PATH=C:\Ruby27-x64\bin;%PATH%
-    gem install jekyll
+    gem install -N jekyll
 before_build:
 - cmd: |-
     ruby bumpversion.rb %APPVEYOR_BUILD_VERSION%
