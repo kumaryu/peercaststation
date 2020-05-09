@@ -7,22 +7,14 @@ PeerCastStationはPeerCastクローンです。
 
 ビルド方法
 ==========
-PeerCastStation/PeerCastStation.slnをVisualStudio 2010以降で開いて普通にビルドしてください。
-VisualStudioにNuGet拡張が入ってた方がいいかもしれませんが無くてもたぶんいけます。
+PeerCastStation/PeerCastStation.slnをVisualStudio 2019 16.5以降で開いて普通にビルドしてください。
+.NET Core SDKの3.0以降が必要です。
 
-Test～プロジェクト群が開けないと言われますが気にしなくて大丈夫です。
+ドキュメントはrubyとjekyllを入れてdoc/helpで`jekyll build`を実行してください。
 
-WPF GUIのプロジェクトをなんとか外せばMonoでもxbuildでビルドできます。
-MonoDevelopは試してないのでわかりません。
-
-ドキュメントはruby(2.0以降がよさげ)とjekyllを入れてdoc/helpで`jekyll build`を実行してください。
-RUBYOPT環境変数に`-Eutf-8`を付けておかないとエラーが出るかもしれません。
-
-    gem install bundler
-    cd doc
-    bundle install
-    cd help
-    RUBYOPT=-Eutf-8 jekyll build
+    gem install -N jekyll
+    cd doc/help
+    jekyll build
 
 こんな感じ
 
@@ -36,7 +28,7 @@ pull requestの作法なんかはよくわかってないので適当でいい�
 自分で書き起こしたソースにはライセンスをつけてくれると助かります(ちょっとしたパッチには必要ないです)。
 ライセンスはGPLv3互換であればなんでもいいですが、特に考えがなければGPLv3にしてください。
 
-今のところ.NET Frameworkは3.5でやってください。
+今のところ.NET Frameworkは4.5.xでやってください。
 Monoで使えなさそうなクラスの使用はご遠慮ください(PeerCastStation.WPF.dllのように特定のアセンブリで閉じている場合には可)。
 といってもやたら変なクラスを使わない限り動くのであんまり気にしなくてもいいです。
 
