@@ -1,107 +1,22 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{CB01F4C1-482B-45FD-9237-1ADEA259BB2B}</ProjectGuid>
+    <TargetFramework>net452</TargetFramework>
     <OutputType>Exe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PecaStationdDebug</RootNamespace>
-    <AssemblyName>PecaStationdDebug</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
+    <ProjectReference Include="..\PecaStationd\PecaStationd.csproj" />
+    <ProjectReference Include="..\PeerCastStation.App\PeerCastStation.App.csproj" />
+    <ProjectReference Include="..\PeerCastStation.ASF\PeerCastStation.ASF.csproj" />
+    <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj" />
+    <ProjectReference Include="..\PeerCastStation.CustomFilter\PeerCastStation.CustomFilter.csproj" />
+    <ProjectReference Include="..\PeerCastStation.FLV\PeerCastStation.FLV.csproj" />
+    <ProjectReference Include="..\PeerCastStation.HTTP\PeerCastStation.HTTP.csproj" />
+    <ProjectReference Include="..\PeerCastStation.MKV\PeerCastStation.MKV.csproj" />
+    <ProjectReference Include="..\PeerCastStation.PCP\PeerCastStation.PCP.csproj" />
+    <ProjectReference Include="..\PeerCastStation.TS\PeerCastStation.TS.csproj" />
+    <ProjectReference Include="..\PeerCastStation.UI.HTTP\PeerCastStation.UI.HTTP.csproj" />
+    <ProjectReference Include="..\PeerCastStation.UI\PeerCastStation.UI.csproj" />
+    <ProjectReference Include="..\PeerCastStation.Updater\PeerCastStation.Updater.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\PecaStationd\PecaStationd.csproj">
-      <Project>{6bb358e2-a9eb-453c-aaba-5080dddb3b86}</Project>
-      <Name>PecaStationd</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.App\PeerCastStation.App.csproj">
-      <Project>{c8b4e4dc-be2b-4fc5-94d2-a22ff754c9a7}</Project>
-      <Name>PeerCastStation.App</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.ASF\PeerCastStation.ASF.csproj">
-      <Project>{dee84338-9849-4a90-8f1c-7bd6d88e3c2d}</Project>
-      <Name>PeerCastStation.ASF</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj">
-      <Project>{387996f5-e31d-4d92-bd86-8983c599f748}</Project>
-      <Name>PeerCastStation.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.CustomFilter\PeerCastStation.CustomFilter.csproj">
-      <Project>{e45e0a0a-4acc-4b46-a4b4-e2d836bde3dd}</Project>
-      <Name>PeerCastStation.CustomFilter</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.FLV\PeerCastStation.FLV.csproj">
-      <Project>{895d4df8-a8b2-43a0-85e4-ed74152e73b2}</Project>
-      <Name>PeerCastStation.FLV</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.HTTP\PeerCastStation.HTTP.csproj">
-      <Project>{db3bbed9-6f4b-456c-910d-e1801c94a110}</Project>
-      <Name>PeerCastStation.HTTP</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.MKV\PeerCastStation.MKV.csproj">
-      <Project>{c8f8baec-67bc-41f3-a1a4-56308cd2cab7}</Project>
-      <Name>PeerCastStation.MKV</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.PCP\PeerCastStation.PCP.csproj">
-      <Project>{f9d126c6-76b7-45e2-b62e-6ac35ee285cd}</Project>
-      <Name>PeerCastStation.PCP</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.TS\PeerCastStation.TS.csproj">
-      <Project>{0f0123ae-e500-45ca-b69d-4fbdbb88b752}</Project>
-      <Name>PeerCastStation.TS</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.UI.HTTP\PeerCastStation.UI.HTTP.csproj">
-      <Project>{bf5e0b6d-961a-4216-bacf-01d80ab3d6bb}</Project>
-      <Name>PeerCastStation.UI.HTTP</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.UI\PeerCastStation.UI.csproj">
-      <Project>{5988fbaf-37c4-4997-8389-55f2ebbb9511}</Project>
-      <Name>PeerCastStation.UI</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PeerCastStation.Updater\PeerCastStation.Updater.csproj">
-      <Project>{be5fd77b-d20e-40f6-b198-c7fd97e41274}</Project>
-      <Name>PeerCastStation.Updater</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

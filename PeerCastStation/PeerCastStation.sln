@@ -2,56 +2,33 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28803.352
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Core", "PeerCastStation.Core\PeerCastStation.Core.csproj", "{387996F5-E31D-4D92-BD86-8983C599F748}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PeerCastStation.Core", "PeerCastStation.Core\PeerCastStation.Core.csproj", "{387996F5-E31D-4D92-BD86-8983C599F748}"
 EndProject
-Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestCore", "TestCore\TestCore.rbproj", "{03C928C9-7AA8-4995-9D44-3F373BCF3CB3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PeerCastStation.PCP", "PeerCastStation.PCP\PeerCastStation.PCP.csproj", "{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}"
 	ProjectSection(ProjectDependencies) = postProject
 		{387996F5-E31D-4D92-BD86-8983C599F748} = {387996F5-E31D-4D92-BD86-8983C599F748}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.PCP", "PeerCastStation.PCP\PeerCastStation.PCP.csproj", "{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}"
-	ProjectSection(ProjectDependencies) = postProject
-		{387996F5-E31D-4D92-BD86-8983C599F748} = {387996F5-E31D-4D92-BD86-8983C599F748}
-	EndProjectSection
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PeerCastStation.HTTP", "PeerCastStation.HTTP\PeerCastStation.HTTP.csproj", "{DB3BBED9-6F4B-456C-910D-E1801C94A110}"
 EndProject
-Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestPCP", "TestPCP\TestPCP.rbproj", "{AD0E6E1A-2A22-4CDC-8DE9-7F9E8F4DFE3C}"
-	ProjectSection(ProjectDependencies) = postProject
-		{F9D126C6-76B7-45E2-B62E-6AC35EE285CD} = {F9D126C6-76B7-45E2-B62E-6AC35EE285CD}
-	EndProjectSection
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PeerCastStation.ASF", "PeerCastStation.ASF\PeerCastStation.ASF.csproj", "{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.HTTP", "PeerCastStation.HTTP\PeerCastStation.HTTP.csproj", "{DB3BBED9-6F4B-456C-910D-E1801C94A110}"
-EndProject
-Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestHTTP", "TestHTTP\TestHTTP.rbproj", "{5FD6FD1D-1911-467A-95E2-1CEDD8C49B26}"
-	ProjectSection(ProjectDependencies) = postProject
-		{DB3BBED9-6F4B-456C-910D-E1801C94A110} = {DB3BBED9-6F4B-456C-910D-E1801C94A110}
-	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.ASF", "PeerCastStation.ASF\PeerCastStation.ASF.csproj", "{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}"
-EndProject
-Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestASF", "TestASF\TestASF.rbproj", "{A5C59DA0-3105-48FC-9C46-B988A6F1541A}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation", "PeerCastStation\PeerCastStation.csproj", "{3D030F73-33A1-4FEF-9A3F-D8CD34FC63A2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PeerCastStation", "PeerCastStation\PeerCastStation.csproj", "{3D030F73-33A1-4FEF-9A3F-D8CD34FC63A2}"
 	ProjectSection(ProjectDependencies) = postProject
 		{BF5E0B6D-961A-4216-BACF-01D80AB3D6BB} = {BF5E0B6D-961A-4216-BACF-01D80AB3D6BB}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.UI.HTTP", "PeerCastStation.UI.HTTP\PeerCastStation.UI.HTTP.csproj", "{BF5E0B6D-961A-4216-BACF-01D80AB3D6BB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PeerCastStation.UI.HTTP", "PeerCastStation.UI.HTTP\PeerCastStation.UI.HTTP.csproj", "{BF5E0B6D-961A-4216-BACF-01D80AB3D6BB}"
 EndProject
-Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestUI.HTTP", "TestUI.HTTP\TestUI.HTTP.rbproj", "{83C856D6-4500-4E07-B177-3854FC49CC5E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PeerCastStation.MKV", "PeerCastStation.MKV\PeerCastStation.MKV.csproj", "{C8F8BAEC-67BC-41F3-A1A4-56308CD2CAB7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.MKV", "PeerCastStation.MKV\PeerCastStation.MKV.csproj", "{C8F8BAEC-67BC-41F3-A1A4-56308CD2CAB7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PeerCastStation.FLV", "PeerCastStation.FLV\PeerCastStation.FLV.csproj", "{895D4DF8-A8B2-43A0-85E4-ED74152E73B2}"
 EndProject
-Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestMKV", "TestMKV\TestMKV.rbproj", "{8506DD10-3565-4253-8596-012E6425AFA9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PeerCastStation.WPF", "PeerCastStation.WPF\PeerCastStation.WPF.csproj", "{5EA68141-AC06-428B-9526-A6835E0CC2B2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.FLV", "PeerCastStation.FLV\PeerCastStation.FLV.csproj", "{895D4DF8-A8B2-43A0-85E4-ED74152E73B2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PeerCastStation.UI", "PeerCastStation.UI\PeerCastStation.UI.csproj", "{5988FBAF-37C4-4997-8389-55F2EBBB9511}"
 EndProject
-Project("{B373B46A-B089-44D7-96CA-CD150D098BC8}") = "TestFLV", "TestFLV\TestFLV.rbproj", "{A21A8B81-F2C8-4303-962E-FD2B8D528B75}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.WPF", "PeerCastStation.WPF\PeerCastStation.WPF.csproj", "{5EA68141-AC06-428B-9526-A6835E0CC2B2}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.UI", "PeerCastStation.UI\PeerCastStation.UI.csproj", "{5988FBAF-37C4-4997-8389-55F2EBBB9511}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PecaStationd", "PecaStationd\PecaStationd.csproj", "{6BB358E2-A9EB-453C-AABA-5080DDDB3B86}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PecaStationd", "PecaStationd\PecaStationd.csproj", "{6BB358E2-A9EB-453C-AABA-5080DDDB3B86}"
 	ProjectSection(ProjectDependencies) = postProject
 		{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D} = {DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}
 		{BF5E0B6D-961A-4216-BACF-01D80AB3D6BB} = {BF5E0B6D-961A-4216-BACF-01D80AB3D6BB}
@@ -62,28 +39,21 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PecaStationd", "PecaStation
 		{895D4DF8-A8B2-43A0-85E4-ED74152E73B2} = {895D4DF8-A8B2-43A0-85E4-ED74152E73B2}
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{B99C2D12-C3D0-4644-978F-22515BF3AEFD}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.Config = .nuget\NuGet.Config
-		.nuget\NuGet.exe = .nuget\NuGet.exe
-		.nuget\NuGet.targets = .nuget\NuGet.targets
-	EndProjectSection
-EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "PeerCastStationInstaller", "PeerCastStationInstaller\PeerCastStationInstaller.wixproj", "{5F06EDA6-38C8-4BB7-8683-1EF94EE10290}"
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "PeerCastStationSetupBundle", "SetupBundle\PeerCastStationSetupBundle.wixproj", "{8887893D-66AA-4B0C-B222-FBAC46D94455}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PecaStationdDebug", "PecaStationdDebug\PecaStationdDebug.csproj", "{CB01F4C1-482B-45FD-9237-1ADEA259BB2B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PecaStationdDebug", "PecaStationdDebug\PecaStationdDebug.csproj", "{CB01F4C1-482B-45FD-9237-1ADEA259BB2B}"
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "PecaStationdInstaller", "PecaStationdInstaller\PecaStationdInstaller.wixproj", "{380048CC-CCEC-4864-B7B1-60E9360560B9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.TS", "PeerCastStation.TS\PeerCastStation.TS.csproj", "{0F0123AE-E500-45CA-B69D-4FBDBB88B752}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PeerCastStation.TS", "PeerCastStation.TS\PeerCastStation.TS.csproj", "{0F0123AE-E500-45CA-B69D-4FBDBB88B752}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.CustomFilter", "PeerCastStation.CustomFilter\PeerCastStation.CustomFilter.csproj", "{E45E0A0A-4ACC-4B46-A4B4-E2D836BDE3DD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PeerCastStation.CustomFilter", "PeerCastStation.CustomFilter\PeerCastStation.CustomFilter.csproj", "{E45E0A0A-4ACC-4B46-A4B4-E2D836BDE3DD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.App", "PeerCastStation.App\PeerCastStation.App.csproj", "{C8B4E4DC-BE2B-4FC5-94D2-A22FF754C9A7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PeerCastStation.App", "PeerCastStation.App\PeerCastStation.App.csproj", "{C8B4E4DC-BE2B-4FC5-94D2-A22FF754C9A7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeerCastStation.Updater", "PeerCastStation.Updater\PeerCastStation.Updater.csproj", "{BE5FD77B-D20E-40F6-B198-C7FD97E41274}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PeerCastStation.Updater", "PeerCastStation.Updater\PeerCastStation.Updater.csproj", "{BE5FD77B-D20E-40F6-B198-C7FD97E41274}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7DD6FFF0-25EA-4C46-A2AE-FCB7337C6C03}"
 	ProjectSection(SolutionItems) = preProject
@@ -102,26 +72,18 @@ Global
 		{387996F5-E31D-4D92-BD86-8983C599F748}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{387996F5-E31D-4D92-BD86-8983C599F748}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{387996F5-E31D-4D92-BD86-8983C599F748}.Release|Any CPU.Build.0 = Release|Any CPU
-		{03C928C9-7AA8-4995-9D44-3F373BCF3CB3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{03C928C9-7AA8-4995-9D44-3F373BCF3CB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F9D126C6-76B7-45E2-B62E-6AC35EE285CD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AD0E6E1A-2A22-4CDC-8DE9-7F9E8F4DFE3C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AD0E6E1A-2A22-4CDC-8DE9-7F9E8F4DFE3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DB3BBED9-6F4B-456C-910D-E1801C94A110}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DB3BBED9-6F4B-456C-910D-E1801C94A110}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DB3BBED9-6F4B-456C-910D-E1801C94A110}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DB3BBED9-6F4B-456C-910D-E1801C94A110}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5FD6FD1D-1911-467A-95E2-1CEDD8C49B26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5FD6FD1D-1911-467A-95E2-1CEDD8C49B26}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DEE84338-9849-4A90-8F1C-7BD6D88E3C2D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A5C59DA0-3105-48FC-9C46-B988A6F1541A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A5C59DA0-3105-48FC-9C46-B988A6F1541A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3D030F73-33A1-4FEF-9A3F-D8CD34FC63A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3D030F73-33A1-4FEF-9A3F-D8CD34FC63A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3D030F73-33A1-4FEF-9A3F-D8CD34FC63A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -130,20 +92,14 @@ Global
 		{BF5E0B6D-961A-4216-BACF-01D80AB3D6BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BF5E0B6D-961A-4216-BACF-01D80AB3D6BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BF5E0B6D-961A-4216-BACF-01D80AB3D6BB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{83C856D6-4500-4E07-B177-3854FC49CC5E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{83C856D6-4500-4E07-B177-3854FC49CC5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C8F8BAEC-67BC-41F3-A1A4-56308CD2CAB7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C8F8BAEC-67BC-41F3-A1A4-56308CD2CAB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C8F8BAEC-67BC-41F3-A1A4-56308CD2CAB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C8F8BAEC-67BC-41F3-A1A4-56308CD2CAB7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8506DD10-3565-4253-8596-012E6425AFA9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8506DD10-3565-4253-8596-012E6425AFA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{895D4DF8-A8B2-43A0-85E4-ED74152E73B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{895D4DF8-A8B2-43A0-85E4-ED74152E73B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{895D4DF8-A8B2-43A0-85E4-ED74152E73B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{895D4DF8-A8B2-43A0-85E4-ED74152E73B2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A21A8B81-F2C8-4303-962E-FD2B8D528B75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A21A8B81-F2C8-4303-962E-FD2B8D528B75}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5EA68141-AC06-428B-9526-A6835E0CC2B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5EA68141-AC06-428B-9526-A6835E0CC2B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5EA68141-AC06-428B-9526-A6835E0CC2B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
