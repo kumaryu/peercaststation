@@ -1480,6 +1480,12 @@ namespace PeerCastStation.UI.HTTP
     private async Task InvokeGet(IOwinContext ctx)
     {
       var cancel_token = ctx.Request.CallCancelled;
+      await SendJson(ctx, apiContext.GetVersionInfo(), cancel_token).ConfigureAwait(false);
+    }
+
+    private async Task InvokeGetAPIDescription(IOwinContext ctx)
+    {
+      var cancel_token = ctx.Request.CallCancelled;
       await SendJson(ctx, rpcHost.GenerateAPIDescription(), cancel_token).ConfigureAwait(false);
     }
 
@@ -1500,6 +1506,12 @@ namespace PeerCastStation.UI.HTTP
         sub.MapMethod("GET", withmethod => {
           withmethod.UseAuth(OutputStreamType.Interface | OutputStreamType.Play);
           withmethod.Run(new PeerCastStationJSApp(typeof(APIContext)).Invoke);
+        });
+      });
+      builder.Map("/api/1/openrpc.json", sub => {
+        sub.UseAllowMethods("GET");
+        sub.MapMethod("GET", withmethod => {
+          withmethod.Run(app.InvokeGetAPIDescription);
         });
       });
       builder.Map("/api/1", sub => {
