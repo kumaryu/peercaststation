@@ -297,7 +297,12 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
               catch (ArgumentException) {
                 throw new RPCError(
                   RPCErrorCode.InvalidParams, 
-                  String.Format("{0} must be {1})", param_infos[i+pos].Name, JsonType(param_infos[i+pos].ParameterType)));
+                  String.Format("{0} must be {1}", param_infos[i+pos].Name, JsonType(param_infos[i+pos].ParameterType)));
+              }
+              catch (InvalidCastException) {
+                throw new RPCError(
+                  RPCErrorCode.InvalidParams, 
+                  String.Format("{0} must be {1}", param_infos[i+pos].Name, JsonType(param_infos[i+pos].ParameterType)));
               }
             }
             else if (param_infos[i+pos].DefaultValue!=DBNull.Value) {

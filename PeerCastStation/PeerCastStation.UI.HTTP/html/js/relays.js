@@ -13,7 +13,7 @@ var UserConfig = new function () {
       loading = false;
     });
     PeerCastStation.getUserConfig('default', 'defaultPlayProtocol').then(function (value) {
-      if (!config) return;
+      if (!value) return;
       loading = true;
       self.defaultPlayProtocol(value);
       loading = false;
@@ -349,20 +349,23 @@ var BroadcastDialog = new function() {
     var sourceStream  = self.sourceStream() ? self.sourceStream().name       : null;
     var contentReader = self.contentType()  ? self.contentType().name        : null;
     PeerCastStation.broadcastChannel(
-        yellowPageId,
-        self.networkType(),
-        self.source(),
-        sourceStream,
-        contentReader,
-        info,
-        track).then(
-      function(res, err) {
-        if (err) {
-          alert("エラー: " + err.message);
-        }
+      yellowPageId,
+      self.networkType(),
+      self.source(),
+      contentReader,
+      info,
+      track,
+      sourceStream
+    ).then(
+      function (res) {
         refresh();
         dialog.modal('hide');
-        }
+      },
+      function(err) {
+        alert("エラー: " + err.message);
+        refresh();
+        dialog.modal('hide');
+      }
     );
     PeerCastStation.addBroadcastHistory({
       yellowPage:  self.yellowPage() ? self.yellowPage().name : null,
