@@ -1,10 +1,10 @@
 ---
-image: Visual Studio 2017
+image: Visual Studio 2019
 version: 2.9.3.{build}
 configuration: Release
 install:
 - cmd: |-
-    set PATH=C:\Ruby26\bin;%PATH%
+    set PATH=C:\Ruby27-x64\bin;%PATH%
     gem install jekyll
 before_build:
 - cmd: |-
@@ -12,7 +12,7 @@ before_build:
     cd doc\help
     jekyll build
     cd ..\..
-    nuget restore PeerCastStation\PeerCastStation.sln
+    dotnet restore PeerCastStation\PeerCastStation.sln
 build:
   verbosity: minimal
 artifacts:
