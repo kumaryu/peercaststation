@@ -42,7 +42,15 @@ var JsonRPCClient = {
     }
     return new Promise(function (resolve, reject) {
       var xhr = new XMLHttpRequest();
-      xhr.addEventListener('load', function () { resolve(JSON.parse(xhr.response)) });
+      xhr.addEventListener('load', function () {
+        var response = JSON.parse(xhr.response);
+        if (response.error) {
+          reject(response.error)
+        }
+        else {
+          resolve(response.result)
+        }
+      });
       xhr.addEventListener('error', function () { reject('request error') });
       xhr.addEventListener('abort', function () { reject('request aborted') });
       xhr.addEventListener('timeout', function () { reject('request timed out') });
@@ -72,7 +80,7 @@ PeerCastStation = {
   },
   ");
             
-            #line 47 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
+            #line 55 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
 
   foreach (var method in methods) {
     if (method.Args.Length>0) {
@@ -82,35 +90,35 @@ PeerCastStation = {
             #line hidden
             this.Write("  ");
             
-            #line 51 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
+            #line 59 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(method.Name));
             
             #line default
             #line hidden
             this.Write(": function (");
             
-            #line 51 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
+            #line 59 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(String.Join(", ", method.Args)));
             
             #line default
             #line hidden
             this.Write(") { return JsonRPCClient.sendRequest(\'");
             
-            #line 51 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
+            #line 59 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(method.Name));
             
             #line default
             #line hidden
             this.Write("\', { ");
             
-            #line 51 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
+            #line 59 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(String.Join(", ", method.Args.Select(arg => $"{arg}: {arg}"))));
             
             #line default
             #line hidden
             this.Write(" }) },\r\n  ");
             
-            #line 52 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
+            #line 60 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
 
     }
     else {
@@ -120,21 +128,21 @@ PeerCastStation = {
             #line hidden
             this.Write("  ");
             
-            #line 56 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
+            #line 64 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(method.Name));
             
             #line default
             #line hidden
             this.Write(": function () { return JsonRPCClient.sendRequest(\'");
             
-            #line 56 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
+            #line 64 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(method.Name));
             
             #line default
             #line hidden
             this.Write("\', null) },\r\n  ");
             
-            #line 57 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
+            #line 65 "C:\Users\kumaryu\OneDrive\Documents\peercaststation\PeerCastStation\PeerCastStation.UI.HTTP\PeerCastStationJS.tt"
 
     }
   }

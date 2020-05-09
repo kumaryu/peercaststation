@@ -6,14 +6,14 @@ var UserConfig = new function () {
   self.defaultPlayProtocol = ko.observable({});
 
   self.loadConfig = function() {
-    PeerCast.getUserConfig('default', 'ui', function (config) {
+    PeerCastStation.getUserConfig('default', 'ui').then(function (config) {
       if (!config) return;
       loading = true;
       if (config.remoteNodeName) self.remoteNodeName(config.remoteNodeName);
       loading = false;
     });
-    PeerCast.getUserConfig('default', 'defaultPlayProtocol', function (value) {
-      if (!value) return;
+    PeerCastStation.getUserConfig('default', 'defaultPlayProtocol').then(function (value) {
+      if (!config) return;
       loading = true;
       self.defaultPlayProtocol(value);
       loading = false;
@@ -25,8 +25,8 @@ var UserConfig = new function () {
     var ui = {
       remoteNodeName: self.remoteNodeName()
     };
-    PeerCast.setUserConfig('default', 'ui', ui);
-    PeerCast.setUserConfig('default', 'defaultPlayProtocol', self.defaultPlayProtocol());
+    PeerCastStation.setUserConfig('default', 'ui', ui);
+    PeerCastStation.setUserConfig('default', 'defaultPlayProtocol', self.defaultPlayProtocol());
   };
 
   $(function () {
@@ -97,21 +97,19 @@ var ChannelEditDialog = new function() {
       album:       self.trackAlbum(),
       url:         self.trackUrl()
     };
-    PeerCast.setChannelInfo(
-        self.channelId(),
-        info,
-        track,
-        function() {
-          refresh();
-          dialog.modal('hide');
-        });
+    PeerCastStation.setChannelInfo(self.channelId(), info, track).then(
+      function () {
+        refresh();
+        dialog.modal('hide');
+      }
+    );
   };
 };
 
 var BroadcastHistoryViewModel = function(parent, entry) {
   var self = this;
   var updateEntry = function() {
-    PeerCast.addBroadcastHistory({
+    PeerCastStation.addBroadcastHistory({
       yellowPage:  self.yellowPage(),
       networkTyep: self.networkType(),
       streamType:  self.streamType(),
@@ -188,14 +186,12 @@ var BroadcastDialog = new function() {
     dialog = $('#broadcastDialog');
     dialog.modal({show: false});
     dialog.on('hide', self.onHide);
-    PeerCast.getContentReaders(function(result) {
-      if (!result) return;
+    PeerCastStation.getContentReaders().then(function(result) {
       self.contentTypes.push.apply(self.contentTypes, result);
     });
-    PeerCast.getSourceStreams(function(result) {
-      if (!result) return;
+    PeerCastStation.getSourceStreams().then(function(result) {
       for (var i in result) {
-        if ((result[i].type & PeerCast.SourceStreamType.Broadcast)!=0) {
+        if ((result[i].type & PeerCastStation.SourceStreamType.Broadcast)!=0) {
           self.sourceStreams.push(result[i]);
         }
       }
@@ -313,8 +309,7 @@ var BroadcastDialog = new function() {
 
   self.show = function() {
     dialog.modal('show');
-    PeerCast.getYellowPages(function(result) {
-      if (!result) return;
+    PeerCastStation.getYellowPages().then(function(result) {
       self.yellowPages(
         [
           {
@@ -326,12 +321,10 @@ var BroadcastDialog = new function() {
         ].concat(result)
       );
     });
-    PeerCast.getBroadcastHistory(function(result) {
-      if (!result) return;
+    PeerCastStation.getBroadcastHistory().then(function(result) {
       self.broadcastHistory($.map(result, function (value) { return new BroadcastHistoryViewModel(self, value); }));
     });
-    PeerCast.getChannels(function(result) {
-      if (!result) return;
+    PeerCastStation.getChannels().then(function(result) {
       self.localChannels($.map(result, function (value) { return new LocalChannelViewModel(self, value); }));
     })
   };
@@ -355,22 +348,23 @@ var BroadcastDialog = new function() {
     var yellowPageId  = self.yellowPage()   ? self.yellowPage().yellowPageId : null;
     var sourceStream  = self.sourceStream() ? self.sourceStream().name       : null;
     var contentReader = self.contentType()  ? self.contentType().name        : null;
-    PeerCast.broadcastChannel(
+    PeerCastStation.broadcastChannel(
         yellowPageId,
         self.networkType(),
         self.source(),
         sourceStream,
         contentReader,
         info,
-        track,
-        function(res, err) {
-          if (err) {
-            alert("エラー: " + err.message);
-          }
-          refresh();
-          dialog.modal('hide');
-        });
-    PeerCast.addBroadcastHistory({
+        track).then(
+      function(res, err) {
+        if (err) {
+          alert("エラー: " + err.message);
+        }
+        refresh();
+        dialog.modal('hide');
+        }
+    );
+    PeerCastStation.addBroadcastHistory({
       yellowPage:  self.yellowPage() ? self.yellowPage().name : null,
       networkType: self.networkType(),
       streamType:  sourceStream,
@@ -493,14 +487,12 @@ var ChannelConnectionViewModel = function(owner, initial_value) {
   };
 
   self.stop = function() {
-    PeerCast.stopChannelConnection(self.channel.channelId(), self.connectionId(), function(result, error) {
-      if (!error && result) {
-        self.channel.connections.remove(self);
-      }
+    PeerCastStation.stopChannelConnection(self.channel.channelId(), self.connectionId()).then(function(result) {
+      self.channel.connections.remove(self);
     });
   };
   self.restart = function() {
-    PeerCast.restartChannelConnection(self.channel.channelId(), self.connectionId());
+    PeerCastStation.restartChannelConnection(self.channel.channelId(), self.connectionId());
   };
 };
 
@@ -523,10 +515,10 @@ var ChannelYellowPageViewModel = function(owner, initial_value) {
   };
 
   self.stop = function() {
-    PeerCast.stopAnnounce(self.yellowPageId(), self.channel.channelId(), refresh);
+    PeerCastStation.stopAnnounce(self.yellowPageId(), self.channel.channelId()).then(refresh);
   };
   self.reconnect = function() {
-    PeerCast.restartAnnounce(self.yellowPageId(), self.channel.channelId(), refresh);
+    PeerCastStation.restartAnnounce(self.yellowPageId(), self.channel.channelId()).then(refresh);
   };
 };
 
@@ -653,13 +645,11 @@ var ChannelViewModel = function(owner, initial_value) {
     return false;
   });
 
-  PeerCast.getChannelConnections(self.channelId(), function(result) {
-    if (result) {
-      var connections = $.map(result, function(conn) {
-        return new ChannelConnectionViewModel(self, conn);
-      });
-      self.connections.splice.apply(self.connections, [0, self.connections().length].concat(connections));
-    }
+  PeerCastStation.getChannelConnections(self.channelId()).then(function(result) {
+    var connections = $.map(result, function(conn) {
+      return new ChannelConnectionViewModel(self, conn);
+    });
+    self.connections.splice.apply(self.connections, [0, self.connections().length].concat(connections));
   });
 
   self.showInfo = function() {
@@ -667,19 +657,17 @@ var ChannelViewModel = function(owner, initial_value) {
   };
 
   var updateConnections = function() {
-    PeerCast.getChannelConnections(self.channelId(), function(result) {
-      if (result) {
-        var connections = self.connections();
-        var new_connections = $.map(result, function(conn) {
-          for (var i=0,l=connections.length; i<l; i++) {
-            if (connections[i].connectionId()==conn.connectionId) {
-              return connections[i].update(conn);
-            }
+    PeerCastStation.getChannelConnections(self.channelId()).then(function(result) {
+      var connections = self.connections();
+      var new_connections = $.map(result, function(conn) {
+        for (var i=0,l=connections.length; i<l; i++) {
+          if (connections[i].connectionId()==conn.connectionId) {
+            return connections[i].update(conn);
           }
-          return new ChannelConnectionViewModel(self, conn);
-        });
-        self.connections.splice.apply(self.connections, [0, self.connections().length].concat(new_connections));
-      }
+        }
+        return new ChannelConnectionViewModel(self, conn);
+      });
+      self.connections.splice.apply(self.connections, [0, self.connections().length].concat(new_connections));
     });
   };
 
@@ -735,7 +723,7 @@ var ChannelViewModel = function(owner, initial_value) {
   };
 
   var updateRelayTree = function() {
-    PeerCast.getChannelRelayTree(self.channelId(), function(result) {
+    PeerCastStation.getChannelRelayTree(self.channelId()).then(function(result) {
       var nodes = $.map(result, createTreeNode);
       self.nodes.splice.apply(self.nodes, [0, self.nodes().length].concat(nodes));
     });
@@ -766,11 +754,11 @@ var ChannelViewModel = function(owner, initial_value) {
   };
 
   self.stop = function() {
-    PeerCast.stopChannel(self.channelId(), refresh);
+    PeerCastStation.stopChannel(self.channelId()).then(refresh);
   };
 
   self.bump = function() {
-    PeerCast.bumpChannel(self.channelId());
+    PeerCastStation.bumpChannel(self.channelId());
   };
 
   self.update = function(c) {
@@ -813,39 +801,37 @@ var channelsViewModel = new function() {
   self.playPageUrls = ko.observableArray();
 
   self.update = function() {
-    PeerCast.getStatus(function(result) {
-      if (result) self.updateStatus(result);
+    PeerCastStation.getStatus().then(function(result) {
+      self.updateStatus(result);
     });
-    PeerCast.getChannels(function(result) {
-      if (result) self.updateChannels(result);
+    PeerCastStation.getChannels().then(function(result) {
+      self.updateChannels(result);
     });
-    PeerCast.getAuthToken(function(result) {
-      if (result) self.authToken(result);
+    PeerCastStation.getAuthToken().then(function(result) {
+      self.authToken(result);
     });
-    PeerCast.getListeners(function(result) {
-      if (result) {
-        var urls = [];
-        for (var i=0; i<result.length; i++) {
-          var port = result[i];
-          if ((port.globalAccepts & PeerCast.OutputStreamType.Play)===0) continue;
-          var addresses = port.globalAddresses;
-          if (addresses.length===0) continue;
-          for (var j=0; j<addresses.length; j++) {
-            var host = addresses[j] + ":" + port.port;
-            var family = "";
-            if (/:/.exec(addresses[j])) {
-              host = "[" + addresses[j] + "]:" + port.port;
-              family = "(IPv6)";
-            }
-            var url = "http://" + host + "/html/play.html";
-            if (port.globalAuthorizationRequired) {
-              url = url + "?auth=" + port.authToken;
-            }
-            urls.push({
-              url: url,
-              family: family
-            });
+    PeerCastStation.getListeners().then(function(result) {
+      var urls = [];
+      for (var i=0; i<result.length; i++) {
+        var port = result[i];
+        if ((port.globalAccepts & PeerCastStation.OutputStreamType.Play)===0) continue;
+        var addresses = port.globalAddresses;
+        if (addresses.length===0) continue;
+        for (var j=0; j<addresses.length; j++) {
+          var host = addresses[j] + ":" + port.port;
+          var family = "";
+          if (/:/.exec(addresses[j])) {
+            host = "[" + addresses[j] + "]:" + port.port;
+            family = "(IPv6)";
           }
+          var url = "http://" + host + "/html/play.html";
+          if (port.globalAuthorizationRequired) {
+            url = url + "?auth=" + port.authToken;
+          }
+          urls.push({
+            url: url,
+            family: family
+          });
         }
       }
       self.playPageUrls(urls);

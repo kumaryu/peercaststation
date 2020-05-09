@@ -39,7 +39,7 @@ PeerCast = {
     if (params!=undefined && params!=null) {
       request.params = params;
     }
-    $.post('/api/1', $.toJSON(request), this.onSuccessFunc(completed)).error(this.onErrorFunc(completed));
+    $.post('/api/1', JSON.stringify(request), this.onSuccessFunc(completed)).error(this.onErrorFunc(completed));
   },
   getVersionInfo: function(completed)    { this.postRequest('getVersionInfo', null, completed); },
   getPlugins:  function(completed)       { this.postRequest('getPlugins',     null, completed); },

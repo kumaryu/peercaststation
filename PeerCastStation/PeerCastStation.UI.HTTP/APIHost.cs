@@ -1495,6 +1495,13 @@ namespace PeerCastStation.UI.HTTP
     public static void BuildApp(IAppBuilder builder)
     {
       var app = new APIHostOwinApp(builder.Properties[OwinEnvironment.PeerCastStation.PeerCastApplication] as PeerCastApplication);
+      builder.Map("/api/1/peercaststation.js", sub => {
+        sub.UseAllowMethods("GET");
+        sub.MapMethod("GET", withmethod => {
+          withmethod.UseAuth(OutputStreamType.Interface | OutputStreamType.Play);
+          withmethod.Run(new PeerCastStationJSApp(typeof(APIContext)).Invoke);
+        });
+      });
       builder.Map("/api/1", sub => {
         sub.UseAllowMethods("POST", "GET");
         sub.MapMethod("POST", withmethod => {
@@ -1502,13 +1509,6 @@ namespace PeerCastStation.UI.HTTP
         });
         sub.MapMethod("GET", withmethod => {
           withmethod.Run(app.InvokeGet);
-        });
-      });
-      builder.Map("/api/peercaststation.js", sub => {
-        sub.UseAllowMethods("GET");
-        sub.MapMethod("GET", withmethod => {
-          withmethod.UseAuth(OutputStreamType.Interface | OutputStreamType.Play);
-          withmethod.Run(new PeerCastStationJSApp(typeof(APIContext)).Invoke);
         });
       });
       if (builder.Properties[OwinEnvironment.Server.OnDispose] is CancellationToken) {

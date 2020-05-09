@@ -6,13 +6,13 @@ var UserConfig = new function () {
   self.defaultPlayProtocol = ko.observable({});
 
   self.loadConfig = function() {
-    PeerCast.getUserConfig('default', 'ui', function (config) {
+    PeerCastStation.getUserConfig('default', 'ui').then(function (config) {
       if (!config) return;
       loading = true;
       if (config.remoteNodeName) self.remoteNodeName(config.remoteNodeName);
       loading = false;
     });
-    PeerCast.getUserConfig('default', 'defaultPlayProtocol', function (value) {
+    PeerCastStation.getUserConfig('default', 'defaultPlayProtocol').then(function (value) {
       if (!value) return;
       loading = true;
       self.defaultPlayProtocol(value);
@@ -25,8 +25,8 @@ var UserConfig = new function () {
     var ui = {
       remoteNodeName: self.remoteNodeName()
     };
-    PeerCast.setUserConfig('default', 'ui', ui);
-    PeerCast.setUserConfig('default', 'defaultPlayProtocol', self.defaultPlayProtocol());
+    PeerCastStation.setUserConfig('default', 'ui', ui);
+    PeerCastStation.setUserConfig('default', 'defaultPlayProtocol', self.defaultPlayProtocol());
   };
 
   $(function () {
@@ -521,41 +521,38 @@ var YPChannelsViewModel = function() {
 
   self.update = function() {
     self.isLoading(true);
-    PeerCast.getAuthToken(function (result) {
-      if (result) self.authToken(result);
+    PeerCastStation.getAuthToken().then(function (result) {
+      self.authToken(result);
     });
-    PeerCast.updateYPChannels(function(result) {
-      if (result) {
-        var old_channels = getLastChannels();
-        var is_new_channel = function (channel_info) {
-          if (old_channels==null) return false;
-          for (var i in old_channels) {
-            if (old_channels[i]===channel_info.name) {
-              return false;
-            }
+    PeerCastStation.updateYPChannels().then(function(result) {
+      var old_channels = getLastChannels();
+      var is_new_channel = function (channel_info) {
+        if (old_channels==null) return false;
+        for (var i in old_channels) {
+          if (old_channels[i]===channel_info.name) {
+            return false;
           }
-          return true;
         }
-        var new_channels = $.map(result, function(channel_info) {
-          return new YPChannelViewModel(self, channel_info, is_new_channel(channel_info));
-        });
-        setLastChannels($.map(result, function(channel_info) { return channel_info.name; }));
-        self.channels.splice.apply(self.channels, [0, self.channels().length].concat(new_channels));
-        PeerCast.getChannels(function(result) {
-          if (!result) return;
-          var channels = self.channels();
-          for (var i in channels) {
-            var relaying = false;
-            for (var j in result) {
-              if (channels[i].channelId()===result[j].channelId) {
-                relaying = true;
-                break;
-              }
-            }
-            channels[i].isPlaying(relaying);
-          }
-        });
+        return true;
       }
+      var new_channels = $.map(result, function(channel_info) {
+        return new YPChannelViewModel(self, channel_info, is_new_channel(channel_info));
+      });
+      setLastChannels($.map(result, function(channel_info) { return channel_info.name; }));
+      self.channels.splice.apply(self.channels, [0, self.channels().length].concat(new_channels));
+      PeerCastStation.getChannels().then(function(result) {
+        var channels = self.channels();
+        for (var i in channels) {
+          var relaying = false;
+          for (var j in result) {
+            if (channels[i].channelId()===result[j].channelId) {
+              relaying = true;
+              break;
+            }
+          }
+          channels[i].isPlaying(relaying);
+        }
+      });
       self.isLoading(false);
     });
   };
@@ -641,11 +638,11 @@ var YPChannelsViewModel = function() {
     var yp_channels = {
       filters: $.map(self.customFilters(), function (filter) { return filter.model(); })
     };
-    PeerCast.setUserConfig('default', 'ypChannels', yp_channels);
+    PeerCastStation.setUserConfig('default', 'ypChannels', yp_channels);
   };
 
   self.loadConfig = function() {
-    PeerCast.getUserConfig('default', 'ypChannels', function (config) {
+    PeerCastStation.getUserConfig('default', 'ypChannels').then(function (config) {
       if (config) {
         self.customFilters($.map(config.filters, function (filter) {
           return new CustomFilterViewModel(self, filter);

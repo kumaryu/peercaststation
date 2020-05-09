@@ -16,7 +16,15 @@ var JsonRPCClient = {
     }
     return new Promise(function (resolve, reject) {
       var xhr = new XMLHttpRequest();
-      xhr.addEventListener('load', function () { resolve(JSON.parse(xhr.response)) });
+      xhr.addEventListener('load', function () {
+        var response = JSON.parse(xhr.response);
+        if (response.error) {
+          reject(response.error)
+        }
+        else {
+          resolve(response.result)
+        }
+      });
       xhr.addEventListener('error', function () { reject('request error') });
       xhr.addEventListener('abort', function () { reject('request aborted') });
       xhr.addEventListener('timeout', function () { reject('request timed out') });
