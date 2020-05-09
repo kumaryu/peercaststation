@@ -2,10 +2,10 @@
 using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using PeerCastStation.Core;
 using Microsoft.Owin;
+using System.Xml.Linq;
 
 namespace PeerCastStation.UI.HTTP.JSONRPC
 {
@@ -13,13 +13,129 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
   {
     public string Name { get; private set; }
     public OutputStreamType Grant { get; private set; }
-    private MethodInfo method;
-    public RPCMethodInfo(MethodInfo method)
+    public MethodInfo Method { get; private set; }
+    public object Receiver { get; private set; }
+    public RPCMethodInfo(object receiver, MethodInfo method)
     {
-      this.method = method;
+      this.Receiver = receiver;
+      this.Method = method;
       var attr = Attribute.GetCustomAttributes(method).First(a => a.GetType()==typeof(RPCMethodAttribute));
       this.Name = ((RPCMethodAttribute)attr).Name;
       this.Grant = ((RPCMethodAttribute)attr).Grant;
+    }
+
+    private static string GetTypeSignatureForDoc(Type type)
+    {
+      if (type.IsGenericType && !type.IsGenericTypeDefinition) {
+        return $"{GetTypeSignatureForDoc(type.GetGenericTypeDefinition())}{{{String.Join(",", type.GenericTypeArguments.Select(t => GetTypeSignatureForDoc(t)))}}}";
+      }
+      else if (type.IsGenericTypeDefinition) {
+        var name = type.FullName.Replace('+', '.');
+        return name.Substring(0, name.Length-2);
+      }
+      else {
+        return type.FullName.Replace('+', '.');
+      }
+    }
+
+    private static string GetMethodSignatureForDoc(MethodInfo method)
+    {
+      return $"M:{GetTypeSignatureForDoc(method.DeclaringType)}.{method.Name}({String.Join(",", method.GetParameters().Select(param => GetTypeSignatureForDoc(param.ParameterType)))})";
+    }
+
+    private static Dictionary<string, WeakReference<XDocument>> assemblyDocuments = new Dictionary<string, WeakReference<XDocument>>();
+    private static XDocument GetAssemblyDocument(Assembly asm)
+    {
+      lock (assemblyDocuments) {
+        if (assemblyDocuments.TryGetValue(asm.Location, out var reference) && reference.TryGetTarget(out var doc)) {
+          return doc;
+        }
+        else {
+          var path = System.IO.Path.ChangeExtension(asm.Location, ".xml");
+          XDocument xml = null;
+          try {
+            xml = XDocument.Load(path);
+          }
+          catch (System.IO.FileNotFoundException) {
+          }
+          catch (System.Security.SecurityException) {
+          }
+          assemblyDocuments[asm.Location] = new WeakReference<XDocument>(xml);
+          return xml;
+        }
+      }
+    }
+
+    struct DocumentCache {
+      public enum CacheState {
+        NotInitialized = 0,
+        NotFound,
+        Found,
+      }
+      public readonly CacheState State;
+      public readonly XElement Document;
+      public DocumentCache(CacheState state, XElement document)
+      {
+        State = state;
+        Document = document;
+      }
+    }
+
+    private DocumentCache document;
+    private XElement GetMethodDocument()
+    {
+      switch (document.State) {
+      case DocumentCache.CacheState.NotInitialized:
+        {
+          var doc = GetAssemblyDocument(Method.DeclaringType.Assembly);
+          if (doc==null) {
+            document = new DocumentCache(DocumentCache.CacheState.NotFound, null);
+          }
+          var elt = doc
+            .Descendants("member")
+            .Where(m => m.Attribute("name")?.Value==GetMethodSignatureForDoc(Method))
+            .FirstOrDefault();
+          if (elt!=null) {
+            document = new DocumentCache(DocumentCache.CacheState.Found, elt);
+          }
+          else {
+            document = new DocumentCache(DocumentCache.CacheState.NotFound, null);
+          }
+          return document.Document;
+        }
+      case DocumentCache.CacheState.Found:
+        return document.Document;
+      case DocumentCache.CacheState.NotFound:
+      default:
+        return null;
+      }
+    }
+
+    public string GetMethodSummary()
+    {
+      var elt = GetMethodDocument();
+      return elt?.Element("summary")?.Value?.Trim();
+    }
+
+    public string GetResultSummary()
+    {
+      var elt = GetMethodDocument();
+      if (elt==null) return null;
+      return
+        elt.Elements("returns")
+          .Select(p => p.Value)
+          .FirstOrDefault();
+    }
+
+    public string GetParameterSummary(string name)
+    {
+      var elt = GetMethodDocument();
+      if (elt==null) return null;
+      return
+        elt.Elements("param")
+          .Where(p => p.Attribute("name")?.Value==name)
+          .Select(p => p.Value)
+          .FirstOrDefault();
     }
 
     private string JsonType(Type type)
@@ -119,13 +235,13 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       else                             return JToken.FromObject(value);
     }
 
-    public JToken Invoke(object receiver, IOwinContext ctx, JToken args)
+    public JToken Invoke(IOwinContext ctx, JToken args)
     {
-      var param_infos = method.GetParameters();
+      var param_infos = Method.GetParameters();
       if (param_infos.Length==0) {
         try {
-          var res = method.Invoke(receiver, new object[] {});
-          return FromObject(method.ReturnType, res);
+          var res = Method.Invoke(Receiver, new object[] {});
+          return FromObject(Method.ReturnType, res);
         }
         catch (TargetInvocationException e) {
           throw e.InnerException;
@@ -142,8 +258,8 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
         }
         if (len==0) {
           try {
-            var res = method.Invoke(receiver, arguments);
-            return FromObject(method.ReturnType, res);
+            var res = Method.Invoke(Receiver, arguments);
+            return FromObject(Method.ReturnType, res);
           }
           catch (TargetInvocationException e) {
             throw e.InnerException;
@@ -181,7 +297,12 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
               catch (ArgumentException) {
                 throw new RPCError(
                   RPCErrorCode.InvalidParams, 
-                  String.Format("{0} must be {1})", param_infos[i+pos].Name, JsonType(param_infos[i+pos].ParameterType)));
+                  String.Format("{0} must be {1}", param_infos[i+pos].Name, JsonType(param_infos[i+pos].ParameterType)));
+              }
+              catch (InvalidCastException) {
+                throw new RPCError(
+                  RPCErrorCode.InvalidParams, 
+                  String.Format("{0} must be {1}", param_infos[i+pos].Name, JsonType(param_infos[i+pos].ParameterType)));
               }
             }
             else if (param_infos[i+pos].DefaultValue!=DBNull.Value) {
@@ -201,8 +322,8 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
           throw new RPCError(RPCErrorCode.InvalidParams, "parameters must be Array or Object");
         }
         try {
-          var res = method.Invoke(receiver, arguments);
-          return FromObject(method.ReturnType, res);
+          var res = Method.Invoke(Receiver, arguments);
+          return FromObject(Method.ReturnType, res);
         }
         catch (TargetInvocationException e) {
           if (e.InnerException is RPCError) {
@@ -376,7 +497,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
         var methods = authFunc!=null ? this.methods.Where(method => authFunc(method.Grant)) : this.methods;
         var m = methods.FirstOrDefault(method => method.Name==req.Method);
         if (m!=null) {
-          var res = m.Invoke(host, ctx, req.Parameters);
+          var res = m.Invoke(ctx, req.Parameters);
           if (req.Id!=null) {
             results.Add(new RPCResponse(req.Id, res).ToJson());
           }
@@ -430,18 +551,117 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
     }
 
     private object host;
-    private IEnumerable<RPCMethodInfo> methods;
+    private RPCMethodInfo[] methods;
     public JSONRPCHost(object host)
     {
       this.host = host;
-      this.methods = host.GetType().GetMethods(
-        System.Reflection.BindingFlags.Instance |
-        System.Reflection.BindingFlags.Public |
-        System.Reflection.BindingFlags.NonPublic).Where(method =>
-          Attribute.IsDefined(method, typeof(RPCMethodAttribute), true)
+      this.methods =
+        Enumerable.Concat(
+          Enumerable.Repeat(this.GetType().GetMethod("GenerateAPIDescription"), 1)
+          .Select(method => new RPCMethodInfo(this, method)),
+          host.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+          .Where(method => Attribute.IsDefined(method, typeof(RPCMethodAttribute), true))
+          .Select(method => new RPCMethodInfo(host, method))
         )
-        .Select(method => new RPCMethodInfo(method))
         .ToArray();
     }
+
+    private JObject GenerateTypeSchema(Type t)
+    {
+      if (t.IsGenericType && t.GetGenericTypeDefinition()==typeof(Nullable<>)) {
+        return GenerateTypeSchema(t.GenericTypeArguments[0]);
+      }
+      else if (t==typeof(string)) {
+        return JObject.FromObject(new { type="string" });
+      }
+      else if (t==typeof(bool)) {
+        return JObject.FromObject(new { type="boolean" });
+      }
+      else if (t==typeof(int) ||
+               t==typeof(uint) ||
+               t==typeof(byte) ||
+               t==typeof(sbyte) ||
+               t==typeof(short) ||
+               t==typeof(ushort) ||
+               t==typeof(long) ||
+               t==typeof(ulong) ||
+               t==typeof(float) ||
+               t==typeof(double)) {
+        return JObject.FromObject(new { type="number" });
+      }
+      else if (t==typeof(JObject) || t==typeof(JToken)) {
+        return JObject.FromObject(new { type="object", properties=new JObject() });
+      }
+      else if (t==typeof(JArray)) {
+        return JObject.FromObject(new { type="array", items=GenerateTypeSchema(typeof(JObject)) });
+      }
+      else if (t==typeof(void)) {
+        return JObject.FromObject(new { type="null" });
+      }
+      else {
+        throw new InvalidCastException();
+      }
+    }
+
+    private JObject GenerateParameterDescription(string name, ParameterInfo param, Type t, string summary)
+    {
+      var schema = GenerateTypeSchema(t);
+      if (!String.IsNullOrWhiteSpace(summary)) {
+        return JObject.FromObject(new { name, summary, schema });
+      }
+      else {
+        return JObject.FromObject(new { name, schema });
+      }
+    }
+
+    private JObject GenerateParameterDescription(string name, ParameterInfo param, string summary)
+    {
+      return GenerateParameterDescription(name, param, param.ParameterType, summary);
+    }
+
+    private JObject GenerateParameterDescription(ParameterInfo param, string summary)
+    {
+      return GenerateParameterDescription(param.Name, param, param.ParameterType, summary);
+    }
+
+    [RPCMethod("rpc.discover")]
+    public JToken GenerateAPIDescription()
+    {
+      var openrpc = "1.2.4";
+      var info = JObject.FromObject(new {
+        title = "PeerCastStation",
+        version = "1.0.0",
+      });
+      var methods =
+        new JArray(
+          this.methods
+            .Select(m => {
+              var name = m.Name;
+              var result = GenerateParameterDescription("result", m.Method.ReturnParameter, m.GetResultSummary());
+              var summary = m.GetMethodSummary();
+              var @params = new JArray(
+                m.Method.GetParameters()
+                .Where(p => p.ParameterType!=typeof(IOwinContext))
+                .Select(p => GenerateParameterDescription(p, m.GetParameterSummary(p.Name)))
+                .ToArray()
+              );
+              if (summary==null) {
+                return JObject.FromObject(new { name, result, @params });
+              }
+              else {
+                return JObject.FromObject(new { name, summary, result, @params });
+              }
+            })
+            .ToArray()
+        );
+      return JObject.FromObject(new {
+        openrpc,
+        info,
+        methods,
+      });
+    }
+
   }
+
 }
+

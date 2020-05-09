@@ -8,7 +8,7 @@ var LogsViewModel = new function() {
     write: function(value) {
       value = Math.floor(Number(value));
       if (!self.updating && self.level!=value) {
-        PeerCast.setLogSettings({ level:value });
+        PeerCastStation.setLogSettings({ level:value });
       }
       self.level(value);
     }
@@ -16,15 +16,13 @@ var LogsViewModel = new function() {
 
   self.updating = false;
   self.update = function() {
-    PeerCast.getLogSettings(function(result) {
-      if (result) {
-        self.updating = true;
-        self.logLevel(result.level);
-        self.updating = false;
-      }
+    PeerCastStation.getLogSettings().then(function(result) {
+      self.updating = true;
+      self.logLevel(result.level);
+      self.updating = false;
     });
-    PeerCast.getLog(null, null, function(result) {
-      if (result && result.lines>0) {
+    PeerCastStation.getLog(null, null).then(function(result) {
+      if (result.lines>0) {
         self.updating = true;
         self.logs(result.log);
         self.updating = false;
@@ -33,7 +31,7 @@ var LogsViewModel = new function() {
   };
 
   self.clear = function() {
-    PeerCast.clearLog(function() {
+    PeerCastStation.clearLog().then(function() {
       self.logs('');
     });
   };

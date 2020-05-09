@@ -6,13 +6,13 @@ var UserConfig = new function () {
   self.defaultPlayProtocol = ko.observable({});
 
   self.loadConfig = function() {
-    PeerCast.getUserConfig('default', 'ui', function (config) {
+    PeerCastStation.getUserConfig('default', 'ui').then(function (config) {
       if (!config) return;
       loading = true;
       if (config.remoteNodeName) self.remoteNodeName(config.remoteNodeName);
       loading = false;
     });
-    PeerCast.getUserConfig('default', 'defaultPlayProtocol', function (value) {
+    PeerCastStation.getUserConfig('default', 'defaultPlayProtocol').then(function (value) {
       if (!value) return;
       loading = true;
       self.defaultPlayProtocol(value);
@@ -25,8 +25,8 @@ var UserConfig = new function () {
     var ui = {
       remoteNodeName: self.remoteNodeName()
     };
-    PeerCast.setUserConfig('default', 'ui', ui);
-    PeerCast.setUserConfig('default', 'defaultPlayProtocol', self.defaultPlayProtocol());
+    PeerCastStation.setUserConfig('default', 'ui', ui);
+    PeerCastStation.setUserConfig('default', 'defaultPlayProtocol', self.defaultPlayProtocol());
   };
 
   $(function () {
@@ -42,12 +42,10 @@ var YellowPageEditDialog = new function() {
     dialog.modal({show: false});
     dialog.on('hide', self.onHide);
     ko.applyBindings(self, dialog.get(0));
-    PeerCast.getYellowPageProtocols(function(result) {
-      if (result) {
-        self.yellowPageProtocols.splice.apply(
-          self.yellowPageProtocols,
-          [0, self.yellowPageProtocols().length].concat(result));
-      }
+    PeerCastStation.getYellowPageProtocols().then(function(result) {
+      self.yellowPageProtocols.splice.apply(
+        self.yellowPageProtocols,
+        [0, self.yellowPageProtocols().length].concat(result));
     });
   });
   self.yellowPageProtocols = ko.observableArray();
@@ -88,55 +86,55 @@ var ListenerEditDialog = new function() {
   self.port               = ko.observable(7144);
   self.localAccepts       = ko.observable(15);
   self.localAuthRequired  = ko.observable(false);
-  self.globalAccepts      = ko.observable(PeerCast.OutputStreamType.Relay | PeerCast.OutputStreamType.Metadata);
+  self.globalAccepts      = ko.observable(PeerCastStation.OutputStreamType.Relay | PeerCastStation.OutputStreamType.Metadata);
   self.globalAuthRequired = ko.observable(true);
   self.onOK = null;
 
   self.lanPlayAccept = ko.computed({
-    read: function() { return (self.localAccepts() & PeerCast.OutputStreamType.Play)!=0; },
+    read: function() { return (self.localAccepts() & PeerCastStation.OutputStreamType.Play)!=0; },
     write: function(value) {
-      if (value) self.localAccepts(self.localAccepts() | PeerCast.OutputStreamType.Play);
-      else       self.localAccepts(self.localAccepts() & ~PeerCast.OutputStreamType.Play);
+      if (value) self.localAccepts(self.localAccepts() | PeerCastStation.OutputStreamType.Play);
+      else       self.localAccepts(self.localAccepts() & ~PeerCastStation.OutputStreamType.Play);
     }
   });
 
   self.lanRelayAccept = ko.computed({
-    read: function() { return (self.localAccepts() & PeerCast.OutputStreamType.Relay)!=0; },
+    read: function() { return (self.localAccepts() & PeerCastStation.OutputStreamType.Relay)!=0; },
     write: function(value) {
-      if (value) self.localAccepts(self.localAccepts() | PeerCast.OutputStreamType.Relay);
-      else       self.localAccepts(self.localAccepts() & ~PeerCast.OutputStreamType.Relay);
+      if (value) self.localAccepts(self.localAccepts() | PeerCastStation.OutputStreamType.Relay);
+      else       self.localAccepts(self.localAccepts() & ~PeerCastStation.OutputStreamType.Relay);
     }
   });
 
   self.lanInterfaceAccept = ko.computed({
-    read: function() { return (self.localAccepts() & PeerCast.OutputStreamType.Interface)!=0; },
+    read: function() { return (self.localAccepts() & PeerCastStation.OutputStreamType.Interface)!=0; },
     write: function(value) {
-      if (value) self.localAccepts(self.localAccepts() | PeerCast.OutputStreamType.Interface);
-      else       self.localAccepts(self.localAccepts() & ~PeerCast.OutputStreamType.Interface);
+      if (value) self.localAccepts(self.localAccepts() | PeerCastStation.OutputStreamType.Interface);
+      else       self.localAccepts(self.localAccepts() & ~PeerCastStation.OutputStreamType.Interface);
     }
   });
 
   self.wanPlayAccept = ko.computed({
-    read: function() { return (self.globalAccepts() & PeerCast.OutputStreamType.Play)!=0; },
+    read: function() { return (self.globalAccepts() & PeerCastStation.OutputStreamType.Play)!=0; },
     write: function(value) {
-      if (value) self.globalAccepts(self.globalAccepts() | PeerCast.OutputStreamType.Play);
-      else       self.globalAccepts(self.globalAccepts() & ~PeerCast.OutputStreamType.Play);
+      if (value) self.globalAccepts(self.globalAccepts() | PeerCastStation.OutputStreamType.Play);
+      else       self.globalAccepts(self.globalAccepts() & ~PeerCastStation.OutputStreamType.Play);
     }
   });
 
   self.wanRelayAccept = ko.computed({
-    read: function() { return (self.globalAccepts() & PeerCast.OutputStreamType.Relay)!=0; },
+    read: function() { return (self.globalAccepts() & PeerCastStation.OutputStreamType.Relay)!=0; },
     write: function(value) {
-      if (value) self.globalAccepts(self.globalAccepts() | PeerCast.OutputStreamType.Relay);
-      else       self.globalAccepts(self.globalAccepts() & ~PeerCast.OutputStreamType.Relay);
+      if (value) self.globalAccepts(self.globalAccepts() | PeerCastStation.OutputStreamType.Relay);
+      else       self.globalAccepts(self.globalAccepts() & ~PeerCastStation.OutputStreamType.Relay);
     }
   });
 
   self.wanInterfaceAccept = ko.computed({
-    read: function() { return (self.globalAccepts() & PeerCast.OutputStreamType.Interface)!=0; },
+    read: function() { return (self.globalAccepts() & PeerCastStation.OutputStreamType.Interface)!=0; },
     write: function(value) {
-      if (value) self.globalAccepts(self.globalAccepts() | PeerCast.OutputStreamType.Interface);
-      else       self.globalAccepts(self.globalAccepts() & ~PeerCast.OutputStreamType.Interface);
+      if (value) self.globalAccepts(self.globalAccepts() | PeerCastStation.OutputStreamType.Interface);
+      else       self.globalAccepts(self.globalAccepts() & ~PeerCastStation.OutputStreamType.Interface);
     }
   });
 
@@ -188,10 +186,10 @@ var ListenerViewModel = function(value) {
   });
   self.checked                = ko.observable(false);
   self.setAccepts = function() {
-    PeerCast.setListenerAccepts(self.id(), self.localAccepts(), self.globalAccepts());
+    PeerCastStation.setListenerAccepts(self.id(), self.localAccepts(), self.globalAccepts());
   };
   self.setAuthorizationRequired = function() {
-    PeerCast.setListenerAuthorizationRequired(self.id(), self.localAuthRequired(), self.globalAuthRequired());
+    PeerCastStation.setListenerAuthorizationRequired(self.id(), self.localAuthRequired(), self.globalAuthRequired());
   };
   self.localAuthRequired.subscribe(function (value) {
     self.setAuthorizationRequired();
@@ -226,61 +224,61 @@ var ListenerViewModel = function(value) {
   });
 
   self.lanPlayAccept = ko.computed({
-    read: function() { return (self.localAccepts() & PeerCast.OutputStreamType.Play)!=0; },
+    read: function() { return (self.localAccepts() & PeerCastStation.OutputStreamType.Play)!=0; },
     write: function(value) {
-      if (value) self.localAccepts(self.localAccepts() | PeerCast.OutputStreamType.Play);
-      else       self.localAccepts(self.localAccepts() & ~PeerCast.OutputStreamType.Play);
+      if (value) self.localAccepts(self.localAccepts() | PeerCastStation.OutputStreamType.Play);
+      else       self.localAccepts(self.localAccepts() & ~PeerCastStation.OutputStreamType.Play);
       self.setAccepts();
     }
   });
 
   self.lanRelayAccept = ko.computed({
-    read: function() { return (self.localAccepts() & PeerCast.OutputStreamType.Relay)!=0; },
+    read: function() { return (self.localAccepts() & PeerCastStation.OutputStreamType.Relay)!=0; },
     write: function(value) {
-      if (value) self.localAccepts(self.localAccepts() | PeerCast.OutputStreamType.Relay);
-      else       self.localAccepts(self.localAccepts() & ~PeerCast.OutputStreamType.Relay);
+      if (value) self.localAccepts(self.localAccepts() | PeerCastStation.OutputStreamType.Relay);
+      else       self.localAccepts(self.localAccepts() & ~PeerCastStation.OutputStreamType.Relay);
       self.setAccepts();
     }
   });
 
   self.lanInterfaceAccept = ko.computed({
-    read: function() { return (self.localAccepts() & PeerCast.OutputStreamType.Interface)!=0; },
+    read: function() { return (self.localAccepts() & PeerCastStation.OutputStreamType.Interface)!=0; },
     write: function(value) {
-      if (value) self.localAccepts(self.localAccepts() | PeerCast.OutputStreamType.Interface);
-      else       self.localAccepts(self.localAccepts() & ~PeerCast.OutputStreamType.Interface);
+      if (value) self.localAccepts(self.localAccepts() | PeerCastStation.OutputStreamType.Interface);
+      else       self.localAccepts(self.localAccepts() & ~PeerCastStation.OutputStreamType.Interface);
       self.setAccepts();
     }
   });
 
   self.wanPlayAccept = ko.computed({
-    read: function() { return (self.globalAccepts() & PeerCast.OutputStreamType.Play)!=0; },
+    read: function() { return (self.globalAccepts() & PeerCastStation.OutputStreamType.Play)!=0; },
     write: function(value) {
-      if (value) self.globalAccepts(self.globalAccepts() | PeerCast.OutputStreamType.Play);
-      else       self.globalAccepts(self.globalAccepts() & ~PeerCast.OutputStreamType.Play);
+      if (value) self.globalAccepts(self.globalAccepts() | PeerCastStation.OutputStreamType.Play);
+      else       self.globalAccepts(self.globalAccepts() & ~PeerCastStation.OutputStreamType.Play);
       self.setAccepts();
     }
   });
 
   self.wanRelayAccept = ko.computed({
-    read: function() { return (self.globalAccepts() & PeerCast.OutputStreamType.Relay)!=0; },
+    read: function() { return (self.globalAccepts() & PeerCastStation.OutputStreamType.Relay)!=0; },
     write: function(value) {
-      if (value) self.globalAccepts(self.globalAccepts() | PeerCast.OutputStreamType.Relay);
-      else       self.globalAccepts(self.globalAccepts() & ~PeerCast.OutputStreamType.Relay);
+      if (value) self.globalAccepts(self.globalAccepts() | PeerCastStation.OutputStreamType.Relay);
+      else       self.globalAccepts(self.globalAccepts() & ~PeerCastStation.OutputStreamType.Relay);
       self.setAccepts();
     }
   });
 
   self.wanInterfaceAccept = ko.computed({
-    read: function() { return (self.globalAccepts() & PeerCast.OutputStreamType.Interface)!=0; },
+    read: function() { return (self.globalAccepts() & PeerCastStation.OutputStreamType.Interface)!=0; },
     write: function(value) {
-      if (value) self.globalAccepts(self.globalAccepts() | PeerCast.OutputStreamType.Interface);
-      else       self.globalAccepts(self.globalAccepts() & ~PeerCast.OutputStreamType.Interface);
+      if (value) self.globalAccepts(self.globalAccepts() | PeerCastStation.OutputStreamType.Interface);
+      else       self.globalAccepts(self.globalAccepts() & ~PeerCastStation.OutputStreamType.Interface);
       self.setAccepts();
     }
   });
 
   self.resetAuthenticationKey = function() {
-    PeerCast.resetListenerAuthenticationKey(self.id(), function (data) {
+    PeerCastStation.resetListenerAuthenticationKey(self.id()).then(function (data) {
       self.update(data);
     });
   };
@@ -365,7 +363,7 @@ var SettingsViewModel = new function() {
         enabled:       self.portMapperEnabled()
       }
     };
-    PeerCast.setSettings(settings);
+    PeerCastStation.setSettings(settings);
   };
   $.each([
     UserConfig.defaultPlayProtocol,
@@ -391,21 +389,22 @@ var SettingsViewModel = new function() {
       if (channels_uri==null || channels_uri==="") {
         channels_uri = null;
       }
-      PeerCast.addYellowPage(yp.protocol(), yp.name(), announce_uri, channels_uri, function(res, err) {
-        if (err) {
+      PeerCastStation.addYellowPage(yp.protocol(), yp.name(), announce_uri, channels_uri).then(
+        function (res) {
+          self.update();
+        },
+        function (err) {
           alert("YPの追加に失敗しました: " + err.message);
           YellowPageEditDialog.show(onOK);
-          return;
         }
-        self.update();
-      });
+      );
     });
   }
 
   self.removeYellowPages = function() {
     var removed = self.yellowPages.remove(function(yp) { return yp.checked(); });
     $.each(removed, function(i, yp) {
-      PeerCast.removeYellowPage(yp.id(), function() { self.update(); });
+      PeerCastStation.removeYellowPage(yp.id()).then(function() { self.update(); });
     });
   }
 
@@ -439,38 +438,35 @@ var SettingsViewModel = new function() {
       if (channels_uri==null || channels_uri==="") {
         channels_uri = null;
       }
-      PeerCast.addYellowPage(yp.protocol(), yp.name(), announce_uri, channels_uri, function(res, err) {
-        if (err) {
+      PeerCastStation.addYellowPage(yp.protocol(), yp.name(), announce_uri, channels_uri).then(
+        function (res) {
+          PeerCastStation.removeYellowPage(target.id()).then(function () { self.update(); });
+        },
+        function (err) {
           alert("YPの追加に失敗しました: " + err.message);
           YellowPageEditDialog.show(onOK);
-          return;
         }
-        PeerCast.removeYellowPage(target.id(), function() {
-          self.update();
-        });
-      });
+      );
     });
   }
 
   self.addListener = function() {
     ListenerEditDialog.show(function(listener) {
-      PeerCast.addListener(
-          listener.address(),
-          Number(listener.port()),
-          listener.localAccepts(),
-          listener.globalAccepts(),
-          listener.localAuthRequired(),
-          listener.globalAuthRequired(),
-          function() {
-        self.update();
-      });
+      PeerCastStation.addListener(
+        listener.address(),
+        Number(listener.port()),
+        listener.localAccepts(),
+        listener.globalAccepts(),
+        listener.localAuthRequired(),
+        listener.globalAuthRequired()
+      ).then(function() { self.update(); });
     });
   };
 
   self.removeListener = function() {
     var removed = self.listeners.remove(function(listener) { return listener.checked(); });
     $.each(removed, function(i, listener) {
-      PeerCast.removeListener(listener.id(), function() { self.update(); });
+      PeerCastStation.removeListener(listener.id()).then(function() { self.update(); });
     });
   };
 
@@ -484,36 +480,36 @@ var SettingsViewModel = new function() {
 
   self.checkBandwidth = function() {
     self.checkBandwidthStatus("計測中");
-    PeerCast.checkBandwidth('ipv4', function (result) {
-      if (result) {
+    PeerCastStation.checkBandwidth('ipv4').then(
+      function (result) {
         var rate = Math.floor(result * 0.8 / 100) * 100;
         self.maxUpstreamRate(rate);
         self.checkBandwidthStatus("帯域測定完了: " + result + "kbps, 設定推奨値: " + rate + "kbps");
+      },
+      function (err) {
+        self.checkBandwidthStatus("帯域測定失敗。接続できませんでした: " + err);
       }
-      else {
-        self.checkBandwidthStatus("帯域測定失敗。接続できませんでした");
-      }
-    });
+    );
   };
 
   self.checkBandwidthIPv6 = function() {
     self.checkBandwidthStatus("計測中");
-    PeerCast.checkBandwidth('ipv6', function (result) {
-      if (result) {
+    PeerCastStation.checkBandwidth('ipv6').then(
+      function (result) {
         var rate = Math.floor(result * 0.8 / 100) * 100;
         self.maxUpstreamRateIPv6(rate);
         self.checkBandwidthStatus("帯域測定完了: " + result + "kbps, 設定推奨値: " + rate + "kbps");
+      },
+      function (err) {
+        self.checkBandwidthStatus("帯域測定失敗。接続できませんでした: " + err);
       }
-      else {
-        self.checkBandwidthStatus("帯域測定失敗。接続できませんでした");
-      }
-    });
+    );
   };
 
   self.checkPorts = function() {
     self.checkPortsStatus("確認中");
-    PeerCast.checkPorts(function (result) {
-      if (result) {
+    PeerCastStation.checkPorts().then(
+      function (result) {
         if (result.length>0) {
           self.checkPortsStatus("開放されています");
         }
@@ -521,65 +517,57 @@ var SettingsViewModel = new function() {
           self.checkPortsStatus("開放されてません");
         }
         self.update();
+      },
+      function (err) {
+        self.checkPortsStatus("ポート開放確認失敗。接続できませんでした: " + err);
       }
-      else {
-        self.checkPortsStatus("ポート開放確認失敗。接続できませんでした");
-      }
-    });
+    );
   };
 
   self.update = function() {
-    PeerCast.getSettings(function(result) {
-      if (result) {
-        updating = true;
-        self.maxRelays(result.maxRelays);
-        self.maxDirects(result.maxDirects);
-        self.maxRelaysPerBroadcastChannel(result.maxRelaysPerBroadcastChannel);
-        self.maxRelaysPerRelayChannel(result.maxRelaysPerRelayChannel);
-        self.maxDirectsPerBroadcastChannel(result.maxDirectsPerBroadcastChannel);
-        self.maxDirectsPerRelayChannel(result.maxDirectsPerRelayChannel);
-        self.maxUpstreamRate(result.maxUpstreamRate);
-        self.maxUpstreamRateIPv6(result.maxUpstreamRateIPv6);
-        self.maxUpstreamRatePerBroadcastChannel(result.maxUpstreamRatePerBroadcastChannel);
-        self.maxUpstreamRatePerRelayChannel(result.maxUpstreamRatePerRelayChannel);
-        if (result.channelCleaner) {
-          self.inactiveChannelLimit(result.channelCleaner.inactiveLimit/60000);
-          self.channelCleanupMode(result.channelCleaner.mode);
-        }
-        if (result.portMapper) {
-          self.portMapperEnabled(result.portMapper.enabled);
-        }
-        updating = false;
+    PeerCastStation.getSettings().then(function(result) {
+      updating = true;
+      self.maxRelays(result.maxRelays);
+      self.maxDirects(result.maxDirects);
+      self.maxRelaysPerBroadcastChannel(result.maxRelaysPerBroadcastChannel);
+      self.maxRelaysPerRelayChannel(result.maxRelaysPerRelayChannel);
+      self.maxDirectsPerBroadcastChannel(result.maxDirectsPerBroadcastChannel);
+      self.maxDirectsPerRelayChannel(result.maxDirectsPerRelayChannel);
+      self.maxUpstreamRate(result.maxUpstreamRate);
+      self.maxUpstreamRateIPv6(result.maxUpstreamRateIPv6);
+      self.maxUpstreamRatePerBroadcastChannel(result.maxUpstreamRatePerBroadcastChannel);
+      self.maxUpstreamRatePerRelayChannel(result.maxUpstreamRatePerRelayChannel);
+      if (result.channelCleaner) {
+        self.inactiveChannelLimit(result.channelCleaner.inactiveLimit/60000);
+        self.channelCleanupMode(result.channelCleaner.mode);
       }
+      if (result.portMapper) {
+        self.portMapperEnabled(result.portMapper.enabled);
+      }
+      updating = false;
     });
-    PeerCast.getListeners(function(result) {
-      if (result) {
-        updating = true;
-        var new_listeners = $.map(result, function(listener) {
-          return new ListenerViewModel(listener);
-        });
-        self.listeners.splice.apply(
-          self.listeners,
-          [0, self.listeners().length].concat(new_listeners));
-        updating = false;
-      }
+    PeerCastStation.getListeners().then(function(result) {
+      updating = true;
+      var new_listeners = $.map(result, function(listener) {
+        return new ListenerViewModel(listener);
+      });
+      self.listeners.splice.apply(
+        self.listeners,
+        [0, self.listeners().length].concat(new_listeners));
+      updating = false;
     });
-    PeerCast.getYellowPages(function(result) {
-      if (result) {
-        updating = true;
-        var new_yps = $.map(result, function(yp) {
-          return new YellowPageViewModel(yp);
-        });
-        self.yellowPages.splice.apply(
-          self.yellowPages,
-          [0, self.yellowPages().length].concat(new_yps));
-        updating = false;
-      }
+    PeerCastStation.getYellowPages().then(function(result) {
+      updating = true;
+      var new_yps = $.map(result, function(yp) {
+        return new YellowPageViewModel(yp);
+      });
+      self.yellowPages.splice.apply(
+        self.yellowPages,
+        [0, self.yellowPages().length].concat(new_yps));
+      updating = false;
     });
-    PeerCast.getExternalIPAddresses(function(result) {
-      if (result) {
-        self.externalIPAddresses(result.join(", "));
-      }
+    PeerCastStation.getExternalIPAddresses().then(function(result) {
+      self.externalIPAddresses(result.join(", "));
     });
   };
 

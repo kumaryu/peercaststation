@@ -53,49 +53,43 @@ var IndexViewModel = new function() {
   });
 
   self.update = function() {
-    PeerCast.getVersionInfo(function(result) {
-      if (result) {
-        self.apiVersion(result.apiVersion);
-        self.agentName(result.agentName);
-      }
+    PeerCastStation.getVersionInfo().then(function(result) {
+      self.apiVersion(result.apiVersion);
+      self.agentName(result.agentName);
     });
-    PeerCast.getStatus(function(result) {
-      if (result) {
-        self.isFirewalled(result.isFirewalled);
-        self.uptime(result.uptime);
-        self.globalRelayEndPoint(result.globalRelayEndPoint);
-        self.globalDirectEndPoint(result.globalDirectEndPoint);
-        self.localRelayEndPoint(result.localRelayEndPoint);
-        self.localDirectEndPoint(result.localDirectEndPoint);
-      }
+    PeerCastStation.getStatus().then(function (result) {
+      self.isFirewalled(result.isFirewalled);
+      self.uptime(result.uptime);
+      self.globalRelayEndPoint(result.globalRelayEndPoint);
+      self.globalDirectEndPoint(result.globalDirectEndPoint);
+      self.localRelayEndPoint(result.localRelayEndPoint);
+      self.localDirectEndPoint(result.localDirectEndPoint);
     });
   };
 
   $(document).ready(function() {
-    PeerCast.getPlugins(function(result) {
-      if (result) {
-        var pluginDLLs = {};
-        var plugins = [];
-        $.each(result, function(i, plugin) {
-          var dllname = plugin.assembly.path;
-          pluginDLLs[dllname] = {
-            name:    plugin.assembly.name,
-            path:    plugin.assembly.path,
-            dll:     dllname,
-            version: plugin.assembly.version
-          };
-          plugins.push({
-            name:     plugin.name,
-            isUsable: plugin.isUsable,
-            dll:      dllname,
-            version:  plugin.assembly.version
-          });
+    PeerCastStation.getPlugins().then(function(result) {
+      var pluginDLLs = {};
+      var plugins = [];
+      $.each(result, function(i, plugin) {
+        var dllname = plugin.assembly.path;
+        pluginDLLs[dllname] = {
+          name:    plugin.assembly.name,
+          path:    plugin.assembly.path,
+          dll:     dllname,
+          version: plugin.assembly.version
+        };
+        plugins.push({
+          name:     plugin.name,
+          isUsable: plugin.isUsable,
+          dll:      dllname,
+          version:  plugin.assembly.version
         });
-        for (var dllname in pluginDLLs) {
-          self.pluginDLLs.push(pluginDLLs[dllname]);
-        }
-        self.plugins.splice.apply(self.plugins, [0, self.plugins().length].concat(plugins));
+      });
+      for (var dllname in pluginDLLs) {
+        self.pluginDLLs.push(pluginDLLs[dllname]);
       }
+      self.plugins.splice.apply(self.plugins, [0, self.plugins().length].concat(plugins));
     });
   });
 
