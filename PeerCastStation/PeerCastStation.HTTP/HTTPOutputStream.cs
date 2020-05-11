@@ -314,6 +314,7 @@ namespace PeerCastStation.HTTP
           try {
             while (!ct.IsCancellationRequested) {
               var packet = await sink.DequeueAsync(ct).ConfigureAwait(false);
+              ctx.Response.ContentLength = packet.Content.Data.Length;
               if (packet.Type==ChannelSink.ChannelMessage.MessageType.ContentHeader) {
                 await ctx.Response.WriteAsync(packet.Content.Data, ct).ConfigureAwait(false);
                 logger.Debug("Sent ContentHeader pos {0}", packet.Content.Position);
