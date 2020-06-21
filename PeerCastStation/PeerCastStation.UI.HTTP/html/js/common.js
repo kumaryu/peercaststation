@@ -42,3 +42,93 @@ var UIViewModel = new function() {
   }
   $(function() { setInterval(self.refresh, 1000); });
 };
+
+var UserConfig = new function () {
+  var self = this;
+  var loading = false;
+  self.remoteNodeName = ko.observable("sessionId");
+  self.defaultPlayProtocol = ko.observable({});
+  self.ypChannels = ko.observable({});
+
+  var loadingTask = null;
+  self.loadConfigInternal = function() {
+    loadingTask = Promise.all([
+      PeerCastStation.getUserConfig('default', 'ui').then(function (value) {
+        if (!value || !value.remoteNodeName) return;
+        loading = true;
+        self.remoteNodeName(value.remoteNodeName);
+        loading = false;
+      }),
+      PeerCastStation.getUserConfig('default', 'defaultPlayProtocol').then(function (value) {
+        if (!value) return;
+        loading = true;
+        self.defaultPlayProtocol(value);
+        loading = false;
+      }),
+      PeerCastStation.getUserConfig('default', 'ypChannels').then(function (value) {
+        if (!value) return;
+        loading = true;
+        self.ypChannels(value);
+        loading = false;
+      })
+    ]);
+  }
+
+  self.loadConfig = function() {
+    return loadingTask;
+  };
+
+  self.saveConfig = function() {
+    if (loading) return;
+    var ui = {
+      remoteNodeName: self.remoteNodeName()
+    };
+    return Promise.all([
+      PeerCastStation.setUserConfig('default', 'ui', ui),
+      PeerCastStation.setUserConfig('default', 'defaultPlayProtocol', self.defaultPlayProtocol()),
+      PeerCastStation.setUserConfig('default', 'ypChannels', self.ypChannels())
+    ]);
+  };
+
+  self.exportBlob = function() {
+    var defaultUser = {
+      ui: { remoteNodeName: self.remoteNodeName() },
+      defaultPlayProtocol: self.defaultPlayProtocol(),
+      ypChannels: self.ypChannels()
+    };
+    return new Blob([JSON.stringify({ default: defaultUser }, null, 2)], { "type" : "application/json" });
+  };
+
+  self.importBlob = function(blob) {
+    console.log(blob.type);
+    switch (blob.type) {
+    case null:
+    case "application/json":
+        var reader = new FileReader();
+        reader.onload = function (event) {
+          var doc = JSON.parse(event.target.result);
+          if (!doc) return;
+          if (!doc.default) return;
+          if (doc.default.ui) {
+            if (doc.default.ui.remoteNodeName) {
+              self.remoteNodeName(doc.default.ui.remoteNodeName);
+            }
+          }
+          if (doc.default.defaultPlayProtocol) {
+            self.defaultPlayProtocol(doc.default.defaultPlayProtocol);
+          }
+          if (doc.default.ypChannels) {
+            self.ypChannels(doc.default.ypChannels);
+          }
+          self.saveConfig();
+        };
+        reader.readAsText(blob);
+        break;
+    }
+  };
+
+  $(function () {
+    self.loadConfigInternal();
+  });
+}
+

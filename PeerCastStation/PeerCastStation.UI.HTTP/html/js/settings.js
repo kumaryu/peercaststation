@@ -1,39 +1,4 @@
 ﻿
-var UserConfig = new function () {
-  var self = this;
-  var loading = false;
-  self.remoteNodeName = ko.observable("sessionId");
-  self.defaultPlayProtocol = ko.observable({});
-
-  self.loadConfig = function() {
-    PeerCastStation.getUserConfig('default', 'ui').then(function (config) {
-      if (!config) return;
-      loading = true;
-      if (config.remoteNodeName) self.remoteNodeName(config.remoteNodeName);
-      loading = false;
-    });
-    PeerCastStation.getUserConfig('default', 'defaultPlayProtocol').then(function (value) {
-      if (!value) return;
-      loading = true;
-      self.defaultPlayProtocol(value);
-      loading = false;
-    });
-  };
-
-  self.saveConfig = function() {
-    if (loading) return;
-    var ui = {
-      remoteNodeName: self.remoteNodeName()
-    };
-    PeerCastStation.setUserConfig('default', 'ui', ui);
-    PeerCastStation.setUserConfig('default', 'defaultPlayProtocol', self.defaultPlayProtocol());
-  };
-
-  $(function () {
-    self.loadConfig();
-  });
-}
-
 var YellowPageEditDialog = new function() {
   var self = this;
   var dialog = null;
@@ -569,6 +534,17 @@ var SettingsViewModel = new function() {
     PeerCastStation.getExternalIPAddresses().then(function(result) {
       self.externalIPAddresses(result.join(", "));
     });
+  };
+
+  self.exportUserConfig = function (data, event) {
+    event.target.href = window.URL.createObjectURL(UserConfig.exportBlob());
+    return true;
+  };
+
+  self.importUserConfig = function () {
+    input = document.getElementById('importUserConfigFile');
+    if (input.files.length === 0) return;
+    UserConfig.importBlob(input.files[0]);
   };
 
   self.bind = function(target) {
