@@ -261,6 +261,21 @@
               </div>
             </div>
 
+            <div class="ui-row">
+              <div class="ui-header">ユーザー設定</div>
+              <div class="ui-label">エクスポート</div>
+              <div class="ui-control">
+                <a class="btn" download="peercaststation-userconfig.json" href="#" data-bind="click:exportUserConfig">エクスポート</a>
+              </div>
+            </div>
+            <div class="ui-row">
+              <div class="ui-header"></div>
+              <div class="ui-label">インポート</div>
+              <div class="ui-control">
+                <input id="importUserConfigFile" type="file" accept="application/json,.json">
+                <a class="btn" href="#" data-bind="click:importUserConfig">インポート</a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
