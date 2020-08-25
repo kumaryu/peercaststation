@@ -200,7 +200,7 @@ namespace PeerCastStation.Core
           var result = await prev.ConfigureAwait(false);
           args.Reason = result;
         }
-        catch (TaskCanceledException) {
+        catch (OperationCanceledException) {
           args.Reason = StopReason.UserShutdown;
         }
         catch (Exception) {
