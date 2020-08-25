@@ -354,7 +354,7 @@ var SettingsViewModel = new function() {
       if (channels_uri==null || channels_uri==="") {
         channels_uri = null;
       }
-      PeerCastStation.addYellowPage(yp.protocol(), yp.name(), announce_uri, channels_uri).then(
+      PeerCastStation.addYellowPage(yp.protocol(), yp.name(), null, announce_uri, channels_uri).then(
         function (res) {
           self.update();
         },
@@ -403,7 +403,7 @@ var SettingsViewModel = new function() {
       if (channels_uri==null || channels_uri==="") {
         channels_uri = null;
       }
-      PeerCastStation.addYellowPage(yp.protocol(), yp.name(), announce_uri, channels_uri).then(
+      PeerCastStation.addYellowPage(yp.protocol(), yp.name(), null, announce_uri, channels_uri).then(
         function (res) {
           PeerCastStation.removeYellowPage(target.id()).then(function () { self.update(); });
         },
