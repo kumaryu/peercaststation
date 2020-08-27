@@ -148,11 +148,16 @@ namespace PeerCastStation.Core
     public virtual void Stop(StopReason reason)
     {
       if (reason==StopReason.None) throw new ArgumentException("Invalid value", "reason");
-      if (reason==StopReason.UserShutdown && StoppedReason!=reason) StoppedReason = reason;
-      if (IsStopped) return;
-      StoppedReason = reason;
-      Logger.Debug($"Stop requested by reason {StoppedReason}");
-      isStopped.Cancel();
+      if (StoppedReason!=StopReason.UserShutdown) {
+        StoppedReason = reason;
+      }
+      if (IsStopped) {
+        Logger.Debug($"Stop requested by reason {reason} but already stopped");
+      }
+      else {
+        isStopped.Cancel();
+        Logger.Debug($"Stop requested by reason {reason}");
+      }
     }
 
     protected abstract Task<SourceConnectionClient> DoConnect(Uri source, CancellationToken cancellationToken);
