@@ -115,13 +115,25 @@ namespace PeerCastStation.Core
     {
       private Task lastTask = Task.Delay(0);
       private object lastTaskId = null;
+      public bool Aborted { get; private set; } = false;
+
+      public void Abort()
+      {
+        Aborted = true;
+      }
+
       public Task Queue(object taskId, Action action)
       {
         lock (this) {
           if (Object.Equals(lastTaskId, taskId) && !lastTask.IsCompleted) return lastTask;
           lastTask = lastTask.ContinueWith(prev => {
-            if (prev.IsFaulted) return;
-            action.Invoke();
+            if (Aborted) return;
+            try {
+              action.Invoke();
+            }
+            catch (Exception ex) {
+              OnUnhandledException(ex);
+            }
           });
           lastTaskId = taskId;
           return lastTask;
@@ -132,16 +144,27 @@ namespace PeerCastStation.Core
       {
         lock (this) {
           if (Object.Equals(lastTaskId, taskId) && !lastTask.IsCompleted) return lastTask;
-          lastTask = lastTask.ContinueWith(prev => {
-            if (prev.IsFaulted) return prev;
-            return action.Invoke();
+          lastTask = lastTask.ContinueWith(async prev => {
+            if (Aborted) return;
+            try {
+              await action.Invoke();
+            }
+            catch (Exception ex) {
+              OnUnhandledException(ex);
+            }
           });
           lastTaskId = taskId;
           return lastTask;
         }
       }
+      
+      private void OnUnhandledException(Exception ex)
+      {
+        UnhandledException?.Invoke(this, new UnhandledExceptionEventArgs(ex, false));
+      }
+      public event UnhandledExceptionEventHandler UnhandledException;
     }
-    private ActionQueue actionQueue = new ActionQueue();
+    private ActionQueue actionQueue;
 
     protected void Queue(object taskId, Action action)
     {
@@ -183,6 +206,13 @@ namespace PeerCastStation.Core
       this.SourceUri = source_uri;
       this.StoppedReason = StopReason.None;
       this.Logger = new Logger(this.GetType(), source_uri.ToString());
+      actionQueue = new ActionQueue();
+      actionQueue.UnhandledException += ActionQueue_UnhandledException;
+    }
+
+    private void ActionQueue_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+      Logger.Error((Exception)e.ExceptionObject);
     }
 
     public void Dispose()
@@ -199,14 +229,19 @@ namespace PeerCastStation.Core
         try {
           var result = await prev.ConfigureAwait(false);
           args.Reason = result;
+          Logger.Debug($"Connection stopped by reason {result}");
         }
         catch (OperationCanceledException) {
           args.Reason = StopReason.UserShutdown;
+          Logger.Debug("Connection stopped by canceled");
         }
-        catch (Exception) {
+        catch (Exception e) {
           args.Reason = StopReason.NotIdentifiedError;
+          Logger.Debug("Connection stopped by Error");
+          Logger.Error(e);
         }
         Queue("CONNECTION_CLEANUP", async () => {
+          Logger.Debug($"Cleaning up connection (closed by {args.Reason})");
           OnConnectionStopped(conn.Connection, args);
           if (args.Delay>0) {
             await Task.Delay(args.Delay).ConfigureAwait(false);
