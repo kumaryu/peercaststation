@@ -151,6 +151,7 @@ namespace PeerCastStation.Core
       if (reason==StopReason.UserShutdown && StoppedReason!=reason) StoppedReason = reason;
       if (IsStopped) return;
       StoppedReason = reason;
+      Logger.Debug($"Stop requested by reason {StoppedReason}");
       isStopped.Cancel();
     }
 

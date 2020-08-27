@@ -51,9 +51,15 @@ namespace PeerCastStation.PCP
       get { return false; }
     }
 
+    //ハンドシェイク終了まで一定時間で終わらなかったらタイムアウトする
+    //PeerCastのポート開放チェックが最悪15秒かかるのでそれより短くはしないこと
+    public int PCPHandshakeTimeout { get; set; } = 18000;
+
     public override ISourceStream Create(Channel channel, Uri tracker)
     {
-      return new PCPSourceStream(PeerCast, channel, tracker);
+      var strm = new PCPSourceStream(PeerCast, channel, tracker);
+      strm.PCPHandshakeTimeout = PCPHandshakeTimeout;
+      return strm;
     }
   }
 
@@ -211,18 +217,24 @@ namespace PeerCastStation.PCP
       }
     }
 
+    //ハンドシェイク終了まで一定時間で終わらなかったらタイムアウトする
+    //PeerCastのポート開放チェックが最悪15秒かかるのでそれより短くはしないこと
+    public int PCPHandshakeTimeout { get; set; } = 18000;
     protected override async Task DoProcess(CancellationToken cancel_token)
     {
       try {
         this.Status = ConnectionStatus.Connecting;
-        await ProcessRelayRequest(cancel_token).ConfigureAwait(false);
-        if (IsStopped) goto Stopped;
-        await ProcessHandshake(cancel_token).ConfigureAwait(false);
-        if (IsStopped) goto Stopped;
-        if (relayResponse.StatusCode==503) {
-          await ProcessHosts(cancel_token).ConfigureAwait(false);
+        using (var cts=CancellationTokenSource.CreateLinkedTokenSource(cancel_token)) {
+          cts.CancelAfter(PCPHandshakeTimeout);
+          await ProcessRelayRequest(cts.Token).ConfigureAwait(false);
+          if (cts.IsCancellationRequested) goto Stopped;
+          await ProcessHandshake(cts.Token).ConfigureAwait(false);
+          if (cts.IsCancellationRequested) goto Stopped;
+          if (relayResponse.StatusCode==503) {
+            await ProcessHosts(cts.Token).ConfigureAwait(false);
+          }
         }
-        else {
+        if (relayResponse.StatusCode!=503) {
           this.Status = ConnectionStatus.Connected;
           await Task.WhenAll(
             ProcessBody(cancel_token),
@@ -367,7 +379,15 @@ Stopped:
         }
         catch (OperationCanceledException) {
         }
-        await SendQuit(connection.Stream, StopReason.UserShutdown, CancellationToken.None).ConfigureAwait(false);
+        try {
+          using (var cts=new CancellationTokenSource(3000)) {
+            //QUIT送るのに3秒でタイムアウトする
+            //cancel_tokenはキャンセルされているので使わない
+            await SendQuit(connection.Stream, StopReason.UserShutdown, cts.Token).ConfigureAwait(false);
+          }
+        }
+        catch (OperationCanceledException) {
+        }
       }
       catch (InvalidDataException e) {
         Logger.Error(e);
@@ -379,12 +399,13 @@ Stopped:
       }
     }
 
+    private static readonly ID4[] hostPackets = new []{ Atom.PCP_QUIT, Atom.PCP_HOST };
     private async Task ProcessHosts(CancellationToken cancel_token)
     {
       try {
         while (!cancel_token.IsCancellationRequested) {
           var atom = await connection.Stream.ReadAtomAsync(cancel_token).ConfigureAwait(false);
-          ProcessAtom(atom);
+          ProcessAtom(atom, hostPackets);
         }
       }
       catch (InvalidDataException e) {
@@ -489,6 +510,21 @@ Stopped:
     protected bool ProcessAtom(Atom atom)
     {
       if (atom==null) return true;
+      else if (atom.Name==Atom.PCP_OK)         { OnPCPOk(atom);        return true; }
+      else if (atom.Name==Atom.PCP_CHAN)       { OnPCPChan(atom);      return true; }
+      else if (atom.Name==Atom.PCP_CHAN_PKT)   { OnPCPChanPkt(atom);   return true; }
+      else if (atom.Name==Atom.PCP_CHAN_INFO)  { OnPCPChanInfo(atom);  return true; }
+      else if (atom.Name==Atom.PCP_CHAN_TRACK) { OnPCPChanTrack(atom); return true; }
+      else if (atom.Name==Atom.PCP_BCST)       { OnPCPBcst(atom);      return true; }
+      else if (atom.Name==Atom.PCP_HOST)       { OnPCPHost(atom);      return true; }
+      else if (atom.Name==Atom.PCP_QUIT)       { OnPCPQuit(atom);      return false; }
+      return true;
+    }
+
+    protected bool ProcessAtom(Atom atom, ID4[] accepts)
+    {
+      if (atom==null) return true;
+      else if (!accepts.Contains(atom.Name)) return true;
       else if (atom.Name==Atom.PCP_OK)         { OnPCPOk(atom);        return true; }
       else if (atom.Name==Atom.PCP_CHAN)       { OnPCPChan(atom);      return true; }
       else if (atom.Name==Atom.PCP_CHAN_PKT)   { OnPCPChanPkt(atom);   return true; }
@@ -747,6 +783,10 @@ Stopped:
   public class PCPSourceStream
     : SourceStreamBase
   {
+    //ハンドシェイク終了まで一定時間で終わらなかったらタイムアウトする
+    //PeerCastのポート開放チェックが最悪15秒かかるのでそれより短くはしないこと
+    public int PCPHandshakeTimeout { get; set; } = 18000;
+
     private class IgnoredNodeCollection
     {
       private Dictionary<Uri, TimeSpan> ignoredNodes = new Dictionary<Uri, TimeSpan>();
@@ -911,12 +951,14 @@ Stopped:
 
     protected override ISourceConnection CreateConnection(Uri source_uri)
     {
-      if (source_uri==this.SourceUri) {
-        return new PCPSourceConnection(PeerCast, Channel, source_uri, RemoteHostStatus.Tracker);
-      }
-      else {
-        return new PCPSourceConnection(PeerCast, Channel, source_uri, RemoteHostStatus.None);
-      }
+      var conn = new PCPSourceConnection(
+        PeerCast,
+        Channel,
+        source_uri,
+        source_uri==this.SourceUri ? RemoteHostStatus.Tracker : RemoteHostStatus.None
+      );
+      conn.PCPHandshakeTimeout = PCPHandshakeTimeout;
+      return conn;
     }
 
     protected override void OnConnectionStopped(ISourceConnection connection, ConnectionStoppedArgs args)
