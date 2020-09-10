@@ -1,6 +1,4 @@
-﻿using Microsoft.Owin;
-using Owin;
-using PeerCastStation.Core;
+﻿using PeerCastStation.Core;
 using PeerCastStation.Core.Http;
 using System;
 using System.Collections.Concurrent;
@@ -123,7 +121,7 @@ namespace PeerCastStation.HTTP
         get { return contentSink?.Segmenter; }
       }
 
-      public static HLSChannelSink GetSubscription(HTTPLiveStreamingDirectOwinApp owner, Channel channel, IOwinContext ctx, string session)
+      public static HLSChannelSink GetSubscription(HTTPLiveStreamingDirectOwinApp owner, Channel channel, OwinEnvironment ctx, string session)
       {
         if (String.IsNullOrWhiteSpace(session)) {
           var source = new IPEndPoint(IPAddress.Parse(ctx.Request.RemoteIpAddress), ctx.Request.RemotePort ?? 0).ToString();
@@ -141,7 +139,7 @@ namespace PeerCastStation.HTTP
       private IDisposable subscription;
       private int referenceCount = 0;
 
-      private HLSChannelSink(HTTPLiveStreamingDirectOwinApp owner, IOwinContext ctx, Tuple<Channel,string> session)
+      private HLSChannelSink(HTTPLiveStreamingDirectOwinApp owner, OwinEnvironment ctx, Tuple<Channel,string> session)
       {
         this.owner = owner;
         this.session = session;
@@ -167,7 +165,7 @@ namespace PeerCastStation.HTTP
         contentSink = HLSContentSink.GetSubscription(owner, Channel);
       }
 
-      private HLSChannelSink AddRef(IOwinContext ctx)
+      private HLSChannelSink AddRef(OwinEnvironment ctx)
       {
         connectionInfo.AgentName = ctx.Request.Headers.Get("User-Agent");
         var remoteEndPoint = new IPEndPoint(IPAddress.Parse(ctx.Request.RemoteIpAddress), ctx.Request.RemotePort ?? 0);
@@ -230,10 +228,10 @@ namespace PeerCastStation.HTTP
       public bool IsValid {
         get { return Status==HttpStatusCode.OK; }
       }
-      public static ParsedRequest Parse(IOwinContext ctx)
+      public static ParsedRequest Parse(OwinEnvironment ctx)
       {
         var req = new ParsedRequest();
-        var path = ctx.Request.Path.HasValue ? ctx.Request.Path.Value : "/";
+        var path = ctx.Request.Path ?? "/";
         if (path=="/") {
           req.Status = HttpStatusCode.Forbidden;
           return req;
@@ -252,7 +250,7 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    private static async Task<Channel> GetChannelAsync(IOwinContext ctx, ParsedRequest req, CancellationToken ct)
+    private static async Task<Channel> GetChannelAsync(OwinEnvironment ctx, ParsedRequest req, CancellationToken ct)
     {
       var tip = ctx.Request.Query.Get("tip");
       var channel = ctx.GetPeerCast().RequestChannel(req.ChannelId, OutputStreamBase.CreateTrackerUri(req.ChannelId, tip), true);
@@ -266,7 +264,7 @@ namespace PeerCastStation.HTTP
       return channel;
     }
 
-    private async Task PlayListHandler(IOwinContext ctx, ParsedRequest req, Channel channel)
+    private async Task PlayListHandler(OwinEnvironment ctx, ParsedRequest req, Channel channel)
     {
       var ct = ctx.Request.CallCancelled;
       var session = req.Session;
@@ -290,10 +288,10 @@ namespace PeerCastStation.HTTP
         return;
       }
       var pls = new M3U8PlayList(ctx.Request.Query.Get("scheme"), channel);
-      ctx.Response.StatusCode = (int)HttpStatusCode.OK;
-      ctx.Response.Headers.Add("Cache-Control", new string [] { "private" });
-      ctx.Response.Headers.Add("Cache-Disposition", new string [] { "inline" });
-      ctx.Response.Headers.Add("Access-Control-Allow-Origin", new string[] { "*" });
+      ctx.Response.StatusCode = HttpStatusCode.OK;
+      ctx.Response.Headers.Add("Cache-Control", "private");
+      ctx.Response.Headers.Add("Cache-Disposition", "inline");
+      ctx.Response.Headers.Add("Access-Control-Allow-Origin", "*");
       ctx.Response.ContentType = pls.MIMEType;
       using (var subscription=HLSChannelSink.GetSubscription(this, channel, ctx, session)) {
         subscription.Stopped.ThrowIfCancellationRequested();
@@ -321,15 +319,15 @@ namespace PeerCastStation.HTTP
           }
         }
         catch (OperationCanceledException) {
-          ctx.Response.StatusCode = (int)HttpStatusCode.GatewayTimeout;
+          ctx.Response.StatusCode = HttpStatusCode.GatewayTimeout;
           return;
         }
-        ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+        ctx.Response.StatusCode = HttpStatusCode.OK;
         await ctx.Response.WriteAsync(body, ct).ConfigureAwait(false);
       }
     }
 
-    private async Task FragmentHandler(IOwinContext ctx, ParsedRequest req, Channel channel)
+    private async Task FragmentHandler(OwinEnvironment ctx, ParsedRequest req, Channel channel)
     {
       var ct = ctx.Request.CallCancelled;
       using (var subscription=HLSChannelSink.GetSubscription(this, channel, ctx, req.Session)) {
@@ -339,11 +337,11 @@ namespace PeerCastStation.HTTP
           var segments = await subscription.Segmenter.GetSegmentsAsync(cts.Token).ConfigureAwait(false);
           var segment = segments.FirstOrDefault(s => s.Index==req.FragmentNumber);
           if (segment.Index==0) {
-            ctx.Response.StatusCode = (int)HttpStatusCode.NotFound;
+            ctx.Response.StatusCode = HttpStatusCode.NotFound;
           }
           else {
-            ctx.Response.StatusCode = (int)HttpStatusCode.OK;
-            ctx.Response.Headers.Add("Access-Control-Allow-Origin", new string[] { "*" });
+            ctx.Response.StatusCode = HttpStatusCode.OK;
+            ctx.Response.Headers.Add("Access-Control-Allow-Origin", "*");
             ctx.Response.ContentType = "video/MP2T";
             ctx.Response.ContentLength = segment.Data.LongLength;
             await ctx.Response.WriteAsync(segment.Data, cts.Token).ConfigureAwait(false);
@@ -352,12 +350,12 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    private async Task HLSHandler(IOwinContext ctx)
+    private async Task HLSHandler(OwinEnvironment ctx)
     {
       var ct = ctx.Request.CallCancelled;
       var req = ParsedRequest.Parse(ctx);
       if (!req.IsValid) {
-        ctx.Response.StatusCode = (int)req.Status;
+        ctx.Response.StatusCode = req.Status;
         return;
       }
       Channel channel;
@@ -365,11 +363,11 @@ namespace PeerCastStation.HTTP
         channel = await GetChannelAsync(ctx, req, ct).ConfigureAwait(false);
       }
       catch (TaskCanceledException) {
-        ctx.Response.StatusCode = (int)HttpStatusCode.GatewayTimeout;
+        ctx.Response.StatusCode = HttpStatusCode.GatewayTimeout;
         return;
       }
       if (channel==null) {
-        ctx.Response.StatusCode = (int)HttpStatusCode.NotFound;
+        ctx.Response.StatusCode = HttpStatusCode.NotFound;
         return;
       }
 
@@ -384,11 +382,9 @@ namespace PeerCastStation.HTTP
     public static void BuildApp(IAppBuilder builder)
     {
       var app = new HTTPLiveStreamingDirectOwinApp();
-      builder.Map("/hls", sub => {
-        sub.MapMethod("GET", withmethod => {
-          withmethod.UseAuth(OutputStreamType.Play);
-          withmethod.Run(app.HLSHandler);
-        });
+      builder.MapGET("/hls", sub => {
+        sub.UseAuth(OutputStreamType.Play);
+        sub.Run(app.HLSHandler);
       });
     }
 

@@ -16,7 +16,6 @@
 using System;
 using PeerCastStation.Core;
 using PeerCastStation.Core.Http;
-using Microsoft.Owin;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Net;
@@ -25,7 +24,7 @@ namespace PeerCastStation.PCP
 {
   static class OwinContextExtensions
   {
-    public static PeerCast GetPeerCast(this IOwinContext ctx)
+    public static PeerCast GetPeerCast(this OwinEnvironment ctx)
     {
       if (ctx.Environment.TryGetValue(OwinEnvironment.PeerCastStation.PeerCast, out var obj)) {
         return obj as PeerCast; 
@@ -35,7 +34,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    public static AccessControlInfo GetAccessControlInfo(this IOwinContext ctx)
+    public static AccessControlInfo GetAccessControlInfo(this OwinEnvironment ctx)
     {
       if (ctx.Environment.TryGetValue(OwinEnvironment.PeerCastStation.AccessControlInfo, out var obj)) {
         return obj as AccessControlInfo; 
@@ -45,7 +44,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    public static void Upgrade(this IOwinContext ctx, Func<IDictionary<string,object>, Task> handler)
+    public static void Upgrade(this OwinEnvironment ctx, Func<IDictionary<string,object>, Task> handler)
     {
       var upgradeAction =
         (Action<IDictionary<string,object>, Func<IDictionary<string,object>, Task>>)
@@ -53,7 +52,7 @@ namespace PeerCastStation.PCP
       upgradeAction.Invoke(new Dictionary<string,object>(), handler);
     }
 
-    public static int? GetPCPVersion(this IOwinRequest request)
+    public static int? GetPCPVersion(this OwinEnvironment.OwinRequest request)
     {
       if (Int32.TryParse(request.Headers.Get("x-peercast-pcp"), out var ver)) {
         return ver;
@@ -63,7 +62,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    public static long? GetPCPPos(this IOwinRequest request)
+    public static long? GetPCPPos(this OwinEnvironment.OwinRequest request)
     {
       if (Int64.TryParse(request.Headers.Get("x-peercast-pos"), out var pos)) {
         return pos;
@@ -73,7 +72,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    public static IPEndPoint GetRemoteEndPoint(this IOwinRequest request)
+    public static IPEndPoint GetRemoteEndPoint(this OwinEnvironment.OwinRequest request)
     {
       if (IPAddress.TryParse(request.RemoteIpAddress, out var addr)) {
         return new IPEndPoint(addr, request.RemotePort ?? 0);

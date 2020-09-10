@@ -1,4 +1,4 @@
-﻿using Microsoft.Owin;
+﻿using PeerCastStation.Core.Http;
 using PeerCastStation.UI.HTTP.JSONRPC;
 using System;
 using System.Linq;
@@ -21,7 +21,7 @@ namespace PeerCastStation.UI.HTTP
         var attr = method.GetCustomAttribute<RPCMethodAttribute>();
         Name = attr.Name;
         Args = method.GetParameters()
-                .Where(p => p.ParameterType!=typeof(IOwinContext))
+                .Where(p => p.ParameterType!=typeof(OwinEnvironment))
                 .Select(p => p.Name)
                 .ToArray();
       }
@@ -50,14 +50,14 @@ namespace PeerCastStation.UI.HTTP
       contents = System.Text.Encoding.UTF8.GetBytes(builder.TransformText());
     }
     
-    public async Task Invoke(IOwinContext ctx)
+    public async Task Invoke(OwinEnvironment ctx)
     {
       var cancel_token = ctx.Request.CallCancelled;
       ctx.Response.ContentType = "application/javascript";
       ctx.Response.ContentLength = contents.LongLength;
       var acinfo = ctx.GetAccessControlInfo();
       if (acinfo?.AuthenticationKey!=null) {
-        ctx.Response.Headers.Append("Set-Cookie", $"auth={acinfo.AuthenticationKey.GetToken()}; Path=/");
+        ctx.Response.Headers.Add("Set-Cookie", $"auth={acinfo.AuthenticationKey.GetToken()}; Path=/");
       }
       await ctx.Response.WriteAsync(contents, cancel_token).ConfigureAwait(false);
     }

@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Linq;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PeerCastStation.Core.Http
 {
@@ -13,6 +16,7 @@ namespace PeerCastStation.Core.Http
       public const string RequestMethod = "owin.RequestMethod"; // A string containing the HTTP request method of the request (e.g., "GET", "POST").
       public const string RequestPath = "owin.RequestPath"; // A string containing the request path. The path MUST be relative to the "root" of the application delegate. See Paths.
       public const string RequestPathBase = "owin.RequestPathBase"; // A string containing the portion of the request path corresponding to the "root" of the application delegate; see Paths.
+      public const string RequestPathMatch = "owin.RequestPathMatch";
       public const string RequestProtocol = "owin.RequestProtocol"; // A string containing the protocol name and version (e.g. "HTTP/1.0" or "HTTP/1.1").
       public const string RequestQueryString = "owin.RequestQueryString"; // A string containing the query string component of the HTTP request URI, without the leading "?" (e.g., "foo=bar&amp;baz=quux"). The value may be an empty string.
       public const string RequestScheme = "owin.RequestScheme"; // A string containing the URI scheme used for the request (e.g., "http", "https"); see URI Scheme.
@@ -70,6 +74,262 @@ namespace PeerCastStation.Core.Http
       Unsupported = 0x8000,
     };
 
+    public class OwinRequest
+    {
+      private OwinEnvironment env;
+
+      public class RequestHeaders
+      {
+        private OwinEnvironment env;
+        public string Get(string key)
+        {
+          return env.GetRequestHeader(key, (string)null);
+        }
+
+        public bool TryGetValue(string key, out string[] values)
+        {
+          var result = env.GetRequestHeader(key, (string[])null);
+          if (result!=null) {
+            values = result.ToArray();
+            return true;
+          }
+          else {
+            values = default;
+            return false;
+          }
+        }
+
+        public bool ContainsKey(string key)
+        {
+          return env.GetRequestHeader(key, (string[])null)!=null;
+        }
+
+        internal RequestHeaders(OwinEnvironment env)
+        {
+          this.env = env;
+        }
+
+      }
+      public RequestHeaders Headers { get; }
+
+      public CancellationToken CallCancelled {
+        get {
+          return env.Get<CancellationToken>(Owin.CallCancelled);
+        }
+      }
+
+      public string LocalIpAddress {
+        get { return env.Get(Server.LocalIpAddress, null); }
+      }
+
+      public int? LocalPort {
+        get {
+          if (env.TryGetValue(Server.LocalPort, out string portStr) &&
+              int.TryParse(portStr, out int port)) {
+            return port;
+          }
+          else {
+            return null;
+          }
+        }
+      }
+
+      public string RemoteIpAddress {
+        get { return env.Get(Server.RemoteIpAddress, null); }
+      }
+
+      public int? RemotePort {
+        get {
+          if (env.TryGetValue(Server.RemotePort, out int port)) {
+            return port;
+          }
+          else {
+            return null;
+          }
+        }
+      }
+
+      public string Path {
+        get { return env.Get(Owin.RequestPath, null); }
+      }
+
+      public Uri Uri {
+        get {
+          var scheme = env.Get(Owin.RequestScheme, "http");
+          var authority = env.GetRequestHeader("Host", "");
+          var path = env.Get(Owin.RequestPathBase, "") + env.Get(Owin.RequestPath, "");
+          var query = env.Get(Owin.RequestQueryString, null);
+          if (String.IsNullOrEmpty(query)) {
+            return new Uri($"{scheme}://{authority}{path}", UriKind.Absolute);
+          }
+          else {
+            return new Uri($"{scheme}://{authority}{path}?{query}", UriKind.Absolute);
+          }
+        }
+      }
+
+      public class RequestQuery
+      {
+        private OwinEnvironment env;
+        public string Get(string key)
+        {
+          if (env.GetQueryParameters().TryGetValue(key, out var value)) {
+            return value;
+          }
+          else {
+            return null;
+          }
+        }
+
+        internal RequestQuery(OwinEnvironment env)
+        {
+          this.env = env;
+        }
+      }
+      public RequestQuery Query { get; }
+
+      public class RequestCookies
+      {
+        private IReadOnlyDictionary<string, string> cookies;
+        public string this[string key]
+        {
+          get {
+            if (cookies.TryGetValue(key, out var value)) {
+              return value;
+            }
+            else {
+              return null;
+            }
+          }
+
+        }
+        public RequestCookies(OwinEnvironment env)
+        {
+          this.cookies = env.GetRequestCookies();
+        }
+      }
+      public RequestCookies Cookies { get; }
+      public System.IO.Stream Body { get; }
+
+      internal OwinRequest(OwinEnvironment owner) 
+      {
+        env = owner;
+        Headers = new RequestHeaders(env);
+        Query = new RequestQuery(env);
+        Cookies = new RequestCookies(env);
+        Body = env.Get<System.IO.Stream>(Owin.RequestBody);
+      }
+    }
+    public OwinRequest Request { get; }
+
+    public class OwinResponse
+    {
+      private OwinEnvironment env;
+
+      public class ResponseHeaders
+      {
+        private OwinEnvironment env;
+        public void Add(string key, string value)
+        {
+          env.AppendResponseHeader(key, value);
+        }
+
+        public void Add(string key, params string[] value)
+        {
+          env.AppendResponseHeader(key, value);
+        }
+
+        public void Set(string key, string value)
+        {
+          env.SetResponseHeader(key, value);
+        }
+
+        internal ResponseHeaders(OwinEnvironment env)
+        {
+          this.env = env;
+        }
+      }
+      public ResponseHeaders Headers { get; }
+
+      public HttpStatusCode StatusCode {
+        get {
+          return (HttpStatusCode)env.Get(Owin.ResponseStatusCode, 200);
+        }
+        set {
+          env.Environment[Owin.ResponseStatusCode] = (int)value;
+        }
+      }
+
+      public string ContentType {
+        get {
+          return env.GetResponseHeader("Content-Type", (string)null);
+        }
+        set {
+          env.SetResponseHeader("Content-Type", value);
+        }
+      }
+
+      public long? ContentLength {
+        get {
+          var value = env.GetResponseHeader("Content-Length", (string)null);
+          if (!String.IsNullOrEmpty(value) && long.TryParse(value, out long len)) {
+            return len;
+          }
+          else {
+            return null;
+          }
+        }
+        set {
+          if (value.HasValue) {
+            env.SetResponseHeader("Content-Length", value.ToString());
+          }
+        }
+      }
+
+      public void Redirect(string url)
+      {
+        if (((int)StatusCode)/100!=3 && StatusCode!=HttpStatusCode.Created) {
+          StatusCode = HttpStatusCode.Moved;
+        }
+        Headers.Add("Location", url);
+      }
+
+      public void Redirect(HttpStatusCode statusCode, string url)
+      {
+        StatusCode = statusCode;
+        Headers.Add("Location", url);
+      }
+
+      public Task WriteAsync(byte[] bytes, CancellationToken ct)
+      {
+        if (!ContentLength.HasValue) {
+          ContentLength = bytes.LongLength;
+        }
+        var strm = env.Get<System.IO.Stream>(Owin.ResponseBody);
+        return strm.WriteAsync(bytes, 0, bytes.Length, ct);
+      }
+
+      public Task WriteAsync(string str, CancellationToken ct)
+      {
+        if (String.IsNullOrEmpty(ContentType)) {
+          ContentType = "text/plain;charset=utf-8";
+        }
+        return WriteAsync(System.Text.Encoding.UTF8.GetBytes(str), ct);
+      }
+
+      public void OnSendingHeaders(Action<object> action, object state)
+      {
+        var method = env.Get<Action<Action<object>,object>>(Server.OnSendingHeaders);
+        method?.Invoke(action, state);
+      }
+
+      internal OwinResponse(OwinEnvironment owner)
+      {
+        env = owner;
+        Headers = new ResponseHeaders(env);
+      }
+    }
+    public OwinResponse Response { get; }
 
     public IDictionary<string,object> Environment { get; private set; }
     public OwinEnvironment()
@@ -80,6 +340,8 @@ namespace PeerCastStation.Core.Http
     public OwinEnvironment(IDictionary<string,object> env)
     {
       Environment = env;
+      Request = new OwinRequest(this);
+      Response = new OwinResponse(this);
     }
 
     public bool TryGetValue<T>(string name, out T value)
@@ -306,10 +568,33 @@ namespace PeerCastStation.Core.Http
 
     public void SetResponseHeader(string key, string value)
     {
+      SetResponseHeader(key, new [] { value });
+    }
+
+    public void SetResponseHeader(string key, string[] value)
+    {
       if (TryGetValue<IDictionary<string,string[]>>(Owin.ResponseHeaders, out var headers)) {
-        headers[key] = new string[] { value };
+        headers[key] = value;
       }
     }
+
+    public void AppendResponseHeader(string key, string[] value)
+    {
+      if (TryGetValue<IDictionary<string,string[]>>(Owin.ResponseHeaders, out var headers)) {
+        if (headers.ContainsKey(key)) {
+          headers[key] = Enumerable.Concat(headers[key], value).ToArray();
+        }
+        else {
+          headers[key] = value;
+        }
+      }
+    }
+
+    public void AppendResponseHeader(string key, string value)
+    {
+      AppendResponseHeader(key, new [] { value });
+    }
+
 
     public void SetResponseHeaderOptional(string key, Func<string> generator)
     {
@@ -332,6 +617,13 @@ namespace PeerCastStation.Core.Http
       if (TryGetValue<IDictionary<string,string[]>>(Owin.ResponseHeaders, out var headers) &&
           !headers.ContainsKey(key)) {
         headers[key] = new string[] { value };
+      }
+    }
+
+    public void RemoveResponseHeader(string key)
+    {
+      if (TryGetValue<IDictionary<string,string[]>>(Owin.ResponseHeaders, out var headers)) {
+        headers.Remove(key);
       }
     }
 
@@ -361,6 +653,16 @@ namespace PeerCastStation.Core.Http
       }
       else {
         return defval;
+      }
+    }
+
+    public T Get<T>(string name)
+    {
+      if (Environment.TryGetValue(name, out var val) && val!=null && val is T) {
+        return (T)val;
+      }
+      else {
+        return default(T);
       }
     }
 

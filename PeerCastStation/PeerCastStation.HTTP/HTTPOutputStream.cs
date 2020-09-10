@@ -21,9 +21,7 @@ using System.Threading;
 using PeerCastStation.Core;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
-using Owin;
 using PeerCastStation.Core.Http;
-using Microsoft.Owin;
 
 namespace PeerCastStation.HTTP
 {
@@ -66,10 +64,10 @@ namespace PeerCastStation.HTTP
       public bool IsValid {
         get { return Status==HttpStatusCode.OK; }
       }
-      public static ParsedRequest Parse(IOwinContext ctx)
+      public static ParsedRequest Parse(OwinEnvironment ctx)
       {
         var req = new ParsedRequest();
-        var components = (ctx.Request.Path.HasValue ? ctx.Request.Path.Value : "/").Split('/');
+        var components = (String.IsNullOrEmpty(ctx.Request.Path) ? "/" : ctx.Request.Path).Split('/');
         if (components.Length>2) {
           req.Status = HttpStatusCode.NotFound;
           return req;
@@ -92,7 +90,7 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    private static async Task<Channel> GetChannelAsync(IOwinContext ctx, ParsedRequest req, CancellationToken ct)
+    private static async Task<Channel> GetChannelAsync(OwinEnvironment ctx, ParsedRequest req, CancellationToken ct)
     {
       var tip = ctx.Request.Query.Get("tip");
       var channel = ctx.GetPeerCast().RequestChannel(req.ChannelId, OutputStreamBase.CreateTrackerUri(req.ChannelId, tip), true);
@@ -106,12 +104,12 @@ namespace PeerCastStation.HTTP
       return channel;
     }
 
-    private static async Task PlayListHandler(IOwinContext ctx)
+    private static async Task PlayListHandler(OwinEnvironment ctx)
     {
       var ct = ctx.Request.CallCancelled;
       var req = ParsedRequest.Parse(ctx);
       if (!req.IsValid) {
-        ctx.Response.StatusCode = (int)req.Status;
+        ctx.Response.StatusCode = req.Status;
         return;
       }
       Channel channel;
@@ -119,20 +117,19 @@ namespace PeerCastStation.HTTP
         channel = await GetChannelAsync(ctx, req, ct).ConfigureAwait(false);
       }
       catch (TaskCanceledException) {
-        ctx.Response.StatusCode = (int)HttpStatusCode.GatewayTimeout;
+        ctx.Response.StatusCode = HttpStatusCode.GatewayTimeout;
         return;
       }
       if (channel==null) {
-        ctx.Response.StatusCode = (int)HttpStatusCode.NotFound;
+        ctx.Response.StatusCode = HttpStatusCode.NotFound;
         return;
       }
 
       var fmt = ctx.Request.Query.Get("pls") ?? req.Extension;
       //m3u8のプレイリストを要求された時はHLS用のパスに転送する
       if (fmt?.ToLowerInvariant()=="m3u8") {
-        ctx.Response.StatusCode = (int)HttpStatusCode.MovedPermanently;
         var location = new UriBuilder(ctx.Request.Uri);
-        location.Path = $"/hls/{req.ChannelId.ToString("N")}";
+        location.Path = $"/hls/{req.ChannelId:N}";
         if (location.Query.Contains("pls=m3u8")) {
           var queries = location.Query.Substring(1).Split('&').Where(seg => seg!="pls=m3u8").ToArray();
           if (queries.Length>0) {
@@ -142,16 +139,16 @@ namespace PeerCastStation.HTTP
             location.Query = null;
           }
         }
-        ctx.Response.Headers.Add("Location", new string [] { location.Uri.ToString() });
+        ctx.Response.Redirect(HttpStatusCode.MovedPermanently, location.Uri.ToString());
         return;
       }
 
       var scheme = ctx.Request.Query.Get("scheme");
       var pls = CreatePlaylist(channel, fmt, scheme);
-      ctx.Response.StatusCode = (int)HttpStatusCode.OK;
-      ctx.Response.Headers.Add("Cache-Control", new string [] { "private" });
-      ctx.Response.Headers.Add("Cache-Disposition", new string [] { "inline" });
-      ctx.Response.Headers.Add("Access-Control-Allow-Origin", new string[] { "*" });
+      ctx.Response.StatusCode = HttpStatusCode.OK;
+      ctx.Response.Headers.Add("Cache-Control", "private");
+      ctx.Response.Headers.Add("Cache-Disposition", "inline");
+      ctx.Response.Headers.Add("Access-Control-Allow-Origin", "*");
       ctx.Response.ContentType = pls.MIMEType;
       byte[] body;
       try {
@@ -173,10 +170,10 @@ namespace PeerCastStation.HTTP
         }
       }
       catch (OperationCanceledException) {
-        ctx.Response.StatusCode = (int)HttpStatusCode.GatewayTimeout;
+        ctx.Response.StatusCode = HttpStatusCode.GatewayTimeout;
         return;
       }
-      ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+      ctx.Response.StatusCode = HttpStatusCode.OK;
       await ctx.Response.WriteAsync(body, ct).ConfigureAwait(false);
     }
 
@@ -204,7 +201,7 @@ namespace PeerCastStation.HTTP
       private Func<float> getRecvRate = null;
       private Func<float> getSendRate = null;
 
-      public ChannelSink(IOwinContext ctx)
+      public ChannelSink(OwinEnvironment ctx)
       {
         connectionInfo.AgentName = ctx.Request.Headers.Get("User-Agent");
         connectionInfo.LocalDirects = null;
@@ -274,13 +271,13 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    private static async Task StreamHandler(IOwinContext ctx)
+    private static async Task StreamHandler(OwinEnvironment ctx)
     {
       var logger = new Logger(typeof(HTTPDirectOwinApp), $"{ctx.Request.RemoteIpAddress}:{ctx.Request.RemotePort}");
       var ct = ctx.Request.CallCancelled;
       var req = ParsedRequest.Parse(ctx);
       if (!req.IsValid) {
-        ctx.Response.StatusCode = (int)req.Status;
+        ctx.Response.StatusCode = req.Status;
         return;
       }
       Channel channel;
@@ -288,27 +285,27 @@ namespace PeerCastStation.HTTP
         channel = await GetChannelAsync(ctx, req, ct).ConfigureAwait(false);
       }
       catch (TaskCanceledException) {
-        ctx.Response.StatusCode = (int)HttpStatusCode.GatewayTimeout;
+        ctx.Response.StatusCode = HttpStatusCode.GatewayTimeout;
         return;
       }
       if (channel==null) {
-        ctx.Response.StatusCode = (int)HttpStatusCode.NotFound;
+        ctx.Response.StatusCode = HttpStatusCode.NotFound;
         return;
       }
       var sink = new ChannelSink(ctx);
       using (channel.AddOutputStream(sink))
       using (channel.AddContentSink(sink)) {
-        ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+        ctx.Response.StatusCode = HttpStatusCode.OK;
         bool asf =
           channel.ChannelInfo.ContentType=="WMV" ||
           channel.ChannelInfo.ContentType=="WMA" ||
           channel.ChannelInfo.ContentType=="ASX";
 
         if (asf && (!ctx.Request.Headers.TryGetValue("Pragma", out var values) || !values.Contains("xplaystrm=1", StringComparer.InvariantCultureIgnoreCase))) {
-          ctx.Response.Headers.Add("Cache-Control", new string [] { "no-cache" });
-          ctx.Response.Headers.Add("Server", new string [] { "Rex/9.0.2980" });
-          ctx.Response.Headers.Add("Pragma", new string [] { "no-cache", @"features=""broadcast,playlist""" });
-          ctx.Response.Headers.Add("Access-Control-Allow-Origin", new string[] { "*" });
+          ctx.Response.Headers.Add("Cache-Control", "no-cache");
+          ctx.Response.Headers.Add("Server", "Rex/9.0.2980");
+          ctx.Response.Headers.Add("Pragma", "no-cache", @"features=""broadcast,playlist""");
+          ctx.Response.Headers.Add("Access-Control-Allow-Origin", "*");
           ctx.Response.ContentType = "application/vnd.ms.wms-hdr.asfv1";
 
           try {
@@ -378,17 +375,13 @@ namespace PeerCastStation.HTTP
 
     public static void BuildApp(IAppBuilder builder)
     {
-      builder.Map("/pls", sub => {
-        sub.MapMethod("GET", withmethod => {
-          withmethod.UseAuth(OutputStreamType.Play);
-          withmethod.Run(PlayListHandler);
-        });
+      builder.MapGET("/pls", sub => {
+        sub.UseAuth(OutputStreamType.Play);
+        sub.Run(PlayListHandler);
       });
-      builder.Map("/stream", sub => {
-        sub.MapMethod("GET", withmethod => {
-          withmethod.UseAuth(OutputStreamType.Play);
-          withmethod.Run(StreamHandler);
-        });
+      builder.MapGET("/stream", sub => {
+        sub.UseAuth(OutputStreamType.Play);
+        sub.Run(StreamHandler);
       });
     }
 

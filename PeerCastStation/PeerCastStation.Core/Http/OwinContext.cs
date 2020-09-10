@@ -48,7 +48,11 @@ namespace PeerCastStation.Core.Http
       Environment.Environment[OwinEnvironment.Owin.Version] = "1.0.1";
       Environment.Environment[OwinEnvironment.Host.TraceOutput] = TextWriter.Null;
       Environment.Environment[OwinEnvironment.Owin.RequestBody] = RequestBody;
-      Environment.Environment[OwinEnvironment.Owin.RequestHeaders] = req.Headers.ToDictionary();
+      var requestHeaders = req.Headers.ToDictionary();
+      if (!requestHeaders.TryGetValue("Host", out var values) || values.Length==0 || String.IsNullOrEmpty(values[0])) {
+        requestHeaders["Host"] = new string[] { localEndPoint.ToString() };
+      }
+      Environment.Environment[OwinEnvironment.Owin.RequestHeaders] = requestHeaders;
       Environment.Environment[OwinEnvironment.Owin.RequestPath] = req.Path;
       Environment.Environment[OwinEnvironment.Owin.RequestPathBase] = "";
       Environment.Environment[OwinEnvironment.Owin.RequestProtocol] = req.Protocol;

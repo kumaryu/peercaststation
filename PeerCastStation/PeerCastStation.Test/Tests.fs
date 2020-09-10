@@ -1,21 +1,38 @@
 ﻿module Tests
 
 open Xunit
-open Owin
 open System
 open System.Net
 open PeerCastStation.Core
 open PeerCastStation.Core.Http
 open TestCommon
 
+module OwinResponse =
+    let writeStrAsync (rsp:OwinEnvironment.OwinResponse) (data:string) =
+        async {
+            let! ct = Async.CancellationToken
+            do!
+                rsp.WriteAsync (data, ct)
+                |> Async.AwaitTask
+        }
+
+    let writeBytesAsync (rsp:OwinEnvironment.OwinResponse) (data:byte[]) =
+        async {
+            let! ct = Async.CancellationToken
+            do!
+                rsp.WriteAsync (data, ct)
+                |> Async.AwaitTask
+        }
+
 let messageApp path msg =
     registerApp path (fun env ->
         async {
-            if env.Request.Path.HasValue then
-                env.Response.StatusCode <- 404
+            if env.Request.Path = null then
+                env.Response.StatusCode <- HttpStatusCode.NotFound
             else
                 env.Response.ContentType <- "text/plain;charset=utf-8"
-                env.Response.Write (string msg)
+                do!
+                    OwinResponse.writeStrAsync env.Response msg
         }
     )
 
@@ -89,6 +106,28 @@ let ``再起動後のリクエストも正しく処理される`` () =
     test ()
 
 [<Fact>]
+let ``Envにマップしたパスとそれより後のパスが入ってくる`` () =
+    let mutable basePath : obj = null
+    let mutable path : obj = null
+    use peca =
+        pecaWithOwinHost endpoint (
+            registerApp "/hoge" (fun env ->
+                async {
+                    env.Environment.TryGetValue(OwinEnvironment.Owin.RequestPathBase, &basePath) |> ignore
+                    env.Environment.TryGetValue(OwinEnvironment.Owin.RequestPath, &path) |> ignore
+                    env.Response.ContentType <- "text/plain"
+                    do!
+                        OwinResponse.writeStrAsync env.Response ""
+                }
+            )
+        )
+    sprintf "http://%s/hoge/index.txt" (endpoint.ToString())
+    |> WebRequest.CreateHttp
+    |> Assert.ExpectResponse ""
+    Assert.Equal("/hoge", string basePath)
+    Assert.Equal("/index.txt", string path)
+
+[<Fact>]
 let ``EnvにAccessControlInfoが入ってくる`` () =
     let mutable acinfo : obj = null
     use peca =
@@ -97,7 +136,8 @@ let ``EnvにAccessControlInfoが入ってくる`` () =
                 async {
                     env.Environment.TryGetValue("peercaststation.AccessControlInfo", &acinfo) |> ignore
                     env.Response.ContentType <- "text/plain"
-                    env.Response.Write ""
+                    do!
+                        OwinResponse.writeStrAsync env.Response ""
                 }
             )
         )
@@ -116,7 +156,8 @@ let ``EnvにPeerCastが入ってくる`` () =
                 async {
                     env.Environment.TryGetValue("peercaststation.PeerCast", &peercast) |> ignore
                     env.Response.ContentType <- "text/plain"
-                    env.Response.Write ""
+                    do!
+                        OwinResponse.writeStrAsync env.Response ""
                 }
             )
         )
@@ -137,7 +178,8 @@ let ``EnvにLocalEndPointが入ってくる`` () =
                     localaddr <- env.Request.LocalIpAddress
                     localport <- env.Request.LocalPort |> Option.ofNullable
                     env.Response.ContentType <- "text/plain"
-                    env.Response.Write ""
+                    do!
+                        OwinResponse.writeStrAsync env.Response ""
                 }
             )
         )
@@ -158,7 +200,8 @@ let ``EnvにRemoteEndPointが入ってくる`` () =
                     remoteaddr <- env.Request.RemoteIpAddress
                     remoteport <- env.Request.RemotePort |> Option.ofNullable
                     env.Response.ContentType <- "text/plain"
-                    env.Response.Write ""
+                    do!
+                        OwinResponse.writeStrAsync env.Response ""
                 }
             )
         )
@@ -176,13 +219,15 @@ let ``OutputStreamTypeが一致しないアプリは403を返す`` () =
             registerAppWithType OutputStreamType.Interface "/index.txt" (fun env ->
                 async {
                     env.Response.ContentType <- "text/plain"
-                    env.Response.Write "Hello World!"
+                    do!
+                        OwinResponse.writeStrAsync env.Response "Hello World!"
                 }
             ) owinHost |> ignore
             registerAppWithType OutputStreamType.Relay "/relay.txt" (fun env ->
                 async {
                     env.Response.ContentType <- "text/plain"
-                    env.Response.Write "Hello World!"
+                    do!
+                        OwinResponse.writeStrAsync env.Response "Hello World!"
                 }
             ) owinHost |> ignore
         )
@@ -202,13 +247,15 @@ let ``認証が必要であれば401を返す`` () =
             registerAppWithType OutputStreamType.Interface "/index.txt" (fun env ->
                 async {
                     env.Response.ContentType <- "text/plain"
-                    env.Response.Write "Hello World!"
+                    do!
+                        OwinResponse.writeStrAsync env.Response "Hello World!"
                 }
             ) owinHost |> ignore
             registerAppWithType OutputStreamType.Relay "/relay.txt" (fun env ->
                 async {
                     env.Response.ContentType <- "text/plain"
-                    env.Response.Write "Hello World!"
+                    do!
+                        OwinResponse.writeStrAsync env.Response "Hello World!"
                 }
             ) owinHost |> ignore
         )
@@ -228,7 +275,8 @@ let ``Basic認証で認証が通る`` () =
             registerAppWithType OutputStreamType.Relay "/relay.txt" (fun env ->
                 async {
                     env.Response.ContentType <- "text/plain"
-                    env.Response.Write "Hello World!"
+                    do!
+                        OwinResponse.writeStrAsync env.Response "Hello World!"
                 }
             ) owinHost |> ignore
         )
@@ -246,7 +294,8 @@ let ``Cookieで認証が通る`` () =
             registerAppWithType OutputStreamType.Relay "/relay.txt" (fun env ->
                 async {
                     env.Response.ContentType <- "text/plain"
-                    env.Response.Write "Hello World!"
+                    do!
+                        OwinResponse.writeStrAsync env.Response "Hello World!"
                 }
             ) owinHost |> ignore
         )
@@ -265,7 +314,8 @@ let ``クエリパラメータで認証が通る`` () =
             registerAppWithType OutputStreamType.Relay "/relay.txt" (fun env ->
                 async {
                     env.Response.ContentType <- "text/plain"
-                    env.Response.Write "Hello World!"
+                    do!
+                        OwinResponse.writeStrAsync env.Response "Hello World!"
                 }
             ) owinHost |> ignore
         )
@@ -283,7 +333,8 @@ let ``chunkedエンコーディングで送受信できる`` () =
                     let! req = strm.ReadToEndAsync() |> Async.AwaitTask
                     env.Response.ContentType <- "text/plain"
                     env.Response.Headers.Set("Transfer-Encoding", "chunked")
-                    env.Response.Write req
+                    do!
+                        OwinResponse.writeStrAsync env.Response req
                 }
             ) owinHost |> ignore
         )
@@ -304,39 +355,35 @@ let ``許可されていないメソッドを実行すると405が返る`` () =
         pecaWithOwinHost endpoint (fun owinHost ->
             owinHost.Register(
                 fun builder ->
-                    builder.Map(
+                    builder.MapPOST(
                         "/echo",
                         fun builder ->
-                            builder.UseAllowMethods("POST", "GET") |> ignore
-                            builder.MapMethod(
-                                "POST",
-                                fun builder ->
-                                    builder.Run (fun env ->
-                                        async {
-                                            use strm = new System.IO.StreamReader(env.Request.Body, System.Text.Encoding.UTF8, false, 2048, true)
-                                            let! req = strm.ReadToEndAsync() |> Async.AwaitTask
-                                            env.Response.ContentType <- "text/plain"
-                                            env.Response.Headers.Set("Transfer-Encoding", "chunked")
-                                            env.Response.Write req
-                                        }
-                                        |> Async.StartAsTask
-                                        :> System.Threading.Tasks.Task
-                                    )
+                            builder.Run (fun (env:OwinEnvironment) ->
+                                async {
+                                    use strm = new System.IO.StreamReader(env.Request.Body, System.Text.Encoding.UTF8, false, 2048, true)
+                                    let! req = strm.ReadToEndAsync() |> Async.AwaitTask
+                                    env.Response.ContentType <- "text/plain"
+                                    env.Response.Headers.Set("Transfer-Encoding", "chunked")
+                                    do!
+                                        OwinResponse.writeStrAsync env.Response req
+                                }
+                                |> Async.StartAsTask
+                                :> System.Threading.Tasks.Task
                             )
-                            |> ignore
-                            builder.MapMethod(
-                                "GET",
-                                fun builder ->
-                                    builder.Run (fun env ->
-                                        async {
-                                            env.Response.ContentType <- "text/plain"
-                                            env.Response.Write "hello"
-                                        }
-                                        |> Async.StartAsTask
-                                        :> System.Threading.Tasks.Task
-                                    )
+                    )
+                    |> ignore
+                    builder.MapGET(
+                        "/echo",
+                        fun builder ->
+                            builder.Run (fun (env:OwinEnvironment) ->
+                                async {
+                                    env.Response.ContentType <- "text/plain"
+                                    do!
+                                        OwinResponse.writeStrAsync env.Response "hello"
+                                }
+                                |> Async.StartAsTask
+                                :> System.Threading.Tasks.Task
                             )
-                            |> ignore
                     )
                     |> ignore
             ) |> ignore
@@ -375,7 +422,8 @@ let ``OnSendingHeadersに登録したアクションでヘッダを書き換え�
                 async {
                     env.Response.OnSendingHeaders((fun _ -> env.Response.Headers.Set("x-hoge", "fuga")), ())
                     env.Response.ContentType <- "text/plain"
-                    env.Response.Write "Hello World!"
+                    do!
+                        OwinResponse.writeStrAsync env.Response "Hello World!"
                 }
             ) owinHost |> ignore
         )

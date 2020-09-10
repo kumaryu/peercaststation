@@ -6,8 +6,7 @@ using PeerCastStation.Core;
 using PeerCastStation.Core.Http;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Owin;
-using Microsoft.Owin;
+using System.Text.RegularExpressions;
 
 namespace PeerCastStation.UI.HTTP
 {
@@ -65,14 +64,14 @@ namespace PeerCastStation.UI.HTTP
         }
       }
 
-      public async Task Invoke(IOwinContext ctx)
+      public async Task Invoke(OwinEnvironment ctx)
       {
         var cancel_token = ctx.Request.CallCancelled;
-        var localpath = Path.GetFullPath(CombinePath(LocalPath, ctx.Request.Path.Value));
+        var localpath = Path.GetFullPath(CombinePath(LocalPath, ctx.Request.Path));
         if (Directory.Exists(localpath)) {
           localpath = Path.Combine(localpath, "index.html");
           if (!File.Exists(localpath)) {
-            ctx.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+            ctx.Response.StatusCode = HttpStatusCode.Forbidden;
             return;
           }
         }
@@ -83,12 +82,12 @@ namespace PeerCastStation.UI.HTTP
           ctx.Response.ContentLength = contents.LongLength;
           var acinfo = ctx.GetAccessControlInfo();
           if (acinfo?.AuthenticationKey!=null) {
-            ctx.Response.Headers.Append("Set-Cookie", $"auth={acinfo.AuthenticationKey.GetToken()}; Path=/");
+            ctx.Response.Headers.Add("Set-Cookie", $"auth={acinfo.AuthenticationKey.GetToken()}; Path=/");
           }
           await ctx.Response.WriteAsync(contents, cancel_token).ConfigureAwait(false);
         }
         else {
-          ctx.Response.StatusCode = (int)HttpStatusCode.NotFound;
+          ctx.Response.StatusCode = HttpStatusCode.NotFound;
         }
       }
 
@@ -142,26 +141,24 @@ namespace PeerCastStation.UI.HTTP
     }
 
     private static async Task InvokeRedirect(IOwinContext ctx)
+    private static async Task InvokeRedirect(OwinEnvironment ctx)
     {
       var cancel_token = ctx.Request.CallCancelled;
       ctx.Response.ContentType = "text/plain;charset=utf-8";
       ctx.Response.Headers.Set("Location", "/html/index.html");
       var acinfo = ctx.GetAccessControlInfo();
       if (acinfo?.AuthenticationKey!=null) {
-        ctx.Response.Headers.Append("Set-Cookie", $"auth={acinfo.AuthenticationKey.GetToken()}; Path=/");
+        ctx.Response.Headers.Add("Set-Cookie", $"auth={acinfo.AuthenticationKey.GetToken()}; Path=/");
       }
-      ctx.Response.StatusCode = (int)HttpStatusCode.Moved;
+      ctx.Response.StatusCode = HttpStatusCode.Moved;
       await ctx.Response.WriteAsync("Moving...", cancel_token).ConfigureAwait(false);
     }
 
     public static void BuildPath(IAppBuilder builder, string mappath, OutputStreamType accepts, string localpath)
     {
-      builder.Map(mappath, sub => {
-        sub.UseAllowMethods("GET");
-        sub.MapMethod("GET", withmethod => {
-          withmethod.UseAuth(accepts);
-          withmethod.Run(new HostApp(localpath).Invoke);
-        });
+      builder.MapGET(mappath, sub => {
+        sub.UseAuth(accepts);
+        sub.Run(new HostApp(localpath).Invoke);
       });
     }
 
@@ -182,12 +179,9 @@ namespace PeerCastStation.UI.HTTP
       BuildPath(builder, "/help", OutputStreamType.Interface, Path.Combine(basepath, "help"));
       BuildPath(builder, "/Content", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "Content"));
       BuildPath(builder, "/Scripts", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "Scripts"));
-      builder.MapWhen(ctx => ctx.Request.Path.Value=="/", sub => {
-        sub.UseAllowMethods("GET");
-        sub.MapMethod("GET", withmethod => {
-          withmethod.UseAuth(OutputStreamType.Interface);
-          withmethod.Run(InvokeRedirect);
-        });
+      builder.MapGET(new Regex("^$"), sub => {
+        sub.UseAuth(OutputStreamType.Interface);
+        sub.Run(InvokeRedirect);
       });
     }
   }

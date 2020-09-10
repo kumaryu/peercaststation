@@ -3,7 +3,6 @@
 open System
 open PeerCastStation.Core
 open PeerCastStation.Core.Http
-open Owin
 open System.Net
 open Xunit
 
@@ -102,26 +101,24 @@ let createChannelInfoBitrate name contentType bitrate =
 let registerApp path appFunc (owinHost:PeerCastStation.Core.Http.OwinHost) =
     owinHost.Register(
         fun builder ->
-            builder.Map(
-                string path,
-                fun builder ->
-                    builder.Run (fun env ->
-                        appFunc env
-                        |> Async.StartAsTask
-                        :> System.Threading.Tasks.Task
-                    )
-            )
-            |> ignore
+            let buildApp (builder:IAppBuilder) =
+                builder.Run (fun (env:OwinEnvironment) ->
+                    appFunc env
+                    |> Async.StartAsTask
+                    :> System.Threading.Tasks.Task
+                )
+            builder.MapGET(string path, fun builder -> buildApp builder) |> ignore
+            builder.MapPOST(string path, fun builder -> buildApp builder) |> ignore
     ) |> ignore
 
 let registerAppWithType appType path appFunc (owinHost:PeerCastStation.Core.Http.OwinHost) =
     owinHost.Register(
         fun builder ->
-            builder.Map(
+            builder.MapGET(
                 string path,
                 fun builder ->
                     builder.UseAuth appType |> ignore
-                    builder.Run (fun env ->
+                    builder.Run (fun (env:OwinEnvironment) ->
                         appFunc env
                         |> Async.StartAsTask
                         :> System.Threading.Tasks.Task
