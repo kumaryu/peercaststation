@@ -1,10 +1,8 @@
-﻿using Owin;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
-using Microsoft.Owin.Builder;
 using System.Threading;
 
 namespace PeerCastStation.Core.Http
@@ -174,7 +172,7 @@ namespace PeerCastStation.Core.Http
         factory.Value.ConfigAction(builder);
       }
       builder.TraceOutput = new LoggerWriter(logger, LogLevel.Debug);
-      var appfunc = builder.Build<Func<IDictionary<string,object>, Task>>();
+      var appfunc = builder.Build();
       return (env) => {
         env[OwinEnvironment.Server.Capabilities] = builder.Capabilities;
         env[OwinEnvironment.Host.TraceOutput] = builder.TraceOutput;

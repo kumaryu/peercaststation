@@ -7,14 +7,12 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using PeerCastStation.Core;
 using PeerCastStation.Core.Http;
-using Owin;
-using Microsoft.Owin;
 
 namespace PeerCastStation.UI.HTTP
 {
   public static class AdminHostOwinApp
   {
-    private static async Task AdminHandler(IOwinContext ctx)
+    private static async Task AdminHandler(OwinEnvironment ctx)
     {
       var cancel_token = ctx.Request.CallCancelled;
       switch (ctx.Request.Query.Get("cmd")) {
@@ -28,7 +26,7 @@ namespace PeerCastStation.UI.HTTP
         await OnBump(ctx, cancel_token).ConfigureAwait(false);
         break;
       default:
-        ctx.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+        ctx.Response.StatusCode = HttpStatusCode.BadRequest;
         break;
       }
     }
@@ -156,16 +154,16 @@ namespace PeerCastStation.UI.HTTP
       return res.ToArray();
     }
 
-    private static async Task OnViewXML(IOwinContext ctx, CancellationToken cancel_token)
+    private static async Task OnViewXML(OwinEnvironment ctx, CancellationToken cancel_token)
     {
       var data = BuildViewXml(ctx.GetPeerCast());
-      ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+      ctx.Response.StatusCode = HttpStatusCode.OK;
       ctx.Response.ContentType = "text/xml;charset=utf-8";
       ctx.Response.ContentLength = data.LongLength;
       await ctx.Response.WriteAsync(data, cancel_token).ConfigureAwait(false);
     }
 
-    private static Channel FindChannelFromQuery(IOwinContext ctx)
+    private static Channel FindChannelFromQuery(OwinEnvironment ctx)
     {
       var peercast = ctx.GetPeerCast();
       var idstr = ctx.Request.Query.Get("id");
@@ -186,42 +184,40 @@ namespace PeerCastStation.UI.HTTP
       }
     }
 
-    private static async Task OnBump(IOwinContext ctx, CancellationToken cancel_token)
+    private static async Task OnBump(OwinEnvironment ctx, CancellationToken cancel_token)
     {
       var channel = FindChannelFromQuery(ctx);
       if (channel!=null) {
         channel.Reconnect();
-        ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+        ctx.Response.StatusCode = HttpStatusCode.OK;
         await ctx.Response.WriteAsync("OK", cancel_token).ConfigureAwait(false);
       }
       else {
-        ctx.Response.StatusCode = (int)HttpStatusCode.NotFound;
+        ctx.Response.StatusCode = HttpStatusCode.NotFound;
         await ctx.Response.WriteAsync("Channel NotFound", cancel_token).ConfigureAwait(false);
       }
     }
 
-    private static async Task OnStop(IOwinContext ctx, CancellationToken cancel_token)
+    private static async Task OnStop(OwinEnvironment ctx, CancellationToken cancel_token)
     {
       var peercast = ctx.GetPeerCast();
       var channel = FindChannelFromQuery(ctx);
       if (channel!=null) {
         peercast.CloseChannel(channel);
-        ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+        ctx.Response.StatusCode = HttpStatusCode.OK;
         await ctx.Response.WriteAsync("OK", cancel_token).ConfigureAwait(false);
       }
       else {
-        ctx.Response.StatusCode = (int)HttpStatusCode.NotFound;
+        ctx.Response.StatusCode = HttpStatusCode.NotFound;
         await ctx.Response.WriteAsync("Channel NotFound", cancel_token).ConfigureAwait(false);
       }
     }
 
     public static void BuildApp(IAppBuilder builder)
     {
-      builder.Map("/admin", sub => {
-        sub.MapMethod("GET", withmethod => {
-          withmethod.UseAuth(OutputStreamType.Interface);
-          withmethod.Run(AdminHandler);
-        });
+      builder.MapGET("/admin", sub => {
+        sub.UseAuth(OutputStreamType.Interface);
+        sub.Run(AdminHandler);
       });
     }
 

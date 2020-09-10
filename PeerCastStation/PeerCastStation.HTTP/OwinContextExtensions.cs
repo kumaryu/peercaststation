@@ -15,13 +15,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using PeerCastStation.Core;
 using PeerCastStation.Core.Http;
-using Microsoft.Owin;
 
 namespace PeerCastStation.HTTP
 {
   static class OwinContextExtensions
   {
-    public static PeerCast GetPeerCast(this IOwinContext ctx)
+    public static PeerCast GetPeerCast(this OwinEnvironment ctx)
     {
       if (ctx.Environment.TryGetValue(OwinEnvironment.PeerCastStation.PeerCast, out var obj)) {
         return obj as PeerCast; 
@@ -31,7 +30,7 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    public static AccessControlInfo GetAccessControlInfo(this IOwinContext ctx)
+    public static AccessControlInfo GetAccessControlInfo(this OwinEnvironment ctx)
     {
       if (ctx.Environment.TryGetValue(OwinEnvironment.PeerCastStation.AccessControlInfo, out var obj)) {
         return obj as AccessControlInfo; 

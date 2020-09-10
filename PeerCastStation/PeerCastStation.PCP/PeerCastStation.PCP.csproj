@@ -20,8 +20,4 @@
       <Link>PeerCastStation.snk</Link>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Owin" Version="4.0.1" />
-    <PackageReference Include="Owin" Version="1.0" />
-  </ItemGroup>
 </Project>

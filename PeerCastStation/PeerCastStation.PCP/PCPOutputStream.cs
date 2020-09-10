@@ -22,9 +22,7 @@ using System.Text.RegularExpressions;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using Owin;
 using PeerCastStation.Core.Http;
-using Microsoft.Owin;
 
 namespace PeerCastStation.PCP
 {
@@ -39,10 +37,10 @@ namespace PeerCastStation.PCP
       public bool IsValid {
         get { return Status==HttpStatusCode.OK; }
       }
-      public static ParsedRequest Parse(IOwinContext ctx)
+      public static ParsedRequest Parse(OwinEnvironment ctx)
       {
         var req = new ParsedRequest();
-        var components = (ctx.Request.Path.HasValue ? ctx.Request.Path.Value : "/").Split('/');
+        var components = (ctx.Request.Path ?? "/").Split('/');
         if (components.Length>2) {
           req.Status = HttpStatusCode.NotFound;
           return req;
@@ -884,28 +882,28 @@ namespace PeerCastStation.PCP
         }
       }
 
-      public static Task Invoke(IOwinContext ctx)
+      public static Task Invoke(OwinEnvironment ctx)
       {
         var remoteEndPoint = ctx.Request.GetRemoteEndPoint();
         var logger = new Logger(typeof(PCPRelayOwinApp), remoteEndPoint?.ToString() ?? "");
         var req = ParsedRequest.Parse(ctx);
         if (!req.IsValid) {
-          ctx.Response.StatusCode = (int)req.Status;
+          ctx.Response.StatusCode = req.Status;
           return Task.Delay(0);
         }
         var channel = ctx.GetPeerCast().Channels.FirstOrDefault(ch => ch.ChannelID==req.ChannelId);
         if (channel==null || channel.Status!=SourceStreamStatus.Receiving) {
-          ctx.Response.StatusCode = (int)HttpStatusCode.NotFound;
+          ctx.Response.StatusCode = HttpStatusCode.NotFound;
           return Task.Delay(0);
         }
         if (!ctx.Request.GetPCPVersion().HasValue) {
-          ctx.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+          ctx.Response.StatusCode = HttpStatusCode.BadRequest;
           return Task.Delay(0);
         }
         if (remoteEndPoint!=null &&
             !(channel.Network==NetworkType.IPv6 && ctx.Request.GetPCPVersion()==PCPVersion.ProtocolVersionIPv6 && remoteEndPoint.Address.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6) &&
             !(channel.Network==NetworkType.IPv4 && ctx.Request.GetPCPVersion()==PCPVersion.ProtocolVersionIPv4 && remoteEndPoint.Address.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork)) {
-          ctx.Response.StatusCode = (int)HttpStatusCode.NotFound;
+          ctx.Response.StatusCode = HttpStatusCode.NotFound;
           return Task.Delay(0);
         }
         var requestPos = ctx.Request.GetPCPPos() ?? -1;
@@ -922,10 +920,8 @@ namespace PeerCastStation.PCP
 
     public static void BuildApp(IAppBuilder builder)
     {
-      builder.Map("/channel", sub => {
-        sub.MapMethod("GET", withmethod => {
-          withmethod.Run(PCPRelayHandler.Invoke);
-        });
+      builder.MapGET("/channel", sub => {
+        sub.Run(PCPRelayHandler.Invoke);
       });
     }
 

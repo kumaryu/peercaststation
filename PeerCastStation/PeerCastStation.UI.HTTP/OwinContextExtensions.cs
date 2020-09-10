@@ -1,16 +1,11 @@
-﻿using System;
-using System.Net;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using PeerCastStation.Core;
+﻿using PeerCastStation.Core;
 using PeerCastStation.Core.Http;
-using Microsoft.Owin;
 
 namespace PeerCastStation.UI.HTTP
 {
   static class OwinContextExtensions
   {
-    public static PeerCast GetPeerCast(this IOwinContext ctx)
+    public static PeerCast GetPeerCast(this OwinEnvironment ctx)
     {
       if (ctx.Environment.TryGetValue(OwinEnvironment.PeerCastStation.PeerCast, out var obj)) {
         return obj as PeerCast; 
@@ -20,7 +15,7 @@ namespace PeerCastStation.UI.HTTP
       }
     }
 
-    public static AccessControlInfo GetAccessControlInfo(this IOwinContext ctx)
+    public static AccessControlInfo GetAccessControlInfo(this OwinEnvironment ctx)
     {
       if (ctx.Environment.TryGetValue(OwinEnvironment.PeerCastStation.AccessControlInfo, out var obj)) {
         return obj as AccessControlInfo; 

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using PeerCastStation.Core;
-using Microsoft.Owin;
+using PeerCastStation.Core.Http;
 using System.Xml.Linq;
 
 namespace PeerCastStation.UI.HTTP.JSONRPC
@@ -235,7 +235,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       else                             return JToken.FromObject(value);
     }
 
-    public JToken Invoke(IOwinContext ctx, JToken args)
+    public JToken Invoke(OwinEnvironment ctx, JToken args)
     {
       var param_infos = Method.GetParameters();
       if (param_infos.Length==0) {
@@ -251,7 +251,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
         int pos = 0;
         int len = param_infos.Length;
         var arguments = new object[param_infos.Length];
-        if (param_infos[0].ParameterType==typeof(IOwinContext)) {
+        if (param_infos[0].ParameterType==typeof(OwinEnvironment)) {
           arguments[0] = ctx;
           pos += 1;
           len -= 1;
@@ -483,7 +483,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
 
   public class JSONRPCHost
   {
-    private void ProcessRequest(IOwinContext ctx, JArray results, JToken request, Func<OutputStreamType,bool> authFunc)
+    private void ProcessRequest(OwinEnvironment ctx, JArray results, JToken request, Func<OutputStreamType,bool> authFunc)
     {
       RPCRequest req = null;
       try {
@@ -521,7 +521,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       }
     }
 
-    public JToken ProcessRequest(IOwinContext ctx, JToken req, Func<OutputStreamType,bool> authFunc)
+    public JToken ProcessRequest(OwinEnvironment ctx, JToken req, Func<OutputStreamType,bool> authFunc)
     {
       if (req==null) return null;
       if (req.Type==JTokenType.Array) {
@@ -538,7 +538,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       }
     }
 
-    public JToken ProcessRequest(IOwinContext ctx, string request_str, Func<OutputStreamType,bool> authFunc)
+    public JToken ProcessRequest(OwinEnvironment ctx, string request_str, Func<OutputStreamType,bool> authFunc)
     {
       JToken req;
       try {
@@ -641,7 +641,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
               var summary = m.GetMethodSummary();
               var @params = new JArray(
                 m.Method.GetParameters()
-                .Where(p => p.ParameterType!=typeof(IOwinContext))
+                .Where(p => p.ParameterType!=typeof(OwinEnvironment))
                 .Select(p => GenerateParameterDescription(p, m.GetParameterSummary(p.Name)))
                 .ToArray()
               );

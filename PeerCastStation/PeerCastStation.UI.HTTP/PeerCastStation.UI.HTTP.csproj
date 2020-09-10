@@ -332,9 +332,7 @@
     <PackageReference Include="es6-shim" Version="0.35.3" />
     <PackageReference Include="jQuery" Version="1.8.3" />
     <PackageReference Include="knockoutjs" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Owin" Version="4.0.1" />
     <PackageReference Include="Newtonsoft.Json" Version="6.0.6" />
-    <PackageReference Include="Owin" Version="1.0" />
     <PackageReference Include="Twitter.Bootstrap" Version="2.2.2" />
   </ItemGroup>
 </Project>

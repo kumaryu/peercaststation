@@ -1,6 +1,4 @@
-﻿using Microsoft.Owin;
-using Owin;
-using PeerCastStation.Core;
+﻿using PeerCastStation.Core;
 using PeerCastStation.Core.Http;
 using System;
 using System.Collections.Generic;
@@ -72,7 +70,7 @@ namespace PeerCastStation.UI.HTTP
       ) + "\n";
     }
 
-    private async Task Invoke(IOwinContext ctx)
+    private async Task Invoke(OwinEnvironment ctx)
     {
       var cancel_token = ctx.Request.CallCancelled;
       var channel_list = await GetYPChannelsAsync(cancel_token).ConfigureAwait(false);
@@ -81,7 +79,7 @@ namespace PeerCastStation.UI.HTTP
       ctx.Response.ContentLength = contents.LongLength;
       var acinfo = ctx.GetAccessControlInfo();
       if (acinfo?.AuthenticationKey!=null) {
-        ctx.Response.Headers.Append("Set-Cookie", $"auth={acinfo.AuthenticationKey.GetToken()}; Path=/");
+        ctx.Response.Headers.Add("Set-Cookie", $"auth={acinfo.AuthenticationKey.GetToken()}; Path=/");
       }
       await ctx.Response.WriteAsync(contents, cancel_token).ConfigureAwait(false);
     }
@@ -89,12 +87,9 @@ namespace PeerCastStation.UI.HTTP
     public static void BuildApp(IAppBuilder builder, PeerCastApplication application)
     {
       var app = new YPChannelsHostOwinApp(application);
-      builder.Map("/ypchannels/index.txt", sub => {
-        sub.UseAllowMethods("GET");
-        sub.MapMethod("GET", withmethod => {
-          withmethod.UseAuth(OutputStreamType.Interface);
-          withmethod.Run(app.Invoke);
-        });
+      builder.MapGET("/ypchannels/index.txt", sub => {
+        sub.UseAuth(OutputStreamType.Interface);
+        sub.Run(app.Invoke);
       });
     }
 

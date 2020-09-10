@@ -8,8 +8,6 @@ using Newtonsoft.Json.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using PeerCastStation.Core.Http;
-using Owin;
-using Microsoft.Owin;
 
 namespace PeerCastStation.UI.HTTP
 {
@@ -178,7 +176,7 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("getAuthToken", OutputStreamType.Interface | OutputStreamType.Play)]
-      public string GetAuthToken(IOwinContext ctx)
+      public string GetAuthToken(OwinEnvironment ctx)
       {
         return ctx.GetAccessControlInfo()?.AuthenticationKey?.GetToken();
       }
@@ -1400,7 +1398,7 @@ namespace PeerCastStation.UI.HTTP
       }
     }
 
-    private AuthToken GetAuthToken(IOwinContext ctx)
+    private AuthToken GetAuthToken(OwinEnvironment ctx)
     {
       string token = null;
       var auth = ctx.Request.Headers.Get("Authorization");
@@ -1437,21 +1435,21 @@ namespace PeerCastStation.UI.HTTP
 
     public static readonly int RequestLimit = 64*1024;
     public static readonly int TimeoutLimit = 5000;
-    private async Task Invoke(IOwinContext ctx)
+    private async Task Invoke(OwinEnvironment ctx)
     {
       var cancel_token = ctx.Request.CallCancelled;
       var acinfo = ctx.GetAccessControlInfo();
       var authtoken = GetAuthToken(ctx);
       if (!ctx.Request.Headers.ContainsKey("X-Requested-With")) {
-        ctx.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+        ctx.Response.StatusCode = HttpStatusCode.BadRequest;
         return;
       }
       if (!Int32.TryParse(ctx.Request.Headers.Get("Content-Length"), out var len)) {
-        ctx.Response.StatusCode = (int)HttpStatusCode.LengthRequired;
+        ctx.Response.StatusCode = HttpStatusCode.LengthRequired;
         return;
       }
       if (RequestLimit<len) {
-        ctx.Response.StatusCode = (int)HttpStatusCode.RequestEntityTooLarge;
+        ctx.Response.StatusCode = HttpStatusCode.RequestEntityTooLarge;
         return;
       }
 
@@ -1468,60 +1466,51 @@ namespace PeerCastStation.UI.HTTP
             await SendJson(ctx, res, cancel_token).ConfigureAwait(false);
           }
           else {
-            ctx.Response.StatusCode = (int)HttpStatusCode.NoContent;
+            ctx.Response.StatusCode = HttpStatusCode.NoContent;
           }
         }
       }
       catch (OperationCanceledException) {
-        ctx.Response.StatusCode = (int)HttpStatusCode.RequestTimeout;
+        ctx.Response.StatusCode = HttpStatusCode.RequestTimeout;
       }
     }
 
-    private async Task InvokeGet(IOwinContext ctx)
+    private async Task InvokeGet(OwinEnvironment ctx)
     {
       var cancel_token = ctx.Request.CallCancelled;
       await SendJson(ctx, apiContext.GetVersionInfo(), cancel_token).ConfigureAwait(false);
     }
 
-    private async Task InvokeGetAPIDescription(IOwinContext ctx)
+    private async Task InvokeGetAPIDescription(OwinEnvironment ctx)
     {
       var cancel_token = ctx.Request.CallCancelled;
       await SendJson(ctx, rpcHost.GenerateAPIDescription(), cancel_token).ConfigureAwait(false);
     }
 
-    private async Task SendJson(IOwinContext ctx, JToken token, CancellationToken cancel_token)
+    private async Task SendJson(OwinEnvironment ctx, JToken token, CancellationToken cancel_token)
     {
       var body = System.Text.Encoding.UTF8.GetBytes(token.ToString());
       ctx.Response.ContentType = "application/json";
       ctx.Response.ContentLength = body.Length;
-      ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+      ctx.Response.StatusCode = HttpStatusCode.OK;
       await ctx.Response.WriteAsync(body, cancel_token).ConfigureAwait(false);
     }
 
     public static void BuildApp(IAppBuilder builder)
     {
       var app = new APIHostOwinApp(builder.Properties[OwinEnvironment.PeerCastStation.PeerCastApplication] as PeerCastApplication);
-      builder.Map("/api/1/peercaststation.js", sub => {
-        sub.UseAllowMethods("GET");
-        sub.MapMethod("GET", withmethod => {
-          withmethod.UseAuth(OutputStreamType.Interface | OutputStreamType.Play);
-          withmethod.Run(new PeerCastStationJSApp(typeof(APIContext)).Invoke);
-        });
+      builder.MapGET("/api/1/peercaststation.js", sub => {
+        sub.UseAuth(OutputStreamType.Interface | OutputStreamType.Play);
+        sub.Run(new PeerCastStationJSApp(typeof(APIContext)).Invoke);
       });
-      builder.Map("/api/1/openrpc.json", sub => {
-        sub.UseAllowMethods("GET");
-        sub.MapMethod("GET", withmethod => {
-          withmethod.Run(app.InvokeGetAPIDescription);
-        });
+      builder.MapGET("/api/1/openrpc.json", sub => {
+        sub.Run(app.InvokeGetAPIDescription);
       });
-      builder.Map("/api/1", sub => {
-        sub.UseAllowMethods("POST", "GET");
-        sub.MapMethod("POST", withmethod => {
-          withmethod.Run(app.Invoke);
-        });
-        sub.MapMethod("GET", withmethod => {
-          withmethod.Run(app.InvokeGet);
-        });
+      builder.MapPOST("/api/1", sub => {
+        sub.Run(app.Invoke);
+      });
+      builder.MapGET("/api/1", sub => {
+        sub.Run(app.InvokeGet);
       });
       if (builder.Properties[OwinEnvironment.Server.OnDispose] is CancellationToken) {
         var onDispose = (CancellationToken)builder.Properties[OwinEnvironment.Server.OnDispose];
