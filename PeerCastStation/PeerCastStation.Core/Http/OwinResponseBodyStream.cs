@@ -279,6 +279,7 @@ namespace PeerCastStation.Core.Http
 
       ResponseStream strm = new ResponseStreamWrapper(basestrm);
       if (encoding.HasFlag(OwinEnvironment.TransferEncoding.Chunked)) {
+        Environment.RemoveResponseHeader("Content-Length");
         await SendResponseHeaderAsync(cancellationToken).ConfigureAwait(false);
         strm = new ChunkedResponseStream(strm);
       }
