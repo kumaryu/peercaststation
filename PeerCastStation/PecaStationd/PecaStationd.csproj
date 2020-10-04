@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <OutputType>WinExe</OutputType>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
@@ -14,29 +14,14 @@
     <ApplicationIcon>..\peercaststation.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System.Configuration.Install" />
-    <Reference Include="System.ServiceProcess" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Update="PeerCastStationService.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Update="PeerCastStationService.cs" />
     <Compile Update="PeerCastStationService.Designer.cs">
       <DependentUpon>PeerCastStationService.cs</DependentUpon>
-    </Compile>
-    <Compile Update="ProjectInstaller.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="ProjectInstaller.Designer.cs">
-      <DependentUpon>ProjectInstaller.cs</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Update="PeerCastStationService.resx">
       <DependentUpon>PeerCastStationService.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Update="ProjectInstaller.resx">
-      <DependentUpon>ProjectInstaller.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
@@ -59,6 +44,6 @@
     <Content Include="..\peercaststation.ico" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Management" Version="4.7.0" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="4.7.0" />
   </ItemGroup>
 </Project>

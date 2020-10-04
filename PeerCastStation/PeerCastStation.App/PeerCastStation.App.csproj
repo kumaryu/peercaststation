@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <OutputType>Library</OutputType>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
@@ -19,16 +19,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\PeerCastStation.ASF\PeerCastStation.ASF.csproj" />
     <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj" />
-    <ProjectReference Include="..\PeerCastStation.CustomFilter\PeerCastStation.CustomFilter.csproj" />
-    <ProjectReference Include="..\PeerCastStation.FLV\PeerCastStation.FLV.csproj" />
-    <ProjectReference Include="..\PeerCastStation.HTTP\PeerCastStation.HTTP.csproj" />
-    <ProjectReference Include="..\PeerCastStation.MKV\PeerCastStation.MKV.csproj" />
-    <ProjectReference Include="..\PeerCastStation.PCP\PeerCastStation.PCP.csproj" />
-    <ProjectReference Include="..\PeerCastStation.TS\PeerCastStation.TS.csproj" />
-    <ProjectReference Include="..\PeerCastStation.UI.HTTP\PeerCastStation.UI.HTTP.csproj" />
-    <ProjectReference Include="..\PeerCastStation.UI\PeerCastStation.UI.csproj" />
-    <ProjectReference Include="..\PeerCastStation.WPF\PeerCastStation.WPF.csproj" />
   </ItemGroup>
 </Project>
