@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using System.Threading;
 
 namespace PeerCastStation.Core
@@ -175,14 +174,15 @@ namespace PeerCastStation.Core
     {
       if ((targets & LoggerOutputTarget.Console)!=0 &&
           (old     & LoggerOutputTarget.Console)==0) {
-        if (consoleListener==null) {
-          consoleListener = new ConsoleTraceListener(true);
+        if (consoleListener!=null) {
+          Trace.Listeners.Add(consoleListener);
         }
-        Trace.Listeners.Add(consoleListener);
       }
       if ((targets & LoggerOutputTarget.Console)==0 &&
           (old     & LoggerOutputTarget.Console)!=0) {
-        Trace.Listeners.Remove(consoleListener);
+        if (consoleListener!=null) {
+          Trace.Listeners.Remove(consoleListener);
+        }
       }
       if ((targets & LoggerOutputTarget.File)!=0 &&
           (old     & LoggerOutputTarget.File)==0) {
@@ -231,6 +231,20 @@ namespace PeerCastStation.Core
         case LogLevel.Debug: level = TraceLevel.Verbose; break;
         }
         generalSwitch.Level = level;
+      }
+    }
+
+    public static TextWriterTraceListener ConsoleWriter
+    {
+      get { return consoleListener; }
+      set {
+        if (outputTarget.HasFlag(LoggerOutputTarget.Console) && consoleListener!=null) {
+          Trace.Listeners.Remove(consoleListener);
+        }
+        consoleListener = value;
+        if (outputTarget.HasFlag(LoggerOutputTarget.Console) && consoleListener!=null) {
+          Trace.Listeners.Add(consoleListener);
+        }
       }
     }
 
