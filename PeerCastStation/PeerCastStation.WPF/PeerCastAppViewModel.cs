@@ -129,7 +129,11 @@ namespace PeerCastStation.WPF
           endpoint.Address.Equals(System.Net.IPAddress.IPv6Any) ?
           String.Format("localhost:{0}", endpoint.Port) :
           endpoint.ToString();
-        System.Diagnostics.Process.Start(String.Format("http://{0}/html/index.html", host));
+        System.Diagnostics.Process.Start(
+          new System.Diagnostics.ProcessStartInfo($"http://{host}/html/index.html") {
+            UseShellExecute = true,
+          }
+        );
       }
     }
 
@@ -147,7 +151,11 @@ namespace PeerCastStation.WPF
           endpoint.Address.Equals(System.Net.IPAddress.IPv6Any) ?
           String.Format("localhost:{0}", endpoint.Port) :
           endpoint.ToString();
-        System.Diagnostics.Process.Start(String.Format("http://{0}/help/index.html", host));
+        System.Diagnostics.Process.Start(
+          new System.Diagnostics.ProcessStartInfo($"http://{host}/help/index.html") {
+            UseShellExecute = true,
+          }
+        );
       }
     }
 

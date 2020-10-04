@@ -42,7 +42,7 @@ namespace PeerCastStation.WPF
     {
       InitializeComponent();
       this.OpenCommand = new Command(() => {
-        System.Diagnostics.Process.Start(this.Url);
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(this.Url) { UseShellExecute = true });
       }, () => !String.IsNullOrWhiteSpace(this.Url));
       this.CopyCommand = new Command(() => {
         try {
