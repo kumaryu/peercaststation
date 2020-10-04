@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <OutputType>Library</OutputType>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\PeerCastStation\</SolutionDir>
     <RestorePackages>true</RestorePackages>
@@ -332,7 +332,8 @@
     <PackageReference Include="es6-shim" Version="0.35.3" />
     <PackageReference Include="jQuery" Version="1.8.3" />
     <PackageReference Include="knockoutjs" Version="2.2.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="6.0.6" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="System.CodeDom" Version="4.7.0" />
     <PackageReference Include="Twitter.Bootstrap" Version="2.2.2" />
   </ItemGroup>
 </Project>
