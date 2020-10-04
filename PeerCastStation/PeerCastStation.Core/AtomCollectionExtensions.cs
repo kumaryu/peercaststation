@@ -16,11 +16,17 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Text;
 
 namespace PeerCastStation.Core
 {
   public static class AtomCollectionExtensions
   {
+    static AtomCollectionExtensions()
+    {
+      Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+    }
+
     public static int? GetIntFrom(IAtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
