@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:firewall="http://schemas.microsoft.com/wix/FirewallExtension"
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
   <Product Id="*"
       Name="PeerCastStation Service"
       Language="1041"
-      Version="!(bind.FileVersion.$(var.PecaStationd.TargetFileName))"
+      Codepage="932"
+      Version="!(bind.FileVersion.PecaStationd.exe)"
       Manufacturer="pecastation.org"
       UpgradeCode="5b0f0db9-4cd2-4640-8b49-5a8132d33ddf">
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
@@ -14,17 +16,7 @@
 
     <Feature Id="Service" Title="PeerCastStationサービス" Level="1" Absent="disallow" AllowAdvertise="no" ConfigurableDirectory="INSTALLFOLDER">
       <ComponentGroupRef Id="PecaStationd"/>
-      <ComponentGroupRef Id="PeerCastStation.App"/>
-      <ComponentGroupRef Id="PeerCastStation.Core"/>
-      <ComponentGroupRef Id="PeerCastStation.PCP"/>
-      <ComponentGroupRef Id="PeerCastStation.HTTP"/>
-      <ComponentGroupRef Id="PeerCastStation.ASF"/>
-      <ComponentGroupRef Id="PeerCastStation.FLV"/>
-      <ComponentGroupRef Id="PeerCastStation.MKV"/>
-      <ComponentGroupRef Id="PeerCastStation.UI"/>
-      <ComponentGroupRef Id="PeerCastStation.UI.HTTP"/>
-      <ComponentGroupRef Id="PeerCastStation.TS"/>
-      <ComponentGroupRef Id="PeerCastStation.CustomFilter"/>
+      <ComponentGroupRef Id="ProductComponents" />
     </Feature>
 
     <Feature Id="Menu" Title="プログラムメニューの追加" Level="1" AllowAdvertise="no">
@@ -47,6 +39,31 @@
     <CustomAction Id="OpenHTMLUIAction" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
     <UIRef Id="WixUI_MyMondo"/>
   </Product>
+
+  <Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="ProductComponent">
+        <File Id="PecaStationd.exe" Source="$(var.PecaStationd.TargetDir)\PecaStationd.exe" KeyPath="yes">
+          <firewall:FirewallException Id="PecaStationd.exe.firewall" Name="PeerCastStation Service" Scope="any" IgnoreFailure="yes"/>
+        </File>
+        <ServiceInstall Id="ServiceInstall"
+                        Type="ownProcess"
+                        Name="PeerCastStationService"
+                        DisplayName="PeerCastStation Service"
+                        Description="PeerCastStation Service"
+                        ErrorControl="normal"
+                        Start="auto"
+                        Interactive="no"
+                        Vital="yes"/>
+        <ServiceControl Id="StartService"
+                        Start="install"
+                        Stop="both"
+                        Remove="uninstall"
+                        Name="PeerCastStationService"
+                        Wait="yes"/>
+      </Component>
+    </ComponentGroup>
+  </Fragment>
 
   <Fragment>
     <Directory Id="TARGETDIR" Name="SourceDir">
