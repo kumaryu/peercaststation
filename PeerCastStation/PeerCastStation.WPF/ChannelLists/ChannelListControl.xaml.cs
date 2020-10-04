@@ -47,7 +47,13 @@ namespace PeerCastStation.WPF.ChannelLists
       var channel = ((ChannelListViewModel)DataContext).SelectedChannel;
       if (channel==null) return;
       var pls = channel.PlayListUri;
-      if (pls!=null) System.Diagnostics.Process.Start(pls.ToString());
+      if (pls!=null) {
+        System.Diagnostics.Process.Start(
+          new System.Diagnostics.ProcessStartInfo(pls.ToString()) {
+            UseShellExecute = true,
+          }
+        );
+      }
     }
 
     private void OnDisconnectExecuted(object sender, ExecutedRoutedEventArgs e)
@@ -70,7 +76,11 @@ namespace PeerCastStation.WPF.ChannelLists
       if (channel==null) return;
       var uri = channel.ContactUri;
       if (uri!=null && (uri.Scheme=="http" || uri.Scheme=="https")) {
-        System.Diagnostics.Process.Start(uri.ToString());
+        System.Diagnostics.Process.Start(
+          new System.Diagnostics.ProcessStartInfo(uri.ToString()) {
+            UseShellExecute = true,
+          }
+        );
       }
     }
 

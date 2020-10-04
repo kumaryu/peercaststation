@@ -139,7 +139,7 @@ namespace PeerCastStation.WPF.Dialogs
       switch (System.IO.Path.GetExtension(downloadPath).ToLowerInvariant()) {
       case ".msi":
       case ".exe":
-        Process.Start(downloadPath);
+        Process.Start(new ProcessStartInfo(downloadPath) { UseShellExecute = true });
         PeerCastApplication.Current.Stop();
         break;
       case ".zip":
