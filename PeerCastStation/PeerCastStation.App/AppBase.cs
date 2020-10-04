@@ -132,8 +132,21 @@ namespace PeerCastStation.App
         LoadPluginAssembly(System.Reflection.Assembly.GetEntryAssembly())
         .Concat(
           System.IO.Directory.GetFiles(BasePath, "*.dll")
-            .SelectMany(dll => LoadPluginAssembly(System.Reflection.Assembly.LoadFrom(dll)))
+            .SelectMany(dll => LoadPluginAssembly(dll))
         );
+    }
+
+    IEnumerable<Type> LoadPluginAssembly(string filename)
+    {
+      try {
+        return LoadPluginAssembly(System.Reflection.Assembly.LoadFrom(filename));
+      }
+      catch (BadImageFormatException) {
+        return Enumerable.Empty<Type>();
+      }
+      catch (System.IO.FileLoadException) {
+        return Enumerable.Empty<Type>();
+      }
     }
 
     IEnumerable<Type> LoadPluginAssembly(System.Reflection.Assembly asm)
@@ -157,6 +170,9 @@ namespace PeerCastStation.App
           PecaSettings.RegisterType(enumtype.FullName, enumtype);
         }
         return res;
+      }
+      catch (BadImageFormatException) {
+        return Enumerable.Empty<Type>();
       }
       catch (System.Reflection.ReflectionTypeLoadException) {
         return Enumerable.Empty<Type>();
