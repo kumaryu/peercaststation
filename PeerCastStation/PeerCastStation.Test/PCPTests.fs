@@ -250,7 +250,7 @@ module RelayClientConnection =
     let recvAtom connection =
         connection.response.stream.ReadAtom()
 
-    let sendAtom value connection =
+    let sendAtom (value:Atom) connection =
         connection.response.stream.Write(value)
 
 module RelaySinkTests =
@@ -474,7 +474,7 @@ module RelayServerConnection =
     let recvAtom connection =
         connection.request.stream.ReadAtom()
 
-    let sendAtom value connection =
+    let sendAtom (value:Atom) connection =
         connection.request.stream.Write(value)
 
 module RelaySourceTests =

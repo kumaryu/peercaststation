@@ -149,7 +149,12 @@ module PlayList =
                 sprintf "http://%s/pls/%s%s" (endpoint.ToString()) (channel.ChannelID.ToString("N")) postfix
                 |> WebRequest.CreateHttp
             req.AllowAutoRedirect <- false
-            let res = req.GetResponse() :?> HttpWebResponse
+            let res =
+                try
+                    req.GetResponse() :?> HttpWebResponse
+                with
+                | :? WebException as ex when ex.Response <> null ->
+                    ex.Response :?> HttpWebResponse
             Assert.Equal(HttpStatusCode.MovedPermanently, res.StatusCode)
             let hls = sprintf "http://%s/hls/%s%s" (endpoint.ToString()) (channel.ChannelID.ToString("N")) query
             Assert.Equal(hls, res.GetResponseHeader("Location"))
