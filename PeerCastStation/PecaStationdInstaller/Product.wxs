@@ -25,7 +25,6 @@
       <ComponentGroupRef Id="PeerCastStation.UI.HTTP"/>
       <ComponentGroupRef Id="PeerCastStation.TS"/>
       <ComponentGroupRef Id="PeerCastStation.CustomFilter"/>
-      <ComponentGroupRef Id="PeerCastStation.Updater"/>
     </Feature>
 
     <Feature Id="Menu" Title="プログラムメニューの追加" Level="1" AllowAdvertise="no">

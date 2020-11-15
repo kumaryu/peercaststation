@@ -5,27 +5,6 @@ using System.Reflection;
 
 namespace PeerCastStation.Main
 {
-  internal class TempDir
-    : IDisposable
-  {
-    public TempDir(string prefix)
-    {
-      string tmppath;
-      do {
-        tmppath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"{prefix}.{Guid.NewGuid()}");
-      } while (Directory.Exists(tmppath));
-      Directory.CreateDirectory(tmppath);
-      Path = tmppath;
-    }
-
-    public void Dispose()
-    {
-      Directory.Delete(Path, true);
-    }
-
-    public string Path { get; private set; }
-  }
-
   public class PeerCastStation
   {
     struct SubAppDescription
@@ -37,20 +16,6 @@ namespace PeerCastStation.Main
       AssemblyName = "PeerCastStation.App.dll",
       AppType      = "PeerCastStation.App.StandaloneApp",
     };
-    static readonly SubAppDescription UpdaterAppDesc = new SubAppDescription {
-      AssemblyName = "PeerCastStation.Updater.dll",
-      AppType      = "PeerCastStation.Updater.UpdaterApp",
-    };
-
-    static string ShellEscape(string arg)
-    {
-      if (arg.Contains(" ") && !arg.StartsWith("\"") && !arg.EndsWith("\"")) {
-        return "\"" + arg + "\"";
-      }
-      else {
-        return arg;
-      }
-    }
 
     static int ProcessMain(string basepath, string[] args)
     {
@@ -66,34 +31,25 @@ namespace PeerCastStation.Main
       return (int)result;
     }
 
-    static int ProcessUpdate(string basepath, string tmpdir, string[] args)
+    static readonly int MaxRetries = 10;
+
+    static int ProcessUpdate(string basepath, string sourcepath, string targetpath, string[] args)
     {
-      Directory.CreateDirectory(tmpdir);
-      var updateurl = new Uri(System.Configuration.ConfigurationManager.AppSettings["UpdateUrl"], UriKind.Absolute);
-      var updaterpath = Path.Combine(basepath, UpdaterAppDesc.AssemblyName);
-      var tmppath = Path.Combine(tmpdir, UpdaterAppDesc.AssemblyName);
-      File.Copy(updaterpath, tmppath, true);
-      var asm = Assembly.LoadFrom(tmppath);
-      var type = asm.GetType(UpdaterAppDesc.AppType);
-      var result = type.InvokeMember(
-        "Run",
-        BindingFlags.Public |
-        BindingFlags.Static |
-        BindingFlags.InvokeMethod,
-        null,
-        null,
-        new object[] { updateurl, tmpdir, basepath });
-      return (int)result;
+      global::PeerCastStation.UI.Updater.Update(sourcepath, targetpath);
+      global::PeerCastStation.UI.Updater.StartCleanup(targetpath, sourcepath, args);
+      return 0;
     }
 
-    static int InvokeApp(string method, params string[] args)
+    static int ProcessInstall(string basepath, string zipfile, string[] args)
     {
-      var proc = System.Diagnostics.Process.Start(
-        Assembly.GetEntryAssembly().Location,
-        String.Join(" ", Enumerable.Repeat(method, 1).Concat(args).Select(ShellEscape))
-      );
-      proc.WaitForExit();
-      return proc.ExitCode;
+      global::PeerCastStation.UI.Updater.Install(zipfile);
+      return 0;
+    }
+
+    static int ProcessCleanup(string basepath, string tmppath, string[] args)
+    {
+      global::PeerCastStation.UI.Updater.Cleanup(tmppath);
+      return ProcessMain(basepath, args);
     }
 
     [STAThread]
@@ -104,26 +60,31 @@ namespace PeerCastStation.Main
         switch (args[0]) {
         case "main":
           return ProcessMain(basepath, args.Skip(1).ToArray());
-        case "update":
+        case "install":
           if (args.Length<2) {
-            Console.WriteLine("USAGE: PeerCastStation.exe update TMPPATH");
+            Console.WriteLine("USAGE: PeerCastStation.exe install ZIPFILE");
             return 1;
           }
-          return ProcessUpdate(basepath, args[1], args.Skip(2).ToArray());
+          return ProcessInstall(basepath, args[1], args.Skip(2).ToArray());
+        case "update":
+          if (args.Length<3) {
+            Console.WriteLine("USAGE: PeerCastStation.exe update SOURCEPATH TARGETPATH");
+            return 1;
+          }
+          return ProcessUpdate(basepath, args[1], args[2], args.Skip(3).ToArray());
+        case "cleanup":
+          if (args.Length<2) {
+            Console.WriteLine("USAGE: PeerCastStation.exe cleanup TARGETPATH");
+            return 1;
+          }
+          return ProcessCleanup(basepath, args[1], args.Skip(2).ToArray());
+        default:
+          return ProcessMain(basepath, args);
         }
       }
-
-      int appresult;
-      do {
-        appresult = InvokeApp("main", new string[] { $"--linkPID={System.Diagnostics.Process.GetCurrentProcess().Id}" }.Concat(args).ToArray());
-        if (appresult==3) {
-          using (var tmpdir=new TempDir("PeerCastStation.Updater")) {
-            var updateresult = InvokeApp("update", tmpdir.Path);
-            if (updateresult!=0) return updateresult;
-          }
-        }
-      } while (appresult==3);
-      return appresult;
+      else {
+        return ProcessMain(basepath, args);
+      }
     }
 
   }

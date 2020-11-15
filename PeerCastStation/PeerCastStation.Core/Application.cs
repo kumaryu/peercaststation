@@ -21,6 +21,7 @@ namespace PeerCastStation.Core
     public abstract IEnumerable<IPlugin> Plugins { get; }
     public abstract PeerCast PeerCast { get; }
     public abstract string BasePath { get; }
+    public abstract string[] Args { get; }
     public abstract void Stop(int exit_code);
     public void Stop()
     {
