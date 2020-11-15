@@ -47,7 +47,6 @@
     <ProjectReference Include="..\PeerCastStation.TS\PeerCastStation.TS.csproj" />
     <ProjectReference Include="..\PeerCastStation.UI.HTTP\PeerCastStation.UI.HTTP.csproj" />
     <ProjectReference Include="..\PeerCastStation.UI\PeerCastStation.UI.csproj" />
-    <ProjectReference Include="..\PeerCastStation.Updater\PeerCastStation.Updater.csproj" />
     <ProjectReference Include="..\PeerCastStation.WPF\PeerCastStation.WPF.csproj" />
   </ItemGroup>
   <ItemGroup>

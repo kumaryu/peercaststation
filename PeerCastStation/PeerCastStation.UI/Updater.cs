@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -108,10 +111,6 @@ namespace PeerCastStation.UI
     public static async Task<DownloadResult> DownloadAsync(VersionDescription version, Action<float> onprogress, CancellationToken ct)
     {
       var enclosure = version.Enclosures.First(e => e.InstallerType==Updater.CurrentInstallerType);
-      if (Updater.CurrentInstallerType==InstallerType.Archive || 
-          Updater.CurrentInstallerType==InstallerType.ServiceArchive) {
-        return new DownloadResult(null, version, enclosure);
-      }
       using (var client = new System.Net.WebClient())
       using (ct.Register(() => client.CancelAsync(), false)) {
         if (onprogress!=null) {
@@ -128,20 +127,78 @@ namespace PeerCastStation.UI
       }
     }
 
+    private static string CreateTempPath(string prefix)
+    {
+      string tmppath;
+      do {
+        tmppath = Path.Combine(Path.GetTempPath(), $"{prefix}.{Guid.NewGuid()}");
+      } while (Directory.Exists(tmppath));
+      Directory.CreateDirectory(tmppath);
+      return tmppath;
+    }
+
+    static string FindRootDirectory(string path)
+    {
+      var dir = new DirectoryInfo(path);
+      var entries = dir.GetFileSystemInfos();
+      if (entries.Length==1 && entries[0] is DirectoryInfo) {
+        return FindRootDirectory(entries[0].FullName);
+      }
+      else {
+        return dir.FullName;
+      }
+    }
+
+    static string GetProcessEntryFile()
+    {
+      var entry = System.Reflection.Assembly.GetEntryAssembly().Location;
+      if (Path.GetExtension(entry).ToLowerInvariant()==".dll") {
+        //たぶん.NET Core以降
+        return Process.GetCurrentProcess().MainModule.FileName;
+      }
+      else {
+        //実行ファイル
+        return entry;
+      }
+    }
+
+    private static string ShellEscape(string arg)
+    {
+      if ((arg.Contains(" ") || arg.Contains("\"")) && !arg.StartsWith("\"") && !arg.EndsWith("\"")) {
+        return "\"" + arg.Replace("\"", "\\\"") + "\"";
+      }
+      else {
+        return arg;
+      }
+    }
+
+    private static void StartNewSelf(string exepath, string[] additionalArgs, params string[] args)
+    {
+      var exefile = Path.Combine(FindRootDirectory(exepath), Path.GetFileName(GetProcessEntryFile()));
+      var combinedArgs = String.Join(" ", args.Select(arg => ShellEscape(arg)).Concat(additionalArgs));
+      Process.Start(exefile, combinedArgs);
+    }
+
     public static bool Install(DownloadResult downloaded)
     {
       try {
         switch (downloaded.Enclosure.InstallerType) {
         case InstallerType.Archive:
         case InstallerType.ServiceArchive:
-          PeerCastApplication.Current.Stop(3);
+          {
+            var tmpdir = CreateTempPath("PeerCastStation.Updater");
+            ZipFile.ExtractToDirectory(downloaded.FilePath, tmpdir);
+            var appdir = Path.GetDirectoryName(GetProcessEntryFile());
+            StartUpdate(tmpdir, appdir, PeerCastApplication.Current?.Args ?? new string[0]);
+          }
+          PeerCastApplication.Current.Stop();
           break;
         case InstallerType.Installer:
-          System.Diagnostics.Process.Start(downloaded.FilePath);
+          Process.Start(downloaded.FilePath);
           PeerCastApplication.Current.Stop();
           break;
         case InstallerType.ServiceInstaller:
-          System.Diagnostics.Process.Start(downloaded.FilePath, "/quiet");
+          Process.Start(downloaded.FilePath, "/quiet");
           break;
         case InstallerType.Unknown:
           throw new ApplicationException();
@@ -151,6 +208,117 @@ namespace PeerCastStation.UI
       catch (Exception) {
         return false;
       }
+
+    }
+
+    private static void DeleteEntry(DirectoryInfo dir, bool dryrun)
+    {
+      System.Diagnostics.Debug.WriteLine($"Removing Directory: {dir.FullName}");
+      if (!dryrun) {
+          dir.Delete(true);
+      }
+    }
+
+    private static void DeleteEntry(FileInfo file, bool dryrun)
+    {
+      System.Diagnostics.Debug.WriteLine($"Removing File: {file.FullName}");
+      if (!dryrun) {
+          file.Delete();
+      }
+    }
+
+    private static readonly int MaxRetries = 10;
+    private static void CleanupTree(string path, bool removeself, bool dryrun)
+    {
+      var dst = new DirectoryInfo(path);
+      if (!dst.Exists) return;
+      int trying = 0;
+    retry:
+      try {
+        if (removeself) {
+          DeleteEntry(dst, dryrun);
+        }
+        else {
+          foreach (var ent in dst.GetFileSystemInfos()) {
+            switch (ent) {
+            case DirectoryInfo dir:
+              DeleteEntry(dir, dryrun);
+              break;
+            case FileInfo file:
+              DeleteEntry(file, dryrun);
+              break;
+            }
+          }
+        }
+      }
+      catch (UnauthorizedAccessException) {
+        if (trying++<MaxRetries) {
+          System.Threading.Thread.Sleep(1000*trying);
+          goto retry;
+        }
+        else {
+          throw;
+        }
+      }
+      catch (IOException) {
+        if (trying++<MaxRetries) {
+          System.Threading.Thread.Sleep(1000*trying);
+          goto retry;
+        }
+        else {
+          throw;
+        }
+      }
+    }
+
+    private static void CopyTree(string srcpath, string dstpath)
+    {
+      CleanupTree(dstpath, false, false);
+      var dst = new DirectoryInfo(dstpath);
+      dst.Create();
+      var src = new DirectoryInfo(srcpath);
+      foreach (var ent in src.GetFileSystemInfos()) {
+        switch (ent) {
+        case DirectoryInfo dir:
+          {
+            var dstdir = Path.Combine(dstpath, dir.Name);
+            CopyTree(dir.FullName, dstdir);
+          }
+          break;
+        case FileInfo file:
+          {
+            var dstfile = Path.Combine(dstpath, file.Name);
+            file.CopyTo(dstfile, true);
+          }
+          break;
+        }
+      }
+    }
+
+    public static void Update(string sourcepath, string targetpath)
+    {
+      Directory.CreateDirectory(targetpath);
+      CopyTree(FindRootDirectory(sourcepath), targetpath);
+    }
+
+    public static void StartUpdate(string sourcepath, string targetpath, string[] additionalArgs)
+    {
+      StartNewSelf(sourcepath, additionalArgs, "update", sourcepath, targetpath);
+    }
+
+    public static void Install(string zipfile)
+    {
+      Install(new Updater.DownloadResult(zipfile, new VersionDescription(), new VersionEnclosure { InstallerType=InstallerType.Archive }));
+    }
+
+    public static void Cleanup(string tmppath)
+    {
+      CleanupTree(tmppath, true, false);
+    }
+
+    public static void StartCleanup(string targetpath, string tmppath, string[] additionalArgs)
+    {
+      StartNewSelf(targetpath, additionalArgs, "cleanup", tmppath);
     }
 
     public event NewVersionFoundEventHandler NewVersionFound;

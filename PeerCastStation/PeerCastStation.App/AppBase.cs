@@ -30,6 +30,8 @@ namespace PeerCastStation.App
       get { return basePath; }
     }
 
+    public override string[] Args { get; }
+
     private static readonly OptionParser optionParser = new OptionParser {
       {"--settings", "-s", OptionArg.Required },
       {"--linkPID", null, OptionArg.Required },
@@ -39,6 +41,7 @@ namespace PeerCastStation.App
 
     public AppBase(string basepath, string[] args)
     {
+      Args = args;
       basePath = basepath;
       var opts = optionParser.Parse(args);
       var optSettings = opts.FirstOrDefault(opt => opt.LongName=="--settings");
