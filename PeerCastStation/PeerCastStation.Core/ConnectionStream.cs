@@ -29,24 +29,30 @@ namespace PeerCastStation.Core
     {
       readBuffer.WriteTimeout = Timeout.Infinite;
       var buf = new byte[64*1024];
-      var cts = closedCancelSource;
+      var ct = closedCancelSource.Token;
+      var canceledTask = new TaskCompletionSource<int>();
       try {
-        var len = await s.ReadAsync(buf, 0, buf.Length, cts.Token).ConfigureAwait(false);
-        while (len>0) {
-          await readBuffer.WriteAsync(buf, 0, len, cts.Token).ConfigureAwait(false);
-          len = await s.ReadAsync(buf, 0, buf.Length, cts.Token).ConfigureAwait(false);
+        using (ct.Register(() => canceledTask.SetCanceled())) {
+          var completed = await Task.WhenAny(s.ReadAsync(buf, 0, buf.Length, ct), canceledTask.Task).ConfigureAwait(false);
+          var len = await completed.ConfigureAwait(false);
+          while (len>0) {
+            await readBuffer.WriteAsync(buf, 0, len, ct).ConfigureAwait(false);
+            completed = await Task.WhenAny(s.ReadAsync(buf, 0, buf.Length, ct), canceledTask.Task).ConfigureAwait(false);
+            len = await completed.ConfigureAwait(false);
+          }
         }
         socket.Shutdown(SocketShutdown.Receive);
       }
       catch (OperationCanceledException) {
+        socket.Shutdown(SocketShutdown.Receive);
       }
       catch (IOException) {
-        if (!cts.IsCancellationRequested) {
+        if (!ct.IsCancellationRequested) {
           throw;
         }
       }
       catch (ObjectDisposedException) {
-        if (!cts.IsCancellationRequested) {
+        if (!ct.IsCancellationRequested) {
           throw;
         }
       }
