@@ -69,6 +69,11 @@ namespace PeerCastStation.UI
       return result;
     }
 
+    private InstallerPlatform GetInstallerPlatformValue(XAttribute src)
+    {
+      return Updater.ParsePlatformString(src?.Value ?? "unknown");
+    }
+
     private Uri GetUriValue(XElement src)
     {
       Uri result = null;
@@ -123,6 +128,7 @@ namespace PeerCastStation.UI
                 Type   = GetStringValue(elt.Attribute("type")),
                 Title  = GetStringValue(elt),
                 InstallerType = GetInstallerTypeValue(elt.Attribute("installer-type")),
+                InstallerPlatform = GetInstallerPlatformValue(elt.Attribute("installer-platform")),
               }
             ).ToArray(),
           };

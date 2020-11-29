@@ -6,26 +6,42 @@ using System.IO.Compression;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 using PeerCastStation.Core;
 
 namespace PeerCastStation.UI
 {
-	public enum InstallerType {
-		Unknown   = 0,
-		Installer,
-		Archive,
-		ServiceInstaller,
-		ServiceArchive,
-	}
+  public enum InstallerType {
+    Unknown   = 0,
+    Installer,
+    Archive,
+    ServiceInstaller,
+    ServiceArchive,
+  }
 
-	public class VersionEnclosure
-	{
-		public string Title  { get; set; }
-		public long   Length { get; set; }
-		public string Type   { get; set; }
-		public Uri    Url    { get; set; }
-		public InstallerType InstallerType { get; set; }
-	}
+  public enum InstallerPlatform {
+    Unknown = 0,
+    Any,
+    WindowsX86,
+    WindowsX64,
+    WindowsArm,
+    WindowsArm64,
+    LinuxX64,
+    LinuxMUSLX64,
+    LinuxArm,
+    LinuxArm64,
+    MacX64,
+  }
+
+  public class VersionEnclosure
+  {
+    public string Title  { get; set; }
+    public long   Length { get; set; }
+    public string Type   { get; set; }
+    public Uri    Url    { get; set; }
+    public InstallerType InstallerType { get; set; }
+    public InstallerPlatform InstallerPlatform { get; set; }
+  }
 
   public class VersionDescription
   {
@@ -57,15 +73,96 @@ namespace PeerCastStation.UI
       this.currentVersion = AppSettingsReader.GetDate("CurrentVersion", DateTime.Today);
     }
 
-		public static InstallerType CurrentInstallerType {
-			get {
-				InstallerType result;
-				if (!Enum.TryParse<InstallerType>(AppSettingsReader.GetString("InstallerType", "unknwon"), true, out result)) {
-					return InstallerType.Unknown;
-				}
-				return result;
-			}
-		}
+    public static InstallerType CurrentInstallerType {
+      get {
+        InstallerType result;
+        if (!Enum.TryParse(AppSettingsReader.GetString("InstallerType", "unknown"), true, out result)) {
+          return InstallerType.Unknown;
+        }
+        return result;
+      }
+    }
+
+    public static InstallerPlatform ParsePlatformString(string value)
+    {
+      switch (value.ToLowerInvariant()) {
+      case "any":
+        return InstallerPlatform.Any;
+      case "windows-x86":
+        return InstallerPlatform.WindowsX86;
+      case "windows-x64":
+        return InstallerPlatform.WindowsX64;
+      case "windows-arm":
+        return InstallerPlatform.WindowsArm;
+      case "windows-arm64":
+        return InstallerPlatform.WindowsArm64;
+      case "linux-x64":
+        return InstallerPlatform.LinuxX64;
+      case "linux-musl-x64":
+        return InstallerPlatform.LinuxMUSLX64;
+      case "linux-arm":
+        return InstallerPlatform.LinuxArm;
+      case "linux-arm64":
+        return InstallerPlatform.LinuxArm64;
+      case "osx-x64":
+        return InstallerPlatform.MacX64;
+      case "unknown":
+      default:
+        return InstallerPlatform.Unknown;
+      }
+    }
+
+    public static InstallerPlatform CurrentInstallerPlatform {
+      get {
+        var platform = ParsePlatformString(AppSettingsReader.GetString("InstallerPlatform", "unknown"));
+        if (platform==InstallerPlatform.Unknown) {
+          if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+            switch (RuntimeInformation.ProcessArchitecture) {
+            case Architecture.X86:
+              return InstallerPlatform.WindowsX86;
+            case Architecture.X64:
+              return InstallerPlatform.WindowsX64;
+            case Architecture.Arm:
+              return InstallerPlatform.WindowsX86;
+            case Architecture.Arm64:
+              return InstallerPlatform.WindowsArm64;
+            default:
+              return InstallerPlatform.Unknown;
+            }
+          }
+          else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+            switch (RuntimeInformation.ProcessArchitecture) {
+            case Architecture.X64:
+              return InstallerPlatform.LinuxX64;
+            case Architecture.Arm:
+              return InstallerPlatform.LinuxArm;
+            case Architecture.Arm64:
+              return InstallerPlatform.LinuxArm64;
+            case Architecture.X86:
+            default:
+              return InstallerPlatform.Unknown;
+            }
+          }
+          else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+            switch (RuntimeInformation.ProcessArchitecture) {
+            case Architecture.X64:
+              return InstallerPlatform.MacX64;
+            case Architecture.Arm:
+            case Architecture.Arm64:
+            case Architecture.X86:
+            default:
+              return InstallerPlatform.Unknown;
+            }
+          }
+          else {
+            return InstallerPlatform.Unknown;
+          }
+        }
+        else {
+          return platform;
+        }
+      }
+    }
 
 		public async Task<IEnumerable<VersionDescription>> CheckVersionTaskAsync(CancellationToken cancel_token)
 		{
@@ -108,9 +205,28 @@ namespace PeerCastStation.UI
       }
     }
 
+    private static VersionEnclosure SelectEnclocure(VersionEnclosure[] enclosures, InstallerType type, InstallerPlatform platform)
+    {
+      var enclosure = enclosures.FirstOrDefault(e => e.InstallerType==type && e.InstallerPlatform==platform);
+      if (enclosure!=null) {
+        return enclosure;
+      }
+      switch (platform) {
+      case InstallerPlatform.WindowsArm:
+      case InstallerPlatform.WindowsArm64:
+        return SelectEnclocure(enclosures, type, InstallerPlatform.WindowsX86);
+      case InstallerPlatform.Any:
+        return SelectEnclocure(enclosures, type, InstallerPlatform.Unknown);
+      case InstallerPlatform.Unknown:
+        return enclosures.First(e => e.InstallerType==type && e.InstallerPlatform==InstallerPlatform.Any);
+      default:
+        return SelectEnclocure(enclosures, type, InstallerPlatform.Any);
+      }
+    }
+
     public static async Task<DownloadResult> DownloadAsync(VersionDescription version, Action<float> onprogress, CancellationToken ct)
     {
-      var enclosure = version.Enclosures.First(e => e.InstallerType==Updater.CurrentInstallerType);
+      var enclosure = SelectEnclocure(version.Enclosures, CurrentInstallerType, CurrentInstallerPlatform);
       using (var client = new System.Net.WebClient())
       using (ct.Register(() => client.CancelAsync(), false)) {
         if (onprogress!=null) {

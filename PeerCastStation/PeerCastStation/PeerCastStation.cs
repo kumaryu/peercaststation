@@ -31,24 +31,22 @@ namespace PeerCastStation.Main
       return (int)result;
     }
 
-    static readonly int MaxRetries = 10;
-
     static int ProcessUpdate(string basepath, string sourcepath, string targetpath, string[] args)
     {
-      global::PeerCastStation.UI.Updater.Update(sourcepath, targetpath);
-      global::PeerCastStation.UI.Updater.StartCleanup(targetpath, sourcepath, args);
+      UI.Updater.Update(sourcepath, targetpath);
+      UI.Updater.StartCleanup(targetpath, sourcepath, args);
       return 0;
     }
 
     static int ProcessInstall(string basepath, string zipfile, string[] args)
     {
-      global::PeerCastStation.UI.Updater.Install(zipfile);
+      UI.Updater.Install(zipfile);
       return 0;
     }
 
     static int ProcessCleanup(string basepath, string tmppath, string[] args)
     {
-      global::PeerCastStation.UI.Updater.Cleanup(tmppath);
+      UI.Updater.Cleanup(tmppath);
       return ProcessMain(basepath, args);
     }
 
