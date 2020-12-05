@@ -27,10 +27,13 @@ namespace PeerCastStation.UI
     WindowsArm,
     WindowsArm64,
     LinuxX64,
-    LinuxMUSLX64,
+    LinuxMuslX64,
     LinuxArm,
+    LinuxMuslArm,
     LinuxArm64,
+    LinuxMuslArm64,
     MacX64,
+    MacArm64,
   }
 
   public class VersionEnclosure
@@ -88,24 +91,30 @@ namespace PeerCastStation.UI
       switch (value.ToLowerInvariant()) {
       case "any":
         return InstallerPlatform.Any;
-      case "windows-x86":
+      case "win-x86":
         return InstallerPlatform.WindowsX86;
-      case "windows-x64":
+      case "win-x64":
         return InstallerPlatform.WindowsX64;
-      case "windows-arm":
+      case "win-arm":
         return InstallerPlatform.WindowsArm;
-      case "windows-arm64":
+      case "win-arm64":
         return InstallerPlatform.WindowsArm64;
       case "linux-x64":
         return InstallerPlatform.LinuxX64;
       case "linux-musl-x64":
-        return InstallerPlatform.LinuxMUSLX64;
+        return InstallerPlatform.LinuxMuslX64;
       case "linux-arm":
         return InstallerPlatform.LinuxArm;
+      case "linux-musl-arm":
+        return InstallerPlatform.LinuxMuslArm;
       case "linux-arm64":
         return InstallerPlatform.LinuxArm64;
+      case "linux-musl-arm64":
+        return InstallerPlatform.LinuxMuslArm64;
       case "osx-x64":
         return InstallerPlatform.MacX64;
+      case "osx-arm64":
+        return InstallerPlatform.MacArm64;
       case "unknown":
       default:
         return InstallerPlatform.Unknown;
@@ -147,8 +156,9 @@ namespace PeerCastStation.UI
             switch (RuntimeInformation.ProcessArchitecture) {
             case Architecture.X64:
               return InstallerPlatform.MacX64;
-            case Architecture.Arm:
             case Architecture.Arm64:
+              return InstallerPlatform.MacArm64;
+            case Architecture.Arm:
             case Architecture.X86:
             default:
               return InstallerPlatform.Unknown;
@@ -205,7 +215,7 @@ namespace PeerCastStation.UI
       }
     }
 
-    private static VersionEnclosure SelectEnclocure(VersionEnclosure[] enclosures, InstallerType type, InstallerPlatform platform)
+    public static VersionEnclosure SelectEnclosure(VersionEnclosure[] enclosures, InstallerType type, InstallerPlatform platform)
     {
       var enclosure = enclosures.FirstOrDefault(e => e.InstallerType==type && e.InstallerPlatform==platform);
       if (enclosure!=null) {
@@ -214,19 +224,19 @@ namespace PeerCastStation.UI
       switch (platform) {
       case InstallerPlatform.WindowsArm:
       case InstallerPlatform.WindowsArm64:
-        return SelectEnclocure(enclosures, type, InstallerPlatform.WindowsX86);
+        return SelectEnclosure(enclosures, type, InstallerPlatform.WindowsX86);
       case InstallerPlatform.Any:
-        return SelectEnclocure(enclosures, type, InstallerPlatform.Unknown);
+        return SelectEnclosure(enclosures, type, InstallerPlatform.Unknown);
       case InstallerPlatform.Unknown:
         return enclosures.First(e => e.InstallerType==type && e.InstallerPlatform==InstallerPlatform.Any);
       default:
-        return SelectEnclocure(enclosures, type, InstallerPlatform.Any);
+        return SelectEnclosure(enclosures, type, InstallerPlatform.Any);
       }
     }
 
     public static async Task<DownloadResult> DownloadAsync(VersionDescription version, Action<float> onprogress, CancellationToken ct)
     {
-      var enclosure = SelectEnclocure(version.Enclosures, CurrentInstallerType, CurrentInstallerPlatform);
+      var enclosure = SelectEnclosure(version.Enclosures, CurrentInstallerType, CurrentInstallerPlatform);
       using (var client = new System.Net.WebClient())
       using (ct.Register(() => client.CancelAsync(), false)) {
         if (onprogress!=null) {
