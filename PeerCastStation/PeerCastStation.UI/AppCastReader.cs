@@ -8,22 +8,24 @@ using System.Threading;
 
 namespace PeerCastStation.UI
 {
-  internal class AppCastReader
+  public class AppCastReader
   {
-    private WebClient client;
-    private Action<IEnumerable<VersionDescription>> downloaded;
     public AppCastReader()
     {
-      this.client = new WebClient();
-      this.client.Headers.Add(HttpRequestHeader.AcceptEncoding, "deflate, gzip");
-      this.client.DownloadDataCompleted += OnDownloadDataCompleted;
     }
 
     public bool DownloadVersionInfoAsync(Uri source, Action<IEnumerable<VersionDescription>> handler)
     {
-      if (this.client.IsBusy) return false;
-      this.downloaded = handler;
-      this.client.DownloadDataAsync(source);
+      var client = new WebClient();
+      client.Headers.Add(HttpRequestHeader.AcceptEncoding, "deflate, gzip");
+      client.DownloadDataCompleted += (sender, args) => {
+        if (args.Cancelled || args.Error!=null) return;
+        var result = ParseResponse(client.ResponseHeaders, args.Result);
+        if (result.Count()>0) {
+          handler?.Invoke(result);
+        }
+      };
+      client.DownloadDataAsync(source);
       return true;
     }
 
@@ -110,7 +112,7 @@ namespace PeerCastStation.UI
       return result;
     }
 
-    private IEnumerable<VersionDescription> ParseAppCast(string data)
+    public IEnumerable<VersionDescription> ParseAppCastString(string data)
     {
       var doc = XDocument.Parse(data);
       var versions = new List<VersionDescription>();
@@ -163,16 +165,7 @@ namespace PeerCastStation.UI
       default:
         break;
       }
-      return ParseAppCast(System.Text.Encoding.UTF8.GetString(body));
-    }
-
-    private void OnDownloadDataCompleted(object sender, DownloadDataCompletedEventArgs args)
-    {
-      if (args.Cancelled || args.Error!=null) return;
-      var result = ParseResponse(this.client.ResponseHeaders, args.Result);
-      if (result.Count()>0 && downloaded!=null) {
-        downloaded(result);
-      }
+      return ParseAppCastString(System.Text.Encoding.UTF8.GetString(body));
     }
 
   }
