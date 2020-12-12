@@ -86,6 +86,9 @@ namespace PeerCastStation.UI.HTTP
         else                  status = "RECEIVE";
         break;
       }
+      var contents = c.Contents;
+      var buffersBytes = contents.Sum(cc => cc.Data.Length);
+      var buffersDuration = ((contents.Newest?.Timestamp ?? TimeSpan.Zero) - (contents.Oldest?.Timestamp ?? TimeSpan.Zero)).TotalSeconds;
       return new XElement("channel",
         new XAttribute("id",      c.ChannelID.ToString("N").ToUpper()),
         new XAttribute("name",    c.ChannelInfo.Name ?? ""),
@@ -104,7 +107,12 @@ namespace PeerCastStation.UI.HTTP
           new XAttribute("listeners", c.LocalDirects),
           new XAttribute("relays",    c.LocalRelays),
           new XAttribute("hosts",     c.Nodes.Count),
-          new XAttribute("status",    status)),
+          new XAttribute("status",    status),
+          new XElement("buffer",
+            new XAttribute("bytes",    buffersBytes),
+            new XAttribute("duration", buffersDuration)
+          )
+        ),
         new XElement("track", 
           new XAttribute("title",   c.ChannelTrack.Name ?? ""),
           new XAttribute("album",   c.ChannelTrack.Album ?? ""),
