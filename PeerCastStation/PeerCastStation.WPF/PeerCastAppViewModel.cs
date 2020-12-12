@@ -18,7 +18,6 @@ using System.Linq;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.ChannelLists;
 using PeerCastStation.WPF.Commons;
-using PeerCastStation.WPF.CoreSettings;
 using PeerCastStation.WPF.Dialogs;
 using PeerCastStation.WPF.Logs;
 using System.Windows;
@@ -30,6 +29,8 @@ namespace PeerCastStation.WPF
   {
     private readonly PeerCastApplication application;
     public PeerCastApplication Model { get { return application; } }
+
+    public string WindowTitle { get; private set; }
 
     private string GetPortStatus(AddressFamily family)
     {
@@ -77,12 +78,16 @@ namespace PeerCastStation.WPF
       get { return new VersionInfoViewModel(application); }
     }
 
+    private readonly WPFSettings settings;
+
     internal PeerCastAppViewModel(PeerCastApplication application)
     {
       this.application = application;
+      settings = application.Settings.Get<WPFSettings>();
       var peerCast = application.PeerCast;
       channelList = new ChannelListViewModel(peerCast);
       peerCast.AddChannelMonitor(this);
+      WindowTitle = CreateWindowTitle();
     }
 
     public void Dispose()
@@ -95,6 +100,7 @@ namespace PeerCastStation.WPF
     {
       OnPropertyChanged("PortStatus");
       channelList.UpdateChannelList();
+      UpdateWindowTitle();
       log.UpdateLog();
     }
 
@@ -150,5 +156,51 @@ namespace PeerCastStation.WPF
       application.Stop();
     }
 
+    private string CreateWindowTitle()
+    {
+      switch (settings.WindowTitleMode) {
+      case WindowTitleMode.Simple:
+        return System.Text.RegularExpressions.Regex.Replace(application.PeerCast.AgentName, "/.*", "");
+      case WindowTitleMode.Version:
+        return application.PeerCast.AgentName;
+      case WindowTitleMode.ChannelStats:
+        var cnt = application.PeerCast.Channels.Count;
+        var (localDirects, localRelays, totalDirects, totalRelays) = 
+          application.PeerCast.Channels
+          .Aggregate((0, 0, 0, 0), (r, c) =>
+            (r.Item1 + c.LocalDirects, r.Item2 + c.LocalRelays, r.Item3 + c.TotalDirects, r.Item4 + c.TotalRelays)
+          );
+        return $"{cnt}ch ({totalDirects}/{totalRelays}) [{localDirects}/{localRelays}]";
+      default:
+        return "";
+      }
+    }
+
+    private WindowTitleMode lastWindowTitleMode = WindowTitleMode.Simple;
+    private void UpdateWindowTitle()
+    {
+      switch (settings.WindowTitleMode) {
+      case WindowTitleMode.Simple:
+        if (lastWindowTitleMode!=settings.WindowTitleMode) {
+          WindowTitle = CreateWindowTitle();
+          OnPropertyChanged(nameof(WindowTitle));
+          lastWindowTitleMode = settings.WindowTitleMode;
+        }
+        break;
+      case WindowTitleMode.Version:
+        if (lastWindowTitleMode!=settings.WindowTitleMode) {
+          WindowTitle = CreateWindowTitle();
+          OnPropertyChanged(nameof(WindowTitle));
+        }
+        break;
+      case WindowTitleMode.ChannelStats:
+        WindowTitle = CreateWindowTitle();
+        OnPropertyChanged(nameof(WindowTitle));
+        break;
+      }
+      lastWindowTitleMode = settings.WindowTitleMode;
+    }
+
   }
+
 }

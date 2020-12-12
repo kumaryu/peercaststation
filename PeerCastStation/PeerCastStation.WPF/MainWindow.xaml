@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         xmlns:l="clr-namespace:PeerCastStation.WPF.Logs"
         xmlns:lc="clr-namespace:PeerCastStation.WPF.CoreSettings"
         xmlns:lb="clr-namespace:PeerCastStation.WPF.ChannelLists"
-        Title="PeerCastStation" Height="600" Width="460" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+        Title="{Binding WindowTitle}" Height="600" Width="460" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
   <DockPanel>
     <Menu DockPanel.Dock="Top">
       <MenuItem Header="ファイル(_F)">
