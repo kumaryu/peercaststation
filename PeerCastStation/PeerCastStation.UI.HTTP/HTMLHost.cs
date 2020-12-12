@@ -94,6 +94,52 @@ namespace PeerCastStation.UI.HTTP
 
     }
 
+    private static string BuildIndexTXTEntry(PeerCast peercast, Channel channel)
+    {
+      var endpoint = peercast.GetGlobalEndPoint(channel.NetworkAddressFamily, OutputStreamType.Play);
+      var enc_channel_name = Uri.EscapeDataString(channel.ChannelInfo.Name);
+      var columns = new string[] {
+        channel.ChannelInfo.Name,  //1 CHANNEL_NAME チャンネル名
+        channel.ChannelID.ToString("N").ToUpperInvariant(),  //2 ID ID ユニーク値16進数32桁、制限チャンネルは全て0埋め
+        endpoint.ToString(),  //3 TIP TIP ポートも含む。Push配信時はブランク、制限チャンネルは127.0.0.1
+        channel.ChannelInfo.URL, //4 CONTACT_URL コンタクトURL 基本的にURL、任意の文字列も可 CONTACT_URL
+        channel.ChannelInfo.Genre, //5 GENRE ジャンル
+        channel.ChannelInfo.Desc, //6 DETAIL 詳細
+        channel.TotalDirects.ToString(),  //7 LISTENER_NUM Listener数 -1は非表示、-1未満はサーバのメッセージ。ブランクもあるかも
+        channel.TotalRelays.ToString(), //8 RELAY_NUM Relay数 同上 
+        channel.ChannelInfo.Bitrate.ToString(),  //9 BITRATE Bitrate 単位は kbps 
+        channel.ChannelInfo.ContentType,  //10 TYPE Type たぶん大文字 
+        channel.ChannelTrack.Creator, //11 TRACK_ARTIST トラック アーティスト 
+        channel.ChannelTrack.Album, //12 TRACK_ALBUM トラック アルバム 
+        channel.ChannelTrack.Name, //13 TRACK_TITLE トラック タイトル 
+        channel.ChannelTrack.URL, //14 TRACK_CONTACT_URL トラック コンタクトURL 基本的にURL、任意の文字列も可 
+        enc_channel_name, //15 ENC_CHANNEL_NAME エンコード済みチャンネル名 URLエンコード(UTF-8)
+        ((int)channel.Uptime.TotalMinutes).ToString(), //16 BROADCAST_TIME 配信時間 000〜99999 
+        "",          //17 STATUS ステータス 特殊なステータス disconnectしばらく情報の更新が無い、port0Push配信 又はアイコン
+        channel.ChannelInfo.Comment, //18 COMMENT コメント 
+        "0",         //19 DIRECT ダイレクトの有無 0固定
+      }.Select(str => {
+        str = System.Text.RegularExpressions.Regex.Replace(str, "&", "&amp;");
+        str = System.Text.RegularExpressions.Regex.Replace(str, "<", "&lt;");
+        str = System.Text.RegularExpressions.Regex.Replace(str, ">", "&gt;");
+        return str;
+      });
+      return String.Join("<>", columns);
+    }
+
+    private static async Task InvokeIndexTXT(IOwinContext ctx)
+    {
+      var cancel_token = ctx.Request.CallCancelled;
+      ctx.Response.ContentType = "text/plain;charset=utf-8";
+      var acinfo = ctx.GetAccessControlInfo();
+      if (acinfo?.AuthenticationKey!=null) {
+        ctx.Response.Headers.Append("Set-Cookie", $"auth={acinfo.AuthenticationKey.GetToken()}; Path=/");
+      }
+      var peercast = ctx.GetPeerCast();
+      var indextxt = String.Join("\r\n", peercast.Channels.Select(c => BuildIndexTXTEntry(peercast, c)));
+      await ctx.Response.WriteAsync(indextxt, cancel_token).ConfigureAwait(false);
+    }
+
     private static async Task InvokeRedirect(IOwinContext ctx)
     {
       var cancel_token = ctx.Request.CallCancelled;
@@ -120,6 +166,13 @@ namespace PeerCastStation.UI.HTTP
 
     public static void BuildApp(IAppBuilder builder, string basepath)
     {
+      builder.MapWhen(ctx => ctx.Request.Path.Value=="/html/index.txt", sub => {
+        sub.UseAllowMethods("GET");
+        sub.MapMethod("GET", withmethod => {
+          withmethod.UseAuth(OutputStreamType.Interface | OutputStreamType.Play);
+          withmethod.Run(InvokeIndexTXT);
+        });
+      });
       BuildPath(builder, "/html/play.html", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/play.html"));
       BuildPath(builder, "/html/js", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/js"));
       BuildPath(builder, "/html/css", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/css"));
