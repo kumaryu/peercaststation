@@ -98,6 +98,7 @@ namespace PeerCastStation.UI.HTTP
     {
       var endpoint = peercast.GetGlobalEndPoint(channel.NetworkAddressFamily, OutputStreamType.Play);
       var enc_channel_name = Uri.EscapeDataString(channel.ChannelInfo.Name);
+      var uptime = (int)channel.Uptime.TotalMinutes;
       var columns = new string[] {
         channel.ChannelInfo.Name,  //1 CHANNEL_NAME チャンネル名
         channel.ChannelID.ToString("N").ToUpperInvariant(),  //2 ID ID ユニーク値16進数32桁、制限チャンネルは全て0埋め
@@ -114,7 +115,7 @@ namespace PeerCastStation.UI.HTTP
         channel.ChannelTrack.Name, //13 TRACK_TITLE トラック タイトル 
         channel.ChannelTrack.URL, //14 TRACK_CONTACT_URL トラック コンタクトURL 基本的にURL、任意の文字列も可 
         enc_channel_name, //15 ENC_CHANNEL_NAME エンコード済みチャンネル名 URLエンコード(UTF-8)
-        ((int)channel.Uptime.TotalMinutes).ToString(), //16 BROADCAST_TIME 配信時間 000〜99999 
+        $"{uptime/60}:{uptime%60:D2}", //16 BROADCAST_TIME 配信時間 000〜99999 
         "",          //17 STATUS ステータス 特殊なステータス disconnectしばらく情報の更新が無い、port0Push配信 又はアイコン
         channel.ChannelInfo.Comment, //18 COMMENT コメント 
         "0",         //19 DIRECT ダイレクトの有無 0固定
