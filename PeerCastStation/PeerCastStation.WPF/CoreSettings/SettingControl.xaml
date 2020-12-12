@@ -538,17 +538,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
               <RowDefinition Height="Auto"/>
               <RowDefinition Height="Auto"/>
               <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="Auto"/>
               <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <CheckBox Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="0" Margin="2" Content="起動時にウィンドウを表示する" IsChecked="{Binding IsShowWindowOnStartup}"/>
-            <CheckBox Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" Margin="2" Content="通知を表示する" IsChecked="{Binding IsShowNotifications}"/>
-            <Label    Grid.Column="0" Grid.Row="2" Content="接続先表示:"/>
-            <ComboBox Grid.Column="1" Grid.Row="2" Margin="2" ItemsSource="{Binding RemoteNodeNameItems}" DisplayMemberPath="Name" SelectedValuePath="Value" IsEditable="False" SelectedValue="{Binding RemoteNodeName}"/>
-            <Label    Grid.Column="0" Grid.Row="3" Content="視聴方法:"/>
-            <Grid Grid.Column="1" Grid.Row="3">
+            <Label    Grid.Column="0" Grid.Row="0" Content="ウィンドウタイトル"/>
+            <ComboBox Grid.Column="1" Grid.Row="0" Margin="2" ItemsSource="{Binding WindowTitleModeNameItems}" DisplayMemberPath="Name" SelectedValuePath="Value" IsEditable="False" SelectedValue="{Binding WindowTitleMode}"/>
+            <CheckBox Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" Margin="2" Content="起動時にウィンドウを表示する" IsChecked="{Binding IsShowWindowOnStartup}"/>
+            <CheckBox Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="2" Margin="2" Content="通知を表示する" IsChecked="{Binding IsShowNotifications}"/>
+            <Label    Grid.Column="0" Grid.Row="3" Content="接続先表示:"/>
+            <ComboBox Grid.Column="1" Grid.Row="3" Margin="2" ItemsSource="{Binding RemoteNodeNameItems}" DisplayMemberPath="Name" SelectedValuePath="Value" IsEditable="False" SelectedValue="{Binding RemoteNodeName}"/>
+            <Label    Grid.Column="0" Grid.Row="4" Content="視聴方法:"/>
+            <Grid Grid.Column="1" Grid.Row="4">
               <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>

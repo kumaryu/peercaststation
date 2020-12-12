@@ -912,6 +912,19 @@ namespace PeerCastStation.WPF.CoreSettings
       set { SetProperty("IsShowNotifications", ref isShowNotifications, value); }
     }
 
+    public IEnumerable<NamedValue<WindowTitleMode>> WindowTitleModeNameItems { get; } =
+      new NamedValueList<WindowTitleMode> {
+        { "シンプル", WindowTitleMode.Simple },
+        { "バージョン付き", WindowTitleMode.Version },
+        { "視聴/リレー数", WindowTitleMode.ChannelStats },
+      };
+
+    private WindowTitleMode windowTitleMode;
+    public WindowTitleMode WindowTitleMode {
+      get { return windowTitleMode; }
+      set { SetProperty(nameof(WindowTitleMode), ref windowTitleMode, value); }
+    }
+
     private static readonly NamedValueList<RemoteNodeName> remoteNodeNameItems =
       new NamedValueList<RemoteNodeName> {
         { "セッションID", RemoteNodeName.SessionID },
@@ -970,6 +983,7 @@ namespace PeerCastStation.WPF.CoreSettings
       isShowWindowOnStartup = pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup;
       isShowNotifications   = pecaApp.Settings.Get<WPFSettings>().ShowNotifications;
       remoteNodeName        = pecaApp.Settings.Get<WPFSettings>().RemoteNodeName;
+      windowTitleMode        = pecaApp.Settings.Get<WPFSettings>().WindowTitleMode;
       ports = new ViewModelCollection<OutputListenerViewModel>(
         peerCast.OutputListeners
         .Select(listener => new OutputListenerViewModel(this, listener))
@@ -1198,6 +1212,7 @@ namespace PeerCastStation.WPF.CoreSettings
       pecaApp.Settings.Get<WPFSettings>().ShowWindowOnStartup = isShowWindowOnStartup;
       pecaApp.Settings.Get<WPFSettings>().ShowNotifications = isShowNotifications;
       pecaApp.Settings.Get<WPFSettings>().RemoteNodeName = remoteNodeName;
+      pecaApp.Settings.Get<WPFSettings>().WindowTitleMode = windowTitleMode;
       if (IsListenersModified) {
         foreach (var listener in peerCast.OutputListeners.ToArray()) {
           peerCast.StopListen(listener);

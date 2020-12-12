@@ -10,6 +10,13 @@ namespace PeerCastStation.WPF
     SessionID,
   }
 
+  [PecaSettings]
+  public enum WindowTitleMode {
+    Simple,
+    Version,
+    ChannelStats,
+  }
+
   [PeerCastStation.Core.PecaSettings]
   public class WPFSettings
   {
@@ -36,6 +43,8 @@ namespace PeerCastStation.WPF
       get { return broadcastHistory; }
       set { broadcastHistory = value; }
     }
+
+    public WindowTitleMode WindowTitleMode { get; set; } = WindowTitleMode.Version;
 
     public WPFSettings()
     {
