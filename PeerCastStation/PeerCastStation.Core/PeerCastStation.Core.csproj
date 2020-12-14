@@ -20,7 +20,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Owin" Version="4.0.1" />
     <PackageReference Include="Owin" Version="1.0" />
-    <PackageReference Include="System.Collections.Immutable" Version="1.7.1" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="ChannelContentReader.cs" />
