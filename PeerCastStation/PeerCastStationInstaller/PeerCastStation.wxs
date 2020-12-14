@@ -22,9 +22,6 @@
 			<Component Id="Owin.dll" Guid="*">
 				<File Id="Owin.dll" Source="$(var.PeerCastStation.TargetDir)\Owin.dll" />
 			</Component>
-      <Component Id="System.Collections.Immutable.dll" Guid="*">
-        <File Id="System.Collections.Immutable.dll" Source="$(var.PeerCastStation.TargetDir)\System.Collections.Immutable.dll" />
-      </Component>
 			<Component Id="readme.txt" Guid="*">
 				<File Id="readme.txt" Source="$(var.PeerCastStation.ProjectDir)\readme.txt" />
 			</Component>
