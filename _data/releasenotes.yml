@@ -1,4 +1,37 @@
 ---
+- name: Version 2.9.4 (2020年12月16日開発版)
+  version: 2.9.4
+  channel: dev
+  notes: |
+    リレー周りの不具合修正を行いました。
+
+    ## 修正点
+    * 上流からのデータが受信できない時にチャンネルが固まるのを修正しました。
+    * 一部のプレイヤーでWMV配信が再生できなくなっていたのを修正しました。
+
+    ## 変更点
+    * リレー自動管理でリレー不可ノードを一度に全部切っていたのを必要なだけ切断するようにしました。
+    * リレー切断時の下流への接続先情報送信タイミングを増やしました。
+    * リレー自動管理で切ったノードが頻繁に接続されないようにしました。
+    * 接続できないノードへの接続試行タイムアウトを短く設定しました。
+    * ZIP版のアップデート実装を変更しました。PeerCastStation.exeのプロセスが2つ起動しないようになりました。
+    * viewxml にチャンネル毎のバッファバイト数/秒数を追加しました。
+
+    ## 新機能
+    * HTML UIの設定画面でユーザー設定(内蔵YPブラウザの設定)をエクスポート/インポートできるようにしました。
+    * http://localhost:7144/html/index.txt でリレー中チャンネル一覧をindex.txt形式で取得できるようにしました。
+    * GUI のタイトルバーの文字列を設定できるようにしました。GUIのUI設定からバージョン番号付き・シンプル形式・視聴/リレー状態を選択できます。
+
+  date: 2020-12-16T00:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.9.4.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.4.zip
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.4.exe
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.9.4.msi
+
 - name: Version 2.9.3 (2020年2月26日開発版)
   version: 2.9.3
   channel: dev

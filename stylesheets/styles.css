@@ -22,7 +22,6 @@ time, mark, audio, video {
   vertical-align: baseline;
 }
 
-
 /* Base text styles */
 
 body {
@@ -313,6 +312,54 @@ a.buttons:hover {
 	text-decoration: none;
 }
 
+.underline {
+  text-decoration: underline;
+}
+
+section {
+  counter-reset: chapter;
+}
+
+.post h1 {
+  counter-reset: sub-chapter;
+}
+
+.post h2 {
+  counter-reset: section;
+}
+
+.post h3{
+  counter-reset: sub-section;
+}
+
+.post h4{
+  counter-reset: sub-sub-section;
+}
+
+.post h1::before{
+  counter-increment: chapter;
+  content: counter(chapter) ". ";
+}
+
+.post h2::before{
+  counter-increment: sub-chapter;
+  content: counter(chapter) "." counter(sub-chapter) ". ";
+}
+
+.post h3::before{
+  counter-increment: section;
+  content: counter(chapter) "." counter(sub-chapter) "." counter(section) ". ";    
+}
+
+.post h4::before{
+  counter-increment: sub-section;
+  content: counter(chapter) "." counter(sub-chapter) "." counter(section) "." counter(sub-section) ".";    
+}
+
+.post h5::before{
+  counter-increment: sub-sub-section;
+  content: counter(chapter) "." counter(sub-chapter) "." counter(section) "." counter(sub-section) "." counter(sub-sub-section) ".";    
+}
 
 /* Section - for main page content */
 
