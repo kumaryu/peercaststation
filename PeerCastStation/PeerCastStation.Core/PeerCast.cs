@@ -21,7 +21,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
 using Owin;
-using System.Collections.Immutable;
 
 namespace PeerCastStation.Core
 {
@@ -76,12 +75,12 @@ namespace PeerCastStation.Core
     public TimeSpan Uptime { get { return uptime.Elapsed; } }
     private System.Diagnostics.Stopwatch uptime = System.Diagnostics.Stopwatch.StartNew();
 
-    private void ReplaceCollection<T>(ref ImmutableArray<T> collection, Func<ImmutableArray<T>, ImmutableArray<T>> newcollection_func)
+    private void ReplaceCollection<T>(ref T[] collection, Func<T[], T[]> newcollection_func)
     {
       bool replaced;
       do {
         var orig = collection;
-        replaced = ImmutableInterlocked.InterlockedCompareExchange(ref collection, newcollection_func(orig), orig)==orig;
+        replaced = Interlocked.CompareExchange(ref collection, newcollection_func(orig), orig)==orig;
       } while (!replaced);
     }
 
@@ -90,7 +89,7 @@ namespace PeerCastStation.Core
     /// 取得は読み取り専用のリストを、設定は指定したリストのコピーを設定します
     /// </summary>
     public IReadOnlyList<IYellowPageClient> YellowPages { get { return yellowPages; } }
-    private ImmutableArray<IYellowPageClient> yellowPages = ImmutableArray<IYellowPageClient>.Empty;
+    private IYellowPageClient[] yellowPages = Array.Empty<IYellowPageClient>();
 
     /// <summary>
     /// 登録されているYellowPageファクトリのリストを取得します
@@ -114,13 +113,13 @@ namespace PeerCastStation.Core
     /// 接続しているチャンネルの読み取り専用リストを取得します
     /// </summary>
     public IReadOnlyList<Channel> Channels { get { return channels; } }
-    private ImmutableArray<Channel> channels = ImmutableArray<Channel>.Empty;
+    private Channel[] channels = Array.Empty<Channel>();
 
     /// <summary>
     /// 監視オブジェクトのリストを取得します
     /// </summary>
     public IReadOnlyList<IPeerCastMonitor> Monitors { get { return monitors; } }
-    private ImmutableArray<IPeerCastMonitor> monitors = ImmutableArray<IPeerCastMonitor>.Empty;
+    private IPeerCastMonitor[] monitors = Array.Empty<IPeerCastMonitor>();
     private readonly Timer monitorTimer;
 
     private CancellationTokenSource cancelSource = new CancellationTokenSource();
@@ -131,7 +130,7 @@ namespace PeerCastStation.Core
     /// </summary>
     public AccessController AccessController { get; set; }
 
-    private ImmutableArray<OutputListener> outputListeners = ImmutableArray<OutputListener>.Empty;
+    private OutputListener[] outputListeners = Array.Empty<OutputListener>();
     /// <summary>
     /// 接続待ち受けスレッドのコレクションを取得します
     /// </summary>

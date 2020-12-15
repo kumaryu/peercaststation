@@ -15,7 +15,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
@@ -57,8 +56,8 @@ namespace PeerCastStation.Core
     protected static Logger logger = new Logger(typeof(Channel));
     private const int NodeLimit = 180000; //ms
     private ISourceStream sourceStream = null;
-    private ImmutableArray<IChannelMonitor> monitors = ImmutableArray<IChannelMonitor>.Empty;
-    private ImmutableArray<IChannelSink> sinks = ImmutableArray<IChannelSink>.Empty;
+    private IChannelMonitor[] monitors = Array.Empty<IChannelMonitor>();
+    private IChannelSink[] sinks = Array.Empty<IChannelSink>();
     private Host[] sourceNodes = new Host[0];
     private Host[] nodes = new Host[0];
     private Content contentHeader = null;
@@ -151,13 +150,13 @@ namespace PeerCastStation.Core
       } while (!replaced);
     }
 
-    private void ReplaceCollection<T>(ref ImmutableArray<T> collection, Func<ImmutableArray<T>, ImmutableArray<T>> newcollection_func) where T : class
+    private void ReplaceCollection<T>(ref T[] collection, Func<T[], T[]> newcollection_func) where T : class
     {
       bool replaced = false;
       do {
         var orig = collection;
         var new_collection = newcollection_func(orig);
-        replaced = ImmutableInterlocked.InterlockedCompareExchange(ref collection, new_collection, orig)==orig;
+        replaced = Interlocked.CompareExchange(ref collection, new_collection, orig)==orig;
       } while (!replaced);
     }
 
@@ -369,7 +368,7 @@ namespace PeerCastStation.Core
     /// </summary>
     public ContentCollection Contents { get { return contents; } }
 
-    private ImmutableArray<IContentSink> contentSinks;
+    private IContentSink[] contentSinks = Array.Empty<IContentSink>();
 
     private class ContentSinkSubscription
       : IDisposable
@@ -656,7 +655,7 @@ namespace PeerCastStation.Core
       var old = Interlocked.CompareExchange(ref sourceStream, null, source_stream);
       if (old!=source_stream) return;
       old.Dispose();
-      var ostreams = ImmutableInterlocked.InterlockedExchange(ref sinks, ImmutableArray<IChannelSink>.Empty);
+      var ostreams = Interlocked.Exchange(ref sinks, Array.Empty<IChannelSink>());
       foreach (var os in ostreams) {
         os.OnStopped(reason);
       }
@@ -813,7 +812,7 @@ namespace PeerCastStation.Core
       if (source!=null) {
         source.Dispose();
       }
-      var ostreams = ImmutableInterlocked.InterlockedExchange(ref sinks, ImmutableArray<IChannelSink>.Empty);
+      var ostreams = Interlocked.Exchange(ref sinks, Array.Empty<IChannelSink>());
       foreach (var os in ostreams) {
         os.OnStopped(StopReason.OffAir);
       }
@@ -830,7 +829,6 @@ namespace PeerCastStation.Core
       this.Network     = network;
       this.ChannelID   = channel_id;
       this.contents    = new ContentCollection(this);
-      this.contentSinks = ImmutableArray<IContentSink>.Empty;
     }
   }
 
