@@ -127,20 +127,19 @@ namespace PeerCastStation.UI.HTTP
       return String.Join("<>", columns);
     }
 
-    private static async Task InvokeIndexTXT(IOwinContext ctx)
+    private static async Task InvokeIndexTXT(OwinEnvironment ctx)
     {
       var cancel_token = ctx.Request.CallCancelled;
       ctx.Response.ContentType = "text/plain;charset=utf-8";
       var acinfo = ctx.GetAccessControlInfo();
       if (acinfo?.AuthenticationKey!=null) {
-        ctx.Response.Headers.Append("Set-Cookie", $"auth={acinfo.AuthenticationKey.GetToken()}; Path=/");
+        ctx.Response.Headers.Add("Set-Cookie", $"auth={acinfo.AuthenticationKey.GetToken()}; Path=/");
       }
       var peercast = ctx.GetPeerCast();
       var indextxt = String.Join("\r\n", peercast.Channels.Select(c => BuildIndexTXTEntry(peercast, c)));
       await ctx.Response.WriteAsync(indextxt, cancel_token).ConfigureAwait(false);
     }
 
-    private static async Task InvokeRedirect(IOwinContext ctx)
     private static async Task InvokeRedirect(OwinEnvironment ctx)
     {
       var cancel_token = ctx.Request.CallCancelled;
@@ -164,12 +163,9 @@ namespace PeerCastStation.UI.HTTP
 
     public static void BuildApp(IAppBuilder builder, string basepath)
     {
-      builder.MapWhen(ctx => ctx.Request.Path.Value=="/html/index.txt", sub => {
-        sub.UseAllowMethods("GET");
-        sub.MapMethod("GET", withmethod => {
-          withmethod.UseAuth(OutputStreamType.Interface | OutputStreamType.Play);
-          withmethod.Run(InvokeIndexTXT);
-        });
+      builder.MapGET("/html/index.txt", sub => {
+        sub.UseAuth(OutputStreamType.Interface | OutputStreamType.Play);
+        sub.Run(InvokeIndexTXT);
       });
       BuildPath(builder, "/html/play.html", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/play.html"));
       BuildPath(builder, "/html/js", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/js"));
