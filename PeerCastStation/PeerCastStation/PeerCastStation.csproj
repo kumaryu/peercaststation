@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <OutputType>WinExe</OutputType>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\PeerCastStation\</SolutionDir>
@@ -44,6 +45,8 @@
     <ProjectReference Include="..\PeerCastStation.TS\PeerCastStation.TS.csproj" />
     <ProjectReference Include="..\PeerCastStation.UI.HTTP\PeerCastStation.UI.HTTP.csproj" />
     <ProjectReference Include="..\PeerCastStation.UI\PeerCastStation.UI.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="('$(RuntimeIdentifier)' == 'win-x86') or ('$(RuntimeIdentifier)' == 'win-x64')">
     <ProjectReference Include="..\PeerCastStation.WPF\PeerCastStation.WPF.csproj" />
   </ItemGroup>
   <ItemGroup>
