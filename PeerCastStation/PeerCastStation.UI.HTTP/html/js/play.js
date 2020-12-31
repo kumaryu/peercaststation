@@ -166,6 +166,10 @@ var ChannelViewModel = function(owner, initial_value) {
     $('#channelInfo-'+self.channelId()).slideToggle("fast");
   };
 
+  self.showPlayer = function() {
+    window.open('player.html?channelId=' + self.channelId());
+  };
+
   self.update = function(c) {
     self.infoName(c.info.name);
     self.infoUrl(c.info.url);

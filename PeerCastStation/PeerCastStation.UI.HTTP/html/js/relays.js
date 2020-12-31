@@ -648,6 +648,10 @@ var ChannelViewModel = function(owner, initial_value) {
     $('#channelInfo-'+self.channelId()).slideToggle("fast");
   };
 
+  self.showPlayer = function() {
+    window.open('player.html?channelId=' + self.channelId());
+  };
+
   var updateConnections = function() {
     PeerCastStation.getChannelConnections(self.channelId()).then(function(result) {
       var connections = self.connections();
