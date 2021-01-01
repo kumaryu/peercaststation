@@ -39,9 +39,12 @@ namespace PeerCastStation.App
       base.DoCleanup();
     }
 
-    static EventWaitHandle killWaitHandle;
+    static EventWaitHandle killWaitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
     private static bool CheckIsFirstInstance(string basepath, ref EventWaitHandle wait_handle)
     {
+      if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows)) {
+        return true;
+      }
       bool is_first_instance;
       var event_name = System.IO.Path.Combine(basepath, "PeerCastStation.exe").Replace('\\', '/')+".kill";
       try {
