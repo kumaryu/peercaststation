@@ -378,7 +378,6 @@ namespace PeerCastStation.Core
     private IPAddress GetInterfaceAddress(AddressFamily addr_family)
     {
       return System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
-        .Where(intf => !intf.IsReceiveOnly)
         .Where(intf => intf.OperationalStatus==System.Net.NetworkInformation.OperationalStatus.Up)
         .Where(intf => intf.NetworkInterfaceType!=System.Net.NetworkInformation.NetworkInterfaceType.Loopback)
         .Select(intf => intf.GetIPProperties())
