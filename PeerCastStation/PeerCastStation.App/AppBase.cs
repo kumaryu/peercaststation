@@ -115,12 +115,12 @@ namespace PeerCastStation.App
         plugin.Start();
       }
       var result = await stopTask.Task.ConfigureAwait(false);
-      foreach (var plugin in Plugins) {
+      foreach (var plugin in Plugins.Reverse()) {
         plugin.Stop();
       }
       SaveSettings();
       peerCast.Stop();
-      foreach (var plugin in Plugins) {
+      foreach (var plugin in Plugins.Reverse()) {
         plugin.Detach();
       }
       return result;
@@ -133,7 +133,8 @@ namespace PeerCastStation.App
         .Concat(
           System.IO.Directory.GetFiles(BasePath, "*.dll")
             .SelectMany(dll => LoadPluginAssembly(System.Reflection.Assembly.LoadFrom(dll)))
-        );
+        )
+        .OrderBy(type => ((PluginAttribute)(type.GetCustomAttributes(typeof(PluginAttribute), true)[0])).Priority);
     }
 
     IEnumerable<Type> LoadPluginAssembly(System.Reflection.Assembly asm)
@@ -141,8 +142,7 @@ namespace PeerCastStation.App
       try {
         var res = asm.GetTypes()
             .Where(type => type.GetCustomAttributes(typeof(PluginAttribute), true).Length>0)
-            .Where(type => type.GetInterfaces().Contains(typeof(IPlugin)))
-            .OrderBy(type => ((PluginAttribute)(type.GetCustomAttributes(typeof(PluginAttribute), true)[0])).Priority);
+            .Where(type => type.GetInterfaces().Contains(typeof(IPlugin)));
         foreach (var settingtype in asm.GetTypes().Where(type => type.GetCustomAttributes(typeof(PecaSettingsAttribute), true).Length>0)) {
           foreach (var attr in settingtype.GetCustomAttributes(typeof(PecaSettingsAttribute), true).Cast<PecaSettingsAttribute>()) {
             if (attr.Alias!=null) {
