@@ -551,7 +551,7 @@ namespace PeerCastStation.Core
     public static string DefaultFileName {
       get {
         var path = Path.Combine(
-          Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
+          Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.Create), 
           "PeerCastStation");
         Directory.CreateDirectory(path);
         return Path.Combine(path, "PecaSettings.xml");
