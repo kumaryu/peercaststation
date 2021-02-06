@@ -175,7 +175,7 @@ namespace PeerCastStation.UI.HTTP
       BuildPath(builder, "/help", OutputStreamType.Interface, Path.Combine(basepath, "help"));
       BuildPath(builder, "/Content", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "Content"));
       BuildPath(builder, "/Scripts", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "Scripts"));
-      builder.MapGET(new Regex("^$"), sub => {
+      builder.MapGET(new Regex("^/?$"), sub => {
         sub.UseAuth(OutputStreamType.Interface);
         sub.Run(InvokeRedirect);
       });
