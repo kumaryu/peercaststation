@@ -191,6 +191,9 @@ var BroadcastDialog = new function() {
   self.sourceStream.subscribe(function (value) {
     if (value!=null) {
       self.source(value.defaultUri);
+      if (self.sourceChannel()!=null && value && value.scheme==="loopback") {
+        self.source("loopback:" + self.sourceChannel().channelId());
+      }
     }
   });
 
