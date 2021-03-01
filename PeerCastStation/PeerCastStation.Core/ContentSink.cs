@@ -61,7 +61,7 @@ namespace PeerCastStation.Core
                  contFlag!=content.ContFlag ||
                  position+dataBuffer.Length!=content.Position ||
                  Math.Abs((content.Timestamp-lastTimestamp).TotalMilliseconds)>100.0 ||
-                 dataBuffer.Length+content.Data.Length>8*1024) {
+                 dataBuffer.Length+content.Data.Length>15*1024) {
           return false;
         }
         else {
