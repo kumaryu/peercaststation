@@ -92,7 +92,7 @@ namespace PeerCastStation.Core
   }
 
   public class ContentCollection
-    : ICollection<Content>
+    : ICollection<Content>, IReadOnlyCollection<Content>
   {
     private struct ContentKey
       : IComparable<ContentKey>

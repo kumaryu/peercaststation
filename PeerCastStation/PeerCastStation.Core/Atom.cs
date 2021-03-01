@@ -173,7 +173,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 中間フレームである
     /// </summary>
-    IntraFrame    = 0x02,
+    InterFrame    = 0x02,
     /// <summary>
     /// 音声パケットである
     /// </summary>
