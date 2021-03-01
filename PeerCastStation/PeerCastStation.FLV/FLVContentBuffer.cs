@@ -184,26 +184,6 @@ namespace PeerCastStation.FLV
       position += bytes.Length;
     }
 
-    private PCPChanPacketContinuation GetContentFlags(RTMPMessage content)
-    {
-      var pkttype = content.GetPacketType();
-      switch (pkttype) {
-      case FLVPacketType.AudioData:
-      case FLVPacketType.AACRawData:
-        return PCPChanPacketContinuation.AudioFrame;
-      case FLVPacketType.AACSequenceHeader:
-        return PCPChanPacketContinuation.None;
-      case FLVPacketType.AVCNALUnitInterFrame:
-        return PCPChanPacketContinuation.IntraFrame;
-      case FLVPacketType.AVCEOS:
-      case FLVPacketType.AVCNALUnitKeyFrame:
-      case FLVPacketType.AVCSequenceHeader:
-      case FLVPacketType.VideoData:
-      default:
-        return PCPChanPacketContinuation.None;
-      }
-    }
-
     private void OnContentChanged(RTMPMessage content)
     {
       if (streamIndex<0) {
@@ -212,7 +192,7 @@ namespace PeerCastStation.FLV
       }
       WriteMessage(bodyBuffer, content, timestampOrigin);
       if (bodyBuffer.Length>0) {
-        ContentSink.OnContent(new Content(streamIndex, DateTime.Now-streamOrigin, position, bodyBuffer.ToArray(), GetContentFlags(content)));
+        ContentSink.OnContent(new Content(streamIndex, DateTime.Now-streamOrigin, position, bodyBuffer.ToArray(), PCPChanPacketContinuation.None));
         position += bodyBuffer.Length;
         bodyBuffer.SetLength(0);
       }
