@@ -98,6 +98,13 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
       private set { SetProperty("Bitrate", ref bitrate, value); }
     }
 
+    private string buffer;
+    public string Buffer
+    {
+      get { return buffer; }
+      private set { SetProperty(nameof(Buffer), ref buffer, value); }
+    }
+
     private string uptime;
     public string Uptime
     {
@@ -216,6 +223,7 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
         ChannelName = "";
         ContentType = "";
         Bitrate     = "";
+        Buffer      = "";
         Uptime      = "";
         Genre       = "";
         Description = "";
@@ -240,6 +248,13 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
         ChannelName = info.Name;
         ContentType = info.ContentType;
         Bitrate = String.Format("{0} kbps", info.Bitrate);
+        var contents = channel.Contents;
+        var buffersBytes = contents.Sum(cc => cc.Data.Length);
+        var minBufferBytes = contents.Count>0 ? contents.Min(cc => cc.Data.Length) : 0;
+        var maxBufferBytes = contents.Count>0 ? contents.Max(cc => cc.Data.Length) : 0;
+        var avgBufferBytes = contents.Count>0 ? buffersBytes / contents.Count : 0;
+        var buffersDuration = ((contents.LastOrDefault()?.Timestamp ?? TimeSpan.Zero) - (contents.FirstOrDefault()?.Timestamp ?? TimeSpan.Zero)).TotalSeconds;
+        Buffer  = $"Duration: {buffersDuration:F1}s, Count: {contents.Count} ,Total {buffersBytes/1024} KiB, min. {minBufferBytes} B, max. {maxBufferBytes} B, avg. {avgBufferBytes} B)";
         Uptime  = String.Format(
           "{0:D}:{1:D2}:{2:D2}",
           (int)channel.Uptime.TotalHours,
@@ -250,6 +265,7 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
         ChannelName = "";
         ContentType = "";
         Bitrate     = "";
+        Buffer      = "";
         Uptime      = "";
       }
       if (IsTracker && IsModified) return;
