@@ -59,7 +59,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
-          <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Label   Grid.Row="0" Grid.Column="0" Content="チャンネル名:"/>
         <TextBox Grid.Row="0" Grid.Column="1" IsReadOnly="True" Text="{Binding ChannelName, Mode=OneWay}"/>
@@ -76,18 +75,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         <Label   Grid.Row="6" Grid.Column="0" Content="形式:"/>
         <TextBox Grid.Row="6" Grid.Column="1" IsReadOnly="True" Text="{Binding ContentType, Mode=OneWay}"/>
         <Label   Grid.Row="7" Grid.Column="0" Content="ビットレート:"/>
-        <Grid  Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="1">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-          </Grid.ColumnDefinitions>
-          <TextBox Grid.Column="0" IsReadOnly="True" Text="{Binding Bitrate, Mode=OneWay}"/>
-          <Label   Grid.Column="1" Content="バッファ:"/>
-          <TextBox Grid.Column="2" IsReadOnly="True" Text="{Binding Buffer, Mode=OneWay}"/>
-        </Grid>
-        <Label   Grid.Row="8" Grid.Column="0" Content="配信・リレー時間:"/>
-        <TextBox Grid.Row="8" Grid.Column="1" IsReadOnly="True" Text="{Binding Uptime, Mode=OneWay}"/>
+        <TextBox Grid.Row="7" Grid.Column="1" IsReadOnly="True" Text="{Binding Bitrate, Mode=OneWay}"/>
       </Grid>
     </GroupBox>
     <GroupBox Header="トラック情報">
@@ -116,5 +104,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
       </Grid>
     </GroupBox>
     <Button HorizontalAlignment="Right" Content="適用" Command="{Binding Update}"/>
+    <GroupBox Header="統計情報">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" SharedSizeGroup="Label"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Label   Grid.Row="0" Grid.Column="0" Content="配信・リレー時間:"/>
+        <TextBox Grid.Row="0" Grid.Column="1" IsReadOnly="True" Text="{Binding Uptime, Mode=OneWay}"/>
+        <Label   Grid.Row="1" Grid.Column="0" Content="バッファ:"/>
+        <TextBox Grid.Row="1" Grid.Column="1" IsReadOnly="True" Text="{Binding Buffer, Mode=OneWay}"/>
+      </Grid>
+    </GroupBox>
   </StackPanel>
 </UserControl>
