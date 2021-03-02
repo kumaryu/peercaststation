@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Linq;
 using System.IO;
+using System.Collections.Generic;
 
 namespace PeerCastStation.Core
 {
@@ -40,6 +42,7 @@ namespace PeerCastStation.Core
       private TimeSpan timestamp;
       private TimeSpan lastTimestamp;
       private MemoryStream dataBuffer = new MemoryStream(16*1024);
+      private const int LengthThreashold = 15*1024;
       public ContentBuilder()
       {
       }
@@ -60,9 +63,20 @@ namespace PeerCastStation.Core
         else if (stream!=content.Stream ||
                  contFlag!=content.ContFlag ||
                  position+dataBuffer.Length!=content.Position ||
-                 Math.Abs((content.Timestamp-lastTimestamp).TotalMilliseconds)>100.0 ||
-                 dataBuffer.Length+content.Data.Length>15*1024) {
+                 Math.Abs((content.Timestamp-lastTimestamp).TotalMilliseconds)>100.0) {
           return false;
+        }
+        else if (dataBuffer.Length+content.Data.Length>LengthThreashold) {
+          var unified_packets = (dataBuffer.Length+content.Data.Length+LengthThreashold-1) / LengthThreashold;
+          var independent_packets = (dataBuffer.Length+LengthThreashold-1)/LengthThreashold + (content.Data.Length+LengthThreashold)/LengthThreashold;
+          if (unified_packets<independent_packets) {
+            lastTimestamp = content.Timestamp;
+            dataBuffer.Write(content.Data, 0, content.Data.Length);
+            return true;
+          }
+          else {
+            return false;
+          }
         }
         else {
           lastTimestamp = content.Timestamp;
@@ -71,11 +85,25 @@ namespace PeerCastStation.Core
         }
       }
 
-      public Content ToContent()
+      public IEnumerable<Content> ToContents()
       {
-        if (empty) return null;
-        dataBuffer.Flush();
-        return new Content(stream, timestamp, position, dataBuffer.ToArray(), contFlag);
+        if (!empty) {
+          dataBuffer.Flush();
+          if (dataBuffer.Length<=LengthThreashold) {
+            yield return new Content(stream, timestamp, position, dataBuffer.ToArray(), contFlag);
+          }
+          else {
+            int pos = 0;
+            var flag = contFlag;
+            var buf = dataBuffer.ToArray();
+            while (pos<dataBuffer.Length) {
+              int len = Math.Min(buf.Length - pos, LengthThreashold);
+              yield return new Content(stream, timestamp, position + pos, buf, pos, len, contFlag);
+              flag |= PCPChanPacketContinuation.Fragment;
+              pos += len;
+            }
+          }
+        }
       }
 
       public void Clear()
@@ -96,8 +124,7 @@ namespace PeerCastStation.Core
 
     private void Flush()
     {
-      var content = builder.ToContent();
-      if (content!=null) {
+      foreach (var content in builder.ToContents()) {
         this.BaseSink.OnContent(content);
         packetRateCounter.Add(1);
       }
