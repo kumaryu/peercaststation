@@ -237,7 +237,7 @@ namespace PeerCastStation.Core
     private Content GetFirstContent(int stream, TimeSpan t, long position)
     {
       lock (list) {
-        return list.Values.FirstOrDefault(c =>
+        return list.Values.LastOrDefault(c =>
           c.Stream>stream ||
           (c.Stream==stream &&
            c.ContFlag==PCPChanPacketContinuation.None &&
@@ -246,7 +246,7 @@ namespace PeerCastStation.Core
            )
           )
         ) ??
-        list.Values.FirstOrDefault(c =>
+        list.Values.LastOrDefault(c =>
           c.Stream>stream ||
           (c.Stream==stream &&
            (c.Timestamp>t ||
