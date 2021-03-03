@@ -68,7 +68,7 @@ namespace PeerCastStation.Core
         }
         else if (dataBuffer.Length+content.Data.Length>LengthThreashold) {
           var unified_packets = (dataBuffer.Length+content.Data.Length+LengthThreashold-1) / LengthThreashold;
-          var independent_packets = (dataBuffer.Length+LengthThreashold-1)/LengthThreashold + (content.Data.Length+LengthThreashold)/LengthThreashold;
+          var independent_packets = (dataBuffer.Length+LengthThreashold-1)/LengthThreashold + (content.Data.Length+LengthThreashold-1)/LengthThreashold;
           if (unified_packets<independent_packets) {
             lastTimestamp = content.Timestamp;
             dataBuffer.Write(content.Data, 0, content.Data.Length);
