@@ -98,7 +98,7 @@ namespace PeerCastStation.Core
             var buf = dataBuffer.ToArray();
             while (pos<dataBuffer.Length) {
               int len = Math.Min(buf.Length - pos, LengthThreashold);
-              yield return new Content(stream, timestamp, position + pos, buf, pos, len, contFlag);
+              yield return new Content(stream, timestamp, position + pos, buf, pos, len, flag);
               flag |= PCPChanPacketContinuation.Fragment;
               pos += len;
             }
