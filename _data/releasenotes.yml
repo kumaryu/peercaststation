@@ -1,4 +1,29 @@
 ---
+- name: Version 2.9.5 (2021年03月04日開発版)
+  version: 2.9.5
+  channel: dev
+  notes: |
+    配信等に関係する不具合修正を行いました。
+
+    ## 修正点
+    * 2.9.0から主にFLV配信時にパケット数が多くなりすぎていたのを修正しました。リレーにPeerCastが入った時に不安定になりがちになっていたのが解消されます。
+    * mono使用時にプラットフォームによっては正しく視聴できなくなっていたのを修正しました。
+    * HTML UIから他のチャンネルソースで配信開始した時に正しく開始できない場合があったのを修正しました。
+
+    ## 変更点
+    * チャンネルのバッファを出力時になるべく最新のパケットから送るようにしました。視聴時やリレー時の遅延が若干減ることが期待されます。
+    * チャンネルのバッファを1秒から3秒に延長しました。送信が詰まった時に切断される可能性が少し減ります。
+
+  date: 2021-03-04T14:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.9.5.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.5.zip
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.5.exe
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.9.5.msi
+
 - name: Version 2.8.0 (2021年02月11日安定版)
   version: 2.8.0
   channel: stable
