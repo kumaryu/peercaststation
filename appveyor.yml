@@ -1,6 +1,6 @@
 ---
 image: Visual Studio 2019
-version: 2.9.5.{build}
+version: 2.9.6.{build}
 configuration: Release
 install:
 - cmd: |-
