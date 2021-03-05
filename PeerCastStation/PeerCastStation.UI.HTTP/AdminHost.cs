@@ -84,9 +84,9 @@ namespace PeerCastStation.UI.HTTP
         else                  status = "RECEIVE";
         break;
       }
-      var contents = c.Contents;
+      var contents = c.Contents.ToArray();
       var buffersBytes = contents.Sum(cc => cc.Data.Length);
-      var buffersDuration = ((contents.Newest?.Timestamp ?? TimeSpan.Zero) - (contents.Oldest?.Timestamp ?? TimeSpan.Zero)).TotalSeconds;
+      var buffersDuration = ((contents.LastOrDefault()?.Timestamp ?? TimeSpan.Zero) - (contents.FirstOrDefault()?.Timestamp ?? TimeSpan.Zero)).TotalSeconds;
       return new XElement("channel",
         new XAttribute("id",      c.ChannelID.ToString("N").ToUpper()),
         new XAttribute("name",    c.ChannelInfo.Name ?? ""),

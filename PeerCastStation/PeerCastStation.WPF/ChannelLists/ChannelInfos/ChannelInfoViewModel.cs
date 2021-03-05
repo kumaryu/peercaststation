@@ -248,7 +248,7 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
         ChannelName = info.Name;
         ContentType = info.ContentType;
         Bitrate = String.Format("{0} kbps", info.Bitrate);
-        var contents = channel.Contents;
+        var contents = channel.GetContents();
         var buffersBytes = contents.Sum(cc => cc.Data.Length);
         var minBufferBytes = contents.Count>0 ? contents.Min(cc => cc.Data.Length) : 0;
         var maxBufferBytes = contents.Count>0 ? contents.Max(cc => cc.Data.Length) : 0;

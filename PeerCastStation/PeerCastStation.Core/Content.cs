@@ -182,6 +182,13 @@ namespace PeerCastStation.Core
       }
     }
 
+    public Content[] ToArray()
+    {
+      lock (list) {
+        return list.Values.ToArray();
+      }
+    }
+
     public bool Remove(Content item)
     {
       bool res;
