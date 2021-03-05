@@ -1,4 +1,24 @@
 ---
+- name: Version 2.9.6 (2021年03月05日開発版)
+  version: 2.9.6
+  channel: dev
+  notes: |
+    2.9.5が落ちるのを修正しました。
+
+    ## 修正点
+    * 2.9.5のGUIでチャンネルを選択しているとたまにクラッシュするようになっていたのを修正しました。
+
+  date: 2021-03-05T14:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.9.6.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.6.zip
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.6.exe
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.9.6.msi
+
+
 - name: Version 2.9.5 (2021年03月04日開発版)
   version: 2.9.5
   channel: dev
