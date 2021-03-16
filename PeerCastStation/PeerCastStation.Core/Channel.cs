@@ -499,6 +499,7 @@ namespace PeerCastStation.Core
       foreach (var sink in sinks) {
         sink.OnStop(reason);
       }
+      DispatchMonitorEvent(mon => mon.OnStopped(reason));
     }
 
     private class HostComparer
