@@ -1,4 +1,24 @@
 ---
+- name: Version 2.9.7 (2021年03月17日開発版)
+  version: 2.9.7
+  channel: dev
+  notes: |
+    YPへの接続に問題があったのを修正しました。
+
+    ## 修正点
+    * 2.9.4から配信終了時にYPへの接続が維持されたままになっていたのを修正しました。配信終了時のYPからのチャンネル削除が遅くなったり、再度配信を立ち上げた時にYPに掲載されるチャンネル情報がおかしくなる場合があったりしたのが解消されます。
+    * 2.9.4からチャンネル終了時の通知が出なくなっていたのを修正しました。
+
+  date: 2021-03-17T13:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.9.7.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.7.zip
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.7.exe
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.9.7.msi
+
 - name: Version 2.9.6 (2021年03月05日開発版)
   version: 2.9.6
   channel: dev
