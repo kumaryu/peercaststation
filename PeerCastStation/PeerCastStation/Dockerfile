@@ -16,4 +16,4 @@ VOLUME ["/data"]
 EXPOSE 7144
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "PeerCastStation.dll", "-s", "/data/PeCaSettings.xml"]
+ENTRYPOINT ["dotnet", "PeerCastStation.dll", "-s", "/data/PecaSettings.xml"]
