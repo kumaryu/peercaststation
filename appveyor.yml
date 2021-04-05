@@ -1,57 +1,95 @@
 ---
-image: Visual Studio 2019
-version: 2.9.4.{build}
+image:
+  - Visual Studio 2019
+  - Ubuntu
+version: 3.1.0.{build}
+environment:
+  GITHUB_ACTOR: kumaryu
+  GITHUB_CR_TOKEN:
+    secure: cRpimg3ZDRI8pJUkcSSouww5+tki/QLZIqAGMlziMY8d6wx8z9+GXZfi4YbCgelY
 configuration: Release
-install:
-- cmd: |-
-    set PATH=C:\Ruby27-x64\bin;%PATH%
-    gem install -N jekyll
-before_build:
-- cmd: |-
-    ruby bumpversion.rb %APPVEYOR_BUILD_VERSION%
-    cd doc\help
-    jekyll build
-    cd ..\..
-    dotnet restore PeerCastStation/PeerCastStation.sln
-build:
-  verbosity: minimal
-before_package:
-- cmd: |-
-    dotnet publish -c %CONFIGURATION% --self-contained -r win-x64 -o win-x64 PeerCastStation/PeerCastStation/PeerCastStation.csproj
-    dotnet publish -c %CONFIGURATION% --self-contained -r win-x64 -o win-x64 PeerCastStation/PecaStationd/PecaStationd.csproj
-    dotnet publish -c %CONFIGURATION% --self-contained -r win-x86 -o win-x86 PeerCastStation/PeerCastStation/PeerCastStation.csproj
-    dotnet publish -c %CONFIGURATION% --self-contained -r win-x86 -o win-x86 PeerCastStation/PecaStationd/PecaStationd.csproj
-    dotnet publish -c %CONFIGURATION% --self-contained -r linux-x64 -o linux-x64 PeerCastStation/PeerCastStation/PeerCastStation.csproj
-    dotnet publish -c %CONFIGURATION% --self-contained -r linux-arm -o linux-arm PeerCastStation/PeerCastStation/PeerCastStation.csproj
-    dotnet publish -c %CONFIGURATION% --self-contained -r linux-arm64 -o linux-arm64 PeerCastStation/PeerCastStation/PeerCastStation.csproj
-    dotnet publish -c %CONFIGURATION% --self-contained -r linux-musl-x64 -o linux-musl-x64 PeerCastStation/PeerCastStation/PeerCastStation.csproj
-    dotnet publish -c %CONFIGURATION% --self-contained -r linux-musl-arm -o linux-musl-arm PeerCastStation/PeerCastStation/PeerCastStation.csproj
-    dotnet publish -c %CONFIGURATION% --self-contained -r linux-musl-arm64 -o linux-musl-arm64 PeerCastStation/PeerCastStation/PeerCastStation.csproj
-    dotnet publish -c %CONFIGURATION% --self-contained -r linux-musl-arm64 -o linux-musl-arm64 PeerCastStation/PeerCastStation/PeerCastStation.csproj
-    dotnet publish -c %CONFIGURATION% --self-contained -r linux-musl-arm64 -o linux-musl-arm64 PeerCastStation/PeerCastStation/PeerCastStation.csproj
-    dotnet publish -c %CONFIGURATION% --no-self-contained -r any -o any PeerCastStation/PeerCastStation/PeerCastStation.csproj
 
-artifacts:
-- path: win-x64
-  name: PeerCastStation-win-x64-$(APPVEYOR_BUILD_VERSION)
-- path: win-x86
-  name: PeerCastStation-win-x86-$(APPVEYOR_BUILD_VERSION)
-- path: linux-x64
-  name: PeerCastStation-linux-x64-$(APPVEYOR_BUILD_VERSION)
-- path: linux-arm
-  name: PeerCastStation-linux-arm-$(APPVEYOR_BUILD_VERSION)
-- path: linux-arm64
-  name: PeerCastStation-linux-arm64-$(APPVEYOR_BUILD_VERSION)
-- path: linux-musl-x64
-  name: PeerCastStation-linux-musl-x64-$(APPVEYOR_BUILD_VERSION)
-- path: linux-musl-arm
-  name: PeerCastStation-linux-musl-arm-$(APPVEYOR_BUILD_VERSION)
-- path: linux-musl-arm64
-  name: PeerCastStation-linux-musl-arm64-$(APPVEYOR_BUILD_VERSION)
-- path: any
-  name: PeerCastStation-any-$(APPVEYOR_BUILD_VERSION)
-- path: PeerCastStation/PecaStationdInstaller/bin/$(CONFIGURATION)/PecaStationd-$(APPVEYOR_BUILD_VERSION).msi
-  name: PecaStationd-$(APPVEYOR_BUILD_VERSION).msi
-- path: PeerCastStation/SetupBundle/bin/$(CONFIGURATION)/PeerCastStation-$(APPVEYOR_BUILD_VERSION).exe
-  name: PeerCastStation-$(APPVEYOR_BUILD_VERSION).exe
+for:
+- matrix:
+    only:
+      - image: Visual Studio 2019
+
+  install:
+  - cmd: |-
+      set PATH=C:\Ruby27-x64\bin;%PATH%
+      gem install -N jekyll
+
+  before_build:
+  - cmd: |-
+      ruby bumpversion.rb %APPVEYOR_BUILD_VERSION%
+      cd doc\help
+      jekyll build
+      cd ..\..
+      dotnet restore PeerCastStation/PeerCastStation.sln
+
+  build_script:
+  - cmd: |-
+      msbuild -p:Configuration=%CONFIGURATION% -p:"Platform=Any CPU" PeerCastStation/PeerCastStation.sln
+      dotnet publish -c %CONFIGURATION% --self-contained -r win-x64 -o win-x64 PeerCastStation/PeerCastStation/PeerCastStation.csproj
+      dotnet publish -c %CONFIGURATION% --self-contained -r win-x64 -o win-x64 PeerCastStation/PecaStationd/PecaStationd.csproj
+      dotnet publish -c %CONFIGURATION% --self-contained -r win-x86 -o win-x86 PeerCastStation/PeerCastStation/PeerCastStation.csproj
+      dotnet publish -c %CONFIGURATION% --self-contained -r win-x86 -o win-x86 PeerCastStation/PecaStationd/PecaStationd.csproj
+      dotnet publish -c %CONFIGURATION% --self-contained -r linux-x64 -o linux-x64 PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
+      dotnet publish -c %CONFIGURATION% --self-contained -r linux-arm -o linux-arm PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
+      dotnet publish -c %CONFIGURATION% --self-contained -r linux-arm64 -o linux-arm64 PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
+      dotnet publish -c %CONFIGURATION% --self-contained -r linux-musl-x64 -o linux-musl-x64 PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
+      dotnet publish -c %CONFIGURATION% --self-contained -r linux-musl-arm -o linux-musl-arm PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
+      dotnet publish -c %CONFIGURATION% --self-contained -r linux-musl-arm64 -o linux-musl-arm64 PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
+      dotnet publish -c %CONFIGURATION% --self-contained -r linux-musl-arm64 -o linux-musl-arm64 PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
+      dotnet publish -c %CONFIGURATION% --self-contained -r linux-musl-arm64 -o linux-musl-arm64 PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
+      dotnet publish -c %CONFIGURATION% --no-self-contained -r any -o any PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
+
+  artifacts:
+  - path: win-x64
+    name: PeerCastStation-win-x64-$(APPVEYOR_BUILD_VERSION)
+  - path: win-x86
+    name: PeerCastStation-win-x86-$(APPVEYOR_BUILD_VERSION)
+  - path: linux-x64
+    name: PeerCastStation-linux-x64-$(APPVEYOR_BUILD_VERSION)
+  - path: linux-arm
+    name: PeerCastStation-linux-arm-$(APPVEYOR_BUILD_VERSION)
+  - path: linux-arm64
+    name: PeerCastStation-linux-arm64-$(APPVEYOR_BUILD_VERSION)
+  - path: linux-musl-x64
+    name: PeerCastStation-linux-musl-x64-$(APPVEYOR_BUILD_VERSION)
+  - path: linux-musl-arm
+    name: PeerCastStation-linux-musl-arm-$(APPVEYOR_BUILD_VERSION)
+  - path: linux-musl-arm64
+    name: PeerCastStation-linux-musl-arm64-$(APPVEYOR_BUILD_VERSION)
+  - path: any
+    name: PeerCastStation-any-$(APPVEYOR_BUILD_VERSION)
+  - path: PeerCastStation/PecaStationdInstaller/bin/$(CONFIGURATION)/PecaStationd-$(APPVEYOR_BUILD_VERSION).msi
+    name: PecaStationd-$(APPVEYOR_BUILD_VERSION).msi
+  - path: PeerCastStation/SetupBundle/bin/$(CONFIGURATION)/PeerCastStation-$(APPVEYOR_BUILD_VERSION).exe
+    name: PeerCastStation-$(APPVEYOR_BUILD_VERSION).exe
+
+- matrix:
+    only:
+      - image: Ubuntu
+
+  install:
+    - rvm use 2.7.0
+    - gem install -N jekyll
+
+  before_build:
+    - ruby bumpversion.rb $APPVEYOR_BUILD_VERSION
+    - cd doc/help
+    - jekyll build
+    - cd ../..
+
+  build_script:
+    - docker build --rm -t ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION -f PeerCastStation/PeerCastStation/Dockerfile PeerCastStation/
+    - docker save -o peercaststation-$APPVEYOR_BUILD_VERSION.tar ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION
+
+  deploy_script:
+    - echo $GITHUB_CR_TOKEN | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+    - docker push ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION
+
+  artifacts:
+    - path: peercaststation-$(APPVEYOR_BUILD_VERSION).tar
 
