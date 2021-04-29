@@ -302,18 +302,12 @@ namespace PeerCastStation.Core.Http
 
       public Task WriteAsync(byte[] bytes, CancellationToken ct)
       {
-        if (!ContentLength.HasValue) {
-          ContentLength = bytes.LongLength;
-        }
         var strm = env.Get<System.IO.Stream>(Owin.ResponseBody);
         return strm.WriteAsync(bytes, 0, bytes.Length, ct);
       }
 
       public ValueTask WriteAsync(ReadOnlyMemory<byte> bytes, CancellationToken ct)
       {
-        if (!ContentLength.HasValue) {
-          ContentLength = bytes.Length;
-        }
         var strm = env.Get<System.IO.Stream>(Owin.ResponseBody);
         return strm.WriteAsync(bytes, ct);
       }
