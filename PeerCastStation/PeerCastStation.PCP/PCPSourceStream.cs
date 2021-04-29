@@ -579,7 +579,7 @@ Stopped:
         string mime_type = null;
         if (content_header!=null &&
             PeerCast.ContentReaderFactories.Any(
-              factory => factory.TryParseContentType(content_header.Data, out content_type, out mime_type))) {
+              factory => factory.TryParseContentType(content_header.Data.ToArray(), out content_type, out mime_type))) {
           var new_info = new AtomCollection(channel_info.Extra);
           new_info.SetChanInfoType(content_type);
           new_info.SetChanInfoStreamType(mime_type);

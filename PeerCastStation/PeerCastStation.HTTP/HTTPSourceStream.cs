@@ -134,18 +134,18 @@ namespace PeerCastStation.HTTP
         this.Status = ConnectionStatus.Connecting;
         var host = SourceUri.DnsSafeHost;
         if (SourceUri.Port!=-1 && SourceUri.Port!=80) {
-          host = String.Format("{0}:{1}", SourceUri.DnsSafeHost, SourceUri.Port);
+          host = $"{SourceUri.DnsSafeHost}:{SourceUri.Port}";
         }
-        var request = String.Format(
-            "GET {0} HTTP/1.1\r\n" +
-            "Host: {1}\r\n" +
-            "User-Agent: NSPlayer ({2})\r\n" +
+        var request =
+            $"GET {SourceUri.PathAndQuery} HTTP/1.1\r\n" +
+            $"Host: {host}\r\n" +
+            "Accept: */*\r\n" +
+            "User-Agent: NSPlayer/12.0\r\n" +
             "Connection: close\r\n" +
-            "Pragma: stream-switch\r\n" +
-            "\r\n",
-            SourceUri.PathAndQuery,
-            host,
-            PeerCast.AgentName);
+            "Cache-Control: no-cache\r\n" +
+            "Pragma: xPlayStrm=1\r\n" +
+            "Pragma: rate=1.000,stream-time=0\r\n" +
+            "\r\n";
         await connection.Stream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(request)).ConfigureAwait(false);
         Logger.Debug("Sending request:\n" + request);
 

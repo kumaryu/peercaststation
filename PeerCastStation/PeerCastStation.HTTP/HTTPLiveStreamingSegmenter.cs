@@ -39,13 +39,13 @@ namespace PeerCastStation.HTTP
       {
         this.owner = owner;
         this.header = header;
-        segmentBuffer.Write(header.Data, 0, header.Data.Length);
+        segmentBuffer.Write(header.Data.Span);
       }
 
       private void FlushSegment(double duration)
       {
         var newbuf = new MemoryStream();
-        newbuf.Write(header.Data, 0, header.Data.Length);
+        newbuf.Write(header.Data.Span);
         var buf = Interlocked.Exchange(ref segmentBuffer, newbuf);
         buf.Close();
         lock (segments) {
@@ -60,7 +60,7 @@ namespace PeerCastStation.HTTP
         int r = 0;
         var bytes188 = new byte[188];
         while (r<content.Data.Length) {
-          Array.Copy(content.Data, r, bytes188, 0, 188);
+          content.Data.Slice(r).CopyTo(new Memory<byte>(bytes188));
           var tsPacket = new TSPacket(bytes188);
           if (tsPacket.keyframe) {
             if (lastPcr.HasValue) {

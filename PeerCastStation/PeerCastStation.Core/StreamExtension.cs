@@ -63,6 +63,18 @@ namespace PeerCastStation.Core
       return length;
     }
 
+    public static async Task<int> ReadBytesAsync(this Stream stream, Memory<byte> buffer, int length, CancellationToken cancel_token)
+    {
+      int pos = 0;
+      while (pos<length) {
+        cancel_token.ThrowIfCancellationRequested();
+        var r = await stream.ReadAsync(buffer.Slice(pos, length-pos), cancel_token).ConfigureAwait(false);
+        if (r<=0) throw new EndOfStreamException();
+        pos += r;
+      }
+      return length;
+    }
+
     public static void WriteByte(this Stream stream, int value)
     {
       stream.WriteByte((byte)value);
