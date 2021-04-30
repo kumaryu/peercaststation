@@ -298,8 +298,13 @@ namespace PeerCastStation.ASF
 
     public static (WMSPFrame, ReadOnlyMemory<byte>) ReadFromMemory(ReadOnlyMemory<byte> memory)
     {
-      var frame = new WMSPFrame(memory);
-      return (frame, memory.Slice(4+frame.Length));
+      try {
+        var frame = new WMSPFrame(memory);
+        return (frame, memory.Slice(4+frame.Length));
+      }
+      catch (ArgumentOutOfRangeException ex) {
+        throw new EndOfStreamException(ex.Message, ex);
+      }
     }
 
     public static async Task<WMSPFrame> ReadAsync(Stream stream, CancellationToken cancellationToken)
