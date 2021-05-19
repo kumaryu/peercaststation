@@ -319,7 +319,7 @@ namespace PeerCastStation.FLV.RTMP
       ContentPosition = content.Position;
       var pos = contentBuffer.Position;
       contentBuffer.Seek(0, System.IO.SeekOrigin.End);
-      contentBuffer.Write(content.Data, 0, content.Data.Length);
+      contentBuffer.Write(content.Data.Span);
       contentBuffer.Position = pos;
       if (contentSink==null) contentSink = new RTMPContentSink(this);
       fileParser.Read(contentBuffer, contentSink);

@@ -56,7 +56,7 @@ namespace PeerCastStation.Core
           timestamp = content.Timestamp;
           lastTimestamp = timestamp;
           dataBuffer.SetLength(0);
-          dataBuffer.Write(content.Data, 0, content.Data.Length);
+          dataBuffer.Write(content.Data.Span);
           empty = false;
           return true;
         }
@@ -71,7 +71,7 @@ namespace PeerCastStation.Core
           var independent_packets = (dataBuffer.Length+LengthThreashold-1)/LengthThreashold + (content.Data.Length+LengthThreashold-1)/LengthThreashold;
           if (unified_packets<independent_packets) {
             lastTimestamp = content.Timestamp;
-            dataBuffer.Write(content.Data, 0, content.Data.Length);
+            dataBuffer.Write(content.Data.Span);
             return true;
           }
           else {
@@ -80,7 +80,7 @@ namespace PeerCastStation.Core
         }
         else {
           lastTimestamp = content.Timestamp;
-          dataBuffer.Write(content.Data, 0, content.Data.Length);
+          dataBuffer.Write(content.Data.Span);
           return true;
         }
       }

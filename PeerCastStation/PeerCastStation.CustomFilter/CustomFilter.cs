@@ -125,7 +125,7 @@ namespace PeerCastStation.CustomFilter
     private Task stdOutTask;
     private Task stdInTask;
     private bool writable = false;
-    private WaitableQueue<byte[]> pipePackets = new WaitableQueue<byte[]>();
+    private WaitableQueue<ReadOnlyMemory<byte>> pipePackets = new WaitableQueue<ReadOnlyMemory<byte>>();
 
     private Content lastContent = null;
     private void StartProcess()
@@ -151,7 +151,7 @@ namespace PeerCastStation.CustomFilter
       processCancellationToken = new CancellationTokenSource();
       var cancel = processCancellationToken.Token;
       process = System.Diagnostics.Process.Start(startinfo);
-      pipePackets = new WaitableQueue<byte[]>();
+      pipePackets = new WaitableQueue<ReadOnlyMemory<byte>>();
       var stdout = process.StandardOutput.BaseStream;
       var stdin  = process.StandardInput.BaseStream;
       var stderr = process.StandardError;
@@ -198,8 +198,8 @@ namespace PeerCastStation.CustomFilter
         try {
           while (!cancel.IsCancellationRequested) {
             var packet = await pipePackets.DequeueAsync(cancel).ConfigureAwait(false);
-            if (packet!=null) {
-              await stdin.WriteAsync(packet, 0, packet.Length, cancel).ConfigureAwait(false);
+            if (!packet.IsEmpty) {
+              await stdin.WriteAsync(packet, cancel).ConfigureAwait(false);
               if (pipePackets.IsEmpty) {
                 await stdin.FlushAsync().ConfigureAwait(false);
               }

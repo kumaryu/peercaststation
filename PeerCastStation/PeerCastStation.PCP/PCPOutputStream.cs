@@ -682,7 +682,7 @@ namespace PeerCastStation.PCP
         await stream.WriteAsync(new Atom(Atom.PCP_BCST, bcst), cancellationToken).ConfigureAwait(false);
       }
 
-      private Atom CreateContentBodyPacket(Guid channelId, long pos, IEnumerable<byte> data, PCPChanPacketContinuation contFlag)
+      private Atom CreateContentBodyPacket(Guid channelId, long pos, ReadOnlyMemory<byte> data, PCPChanPacketContinuation contFlag)
       {
         var chan = new AtomCollection();
         chan.SetChanID(channelId);
@@ -706,7 +706,7 @@ namespace PeerCastStation.PCP
               CreateContentBodyPacket(
                 channelId,
                 i*MaxBodyLength+content.Position,
-                content.Data.Skip(i*MaxBodyLength).Take(MaxBodyLength),
+                content.Data.Slice(i*MaxBodyLength, Math.Min((content.Data.Length - i*MaxBodyLength), MaxBodyLength)),
                 content.ContFlag | (i==0 ? PCPChanPacketContinuation.None : PCPChanPacketContinuation.Fragment)
               )
             );

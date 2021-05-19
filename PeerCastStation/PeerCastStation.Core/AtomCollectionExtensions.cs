@@ -798,6 +798,11 @@ namespace PeerCastStation.Core
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_PKT_DATA, value));
     }
 
+    public static void SetChanPktData(this IAtomCollection collection, ReadOnlyMemory<byte> value)
+    {
+      SetAtomTo(collection, new Atom(Atom.PCP_CHAN_PKT_DATA, value.ToArray()));
+    }
+
     public static void SetChanPktCont(this IAtomCollection collection, PCPChanPacketContinuation value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_CHAN_PKT_CONTINUATION, (byte)value));

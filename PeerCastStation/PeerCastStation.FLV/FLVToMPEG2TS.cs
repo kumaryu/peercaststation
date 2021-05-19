@@ -945,7 +945,7 @@ namespace PeerCastStation.FLV
               var buffer = contentBuffer;
               var pos = buffer.Position;
               buffer.Seek(0, SeekOrigin.End);
-              buffer.Write(msg.Content.Data, 0, msg.Content.Data.Length);
+              buffer.Write(msg.Content.Data.Span);
               buffer.Position = pos;
               fileParser.Read(buffer, context);
               if (buffer.Position!=0) {
@@ -976,7 +976,7 @@ namespace PeerCastStation.FLV
               var buffer = contentBuffer;
               var pos = buffer.Position;
               buffer.Seek(0, SeekOrigin.End);
-              buffer.Write(msg.Content.Data, 0, msg.Content.Data.Length);
+              buffer.Write(msg.Content.Data.Span);
               buffer.Position = pos;
               fileParser.Read(buffer, context);
               if (buffer.Position!=0) {

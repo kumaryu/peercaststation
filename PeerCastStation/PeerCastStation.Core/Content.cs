@@ -45,7 +45,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// コンテントの内容を取得します
     /// </summary>
-    public byte[] Data   { get; private set; } 
+    public ReadOnlyMemory<byte> Data { get; private set; } 
     /// <summary>
     /// コンテントのContentCollectionへ追加された順番を取得および設定します
     /// </summary>
@@ -59,7 +59,7 @@ namespace PeerCastStation.Core
     /// <param name="pos">バイト位置</param>
     /// <param name="data">内容</param>
     /// <param name="cont">内容</param>
-    public Content(int stream, TimeSpan timestamp, long pos, byte[] data, PCPChanPacketContinuation cont)
+    public Content(int stream, TimeSpan timestamp, long pos, ReadOnlyMemory<byte> data, PCPChanPacketContinuation cont)
     {
       Stream    = stream;
       Timestamp = timestamp;
@@ -74,8 +74,9 @@ namespace PeerCastStation.Core
       Stream    = stream;
       Timestamp = timestamp;
       Position  = pos;
-      Data      = new byte[length];
-      Array.Copy(data, offset, this.Data, 0, length);
+      var buf = new byte[length];
+      Array.Copy(data, offset, buf, 0, length);
+      Data      = buf;
       ContFlag  = cont;
       Serial    = -1;
     }
