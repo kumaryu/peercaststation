@@ -230,6 +230,27 @@ var YPChannelViewModel = function(owner, initial_value, new_channel) {
     var auth_token = owner.authToken();
     return auth_token ? url + '&auth=' + auth_token : url;
   });
+  self.playlistFilename = ko.computed(function () {
+    var ext = "";
+    var protocol = UserConfig.defaultPlayProtocol()[self.infoContentType()] || 'Unknown';
+    switch (protocol) {
+    case 'Unknown':
+      break;
+    case 'MSWMSP':
+      ext = ".asx";
+      break;
+    case 'HTTP':
+      ext = ".m3u";
+      break;
+    case 'RTMP':
+      ext = ".m3u";
+      break;
+    case 'HLS':
+      ext = ".m3u8";
+      break;
+    }
+    return self.infoName().replace(/((^\.)|[:\/\\~$<>?"*|])/g, '_') + ext;
+  });
   self.playlistUrl     = ko.computed(function() {
     var ext = "";
     var parameters = ["tip=" + self.tracker()];
@@ -274,7 +295,10 @@ var YPChannelViewModel = function(owner, initial_value, new_channel) {
 
   self.onOpened = function() {
     if (!self.isPlayable()) return;
-    window.open(self.playlistUrl());
+    var a = document.createElement('a')
+    a.href = self.playlistUrl()
+    a.download = self.playlistFilename()
+    a.click()
   };
 
   self.toString = function() {
@@ -416,6 +440,11 @@ var YPChannelsViewModel = function() {
     if (channel==null) return false;
     return channel.isPlayable();
   });
+  self.channelPlaylistFilename = ko.computed(function () {
+    var channel = self.selectedChannel();
+    if (channel==null || !channel.isPlayable()) return "";
+    return channel.playlistFilename();
+  })
   self.channelPlaylistUrl = ko.computed(function () {
     var channel = self.selectedChannel();
     if (channel==null || !channel.isPlayable()) return "#";

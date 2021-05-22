@@ -60,6 +60,27 @@ var ChannelViewModel = function(owner, initial_value) {
     var auth_token = owner.authToken();
     return auth_token ? url + '?auth=' + auth_token : url;
   });
+  self.playlistFilename = ko.computed(function () {
+    var ext = "";
+    var protocol = UserConfig.defaultPlayProtocol()[self.infoContentType()] || 'Unknown';
+    switch (protocol) {
+    case 'Unknown':
+      break;
+    case 'MSWMSP':
+      ext = ".asx";
+      break;
+    case 'HTTP':
+      ext = ".m3u";
+      break;
+    case 'RTMP':
+      ext = ".m3u";
+      break;
+    case 'HLS':
+      ext = ".m3u8";
+      break;
+    }
+    return self.infoName().replace(/((^\.)|[:\/\\~$<>?"*|])/g, '_') + ext;
+  });
   self.playlistUrl = ko.computed(function () {
     var ext = "";
     var parameters = [];

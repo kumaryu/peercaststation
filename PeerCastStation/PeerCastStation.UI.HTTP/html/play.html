@@ -14,6 +14,7 @@
     <script type="text/javascript" src="/Scripts/knockout-2.2.0.js"></script>
     <script type="text/javascript" src="/Scripts/bootstrap.min.js"></script>
     <script type="text/javascript" src="/api/1/peercaststation.js"></script>
+    <script type="text/javascript" src="js/common.js"></script>
     <script type="text/javascript" src="js/play.js"></script>
     <script type="text/javascript">
       $(function() {
@@ -58,7 +59,7 @@
                   <a href="#" class="btn btn-mini" data-bind="click:showInfo" rel="tooltip" title="情報"><i class="icon-info-sign"></i></a>
                 </div>
                 <div class="btn-group">
-                  <a class="btn btn-mini" data-bind="attr: { href: playlistUrl }" rel="tooltip" title="再生"><i class="icon-play"></i></a>
+                  <a class="btn btn-mini" data-bind="attr: { href: playlistUrl, download: playlistFilename }" rel="tooltip" title="再生"><i class="icon-play"></i></a>
                 </div>
               </div>
             </div>
