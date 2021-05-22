@@ -66,6 +66,7 @@ namespace PeerCastStation.HTTP
     public Task<byte[]> CreatePlayListAsync(Uri baseuri, IEnumerable<KeyValuePair<string,string>> parameters, CancellationToken cancellationToken)
     {
       var res = new System.Text.StringBuilder();
+      res.AppendLine("#EXTM3U");
       var queries = String.Join("&", parameters.Select(kv => Uri.EscapeDataString(kv.Key) + "=" + Uri.EscapeDataString(kv.Value)));
       foreach (var c in Channels) {
         var url = new UriBuilder(new Uri(baseuri, c.ChannelID.ToString("N").ToUpper() + c.ChannelInfo.ContentExtension));
@@ -73,6 +74,7 @@ namespace PeerCastStation.HTTP
         if (queries!="") {
           url.Query = queries;
         }
+        res.AppendLine($"#EXTINF:-1, {c.ChannelInfo.Name}");
         res.AppendLine(url.ToString());
       }
       return Task.FromResult(System.Text.Encoding.UTF8.GetBytes(res.ToString()));
