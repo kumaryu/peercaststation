@@ -12,73 +12,6 @@ let registerPCPRelay (host:PeerCastStation.Core.Http.OwinHost) =
 
 let endpoint = allocateEndPoint IPAddress.Loopback
 
-[<Fact>]
-let ``チャンネルIDを渡さないとエラーが返る`` () =
-    use peca = pecaWithOwinHost endpoint registerPCPRelay
-    let getRequest404 (path, expected) =
-        sprintf "http://%s/%s" (endpoint.ToString()) path
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectStatusCode expected
-    [
-        ("channel/", HttpStatusCode.Forbidden);
-        ("channel/hoge", HttpStatusCode.NotFound);
-    ]
-    |> List.iter getRequest404
-
-[<Fact>]
-let ``無いチャンネルIDを指定すると404が返る`` () =
-    use peca = pecaWithOwinHost endpoint registerPCPRelay
-    let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
-    channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
-    peca.AddChannel channel
-    sprintf "http://%s/channel/%s" (endpoint.ToString()) (Guid.NewGuid().ToString("N"))
-    |> WebRequest.CreateHttp
-    |> Assert.ExpectStatusCode HttpStatusCode.NotFound
-
-[<Fact>]
-let ``受信状態でないチャンネルを指定すると404が返る`` () =
-    use peca = pecaWithOwinHost endpoint registerPCPRelay
-    let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
-    channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
-    peca.AddChannel channel
-    sprintf "http://%s/channel/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
-    |> WebRequest.CreateHttp
-    |> Assert.ExpectStatusCode HttpStatusCode.NotFound
-
-[<Fact>]
-let ``PCPバージョンが指定されていないと400が返る`` () =
-    use peca = pecaWithOwinHost endpoint registerPCPRelay
-    let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
-    channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
-    channel.Start(null)
-    peca.AddChannel channel
-    sprintf "http://%s/channel/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
-    |> WebRequest.CreateHttp
-    |> Assert.ExpectStatusCode HttpStatusCode.BadRequest
-
-[<Fact>]
-let ``ネットワークが違うチャンネルを指定すると404が返る`` () =
-    let testNetwork (endpoint, network, pcpver) = 
-        use peca = pecaWithOwinHost endpoint registerPCPRelay
-        let channel = DummyBroadcastChannel(peca, network, Guid.NewGuid())
-        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
-        channel.Start(null)
-        peca.AddChannel channel
-        sprintf "http://%s/channel/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
-        |> WebRequest.CreateHttp
-        |> WebRequest.addHeader "x-peercast-pcp" pcpver
-        |> Assert.ExpectStatusCode HttpStatusCode.NotFound
-    [
-        (allocateEndPoint IPAddress.Loopback, NetworkType.IPv6, "1");
-        (allocateEndPoint IPAddress.Loopback, NetworkType.IPv6, "100");
-        (allocateEndPoint IPAddress.Loopback, NetworkType.IPv4, "100");
-        (allocateEndPoint IPAddress.IPv6Loopback, NetworkType.IPv4, "1");
-        (allocateEndPoint IPAddress.IPv6Loopback, NetworkType.IPv4, "100");
-        (allocateEndPoint IPAddress.IPv6Loopback, NetworkType.IPv6, "1");
-    ]
-    |> List.iter testNetwork
-
-
 module Stream =
     let encoding = System.Text.UTF8Encoding(false)
     let eol = [| '\r'B; '\n'B |]
@@ -241,17 +174,69 @@ module RelayClientConnection =
             failwith err
 
     let sendHelo connection =
-        let helo = AtomCollection()
-        helo.SetHeloAgent "TestClient"
-        helo.SetHeloSessionID <| Guid.NewGuid()
-        helo.SetHeloVersion 1218
-        connection.response.stream.Write(Atom(Atom.PCP_HELO, helo))
+        AtomCollection()
+        |> Atom.setHeloAgent "TestClient"
+        |> Atom.setHeloSessionID (Guid.NewGuid())
+        |> Atom.setHeloVersion 1218
+        |> Atom.parentAtom Atom.PCP_HELO
+        |> connection.response.stream.Write
 
     let recvAtom connection =
         connection.response.stream.ReadAtom()
 
     let sendAtom (value:Atom) connection =
         connection.response.stream.Write(value)
+
+module PCPPongServer =
+    let (|ParseAtom|_|) name (atom : Atom) =
+        if atom.Name = name then
+            Some ()
+        else
+            None
+
+    let listen port =
+        async {
+            let listener = System.Net.Sockets.TcpListener.Create(port)
+            listener.Start()
+            use! onCancel = Async.OnCancel (fun () -> listener.Stop())
+            let! ct = Async.CancellationToken
+            try
+                try
+                    use! client = listener.AcceptTcpClientAsync() |> Async.AwaitTask
+                    let strm = client.GetStream()
+                    let rec readAndProcessAtom () =
+                        async {
+                            let! atom = strm.ReadAtomAsync(ct) |> Async.AwaitTask
+                            match atom with
+                            | ParseAtom Atom.PCP_HELO ->
+                                let sessionId = Guid.NewGuid()
+                                let remoteSessionId = atom.Children.GetHeloSessionID()
+                                let oleh = AtomCollection()
+                                oleh.SetHeloSessionID(sessionId)
+                                do!
+                                    strm.WriteAsync(Atom(Atom.PCP_OLEH, oleh)) |> Async.AwaitTask
+                                let stopReason =
+                                    if remoteSessionId.HasValue then
+                                        StopReason.None
+                                    else
+                                        StopReason.NotIdentifiedError
+                                do!
+                                    strm.WriteAsync(Atom(Atom.PCP_QUIT, int stopReason)) |> Async.AwaitTask
+                                return Some ()
+                            | ParseAtom Atom.PCP_QUIT ->
+                                return None
+                            | _ ->
+                                return! readAndProcessAtom ()
+                        }
+                    return! readAndProcessAtom()
+                with
+                | :? ObjectDisposedException
+                | :? System.IO.IOException
+                | :? OperationCanceledException ->
+                    return None
+            finally
+                listener.Stop()
+        }
 
 module RelaySinkTests =
     let endpoint = allocateEndPoint IPAddress.Loopback
@@ -295,6 +280,72 @@ module RelaySinkTests =
         let hosts, last = recvHost connection []
         Assert.ExpectAtomName Atom.PCP_QUIT last
         hosts
+
+    [<Fact>]
+    let ``チャンネルIDを渡さないとエラーが返る`` () =
+        use peca = pecaWithOwinHost endpoint registerPCPRelay
+        let getRequest404 (path, expected) =
+            sprintf "http://%s/%s" (endpoint.ToString()) path
+            |> WebRequest.CreateHttp
+            |> Assert.ExpectStatusCode expected
+        [
+            ("channel/", HttpStatusCode.Forbidden);
+            ("channel/hoge", HttpStatusCode.NotFound);
+        ]
+        |> List.iter getRequest404
+
+    [<Fact>]
+    let ``無いチャンネルIDを指定すると404が返る`` () =
+        use peca = pecaWithOwinHost endpoint registerPCPRelay
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        peca.AddChannel channel
+        sprintf "http://%s/channel/%s" (endpoint.ToString()) (Guid.NewGuid().ToString("N"))
+        |> WebRequest.CreateHttp
+        |> Assert.ExpectStatusCode HttpStatusCode.NotFound
+
+    [<Fact>]
+    let ``受信状態でないチャンネルを指定すると404が返る`` () =
+        use peca = pecaWithOwinHost endpoint registerPCPRelay
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        peca.AddChannel channel
+        sprintf "http://%s/channel/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
+        |> WebRequest.CreateHttp
+        |> Assert.ExpectStatusCode HttpStatusCode.NotFound
+
+    [<Fact>]
+    let ``PCPバージョンが指定されていないと400が返る`` () =
+        use peca = pecaWithOwinHost endpoint registerPCPRelay
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        channel.Start(null)
+        peca.AddChannel channel
+        sprintf "http://%s/channel/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
+        |> WebRequest.CreateHttp
+        |> Assert.ExpectStatusCode HttpStatusCode.BadRequest
+
+    [<Fact>]
+    let ``ネットワークが違うチャンネルを指定すると404が返る`` () =
+        let testNetwork (endpoint, network, pcpver) = 
+            use peca = pecaWithOwinHost endpoint registerPCPRelay
+            let channel = DummyBroadcastChannel(peca, network, Guid.NewGuid())
+            channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+            channel.Start(null)
+            peca.AddChannel channel
+            sprintf "http://%s/channel/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
+            |> WebRequest.CreateHttp
+            |> WebRequest.addHeader "x-peercast-pcp" pcpver
+            |> Assert.ExpectStatusCode HttpStatusCode.NotFound
+        [
+            (allocateEndPoint IPAddress.Loopback, NetworkType.IPv6, "1");
+            (allocateEndPoint IPAddress.Loopback, NetworkType.IPv6, "100");
+            (allocateEndPoint IPAddress.Loopback, NetworkType.IPv4, "100");
+            (allocateEndPoint IPAddress.IPv6Loopback, NetworkType.IPv4, "1");
+            (allocateEndPoint IPAddress.IPv6Loopback, NetworkType.IPv4, "100");
+            (allocateEndPoint IPAddress.IPv6Loopback, NetworkType.IPv6, "1");
+        ]
+        |> List.iter testNetwork
 
     [<Fact>]
     let ``503の時は他のリレー候補を返して切る`` () =
@@ -426,6 +477,41 @@ module RelaySinkTests =
         Threading.Thread.Sleep(1000)
         expectRelay200 channel StopReason.UserShutdown |> ignore
         Assert.False(channel.HasBanned("127.0.0.1"))
+
+    [<Fact>]
+    let ``PINGが設定されているとポートチェックをする`` () =
+        let pongEndPoint = allocateEndPoint IPAddress.Loopback
+        use peca = pecaWithOwinHost endpoint registerPCPRelay
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+        channel.Relayable <- true
+        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        channel.Start(null)
+        peca.AddChannel channel
+        use connection = RelayClientConnection.connect endpoint (channel.ChannelID)
+        Assert.Equal(200, connection.response.status)
+        async {
+            let! pong = Async.StartChild(PCPPongServer.listen pongEndPoint.Port, 10000)
+            let test = async {
+                AtomCollection()
+                |> Atom.setHeloAgent "TestClient"
+                |> Atom.setHeloSessionID (Guid.NewGuid())
+                |> Atom.setHeloVersion 1218
+                |> Atom.setHeloPing pongEndPoint.Port
+                |> Atom.setHeloPort pongEndPoint.Port
+                |> Atom.parentAtom Atom.PCP_HELO
+                |> connection.response.stream.Write
+                RelayClientConnection.sendHelo connection
+                RelayClientConnection.recvAtom connection
+                |> Assert.ExpectAtomName Atom.PCP_OLEH
+                RelayClientConnection.recvAtom connection
+                |> Assert.ExpectAtomName Atom.PCP_OK
+                return Some ()
+            }
+            return! Async.Parallel([ pong; test ])
+        }
+        |> Async.RunSynchronously
+        |> Seq.forall Option.isSome
+        |> Assert.True
 
 type RelayServerConnection =
     {

@@ -379,17 +379,21 @@ namespace PeerCastStation.PCP
           host.SessionID = session_id.Value;
           var port = atom.Children.GetHeloPort();
           var ping = atom.Children.GetHeloPing();
-          if (port!=null) {
-            remote_port = port.Value;
-          }
-          else if (ping!=null) {
-            if (!remoteEndPoint.Address.IsSiteLocal() &&
-                await PingHostAsync(new IPEndPoint(remoteEndPoint.Address, ping.Value), session_id.Value, cancel_token).ConfigureAwait(false)) {
-              remote_port = ping.Value;
+          if (ping!=null) {
+            if (await PingHostAsync(new IPEndPoint(remoteEndPoint.Address, ping.Value), session_id.Value, cancel_token).ConfigureAwait(false)) {
+              if (!remoteEndPoint.Address.IsSiteLocal()) {
+                remote_port = ping.Value;
+              }
+              else {
+                remote_port = 0;
+              }
             }
             else {
               remote_port = 0;
             }
+          }
+          else if (port!=null) {
+            remote_port = port.Value;
           }
           else {
             remote_port = 0;
