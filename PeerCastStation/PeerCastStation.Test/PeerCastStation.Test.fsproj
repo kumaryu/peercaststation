@@ -41,6 +41,5 @@
     <Compile Include="Tests.fs" />
     <Compile Include="PCPTests.fs" />
     <Compile Include="UpdaterTests.fs" />
-    <Compile Include="Program.fs" />
   </ItemGroup>
 </Project>
