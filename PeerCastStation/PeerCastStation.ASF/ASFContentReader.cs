@@ -456,10 +456,9 @@ namespace PeerCastStation.ASF
   {
     override public string Name { get { return "ASF Content Reader"; } }
 
-    private ASFContentReaderFactory factory;
+    private readonly ASFContentReaderFactory factory = new ASFContentReaderFactory();
     override protected void OnAttach()
     {
-      if (factory==null) factory = new ASFContentReaderFactory();
       Application.PeerCast.ContentReaderFactories.Add(factory);
     }
 
