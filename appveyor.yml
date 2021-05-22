@@ -73,7 +73,7 @@ for:
       - image: Ubuntu
 
   install:
-    - rvm use 2.7.0
+    - rvm use 2.7
     - gem install -N jekyll
 
   before_build:
