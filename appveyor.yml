@@ -6,7 +6,7 @@ version: 3.1.0.{build}
 environment:
   GITHUB_ACTOR: kumaryu
   GITHUB_CR_TOKEN:
-    secure: cRpimg3ZDRI8pJUkcSSouww5+tki/QLZIqAGMlziMY8d6wx8z9+GXZfi4YbCgelY
+    secure: 4ZKkbwwriImTNatsCmqVWNFOsObxDOfbenDzznEtCtfwqqOctigBAOvgbwM9Ll9c
 configuration: Release
 
 for:
