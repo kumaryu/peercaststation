@@ -300,6 +300,10 @@ namespace PeerCastStation.PCP
       private Channel channel;
       private Logger logger;
 
+      //ハンドシェイク終了まで一定時間で終わらなかったらタイムアウトする
+      //PeerCastのポート開放チェックが最悪15秒かかるのでそれより短くはしないこと
+      public int PCPHandshakeTimeout { get; set; } = 18000;
+
       public PCPRelayHandler(Channel channel, Logger logger)
       {
         this.peerCast = channel.PeerCast;
@@ -803,7 +807,7 @@ namespace PeerCastStation.PCP
         try {
           await stream.WriteBytesAsync(CreateRelayResponse(isRelayFull), cancellationToken).ConfigureAwait(false);
           using (var handshakeCT=CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)) {
-            handshakeCT.CancelAfter(5000);
+            handshakeCT.CancelAfter(PCPHandshakeTimeout);
             try {
               peer = await DoHandshake(stream, remoteEndPoint, isRelayFull, handshakeCT.Token).ConfigureAwait(false);
             }
