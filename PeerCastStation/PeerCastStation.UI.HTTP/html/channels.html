@@ -71,7 +71,7 @@
       <div class="toolbar" data-spy="affix" data-offset-top="42">
         <div class="toolbar-inner">
           <div class="pull-left" style="margin-left:8px">
-            <a class="btn hastooltip" title="再生" data-placement="right" data-container="body" data-bind="attr: { href: channelPlaylistUrl }, css: { disabled: !channelPlayable() }" href="#"><i class="icon-play"></i></a>
+            <a class="btn hastooltip" title="再生" data-placement="right" data-container="body" data-bind="attr: { href: channelPlaylistUrl, download: channelPlaylistFilename }, css: { disabled: !channelPlayable() }" href="#"><i class="icon-play"></i></a>
             <a class="btn hastooltip" title="お気に入り" data-placement="right" data-container="body" data-bind="css: { disabled: !isChannelSelected() }, click: favChannel" href="#"><i class="icon-heart"></i></a>
           </div>
           <div class="pull-left" style="margin-left:8px">
