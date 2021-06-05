@@ -81,15 +81,7 @@ namespace PeerCastStation.WPF.Dialogs
 				var results = await versionChecker.CheckVersionTaskAsync(cancelSource.Token);
 				this.VersionInfo = results;
 				if (results!=null && results.Count()>0) {
-          if (Updater.CurrentInstallerType==InstallerType.Archive ||
-              Updater.CurrentInstallerType==InstallerType.ServiceArchive) {
-            var enclosure = VersionInfo.First().Enclosures.First(e => e.InstallerType==Updater.CurrentInstallerType);
-            downloadPath = enclosure.Url.AbsolutePath;
-            this.State = UpdateActionState.Downloaded;
-          }
-          else {
-            this.State = UpdateActionState.NewVersionFound;
-          }
+          this.State = UpdateActionState.NewVersionFound;
 				}
 				else {
 					this.State = UpdateActionState.NoUpdates;
@@ -102,54 +94,25 @@ namespace PeerCastStation.WPF.Dialogs
 			}
 		}
 
-    private string downloadPath;
+    private Updater.DownloadResult downloadResult = null;
     public async Task DoDownload()
     {
-      var enclosure = VersionInfo.First().Enclosures.First(e => e.InstallerType==Updater.CurrentInstallerType);
-      if (Updater.CurrentInstallerType==InstallerType.Archive ||
-          Updater.CurrentInstallerType==InstallerType.ServiceArchive) {
-        downloadPath = enclosure.Url.AbsolutePath;
+      this.State = UpdateActionState.Downloading;
+      try {
+        downloadResult = await Updater.DownloadAsync(VersionInfo.First(), (progress) => {
+            this.Progress = progress;
+        }, cancelSource.Token);
         this.State = UpdateActionState.Downloaded;
-        return;
       }
-      using (var client=new System.Net.WebClient())
-      using (cancelSource.Token.Register(() => client.CancelAsync(), true)) {
-        client.DownloadProgressChanged += (sender, args) => {
-          this.Progress = args.ProgressPercentage/100.0;
-        };
-        this.State = UpdateActionState.Downloading;
-        try {
-          downloadPath = System.IO.Path.Combine(
-            Shell.GetKnownFolder(Shell.KnownFolder.Downloads),
-            System.IO.Path.GetFileName(enclosure.Url.AbsolutePath));
-          await client.DownloadFileTaskAsync(
-            enclosure.Url.ToString(),
-            downloadPath);
-          this.State = UpdateActionState.Downloaded;
-        }
-        catch (System.Net.WebException) {
-          this.State = UpdateActionState.Aborted;
-        }
+      catch (Exception) {
+        this.State = UpdateActionState.Aborted;
       }
     }
 
     private void DoInstall()
     {
-      if (downloadPath==null) return;
-      switch (System.IO.Path.GetExtension(downloadPath).ToLowerInvariant()) {
-      case ".msi":
-      case ".exe":
-        Process.Start(new ProcessStartInfo(downloadPath) { UseShellExecute = true });
-        PeerCastApplication.Current.Stop();
-        break;
-      case ".zip":
-        PeerCastApplication.Current.Stop(3);
-        break;
-      default:
-        Process.Start("explorer.exe", $"/select,\"{downloadPath}\"");
-        PeerCastApplication.Current.Stop();
-        break;
-      }
+      if (downloadResult==null) return;
+      Updater.Install(downloadResult);
     }
 
 		private System.Threading.CancellationTokenSource cancelSource =
