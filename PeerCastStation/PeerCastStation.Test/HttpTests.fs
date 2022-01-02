@@ -60,7 +60,7 @@ module PlayList =
 
     type Entry = { name: string; streamUrl: string }
     let m3u entry =
-        entry.streamUrl + "\r\n"
+        $"#EXTM3U\r\n#EXTINF:-1, {entry.name}\r\n{entry.streamUrl}\r\n"
 
     let asx entry =
         sprintf "<ASX version=\"3.0\">\r\n  <Title>%s</Title>\r\n  <Entry>\r\n    <Title>%s</Title>\r\n    <Ref href=\"%s\" />\r\n  </Entry>\r\n</ASX>" entry.name entry.name entry.streamUrl
@@ -71,10 +71,15 @@ module PlayList =
         let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
         channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
         peca.AddChannel channel
-        let streamUrl = sprintf "http://%s/stream/%s\r\n" (endpoint.ToString()) (channel.ChannelID.ToString("N").ToUpperInvariant())
+        let playlist =
+            {
+                name=channel.ChannelInfo.Name;
+                streamUrl=sprintf "http://%s/stream/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N").ToUpperInvariant());
+            }
+            |> m3u
         sprintf "http://%s/pls/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
         |> WebRequest.CreateHttp
-        |> Assert.ExpectResponse streamUrl
+        |> Assert.ExpectResponse playlist
 
     [<Fact>]
     let ``WMVチャンネルのプレイリストは標準でASXが返る`` () =
