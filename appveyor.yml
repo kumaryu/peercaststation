@@ -45,7 +45,7 @@ for:
       dotnet publish -c %CONFIGURATION% --no-self-contained -r any -o any PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
 
   test_script:
-    - dotnet test "PeerCastStation.Test/PeerCastStation.Test.fsproj" -c %CONFIGURATION% 
+    - dotnet test "PeerCastStation/PeerCastStation.Test/PeerCastStation.Test.fsproj" -c %CONFIGURATION% 
 
   artifacts:
   - path: win-x64
