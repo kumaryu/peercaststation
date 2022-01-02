@@ -17,14 +17,11 @@ for:
   install:
   - cmd: |-
       set PATH=C:\Ruby27-x64\bin;%PATH%
-      gem install -N jekyll
 
   before_build:
   - cmd: |-
       ruby bumpversion.rb %APPVEYOR_BUILD_VERSION%
-      cd doc\help
-      jekyll build
-      cd ..\..
+      docker run --rm --volume="%CD%:/srv/jekyll" -t jekyll/jekyll jekyll build --config doc/help/_config.yml -s doc/help -d PeerCastStation/PeerCastStation.UI.HTTP/help
       dotnet restore PeerCastStation/PeerCastStation.sln
 
   build_script:
@@ -77,17 +74,20 @@ for:
 
   install:
     - rvm use 2.7
-    - gem install -N jekyll
 
   before_build:
+    - echo $PWD
+    - echo `pwd`
     - ruby bumpversion.rb $APPVEYOR_BUILD_VERSION
-    - cd doc/help
-    - jekyll build
-    - cd ../..
+    - docker run --rm --volume=`pwd`:/srv/jekyll -t jekyll/jekyll jekyll build --config doc/help/_config.yml -s doc/help -d PeerCastStation/PeerCastStation.UI.HTTP/help
 
   build_script:
     - docker build --rm -t ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION -f PeerCastStation/PeerCastStation/Dockerfile PeerCastStation/
+    - docker build --rm -t ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION-test -f PeerCastStation/PeerCastStation/Dockerfile PeerCastStation/ --target test
     - docker save -o peercaststation-$APPVEYOR_BUILD_VERSION.tar ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION
+
+  test_script:
+    - docker run -t --rm ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION-test
 
   deploy_script:
     - echo $GITHUB_CR_TOKEN | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
