@@ -468,35 +468,6 @@ namespace PeerCastStation.Core
       }
     }
 
-    private IPAddress globalAddressV4 = null;
-    private IPAddress globalAddressV6 = null;
-
-    public IPAddress GetGlobalAddress(AddressFamily family)
-    {
-      switch (family) {
-      case AddressFamily.InterNetwork:
-        return globalAddressV4;
-      case AddressFamily.InterNetworkV6:
-        return globalAddressV6;
-      default:
-        throw new NotSupportedException();
-      }
-    }
-
-    public void SetGlobalAddress(IPAddress addr)
-    {
-      switch (addr.AddressFamily) {
-      case AddressFamily.InterNetwork:
-        globalAddressV4 = addr;
-        break;
-      case AddressFamily.InterNetworkV6:
-        globalAddressV6 = addr;
-        break;
-      default:
-        throw new NotSupportedException();
-      }
-    }
-
     /// <summary>
     /// 指定したエンドポイントで接続待ち受けを開始します
     /// </summary>
@@ -539,7 +510,7 @@ namespace PeerCastStation.Core
       var listener = outputListeners.FirstOrDefault(
         x => x.LocalEndPoint.AddressFamily==addr_family &&
              (x.GlobalOutputAccepts & connection_type)!=0);
-      var addr = GetGlobalAddress(addr_family);
+      var addr = listener.GlobalAddress;
       if (listener!=null && addr!=null) {
         return new IPEndPoint(addr, listener.LocalEndPoint.Port);
       }
