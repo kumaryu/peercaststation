@@ -60,6 +60,18 @@ namespace PeerCastStation.Core
         }
       }
     }
+
+    public IPEndPoint GlobalEndPoint {
+      get {
+        if (globalAddress==null) {
+          return null;
+        }
+        else {
+          return new IPEndPoint(globalAddress, ((IPEndPoint)server.LocalEndpoint).Port);
+        }
+      }
+    }
+
     private bool bound = false;
     private PortStatus portStatus = PortStatus.Unknown;
     public PortStatus Status {
