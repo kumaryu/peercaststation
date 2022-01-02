@@ -60,7 +60,7 @@ module PlayList =
 
     type Entry = { name: string; streamUrl: string }
     let m3u entry =
-        $"#EXTM3U\r\n#EXTINF:-1, {entry.name}\r\n{entry.streamUrl}\r\n"
+        "#EXTM3U\r\n#EXTINF:-1, " + entry.name + "\r\n" + entry.streamUrl + "\r\n"
 
     let asx entry =
         sprintf "<ASX version=\"3.0\">\r\n  <Title>%s</Title>\r\n  <Entry>\r\n    <Title>%s</Title>\r\n    <Ref href=\"%s\" />\r\n  </Entry>\r\n</ASX>" entry.name entry.name entry.streamUrl
