@@ -1,6 +1,6 @@
 ---
 image:
-  - Visual Studio 2019
+  - Visual Studio 2022
   - Ubuntu
 version: 3.1.0.{build}
 environment:
