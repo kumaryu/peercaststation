@@ -6,6 +6,10 @@ open PeerCastStation.Core.Http
 open System.Net
 open Xunit
 
+let isIPv6Supported =
+    let ipv6loopback = System.Net.NetworkInformation.NetworkInterface.IPv6LoopbackInterfaceIndex
+    System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces().[ipv6loopback].OperationalStatus = NetworkInformation.OperationalStatus.Up
+
 let allocateEndPoint localAddr =
     let listener = System.Net.Sockets.TcpListener(localAddr, 0)
     try

@@ -60,10 +60,22 @@ module PlayList =
 
     type Entry = { name: string; streamUrl: string }
     let m3u entry =
-        "#EXTM3U\r\n#EXTINF:-1, " + entry.name + "\r\n" + entry.streamUrl + "\r\n"
+        let builder = System.Text.StringBuilder()
+        builder.AppendLine("#EXTM3U")
+               .AppendLine("#EXTINF:-1, " + entry.name)
+               .AppendLine(entry.streamUrl)
+               .ToString()
 
     let asx entry =
-        sprintf "<ASX version=\"3.0\">\r\n  <Title>%s</Title>\r\n  <Entry>\r\n    <Title>%s</Title>\r\n    <Ref href=\"%s\" />\r\n  </Entry>\r\n</ASX>" entry.name entry.name entry.streamUrl
+        let builder = System.Text.StringBuilder()
+        builder.AppendLine("<ASX version=\"3.0\">")
+               .AppendLine(sprintf "  <Title>%s</Title>" entry.name)
+               .AppendLine("  <Entry>")
+               .AppendLine(sprintf "    <Title>%s</Title>" entry.name)
+               .AppendLine(sprintf "    <Ref href=\"%s\" />" entry.streamUrl)
+               .AppendLine("  </Entry>")
+               .Append("</ASX>")
+               .ToString()
 
     [<Fact>]
     let ``指定したチャンネルIDのプレイリストが取得できる`` () =

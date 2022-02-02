@@ -338,12 +338,13 @@ module RelaySinkTests =
             |> WebRequest.addHeader "x-peercast-pcp" pcpver
             |> Assert.ExpectStatusCode HttpStatusCode.NotFound
         [
-            (allocateEndPoint IPAddress.Loopback, NetworkType.IPv6, "1");
-            (allocateEndPoint IPAddress.Loopback, NetworkType.IPv6, "100");
-            (allocateEndPoint IPAddress.Loopback, NetworkType.IPv4, "100");
-            (allocateEndPoint IPAddress.IPv6Loopback, NetworkType.IPv4, "1");
-            (allocateEndPoint IPAddress.IPv6Loopback, NetworkType.IPv4, "100");
-            (allocateEndPoint IPAddress.IPv6Loopback, NetworkType.IPv6, "1");
+            (allocateEndPoint IPAddress.Loopback, NetworkType.IPv6, "1")
+            (allocateEndPoint IPAddress.Loopback, NetworkType.IPv6, "100")
+            (allocateEndPoint IPAddress.Loopback, NetworkType.IPv4, "100")
+            if TestCommon.isIPv6Supported then
+                (allocateEndPoint IPAddress.IPv6Loopback, NetworkType.IPv4, "1")
+                (allocateEndPoint IPAddress.IPv6Loopback, NetworkType.IPv4, "100")
+                (allocateEndPoint IPAddress.IPv6Loopback, NetworkType.IPv6, "1")
         ]
         |> List.iter testNetwork
 
