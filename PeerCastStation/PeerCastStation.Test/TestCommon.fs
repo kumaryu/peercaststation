@@ -7,8 +7,17 @@ open System.Net
 open Xunit
 
 let isIPv6Supported =
-    let ipv6loopback = System.Net.NetworkInformation.NetworkInterface.IPv6LoopbackInterfaceIndex
-    System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces().[ipv6loopback].OperationalStatus = NetworkInformation.OperationalStatus.Up
+    if Sockets.Socket.OSSupportsIPv6 then
+        use sock = new Sockets.Socket(Sockets.AddressFamily.InterNetworkV6, Sockets.SocketType.Stream, Sockets.ProtocolType.Tcp)
+        try
+            IPEndPoint(IPAddress.IPv6Loopback, 0)
+            |> sock.Bind
+            true
+        with
+        | _ ->
+            false
+    else
+        false
 
 let allocateEndPoint localAddr =
     let listener = System.Net.Sockets.TcpListener(localAddr, 0)
