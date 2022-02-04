@@ -17,11 +17,14 @@ for:
   install:
   - cmd: |-
       set PATH=C:\Ruby27-x64\bin;%PATH%
+      gem install -N jekyll
 
   before_build:
   - cmd: |-
       ruby bumpversion.rb %APPVEYOR_BUILD_VERSION%
-      docker run --rm --volume="%CD%:/srv/jekyll" -t jekyll/jekyll jekyll build --config doc/help/_config.yml -s doc/help -d PeerCastStation/PeerCastStation.UI.HTTP/help
+      cd doc\help
+      jekyll build
+      cd ..\..
       dotnet restore PeerCastStation/PeerCastStation.sln
 
   build_script:
@@ -76,8 +79,6 @@ for:
     - rvm use 2.7
 
   before_build:
-    - echo $PWD
-    - echo `pwd`
     - ruby bumpversion.rb $APPVEYOR_BUILD_VERSION
     - docker run --rm --volume=`pwd`:/srv/jekyll -t jekyll/jekyll jekyll build --config doc/help/_config.yml -s doc/help -d PeerCastStation/PeerCastStation.UI.HTTP/help
 
