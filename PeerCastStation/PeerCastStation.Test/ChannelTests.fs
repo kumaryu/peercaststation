@@ -136,13 +136,13 @@ let ``ノード情報が変更されるとIChannelMonitorのOnNodeChangedが呼�
         Array.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
     Array.iter (fun h -> channel.AddNode(h)) hosts
     Array.iter (fun h -> channel.RemoveNode(h)) hosts
-    let rec waitForNotEmpty cnt =
+    let rec waitForListLength cnt retry =
         System.Threading.Thread.Sleep 100
-        if List.isEmpty nodes && cnt>0 then
-            waitForNotEmpty (cnt-1)
+        if List.length nodes < cnt && retry>0 then
+            waitForListLength cnt (retry-1)
         else
             ()
-    waitForNotEmpty 100
+    waitForListLength 64 100
     Assert.Equal(64, List.length nodes)
     Assert.True(Array.forall (fun h -> List.contains (ChannelNodeAction.Updated, h) nodes) hosts)
     Assert.True(Array.forall (fun h -> List.contains (ChannelNodeAction.Removed, h) nodes) hosts)
