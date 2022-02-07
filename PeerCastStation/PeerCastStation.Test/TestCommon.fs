@@ -27,6 +27,15 @@ let allocateEndPoint localAddr =
     finally
         listener.Stop()
 
+let waitForConditionOrTimeout cond timeout =
+    let rec waitForCond retry =
+        System.Threading.Thread.Sleep 100
+        if not (cond ()) && retry>0 then
+            waitForCond (retry-1)
+        else
+            ()
+    waitForCond ((timeout+99)/100)
+
 type DummySourceStream (sstype) =
     let runTask = System.Threading.Tasks.TaskCompletionSource<StopReason>()
     interface ISourceStream with 

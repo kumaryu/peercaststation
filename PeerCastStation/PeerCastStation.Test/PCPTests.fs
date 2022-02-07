@@ -401,7 +401,7 @@ module RelaySinkTests =
             RelayClientConnection.sendAtom (Atom(Atom.PCP_BCST, bcst)) connection
         Seq.init 32 createHostInfo
         |> Seq.iter sendBcst
-        Threading.Thread.Sleep(1000)
+        TestCommon.waitForConditionOrTimeout (fun () -> 32 <= channel.Nodes.Count) 10000
         Assert.Equal(32, channel.Nodes.Count)
 
     [<Fact>]
