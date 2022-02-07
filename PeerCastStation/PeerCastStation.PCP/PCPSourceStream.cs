@@ -108,6 +108,7 @@ namespace PeerCastStation.PCP
     private IContentSink contentSink;
     private Content     lastHeader = null;
     private ChannelInfo lastInfo = null;
+    private OutputListener listener = null;
 
     public PCPSourceConnection(
         PeerCast peercast,
@@ -123,6 +124,9 @@ namespace PeerCastStation.PCP
     protected override void OnStarted()
     {
       Logger.Debug("Started");
+      listener = PeerCast.FindListener(
+        connection.RemoteEndPoint.Address,
+        OutputStreamType.Relay | OutputStreamType.Metadata);
       lastInfo = Channel.ChannelInfo;
       lastHeader = Channel.ContentHeader;
       Channel.AddMonitor(this);
@@ -305,26 +309,14 @@ Stopped:
       var helo = new AtomCollection();
       helo.SetHeloAgent(PeerCast.AgentName);
       helo.SetHeloSessionID(PeerCast.SessionID);
-      switch (PeerCast.GetPortStatus(Channel.NetworkAddressFamily)) {
+      switch (listener?.Status ?? PortStatus.Firewalled) {
       case PortStatus.Open:
-        {
-          var listener = PeerCast.FindListener(
-            connection.RemoteEndPoint.Address,
-            OutputStreamType.Relay | OutputStreamType.Metadata);
-          helo.SetHeloPort(listener.LocalEndPoint.Port);
-        }
+        helo.SetHeloPort(listener.LocalEndPoint.Port);
         break;
       case PortStatus.Firewalled:
         break;
       case PortStatus.Unknown:
-        {
-          var listener = PeerCast.FindListener(
-            connection.RemoteEndPoint.Address,
-            OutputStreamType.Relay | OutputStreamType.Metadata);
-          if (listener!=null) {
-            helo.SetHeloPing(listener.LocalEndPoint.Port);
-          }
-        }
+        helo.SetHeloPing(listener.LocalEndPoint.Port);
         break;
       }
       PCPVersion.SetHeloVersion(helo);
@@ -427,18 +419,12 @@ Stopped:
       var host = new AtomCollection();
       host.SetHostChannelID(Channel.ChannelID);
       host.SetHostSessionID(PeerCast.SessionID);
-      var globalendpoint = 
-        PeerCast.GetGlobalEndPoint(
-          connection.RemoteEndPoint.AddressFamily,
-          OutputStreamType.Relay);
+      var globalendpoint = listener?.GlobalEndPoint;
       if (globalendpoint!=null) {
         host.AddHostIP(globalendpoint.Address);
         host.AddHostPort(globalendpoint.Port);
       }
-      var localendpoint = 
-        PeerCast.GetLocalEndPoint(
-          connection.RemoteEndPoint.AddressFamily,
-          OutputStreamType.Relay);
+      var localendpoint = listener?.LocalEndPoint;
       if (localendpoint!=null) {
         host.AddHostIP(localendpoint.Address);
         host.AddHostPort(localendpoint.Port);
@@ -454,7 +440,7 @@ Stopped:
       host.SetHostFlags1(
         (Channel.IsRelayable(false) ? PCPHostFlags1.Relay : 0) |
         (Channel.IsPlayable(false) ? PCPHostFlags1.Direct : 0) |
-        ((PeerCast.GetPortStatus(connection.RemoteEndPoint.AddressFamily)!=PortStatus.Open) ? PCPHostFlags1.Firewalled : 0) |
+        (listener?.Status!=PortStatus.Open ? PCPHostFlags1.Firewalled : 0) |
         (RecvRate>0 ? PCPHostFlags1.Receiving : 0));
       host.SetHostUphostIP(connection.RemoteEndPoint.Address);
       host.SetHostUphostPort(connection.RemoteEndPoint.Port);
@@ -539,16 +525,18 @@ Stopped:
     protected void OnPCPOleh(Atom atom)
     {
       var rip = atom.Children.GetHeloRemoteIP();
-      if (rip!=null) {
-        var global_addr = PeerCast.GetGlobalAddress(rip.AddressFamily);
+      if (rip!=null && Channel.NetworkAddressFamily==rip.AddressFamily) {
+        var global_addr = listener?.GlobalAddress;
         if (global_addr==null ||
             global_addr.GetAddressLocality()<=rip.GetAddressLocality()) {
-          PeerCast.SetGlobalAddress(rip);
+          if (listener!=null) {
+            listener.GlobalAddress = rip;
+          }
         }
       }
       var port = atom.Children.GetHeloPort();
-      if (port.HasValue) {
-        PeerCast.SetPortStatus(((IPEndPoint)connection.Client.Client.LocalEndPoint).Address, rip, port.Value!=0 ? PortStatus.Open : PortStatus.Firewalled);
+      if (port.HasValue && listener!=null) {
+        listener.Status = port.Value!=0 ? PortStatus.Open : PortStatus.Firewalled;
       }
       var sid = atom.Children.GetHeloSessionID();
       if (sid.HasValue) {
@@ -889,8 +877,7 @@ Stopped:
     private bool IsSiteLocal(Host node)
     {
       if (node.GlobalEndPoint!=null) {
-        var global = PeerCast.GetGlobalAddress(node.GlobalEndPoint.AddressFamily);
-        return node.GlobalEndPoint.Equals(global);
+        return PeerCast.OutputListeners.Any(listener => node.GlobalEndPoint.Equals(listener.GlobalEndPoint));
       }
       else {
         return true;

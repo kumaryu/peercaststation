@@ -236,6 +236,7 @@ namespace PeerCastStation.PCP
       private class BannedException : Exception {}
       private IPEndPoint remoteEndPoint;
       private Guid? remoteSessionID;
+      private OutputListener listener;
 
       private async Task PCPHandshake(ConnectionStream stream, CancellationToken ct)
       {
@@ -246,30 +247,14 @@ namespace PeerCastStation.PCP
         helo.SetHeloVersion(PCPVersion.ServantVersion);
         helo.SetHeloSessionID(peerCast.SessionID);
         helo.SetHeloBCID(peerCast.BroadcastID);
-        switch (peerCast.GetPortStatus(networkType)) {
+        switch (listener?.Status ?? PortStatus.Firewalled) {
         case PortStatus.Open:
-          {
-            var listener = peerCast.FindListener(
-              networkType.GetAddressFamily(),
-              stream.RemoteEndPoint.Address,
-              OutputStreamType.Relay | OutputStreamType.Metadata);
-            if (listener!=null) {
-              helo.SetHeloPort(listener.LocalEndPoint.Port);
-            }
-          }
+          helo.SetHeloPort(listener.LocalEndPoint.Port);
           break;
         case PortStatus.Firewalled:
           break;
         case PortStatus.Unknown:
-          {
-            var listener = peerCast.FindListener(
-              networkType.GetAddressFamily(),
-              stream.RemoteEndPoint.Address,
-              OutputStreamType.Relay | OutputStreamType.Metadata);
-            if (listener!=null) {
-              helo.SetHeloPing(listener.LocalEndPoint.Port);
-            }
-          }
+          helo.SetHeloPing(listener.LocalEndPoint.Port);
           break;
         }
         await stream.WriteAsync(new Atom(Atom.PCP_HELO, helo), ct).ConfigureAwait(false);
@@ -294,16 +279,18 @@ namespace PeerCastStation.PCP
           throw new BannedException();
         }
         var rip = atom.Children.GetHeloRemoteIP();
-        if (rip!=null) {
-          var global_addr = peerCast.GetGlobalAddress(rip.AddressFamily);
+        if (rip!=null && listener?.LocalEndPoint?.AddressFamily==rip.AddressFamily) {
+          var global_addr = listener?.GlobalAddress;
           if (global_addr==null ||
               global_addr.GetAddressLocality()<=rip.GetAddressLocality()) {
-            peerCast.SetGlobalAddress(rip);
+            if (listener!=null) {
+              listener.GlobalAddress = rip;
+            }
           }
         }
         var port = atom.Children.GetHeloPort();
-        if (port.HasValue) {
-          peerCast.SetPortStatus(stream.LocalEndPoint.Address, rip, port.Value!=0 ? PortStatus.Open : PortStatus.Firewalled);
+        if (port.HasValue && listener!=null) {
+          listener.Status = port.Value!=0 ? PortStatus.Open : PortStatus.Firewalled;
         }
       }
 
@@ -440,6 +427,7 @@ namespace PeerCastStation.PCP
           using (var client=new TcpClient()) {
             await client.ConnectAsync(host, port).ConfigureAwait(false);
             using (var stream=new ConnectionStream(client.Client, client.GetStream())) {
+              OnStarted(stream);
               await PCPHandshake(stream, ct).ConfigureAwait(false);
               logger.Debug("Handshake succeeded");
               status = ConnectionStatus.Connected;
@@ -455,6 +443,7 @@ namespace PeerCastStation.PCP
               }
               logger.Debug("Closing connection");
               await stream.WriteAsync(new Atom(Atom.PCP_QUIT, Atom.PCP_ERROR_QUIT)).ConfigureAwait(false);
+              OnStopped(stream);
               result = ConnectionResult.Stopped;
               status = ConnectionStatus.Idle;
             }
@@ -472,6 +461,17 @@ namespace PeerCastStation.PCP
         remoteSessionID = null;
         logger.Debug("Connection closed");
         return result;
+      }
+
+      private void OnStarted(ConnectionStream connection)
+      {
+        listener = peerCast.FindListener(
+          connection.RemoteEndPoint.Address,
+          OutputStreamType.Relay | OutputStreamType.Metadata);
+      }
+
+      private void OnStopped(ConnectionStream connection)
+      {
       }
 
       private void CheckConnection() {
