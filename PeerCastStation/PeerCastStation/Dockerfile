@@ -10,7 +10,7 @@ RUN dotnet build "PeerCastStation.csproj" -c Release -o /app/build -p:PeerCastUs
 
 FROM build AS test
 WORKDIR /src
-CMD ["dotnet", "test", "PeerCastStation.Test/PeerCastStation.Test.fsproj", "-c", "Release", "-o", "/app/build", "-p:PeerCastUseGUI=false"]
+CMD ["dotnet", "test", "PeerCastStation.Test/PeerCastStation.Test.fsproj", "-v", "n", "-c", "Release", "-o", "/app/build", "-p:PeerCastUseGUI=false"]
 
 FROM build AS publish
 RUN dotnet publish "PeerCastStation.csproj" -c Release -o /app/publish -p:PeerCastUseGUI=false
