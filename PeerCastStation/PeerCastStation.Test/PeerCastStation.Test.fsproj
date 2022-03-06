@@ -41,8 +41,7 @@
     <Compile Include="HttpTests.fs" />
     <Compile Include="Tests.fs" />
     <Compile Include="PCPTests.fs" />
+    <Compile Include="AppTest.fs" />
     <Compile Include="UpdaterTests.fs" />
   </ItemGroup>
-
-  <ItemGroup />
 </Project>

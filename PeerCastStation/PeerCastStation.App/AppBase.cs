@@ -44,26 +44,21 @@ namespace PeerCastStation.App
       Args = args;
       basePath = basepath;
       var opts = optionParser.Parse(args);
-      var optSettings = opts.FirstOrDefault(opt => opt.LongName=="--settings");
-      if (optSettings!=null) {
-        SettingsFileName = optSettings.Arguments[0];
+      if (opts.TryGetArgumentOf("--settings", out var optSettings)) {
+        SettingsFileName = optSettings;
       }
       else {
         SettingsFileName = PecaSettings.DefaultFileName;
       }
-      var optLinkPID = opts.FirstOrDefault(opt => opt.LongName=="--linkPID");
-      if (optLinkPID!=null) {
-        int pid = 0;
-        if (Int32.TryParse(optLinkPID.Arguments[0], out pid)) {
-          try {
-            LinkProcess = System.Diagnostics.Process.GetProcessById(pid);
-            LinkProcess.Exited += (sender, ev) => {
-              Stop();
-            };
-            LinkProcess.EnableRaisingEvents = true;
-          }
-          catch (Exception) {
-          }
+      if (opts.TryGetArgumentOf("--linkPID", out var optLinkPID) && Int32.TryParse(optLinkPID, out var pid)) {
+        try {
+          LinkProcess = System.Diagnostics.Process.GetProcessById(pid);
+          LinkProcess.Exited += (sender, ev) => {
+            Stop();
+          };
+          LinkProcess.EnableRaisingEvents = true;
+        }
+        catch (Exception) {
         }
       }
       settings = new PecaSettings(SettingsFileName);
