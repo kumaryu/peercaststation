@@ -23,8 +23,8 @@ module OptionParserTest =
         Assert.False(r.HasOption "--arg-required")
         Assert.False(r.HasOption "--arg-optional")
         Assert.Equal(2, r.Arguments.Count)
-        Assert.Equal("ARG1", r.Arguments[0])
-        Assert.Equal("ARG2", r.Arguments[1])
+        Assert.Equal("ARG1", r.Arguments.[0])
+        Assert.Equal("ARG2", r.Arguments.[1])
 
         let r = opts.Parse([| "--simpleoption"; "--arg-required=ARG1"; "--arg-optional"; "ARG2"; "ARG3" |])
         Assert.True(r.HasOption "--simpleoption")
@@ -33,7 +33,7 @@ module OptionParserTest =
         Assert.True(r.HasOption "--arg-optional")
         Assert.Equal("ARG2", r.GetArgumentOf("--arg-optional"))
         Assert.Equal(1, r.Arguments.Count)
-        Assert.Equal("ARG3", r.Arguments[0])
+        Assert.Equal("ARG3", r.Arguments.[0])
 
         let r = opts.Parse([| "-s"; "-r=ARG1"; "-o"; "ARG2"; "ARG3" |])
         Assert.True(r.HasOption "--simpleoption")
@@ -42,7 +42,7 @@ module OptionParserTest =
         Assert.True(r.HasOption "--arg-optional")
         Assert.Equal("ARG2", r.GetArgumentOf("--arg-optional"))
         Assert.Equal(1, r.Arguments.Count)
-        Assert.Equal("ARG3", r.Arguments[0])
+        Assert.Equal("ARG3", r.Arguments.[0])
 
         Assert.Throws<OptionParseErrorException>(fun () ->
             opts.Parse([| "--arg-required"; |]) |> ignore
@@ -91,7 +91,7 @@ module OptionParserTest =
         Assert.Equal("ARG1", r.GetArgumentOf("REQUIREDARG"))
         Assert.Equal("ARG2", r.GetArgumentOf("OPTIONALARG"))
         Assert.Equal(1, r.Arguments.Count)
-        Assert.Equal("ARG3", r.Arguments[0])
+        Assert.Equal("ARG3", r.Arguments.[0])
 
         let r = opts.Parse([| "-s"; "-r=ARG1"; "-o"; "ARG2"; "ARG3"; "ARG4"; "ARG5" |])
         Assert.True(r.HasOption "--simpleoption")
@@ -102,7 +102,7 @@ module OptionParserTest =
         Assert.Equal("ARG3", r.GetArgumentOf("REQUIREDARG"))
         Assert.Equal("ARG4", r.GetArgumentOf("OPTIONALARG"))
         Assert.Equal(1, r.Arguments.Count)
-        Assert.Equal("ARG5", r.Arguments[0])
+        Assert.Equal("ARG5", r.Arguments.[0])
 
     [<Fact>]
     let ``サブコマンドをパースできる`` () =
@@ -135,7 +135,7 @@ module OptionParserTest =
         Assert.False(r.HasOption "suba")
         Assert.False(r.HasOption "subb")
         Assert.Equal(1, r.Arguments.Count)
-        Assert.Equal("ARG1", r.Arguments[0])
+        Assert.Equal("ARG1", r.Arguments.[0])
 
         let r = opts.Parse([| "--simpleoption"; "suba"; "-s"; "ARG1"; "ARG2"; "ARG3" |])
         Assert.True(r.HasOption "--simpleoption")
@@ -151,7 +151,7 @@ module OptionParserTest =
         Assert.Equal("ARG1", sub.GetArgumentOf("REQUIREDARG"))
         Assert.Equal("ARG2", sub.GetArgumentOf("OPTIONALARG"))
         Assert.Equal(1, sub.Arguments.Count)
-        Assert.Equal("ARG3", sub.Arguments[0])
+        Assert.Equal("ARG3", sub.Arguments.[0])
 
         Assert.Throws<OptionParseErrorException>(fun () ->
             opts.Parse([| "--simpleoption"; "suba"; "-s" |]) |> ignore
