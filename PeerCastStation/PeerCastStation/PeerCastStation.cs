@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PeerCastStation.App;
+using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -7,81 +8,105 @@ namespace PeerCastStation.Main
 {
   public class PeerCastStation
   {
-    struct SubAppDescription
-    {
-      public string AssemblyName;
-      public string AppType;
-    }
-    static readonly SubAppDescription MainAppDesc = new SubAppDescription {
-      AssemblyName = "PeerCastStation.App.dll",
-      AppType      = "PeerCastStation.App.StandaloneApp",
-    };
-
     static int ProcessMain(string basepath, string[] args)
     {
-      var asm = Assembly.LoadFrom(Path.Combine(basepath, MainAppDesc.AssemblyName));
-      var type = asm.GetType(MainAppDesc.AppType);
-      var result = type.InvokeMember("Run",
-        BindingFlags.Public |
-        BindingFlags.Static |
-        BindingFlags.InvokeMethod,
-        null,
-        null,
-        new object[] { basepath, args });
-      return (int)result;
+      return StandaloneApp.Run(basepath, args);
     }
 
-    static int ProcessUpdate(string basepath, string sourcepath, string targetpath, string[] args)
+    static int ProcessUpdate(
+      string basepath,
+      string sourcepath,
+      string targetpath,
+      bool cleanup,
+      bool start,
+      string[] args)
     {
       UI.Updater.Update(sourcepath, targetpath);
-      UI.Updater.StartCleanup(targetpath, sourcepath, args);
+      if (cleanup) {
+        if (start) {
+          args = Enumerable.Concat(new string[] { "--start" }, args).ToArray();
+        }
+        UI.Updater.StartCleanup(targetpath, sourcepath, args);
+      }
       return 0;
     }
 
-    static int ProcessInstall(string basepath, string zipfile, string[] args)
-    {
-      UI.Updater.Install(zipfile);
-      return 0;
-    }
-
-    static int ProcessCleanup(string basepath, string tmppath, string[] args)
+    static int ProcessCleanup(string basepath, string tmppath, bool start, string[] args)
     {
       UI.Updater.Cleanup(tmppath);
-      return ProcessMain(basepath, args);
+      if (start) {
+        return ProcessMain(basepath, args);
+      }
+      else {
+        return 0;
+      }
     }
+
+    static readonly OptionParser s_optionParser = new OptionParser {
+      new Subcommand("install") {
+        { "--cleanup", "-c" },
+        { "--start", "-s" },
+        new NamedArgument("TARGETPATH", OptionType.Required),
+      },
+      new Subcommand("update") {
+        { "--cleanup", "-c" },
+        { "--start", "-s" },
+        new NamedArgument("SOURCEPATH", OptionType.Required),
+        new NamedArgument("TARGETPATH", OptionType.Required),
+      },
+      new Subcommand("cleanup") {
+        { "--start", "-s" },
+        new NamedArgument("TARGETPATH", OptionType.Required),
+      },
+      new Subcommand("") {
+        {"--settings", "-s", OptionArg.Required },
+        {"--kill", "-kill" },
+        {"--multi", "-multi" },
+      },
+    };
 
     [STAThread]
     static int Main(string[] args)
     {
       var basepath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-      if (args.Length>0) {
-        switch (args[0]) {
-        case "main":
-          return ProcessMain(basepath, args.Skip(1).ToArray());
-        case "install":
-          if (args.Length<2) {
-            Console.WriteLine("USAGE: PeerCastStation.exe install ZIPFILE");
-            return 1;
-          }
-          return ProcessInstall(basepath, args[1], args.Skip(2).ToArray());
-        case "update":
-          if (args.Length<3) {
-            Console.WriteLine("USAGE: PeerCastStation.exe update SOURCEPATH TARGETPATH");
-            return 1;
-          }
-          return ProcessUpdate(basepath, args[1], args[2], args.Skip(3).ToArray());
-        case "cleanup":
-          if (args.Length<2) {
-            Console.WriteLine("USAGE: PeerCastStation.exe cleanup TARGETPATH");
-            return 1;
-          }
-          return ProcessCleanup(basepath, args[1], args.Skip(2).ToArray());
-        default:
-          return ProcessMain(basepath, args);
+      System.Diagnostics.Debug.WriteLine(s_optionParser.Help());
+      try {
+        var opts = s_optionParser.Parse(args);
+        if (opts.TryGetOption("", out var mainCmd)) {
+          return ProcessMain(basepath, mainCmd.RawArguments.ToArray());
         }
+        if (opts.TryGetOption("install", out var installCmd)) {
+          return ProcessUpdate(
+            basepath,
+            basepath,
+            installCmd.GetArgumentOf("TARGETPATH"),
+            installCmd.HasOption("--cleanup"),
+            installCmd.HasOption("--start"),
+            installCmd.Arguments.ToArray());
+        }
+        if (opts.TryGetOption("update", out var updateCmd)) {
+          return ProcessUpdate(
+            basepath,
+            updateCmd.GetArgumentOf("SOURCEPATH"),
+            updateCmd.GetArgumentOf("TARGETPATH"),
+            updateCmd.HasOption("--cleanup"),
+            updateCmd.HasOption("--start"),
+            updateCmd.Arguments.ToArray());
+        }
+        if (opts.TryGetOption("cleanup", out var cleanupCmd)) {
+          return ProcessCleanup(
+            basepath,
+            cleanupCmd.GetArgumentOf("TARGETPATH"),
+            cleanupCmd.HasOption("--start"),
+            cleanupCmd.Arguments.ToArray());
+        }
+        return ProcessMain(basepath, opts.Arguments.ToArray());
       }
-      else {
-        return ProcessMain(basepath, args);
+      catch (OptionParseErrorException ex) {
+        Console.WriteLine("USAGE:");
+        Console.WriteLine(s_optionParser.Help());
+        Console.WriteLine($"ERROR: {ex.Message}");
+        return 1;
       }
     }
 
