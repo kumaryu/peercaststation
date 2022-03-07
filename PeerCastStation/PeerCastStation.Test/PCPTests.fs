@@ -10,8 +10,6 @@ open TestCommon
 let registerPCPRelay (host:PeerCastStation.Core.Http.OwinHost) =
     host.Register(fun builder -> PCPRelayOwinApp.BuildApp(builder))
 
-let endpoint = allocateEndPoint IPAddress.Loopback
-
 module Stream =
     let encoding = System.Text.UTF8Encoding(false)
     let eol = [| '\r'B; '\n'B |]

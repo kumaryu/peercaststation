@@ -10,51 +10,52 @@ open TestCommon
 let registerHttpDirect (host:PeerCastStation.Core.Http.OwinHost) =
     host.Register(fun builder -> HTTPDirectOwinApp.BuildApp(builder))
 
-let endpoint = allocateEndPoint IPAddress.Loopback
+module HttpOutputTest =
+    let endpoint = allocateEndPoint IPAddress.Loopback
 
-[<Fact>]
-let ``チャンネルIDを渡さないとエラーが返る`` () =
-    use peca = pecaWithOwinHost endpoint registerHttpDirect
-    let getRequest404 (path, expected) =
-        sprintf "http://%s/%s" (endpoint.ToString()) path
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectStatusCode expected
-    [
-        ("stream/", HttpStatusCode.Forbidden);
-        ("stream/hoge", HttpStatusCode.NotFound);
-        ("pls/", HttpStatusCode.Forbidden);
-        ("pls/fuga", HttpStatusCode.NotFound);
-    ]
-    |> List.iter getRequest404
-
-[<Fact>]
-let ``無いチャンネルIDを指定すると404が返る`` () =
-    use peca = pecaWithOwinHost endpoint registerHttpDirect
-    let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
-    channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
-    peca.AddChannel channel
-    ["pls"; "stream"]
-    |> List.iter (fun subpath ->
-        sprintf "http://%s/%s/%s" (endpoint.ToString()) subpath (Guid.NewGuid().ToString("N"))
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectStatusCode HttpStatusCode.NotFound
-    )
-
-[<Fact>]
-let ``チャンネル情報が無いチャンネルを指定すると10秒でタイムアウトして504が返る`` () =
-    use peca = pecaWithOwinHost endpoint registerHttpDirect
-    let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
-    peca.AddChannel channel
-    ["pls"; "stream"]
-    |> List.iter (fun subpath ->
-        let req =
-            sprintf "http://%s/%s/%s" (endpoint.ToString()) subpath (channel.ChannelID.ToString("N"))
+    [<Fact>]
+    let ``チャンネルIDを渡さないとエラーが返る`` () =
+        use peca = pecaWithOwinHost endpoint registerHttpDirect
+        let getRequest404 (path, expected) =
+            sprintf "http://%s/%s" (endpoint.ToString()) path
             |> WebRequest.CreateHttp
-        req.Timeout <- 11000
-        Assert.ExpectStatusCode HttpStatusCode.GatewayTimeout req
-    )
+            |> Assert.ExpectStatusCode expected
+        [
+            ("stream/", HttpStatusCode.Forbidden);
+            ("stream/hoge", HttpStatusCode.NotFound);
+            ("pls/", HttpStatusCode.Forbidden);
+            ("pls/fuga", HttpStatusCode.NotFound);
+        ]
+        |> List.iter getRequest404
 
-module PlayList =
+    [<Fact>]
+    let ``無いチャンネルIDを指定すると404が返る`` () =
+        use peca = pecaWithOwinHost endpoint registerHttpDirect
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        peca.AddChannel channel
+        ["pls"; "stream"]
+        |> List.iter (fun subpath ->
+            sprintf "http://%s/%s/%s" (endpoint.ToString()) subpath (Guid.NewGuid().ToString("N"))
+            |> WebRequest.CreateHttp
+            |> Assert.ExpectStatusCode HttpStatusCode.NotFound
+        )
+
+    [<Fact>]
+    let ``チャンネル情報が無いチャンネルを指定すると10秒でタイムアウトして504が返る`` () =
+        use peca = pecaWithOwinHost endpoint registerHttpDirect
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+        peca.AddChannel channel
+        ["pls"; "stream"]
+        |> List.iter (fun subpath ->
+            let req =
+                sprintf "http://%s/%s/%s" (endpoint.ToString()) subpath (channel.ChannelID.ToString("N"))
+                |> WebRequest.CreateHttp
+            req.Timeout <- 11000
+            Assert.ExpectStatusCode HttpStatusCode.GatewayTimeout req
+        )
+
+module PlayListTest =
     let endpoint = allocateEndPoint IPAddress.Loopback
     let authinfo = { id="hoge"; pass="fuga" }
 
