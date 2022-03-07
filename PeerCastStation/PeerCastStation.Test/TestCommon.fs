@@ -6,6 +6,10 @@ open PeerCastStation.Core.Http
 open System.Net
 open Xunit
 
+[<assembly: Xunit.CollectionBehavior(DisableTestParallelization = true)>]
+do
+    ()
+
 let isIPv6Supported =
     if Sockets.Socket.OSSupportsIPv6 then
         use sock = new Sockets.Socket(Sockets.AddressFamily.InterNetworkV6, Sockets.SocketType.Stream, Sockets.ProtocolType.Tcp)
