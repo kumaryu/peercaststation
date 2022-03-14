@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="ja-JP" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="NewerVersionAlreadyInstalled">より新しいバージョンの[ProductName]が既にインストールされています。</String>
+  <String Id="OpenHTMLUI">PeerCastStationのHTML UIを開く</String>
+  <String Id="PeerCastStationService">PeerCastStationサービス</String>
+  <String Id="AddProgramMenu">プログラムメニューへの追加</String>
+</WixLocalization>

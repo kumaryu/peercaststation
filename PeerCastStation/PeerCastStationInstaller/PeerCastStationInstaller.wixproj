@@ -16,26 +16,31 @@
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <DefineConstants>Debug</DefineConstants>
     <SuppressIces>ICE30</SuppressIces>
+    <Cultures>en-US;ja-JP</Cultures>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <SuppressIces>ICE30</SuppressIces>
+    <Cultures>en-US;ja-JP</Cultures>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
     <DefineConstants>Debug</DefineConstants>
     <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
     <SuppressIces>ICE30</SuppressIces>
+    <Cultures>en-US;ja-JP</Cultures>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
     <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
     <SuppressIces>ICE30</SuppressIces>
+    <Cultures>en-US;ja-JP</Cultures>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PeerCastStation.wxs" />
     <Compile Include="Product.wxs" />
+    <Compile Include="MyUI.wxs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PeerCastStation\PeerCastStation.csproj">
@@ -56,6 +61,14 @@
       <HintPath>$(WixExtDir)\WixUIExtension.dll</HintPath>
       <Name>WixUIExtension</Name>
     </WixExtension>
+    <WixExtension Include="WixUtilExtension">
+      <HintPath>$(WixExtDir)\WixUtilExtension.dll</HintPath>
+      <Name>WixUtilExtension</Name>
+    </WixExtension>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="MyUI_en-US.wxl" />
+    <EmbeddedResource Include="MyUI_ja-JP.wxl" />
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" />
   <Target Name="BeforeBuild">
@@ -64,7 +77,7 @@
       <LinkerBaseInputPaths>..\PeerCastStation\bin\$(Configuration)\netcoreapp3.1\win-$(Platform)\publish</LinkerBaseInputPaths>
       <DefineConstants>BasePath=..\PeerCastStation\bin\$(Configuration)\netcoreapp3.1\win-$(Platform)\publish</DefineConstants>
     </PropertyGroup>
-    <HeatDirectory OutputFile="PeerCastStation.wxs" DirectoryRefId="INSTALLFOLDER" ComponentGroupName="PeerCastStation" SuppressCom="true" Directory="..\PeerCastStation\bin\$(Configuration)\netcoreapp3.1\win-$(Platform)\publish" SuppressFragments="true" SuppressRegistry="true" SuppressRootDirectory="true" AutoGenerateGuids="false" GenerateGuidsNow="true" ToolPath="$(WixToolPath)" PreprocessorVariable="var.BasePath" />
+    <HeatDirectory OutputFile="PeerCastStation.wxs" DirectoryRefId="INSTALLFOLDER" ComponentGroupName="PeerCastStation" SuppressCom="true" Directory="..\PeerCastStation\bin\$(Configuration)\netcoreapp3.1\win-$(Platform)\publish" SuppressFragments="true" SuppressRegistry="true" SuppressRootDirectory="true" AutoGenerateGuids="false" GenerateGuidsNow="true" ToolPath="$(WixToolPath)" PreprocessorVariable="var.BasePath" RunAsSeparateProcess="$(RunWixToolsOutOfProc)" />
   </Target>
   <!--
 	To modify your build process, add your task inside one of the targets below and uncomment it.

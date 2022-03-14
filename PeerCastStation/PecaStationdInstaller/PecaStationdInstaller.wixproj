@@ -17,26 +17,26 @@
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <DefineConstants>Debug</DefineConstants>
     <SuppressIces>ICE30</SuppressIces>
-    <Cultures>ja-JP</Cultures>
+    <Cultures>en-US;ja-JP</Cultures>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <Cultures>ja-JP</Cultures>
     <SuppressIces>ICE30</SuppressIces>
+    <Cultures>en-US;ja-JP</Cultures>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
     <DefineConstants>Debug</DefineConstants>
-    <SuppressIces>ICE30</SuppressIces>
-    <Cultures>ja-JP</Cultures>
     <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
+    <SuppressIces>ICE30</SuppressIces>
+    <Cultures>en-US;ja-JP</Cultures>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
-    <Cultures>ja-JP</Cultures>
-    <SuppressIces>ICE30</SuppressIces>
     <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
+    <SuppressIces>ICE30</SuppressIces>
+    <Cultures>en-US;ja-JP</Cultures>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PecaStationd.wxs" />
@@ -66,6 +66,10 @@
       <Name>WixFirewallExtension</Name>
     </WixExtension>
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Product_en-US.wxl" />
+    <EmbeddedResource Include="Product_ja-JP.wxl" />
+  </ItemGroup>
   <Import Project="$(WixTargetsPath)" />
   <Target Name="BeforeBuild">
     <Exec Command="dotnet publish ..\PecaStationd\PecaStationd.csproj -c $(Configuration) -r win-$(Platform)" />
@@ -73,7 +77,7 @@
       <LinkerBaseInputPaths>..\PecaStationd\bin\$(Configuration)\netcoreapp3.1\win-$(Platform)\publish</LinkerBaseInputPaths>
       <DefineConstants>BasePath=..\PecaStationd\bin\$(Configuration)\netcoreapp3.1\win-$(Platform)\publish</DefineConstants>
     </PropertyGroup>
-    <HeatDirectory OutputFile="PecaStationd.wxs" DirectoryRefId="INSTALLFOLDER" ComponentGroupName="PecaStationd" SuppressCom="true" Directory="..\PecaStationd\bin\$(Configuration)\netcoreapp3.1\win-$(Platform)\publish" SuppressFragments="true" SuppressRegistry="true" SuppressRootDirectory="true" AutoGenerateGuids="false" GenerateGuidsNow="true" ToolPath="$(WixToolPath)" PreprocessorVariable="var.BasePath" />
+    <HeatDirectory OutputFile="PecaStationd.wxs" DirectoryRefId="INSTALLFOLDER" ComponentGroupName="PecaStationd" SuppressCom="true" Directory="..\PecaStationd\bin\$(Configuration)\netcoreapp3.1\win-$(Platform)\publish" SuppressFragments="true" SuppressRegistry="true" SuppressRootDirectory="true" AutoGenerateGuids="false" GenerateGuidsNow="true" ToolPath="$(WixToolPath)" PreprocessorVariable="var.BasePath" RunAsSeparateProcess="$(RunWixToolsOutOfProc)" />
   </Target>
   <!--
 	To modify your build process, add your task inside one of the targets below and uncomment it.

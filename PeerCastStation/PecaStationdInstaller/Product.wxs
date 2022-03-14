@@ -5,39 +5,38 @@
   <Product Id="*"
       Name="PeerCastStation Service"
       Language="1041"
-      Codepage="932"
       Version="!(bind.FileVersion.PecaStationd.exe)"
       Manufacturer="pecastation.org"
       UpgradeCode="5b0f0db9-4cd2-4640-8b49-5a8132d33ddf">
-    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+    <Package InstallerVersion="400" Compressed="yes" InstallScope="perMachine"/>
 
-    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MajorUpgrade DowngradeErrorMessage="!(loc.NewerVersionAlreadyInstalled)" />
     <MediaTemplate EmbedCab="yes"/>
 
-    <Feature Id="Service" Title="PeerCastStationサービス" Level="1" Absent="disallow" AllowAdvertise="no" ConfigurableDirectory="INSTALLFOLDER">
+    <Feature Id="Service" Title="!(loc.PeerCastStationService)" Level="1" Absent="disallow" AllowAdvertise="no" ConfigurableDirectory="INSTALLFOLDER">
       <ComponentGroupRef Id="PecaStationd"/>
       <ComponentGroupRef Id="ProductComponents" />
     </Feature>
 
-    <Feature Id="Menu" Title="プログラムメニューの追加" Level="1" AllowAdvertise="no">
+    <Feature Id="Menu" Title="!(loc.AddProgramMenu)" Level="1" AllowAdvertise="no">
       <ComponentRef Id="ProgramMenu"/>
     </Feature>
 
-    <Property Id="INSTALLED">
-      <RegistrySearch
-        Id="InstallDir"
-        Root='HKCU'
-        Key='Software\[Manufacturer]\[ProductName]'
-        Name='InstallDir'
-        Type='directory'/>
+    <Property Id="INSTALLED_CU" Secure="yes">
+      <RegistrySearch Id="InstallDir_CU" Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' Type='directory'/>
     </Property>
-    <SetProperty After='AppSearch' Id='INSTALLFOLDER' Value='[INSTALLED]' Sequence='first'>NOT INSTALLFOLDER</SetProperty>
+    <Property Id="INSTALLED_LM" Secure="yes">
+      <RegistrySearch Id="InstallDir_LM" Root='HKLM' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' Type='directory'/>
+    </Property>
+    <SetProperty Id='INSTALLFOLDER' Action='SetINSTALLFOLDER_CU' Value='[INSTALLED_CU]' After='FileCost'>NOT Installed AND (NOT INSTALLFOLDER) AND INSTALLED_CU</SetProperty>
+    <SetProperty Id='INSTALLFOLDER' Action='SetINSTALLFOLDER_LM' Value='[INSTALLED_LM]' After='FileCost'>NOT Installed AND (NOT INSTALLFOLDER) AND INSTALLED_LM</SetProperty>
 
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
-    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="PeerCastStation HTML UIを開く" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="!(loc.OpenHTMLUI)" />
     <Property Id="WixShellExecTarget" Value="http://127.0.0.1:7144/" />
     <CustomAction Id="OpenHTMLUIAction" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
     <UIRef Id="WixUI_MyMondo"/>
+    <UIRef Id="WixUI_ErrorProgressText" />
   </Product>
 
   <Fragment>
@@ -49,8 +48,8 @@
         <ServiceInstall Id="ServiceInstall"
                         Type="ownProcess"
                         Name="PeerCastStationService"
-                        DisplayName="PeerCastStation Service"
-                        Description="PeerCastStation Service"
+                        DisplayName="!(loc.PeerCastStationService)"
+                        Description="!(loc.PeerCastStationService)"
                         ErrorControl="normal"
                         Start="auto"
                         Interactive="no"
@@ -72,7 +71,7 @@
       </Directory>
 
       <Directory Id="ProgramMenuFolder" Name="Programs">
-        <Directory Id="ProgramMenu" Name="PeerCastStationサービス">
+        <Directory Id="ProgramMenu" Name="!(loc.PeerCastStationService)">
           <Component Id="ProgramMenu" Guid="7C056F91-DFA5-4FAC-9BE9-4595AFB10164">
             <util:InternetShortcut
               Id="HTMLUIStartMenuShortcut"
@@ -80,8 +79,9 @@
               Target="http://127.0.0.1:7144/"
               Type="url"/>
             <RemoveFolder Id='ProgramMenu' On='uninstall' />
-            <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
-            <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' Type='string' Value='[INSTALLFOLDER]'/>
+            <RegistryValue Root='HKMU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
+            <RegistryValue Root='HKMU' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' Type='string' Value='[INSTALLFOLDER]'/>
+            <RegistryValue Root='HKMU' Key='Software\[Manufacturer]\[ProductName]' Name='Version' Type='string' Value='[ProductVersion]'/>
           </Component>
 
         </Directory>
