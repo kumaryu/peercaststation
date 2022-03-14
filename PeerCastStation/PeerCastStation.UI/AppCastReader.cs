@@ -131,6 +131,7 @@ namespace PeerCastStation.UI
                 Title  = GetStringValue(elt),
                 InstallerType = GetInstallerTypeValue(elt.Attribute("installer-type")),
                 InstallerPlatform = GetInstallerPlatformValue(elt.Attribute("installer-platform")),
+                InstallCommand = elt.Attribute("install-command")?.Value,
               }
             ).ToArray(),
           };

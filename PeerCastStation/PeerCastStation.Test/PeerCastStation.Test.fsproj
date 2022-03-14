@@ -36,6 +36,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="fixtures/UpdateArchive/Updater.bat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="fixtures/UpdateArchive/Updater.sh">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <Compile Include="TestCommon.fs" />
     <Compile Include="Atom.fs" />
     <Compile Include="CoreTests.fs" />

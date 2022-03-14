@@ -22,7 +22,11 @@ namespace PeerCastStation.Core
     public abstract PeerCast PeerCast { get; }
     public abstract string BasePath { get; }
     public abstract string[] Args { get; }
-    public abstract void Stop(int exit_code);
+    public abstract void Stop(int exit_code, Action cleanupHandler);
+    public void Stop(int exit_code)
+    {
+      Stop(exit_code, ()=> { });
+    }
     public void Stop()
     {
       Stop(0);
