@@ -264,22 +264,22 @@ let appCast = """<?xml version="1.0" encoding="utf-8"?>
       </description>
       <pubDate>Mon, 28 May 2018 01:00:00 +0900</pubDate>
       <link>http://example.com/files/hoge-windows-x86.zip</link>
-      <enclosure installer-type="archive" url="http://example.com/files/hoge-windows-x86.zip" length="123456" type="application/octet-stream" />
+      <enclosure installer-type="archive" install-command="PeerCastStation update" url="http://example.com/files/hoge-windows-x86.zip" length="123456" type="application/octet-stream" />
       <enclosure installer-type="installer" url="http://example.com/files/hoge-windows-x86.exe" length="2341639" type="application/octet-stream" />
       <enclosure installer-type="serviceinstaller" url="http://example.com/files/hoge-windows-x86.msi" length="2024226" type="application/octet-stream" />
-      <enclosure installer-type="archive" installer-platform="any" url="http://example.com/files/hoge-any.zip" length="123456" type="application/octet-stream" />
-      <enclosure installer-type="archive" installer-platform="win-x86" url="http://example.com/files/hoge-windows-x86.zip" length="123456" type="application/octet-stream" />
+      <enclosure installer-type="archive" installer-platform="any" install-command="PeerCastStation update" url="http://example.com/files/hoge-any.zip" length="123456" type="application/octet-stream" />
+      <enclosure installer-type="archive" installer-platform="win-x86" install-command="PeerCastStation update" url="http://example.com/files/hoge-windows-x86.zip" length="123456" type="application/octet-stream" />
       <enclosure installer-type="installer" installer-platform="win-x86" url="http://example.com/files/hoge-windows-x86.exe" length="2341639" type="application/octet-stream" />
       <enclosure installer-type="serviceinstaller" installer-platform="win-x86" url="http://example.com/files/hoge-windows-x86.msi" length="2024226" type="application/octet-stream" />
-      <enclosure installer-type="archive" installer-platform="win-x64" url="http://example.com/files/hoge-windows-x64.zip" length="123456" type="application/octet-stream" />
+      <enclosure installer-type="archive" installer-platform="win-x64" install-command="PeerCastStation update" url="http://example.com/files/hoge-windows-x64.zip" length="123456" type="application/octet-stream" />
       <enclosure installer-type="installer" installer-platform="win-x64" url="http://example.com/files/hoge-windows-x64.exe" length="2341639" type="application/octet-stream" />
       <enclosure installer-type="serviceinstaller" installer-platform="win-x64" url="http://example.com/files/hoge-windows-x64.msi" length="2024226" type="application/octet-stream" />
-      <enclosure installer-type="archive" installer-platform="linux-x64" url="http://example.com/files/hoge-linux-x64.zip" length="123456" type="application/octet-stream" />
-      <enclosure installer-type="archive" installer-platform="linux-arm" url="http://example.com/files/hoge-linux-arm.zip" length="123456" type="application/octet-stream" />
-      <enclosure installer-type="archive" installer-platform="linux-arm64" url="http://example.com/files/hoge-linux-arm64.zip" length="123456" type="application/octet-stream" />
-      <enclosure installer-type="archive" installer-platform="linux-musl-x64" url="http://example.com/files/hoge-linux-musl-x64.zip" length="123456" type="application/octet-stream" />
-      <enclosure installer-type="archive" installer-platform="linux-musl-arm" url="http://example.com/files/hoge-linux-musl-arm.zip" length="123456" type="application/octet-stream" />
-      <enclosure installer-type="archive" installer-platform="linux-musl-arm64" url="http://example.com/files/hoge-linux-musl-arm64.zip" length="123456" type="application/octet-stream" />
+      <enclosure installer-type="archive" installer-platform="linux-x64" install-command="PeerCastStation update" url="http://example.com/files/hoge-linux-x64.zip" length="123456" type="application/octet-stream" />
+      <enclosure installer-type="archive" installer-platform="linux-arm" install-command="PeerCastStation update" url="http://example.com/files/hoge-linux-arm.zip" length="123456" type="application/octet-stream" />
+      <enclosure installer-type="archive" installer-platform="linux-arm64" install-command="PeerCastStation update" url="http://example.com/files/hoge-linux-arm64.zip" length="123456" type="application/octet-stream" />
+      <enclosure installer-type="archive" installer-platform="linux-musl-x64" install-command="PeerCastStation update" url="http://example.com/files/hoge-linux-musl-x64.zip" length="123456" type="application/octet-stream" />
+      <enclosure installer-type="archive" installer-platform="linux-musl-arm" install-command="PeerCastStation update" url="http://example.com/files/hoge-linux-musl-arm.zip" length="123456" type="application/octet-stream" />
+      <enclosure installer-type="archive" installer-platform="linux-musl-arm64" install-command="PeerCastStation update" url="http://example.com/files/hoge-linux-musl-arm64.zip" length="123456" type="application/octet-stream" />
     </item>
   </channel>
 </rss>
@@ -321,4 +321,64 @@ let ``AppCastでプラットフォーム毎のEnclosureが取得できる`` () =
             |> Seq.exists (fun enc -> enc.InstallerPlatform = iplatform && enc.InstallerType = itype)
         )
     )
+
+[<Fact>]
+let ``AppCastからインストールコマンドが取得できる`` () =
+    let reader = AppCastReader()
+    let versionDesciptions = reader.ParseAppCastString(appCast)
+    Assert.Equal(1, Seq.length versionDesciptions)
+    let ver = Seq.head versionDesciptions
+    ver.Enclosures
+    |> Seq.filter (fun enc -> enc.InstallerType = InstallerType.Archive)
+    |> Seq.iter (fun enc -> Assert.Equal("PeerCastStation update", enc.InstallCommand))
+
+let archiveFixture (sourceDir:string) targetDir =
+    let targetFile = System.IO.Path.Join(targetDir, System.IO.Path.GetFileName(sourceDir) + ".zip")
+    System.IO.Compression.ZipFile.CreateFromDirectory(sourceDir, targetFile, System.IO.Compression.CompressionLevel.Fastest, false)
+    targetFile
+
+let readTextFile filename =
+    let rec readTextFileInternal retry =
+        try
+            IO.File.ReadAllText(filename)
+        with
+        | :? System.IO.FileNotFoundException ->
+            if retry>0 then
+                System.Threading.Thread.Sleep(100)
+                readTextFileInternal (retry - 1)
+            else
+                reraise()
+    readTextFileInternal 5
+    
+type TestApplication () =
+    inherit PeerCastStation.Core.PeerCastApplication()
+    let mutable onCleanup = fun () -> ()
+    let settings = PeerCastStation.Core.PecaSettings("settings.xml")
+    let peerCast = new PeerCastStation.Core.PeerCast()
+    override this.Settings = settings
+    override this.Plugins = Seq.empty
+    override this.PeerCast = peerCast
+    override this.BasePath = "."
+    override this.Args = [||]
+    override this.Stop(exitCode, cleanupHandler) =
+        onCleanup <- fun () -> cleanupHandler.Invoke()
+    override this.SaveSettings() = ()
+
+    interface IDisposable with
+        member this.Dispose() =
+            peerCast.Dispose()
+            onCleanup ()
+
+[<Fact>]
+let ``アーカイブ内のインストールコマンドがアプリ終了時に実行される`` () =
+    use tempDir = new TempDirectory()
+    let zipFile = archiveFixture "fixtures/UpdateArchive" tempDir.FullName
+    let downloadResult = Updater.DownloadResult(zipFile, VersionDescription(), VersionEnclosure(InstallerType=InstallerType.Archive, InstallCommand="Updater"))
+    let doInstall () =
+        use app = new TestApplication()
+        let installResult = Updater.Install(downloadResult, tempDir.FullName)
+        Assert.True(installResult)
+    doInstall()
+    let text = IO.Path.Combine(tempDir.FullName, "UpdaterTest.txt") |> readTextFile
+    Assert.Matches(sprintf @"UpdaterTest update (\S+) %s" (System.Text.RegularExpressions.Regex.Escape(tempDir.FullName)), text.Trim())
 

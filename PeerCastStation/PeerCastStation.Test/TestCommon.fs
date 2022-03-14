@@ -205,6 +205,59 @@ let pecaWithOwinHostAccessControl acinfo endpoint buildFunc =
 let pecaWithOwinHost endpoint buildFunc =
     pecaWithOwinHostAccessControl (AccessControlInfo(OutputStreamType.All, false, null)) endpoint buildFunc
 
+let httpFileHost url path =
+    let ct = new System.Threading.CancellationTokenSource()
+    let hostTask =
+        async {
+            use server = new HttpListener()
+            server.Prefixes.Add(url)
+            server.Start()
+            use _ = ct.Token.Register(fun () -> server.Stop())
+            let rec processRequestAsync () =
+                async {
+                    let! ctx =
+                        server.GetContextAsync()
+                        |> Async.AwaitTask
+                    let responseBytes status contenttype bytes =
+                        ctx.Response.StatusCode <- status
+                        ctx.Response.ContentType <- contenttype
+                        ctx.Response.ContentLength64 <- Array.length bytes
+                        ctx.Response.Close(bytes, false)
+                    let responseText status text =
+                        System.Text.Encoding.UTF8.GetBytes(string text)
+                        |> responseBytes status "text/plain" 
+                    match ctx.Request.HttpMethod with
+                    | "HEAD" -> ()
+                    | "GET" -> 
+                        let localPath = System.IO.Path.Combine(path, ctx.Request.Url.AbsolutePath)
+                        if System.IO.File.Exists(localPath) then
+                            ctx.Response.StatusCode <- 200
+                            let! bytes =
+                                System.IO.File.ReadAllBytesAsync(localPath)
+                                |> Async.AwaitTask
+                            responseBytes 200 "application/octet-stream" bytes
+                        else
+                            responseText 404 "File not found."
+                    | _ ->
+                        responseText 400 "Invalid request."
+                    if ct.IsCancellationRequested then
+                        return ()
+                    else
+                        return! processRequestAsync()
+                }
+            do!
+                processRequestAsync()
+            server.Close()
+        }
+        |> Async.StartAsTask
+    {
+        new IDisposable with
+            member self.Dispose() =
+                ct.Cancel()
+                hostTask.Wait()
+                ct.Dispose()
+    }
+
 module WebRequest =
     let addHeader (header:string) value (req:WebRequest) =
         req.Headers.Add(header, value)
@@ -227,3 +280,17 @@ module Assert =
 
     let ExpectAtomName expected (atom:Atom) =
         Assert.Equal(expected, atom.Name)
+
+type TempDirectory() =
+    let name = System.IO.Path.GetTempFileName()
+    do
+        System.IO.File.Delete(name)
+    let directoryInfo = System.IO.Directory.CreateDirectory(name)
+
+    member self.Name = directoryInfo.Name
+    member self.FullName = directoryInfo.FullName
+
+    interface IDisposable with
+        member self.Dispose() =
+            System.IO.Directory.Delete(self.FullName, true)
+

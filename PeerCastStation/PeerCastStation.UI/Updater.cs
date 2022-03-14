@@ -44,6 +44,7 @@ namespace PeerCastStation.UI
     public Uri    Url    { get; set; }
     public InstallerType InstallerType { get; set; }
     public InstallerPlatform InstallerPlatform { get; set; }
+    public string InstallCommand { get; set; }
   }
 
   public class VersionDescription
@@ -278,12 +279,13 @@ namespace PeerCastStation.UI
     static string GetProcessEntryFile()
     {
       var entry = System.Reflection.Assembly.GetEntryAssembly().Location;
-      if (Path.GetExtension(entry).ToLowerInvariant()==".dll") {
-        //たぶん.NET Core以降
+      if (Path.GetExtension(entry).ToLowerInvariant()==".dll" &&
+          Path.GetDirectoryName(entry)==Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName)) {
+        //たぶん.NET Core以降の実行ファイル
         return Process.GetCurrentProcess().MainModule.FileName;
       }
       else {
-        //実行ファイル
+        //実行ファイルもしくはdotnetコマンド経由起動のアセンブリ
         return entry;
       }
     }
@@ -300,41 +302,64 @@ namespace PeerCastStation.UI
 
     private static void StartNewSelf(string exepath, string[] additionalArgs, params string[] args)
     {
-      var exefile = Path.Combine(FindRootDirectory(exepath), Path.GetFileName(GetProcessEntryFile()));
+      var exefile = GetExecutable(Path.Combine(FindRootDirectory(exepath), Path.GetFileName(GetProcessEntryFile())));
       var combinedArgs = String.Join(" ", args.Select(arg => ShellEscape(arg)).Concat(additionalArgs));
-      Process.Start(exefile, combinedArgs);
+      Process.Start(GetDotNetProcessStartInfo(exefile, combinedArgs));
+    }
+
+    public static string GetApplicationDirectory()
+    {
+      return Path.GetDirectoryName(GetProcessEntryFile());
     }
 
     public static bool Install(DownloadResult downloaded)
     {
+      return Install(downloaded, GetApplicationDirectory());
+    }
+
+
+    private static void DoStopAndInstall(PeerCastApplication app, Action doInstall)
+    {
+      if (app!=null) {
+        app.Stop(0, doInstall);
+      }
+      else {
+        doInstall.Invoke();
+      }
+    }
+
+    public static bool Install(DownloadResult downloaded, string targetdir)
+    {
+      var app = PeerCastApplication.Current;
       try {
         switch (downloaded.Enclosure.InstallerType) {
         case InstallerType.Archive:
         case InstallerType.ServiceArchive:
-          {
+          DoStopAndInstall(app, () => {
             var tmpdir = CreateTempPath("PeerCastStation.Updater");
             ZipFile.ExtractToDirectory(downloaded.FilePath, tmpdir);
-            var appdir = Path.GetDirectoryName(GetProcessEntryFile());
-            StartUpdate(tmpdir, appdir, PeerCastApplication.Current?.Args ?? new string[0]);
-          }
-          PeerCastApplication.Current.Stop();
+            StartUpdate(tmpdir, targetdir, downloaded.Enclosure.InstallCommand, app?.Args ?? new string[0]);
+          });
           break;
         case InstallerType.Installer:
-          System.Diagnostics.Process.Start(
-            new System.Diagnostics.ProcessStartInfo(downloaded.FilePath) {
-              UseShellExecute = true,
-            }
-          );
-          PeerCastApplication.Current.Stop();
+          DoStopAndInstall(app, () => {
+            System.Diagnostics.Process.Start(
+              new System.Diagnostics.ProcessStartInfo(downloaded.FilePath) {
+                UseShellExecute = true,
+              }
+            );
+          });
           break;
         case InstallerType.ServiceInstaller:
-          System.Diagnostics.Process.Start(
-            new System.Diagnostics.ProcessStartInfo(downloaded.FilePath, "/quiet") {
-              UseShellExecute = true,
-            }
-          );
+          DoStopAndInstall(app, () => {
+            System.Diagnostics.Process.Start(
+              new System.Diagnostics.ProcessStartInfo(downloaded.FilePath, "/quiet") {
+                UseShellExecute = true,
+              }
+            );
+          });
           break;
-        case InstallerType.Unknown:
+        default:
           throw new ApplicationException();
         }
         return true;
@@ -435,9 +460,144 @@ namespace PeerCastStation.UI
       CopyTree(FindRootDirectory(sourcepath), targetpath);
     }
 
-    public static void StartUpdate(string sourcepath, string targetpath, string[] additionalArgs)
+    private static bool TryGetDescendantPath(string sourcepath, string filename, out string path)
     {
-      StartNewSelf(sourcepath, additionalArgs, "update", sourcepath, targetpath);
+      try {
+        sourcepath = Path.GetFullPath(sourcepath);
+        var filepath = Path.GetFullPath(Path.Join(sourcepath, filename));
+        if (filepath.StartsWith(sourcepath)) {
+          path = filepath;
+          return true;
+        }
+        else {
+          path = null;
+          return false;
+        }
+      }
+      catch {
+        path = null;
+        return false;
+      }
+    }
+
+    private static ProcessStartInfo GetDotNetProcessStartInfo(string exefile, string args)
+    {
+      if (Path.GetExtension(exefile)==".dll") {
+        return new ProcessStartInfo("dotnet") {
+          Arguments = String.Join(" ", ShellEscape(exefile), args),
+          UseShellExecute = true,
+        };
+      }
+      else if (Path.GetExtension(exefile)==".sh") {
+        return new ProcessStartInfo("/bin/sh") {
+          Arguments = String.Join(" ", ShellEscape(exefile), args),
+          UseShellExecute = true,
+        };
+      }
+      else {
+        return new ProcessStartInfo(exefile) {
+          Arguments = args,
+          UseShellExecute = true,
+        };
+      }
+    }
+
+    private static bool IsWindows()
+    {
+      return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+    }
+
+    private static bool TryGetExecutable(string command, out string executableCommand)
+    {
+      var ext = Path.GetExtension(command);
+      var basepath = command.Substring(0, command.Length-ext.Length);
+      switch (ext) {
+      case "":
+        if (!IsWindows() && File.Exists(command)) {
+          executableCommand = command;
+          return true;
+        }
+        if (!IsWindows() && File.Exists(command + ".sh")) {
+          executableCommand = command + ".sh";
+          return true;
+        }
+        else if (IsWindows() && File.Exists(command + ".bat")) {
+          executableCommand = command + ".bat";
+          return true;
+        }
+        else if (IsWindows() && File.Exists(basepath + ".exe")) {
+          executableCommand = command + ".exe";
+          return true;
+        }
+        else if (File.Exists(basepath + ".dll")) {
+          executableCommand = command + ".dll";
+          return true;
+        }
+        break;
+      case ".dll":
+        if (File.Exists(command)) {
+          executableCommand = command;
+          return true;
+        }
+        break;
+      case ".exe":
+        if (IsWindows() && File.Exists(command)) {
+          executableCommand = command;
+          return true;
+        }
+        else if (File.Exists(basepath + ".dll")) {
+          executableCommand = basepath + ".dll";
+          return true;
+        }
+        break;
+      }
+      executableCommand = default;
+      return false;
+    }
+
+    private static string GetExecutable(string command)
+    {
+      if (TryGetExecutable(command, out string executableCommand)) {
+        return executableCommand;
+      }
+      else {
+        return command;
+      }
+    }
+
+    private static (string Installer, string[] Args) GetArchiveInstaller(string sourcepath, string installCommand, string defaultArg)
+    {
+      if (!String.IsNullOrWhiteSpace(installCommand)) {
+        var commands = installCommand.Split(" ");
+        var archiveInstaller = commands[0];
+        if (TryGetDescendantPath(sourcepath, archiveInstaller, out var archiveInstallerPath) &&
+            TryGetExecutable(archiveInstallerPath, out var installerPath)) {
+          if (commands.Length==1) {
+            return (installerPath, defaultArg.Split(" "));
+          }
+          else {
+            return (installerPath, commands.Skip(1).ToArray());
+          }
+        }
+      }
+      {
+        var exefile = Path.Combine(FindRootDirectory(sourcepath), Path.GetFileName(GetProcessEntryFile()));
+        return (GetExecutable(exefile), defaultArg.Split(" "));
+      }
+    }
+
+    public static ProcessStartInfo GetUpdateCommand(string sourcepath, string targetpath, string installCommand, string[] additionalArgs)
+    {
+      var (installer, args) = GetArchiveInstaller(sourcepath, installCommand, "update");
+      var combinedArgs = String.Join(" ",
+        Enumerable.Concat(args, new [] { sourcepath, targetpath }).Select(arg => ShellEscape(arg)).Concat(additionalArgs)
+      );
+      return GetDotNetProcessStartInfo(installer, combinedArgs);
+    }
+
+    public static void StartUpdate(string sourcepath, string targetpath, string installCommand, string[] additionalArgs)
+    {
+      Process.Start(GetUpdateCommand(sourcepath, targetpath, installCommand, additionalArgs));
     }
 
     public static void Install(string zipfile)
