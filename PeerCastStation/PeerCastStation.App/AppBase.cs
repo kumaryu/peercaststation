@@ -67,9 +67,12 @@ namespace PeerCastStation.App
     }
 
     private TaskCompletionSource<int> stopTask = new TaskCompletionSource<int>();
-    override public void Stop(int exit_code)
+    private Action cleanupHandler = null;
+    override public void Stop(int exit_code, Action cleanupHandler)
     {
-      stopTask.TrySetResult(exit_code);
+      if (stopTask.TrySetResult(exit_code)) {
+        this.cleanupHandler = cleanupHandler;
+      }
     }
 
     PeerCast peerCast = new PeerCast();
@@ -94,6 +97,7 @@ namespace PeerCastStation.App
     protected virtual void DoCleanup()
     {
       Logger.Close();
+      cleanupHandler?.Invoke();
     }
 
     public virtual async Task<int> Start()
