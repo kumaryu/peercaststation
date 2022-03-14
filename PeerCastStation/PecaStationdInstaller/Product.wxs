@@ -2,6 +2,11 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
      xmlns:firewall="http://schemas.microsoft.com/wix/FirewallExtension"
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+  <?if $(sys.BUILDARCH) = x64 ?>
+    <?define PlatformProgramFilesFolder = ProgramFiles64Folder ?>
+  <?else?>
+    <?define PlatformProgramFilesFolder = ProgramFilesFolder ?>
+  <?endif ?>
   <Product Id="*"
       Name="PeerCastStation Service"
       Language="1041"
@@ -66,7 +71,7 @@
 
   <Fragment>
     <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFilesFolder">
+      <Directory Id="$(var.PlatformProgramFilesFolder)">
         <Directory Id="INSTALLFOLDER" Name="PeerCastStationService" />
       </Directory>
 
