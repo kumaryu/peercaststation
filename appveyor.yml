@@ -79,13 +79,13 @@ for:
     name: PecaStationd-$(APPVEYOR_BUILD_VERSION)-x64-en-US.msi
   - path: PeerCastStation/PecaStationdInstaller/bin/$(CONFIGURATION)/ja-JP/PecaStationd-$(APPVEYOR_BUILD_VERSION)-x64.msi
     name: PecaStationd-$(APPVEYOR_BUILD_VERSION)-x64-ja-JP.msi
-  - path: PeerCastStation/PeerCastStationInstaller/bin/$(CONFIGURATION)/en-US/PecaStationd-$(APPVEYOR_BUILD_VERSION)-x86.msi
+  - path: PeerCastStation/PeerCastStationInstaller/bin/$(CONFIGURATION)/en-US/PeerCastStation-$(APPVEYOR_BUILD_VERSION)-x86.msi
     name: PeerCastStation-$(APPVEYOR_BUILD_VERSION)-x86-en-US.msi
-  - path: PeerCastStation/PeerCastStationInstaller/bin/$(CONFIGURATION)/ja-JP/PecaStationd-$(APPVEYOR_BUILD_VERSION)-x86.msi
+  - path: PeerCastStation/PeerCastStationInstaller/bin/$(CONFIGURATION)/ja-JP/PeerCastStation-$(APPVEYOR_BUILD_VERSION)-x86.msi
     name: PeerCastStation-$(APPVEYOR_BUILD_VERSION)-x86-ja-JP.msi
-  - path: PeerCastStation/PeerCastStationInstaller/bin/$(CONFIGURATION)/en-US/PecaStationd-$(APPVEYOR_BUILD_VERSION)-x64.msi
+  - path: PeerCastStation/PeerCastStationInstaller/bin/$(CONFIGURATION)/en-US/PeerCastStation-$(APPVEYOR_BUILD_VERSION)-x64.msi
     name: PeerCastStation-$(APPVEYOR_BUILD_VERSION)-x64-en-US.msi
-  - path: PeerCastStation/PeerCastStationInstaller/bin/$(CONFIGURATION)/ja-JP/PecaStationd-$(APPVEYOR_BUILD_VERSION)-x64.msi
+  - path: PeerCastStation/PeerCastStationInstaller/bin/$(CONFIGURATION)/ja-JP/PeerCastStation-$(APPVEYOR_BUILD_VERSION)-x64.msi
     name: PeerCastStation-$(APPVEYOR_BUILD_VERSION)-x64-ja-JP.msi
 
 - matrix:
