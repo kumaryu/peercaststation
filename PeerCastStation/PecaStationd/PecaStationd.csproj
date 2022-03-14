@@ -3,6 +3,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <OutputType>WinExe</OutputType>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Platforms>AnyCPU;x86;x64;ARM64;ARM32</Platforms>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
