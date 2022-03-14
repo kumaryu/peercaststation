@@ -7,7 +7,7 @@
       Version="!(bind.FileVersion.PeerCastStation.exe)"
       Manufacturer="pecastation.org"
       UpgradeCode="f0ddea2a-37af-428c-88ab-6fe829f20552">
-    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+    <Package InstallerVersion="400" Compressed="yes" InstallScope="perMachine"/>
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate EmbedCab="yes"/>
@@ -18,13 +18,30 @@
       <ComponentGroupRef Id="ProductComponents"/>
     </Feature>
 
+    <Property Id="INSTALLED_CU" Secure="yes">
+      <RegistrySearch Id="InstallDir_CU" Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' Type='directory'/>
+    </Property>
+    <Property Id="INSTALLED_LM" Secure="yes">
+      <RegistrySearch Id="InstallDir_LM" Root='HKLM' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' Type='directory'/>
+    </Property>
+    <SetProperty Id='INSTALLFOLDER' Action='SetINSTALLFOLDER_CU' Value='[INSTALLED_CU]' After='FileCost'>NOT Installed AND (NOT INSTALLFOLDER) AND INSTALLED_CU</SetProperty>
+    <SetProperty Id='INSTALLFOLDER' Action='SetINSTALLFOLDER_LM' Value='[INSTALLED_LM]' After='FileCost'>NOT Installed AND (NOT INSTALLFOLDER) AND INSTALLED_LM</SetProperty>
+
+    <Property Id="WixShellExecTarget" Value="[#PeerCastStation.exe]" />
+    <CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
+
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
-    <UIRef Id="WixUI_InstallDir" />
-    <UIRef Id="WixUI_ErrorProgressText" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="!(loc.LaunchPeerCastStation)" />
+    <UI>
+       <UIRef Id="MyUI" />
+       <UIRef Id="WixUI_ErrorProgressText" />
+       <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApplication">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
+    </UI>
   </Product>
 
   <Fragment>
     <Icon Id="PeerCastStation.exe" SourceFile="$(var.PeerCastStation.TargetDir)\PeerCastStation.exe"/>
+    <Property Id="ARPPRODUCTICON" Value="PeerCastStation.exe" />
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
       <Component Id="ProductComponent">
         <File Id="PeerCastStation.exe" Source="$(var.PeerCastStation.TargetDir)\PeerCastStation.exe" KeyPath="yes">
@@ -45,8 +62,9 @@
         <Directory Id="ProgramMenu" Name="PeerCastStation">
           <Component Id="ProgramMenu" Guid="a1107ec4-3dfb-41a9-9bb8-f9c710f1d6df">
             <RemoveFolder Id='ProgramMenu' On='uninstall' />
-            <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
-            <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' Type='string' Value='[INSTALLFOLDER]'/>
+            <RegistryValue Root='HKMU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
+            <RegistryValue Root='HKMU' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' Type='string' Value='[INSTALLFOLDER]'/>
+            <RegistryValue Root='HKMU' Key='Software\[Manufacturer]\[ProductName]' Name='Version' Type='string' Value='[ProductVersion]'/>
           </Component>
         </Directory>
       </Directory>
