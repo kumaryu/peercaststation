@@ -221,7 +221,7 @@ let httpFileHost url path =
                     let responseBytes status contenttype bytes =
                         ctx.Response.StatusCode <- status
                         ctx.Response.ContentType <- contenttype
-                        ctx.Response.ContentLength64 <- Array.length bytes
+                        ctx.Response.ContentLength64 <- Array.length bytes |> int64
                         ctx.Response.Close(bytes, false)
                     let responseText status text =
                         System.Text.Encoding.UTF8.GetBytes(string text)
