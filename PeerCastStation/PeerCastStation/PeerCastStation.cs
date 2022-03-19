@@ -44,8 +44,8 @@ namespace PeerCastStation.Main
 
     static readonly OptionParser s_optionParser = new OptionParser {
       new Subcommand("install") {
-        { "--cleanup", "-c" },
-        { "--start", "-s" },
+        { "--cleanup" },
+        { "--start" },
         new NamedArgument("TARGETPATH", OptionType.Required),
       },
       new Subcommand("update") {
@@ -55,7 +55,7 @@ namespace PeerCastStation.Main
         new NamedArgument("TARGETPATH", OptionType.Required),
       },
       new Subcommand("cleanup") {
-        { "--start", "-s" },
+        { "--start" },
         new NamedArgument("TARGETPATH", OptionType.Required),
       },
       new Subcommand("") {
