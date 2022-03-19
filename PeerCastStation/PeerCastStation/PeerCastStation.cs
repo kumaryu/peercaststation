@@ -49,8 +49,8 @@ namespace PeerCastStation.Main
         new NamedArgument("TARGETPATH", OptionType.Required),
       },
       new Subcommand("update") {
-        { "--cleanup", "-c" },
-        { "--start", "-s" },
+        { "--no-cleanup" },
+        { "--no-start" },
         new NamedArgument("SOURCEPATH", OptionType.Required),
         new NamedArgument("TARGETPATH", OptionType.Required),
       },
@@ -89,8 +89,8 @@ namespace PeerCastStation.Main
             basepath,
             updateCmd.GetArgumentOf("SOURCEPATH"),
             updateCmd.GetArgumentOf("TARGETPATH"),
-            updateCmd.HasOption("--cleanup"),
-            updateCmd.HasOption("--start"),
+            !updateCmd.HasOption("--no-cleanup"),
+            !updateCmd.HasOption("--no-start"),
             updateCmd.Arguments.ToArray());
         }
         if (opts.TryGetOption("cleanup", out var cleanupCmd)) {
