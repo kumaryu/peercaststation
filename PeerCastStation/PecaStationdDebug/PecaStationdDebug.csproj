@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <Platforms>AnyCPU;x86;x64;ARM64;ARM32</Platforms>
+    <Platforms>AnyCPU;x86;x64</Platforms>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\PecaStationd\PecaStationd.csproj" />
