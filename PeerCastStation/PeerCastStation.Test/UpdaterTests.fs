@@ -332,6 +332,12 @@ let ``AppCastからインストールコマンドが取得できる`` () =
     |> Seq.filter (fun enc -> enc.InstallerType = InstallerType.Archive)
     |> Seq.iter (fun enc -> Assert.Equal("PeerCastStation update", enc.InstallCommand))
 
+[<Fact>]
+let ``FindDotNetでdotnetコマンドを取得できる`` () =
+    let dotnet = Updater.FindDotNet()
+    Assert.NotEqual<string>("dotnet", dotnet)
+    Assert.Contains("dotnet", dotnet)
+
 let archiveFixture (sourceDir:string) targetDir =
     let targetFile = System.IO.Path.Join(targetDir, System.IO.Path.GetFileName(sourceDir) + ".zip")
     System.IO.Compression.ZipFile.CreateFromDirectory(sourceDir, targetFile, System.IO.Compression.CompressionLevel.Fastest, false)
