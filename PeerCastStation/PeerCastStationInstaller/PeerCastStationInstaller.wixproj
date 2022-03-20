@@ -75,7 +75,7 @@
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" />
   <Target Name="BeforeBuild">
-    <Exec Command="dotnet publish ..\PeerCastStation\PeerCastStation.csproj -c $(Configuration) -r win-$(Platform) --self-contained" />
+    <Exec Command="dotnet publish ..\PeerCastStation\PeerCastStation.csproj -c $(Configuration) -p:Platform=$(Platform) -r win-$(Platform) --self-contained" />
     <PropertyGroup>
       <LinkerBaseInputPaths>..\PeerCastStation\bin\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish</LinkerBaseInputPaths>
       <DefineConstants>BasePath=..\PeerCastStation\bin\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish</DefineConstants>

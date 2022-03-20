@@ -74,7 +74,7 @@
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" />
   <Target Name="BeforeBuild">
-    <Exec Command="dotnet publish ..\PecaStationd\PecaStationd.csproj -c $(Configuration) -r win-$(Platform) --self-contained" />
+    <Exec Command="dotnet publish ..\PecaStationd\PecaStationd.csproj -c $(Configuration) -p:Platform=$(Platform) -r win-$(Platform) --self-contained" />
     <PropertyGroup>
       <LinkerBaseInputPaths>..\PecaStationd\bin\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish</LinkerBaseInputPaths>
       <DefineConstants>BasePath=..\PecaStationd\bin\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish</DefineConstants>
