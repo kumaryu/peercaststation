@@ -76,10 +76,10 @@
   <Target Name="BeforeBuild">
     <Exec Command="dotnet publish ..\PecaStationd\PecaStationd.csproj -c $(Configuration) -p:Platform=$(Platform) -r win-$(Platform) --self-contained" />
     <PropertyGroup>
-      <LinkerBaseInputPaths>..\PecaStationd\bin\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish</LinkerBaseInputPaths>
-      <DefineConstants>BasePath=..\PecaStationd\bin\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish</DefineConstants>
+      <LinkerBaseInputPaths>..\PecaStationd\bin\$(Platform)\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish</LinkerBaseInputPaths>
+      <DefineConstants>BasePath=..\PecaStationd\bin\$(Platform)\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish</DefineConstants>
     </PropertyGroup>
-    <HeatDirectory OutputFile="PecaStationd.wxs" DirectoryRefId="INSTALLFOLDER" ComponentGroupName="PecaStationd" SuppressCom="true" Directory="..\PecaStationd\bin\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish" SuppressFragments="true" SuppressRegistry="true" SuppressRootDirectory="true" AutoGenerateGuids="false" GenerateGuidsNow="true" ToolPath="$(WixToolPath)" PreprocessorVariable="var.BasePath" RunAsSeparateProcess="$(RunWixToolsOutOfProc)" />
+    <HeatDirectory OutputFile="PecaStationd.wxs" DirectoryRefId="INSTALLFOLDER" ComponentGroupName="PecaStationd" SuppressCom="true" Directory="..\PecaStationd\bin\$(Platform)\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish" SuppressFragments="true" SuppressRegistry="true" SuppressRootDirectory="true" AutoGenerateGuids="false" GenerateGuidsNow="true" ToolPath="$(WixToolPath)" PreprocessorVariable="var.BasePath" RunAsSeparateProcess="$(RunWixToolsOutOfProc)" />
   </Target>
   <!--
 	To modify your build process, add your task inside one of the targets below and uncomment it.

@@ -9,7 +9,7 @@
     <PeerCastUseGUI>true</PeerCastUseGUI>
     <Platforms>AnyCPU;x86;x64</Platforms>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">
+  <PropertyGroup Condition="'$(Platform)' == 'Any CPU'">
     <TargetFramework>net6.0</TargetFramework>
     <PeerCastUseGUI>false</PeerCastUseGUI>
   </PropertyGroup>
@@ -57,13 +57,13 @@
     </Content>
     <Content Include="peercaststation.ico" />
     <Content Include="PeerCastStation.sh" Link="%(RecursiveDir)%(Filename)" >
-      <CopyToOutputDirectory Condition="'$(Platform)' == 'AnyCPU'">PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Platform)' == 'Any CPU'">PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="readme.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="unblock.bat">
-      <CopyToOutputDirectory Condition="'$(Platform)' != 'AnyCPU'">PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Platform)' != 'Any CPU'">PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>

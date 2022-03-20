@@ -6,7 +6,7 @@
     <ProductVersion>3.8</ProductVersion>
     <ProjectGuid>5f06eda6-38c8-4bb7-8683-1ef94ee10290</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <MyVersion Condition=" '$(APPVEYOR_BUILD_VERSION)' != ''">$(APPVEYOR_BUILD_VERSION)</MyVersion>
     <MyVersion Condition=" '$(APPVEYOR_BUILD_VERSION)' == ''">0.0.0.0</MyVersion>
     <OutputName>PeerCastStation-$(MyVersion)-$(Platform)</OutputName>
@@ -77,10 +77,10 @@
   <Target Name="BeforeBuild">
     <Exec Command="dotnet publish ..\PeerCastStation\PeerCastStation.csproj -c $(Configuration) -p:Platform=$(Platform) -r win-$(Platform) --self-contained" />
     <PropertyGroup>
-      <LinkerBaseInputPaths>..\PeerCastStation\bin\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish</LinkerBaseInputPaths>
-      <DefineConstants>BasePath=..\PeerCastStation\bin\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish</DefineConstants>
+      <LinkerBaseInputPaths>..\PeerCastStation\bin\$(Platform)\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish</LinkerBaseInputPaths>
+      <DefineConstants>BasePath=..\PeerCastStation\bin\$(Platform)\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish</DefineConstants>
     </PropertyGroup>
-    <HeatDirectory OutputFile="PeerCastStation.wxs" DirectoryRefId="INSTALLFOLDER" ComponentGroupName="PeerCastStation" SuppressCom="true" Directory="..\PeerCastStation\bin\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish" SuppressFragments="true" SuppressRegistry="true" SuppressRootDirectory="true" AutoGenerateGuids="false" GenerateGuidsNow="true" ToolPath="$(WixToolPath)" PreprocessorVariable="var.BasePath" RunAsSeparateProcess="$(RunWixToolsOutOfProc)" />
+    <HeatDirectory OutputFile="PeerCastStation.wxs" DirectoryRefId="INSTALLFOLDER" ComponentGroupName="PeerCastStation" SuppressCom="true" Directory="..\PeerCastStation\bin\$(Platform)\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish" SuppressFragments="true" SuppressRegistry="true" SuppressRootDirectory="true" AutoGenerateGuids="false" GenerateGuidsNow="true" ToolPath="$(WixToolPath)" PreprocessorVariable="var.BasePath" RunAsSeparateProcess="$(RunWixToolsOutOfProc)" />
   </Target>
   <!--
 	To modify your build process, add your task inside one of the targets below and uncomment it.
