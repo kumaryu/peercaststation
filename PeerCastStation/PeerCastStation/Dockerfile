@@ -5,15 +5,15 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build
 WORKDIR /src
 COPY . .
 WORKDIR "/src/PeerCastStation"
-RUN dotnet restore "PeerCastStation.csproj" -p:Platform=AnyCPU -p:PeerCastUseGUI=false
-RUN dotnet build "PeerCastStation.csproj" -c Release -o /app/build -p:Platform=AnyCPU -p:PeerCastUseGUI=false
+RUN dotnet restore "PeerCastStation.csproj" -p:"Platform=Any CPU" -p:PeerCastUseGUI=false
+RUN dotnet build "PeerCastStation.csproj" -c Release -o /app/build -p:"Platform=Any CPU" -p:PeerCastUseGUI=false
 
 FROM build AS test
 WORKDIR /src
-CMD ["dotnet", "test", "PeerCastStation.Test/PeerCastStation.Test.fsproj", "-v", "n", "-c", "Release", "-o", "/app/build", "-p:PeerCastUseGUI=false"]
+CMD ["dotnet", "test", "PeerCastStation.Test/PeerCastStation.Test.fsproj", "-v", "n", "-c", "Release", "-o", "/app/build", "-p:Platform=Any CPU", "-p:PeerCastUseGUI=false"]
 
 FROM build AS publish
-RUN dotnet publish "PeerCastStation.csproj" -c Release -o /app/publish -p:PeerCastUseGUI=false
+RUN dotnet publish "PeerCastStation.csproj" -c Release -o /app/publish -p:"Platform=Any CPU" -p:PeerCastUseGUI=false
 
 FROM base AS final
 VOLUME ["/data"]
