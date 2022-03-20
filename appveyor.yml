@@ -26,10 +26,11 @@ for:
       cd doc\help
       jekyll build
       cd ..\..
-      dotnet restore PeerCastStation/PeerCastStation.sln
 
   build_script:
   - cmd: |-
+      dotnet restore -p:Configuration=%CONFIGURATION% -p:"Platform=x86"PeerCastStation/PeerCastStation.sln
+      dotnet restore -p:Configuration=%CONFIGURATION% -p:"Platform=x64"PeerCastStation/PeerCastStation.sln
       msbuild -p:Configuration=%CONFIGURATION% -p:"Platform=x86" PeerCastStation/PeerCastStation.sln
       msbuild -p:Configuration=%CONFIGURATION% -p:"Platform=x64" PeerCastStation/PeerCastStation.sln
       dotnet publish -c %CONFIGURATION% --self-contained -r win-x64 -o win-x64 PeerCastStation/PeerCastStation/PeerCastStation.csproj
@@ -77,8 +78,8 @@ for:
     - docker run --rm --volume=`pwd`:/srv/jekyll -t jekyll/jekyll jekyll build --config doc/help/_config.yml -s doc/help -d PeerCastStation/PeerCastStation.UI.HTTP/help
 
   build_script:
-    - dotnet build -p:Configuration=$CONFIGURATION -p:"Platform=AnyCPU" PeerCastStation/PeerCastStation.sln
-    - dotnet publish -c $CONFIGURATION -p:"Platform=AnyCPU" --no-self-contained -r any -o any PeerCastStation/PeerCastStation/PeerCastStation.csproj
+    - msbuild -p:Configuration=$CONFIGURATION -p:"Platform=Any CPU" PeerCastStation/PeerCastStation.sln
+    - dotnet publish -c $CONFIGURATION -p:"Platform=Any CPU" --no-self-contained -r any -o any PeerCastStation/PeerCastStation/PeerCastStation.csproj
     - docker build --rm -t ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION -f PeerCastStation/PeerCastStation/Dockerfile PeerCastStation/
     - docker build --rm -t ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION-test -f PeerCastStation/PeerCastStation/Dockerfile PeerCastStation/ --target test
     - docker save -o peercaststation-$APPVEYOR_BUILD_VERSION.tar ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION
