@@ -39,7 +39,7 @@ for:
       dotnet publish -c %CONFIGURATION% --self-contained -r win-x86 -o win-x86 PeerCastStation/PecaStationd/PecaStationd.csproj
 
   test_script:
-    - dotnet test "PeerCastStation/PeerCastStation.Test/PeerCastStation.Test.fsproj" -c %CONFIGURATION% 
+    - dotnet test "PeerCastStation/PeerCastStation.Test/PeerCastStation.Test.fsproj" -v -n -c %CONFIGURATION% 
 
   artifacts:
   - path: win-x64
@@ -85,7 +85,7 @@ for:
     - docker save -o peercaststation-$APPVEYOR_BUILD_VERSION.tar ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION
 
   test_script:
-    - dotnet test "PeerCastStation/PeerCastStation.Test/PeerCastStation.Test.fsproj" -c $CONFIGURATION
+    - dotnet test "PeerCastStation/PeerCastStation.Test/PeerCastStation.Test.fsproj" -v -n -c $CONFIGURATION -p:"Platform=Any CPU"
   #  - docker run -t --rm ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION-test
 
   deploy_script:
