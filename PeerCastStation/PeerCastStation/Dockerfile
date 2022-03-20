@@ -5,8 +5,8 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build
 WORKDIR /src
 COPY . .
 WORKDIR "/src/PeerCastStation"
-RUN dotnet restore "PeerCastStation.csproj" -p:PeerCastUseGUI=false
-RUN dotnet build "PeerCastStation.csproj" -c Release -o /app/build -p:PeerCastUseGUI=false
+RUN dotnet restore "PeerCastStation.csproj" -p:Platform=AnyCPU -p:PeerCastUseGUI=false
+RUN dotnet build "PeerCastStation.csproj" -c Release -o /app/build -p:Platform=AnyCPU -p:PeerCastUseGUI=false
 
 FROM build AS test
 WORKDIR /src
@@ -20,4 +20,5 @@ VOLUME ["/data"]
 EXPOSE 7144
 WORKDIR /app
 COPY --from=publish /app/publish .
+RUN apk add bash
 ENTRYPOINT ["dotnet", "PeerCastStation.dll", "-s", "/data/PecaSettings.xml"]

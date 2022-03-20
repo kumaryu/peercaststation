@@ -32,6 +32,10 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="PeerCastStation.sh" />
+    <None Remove="unblock.bat" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\PeerCastStation.App\PeerCastStation.App.csproj" />
     <ProjectReference Include="..\PeerCastStation.ASF\PeerCastStation.ASF.csproj" />
     <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj" />
@@ -48,17 +52,18 @@
     <ProjectReference Include="..\PeerCastStation.WPF\PeerCastStation.WPF.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="unblock.bat">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="LICENSE.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="peercaststation.ico" />
+    <Content Include="PeerCastStation.sh" Link="%(RecursiveDir)%(Filename)" >
+      <CopyToOutputDirectory Condition="'$(Platform)' == 'AnyCPU'">PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="readme.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="unblock.bat">
+      <CopyToOutputDirectory Condition="'$(Platform)' != 'AnyCPU'">PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
