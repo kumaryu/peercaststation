@@ -480,16 +480,61 @@ namespace PeerCastStation.UI
       }
     }
 
+    public static string Where(string exefile)
+    {
+      ProcessStartInfo startinfo;
+      if (IsWindows()) {
+        startinfo = new ProcessStartInfo("where") {
+          Arguments = ShellEscape(exefile),
+          UseShellExecute = false,
+          RedirectStandardOutput = true,
+        };
+      }
+      else {
+        startinfo = new ProcessStartInfo("command") {
+          Arguments = "-v " + ShellEscape(exefile),
+          UseShellExecute = false,
+          RedirectStandardOutput = true,
+        };
+      }
+      using (var proc = Process.Start(startinfo)) {
+        var lines = new List<string>();
+        proc.OutputDataReceived += (sender, e) => {
+          if (e.Data!=null) {
+            lines.Add(e.Data.TrimEnd());
+          }
+        };
+        proc.BeginOutputReadLine();
+        proc.WaitForExit();
+        if (proc.ExitCode==0 && lines.Count>0) {
+          return lines[0];
+        }
+        else {
+          return null;
+        }
+      }
+    }
+
+    public static string FindDotNet()
+    {
+      if (Path.GetFileNameWithoutExtension(Process.GetCurrentProcess().MainModule.FileName).ToLowerInvariant()=="dotnet") {
+        return Process.GetCurrentProcess().MainModule.FileName;
+      }
+      else {
+        return Where("dotnet") ?? "dotnet";
+      }
+    }
+
     private static ProcessStartInfo GetDotNetProcessStartInfo(string exefile, string args)
     {
       if (Path.GetExtension(exefile)==".dll") {
-        return new ProcessStartInfo("dotnet") {
+        return new ProcessStartInfo(FindDotNet()) {
           Arguments = String.Join(" ", ShellEscape(exefile), args),
           UseShellExecute = true,
         };
       }
       else if (Path.GetExtension(exefile)==".sh") {
-        return new ProcessStartInfo("/bin/sh") {
+        return new ProcessStartInfo("/bin/bash") {
           Arguments = String.Join(" ", ShellEscape(exefile), args),
           UseShellExecute = true,
         };
@@ -542,6 +587,10 @@ namespace PeerCastStation.UI
         break;
       case ".exe":
         if (IsWindows() && File.Exists(command)) {
+          executableCommand = command;
+          return true;
+        }
+        else if (!IsWindows() && File.Exists(command)) {
           executableCommand = command;
           return true;
         }
