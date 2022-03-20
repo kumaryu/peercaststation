@@ -464,7 +464,7 @@ namespace PeerCastStation.UI
     {
       try {
         sourcepath = Path.GetFullPath(sourcepath);
-        var filepath = Path.GetFullPath(Path.Join(sourcepath, filename));
+        var filepath = Path.GetFullPath(Path.Combine(sourcepath, filename));
         if (filepath.StartsWith(sourcepath)) {
           path = filepath;
           return true;
@@ -617,12 +617,12 @@ namespace PeerCastStation.UI
     private static (string Installer, string[] Args) GetArchiveInstaller(string sourcepath, string installCommand, string defaultArg)
     {
       if (!String.IsNullOrWhiteSpace(installCommand)) {
-        var commands = installCommand.Split(" ");
+        var commands = installCommand.Split(' ');
         var archiveInstaller = commands[0];
         if (TryGetDescendantPath(sourcepath, archiveInstaller, out var archiveInstallerPath) &&
             TryGetExecutable(archiveInstallerPath, out var installerPath)) {
           if (commands.Length==1) {
-            return (installerPath, defaultArg.Split(" "));
+            return (installerPath, defaultArg.Split(' '));
           }
           else {
             return (installerPath, commands.Skip(1).ToArray());
@@ -631,7 +631,7 @@ namespace PeerCastStation.UI
       }
       {
         var exefile = Path.Combine(FindRootDirectory(sourcepath), Path.GetFileName(GetProcessEntryFile()));
-        return (GetExecutable(exefile), defaultArg.Split(" "));
+        return (GetExecutable(exefile), defaultArg.Split(' '));
       }
     }
 

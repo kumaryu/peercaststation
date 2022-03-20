@@ -339,7 +339,7 @@ let ``FindDotNetでdotnetコマンドを取得できる`` () =
     Assert.Contains("dotnet", dotnet)
 
 let archiveFixture (sourceDir:string) targetDir =
-    let targetFile = System.IO.Path.Join(targetDir, System.IO.Path.GetFileName(sourceDir) + ".zip")
+    let targetFile = System.IO.Path.Combine(targetDir, System.IO.Path.GetFileName(sourceDir) + ".zip")
     System.IO.Compression.ZipFile.CreateFromDirectory(sourceDir, targetFile, System.IO.Compression.CompressionLevel.Fastest, false)
     targetFile
 
