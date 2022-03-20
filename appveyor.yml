@@ -78,7 +78,7 @@ for:
     - docker run --rm --volume=`pwd`:/srv/jekyll -t jekyll/jekyll jekyll build --config doc/help/_config.yml -s doc/help -d PeerCastStation/PeerCastStation.UI.HTTP/help
 
   build_script:
-    - dotnet build -p:Configuration=$CONFIGURATION -p:"Platform=Any CPU" PeerCastStation/PeerCastStation.sln
+    - dotnet restore -p:Configuration=$CONFIGURATION -p:"Platform=Any CPU" PeerCastStation/PeerCastStation/PeerCastStation.csproj
     - dotnet publish -c $CONFIGURATION -p:"Platform=Any CPU" --no-self-contained -r any -o any PeerCastStation/PeerCastStation/PeerCastStation.csproj
     - docker build --rm -t ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION -f PeerCastStation/PeerCastStation/Dockerfile PeerCastStation/
     - docker build --rm -t ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION-test -f PeerCastStation/PeerCastStation/Dockerfile PeerCastStation/ --target test
