@@ -13,7 +13,7 @@ WORKDIR /src
 CMD ["dotnet", "test", "PeerCastStation.Test/PeerCastStation.Test.fsproj", "-v", "n", "-c", "Release", "-o", "/app/build", "-p:Platform=Any CPU", "-p:PeerCastUseGUI=false"]
 
 FROM build AS publish
-RUN dotnet publish "PeerCastStation.csproj" -c Release -o /app/publish -p:"Platform=Any CPU" -p:PeerCastUseGUI=false
+RUN dotnet publish "PeerCastStation.csproj" --no-self-contained -r any -c Release -o /app/publish -p:"Platform=Any CPU" -p:PeerCastUseGUI=false
 
 FROM base AS final
 VOLUME ["/data"]
