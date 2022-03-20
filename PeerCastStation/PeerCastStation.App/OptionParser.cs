@@ -106,7 +106,7 @@ namespace PeerCastStation.App
 
       public bool AddOption(string name, string arg, bool allowMultiple)
       {
-        var opt = Options.FirstOrDefault(opt => opt.LongName==name);
+        var opt = Options.FirstOrDefault(o => o.LongName==name);
         if (opt!=null) {
           if (allowMultiple || opt.Arguments.Count==0) {
             opt.Arguments.Add(arg);
@@ -205,11 +205,40 @@ namespace PeerCastStation.App
     Multiple = 2,
   }
 
+  public struct ArgsSpan
+  {
+    public IReadOnlyList<string> BaseList { get; }
+    public int Offset { get; }
+    public int Length { get; }
+
+    public ArgsSpan(IReadOnlyList<string> baseList, int offset, int length)
+    {
+      BaseList = baseList;
+      Offset = offset;
+      Length = length;
+    }
+
+    public string this[int index] {
+      get { return BaseList[Offset+index]; }
+    }
+
+    public ArgsSpan Slice(int offset)
+    {
+      offset = Math.Min(offset, Length);
+      return new ArgsSpan(BaseList, Offset+offset, Length-offset);
+    }
+
+    public string[] ToArray()
+    {
+      return BaseList.Skip(Offset).Take(Length).ToArray();
+    }
+  }
+
   public interface IOptionParser
   {
-    public string Name { get; }
+    string Name { get; }
     OptionType OptionType { get; }
-    bool Parse(ParsedOption.Builder context, ref Span<string> args);
+    bool Parse(ParsedOption.Builder context, ref ArgsSpan args);
     void Help(CommandHelpBuilder helpBuilder);
   }
 
@@ -245,7 +274,7 @@ namespace PeerCastStation.App
       }
     }
 
-    public bool Parse(ParsedOption.Builder context, ref Span<string> args)
+    public bool Parse(ParsedOption.Builder context, ref ArgsSpan args)
     {
       if (args.Length==0) {
         return false;
@@ -326,7 +355,7 @@ namespace PeerCastStation.App
       OptionType = type;
     }
 
-    public bool Parse(ParsedOption.Builder context, ref Span<string> args)
+    public bool Parse(ParsedOption.Builder context, ref ArgsSpan args)
     {
       if (args.Length==0 || args[0].StartsWith("-")) {
         return false;
@@ -397,7 +426,7 @@ namespace PeerCastStation.App
       options.Add(opt);
     }
 
-    public virtual bool Parse(ParsedOption.Builder context, ref Span<string> args)
+    public virtual bool Parse(ParsedOption.Builder context, ref ArgsSpan args)
     {
       var result = new ParsedOption.Builder(Name);
       result.RawArguments.AddRange(args.ToArray());
@@ -435,7 +464,7 @@ namespace PeerCastStation.App
     {
     }
 
-    public override bool Parse(ParsedOption.Builder context, ref Span<string> args)
+    public override bool Parse(ParsedOption.Builder context, ref ArgsSpan args)
     {
       if (String.IsNullOrEmpty(Name)) {
         return base.Parse(context, ref args);
@@ -481,7 +510,7 @@ namespace PeerCastStation.App
 
     public ParsedOption Parse(string[] args)
     {
-      var argsSpan = args.AsSpan();
+      var argsSpan = new ArgsSpan(args, 0, args.Length);
       var result = new ParsedOption.Builder(Name);
       Parse(result, ref argsSpan);
       return result.ToParsedOption().Options.First();
