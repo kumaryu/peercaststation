@@ -345,9 +345,11 @@ module OwinHostTest =
         req.Method <- "POST"
         req.ContentType <- "text/plain"
         req.SendChunked <- true
-        use reqstrm = req.GetRequestStream()
-        reqstrm.WriteUTF8("Hello ")
-        reqstrm.WriteUTF8("Hoge!")
+        let writeContent () =
+            use reqstrm = req.GetRequestStream()
+            reqstrm.WriteUTF8("Hello ")
+            reqstrm.WriteUTF8("Hoge!")
+        writeContent()
         Assert.ExpectResponse "Hello Hoge!" req
 
     [<Fact>]
@@ -395,9 +397,11 @@ module OwinHostTest =
         req.Method <- "POST"
         req.ContentType <- "text/plain"
         req.SendChunked <- true
-        use reqstrm = req.GetRequestStream()
-        reqstrm.WriteUTF8("Hello ")
-        reqstrm.WriteUTF8("Hoge!")
+        let writeContent () =
+            use reqstrm = req.GetRequestStream()
+            reqstrm.WriteUTF8("Hello ")
+            reqstrm.WriteUTF8("Hoge!")
+        writeContent()
         Assert.ExpectResponse "Hello Hoge!" req
         let req =
             sprintf "http://%s/echo" (endpoint.ToString())
