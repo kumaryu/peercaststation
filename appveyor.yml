@@ -84,8 +84,8 @@ for:
     - docker build --rm -t ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION-test -f PeerCastStation/PeerCastStation/Dockerfile PeerCastStation/ --target test
     - docker save -o peercaststation-$APPVEYOR_BUILD_VERSION.tar ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION
 
-  test_script:
-    - dotnet test "PeerCastStation/PeerCastStation.Test/PeerCastStation.Test.fsproj" -v n -c $CONFIGURATION -p:"Platform=Any CPU"
+  #test_script:
+  #  - dotnet test "PeerCastStation/PeerCastStation.Test/PeerCastStation.Test.fsproj" -v n -c $CONFIGURATION -p:"Platform=Any CPU"
   #  - docker run -t --rm ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION-test
 
   deploy_script:

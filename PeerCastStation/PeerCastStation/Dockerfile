@@ -10,6 +10,7 @@ RUN dotnet build "PeerCastStation.csproj" -c Release -o /app/build -p:"Platform=
 
 FROM build AS test
 WORKDIR /src
+RUN apk add bash
 CMD ["dotnet", "test", "PeerCastStation.Test/PeerCastStation.Test.fsproj", "-v", "n", "-c", "Release", "-o", "/app/build", "-p:Platform=Any CPU", "-p:PeerCastUseGUI=false"]
 
 FROM build AS publish
