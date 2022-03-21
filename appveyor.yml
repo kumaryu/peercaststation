@@ -26,51 +26,26 @@ for:
       cd doc\help
       jekyll build
       cd ..\..
-      dotnet restore PeerCastStation/PeerCastStation.sln
 
   build_script:
   - cmd: |-
-      msbuild -p:Configuration=%CONFIGURATION% -p:"Platform=Any CPU" PeerCastStation/PeerCastStation.sln
-      msbuild -p:Configuration=%CONFIGURATION% -p:"Platform=x86" PeerCastStation/PeerCastStation.sln
-      msbuild -p:Configuration=%CONFIGURATION% -p:"Platform=x64" PeerCastStation/PeerCastStation.sln
-      msbuild -p:Configuration=%CONFIGURATION% -p:"Platform=ARM64" PeerCastStation/PeerCastStation.sln
-      msbuild -p:Configuration=%CONFIGURATION% -p:"Platform=ARM32" PeerCastStation/PeerCastStation.sln
+      dotnet restore -p:Configuration=%CONFIGURATION% -p:Platform=x86 PeerCastStation/PeerCastStation.sln
+      dotnet restore -p:Configuration=%CONFIGURATION% -p:Platform=x64 PeerCastStation/PeerCastStation.sln
+      msbuild -p:Configuration=%CONFIGURATION% -p:Platform=x86 PeerCastStation/PeerCastStation.sln
+      msbuild -p:Configuration=%CONFIGURATION% -p:Platform=x64 PeerCastStation/PeerCastStation.sln
       dotnet publish -c %CONFIGURATION% --self-contained -r win-x64 -o win-x64 PeerCastStation/PeerCastStation/PeerCastStation.csproj
       dotnet publish -c %CONFIGURATION% --self-contained -r win-x64 -o win-x64 PeerCastStation/PecaStationd/PecaStationd.csproj
       dotnet publish -c %CONFIGURATION% --self-contained -r win-x86 -o win-x86 PeerCastStation/PeerCastStation/PeerCastStation.csproj
       dotnet publish -c %CONFIGURATION% --self-contained -r win-x86 -o win-x86 PeerCastStation/PecaStationd/PecaStationd.csproj
-      dotnet publish -c %CONFIGURATION% --self-contained -r linux-x64 -o linux-x64 PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
-      dotnet publish -c %CONFIGURATION% --self-contained -r linux-arm -o linux-arm PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
-      dotnet publish -c %CONFIGURATION% --self-contained -r linux-arm64 -o linux-arm64 PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
-      dotnet publish -c %CONFIGURATION% --self-contained -r linux-musl-x64 -o linux-musl-x64 PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
-      dotnet publish -c %CONFIGURATION% --self-contained -r linux-musl-arm -o linux-musl-arm PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
-      dotnet publish -c %CONFIGURATION% --self-contained -r linux-musl-arm64 -o linux-musl-arm64 PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
-      dotnet publish -c %CONFIGURATION% --self-contained -r linux-musl-arm64 -o linux-musl-arm64 PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
-      dotnet publish -c %CONFIGURATION% --self-contained -r linux-musl-arm64 -o linux-musl-arm64 PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
-      dotnet publish -c %CONFIGURATION% --no-self-contained -r any -o any PeerCastStation/PeerCastStation/PeerCastStation.csproj -p:PeerCastUseGUI=false
 
   test_script:
-    - dotnet test "PeerCastStation/PeerCastStation.Test/PeerCastStation.Test.fsproj" -c %CONFIGURATION% 
+    - dotnet test "PeerCastStation/PeerCastStation.Test/PeerCastStation.Test.fsproj" -v n -c %CONFIGURATION% 
 
   artifacts:
   - path: win-x64
-    name: PeerCastStation-win-x64-$(APPVEYOR_BUILD_VERSION)
+    name: PeerCastStation-$(APPVEYOR_BUILD_VERSION)-win-x64
   - path: win-x86
-    name: PeerCastStation-win-x86-$(APPVEYOR_BUILD_VERSION)
-  - path: linux-x64
-    name: PeerCastStation-linux-x64-$(APPVEYOR_BUILD_VERSION)
-  - path: linux-arm
-    name: PeerCastStation-linux-arm-$(APPVEYOR_BUILD_VERSION)
-  - path: linux-arm64
-    name: PeerCastStation-linux-arm64-$(APPVEYOR_BUILD_VERSION)
-  - path: linux-musl-x64
-    name: PeerCastStation-linux-musl-x64-$(APPVEYOR_BUILD_VERSION)
-  - path: linux-musl-arm
-    name: PeerCastStation-linux-musl-arm-$(APPVEYOR_BUILD_VERSION)
-  - path: linux-musl-arm64
-    name: PeerCastStation-linux-musl-arm64-$(APPVEYOR_BUILD_VERSION)
-  - path: any
-    name: PeerCastStation-any-$(APPVEYOR_BUILD_VERSION)
+    name: PeerCastStation-$(APPVEYOR_BUILD_VERSION)-win-x86
   - path: PeerCastStation/PecaStationdInstaller/bin/$(CONFIGURATION)/en-US/PecaStationd-$(APPVEYOR_BUILD_VERSION)-x86.msi
     name: PecaStationd-$(APPVEYOR_BUILD_VERSION)-x86-en-US.msi
   - path: PeerCastStation/PecaStationdInstaller/bin/$(CONFIGURATION)/ja-JP/PecaStationd-$(APPVEYOR_BUILD_VERSION)-x86.msi
@@ -103,11 +78,14 @@ for:
     - docker run --rm --volume=`pwd`:/srv/jekyll -t jekyll/jekyll jekyll build --config doc/help/_config.yml -s doc/help -d PeerCastStation/PeerCastStation.UI.HTTP/help
 
   build_script:
+    - dotnet restore -p:Configuration=$CONFIGURATION -p:"Platform=Any CPU" PeerCastStation/PeerCastStation/PeerCastStation.csproj
+    - dotnet publish -c $CONFIGURATION -p:"Platform=Any CPU" --no-self-contained -r any -o any PeerCastStation/PeerCastStation/PeerCastStation.csproj
     - docker build --rm -t ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION -f PeerCastStation/PeerCastStation/Dockerfile PeerCastStation/
     - docker build --rm -t ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION-test -f PeerCastStation/PeerCastStation/Dockerfile PeerCastStation/ --target test
     - docker save -o peercaststation-$APPVEYOR_BUILD_VERSION.tar ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION
 
   #test_script:
+  #  - dotnet test "PeerCastStation/PeerCastStation.Test/PeerCastStation.Test.fsproj" -v n -c $CONFIGURATION -p:"Platform=Any CPU"
   #  - docker run -t --rm ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION-test
 
   deploy_script:
@@ -116,4 +94,6 @@ for:
 
   artifacts:
     - path: peercaststation-$(APPVEYOR_BUILD_VERSION).tar
+    - path: any
+      name: PeerCastStation-$(APPVEYOR_BUILD_VERSION)-any
 

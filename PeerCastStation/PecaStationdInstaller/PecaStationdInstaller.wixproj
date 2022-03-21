@@ -6,6 +6,7 @@
     <ProductVersion>3.10</ProductVersion>
     <ProjectGuid>380048cc-ccec-4864-b7b1-60e9360560b9</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
+    <TargetFramework>net6.0</TargetFramework>
     <MyVersion Condition=" '$(APPVEYOR_BUILD_VERSION)' != ''">$(APPVEYOR_BUILD_VERSION)</MyVersion>
     <MyVersion Condition=" '$(APPVEYOR_BUILD_VERSION)' == ''">0.0.0.0</MyVersion>
     <OutputName>PecaStationd-$(MyVersion)-$(Platform)</OutputName>
@@ -73,12 +74,12 @@
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" />
   <Target Name="BeforeBuild">
-    <Exec Command="dotnet publish ..\PecaStationd\PecaStationd.csproj -c $(Configuration) -r win-$(Platform)" />
+    <Exec Command="dotnet publish ..\PecaStationd\PecaStationd.csproj -c $(Configuration) -p:Platform=$(Platform) -r win-$(Platform) --self-contained" />
     <PropertyGroup>
-      <LinkerBaseInputPaths>..\PecaStationd\bin\$(Configuration)\netcoreapp3.1\win-$(Platform)\publish</LinkerBaseInputPaths>
-      <DefineConstants>BasePath=..\PecaStationd\bin\$(Configuration)\netcoreapp3.1\win-$(Platform)\publish</DefineConstants>
+      <LinkerBaseInputPaths>..\PecaStationd\bin\$(Platform)\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish</LinkerBaseInputPaths>
+      <DefineConstants>BasePath=..\PecaStationd\bin\$(Platform)\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish</DefineConstants>
     </PropertyGroup>
-    <HeatDirectory OutputFile="PecaStationd.wxs" DirectoryRefId="INSTALLFOLDER" ComponentGroupName="PecaStationd" SuppressCom="true" Directory="..\PecaStationd\bin\$(Configuration)\netcoreapp3.1\win-$(Platform)\publish" SuppressFragments="true" SuppressRegistry="true" SuppressRootDirectory="true" AutoGenerateGuids="false" GenerateGuidsNow="true" ToolPath="$(WixToolPath)" PreprocessorVariable="var.BasePath" RunAsSeparateProcess="$(RunWixToolsOutOfProc)" />
+    <HeatDirectory OutputFile="PecaStationd.wxs" DirectoryRefId="INSTALLFOLDER" ComponentGroupName="PecaStationd" SuppressCom="true" Directory="..\PecaStationd\bin\$(Platform)\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish" SuppressFragments="true" SuppressRegistry="true" SuppressRootDirectory="true" AutoGenerateGuids="false" GenerateGuidsNow="true" ToolPath="$(WixToolPath)" PreprocessorVariable="var.BasePath" RunAsSeparateProcess="$(RunWixToolsOutOfProc)" />
   </Target>
   <!--
 	To modify your build process, add your task inside one of the targets below and uncomment it.

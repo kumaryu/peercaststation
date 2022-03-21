@@ -61,7 +61,7 @@ namespace PeerCastStation.WPF
       }
       else {
         hwnd = new System.Windows.Interop.WindowInteropHelper(this);
-        if (hwnd.Handle!=null && hwnd.Handle!=IntPtr.Zero) {
+        if (hwnd.Handle!=IntPtr.Zero) {
           nativeSource = System.Windows.Interop.HwndSource.FromHwnd(hwnd.Handle);
           nativeSource.AddHook(OnWindowMessage);
           var dpi = Screen.GetDpiForWindow(hwnd);

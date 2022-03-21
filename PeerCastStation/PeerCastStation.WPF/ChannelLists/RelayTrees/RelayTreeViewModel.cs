@@ -94,7 +94,7 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
         var settings = PeerCastApplication.Current.Settings.Get<WPFSettings>();
         switch (settings.RemoteNodeName) {
         case RemoteNodeName.SessionID:
-          if (Node.Host.SessionID!=null) {
+          if (Node.Host.SessionID!=Guid.Empty) {
             return Node.Host.SessionID.ToString("N").ToUpperInvariant();
           }
           else if (Node.Host.GlobalEndPoint!=null && Node.Host.GlobalEndPoint.Port!=0) {
