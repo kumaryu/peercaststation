@@ -1,32 +1,27 @@
 ---
 image:
-  - Visual Studio 2022
-  - Ubuntu2004
-
-version: 3.1.0.{build}
+- Visual Studio 2022
+- Ubuntu2004
+version: 3.0.0.{build}
 environment:
   GITHUB_ACTOR: kumaryu
   GITHUB_CR_TOKEN:
     secure: 4ZKkbwwriImTNatsCmqVWNFOsObxDOfbenDzznEtCtfwqqOctigBAOvgbwM9Ll9c
 configuration: Release
-
 for:
 - matrix:
     only:
-      - image: Visual Studio 2022
-
+    - image: Visual Studio 2022
   install:
   - cmd: |-
       set PATH=C:\Ruby27-x64\bin;%PATH%
       gem install -N jekyll
-
   before_build:
   - cmd: |-
       ruby bumpversion.rb %APPVEYOR_BUILD_VERSION%
       cd doc\help
       jekyll build
       cd ..\..
-
   build_script:
   - cmd: |-
       dotnet restore -p:Configuration=%CONFIGURATION% -p:Platform=x86 PeerCastStation/PeerCastStation.sln
@@ -37,10 +32,8 @@ for:
       dotnet publish -c %CONFIGURATION% --self-contained -r win-x64 -o win-x64 PeerCastStation/PecaStationd/PecaStationd.csproj
       dotnet publish -c %CONFIGURATION% --self-contained -r win-x86 -o win-x86 PeerCastStation/PeerCastStation/PeerCastStation.csproj
       dotnet publish -c %CONFIGURATION% --self-contained -r win-x86 -o win-x86 PeerCastStation/PecaStationd/PecaStationd.csproj
-
   test_script:
-    - dotnet test "PeerCastStation/PeerCastStation.Test/PeerCastStation.Test.fsproj" -v n -c %CONFIGURATION% 
-
+  - dotnet test "PeerCastStation/PeerCastStation.Test/PeerCastStation.Test.fsproj" -v n -c %CONFIGURATION%
   artifacts:
   - path: win-x64
     name: PeerCastStation-$(APPVEYOR_BUILD_VERSION)-win-x64
@@ -62,38 +55,31 @@ for:
     name: PeerCastStation-$(APPVEYOR_BUILD_VERSION)-x64-en-US.msi
   - path: PeerCastStation/PeerCastStationInstaller/bin/$(CONFIGURATION)/ja-JP/PeerCastStation-$(APPVEYOR_BUILD_VERSION)-x64.msi
     name: PeerCastStation-$(APPVEYOR_BUILD_VERSION)-x64-ja-JP.msi
-
 - matrix:
     only:
-      - image: Ubuntu2004
-
+    - image: Ubuntu2004
   services:
-    - docker
-
+  - docker
   install:
-    - rvm use 2.7
-
+  - rvm use 2.7
   before_build:
-    - ruby bumpversion.rb $APPVEYOR_BUILD_VERSION
-    - docker run --rm --volume=`pwd`:/srv/jekyll -t jekyll/jekyll jekyll build --config doc/help/_config.yml -s doc/help -d PeerCastStation/PeerCastStation.UI.HTTP/help
-
+  - ruby bumpversion.rb $APPVEYOR_BUILD_VERSION
+  - docker run --rm --volume=`pwd`:/srv/jekyll -t jekyll/jekyll jekyll build --config doc/help/_config.yml -s doc/help -d PeerCastStation/PeerCastStation.UI.HTTP/help
   build_script:
-    - dotnet restore -p:Configuration=$CONFIGURATION -p:"Platform=Any CPU" PeerCastStation/PeerCastStation/PeerCastStation.csproj
-    - dotnet publish -c $CONFIGURATION -p:"Platform=Any CPU" --no-self-contained -r any -o any PeerCastStation/PeerCastStation/PeerCastStation.csproj
-    - docker build --rm -t ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION -f PeerCastStation/PeerCastStation/Dockerfile PeerCastStation/
-    - docker build --rm -t ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION-test -f PeerCastStation/PeerCastStation/Dockerfile PeerCastStation/ --target test
-    - docker save -o peercaststation-$APPVEYOR_BUILD_VERSION.tar ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION
+  - dotnet restore -p:Configuration=$CONFIGURATION -p:"Platform=Any CPU" PeerCastStation/PeerCastStation/PeerCastStation.csproj
+  - dotnet publish -c $CONFIGURATION -p:"Platform=Any CPU" --no-self-contained -r any -o any PeerCastStation/PeerCastStation/PeerCastStation.csproj
+  - docker build --rm -t ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION -f PeerCastStation/PeerCastStation/Dockerfile PeerCastStation/
+  - docker build --rm -t ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION-test -f PeerCastStation/PeerCastStation/Dockerfile PeerCastStation/ --target test
+  - docker save -o peercaststation-$APPVEYOR_BUILD_VERSION.tar ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION
 
   #test_script:
   #  - dotnet test "PeerCastStation/PeerCastStation.Test/PeerCastStation.Test.fsproj" -v n -c $CONFIGURATION -p:"Platform=Any CPU"
   #  - docker run -t --rm ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION-test
 
   deploy_script:
-    - echo $GITHUB_CR_TOKEN | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
-    - docker push ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION
-
+  - echo $GITHUB_CR_TOKEN | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+  - docker push ghcr.io/$GITHUB_ACTOR/peercaststation:$APPVEYOR_BUILD_VERSION
   artifacts:
-    - path: peercaststation-$(APPVEYOR_BUILD_VERSION).tar
-    - path: any
-      name: PeerCastStation-$(APPVEYOR_BUILD_VERSION)-any
-
+  - path: peercaststation-$(APPVEYOR_BUILD_VERSION).tar
+  - path: any
+    name: PeerCastStation-$(APPVEYOR_BUILD_VERSION)-any
