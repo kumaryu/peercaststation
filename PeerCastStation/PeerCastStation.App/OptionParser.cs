@@ -437,7 +437,7 @@ namespace PeerCastStation.App
 
     public override bool Parse(ParsedOption.Builder context, ref Span<string> args)
     {
-      if (String.IsNullOrEmpty(Name)) {
+      if (args.Length>0 && String.IsNullOrEmpty(Name)) {
         return base.Parse(context, ref args);
       }
       else {
