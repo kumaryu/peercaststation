@@ -491,8 +491,8 @@ namespace PeerCastStation.UI
         };
       }
       else {
-        startinfo = new ProcessStartInfo("command") {
-          Arguments = "-v " + ShellEscape(exefile),
+        startinfo = new ProcessStartInfo("/bin/sh") {
+          Arguments = $"-c 'command -v {ShellEscape(exefile)}'",
           UseShellExecute = false,
           RedirectStandardOutput = true,
         };
@@ -554,33 +554,47 @@ namespace PeerCastStation.UI
 
     private static bool TryGetExecutable(string command, out string executableCommand)
     {
-      var ext = Path.GetExtension(command);
-      var basepath = command.Substring(0, command.Length-ext.Length);
-      switch (ext) {
+      switch (Path.GetExtension(command)) {
       case "":
         if (!IsWindows() && File.Exists(command)) {
           executableCommand = command;
           return true;
         }
-        if (!IsWindows() && File.Exists(command + ".sh")) {
-          executableCommand = command + ".sh";
+        if (!IsWindows() && File.Exists(Path.ChangeExtension(command, ".sh"))) {
+          executableCommand = Path.ChangeExtension(command, ".sh");
           return true;
         }
-        else if (IsWindows() && File.Exists(command + ".bat")) {
-          executableCommand = command + ".bat";
+        else if (IsWindows() && File.Exists(Path.ChangeExtension(command, ".bat"))) {
+          executableCommand = Path.ChangeExtension(command, ".bat");
           return true;
         }
-        else if (IsWindows() && File.Exists(basepath + ".exe")) {
-          executableCommand = command + ".exe";
+        else if (IsWindows() && File.Exists(Path.ChangeExtension(command, ".exe"))) {
+          executableCommand = Path.ChangeExtension(command, ".exe");
           return true;
         }
-        else if (File.Exists(basepath + ".dll")) {
-          executableCommand = command + ".dll";
+        else if (File.Exists(Path.ChangeExtension(command, ".dll"))) {
+          executableCommand = Path.ChangeExtension(command, ".dll");
           return true;
         }
         break;
       case ".dll":
-        if (File.Exists(command)) {
+        if (!IsWindows() && File.Exists(Path.ChangeExtension(command, null))) {
+          executableCommand = Path.ChangeExtension(command, null);
+          return true;
+        }
+        else if (!IsWindows() && File.Exists(Path.ChangeExtension(command, ".sh"))) {
+          executableCommand = Path.ChangeExtension(command, ".sh");
+          return true;
+        }
+        else if (IsWindows() && File.Exists(Path.ChangeExtension(command, ".bat"))) {
+          executableCommand = Path.ChangeExtension(command, ".bat");
+          return true;
+        }
+        else if (IsWindows() && File.Exists(Path.ChangeExtension(command, ".exe"))) {
+          executableCommand = Path.ChangeExtension(command, ".exe");
+          return true;
+        }
+        else if (File.Exists(command)) {
           executableCommand = command;
           return true;
         }
@@ -590,12 +604,20 @@ namespace PeerCastStation.UI
           executableCommand = command;
           return true;
         }
-        else if (!IsWindows() && File.Exists(command)) {
-          executableCommand = command;
+        else if (!IsWindows() && File.Exists(Path.ChangeExtension(command, null))) {
+          executableCommand = Path.ChangeExtension(command, null);
           return true;
         }
-        else if (File.Exists(basepath + ".dll")) {
-          executableCommand = basepath + ".dll";
+        else if (!IsWindows() && File.Exists(Path.ChangeExtension(command, ".sh"))) {
+          executableCommand = Path.ChangeExtension(command, ".sh");
+          return true;
+        }
+        else if (IsWindows() && File.Exists(Path.ChangeExtension(command, ".bat"))) {
+          executableCommand = Path.ChangeExtension(command, ".bat");
+          return true;
+        }
+        else if (File.Exists(Path.ChangeExtension(command, ".dll"))) {
+          executableCommand = Path.ChangeExtension(command, ".dll");
           return true;
         }
         break;
