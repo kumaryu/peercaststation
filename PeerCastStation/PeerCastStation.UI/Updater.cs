@@ -328,6 +328,34 @@ namespace PeerCastStation.UI
       }
     }
 
+    public static void Chmod(string path, int permission)
+    {
+      if (IsWindows()) {
+        return;
+      }
+      System.Diagnostics.Process.Start(
+        new System.Diagnostics.ProcessStartInfo("chmod") {
+          Arguments = $"{Convert.ToString(permission, 8)} {ShellEscape(path)}",
+          UseShellExecute = true,
+        }
+      );
+    }
+
+    public static void ExtractZipToDirectory(string source, string targetdir)
+    {
+      ZipFile.ExtractToDirectory(source, targetdir);
+      using (var zip = new ZipArchive(File.OpenRead(source), ZipArchiveMode.Read)) {
+        foreach (var ent in zip.Entries) {
+          if (ent.Length>0 && ent.ExternalAttributes!=0) {
+            var permission = (ent.ExternalAttributes >> 16) & 511; //0777
+            if (permission != 0 && permission != 420) { //0644
+              Chmod(Path.Combine(targetdir, ent.FullName), permission);
+            }
+          }
+        }
+      }
+    }
+
     public static bool Install(DownloadResult downloaded, string targetdir)
     {
       var app = PeerCastApplication.Current;
@@ -337,7 +365,7 @@ namespace PeerCastStation.UI
         case InstallerType.ServiceArchive:
           DoStopAndInstall(app, () => {
             var tmpdir = CreateTempPath("PeerCastStation.Updater");
-            ZipFile.ExtractToDirectory(downloaded.FilePath, tmpdir);
+            ExtractZipToDirectory(downloaded.FilePath, tmpdir);
             StartUpdate(tmpdir, targetdir, downloaded.Enclosure.InstallCommand, app?.Args ?? new string[0]);
           });
           break;
