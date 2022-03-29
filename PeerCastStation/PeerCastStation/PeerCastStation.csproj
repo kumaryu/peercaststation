@@ -13,6 +13,10 @@
     <TargetFramework>net6.0</TargetFramework>
     <PeerCastUseGUI>false</PeerCastUseGUI>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">
+    <TargetFramework>net6.0</TargetFramework>
+    <PeerCastUseGUI>false</PeerCastUseGUI>
+  </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
     <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
