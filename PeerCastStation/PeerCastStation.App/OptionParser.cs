@@ -492,7 +492,7 @@ namespace PeerCastStation.App
   public class OptionParser : Command
   {
     public OptionParser()
-      : base(System.IO.Path.GetFileName(System.Reflection.Assembly.GetEntryAssembly().Location))
+      : base(System.IO.Path.GetFileName(System.Reflection.Assembly.GetEntryAssembly()?.Location ?? ""))
     {
     }
 
