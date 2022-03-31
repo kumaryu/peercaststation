@@ -9,6 +9,9 @@ date = Time.now
 url  = nil
 
 opt = OptionParser.new
+opt.on('--appcast URL') do |v|
+  url = v
+end
 opt.on('--dev') do
   url = 'http://www.pecastation.org/files/appcast-dev.xml'
 end
@@ -21,7 +24,7 @@ end
 opt.parse!(ARGV)
 
 if ARGV.size<1 then
-  $stderr.puts "#{$0} [--dev|--stable] [--date=DATE] VERSION"
+  $stderr.puts "#{$0} [--dev|--stable|--appcast=URL] [--date=DATE] VERSION"
   exit 1
 end
 version = ARGV[0]
