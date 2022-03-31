@@ -12,6 +12,34 @@ title: 開発版のダウンロード - PeerCastStation
 
 動作環境とインストール方法
 ==========================
+Windowsの場合はWindows 7以降が必要です。
+Windows以外の場合は.NET6のランタイムが必要です。
+
+zip版をダウンロードした場合は展開前にプロパティからブロック解除しておくとあとで便利です。中身を適当な場所に置いてPeerCastStation.exeを起動してください。詳しい使い方はzip内のhelp\\index.htmlを開いてヘルプを見てください。
+
+なぜか起動しない場合は実行ファイルとdllファイルがブロックされている可能性があります。
+unblock.batを実行してから再度PeerCastStation.exeを実行してみてください。
+
+サービス版インストーラはサービスとは何であるかわからない人には関係ないので、通常版(ZIP版またはインストーラ版)を使用してください。
+
+Windows以外で.NET6がインストールされていない場合は起動時に自動的にランタイムをダウンロードして`~/.dotnet`にインストールします。
+ダウンロードにはbashとcurlまたはwgetが必要なので無い環境では入れておいてください。
+zipを展開したあとPeerCastStationを起動してください。
+
+{% for release in site.data.releasenotes %}{% if release.channel == 'dev2' %}
+{{ release.name }}
+------------------
+{% for enclosure in release.enclosures  %}
+* {% if enclosure.type == 'archive' %}{% if enclosure.platform == 'win-x86' %}[Windows 32bit ZIP版ダウンロード (インストールしたくない人向け)]({{ enclosure.url }}){% endif %}{% if enclosure.platform == 'win-x64' %}[Windows 64bit ZIP版ダウンロード (インストールしたくない人向け)]({{ enclosure.url }}){% endif %}{% if enclosure.platform == 'any' %}[Windows以外向けZIP版ダウンロード]({{ enclosure.url }}){% endif %}{% endif %}{% if enclosure.type == 'installer' %}{% if enclosure.platform == 'win-x86' %}[Windows 32bit インストーラ版ダウンロード (普通の人向け)]({{ enclosure.url }}){% endif %}{% if enclosure.platform == 'win-x64' %}[Windows 64bit インストーラ版ダウンロード (普通の人向け)]({{ enclosure.url }}){% endif %}{% endif %}{% if enclosure.type == 'serviceinstaller' %}{% if enclosure.platform == 'win-x86' %}[Windows 32bit サービス版インストーラダウンロード (サービスが何か分かる人向け)]({{ enclosure.url }}){% endif %}{% if enclosure.platform == 'win-x64' %}[Windows 64bit サービス版インストーラダウンロード (サービスが何か分かる人向け)]({{ enclosure.url }}){% endif %}{% endif %}{% endfor %} 
+
+{{ release.notes }}
+
+{% endif %}{% endfor %}
+
+動作環境とインストール方法(旧)
+==========================
+以下のバージョンは.NET Frameworkまたはmonoで動作するバージョンです。
+
 Windowsの場合はWindows 7以降と.NET Framework 4.5以降、
 Windows以外の場合はMono 5.0以降(なるべく最新を推奨)が必要です。
 macOS 10.15 (Catalina)以降ではmono 6.4以降を使用してください。
@@ -28,7 +56,7 @@ Windowsでサービス版を実行するにはサービス版インストーラ�
 
 サービス版インストーラはサービスとは何であるかわからない人には関係ないので、通常版(ZIP版またはインストーラ版)を使用してください。
 
-{% for release in site.data.releasenotes %}{% if release.channel contains 'dev' %}
+{% for release in site.data.releasenotes %}{% if release.channel == 'dev' %}
 {{ release.name }}
 ------------------
 {% for enclosure in release.enclosures  %}

@@ -1,4 +1,76 @@
 ---
+- name: Version 2.9.8 (2021年03月31日開発版)
+  version: 2.9.8
+  channel: dev
+  notes: |
+    3.0以降へのバージョンアップができるようにしました。
+
+    ## 変更点
+    * 2.9.8から3.0以降へのバージョンアップができるようにしました。このバージョンへの更新後、すぐに3.0以降のバージョンアップ通知が出ますので再度バージョンアップを行ってください。
+    * 一部のバージョン(特にzip版)からは自動アップデートが動かない可能性があります。その場合は3.0以降を手動で再インストールしてください。
+
+  date: 2021-03-20T22:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-2.9.8.zip
+  enclosures:
+  - type: archive
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.8.zip
+    length: 1963106
+  - type: installer
+    url: http://www.pecastation.org/files/PeerCastStation-2.9.8.exe
+    length: 2481860
+  - type: serviceinstaller
+    url: http://www.pecastation.org/files/PecaStationd-2.9.8.msi
+    length: 2151600
+
+- name: Version 3.0.1 (2022年03月21日開発版)
+  version: 3.0.1
+  channel: dev2
+  notes: |
+    ランタイムを.NET6に移行しました。
+
+    ## 変更点
+    * 今まで.NET Frameworkやmonoを使って起動するようにしていたのを.NET6に移行しました。
+    これで動作が変わるということは特にありませんが、Windowsではランタイムを同梱するようになったので別途ランタイムのインストールは必要ありません。Windows以外では.NET6のランタイムを別途インストールすることを推奨しますが、無い場合は起動時にランタイムを`~/.dotnet/`に自動的にインストールします。
+    * Windows版はx86版とx64版が分かれるようになりました。ARM64版はまだないので必要ならx86版を使用してください。
+    * M3Uプレイリストの拡張情報にチャンネル名を含めるようにしました。
+    * HTML UIからプレイリストファイルをダウンロードする時にチャンネル名をファイル名とするようにしました。
+
+    ## 修正点
+    * ポートチェックを改善し、GUIではポート開放になっているのに実際接続すると開放にならない場合があったのを修正しました。
+    * zip版で3.0.0へのアップデートが正しく実行されないのを修正しました。
+
+  date: 2022-03-21T16:00:00+09:00
+  url: http://www.pecastation.org/files/PeerCastStation-3.0.1-any.zip
+  enclosures:
+  - type: archive
+    platform: any
+    url: http://www.pecastation.org/files/PeerCastStation-3.0.1-any.zip
+    length: 1963106
+  - type: archive
+    platform: win-x86
+    url: http://www.pecastation.org/files/PeerCastStation-3.0.1-x86.zip
+    length: 1963106
+  - type: archive
+    platform: win-x64
+    url: http://www.pecastation.org/files/PeerCastStation-3.0.1-x64.zip
+    length: 1963106
+  - type: installer
+    platform: win-x86
+    url: http://www.pecastation.org/files/PeerCastStation-3.0.1-x86.msi
+    length: 2481860
+  - type: installer
+    platform: win-x64
+    url: http://www.pecastation.org/files/PeerCastStation-3.0.1-x64.msi
+    length: 2481860
+  - type: serviceinstaller
+    platform: win-x86
+    url: http://www.pecastation.org/files/PecaStationd-3.0.1-x86.msi
+    length: 2151600
+  - type: serviceinstaller
+    platform: win-x64
+    url: http://www.pecastation.org/files/PecaStationd-3.0.1-x64.msi
+    length: 2151600
+
 - name: Version 2.8.1 (2021年03月19日安定版)
   version: 2.8.1
   channel: stable
@@ -21,10 +93,13 @@
   enclosures:
   - type: archive
     url: http://www.pecastation.org/files/PeerCastStation-2.8.1.zip
+    length: 1963104
   - type: installer
     url: http://www.pecastation.org/files/PeerCastStation-2.8.1.exe
+    length: 2481852
   - type: serviceinstaller
     url: http://www.pecastation.org/files/PecaStationd-2.8.1.msi
+    length: 2151600
 
 - name: Version 2.9.7 (2021年03月17日開発版)
   version: 2.9.7
@@ -41,10 +116,13 @@
   enclosures:
   - type: archive
     url: http://www.pecastation.org/files/PeerCastStation-2.9.7.zip
+    length: 1963106
   - type: installer
     url: http://www.pecastation.org/files/PeerCastStation-2.9.7.exe
+    length: 2481860
   - type: serviceinstaller
     url: http://www.pecastation.org/files/PecaStationd-2.9.7.msi
+    length: 2151600
 
 - name: Version 2.9.6 (2021年03月05日開発版)
   version: 2.9.6
@@ -60,11 +138,13 @@
   enclosures:
   - type: archive
     url: http://www.pecastation.org/files/PeerCastStation-2.9.6.zip
+    length: 1963106
   - type: installer
     url: http://www.pecastation.org/files/PeerCastStation-2.9.6.exe
+    length: 1963106
   - type: serviceinstaller
     url: http://www.pecastation.org/files/PecaStationd-2.9.6.msi
-
+    length: 1963106
 
 - name: Version 2.9.5 (2021年03月04日開発版)
   version: 2.9.5
@@ -86,10 +166,13 @@
   enclosures:
   - type: archive
     url: http://www.pecastation.org/files/PeerCastStation-2.9.5.zip
+    length: 1963106
   - type: installer
     url: http://www.pecastation.org/files/PeerCastStation-2.9.5.exe
+    length: 1963106
   - type: serviceinstaller
     url: http://www.pecastation.org/files/PecaStationd-2.9.5.msi
+    length: 1963106
 
 - name: Version 2.8.0 (2021年02月11日安定版)
   version: 2.8.0

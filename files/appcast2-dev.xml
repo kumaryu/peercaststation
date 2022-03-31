@@ -1,0 +1,14 @@
+---
+layout: rss
+name:   appcast
+title:  PeerCastStation更新情報
+link:   http://www.pecastation.org/
+description: PeerCastStationの更新情報です
+---
+{% for release in site.data.releasenotes %}{% if release.channel == 'dev2' %}<item>
+  <title>{{ release.name }}</title>
+  <description><h1>{{ release.name }}</h1>{{ release.notes | markdownify }}</description>
+  <pubDate>{{ release.date | date: '%a, %d %b %Y %H:%M:%S %z' }}</pubDate>
+  <link>{{ release.url }}</link>
+    {% for enclosure in release.enclosures %}<enclosure installer-type="{{ enclosure.type }}" url="{{ enclosure.url }}" length="{{ enclosure.length }}" installer-platform="{{ enclosure.platform }}" type="application/octet-stream" />{% endfor %}
+</item>{% endif %}{% endfor %}

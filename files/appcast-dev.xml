@@ -5,7 +5,7 @@ title:  PeerCastStation更新情報
 link:   http://www.pecastation.org/
 description: PeerCastStationの更新情報です
 ---
-{% for release in site.data.releasenotes %}{% if release.channel contains 'dev' %}<item>
+{% for release in site.data.releasenotes %}{% if release.channel == 'dev' %}<item>
   <title>{{ release.name }}</title>
   <description><h1>{{ release.name }}</h1>{{ release.notes | markdownify }}</description>
   <pubDate>{{ release.date | date: '%a, %d %b %Y %H:%M:%S %z' }}</pubDate>
