@@ -15,6 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -317,7 +318,7 @@ namespace PeerCastStation.Core
     public string     ProtocolName    { get; private set; }
     public ConnectionType   Type      { get; private set; }
     public ConnectionStatus Status    { get; private set; }
-    public IPEndPoint RemoteEndPoint  { get; private set; }
+    public IPEndPoint? RemoteEndPoint { get; private set; }
     public RemoteHostStatus RemoteHostStatus { get; private set; }
     public Guid?      RemoteSessionID { get; private set; }
     public long?      ContentPosition { get; private set; }
@@ -325,14 +326,14 @@ namespace PeerCastStation.Core
     public float?     SendRate        { get; private set; }
     public int?       LocalRelays     { get; private set; }
     public int?       LocalDirects    { get; private set; }
-    public string     AgentName       { get; private set; }
-    public string     RemoteName      { get; private set; }
+    public string?    AgentName       { get; private set; }
+    public string?    RemoteName      { get; private set; }
     public ConnectionInfo(
       string           protocol_name,
       ConnectionType   type,
       ConnectionStatus status,
-      string           remote_name,
-      IPEndPoint       remote_endpoint,
+      string?          remote_name,
+      IPEndPoint?      remote_endpoint,
       RemoteHostStatus remote_host_status,
       Guid?            remote_session_id,
       long?      content_position,
@@ -340,7 +341,7 @@ namespace PeerCastStation.Core
       float?     send_rate,
       int?       local_relays,
       int?       local_directs,
-      string     agent_name)
+      string?    agent_name)
     {
       ProtocolName     = protocol_name;
       Type             = type;
@@ -727,7 +728,7 @@ namespace PeerCastStation.Core
     /// <param name="content_type">解析したコンテントタイプの設定先</param>
     /// <param name="mime_type">解析したMIMEタイプの設定先</param>
     /// <returns>解析できた時はtrue、それ以外はfalse</returns>
-    bool TryParseContentType(byte[] header, out string content_type, out string mime_type);
+    bool TryParseContentType(byte[] header, [NotNullWhen(true)] out string? content_type, [NotNullWhen(true)] out string? mime_type);
   }
 
   public interface IContentFilter

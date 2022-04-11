@@ -269,10 +269,6 @@ namespace PeerCastStation.Core
     public string Id       { get; private set; }
     public string Password { get; private set; }
 
-    public AuthenticationKey()
-    {
-    }
-
     public AuthenticationKey(string id, string password)
     {
       this.Id = id;
@@ -302,12 +298,12 @@ namespace PeerCastStation.Core
 
     public bool AuthorizationRequired { get; private set; }
 
-    public AuthenticationKey AuthenticationKey { get; private set; }
+    public AuthenticationKey? AuthenticationKey { get; private set; }
 
     public AccessControlInfo(
       OutputStreamType accepts,
       bool auth_required,
-      AuthenticationKey key)
+      AuthenticationKey? key)
     {
       this.Accepts                = accepts;
       this.AuthorizationRequired  = auth_required;

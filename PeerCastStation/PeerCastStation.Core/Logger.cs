@@ -67,11 +67,12 @@ namespace PeerCastStation.Core
   {
     static Logger()
     {
-      defaultListener = Trace.Listeners.OfType<TraceListener>().FirstOrDefault(listener => listener is DefaultTraceListener) as DefaultTraceListener;
-      if (defaultListener==null) {
-        defaultListener = new DefaultTraceListener();
-        Trace.Listeners.Add(defaultListener);
+      var d = Trace.Listeners.OfType<TraceListener>().FirstOrDefault(listener => listener is DefaultTraceListener) as DefaultTraceListener;
+      if (d==null) {
+        d = new DefaultTraceListener();
+        Trace.Listeners.Add(d);
       }
+      defaultListener = d;
       outputThread = new Thread(DoOutputThread);
       outputThread.IsBackground = true;
       outputThread.Priority = ThreadPriority.Lowest;
@@ -141,11 +142,11 @@ namespace PeerCastStation.Core
       }
     }
 
-    private static TextWriterTraceListener consoleListener;
+    private static TextWriterTraceListener? consoleListener = null;
     private static List<TextWriterTraceListener> uiListeners = new List<TextWriterTraceListener>();
     private static DefaultTraceListener defaultListener;
 
-    private static string logFileName = null;
+    private static string logFileName = "";
     public static string LogFileName {
       get { return logFileName; }
       set {
@@ -153,7 +154,7 @@ namespace PeerCastStation.Core
         logFileName = value;
 
         if ((outputTarget & LoggerOutputTarget.File)!=0) {
-          defaultListener.LogFileName = LogFileName ?? "";
+          defaultListener.LogFileName = logFileName ?? "";
         }
         else {
           defaultListener.LogFileName = "";
@@ -234,7 +235,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static TextWriterTraceListener ConsoleWriter
+    public static TextWriterTraceListener? ConsoleWriter
     {
       get { return consoleListener; }
       set {

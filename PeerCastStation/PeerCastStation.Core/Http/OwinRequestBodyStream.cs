@@ -37,7 +37,7 @@ namespace PeerCastStation.Core.Http
     public OwinEnvironment Environment { get { return Context.Environment; } }
     public Stream BaseStream { get; private set; }
 
-    private Stream bodyStream = null;
+    private Stream? bodyStream = null;
     private Stream BodyStream {
       get {
         if (bodyStream==null) {

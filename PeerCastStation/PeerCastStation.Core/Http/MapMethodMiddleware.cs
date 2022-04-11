@@ -8,9 +8,15 @@ namespace PeerCastStation.Core.Http
 {
   public class MapMethodOptions
   {
-    public Func<IDictionary<string, object>, Task> Branch { get; set; }
-    public IEnumerable<string> MethodMatch { get; set; }
-    public Regex PathPattern { get; set; }
+    public IEnumerable<string> MethodMatch { get; }
+    public Func<IDictionary<string, object>, Task> Branch { get; }
+    public Regex PathPattern { get; }
+    public MapMethodOptions(IEnumerable<string> methodMatch, Func<IDictionary<string, object>, Task> branch, Regex pathPattern)
+    {
+      MethodMatch = methodMatch;
+      Branch = branch;
+      PathPattern = pathPattern;
+    }
   }
 
   public class MapMethodMiddleware
@@ -33,18 +39,18 @@ namespace PeerCastStation.Core.Http
       var env = new OwinEnvironment(arg);
       var pathMatch = pathPattern.Match(env.Request.Path);
       if (pathMatch.Success) {
-        if (env.TryGetValue(OwinEnvironment.Owin.RequestMethod, out string method) && methods.Contains(method)) {
+        if (env.TryGetValue(OwinEnvironment.Owin.RequestMethod, out string? method) && methods.Contains(method)) {
           env.Response.StatusCode = System.Net.HttpStatusCode.OK;
           env.Environment[OwinEnvironment.Owin.RequestPathMatch] = pathMatch;
           var pathBase = env.Get(OwinEnvironment.Owin.RequestPathBase, "");
           env.Environment[OwinEnvironment.Owin.RequestPathBase] = pathBase + pathMatch.Value;
-          env.Environment[OwinEnvironment.Owin.RequestPath] = env.Request.Path.Substring(pathMatch.Length);
+          env.Environment[OwinEnvironment.Owin.RequestPath] = env.Request.Path!.Substring(pathMatch.Length);
           env.RemoveResponseHeader("Allow");
           return branch.Invoke(arg);
         }
         else {
           env.Response.StatusCode = System.Net.HttpStatusCode.MethodNotAllowed;
-          var allow = env.GetResponseHeader("Allow", (string)null);
+          var allow = env.GetResponseHeader("Allow", (string?)null);
           if (allow==null) {
             allow = String.Join(", ", methods);
           }
@@ -65,7 +71,7 @@ namespace PeerCastStation.Core.Http
     {
       var branchBuilder = appBuilder.New();
       configuration(branchBuilder);
-      return appBuilder.Use<MapMethodMiddleware>(new MapMethodOptions { MethodMatch=methods, Branch=branchBuilder.Build(), PathPattern=pathPattern });
+      return appBuilder.Use<MapMethodMiddleware>(new MapMethodOptions(methods, branchBuilder.Build(), pathPattern));
     }
 
     private static Regex CreatePathPattern(string path)
@@ -81,7 +87,7 @@ namespace PeerCastStation.Core.Http
     {
       var branchBuilder = appBuilder.New();
       configuration(branchBuilder);
-      return appBuilder.Use<MapMethodMiddleware>(new MapMethodOptions { MethodMatch=methods, Branch=branchBuilder.Build(), PathPattern=CreatePathPattern(path) });
+      return appBuilder.Use<MapMethodMiddleware>(new MapMethodOptions(methods, branchBuilder.Build(), CreatePathPattern(path)));
     }
 
     public static IAppBuilder MapMethod(this IAppBuilder appBuilder, string method, string path, Action<IAppBuilder> configuration)

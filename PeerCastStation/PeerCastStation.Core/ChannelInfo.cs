@@ -10,42 +10,42 @@ namespace PeerCastStation.Core
     /// <summary>
     /// チャンネル名を取得します
     /// </summary>
-    public string Name {
+    public string? Name {
       get { return extra.GetChanInfoName(); }
     }
 
     /// <summary>
     /// チャンネルストリームの内容種類を取得します
     /// </summary>
-    public string ContentType {
+    public string? ContentType {
       get { return extra.GetChanInfoType(); }
     }
 
     /// <summary>
     /// ジャンルを取得します
     /// </summary>
-    public string Genre {
+    public string? Genre {
       get { return extra.GetChanInfoGenre(); }
     }
 
     /// <summary>
     /// チャンネル詳細を取得します
     /// </summary>
-    public string Desc {
+    public string? Desc {
       get { return extra.GetChanInfoDesc(); }
     }
 
     /// <summary>
     /// 配信コメントを取得します
     /// </summary>
-    public string Comment {
+    public string? Comment {
       get { return extra.GetChanInfoComment(); }
     }
 
     /// <summary>
     /// コンタクトURLを取得します
     /// </summary>
-    public string URL {
+    public string? URL {
       get { return extra.GetChanInfoURL(); }
     }
 
@@ -134,35 +134,35 @@ namespace PeerCastStation.Core
     /// <summary>
     /// タイトルを取得します
     /// </summary>
-    public string Name {
+    public string? Name {
       get { return extra.GetChanTrackTitle(); }
     }
 
     /// <summary>
     /// アルバム名を取得します
     /// </summary>
-    public string Album {
+    public string? Album {
       get { return extra.GetChanTrackAlbum(); }
     }
 
     /// <summary>
     /// ジャンルを取得します
     /// </summary>
-    public string Genre {
+    public string? Genre {
       get { return extra.GetChanTrackGenre(); }
     }
 
     /// <summary>
     /// 作者名を取得します
     /// </summary>
-    public string Creator {
+    public string? Creator {
       get { return extra.GetChanTrackCreator(); }
     }
 
     /// <summary>
     /// トラック情報に関するURLを取得します
     /// </summary>
-    public string URL {
+    public string? URL {
       get { return extra.GetChanTrackURL(); }
     }
 

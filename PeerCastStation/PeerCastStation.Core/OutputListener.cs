@@ -26,7 +26,7 @@ namespace PeerCastStation.Core
 {
   public interface IConnectionHandler
   {
-    Task HandleClient(IPEndPoint localEndPoint, TcpClient client, AccessControlInfo acinfo, CancellationToken cancellationToken);
+    Task HandleClient(EndPoint localEndPoint, TcpClient client, AccessControlInfo acinfo, CancellationToken cancellationToken);
   }
 
   /// <summary>
@@ -51,8 +51,8 @@ namespace PeerCastStation.Core
     /// </summary>
     public IPEndPoint LocalEndPoint { get { return (IPEndPoint)server.LocalEndpoint; } }
 
-    private IPAddress globalAddress = null;
-    public IPAddress GlobalAddress {
+    private IPAddress? globalAddress = null;
+    public IPAddress? GlobalAddress {
       get { return globalAddress; }
       set {
         if (globalAddress==null || value==null || globalAddress.GetAddressLocality()<=value.GetAddressLocality()) {
@@ -61,7 +61,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    public IPEndPoint GlobalEndPoint {
+    public IPEndPoint? GlobalEndPoint {
       get {
         if (globalAddress==null) {
           return null;
@@ -91,7 +91,7 @@ namespace PeerCastStation.Core
       get { return localOutputAccepts;  }
       set {
         localOutputAccepts = value;
-        UpdateLocalAccessControlInfo();
+        LocalAccessControlInfo = UpdateLocalAccessControlInfo();
       }
     }
     private OutputStreamType localOutputAccepts;
@@ -105,7 +105,7 @@ namespace PeerCastStation.Core
       }
       set {
         localAuthorizationRequired = value;
-        UpdateLocalAccessControlInfo();
+        LocalAccessControlInfo = UpdateLocalAccessControlInfo();
       }
     }
     private bool localAuthorizationRequired = false;
@@ -132,7 +132,7 @@ namespace PeerCastStation.Core
       get { return globalAuthorizationRequired; }
       set {
         globalAuthorizationRequired = value;
-        UpdateGlobalAccessControlInfo();
+        GlobalAccessControlInfo = UpdateGlobalAccessControlInfo();
       }
     }
     private bool globalAuthorizationRequired = true;
@@ -144,23 +144,23 @@ namespace PeerCastStation.Core
       get { return authenticationKey; }
       set {
         this.authenticationKey = value;
-        UpdateLocalAccessControlInfo();
-        UpdateGlobalAccessControlInfo();
+        LocalAccessControlInfo = UpdateLocalAccessControlInfo();
+        GlobalAccessControlInfo = UpdateGlobalAccessControlInfo();
       }
     }
     private AuthenticationKey authenticationKey = AuthenticationKey.Generate();
 
-    private void UpdateLocalAccessControlInfo()
+    private AccessControlInfo UpdateLocalAccessControlInfo()
     {
-      this.LocalAccessControlInfo = new AccessControlInfo(
+      return new AccessControlInfo(
         this.localOutputAccepts,
         this.LocalAuthorizationRequired,
         this.authenticationKey);
     }
 
-    private void UpdateGlobalAccessControlInfo()
+    private AccessControlInfo UpdateGlobalAccessControlInfo()
     {
-      this.GlobalAccessControlInfo = new AccessControlInfo(
+      return new AccessControlInfo(
         this.globalOutputAccepts,
         this.GlobalAuthorizationRequired,
         this.authenticationKey);
@@ -188,16 +188,13 @@ namespace PeerCastStation.Core
       OutputStreamType local_accepts,
       OutputStreamType global_accepts)
     {
-      this.PeerCast = peercast;
-      this.localOutputAccepts  = local_accepts;
-      this.globalOutputAccepts = global_accepts;
-      this.LoopbackAccessControlInfo = new AccessControlInfo(
-        OutputStreamType.All,
-        false,
-        null);
-      UpdateLocalAccessControlInfo();
-      UpdateGlobalAccessControlInfo();
-      this.ConnectionHandler = connection_handler;
+      PeerCast = peercast;
+      localOutputAccepts  = local_accepts;
+      globalOutputAccepts = global_accepts;
+      LoopbackAccessControlInfo = new AccessControlInfo(OutputStreamType.All, false, null);
+      LocalAccessControlInfo = UpdateLocalAccessControlInfo();
+      GlobalAccessControlInfo = UpdateGlobalAccessControlInfo();
+      ConnectionHandler = connection_handler;
       server = new TcpListener(ip);
       if (ip.AddressFamily==AddressFamily.InterNetworkV6) {
         server.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, true);
@@ -210,7 +207,7 @@ namespace PeerCastStation.Core
       this.AuthenticationKey = AuthenticationKey.Generate();
     }
 
-    private AccessControlInfo GetAccessControlInfo(IPEndPoint remote_endpoint)
+    private AccessControlInfo GetAccessControlInfo(IPEndPoint? remote_endpoint)
     {
       if (remote_endpoint==null) return this.GlobalAccessControlInfo;
       if (remote_endpoint.Address.Equals(IPAddress.Loopback) ||
@@ -235,7 +232,7 @@ namespace PeerCastStation.Core
             var client = await server.AcceptTcpClientAsync().ConfigureAwait(false);
             logger.Info("Client connected {0}", client.Client.RemoteEndPoint);
             var client_task = ConnectionHandler.HandleClient(
-              server.LocalEndpoint as IPEndPoint,
+              server.LocalEndpoint,
               client,
               GetAccessControlInfo(client.Client.RemoteEndPoint as IPEndPoint),
               cancel_token);
@@ -280,7 +277,7 @@ namespace PeerCastStation.Core
     }
 
     public async Task HandleClient(
-      IPEndPoint localEndPoint,
+      EndPoint localEndPoint,
       TcpClient client,
       AccessControlInfo acinfo,
       CancellationToken cancellationToken)
@@ -327,7 +324,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    private async Task<IOutputStream> CreateMatchedHandler(
+    private async Task<IOutputStream?> CreateMatchedHandler(
         Socket socket,
         NetworkStream stream,
         AccessControlInfo acinfo,

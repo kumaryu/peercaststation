@@ -22,8 +22,8 @@ namespace PeerCastStation.Core
     private Task readTask;
     private Socket socket;
 
-    public IPEndPoint LocalEndPoint { get; private set; }
-    public IPEndPoint RemoteEndPoint { get; private set; }
+    public IPEndPoint? LocalEndPoint { get; private set; }
+    public IPEndPoint? RemoteEndPoint { get; private set; }
 
     private async Task ProcessRead(Stream s)
     {
@@ -94,17 +94,29 @@ namespace PeerCastStation.Core
     private void CheckReadException()
     {
       if (!readTask.IsFaulted) return;
-      throw readTask.Exception.InnerException;
+      if (readTask.Exception==null) return;
+      if (readTask.Exception.InnerException==null) {
+        throw readTask.Exception;
+      }
+      else {
+        throw readTask.Exception.InnerException;
+      }
     }
 
     private void CheckWriteException()
     {
       if (!writeTask.IsFaulted) return;
-      throw writeTask.Exception.InnerException;
+      if (writeTask.Exception==null) return;
+      if (writeTask.Exception.InnerException==null) {
+        throw writeTask.Exception;
+      }
+      else {
+        throw writeTask.Exception.InnerException;
+      }
     }
 
 
-    public Stream  ReadStream { get; private set; }
+    public Stream  ReadStream { get; }
     public float   ReadRate { get { return readBytesCounter.Rate; } }
     public override bool CanRead { get { return ReadStream!=null; } }
     public override int ReadTimeout {
@@ -122,7 +134,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    public Stream  WriteStream { get; private set; }
+    public Stream  WriteStream { get; }
     public float   WriteRate { get { return writeBytesCounter.Rate; } }
     public override bool CanWrite {
       get { return WriteStream!=null && WriteStream.CanWrite; }
@@ -146,8 +158,7 @@ namespace PeerCastStation.Core
 
     public override bool CanTimeout {
       get {
-        return (ReadStream!=null ? ReadStream.CanTimeout : false) ||
-               (WriteStream!=null ? WriteStream.CanTimeout : false);
+        return ReadStream.CanTimeout || WriteStream.CanTimeout;
       }
     }
     public override bool CanSeek {
@@ -166,17 +177,17 @@ namespace PeerCastStation.Core
     public ConnectionStream(
       Socket socket,
       Stream base_stream,
-      byte[] header)
+      byte[]? header)
     {
       this.socket = socket;
-      LocalEndPoint = socket.LocalEndPoint as IPEndPoint;
-      RemoteEndPoint = socket.RemoteEndPoint as IPEndPoint;
       ReadStream  = base_stream;
       WriteStream = base_stream;
-      if (ReadStream!=null && ReadStream.CanTimeout) {
+      LocalEndPoint = socket.LocalEndPoint as IPEndPoint;
+      RemoteEndPoint = socket.RemoteEndPoint as IPEndPoint;
+      if (ReadStream.CanTimeout) {
         ReadStream.ReadTimeout = this.ReadTimeout;
       }
-      if (WriteStream!=null && WriteStream.CanTimeout) {
+      if (WriteStream.CanTimeout) {
         WriteStream.WriteTimeout = this.WriteTimeout;
       }
       if (header!=null && header.Length>0) {
@@ -185,8 +196,8 @@ namespace PeerCastStation.Core
         }
         readBuffer.Write(header, 0, header.Length);
       }
-      readTask = ProcessRead(ReadStream);
-      writeTask = ProcessWrite(WriteStream);
+      readTask = ProcessRead(base_stream);
+      writeTask = ProcessWrite(base_stream);
     }
 
     public ConnectionStream(Socket socket, Stream base_stream)

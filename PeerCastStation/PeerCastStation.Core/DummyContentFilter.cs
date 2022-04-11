@@ -58,14 +58,14 @@ namespace PeerCastStation.Core
     }
 
     private DummyContentFilter filter = new DummyContentFilter();
-    protected override void OnAttach()
+    protected override void OnAttach(PeerCastApplication application)
     {
-      Application.PeerCast.ContentFilters.Add(filter);
+      application.PeerCast.ContentFilters.Add(filter);
     }
 
-    protected override void OnDetach()
+    protected override void OnDetach(PeerCastApplication application)
     {
-      Application.PeerCast.ContentFilters.Remove(filter);
+      application.PeerCast.ContentFilters.Remove(filter);
     }
   }
 

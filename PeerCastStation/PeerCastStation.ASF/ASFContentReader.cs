@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Buffers.Binary;
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PeerCastStation.ASF
 {
@@ -440,7 +441,7 @@ namespace PeerCastStation.ASF
       return (false, null, null);
     }
 
-    public bool TryParseContentType(byte[] header_bytes, out string? content_type, out string? mime_type)
+    public bool TryParseContentType(byte[] header_bytes, [NotNullWhen(true)] out string? content_type, [NotNullWhen(true)] out string? mime_type)
     {
       var (parsed, type, mime) = TryParseContentType(header_bytes);
       content_type = type;
@@ -457,14 +458,14 @@ namespace PeerCastStation.ASF
     override public string Name { get { return "ASF Content Reader"; } }
 
     private readonly ASFContentReaderFactory factory = new ASFContentReaderFactory();
-    override protected void OnAttach()
+    override protected void OnAttach(PeerCastApplication application)
     {
-      Application.PeerCast.ContentReaderFactories.Add(factory);
+      application.PeerCast.ContentReaderFactories.Add(factory);
     }
 
-    override protected void OnDetach()
+    override protected void OnDetach(PeerCastApplication application)
     {
-      Application.PeerCast.ContentReaderFactories.Remove(factory);
+      application.PeerCast.ContentReaderFactories.Remove(factory);
     }
   }
 }

@@ -102,19 +102,21 @@ namespace PeerCastStation.Core
         file_version.LegalCopyright);
     }
 
-    private PeerCastApplication application;
-    public PeerCastApplication Application { get { return application; } }
+    private PeerCastApplication? application = null;
+    public PeerCastApplication? Application { get { return application; } }
 
     public void Attach(PeerCastApplication app)
     {
       application = app;
-      OnAttach();
+      OnAttach(application);
     }
 
     public void Detach()
     {
-      OnDetach();
-      application = null;
+      if (application!=null) {
+        OnDetach(application);
+        application = null;
+      }
     }
 
     public void Start()
@@ -127,6 +129,14 @@ namespace PeerCastStation.Core
       OnStop();
     }
 
+    protected virtual void OnAttach(PeerCastApplication application)
+    {
+      OnAttach();
+    }
+    protected virtual void OnDetach(PeerCastApplication application)
+    {
+      OnDetach();
+    }
     protected virtual void OnAttach() {}
     protected virtual void OnDetach() {}
     protected virtual void OnStart() {}
@@ -135,7 +145,7 @@ namespace PeerCastStation.Core
 
   public static class PluginCollectionExtension
   {
-    public static T GetPlugin<T>(this IEnumerable<IPlugin> self)
+    public static T? GetPlugin<T>(this IEnumerable<IPlugin> self)
       where T : class, IPlugin
     {
       return self.FirstOrDefault(plugin => plugin is T) as T;

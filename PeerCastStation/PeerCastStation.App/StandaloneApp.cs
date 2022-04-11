@@ -13,7 +13,7 @@ namespace PeerCastStation.App
     {
     }
 
-    RegisteredWaitHandle registeredWaitHandle = null;
+    RegisteredWaitHandle? registeredWaitHandle = null;
     protected override void DoSetup()
     {
       Console.CancelKeyPress += (sender, args) => {

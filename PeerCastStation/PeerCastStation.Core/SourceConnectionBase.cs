@@ -59,8 +59,8 @@ namespace PeerCastStation.Core
         this.Stream.WriteTimeout = 10000;
       }
 
-      private IPEndPoint remoteEndPoint = null;
-      public IPEndPoint RemoteEndPoint {
+      private IPEndPoint? remoteEndPoint = null;
+      public IPEndPoint? RemoteEndPoint {
         get {
           if (remoteEndPoint!=null) {
             return remoteEndPoint;
@@ -82,7 +82,6 @@ namespace PeerCastStation.Core
         this.Client.Close();
       }
     }
-    protected SourceConnectionClient connection;
 
     public SourceConnectionBase(
         PeerCast peercast,
@@ -93,7 +92,7 @@ namespace PeerCastStation.Core
       this.Channel       = channel;
       this.SourceUri     = source_uri;
       this.StoppedReason = StopReason.None;
-      this.Logger        = new Logger(this.GetType(), source_uri?.ToString());
+      this.Logger        = new Logger(this.GetType(), source_uri?.ToString() ?? "");
       this.Status        = ConnectionStatus.Idle;
     }
 
@@ -105,6 +104,7 @@ namespace PeerCastStation.Core
     {
     }
 
+    protected SourceConnectionClient? connection;
     public async Task<StopReason> Run()
     {
       this.Status = ConnectionStatus.Connecting;

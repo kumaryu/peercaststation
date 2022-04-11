@@ -21,18 +21,9 @@ namespace PeerCastStation.App
   {
     public class LoggerSettings
     {
-      public LogLevel           Level        { get; set; }
-      public LoggerOutputTarget OutputTarget { get; set; }
-      public string             LogFileName  { get; set; }
-
-      public LoggerSettings()
-      {
-        this.Level = LogLevel.Warn;
-        this.OutputTarget =
-          LoggerOutputTarget.Debug |
-          LoggerOutputTarget.Console |
-          LoggerOutputTarget.UserInterface;
-      }
+      public LogLevel           Level { get; set; } = LogLevel.Warn;
+      public LoggerOutputTarget OutputTarget { get; set; } = LoggerOutputTarget.Debug | LoggerOutputTarget.Console | LoggerOutputTarget.UserInterface;
+      public string             LogFileName { get; set; } = "";
     }
 
     public class ListenerSettings

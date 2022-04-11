@@ -77,7 +77,7 @@ namespace PeerCastStation.Core
     private class Enumerator
       : IEnumerator<T>
     {
-      private Ringbuffer<T> owner;
+      private Ringbuffer<T>? owner;
       private int pos = -1;
       internal Enumerator(Ringbuffer<T> owner)
       {
@@ -92,20 +92,29 @@ namespace PeerCastStation.Core
       public T Current
       {
         get {
+          if (owner==null) {
+            throw new ObjectDisposedException(nameof(Enumerator));
+          }
           return owner.buffer[(owner.top+pos) % owner.Capacity];
         }
       }
 
-      object System.Collections.IEnumerator.Current { get { return this.Current; } }
+      object? System.Collections.IEnumerator.Current { get { return Current; } }
 
       public bool MoveNext()
       {
+        if (owner==null) {
+          throw new ObjectDisposedException(nameof(Enumerator));
+        }
         pos = Math.Min(pos+1, owner.Count);
         return pos<owner.Count;
       }
 
       public void Reset()
       {
+        if (owner==null) {
+          throw new ObjectDisposedException(nameof(Enumerator));
+        }
         this.pos = -1;
       }
     }

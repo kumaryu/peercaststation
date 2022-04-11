@@ -101,13 +101,17 @@ namespace PeerCastStation.Core
         stream.Write(len, 0, len.Length);
         stream.Write(value, 0, value.Length);
       }
-      else {
-        var cnt = BitConverter.GetBytes(0x80000000U | (uint)atom.Children.Count);
+      else if (atom.HasChildren) {
+        var cnt = BitConverter.GetBytes(0x80000000U | (uint)atom.Children!.Count);
         if (!BitConverter.IsLittleEndian) Array.Reverse(cnt);
         stream.Write(cnt, 0, cnt.Length);
         foreach (var child in atom.Children) {
           Write(stream, child);
         }
+      }
+      else {
+        var len = BitConverter.GetBytes(0);
+        stream.Write(len, 0, len.Length);
       }
     }
 

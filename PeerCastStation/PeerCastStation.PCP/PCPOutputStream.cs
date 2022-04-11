@@ -33,7 +33,7 @@ namespace PeerCastStation.PCP
     {
       public HttpStatusCode Status;
       public Guid ChannelId;
-      public string Extension;
+      public string? Extension;
       public bool IsValid {
         get { return Status==HttpStatusCode.OK; }
       }
@@ -65,9 +65,16 @@ namespace PeerCastStation.PCP
 
     class PeerInfo
     {
-      public IPEndPoint RemoteEndPoint { get; set; }
-      public Host Host { get; set; }
-      public string UserAgent { get; set; }
+      public Host Host { get; }
+      public string UserAgent { get; }
+      public IPEndPoint RemoteEndPoint { get; }
+      public PeerInfo(Host host, string user_agent, IPEndPoint remote_endpoint)
+      {
+        Host = host;
+        UserAgent = user_agent;
+        RemoteEndPoint = remote_endpoint;
+      }
+
     }
 
     class ChannelSink
@@ -87,8 +94,8 @@ namespace PeerCastStation.PCP
 
         public Timestamp Timestamp;
         public MessageType Type;
-        public Content Content;
-        public IAtomCollection Data;
+        public Content? Content;
+        public IAtomCollection? Data;
 
         public static ChannelMessage CreateBroadcast(Atom value)
         {
@@ -154,11 +161,11 @@ namespace PeerCastStation.PCP
       }
 
       private PeerInfo peer;
-      private Content lastContent = null;
+      private Content? lastContent = null;
       private WaitableQueue<ChannelMessage> queue = new WaitableQueue<ChannelMessage>();
       private ConnectionInfoBuilder connectionInfo = new ConnectionInfoBuilder();
-      private Func<float> getRecvRate = null;
-      private Func<float> getSendRate = null;
+      private Func<float>? getRecvRate = null;
+      private Func<float>? getSendRate = null;
       private CancellationTokenSource channelStopped = new CancellationTokenSource();
       private bool overflow = false;
       public CancellationToken ChannelStopped { get { return channelStopped.Token; } }
@@ -372,12 +379,12 @@ namespace PeerCastStation.PCP
         return result;
       }
 
-      private async Task<PeerInfo> OnHandshakePCPHelo(Stream stream, IPEndPoint remoteEndPoint, Atom atom, CancellationToken cancel_token)
+      private async Task<PeerInfo?> OnHandshakePCPHelo(Stream stream, IPEndPoint remoteEndPoint, Atom atom, CancellationToken cancel_token)
       {
         logger.Debug("Helo received");
         var session_id = atom.Children.GetHeloSessionID();
         int remote_port = 0;
-        PeerInfo peer = null;
+        PeerInfo? peer = null;
         if (session_id!=null) {
           var host = new HostBuilder();
           host.SessionID = session_id.Value;
@@ -410,7 +417,7 @@ namespace PeerCastStation.PCP
           }
           host.IsFirewalled = remote_port==0;
           host.Extra.Update(atom.Children);
-          peer = new PeerInfo { Host=host.ToHost(), RemoteEndPoint=remoteEndPoint, UserAgent=atom.Children.GetHeloAgent() };
+          peer = new PeerInfo(host.ToHost(), atom.Children.GetHeloAgent(), remoteEndPoint);
         }
         var oleh = new AtomCollection();
         if (remoteEndPoint!=null && remoteEndPoint.AddressFamily==channel.NetworkAddressFamily) {
@@ -475,7 +482,7 @@ namespace PeerCastStation.PCP
 
       private async Task<PeerInfo> DoHandshake(Stream stream, IPEndPoint remoteEndPoint, bool isRelayFull, CancellationToken cancellationToken)
       {
-        PeerInfo peer = null;
+        PeerInfo? peer = null;
         while (peer==null) {
           //Handshakeが5秒以内に完了しなければ切る
           //HELOでセッションIDを受け取るまでは他のパケットは無視
@@ -635,10 +642,10 @@ namespace PeerCastStation.PCP
           if (endpoints.Length>1 && (host.LocalEndPoint==null || !host.LocalEndPoint.Equals(endpoints[1]))) {
             host.LocalEndPoint = endpoints[1];
           }
-          logger.Debug("Updating Node: {0}/{1}({2})", host.GlobalEndPoint, host.LocalEndPoint, host.SessionID.ToString("N"));
+          logger.Debug($"Updating Node: {host.GlobalEndPoint}/{host.LocalEndPoint}({host.SessionID.ToString("N")})");
           channel.AddNode(host.ToHost());
           if (sink.Peer.Host.SessionID==host.SessionID) {
-            sink.Peer = new PeerInfo { Host=host.ToHost(), UserAgent=sink.Peer.UserAgent, RemoteEndPoint=sink.Peer.RemoteEndPoint };
+            sink.Peer = new PeerInfo(host.ToHost(), sink.Peer.UserAgent, sink.Peer.RemoteEndPoint);
           }
         }
         return Task.Delay(0);
@@ -673,7 +680,7 @@ namespace PeerCastStation.PCP
         }
       }
 
-      private async Task BcstChannelInfo(Stream stream, IAtomCollection channelInfo, IAtomCollection channelTrack, CancellationToken cancellationToken)
+      private async Task BcstChannelInfo(Stream stream, IAtomCollection? channelInfo, IAtomCollection? channelTrack, CancellationToken cancellationToken)
       {
         var chan = new AtomCollection();
         chan.SetChanID(channel.ChannelID);
@@ -726,24 +733,27 @@ namespace PeerCastStation.PCP
 
       private async Task SendRelayBody(Stream stream, ChannelSink sink, CancellationToken cancellationToken)
       {
-        Content lastHeader = null;
-        IAtomCollection channelInfo = null;
-        IAtomCollection channelTrack = null;
+        Content? lastHeader = null;
+        IAtomCollection? channelInfo = null;
+        IAtomCollection? channelTrack = null;
         while (!cancellationToken.IsCancellationRequested) {
           var msg = await sink.DequeueAsync(cancellationToken).ConfigureAwait(false);
           switch (msg.Type) {
           case ChannelSink.ChannelMessage.MessageType.Broadcast:
+            System.Diagnostics.Debug.Assert(msg.Data!=null);
             foreach (var atom in msg.Data) {
               await stream.WriteAsync(atom, cancellationToken).ConfigureAwait(false);
             }
             break;
           case ChannelSink.ChannelMessage.MessageType.ChannelInfo:
+            System.Diagnostics.Debug.Assert(msg.Data!=null);
             channelInfo = msg.Data;
             if (channel.IsBroadcasting && lastHeader!=null) {
               await BcstChannelInfo(stream, channelInfo, channelTrack, cancellationToken).ConfigureAwait(false);
             }
             break;
           case ChannelSink.ChannelMessage.MessageType.ChannelTrack:
+            System.Diagnostics.Debug.Assert(msg.Data!=null);
             channelTrack = msg.Data;
             if (channel.IsBroadcasting && lastHeader!=null) {
               await BcstChannelInfo(stream, channelInfo, channelTrack, cancellationToken).ConfigureAwait(false);
@@ -751,6 +761,7 @@ namespace PeerCastStation.PCP
             break;
           case ChannelSink.ChannelMessage.MessageType.ContentHeader:
             {
+              System.Diagnostics.Debug.Assert(msg.Content!=null);
               lastHeader = msg.Content;
               var chan = new AtomCollection();
               chan.SetChanID(channel.ChannelID);
@@ -766,6 +777,7 @@ namespace PeerCastStation.PCP
             }
             break;
           case ChannelSink.ChannelMessage.MessageType.ContentBody:
+            System.Diagnostics.Debug.Assert(msg.Content!=null);
             foreach (var atom in CreateContentBodyPacket(channel.ChannelID, msg.Content)) {
               await stream.WriteAsync(atom, cancellationToken).ConfigureAwait(false);
             }
@@ -807,9 +819,9 @@ namespace PeerCastStation.PCP
       public async Task ProcessStream(Stream stream, IPEndPoint remoteEndPoint, long requestPos, CancellationToken cancellationToken)
       {
         var isRelayFull = !channel.MakeRelayable(remoteEndPoint.Address.ToString(), remoteEndPoint.Address.IsSiteLocal());
-        PeerInfo peer = null;
         try {
           await stream.WriteBytesAsync(CreateRelayResponse(isRelayFull), cancellationToken).ConfigureAwait(false);
+          PeerInfo peer;
           using (var handshakeCT=CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)) {
             handshakeCT.CancelAfter(PCPHandshakeTimeout);
             try {
@@ -941,10 +953,10 @@ namespace PeerCastStation.PCP
   {
     override public string Name { get { return "PCP Output"; } }
 
-    private IDisposable appRegistration;
-    override protected void OnAttach()
+    private IDisposable? appRegistration;
+    override protected void OnAttach(PeerCastApplication application)
     {
-      var owin = Application.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
+      var owin = application.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
       appRegistration = owin?.OwinHost?.Register(PCPRelayOwinApp.BuildApp);
     }
 

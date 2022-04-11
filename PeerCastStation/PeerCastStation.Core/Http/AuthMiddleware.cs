@@ -16,10 +16,10 @@ namespace PeerCastStation.Core.Http
       this.acceptType = acceptType;
     }
 
-    private string GetAuthorizationToken(OwinEnvironment env)
+    private string? GetAuthorizationToken(OwinEnvironment env)
     {
-      string result = null;
-      var auth = env.GetRequestHeader("Authorization", (string)null);
+      string? result = null;
+      var auth = env.GetRequestHeader("Authorization", (string?)null);
       if (auth!=null) {
         var md = System.Text.RegularExpressions.Regex.Match(
           auth,
@@ -39,7 +39,7 @@ namespace PeerCastStation.Core.Http
       return result;
     }
 
-    private bool CheckAuthorization(string authorization_token, AccessControlInfo acinfo)
+    private bool CheckAuthorization(string? authorization_token, AccessControlInfo acinfo)
     {
       if (!acinfo.AuthorizationRequired || acinfo.AuthenticationKey==null) return true;
       if (authorization_token==null) return false;
@@ -63,7 +63,7 @@ namespace PeerCastStation.Core.Http
     public Task Invoke(IDictionary<string, object> arg)
     {
       var env = new OwinEnvironment(arg);
-      if (env.TryGetValue(OwinEnvironment.PeerCastStation.AccessControlInfo, out AccessControlInfo acinfo) &&
+      if (env.TryGetValue(OwinEnvironment.PeerCastStation.AccessControlInfo, out AccessControlInfo? acinfo) &&
           (acinfo.Accepts & acceptType)!=0) {
         if (acinfo.AuthorizationRequired) {
           if (CheckAuthorization(GetAuthorizationToken(env), acinfo)) {

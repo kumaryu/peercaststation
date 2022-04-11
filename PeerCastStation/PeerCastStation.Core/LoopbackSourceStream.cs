@@ -13,7 +13,7 @@ namespace PeerCastStation.Core
         PeerCast peercast,
         Channel channel,
         Uri source_uri,
-        Channel source_channel)
+        Channel? source_channel)
     {
       PeerCast = peercast;
       Channel = channel;
@@ -25,12 +25,12 @@ namespace PeerCastStation.Core
     }
 
     private TaskCompletionSource<StopReason> taskSource = new TaskCompletionSource<StopReason>();
-    private IContentSink channelContentSink = null;
+    private IContentSink? channelContentSink = null;
 
     public PeerCast PeerCast { get; private set; }
     public Channel Channel { get; private set; }
     public Uri SourceUri { get; private set; }
-    public Channel SourceChannel { get; private set; }
+    public Channel? SourceChannel { get; private set; }
 
     public StopReason StoppedReason { get; private set; }
 
@@ -93,30 +93,34 @@ namespace PeerCastStation.Core
     {
       var new_channel_info = new AtomCollection(channel_info.Extra);
       if (Channel.ChannelInfo!=null) {
-        new_channel_info.SetChanInfoName(Channel.ChannelInfo.Name);
-        new_channel_info.SetChanInfoGenre(Channel.ChannelInfo.Genre);
+        if (Channel.ChannelInfo.Name!=null) {
+          new_channel_info.SetChanInfoName(Channel.ChannelInfo.Name);
+        }
+        if (Channel.ChannelInfo.Genre!=null) {
+          new_channel_info.SetChanInfoGenre(Channel.ChannelInfo.Genre);
+        }
       }
-      channelContentSink.OnChannelInfo(new ChannelInfo(new_channel_info));
+      channelContentSink?.OnChannelInfo(new ChannelInfo(new_channel_info));
     }
 
     public void OnChannelTrack(ChannelTrack channel_track)
     {
-      channelContentSink.OnChannelTrack(channel_track);
+      channelContentSink?.OnChannelTrack(channel_track);
     }
 
     public void OnContent(Content content)
     {
-      channelContentSink.OnContent(content);
+      channelContentSink?.OnContent(content);
     }
 
     public void OnContentHeader(Content content_header)
     {
-      channelContentSink.OnContentHeader(content_header);
+      channelContentSink?.OnContentHeader(content_header);
     }
 
     public void OnStop(StopReason reason)
     {
-      channelContentSink.OnStop(reason);
+      channelContentSink?.OnStop(reason);
       taskSource.TrySetResult(reason);
     }
 
@@ -157,12 +161,9 @@ namespace PeerCastStation.Core
 
     public override ConnectionInfo GetConnectionInfo()
     {
-      var conn = sourceConnection;
-      if (!conn.IsCompleted) {
-        return conn.Connection.GetConnectionInfo();
-      }
-      else {
-        return new ConnectionInfoBuilder {
+      return
+        sourceConnection.GetConnectionInfo() ??
+        new ConnectionInfoBuilder {
           ProtocolName     = "Loopback Source",
           Type             = ConnectionType.Source,
           Status           = ConnectionStatus.Idle,
@@ -174,10 +175,9 @@ namespace PeerCastStation.Core
           SendRate         = SendRate,
           AgentName        = "",
         }.Build();
-      }
     }
 
-    private Channel GetSourceChannel(Uri source_uri)
+    private Channel? GetSourceChannel(Uri source_uri)
     {
       var md = System.Text.RegularExpressions.Regex.Match(source_uri.AbsolutePath, @"([0-9a-zA-Z]{32})");
       if (!md.Success) return null;
@@ -233,16 +233,20 @@ namespace PeerCastStation.Core
   {
     override public string Name { get { return "Loopback Source"; } }
 
-    private LoopbackSourceStreamFactory factory;
-    override protected void OnAttach()
+    private LoopbackSourceStreamFactory? factory = null;
+    override protected void OnAttach(PeerCastApplication app)
     {
-      if (factory==null) factory = new LoopbackSourceStreamFactory(Application.PeerCast);
-      Application.PeerCast.SourceStreamFactories.Add(factory);
+      if (factory==null) {
+        factory = new LoopbackSourceStreamFactory(app.PeerCast);
+      }
+      app.PeerCast.SourceStreamFactories.Add(factory);
     }
 
-    override protected void OnDetach()
+    override protected void OnDetach(PeerCastApplication app)
     {
-      Application.PeerCast.SourceStreamFactories.Remove(factory);
+      if (factory!=null) {
+        app.PeerCast.SourceStreamFactories.Remove(factory);
+      }
     }
   }
 

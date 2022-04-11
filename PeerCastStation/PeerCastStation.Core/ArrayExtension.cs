@@ -15,7 +15,7 @@ namespace PeerCastStation.Core
 
     public static T[] Remove<T>(this T[] arr, T value)
     {
-      return arr.Where(ent => !ent.Equals(value)).ToArray();
+      return arr.Where(ent => !Object.Equals(ent, value)).ToArray();
     }
 
     public static T[] Clear<T>(this T[] arr)

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PeerCastStation.Core.Http
 {
@@ -81,14 +82,14 @@ namespace PeerCastStation.Core.Http
       public class RequestHeaders
       {
         private OwinEnvironment env;
-        public string Get(string key)
+        public string? Get(string key)
         {
-          return env.GetRequestHeader(key, (string)null);
+          return env.GetRequestHeader(key, (string?)null);
         }
 
-        public bool TryGetValue(string key, out string[] values)
+        public bool TryGetValue(string key, [NotNullWhen(true)] out string[]? values)
         {
-          var result = env.GetRequestHeader(key, (string[])null);
+          var result = env.GetRequestHeader(key, (string[]?)null);
           if (result!=null) {
             values = result.ToArray();
             return true;
@@ -101,7 +102,7 @@ namespace PeerCastStation.Core.Http
 
         public bool ContainsKey(string key)
         {
-          return env.GetRequestHeader(key, (string[])null)!=null;
+          return env.GetRequestHeader(key, (string[]?)null)!=null;
         }
 
         internal RequestHeaders(OwinEnvironment env)
@@ -118,13 +119,13 @@ namespace PeerCastStation.Core.Http
         }
       }
 
-      public string LocalIpAddress {
+      public string? LocalIpAddress {
         get { return env.Get(Server.LocalIpAddress, null); }
       }
 
       public int? LocalPort {
         get {
-          if (env.TryGetValue(Server.LocalPort, out string portStr) &&
+          if (env.TryGetValue(Server.LocalPort, out string? portStr) &&
               int.TryParse(portStr, out int port)) {
             return port;
           }
@@ -134,7 +135,7 @@ namespace PeerCastStation.Core.Http
         }
       }
 
-      public string RemoteIpAddress {
+      public string? RemoteIpAddress {
         get { return env.Get(Server.RemoteIpAddress, null); }
       }
 
@@ -149,7 +150,7 @@ namespace PeerCastStation.Core.Http
         }
       }
 
-      public string Path {
+      public string? Path {
         get { return env.Get(Owin.RequestPath, null); }
       }
 
@@ -171,7 +172,7 @@ namespace PeerCastStation.Core.Http
       public class RequestQuery
       {
         private OwinEnvironment env;
-        public string Get(string key)
+        public string? Get(string key)
         {
           if (env.GetQueryParameters().TryGetValue(key, out var value)) {
             return value;
@@ -191,7 +192,7 @@ namespace PeerCastStation.Core.Http
       public class RequestCookies
       {
         private IReadOnlyDictionary<string, string> cookies;
-        public string this[string key]
+        public string? this[string key]
         {
           get {
             if (cookies.TryGetValue(key, out var value)) {
@@ -217,7 +218,11 @@ namespace PeerCastStation.Core.Http
         Headers = new RequestHeaders(env);
         Query = new RequestQuery(env);
         Cookies = new RequestCookies(env);
-        Body = env.Get<System.IO.Stream>(Owin.RequestBody);
+        var bodyStream = env.Get<System.IO.Stream>(Owin.RequestBody);
+        if (bodyStream==null) {
+          throw new InvalidOperationException($"{Owin.RequestBody} parameter is missing for Owin Env.");
+        }
+        Body = bodyStream;
       }
     }
     public OwinRequest Request { get; }
@@ -260,18 +265,23 @@ namespace PeerCastStation.Core.Http
         }
       }
 
-      public string ContentType {
+      public string? ContentType {
         get {
-          return env.GetResponseHeader("Content-Type", (string)null);
+          return env.GetResponseHeader("Content-Type", (string?)null);
         }
         set {
-          env.SetResponseHeader("Content-Type", value);
+          if (value!=null) {
+            env.SetResponseHeader("Content-Type", value);
+          }
+          else {
+            env.RemoveResponseHeader("Content-Type");
+          }
         }
       }
 
       public long? ContentLength {
         get {
-          var value = env.GetResponseHeader("Content-Length", (string)null);
+          var value = env.GetResponseHeader("Content-Length", (string?)null);
           if (!String.IsNullOrEmpty(value) && long.TryParse(value, out long len)) {
             return len;
           }
@@ -303,12 +313,18 @@ namespace PeerCastStation.Core.Http
       public Task WriteAsync(byte[] bytes, CancellationToken ct)
       {
         var strm = env.Get<System.IO.Stream>(Owin.ResponseBody);
+        if (strm==null) {
+          throw new InvalidOperationException($"{Owin.ResponseBody} parameter is missing for Owin Env.");
+        }
         return strm.WriteAsync(bytes, 0, bytes.Length, ct);
       }
 
       public ValueTask WriteAsync(ReadOnlyMemory<byte> bytes, CancellationToken ct)
       {
         var strm = env.Get<System.IO.Stream>(Owin.ResponseBody);
+        if (strm==null) {
+          throw new InvalidOperationException($"{Owin.ResponseBody} parameter is missing for Owin Env.");
+        }
         return strm.WriteAsync(bytes, ct);
       }
 
@@ -347,7 +363,7 @@ namespace PeerCastStation.Core.Http
       Response = new OwinResponse(this);
     }
 
-    public bool TryGetValue<T>(string name, out T value)
+    public bool TryGetValue<T>(string name, [NotNullWhen(true)] out T? value)
     {
       if (Environment.TryGetValue(name, out var val) && val is T) {
         value = (T)val;
@@ -451,7 +467,7 @@ namespace PeerCastStation.Core.Http
       }
     }
 
-    public string GetHttpHeader(string envKey, string key, string defval)
+    public string? GetHttpHeader(string envKey, string key, string? defval)
     {
       if (TryGetValue<IDictionary<string,string[]>>(envKey, out var headers) &&
           headers.TryGetValue(key, out var values) &&
@@ -473,12 +489,13 @@ namespace PeerCastStation.Core.Http
       }
     }
 
-    public string GetRequestHeader(string key, string defval)
+    public string? GetRequestHeader(string key, string? defval)
     {
       return GetHttpHeader(Owin.RequestHeaders, key, defval);
     }
 
-    public IEnumerable<string> GetHttpHeader(string envKey, string key, string[] defval)
+    [return:NotNullIfNotNull("defval")]
+    public IEnumerable<string>? GetHttpHeader(string envKey, string key, string[]? defval)
     {
       if (TryGetValue<IDictionary<string,string[]>>(envKey, out var headers) &&
           headers.TryGetValue(key, out var values) &&
@@ -490,16 +507,16 @@ namespace PeerCastStation.Core.Http
       }
     }
 
-    public IEnumerable<string> GetRequestHeader(string key, string[] defval)
+    public IEnumerable<string>? GetRequestHeader(string key, string[]? defval)
     {
       return GetHttpHeader(Owin.RequestHeaders, key, defval);
     }
 
-    private IReadOnlyDictionary<string,string> queryCache = null;
+    private IReadOnlyDictionary<string,string>? queryCache = null;
     public IReadOnlyDictionary<string,string> GetQueryParameters()
     {
       if (queryCache!=null) return queryCache;
-      if (TryGetValue(Owin.RequestQueryString, out string query)) {
+      if (TryGetValue(Owin.RequestQueryString, out string? query)) {
         queryCache =
           query
           .Split('&')
@@ -521,7 +538,7 @@ namespace PeerCastStation.Core.Http
       return queryCache;
     }
 
-    private IReadOnlyDictionary<string,string> cookieCache = null;
+    private IReadOnlyDictionary<string,string>? cookieCache = null;
     public IReadOnlyDictionary<string,string> GetRequestCookies()
     {
       if (cookieCache!=null) return cookieCache;
@@ -559,12 +576,12 @@ namespace PeerCastStation.Core.Http
              headers.ContainsKey(key);
     }
 
-    public string GetResponseHeader(string key, string defval)
+    public string? GetResponseHeader(string key, string? defval)
     {
       return GetHttpHeader(Owin.ResponseHeaders, key, defval);
     }
 
-    public IEnumerable<string> GetResponseHeader(string key, string[] defval)
+    public IEnumerable<string>? GetResponseHeader(string key, string[]? defval)
     {
       return GetHttpHeader(Owin.ResponseHeaders, key, defval);
     }
@@ -630,7 +647,8 @@ namespace PeerCastStation.Core.Http
       }
     }
 
-    public string Get(string name, string defval)
+    [return:NotNullIfNotNull("defval")]
+    public string? Get(string name, string? defval)
     {
       if (Environment.TryGetValue(name, out var val) && val!=null) {
         try {
@@ -659,7 +677,7 @@ namespace PeerCastStation.Core.Http
       }
     }
 
-    public T Get<T>(string name)
+    public T? Get<T>(string name)
     {
       if (Environment.TryGetValue(name, out var val) && val!=null && val is T) {
         return (T)val;

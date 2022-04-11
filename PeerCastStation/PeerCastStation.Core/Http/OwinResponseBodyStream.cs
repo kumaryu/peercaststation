@@ -104,7 +104,7 @@ namespace PeerCastStation.Core.Http
       get { return Context.Environment; }
     }
     public Stream BaseStream { get; private set; }
-    public ResponseStream BodyStream { get; private set; }
+    private ResponseStream? bodyStream;
     public bool Submitted { get; private set; } = false;
 
     public override bool CanRead {
@@ -136,7 +136,7 @@ namespace PeerCastStation.Core.Http
     {
       Context = ctx;
       BaseStream = baseStream;
-      BodyStream = null;
+      bodyStream = null;
     }
 
     public override long Seek(long offset, SeekOrigin origin)
@@ -261,7 +261,7 @@ namespace PeerCastStation.Core.Http
 
     private async Task<ResponseStream> GetBodyStreamAsync(CancellationToken cancellationToken)
     {
-      if (BodyStream!=null) return BodyStream;
+      if (bodyStream!=null) return bodyStream;
       var basestrm = Environment.GetRequestMethod()=="HEAD" ? Stream.Null : BaseStream;
       var encoding = Environment.GetResponseTransferEncoding();
       if (encoding.HasFlag(OwinEnvironment.TransferEncoding.Deflate)) {
@@ -289,8 +289,8 @@ namespace PeerCastStation.Core.Http
       else {
         strm = new DeferredResponseStream(this, strm);
       }
-      BodyStream = strm;
-      return BodyStream;
+      bodyStream = strm;
+      return bodyStream;
     }
 
     public override async Task FlushAsync(CancellationToken cancellationToken)

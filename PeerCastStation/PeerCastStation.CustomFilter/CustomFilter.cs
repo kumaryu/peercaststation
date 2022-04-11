@@ -11,14 +11,14 @@ namespace PeerCastStation.CustomFilter
 {
   public class CustomFilterDescription
   {
-    public string Name              { get; private set; }
-    public string CommandLine       { get; private set; }
-    public string InputContentType  { get; private set; }
-    public string OutputContentType { get; private set; }
-    public string OutputMIMEType    { get; private set; }
-    public string OutputContentExt  { get; private set; }
-    public string BasePath          { get; private set; }
-    public bool   Logging           { get; private set; }
+    public string? Name              { get; private set; }
+    public string? CommandLine       { get; private set; }
+    public string? InputContentType  { get; private set; }
+    public string? OutputContentType { get; private set; }
+    public string? OutputMIMEType    { get; private set; }
+    public string? OutputContentExt  { get; private set; }
+    public string? BasePath          { get; private set; }
+    public bool    Logging           { get; private set; } = false;
 
     public static IEnumerable<CustomFilterDescription> Load(string filename)
     {
@@ -38,7 +38,7 @@ namespace PeerCastStation.CustomFilter
         }).ToArray();
     }
 
-    private static bool ToBool(string value)
+    private static bool ToBool(string? value)
     {
       if (value==null) return false;
       switch (value.ToLowerInvariant()) {
@@ -57,7 +57,7 @@ namespace PeerCastStation.CustomFilter
   {
     public CustomFilterDescription Description { get; private set; }
     public IContentSink Sink { get; private set; }
-    private System.Diagnostics.Process process = null;
+    private System.Diagnostics.Process? process = null;
 
     public CustomFilterContentSink(CustomFilterDescription desc, IContentSink sink)
     {
@@ -120,14 +120,14 @@ namespace PeerCastStation.CustomFilter
       }
     }
 
-    private CancellationTokenSource processCancellationToken;
-    private Task stdErrorTask;
-    private Task stdOutTask;
-    private Task stdInTask;
+    private CancellationTokenSource? processCancellationToken;
+    private Task? stdErrorTask;
+    private Task? stdOutTask;
+    private Task? stdInTask;
     private bool writable = false;
     private WaitableQueue<ReadOnlyMemory<byte>> pipePackets = new WaitableQueue<ReadOnlyMemory<byte>>();
 
-    private Content lastContent = null;
+    private Content? lastContent = null;
     private void StartProcess()
     {
       var startinfo = new System.Diagnostics.ProcessStartInfo();

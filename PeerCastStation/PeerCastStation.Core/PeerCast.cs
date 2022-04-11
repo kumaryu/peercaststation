@@ -142,9 +142,9 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="channel_id">リレーを開始するチャンネルID</param>
     /// <returns>接続先が見付かった場合はChannelのインスタンス、それ以外はnull</returns>
-    public Channel RelayChannel(Guid channel_id)
+    public Channel? RelayChannel(Guid channel_id)
     {
-      Channel result = null;
+      Channel? result = null;
       logger.Debug("Finding channel {0} from YP", channel_id.ToString("N"));
       foreach (var yp in YellowPages) {
         var tracker = yp.FindTracker(channel_id);
@@ -196,9 +196,9 @@ namespace PeerCastStation.Core
     /// チャンネルが無かった場合はrequest_relayがtrueならReleyChannelを呼び出した結果、
     /// request_relayがfalseならnull。
     /// </returns>
-    public virtual Channel RequestChannel(Guid channel_id, Uri tracker, bool request_relay)
+    public virtual Channel? RequestChannel(Guid channel_id, Uri tracker, bool request_relay)
     {
-      Channel channel = channels.FirstOrDefault(c => c.ChannelID==channel_id);
+      Channel? channel = channels.FirstOrDefault(c => c.ChannelID==channel_id);
       if (request_relay) {
         if (channel!=null) {
           if (!channel.IsBroadcasting &&
@@ -277,7 +277,7 @@ namespace PeerCastStation.Core
     /// <param name="channels_uri">YPのチャンネル一覧取得先URI</param>
     public IYellowPageClient AddYellowPage(string protocol, string name, Uri announce_uri, Uri channels_uri)
     {
-      IYellowPageClient yp = null;
+      IYellowPageClient? yp = null;
       foreach (var factory in YellowPageFactories) {
         if (factory.Protocol==protocol) {
           yp = factory.Create(name, announce_uri, channels_uri);
@@ -426,7 +426,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    private IPAddress localAddressV4;
+    private IPAddress? localAddressV4 = null;
     private IPAddress GetLocalAddressV4()
     {
       if (localAddressV4!=null) return localAddressV4;
@@ -441,7 +441,7 @@ namespace PeerCastStation.Core
       return this.localAddressV4;
     }
 
-    private IPAddress localAddressV6;
+    private IPAddress? localAddressV6 = null;
     private IPAddress GetLocalAddressV6()
     {
       if (localAddressV6!=null) return localAddressV6;
@@ -479,7 +479,7 @@ namespace PeerCastStation.Core
     /// <remarks>WANへのリレーが許可されておりIsFirewalledがtrueだった場合にはnullにリセットします</remarks>
     public OutputListener StartListen(IPEndPoint ip, OutputStreamType local_accepts, OutputStreamType global_accepts)
     {
-      OutputListener res = null;
+      OutputListener? res = null;
       logger.Info("starting listen at {0}", ip);
       try {
         res = new OutputListener(this, new ConnectionHandler(this), ip, local_accepts, global_accepts);
@@ -505,7 +505,7 @@ namespace PeerCastStation.Core
       ReplaceCollection(ref outputListeners, orig => orig.Remove(listener));
     }
 
-    public IPEndPoint GetGlobalEndPoint(AddressFamily addr_family, OutputStreamType connection_type)
+    public IPEndPoint? GetGlobalEndPoint(AddressFamily addr_family, OutputStreamType connection_type)
     {
       var listener = outputListeners.FirstOrDefault(
         x => x.LocalEndPoint.AddressFamily==addr_family &&
@@ -517,7 +517,7 @@ namespace PeerCastStation.Core
       return null;
     }
 
-    public IPEndPoint GetLocalEndPoint(AddressFamily addr_family, OutputStreamType connection_type)
+    public IPEndPoint? GetLocalEndPoint(AddressFamily addr_family, OutputStreamType connection_type)
     {
       var listener = outputListeners.FirstOrDefault(
         x =>  x.LocalEndPoint.AddressFamily==addr_family &&
@@ -526,17 +526,6 @@ namespace PeerCastStation.Core
         return new IPEndPoint(GetLocalAddress(addr_family), listener.LocalEndPoint.Port);
       }
       return null;
-    }
-
-    public IPEndPoint GetEndPoint(IPAddress remote_addr, OutputStreamType connection_type)
-    {
-      if (remote_addr==null) throw new ArgumentNullException("remote_addr");
-      if (remote_addr.IsSiteLocal()) {
-        return GetLocalEndPoint(remote_addr.AddressFamily, connection_type);
-      }
-      else {
-        return GetGlobalEndPoint(remote_addr.AddressFamily, connection_type);
-      }
     }
 
     public OutputListener FindListener(IPAddress remote_addr, OutputStreamType connection_type)

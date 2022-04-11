@@ -752,12 +752,12 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("addYellowPage")]
-      private JObject AddYellowPage(string protocol, string name, string uri=null, string announceUri=null, string channelsUri=null)
+      private JObject AddYellowPage(string protocol, string name, string? uri=null, string? announceUri=null, string? channelsUri=null)
       {
         var factory = PeerCast.YellowPageFactories.FirstOrDefault(p => protocol==p.Protocol);
         if (factory==null) throw new RPCError(RPCErrorCode.InvalidParams, "protocol Not Found");
         if (name==null) throw new RPCError(RPCErrorCode.InvalidParams, "name must be String");
-        Uri announce_uri = null;
+        Uri? announce_uri = null;
         try {
           if (String.IsNullOrEmpty(uri)) uri = announceUri;
           if (!String.IsNullOrEmpty(uri)) {
@@ -777,7 +777,7 @@ namespace PeerCastStation.UI.HTTP
         catch (UriFormatException) {
           throw new RPCError(RPCErrorCode.InvalidParams, "Invalid uri");
         }
-        Uri channels_uri = null;
+        Uri? channels_uri = null;
         try {
           if (!String.IsNullOrEmpty(channelsUri)) {
             channels_uri = new Uri(channelsUri, UriKind.Absolute);
@@ -819,7 +819,7 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("stopAnnounce")]
-      private void StopAnnounce(int yellowPageId, string channelId=null)
+      private void StopAnnounce(int yellowPageId, string? channelId=null)
       {
         var yp = PeerCast.YellowPages.FirstOrDefault(p => GetObjectId(p)==yellowPageId);
         if (yp!=null) {
@@ -837,7 +837,7 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("restartAnnounce")]
-      private void RestartAnnounce(int yellowPageId, string channelId=null)
+      private void RestartAnnounce(int yellowPageId, string? channelId=null)
       {
         var yp = PeerCast.YellowPages.FirstOrDefault(p => GetObjectId(p)==yellowPageId);
         if (yp!=null) {
@@ -980,9 +980,9 @@ namespace PeerCastStation.UI.HTTP
         string contentReader,
         JObject info,
         JObject track,
-        string sourceStream=null)
+        string? sourceStream=null)
       {
-        IYellowPageClient yp = null;
+        IYellowPageClient? yp = null;
         if (yellowPageId.HasValue) {
           yp = PeerCast.YellowPages.FirstOrDefault(y => GetObjectId(y)==yellowPageId.Value);
           if (yp==null) throw new RPCError(RPCErrorCode.InvalidParams, "Yellow page not found");

@@ -16,7 +16,7 @@ namespace PeerCastStation.Core
 
   public abstract class PeerCastApplication
   {
-    public static PeerCastApplication Current { get; set; }
+    public static PeerCastApplication? Current { get; set; }
     public abstract PecaSettings Settings { get; }
     public abstract IEnumerable<IPlugin> Plugins { get; }
     public abstract PeerCast PeerCast { get; }
@@ -32,7 +32,7 @@ namespace PeerCastStation.Core
       Stop(0);
     }
 
-    public event NotificationMessageEventHandler MessageNotified;
+    public event NotificationMessageEventHandler? MessageNotified;
     public virtual void ShowNotificationMessage(NotificationMessage message)
     {
       MessageNotified?.Invoke(this, new NotificationMessageEventArgs(message));

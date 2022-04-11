@@ -37,11 +37,11 @@ namespace PeerCastStation.Core
     /// <summary>
     /// ホストが持つローカルなアドレス情報を取得します
     /// </summary>
-    public IPEndPoint LocalEndPoint { get; private set; }
+    public IPEndPoint? LocalEndPoint { get; private set; }
     /// <summary>
     /// ホストが持つグローバルなアドレス情報を取得および設定します
     /// </summary>
-    public IPEndPoint GlobalEndPoint { get; private set; }
+    public IPEndPoint? GlobalEndPoint { get; private set; }
     /// <summary>
     /// ホストへの接続が可能かどうかを取得および設定します
     /// </summary>
@@ -97,8 +97,8 @@ namespace PeerCastStation.Core
     public Host(
       Guid sessionID,
       Guid broadcastID,
-      IPEndPoint localEndPoint,
-      IPEndPoint globalEndPoint,
+      IPEndPoint? localEndPoint,
+      IPEndPoint? globalEndPoint,
       int relayCount,
       int directCount,
       bool isFirewalled,
@@ -144,11 +144,11 @@ namespace PeerCastStation.Core
     /// <summary>
     /// ホストが持つローカルなアドレス情報を取得および設定します
     /// </summary>
-    public IPEndPoint LocalEndPoint { get; set; }
+    public IPEndPoint? LocalEndPoint { get; set; }
     /// <summary>
     /// ホストが持つグローバルなアドレス情報を取得および設定します
     /// </summary>
-    public IPEndPoint GlobalEndPoint { get; set; }
+    public IPEndPoint? GlobalEndPoint { get; set; }
     /// <summary>
     /// ホストへの接続が可能かどうかを取得および設定します
     /// </summary>

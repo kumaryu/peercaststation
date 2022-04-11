@@ -47,7 +47,7 @@ namespace PeerCastStation.Core
           .Select(os => os.GetConnectionInfo())
           .Where(ci => ci.Type.HasFlag(ConnectionType.Relay))
           .Where(ci => ci.RemoteSessionID!=null)
-          .Select(ci => nodes.SingleOrDefault(node => node.SessionID==ci.RemoteSessionID.Value))
+          .Select(ci => nodes.SingleOrDefault(node => node.SessionID==ci.RemoteSessionID!.Value))
           .Where(node => node!=null);
       var tree = CreateHostTree(nodes);
       return new HostTreeNode(

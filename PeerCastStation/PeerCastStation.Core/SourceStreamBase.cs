@@ -68,12 +68,12 @@ namespace PeerCastStation.Core
 
     protected class ConnectionWrapper
     {
-      public ISourceConnection Connection { get; private set; }
-      public Uri SourceUri { get { return Connection?.SourceUri; } }
+      public ISourceConnection? Connection { get; private set; }
+      public Uri? SourceUri { get { return Connection?.SourceUri; } }
       public Task Task { get; private set; }
       public bool IsCompleted { get { return Task.IsCompleted; } }
-      public float SendRate { get { return Task.IsCompleted ? 0.0f : Connection.SendRate; } }
-      public float RecvRate { get { return Task.IsCompleted ? 0.0f : Connection.RecvRate; } }
+      public float SendRate { get { return Task.IsCompleted ? 0.0f : Connection?.SendRate ?? 0.0f; } }
+      public float RecvRate { get { return Task.IsCompleted ? 0.0f : Connection?.RecvRate ?? 0.0f; } }
 
       public ConnectionWrapper()
       {
@@ -90,14 +90,24 @@ namespace PeerCastStation.Core
       public void StopAndWait(StopReason reason)
       {
         if (IsCompleted) return;
-        Connection.Stop(reason);
+        Connection?.Stop(reason);
         Task.Wait();
       }
 
       public void Post(Host from, Atom message)
       {
         if (IsCompleted) return;
-        Connection.Post(from, message);
+        Connection?.Post(from, message);
+      }
+
+      public ConnectionInfo? GetConnectionInfo()
+      {
+        if (Connection!=null && !IsCompleted) {
+          return Connection.GetConnectionInfo();
+        }
+        else {
+          return null;
+        }
       }
 
       static public ConnectionWrapper Run(ISourceConnection connection, Func<ConnectionWrapper,Task<StopReason>,Task> taskFunc)
@@ -114,7 +124,7 @@ namespace PeerCastStation.Core
     protected class ActionQueue
     {
       private Task lastTask = Task.Delay(0);
-      private object lastTaskId = null;
+      private object? lastTaskId = null;
       public bool Aborted { get; private set; } = false;
 
       public void Abort()
@@ -162,7 +172,7 @@ namespace PeerCastStation.Core
       {
         UnhandledException?.Invoke(this, new UnhandledExceptionEventArgs(ex, false));
       }
-      public event UnhandledExceptionEventHandler UnhandledException;
+      public event UnhandledExceptionEventHandler? UnhandledException;
     }
     private ActionQueue actionQueue;
 
@@ -188,11 +198,11 @@ namespace PeerCastStation.Core
     {
       public StopReason Reason { get; set; }
       public int Delay { get; set; } = 0;
-      public Uri IgnoreSource { get; set; } = null;
+      public Uri? IgnoreSource { get; set; } = null;
       public bool Reconnect { get; set; } = false;
     }
 
-    protected virtual void OnConnectionStopped(ISourceConnection connection, ConnectionStoppedArgs args)
+    protected virtual void OnConnectionStopped(ISourceConnection? connection, ConnectionStoppedArgs args)
     {
     }
 

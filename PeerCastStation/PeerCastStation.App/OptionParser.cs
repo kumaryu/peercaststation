@@ -228,7 +228,7 @@ namespace PeerCastStation.App
     public string ShortName { get; }
     public OptionArg Argument { get; }
     public System.Text.RegularExpressions.Regex Regex { get; }
-    public OptionDesc(string optLong, string optShort=null, OptionArg arg=OptionArg.None, OptionType type=OptionType.None)
+    public OptionDesc(string optLong, string? optShort=null, OptionArg arg=OptionArg.None, OptionType type=OptionType.None)
     {
       OptionType = type;
       LongName = optLong;
@@ -387,7 +387,7 @@ namespace PeerCastStation.App
       Options = options;
     }
 
-    public void Add(string optLong, string optShort=null, OptionArg argc=OptionArg.None)
+    public void Add(string optLong, string? optShort=null, OptionArg argc=OptionArg.None)
     {
       Add(new OptionDesc(optLong, optShort, argc));
     }

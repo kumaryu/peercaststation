@@ -14,7 +14,7 @@ namespace PeerCastStation.App
       set { messageExpires = value; }
     }
     private System.Diagnostics.Stopwatch messageExpireTimer = new System.Diagnostics.Stopwatch();
-    private NotificationMessage lastMessage;
+    private NotificationMessage? lastMessage = null;
     private PeerCastApplication app;
     public ChannelNotifier(PeerCastApplication app)
     {

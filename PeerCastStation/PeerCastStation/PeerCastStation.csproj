@@ -8,6 +8,7 @@
     <UseAppHost Condition="'$(RuntimeIdentifier)' == 'any'">false</UseAppHost>
     <PeerCastUseGUI>true</PeerCastUseGUI>
     <Platforms>AnyCPU;x86;x64</Platforms>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'Any CPU'">
     <TargetFramework>net6.0</TargetFramework>

@@ -15,8 +15,8 @@ namespace PeerCastStation.Core
     public string Title   { get; private set; }
     public string Message { get; private set; }
     public NotificationMessageType Type { get; private set; }
-    public object Data    { get; private set; }
-    public NotificationMessage(string title, string message, NotificationMessageType type, object data=null)
+    public object? Data   { get; private set; }
+    public NotificationMessage(string title, string message, NotificationMessageType type, object? data=null)
     {
       this.Title   = title;
       this.Message = message;
@@ -24,8 +24,9 @@ namespace PeerCastStation.Core
       this.Data    = data;
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
+      if (obj==null) return false;
       if (this==obj) return true;
       if (this.GetType()!=obj.GetType()) return false;
       var x = (NotificationMessage)obj;

@@ -3,6 +3,7 @@ using System.Linq;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PeerCastStation.Core
 {
@@ -63,7 +64,7 @@ namespace PeerCastStation.Core
       return new RawContentReader(channel);
     }
 
-    public bool TryParseContentType(byte[] header, out string content_type, out string mime_type)
+    public bool TryParseContentType(byte[] header, [NotNullWhen(true)] out string? content_type, [NotNullWhen(true)] out string? mime_type)
     {
       content_type = null;
       mime_type = null;
@@ -77,16 +78,18 @@ namespace PeerCastStation.Core
   {
     override public string Name { get { return "Raw Content Reader"; } }
 
-    private RawContentReaderFactory factory;
-    override protected void OnAttach()
+    private RawContentReaderFactory? factory = null;
+    override protected void OnAttach(PeerCastApplication app)
     {
       if (factory==null) factory = new RawContentReaderFactory();
-      Application.PeerCast.ContentReaderFactories.Add(factory);
+      app.PeerCast.ContentReaderFactories.Add(factory);
     }
 
-    override protected void OnDetach()
+    override protected void OnDetach(PeerCastApplication app)
     {
-      Application.PeerCast.ContentReaderFactories.Remove(factory);
+      if (factory!=null) {
+        app.PeerCast.ContentReaderFactories.Remove(factory);
+      }
     }
   }
 }
