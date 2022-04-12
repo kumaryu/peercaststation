@@ -28,7 +28,7 @@ namespace PeerCastStation.App
 
     public class ListenerSettings
     {
-      public System.Net.IPEndPoint EndPoint      { get; set; }
+      public System.Net.IPEndPoint? EndPoint     { get; set; }
       public OutputStreamType LocalAccepts       { get; set; }
       public bool             LocalAuthRequired  { get; set; }
       public OutputStreamType GlobalAccepts      { get; set; }
@@ -67,10 +67,10 @@ namespace PeerCastStation.App
 
     public class YellowPageSettings
     {
-      public string Protocol { get; set; }
-      public string Name     { get; set; }
-      public Uri    Uri      { get; set; }
-      public Uri    ChannelsUri { get; set; }
+      public string? Protocol { get; set; }
+      public string? Name     { get; set; }
+      public Uri?    Uri      { get; set; }
+      public Uri?    ChannelsUri { get; set; }
 
       public YellowPageSettings()
       {

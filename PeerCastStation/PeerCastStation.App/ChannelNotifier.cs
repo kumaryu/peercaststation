@@ -52,7 +52,7 @@ namespace PeerCastStation.App
       switch (reason) {
       case StopReason.OffAir: {
           var msg = new NotificationMessage(
-            channel.ChannelInfo.Name,
+            channel.ChannelInfo.Name ?? "",
             "チャンネルが終了しました",
             NotificationMessageType.Info);
           NotifyMessage(msg);
@@ -61,7 +61,7 @@ namespace PeerCastStation.App
       case StopReason.NoHost:
       case StopReason.ConnectionError: {
           var msg = new NotificationMessage(
-            channel.ChannelInfo.Name,
+            channel.ChannelInfo.Name ?? "",
             "チャンネルに接続できませんでした",
             NotificationMessageType.Error);
           NotifyMessage(msg);

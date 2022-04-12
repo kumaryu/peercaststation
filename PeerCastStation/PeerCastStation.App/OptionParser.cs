@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace PeerCastStation.App
@@ -40,13 +41,13 @@ namespace PeerCastStation.App
       return Options.Any(opt => opt.LongName==name);
     }
 
-    public bool TryGetOption(string name, out ParsedOption option)
+    public bool TryGetOption(string name, [NotNullWhen(true)] out ParsedOption? option)
     {
       option = Options.FirstOrDefault(opt => opt.LongName==name);
       return option!=null;
     }
 
-    public bool TryGetArgumentOf(string name, out string value)
+    public bool TryGetArgumentOf(string name, [NotNullWhen(true)] out string? value)
     {
       var option = Options.FirstOrDefault(opt => opt.LongName==name);
       if (option!=null && option.Arguments.Count>0) {
@@ -236,6 +237,7 @@ namespace PeerCastStation.App
       Argument = arg;
       switch (Argument) {
       case OptionArg.None:
+      default:
         Regex = new System.Text.RegularExpressions.Regex($"^(?:{ShortName}|{LongName})$");
         break;
       case OptionArg.Optional:
@@ -463,7 +465,7 @@ namespace PeerCastStation.App
   public class OptionParser : Command
   {
     public OptionParser()
-      : base(System.IO.Path.GetFileName(System.Reflection.Assembly.GetEntryAssembly().Location))
+      : base(System.IO.Path.GetFileName(System.Reflection.Assembly.GetEntryAssembly()?.Location) ?? "")
     {
     }
 

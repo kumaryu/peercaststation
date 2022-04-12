@@ -863,8 +863,8 @@ namespace PeerCastStation.PCP
     public PeerCast PeerCast { get; private set; }
     public string Name { get; private set; }
     public string Protocol { get { return "pcp"; } }
-		public Uri AnnounceUri { get; private set; }
-		public Uri ChannelsUri { get; private set; }
+		public Uri? AnnounceUri { get; private set; }
+		public Uri? ChannelsUri { get; private set; }
     public static bool IsValidUri(Uri uri)
     {
       return uri!=null && uri.IsAbsoluteUri && uri.Scheme=="pcp";
@@ -897,7 +897,7 @@ namespace PeerCastStation.PCP
 			}
 		}
 
-    public PCPYellowPageClient(PeerCast peercast, string name, Uri announce_uri, Uri channels_uri)
+    public PCPYellowPageClient(PeerCast peercast, string name, Uri? announce_uri, Uri? channels_uri)
     {
       this.PeerCast = peercast;
       this.Name = name;

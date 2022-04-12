@@ -198,7 +198,7 @@ namespace PeerCastStation.Core
     /// <param name="annouce_uri">YellowPageの配信掲載用URI</param>
     /// <param name="channels_uri">YellowPageのチャンネル一覧取得用URI</param>
     /// <returns>IYellowPageClientを実装するオブジェクトのインスタンス</returns>
-    IYellowPageClient Create(string name, Uri announce_uri, Uri channels_uri);
+    IYellowPageClient Create(string name, Uri? announce_uri, Uri? channels_uri);
     /// <summary>
     /// URIがこのYellowPageFactoryで扱えるかどうかを返します
     /// </summary>

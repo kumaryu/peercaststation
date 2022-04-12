@@ -275,7 +275,7 @@ namespace PeerCastStation.Core
     /// <param name="name">YPの名前</param>
     /// <param name="announce_uri">YPの掲載先URI</param>
     /// <param name="channels_uri">YPのチャンネル一覧取得先URI</param>
-    public IYellowPageClient AddYellowPage(string protocol, string name, Uri announce_uri, Uri channels_uri)
+    public IYellowPageClient AddYellowPage(string protocol, string name, Uri? announce_uri, Uri? channels_uri)
     {
       IYellowPageClient? yp = null;
       foreach (var factory in YellowPageFactories) {
