@@ -85,7 +85,7 @@ namespace PeerCastStation.Core
       }.Build();
     }
 
-    public void Post(Host from, Atom packet)
+    public void Post(Host? from, Atom packet)
     {
     }
 

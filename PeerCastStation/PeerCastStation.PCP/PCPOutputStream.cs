@@ -66,9 +66,9 @@ namespace PeerCastStation.PCP
     class PeerInfo
     {
       public Host Host { get; }
-      public string UserAgent { get; }
+      public string? UserAgent { get; }
       public IPEndPoint RemoteEndPoint { get; }
-      public PeerInfo(Host host, string user_agent, IPEndPoint remote_endpoint)
+      public PeerInfo(Host host, string? user_agent, IPEndPoint remote_endpoint)
       {
         Host = host;
         UserAgent = user_agent;
@@ -258,9 +258,9 @@ namespace PeerCastStation.PCP
         return builder.Build();
       }
 
-      public void OnBroadcast(Host from, Atom packet)
+      public void OnBroadcast(Host? from, Atom packet)
       {
-        if (from.SessionID==Peer.Host.SessionID) return;
+        if (from?.SessionID==Peer.Host.SessionID) return;
         Enqueue(ChannelMessage.CreateBroadcast(packet));
       }
 
@@ -344,6 +344,9 @@ namespace PeerCastStation.PCP
           await stream.WriteAsync(new Atom(Atom.PCP_HELO, helo), cancel_token).ConfigureAwait(false);
           var res = await stream.ReadAtomAsync(cancel_token).ConfigureAwait(false);
           if (res.Name==Atom.PCP_OLEH) {
+            if (res.Children==null) {
+              throw new InvalidDataException($"{res.Name} has no children.");
+            }
             var session_id = res.Children.GetHeloSessionID();
             if (session_id.HasValue && session_id.Value==remote_session_id) {
               logger.Debug("Ping succeeded");
@@ -382,6 +385,9 @@ namespace PeerCastStation.PCP
       private async Task<PeerInfo?> OnHandshakePCPHelo(Stream stream, IPEndPoint remoteEndPoint, Atom atom, CancellationToken cancel_token)
       {
         logger.Debug("Helo received");
+        if (atom.Children==null) {
+          throw new InvalidDataException($"{atom.Name} has no children.");
+        }
         var session_id = atom.Children.GetHeloSessionID();
         int remote_port = 0;
         PeerInfo? peer = null;
@@ -500,7 +506,7 @@ namespace PeerCastStation.PCP
               throw new HandshakeErrorException(StopReason.BadAgentError);
             }
             else if (isRelayFull) {
-              logger.Debug("Handshake succeeded {0}({1}) but relay is full", peer.Host.GlobalEndPoint, peer.Host.SessionID.ToString("N"));
+              logger.Debug($"Handshake succeeded {peer.Host.GlobalEndPoint}({peer.Host.SessionID.ToString("N")}) but relay is full");
               //次に接続するべきホストを送ってQUIT
               foreach (var node in SelectSourceHosts(remoteEndPoint)) {
                 if (peer.Host.SessionID==node.SessionID) continue;
@@ -509,7 +515,7 @@ namespace PeerCastStation.PCP
               throw new HandshakeErrorException(StopReason.UnavailableError);
             }
             else {
-              logger.Debug("Handshake succeeded {0}({1})", peer.Host.GlobalEndPoint, peer.Host.SessionID.ToString("N"));
+              logger.Debug($"Handshake succeeded {peer.Host.GlobalEndPoint}({peer.Host.SessionID.ToString("N")})");
               await stream.WriteAsync(new Atom(Atom.PCP_OK, (int)1), cancellationToken).ConfigureAwait(false);
             }
           }
@@ -588,6 +594,9 @@ namespace PeerCastStation.PCP
 
       private async Task OnPCPBcst(Stream stream, ChannelSink sink, Atom atom, CancellationToken cancel_token)
       {
+        if (atom.Children==null) {
+          throw new InvalidDataException($"{atom.Name} has no children.");
+        }
         var dest = atom.Children.GetBcstDest();
         var ttl = atom.Children.GetBcstTTL();
         var hops = atom.Children.GetBcstHops();
@@ -615,6 +624,9 @@ namespace PeerCastStation.PCP
 
       private Task OnPCPHost(Stream stream, ChannelSink sink, Atom atom, CancellationToken cancel_token)
       {
+        if (atom.Children==null) {
+          throw new InvalidDataException($"{atom.Name} has no children.");
+        }
         var session_id = atom.Children.GetHostSessionID();
         if (session_id!=null) {
           var node = channel.Nodes.FirstOrDefault(x => x.SessionID.Equals(session_id));
@@ -905,13 +917,16 @@ namespace PeerCastStation.PCP
       public static Task Invoke(OwinEnvironment ctx)
       {
         var remoteEndPoint = ctx.Request.GetRemoteEndPoint();
-        var logger = new Logger(typeof(PCPRelayOwinApp), remoteEndPoint?.ToString() ?? "");
+        if (remoteEndPoint==null) {
+          throw new ArgumentNullException("RemoteEndPoint must not be null.");
+        }
+        var logger = new Logger(typeof(PCPRelayOwinApp), remoteEndPoint.ToString());
         var req = ParsedRequest.Parse(ctx);
         if (!req.IsValid) {
           ctx.Response.StatusCode = req.Status;
           return Task.Delay(0);
         }
-        var channel = ctx.GetPeerCast().Channels.FirstOrDefault(ch => ch.ChannelID==req.ChannelId);
+        var channel = ctx.GetPeerCast()?.Channels.FirstOrDefault(ch => ch.ChannelID==req.ChannelId);
         if (channel==null || channel.Status!=SourceStreamStatus.Receiving) {
           ctx.Response.StatusCode = HttpStatusCode.NotFound;
           return Task.Delay(0);
@@ -920,8 +935,7 @@ namespace PeerCastStation.PCP
           ctx.Response.StatusCode = HttpStatusCode.BadRequest;
           return Task.Delay(0);
         }
-        if (remoteEndPoint!=null &&
-            !(channel.Network==NetworkType.IPv6 && ctx.Request.GetPCPVersion()==PCPVersion.ProtocolVersionIPv6 && remoteEndPoint.Address.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6) &&
+        if (!(channel.Network==NetworkType.IPv6 && ctx.Request.GetPCPVersion()==PCPVersion.ProtocolVersionIPv6 && remoteEndPoint.Address.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6) &&
             !(channel.Network==NetworkType.IPv4 && ctx.Request.GetPCPVersion()==PCPVersion.ProtocolVersionIPv4 && remoteEndPoint.Address.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork)) {
           ctx.Response.StatusCode = HttpStatusCode.NotFound;
           return Task.Delay(0);

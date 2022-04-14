@@ -182,12 +182,12 @@ namespace PeerCastStation.Core
       }
     }
 
-    protected virtual Task DoPost(Host from, Atom packet, CancellationToken cancel_token)
+    protected virtual Task DoPost(Host? from, Atom packet, CancellationToken cancel_token)
     {
       return Task.Delay(0);
     }
 
-    public void OnBroadcast(Host from, Atom packet)
+    public void OnBroadcast(Host? from, Atom packet)
     {
       if (isStopped.IsCancellationRequested) return;
       DoPost(from, packet, isStopped.Token);

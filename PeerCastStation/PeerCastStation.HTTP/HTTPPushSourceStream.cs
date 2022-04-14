@@ -208,7 +208,7 @@ namespace PeerCastStation.HTTP
       Stop(StopReason.OffAir);
     }
 
-    protected override async Task DoProcess(CancellationToken cancellationToken)
+    protected override async Task DoProcess(SourceConnectionClient connection, CancellationToken cancellationToken)
     {
       this.state = ConnectionState.Waiting;
       try {
@@ -233,7 +233,7 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    protected override void DoPost(Host from, Atom packet)
+    protected override void DoPost(SourceConnectionClient connection, Host from, Atom packet)
     {
       //Do nothing
     }

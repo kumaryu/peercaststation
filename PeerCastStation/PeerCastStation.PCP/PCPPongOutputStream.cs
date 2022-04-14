@@ -84,7 +84,7 @@ namespace PeerCastStation.PCP
       AccessControlInfo access_control)
       : base(peercast, connection, access_control, null)
     {
-      Logger.Debug("Initialized: Remote {0}", RemoteEndPoint);
+      Logger.Debug($"Initialized: Remote {RemoteEndPoint}");
     }
 
     protected override async Task<StopReason> DoProcess(CancellationToken cancel_token)
@@ -108,6 +108,9 @@ namespace PeerCastStation.PCP
 
     protected async Task OnPCPHelo(Atom atom, CancellationToken cancel_token)
     {
+      if (atom.Children==null) {
+        throw new InvalidDataException($"{atom.Name} has no children.");
+      }
       var session_id = atom.Children.GetHeloSessionID();
       RemoteSessionID = session_id;
       var oleh = new AtomCollection();
@@ -144,8 +147,8 @@ namespace PeerCastStation.PCP
         ProtocolName     = "PCP Pong",
         Type             = ConnectionType.Metadata,
         Status           = status,
-        RemoteName       = RemoteEndPoint.ToString(),
-        RemoteEndPoint   = (IPEndPoint)RemoteEndPoint,
+        RemoteName       = RemoteEndPoint?.ToString() ?? "",
+        RemoteEndPoint   = (IPEndPoint?)RemoteEndPoint,
         RemoteHostStatus = IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None,
         RemoteSessionID  = RemoteSessionID,
         RecvRate         = Connection.ReadRate,
@@ -160,16 +163,18 @@ namespace PeerCastStation.PCP
   {
     override public string Name { get { return "PCP Pong"; } }
 
-    private PCPPongOutputStreamFactory factory;
-    override protected void OnAttach()
+    private PCPPongOutputStreamFactory? factory;
+    override protected void OnAttach(PeerCastApplication app)
     {
-      if (factory==null) factory = new PCPPongOutputStreamFactory(Application.PeerCast);
-      Application.PeerCast.OutputStreamFactories.Add(factory);
+      if (factory==null) factory = new PCPPongOutputStreamFactory(app.PeerCast);
+      app.PeerCast.OutputStreamFactories.Add(factory);
     }
 
-    override protected void OnDetach()
+    override protected void OnDetach(PeerCastApplication app)
     {
-      Application.PeerCast.OutputStreamFactories.Remove(factory);
+      if (factory!=null) {
+        app.PeerCast.OutputStreamFactories.Remove(factory);
+      }
     }
   }
 }

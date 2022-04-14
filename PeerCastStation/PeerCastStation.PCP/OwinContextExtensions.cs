@@ -24,7 +24,7 @@ namespace PeerCastStation.PCP
 {
   static class OwinContextExtensions
   {
-    public static PeerCast GetPeerCast(this OwinEnvironment ctx)
+    public static PeerCast? GetPeerCast(this OwinEnvironment ctx)
     {
       if (ctx.Environment.TryGetValue(OwinEnvironment.PeerCastStation.PeerCast, out var obj)) {
         return obj as PeerCast; 
@@ -34,7 +34,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    public static AccessControlInfo GetAccessControlInfo(this OwinEnvironment ctx)
+    public static AccessControlInfo? GetAccessControlInfo(this OwinEnvironment ctx)
     {
       if (ctx.Environment.TryGetValue(OwinEnvironment.PeerCastStation.AccessControlInfo, out var obj)) {
         return obj as AccessControlInfo; 
@@ -72,7 +72,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    public static IPEndPoint GetRemoteEndPoint(this OwinEnvironment.OwinRequest request)
+    public static IPEndPoint? GetRemoteEndPoint(this OwinEnvironment.OwinRequest request)
     {
       if (IPAddress.TryParse(request.RemoteIpAddress, out var addr)) {
         return new IPEndPoint(addr, request.RemotePort ?? 0);

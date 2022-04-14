@@ -7,6 +7,7 @@ using PeerCastStation.Core;
 using System.Threading;
 using System.Net;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PeerCastStation.PCP
 {
@@ -17,7 +18,7 @@ namespace PeerCastStation.PCP
     public string Name { get { return "PCP"; } }
     public string Protocol { get { return "pcp"; } }
 
-    public IYellowPageClient Create(string name, Uri announce_uri, Uri channels_uri)
+    public IYellowPageClient Create(string name, Uri? announce_uri, Uri? channels_uri)
     {
       return new PCPYellowPageClient(PeerCast, name, announce_uri, channels_uri);
     }
@@ -176,7 +177,7 @@ namespace PeerCastStation.PCP
       this.PeerCast = peercast;
     }
 
-	}
+  }
 
   internal class BundledYPConnectionPool
     : IDisposable
@@ -234,9 +235,9 @@ namespace PeerCastStation.PCP
       }
 
       private class BannedException : Exception {}
-      private IPEndPoint remoteEndPoint;
+      private IPEndPoint? remoteEndPoint = null;
       private Guid? remoteSessionID;
-      private OutputListener listener;
+      private OutputListener? listener = null;
 
       private async Task PCPHandshake(ConnectionStream stream, CancellationToken ct)
       {
@@ -249,12 +250,12 @@ namespace PeerCastStation.PCP
         helo.SetHeloBCID(peerCast.BroadcastID);
         switch (listener?.Status ?? PortStatus.Firewalled) {
         case PortStatus.Open:
-          helo.SetHeloPort(listener.LocalEndPoint.Port);
+          helo.SetHeloPort(listener!.LocalEndPoint.Port);
           break;
         case PortStatus.Firewalled:
           break;
         case PortStatus.Unknown:
-          helo.SetHeloPing(listener.LocalEndPoint.Port);
+          helo.SetHeloPing(listener!.LocalEndPoint.Port);
           break;
         }
         await stream.WriteAsync(new Atom(Atom.PCP_HELO, helo), ct).ConfigureAwait(false);
@@ -273,7 +274,13 @@ namespace PeerCastStation.PCP
 
       private void OnPCPOleh(ConnectionStream stream, Atom atom)
       {
+        if (atom.Children==null) {
+          throw new InvalidDataException($"{atom.Name} has no SessionID");
+        }
         remoteSessionID = atom.Children.GetHeloSessionID();
+        if (remoteSessionID==null) {
+          throw new InvalidDataException($"{atom.Name} has no SessionID");
+        }
         var dis = atom.Children.GetHeloDisable();
         if (dis!=null && dis.Value!=0) {
           throw new BannedException();
@@ -343,7 +350,7 @@ namespace PeerCastStation.PCP
         Task.WhenAll(tasks)
           .ContinueWith(prev => {
             if (prev.IsFaulted) {
-              completionSource.SetException(prev.Exception);
+              completionSource.SetException(prev.Exception!);
             }
             else if (prev.IsCanceled) {
               completionSource.SetCanceled();
@@ -466,7 +473,7 @@ namespace PeerCastStation.PCP
       private void OnStarted(ConnectionStream connection)
       {
         listener = peerCast.FindListener(
-          connection.RemoteEndPoint.Address,
+          connection.RemoteEndPoint?.Address,
           OutputStreamType.Relay | OutputStreamType.Metadata);
       }
 
@@ -540,15 +547,15 @@ namespace PeerCastStation.PCP
         hostinfo.SetHostNumRelays(channel.TotalRelays);
         hostinfo.SetHostUptime(channel.Uptime);
         if (channel.Contents.Count > 0) {
-          hostinfo.SetHostOldPos((uint)(channel.Contents.Oldest.Position & 0xFFFFFFFFU));
-          hostinfo.SetHostNewPos((uint)(channel.Contents.Newest.Position & 0xFFFFFFFFU));
+          hostinfo.SetHostOldPos((uint)(channel.Contents.Oldest!.Position & 0xFFFFFFFFU));
+          hostinfo.SetHostNewPos((uint)(channel.Contents.Newest!.Position & 0xFFFFFFFFU));
         }
         PCPVersion.SetHostVersion(hostinfo);
         var relayable = channel.IsRelayable(false);
         var playable  = channel.IsPlayable(false) &&
-                        channel.PeerCast.FindListener(remoteEndPoint.Address, OutputStreamType.Play)!=null;
+                        channel.PeerCast.FindListener(remoteEndPoint?.Address, OutputStreamType.Play)!=null;
         var firewalled = channel.PeerCast.GetPortStatus(networkType.GetAddressFamily())!=PortStatus.Open ||
-                         channel.PeerCast.FindListener(remoteEndPoint.Address, OutputStreamType.Relay)==null;
+                         channel.PeerCast.FindListener(remoteEndPoint?.Address, OutputStreamType.Relay)==null;
         var receiving = playing && channel.Status==SourceStreamStatus.Receiving;
         hostinfo.SetHostFlags1(
           (relayable  ? PCPHostFlags1.Relay      : 0) |
@@ -781,6 +788,7 @@ namespace PeerCastStation.PCP
 
       public void OnPCPBcst(Atom atom)
       {
+        if (atom.Children==null) return;
         var channel_id = atom.Children.GetBcstChannelID();
         if (channel_id==null) return;
         var group = atom.Children.GetBcstGroup();
@@ -863,39 +871,39 @@ namespace PeerCastStation.PCP
     public PeerCast PeerCast { get; private set; }
     public string Name { get; private set; }
     public string Protocol { get { return "pcp"; } }
-		public Uri? AnnounceUri { get; private set; }
-		public Uri? ChannelsUri { get; private set; }
-    public static bool IsValidUri(Uri uri)
+    public Uri? AnnounceUri { get; private set; }
+    public Uri? ChannelsUri { get; private set; }
+    public static bool IsValidUri([NotNullWhen(true)] Uri? uri)
     {
       return uri!=null && uri.IsAbsoluteUri && uri.Scheme=="pcp";
     }
 
-		public class PCPYellowPageChannel
-			: IYellowPageChannel
-		{
-			public IYellowPageClient Source { get; private set; }
-			public string Name        { get; set; }
-			public Guid ChannelId     { get; set; }
-			public string Tracker     { get; set; }
-			public string ContentType { get; set; }
-			public int? Listeners     { get; set; }
-			public int? Relays        { get; set; }
-			public int? Bitrate       { get; set; }
-			public int? Uptime        { get; set; }
-			public string ContactUrl  { get; set; }
-			public string Genre       { get; set; }
-			public string Description { get; set; }
-			public string Comment     { get; set; }
-			public string Artist      { get; set; }
-			public string TrackTitle  { get; set; }
-			public string Album       { get; set; }
-			public string TrackUrl    { get; set; }
+    public class PCPYellowPageChannel
+      : IYellowPageChannel
+    {
+      public IYellowPageClient Source { get; private set; }
+      public string Name         { get; set; } = "";
+      public Guid ChannelId      { get; set; }
+      public string? Tracker     { get; set; }
+      public string? ContentType { get; set; }
+      public int? Listeners      { get; set; }
+      public int? Relays         { get; set; }
+      public int? Bitrate        { get; set; }
+      public int? Uptime         { get; set; }
+      public string? ContactUrl  { get; set; }
+      public string? Genre       { get; set; }
+      public string? Description { get; set; }
+      public string? Comment     { get; set; }
+      public string? Artist      { get; set; }
+      public string? TrackTitle  { get; set; }
+      public string? Album       { get; set; }
+      public string? TrackUrl    { get; set; }
 
-			public PCPYellowPageChannel(IYellowPageClient source)
-			{
-				this.Source = source;
-			}
-		}
+      public PCPYellowPageChannel(IYellowPageClient source)
+      {
+        this.Source = source;
+      }
+    }
 
     public PCPYellowPageClient(PeerCast peercast, string name, Uri? announce_uri, Uri? channels_uri)
     {
@@ -906,7 +914,7 @@ namespace PeerCastStation.PCP
       this.Logger = new Logger(this.GetType());
     }
 
-    private string ReadResponse(Stream s)
+    private string? ReadResponse(Stream s)
     {
       var res = new List<byte>();
       do {
@@ -931,7 +939,7 @@ namespace PeerCastStation.PCP
       try {
         while (!quit) {
           var atom = AtomReader.Read(s);
-          if (atom.Name==Atom.PCP_HOST) {
+          if (atom.Name==Atom.PCP_HOST && atom.Children!=null) {
             if (atom.Children.GetHostChannelID()==channel_id) {
               var host = new HostBuilder();
               var endpoints = atom.Children.GetHostEndPoints();
@@ -941,7 +949,7 @@ namespace PeerCastStation.PCP
               host.RelayCount = atom.Children.GetHostNumRelays() ?? 0;
               host.SessionID = atom.Children.GetHostSessionID() ?? Guid.Empty;
               if (atom.Children.GetHostFlags1().HasValue) {
-                var flags = atom.Children.GetHostFlags1().Value;
+                var flags = atom.Children.GetHostFlags1().GetValueOrDefault();
                 host.IsControlFull = (flags & PCPHostFlags1.ControlIn)!=0;
                 host.IsFirewalled = (flags & PCPHostFlags1.Firewalled)!=0;
                 host.IsDirectFull = (flags & PCPHostFlags1.Direct)==0;
@@ -963,7 +971,7 @@ namespace PeerCastStation.PCP
       return res;
     }
 
-    private Uri HostToUri(Host host, Guid channel_id)
+    private Uri? HostToUri(Host? host, Guid channel_id)
     {
       if (host==null) return null;
       if (host.GlobalEndPoint!=null) {
@@ -987,13 +995,13 @@ namespace PeerCastStation.PCP
       }
     }
 
-    public Uri FindTracker(Guid channel_id)
+    public Uri? FindTracker(Guid channel_id)
     {
       if (!IsValidUri(AnnounceUri)) return null;
-      Logger.Debug("Finding tracker {0} from {1}", channel_id.ToString("N"), AnnounceUri);
+      Logger.Debug($"Finding tracker {channel_id.ToString("N")} from {AnnounceUri}");
       var host = AnnounceUri.DnsSafeHost;
       var port = AnnounceUri.Port;
-      Uri res = null;
+      Uri? res = null;
       if (port<0) port = PCPVersion.DefaultPort;
       try {
         var client = new TcpClient(host, port);
@@ -1048,7 +1056,7 @@ namespace PeerCastStation.PCP
       return res;
     }
 
-    private BundledYPConnectionPool connectionPool = null;
+    private BundledYPConnectionPool? connectionPool = null;
 
     public IEnumerable<IAnnouncingChannel> GetAnnouncingChannels()
     {
@@ -1057,7 +1065,7 @@ namespace PeerCastStation.PCP
       return pool.GetAnnouncingChannels();
     }
 
-    public IAnnouncingChannel Announce(Channel channel)
+    public IAnnouncingChannel? Announce(Channel channel)
     {
     start:
       if (!IsValidUri(AnnounceUri)) return null;
@@ -1069,12 +1077,12 @@ namespace PeerCastStation.PCP
           goto start;
         }
       }
-      return connectionPool.AddChannel(channel);
+      return connectionPool!.AddChannel(channel);
     }
 
     public void StopAnnounce(IAnnouncingChannel announcing)
     {
-      connectionPool.RemoveChannel(announcing.Channel);
+      connectionPool?.RemoveChannel(announcing.Channel);
     }
 
     public void StopAnnounce()
@@ -1096,7 +1104,7 @@ namespace PeerCastStation.PCP
 
     public void RestartAnnounce()
     {
-      connectionPool.Restart();
+      connectionPool?.Restart();
     }
 
     public async System.Threading.Tasks.Task<IEnumerable<IYellowPageChannel>> GetChannelsAsync(CancellationToken cancel_token)
@@ -1133,40 +1141,40 @@ namespace PeerCastStation.PCP
       }
     }
 
-		private int? ParseUptime(string token)
-		{
-			if (String.IsNullOrWhiteSpace(token)) return null;
-			var times = token.Split(':');
-			if (times.Length<2) return ParseInt(times[0]);
-			var hours   = ParseInt(times[0]);
-			var minutes = ParseInt(times[1]);
-			if (!hours.HasValue || !minutes.HasValue) return null;
-			return (hours*60 + minutes)*60;
-		}
+    private int? ParseUptime(string token)
+    {
+      if (String.IsNullOrWhiteSpace(token)) return null;
+      var times = token.Split(':');
+      if (times.Length<2) return ParseInt(times[0]);
+      var hours   = ParseInt(times[0]);
+      var minutes = ParseInt(times[1]);
+      if (!hours.HasValue || !minutes.HasValue) return null;
+      return (hours*60 + minutes)*60;
+    }
 
-		private string ParseStr(string token)
-		{
-			if (String.IsNullOrWhiteSpace(token)) return token;
-			return System.Net.WebUtility.HtmlDecode(token);
-		}
+    private string ParseStr(string token)
+    {
+      if (String.IsNullOrWhiteSpace(token)) return token;
+      return System.Net.WebUtility.HtmlDecode(token);
+    }
 
-		private Guid ParseGuid(string token)
-		{
-			if (String.IsNullOrWhiteSpace(token)) return Guid.Empty;
-			Guid result;
-			if (Guid.TryParse(token, out result)) {
-				return result;
-			}
-			return Guid.Empty;
-		}
+    private Guid ParseGuid(string token)
+    {
+      if (String.IsNullOrWhiteSpace(token)) return Guid.Empty;
+      Guid result;
+      if (Guid.TryParse(token, out result)) {
+        return result;
+      }
+      return Guid.Empty;
+    }
 
-		private int? ParseInt(string token)
-		{
-			int result;
-			if (token==null || !Int32.TryParse(token, out result)) return null;
-			return result;
-		}
-	}
+    private int? ParseInt(string token)
+    {
+      int result;
+      if (token==null || !Int32.TryParse(token, out result)) return null;
+      return result;
+    }
+  }
 
   [Plugin]
   class PCPYellowPageClientPlugin
@@ -1174,16 +1182,18 @@ namespace PeerCastStation.PCP
   {
     override public string Name { get { return "PCP YellowPage Client"; } }
 
-    private PCPYellowPageClientFactory factory;
-    override protected void OnAttach()
+    private PCPYellowPageClientFactory? factory = null;
+    override protected void OnAttach(PeerCastApplication app)
     {
-      if (factory==null) factory = new PCPYellowPageClientFactory(Application.PeerCast);
-      Application.PeerCast.YellowPageFactories.Add(factory);
+      if (factory==null) factory = new PCPYellowPageClientFactory(app.PeerCast);
+      app.PeerCast.YellowPageFactories.Add(factory);
     }
 
-    override protected void OnDetach()
+    override protected void OnDetach(PeerCastApplication app)
     {
-      Application.PeerCast.YellowPageFactories.Remove(factory);
+      if (factory!=null) {
+        app.PeerCast.YellowPageFactories.Remove(factory);
+      }
     }
   }
 }

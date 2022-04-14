@@ -173,7 +173,7 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
-    protected override async Task DoProcess(CancellationToken cancellationToken)
+    protected override async Task DoProcess(SourceConnectionClient connection, CancellationToken cancellationToken)
     {
       this.state = ConnectionState.Waiting;
       try {
@@ -202,7 +202,7 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
-    protected override void DoPost(Host from, Atom packet)
+    protected override void DoPost(SourceConnectionClient connection, Host from, Atom packet)
     {
       //Do nothing
     }

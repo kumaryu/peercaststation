@@ -42,7 +42,7 @@ namespace PeerCastStation.Core
     public abstract string           Name { get; }
     public abstract string           Scheme { get; }
     public abstract SourceStreamType Type { get; }
-    public abstract Uri              DefaultUri { get; }
+    public abstract Uri?             DefaultUri { get; }
     public abstract bool             IsContentReaderRequired { get; }
     public virtual ISourceStream Create(Channel channel, Uri tracker)
     {
@@ -94,7 +94,7 @@ namespace PeerCastStation.Core
         Task.Wait();
       }
 
-      public void Post(Host from, Atom message)
+      public void Post(Host? from, Atom message)
       {
         if (IsCompleted) return;
         Connection?.Post(from, message);
@@ -202,7 +202,7 @@ namespace PeerCastStation.Core
       public bool Reconnect { get; set; } = false;
     }
 
-    protected virtual void OnConnectionStopped(ISourceConnection? connection, ConnectionStoppedArgs args)
+    protected virtual void OnConnectionStopped(ISourceConnection connection, ConnectionStoppedArgs args)
     {
     }
 
@@ -252,7 +252,7 @@ namespace PeerCastStation.Core
         }
         Queue("CONNECTION_CLEANUP", async () => {
           Logger.Debug($"Cleaning up connection (closed by {args.Reason})");
-          OnConnectionStopped(conn.Connection, args);
+          OnConnectionStopped(conn.Connection!, args);
           if (args.Delay>0) {
             await Task.Delay(args.Delay).ConfigureAwait(false);
           }
@@ -276,7 +276,7 @@ namespace PeerCastStation.Core
       sourceConnection.StopAndWait(reason);
     }
 
-    protected virtual Uri SelectSourceHost()
+    protected virtual Uri? SelectSourceHost()
     {
       return SourceUri;
     }
@@ -302,7 +302,7 @@ namespace PeerCastStation.Core
       ranTaskSource.TrySetResult(reason);
     }
 
-    protected virtual void DoPost(Host from, Atom message)
+    protected virtual void DoPost(Host? from, Atom message)
     {
       sourceConnection.Post(from, message);
     }
@@ -321,7 +321,7 @@ namespace PeerCastStation.Core
       return ranTaskSource.Task;
     }
 
-    public void Post(Host from, Atom packet)
+    public void Post(Host? from, Atom packet)
     {
       if (disposed) throw new ObjectDisposedException(this.GetType().Name);
       Queue(Tuple.Create(from, packet), () => { DoPost(from, packet); });

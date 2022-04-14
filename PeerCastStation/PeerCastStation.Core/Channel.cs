@@ -753,7 +753,7 @@ namespace PeerCastStation.Core
     /// <param name="from">送信元のホスト</param>
     /// <param name="packet">送信するデータ</param>
     /// <param name="group">送信先グループ</param>
-    public virtual void Broadcast(Host from, Atom packet, BroadcastGroup group)
+    public virtual void Broadcast(Host? from, Atom packet, BroadcastGroup group)
     {
       if (group.HasFlag(BroadcastGroup.Trackers) || group.HasFlag(BroadcastGroup.Relays)) {
         var source = sourceStream;

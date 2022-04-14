@@ -528,15 +528,19 @@ namespace PeerCastStation.Core
       return null;
     }
 
-    public OutputListener FindListener(IPAddress remote_addr, OutputStreamType connection_type)
+    public OutputListener? FindListener(IPAddress? remote_addr, OutputStreamType connection_type)
     {
-      if (remote_addr==null) throw new ArgumentNullException("remote_addr");
+      if (remote_addr==null) {
+        return null;
+      }
       return FindListener(remote_addr.AddressFamily, remote_addr, connection_type);
     }
 
-    public OutputListener FindListener(AddressFamily family, IPAddress remote_addr, OutputStreamType connection_type)
+    public OutputListener? FindListener(AddressFamily family, IPAddress? remote_addr, OutputStreamType connection_type)
     {
-      if (remote_addr==null) throw new ArgumentNullException("remote_addr");
+      if (remote_addr==null) {
+        return null;
+      }
       if (remote_addr.IsSiteLocal()) {
         var listener = outputListeners.FirstOrDefault(
           x =>  x.LocalEndPoint.AddressFamily==family &&

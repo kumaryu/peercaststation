@@ -69,26 +69,26 @@ namespace PeerCastStation.Core
     ConnectionInfo GetConnectionInfo();
   }
 
-	public interface IYellowPageChannel
-	{
-		IYellowPageClient Source { get; }
-		string Name        { get; }
-		Guid   ChannelId   { get; }
-		string Tracker     { get; }
-		string ContentType { get; }
-		int?   Listeners   { get; }
-		int?   Relays      { get; }
-		int?   Bitrate     { get; }
-		int?   Uptime      { get; }
-		string ContactUrl  { get; }
-		string Genre       { get; }
-		string Description { get; }
-		string Comment     { get; }
-		string Artist      { get; }
-		string TrackTitle  { get; }
-		string Album       { get; }
-		string TrackUrl    { get; }
-	}
+  public interface IYellowPageChannel
+  {
+    IYellowPageClient Source { get; }
+    string Name         { get; }
+    Guid   ChannelId    { get; }
+    string? Tracker     { get; }
+    string? ContentType { get; }
+    int?   Listeners    { get; }
+    int?   Relays       { get; }
+    int?   Bitrate      { get; }
+    int?   Uptime       { get; }
+    string? ContactUrl  { get; }
+    string? Genre       { get; }
+    string? Description { get; }
+    string? Comment     { get; }
+    string? Artist      { get; }
+    string? TrackTitle  { get; }
+    string? Album       { get; }
+    string? TrackUrl    { get; }
+  }
 
   /// <summary>
   /// YellowPageとやりとりするクライアントのインターフェースです
@@ -106,24 +106,24 @@ namespace PeerCastStation.Core
     /// <summary>
     /// チャンネル掲載先のURLを取得します
     /// </summary>
-    Uri AnnounceUri { get; }
+    Uri? AnnounceUri { get; }
     /// <summary>
     /// チャンネル一覧取得用のURLを取得します
     /// </summary>
-    Uri ChannelsUri { get; }
+    Uri? ChannelsUri { get; }
     /// <summary>
     /// チャンネルIDからトラッカーを検索し取得します
     /// </summary>
     /// <param name="channel_id">検索するチャンネルID</param>
     /// <returns>見付かった場合は接続先URI、見付からなかった場合はnull</returns>
-    Uri FindTracker(Guid channel_id);
+    Uri? FindTracker(Guid channel_id);
 
     /// <summary>
     /// YellowPageにチャンネルを載せます
     /// </summary>
     /// <param name="channel">載せるチャンネル</param>
     /// <returns>掲載するチャンネルの状態を保持するオブジェクト</returns>
-    IAnnouncingChannel Announce(Channel channel);
+    IAnnouncingChannel? Announce(Channel channel);
 
     /// <summary>
     /// YellowPageとの接続を終了し、載せているチャンネルを全て削除します
@@ -163,9 +163,9 @@ namespace PeerCastStation.Core
   public class YellowPageUriValidationResult
   {
     public bool IsValid { get; private set; }
-    public Uri Candidate { get; private set; }
-    public string Message { get; private set; }
-    public YellowPageUriValidationResult(bool isValid, Uri candidate, string message)
+    public Uri? Candidate { get; private set; }
+    public string? Message { get; private set; }
+    public YellowPageUriValidationResult(bool isValid, Uri? candidate, string? message)
     {
       IsValid = isValid;
       Candidate = candidate;
@@ -451,7 +451,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="from">ブロードキャストパケットの送信元。無い場合はnull</param>
     /// <param name="packet">送信するデータ</param>
-    void Post(Host from, Atom packet);
+    void Post(Host? from, Atom packet);
     /// <summary>
     /// ストリームの種類を取得します
     /// </summary>
@@ -491,7 +491,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 配信時に使われるURIのデフォルト値を取得します
     /// </summary>
-    Uri DefaultUri { get; }
+    Uri? DefaultUri { get; }
     /// <summary>
     /// URIからプロトコルを判別しSourceStreamのインスタンスを作成します。
     /// </summary>
@@ -577,7 +577,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="from">ブロードキャストパケットの送信元。無い場合はnull</param>
     /// <param name="packet">送信するデータ</param>
-    void OnBroadcast(Host from, Atom packet);
+    void OnBroadcast(Host? from, Atom packet);
     /// <summary>
     /// ストリームへの書き込みを終了します
     /// </summary>

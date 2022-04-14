@@ -238,7 +238,7 @@ namespace PeerCastStation.Core
     /// 指定されたHostの値でHostBuilderを初期化します
     /// </summary>
     /// <param name="host">初期化元のHost</param>
-    public HostBuilder(Host host)
+    public HostBuilder(Host? host)
     {
       if (host!=null) {
         SessionID = host.SessionID;

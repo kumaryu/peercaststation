@@ -128,7 +128,7 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    protected override async Task DoProcess(CancellationToken cancel_token)
+    protected override async Task DoProcess(SourceConnectionClient connection, CancellationToken cancel_token)
     {
       try {
         this.Status = ConnectionStatus.Connecting;

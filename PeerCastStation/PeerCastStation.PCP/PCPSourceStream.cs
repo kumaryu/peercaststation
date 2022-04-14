@@ -43,7 +43,7 @@ namespace PeerCastStation.PCP
       get { return SourceStreamType.Relay; }
     }
 
-    public override Uri DefaultUri {
+    public override Uri? DefaultUri {
       get { return null; }
     }
 
@@ -65,18 +65,18 @@ namespace PeerCastStation.PCP
 
   public class RelayRequestResponse
   {
-    public int    StatusCode  { get; set; }
-    public int?   PCPVersion  { get; set; }
-    public string ContentType { get; set; }
-    public long?  StreamPos   { get; set; }
-    public string Server      { get; set; }
+    public int     StatusCode  { get; set; }
+    public int?    PCPVersion  { get; set; }
+    public string? ContentType { get; set; }
+    public long?   StreamPos   { get; set; }
+    public string? Server      { get; set; }
     public RelayRequestResponse(IEnumerable<string> responses)
     {
       this.PCPVersion = null;
       this.ContentType = null;
       this.StreamPos = null;
       foreach (var res in responses) {
-        Match match = null;
+        Match match;
         if ((match = Regex.Match(res, @"^HTTP/1.\d (\d+) .*$")).Success) {
           this.StatusCode = Convert.ToInt32(match.Groups[1].Value);
         }
@@ -100,15 +100,15 @@ namespace PeerCastStation.PCP
     : SourceConnectionBase,
       IChannelMonitor
   {
-    private TcpClient client = null;
-    private RelayRequestResponse relayResponse = null;
-    private Host uphost;
+    private TcpClient? client = null;
+    private RelayRequestResponse? relayResponse = null;
+    private Host? uphost = null;
     private RemoteHostStatus remoteType = RemoteHostStatus.None;
-    private EndPoint remoteHost = null;
+    private EndPoint? remoteHost = null;
     private IContentSink contentSink;
-    private Content     lastHeader = null;
-    private ChannelInfo lastInfo = null;
-    private OutputListener listener = null;
+    private Content?     lastHeader = null;
+    private ChannelInfo lastInfo;
+    private OutputListener? listener = null;
 
     public PCPSourceConnection(
         PeerCast peercast,
@@ -119,18 +119,19 @@ namespace PeerCastStation.PCP
     {
       remoteType = remote_type;
       contentSink = new AsynchronousContentSink(new ChannelContentSink(channel, true));
+      lastInfo = Channel.ChannelInfo;
     }
 
-    protected override void OnStarted()
+    protected override void OnStarted(SourceConnectionClient connection)
     {
       Logger.Debug("Started");
       listener = PeerCast.FindListener(
-        connection.RemoteEndPoint.Address,
+        connection.RemoteEndPoint?.Address,
         OutputStreamType.Relay | OutputStreamType.Metadata);
       lastInfo = Channel.ChannelInfo;
       lastHeader = Channel.ContentHeader;
       Channel.AddMonitor(this);
-      base.OnStarted();
+      base.OnStarted(connection);
     }
 
     protected override void OnStopped()
@@ -140,9 +141,9 @@ namespace PeerCastStation.PCP
       base.OnStopped();
     }
 
-    protected override async Task<SourceConnectionClient> DoConnect(Uri source, CancellationToken cancel_token)
+    protected override async Task<SourceConnectionClient?> DoConnect(Uri source, CancellationToken cancel_token)
     {
-      TcpClient client = null;
+      TcpClient? client = null;
       try {
         var port = source.Port<0 ? PCPVersion.DefaultPort : source.Port;
         if (source.HostNameType==UriHostNameType.IPv4 ||
@@ -189,7 +190,7 @@ namespace PeerCastStation.PCP
       }
     }
 
-    protected override void DoPost(Host from, Atom packet)
+    protected override void DoPost(SourceConnectionClient connection, Host? from, Atom packet)
     {
       if (uphost==from) return;
       if (postedAtoms.TryAdd(packet)) {
@@ -199,7 +200,7 @@ namespace PeerCastStation.PCP
 
     private BlockingCollection<Atom> postedAtoms = new BlockingCollection<Atom>(110);
     private SemaphoreSlim postedAtomsEvent = new SemaphoreSlim(0);
-    private async Task ProcessPost(CancellationToken cancel_token)
+    private async Task ProcessPost(SourceConnectionClient connection, CancellationToken cancel_token)
     {
       while (!cancel_token.IsCancellationRequested) {
         int delay = 0;
@@ -224,25 +225,24 @@ namespace PeerCastStation.PCP
     //ハンドシェイク終了まで一定時間で終わらなかったらタイムアウトする
     //PeerCastのポート開放チェックが最悪15秒かかるのでそれより短くはしないこと
     public int PCPHandshakeTimeout { get; set; } = 18000;
-    protected override async Task DoProcess(CancellationToken cancel_token)
+    protected override async Task DoProcess(SourceConnectionClient connection, CancellationToken cancel_token)
     {
       try {
         this.Status = ConnectionStatus.Connecting;
-        using (var cts=CancellationTokenSource.CreateLinkedTokenSource(cancel_token)) {
-          cts.CancelAfter(PCPHandshakeTimeout);
-          await ProcessRelayRequest(cts.Token).ConfigureAwait(false);
-          if (cts.IsCancellationRequested) goto Stopped;
-          await ProcessHandshake(cts.Token).ConfigureAwait(false);
-          if (cts.IsCancellationRequested) goto Stopped;
-          if (relayResponse.StatusCode==503) {
-            await ProcessHosts(cts.Token).ConfigureAwait(false);
-          }
+        var cts = CancellationTokenSource.CreateLinkedTokenSource(cancel_token);
+        cts.CancelAfter(PCPHandshakeTimeout);
+        var relayResponse = await ProcessRelayRequest(connection, cts.Token).ConfigureAwait(false);
+        if (relayResponse==null || cts.IsCancellationRequested) goto Stopped;
+        await ProcessHandshake(connection, cts.Token).ConfigureAwait(false);
+        if (cts.IsCancellationRequested) goto Stopped;
+        if (relayResponse.StatusCode==503) {
+          await ProcessHosts(connection, cts.Token).ConfigureAwait(false);
         }
         if (relayResponse.StatusCode!=503) {
           this.Status = ConnectionStatus.Connected;
           await Task.WhenAll(
-            ProcessBody(cancel_token),
-            ProcessPost(cancel_token)
+            ProcessBody(connection, cancel_token),
+            ProcessPost(connection, cancel_token)
           ).ConfigureAwait(false);
         }
       }
@@ -254,7 +254,7 @@ Stopped:
 
     private async Task<RelayRequestResponse> ReadRequestResponseAsync(Stream stream, CancellationToken cancel_token)
     {
-      string line = null;
+      string? line = null;
       var responses = new List<string>();
       var buf = new List<byte>();
       while (line!="") {
@@ -270,12 +270,11 @@ Stopped:
       return new RelayRequestResponse(responses);
     }
 
-    private async Task ProcessRelayRequest(CancellationToken cancel_token)
+    private async Task<RelayRequestResponse?> ProcessRelayRequest(SourceConnectionClient connection, CancellationToken cancel_token)
     {
       Logger.Debug("Sending Relay request: /channel/{0}", Channel.ChannelID.ToString("N"));
       var host_header = remoteHost!=null ? $"Host:{remoteHost}\r\n" : "";
-      if (remoteHost is DnsEndPoint) {
-        var dnsendpoint = remoteHost as DnsEndPoint;
+      if (remoteHost is DnsEndPoint dnsendpoint) {
         host_header = $"Host:{dnsendpoint.Host}:{dnsendpoint.Port}\r\n";
       }
       var req = System.Text.Encoding.UTF8.GetBytes(
@@ -291,16 +290,18 @@ Stopped:
         relayResponse = await ReadRequestResponseAsync(connection.Stream, cancel_token).ConfigureAwait(false);
         Logger.Debug("Relay response: {0}", relayResponse.StatusCode);
         if (relayResponse.StatusCode==200 || relayResponse.StatusCode==503) {
-          return;
+          return relayResponse;
         }
         else {
           Logger.Info("Server responses {0} to GET {1}", relayResponse.StatusCode, SourceUri.PathAndQuery);
           Stop(relayResponse.StatusCode==404 ? StopReason.OffAir : StopReason.ConnectionError);
         }
+        return relayResponse;
       }
       catch (IOException e) {
         Logger.Info(e);
         Stop(StopReason.ConnectionError);
+        return null;
       }
     }
 
@@ -311,19 +312,19 @@ Stopped:
       helo.SetHeloSessionID(PeerCast.SessionID);
       switch (listener?.Status ?? PortStatus.Firewalled) {
       case PortStatus.Open:
-        helo.SetHeloPort(listener.LocalEndPoint.Port);
+        helo.SetHeloPort(listener!.LocalEndPoint.Port);
         break;
       case PortStatus.Firewalled:
         break;
       case PortStatus.Unknown:
-        helo.SetHeloPing(listener.LocalEndPoint.Port);
+        helo.SetHeloPing(listener!.LocalEndPoint.Port);
         break;
       }
       PCPVersion.SetHeloVersion(helo);
       return new Atom(Atom.PCP_HELO, helo);
     }
 
-    private async Task ProcessHandshake(CancellationToken cancel_token)
+    private async Task ProcessHandshake(SourceConnectionClient connection, CancellationToken cancel_token)
     {
       Logger.Debug("Handshake Started");
       var helo = CreatePCPHelo();
@@ -334,7 +335,7 @@ Stopped:
           cancel_token.ThrowIfCancellationRequested();
           var atom = await connection.Stream.ReadAtomAsync(cancel_token).ConfigureAwait(false);
           if (atom.Name==Atom.PCP_OLEH) {
-            OnPCPOleh(atom);
+            OnPCPOleh(connection, atom);
             Logger.Debug("Handshake Finished");
             handshake_finished = true;
           }
@@ -356,7 +357,7 @@ Stopped:
       }
     }
 
-    private async Task ProcessBody(CancellationToken cancel_token)
+    private async Task ProcessBody(SourceConnectionClient connection, CancellationToken cancel_token)
     {
       try {
         BroadcastHostInfo();
@@ -392,7 +393,7 @@ Stopped:
     }
 
     private static readonly ID4[] hostPackets = new []{ Atom.PCP_QUIT, Atom.PCP_HOST };
-    private async Task ProcessHosts(CancellationToken cancel_token)
+    private async Task ProcessHosts(SourceConnectionClient connection, CancellationToken cancel_token)
     {
       try {
         while (!cancel_token.IsCancellationRequested) {
@@ -414,7 +415,7 @@ Stopped:
     /// 現在のチャンネルとPeerCastの状態からHostパケットを作ります
     /// </summary>
     /// <returns>作ったPCP_HOSTパケット</returns>
-    private Atom CreatePCPHOST()
+    private Atom CreatePCPHOST(SourceConnectionClient connection)
     {
       var host = new AtomCollection();
       host.SetHostChannelID(Channel.ChannelID);
@@ -433,8 +434,8 @@ Stopped:
       host.SetHostNumRelays(Channel.LocalRelays);
       host.SetHostUptime(Channel.Uptime);
       if (Channel.Contents.Count > 0) {
-        host.SetHostOldPos((uint)(Channel.Contents.Oldest.Position & 0xFFFFFFFFU));
-        host.SetHostNewPos((uint)(Channel.Contents.Newest.Position & 0xFFFFFFFFU));
+        host.SetHostOldPos((uint)(Channel.Contents.Oldest!.Position & 0xFFFFFFFFU));
+        host.SetHostNewPos((uint)(Channel.Contents.Newest!.Position & 0xFFFFFFFFU));
       }
       PCPVersion.SetHostVersion(host);
       host.SetHostFlags1(
@@ -442,8 +443,10 @@ Stopped:
         (Channel.IsPlayable(false) ? PCPHostFlags1.Direct : 0) |
         (listener?.Status!=PortStatus.Open ? PCPHostFlags1.Firewalled : 0) |
         (RecvRate>0 ? PCPHostFlags1.Receiving : 0));
-      host.SetHostUphostIP(connection.RemoteEndPoint.Address);
-      host.SetHostUphostPort(connection.RemoteEndPoint.Port);
+      if (connection.RemoteEndPoint!=null) {
+        host.SetHostUphostIP(connection.RemoteEndPoint.Address);
+        host.SetHostUphostPort(connection.RemoteEndPoint.Port);
+      }
       return new Atom(Atom.PCP_HOST, host);
     }
 
@@ -484,7 +487,7 @@ Stopped:
     private void BroadcastHostInfo()
     {
       if (connection==null) return;
-      Channel.Broadcast(null, CreatePCPBCST(BroadcastGroup.Trackers, CreatePCPHOST()), BroadcastGroup.Trackers);
+      Channel.Broadcast(null, CreatePCPBCST(BroadcastGroup.Trackers, CreatePCPHOST(connection)), BroadcastGroup.Trackers);
       var hostInfo = new LocalHostInfo {
         Timestamp = Timestamp.Now,
         LocalDirects = Channel.LocalDirects,
@@ -522,8 +525,11 @@ Stopped:
       return true;
     }
 
-    protected void OnPCPOleh(Atom atom)
+    protected void OnPCPOleh(SourceConnectionClient connection, Atom atom)
     {
+      if (atom.Children==null) {
+        throw new InvalidDataException($"{atom.Name} has no children.");
+      }
       var rip = atom.Children.GetHeloRemoteIP();
       if (rip!=null && Channel.NetworkAddressFamily==rip.AddressFamily) {
         var global_addr = listener?.GlobalAddress;
@@ -553,6 +559,9 @@ Stopped:
 
     protected void OnPCPChan(Atom atom)
     {
+      if (atom.Children==null) {
+        throw new InvalidDataException($"{atom.Name} has no children.");
+      }
       foreach (var c in atom.Children) {
         ProcessAtom(c);
       }
@@ -560,17 +569,20 @@ Stopped:
 
     private ChannelInfo ResetContentType(ChannelInfo channel_info, Content content_header)
     {
-      if (channel_info==null) throw new ArgumentNullException("channel_info");
-
       var content_type = channel_info.ContentType;
       if (content_type==null || content_type=="UNKNOWN") {
-        string mime_type = null;
-        if (content_header!=null &&
-            PeerCast.ContentReaderFactories.Any(
-              factory => factory.TryParseContentType(content_header.Data.ToArray(), out content_type, out mime_type))) {
+        var (found, contentType, mimeType) =
+          PeerCast.ContentReaderFactories
+          .Select(factory => (factory.TryParseContentType(content_header.Data.ToArray(), out var ctype, out var mtype), ctype, mtype))
+          .FirstOrDefault(v => v.Item1, (false, "", ""));
+        if (found) {
           var new_info = new AtomCollection(channel_info.Extra);
-          new_info.SetChanInfoType(content_type);
-          new_info.SetChanInfoStreamType(mime_type);
+          if (contentType!=null) {
+            new_info.SetChanInfoType(contentType);
+          }
+          if (mimeType!=null) {
+            new_info.SetChanInfoStreamType(mimeType);
+          }
           channel_info = new ChannelInfo(new_info);
         }
       }
@@ -582,6 +594,9 @@ Stopped:
     private long     lastPosition = 0;
     protected void OnPCPChanPkt(Atom atom)
     {
+      if (atom.Children==null) {
+        throw new InvalidDataException($"{atom.Name} has no children.");
+      }
       var pkt_type = atom.Children.GetChanPktType();
       var pkt_data = atom.Children.GetChanPktData();
       var pkt_cont = atom.Children.GetChanPktCont();
@@ -599,10 +614,10 @@ Stopped:
           lastPosition = pkt_pos;
         }
         else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_DATA) {
-          if (atom.Children.GetChanPktPos()!=null) {
-            long pkt_pos = atom.Children.GetChanPktPos().Value;
-            contentSink.OnContent(new Content(streamIndex, DateTime.Now-streamOrigin, pkt_pos, pkt_data, pkt_cont));
-            lastPosition = pkt_pos;
+          var pkt_pos = atom.Children.GetChanPktPos();
+          if (pkt_pos!=null) {
+            contentSink.OnContent(new Content(streamIndex, DateTime.Now-streamOrigin, pkt_pos.Value, pkt_data, pkt_cont));
+            lastPosition = pkt_pos.Value;
           }
         }
         else if (pkt_type==Atom.PCP_CHAN_PKT_TYPE_META) {
@@ -612,7 +627,13 @@ Stopped:
 
     protected void OnPCPChanInfo(Atom atom)
     {
-      var channel_info = ResetContentType(new ChannelInfo(atom.Children), lastHeader);
+      if (atom.Children==null) {
+        throw new InvalidDataException($"{atom.Name} has no children.");
+      }
+      var channel_info = new ChannelInfo(atom.Children);
+      if (lastHeader!=null) {
+        channel_info = ResetContentType(channel_info, lastHeader);
+      }
       contentSink.OnChannelInfo(channel_info);
       lastInfo = channel_info;
       BroadcastHostInfo();
@@ -620,11 +641,17 @@ Stopped:
 
     protected void OnPCPChanTrack(Atom atom)
     {
+      if (atom.Children==null) {
+        throw new InvalidDataException($"{atom.Name} has no children.");
+      }
       contentSink.OnChannelTrack(new ChannelTrack(atom.Children));
     }
 
     protected void OnPCPBcst(Atom atom)
     {
+      if (atom.Children==null) {
+        throw new InvalidDataException($"{atom.Name} has no children.");
+      }
       var dest = atom.Children.GetBcstDest();
       if (dest==null || dest==PeerCast.SessionID) {
         foreach (var c in atom.Children) ProcessAtom(c);
@@ -648,6 +675,9 @@ Stopped:
 
     private void OnPCPHost(Atom atom)
     {
+      if (atom.Children==null) {
+        throw new InvalidDataException($"{atom.Name} has no children.");
+      }
       var session_id = atom.Children.GetHostSessionID();
       if (session_id!=null) {
         var node = Channel.SourceNodes.FirstOrDefault(x => x.SessionID.Equals(session_id));
@@ -866,12 +896,8 @@ Stopped:
 
     private Uri CreateHostUri(Host host)
     {
-      EndPoint endpoint = IsSiteLocal(host) ? host.LocalEndPoint : host.GlobalEndPoint;
-      return new Uri(
-        String.Format(
-          "pcp://{0}/channel/{1}",
-          endpoint.ToString(),
-          Channel.ChannelID.ToString("N").ToUpperInvariant()));
+      EndPoint? endpoint = IsSiteLocal(host) ? host.LocalEndPoint : host.GlobalEndPoint;
+      return new Uri($"pcp://{endpoint}/channel/{Channel.ChannelID.ToString("N").ToUpperInvariant()}");
     }
 
     private bool IsSiteLocal(Host node)
@@ -884,7 +910,7 @@ Stopped:
       }
     }
 
-    protected override Uri SelectSourceHost()
+    protected override Uri? SelectSourceHost()
     {
       var rnd = new Random();
       var res = GetConnectableNodes().OrderByDescending(n =>
@@ -912,28 +938,30 @@ Stopped:
 
     public override ConnectionInfo GetConnectionInfo()
     {
-      var conn = sourceConnection;
-      if (!conn.IsCompleted) {
-        return conn.Connection.GetConnectionInfo();
+      var connInfo = sourceConnection.GetConnectionInfo();
+      if (connInfo!=null) {
+        return connInfo;
       }
-      ConnectionStatus status = ConnectionStatus.Idle;
-      switch (StoppedReason) {
-      case StopReason.UserReconnect:
-        status = ConnectionStatus.Connecting;
-        break;
-      case StopReason.UserShutdown:
-      case StopReason.None:
-        status = ConnectionStatus.Idle;
-        break;
-      default:
-        status = ConnectionStatus.Error;
-        break;
+      else {
+        ConnectionStatus status = ConnectionStatus.Idle;
+        switch (StoppedReason) {
+        case StopReason.UserReconnect:
+          status = ConnectionStatus.Connecting;
+          break;
+        case StopReason.UserShutdown:
+        case StopReason.None:
+          status = ConnectionStatus.Idle;
+          break;
+        default:
+          status = ConnectionStatus.Error;
+          break;
+        }
+        return new ConnectionInfoBuilder {
+          ProtocolName     = "PCP Source",
+          Type             = ConnectionType.Source,
+          Status           = status,
+        }.Build();
       }
-      return new ConnectionInfoBuilder {
-        ProtocolName     = "PCP Source",
-        Type             = ConnectionType.Source,
-        Status           = status,
-      }.Build();
     }
 
     protected override ISourceConnection CreateConnection(Uri source_uri)
@@ -967,7 +995,7 @@ Stopped:
 
     protected override void DoReconnect()
     {
-      if (this.sourceConnection.SourceUri!=this.SourceUri) {
+      if (this.sourceConnection.SourceUri!=this.SourceUri && this.sourceConnection.SourceUri!=null) {
         IgnoreSourceHost(this.sourceConnection.SourceUri);
       }
       base.DoReconnect();
@@ -984,16 +1012,18 @@ Stopped:
   {
     override public string Name { get { return "PCP Source"; } }
 
-    private PCPSourceStreamFactory factory;
-    override protected void OnAttach()
+    private PCPSourceStreamFactory? factory;
+    override protected void OnAttach(PeerCastApplication app)
     {
-      if (factory==null) factory = new PCPSourceStreamFactory(Application.PeerCast);
-      Application.PeerCast.SourceStreamFactories.Add(factory);
+      if (factory==null) factory = new PCPSourceStreamFactory(app.PeerCast);
+      app.PeerCast.SourceStreamFactories.Add(factory);
     }
 
-    override protected void OnDetach()
+    override protected void OnDetach(PeerCastApplication app)
     {
-      Application.PeerCast.SourceStreamFactories.Remove(factory);
+      if (factory!=null) {
+        app.PeerCast.SourceStreamFactories.Remove(factory);
+      }
     }
   }
 }
