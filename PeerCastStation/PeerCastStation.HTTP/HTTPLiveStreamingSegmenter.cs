@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using PeerCastStation.Core;
 using System.IO;
@@ -11,9 +10,9 @@ namespace PeerCastStation.HTTP
 {
   public struct HLSSegment {
     public readonly int Index;
-    public readonly byte[] Data;
+    public readonly byte[]? Data;
     public readonly double Duration;
-    public HLSSegment(int index, byte[] data, double duration)
+    public HLSSegment(int index, byte[]? data, double duration)
     {
       Index = index;
       Data = data;
@@ -103,8 +102,8 @@ namespace PeerCastStation.HTTP
     class WaitableContainer<T>
     {
       private TaskCompletionSource<bool> initializedTask = new TaskCompletionSource<bool>();
-      private T value;
-      public async Task<T> GetAsync(CancellationToken cancellationToken)
+      private T? value;
+      public async Task<T?> GetAsync(CancellationToken cancellationToken)
       {
         var result = await Task.WhenAny(
           initializedTask.Task,
@@ -114,7 +113,7 @@ namespace PeerCastStation.HTTP
           return value;
         }
         else {
-          return default(T);
+          return default;
         }
       }
 
@@ -124,7 +123,7 @@ namespace PeerCastStation.HTTP
         initializedTask.TrySetResult(true);
       }
 
-      public T Peek()
+      public T? Peek()
       {
         return value;
       }

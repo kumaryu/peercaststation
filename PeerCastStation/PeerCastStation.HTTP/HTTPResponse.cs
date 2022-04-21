@@ -21,14 +21,14 @@ namespace PeerCastStation.HTTP
     /// レスポンスヘッダの値のコレクション取得します
     /// </summary>
     public IDictionary<string, string> Headers { get; private set; }
-    public byte[] Body { get; private set; }
+    public byte[]? Body { get; private set; }
 
     public HTTPResponse(
       string protocol,
       int    status,
       string reason_phrase,
       IDictionary<string, string> headers,
-      byte[] body)
+      byte[]? body)
     {
       this.Protocol     = protocol;
       this.Status       = status;

@@ -191,7 +191,7 @@ namespace PeerCastStation.Core
       PeerCast = peercast;
       localOutputAccepts  = local_accepts;
       globalOutputAccepts = global_accepts;
-      LoopbackAccessControlInfo = new AccessControlInfo(OutputStreamType.All, false, null);
+      LoopbackAccessControlInfo = new AccessControlInfo(OutputStreamType.All, false, AuthenticationKey.Generate());
       LocalAccessControlInfo = UpdateLocalAccessControlInfo();
       GlobalAccessControlInfo = UpdateGlobalAccessControlInfo();
       ConnectionHandler = connection_handler;

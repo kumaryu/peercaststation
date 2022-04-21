@@ -943,7 +943,7 @@ Stopped:
         return connInfo;
       }
       else {
-        ConnectionStatus status = ConnectionStatus.Idle;
+        ConnectionStatus status;
         switch (StoppedReason) {
         case StopReason.UserReconnect:
           status = ConnectionStatus.Connecting;

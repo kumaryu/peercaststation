@@ -69,9 +69,9 @@ namespace PeerCastStation.HTTP
       case ConnectionState.Error:     status = ConnectionStatus.Error; break;
       default:                        status = ConnectionStatus.Idle; break;
       }
-      IPEndPoint endpoint = null;
+      IPEndPoint? endpoint = null;
       if (this.connection?.Client?.Connected ?? false) {
-        endpoint = (IPEndPoint)this.connection.Client.Client.RemoteEndPoint;
+        endpoint = (IPEndPoint?)this.connection.Client.Client.RemoteEndPoint;
       }
       return new ConnectionInfoBuilder {
         ProtocolName     = "HTTP Push Source",
@@ -115,9 +115,9 @@ namespace PeerCastStation.HTTP
       return addresses.Select(addr => new IPEndPoint(addr, uri.Port<0 ? 1935 : uri.Port));
     }
 
-    protected override async Task<SourceConnectionClient> DoConnect(Uri source, CancellationToken cancellationToken)
+    protected override async Task<SourceConnectionClient?> DoConnect(Uri source, CancellationToken cancellationToken)
     {
-      TcpClient client = null;
+      TcpClient? client = null;
       var bind_addr = GetBindAddresses(source);
       if (bind_addr.Count()==0) {
         this.state = ConnectionState.Error;
@@ -164,15 +164,14 @@ namespace PeerCastStation.HTTP
     }
 
     private bool chunked = false;
-    private async Task Handshake(CancellationToken cancel_token)
+    private async Task Handshake(SourceConnectionClient connection, CancellationToken cancel_token)
     {
       var request = await HTTPRequestReader.ReadAsync(connection.Stream, cancel_token).ConfigureAwait(false);
-      if (request==null) new HTTPError(HttpStatusCode.BadRequest);
-      if (request.Method!="POST") new HTTPError(HttpStatusCode.MethodNotAllowed);
+      if (request==null) throw new HTTPError(HttpStatusCode.BadRequest);
+      if (request.Method!="POST") throw new HTTPError(HttpStatusCode.MethodNotAllowed);
       Logger.Debug("POST requested");
 
-      string encodings;
-      if (request.Headers.TryGetValue("TRANSFER-ENCODING", out encodings)) {
+      if (request.Headers.TryGetValue("TRANSFER-ENCODING", out var encodings)) {
         var codings = encodings.Split(',')
           .Select(token => token.Trim())
           .Distinct()
@@ -189,8 +188,11 @@ namespace PeerCastStation.HTTP
         Logger.Debug("Content-Type: {0}", request.Headers["CONTENT-TYPE"]);
       }
 
-      if (!request.Headers.TryGetValue("USER-AGENT", out clientName)) {
-        clientName = "";
+      if (request.Headers.TryGetValue("USER-AGENT", out var clientName)) {
+        this.clientName = clientName;
+      }
+      else {
+        this.clientName = "";
       }
     }
 
@@ -199,7 +201,7 @@ namespace PeerCastStation.HTTP
       return chunked ? new HTTPChunkedContentStream(stream) : stream;
     }
 
-    private async Task ReadContents(CancellationToken cancel_token)
+    private async Task ReadContents(SourceConnectionClient connection, CancellationToken cancel_token)
     {
       this.state = ConnectionState.Connected;
       var stream = GetChunkedStream(connection.Stream);
@@ -213,8 +215,8 @@ namespace PeerCastStation.HTTP
       this.state = ConnectionState.Waiting;
       try {
         if (connection!=null && !IsStopped) {
-          await Handshake(cancellationToken).ConfigureAwait(false);
-          await ReadContents(cancellationToken).ConfigureAwait(false);
+          await Handshake(connection, cancellationToken).ConfigureAwait(false);
+          await ReadContents(connection, cancellationToken).ConfigureAwait(false);
         }
         this.state = ConnectionState.Closed;
       }
@@ -233,7 +235,7 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    protected override void DoPost(SourceConnectionClient connection, Host from, Atom packet)
+    protected override void DoPost(SourceConnectionClient connection, Host? from, Atom packet)
     {
       //Do nothing
     }
@@ -260,9 +262,9 @@ namespace PeerCastStation.HTTP
 
     public override ConnectionInfo GetConnectionInfo()
     {
-      var conn = sourceConnection;
-      if (!conn.IsCompleted) {
-        return conn.Connection.GetConnectionInfo();
+      var connInfo = sourceConnection.GetConnectionInfo();
+      if (connInfo!=null) {
+        return connInfo;
       }
       else {
         ConnectionStatus status;
@@ -271,17 +273,13 @@ namespace PeerCastStation.HTTP
         case StopReason.UserShutdown:  status = ConnectionStatus.Idle; break;
         default:                       status = ConnectionStatus.Error; break;
         }
-        IPEndPoint endpoint = null;
-        string client_name = "";
-
         return new ConnectionInfoBuilder {
           ProtocolName     = "RTMP Source",
           Type             = ConnectionType.Source,
           Status           = status,
           RemoteName       = SourceUri.ToString(),
-          RemoteEndPoint   = endpoint,
           RemoteHostStatus = RemoteHostStatus.None,
-          AgentName        = client_name,
+          AgentName        = "",
         }.Build();
       }
     }
@@ -312,16 +310,18 @@ namespace PeerCastStation.HTTP
   {
     override public string Name { get { return "HTTP Push Source"; } }
 
-    private HTTPPushSourceStreamFactory factory;
-    override protected void OnAttach()
+    private HTTPPushSourceStreamFactory? factory;
+    override protected void OnAttach(PeerCastApplication app)
     {
-      if (factory==null) factory = new HTTPPushSourceStreamFactory(Application.PeerCast);
-      Application.PeerCast.SourceStreamFactories.Add(factory);
+      if (factory==null) factory = new HTTPPushSourceStreamFactory(app.PeerCast);
+      app.PeerCast.SourceStreamFactories.Add(factory);
     }
 
-    override protected void OnDetach()
+    override protected void OnDetach(PeerCastApplication app)
     {
-      Application.PeerCast.SourceStreamFactories.Remove(factory);
+      if (factory!=null) {
+        app.PeerCast.SourceStreamFactories.Remove(factory);
+      }
     }
   }
 

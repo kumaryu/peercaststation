@@ -298,12 +298,12 @@ namespace PeerCastStation.Core
 
     public bool AuthorizationRequired { get; private set; }
 
-    public AuthenticationKey? AuthenticationKey { get; private set; }
+    public AuthenticationKey AuthenticationKey { get; private set; }
 
     public AccessControlInfo(
       OutputStreamType accepts,
       bool auth_required,
-      AuthenticationKey? key)
+      AuthenticationKey key)
     {
       this.Accepts                = accepts;
       this.AuthorizationRequired  = auth_required;

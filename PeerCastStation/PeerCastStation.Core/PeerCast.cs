@@ -196,7 +196,7 @@ namespace PeerCastStation.Core
     /// チャンネルが無かった場合はrequest_relayがtrueならReleyChannelを呼び出した結果、
     /// request_relayがfalseならnull。
     /// </returns>
-    public virtual Channel? RequestChannel(Guid channel_id, Uri tracker, bool request_relay)
+    public virtual Channel? RequestChannel(Guid channel_id, Uri? tracker, bool request_relay)
     {
       Channel? channel = channels.FirstOrDefault(c => c.ChannelID==channel_id);
       if (request_relay) {

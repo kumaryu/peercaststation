@@ -19,7 +19,7 @@ namespace PeerCastStation.HTTP
       public string MIMEType { get { return "application/vnd.apple.mpegurl"; } }
       public Channel Channel { get; private set; }
 
-      public M3U8PlayList(string scheme, Channel channel)
+      public M3U8PlayList(string? scheme, Channel channel)
       {
         this.scheme = String.IsNullOrEmpty(scheme) ? "http" : scheme.ToLowerInvariant();
         Channel = channel;
@@ -59,7 +59,7 @@ namespace PeerCastStation.HTTP
       public HTTPLiveStreamingSegmenter Segmenter { get; private set; } = new HTTPLiveStreamingSegmenter();
       private HTTPLiveStreamingDirectOwinApp owner;
       private Channel channel;
-      private IDisposable subscription;
+      private IDisposable? subscription = null;
       private int referenceCount = 0;
       private HLSContentSink(HTTPLiveStreamingDirectOwinApp owner, Channel channel)
       {
@@ -74,7 +74,7 @@ namespace PeerCastStation.HTTP
               "flvtots".Split(',')
               .Select(name => channel.PeerCast.ContentFilters.FirstOrDefault(filter => filter.Name.ToLowerInvariant() == name.ToLowerInvariant()))
               .Where(filter => filter != null)
-              .Aggregate((IContentSink)Segmenter, (r, filter) => filter.Activate(r));
+              .Aggregate((IContentSink)Segmenter, (r, filter) => filter!.Activate(r));
           Interlocked.Exchange(ref subscription, channel.AddContentSink(sink))?.Dispose();
         }
         return this;
@@ -101,11 +101,11 @@ namespace PeerCastStation.HTTP
     {
       private HTTPLiveStreamingDirectOwinApp owner;
       private ConnectionInfoBuilder connectionInfo = new ConnectionInfoBuilder();
-      private Func<float> getRecvRate = null;
-      private Func<float> getSendRate = null;
+      private Func<float>? getRecvRate = null;
+      private Func<float>? getSendRate = null;
       private Tuple<Channel,string> session;
       private CancellationTokenSource stoppedCancellationTokenSource = new CancellationTokenSource();
-      private HLSContentSink contentSink = null;
+      private HLSContentSink? contentSink = null;
 
       public string SessionId {
         get { return session.Item2; }
@@ -118,13 +118,18 @@ namespace PeerCastStation.HTTP
       }
 
       public HTTPLiveStreamingSegmenter Segmenter {
-        get { return contentSink?.Segmenter; }
+        get {
+          if (contentSink==null) {
+            throw new ObjectDisposedException(nameof(HLSChannelSink));
+          }
+          return contentSink.Segmenter;
+        }
       }
 
       public static HLSChannelSink GetSubscription(HTTPLiveStreamingDirectOwinApp owner, Channel channel, OwinEnvironment ctx, string session)
       {
         if (String.IsNullOrWhiteSpace(session)) {
-          var source = new IPEndPoint(IPAddress.Parse(ctx.Request.RemoteIpAddress), ctx.Request.RemotePort ?? 0).ToString();
+          var source = ctx.Request.GetRemoteEndPoint().ToString();
           using (var md5=System.Security.Cryptography.MD5.Create()) {
             session =
               md5
@@ -136,7 +141,7 @@ namespace PeerCastStation.HTTP
         return owner.channelSinks.GetOrAdd(new Tuple<Channel,string>(channel, session), k => new HLSChannelSink(owner, ctx, k)).AddRef(ctx);
       }
 
-      private IDisposable subscription;
+      private IDisposable? subscription = null;
       private int referenceCount = 0;
 
       private HLSChannelSink(HTTPLiveStreamingDirectOwinApp owner, OwinEnvironment ctx, Tuple<Channel,string> session)
@@ -150,7 +155,7 @@ namespace PeerCastStation.HTTP
         connectionInfo.RecvRate = null;
         connectionInfo.SendRate = null;
         connectionInfo.ContentPosition = 0;
-        var remoteEndPoint = new IPEndPoint(IPAddress.Parse(ctx.Request.RemoteIpAddress), ctx.Request.RemotePort ?? 0);
+        var remoteEndPoint = ctx.Request.GetRemoteEndPoint();
         connectionInfo.RemoteEndPoint = remoteEndPoint;
         connectionInfo.RemoteName = remoteEndPoint.ToString();
         connectionInfo.RemoteSessionID = null;
@@ -168,7 +173,7 @@ namespace PeerCastStation.HTTP
       private HLSChannelSink AddRef(OwinEnvironment ctx)
       {
         connectionInfo.AgentName = ctx.Request.Headers.Get("User-Agent");
-        var remoteEndPoint = new IPEndPoint(IPAddress.Parse(ctx.Request.RemoteIpAddress), ctx.Request.RemotePort ?? 0);
+        var remoteEndPoint = ctx.Request.GetRemoteEndPoint();
         connectionInfo.RemoteEndPoint = remoteEndPoint;
         connectionInfo.RemoteName = remoteEndPoint.ToString();
         if (remoteEndPoint.Address.GetAddressLocality()<2) {
@@ -205,7 +210,7 @@ namespace PeerCastStation.HTTP
         return connectionInfo.Build();
       }
 
-      public void OnBroadcast(Host from, Atom packet)
+      public void OnBroadcast(Host? from, Atom packet)
       {
       }
 
@@ -223,8 +228,8 @@ namespace PeerCastStation.HTTP
       public HttpStatusCode Status;
       public Guid ChannelId;
       public int? FragmentNumber;
-      public string Extension;
-      public string Session;
+      public string? Extension;
+      public string? Session;
       public bool IsValid {
         get { return Status==HttpStatusCode.OK; }
       }
@@ -250,10 +255,10 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    private static async Task<Channel> GetChannelAsync(OwinEnvironment ctx, ParsedRequest req, CancellationToken ct)
+    private static async Task<Channel?> GetChannelAsync(OwinEnvironment ctx, ParsedRequest req, CancellationToken ct)
     {
       var tip = ctx.Request.Query.Get("tip");
-      var channel = ctx.GetPeerCast().RequestChannel(req.ChannelId, OutputStreamBase.CreateTrackerUri(req.ChannelId, tip), true);
+      var channel = ctx.GetPeerCast()?.RequestChannel(req.ChannelId, OutputStreamBase.CreateTrackerUri(req.ChannelId, tip), true);
       if (channel==null) {
         return null;
       }
@@ -264,19 +269,15 @@ namespace PeerCastStation.HTTP
       return channel;
     }
 
-    private async Task PlayListHandler(OwinEnvironment ctx, ParsedRequest req, Channel channel)
+    private Uri AllocateNewSessionUri(OwinEnvironment ctx)
     {
-      var ct = ctx.Request.CallCancelled;
-      var session = req.Session;
-      if (String.IsNullOrWhiteSpace(session)) {
-        var source = new IPEndPoint(IPAddress.Parse(ctx.Request.RemoteIpAddress), ctx.Request.RemotePort ?? 0).ToString();
-        using (var md5=System.Security.Cryptography.MD5.Create()) {
-          session =
-            md5
-            .ComputeHash(System.Text.Encoding.ASCII.GetBytes(source))
-            .Aggregate(new System.Text.StringBuilder(), (builder,v) => builder.Append(v.ToString("X2")))
-            .ToString();
-        }
+      var source = ctx.Request.GetRemoteEndPoint().ToString();
+      using (var md5=System.Security.Cryptography.MD5.Create()) {
+        var session =
+          md5
+          .ComputeHash(System.Text.Encoding.ASCII.GetBytes(source))
+          .Aggregate(new System.Text.StringBuilder(), (builder,v) => builder.Append(v.ToString("X2")))
+          .ToString();
         var location = new UriBuilder(ctx.Request.Uri);
         if (String.IsNullOrEmpty(location.Query)) {
           location.Query = $"session={session}";
@@ -284,7 +285,16 @@ namespace PeerCastStation.HTTP
         else {
           location.Query = location.Query.Substring(1) + $"&session={session}"; 
         }
-        ctx.Response.Redirect(location.Uri.ToString());
+        return location.Uri;
+      }
+    }
+
+    private async Task PlayListHandler(OwinEnvironment ctx, ParsedRequest req, Channel channel)
+    {
+      var ct = ctx.Request.CallCancelled;
+      var session = req.Session;
+      if (String.IsNullOrWhiteSpace(session)) {
+        ctx.Response.Redirect(AllocateNewSessionUri(ctx).ToString());
         return;
       }
       var pls = new M3U8PlayList(ctx.Request.Query.Get("scheme"), channel);
@@ -303,7 +313,7 @@ namespace PeerCastStation.HTTP
           var acinfo = ctx.GetAccessControlInfo();
           using (var cts=CancellationTokenSource.CreateLinkedTokenSource(ct, subscription.Stopped)) {
             cts.CancelAfter(10000);
-            if (acinfo.AuthorizationRequired) {
+            if (acinfo?.AuthorizationRequired ?? false) {
               var parameters = new Dictionary<string, string>() {
                 { "auth", acinfo.AuthenticationKey.GetToken() },
                 { "session", subscription.SessionId },
@@ -330,13 +340,18 @@ namespace PeerCastStation.HTTP
     private async Task FragmentHandler(OwinEnvironment ctx, ParsedRequest req, Channel channel)
     {
       var ct = ctx.Request.CallCancelled;
-      using (var subscription=HLSChannelSink.GetSubscription(this, channel, ctx, req.Session)) {
+      var session = req.Session;
+      if (String.IsNullOrWhiteSpace(session)) {
+        ctx.Response.Redirect(AllocateNewSessionUri(ctx).ToString());
+        return;
+      }
+      using (var subscription=HLSChannelSink.GetSubscription(this, channel, ctx, session)) {
         subscription.Stopped.ThrowIfCancellationRequested();
         using (var cts=CancellationTokenSource.CreateLinkedTokenSource(ct, subscription.Stopped)) {
           cts.CancelAfter(10000);
           var segments = await subscription.Segmenter.GetSegmentsAsync(cts.Token).ConfigureAwait(false);
           var segment = segments.FirstOrDefault(s => s.Index==req.FragmentNumber);
-          if (segment.Index==0) {
+          if (segment.Index==0 || segment.Data==null) {
             ctx.Response.StatusCode = HttpStatusCode.NotFound;
           }
           else {
@@ -358,7 +373,7 @@ namespace PeerCastStation.HTTP
         ctx.Response.StatusCode = req.Status;
         return;
       }
-      Channel channel;
+      Channel? channel;
       try {
         channel = await GetChannelAsync(ctx, req, ct).ConfigureAwait(false);
       }
@@ -396,10 +411,10 @@ namespace PeerCastStation.HTTP
   {
     override public string Name { get { return "HTTP Live Streaming Host"; } }
 
-    private IDisposable appRegistration = null;
-    override protected void OnAttach()
+    private IDisposable? appRegistration = null;
+    override protected void OnAttach(PeerCastApplication app)
     {
-      var owin = Application.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
+      var owin = app.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
       appRegistration = owin?.OwinHost?.Register(HTTPLiveStreamingDirectOwinApp.BuildApp);
     }
 

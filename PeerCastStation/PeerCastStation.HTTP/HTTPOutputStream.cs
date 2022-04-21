@@ -27,7 +27,7 @@ namespace PeerCastStation.HTTP
 {
   public static class HTTPDirectOwinApp
   {
-    private static IPlayList CreatePlaylist(Channel channel, string fmt, string scheme)
+    private static IPlayList CreatePlaylist(Channel channel, string? fmt, string? scheme)
     {
       IPlayList CreateDefaultPlaylist()
       {
@@ -60,7 +60,7 @@ namespace PeerCastStation.HTTP
       public static readonly Regex ChannelIdPattern = new Regex(@"\A([0-9a-fA-F]{32})(?:\.(\w+))?\z", RegexOptions.Compiled);
       public HttpStatusCode Status;
       public Guid ChannelId;
-      public string Extension;
+      public string? Extension;
       public bool IsValid {
         get { return Status==HttpStatusCode.OK; }
       }
@@ -90,10 +90,10 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    private static async Task<Channel> GetChannelAsync(OwinEnvironment ctx, ParsedRequest req, CancellationToken ct)
+    private static async Task<Channel?> GetChannelAsync(OwinEnvironment ctx, ParsedRequest req, CancellationToken ct)
     {
       var tip = ctx.Request.Query.Get("tip");
-      var channel = ctx.GetPeerCast().RequestChannel(req.ChannelId, OutputStreamBase.CreateTrackerUri(req.ChannelId, tip), true);
+      var channel = ctx.GetPeerCast()?.RequestChannel(req.ChannelId, OutputStreamBase.CreateTrackerUri(req.ChannelId, tip), true);
       if (channel==null) {
         return null;
       }
@@ -112,7 +112,7 @@ namespace PeerCastStation.HTTP
         ctx.Response.StatusCode = req.Status;
         return;
       }
-      Channel channel;
+      Channel? channel;
       try {
         channel = await GetChannelAsync(ctx, req, ct).ConfigureAwait(false);
       }
@@ -158,7 +158,7 @@ namespace PeerCastStation.HTTP
         var acinfo = ctx.GetAccessControlInfo();
         using (var cts=CancellationTokenSource.CreateLinkedTokenSource(ct)) {
           cts.CancelAfter(10000);
-          if (acinfo.AuthorizationRequired) {
+          if (acinfo?.AuthorizationRequired ?? false) {
             var parameters = new Dictionary<string, string>() {
               { "auth", acinfo.AuthenticationKey.GetToken() },
             };
@@ -193,13 +193,13 @@ namespace PeerCastStation.HTTP
         }
 
         public MessageType Type;
-        public Content Content;
-        public byte[] Data;
+        public Content? Content;
+        public byte[]? Data;
       }
       private WaitableQueue<ChannelMessage> queue = new WaitableQueue<ChannelMessage>();
       private ConnectionInfoBuilder connectionInfo = new ConnectionInfoBuilder();
-      private Func<float> getRecvRate = null;
-      private Func<float> getSendRate = null;
+      private Func<float>? getRecvRate = null;
+      private Func<float>? getSendRate = null;
 
       public ChannelSink(OwinEnvironment ctx)
       {
@@ -210,7 +210,7 @@ namespace PeerCastStation.HTTP
         connectionInfo.RecvRate = null;
         connectionInfo.SendRate = null;
         connectionInfo.ContentPosition = 0;
-        var remoteEndPoint = new IPEndPoint(IPAddress.Parse(ctx.Request.RemoteIpAddress), ctx.Request.RemotePort ?? 0);
+        var remoteEndPoint = ctx.Request.GetRemoteEndPoint();
         connectionInfo.RemoteEndPoint = remoteEndPoint;
         connectionInfo.RemoteName = remoteEndPoint.ToString();
         connectionInfo.RemoteSessionID = null;
@@ -236,7 +236,7 @@ namespace PeerCastStation.HTTP
         return connectionInfo.Build();
       }
 
-      public void OnBroadcast(Host from, Atom packet)
+      public void OnBroadcast(Host? from, Atom packet)
       {
       }
 
@@ -280,7 +280,7 @@ namespace PeerCastStation.HTTP
         ctx.Response.StatusCode = req.Status;
         return;
       }
-      Channel channel;
+      Channel? channel;
       try {
         channel = await GetChannelAsync(ctx, req, ct).ConfigureAwait(false);
       }
@@ -311,8 +311,8 @@ namespace PeerCastStation.HTTP
           try {
             while (!ct.IsCancellationRequested) {
               var packet = await sink.DequeueAsync(ct).ConfigureAwait(false);
-              ctx.Response.ContentLength = packet.Content.Data.Length;
               if (packet.Type==ChannelSink.ChannelMessage.MessageType.ContentHeader) {
+                ctx.Response.ContentLength = packet.Content!.Data.Length;
                 await ctx.Response.WriteAsync(packet.Content.Data, ct).ConfigureAwait(false);
                 logger.Debug("Sent ContentHeader pos {0}", packet.Content.Position);
                 break;
@@ -340,26 +340,24 @@ namespace PeerCastStation.HTTP
             ctx.Response.Headers.Add("Transfer-Encoding", new string [] { "chunked" });
           }
 
-          Content sent_header = null;
-          Content sent_packet = null;
+          (Content header, Content body)? sent = null;
           try {
             while (!ct.IsCancellationRequested) {
               var packet = await sink.DequeueAsync(ct).ConfigureAwait(false);
               if (packet.Type==ChannelSink.ChannelMessage.MessageType.ContentHeader) {
-                if (sent_header!=packet.Content && packet.Content!=null) {
+                if (sent?.header!=packet.Content && packet.Content!=null) {
                   await ctx.Response.WriteAsync(packet.Content.Data, ct).ConfigureAwait(false);
                   logger.Debug("Sent ContentHeader pos {0}", packet.Content.Position);
-                  sent_header = packet.Content;
-                  sent_packet = packet.Content;
+                  sent = (packet.Content, packet.Content);
                 }
               }
               else if (packet.Type==ChannelSink.ChannelMessage.MessageType.ContentBody) {
-                if (sent_header==null) continue;
-                var c = packet.Content;
-                if (c.Timestamp>sent_packet.Timestamp ||
-                    (c.Timestamp==sent_packet.Timestamp && c.Position>sent_packet.Position)) {
+                if (sent==null) continue;
+                var c = packet.Content!;
+                if (c.Timestamp>sent.Value.body.Timestamp ||
+                    (c.Timestamp==sent.Value.body.Timestamp && c.Position>sent.Value.body.Position)) {
                   await ctx.Response.WriteAsync(c.Data, ct).ConfigureAwait(false);
-                  sent_packet = c;
+                  sent = (sent.Value.header, c);
                 }
               }
               else if (packet.Type==ChannelSink.ChannelMessage.MessageType.ChannelStopped) {
@@ -393,10 +391,10 @@ namespace PeerCastStation.HTTP
   {
     override public string Name { get { return "HTTP Output"; } }
 
-    private IDisposable appRegistration = null;
-    override protected void OnAttach()
+    private IDisposable? appRegistration = null;
+    override protected void OnAttach(PeerCastApplication app)
     {
-      var owin = Application.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
+      var owin = app.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
       appRegistration = owin?.OwinHost?.Register(HTTPDirectOwinApp.BuildApp);
     }
 

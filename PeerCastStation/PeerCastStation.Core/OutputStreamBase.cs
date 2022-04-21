@@ -255,7 +255,7 @@ namespace PeerCastStation.Core
       return null;
     }
 
-    public static Uri? CreateTrackerUri(Guid channel_id, string tip)
+    public static Uri? CreateTrackerUri(Guid channel_id, string? tip)
     {
       if (tip==null) return null;
       var endpoint = ParseEndPoint(tip);

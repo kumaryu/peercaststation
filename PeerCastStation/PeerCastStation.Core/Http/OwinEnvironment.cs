@@ -150,6 +150,21 @@ namespace PeerCastStation.Core.Http
         }
       }
 
+      public IPEndPoint GetRemoteEndPoint(IPEndPoint defaultValue)
+      {
+        if (IPAddress.TryParse(RemoteIpAddress ?? "", out var address)) {
+          return new IPEndPoint(address, RemotePort ?? defaultValue.Port);
+        }
+        else {
+          return new IPEndPoint(defaultValue.Address, RemotePort ?? defaultValue.Port);
+        }
+      }
+
+      public IPEndPoint GetRemoteEndPoint()
+      {
+        return GetRemoteEndPoint(new IPEndPoint(IPAddress.Any, 0));
+      }
+
       public string? Path {
         get { return env.Get(Owin.RequestPath, null); }
       }
