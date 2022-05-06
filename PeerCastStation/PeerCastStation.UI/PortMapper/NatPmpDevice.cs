@@ -122,20 +122,20 @@ namespace PeerCastStation.UI.PortMapper
       }
     }
 
-    public Task<MappedPort> MapAsync(
+    public async Task<MappedPort?> MapAsync(
         MappingProtocol protocol,
         int port,
         TimeSpan lifetime,
         CancellationToken cancel_token)
     {
-      return MapAsyncInternal(
+      return await MapAsyncInternal(
         protocol,
         port,
         lifetime.TotalSeconds<=0 ? 7200 : (int)lifetime.TotalSeconds,
-        cancel_token);
+        cancel_token).ConfigureAwait(false);
     }
 
-    public async Task<IPAddress> GetExternalAddressAsync(CancellationToken cancel_token)
+    public async Task<IPAddress?> GetExternalAddressAsync(CancellationToken cancel_token)
     {
       int tries = 1;
     retry:

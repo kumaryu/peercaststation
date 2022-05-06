@@ -21,13 +21,13 @@ namespace PeerCastStation.UI
     {
       private static readonly long CacheLimit = 18000;
       private System.Diagnostics.Stopwatch cacheTimer = new System.Diagnostics.Stopwatch();
-      private IEnumerable<IYellowPageChannel> channels = null;
+      private IEnumerable<IYellowPageChannel>? channels = null;
 
       public bool IsValid {
         get { return channels!=null && cacheTimer.ElapsedMilliseconds<CacheLimit; }
       }
 
-      public IEnumerable<IYellowPageChannel> Value {
+      public IEnumerable<IYellowPageChannel>? Value {
         get {
           if (IsValid) {
             return channels;
@@ -74,15 +74,19 @@ namespace PeerCastStation.UI
       using (var cancel=CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, updateCancel.Token)) {
         cancel.CancelAfter(5000);
         try {
+          var app = Application;
+          if (app==null) {
+            return Enumerable.Empty<IYellowPageChannel>();
+          }
           channels.Value = 
             (
               await Task.WhenAll(
-                Application.PeerCast.YellowPages.Select(async yp => {
+                app.PeerCast.YellowPages.Select(async yp => {
                   try {
                     return await yp.GetChannelsAsync(cancel.Token).ConfigureAwait(false);
                   }
                   catch (Exception) {
-                    Application.ShowNotificationMessage(new NotificationMessage(
+                    app.ShowNotificationMessage(new NotificationMessage(
                       yp.Name,
                       "チャンネル一覧を取得できませんでした。",
                       NotificationMessageType.Error)

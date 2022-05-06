@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using PeerCastStation.Core;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PeerCastStation.UI
 {
@@ -38,22 +39,53 @@ namespace PeerCastStation.UI
 
   public class VersionEnclosure
   {
-    public string Title  { get; set; }
-    public long   Length { get; set; }
-    public string Type   { get; set; }
-    public Uri    Url    { get; set; }
-    public InstallerType InstallerType { get; set; }
-    public InstallerPlatform InstallerPlatform { get; set; }
-    public string InstallCommand { get; set; }
+    public string Title  { get; }
+    public long   Length { get; }
+    public string Type   { get; }
+    public Uri    Url    { get; }
+    public InstallerType InstallerType { get; }
+    public InstallerPlatform InstallerPlatform { get; }
+    public string? InstallCommand { get; }
+    public VersionEnclosure(
+      string title,
+      long   length,
+      string type,
+      Uri    url,
+      InstallerType installerType,
+      InstallerPlatform installerPlatform,
+      string? installCommand=null)
+    {
+      Title = title;
+      Length = length;
+      Type = type;
+      Url = url;
+      InstallerType = installerType;
+      InstallerPlatform = installerPlatform;
+      InstallCommand = installCommand;
+    }
   }
 
   public class VersionDescription
   {
-    public DateTime PublishDate { get; set; }
-    public Uri      Link        { get; set; }
-    public string   Title       { get; set; }
-    public string   Description { get; set; }
-		public VersionEnclosure[] Enclosures { get; set; }
+    public DateTime PublishDate { get; }
+    public Uri      Link        { get; }
+    public string   Title       { get; }
+    public string   Description { get; }
+    public VersionEnclosure[] Enclosures { get; }
+
+    public VersionDescription(
+      DateTime publishDate,
+      Uri link,
+      string title,
+      string description,
+      IEnumerable<VersionEnclosure> enclosures)
+    {
+      PublishDate = publishDate;
+      Link = link;
+      Title = title;
+      Description = description;
+      Enclosures = enclosures.ToArray();
+    }
   }
 
   public class NewVersionFoundEventArgs : EventArgs
@@ -175,14 +207,14 @@ namespace PeerCastStation.UI
       }
     }
 
-		public async Task<IEnumerable<VersionDescription>> CheckVersionTaskAsync(CancellationToken cancel_token)
-		{
-			var results = await appcastReader.DownloadVersionInfoTaskAsync(url, cancel_token).ConfigureAwait(false);
-			if (results==null) return null;
-			return results
-				.Where(v => v.PublishDate.Date>currentVersion)
-				.OrderByDescending(v => v.PublishDate);
-		}
+    public async Task<IEnumerable<VersionDescription>?> CheckVersionTaskAsync(CancellationToken cancel_token)
+    {
+      var results = await appcastReader.DownloadVersionInfoTaskAsync(url, cancel_token).ConfigureAwait(false);
+      if (results==null) return null;
+      return results
+        .Where(v => v.PublishDate.Date>currentVersion)
+        .OrderByDescending(v => v.PublishDate);
+    }
 
     public bool CheckVersion()
     {
@@ -278,11 +310,15 @@ namespace PeerCastStation.UI
 
     static string GetProcessEntryFile()
     {
-      var entry = System.Reflection.Assembly.GetEntryAssembly().Location;
-      if (Path.GetExtension(entry).ToLowerInvariant()==".dll" &&
-          Path.GetDirectoryName(entry)==Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName)) {
+      var entry = System.Reflection.Assembly.GetEntryAssembly()?.Location;
+      //MainModule は null になることがあるらしいが、実質なさげなので!でnullはないことにする。
+      //FileName は null にならない(.NET7で直るっぽい)
+      var mainModule = Process.GetCurrentProcess().MainModule!.FileName!;
+      if (entry==null ||
+          (Path.GetExtension(entry).ToLowerInvariant()==".dll" &&
+           Path.GetDirectoryName(entry)==Path.GetDirectoryName(mainModule))) {
         //たぶん.NET Core以降の実行ファイル
-        return Process.GetCurrentProcess().MainModule.FileName;
+        return mainModule;
       }
       else {
         //実行ファイルもしくはdotnetコマンド経由起動のアセンブリ
@@ -309,7 +345,7 @@ namespace PeerCastStation.UI
 
     public static string GetApplicationDirectory()
     {
-      return Path.GetDirectoryName(GetProcessEntryFile());
+      return Path.GetDirectoryName(GetProcessEntryFile())!;
     }
 
     public static bool Install(DownloadResult downloaded)
@@ -318,7 +354,7 @@ namespace PeerCastStation.UI
     }
 
 
-    private static void DoStopAndInstall(PeerCastApplication app, Action doInstall)
+    private static void DoStopAndInstall(PeerCastApplication? app, Action doInstall)
     {
       if (app!=null) {
         app.Stop(0, doInstall);
@@ -460,7 +496,7 @@ namespace PeerCastStation.UI
       CopyTree(FindRootDirectory(sourcepath), targetpath);
     }
 
-    private static bool TryGetDescendantPath(string sourcepath, string filename, out string path)
+    private static bool TryGetDescendantPath(string sourcepath, string filename, [NotNullWhen(true)] out string? path)
     {
       try {
         sourcepath = Path.GetFullPath(sourcepath);
@@ -480,7 +516,7 @@ namespace PeerCastStation.UI
       }
     }
 
-    public static string Where(string exefile)
+    public static string? Where(string exefile)
     {
       ProcessStartInfo startinfo;
       if (IsWindows()) {
@@ -498,6 +534,9 @@ namespace PeerCastStation.UI
         };
       }
       using (var proc = Process.Start(startinfo)) {
+        if (proc==null) {
+          return null;
+        }
         var lines = new List<string>();
         proc.OutputDataReceived += (sender, e) => {
           if (e.Data!=null) {
@@ -517,8 +556,9 @@ namespace PeerCastStation.UI
 
     public static string FindDotNet()
     {
-      if (Path.GetFileNameWithoutExtension(Process.GetCurrentProcess().MainModule.FileName).ToLowerInvariant()=="dotnet") {
-        return Process.GetCurrentProcess().MainModule.FileName;
+      var mainModule = Process.GetCurrentProcess().MainModule!.FileName!;
+      if (Path.GetFileNameWithoutExtension(mainModule).ToLowerInvariant()=="dotnet") {
+        return mainModule;
       }
       else {
         return Where("dotnet") ?? "dotnet";
@@ -552,7 +592,7 @@ namespace PeerCastStation.UI
       return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
     }
 
-    private static bool TryGetExecutable(string command, out string executableCommand)
+    private static bool TryGetExecutable(string command, [NotNullWhen(true)] out string? executableCommand)
     {
       switch (Path.GetExtension(command)) {
       case "":
@@ -628,7 +668,7 @@ namespace PeerCastStation.UI
 
     private static string GetExecutable(string command)
     {
-      if (TryGetExecutable(command, out string executableCommand)) {
+      if (TryGetExecutable(command, out var executableCommand)) {
         return executableCommand;
       }
       else {
@@ -636,7 +676,7 @@ namespace PeerCastStation.UI
       }
     }
 
-    private static (string Installer, string[] Args) GetArchiveInstaller(string sourcepath, string installCommand, string defaultArg)
+    private static (string Installer, string[] Args) GetArchiveInstaller(string sourcepath, string? installCommand, string defaultArg)
     {
       if (!String.IsNullOrWhiteSpace(installCommand)) {
         var commands = installCommand.Split(" ");
@@ -657,7 +697,7 @@ namespace PeerCastStation.UI
       }
     }
 
-    public static ProcessStartInfo GetUpdateCommand(string sourcepath, string targetpath, string installCommand, string[] additionalArgs)
+    public static ProcessStartInfo GetUpdateCommand(string sourcepath, string targetpath, string? installCommand, string[] additionalArgs)
     {
       var (installer, args) = GetArchiveInstaller(sourcepath, installCommand, "update");
       var combinedArgs = String.Join(" ",
@@ -666,14 +706,9 @@ namespace PeerCastStation.UI
       return GetDotNetProcessStartInfo(installer, combinedArgs);
     }
 
-    public static void StartUpdate(string sourcepath, string targetpath, string installCommand, string[] additionalArgs)
+    public static void StartUpdate(string sourcepath, string targetpath, string? installCommand, string[] additionalArgs)
     {
       Process.Start(GetUpdateCommand(sourcepath, targetpath, installCommand, additionalArgs));
-    }
-
-    public static void Install(string zipfile)
-    {
-      Install(new Updater.DownloadResult(zipfile, new VersionDescription(), new VersionEnclosure { InstallerType=InstallerType.Archive }));
     }
 
     public static void Cleanup(string tmppath)
@@ -686,7 +721,7 @@ namespace PeerCastStation.UI
       StartNewSelf(targetpath, additionalArgs, "cleanup", tmppath);
     }
 
-    public event NewVersionFoundEventHandler NewVersionFound;
+    public event NewVersionFoundEventHandler? NewVersionFound;
   }
 
   public class NewVersionNotificationMessage

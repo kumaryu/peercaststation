@@ -1067,7 +1067,7 @@ namespace PeerCastStation.WPF.CoreSettings
     {
       var port_checker = pecaApp.Plugins.GetPlugin<PeerCastStation.UI.PCPPortCheckerPlugin>();
       if (port_checker==null) return new PortCheckResult[0];
-      var results = await port_checker.CheckAsync();
+      var results = await port_checker.CheckAsync(peerCast);
       foreach (var result in results) {
         if (!result.Success) continue;
         foreach (var port in ports) {

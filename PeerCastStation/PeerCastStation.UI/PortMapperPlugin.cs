@@ -44,10 +44,10 @@ namespace PeerCastStation.UI
       }
     }
 
-    protected override void OnAttach()
+    protected override void OnAttach(PeerCastApplication app)
     {
-      base.OnAttach();
-      var settings = Application.Settings.Get<PortMapperSettings>();
+      base.OnAttach(app);
+      var settings = app.Settings.Get<PortMapperSettings>();
       enabled = settings.Enabled;
     }
 
@@ -59,27 +59,28 @@ namespace PeerCastStation.UI
       Application.SaveSettings();
     }
 
-    private PortMapperMonitor monitor;
+    private PortMapperMonitor? monitor = null;
 
     protected override void OnStart()
     {
       base.OnStart();
+      var app = Application!;
       if (enabled) {
-        monitor = new PortMapperMonitor(Application.PeerCast);
-        Application.PeerCast.AddChannelMonitor(monitor);
+        monitor = new PortMapperMonitor(app.PeerCast);
+        app.PeerCast.AddChannelMonitor(monitor);
       }
       Task.Run(async () => {
         if (enabled) {
           await DiscoverAsync().ConfigureAwait(false);
         }
-        var results = await CheckPortAsync().ConfigureAwait(false);
+        var results = await CheckPortAsync(app).ConfigureAwait(false);
         foreach (var result in results) {
           if (!result.Success) continue;
           if (result.IsOpen) {
-            Application.PeerCast.SetPortStatus(result.LocalAddress, result.GlobalAddress, PortStatus.Open);
+            app.PeerCast.SetPortStatus(result.LocalAddress, result.GlobalAddress, PortStatus.Open);
           }
           else {
-            Application.PeerCast.SetPortStatus(result.LocalAddress, result.GlobalAddress, PortStatus.Firewalled);
+            app.PeerCast.SetPortStatus(result.LocalAddress, result.GlobalAddress, PortStatus.Firewalled);
           }
         }
       });
@@ -88,7 +89,7 @@ namespace PeerCastStation.UI
     protected override void OnStop()
     {
       if (monitor!=null) {
-        Application.PeerCast.RemoveChannelMonitor(monitor);
+        Application!.PeerCast.RemoveChannelMonitor(monitor);
         monitor.Dispose();
         monitor = null;
       }
@@ -104,11 +105,11 @@ namespace PeerCastStation.UI
       return discoverTask;
     }
 
-    private async Task<PortCheckResult[]> CheckPortAsync()
+    private async Task<PortCheckResult[]> CheckPortAsync(PeerCastApplication app)
     {
-      var checker = Application.Plugins.GetPlugin<PCPPortCheckerPlugin>();
+      var checker = app.Plugins.GetPlugin<PCPPortCheckerPlugin>();
       if (checker==null) return new PortCheckResult[0];
-      return await checker.CheckAsync().ConfigureAwait(false);
+      return await checker.CheckAsync(app.PeerCast).ConfigureAwait(false);
     }
 
   }
@@ -116,11 +117,10 @@ namespace PeerCastStation.UI
   [PecaSettings]
   public class PortMapperSettings
   {
-    public bool Enabled { get; set; }
+    public bool Enabled { get; set; } = true;
 
     public PortMapperSettings()
     {
-      Enabled = true;
     }
   }
 
@@ -131,7 +131,7 @@ namespace PeerCastStation.UI
     private class NatDevice
     {
       public INatDevice Device { get; private set; }
-      public IPAddress ExternalIPAddress { get; private set; }
+      public IPAddress? ExternalIPAddress { get; private set; }
       public Task MapAsync(MappingProtocol protocol, int port, TimeSpan lifetime, CancellationToken cancel_token)
       {
         return Device.MapAsync(protocol, port, lifetime, cancel_token);
@@ -140,13 +140,13 @@ namespace PeerCastStation.UI
       {
         return Device.UnmapAsync(protocol, port, cancel_token);
       }
-      public NatDevice(INatDevice device, IPAddress external_ipaddress)
+      public NatDevice(INatDevice device, IPAddress? external_ipaddress)
       {
         this.Device = device;
         this.ExternalIPAddress = external_ipaddress;
       }
 
-      public override bool Equals(object obj)
+      public override bool Equals(object? obj)
       {
         if (obj==null) return false;
         if (ReferenceEquals(obj, this)) return true;
@@ -212,7 +212,7 @@ namespace PeerCastStation.UI
     {
       return devices
         .Select(dev => dev.ExternalIPAddress)
-        .Where(addr => addr!=null)
+        .NotNull()
         .ToArray();
     }
 

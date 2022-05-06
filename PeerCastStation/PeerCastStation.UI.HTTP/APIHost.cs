@@ -3,6 +3,7 @@ using System.Linq;
 using System.Net;
 using System.Collections.Generic;
 using PeerCastStation.Core;
+using PeerCastStation.UI;
 using PeerCastStation.UI.HTTP.JSONRPC;
 using Newtonsoft.Json.Linq;
 using System.Threading;
@@ -1074,24 +1075,24 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("addBroadcastHistory")]
       public void AddBroadcastHistory(JObject info)
       {
-        var obj = new PeerCastStation.UI.BroadcastInfo();
-        info.TryGetThen("networkType", v => obj.NetworkType = ParseNetworkType(v));
-        info.TryGetThen("streamType",  v => obj.StreamType  = v);
-        info.TryGetThen("streamUrl",   v => obj.StreamUrl   = v);
-        info.TryGetThen("bitrate",     v => obj.Bitrate     = v);
-        info.TryGetThen("contentType", v => obj.ContentType = v);
-        info.TryGetThen("yellowPage",  v => obj.YellowPage  = v);
-        info.TryGetThen("channelName", v => obj.ChannelName = v);
-        info.TryGetThen("genre",       v => obj.Genre       = v);
-        info.TryGetThen("description", v => obj.Description = v);
-        info.TryGetThen("comment",     v => obj.Comment     = v);
-        info.TryGetThen("contactUrl",  v => obj.ContactUrl  = v);
-        info.TryGetThen("trackTitle",  v => obj.TrackTitle  = v);
-        info.TryGetThen("trackAlbum",  v => obj.TrackAlbum  = v);
-        info.TryGetThen("trackArtist", v => obj.TrackArtist = v);
-        info.TryGetThen("trackGenre",  v => obj.TrackGenre  = v);
-        info.TryGetThen("trackUrl",    v => obj.TrackUrl    = v);
-        info.TryGetThen("favorite",    v => obj.Favorite    = v);
+        var obj = new BroadcastInfo(
+          ParseNetworkType(info.GetValueAsString("networkType") ?? "IPv4"),
+          info.GetValueAsString("streamType") ?? "",
+          info.GetValueAsString("streamUrl") ?? "",
+          info.GetValueAsInt("bitrate") ?? 0,
+          info.GetValueAsString("contentType") ?? "",
+          info.GetValueAsString("yellowPage") ?? "",
+          info.GetValueAsString("channelName") ?? "",
+          info.GetValueAsString("genre") ?? "",
+          info.GetValueAsString("description") ?? "",
+          info.GetValueAsString("comment") ?? "",
+          info.GetValueAsString("contactUrl") ?? "",
+          info.GetValueAsString("trackTitle") ?? "",
+          info.GetValueAsString("trackAlbum") ?? "",
+          info.GetValueAsString("trackArtist") ?? "",
+          info.GetValueAsString("trackGenre") ?? "",
+          info.GetValueAsString("trackUrl") ?? "",
+          info.GetValueAsBool("favorite") ?? false);
         var settings = PeerCastApplication.Current.Settings.Get<UISettings>();
         var item = settings.FindBroadcastHistroryItem(obj);
         if (item!=null) {
@@ -1154,7 +1155,7 @@ namespace PeerCastStation.UI.HTTP
         List<int> results = null;
         var port_checker = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PCPPortCheckerPlugin>();
         if (port_checker!=null) {
-          var task = port_checker.CheckAsync();
+          var task = port_checker.CheckAsync(PeerCast);
           task.Wait();
           foreach (var result in task.Result) {
             if (!result.Success) continue;

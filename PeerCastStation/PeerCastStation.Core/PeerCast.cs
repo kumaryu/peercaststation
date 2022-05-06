@@ -416,7 +416,7 @@ namespace PeerCastStation.Core
       return a.Equals(b);
     }
 
-    public void SetPortStatus(IPAddress localAddress, IPAddress globalAddress, PortStatus value)
+    public void SetPortStatus(IPAddress localAddress, IPAddress? globalAddress, PortStatus value)
     {
       foreach (var listener in OutputListeners.Where(port => IsIPAddressMatch(port.LocalEndPoint.Address, localAddress))) {
         if (globalAddress!=null) {

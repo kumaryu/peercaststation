@@ -5,7 +5,7 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <Nullable>annotations</Nullable>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>

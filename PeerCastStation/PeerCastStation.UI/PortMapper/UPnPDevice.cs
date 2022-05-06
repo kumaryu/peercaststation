@@ -34,7 +34,7 @@ namespace PeerCastStation.UI.PortMapper
       this.EventSubUrl = event_sub_url;
       this.SCPDUrl     = scpd_url;
     }
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
       if (obj==null) return false;
       if (this.GetType()!=obj.GetType()) return false;
@@ -90,7 +90,7 @@ namespace PeerCastStation.UI.PortMapper
       public string Action { get; private set; }
       public bool IsSucceeded { get; private set; }
       public Dictionary<string, string> Parameters { get; private set; }
-      public Exception Exception { get; private set; }
+      public Exception? Exception { get; private set; } = null;
 
       public ActionResult(string action, Dictionary<string, string> parameters)
       {
@@ -113,6 +113,7 @@ namespace PeerCastStation.UI.PortMapper
       {
         this.IsSucceeded = false;
         this.Action = action;
+        this.Parameters = new Dictionary<string, string>();
         this.Exception = exception;
       }
     }
@@ -141,8 +142,7 @@ namespace PeerCastStation.UI.PortMapper
         logger.Info("UPnP Action {0} Success", action);
         var doc = XDocument.Load(await msg.Content.ReadAsStreamAsync().ConfigureAwait(false));
         var results = doc.Descendants()
-          .Where(node => node.Parent!=null)
-          .Where(node => node.Parent.Name==XName.Get(action+"Response", this.ServiceDescription.ServiceType));
+          .Where(node => node.Parent?.Name==XName.Get(action+"Response", this.ServiceDescription.ServiceType));
         var parameters = new Dictionary<string, string>();
         foreach (var param in results) {
           logger.Debug("Param {0}:{1}", param.Name, param.Value);
@@ -159,7 +159,7 @@ namespace PeerCastStation.UI.PortMapper
       }
       else {
         logger.Info("UPnP Action {0} Other Error, status code:{1}}", action, msg.StatusCode);
-        return new ActionResult(action, msg.StatusCode, msg.ReasonPhrase);
+        return new ActionResult(action, msg.StatusCode, msg.ReasonPhrase ?? "");
       }
     }
 
@@ -195,7 +195,7 @@ namespace PeerCastStation.UI.PortMapper
       return SendActionAsync(action, new Dictionary<string, string>(), cancel_token);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
       if (obj==null) return false;
       if (this.GetType()!=obj.GetType()) return false;
@@ -237,7 +237,7 @@ namespace PeerCastStation.UI.PortMapper
       return bytes1.SequenceEqual(bytes2);
     }
 
-    private async Task<IPAddress> GetInternalAddressAsync()
+    private async Task<IPAddress?> GetInternalAddressAsync()
     {
       var dev_addr = (await Dns.GetHostAddressesAsync(ServiceDescription.ControlUrl.DnsSafeHost).ConfigureAwait(false))
         .Where(addr => addr.AddressFamily==AddressFamily.InterNetwork)
@@ -257,14 +257,12 @@ namespace PeerCastStation.UI.PortMapper
     {
     }
 
-    public async Task<IPAddress> GetExternalAddressAsync(CancellationToken cancel_token)
+    public async Task<IPAddress?> GetExternalAddressAsync(CancellationToken cancel_token)
     {
       var result = await SendActionAsync("GetExternalIPAddress", cancel_token).ConfigureAwait(false);
-      string value;
-      IPAddress addr;
       if (result.IsSucceeded &&
-          result.Parameters.TryGetValue("NewExternalIPAddress", out value) &&
-          IPAddress.TryParse(value, out addr)) {
+          result.Parameters.TryGetValue("NewExternalIPAddress", out var value) &&
+          IPAddress.TryParse(value, out var addr)) {
         return addr;
       }
       else {
@@ -272,7 +270,7 @@ namespace PeerCastStation.UI.PortMapper
       }
     }
 
-    public async Task<MappedPort> MapAsync(MappingProtocol protocol, int port, TimeSpan lifetime, CancellationToken cancel_token)
+    public async Task<MappedPort?> MapAsync(MappingProtocol protocol, int port, TimeSpan lifetime, CancellationToken cancel_token)
     {
       var internaladdr = await GetInternalAddressAsync().ConfigureAwait(false);
       if (internaladdr==null) return null;
@@ -354,11 +352,11 @@ namespace PeerCastStation.UI.PortMapper
       }
     }
 
-    public async Task<CommonLinkProperties> GetCommonLinkProperties(CancellationToken cancel_token)
+    public async Task<CommonLinkProperties?> GetCommonLinkProperties(CancellationToken cancel_token)
     {
       var result = await SendActionAsync("GetCommonLinkProperties", cancel_token).ConfigureAwait(false);
       if (!result.IsSucceeded) return null;
-      string value;
+      string? value;
       WANAccessType wan_access_type = WANAccessType.Unknown;
       if (result.Parameters.TryGetValue("NewWANAccessType", out value)) Enum.TryParse(value, out wan_access_type);
       int layer1_upstream_max_bitrate = 0;
@@ -379,17 +377,16 @@ namespace PeerCastStation.UI.PortMapper
     class SSDPResponse
     {
       public IPEndPoint RemoteEndPoint { get; private set; }
-      public string Location { get { return GetValueOrNull("Location"); } }
-      public string EXT      { get { return GetValueOrNull("EXT"); } }
-      public string ST       { get { return GetValueOrNull("ST"); } }
-      public string USN      { get { return GetValueOrNull("USN"); } }
-      public string Server   { get { return GetValueOrNull("Server"); } }
+      public string? Location { get { return GetValueOrNull("Location"); } }
+      public string? EXT      { get { return GetValueOrNull("EXT"); } }
+      public string? ST       { get { return GetValueOrNull("ST"); } }
+      public string? USN      { get { return GetValueOrNull("USN"); } }
+      public string? Server   { get { return GetValueOrNull("Server"); } }
       public Dictionary<string, string> Headers { get; private set; }
 
-      private string GetValueOrNull(string key)
+      private string? GetValueOrNull(string key)
       {
-        string value;
-        if (Headers.TryGetValue(key.ToUpperInvariant(), out value)) {
+        if (Headers.TryGetValue(key.ToUpperInvariant(), out var value)) {
           return value;
         }
         else {
@@ -403,7 +400,7 @@ namespace PeerCastStation.UI.PortMapper
         this.Headers = headers;
       }
 
-      public override bool Equals(object obj)
+      public override bool Equals(object? obj)
       {
         if (obj==null) return false;
         if (this.GetType()!=obj.GetType()) return false;
@@ -452,7 +449,7 @@ namespace PeerCastStation.UI.PortMapper
               headers.Add(key.ToUpperInvariant(), value);
             }
             var rsp = new SSDPResponse(result.RemoteEndPoint, headers);
-            logger.Debug("SSDP Found {0} at {1}", rsp.ST, rsp.Location);
+            logger.Debug($"SSDP Found {rsp.ST} at {rsp.Location}");
             responses.Add(rsp);
             if (client.Available==0 && !cancel_token.IsCancellationRequested) {
               await Task.Delay(100, cancel_token).ConfigureAwait(false);
@@ -477,11 +474,10 @@ namespace PeerCastStation.UI.PortMapper
             .Where(addr => addr.AddressFamily==AddressFamily.InterNetwork));
     }
 
-    private Uri MakeUrl(string base_url, string rel_url)
+    private Uri? MakeUrl(string base_url, string? rel_url)
     {
       if (rel_url==null) return null;
-      Uri url;
-      if (Uri.TryCreate(rel_url, UriKind.Relative, out url)) {
+      if (Uri.TryCreate(rel_url, UriKind.Relative, out var url)) {
         return new Uri(new Uri(base_url, UriKind.Absolute), url);
       }
       else {
@@ -502,14 +498,28 @@ namespace PeerCastStation.UI.PortMapper
           var friendly_name = dev.Elements(DeviceNS+"friendlyName").Select(elt => elt.Value).SingleOrDefault();
           var device_type   = dev.Elements(DeviceNS+"deviceType").Select(elt => elt.Value).SingleOrDefault();
           var udn           = dev.Elements(DeviceNS+"UDN").Select(elt => elt.Value).SingleOrDefault();
-          return dev.Elements(DeviceNS+"serviceList").SelectMany(elt => elt.Elements(DeviceNS+"service")).Select(svc => {
-            var service_type  = svc.Elements(DeviceNS+"serviceType").Select(elt => elt.Value).SingleOrDefault();
-            var service_id    = svc.Elements(DeviceNS+"serviceId").Select(elt => elt.Value).SingleOrDefault();
-            var control_url   = MakeUrl(baseurl, svc.Elements(DeviceNS+"controlURL").Select(elt => elt.Value).SingleOrDefault());
-            var event_sub_url = MakeUrl(baseurl, svc.Elements(DeviceNS+"eventSubURL").Select(elt => elt.Value).SingleOrDefault());
-            var scpd_url      = MakeUrl(baseurl, svc.Elements(DeviceNS+"SCPDURL").Select(elt => elt.Value).SingleOrDefault());
-            return new UPnPServiceDescription(friendly_name, device_type, udn, service_id, service_type, control_url, event_sub_url, scpd_url);
-          });
+          if (friendly_name!=null && device_type!=null && udn!=null) {
+            return dev
+              .Elements(DeviceNS+"serviceList")
+              .SelectMany(elt => elt.Elements(DeviceNS+"service"))
+              .Select(svc => {
+                var service_type = svc.Elements(DeviceNS+"serviceType").Select(elt => elt.Value).SingleOrDefault();
+                var service_id = svc.Elements(DeviceNS+"serviceId").Select(elt => elt.Value).SingleOrDefault();
+                var control_url = MakeUrl(baseurl, svc.Elements(DeviceNS+"controlURL").Select(elt => elt.Value).SingleOrDefault());
+                var event_sub_url = MakeUrl(baseurl, svc.Elements(DeviceNS+"eventSubURL").Select(elt => elt.Value).SingleOrDefault());
+                var scpd_url = MakeUrl(baseurl, svc.Elements(DeviceNS+"SCPDURL").Select(elt => elt.Value).SingleOrDefault());
+                if (service_type!=null && service_id!=null && control_url!=null && event_sub_url!=null && scpd_url!=null) {
+                  return new UPnPServiceDescription(friendly_name, device_type, udn, service_id, service_type, control_url, event_sub_url, scpd_url);
+                }
+                else {
+                  return null;
+                }
+              })
+              .NotNull();
+          }
+          else {
+            return Enumerable.Empty<UPnPServiceDescription>();
+          }
         });
       }
     }
@@ -523,41 +533,48 @@ namespace PeerCastStation.UI.PortMapper
     }
 
     class SupportedService {
-      public string Device;
-      public string Service;
-      public Type   Type;
+      public string Device { get; }
+      public string Service { get; }
+      public Type Type { get; }
+
+      public SupportedService(Type type, string device, string service)
+      {
+        Type = type;
+        Device = device;
+        Service = service;
+      }
     }
     static readonly SupportedService[] SupportedServices = {
-      new SupportedService {
-        Device="urn:schemas-upnp-org:device:WANConnectionDevice:1",
-        Service="urn:schemas-upnp-org:service:WANPPPConnection:1",
-        Type=typeof(WANConnectionService),
-      },
-      new SupportedService {
-        Device="urn:schemas-upnp-org:device:WANConnectionDevice:1",
-        Service="urn:schemas-upnp-org:service:WANIPConnection:1",
-        Type=typeof(WANConnectionService),
-      },
-      new SupportedService {
-        Device="urn:schemas-upnp-org:device:WANConnectionDevice:2",
-        Service="urn:schemas-upnp-org:service:WANPPPConnection:1",
-        Type=typeof(WANConnectionService),
-      },
-      new SupportedService {
-        Device="urn:schemas-upnp-org:device:WANConnectionDevice:2",
-        Service="urn:schemas-upnp-org:service:WANIPConnection:2",
-        Type=typeof(WANConnectionService),
-      },
-      new SupportedService {
-        Device="urn:schemas-upnp-org:device:WANDevice:1",
-        Service="urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1",
-        Type=typeof(WANCommonInterfaceConfigService),
-      },
-      new SupportedService {
-        Device="urn:schemas-upnp-org:device:WANDevice:2",
-        Service="urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1",
-        Type=typeof(WANCommonInterfaceConfigService),
-      },
+      new SupportedService(
+        typeof(WANConnectionService),
+        "urn:schemas-upnp-org:device:WANConnectionDevice:1",
+        "urn:schemas-upnp-org:service:WANPPPConnection:1"
+      ),
+      new SupportedService(
+        typeof(WANConnectionService),
+        "urn:schemas-upnp-org:device:WANConnectionDevice:1",
+        "urn:schemas-upnp-org:service:WANIPConnection:1"
+      ),
+      new SupportedService(
+        typeof(WANConnectionService),
+        "urn:schemas-upnp-org:device:WANConnectionDevice:2",
+        "urn:schemas-upnp-org:service:WANPPPConnection:1"
+      ),
+      new SupportedService(
+        typeof(WANConnectionService),
+        "urn:schemas-upnp-org:device:WANConnectionDevice:2",
+        "urn:schemas-upnp-org:service:WANIPConnection:2"
+      ),
+      new SupportedService(
+        typeof(WANCommonInterfaceConfigService),
+        "urn:schemas-upnp-org:device:WANDevice:1",
+        "urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1"
+      ),
+      new SupportedService(
+        typeof(WANCommonInterfaceConfigService),
+        "urn:schemas-upnp-org:device:WANDevice:2",
+        "urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1"
+      ),
     };
 
     static readonly Type[] constructorArgs = new Type[] { typeof(UPnPServiceDescription) };
@@ -567,7 +584,12 @@ namespace PeerCastStation.UI.PortMapper
       var services = (await Task.WhenAll(
             responses.Select(async rsp => {
               try {
-                return await GetUPnPServiceAsync(rsp.Location, cancel_token).ConfigureAwait(false);
+                if (rsp.Location!=null) {
+                  return await GetUPnPServiceAsync(rsp.Location, cancel_token).ConfigureAwait(false);
+                }
+                else {
+                  return Enumerable.Empty<UPnPServiceDescription>();
+                }
               }
               catch (OperationCanceledException) {
                 throw;
@@ -584,8 +606,9 @@ namespace PeerCastStation.UI.PortMapper
         var type = SupportedServices
           .Where(supported => supported.Device==svc.DeviceType && supported.Service==svc.ServiceType)
           .Select(supported => supported.Type)
+          .Where(t => t.GetConstructor(constructorArgs)!=null)
           .FirstOrDefault() ?? typeof(UPnPService);
-        return type.GetConstructor(constructorArgs).Invoke(new object[] { svc }) as UPnPService;
+        return (UPnPService)type.GetConstructor(constructorArgs)!.Invoke(new object[] { svc });
       });
       return services;
     }
@@ -598,9 +621,7 @@ namespace PeerCastStation.UI.PortMapper
     public async Task<IEnumerable<INatDevice>> DiscoverAsync(CancellationToken cancel_token)
     {
       var services = await (new SSDPDiscoverer()).DiscoverAsync(cancel_token).ConfigureAwait(false);
-      return services
-        .Select(svc => svc as WANConnectionService)
-        .Where(svc => svc!= null);
+      return services.OfType<WANConnectionService>();
     }
   }
 

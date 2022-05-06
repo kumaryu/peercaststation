@@ -116,25 +116,25 @@ namespace PeerCastStation.WPF
 
     public PeerCastStation.UI.BroadcastInfo Save()
     {
-      return new PeerCastStation.UI.BroadcastInfo() {
-        NetworkType = this.NetworkType,
-        StreamType  = this.StreamType,
-        StreamUrl   = this.StreamUrl,
-        Bitrate     = this.Bitrate,
-        ContentType = this.ContentType,
-        YellowPage  = this.YellowPage,
-        ChannelName = this.ChannelName,
-        Genre       = this.Genre,
-        Description = this.Description,
-        Comment     = this.Comment,
-        ContactUrl  = this.ContactUrl,
-        TrackTitle  = this.TrackTitle,
-        TrackAlbum  = this.TrackAlbum,
-        TrackArtist = this.TrackArtist,
-        TrackGenre  = this.TrackGenre,
-        TrackUrl    = this.TrackUrl,
-        Favorite    = this.Favorite,
-      };
+      return new PeerCastStation.UI.BroadcastInfo(
+        NetworkType,
+        StreamType,
+        StreamUrl,
+        Bitrate,
+        ContentType,
+        YellowPage,
+        ChannelName,
+        Genre,
+        Description,
+        Comment,
+        ContactUrl,
+        TrackTitle,
+        TrackAlbum,
+        TrackArtist,
+        TrackGenre,
+        TrackUrl,
+        Favorite
+      );
     }
 
     public string Name {
