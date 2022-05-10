@@ -16,13 +16,12 @@ namespace PeerCastStation.UI.HTTP
       public string Name { get; }
       public string[] Args { get; }
 
-      public RPCMethodInfo(MethodInfo method)
+      public RPCMethodInfo(MethodInfo method, RPCMethodAttribute attr)
       {
-        var attr = method.GetCustomAttribute<RPCMethodAttribute>();
         Name = attr.Name;
         Args = method.GetParameters()
                 .Where(p => p.ParameterType!=typeof(OwinEnvironment))
-                .Select(p => p.Name)
+                .Select(p => p.Name!)
                 .ToArray();
       }
 
@@ -34,8 +33,9 @@ namespace PeerCastStation.UI.HTTP
       methods =
         hostType
         .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-        .Where(method => Attribute.IsDefined(method, typeof(RPCMethodAttribute), true))
-        .Select(method => new RPCMethodInfo(method))
+        .Select(method => (method, attr: method.GetCustomAttribute<RPCMethodAttribute>(true)))
+        .Where(t => t.attr!=null)
+        .Select(t => new RPCMethodInfo(t.method, t.attr!))
         .ToArray();
     }
   }

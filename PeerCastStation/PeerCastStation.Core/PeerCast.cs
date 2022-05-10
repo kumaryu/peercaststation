@@ -231,7 +231,7 @@ namespace PeerCastStation.Core
     /// <returns>Channelのインスタンス</returns>
     public Channel BroadcastChannel(
       NetworkType           network,
-      IYellowPageClient     yp,
+      IYellowPageClient?    yp,
       Guid                  channel_id,
       ChannelInfo           channel_info,
       Uri                   source,

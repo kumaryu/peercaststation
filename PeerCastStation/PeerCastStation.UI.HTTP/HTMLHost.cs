@@ -7,6 +7,7 @@ using PeerCastStation.Core.Http;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PeerCastStation.UI.HTTP
 {
@@ -20,26 +21,23 @@ namespace PeerCastStation.UI.HTTP
         LocalPath = localPath;
       }
 
-      class FileDesc
-      {
-        public string MimeType { get; set; }
-      }
+      record FileDesc(string MimeType);
       private static readonly Dictionary<string, FileDesc> FileDescriptions = new Dictionary<string, FileDesc> {
-        { ".html", new FileDesc { MimeType="text/html" } },
-        { ".htm",  new FileDesc { MimeType="text/html" } },
-        { ".txt",  new FileDesc { MimeType="text/plain" } },
-        { ".xml",  new FileDesc { MimeType="text/xml" } },
-        { ".json", new FileDesc { MimeType="application/json" } },
-        { ".css",  new FileDesc { MimeType="text/css" } },
-        { ".js",   new FileDesc { MimeType="application/javascript" } },
-        { ".bmp",  new FileDesc { MimeType="image/bmp" } },
-        { ".png",  new FileDesc { MimeType="image/png" } },
-        { ".jpg",  new FileDesc { MimeType="image/jpeg" } },
-        { ".gif",  new FileDesc { MimeType="image/gif" } },
-        { ".svg",  new FileDesc { MimeType="image/svg+xml" } },
-        { ".swf",  new FileDesc { MimeType="application/x-shockwave-flash" } },
-        { ".xap",  new FileDesc { MimeType="application/x-silverlight-app" } },
-        { "",      new FileDesc { MimeType="application/octet-stream" } },
+        { ".html", new ("text/html") },
+        { ".htm",  new ("text/html") },
+        { ".txt",  new ("text/plain") },
+        { ".xml",  new ("text/xml") },
+        { ".json", new ("application/json") },
+        { ".css",  new ("text/css") },
+        { ".js",   new ("application/javascript") },
+        { ".bmp",  new ("image/bmp") },
+        { ".png",  new ("image/png") },
+        { ".jpg",  new ("image/jpeg") },
+        { ".gif",  new ("image/gif") },
+        { ".svg",  new ("image/svg+xml") },
+        { ".swf",  new ("application/x-shockwave-flash") },
+        { ".xap",  new ("application/x-silverlight-app") },
+        { "",      new ("application/octet-stream") },
       };
 
       private FileDesc GetFileDesc(string ext)
@@ -52,7 +50,9 @@ namespace PeerCastStation.UI.HTTP
         }
       }
 
-      private string CombinePath(string a, string b)
+      [return:NotNullIfNotNull("a")]
+      [return:NotNullIfNotNull("b")]
+      private string? CombinePath(string? a, string? b)
       {
         if (String.IsNullOrEmpty(a)) return b;
         if (String.IsNullOrEmpty(b)) return a;
@@ -96,27 +96,27 @@ namespace PeerCastStation.UI.HTTP
     private static string BuildIndexTXTEntry(PeerCast peercast, Channel channel)
     {
       var endpoint = peercast.GetGlobalEndPoint(channel.NetworkAddressFamily, OutputStreamType.Play);
-      var enc_channel_name = Uri.EscapeDataString(channel.ChannelInfo.Name);
+      var enc_channel_name = Uri.EscapeDataString(channel.ChannelInfo.Name ?? "");
       var uptime = (int)channel.Uptime.TotalMinutes;
       var columns = new string[] {
-        channel.ChannelInfo.Name,  //1 CHANNEL_NAME チャンネル名
+        channel.ChannelInfo.Name ?? "",  //1 CHANNEL_NAME チャンネル名
         channel.ChannelID.ToString("N").ToUpperInvariant(),  //2 ID ID ユニーク値16進数32桁、制限チャンネルは全て0埋め
-        endpoint.ToString(),  //3 TIP TIP ポートも含む。Push配信時はブランク、制限チャンネルは127.0.0.1
-        channel.ChannelInfo.URL, //4 CONTACT_URL コンタクトURL 基本的にURL、任意の文字列も可 CONTACT_URL
-        channel.ChannelInfo.Genre, //5 GENRE ジャンル
-        channel.ChannelInfo.Desc, //6 DETAIL 詳細
+        endpoint?.ToString() ?? "",  //3 TIP TIP ポートも含む。Push配信時はブランク、制限チャンネルは127.0.0.1
+        channel.ChannelInfo.URL ?? "", //4 CONTACT_URL コンタクトURL 基本的にURL、任意の文字列も可 CONTACT_URL
+        channel.ChannelInfo.Genre ?? "", //5 GENRE ジャンル
+        channel.ChannelInfo.Desc ?? "", //6 DETAIL 詳細
         channel.TotalDirects.ToString(),  //7 LISTENER_NUM Listener数 -1は非表示、-1未満はサーバのメッセージ。ブランクもあるかも
         channel.TotalRelays.ToString(), //8 RELAY_NUM Relay数 同上 
         channel.ChannelInfo.Bitrate.ToString(),  //9 BITRATE Bitrate 単位は kbps 
-        channel.ChannelInfo.ContentType,  //10 TYPE Type たぶん大文字 
-        channel.ChannelTrack.Creator, //11 TRACK_ARTIST トラック アーティスト 
-        channel.ChannelTrack.Album, //12 TRACK_ALBUM トラック アルバム 
-        channel.ChannelTrack.Name, //13 TRACK_TITLE トラック タイトル 
-        channel.ChannelTrack.URL, //14 TRACK_CONTACT_URL トラック コンタクトURL 基本的にURL、任意の文字列も可 
+        channel.ChannelInfo.ContentType ?? "",  //10 TYPE Type たぶん大文字 
+        channel.ChannelTrack.Creator ?? "", //11 TRACK_ARTIST トラック アーティスト 
+        channel.ChannelTrack.Album ?? "", //12 TRACK_ALBUM トラック アルバム 
+        channel.ChannelTrack.Name ?? "", //13 TRACK_TITLE トラック タイトル 
+        channel.ChannelTrack.URL ?? "", //14 TRACK_CONTACT_URL トラック コンタクトURL 基本的にURL、任意の文字列も可 
         enc_channel_name, //15 ENC_CHANNEL_NAME エンコード済みチャンネル名 URLエンコード(UTF-8)
         $"{uptime/60}:{uptime%60:D2}", //16 BROADCAST_TIME 配信時間 000〜99999 
         "",          //17 STATUS ステータス 特殊なステータス disconnectしばらく情報の更新が無い、port0Push配信 又はアイコン
-        channel.ChannelInfo.Comment, //18 COMMENT コメント 
+        channel.ChannelInfo.Comment ?? "", //18 COMMENT コメント 
         "0",         //19 DIRECT ダイレクトの有無 0固定
       }.Select(str => {
         str = System.Text.RegularExpressions.Regex.Replace(str, "&", "&amp;");
@@ -136,8 +136,13 @@ namespace PeerCastStation.UI.HTTP
         ctx.Response.Headers.Add("Set-Cookie", $"auth={acinfo.AuthenticationKey.GetToken()}; Path=/");
       }
       var peercast = ctx.GetPeerCast();
-      var indextxt = String.Join("\r\n", peercast.Channels.Select(c => BuildIndexTXTEntry(peercast, c)));
-      await ctx.Response.WriteAsync(indextxt, cancel_token).ConfigureAwait(false);
+      if (peercast==null) {
+        await ctx.Response.WriteAsync("", cancel_token).ConfigureAwait(false);
+      }
+      else {
+        var indextxt = String.Join("\r\n", peercast.Channels.Select(c => BuildIndexTXTEntry(peercast, c)));
+        await ctx.Response.WriteAsync(indextxt, cancel_token).ConfigureAwait(false);
+      }
     }
 
     private static async Task InvokeRedirect(OwinEnvironment ctx)
@@ -187,12 +192,12 @@ namespace PeerCastStation.UI.HTTP
     : PluginBase
   {
     override public string Name { get { return "HTTP File Host UI"; } }
-    private IDisposable appRegistration = null;
+    private IDisposable? appRegistration = null;
 
-    protected override void OnStart()
+    protected override void OnStart(PeerCastApplication app)
     {
-      var owin = Application.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
-      appRegistration = owin?.OwinHost?.Register(builder => HTMLHostOwinApp.BuildApp(builder, this.Application.BasePath));
+      var owin = app.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
+      appRegistration = owin?.OwinHost?.Register(builder => HTMLHostOwinApp.BuildApp(builder, app.BasePath));
     }
 
     protected override void OnStop()

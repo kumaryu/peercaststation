@@ -46,7 +46,7 @@ namespace PeerCastStation.UI.HTTP
         foreach (var n in c.Nodes) {
           var host = new XElement("host");
           if (n.GlobalEndPoint!=null || n.LocalEndPoint!=null) {
-            host.Add(new XAttribute("ip", (n.GlobalEndPoint ?? n.LocalEndPoint).ToString()));
+            host.Add(new XAttribute("ip", (n.GlobalEndPoint ?? n.LocalEndPoint)!.ToString()));
           }
           host.Add(new XAttribute("hops",      n.Hops));
           host.Add(new XAttribute("listeners", n.DirectCount));
@@ -156,14 +156,20 @@ namespace PeerCastStation.UI.HTTP
 
     private static async Task OnViewXML(OwinEnvironment ctx, CancellationToken cancel_token)
     {
-      var data = BuildViewXml(ctx.GetPeerCast());
-      ctx.Response.StatusCode = HttpStatusCode.OK;
-      ctx.Response.ContentType = "text/xml;charset=utf-8";
-      ctx.Response.ContentLength = data.LongLength;
-      await ctx.Response.WriteAsync(data, cancel_token).ConfigureAwait(false);
+      var peercast = ctx.GetPeerCast();
+      if (peercast==null) {
+        ctx.Response.StatusCode = HttpStatusCode.InternalServerError;
+      }
+      else {
+        var data = BuildViewXml(peercast);
+        ctx.Response.StatusCode = HttpStatusCode.OK;
+        ctx.Response.ContentType = "text/xml;charset=utf-8";
+        ctx.Response.ContentLength = data.LongLength;
+        await ctx.Response.WriteAsync(data, cancel_token).ConfigureAwait(false);
+      }
     }
 
-    private static Channel FindChannelFromQuery(OwinEnvironment ctx)
+    private static Channel? FindChannelFromQuery(OwinEnvironment ctx)
     {
       var peercast = ctx.GetPeerCast();
       var idstr = ctx.Request.Query.Get("id");
@@ -202,7 +208,7 @@ namespace PeerCastStation.UI.HTTP
     {
       var peercast = ctx.GetPeerCast();
       var channel = FindChannelFromQuery(ctx);
-      if (channel!=null) {
+      if (peercast!=null && channel!=null) {
         peercast.CloseChannel(channel);
         ctx.Response.StatusCode = HttpStatusCode.OK;
         await ctx.Response.WriteAsync("OK", cancel_token).ConfigureAwait(false);
@@ -229,11 +235,11 @@ namespace PeerCastStation.UI.HTTP
   {
     override public string Name { get { return "HTTP Admin Host UI"; } }
 
-    private IDisposable appRegistration = null;
+    private IDisposable? appRegistration = null;
 
-    protected override void OnStart()
+    protected override void OnStart(PeerCastApplication app)
     {
-      var owin = Application.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
+      var owin = app.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
       appRegistration = owin?.OwinHost?.Register(AdminHostOwinApp.BuildApp);
     }
 

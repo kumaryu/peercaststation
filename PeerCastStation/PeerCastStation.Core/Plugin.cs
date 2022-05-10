@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace PeerCastStation.Core
 {
@@ -108,25 +109,31 @@ namespace PeerCastStation.Core
     public void Attach(PeerCastApplication app)
     {
       application = app;
-      OnAttach(application);
+      OnAttach(app);
     }
 
     public void Detach()
     {
-      if (application!=null) {
-        OnDetach(application);
-        application = null;
+      var app = Interlocked.Exchange(ref application, null);
+      if (app!=null) {
+        OnDetach(app);
       }
     }
 
     public void Start()
     {
-      OnStart();
+      var app = application;
+      if (app!=null) {
+        OnStart(app);
+      }
     }
 
     public void Stop()
     {
-      OnStop();
+      var app = application;
+      if (app!=null) {
+        OnStop(app);
+      }
     }
 
     protected virtual void OnAttach(PeerCastApplication application)
@@ -139,6 +146,14 @@ namespace PeerCastStation.Core
     }
     protected virtual void OnAttach() {}
     protected virtual void OnDetach() {}
+    protected virtual void OnStart(PeerCastApplication application)
+    {
+      OnStart();
+    }
+    protected virtual void OnStop(PeerCastApplication application)
+    {
+      OnStop();
+    }
     protected virtual void OnStart() {}
     protected virtual void OnStop() {}
   }
