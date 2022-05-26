@@ -235,7 +235,7 @@ namespace PeerCastStation.Core
       Guid                  channel_id,
       ChannelInfo           channel_info,
       Uri                   source,
-      ISourceStreamFactory  source_stream_factory,
+      ISourceStreamFactory? source_stream_factory,
       IContentReaderFactory content_reader_factory)
     {
       logger.Debug("Broadcasting channel {0} from {1}", channel_id.ToString("N"), source);

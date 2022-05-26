@@ -31,7 +31,7 @@ namespace PeerCastStation.WPF
       InitializeComponent();
     }
 
-    private void ViewModel_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
       switch (e.PropertyName) {
       case nameof(SettingViewModel.IsModified):

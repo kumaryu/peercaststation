@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace PeerCastStation.WPF
@@ -26,6 +27,7 @@ namespace PeerCastStation.WPF
     : IDictionary<TKey, TValue>
     , IReadOnlyDictionary<TKey, TValue>
     , INotifyItemChanged<TKey>
+    where TKey : notnull
   {
     public IDictionary<TKey, TValue> Base { get; private set; }
     public TValue this[TKey key] {
@@ -60,7 +62,7 @@ namespace PeerCastStation.WPF
       get { return Base.Values; }
     }
 
-    public event NotifyItemChangedEventHandler<TKey> ItemChanged;
+    public event NotifyItemChangedEventHandler<TKey>? ItemChanged;
 
     public ObservableDictionary(IDictionary<TKey, TValue> dic)
     {
@@ -135,7 +137,7 @@ namespace PeerCastStation.WPF
       }
     }
 
-    public bool TryGetValue(TKey key, out TValue value)
+    public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
     {
       return Base.TryGetValue(key, out value);
     }

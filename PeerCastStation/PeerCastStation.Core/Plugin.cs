@@ -114,9 +114,10 @@ namespace PeerCastStation.Core
 
     public void Detach()
     {
-      var app = Interlocked.Exchange(ref application, null);
+      var app = application;
       if (app!=null) {
         OnDetach(app);
+        Interlocked.CompareExchange(ref application, null, app);
       }
     }
 

@@ -14,9 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using PeerCastStation.Core;
 using PeerCastStation.WPF.Commons;
 
@@ -24,16 +22,16 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
 {
   class ChannelInfoViewModel : ViewModelBase
   {
-    private ChannelViewModel channel;
+    private ChannelViewModel? channel;
 
-    private string channelName;
+    private string channelName = "";
     public string ChannelName
     {
       get { return channelName; }
       private set { SetProperty("ChannelName", ref channelName, value); }
     }
 
-    private string genre;
+    private string genre = "";
     public string Genre
     {
       get { return genre; }
@@ -44,7 +42,7 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
       }
     }
 
-    private string description;
+    private string description = "";
     public string Description
     {
       get { return description; }
@@ -55,7 +53,7 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
       }
     }
 
-    private string contactUrl;
+    private string contactUrl = "";
     public string ContactUrl
     {
       get { return contactUrl; }
@@ -66,7 +64,7 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
       }
     }
 
-    private string comment;
+    private string comment = "";
     public string Comment
     {
       get { return comment; }
@@ -77,35 +75,35 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
       }
     }
 
-    private string channelId;
+    private string channelId = "";
     public string ChannelId
     {
       get { return channelId; }
       private set { SetProperty("ChannelId", ref channelId, value); }
     }
 
-    private string contentType;
+    private string contentType = "";
     public string ContentType
     {
       get { return contentType; }
       private set { SetProperty("ContentType", ref contentType, value); }
     }
 
-    private string bitrate;
+    private string bitrate = "";
     public string Bitrate
     {
       get { return bitrate; }
       private set { SetProperty("Bitrate", ref bitrate, value); }
     }
 
-    private string buffer;
+    private string buffer = "";
     public string Buffer
     {
       get { return buffer; }
       private set { SetProperty(nameof(Buffer), ref buffer, value); }
     }
 
-    private string uptime;
+    private string uptime = "";
     public string Uptime
     {
       get { return uptime; }
@@ -167,7 +165,7 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
       }
     }
 
-    private bool isTracker;
+    private bool isTracker = false;
     public bool IsTracker
     {
       get { return isTracker; }
@@ -186,37 +184,38 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
       private set {
         if (isModified==value) return;
         isModified = value;
-        update.OnCanExecuteChanged();
+        Update.OnCanExecuteChanged();
       }
     }
 
-    private readonly Command update;
-    public Command Update { get { return update; } }
+    public Command Update { get; }
 
     public ChannelInfoViewModel()
     {
-      update = new Command(() =>
+      Update = new Command(() =>
         {
-          var info = new AtomCollection(channel.ChannelInfo.Extra);
-          info.SetChanInfoGenre(genre);
-          info.SetChanInfoDesc(description);
-          info.SetChanInfoURL(contactUrl);
-          info.SetChanInfoComment(comment);
-          channel.ChannelInfo = new ChannelInfo(info);
+          if (channel!=null && IsTracker && IsModified) {
+            var info = new AtomCollection(channel.ChannelInfo.Extra);
+            info.SetChanInfoGenre(genre);
+            info.SetChanInfoDesc(description);
+            info.SetChanInfoURL(contactUrl);
+            info.SetChanInfoComment(comment);
+            channel.ChannelInfo = new ChannelInfo(info);
 
-          var track = new AtomCollection(channel.ChannelTrack.Extra);
-          track.SetChanTrackAlbum(trackAlbum);
-          track.SetChanTrackCreator(trackArtist);
-          track.SetChanTrackTitle(trackTitle);
-          track.SetChanTrackGenre(trackGenre);
-          track.SetChanTrackURL(trackUrl);
-          channel.ChannelTrack = new ChannelTrack(track);
-          IsModified = false;
+            var track = new AtomCollection(channel.ChannelTrack.Extra);
+            track.SetChanTrackAlbum(trackAlbum);
+            track.SetChanTrackCreator(trackArtist);
+            track.SetChanTrackTitle(trackTitle);
+            track.SetChanTrackGenre(trackGenre);
+            track.SetChanTrackURL(trackUrl);
+            channel.ChannelTrack = new ChannelTrack(track);
+            IsModified = false;
+          }
         },
         () => channel!=null && IsTracker && IsModified);
     }
 
-    public void UpdateChannelInfo(ChannelViewModel channel)
+    public void UpdateChannelInfo(ChannelViewModel? channel)
     {
       this.channel = channel;
       if (channel==null) {
@@ -237,7 +236,7 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
         ChannelId   = "";
         IsModified  = false;
         IsTracker = false;
-        update.OnCanExecuteChanged();
+        Update.OnCanExecuteChanged();
         return;
       }
 
@@ -245,8 +244,8 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
       ChannelId = channel.ChannelID.ToString("N").ToUpper();
       var info = channel.ChannelInfo;
       if (info != null) {
-        ChannelName = info.Name;
-        ContentType = info.ContentType;
+        ChannelName = info.Name ?? "";
+        ContentType = info.ContentType ?? "";
         Bitrate = String.Format("{0} kbps", info.Bitrate);
         var contents = channel.GetContents();
         var buffersBytes = contents.Sum(cc => cc.Data.Length);
@@ -271,10 +270,10 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
       if (IsTracker && IsModified) return;
 
       if (info != null) {
-        Genre = info.Genre;
-        Description = info.Desc;
-        ContactUrl = info.URL;
-        Comment = info.Comment;
+        Genre = info.Genre ?? "";
+        Description = info.Desc ?? "";
+        ContactUrl = info.URL ?? "";
+        Comment = info.Comment ?? "";
       }
       else {
         Genre = "";
@@ -284,11 +283,11 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
       }
       var track = channel.ChannelTrack;
       if (track != null) {
-        TrackAlbum = track.Album;
-        TrackArtist = track.Creator;
-        TrackTitle = track.Name;
-        TrackGenre = track.Genre;
-        TrackUrl = track.URL;
+        TrackAlbum = track.Album ?? "";
+        TrackArtist = track.Creator ?? "";
+        TrackTitle = track.Name ?? "";
+        TrackGenre = track.Genre ?? "";
+        TrackUrl = track.URL ?? "";
       }
       else {
         TrackAlbum = "";
@@ -299,7 +298,7 @@ namespace PeerCastStation.WPF.ChannelLists.ChannelInfos
       }
       IsModified = false;
 
-      update.OnCanExecuteChanged();
+      Update.OnCanExecuteChanged();
     }
 
   }

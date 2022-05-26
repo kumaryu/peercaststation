@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PeerCastStation.WPF
 {
@@ -99,7 +100,7 @@ namespace PeerCastStation.WPF
         return BaseDictionary.Remove(item);
       }
 
-      public bool TryGetValue(TKey key, out TValue value)
+      public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
       {
         return BaseDictionary.TryGetValue(key, out value);
       }
@@ -110,9 +111,9 @@ namespace PeerCastStation.WPF
       }
     }
 
-    public static IDictionary<TKey,TValue> WithDefaultValue<TKey,TValue>(this IDictionary<TKey,TValue> dic)
+    public static IDictionary<TKey,TValue?> WithDefaultValue<TKey,TValue>(this IDictionary<TKey,TValue?> dic)
     {
-      return new DictionaryWithDefaultValue<TKey,TValue>(dic, key => default(TValue));
+      return new DictionaryWithDefaultValue<TKey,TValue?>(dic, key => default(TValue?));
     }
 
     public static IDictionary<TKey,TValue> WithDefaultValue<TKey,TValue>(this IDictionary<TKey,TValue> dic, Func<TKey,TValue> defaultValueFunc)

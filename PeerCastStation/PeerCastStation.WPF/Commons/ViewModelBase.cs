@@ -25,7 +25,7 @@ namespace PeerCastStation.WPF.Commons
   {
     #region INotifyPropertyChanged メンバー
 
-    public event PropertyChangedEventHandler PropertyChanged;
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     #endregion
 

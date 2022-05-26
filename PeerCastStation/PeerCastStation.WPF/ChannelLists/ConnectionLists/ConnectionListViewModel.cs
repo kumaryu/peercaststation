@@ -27,8 +27,8 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
   {
     public ObservableCollection<ChannelConnectionViewModel> Connections { get; private set; }
 
-    private ChannelConnectionViewModel selectedConnection;
-    public ChannelConnectionViewModel SelectedConnection {
+    private ChannelConnectionViewModel? selectedConnection;
+    public ChannelConnectionViewModel? SelectedConnection {
       get { return selectedConnection; }
       set {
         SetProperty("SelectedConnection", ref selectedConnection, value, () => {
@@ -45,14 +45,14 @@ namespace PeerCastStation.WPF.ChannelLists.ConnectionLists
     {
       this.Connections = new ObservableCollection<ChannelConnectionViewModel>();
       this.Close = new Command(
-        () => selectedConnection.Disconnect(),
+        () => selectedConnection?.Disconnect(),
         () => selectedConnection!=null && selectedConnection.IsDisconnectable);
       this.Reconnect = new Command(
-        () => selectedConnection.Reconnect(),
+        () => selectedConnection?.Reconnect(),
         () => selectedConnection != null && selectedConnection.IsReconnectable);
     }
 
-    public void UpdateConnections(ChannelViewModel channel)
+    public void UpdateConnections(ChannelViewModel? channel)
     {
       if (channel==null) {
         Connections.Clear();

@@ -29,12 +29,13 @@ namespace PeerCastStation.WPF
     public ChannelViewModel(Channel model)
     {
       this.Model = model;
-      this.UISettings = PeerCastApplication.Current.Settings.Get<UISettings>();
+      this.UISettings = PeerCastApplication.Current!.Settings.Get<UISettings>();
     }
 
     private PlayProtocol GetProtocol()
     {
-      if (UISettings.DefaultPlayProtocols.TryGetValue(Model.ChannelInfo.ContentType, out var protocol)) {
+      if (Model.ChannelInfo.ContentType!=null &&
+          UISettings.DefaultPlayProtocols.TryGetValue(Model.ChannelInfo.ContentType, out var protocol)) {
         return protocol;
       }
       else {
@@ -42,7 +43,7 @@ namespace PeerCastStation.WPF
       }
     }
 
-    public Uri PlayListUri {
+    public Uri? PlayListUri {
       get {
         var endpoint = Model.PeerCast.GetLocalEndPoint(System.Net.Sockets.AddressFamily.InterNetwork, OutputStreamType.Play);
         if (endpoint==null) return null;
@@ -78,7 +79,7 @@ namespace PeerCastStation.WPF
       }
     }
 
-    public Uri StreamUri {
+    public Uri? StreamUri {
       get {
         var ext = Model.ChannelInfo.ContentExtension;
         var endpoint = Model.PeerCast.GetLocalEndPoint(System.Net.Sockets.AddressFamily.InterNetwork, OutputStreamType.Play);
@@ -92,11 +93,10 @@ namespace PeerCastStation.WPF
       }
     }
 
-    public Uri ContactUri {
+    public Uri? ContactUri {
       get {
         var url = Model.ChannelInfo.URL;
-        Uri uri;
-        if (!String.IsNullOrEmpty(url) && Uri.TryCreate(url, UriKind.Absolute, out uri)) {
+        if (!String.IsNullOrEmpty(url) && Uri.TryCreate(url, UriKind.Absolute, out var uri)) {
           return uri;
         }
         else {
@@ -202,7 +202,7 @@ namespace PeerCastStation.WPF
       }
     }
 
-    public string Name    { get { return Model.ChannelInfo.Name; } }
+    public string Name    { get { return Model.ChannelInfo?.Name ?? ""; } }
     public string Bitrate { get { return String.Format("{0}kbps", Model.ChannelInfo.Bitrate); } }
     public string ConnectionCount {
       get {
@@ -228,7 +228,7 @@ namespace PeerCastStation.WPF
         }
         var announcings = Model.PeerCast.YellowPages
           .Select(yp => yp.GetAnnouncingChannels().FirstOrDefault(c => c.Channel.ChannelID==Model.ChannelID))
-          .Where(c => c!=null);
+          .NotNull();
         foreach (var announcing in announcings) {
           connections.Add(new AnnounceChannelConnectionViewModel(announcing));
         }
@@ -255,14 +255,14 @@ namespace PeerCastStation.WPF
         PropertyChanged(this, new PropertyChangedEventArgs(name));
       }
     }
-    public event PropertyChangedEventHandler PropertyChanged;
+    public event PropertyChangedEventHandler? PropertyChanged = null;
 
     public override int GetHashCode()
     {
       return Model.GetHashCode();
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
       if (obj==null) return false;
       if (obj.GetType()!=this.GetType()) return false;

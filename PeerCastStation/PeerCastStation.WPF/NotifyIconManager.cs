@@ -27,21 +27,23 @@ namespace PeerCastStation.WPF
   {
     private readonly NotifyIcon notifyIcon;
     private bool disposed;
-    private IEnumerable<VersionDescription> newVersionInfo;
+    private IEnumerable<VersionDescription> newVersionInfo = Enumerable.Empty<VersionDescription>();
 
     public void NotifyNewVersions(IEnumerable<VersionDescription> new_versions)
     {
       newVersionInfo = new_versions;
-      notifyIcon.ShowBalloonTip(
-        60000,
-        "新しいバージョンがあります",
-        newVersionInfo.First().Title,
-        ToolTipIcon.Info);
+      if (newVersionInfo.Any()) {
+        notifyIcon.ShowBalloonTip(
+          60000,
+          "新しいバージョンがあります",
+          newVersionInfo.First().Title,
+          ToolTipIcon.Info);
+      }
     }
 
     private PeerCastAppViewModel appViewModel;
-    private UserInterface owner;
-    public NotifyIconManager(PeerCastAppViewModel app_viewmodel, UserInterface owner)
+    private UserInterface.UIContext owner;
+    public NotifyIconManager(PeerCastAppViewModel app_viewmodel, UserInterface.UIContext owner)
     {
       this.appViewModel = app_viewmodel;
       this.owner = owner;
@@ -52,7 +54,7 @@ namespace PeerCastStation.WPF
       notifyIcon.Visible = true;
       notifyIcon.DoubleClick += (sender, args) => this.owner.ShowWindow();
       notifyIcon.BalloonTipClicked += (sender, e) => {
-        if (newVersionInfo==null) return;
+        if (!newVersionInfo.Any()) return;
         new UpdaterWindow().Show();
       };
     }
@@ -82,7 +84,7 @@ namespace PeerCastStation.WPF
       case NotificationMessageType.Warning: icon = ToolTipIcon.Warning; break;
       case NotificationMessageType.Error:   icon = ToolTipIcon.Error; break;
       }
-      newVersionInfo = null;
+      newVersionInfo = Enumerable.Empty<VersionDescription>();
       notifyIcon.ShowBalloonTip(
         timeout,
         msg.Title,

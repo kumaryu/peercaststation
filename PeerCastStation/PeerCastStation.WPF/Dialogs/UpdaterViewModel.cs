@@ -24,77 +24,75 @@ using PeerCastStation.Core;
 
 namespace PeerCastStation.WPF.Dialogs
 {
-	internal class UpdaterViewModel
-		: ViewModelBase
-	{
-		private IEnumerable<VersionDescription> versionInfo = Enumerable.Empty<VersionDescription>();
-		public IEnumerable<VersionDescription> VersionInfo {
-			get { return versionInfo; }
-			private set {
-				if (SetProperty("VersionInfo", ref versionInfo, value)) {
-					OnPropertyChanged("Descriptions");
-					OnPropertyChanged("Enclosures");
-				}
-			}
-		}
+  internal class UpdaterViewModel
+    : ViewModelBase
+  {
+    private IEnumerable<VersionDescription> versionInfo = Enumerable.Empty<VersionDescription>();
+    public IEnumerable<VersionDescription> VersionInfo {
+      get { return versionInfo; }
+      private set {
+        if (SetProperty("VersionInfo", ref versionInfo, value)) {
+          OnPropertyChanged("Descriptions");
+          OnPropertyChanged("Enclosures");
+        }
+      }
+    }
 
-		public string Descriptions {
-			get { return String.Join("\n", versionInfo.Select(v => v.Description).ToArray()); }
-		}
+    public string Descriptions {
+      get { return String.Join("\n", versionInfo.Select(v => v.Description).ToArray()); }
+    }
 
-		internal enum UpdateActionState {
-			Idle,
-			Checking,
-			NoUpdates,
-			NewVersionFound,
-			Downloading,
-			Downloaded,
-			Aborted,
-		};
-		private UpdateActionState state = UpdateActionState.Idle;
-		public UpdateActionState State {
-			get { return state; }
-			private set {
-				if (state==value) return;
-				state = value;
-				OnPropertyChanged("State");
-			}
-		}
-		private double progress = 0.0;
-		public double Progress {
-			get { return progress; }
-			private set {
-				if (progress==value) return;
-				progress = value;
-				OnPropertyChanged("Progress");
-			}
-		}
+    internal enum UpdateActionState {
+      Idle,
+      Checking,
+      NoUpdates,
+      NewVersionFound,
+      Downloading,
+      Downloaded,
+      Aborted,
+    };
+    private UpdateActionState state = UpdateActionState.Idle;
+    public UpdateActionState State {
+      get { return state; }
+      private set {
+        if (state==value) return;
+        state = value;
+        OnPropertyChanged("State");
+      }
+    }
+    private double progress = 0.0;
+    public double Progress {
+      get { return progress; }
+      private set {
+        if (progress==value) return;
+        progress = value;
+        OnPropertyChanged("Progress");
+      }
+    }
 
-		public UpdaterViewModel()
-		{
-		}
+    public UpdaterViewModel()
+    {
+    }
 
-		private Updater versionChecker = new Updater();
-		public async Task<IEnumerable<VersionDescription>> DoCheckUpdate()
-		{
-			try {
-				var results = await versionChecker.CheckVersionTaskAsync(cancelSource.Token);
-				this.VersionInfo = results;
-				if (results!=null && results.Count()>0) {
+    private Updater versionChecker = new Updater();
+    public async Task DoCheckUpdate()
+    {
+      try {
+        var results = await versionChecker.CheckVersionTaskAsync(cancelSource.Token);
+        this.VersionInfo = results ?? Enumerable.Empty<VersionDescription>();
+        if (results!=null && results.Count()>0) {
           this.State = UpdateActionState.NewVersionFound;
-				}
-				else {
-					this.State = UpdateActionState.NoUpdates;
-				}
-				return results;
-			}
-			catch (System.Net.WebException) {
-				this.State = UpdateActionState.NoUpdates;
-				return Enumerable.Empty<VersionDescription>();
-			}
-		}
+        }
+        else {
+          this.State = UpdateActionState.NoUpdates;
+        }
+      }
+      catch (System.Net.WebException) {
+        this.State = UpdateActionState.NoUpdates;
+      }
+    }
 
-    private Updater.DownloadResult downloadResult = null;
+    private Updater.DownloadResult? downloadResult = null;
     public async Task DoDownload()
     {
       this.State = UpdateActionState.Downloading;
@@ -115,28 +113,28 @@ namespace PeerCastStation.WPF.Dialogs
       Updater.Install(downloadResult);
     }
 
-		private System.Threading.CancellationTokenSource cancelSource =
-			new System.Threading.CancellationTokenSource();
-		public async void Execute()
-		{
-			switch (this.State) {
-			case UpdateActionState.Idle:
-			case UpdateActionState.NoUpdates:
-				await DoCheckUpdate();
-				break;
-			case UpdateActionState.NewVersionFound:
-			case UpdateActionState.Aborted:
-				await DoDownload();
-				break;
-			case UpdateActionState.Checking:
-			case UpdateActionState.Downloading:
-				cancelSource.Cancel();
-				break;
-			case UpdateActionState.Downloaded:
-				DoInstall();
-				break;
-			}
-		}
+    private System.Threading.CancellationTokenSource cancelSource =
+      new System.Threading.CancellationTokenSource();
+    public async void Execute()
+    {
+      switch (this.State) {
+      case UpdateActionState.Idle:
+      case UpdateActionState.NoUpdates:
+        await DoCheckUpdate();
+        break;
+      case UpdateActionState.NewVersionFound:
+      case UpdateActionState.Aborted:
+        await DoDownload();
+        break;
+      case UpdateActionState.Checking:
+      case UpdateActionState.Downloading:
+        cancelSource.Cancel();
+        break;
+      case UpdateActionState.Downloaded:
+        DoInstall();
+        break;
+      }
+    }
 
-	}
+  }
 }

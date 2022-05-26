@@ -35,13 +35,13 @@ namespace PeerCastStation.WPF.Commons
 
     #region ICommand メンバー
 
-    public event EventHandler CanExecuteChanged;
+    public event EventHandler? CanExecuteChanged;
 
-    public bool CanExecute(object parameter)
+    public bool CanExecute(object? parameter)
     {
       return canExecute();
     }
-    public void Execute(object parameter)
+    public void Execute(object? parameter)
     {
       execute();
     }
@@ -57,32 +57,32 @@ namespace PeerCastStation.WPF.Commons
 
   public class Command<T> : ICommand
   {
-    private Action<T> execute;
-    private Func<T, bool> canExecute;
+    private Action<T?> execute;
+    private Func<T?, bool> canExecute;
 
-    public Command(Action<T> execute)
+    public Command(Action<T?> execute)
       : this(execute, o => true)
     {
     }
 
-    public Command(Action<T> execute, Func<T, bool> canExecute)
+    public Command(Action<T?> execute, Func<T?, bool> canExecute)
     {
       this.execute = execute;
       this.canExecute = canExecute;
     }
 
-    public event EventHandler CanExecuteChanged;
+    public event EventHandler? CanExecuteChanged;
 
     #region ICommand
 
-    bool ICommand.CanExecute(object parameter)
+    bool ICommand.CanExecute(object? parameter)
     {
-      return canExecute((T)parameter);
+      return canExecute((T?)parameter);
     }
 
-    void ICommand.Execute(object parameter)
+    void ICommand.Execute(object? parameter)
     {
-      execute((T)parameter);
+      execute((T?)parameter);
     }
 
     #endregion
