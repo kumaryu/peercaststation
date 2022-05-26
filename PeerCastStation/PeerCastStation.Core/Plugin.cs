@@ -48,7 +48,7 @@ namespace PeerCastStation.Core
     {
     }
 
-    public PluginAttribute()
+		public PluginAttribute()
       : this(PluginType.Unknown, PluginPriority.Normal)
     {
     }
