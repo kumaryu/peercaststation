@@ -20,6 +20,7 @@ namespace PeerCastStation.FLV.AMF
     XML,
     ByteArray,
     ObjectEnd,
+    NotSupported,
   }
 
   public class AMFValue
@@ -27,9 +28,10 @@ namespace PeerCastStation.FLV.AMF
     public static readonly AMFValue Null = new AMFValue();
     public AMFValueType Type  { get; private set; }
     public object       Value { get; private set; }
-    public AMFValue()
+    private AMFValue()
     {
       Type = AMFValueType.Null;
+      Value = this;
     }
 
     public AMFValue(AMFValueType type, object value)
@@ -84,7 +86,7 @@ namespace PeerCastStation.FLV.AMF
     {
       if (value==null) {
         Type  = AMFValueType.Null;
-        Value = null;
+        Value = AMFValue.Null;
       }
       else {
         Type  = AMFValueType.String;
@@ -143,9 +145,8 @@ namespace PeerCastStation.FLV.AMF
         case AMFValueType.ECMAArray:
           {
             var dic = (IDictionary<string,AMFValue>)Value;
-            AMFValue res;
-            if (dic.TryGetValue(key, out res)) return res;
-            else                               return AMFValue.Null;
+            if (dic.TryGetValue(key, out var res)) return res;
+            else                                   return AMFValue.Null;
           }
         case AMFValueType.Object:
           return ((AMFObject)Value)[key];
@@ -254,7 +255,7 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
-    public static explicit operator string(AMFValue value)
+    public static explicit operator string?(AMFValue value)
     {
       switch (value.Type) {
       case AMFValueType.Undefined:
@@ -310,9 +311,9 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
-      if (obj.GetType()!=this.GetType()) return false;
+      if (obj?.GetType()!=this.GetType()) return false;
       return Equals((AMFValue)obj);
     }
 

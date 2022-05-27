@@ -15,7 +15,7 @@ namespace PeerCastStation.FLV.RTMP
     private AccessControlInfo accessControl;
     private RTMPPlayConnection connection;
     private CancellationTokenSource isStopped = new CancellationTokenSource();
-    private Channel channel;
+    private Channel? channel;
 
     public RTMPOutputStream(
         PeerCast peercast,
@@ -38,8 +38,8 @@ namespace PeerCastStation.FLV.RTMP
         ProtocolName     = "RTMP Output",
         Type             = ConnectionType.Direct,
         Status           = ConnectionStatus.Connected,
-        RemoteName       = inputStream.RemoteEndPoint.ToString(),
-        RemoteEndPoint   = inputStream.RemoteEndPoint as System.Net.IPEndPoint,
+        RemoteName       = inputStream.RemoteEndPoint?.ToString() ?? "",
+        RemoteEndPoint   = inputStream.RemoteEndPoint,
         RemoteHostStatus = RemoteHostStatus.Receiving | (IsLocal ? RemoteHostStatus.Local : RemoteHostStatus.None),
         ContentPosition  = connection.ContentPosition,
         RecvRate         = (float)this.inputStream.ReadRate,
@@ -52,7 +52,7 @@ namespace PeerCastStation.FLV.RTMP
       get { return Core.OutputStreamType.Play; }
     }
 
-    public Channel RequestChannel(Guid channel_id, Uri tracker_uri)
+    public Channel? RequestChannel(Guid channel_id, Uri? tracker_uri)
     {
       var channel = peerCast.RequestChannel(channel_id, tracker_uri, true);
       this.channel = channel;
@@ -93,7 +93,7 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
-    public void OnBroadcast(Host from, Atom packet)
+    public void OnBroadcast(Host? from, Atom packet)
     {
     }
 
@@ -104,7 +104,7 @@ namespace PeerCastStation.FLV.RTMP
       isStopped.Cancel();
     }
 
-    public bool CheckAuthotization(string auth)
+    public bool CheckAuthotization(string? auth)
     {
       if (!accessControl.AuthorizationRequired || accessControl.AuthenticationKey==null) return true;
       if (auth==null) return false;
@@ -174,16 +174,19 @@ namespace PeerCastStation.FLV.RTMP
 	{
 		override public string Name { get { return "RTMP Output Stream"; } }
 
-		private RTMPOutputStreamFactory factory;
-		override protected void OnAttach()
+		private RTMPOutputStreamFactory? factory;
+		override protected void OnAttach(PeerCastApplication app)
 		{
-			if (factory==null) factory = new RTMPOutputStreamFactory(Application.PeerCast);
-			Application.PeerCast.OutputStreamFactories.Add(factory);
+			if (factory==null) factory = new RTMPOutputStreamFactory(app.PeerCast);
+			app.PeerCast.OutputStreamFactories.Add(factory);
 		}
 
-		override protected void OnDetach()
+		override protected void OnDetach(PeerCastApplication app)
 		{
-			Application.PeerCast.OutputStreamFactories.Remove(factory);
+      var f = Interlocked.Exchange(ref factory, null);
+      if (f!=null) {
+        app.PeerCast.OutputStreamFactories.Remove(f);
+      }
 		}
 	}
 }

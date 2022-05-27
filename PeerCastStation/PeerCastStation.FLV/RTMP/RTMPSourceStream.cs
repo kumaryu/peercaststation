@@ -57,7 +57,7 @@ namespace PeerCastStation.FLV.RTMP
           .Where(param => Uri.UnescapeDataString(param.Groups[2].Value).ToLowerInvariant()=="filters")
           .SelectMany(param => Uri.UnescapeDataString(param.Groups[3].Value).Split(','))
           .Select(name => PeerCast.ContentFilters.FirstOrDefault(filter => filter.Name.ToLowerInvariant()==name.ToLowerInvariant()))
-          .Where(filter => filter!=null)
+          .NotNull()
           .Aggregate(sink, (r,filter) => filter.Activate(r));
       this.flvBuffer = new FLVContentBuffer(channel, new AsynchronousContentSink(sink));
       this.useContentBitrate = use_content_bitrate;
@@ -77,7 +77,7 @@ namespace PeerCastStation.FLV.RTMP
       case ConnectionState.Error:     status = ConnectionStatus.Error; break;
       default:                        status = ConnectionStatus.Idle; break;
       }
-      IPEndPoint endpoint = null;
+      IPEndPoint? endpoint = null;
       if (connection!=null) {
         endpoint = connection.RemoteEndPoint;
       }
@@ -123,9 +123,9 @@ namespace PeerCastStation.FLV.RTMP
       return addresses.Select(addr => new IPEndPoint(addr, uri.Port<0 ? 1935 : uri.Port));
     }
 
-    protected override async Task<SourceConnectionClient> DoConnect(Uri source, CancellationToken cancellationToken)
+    protected override async Task<SourceConnectionClient?> DoConnect(Uri source, CancellationToken cancellationToken)
     {
-      TcpClient client = null;
+      TcpClient? client = null;
       var bind_addr = GetBindAddresses(source);
       if (bind_addr.Count()==0) {
         this.state = ConnectionState.Error;
@@ -177,8 +177,8 @@ namespace PeerCastStation.FLV.RTMP
     {
       this.state = ConnectionState.Waiting;
       try {
-        await Handshake(cancellationToken).ConfigureAwait(false);
-        await ProcessRTMPMessages(cancellationToken).ConfigureAwait(false);
+        await Handshake(connection, cancellationToken).ConfigureAwait(false);
+        await ProcessRTMPMessages(connection, cancellationToken).ConfigureAwait(false);
         this.state = ConnectionState.Closed;
       }
       catch (IOException e) {
@@ -191,44 +191,44 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
-    protected async Task ProcessRTMPMessages(CancellationToken cancel_token)
+    protected async Task ProcessRTMPMessages(SourceConnectionClient connection, CancellationToken cancel_token)
     {
       this.state = ConnectionState.Connected;
       var messages = new Queue<RTMPMessage>();
       while (!cancel_token.IsCancellationRequested && 
-             await RecvMessage(messages, cancel_token).ConfigureAwait(false)) {
-        await ProcessMessages(messages, cancel_token).ConfigureAwait(false);
+             await RecvMessage(connection.Stream, messages, cancel_token).ConfigureAwait(false)) {
+        await ProcessMessages(connection.Stream, messages, cancel_token).ConfigureAwait(false);
         messages.Clear();
       }
     }
 
-    protected override void DoPost(SourceConnectionClient connection, Host from, Atom packet)
+    protected override void DoPost(SourceConnectionClient connection, Host? from, Atom packet)
     {
       //Do nothing
     }
 
     System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
-    private async Task<bool> Handshake(CancellationToken cancel_token)
+    private async Task<bool> Handshake(SourceConnectionClient connection, CancellationToken cancel_token)
     {
       Logger.Debug("Handshake start");
       var rand = new Random();
-      var c0 = await RecvAsync(1, cancel_token).ConfigureAwait(false);
+      var c0 = await RecvAsync(connection.Stream, 1, cancel_token).ConfigureAwait(false);
       await connection.Stream.WriteByteAsync(0x03, cancel_token).ConfigureAwait(false);
       var s1vec = new byte[1528];
       rand.NextBytes(s1vec);
-      await SendAsync(writer => {
+      await SendAsync(connection.Stream, writer => {
         writer.Write(0);
         writer.Write(0);
         writer.Write(s1vec);
       }, cancel_token).ConfigureAwait(false);
-      using (var reader=await RecvAsync(1536, cancel_token).ConfigureAwait(false)) {
-        await SendAsync(writer => {
+      using (var reader=await RecvAsync(connection.Stream, 1536, cancel_token).ConfigureAwait(false)) {
+        await SendAsync(connection.Stream, writer => {
           writer.Write(reader.ReadInt32());
           writer.Write(reader.ReadInt32());
           writer.Write(reader.ReadBytes(1528));
         }, cancel_token).ConfigureAwait(false);
       }
-      using (var reader=await RecvAsync(1536, cancel_token).ConfigureAwait(false)) {
+      using (var reader=await RecvAsync(connection.Stream, 1536, cancel_token).ConfigureAwait(false)) {
         reader.ReadInt32();
         reader.ReadInt32();
         if (!s1vec.SequenceEqual(reader.ReadBytes(1528))) {
@@ -256,31 +256,31 @@ namespace PeerCastStation.FLV.RTMP
     long recvWindowSize = 0x7FFFFFFF;
     long receivedSize   = 0;
     long sequenceNumber = 0;
-    private async Task<int> RecvStream(byte[] buf, int offset, int len, CancellationToken cancel_token)
+    private async Task<int> RecvStream(Stream stream, byte[] buf, int offset, int len, CancellationToken cancel_token)
     {
       if (len+receivedSize>=recvWindowSize) {
         var len1 = (int)(recvWindowSize-receivedSize);
-        await connection.Stream.ReadBytesAsync(buf, offset, len1, cancel_token).ConfigureAwait(false);
+        await stream.ReadBytesAsync(buf, offset, len1, cancel_token).ConfigureAwait(false);
         receivedSize   += len1;
         sequenceNumber += len1;
-        await SendMessage(2, new AckMessage(this.Now, 0, sequenceNumber), cancel_token).ConfigureAwait(false);
+        await SendMessage(stream, 2, new AckMessage(this.Now, 0, sequenceNumber), cancel_token).ConfigureAwait(false);
         var len2 = len - len1;
-        await connection.Stream.ReadBytesAsync(buf, offset+len1, len2, cancel_token).ConfigureAwait(false);
+        await stream.ReadBytesAsync(buf, offset+len1, len2, cancel_token).ConfigureAwait(false);
         receivedSize    = len2; //reset
         sequenceNumber += len2;
       }
       else {
-        await connection.Stream.ReadBytesAsync(buf, offset, len, cancel_token).ConfigureAwait(false);
+        await stream.ReadBytesAsync(buf, offset, len, cancel_token).ConfigureAwait(false);
         receivedSize   += len;
         sequenceNumber += len;
       }
       return len;
     }
 
-    private async Task<byte[]> RecvStream(int len, CancellationToken cancel_token)
+    private async Task<byte[]> RecvStream(Stream stream, int len, CancellationToken cancel_token)
     {
       var buf = new byte[len];
-      await RecvStream(buf, 0, len, cancel_token).ConfigureAwait(false);
+      await RecvStream(stream, buf, 0, len, cancel_token).ConfigureAwait(false);
       return buf;
     }
 
@@ -297,7 +297,7 @@ namespace PeerCastStation.FLV.RTMP
       public static readonly RTMPMessageBuilder NullPacket = new RTMPMessageBuilder(null, 0, 0, 0, 0);
 
       public RTMPMessageBuilder(
-        RTMPMessageBuilder x,
+        RTMPMessageBuilder? x,
         long timestamp,
         int  type_id,
         long chunk_message_stream_id,
@@ -362,32 +362,33 @@ namespace PeerCastStation.FLV.RTMP
     }
 
     private Dictionary<int, RTMPMessageBuilder> lastMessages = new Dictionary<int,RTMPMessageBuilder>();
-    private async Task<bool> RecvMessage(Queue<RTMPMessage> messages, CancellationToken cancel_token)
+    private async Task<bool> RecvMessage(Stream stream, Queue<RTMPMessage> messages, CancellationToken cancel_token)
     {
-      var basic_header = (await RecvStream(1, cancel_token).ConfigureAwait(false))[0];
+      var basic_header = (await RecvStream(stream, 1, cancel_token).ConfigureAwait(false))[0];
       var chunk_stream_id = basic_header & 0x3F;
       if (chunk_stream_id==0) {
-        chunk_stream_id = (await RecvStream(1, cancel_token).ConfigureAwait(false))[0] + 64;
+        chunk_stream_id = (await RecvStream(stream, 1, cancel_token).ConfigureAwait(false))[0] + 64;
       }
       else if (chunk_stream_id==1) {
-        var buf = await RecvStream(2, cancel_token).ConfigureAwait(false);
+        var buf = await RecvStream(stream, 2, cancel_token).ConfigureAwait(false);
         chunk_stream_id = (buf[1]*256 | buf[0]) + 64;
       }
 
-      RTMPMessageBuilder msg = null;
-      RTMPMessageBuilder last_msg = null;
+      RTMPMessageBuilder msg;
+      RTMPMessageBuilder? last_msg;
       if (!lastMessages.TryGetValue(chunk_stream_id, out last_msg)) {
         last_msg = RTMPMessageBuilder.NullPacket;
       }
       switch ((basic_header & 0xC0)>>6) {
       case 0:
-        using (var reader=new RTMPBinaryReader(await RecvStream(11, cancel_token).ConfigureAwait(false))) {
+      default:
+        using (var reader=new RTMPBinaryReader(await RecvStream(stream, 11, cancel_token).ConfigureAwait(false))) {
           long timestamp  = reader.ReadUInt24();
           var body_length = reader.ReadUInt24();
           var type_id     = reader.ReadByte();
           var stream_id   = reader.ReadUInt32LE();
           if (timestamp==0xFFFFFF) {
-            using (var ext_reader=new RTMPBinaryReader(await RecvStream(4, cancel_token).ConfigureAwait(false))) {
+            using (var ext_reader=new RTMPBinaryReader(await RecvStream(stream, 4, cancel_token).ConfigureAwait(false))) {
               timestamp = ext_reader.ReadUInt32();
             }
           }
@@ -401,12 +402,12 @@ namespace PeerCastStation.FLV.RTMP
         }
         break;
       case 1:
-        using (var reader=new RTMPBinaryReader(await RecvStream(7, cancel_token).ConfigureAwait(false))) {
+        using (var reader=new RTMPBinaryReader(await RecvStream(stream, 7, cancel_token).ConfigureAwait(false))) {
           long timestamp_delta = reader.ReadUInt24();
           var body_length      = reader.ReadUInt24();
           var type_id          = reader.ReadByte();
           if (timestamp_delta==0xFFFFFF) {
-            using (var ext_reader=new RTMPBinaryReader(await RecvStream(4, cancel_token).ConfigureAwait(false))) {
+            using (var ext_reader=new RTMPBinaryReader(await RecvStream(stream, 4, cancel_token).ConfigureAwait(false))) {
               timestamp_delta = ext_reader.ReadUInt32();
             }
           }
@@ -419,10 +420,10 @@ namespace PeerCastStation.FLV.RTMP
         }
         break;
       case 2:
-        using (var reader=new RTMPBinaryReader(await RecvStream(3, cancel_token).ConfigureAwait(false))) {
+        using (var reader=new RTMPBinaryReader(await RecvStream(stream, 3, cancel_token).ConfigureAwait(false))) {
           long timestamp_delta = reader.ReadUInt24();
           if (timestamp_delta==0xFFFFFF) {
-            using (var ext_reader=new RTMPBinaryReader(await RecvStream(4, cancel_token).ConfigureAwait(false))) {
+            using (var ext_reader=new RTMPBinaryReader(await RecvStream(stream, 4, cancel_token).ConfigureAwait(false))) {
               timestamp_delta = ext_reader.ReadUInt32();
             }
           }
@@ -440,6 +441,7 @@ namespace PeerCastStation.FLV.RTMP
       }
 
       msg.ReceivedLength += await RecvStream(
+        stream,
         msg.Body,
         msg.ReceivedLength,
         Math.Min(recvChunkSize, msg.BodyLength-msg.ReceivedLength),
@@ -450,14 +452,14 @@ namespace PeerCastStation.FLV.RTMP
       return true; //TODO:接続エラー時はfalseを返す
     }
 
-    private async Task SendMessage(int chunk_stream_id, RTMPMessage msg, CancellationToken cancel_token)
+    private async Task SendMessage(Stream stream, int chunk_stream_id, RTMPMessage msg, CancellationToken cancel_token)
     {
       int offset = 0;
       int fmt = 0;
       while (msg.Body.Length-offset>0) {
         switch (fmt) {
         case 0:
-          await SendAsync(writer => {
+          await SendAsync(stream, writer => {
             writer.Write((byte)((fmt<<6) | chunk_stream_id));
             if (msg.Timestamp>0xFFFFFF) {
               writer.WriteUInt24(0xFFFFFF);
@@ -478,7 +480,7 @@ namespace PeerCastStation.FLV.RTMP
           fmt = 3;
           break;
         case 3:
-          await SendAsync(writer => {
+          await SendAsync(stream, writer => {
             writer.Write((byte)((fmt<<6) | chunk_stream_id));
             int chunk_len = Math.Min(sendChunkSize, msg.Body.Length-offset);
             writer.Write(msg.Body, offset, chunk_len);
@@ -489,14 +491,14 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
-    private async Task ProcessMessages(IEnumerable<RTMPMessage> messages, CancellationToken cancel_token)
+    private async Task ProcessMessages(Stream stream, IEnumerable<RTMPMessage> messages, CancellationToken cancel_token)
     {
       foreach (var msg in messages) {
-        await ProcessMessage(msg, cancel_token).ConfigureAwait(false);
+        await ProcessMessage(stream, msg, cancel_token).ConfigureAwait(false);
       }
     }
 
-    private async Task ProcessMessage(RTMPMessage msg, CancellationToken cancel_token)
+    private async Task ProcessMessage(Stream stream, RTMPMessage msg, CancellationToken cancel_token)
     {
       switch (msg.MessageType) {
       case RTMPMessageType.SetChunkSize:
@@ -530,13 +532,13 @@ namespace PeerCastStation.FLV.RTMP
         await OnData(new DataAMF0Message(msg), cancel_token).ConfigureAwait(false);
         break;
       case RTMPMessageType.CommandAMF3:
-        await OnCommand(new CommandAMF3Message(msg), cancel_token).ConfigureAwait(false);
+        await OnCommand(stream, new CommandAMF3Message(msg), cancel_token).ConfigureAwait(false);
         break;
       case RTMPMessageType.CommandAMF0:
-        await OnCommand(new CommandAMF0Message(msg), cancel_token).ConfigureAwait(false);
+        await OnCommand(stream, new CommandAMF0Message(msg), cancel_token).ConfigureAwait(false);
         break;
       case RTMPMessageType.Aggregate:
-        await OnAggregate(new AggregateMessage(msg), cancel_token).ConfigureAwait(false);
+        await OnAggregate(stream, new AggregateMessage(msg), cancel_token).ConfigureAwait(false);
         break;
       case RTMPMessageType.SharedObjectAMF3:
       case RTMPMessageType.SharedObjectAMF0:
@@ -556,8 +558,7 @@ namespace PeerCastStation.FLV.RTMP
 
     private Task OnAbort(AbortMessage msg, CancellationToken cancel_token)
     {
-      RTMPMessageBuilder builder;
-      if (lastMessages.TryGetValue(msg.TargetChunkStream, out builder)) {
+      if (lastMessages.TryGetValue(msg.TargetChunkStream, out var builder)) {
         builder.Abort();
       }
       return Task.Delay(0);
@@ -614,16 +615,16 @@ namespace PeerCastStation.FLV.RTMP
       return Task.Delay(0);
     }
 
-    private async Task OnCommand(CommandMessage msg, CancellationToken cancel_token)
+    private async Task OnCommand(Stream stream, CommandMessage msg, CancellationToken cancel_token)
     {
       if (msg.StreamId==0) {
         Logger.Debug("NetConnection command: {0}", msg.CommandName);
         //NetConnection commands
         switch (msg.CommandName) {
-        case "connect":      await OnCommandConnect(msg, cancel_token).ConfigureAwait(false); break;
+        case "connect":      await OnCommandConnect(stream, msg, cancel_token).ConfigureAwait(false); break;
         case "call":         await OnCommandCall(msg, cancel_token).ConfigureAwait(false); break;
         case "close":        await OnCommandClose(msg, cancel_token).ConfigureAwait(false); break;
-        case "createStream": await OnCommandCreateStream(msg, cancel_token).ConfigureAwait(false); break;
+        case "createStream": await OnCommandCreateStream(stream, msg, cancel_token).ConfigureAwait(false); break;
         case "deleteStream": await OnCommandDeleteStream(msg, cancel_token).ConfigureAwait(false); break;
         }
       }
@@ -631,7 +632,7 @@ namespace PeerCastStation.FLV.RTMP
         Logger.Debug("NetStream ({0}) command: {1}", msg.StreamId, msg.CommandName);
         //NetStream commands
         switch (msg.CommandName) {
-        case "publish": await OnCommandPublish(msg, cancel_token).ConfigureAwait(false); break;
+        case "publish": await OnCommandPublish(stream, msg, cancel_token).ConfigureAwait(false); break;
         case "deleteStream": await OnCommandDeleteStream(msg, cancel_token).ConfigureAwait(false); break;
         case "play":
         case "play2":
@@ -646,14 +647,14 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
-    private async Task OnCommandConnect(CommandMessage msg, CancellationToken cancel_token)
+    private async Task OnCommandConnect(Stream stream, CommandMessage msg, CancellationToken cancel_token)
     {
       objectEncoding = ((int)msg.CommandObject["objectEncoding"])==3 ? 3 : 0;
-      clientName     = (string)msg.CommandObject["flashVer"];
-      Logger.Debug("connect: objectEncoding {0}, flashVer: {1}", objectEncoding, clientName);
-      await SendMessage(2, new SetWindowSizeMessage(this.Now, 0, recvWindowSize), cancel_token).ConfigureAwait(false);
-      await SendMessage(2, new SetPeerBandwidthMessage(this.Now, 0, sendWindowSize, PeerBandwidthLimitType.Hard), cancel_token).ConfigureAwait(false);
-      await SendMessage(2, new UserControlMessage.StreamBeginMessage(this.Now, 0, 0), cancel_token).ConfigureAwait(false);
+      clientName     = (string?)msg.CommandObject["flashVer"] ?? "";
+      Logger.Debug($"connect: objectEncoding {objectEncoding}, flashVer: {clientName}");
+      await SendMessage(stream, 2, new SetWindowSizeMessage(this.Now, 0, recvWindowSize), cancel_token).ConfigureAwait(false);
+      await SendMessage(stream, 2, new SetPeerBandwidthMessage(this.Now, 0, sendWindowSize, PeerBandwidthLimitType.Hard), cancel_token).ConfigureAwait(false);
+      await SendMessage(stream, 2, new UserControlMessage.StreamBeginMessage(this.Now, 0, 0), cancel_token).ConfigureAwait(false);
       var response = CommandMessage.Create(
         objectEncoding,
         this.Now,
@@ -675,7 +676,7 @@ namespace PeerCastStation.FLV.RTMP
         })
       );
       if (msg.TransactionId!=0) {
-        await SendMessage(3, response, cancel_token).ConfigureAwait(false);
+        await SendMessage(stream, 3, response, cancel_token).ConfigureAwait(false);
       }
     }
 
@@ -689,7 +690,7 @@ namespace PeerCastStation.FLV.RTMP
       return Task.Delay(0);
     }
 
-    private async Task OnCommandCreateStream(CommandMessage msg, CancellationToken cancel_token)
+    private async Task OnCommandCreateStream(Stream stream, CommandMessage msg, CancellationToken cancel_token)
     {
       var new_stream_id = nextStreamId++;
       var response = CommandMessage.Create(
@@ -698,11 +699,11 @@ namespace PeerCastStation.FLV.RTMP
         msg.StreamId,
         "_result",
         msg.TransactionId,
-        null,
+        AMF.AMFValue.Null,
         new AMF.AMFValue(new_stream_id)
       );
       if (msg.TransactionId!=0) {
-        await SendMessage(3, response, cancel_token).ConfigureAwait(false);
+        await SendMessage(stream, 3, response, cancel_token).ConfigureAwait(false);
       }
     }
 
@@ -712,46 +713,46 @@ namespace PeerCastStation.FLV.RTMP
       return Task.Delay(0);
     }
 
-    private async Task OnCommandPublish(CommandMessage msg, CancellationToken cancel_token)
+    private async Task OnCommandPublish(Stream stream, CommandMessage msg, CancellationToken cancel_token)
     {
-      var name = (string)msg.Arguments[0];
-      var type = (string)msg.Arguments[1];
-      Logger.Debug("publish: name {0}, type: {1}", name, type);
-      await SendMessage(2, new UserControlMessage.StreamBeginMessage(this.Now, 0, msg.StreamId), cancel_token).ConfigureAwait(false);
+      var name = (string?)msg.Arguments[0];
+      var type = (string?)msg.Arguments[1];
+      Logger.Debug($"publish: name {name}, type: {type}");
+      await SendMessage(stream, 2, new UserControlMessage.StreamBeginMessage(this.Now, 0, msg.StreamId), cancel_token).ConfigureAwait(false);
       var status = CommandMessage.Create(
         objectEncoding,
         this.Now,
         msg.StreamId,
         "onStatus",
         0,
-        null,
+        AMF.AMFValue.Null,
         new AMF.AMFValue(new AMF.AMFObject {
           { "level",       "status" },
           { "code",        "NetStream.Publish.Start" },
-          { "description", name },
+          { "description", name ?? "" },
         })
       );
-      await SendMessage(3, status, cancel_token).ConfigureAwait(false);
+      await SendMessage(stream, 3, status, cancel_token).ConfigureAwait(false);
       var result = CommandMessage.Create(
         objectEncoding,
         this.Now,
         msg.StreamId,
         "_result",
         msg.TransactionId,
-        null
+        AMF.AMFValue.Null
       );
       if (msg.TransactionId!=0) {
-        await SendMessage(3, result, cancel_token).ConfigureAwait(false);
+        await SendMessage(stream, 3, result, cancel_token).ConfigureAwait(false);
       }
       this.state = ConnectionState.Receiving;
     }
 
-    private Task OnAggregate(AggregateMessage msg, CancellationToken cancel_token)
+    private Task OnAggregate(Stream stream, AggregateMessage msg, CancellationToken cancel_token)
     {
-      return ProcessMessages(msg.Messages, cancel_token);
+      return ProcessMessages(stream, msg.Messages, cancel_token);
     }
 
-    protected Task SendAsync(Action<RTMPBinaryWriter> proc, CancellationToken cancel_token)
+    protected ValueTask SendAsync(Stream stream, Action<RTMPBinaryWriter> proc, CancellationToken cancel_token)
     {
       var memstream = new MemoryStream();
       using (memstream) {
@@ -759,18 +760,18 @@ namespace PeerCastStation.FLV.RTMP
           proc.Invoke(writer);
         }
       }
-      return connection.Stream.WriteAsync(memstream.ToArray(), cancel_token);
+      return stream.WriteAsync(memstream.ToArray(), cancel_token);
     }
 
-    protected async Task<RTMPBinaryReader> RecvAsync(int len, CancellationToken cancel_token)
+    protected async Task<RTMPBinaryReader> RecvAsync(Stream stream, int len, CancellationToken cancel_token)
     {
-      var buf = await connection.Stream.ReadBytesAsync(len, cancel_token).ConfigureAwait(false);
+      var buf = await stream.ReadBytesAsync(len, cancel_token).ConfigureAwait(false);
       return new RTMPBinaryReader(new MemoryStream(buf, false), false);
     }
 
-    protected Task SendAsync(byte[] data, CancellationToken cancel_token)
+    protected ValueTask SendAsync(Stream stream, byte[] data, CancellationToken cancel_token)
     {
-      return connection.Stream.WriteAsync(data, cancel_token);
+      return stream.WriteAsync(data, cancel_token);
     }
 
   }
@@ -792,9 +793,9 @@ namespace PeerCastStation.FLV.RTMP
 
     public override ConnectionInfo GetConnectionInfo()
     {
-      var conn = sourceConnection;
-      if (!conn.IsCompleted) {
-        return conn.Connection.GetConnectionInfo();
+      var connInfo = sourceConnection.GetConnectionInfo();
+      if (connInfo!=null) {
+        return connInfo;
       }
       else {
         ConnectionStatus status;
@@ -803,14 +804,13 @@ namespace PeerCastStation.FLV.RTMP
         case StopReason.UserShutdown:  status = ConnectionStatus.Idle; break;
         default:                       status = ConnectionStatus.Error; break;
         }
-        IPEndPoint endpoint = null;
         string client_name = "";
         return new ConnectionInfoBuilder {
           ProtocolName     = "RTMP Source",
           Type             = ConnectionType.Source,
           Status           = status,
           RemoteName       = SourceUri.ToString(),
-          RemoteEndPoint   = endpoint,
+          RemoteEndPoint   = null,
           RemoteHostStatus = RemoteHostStatus.None,
           AgentName        = client_name,
         }.Build();
@@ -844,16 +844,19 @@ namespace PeerCastStation.FLV.RTMP
   {
     override public string Name { get { return "RTMP Source"; } }
 
-    private RTMPSourceStreamFactory factory;
-    override protected void OnAttach()
+    private RTMPSourceStreamFactory? factory;
+    override protected void OnAttach(PeerCastApplication app)
     {
-      if (factory==null) factory = new RTMPSourceStreamFactory(Application.PeerCast);
-      Application.PeerCast.SourceStreamFactories.Add(factory);
+      if (factory==null) factory = new RTMPSourceStreamFactory(app.PeerCast);
+      app.PeerCast.SourceStreamFactories.Add(factory);
     }
 
-    override protected void OnDetach()
+    override protected void OnDetach(PeerCastApplication app)
     {
-      Application.PeerCast.SourceStreamFactories.Remove(factory);
+      var f = Interlocked.Exchange(ref factory, null);
+      if (f!=null) {
+        app.PeerCast.SourceStreamFactories.Remove(f);
+      }
     }
   }
 

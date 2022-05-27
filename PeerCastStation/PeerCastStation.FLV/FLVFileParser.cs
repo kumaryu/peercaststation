@@ -5,6 +5,7 @@ using PeerCastStation.FLV.RTMP;
 using PeerCastStation.Core;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PeerCastStation.FLV
 {
@@ -36,199 +37,238 @@ namespace PeerCastStation.FLV
     }
   }
 
-	public class FLVFileParser
-	{
-		private class FLVTag
-		{
-			public enum TagType {
-				Audio  = 8,
-				Video  = 9,
-				Script = 18,
-			}
-			public byte[]  Header    { get; private set; }
-			public byte[]  Body      { get; private set; }
-			public byte[]  Footer    { get; private set; }
-			public bool    Filter    { get; private set; }
-			public TagType Type      { get; private set; }
-			public int     DataSize  { get; private set; }
-			public long    Timestamp { get; private set; }
-			public int     StreamID  { get; private set; }
-			public long    TagSize   {
-				get { return FLVFileParser.GetUInt32(this.Footer); }
-			}
-			public byte[] Binary {
-				get { return Header.Concat(Body).Concat(Footer).ToArray(); }
-			}
+  public class FLVFileParser
+  {
+    private enum TagType {
+      Audio  = 8,
+      Video  = 9,
+      Script = 18,
+    }
 
-			private FLVFileParser owner;
-			public FLVTag(FLVFileParser owner, byte[] binary)
-			{
-				this.owner     = owner;
-				this.Header    = binary;
-				this.Filter    = (binary[0] & 0x20)!=0;
-				this.Type      = (TagType)(binary[0] & 0x1F);
-				this.DataSize  =                   (binary[1]<<16) | (binary[2]<<8) | (binary[3]);
-				this.Timestamp = (binary[7]<<24) | (binary[4]<<16) | (binary[5]<<8) | (binary[6]);
-				this.StreamID  =                   (binary[8]<<16) | (binary[9]<<8) | (binary[10]);
-				this.Body      = null;
-				this.Footer    = null;
-			}
+    private struct FLVTagHeader
+    {
+      public byte[] Binary { get; }
 
-			public bool IsValidHeader {
-				get {
-					return
-						(Header[0] & 0xC0)==0 &&
-						(Type==TagType.Audio || Type==TagType.Video || Type==TagType.Script);
-				}
-			}
+      public bool Filter => (Binary[0] & 0x20)!=0;
+      public TagType Type => (TagType)(Binary[0] & 0x1F);
+      public int DataSize => (Binary[1]<<16) | (Binary[2]<<8) | (Binary[3]);
+      public long Timestamp => (Binary[7]<<24) | (Binary[4]<<16) | (Binary[5]<<8) | (Binary[6]);
+      public int StreamID => (Binary[8]<<16) | (Binary[9]<<8) | (Binary[10]);
 
-			public bool IsValidFooter {
-				get { return this.DataSize+11==this.TagSize; }
-			}
-
-			public bool ReadBody(Stream stream)
-			{
-				bool eos;
-				this.Body = owner.ReadBytes(stream, this.DataSize, out eos);
-				return !eos;
-			}
-
-			public bool ReadFooter(Stream stream)
-			{
-				bool eos;
-				this.Footer = owner.ReadBytes(stream, 4, out eos);
-				return !eos;
-			}
-
-      public async Task<bool> ReadTagBodyAsync(Stream stream, CancellationToken cancel_token)
+      private FLVTagHeader(byte[] binary)
       {
-        this.Body   = await stream.ReadBytesAsync(this.DataSize, cancel_token).ConfigureAwait(false);
-        this.Footer = await stream.ReadBytesAsync(4, cancel_token).ConfigureAwait(false);
-        return IsValidFooter;
+        Binary = binary;
       }
 
-			public RTMPMessage ToRTMPMessage()
-			{
-				return new RTMPMessage(
-					(RTMPMessageType)this.Type,
-					this.Timestamp,
-					this.StreamID,
-					this.Body);
-			}
-		}
+      public static bool TryCreate(byte[] binary, [NotNullWhen(true)] out FLVTagHeader? header)
+      {
+        if (binary.Length<11) {
+          header = null;
+          return false;
+        }
+        if ((binary[0] & 0xC0)!=0) {
+          header = null;
+          return false;
+        }
+        var type = (TagType)(binary[0] & 0x1F);
+        if (type==TagType.Audio || type==TagType.Video || type==TagType.Script) {
+          header = new FLVTagHeader(binary);
+          return true;
+        }
+        else {
+          header = null;
+          return false;
+        }
+      }
+    }
 
-		private byte[] ReadBytes(Stream stream, int len, out bool eos)
-		{
-			var res = new byte[len];
-			var read = stream.Read(res, 0, len);
-			eos = read<len;
-			return res;
-		}
+    private class FLVTag
+    {
+      public FLVTagHeader Header { get; private set; }
+      public byte[] Body   { get; private set; }
+      public byte[] Footer { get; private set; }
+      public bool Filter => Header.Filter;
+      public TagType Type => Header.Type;
+      public int DataSize => Header.DataSize;
+      public long Timestamp => Header.Timestamp;
+      public int StreamID => Header.StreamID;
+      public long TagSize {
+        get { return FLVFileParser.GetUInt32(this.Footer); }
+      }
 
-		private static long GetUInt32(byte[] bin)
-		{
-			return (bin[0]<<24) | (bin[1]<<16) | (bin[2]<<8) | (bin[3]<<0);
-		}
+      private FLVTag(FLVTagHeader header, byte[] body, byte[] footer)
+      {
+        this.Header    = header;
+        this.Body      = body;
+        this.Footer    = footer;
+      }
 
-		private enum ReaderState {
-			Header,
-			Body,
-		};
-		private ReaderState state = ReaderState.Header;
+      public static bool IsValidHeader(byte[] binary)
+      {
+        if (binary.Length<11) {
+          return false;
+        }
+        if ((binary[0] & 0xC0)!=0) {
+          return false;
+        }
+        var type = (TagType)(binary[0] & 0x1F);
+        return type==TagType.Audio || type==TagType.Video || type==TagType.Script;
+      }
 
-		public bool Read(Stream stream, IRTMPContentSink sink)
-		{
-			var processed = false;
-			var eos = false;
-			while (!eos) {
-				retry:
-				var start_pos = stream.Position;
-				try {
-					switch (state) {
-					case ReaderState.Header:
-						{
-							var bin = ReadBytes(stream, 13, out eos);
-							if (eos) goto error;
-							var header = new FLVFileHeader(bin);
-							if (header.IsValid) {
-								sink.OnFLVHeader(header);
-								state = ReaderState.Body;
-							}
-							else {
-								throw new BadDataException();
-							}
-						}
-						break;
-					case ReaderState.Body:
-						{
-							var bin = ReadBytes(stream, 11, out eos);
-							if (eos) goto error;
-							var read_valid = false;
-							var body = new FLVTag(this, bin);
-							if (body.IsValidHeader) {
-								if (!body.ReadBody(stream)) { eos = true; goto error; }
-								if (!body.ReadFooter(stream)) {  eos = true; goto error; }
-								if (body.IsValidFooter) {
-									read_valid = true;
-									switch (body.Type) {
-									case FLVTag.TagType.Audio:
-										sink.OnAudio(body.ToRTMPMessage());
-										break;
-									case FLVTag.TagType.Video:
-										sink.OnVideo(body.ToRTMPMessage());
-										break;
-									case FLVTag.TagType.Script:
-										sink.OnData(new DataAMF0Message(body.ToRTMPMessage()));
-										break;
-									}
-								}
-							}
-							else {
-								stream.Position = start_pos;
-								var headerbin = ReadBytes(stream, 13, out eos);
-								if (eos) goto error;
-								var header = new FLVFileHeader(headerbin);
-								if (header.IsValid) {
-									read_valid = true;
-									sink.OnFLVHeader(header);
-								}
-							}
-							if (!read_valid) {
-								stream.Position = start_pos+1;
-								var b = stream.ReadByte();
-								while (true) {
-									if (b<0) {
-										eos = true;
-										goto error;
-									}
-									if ((b & 0xC0)==0 && ((b & 0x1F)==8 || (b & 0x1F)==9 || (b & 0x1F)==18)) {
-										break;
-									}
-									b = stream.ReadByte();
-								}
-								stream.Position = stream.Position-1;
-								goto retry;
-							}
-						}
-						break;
-					}
-					processed = true;
-				}
-				catch (EndOfStreamException) {
-					stream.Position = start_pos;
-					eos = true;
-				}
-				catch (BadDataException) {
-					stream.Position = start_pos+1;
-				}
-			error:
-				if (eos) {
-					stream.Position = start_pos;
-					eos = true;
-				}
-			}
-			return processed;
-		}
+      public static bool TryReadTag(FLVFileParser owner, FLVTagHeader header, Stream stream, [NotNullWhen(true)] out FLVTag? tag)
+      {
+        bool eos;
+        var body = owner.ReadBytes(stream, header.DataSize, out eos);
+        if (eos) {
+          tag = null;
+          return false;
+        }
+        var footer = owner.ReadBytes(stream, 4, out eos);
+        if (eos) {
+          tag = null;
+          return false;
+        }
+        tag = new FLVTag(header, body, footer);
+        return true;
+      }
+
+      public static async Task<FLVTag> TryReadTagAsync(FLVTagHeader header, Stream stream, CancellationToken cancel_token)
+      {
+        var body = await stream.ReadBytesAsync(header.DataSize, cancel_token).ConfigureAwait(false);
+        var footer = await stream.ReadBytesAsync(4, cancel_token).ConfigureAwait(false);
+        var tagsize = FLVFileParser.GetUInt32(footer);
+        return new FLVTag(header, body, footer);
+      }
+
+      public bool IsValidFooter {
+        get { return this.DataSize+11==this.TagSize; }
+      }
+
+      public RTMPMessage ToRTMPMessage()
+      {
+        return new RTMPMessage(
+          (RTMPMessageType)this.Type,
+          this.Timestamp,
+          this.StreamID,
+          this.Body);
+      }
+    }
+
+    private byte[] ReadBytes(Stream stream, int len, out bool eos)
+    {
+      var res = new byte[len];
+      var read = stream.Read(res, 0, len);
+      eos = read<len;
+      return res;
+    }
+
+    private static long GetUInt32(byte[] bin)
+    {
+      return (bin[0]<<24) | (bin[1]<<16) | (bin[2]<<8) | (bin[3]<<0);
+    }
+
+    private enum ReaderState {
+      Header,
+      Body,
+    };
+    private ReaderState state = ReaderState.Header;
+
+    public bool Read(Stream stream, IRTMPContentSink sink)
+    {
+      var processed = false;
+      var eos = false;
+      while (!eos) {
+        retry:
+        var start_pos = stream.Position;
+        try {
+          switch (state) {
+          case ReaderState.Header:
+            {
+              var bin = ReadBytes(stream, 13, out eos);
+              if (eos) goto error;
+              var header = new FLVFileHeader(bin);
+              if (header.IsValid) {
+                sink.OnFLVHeader(header);
+                state = ReaderState.Body;
+              }
+              else {
+                throw new BadDataException();
+              }
+            }
+            break;
+          case ReaderState.Body:
+            {
+              var bin = ReadBytes(stream, 11, out eos);
+              if (eos) goto error;
+              var read_valid = false;
+              if (FLVTagHeader.TryCreate(bin, out var header)) {
+                if (FLVTag.TryReadTag(this, header.Value, stream, out var tag)) {
+                  if (tag.IsValidFooter) {
+                    read_valid = true;
+                    switch (tag.Type) {
+                    case TagType.Audio:
+                      sink.OnAudio(tag.ToRTMPMessage());
+                      break;
+                    case TagType.Video:
+                      sink.OnVideo(tag.ToRTMPMessage());
+                      break;
+                    case TagType.Script:
+                      sink.OnData(new DataAMF0Message(tag.ToRTMPMessage()));
+                      break;
+                    }
+                  }
+                }
+                else {
+                  eos = true;
+                  goto error;
+                }
+              }
+              else {
+                stream.Position = start_pos;
+                var headerbin = ReadBytes(stream, 13, out eos);
+                if (eos) goto error;
+                var fileheader = new FLVFileHeader(headerbin);
+                if (fileheader.IsValid) {
+                  read_valid = true;
+                  sink.OnFLVHeader(fileheader);
+                }
+              }
+              if (!read_valid) {
+                stream.Position = start_pos+1;
+                var b = stream.ReadByte();
+                while (true) {
+                  if (b<0) {
+                    eos = true;
+                    goto error;
+                  }
+                  if ((b & 0xC0)==0 && ((b & 0x1F)==8 || (b & 0x1F)==9 || (b & 0x1F)==18)) {
+                    break;
+                  }
+                  b = stream.ReadByte();
+                }
+                stream.Position = stream.Position-1;
+                goto retry;
+              }
+            }
+            break;
+          }
+          processed = true;
+        }
+        catch (EndOfStreamException) {
+          stream.Position = start_pos;
+          eos = true;
+        }
+        catch (BadDataException) {
+          stream.Position = start_pos+1;
+        }
+      error:
+        if (eos) {
+          stream.Position = start_pos;
+          eos = true;
+        }
+      }
+      return processed;
+    }
 
     public async Task ReadAsync(
       Stream stream,
@@ -253,30 +293,30 @@ namespace PeerCastStation.FLV
         try {
           len += await stream.ReadBytesAsync(bin, len, 11-len, cancel_token).ConfigureAwait(false);
           var read_valid = false;
-          var body = new FLVTag(this, bin);
-          if (body.IsValidHeader) {
-            if (await body.ReadTagBodyAsync(stream, cancel_token).ConfigureAwait(false)) {
+          if (FLVTagHeader.TryCreate(bin, out var tagheader)) {
+            var tag = await FLVTag.TryReadTagAsync(tagheader.Value, stream, cancel_token).ConfigureAwait(false);
+            if (tag.IsValidFooter) {
               len = 0;
               read_valid = true;
-              switch (body.Type) {
-              case FLVTag.TagType.Audio:
-                sink.OnAudio(body.ToRTMPMessage());
+              switch (tag.Type) {
+              case TagType.Audio:
+                sink.OnAudio(tag.ToRTMPMessage());
                 break;
-              case FLVTag.TagType.Video:
-                sink.OnVideo(body.ToRTMPMessage());
+              case TagType.Video:
+                sink.OnVideo(tag.ToRTMPMessage());
                 break;
-              case FLVTag.TagType.Script:
-                sink.OnData(new DataAMF0Message(body.ToRTMPMessage()));
+              case TagType.Script:
+                sink.OnData(new DataAMF0Message(tag.ToRTMPMessage()));
                 break;
               }
             }
           }
           else {
             len += await stream.ReadBytesAsync(bin, len, 13-len, cancel_token).ConfigureAwait(false);
-            var new_header = new FLVFileHeader(bin);
-            if (new_header.IsValid) {
+            var fileheader = new FLVFileHeader(bin);
+            if (fileheader.IsValid) {
               read_valid = true;
-              sink.OnFLVHeader(header);
+              sink.OnFLVHeader(fileheader);
             }
           }
           if (!read_valid) {
@@ -303,6 +343,6 @@ namespace PeerCastStation.FLV
 
     }
 
-	}
+  }
 
 }

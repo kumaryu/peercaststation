@@ -112,9 +112,9 @@ namespace PeerCastStation.FLV.AMF
       var marker = ReadMarker();
       switch (marker) {
       case AMF3Marker.Undefined:
-        return new AMFValue(AMFValueType.Undefined, null);
+        return new AMFValue(AMFValueType.Undefined, AMFValue.Null);
       case AMF3Marker.Null:
-        return new AMFValue(AMFValueType.Null, null);
+        return new AMFValue(AMFValueType.Null, AMFValue.Null);
       case AMF3Marker.False:
         return new AMFValue(false);
       case AMF3Marker.True:

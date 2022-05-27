@@ -37,21 +37,20 @@ namespace PeerCastStation.FLV.AMF
     }
 
     public AMFObject(IDictionary<string,AMFValue> data)
-      : this(new AMFClass(null, true, data.Keys), data)
+      : this(new AMFClass("", true, data.Keys), data)
     {
     }
 
     public AMFObject()
     {
-      this.Class = new AMFClass(null, true);
+      this.Class = new AMFClass("", true);
       this.Data  = new Dictionary<string,AMFValue>();
     }
 
     public AMFValue this[string key] {
       get {
-        AMFValue res;
-        if (Data.TryGetValue(key, out res)) return res;
-        else                                return AMFValue.Null;
+        if (Data.TryGetValue(key, out var res)) return res;
+        else                                    return AMFValue.Null;
       }
     }
 
