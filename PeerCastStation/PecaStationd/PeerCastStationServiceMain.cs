@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using PeerCastStation.App;
 
@@ -6,21 +7,38 @@ namespace PecaStationd
 {
   public class PeerCastStationServiceMain
   {
-    private ServiceApp application;
-    private Task<int> appTask;
+    private record Context(ServiceApp Application, Task<int> ApplicationTask);
+    private Context? context;
+
     public void Start(string[] args)
     {
-      var basepath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
-      application = new ServiceApp(basepath, args);
-      appTask = application.Start();
+      var basepath = ServiceApp.GetDefaultBasePath();
+      var application = new ServiceApp(basepath, args);
+      var appTask = application.Start();
+
+      var old_context = Interlocked.Exchange(ref context, new Context(application, appTask));
+      if (old_context != null) {
+        Stop(old_context);
+      }
+    }
+
+    private int Stop(Context ctx)
+    {
+      if (ctx==null) return -2;
+      ctx.Application.Stop();
+      ctx.ApplicationTask.Wait();
+      return ctx.ApplicationTask.Result;
     }
 
     public int Stop()
     {
-      if (application==null) return -2;
-      application.Stop();
-      appTask.Wait();
-      return appTask.Result;
+      var ctx = Interlocked.Exchange(ref context, null);
+      if (ctx!=null) {
+        return Stop(ctx);
+      }
+      else {
+        return -2;
+      }
     }
   }
 

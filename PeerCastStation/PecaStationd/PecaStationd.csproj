@@ -4,7 +4,7 @@
     <OutputType>WinExe</OutputType>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Platforms>AnyCPU;x86;x64</Platforms>
-    <Nullable>annotations</Nullable>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>

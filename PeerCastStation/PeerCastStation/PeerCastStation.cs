@@ -68,7 +68,7 @@ namespace PeerCastStation.Main
     [STAThread]
     static int Main(string[] args)
     {
-      var basepath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+      var basepath = StandaloneApp.GetDefaultBasePath();
       try {
         var opts = s_optionParser.Parse(args);
         if (opts.TryGetOption("", out var mainCmd)) {

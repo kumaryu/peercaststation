@@ -9,6 +9,16 @@ namespace PeerCastStation.App
   public class AppBase
     : PeerCastApplication
   {
+    public static string GetDefaultBasePath()
+    {
+      return 
+        System.IO.Path.GetDirectoryName(
+          (System.Reflection.Assembly.GetEntryAssembly()?.Location ??
+           System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ??
+           "").AsSpan()
+        ).ToString();
+    }
+
     private static Logger logger = new Logger(typeof(AppBase));
     private IEnumerable<IPlugin> plugins;
     override public IEnumerable<IPlugin> Plugins {
