@@ -47,39 +47,35 @@ module OwinHostTest =
     let ``アプリからテキストを取得できる`` () =
         use peca = pecaWithOwinHost endpoint (helloWorldApp "/index.txt")
         sprintf "http://%s/index.txt" (endpoint.ToString())
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectResponse "Hello World!"
+        |> HttpClient.getString
+        |> Assert.equal "Hello World!"
 
     [<Fact>]
     let ``HEADリクエストの場合はボディが返らない`` () =
         use peca = pecaWithOwinHost endpoint (helloWorldApp "/index.txt")
         let req =
             sprintf "http://%s/index.txt" (endpoint.ToString())
-            |> WebRequest.CreateHttp
-        req.Method <- "HEAD"
-        let result = req.GetResponse()
-        use strm = new System.IO.StreamReader(result.GetResponseStream())
-        Assert.Equal("", strm.ReadToEnd())
-        Assert.Equal(12L, result.ContentLength)
+            |> HttpRequestMessage.head
+        let rsp = HttpClient.send req
+        Assert.Equal("", rsp.Content.ReadAsStringAsync().Result)
+        Assert.Equal(12L, rsp.Content.Headers.ContentLength |> Option.ofNullable |> Option.get)
 
     [<Fact>]
     let ``Dateヘッダがレスポンスに入ってくる`` () =
         use peca = pecaWithOwinHost endpoint (helloWorldApp "/index.txt")
-        let req =
+        let rsp =
             sprintf "http://%s/index.txt" (endpoint.ToString())
-            |> WebRequest.CreateHttp
-        let result = req.GetResponse()
-        use strm = new System.IO.StreamReader(result.GetResponseStream())
-        Assert.Equal("Hello World!", strm.ReadToEnd())
-        let date = DateTimeOffset.ParseExact(result.Headers.["Date"], "R", System.Globalization.CultureInfo.InvariantCulture)
+            |> HttpClient.get
+        Assert.Equal("Hello World!", rsp.Content.ReadAsStringAsync().Result)
+        let date = DateTimeOffset.ParseExact(rsp.Headers.GetValues("Date") |> Seq.head, "R", System.Globalization.CultureInfo.InvariantCulture)
         Assert.InRange((DateTimeOffset.Now - date).TotalSeconds, 0.0, 10.0)
 
     [<Fact>]
     let ``アプリで処理されなかったら404が返る`` () =
         use peca = pecaWithOwinHost endpoint (helloWorldApp "/index.txt")
         sprintf "http://%s/index.html" (endpoint.ToString())
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectStatusCode HttpStatusCode.NotFound
+        |> HttpClient.get
+        |> Assert.statusCode HttpStatusCode.NotFound
 
     [<Fact>]
     let ``複数回リクエストしても正しく返ってくる`` () =
@@ -90,8 +86,8 @@ module OwinHostTest =
             )
         let testRequest path expected =
             sprintf "http://%s%s" (endpoint.ToString()) path
-            |> WebRequest.CreateHttp
-            |> Assert.ExpectResponse expected
+            |> HttpClient.getString
+            |> Assert.equal expected
         testRequest "/index.txt" "Hello World!"
         testRequest "/index.html" "<html><body>Hello World!</body></html>"
         testRequest "/index.txt" "Hello World!"
@@ -101,8 +97,8 @@ module OwinHostTest =
         let test () =
             use peca = pecaWithOwinHost endpoint (helloWorldApp "/index.txt")
             sprintf "http://%s/index.txt" (endpoint.ToString())
-            |> WebRequest.CreateHttp
-            |> Assert.ExpectResponse "Hello World!"
+            |> HttpClient.getString
+            |> Assert.equal "Hello World!"
         test ()
         test ()
 
@@ -123,8 +119,8 @@ module OwinHostTest =
                 )
             )
         sprintf "http://%s/hoge/index.txt" (endpoint.ToString())
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectResponse ""
+        |> HttpClient.getString
+        |> Assert.equal ""
         Assert.Equal("/hoge", string basePath)
         Assert.Equal("/index.txt", string path)
 
@@ -143,8 +139,8 @@ module OwinHostTest =
                 )
             )
         sprintf "http://%s/index.txt" (endpoint.ToString())
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectResponse ""
+        |> HttpClient.getString
+        |> Assert.equal ""
         Assert.NotNull(acinfo)
         Assert.IsType(typeof<AccessControlInfo>, acinfo)
 
@@ -163,8 +159,8 @@ module OwinHostTest =
                 )
             )
         sprintf "http://%s/index.txt" (endpoint.ToString())
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectResponse ""
+        |> HttpClient.getString
+        |> Assert.equal ""
         Assert.NotNull(peercast)
         Assert.IsType(typeof<PeerCast>, peercast)
 
@@ -185,8 +181,8 @@ module OwinHostTest =
                 )
             )
         sprintf "http://%s/index.txt" (endpoint.ToString())
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectResponse ""
+        |> HttpClient.getString
+        |> Assert.equal ""
         Assert.Equal(endpoint.Address.ToString(), localaddr)
         Assert.Equal(endpoint.Port, localport |> Option.defaultValue 80)
 
@@ -207,8 +203,8 @@ module OwinHostTest =
                 )
             )
         sprintf "http://%s/index.txt" (endpoint.ToString())
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectResponse ""
+        |> HttpClient.getString
+        |> Assert.equal ""
         Assert.Equal(endpoint.Address.ToString(), remoteaddr)
         Assert.NotEqual(endpoint.Port, remoteport |> Option.defaultValue 80)
 
@@ -233,12 +229,12 @@ module OwinHostTest =
                 ) owinHost |> ignore
             )
         sprintf "http://%s/index.txt" (endpoint.ToString())
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectStatusCode HttpStatusCode.Forbidden
+        |> HttpClient.get
+        |> Assert.statusCode HttpStatusCode.Forbidden
 
         sprintf "http://%s/relay.txt" (endpoint.ToString())
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectResponse "Hello World!"
+        |> HttpClient.getString
+        |> Assert.equal "Hello World!"
 
     [<Fact>]
     let ``認証が必要であれば401を返す`` () =
@@ -261,12 +257,12 @@ module OwinHostTest =
                 ) owinHost |> ignore
             )
         sprintf "http://%s/index.txt" (endpoint.ToString())
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectStatusCode HttpStatusCode.Forbidden
+        |> HttpClient.get
+        |> Assert.statusCode HttpStatusCode.Forbidden
 
         sprintf "http://%s/relay.txt" (endpoint.ToString())
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectStatusCode HttpStatusCode.Unauthorized
+        |> HttpClient.get
+        |> Assert.statusCode HttpStatusCode.Unauthorized
 
     [<Fact>]
     let ``Basic認証で認証が通る`` () =
@@ -281,11 +277,12 @@ module OwinHostTest =
                     }
                 ) owinHost |> ignore
             )
-        let req =
-            sprintf "http://%s/relay.txt" (endpoint.ToString())
-            |> WebRequest.CreateHttp
-        req.Credentials <- NetworkCredential(authinfo.id, authinfo.pass)
-        Assert.ExpectResponse "Hello World!" req
+        use handler = new System.Net.Http.HttpClientHandler()
+        handler.Credentials <- NetworkCredential(authinfo.id, authinfo.pass)
+        use client = new System.Net.Http.HttpClient(handler)
+        let url = sprintf "http://%s/relay.txt" (endpoint.ToString())
+        client.GetStringAsync(url).Result
+        |> Assert.equal "Hello World!"
 
     [<Fact>]
     let ``Cookieで認証が通る`` () =
@@ -300,12 +297,13 @@ module OwinHostTest =
                     }
                 ) owinHost |> ignore
             )
-        let req =
-            sprintf "http://%s/relay.txt" (endpoint.ToString())
-            |> WebRequest.CreateHttp
-        req.CookieContainer <- CookieContainer()
-        req.CookieContainer.Add(sprintf "http://%s/relay.txt" (endpoint.ToString()) |> Uri, Cookie("auth", AuthInfo.toToken authinfo))
-        Assert.ExpectResponse "Hello World!" req
+        use handler = new System.Net.Http.HttpClientHandler()
+        handler.CookieContainer <- CookieContainer()
+        handler.CookieContainer.Add(sprintf "http://%s/relay.txt" (endpoint.ToString()) |> Uri, Cookie("auth", AuthInfo.toToken authinfo))
+        use client = new System.Net.Http.HttpClient(handler)
+        let url = sprintf "http://%s/relay.txt" (endpoint.ToString())
+        client.GetStringAsync(url).Result
+        |> Assert.equal "Hello World!"
 
     [<Fact>]
     let ``クエリパラメータで認証が通る`` () =
@@ -321,8 +319,8 @@ module OwinHostTest =
                 ) owinHost |> ignore
             )
         sprintf "http://%s/relay.txt?auth=%s" (endpoint.ToString()) (AuthInfo.toToken authinfo)
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectResponse "Hello World!"
+        |> HttpClient.getString
+        |> Assert.equal "Hello World!"
 
     [<Fact>]
     let ``chunkedエンコーディングで送受信できる`` () =
@@ -339,18 +337,11 @@ module OwinHostTest =
                     }
                 ) owinHost |> ignore
             )
-        let req =
+        let res =
             sprintf "http://%s/echo" (endpoint.ToString())
-            |> WebRequest.CreateHttp
-        req.Method <- "POST"
-        req.ContentType <- "text/plain"
-        req.SendChunked <- true
-        let writeContent () =
-            use reqstrm = req.GetRequestStream()
-            reqstrm.WriteUTF8("Hello ")
-            reqstrm.WriteUTF8("Hoge!")
-        writeContent()
-        Assert.ExpectResponse "Hello Hoge!" req
+            |> HttpClient.postString "Hello Hoge!"
+        res.Content.ReadAsStringAsync().Result
+        |> Assert.equal "Hello Hoge!"
 
     [<Fact>]
     let ``許可されていないメソッドを実行すると405が返る`` () =
@@ -391,33 +382,21 @@ module OwinHostTest =
                         |> ignore
                 ) |> ignore
             )
-        let req =
+        let res =
             sprintf "http://%s/echo" (endpoint.ToString())
-            |> WebRequest.CreateHttp
-        req.Method <- "POST"
-        req.ContentType <- "text/plain"
-        req.SendChunked <- true
-        let writeContent () =
-            use reqstrm = req.GetRequestStream()
-            reqstrm.WriteUTF8("Hello ")
-            reqstrm.WriteUTF8("Hoge!")
-        writeContent()
-        Assert.ExpectResponse "Hello Hoge!" req
-        let req =
-            sprintf "http://%s/echo" (endpoint.ToString())
-            |> WebRequest.CreateHttp
-        req.Method <- "GET"
-        Assert.ExpectResponse "hello" req
-        let req =
-            sprintf "http://%s/hoge" (endpoint.ToString())
-            |> WebRequest.CreateHttp
-        req.Method <- "GET"
-        Assert.ExpectStatusCode HttpStatusCode.NotFound req
-        let req =
-            sprintf "http://%s/echo" (endpoint.ToString())
-            |> WebRequest.CreateHttp
-        req.Method <- "DELETE"
-        Assert.ExpectStatusCode HttpStatusCode.MethodNotAllowed req
+            |> HttpClient.postString "Hello Hoge!"
+        res.Content.ReadAsStringAsync().Result
+        |> Assert.equal "Hello Hoge!"
+        sprintf "http://%s/echo" (endpoint.ToString())
+        |> HttpClient.getString
+        |> Assert.equal "hello"
+        sprintf "http://%s/hoge" (endpoint.ToString())
+        |> HttpClient.get
+        |> Assert.statusCode HttpStatusCode.NotFound
+        sprintf "http://%s/echo" (endpoint.ToString())
+        |> HttpRequestMessage.delete
+        |> HttpClient.send
+        |> Assert.statusCode HttpStatusCode.MethodNotAllowed
 
     [<Fact>]
     let ``OnSendingHeadersに登録したアクションでヘッダを書き換えられる`` () =
@@ -432,13 +411,11 @@ module OwinHostTest =
                     }
                 ) owinHost |> ignore
             )
-        let req =
+        let rsp =
             sprintf "http://%s/index.txt" (endpoint.ToString())
-            |> WebRequest.CreateHttp
-        let result = req.GetResponse()
-        use strm = new System.IO.StreamReader(result.GetResponseStream())
-        Assert.Equal("Hello World!", strm.ReadToEnd())
-        Assert.Equal("fuga", result.Headers.Get("x-hoge"))
+            |> HttpClient.get
+        Assert.Equal("Hello World!", rsp.Content.ReadAsStringAsync().Result)
+        Assert.Equal("fuga", rsp.Headers.GetValues("x-hoge") |> Seq.head)
 
     [<Fact>]
     let ``opaque.Upgradeで好きなように通信できる`` () =

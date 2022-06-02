@@ -18,8 +18,8 @@ module HttpOutputTest =
         use peca = pecaWithOwinHost endpoint registerHttpDirect
         let getRequest404 (path, expected) =
             sprintf "http://%s/%s" (endpoint.ToString()) path
-            |> WebRequest.CreateHttp
-            |> Assert.ExpectStatusCode expected
+            |> HttpClient.get
+            |> Assert.statusCode expected
         [
             ("stream/", HttpStatusCode.Forbidden);
             ("stream/hoge", HttpStatusCode.NotFound);
@@ -37,23 +37,31 @@ module HttpOutputTest =
         ["pls"; "stream"]
         |> List.iter (fun subpath ->
             sprintf "http://%s/%s/%s" (endpoint.ToString()) subpath (Guid.NewGuid().ToString("N"))
-            |> WebRequest.CreateHttp
-            |> Assert.ExpectStatusCode HttpStatusCode.NotFound
+            |> HttpClient.get
+            |> Assert.statusCode HttpStatusCode.NotFound
         )
 
     [<Fact>]
     let ``チャンネル情報が無いチャンネルを指定すると10秒でタイムアウトして504が返る`` () =
-        use peca = pecaWithOwinHost endpoint registerHttpDirect
-        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
-        peca.AddChannel channel
-        ["pls"; "stream"]
-        |> List.iter (fun subpath ->
-            let req =
-                sprintf "http://%s/%s/%s" (endpoint.ToString()) subpath (channel.ChannelID.ToString("N"))
-                |> WebRequest.CreateHttp
-            req.Timeout <- 11000
-            Assert.ExpectStatusCode HttpStatusCode.GatewayTimeout req
-        )
+        task {
+            use peca = pecaWithOwinHost endpoint registerHttpDirect
+            let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+            peca.AddChannel channel
+            let! results =
+                ["pls"; "stream"]
+                |> List.map (fun subpath ->
+                    let url = sprintf "http://%s/%s/%s" (endpoint.ToString()) subpath (channel.ChannelID.ToString("N"))
+                    task {
+                        use client = new System.Net.Http.HttpClient()
+                        client.Timeout <- TimeSpan.FromMilliseconds(11000)
+                        let! rsp = client.GetAsync(url)
+                        rsp
+                        |> Assert.statusCode HttpStatusCode.GatewayTimeout
+                    }
+                )
+                |> System.Threading.Tasks.Task.WhenAll
+            results |> ignore
+        }
 
 module PlayListTest =
     let endpoint = allocateEndPoint IPAddress.Loopback
@@ -91,8 +99,8 @@ module PlayListTest =
             }
             |> m3u
         sprintf "http://%s/pls/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectResponse playlist
+        |> HttpClient.getString
+        |> Assert.equal playlist
 
     [<Fact>]
     let ``WMVチャンネルのプレイリストは標準でASXが返る`` () =
@@ -107,8 +115,8 @@ module PlayListTest =
             }
             |> asx
         sprintf "http://%s/pls/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectResponse playlist
+        |> HttpClient.getString
+        |> Assert.equal playlist
 
     [<Fact>]
     let ``クエリパラメータでスキームを変更できる`` () =
@@ -123,8 +131,8 @@ module PlayListTest =
             }
             |> m3u
         sprintf "http://%s/pls/%s?scheme=rtmp" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectResponse playlist
+        |> HttpClient.getString
+        |> Assert.equal playlist
 
     [<Fact>]
     let ``クエリパラメータか拡張子でフォーマットを変更できる`` () =
@@ -146,8 +154,8 @@ module PlayListTest =
                     streamUrl = sprintf "%s://%s/stream/%s" scheme (endpoint.ToString()) (channel.ChannelID.ToString("N").ToUpperInvariant());
                 }
             sprintf "http://%s/pls/%s%s" (endpoint.ToString()) (channel.ChannelID.ToString("N")) postfix
-            |> WebRequest.CreateHttp
-            |> Assert.ExpectResponse (pls entry)
+            |> HttpClient.getString
+            |> Assert.equal (pls entry)
         )
 
     [<Fact>]
@@ -163,17 +171,15 @@ module PlayListTest =
             (".m3u8?hoge=fuga&pls=m3u8&foo=bar", "?hoge=fuga&foo=bar");
         ]
         |> List.iter (fun (postfix, query) ->
-            let req =
-                sprintf "http://%s/pls/%s%s" (endpoint.ToString()) (channel.ChannelID.ToString("N")) postfix
-                |> WebRequest.CreateHttp
-            req.AllowAutoRedirect <- false
-            let res =
-                try
-                    req.GetResponse() :?> HttpWebResponse
-                with
-                | :? WebException as ex when ex.Response <> null ->
-                    ex.Response :?> HttpWebResponse
-            Assert.Equal(HttpStatusCode.MovedPermanently, res.StatusCode)
+            let url = sprintf "http://%s/pls/%s%s" (endpoint.ToString()) (channel.ChannelID.ToString("N")) postfix
+            let task = task {
+                use handler = new System.Net.Http.HttpClientHandler()
+                handler.AllowAutoRedirect <- false
+                use client = new System.Net.Http.HttpClient(handler)
+                return! client.GetAsync(url)
+            }
+            let rsp = task.Result
+            Assert.statusCode HttpStatusCode.MovedPermanently rsp
             let hls = sprintf "http://%s/hls/%s%s" (endpoint.ToString()) (channel.ChannelID.ToString("N")) query
-            Assert.Equal(hls, res.GetResponseHeader("Location"))
+            Assert.equal hls (rsp.Headers.Location.ToString())
         )

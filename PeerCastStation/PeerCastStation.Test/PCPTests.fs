@@ -6,6 +6,8 @@ open System.Net
 open PeerCastStation.Core
 open PeerCastStation.PCP
 open TestCommon
+open System.Net.Http
+open System.Threading.Tasks
 
 let registerPCPRelay (host:PeerCastStation.Core.Http.OwinHost) =
     host.Register(fun builder -> PCPRelayOwinApp.BuildApp(builder))
@@ -35,7 +37,7 @@ module Stream =
             |> (List.foldBack (fun b s -> s.Append(char b)) <| match stream.ReadByte() with | -1 -> [] | b -> getc (byte b) [])
         result.ToString()
 
-module HTTPClient =
+module HTTPHandler =
     open System.Net.Sockets
     type Response =
         {
@@ -148,7 +150,7 @@ type RelayClientConnection =
         endpoint : IPEndPoint;
         channelId : Guid;
         connection : System.Net.Sockets.TcpClient;
-        response: HTTPClient.Response;
+        response: HTTPHandler.Response;
         localEndpoint : IPEndPoint;
     }
     interface IDisposable with
@@ -157,15 +159,15 @@ type RelayClientConnection =
 
 module RelayClientConnection =
     let connect endpoint (channelId: Guid) =
-        let client = HTTPClient.connect endpoint
+        let client = HTTPHandler.connect endpoint
         let headers =
             [
                 ("x-peercast-pcp", "1")
                 ("Host", endpoint.Address.ToString())
             ]
             |> Map.ofList
-        HTTPClient.sendGetRequest (sprintf "/channel/%s" <| channelId.ToString("N")) headers client
-        match HTTPClient.recvResponse client with
+        HTTPHandler.sendGetRequest (sprintf "/channel/%s" <| channelId.ToString("N")) headers client
+        match HTTPHandler.recvResponse client with
         | Ok rsp ->
             { endpoint=endpoint; channelId=channelId; connection=client; response=rsp; localEndpoint=client.Client.LocalEndPoint :?> IPEndPoint }
         | Error err ->
@@ -282,10 +284,10 @@ module RelaySinkTests =
     [<Fact>]
     let ``チャンネルIDを渡さないとエラーが返る`` () =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
-        let getRequest404 (path, expected) =
+        let getRequest404 (path, expected:HttpStatusCode) =
             sprintf "http://%s/%s" (endpoint.ToString()) path
-            |> WebRequest.CreateHttp
-            |> Assert.ExpectStatusCode expected
+            |> HttpClient.get
+            |> Assert.statusCode expected
         [
             ("channel/", HttpStatusCode.Forbidden);
             ("channel/hoge", HttpStatusCode.NotFound);
@@ -299,8 +301,8 @@ module RelaySinkTests =
         channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
         peca.AddChannel channel
         sprintf "http://%s/channel/%s" (endpoint.ToString()) (Guid.NewGuid().ToString("N"))
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectStatusCode HttpStatusCode.NotFound
+        |> HttpClient.get
+        |> Assert.statusCode HttpStatusCode.NotFound
 
     [<Fact>]
     let ``受信状態でないチャンネルを指定すると404が返る`` () =
@@ -309,8 +311,8 @@ module RelaySinkTests =
         channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
         peca.AddChannel channel
         sprintf "http://%s/channel/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectStatusCode HttpStatusCode.NotFound
+        |> HttpClient.get
+        |> Assert.statusCode HttpStatusCode.NotFound
 
     [<Fact>]
     let ``PCPバージョンが指定されていないと400が返る`` () =
@@ -320,8 +322,8 @@ module RelaySinkTests =
         channel.Start(null)
         peca.AddChannel channel
         sprintf "http://%s/channel/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
-        |> WebRequest.CreateHttp
-        |> Assert.ExpectStatusCode HttpStatusCode.BadRequest
+        |> HttpClient.get
+        |> Assert.statusCode HttpStatusCode.BadRequest
 
     [<Fact>]
     let ``ネットワークが違うチャンネルを指定すると404が返る`` () =
@@ -332,9 +334,8 @@ module RelaySinkTests =
             channel.Start(null)
             peca.AddChannel channel
             sprintf "http://%s/channel/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
-            |> WebRequest.CreateHttp
-            |> WebRequest.addHeader "x-peercast-pcp" pcpver
-            |> Assert.ExpectStatusCode HttpStatusCode.NotFound
+            |> HttpClient.getWithHeader ["x-peercast-pcp", pcpver]
+            |> Assert.statusCode HttpStatusCode.NotFound
         [
             (allocateEndPoint IPAddress.Loopback, NetworkType.IPv6, "1")
             (allocateEndPoint IPAddress.Loopback, NetworkType.IPv6, "100")
@@ -517,7 +518,7 @@ type RelayServerConnection =
         endpoint : IPEndPoint;
         channelId : Guid;
         connection : System.Net.Sockets.TcpClient;
-        request: HTTPClient.Request;
+        request: HTTPHandler.Request;
         localEndpoint : IPEndPoint;
     }
     interface IDisposable with
@@ -534,8 +535,8 @@ module RelayServerConnection =
         
     let listen endpoint =
         async {
-            let! client = HTTPClient.listen endpoint
-            match HTTPClient.recvRequest client with
+            let! client = HTTPHandler.listen endpoint
+            match HTTPHandler.recvRequest client with
             | Ok req ->
                 match req.pathAndQuery with
                 | ParseChannelPath channelId ->
@@ -547,14 +548,14 @@ module RelayServerConnection =
                         localEndpoint = endpoint
                     }
                 | _ ->
-                    HTTPClient.sendResponse HttpStatusCode.NotFound Map.empty client
+                    HTTPHandler.sendResponse HttpStatusCode.NotFound Map.empty client
                     return Error "No channel requested"
             | Error err ->
                 return Error "No channel requested"
         }
 
     let sendResponse status connection =
-        HTTPClient.sendResponse status Map.empty connection.connection
+        HTTPHandler.sendResponse status Map.empty connection.connection
 
     let recvAtom connection =
         connection.request.stream.ReadAtom()

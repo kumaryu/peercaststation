@@ -5,6 +5,8 @@ open PeerCastStation.Core
 open PeerCastStation.Core.Http
 open System.Net
 open Xunit
+open System.Net.Http
+open System.Threading.Tasks
 
 [<assembly: Xunit.CollectionBehavior(DisableTestParallelization = true)>]
 do
@@ -263,7 +265,75 @@ module WebRequest =
         req.Headers.Add(header, value)
         req
 
+
+module HttpRequestMessage =
+    let get (url:string) =
+        new HttpRequestMessage(HttpMethod.Get, url)
+
+    let head (url:string) =
+        new HttpRequestMessage(HttpMethod.Head, url)
+
+    let post (url:string) =
+        new HttpRequestMessage(HttpMethod.Post, url)
+
+    let delete (url:string) =
+        new HttpRequestMessage(HttpMethod.Delete, url)
+
+module HttpClient =
+    let send req =
+        use client = new HttpClient()
+        client.Send(req)
+
+    let get (url:string) =
+        let task = task {
+            use client = new HttpClient()
+            return! client.GetAsync(url)
+        }
+        task.Result
+
+    let postString (data:string) (url:string) =
+        let req = HttpRequestMessage.post url
+        req.Content <- new StringContent(data)
+        req.Headers.TransferEncodingChunked <- true
+        send req
+
+    let getWithTimeout timeout_ms (url:string) =
+        let task = task {
+            use client = new HttpClient()
+            client.Timeout <- TimeSpan.FromMilliseconds(timeout_ms)
+            return! client.GetAsync(url)
+        }
+        task.Result
+
+    let getString (url:string) =
+        let task = task {
+            use client = new HttpClient()
+            return! client.GetStringAsync(url)
+        }
+        task.Result
+
+    let getWithHeader (headers: seq<string*string>) (url:string) =
+        let task = task {
+            use client = new HttpClient()
+            headers
+            |> Seq.iter client.DefaultRequestHeaders.Add
+            return! client.GetAsync(url)
+        }
+        task.Result
+
 module Assert =
+    let equal<'a> (expected:'a) (actual:'a) =
+        Assert.Equal(expected, actual)
+
+    let equalAsync<'a> (expected:'a) (actualTask:Task<'a>) =
+        task {
+            let! actual = actualTask
+            Assert.Equal(expected, actual)
+        }
+
+    let statusCode code (rsp:HttpResponseMessage) =
+        Assert.Equal(code, rsp.StatusCode)
+
     let ExpectStatusCode code (req:WebRequest) =
         try
             req.GetResponse() |> ignore

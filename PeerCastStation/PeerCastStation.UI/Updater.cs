@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using PeerCastStation.Core;
 using System.Diagnostics.CodeAnalysis;
+using System.Buffers;
 
 namespace PeerCastStation.UI
 {
@@ -270,20 +271,31 @@ namespace PeerCastStation.UI
     public static async Task<DownloadResult> DownloadAsync(VersionDescription version, Action<float> onprogress, CancellationToken ct)
     {
       var enclosure = SelectEnclosure(version.Enclosures, CurrentInstallerType, CurrentInstallerPlatform);
-      using (var client = new System.Net.WebClient())
-      using (ct.Register(() => client.CancelAsync(), false)) {
-        if (onprogress!=null) {
-          client.DownloadProgressChanged += (sender, args) => {
-            onprogress(args.ProgressPercentage/100.0f);
-          };
+      var filepath =
+        System.IO.Path.Combine(
+          GetDownloadPath(),
+          System.IO.Path.GetFileName(enclosure.Url.AbsolutePath));
+      using var client = new System.Net.Http.HttpClient();
+      var rsp = await client.GetAsync(enclosure.Url.ToString(), System.Net.Http.HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+      rsp.EnsureSuccessStatusCode();
+      var length = rsp.Content.Headers.ContentLength;
+      var pos = 0L;
+      using var outputStream = File.Create(filepath);
+      using var inputStream = await rsp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+      using var buf = MemoryPool<byte>.Shared.Rent();
+      var len = await inputStream.ReadAsync(buf.Memory, ct).ConfigureAwait(false);
+      while (len!=0) {
+        await outputStream.WriteAsync(buf.Memory.Slice(0, len), ct).ConfigureAwait(false);
+        pos += len;
+        if (onprogress!=null && length.HasValue) {
+          onprogress(((float)pos)/length.Value);
         }
-        var filepath =
-          System.IO.Path.Combine(
-            GetDownloadPath(),
-            System.IO.Path.GetFileName(enclosure.Url.AbsolutePath));
-        await client.DownloadFileTaskAsync(enclosure.Url.ToString(), filepath).ConfigureAwait(false);
-        return new DownloadResult(filepath, version, enclosure);
+        len = await inputStream.ReadAsync(buf.Memory, ct).ConfigureAwait(false);
       }
+      if (onprogress!=null) {
+        onprogress(1.0f);
+      }
+      return new DownloadResult(filepath, version, enclosure);
     }
 
     private static string CreateTempPath(string prefix)

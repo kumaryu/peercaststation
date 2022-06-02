@@ -5,6 +5,7 @@ using System.Xml.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Net.Http;
 
 namespace PeerCastStation.UI
 {
@@ -14,31 +15,32 @@ namespace PeerCastStation.UI
     {
     }
 
-    public bool DownloadVersionInfoAsync(Uri source, Action<IEnumerable<VersionDescription>> handler)
-    {
-      var client = new WebClient();
-      client.Headers.Add(HttpRequestHeader.AcceptEncoding, "deflate, gzip");
-      client.DownloadDataCompleted += (sender, args) => {
-        if (args.Cancelled || args.Error!=null) return;
-        var result = ParseResponse(client.ResponseHeaders!, args.Result);
-        if (result.Count()>0) {
-          handler?.Invoke(result);
-        }
-      };
-      client.DownloadDataAsync(source);
-      return true;
-    }
-
     public async Task<IEnumerable<VersionDescription>> DownloadVersionInfoTaskAsync(
       Uri source,
       CancellationToken cancel_token)
     {
-      using (var client=new WebClient())
-      using (cancel_token.Register(() => client.CancelAsync(), false)) {
-        client.Headers.Add(HttpRequestHeader.AcceptEncoding, "deflate, gzip");
-        var body = await client.DownloadDataTaskAsync(source).ConfigureAwait(false);
-        return ParseResponse(client.ResponseHeaders!, body);
+      var client = new HttpClient(new HttpClientHandler() {
+        AutomaticDecompression = DecompressionMethods.All,
+      });
+      client.DefaultRequestHeaders.AcceptEncoding.Add(new System.Net.Http.Headers.StringWithQualityHeaderValue("deflate"));
+      client.DefaultRequestHeaders.AcceptEncoding.Add(new System.Net.Http.Headers.StringWithQualityHeaderValue("gzip"));
+      try {
+        return ParseAppCastString(await client.GetStringAsync(source, cancel_token).ConfigureAwait(false));
       }
+      catch {
+        return Enumerable.Empty<VersionDescription>();
+      }
+    }
+
+    public bool DownloadVersionInfoAsync(Uri source, Action<IEnumerable<VersionDescription>> handler)
+    {
+      Task.Run(async () => {
+        var result = await DownloadVersionInfoTaskAsync(source, CancellationToken.None).ConfigureAwait(false);
+        if (result.Count()>0) {
+          handler?.Invoke(result);
+        }
+      });
+      return true;
     }
 
     private class ParseErrorException : ApplicationException {}
