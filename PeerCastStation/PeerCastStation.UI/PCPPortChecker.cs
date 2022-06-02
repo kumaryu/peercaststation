@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using PeerCastStation.Core;
 using System.Net.Sockets;
 using System.Threading;
+using System.Net.Http;
 
 namespace PeerCastStation.UI
 {
@@ -101,23 +102,20 @@ namespace PeerCastStation.UI
 
     public async Task<PortCheckResult> RunAsync()
     {
-      var client = new WebClient();
+      var client = new HttpClient();
       var data   = new JObject();
       data["instanceId"] = InstanceId.ToString("N");
       data["ports"] = new JArray(this.Ports);
       var succeeded = false;
       var stopwatch = new System.Diagnostics.Stopwatch();
-      var cancel = new CancellationTokenSource();
+      using var cancel = new CancellationTokenSource();
       string response_body;
       try {
         stopwatch.Start();
-        var body = System.Text.Encoding.UTF8.GetBytes(data.ToString());
-        using (cancel.Token.Register(() => client.CancelAsync())) {
-          cancel.CancelAfter(5000);
-          response_body = System.Text.Encoding.UTF8.GetString(
-            await client.UploadDataTaskAsync(Target, body).ConfigureAwait(false)
-          );
-        }
+        cancel.CancelAfter(5000);
+        var rsp = await client.PostAsync(Target, new StringContent(data.ToString(), System.Text.Encoding.UTF8), cancel.Token).ConfigureAwait(false);
+        rsp.EnsureSuccessStatusCode();
+        response_body = await rsp.Content.ReadAsStringAsync(cancel.Token).ConfigureAwait(false);
         stopwatch.Stop();
         succeeded = true;
         var response = JObject.Parse(response_body);
@@ -135,7 +133,7 @@ namespace PeerCastStation.UI
             response_ports?.ToArray() ?? Array.Empty<int>(),
             stopwatch.Elapsed);
       }
-      catch (WebException) {
+      catch (HttpRequestException) {
         succeeded = false;
         return new PortCheckResult(
             succeeded,

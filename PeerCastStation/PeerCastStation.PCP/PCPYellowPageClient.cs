@@ -8,6 +8,7 @@ using System.Threading;
 using System.Net;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Http;
 
 namespace PeerCastStation.PCP
 {
@@ -35,20 +36,17 @@ namespace PeerCastStation.PCP
     private async Task<IndexTxtResult> CheckIndexTxtAsync(Uri uri)
     {
       try {
-        var req = WebRequest.Create(uri);
-        var res = await req.GetResponseAsync().ConfigureAwait(false);
-        using (var reader = new StreamReader(res.GetResponseStream(), System.Text.Encoding.UTF8)) {
-          var str = await reader.ReadToEndAsync().ConfigureAwait(false);
-          if (indexTxtEntryRegex.IsMatch(str)) {
-            return IndexTxtResult.Success;
-          }
-          else {
-            return IndexTxtResult.ParseError;
-          }
+        using var client = new HttpClient();
+        var str = await client.GetStringAsync(uri).ConfigureAwait(false);
+        if (indexTxtEntryRegex.IsMatch(str)) {
+          return IndexTxtResult.Success;
+        }
+        else {
+          return IndexTxtResult.ParseError;
         }
       }
-      catch (WebException ex) {
-        if (ex.Status==WebExceptionStatus.ProtocolError) {
+      catch (HttpRequestException ex) {
+        if (ex.StatusCode.HasValue) {
           return IndexTxtResult.DownloadError;
         }
         else {
@@ -1107,12 +1105,11 @@ namespace PeerCastStation.PCP
       connectionPool?.Restart();
     }
 
-    public async System.Threading.Tasks.Task<IEnumerable<IYellowPageChannel>> GetChannelsAsync(CancellationToken cancel_token)
+    public async Task<IEnumerable<IYellowPageChannel>> GetChannelsAsync(CancellationToken cancel_token)
     {
       if (ChannelsUri==null) return Enumerable.Empty<IYellowPageChannel>();
-      using (var client=new WebClient { Encoding=System.Text.Encoding.UTF8 })
-      using (cancel_token.Register(() => client.CancelAsync(), false))
-      using (var reader=new StringReader(await client.DownloadStringTaskAsync(this.ChannelsUri).ConfigureAwait(false))) {
+      using var client = new HttpClient();
+      using (var reader=new StringReader(await client.GetStringAsync(ChannelsUri, cancel_token).ConfigureAwait(false))) {
         var results = new List<IYellowPageChannel>();
         var line = reader.ReadLine();
         while (line!=null) {
