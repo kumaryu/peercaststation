@@ -14,9 +14,9 @@ namespace PeerCastStation.FLV.RTMP
   {
     private static Logger logger = new Logger(typeof(RTMPPlayConnection));
     public RTMPOutputStream owner;
-    public Channel  Channel  { get; private set; }
+    public Channel? Channel  { get; private set; }
     public long     StreamId { get; private set; }
-    private IDisposable channelSubscription;
+    private IDisposable? channelSubscription;
 
     public long? ContentPosition { get; private set; }
 
@@ -67,10 +67,9 @@ namespace PeerCastStation.FLV.RTMP
         );
       }
 
-      public string GetParameter(string key)
+      public string? GetParameter(string key)
       {
-        string value;
-        if (this.Parameters.TryGetValue(key, out value)) {
+        if (this.Parameters.TryGetValue(key, out var value)) {
           return value;
         }
         else {
@@ -106,7 +105,7 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
-    private async Task<Channel> RequestChannel(
+    private async Task<Channel?> RequestChannel(
       StreamName stream_name,
       CancellationToken cancel_token)
     {
@@ -145,7 +144,7 @@ namespace PeerCastStation.FLV.RTMP
         stream_id,
         "onStatus",
         transaction,
-        null,
+        AMFValue.Null,
         new AMFValue(new AMFObject {
           { "level",       level },
           { "code",        code },
@@ -186,7 +185,7 @@ namespace PeerCastStation.FLV.RTMP
         await OnCommandPlayStop(msg, cancel_token);
         return;
       }
-      var stream_name = StreamName.Parse((string)msg.Arguments[0]);
+      var stream_name = StreamName.Parse((string?)msg.Arguments[0] ?? "");
       var start       = msg.Arguments.Count>1 ? (int)msg.Arguments[1] : -2;
       var duration    = msg.Arguments.Count>2 ? (int)msg.Arguments[2] : -1;
       var reset       = msg.Arguments.Count>3 ? (bool)msg.Arguments[3] : false;
@@ -239,7 +238,7 @@ namespace PeerCastStation.FLV.RTMP
           msg.StreamId,
           "_result",
           msg.TransactionId,
-          null
+          AMFValue.Null
         );
         await SendMessage(3, result, cancel_token).ConfigureAwait(false);
       }
@@ -313,7 +312,7 @@ namespace PeerCastStation.FLV.RTMP
 
     private System.IO.MemoryStream contentBuffer = new System.IO.MemoryStream();
     private FLVFileParser fileParser = new FLVFileParser();
-    private RTMPContentSink contentSink;
+    private RTMPContentSink? contentSink;
     private void PostContent(Content content)
     {
       ContentPosition = content.Position;

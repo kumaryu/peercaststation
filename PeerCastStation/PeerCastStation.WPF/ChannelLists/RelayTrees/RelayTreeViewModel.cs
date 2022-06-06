@@ -28,7 +28,7 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
     private readonly PeerCast peerCast;
     public IEnumerable<RelayTreeNodeViewModel> RelayTree { get; private set; }
 
-    private ChannelViewModel channel;
+    private ChannelViewModel? channel;
     private Command refresh;
     public System.Windows.Input.ICommand Refresh {
       get { return refresh;}
@@ -43,7 +43,7 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
         () => channel!=null);
     }
 
-    internal void Update(ChannelViewModel channel)
+    internal void Update(ChannelViewModel? channel)
     {
       if (channel!=null) {
         this.RelayTree =
@@ -91,7 +91,7 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
 
     public string RemoteName {
       get {
-        var settings = PeerCastApplication.Current.Settings.Get<WPFSettings>();
+        var settings = PeerCastApplication.Current!.Settings.Get<WPFSettings>();
         switch (settings.RemoteNodeName) {
         case RemoteNodeName.SessionID:
           if (Node.Host.SessionID!=Guid.Empty) {
@@ -101,7 +101,7 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
             return Node.Host.GlobalEndPoint.ToString();
           }
           else {
-            return Node.Host.LocalEndPoint.ToString();
+            return Node.Host.LocalEndPoint?.ToString() ?? "";
           }
         default:
         case RemoteNodeName.Uri:
@@ -110,7 +110,7 @@ namespace PeerCastStation.WPF.ChannelLists.RelayTrees
             return Node.Host.GlobalEndPoint.ToString();
           }
           else {
-            return Node.Host.LocalEndPoint.ToString();
+            return Node.Host.LocalEndPoint?.ToString() ?? "";
           }
         }
       }

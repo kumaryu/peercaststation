@@ -32,7 +32,7 @@ namespace PeerCastStation.Core.Http
       BaseStream.Dispose();
     }
 
-    public async Task<HttpRequest> ReadAsync(CancellationToken cancel_token)
+    public async Task<HttpRequest?> ReadAsync(CancellationToken cancel_token)
     {
       var requests = new List<string>();
       var buf = new System.Text.StringBuilder();

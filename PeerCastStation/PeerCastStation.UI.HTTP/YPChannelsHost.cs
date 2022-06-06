@@ -47,22 +47,22 @@ namespace PeerCastStation.UI.HTTP
             new string [] {
               channel.Name,
               channel.ChannelId.ToString("N").ToUpperInvariant(),
-              channel.Tracker,
-              channel.ContactUrl,
-              channel.Genre,
-              channel.Description,
-              channel.Listeners.ToString(),
-              channel.Relays.ToString(),
-              channel.Bitrate.ToString(),
-              channel.ContentType,
-              channel.Artist,
-              channel.TrackTitle,
-              channel.Album,
-              channel.TrackUrl,
+              channel.Tracker ?? "",
+              channel.ContactUrl ?? "",
+              channel.Genre ?? "",
+              channel.Description ?? "",
+              channel.Listeners?.ToString() ?? "0",
+              channel.Relays?.ToString() ?? "0",
+              channel.Bitrate?.ToString() ?? "0",
+              channel.ContentType ?? "",
+              channel.Artist ?? "",
+              channel.TrackTitle ?? "",
+              channel.Album ?? "",
+              channel.TrackUrl ?? "",
               WebUtility.UrlEncode(channel.Name),
               FormatUptime(channel.Uptime),
               "click",
-              channel.Comment,
+              channel.Comment ?? "",
               "0",
             }.Select(str => System.Net.WebUtility.HtmlEncode(str))
           )
@@ -101,12 +101,12 @@ namespace PeerCastStation.UI.HTTP
   {
     override public string Name { get { return "YP Channels Host"; } }
 
-    private IDisposable appRegistration = null;
+    private IDisposable? appRegistration = null;
 
-    protected override void OnStart()
+    protected override void OnStart(PeerCastApplication app)
     {
-      var owin = Application.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
-      appRegistration = owin?.OwinHost?.Register(builder => YPChannelsHostOwinApp.BuildApp(builder, Application));
+      var owin = app.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
+      appRegistration = owin?.OwinHost?.Register(builder => YPChannelsHostOwinApp.BuildApp(builder, app));
     }
 
     protected override void OnStop()

@@ -57,7 +57,7 @@ namespace PeerCastStation.HTTP
     public string MIMEType { get { return "audio/x-mpegurl"; } }
     public IList<Channel> Channels { get; private set; }
 
-    public M3UPlayList(string scheme, Channel channel)
+    public M3UPlayList(string? scheme, Channel channel)
     {
       this.scheme = String.IsNullOrEmpty(scheme) ? "http" : scheme.ToLowerInvariant();
       Channels = new List<Channel> { channel };
@@ -91,7 +91,7 @@ namespace PeerCastStation.HTTP
     public string MIMEType { get { return "video/x-ms-asf"; } }
     public IList<Channel> Channels { get; private set; }
 
-    public ASXPlayList(string scheme, Channel channel)
+    public ASXPlayList(string? scheme, Channel channel)
     {
       this.scheme = String.IsNullOrEmpty(scheme) ? "mms" : scheme.ToLowerInvariant();
       Channels = new List<Channel> { channel };
@@ -109,8 +109,8 @@ namespace PeerCastStation.HTTP
         xml.WriteElementString("Title", Channels[0].ChannelInfo.Name);
       }
       foreach (var c in Channels) {
-        string name = c.ChannelInfo.Name;
-        string contact_url = null;
+        string? name = c.ChannelInfo.Name;
+        string? contact_url = null;
         if (c.ChannelInfo.URL!=null) {
           contact_url = c.ChannelInfo.URL;
         }

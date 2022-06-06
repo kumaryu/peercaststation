@@ -33,8 +33,8 @@ namespace PeerCastStation.WPF
     }
 
     private DispatcherTimer timer;
-    private System.Windows.Interop.WindowInteropHelper hwnd;
-    private System.Windows.Interop.HwndSource nativeSource;
+    private System.Windows.Interop.WindowInteropHelper? hwnd;
+    private System.Windows.Interop.HwndSource? nativeSource;
     public MainWindow(PeerCastAppViewModel viewmodel)
     {
       InitializeComponent();
@@ -65,7 +65,7 @@ namespace PeerCastStation.WPF
           nativeSource = System.Windows.Interop.HwndSource.FromHwnd(hwnd.Handle);
           nativeSource.AddHook(OnWindowMessage);
           var dpi = Screen.GetDpiForWindow(hwnd);
-          var settings = PeerCastStation.Core.PeerCastApplication.Current.Settings.Get<WPFSettings>();
+          var settings = PeerCastStation.Core.PeerCastApplication.Current!.Settings.Get<WPFSettings>();
           var rect = new Rect(
             IsFinite(settings.WindowLeft)   ? settings.WindowLeft   : (this.Left*dpi/96.0),
             IsFinite(settings.WindowTop)    ? settings.WindowTop    : (this.Top*dpi/96.0),
@@ -151,7 +151,7 @@ namespace PeerCastStation.WPF
 			dialog.ShowDialog();
 		}
 
-    private LogWindow logWindow;
+    private LogWindow? logWindow;
     private void OnShowLogs(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
     {
       if (logWindow==null) {
@@ -180,7 +180,7 @@ namespace PeerCastStation.WPF
     protected override void OnLocationChanged(EventArgs e)
     {
       if (!InitWindow()) return;
-      var settings = PeerCastStation.Core.PeerCastApplication.Current.Settings.Get<WPFSettings>();
+      var settings = PeerCastStation.Core.PeerCastApplication.Current!.Settings.Get<WPFSettings>();
       var bounds = RestoreBounds;
       if (!bounds.IsEmpty) {
         var dpi = Screen.GetDpiForWindow(this);
@@ -197,7 +197,7 @@ namespace PeerCastStation.WPF
     protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
     {
       if (!InitWindow()) return;
-      var settings = PeerCastStation.Core.PeerCastApplication.Current.Settings.Get<WPFSettings>();
+      var settings = PeerCastStation.Core.PeerCastApplication.Current!.Settings.Get<WPFSettings>();
       var bounds = RestoreBounds;
       if (!bounds.IsEmpty) {
         var dpi = Screen.GetDpiForWindow(this);

@@ -31,9 +31,9 @@ namespace PeerCastStation.HTTP
     /// </summary>
     /// <param name="stream">読み取り元のストリーム</param>
     /// <returns>解析済みHTTPRequest</returns>
-    public static HTTPRequest Read(Stream stream)
+    public static HTTPRequest? Read(Stream stream)
     {
-      string line = null;
+      string? line = null;
       var requests = new List<string>();
       var buf = new List<byte>();
       while (line!="") {
@@ -46,14 +46,17 @@ namespace PeerCastStation.HTTP
           buf.Clear();
         }
       }
-      var req = new HTTPRequest(requests);
-      if (req.Uri==null) return null;
-      return req;
+      if (HTTPRequest.TryParse(requests, out var req)) {
+        return req;
+      }
+      else {
+        return null;
+      }
     }
 
-    public static async Task<HTTPRequest> ReadAsync(Stream stream, CancellationToken cancel_token)
+    public static async Task<HTTPRequest?> ReadAsync(Stream stream, CancellationToken cancel_token)
     {
-      string line = null;
+      string? line = null;
       var requests = new List<string>();
       var buf = new List<byte>();
       while (line!="") {
@@ -66,9 +69,12 @@ namespace PeerCastStation.HTTP
           buf.Clear();
         }
       }
-      var req = new HTTPRequest(requests);
-      if (req.Uri==null) return null;
-      return req;
+      if (HTTPRequest.TryParse(requests, out var req)) {
+        return req;
+      }
+      else {
+        return null;
+      }
     }
 
   }

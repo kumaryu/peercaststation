@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace PeerCastStation.Core.Http
 {
@@ -20,14 +19,14 @@ namespace PeerCastStation.Core.Http
     {
       private Dictionary<string, List<string>> headers = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
-      public bool TryGetValue(string name, out string[] value)
+      public bool TryGetValue(string name, [NotNullWhen(true)] out string[]? value)
       {
         if (headers.TryGetValue(name, out var lst) && lst.Count>0) {
           value = lst.ToArray();
           return true;
         }
         else {
-          value = default(string[]);
+          value = default;
           return false;
         }
       }
@@ -37,14 +36,14 @@ namespace PeerCastStation.Core.Http
         return headers.ContainsKey(name);
       }
 
-      public bool TryGetValue(string name, out string value)
+      public bool TryGetValue(string name, [NotNullWhen(true)] out string? value)
       {
         if (headers.TryGetValue(name, out var lst) && lst.Count>0) {
           value = lst[lst.Count-1];
           return true;
         }
         else {
-          value = default(string);
+          value = default;
           return false;
         }
       }
@@ -90,7 +89,7 @@ namespace PeerCastStation.Core.Http
     /// </summary>
     public RequestHeaders Headers { get; private set; }
 
-    private string path = null;
+    private string? path = null;
     public string Path {
       get {
         if (path==null) {
@@ -132,7 +131,7 @@ namespace PeerCastStation.Core.Http
       PathAndQuery = reqLine.PathAndQuery;
       var headers = new RequestHeaders();
       foreach (var req in requests) {
-        Match match = null;
+        Match match = Match.Empty;
         if ((match = OtherHeaderRegex.Match(req)).Success) {
           headers.Add(match.Groups[1].Value, match.Groups[2].Value.Trim());
         }
@@ -152,14 +151,14 @@ namespace PeerCastStation.Core.Http
       }
     }
 
-    public static HttpRequest ParseRequest(IEnumerable<string> lines)
+    public static HttpRequest? ParseRequest(IEnumerable<string> lines)
     {
       var reqLine = ParseRequestLine(lines.First());
       if (reqLine==null) return null;
       return new HttpRequest(reqLine, lines.Skip(1));
     }
 
-    public static HttpRequestLine ParseRequestLine(string line)
+    public static HttpRequestLine? ParseRequestLine(string line)
     {
       var match = RequestLineRegex.Match(line);
       if (match.Success) {

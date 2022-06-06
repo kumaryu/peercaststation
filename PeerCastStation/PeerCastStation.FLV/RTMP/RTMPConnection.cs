@@ -22,7 +22,7 @@ namespace PeerCastStation.FLV.RTMP
 
     protected Stream InputStream  { get { return inputStream; } }
     protected Stream OutputStream { get { return outputStream; } }
-    public string ClientName { get; private set; }
+    public string? ClientName { get; private set; }
 
     private bool disposed = false;
     public virtual void Dispose()
@@ -384,7 +384,7 @@ namespace PeerCastStation.FLV.RTMP
       public static readonly RTMPMessageBuilder NullPacket = new RTMPMessageBuilder(null, 0, 0, 0, 0);
 
       public RTMPMessageBuilder(
-        RTMPMessageBuilder x,
+        RTMPMessageBuilder? x,
         long timestamp,
         int  type_id,
         long chunk_message_stream_id,
@@ -461,13 +461,14 @@ namespace PeerCastStation.FLV.RTMP
         chunk_stream_id = (buf[1]*256 | buf[0]) + 64;
       }
 
-      RTMPMessageBuilder msg = null;
-      RTMPMessageBuilder last_msg = null;
+      RTMPMessageBuilder msg;
+      RTMPMessageBuilder? last_msg;
       if (!lastMessages.TryGetValue(chunk_stream_id, out last_msg)) {
         last_msg = RTMPMessageBuilder.NullPacket;
       }
       switch ((basic_header & 0xC0)>>6) {
       case 0:
+      default:
         using (var reader=new RTMPBinaryReader(await RecvStream(11, cancel_token).ConfigureAwait(false))) {
           long timestamp  = reader.ReadUInt24();
           var body_length = reader.ReadUInt24();
@@ -644,8 +645,7 @@ namespace PeerCastStation.FLV.RTMP
 
     protected virtual Task OnAbort(AbortMessage msg, CancellationToken cancel_token)
     {
-      RTMPMessageBuilder builder;
-      if (lastMessages.TryGetValue(msg.TargetChunkStream, out builder)) {
+      if (lastMessages.TryGetValue(msg.TargetChunkStream, out var builder)) {
         builder.Abort();
       }
       return Task.Delay(0);
@@ -738,8 +738,8 @@ namespace PeerCastStation.FLV.RTMP
     private async Task OnCommandConnect(CommandMessage msg, CancellationToken cancel_token)
     {
       objectEncoding = ((int)msg.CommandObject["objectEncoding"])==3 ? 3 : 0;
-      ClientName     = (string)msg.CommandObject["flashVer"];
-      logger.Debug("connect: objectEncoding {0}, flashVer: {1}", objectEncoding, ClientName);
+      ClientName     = (string?)msg.CommandObject["flashVer"];
+      logger.Debug($"connect: objectEncoding {objectEncoding}, flashVer: {ClientName}");
       await SendMessage(2, new SetChunkSizeMessage(this.Now, 0, sendChunkSize), cancel_token).ConfigureAwait(false);
       await SendMessage(2, new SetWindowSizeMessage(this.Now, 0, recvWindowSize), cancel_token).ConfigureAwait(false);
       await SendMessage(2, new SetPeerBandwidthMessage(this.Now, 0, sendWindowSize, PeerBandwidthLimitType.Hard), cancel_token).ConfigureAwait(false);
@@ -788,7 +788,7 @@ namespace PeerCastStation.FLV.RTMP
         msg.StreamId,
         "_result",
         msg.TransactionId,
-        null,
+        AMF.AMFValue.Null,
         new AMF.AMFValue(new_stream_id)
       );
       if (msg.TransactionId!=0) {

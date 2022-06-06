@@ -20,6 +20,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PeerCastStation.Core
 {
@@ -97,7 +98,7 @@ namespace PeerCastStation.Core
       return (int)value;
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
       if (obj is ID4) {
         return Equals((ID4)obj);
@@ -292,8 +293,8 @@ namespace PeerCastStation.Core
     public static readonly ID4 PCP_CHAN_INFO_STREAMEXT  = new ID4("sext");
     #endregion
 
-    private byte[] value = null;
-    private IAtomCollection children = null;
+    private readonly byte[]? value = null;
+    private readonly IAtomCollection? children = null;
 
     static Atom()
     {
@@ -333,7 +334,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 子Atomのコレクションを取得します。値を保持している場合はnullを返します
     /// </summary>
-    public IAtomCollection Children { get { return children; } }
+    public IAtomCollection? Children { get { return children; } }
 
     /// <summary>
     /// 保持している値をbyteとして取得します。
@@ -571,7 +572,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="res">保持している値の書き込み先</param>
     /// <returns>値を保持していた場合はtrue、そうでない場合はfalse</returns>
-    public bool TryGetBytes(out byte[] res)
+    public bool TryGetBytes([NotNullWhen(true)] out byte[]? res)
     {
       if (value != null) {
         res = value;
@@ -592,7 +593,7 @@ namespace PeerCastStation.Core
     /// <returns>値のIPアドレス</returns>
     public IPAddress GetIPAddress()
     {
-      IPAddress res;
+      IPAddress? res;
       if (TryGetIPAddress(out res)) {
         return res;
       }
@@ -606,7 +607,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="res">保持している値の書き込み先</param>
     /// <returns>値がIPv4またはIPv6アドレスとして解析できた場合はtrue、そうでない場合はfalse</returns>
-    public bool TryGetIPAddress(out IPAddress res)
+    public bool TryGetIPAddress([NotNullWhen(true)] out IPAddress? res)
     {
       if (value!=null && (value.Length==4 || value.Length==16)) {
         var ip_ary = new byte[value.Length];
@@ -802,13 +803,17 @@ namespace PeerCastStation.Core
         stream.Write(len, 0, len.Length);
         stream.Write(value, 0, value.Length);
       }
-      else {
-        var cnt = BitConverter.GetBytes(0x80000000U | (uint)atom.Children.Count);
+      else if (atom.HasChildren) {
+        var cnt = BitConverter.GetBytes(0x80000000U | (uint)atom.Children!.Count);
         if (!BitConverter.IsLittleEndian) Array.Reverse(cnt);
         stream.Write(cnt, 0, cnt.Length);
         foreach (var child in atom.Children) {
           Write(child);
         }
+      }
+      else {
+        var len = BitConverter.GetBytes(0);
+        stream.Write(len, 0, len.Length);
       }
     }
 
@@ -828,13 +833,17 @@ namespace PeerCastStation.Core
         stream.Write(len, 0, len.Length);
         stream.Write(value, 0, value.Length);
       }
-      else {
-        var cnt = BitConverter.GetBytes(0x80000000U | (uint)atom.Children.Count);
+      else if (atom.HasChildren) {
+        var cnt = BitConverter.GetBytes(0x80000000U | (uint)atom.Children!.Count);
         if (!BitConverter.IsLittleEndian) Array.Reverse(cnt);
         stream.Write(cnt, 0, cnt.Length);
         foreach (var child in atom.Children) {
           Write(stream, child);
         }
+      }
+      else {
+        var len = BitConverter.GetBytes(0);
+        stream.Write(len, 0, len.Length);
       }
     }
   }
@@ -958,7 +967,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="name">検索する名前</param>
     /// <returns>指定した名前を持つ最初のAtom、無かった場合はnull</returns>
-    Atom FindByName(ID4 name);
+    Atom? FindByName(ID4 name);
 
     /// <summary>
     /// 他のAtomCollectionの内容をこのインスタンスに上書きします。
@@ -997,7 +1006,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="name">検索する名前</param>
     /// <returns>指定した名前を持つ最初のAtom、無かった場合はnull</returns>
-    public Atom FindByName(ID4 name)
+    public Atom? FindByName(ID4 name)
     {
       return this.FirstOrDefault((x) => { return x.Name==name; });
     }
@@ -1029,7 +1038,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="name">取り除くAtomの名前</param>
     /// <returns>取り除いたAtom、無ければnull</returns>
-    public Atom RemoveByName(ID4 name)
+    public Atom? RemoveByName(ID4 name)
     {
       var atom = this.FirstOrDefault((x) => { return x.Name==name; });
       if (atom!=null) this.Remove(atom);
@@ -1071,7 +1080,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="name">検索する名前</param>
     /// <returns>指定した名前を持つ最初のAtom、無かった場合はnull</returns>
-    public Atom FindByName(ID4 name)
+    public Atom? FindByName(ID4 name)
     {
       return baseCollection.FindByName(name);
     }

@@ -37,8 +37,8 @@ namespace PeerCastStation.WPF.ChannelLists
     {
       get { return channels; }
     }
-    private ChannelViewModel selectedChannel;
-    public ChannelViewModel SelectedChannel
+    private ChannelViewModel? selectedChannel;
+    public ChannelViewModel? SelectedChannel
     {
       get { return selectedChannel; }
       set {
@@ -47,10 +47,6 @@ namespace PeerCastStation.WPF.ChannelLists
           UpdateRelayTree(selectedChannel);
         });
       }
-    }
-    private bool IsChannelSelected
-    {
-      get { return selectedChannel!=null; }
     }
 
     internal BroadcastViewModel Broadcast
@@ -84,19 +80,19 @@ namespace PeerCastStation.WPF.ChannelLists
       foreach (var channel in new_list.Except(channels)) {
         channels.Add(channel);
       }
-      if (!channels.Contains(selectedChannel)) {
+      if (selectedChannel!=null && !channels.Contains(selectedChannel)) {
         this.SelectedChannel = null;
       }
       UpdateChannel(selectedChannel);
     }
 
-    private void UpdateChannel(ChannelViewModel channel)
+    private void UpdateChannel(ChannelViewModel? channel)
     {
       Connections.UpdateConnections(channel);
       ChannelInfo.UpdateChannelInfo(channel);
     }
 
-    private void UpdateRelayTree(ChannelViewModel channel)
+    private void UpdateRelayTree(ChannelViewModel? channel)
     {
       RelayTree.Update(channel);
     }

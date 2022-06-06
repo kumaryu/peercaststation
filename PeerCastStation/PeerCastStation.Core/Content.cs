@@ -214,35 +214,35 @@ namespace PeerCastStation.Core
       return list.Values.GetEnumerator();
     }
 
-    public Content GetOldest(int stream)
+    public Content? GetOldest(int stream)
     {
       lock (list) {
         return list.Values.Where(c => c.Stream>=stream).FirstOrDefault();
       }
     }
 
-    public Content GetNewest(int stream)
+    public Content? GetNewest(int stream)
     {
       lock (list) {
         return list.Values.Where(c => c.Stream>=stream).LastOrDefault();
       }
     }
 
-    public Content Newest
+    public Content? Newest
     {
       get {
         return list.Values.LastOrDefault();
       }
     }
 
-    public Content Oldest
+    public Content? Oldest
     {
       get {
         return list.Values.FirstOrDefault();
       }
     }
 
-    private Content GetFirstContent(int stream, TimeSpan t, long position)
+    private Content? GetFirstContent(int stream, TimeSpan t, long position)
     {
       lock (list) {
         return list.Values.LastOrDefault(c =>
@@ -288,9 +288,9 @@ namespace PeerCastStation.Core
       }
     }
 
-    public Content GetNewerContent(Content content, out bool skipped)
+    public Content? GetNewerContent(Content content, out bool skipped)
     {
-      Content res;
+      Content? res;
       lock (list) {
         res = list.Values.Where(c =>
           c.Stream>content.Stream ||
@@ -305,7 +305,7 @@ namespace PeerCastStation.Core
       return res;
     }
 
-    public Content FindNextByPosition(int stream, long pos)
+    public Content? FindNextByPosition(int stream, long pos)
     {
       lock (list) {
         return list.Values.Where(c => c.Stream>=stream && pos<c.Position).FirstOrDefault();

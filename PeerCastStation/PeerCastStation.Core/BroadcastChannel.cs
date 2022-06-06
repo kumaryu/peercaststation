@@ -7,7 +7,7 @@ namespace PeerCastStation.Core
     : Channel
   {
     public override bool IsBroadcasting { get { return true; } }
-    public ISourceStreamFactory SourceStreamFactory { get; private set; }
+    public ISourceStreamFactory? SourceStreamFactory { get; private set; }
     public IContentReaderFactory ContentReaderFactory { get; private set; }
 
     public BroadcastChannel(
@@ -15,7 +15,7 @@ namespace PeerCastStation.Core
         NetworkType network,
         Guid channel_id,
         ChannelInfo channel_info,
-        ISourceStreamFactory source_stream_factory,
+        ISourceStreamFactory? source_stream_factory,
         IContentReaderFactory content_reader_factory)
       : base(peercast, network, channel_id)
     {

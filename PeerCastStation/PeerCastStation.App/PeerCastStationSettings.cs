@@ -21,23 +21,14 @@ namespace PeerCastStation.App
   {
     public class LoggerSettings
     {
-      public LogLevel           Level        { get; set; }
-      public LoggerOutputTarget OutputTarget { get; set; }
-      public string             LogFileName  { get; set; }
-
-      public LoggerSettings()
-      {
-        this.Level = LogLevel.Warn;
-        this.OutputTarget =
-          LoggerOutputTarget.Debug |
-          LoggerOutputTarget.Console |
-          LoggerOutputTarget.UserInterface;
-      }
+      public LogLevel           Level { get; set; } = LogLevel.Warn;
+      public LoggerOutputTarget OutputTarget { get; set; } = LoggerOutputTarget.Debug | LoggerOutputTarget.Console | LoggerOutputTarget.UserInterface;
+      public string             LogFileName { get; set; } = "";
     }
 
     public class ListenerSettings
     {
-      public System.Net.IPEndPoint EndPoint      { get; set; }
+      public System.Net.IPEndPoint? EndPoint     { get; set; }
       public OutputStreamType LocalAccepts       { get; set; }
       public bool             LocalAuthRequired  { get; set; }
       public OutputStreamType GlobalAccepts      { get; set; }
@@ -76,10 +67,10 @@ namespace PeerCastStation.App
 
     public class YellowPageSettings
     {
-      public string Protocol { get; set; }
-      public string Name     { get; set; }
-      public Uri    Uri      { get; set; }
-      public Uri    ChannelsUri { get; set; }
+      public string? Protocol { get; set; }
+      public string? Name     { get; set; }
+      public Uri?    Uri      { get; set; }
+      public Uri?    ChannelsUri { get; set; }
 
       public YellowPageSettings()
       {

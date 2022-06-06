@@ -51,7 +51,7 @@ namespace PeerCastStation.Core
 
     private async Task<byte[]> PostAsync(Func<Stream,CancellationToken,Task> post_body, CancellationToken cancellationToken)
     {
-      IPAddress targetAddress;
+      IPAddress? targetAddress;
       try {
         targetAddress = (await Dns.GetHostAddressesAsync(Target.DnsSafeHost).ConfigureAwait(false))
           .Where(addr => addr.AddressFamily == AddressFamily)
@@ -61,7 +61,9 @@ namespace PeerCastStation.Core
         new Logger(typeof(BandwidthChecker)).Error(e);
         targetAddress = null;
       }
-      if (targetAddress==null) throw new WebException();
+      if (targetAddress==null) {
+        throw new WebException();
+      }
       using (var client=new TcpClient(AddressFamily)) {
         client.NoDelay = true;
         client.ReceiveBufferSize = 256*1024;
@@ -88,7 +90,7 @@ namespace PeerCastStation.Core
         await stream.WriteBytesAsync(CreateChunk(new byte[0]), cancellationToken).ConfigureAwait(false);
 
         using (var bufStream=new BufferedStream(stream, 8192)) {
-          string line = null;
+          string? line = null;
           var responses = new List<string>();
           var buf = new List<byte>(8192);
           while (line!="") {

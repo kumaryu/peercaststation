@@ -11,19 +11,22 @@ namespace PeerCastStation.CustomFilter
 {
   public class CustomFilterDescription
   {
-    public string Name              { get; private set; }
-    public string CommandLine       { get; private set; }
-    public string InputContentType  { get; private set; }
-    public string OutputContentType { get; private set; }
-    public string OutputMIMEType    { get; private set; }
-    public string OutputContentExt  { get; private set; }
-    public string BasePath          { get; private set; }
-    public bool   Logging           { get; private set; }
+    public string? Name              { get; private set; }
+    public string? CommandLine       { get; private set; }
+    public string? InputContentType  { get; private set; }
+    public string? OutputContentType { get; private set; }
+    public string? OutputMIMEType    { get; private set; }
+    public string? OutputContentExt  { get; private set; }
+    public string? BasePath          { get; private set; }
+    public bool    Logging           { get; private set; } = false;
 
     public static IEnumerable<CustomFilterDescription> Load(string filename)
     {
       filename = System.IO.Path.GetFullPath(filename);
       var doc = XDocument.Load(filename);
+      if (doc.Root==null) {
+        return Enumerable.Empty<CustomFilterDescription>();
+      }
       return doc.Root.Elements(XName.Get("filter"))
         .Select(filter => {
           var desc = new CustomFilterDescription();
@@ -38,7 +41,7 @@ namespace PeerCastStation.CustomFilter
         }).ToArray();
     }
 
-    private static bool ToBool(string value)
+    private static bool ToBool(string? value)
     {
       if (value==null) return false;
       switch (value.ToLowerInvariant()) {
@@ -57,7 +60,7 @@ namespace PeerCastStation.CustomFilter
   {
     public CustomFilterDescription Description { get; private set; }
     public IContentSink Sink { get; private set; }
-    private System.Diagnostics.Process process = null;
+    private System.Diagnostics.Process? process = null;
 
     public CustomFilterContentSink(CustomFilterDescription desc, IContentSink sink)
     {
@@ -112,7 +115,7 @@ namespace PeerCastStation.CustomFilter
       public async Task<T> DequeueAsync(CancellationToken cancellationToken)
       {
         await locker.WaitAsync(cancellationToken).ConfigureAwait(false);
-        T result;
+        T? result;
         while (!queue.TryDequeue(out result)) {
           await locker.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -120,18 +123,18 @@ namespace PeerCastStation.CustomFilter
       }
     }
 
-    private CancellationTokenSource processCancellationToken;
-    private Task stdErrorTask;
-    private Task stdOutTask;
-    private Task stdInTask;
+    private CancellationTokenSource? processCancellationToken;
+    private Task? stdErrorTask;
+    private Task? stdOutTask;
+    private Task? stdInTask;
     private bool writable = false;
     private WaitableQueue<ReadOnlyMemory<byte>> pipePackets = new WaitableQueue<ReadOnlyMemory<byte>>();
 
-    private Content lastContent = null;
+    private Content? lastContent = null;
     private void StartProcess()
     {
       var startinfo = new System.Diagnostics.ProcessStartInfo();
-      var cmd = this.Description.CommandLine;
+      var cmd = this.Description.CommandLine ?? "";
       var args =
         System.Text.RegularExpressions.Regex.Matches(cmd, @"(?:""[^""]+?"")|(?:\S+)")
         .Cast<System.Text.RegularExpressions.Match>()
@@ -148,16 +151,19 @@ namespace PeerCastStation.CustomFilter
       startinfo.RedirectStandardError = true;
       startinfo.StandardOutputEncoding = System.Text.Encoding.ASCII;
       startinfo.StandardErrorEncoding = System.Text.Encoding.Default;
+      process = System.Diagnostics.Process.Start(startinfo);
+      if (process==null) {
+        return;
+      }
       processCancellationToken = new CancellationTokenSource();
       var cancel = processCancellationToken.Token;
-      process = System.Diagnostics.Process.Start(startinfo);
       pipePackets = new WaitableQueue<ReadOnlyMemory<byte>>();
       var stdout = process.StandardOutput.BaseStream;
       var stdin  = process.StandardInput.BaseStream;
       var stderr = process.StandardError;
       stdErrorTask = Task.Run(async () => {
         try {
-          Logger logger = new Logger(typeof(CustomFilterContentSink), this.Description.Name);
+          Logger logger = new Logger(typeof(CustomFilterContentSink), this.Description.Name ?? "");
           while (!cancel.IsCancellationRequested) {
             var line = await stderr.ReadLineAsync().ConfigureAwait(false);
             if (line==null) break;
@@ -180,7 +186,9 @@ namespace PeerCastStation.CustomFilter
             var len = await stdout.ReadAsync(buffer, 0, buffer.Length, cancel).ConfigureAwait(false);
             System.Console.WriteLine("stdout {0}", len);
             if (len<=0) break;
-            Sink.OnContent(new Content(lastContent.Stream, lastContent.Timestamp, pos, buffer, 0, len, PCPChanPacketContinuation.None));
+            if (lastContent!=null) {
+              Sink.OnContent(new Content(lastContent.Stream, lastContent.Timestamp, pos, buffer, 0, len, PCPChanPacketContinuation.None));
+            }
             pos += len;
           }
           stdout.Close();
@@ -244,9 +252,9 @@ namespace PeerCastStation.CustomFilter
       if (process!=null) {
         pipePackets.Enqueue(null);
         try {
-          if (!Task.WaitAll(new [] { stdInTask, stdOutTask, stdErrorTask }, 333)) {
-            processCancellationToken.Cancel();
-            Task.WaitAll(new [] { stdInTask, stdOutTask, stdErrorTask }, 333);
+          if (!Task.WaitAll(new [] { stdInTask!, stdOutTask!, stdErrorTask! }, 333)) {
+            processCancellationToken!.Cancel();
+            Task.WaitAll(new [] { stdInTask!, stdOutTask!, stdErrorTask! }, 333);
           }
         }
         catch (AggregateException) {
@@ -266,6 +274,9 @@ namespace PeerCastStation.CustomFilter
         process.Close();
         process = null;
         processCancellationToken = null;
+        stdInTask = null;
+        stdOutTask = null;
+        stdErrorTask = null;
       }
       Sink.OnStop(reason);
     }
@@ -301,16 +312,17 @@ namespace PeerCastStation.CustomFilter
   {
     public override string Name => "CustomFilter Plugin";
     public string CustomFilterPath { get; set; }
-    public List<CustomFilterDescription> Descriptions { get; private set; }
-    private IEnumerable<CustomFilter> filters = null;
+    public IList<CustomFilterDescription> Descriptions { get; private set; } = new List<CustomFilterDescription>();
+    private IEnumerable<CustomFilter> filters = Enumerable.Empty<CustomFilter>();
 
     public CustomFilterPlugin()
     {
-      string path = null;
+      string path;
       try {
         path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
       }
       catch (PlatformNotSupportedException) {
+        path = "";
       }
       if (string.IsNullOrEmpty(path)) {
         try {
@@ -327,7 +339,7 @@ namespace PeerCastStation.CustomFilter
             "Filters");
       }
       else {
-        this.CustomFilterPath = null;
+        this.CustomFilterPath = "";
       }
     }
 
@@ -341,22 +353,22 @@ namespace PeerCastStation.CustomFilter
       Descriptions.Clear();
     }
 
-    override protected void OnStart()
+    override protected void OnStart(PeerCastApplication app)
     {
       if (filters!=null) return;
       filters = Descriptions.Select(desc => new CustomFilter(desc)).ToArray();
       foreach (var filter in filters) {
-        Application.PeerCast.ContentFilters.Add(filter);
+        app.PeerCast.ContentFilters.Add(filter);
       }
     }
 
-    override protected void OnStop()
+    override protected void OnStop(PeerCastApplication app)
     {
       if (filters==null) return;
       foreach (var filter in filters) {
-        Application.PeerCast.ContentFilters.Remove(filter);
+        app.PeerCast.ContentFilters.Remove(filter);
       }
-      filters = null;
+      filters = Enumerable.Empty<CustomFilter>();
     }
 
     public IEnumerable<CustomFilterDescription> LoadDescriptions()

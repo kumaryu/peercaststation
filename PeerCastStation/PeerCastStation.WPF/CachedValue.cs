@@ -12,17 +12,17 @@ namespace PeerCastStation.WPF
     public T Value {
       get {
         var ts = Stopwatch.GetTimestamp();
-        if (ts - timeStamp > lifetime) {
+        if (!timeStamp.HasValue || ts - timeStamp > lifetime) {
           value = getValueFunc();
           timeStamp = ts;
         }
-        return value;
+        return value!;
       }
     }
 
-    private long timeStamp;
+    private long? timeStamp;
     private long lifetime;
-    private T value;
+    private T? value;
     private Func<T> getValueFunc;
 
     public CachedValue(Func<T> valueFunc, TimeSpan lifetime)

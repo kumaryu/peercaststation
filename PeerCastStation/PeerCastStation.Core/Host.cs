@@ -15,7 +15,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Net;
 
 namespace PeerCastStation.Core
@@ -29,63 +28,63 @@ namespace PeerCastStation.Core
     /// <summary>
     /// ホストのセッションIDを取得および設定します
     /// </summary>
-    public Guid SessionID { get; private set; }
+    public Guid SessionID { get; }
     /// <summary>
     /// ホストのブロードキャストIDを取得および設定します
     /// </summary>
-    public Guid BroadcastID { get; private set; }
+    public Guid BroadcastID { get; }
     /// <summary>
     /// ホストが持つローカルなアドレス情報を取得します
     /// </summary>
-    public IPEndPoint LocalEndPoint { get; private set; }
+    public IPEndPoint? LocalEndPoint { get; }
     /// <summary>
     /// ホストが持つグローバルなアドレス情報を取得および設定します
     /// </summary>
-    public IPEndPoint GlobalEndPoint { get; private set; }
+    public IPEndPoint? GlobalEndPoint { get; }
     /// <summary>
     /// ホストへの接続が可能かどうかを取得および設定します
     /// </summary>
-    public bool IsFirewalled { get; private set; }
+    public bool IsFirewalled { get; }
     /// <summary>
     /// リレーしている数を取得および設定します
     /// </summary>
-    public int RelayCount { get; private set; }
+    public int RelayCount { get; }
     /// <summary>
     /// 直接視聴している数を取得および設定します
     /// </summary>
-    public int DirectCount { get; private set; }
+    public int DirectCount { get; }
     /// <summary>
     /// このホストがトラッカーかどうかを取得および設定します
     /// </summary>
-    public bool IsTracker { get; private set; }
+    public bool IsTracker { get; }
     /// <summary>
     /// リレー数が一杯かどうかを取得および設定します
     /// </summary>
-    public bool IsRelayFull { get; private set; }
+    public bool IsRelayFull { get; }
     /// <summary>
     /// 直接視聴数が一杯かどうかを取得および設定します
     /// </summary>
-    public bool IsDirectFull { get; private set; }
+    public bool IsDirectFull { get; }
     /// <summary>
     /// コンテントの受信中かどうかを取得および設定します
     /// </summary>
-    public bool IsReceiving { get; private set; }
+    public bool IsReceiving { get; }
     /// <summary>
     /// Control接続数が一杯かどうかを取得および設定します
     /// </summary>
-    public bool IsControlFull { get; private set; }
+    public bool IsControlFull { get; }
     /// <summary>
     /// ホストの拡張リストを取得します
     /// </summary>
-    public IList<string> Extensions { get; private set; }
+    public IList<string> Extensions { get; }
     /// <summary>
     /// その他のホスト情報リストを取得します
     /// </summary>
-    public IAtomCollection Extra { get; private set; }
+    public IAtomCollection Extra { get; }
     /// <summary>
     /// ノードの最終更新時刻をTickCount単位で取得します
     /// </summary>
-    public int LastUpdated { get; private set; }
+    public int LastUpdated { get; }
 
     public int Hops { get { return Extra.GetHostUphostHops() ?? 0; } }
     public TimeSpan Uptime { get { return Extra.GetHostUptime() ?? TimeSpan.Zero; } }
@@ -97,8 +96,8 @@ namespace PeerCastStation.Core
     public Host(
       Guid sessionID,
       Guid broadcastID,
-      IPEndPoint localEndPoint,
-      IPEndPoint globalEndPoint,
+      IPEndPoint? localEndPoint,
+      IPEndPoint? globalEndPoint,
       int relayCount,
       int directCount,
       bool isFirewalled,
@@ -144,11 +143,11 @@ namespace PeerCastStation.Core
     /// <summary>
     /// ホストが持つローカルなアドレス情報を取得および設定します
     /// </summary>
-    public IPEndPoint LocalEndPoint { get; set; }
+    public IPEndPoint? LocalEndPoint { get; set; }
     /// <summary>
     /// ホストが持つグローバルなアドレス情報を取得および設定します
     /// </summary>
-    public IPEndPoint GlobalEndPoint { get; set; }
+    public IPEndPoint? GlobalEndPoint { get; set; }
     /// <summary>
     /// ホストへの接続が可能かどうかを取得および設定します
     /// </summary>
@@ -238,7 +237,7 @@ namespace PeerCastStation.Core
     /// 指定されたHostの値でHostBuilderを初期化します
     /// </summary>
     /// <param name="host">初期化元のHost</param>
-    public HostBuilder(Host host)
+    public HostBuilder(Host? host)
     {
       if (host!=null) {
         SessionID = host.SessionID;

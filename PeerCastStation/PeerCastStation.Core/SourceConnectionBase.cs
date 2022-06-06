@@ -16,7 +16,7 @@ namespace PeerCastStation.Core
 
     ConnectionInfo GetConnectionInfo();
     Task<StopReason> Run();
-    void Post(Host from, Atom packet);
+    void Post(Host? from, Atom packet);
     void Stop(StopReason reason);
   }
 
@@ -59,8 +59,8 @@ namespace PeerCastStation.Core
         this.Stream.WriteTimeout = 10000;
       }
 
-      private IPEndPoint remoteEndPoint = null;
-      public IPEndPoint RemoteEndPoint {
+      private IPEndPoint? remoteEndPoint = null;
+      public IPEndPoint? RemoteEndPoint {
         get {
           if (remoteEndPoint!=null) {
             return remoteEndPoint;
@@ -82,7 +82,6 @@ namespace PeerCastStation.Core
         this.Client.Close();
       }
     }
-    protected SourceConnectionClient connection;
 
     public SourceConnectionBase(
         PeerCast peercast,
@@ -93,11 +92,11 @@ namespace PeerCastStation.Core
       this.Channel       = channel;
       this.SourceUri     = source_uri;
       this.StoppedReason = StopReason.None;
-      this.Logger        = new Logger(this.GetType(), source_uri?.ToString());
+      this.Logger        = new Logger(this.GetType(), source_uri?.ToString() ?? "");
       this.Status        = ConnectionStatus.Idle;
     }
 
-    protected virtual void OnStarted()
+    protected virtual void OnStarted(SourceConnectionClient connection)
     {
     }
 
@@ -105,6 +104,7 @@ namespace PeerCastStation.Core
     {
     }
 
+    protected SourceConnectionClient? connection;
     public async Task<StopReason> Run()
     {
       this.Status = ConnectionStatus.Connecting;
@@ -123,10 +123,10 @@ namespace PeerCastStation.Core
         Logger.Error(e);
         Stop(StopReason.NoHost);
       }
-      if (!IsStopped) {
-        OnStarted();
+      if (connection!=null && !IsStopped) {
+        OnStarted(connection);
         try {
-          await DoProcess(isStopped.Token).ConfigureAwait(false);
+          await DoProcess(connection, isStopped.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException) {
         }
@@ -138,11 +138,11 @@ namespace PeerCastStation.Core
       return StoppedReason;
     }
 
-    public void Post(Host from, Atom packet)
+    public void Post(Host? from, Atom packet)
     {
       if (IsStopped) return;
       if (connection==null) return;
-      DoPost(from, packet);
+      DoPost(connection, from, packet);
     }
 
     public virtual void Stop(StopReason reason)
@@ -160,7 +160,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    protected abstract Task<SourceConnectionClient> DoConnect(Uri source, CancellationToken cancellationToken);
+    protected abstract Task<SourceConnectionClient?> DoConnect(Uri source, CancellationToken cancellationToken);
 
     protected virtual async Task DoClose(SourceConnectionClient connection)
     {
@@ -170,11 +170,11 @@ namespace PeerCastStation.Core
       this.Status = ConnectionStatus.Error;
     }
 
-    protected virtual void DoPost(Host from, Atom packet)
+    protected virtual void DoPost(SourceConnectionClient connection, Host? from, Atom packet)
     {
     }
 
-    protected abstract Task DoProcess(CancellationToken cancellationToken);
+    protected abstract Task DoProcess(SourceConnectionClient connection, CancellationToken cancellationToken);
 
     public abstract ConnectionInfo GetConnectionInfo();
   }

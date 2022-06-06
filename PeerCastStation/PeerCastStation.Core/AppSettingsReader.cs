@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Configuration;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PeerCastStation.Core
 {
@@ -24,7 +25,7 @@ namespace PeerCastStation.Core
       else                          return default_value;
     }
 
-    static public bool TryGetString(string key, out string value)
+    static public bool TryGetString(string key, [NotNullWhen(true)] out string? value)
     {
       try {
         value = System.Configuration.ConfigurationManager.AppSettings[key];
@@ -38,12 +39,12 @@ namespace PeerCastStation.Core
 
     static public string GetString(string key, string default_value)
     {
-      string res;
+      string? res;
       if (TryGetString(key, out res)) return res;
       else                            return default_value;
     }
 
-    static public bool TryGetUri(string key, out Uri value)
+    static public bool TryGetUri(string key, [NotNullWhen(true)] out Uri? value)
     {
       try {
         var v = System.Configuration.ConfigurationManager.AppSettings[key];
@@ -57,12 +58,12 @@ namespace PeerCastStation.Core
 
     static public Uri GetUri(string key, Uri default_value)
     {
-      Uri res;
+      Uri? res;
       if (TryGetUri(key, out res)) return res;
       else                         return default_value;
     }
 
-    static public bool TryGetIPAddress(string key, out System.Net.IPAddress value)
+    static public bool TryGetIPAddress(string key, [NotNullWhen(true)] out System.Net.IPAddress? value)
     {
       try {
         var v = System.Configuration.ConfigurationManager.AppSettings[key];
@@ -76,7 +77,7 @@ namespace PeerCastStation.Core
 
     static public System.Net.IPAddress GetIPAddress(string key, System.Net.IPAddress default_value)
     {
-      System.Net.IPAddress res;
+      System.Net.IPAddress? res;
       if (TryGetIPAddress(key, out res)) return res;
       else                               return default_value;
     }

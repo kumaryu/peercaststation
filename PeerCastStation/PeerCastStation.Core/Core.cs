@@ -15,6 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -68,26 +69,26 @@ namespace PeerCastStation.Core
     ConnectionInfo GetConnectionInfo();
   }
 
-	public interface IYellowPageChannel
-	{
-		IYellowPageClient Source { get; }
-		string Name        { get; }
-		Guid   ChannelId   { get; }
-		string Tracker     { get; }
-		string ContentType { get; }
-		int?   Listeners   { get; }
-		int?   Relays      { get; }
-		int?   Bitrate     { get; }
-		int?   Uptime      { get; }
-		string ContactUrl  { get; }
-		string Genre       { get; }
-		string Description { get; }
-		string Comment     { get; }
-		string Artist      { get; }
-		string TrackTitle  { get; }
-		string Album       { get; }
-		string TrackUrl    { get; }
-	}
+  public interface IYellowPageChannel
+  {
+    IYellowPageClient Source { get; }
+    string Name         { get; }
+    Guid   ChannelId    { get; }
+    string? Tracker     { get; }
+    string? ContentType { get; }
+    int?   Listeners    { get; }
+    int?   Relays       { get; }
+    int?   Bitrate      { get; }
+    int?   Uptime       { get; }
+    string? ContactUrl  { get; }
+    string? Genre       { get; }
+    string? Description { get; }
+    string? Comment     { get; }
+    string? Artist      { get; }
+    string? TrackTitle  { get; }
+    string? Album       { get; }
+    string? TrackUrl    { get; }
+  }
 
   /// <summary>
   /// YellowPageとやりとりするクライアントのインターフェースです
@@ -105,24 +106,24 @@ namespace PeerCastStation.Core
     /// <summary>
     /// チャンネル掲載先のURLを取得します
     /// </summary>
-    Uri AnnounceUri { get; }
+    Uri? AnnounceUri { get; }
     /// <summary>
     /// チャンネル一覧取得用のURLを取得します
     /// </summary>
-    Uri ChannelsUri { get; }
+    Uri? ChannelsUri { get; }
     /// <summary>
     /// チャンネルIDからトラッカーを検索し取得します
     /// </summary>
     /// <param name="channel_id">検索するチャンネルID</param>
     /// <returns>見付かった場合は接続先URI、見付からなかった場合はnull</returns>
-    Uri FindTracker(Guid channel_id);
+    Uri? FindTracker(Guid channel_id);
 
     /// <summary>
     /// YellowPageにチャンネルを載せます
     /// </summary>
     /// <param name="channel">載せるチャンネル</param>
     /// <returns>掲載するチャンネルの状態を保持するオブジェクト</returns>
-    IAnnouncingChannel Announce(Channel channel);
+    IAnnouncingChannel? Announce(Channel channel);
 
     /// <summary>
     /// YellowPageとの接続を終了し、載せているチャンネルを全て削除します
@@ -162,9 +163,9 @@ namespace PeerCastStation.Core
   public class YellowPageUriValidationResult
   {
     public bool IsValid { get; private set; }
-    public Uri Candidate { get; private set; }
-    public string Message { get; private set; }
-    public YellowPageUriValidationResult(bool isValid, Uri candidate, string message)
+    public Uri? Candidate { get; private set; }
+    public string? Message { get; private set; }
+    public YellowPageUriValidationResult(bool isValid, Uri? candidate, string? message)
     {
       IsValid = isValid;
       Candidate = candidate;
@@ -197,7 +198,7 @@ namespace PeerCastStation.Core
     /// <param name="annouce_uri">YellowPageの配信掲載用URI</param>
     /// <param name="channels_uri">YellowPageのチャンネル一覧取得用URI</param>
     /// <returns>IYellowPageClientを実装するオブジェクトのインスタンス</returns>
-    IYellowPageClient Create(string name, Uri announce_uri, Uri channels_uri);
+    IYellowPageClient Create(string name, Uri? announce_uri, Uri? channels_uri);
     /// <summary>
     /// URIがこのYellowPageFactoryで扱えるかどうかを返します
     /// </summary>
@@ -317,7 +318,7 @@ namespace PeerCastStation.Core
     public string     ProtocolName    { get; private set; }
     public ConnectionType   Type      { get; private set; }
     public ConnectionStatus Status    { get; private set; }
-    public IPEndPoint RemoteEndPoint  { get; private set; }
+    public IPEndPoint? RemoteEndPoint { get; private set; }
     public RemoteHostStatus RemoteHostStatus { get; private set; }
     public Guid?      RemoteSessionID { get; private set; }
     public long?      ContentPosition { get; private set; }
@@ -325,14 +326,14 @@ namespace PeerCastStation.Core
     public float?     SendRate        { get; private set; }
     public int?       LocalRelays     { get; private set; }
     public int?       LocalDirects    { get; private set; }
-    public string     AgentName       { get; private set; }
-    public string     RemoteName      { get; private set; }
+    public string?    AgentName       { get; private set; }
+    public string?    RemoteName      { get; private set; }
     public ConnectionInfo(
       string           protocol_name,
       ConnectionType   type,
       ConnectionStatus status,
-      string           remote_name,
-      IPEndPoint       remote_endpoint,
+      string?          remote_name,
+      IPEndPoint?      remote_endpoint,
       RemoteHostStatus remote_host_status,
       Guid?            remote_session_id,
       long?      content_position,
@@ -340,7 +341,7 @@ namespace PeerCastStation.Core
       float?     send_rate,
       int?       local_relays,
       int?       local_directs,
-      string     agent_name)
+      string?    agent_name)
     {
       ProtocolName     = protocol_name;
       Type             = type;
@@ -450,7 +451,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="from">ブロードキャストパケットの送信元。無い場合はnull</param>
     /// <param name="packet">送信するデータ</param>
-    void Post(Host from, Atom packet);
+    void Post(Host? from, Atom packet);
     /// <summary>
     /// ストリームの種類を取得します
     /// </summary>
@@ -490,7 +491,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 配信時に使われるURIのデフォルト値を取得します
     /// </summary>
-    Uri DefaultUri { get; }
+    Uri? DefaultUri { get; }
     /// <summary>
     /// URIからプロトコルを判別しSourceStreamのインスタンスを作成します。
     /// </summary>
@@ -576,7 +577,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="from">ブロードキャストパケットの送信元。無い場合はnull</param>
     /// <param name="packet">送信するデータ</param>
-    void OnBroadcast(Host from, Atom packet);
+    void OnBroadcast(Host? from, Atom packet);
     /// <summary>
     /// ストリームへの書き込みを終了します
     /// </summary>
@@ -727,7 +728,7 @@ namespace PeerCastStation.Core
     /// <param name="content_type">解析したコンテントタイプの設定先</param>
     /// <param name="mime_type">解析したMIMEタイプの設定先</param>
     /// <returns>解析できた時はtrue、それ以外はfalse</returns>
-    bool TryParseContentType(byte[] header, out string content_type, out string mime_type);
+    bool TryParseContentType(byte[] header, [NotNullWhen(true)] out string? content_type, [NotNullWhen(true)] out string? mime_type);
   }
 
   public interface IContentFilter

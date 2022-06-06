@@ -17,9 +17,9 @@ namespace PeerCastStation.FLV
     private int          streamIndex     = -1;
     private DateTime     streamOrigin;
     private long         timestampOrigin = 0;
-    private DataMessage  metadata        = null;
-    private RTMPMessage  audioHeader     = null;
-    private RTMPMessage  videoHeader     = null;
+    private DataMessage? metadata        = null;
+    private RTMPMessage? audioHeader     = null;
+    private RTMPMessage? videoHeader     = null;
     private MemoryStream bodyBuffer      = new MemoryStream();
 
     public FLVContentBuffer(
@@ -32,14 +32,14 @@ namespace PeerCastStation.FLV
 
     private void SetDataFrame(DataMessage msg)
     {
-      var name = (string)msg.Arguments[0];
+      var name = (string?)msg.Arguments[0] ?? "";
       var data_msg = new DataAMF0Message(msg.Timestamp, 0, name, new AMF.AMFValue[] { msg.Arguments[1] });
       OnData(data_msg);
     }
 
     private void ClearDataFrame(DataMessage msg)
     {
-      var name = (string)msg.Arguments[0];
+      var name = (string?)msg.Arguments[0];
       switch (name) {
       case "onMetaData":
         metadata = null;
@@ -59,7 +59,7 @@ namespace PeerCastStation.FLV
         var val = metadata.Arguments[0]["maxBitrate"];
         if (!AMF.AMFValue.IsNull(val)) {
           double maxBitrate;
-          string maxBitrateStr = System.Text.RegularExpressions.Regex.Replace((string)val, @"([\d]+)k", "$1");
+          string maxBitrateStr = System.Text.RegularExpressions.Regex.Replace((string?)val ?? "", @"([\d]+)k", "$1");
           if (double.TryParse(maxBitrateStr, out maxBitrate)) {
             bitrate += maxBitrate;
           }

@@ -17,7 +17,7 @@ namespace PeerCastStation.Core.Http
     public IReadOnlyList<Func<Task>> OnInitActions { get { return onInitActions; } }
     public IDictionary<string,object> Capabilities { get; private set; } = new Dictionary<string,object>(StringComparer.Ordinal);
     public TextWriter TraceOutput {
-      get { return Properties[OwinEnvironment.Host.TraceOutput] as TextWriter; }
+      get { return (TextWriter)Properties[OwinEnvironment.Host.TraceOutput]; }
       set { Properties[OwinEnvironment.Host.TraceOutput] = value; }
     }
     public IList<IDictionary<string,object>> Addresses { get; private set; } = new List<IDictionary<string,object>>();
@@ -81,7 +81,7 @@ namespace PeerCastStation.Core.Http
       if (count==0 || buffer[index+count-1]=='\n') Flush();
     }
 
-    public override void Write(string value)
+    public override void Write(string? value)
     {
       if (value==null) return;
       buffer.Append(value);
@@ -126,7 +126,7 @@ namespace PeerCastStation.Core.Http
     private CancellationTokenSource stopCancellationTokenSource = new CancellationTokenSource();
     private int nextKey = 0;
 
-    private Func<IDictionary<string,object>, Task> owinApp = null;
+    private Func<IDictionary<string,object>, Task>? owinApp = null;
     public Func<IDictionary<string,object>, Task> OwinApp {
       get {
         if (owinApp==null) {

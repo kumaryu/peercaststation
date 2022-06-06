@@ -13,7 +13,7 @@ namespace PeerCastStation.App
     {
     }
 
-    RegisteredWaitHandle registeredWaitHandle = null;
+    RegisteredWaitHandle? registeredWaitHandle = null;
     protected override void DoSetup()
     {
       Console.CancelKeyPress += (sender, args) => {
@@ -78,6 +78,9 @@ namespace PeerCastStation.App
     private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs args)
     {
       var dir = System.IO.Path.GetDirectoryName(PecaSettings.DefaultFileName);
+      if (String.IsNullOrEmpty(dir)) {
+        return;
+      }
       System.IO.Directory.CreateDirectory(dir);
       using (var file=System.IO.File.AppendText(System.IO.Path.Combine(dir, "exception.log"))) {
         file.WriteLine("{0}: {1} (OS:{2}, CLR:{3})",

@@ -218,7 +218,7 @@ namespace PeerCastStation.FLV
           int continuity_counter;
           continuityCounter.TryGetValue(pid, out continuity_counter);
           var maxlen = 184;
-          MemoryStream adaptation_field = null;
+          MemoryStream? adaptation_field = null;
           if ((random_access || pcr.HasValue) && payload_unit_start_indicator) {
             adaptation_field = new MemoryStream();
             adaptation_field.WriteByte((byte)(
@@ -1050,14 +1050,14 @@ namespace PeerCastStation.FLV
     }
 
     private FLVToTSContentFilter filter = new FLVToTSContentFilter();
-    protected override void OnAttach()
+    protected override void OnAttach(PeerCastApplication app)
     {
-      Application.PeerCast.ContentFilters.Add(filter);
+      app.PeerCast.ContentFilters.Add(filter);
     }
 
-    protected override void OnDetach()
+    protected override void OnDetach(PeerCastApplication app)
     {
-      Application.PeerCast.ContentFilters.Remove(filter);
+      app.PeerCast.ContentFilters.Remove(filter);
     }
   }
 }

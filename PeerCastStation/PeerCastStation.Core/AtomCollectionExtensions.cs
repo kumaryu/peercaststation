@@ -90,7 +90,7 @@ namespace PeerCastStation.Core
     public static Guid? GetIDFrom(IAtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
-      byte[] value = null;
+      byte[]? value = null;
       if (atom != null && atom.TryGetBytes(out value) && value.Length==16) {
         return ByteArrayToID(value);
       }
@@ -102,7 +102,7 @@ namespace PeerCastStation.Core
     public static ID4? GetID4From(IAtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
-      byte[] value = null;
+      byte[]? value = null;
       if (atom != null && atom.TryGetBytes(out value) && value.Length==4) {
         return new ID4(value);
       }
@@ -111,10 +111,10 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static byte[] GetBytesFrom(IAtomCollection collection, ID4 name)
+    public static byte[]? GetBytesFrom(IAtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
-      byte[] value = null;
+      byte[]? value = null;
       if (atom != null && atom.TryGetBytes(out value)) {
         return value;
       }
@@ -123,10 +123,10 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static IPAddress GetIPAddressFrom(IAtomCollection collection, ID4 name)
+    public static IPAddress? GetIPAddressFrom(IAtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
-      IPAddress value = null;
+      IPAddress? value = null;
       if (atom != null && atom.TryGetIPAddress(out value)) {
         return value;
       }
@@ -135,9 +135,9 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static string GetStringFrom(IAtomCollection collection, ID4 name)
+    public static string? GetStringFrom(IAtomCollection collection, ID4 name)
     {
-      string res = null;
+      string? res = null;
       var atom = collection.FindByName(name);
       if (atom != null && atom.TryGetString(out res)) {
         return res;
@@ -147,12 +147,12 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static Atom GetAtomFrom(IAtomCollection collection, ID4 name)
+    public static Atom? GetAtomFrom(IAtomCollection collection, ID4 name)
     {
       return collection.FindByName(name);
     }
 
-    public static IAtomCollection GetCollectionFrom(IAtomCollection collection, ID4 name)
+    public static IAtomCollection? GetCollectionFrom(IAtomCollection collection, ID4 name)
     {
       var atom = collection.FindByName(name);
       if (atom != null && atom.HasChildren) {
@@ -223,12 +223,12 @@ namespace PeerCastStation.Core
       }
     }
 
-    public static IAtomCollection GetHelo(this IAtomCollection collection)
+    public static IAtomCollection? GetHelo(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_HELO);
     }
 
-    public static string GetHeloAgent(this IAtomCollection collection)
+    public static string? GetHeloAgent(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_HELO_AGENT);
     }
@@ -248,7 +248,7 @@ namespace PeerCastStation.Core
       return (int?)GetUShortFrom(collection, Atom.PCP_HELO_PING);
     }
 
-    public static IPAddress GetHeloRemoteIP(this IAtomCollection collection)
+    public static IPAddress? GetHeloRemoteIP(this IAtomCollection collection)
     {
       return GetIPAddressFrom(collection, Atom.PCP_HELO_REMOTEIP);
     }
@@ -273,7 +273,7 @@ namespace PeerCastStation.Core
       return GetIntFrom(collection, Atom.PCP_HELO_DISABLE);
     }
 
-    public static IAtomCollection GetOleh(this IAtomCollection collection)
+    public static IAtomCollection? GetOleh(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_OLEH);
     }
@@ -283,7 +283,7 @@ namespace PeerCastStation.Core
       return GetIntFrom(collection, Atom.PCP_OK);
     }
 
-    public static IAtomCollection GetChan(this IAtomCollection collection)
+    public static IAtomCollection? GetChan(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_CHAN);
     }
@@ -298,7 +298,7 @@ namespace PeerCastStation.Core
       return GetIDFrom(collection, Atom.PCP_CHAN_BCID);
     }
 
-    public static IAtomCollection GetChanPkt(this IAtomCollection collection)
+    public static IAtomCollection? GetChanPkt(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_CHAN_PKT);
     }
@@ -318,17 +318,17 @@ namespace PeerCastStation.Core
       return (PCPChanPacketContinuation)(GetByteFrom(collection, Atom.PCP_CHAN_PKT_CONTINUATION) ?? 0);
     }
 
-    public static byte[] GetChanPktData(this IAtomCollection collection)
+    public static byte[]? GetChanPktData(this IAtomCollection collection)
     {
       return GetBytesFrom(collection, Atom.PCP_CHAN_PKT_DATA);
     }
 
-    public static IAtomCollection GetChanInfo(this IAtomCollection collection)
+    public static IAtomCollection? GetChanInfo(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_CHAN_INFO);
     }
 
-    public static string GetChanInfoType(this IAtomCollection collection)
+    public static string? GetChanInfoType(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_INFO_TYPE);
     }
@@ -338,27 +338,27 @@ namespace PeerCastStation.Core
       return GetIntFrom(collection, Atom.PCP_CHAN_INFO_BITRATE);
     }
 
-    public static string GetChanInfoGenre(this IAtomCollection collection)
+    public static string? GetChanInfoGenre(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_INFO_GENRE);
     }
 
-    public static string GetChanInfoName(this IAtomCollection collection)
+    public static string? GetChanInfoName(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_INFO_NAME);
     }
 
-    public static string GetChanInfoURL(this IAtomCollection collection)
+    public static string? GetChanInfoURL(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_INFO_URL);
     }
 
-    public static string GetChanInfoDesc(this IAtomCollection collection)
+    public static string? GetChanInfoDesc(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_INFO_DESC);
     }
 
-    public static string GetChanInfoComment(this IAtomCollection collection)
+    public static string? GetChanInfoComment(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_INFO_COMMENT);
     }
@@ -368,47 +368,47 @@ namespace PeerCastStation.Core
       return GetIntFrom(collection, Atom.PCP_CHAN_INFO_PPFLAGS);
     }
 
-    public static string GetChanInfoStreamType(this IAtomCollection collection)
+    public static string? GetChanInfoStreamType(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_INFO_STREAMTYPE);
     }
 
-    public static string GetChanInfoStreamExt(this IAtomCollection collection)
+    public static string? GetChanInfoStreamExt(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_INFO_STREAMEXT);
     }
 
-    public static IAtomCollection GetChanTrack(this IAtomCollection collection)
+    public static IAtomCollection? GetChanTrack(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_CHAN_TRACK);
     }
 
-    public static string GetChanTrackTitle(this IAtomCollection collection)
+    public static string? GetChanTrackTitle(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_TRACK_TITLE);
     }
 
-    public static string GetChanTrackCreator(this IAtomCollection collection)
+    public static string? GetChanTrackCreator(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_TRACK_CREATOR);
     }
 
-    public static string GetChanTrackURL(this IAtomCollection collection)
+    public static string? GetChanTrackURL(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_TRACK_URL);
     }
 
-    public static string GetChanTrackAlbum(this IAtomCollection collection)
+    public static string? GetChanTrackAlbum(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_TRACK_ALBUM);
     }
 
-    public static string GetChanTrackGenre(this IAtomCollection collection)
+    public static string? GetChanTrackGenre(this IAtomCollection collection)
     {
       return GetStringFrom(collection, Atom.PCP_CHAN_TRACK_GENRE);
     }
 
-    public static IAtomCollection GetBcst(this IAtomCollection collection)
+    public static IAtomCollection? GetBcst(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_BCST);
     }
@@ -459,7 +459,7 @@ namespace PeerCastStation.Core
       return GetIntFrom(collection, Atom.PCP_BCST_VERSION_VP);
     }
 
-    public static byte[] GetBcstVersionEXPrefix(this IAtomCollection collection)
+    public static byte[]? GetBcstVersionEXPrefix(this IAtomCollection collection)
     {
       return GetBytesFrom(collection, Atom.PCP_BCST_VERSION_EX_PREFIX);
     }
@@ -469,7 +469,7 @@ namespace PeerCastStation.Core
       return GetShortFrom(collection, Atom.PCP_BCST_VERSION_EX_NUMBER);
     }
 
-    public static IAtomCollection GetHost(this IAtomCollection collection)
+    public static IAtomCollection? GetHost(this IAtomCollection collection)
     {
       return GetCollectionFrom(collection, Atom.PCP_HOST);
     }
@@ -485,14 +485,12 @@ namespace PeerCastStation.Core
       var ports = new List<ushort>();
       foreach (var atom in collection) {
         if (atom.Name==Atom.PCP_HOST_IP) {
-          IPAddress value;
-          if (atom.TryGetIPAddress(out value)) {
+          if (atom.TryGetIPAddress(out var value)) {
             addresses.Add(value);
           }
         }
         else if (atom.Name==Atom.PCP_HOST_PORT) {
-          ushort value;
-          if (atom.TryGetUInt16(out value)) {
+          if (atom.TryGetUInt16(out var value)) {
             ports.Add(value);
           }
         }
@@ -505,7 +503,7 @@ namespace PeerCastStation.Core
       return res;
     }
 
-    public static IPAddress GetHostIP(this IAtomCollection collection)
+    public static IPAddress? GetHostIP(this IAtomCollection collection)
     {
       return GetIPAddressFrom(collection, Atom.PCP_HOST_IP);
     }
@@ -551,7 +549,7 @@ namespace PeerCastStation.Core
       return GetIntFrom(collection, Atom.PCP_HOST_VERSION_VP);
     }
 
-    public static byte[] GetHostVersionEXPrefix(this IAtomCollection collection)
+    public static byte[]? GetHostVersionEXPrefix(this IAtomCollection collection)
     {
       return GetBytesFrom(collection, Atom.PCP_HOST_VERSION_EX_PREFIX);
     }
@@ -581,7 +579,7 @@ namespace PeerCastStation.Core
       return (PCPHostFlags1?)GetByteFrom(collection, Atom.PCP_HOST_FLAGS1);
     }
 
-    public static IPAddress GetHostUphostIP(this IAtomCollection collection)
+    public static IPAddress? GetHostUphostIP(this IAtomCollection collection)
     {
       return GetIPAddressFrom(collection, Atom.PCP_HOST_UPHOST_IP);
     }
@@ -591,7 +589,7 @@ namespace PeerCastStation.Core
       return GetIntFrom(collection, Atom.PCP_HOST_UPHOST_PORT);
     }
 
-    public static IPEndPoint GetHostUphostEndPoint(this IAtomCollection collection)
+    public static IPEndPoint? GetHostUphostEndPoint(this IAtomCollection collection)
     {
       var ip   = GetIPAddressFrom(collection, Atom.PCP_HOST_UPHOST_IP);
       var port = GetIntFrom(collection, Atom.PCP_HOST_UPHOST_PORT);

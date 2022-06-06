@@ -11,11 +11,11 @@ namespace PeerCastStation.Core.Http
   {
     public class OnSendingHeaderCollection
     {
-      private List<Tuple<Action<object>,object>> items = new List<Tuple<Action<object>, object>>();
+      private List<Tuple<Action<object?>,object?>> items = new List<Tuple<Action<object?>, object?>>();
 
-      public void Add(Action<object> action, object state)
+      public void Add(Action<object?> action, object? state)
       {
-        items.Add(new Tuple<Action<object>,object>(action, state));
+        items.Add(new Tuple<Action<object?>,object?>(action, state));
       }
 
       public void Invoke()
@@ -31,7 +31,7 @@ namespace PeerCastStation.Core.Http
     public ResponseStream ResponseBody { get; private set; }
     public OnSendingHeaderCollection OnSendingHeaders { get; private set; } = new OnSendingHeaderCollection();
     public ConnectionStream ConnectionStream { get; private set; }
-    private Func<IDictionary<string,object>, Task> opaqueHandler = null;
+    private Func<IDictionary<string,object>, Task>? opaqueHandler = null;
 
     public OwinContext(
       PeerCast peerCast,
@@ -41,40 +41,41 @@ namespace PeerCastStation.Core.Http
       IPEndPoint remoteEndPoint,
       AccessControlInfo accessControlInfo)
     {
-      Environment = new OwinEnvironment();
       ConnectionStream = stream;
       RequestBody = new OwinRequestBodyStream(this, ConnectionStream);
       ResponseBody = new OwinResponseBodyStream(this, ConnectionStream);
-      Environment.Environment[OwinEnvironment.Owin.Version] = "1.0.1";
-      Environment.Environment[OwinEnvironment.Host.TraceOutput] = TextWriter.Null;
-      Environment.Environment[OwinEnvironment.Owin.RequestBody] = RequestBody;
+      Dictionary<string, object> env = new();
+      env[OwinEnvironment.Owin.Version] = "1.0.1";
+      env[OwinEnvironment.Host.TraceOutput] = TextWriter.Null;
+      env[OwinEnvironment.Owin.RequestBody] = RequestBody;
       var requestHeaders = req.Headers.ToDictionary();
       if (!requestHeaders.TryGetValue("Host", out var values) || values.Length==0 || String.IsNullOrEmpty(values[0])) {
         requestHeaders["Host"] = new string[] { localEndPoint.ToString() };
       }
-      Environment.Environment[OwinEnvironment.Owin.RequestHeaders] = requestHeaders;
-      Environment.Environment[OwinEnvironment.Owin.RequestPath] = req.Path;
-      Environment.Environment[OwinEnvironment.Owin.RequestPathBase] = "";
-      Environment.Environment[OwinEnvironment.Owin.RequestProtocol] = req.Protocol;
-      Environment.Environment[OwinEnvironment.Owin.RequestQueryString] = req.QueryString;
-      Environment.Environment[OwinEnvironment.Owin.RequestScheme] = "http";
-      Environment.Environment[OwinEnvironment.Owin.RequestMethod] = req.Method;
-      Environment.Environment[OwinEnvironment.Owin.ResponseBody] = ResponseBody;
-      Environment.Environment[OwinEnvironment.Owin.ResponseHeaders] = new Dictionary<string,string[]>(StringComparer.OrdinalIgnoreCase);
-      Environment.Environment[OwinEnvironment.Server.RemoteIpAddress] = remoteEndPoint.Address.ToString();
-      Environment.Environment[OwinEnvironment.Server.RemotePort] = remoteEndPoint.Port.ToString();
-      Environment.Environment[OwinEnvironment.Server.IsLocal] = remoteEndPoint.Address.GetAddressLocality()==0;
-      Environment.Environment[OwinEnvironment.Server.LocalIpAddress] = localEndPoint.Address.ToString();
-      Environment.Environment[OwinEnvironment.Server.LocalPort] = localEndPoint.Port.ToString();
-      Environment.Environment[OwinEnvironment.Server.OnSendingHeaders] = new Action<Action<object>,object>(OnSendingHeaders.Add);
-      Environment.Environment[OwinEnvironment.PeerCastStation.PeerCast] = peerCast;
-      Environment.Environment[OwinEnvironment.PeerCastStation.AccessControlInfo] = accessControlInfo;
-      Environment.Environment[OwinEnvironment.PeerCastStation.GetRecvRate] = new Func<float>(() => stream.ReadRate);
-      Environment.Environment[OwinEnvironment.PeerCastStation.GetSendRate] = new Func<float>(() => stream.WriteRate);
-      Environment.Environment[OwinEnvironment.Opaque.Upgrade] = new Action<IDictionary<string,object>, Func<IDictionary<string,object>, Task>>(OpaqueUpgrade);
+      env[OwinEnvironment.Owin.RequestHeaders] = requestHeaders;
+      env[OwinEnvironment.Owin.RequestPath] = req.Path;
+      env[OwinEnvironment.Owin.RequestPathBase] = "";
+      env[OwinEnvironment.Owin.RequestProtocol] = req.Protocol;
+      env[OwinEnvironment.Owin.RequestQueryString] = req.QueryString;
+      env[OwinEnvironment.Owin.RequestScheme] = "http";
+      env[OwinEnvironment.Owin.RequestMethod] = req.Method;
+      env[OwinEnvironment.Owin.ResponseBody] = ResponseBody;
+      env[OwinEnvironment.Owin.ResponseHeaders] = new Dictionary<string,string[]>(StringComparer.OrdinalIgnoreCase);
+      env[OwinEnvironment.Server.RemoteIpAddress] = remoteEndPoint.Address.ToString();
+      env[OwinEnvironment.Server.RemotePort] = remoteEndPoint.Port.ToString();
+      env[OwinEnvironment.Server.IsLocal] = remoteEndPoint.Address.GetAddressLocality()==0;
+      env[OwinEnvironment.Server.LocalIpAddress] = localEndPoint.Address.ToString();
+      env[OwinEnvironment.Server.LocalPort] = localEndPoint.Port.ToString();
+      env[OwinEnvironment.Server.OnSendingHeaders] = new Action<Action<object?>,object?>(OnSendingHeaders.Add);
+      env[OwinEnvironment.PeerCastStation.PeerCast] = peerCast;
+      env[OwinEnvironment.PeerCastStation.AccessControlInfo] = accessControlInfo;
+      env[OwinEnvironment.PeerCastStation.GetRecvRate] = new Func<float>(() => stream.ReadRate);
+      env[OwinEnvironment.PeerCastStation.GetSendRate] = new Func<float>(() => stream.WriteRate);
+      env[OwinEnvironment.Opaque.Upgrade] = new Action<IDictionary<string,object>, Func<IDictionary<string,object>, Task>>(OpaqueUpgrade);
+      Environment = new OwinEnvironment(env);
     }
 
-    public void OpaqueUpgrade(IDictionary<string,object> parameters, Func<IDictionary<string,object>, Task> func)
+    public void OpaqueUpgrade(IDictionary<string,object> parameters, Func<IDictionary<string,object>, Task>? func)
     {
       opaqueHandler = func;
     }

@@ -24,11 +24,10 @@ namespace PeerCastStation.UI
 
     public Dictionary<string, PlayProtocol> DefaultPlayProtocols { get; set; } = new Dictionary<string, PlayProtocol>();
 
-		public Dictionary<string, Dictionary<string, string>> UserConfig { get; set; }
+    public Dictionary<string, Dictionary<string, string>> UserConfig { get; set; } = new Dictionary<string, Dictionary<string, string>>();
 
     public UISettings()
     {
-			this.UserConfig = new Dictionary<string,Dictionary<string,string>>();
     }
 
     public void AddBroadcastHistory(BroadcastInfo info)
@@ -39,7 +38,7 @@ namespace PeerCastStation.UI
       BroadcastHistory = fav.Concat(Enumerable.Repeat(info, 1).Concat(others.Take(19))).ToArray();
     }
 
-    public BroadcastInfo FindBroadcastHistroryItem(BroadcastInfo info)
+    public BroadcastInfo? FindBroadcastHistroryItem(BroadcastInfo info)
     {
       return BroadcastHistory.FirstOrDefault(i =>
           i.NetworkType == info.NetworkType &&
@@ -64,22 +63,66 @@ namespace PeerCastStation.UI
   [PeerCastStation.Core.PecaSettings]
   public class BroadcastInfo
   {
-    public PeerCastStation.Core.NetworkType NetworkType { get; set; }
-    public string StreamType  { get; set; }
-    public string StreamUrl   { get; set; }
-    public int    Bitrate     { get; set; }
-    public string ContentType { get; set; }
-    public string YellowPage  { get; set; }
-    public string ChannelName { get; set; }
-    public string Genre       { get; set; }
-    public string Description { get; set; }
-    public string Comment     { get; set; }
-    public string ContactUrl  { get; set; }
-    public string TrackTitle  { get; set; }
-    public string TrackAlbum  { get; set; }
-    public string TrackArtist { get; set; }
-    public string TrackGenre  { get; set; }
-    public string TrackUrl    { get; set; }
-    public bool   Favorite    { get; set; }
+    public PeerCastStation.Core.NetworkType NetworkType { get; set; } = Core.NetworkType.IPv4;
+    public string StreamType  { get; set; } = "";
+    public string StreamUrl   { get; set; } = "";
+    public int    Bitrate     { get; set; } = 0;
+    public string ContentType { get; set; } = "";
+    public string YellowPage  { get; set; } = "";
+    public string ChannelName { get; set; } = "";
+    public string Genre       { get; set; } = "";
+    public string Description { get; set; } = "";
+    public string Comment     { get; set; } = "";
+    public string ContactUrl  { get; set; } = "";
+    public string TrackTitle  { get; set; } = "";
+    public string TrackAlbum  { get; set; } = "";
+    public string TrackArtist { get; set; } = "";
+    public string TrackGenre  { get; set; } = "";
+    public string TrackUrl    { get; set; } = "";
+    public bool   Favorite    { get; set; } = false;
+
+    public BroadcastInfo()
+    {
+    }
+
+    public BroadcastInfo(
+      PeerCastStation.Core.NetworkType networkType,
+      string streamType,
+      string streamUrl,
+      int    bitrate,
+      string contentType,
+      string yellowPage,
+      string channelName,
+      string genre,
+      string description,
+      string comment,
+      string contactUrl,
+      string trackTitle,
+      string trackAlbum,
+      string trackArtist,
+      string trackGenre,
+      string trackUrl,
+      bool   favorite)
+    {
+      NetworkType = networkType;
+      StreamType = streamType;
+      StreamUrl = streamUrl;
+      Bitrate = bitrate;
+      ContentType = contentType;
+      YellowPage = yellowPage;
+      ChannelName = channelName;
+      Genre = genre;
+      Description = description;
+      Comment = comment;
+      ContactUrl = contactUrl;
+      TrackTitle = trackTitle;
+      TrackAlbum = trackAlbum;
+      TrackArtist = trackArtist;
+      TrackGenre = trackGenre;
+      TrackUrl = trackUrl;
+      Favorite = favorite;
+    }
   }
+
 }
+

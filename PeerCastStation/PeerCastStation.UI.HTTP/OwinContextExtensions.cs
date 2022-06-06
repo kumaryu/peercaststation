@@ -5,7 +5,7 @@ namespace PeerCastStation.UI.HTTP
 {
   static class OwinContextExtensions
   {
-    public static PeerCast GetPeerCast(this OwinEnvironment ctx)
+    public static PeerCast? GetPeerCast(this OwinEnvironment ctx)
     {
       if (ctx.Environment.TryGetValue(OwinEnvironment.PeerCastStation.PeerCast, out var obj)) {
         return obj as PeerCast; 
@@ -15,7 +15,7 @@ namespace PeerCastStation.UI.HTTP
       }
     }
 
-    public static AccessControlInfo GetAccessControlInfo(this OwinEnvironment ctx)
+    public static AccessControlInfo? GetAccessControlInfo(this OwinEnvironment ctx)
     {
       if (ctx.Environment.TryGetValue(OwinEnvironment.PeerCastStation.AccessControlInfo, out var obj)) {
         return obj as AccessControlInfo; 

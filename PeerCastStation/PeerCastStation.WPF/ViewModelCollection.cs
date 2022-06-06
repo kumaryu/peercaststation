@@ -11,7 +11,7 @@ namespace PeerCastStation.WPF
       INotifyItemChanged<T>
     where T : INotifyPropertyChanged
   {
-    public event NotifyItemChangedEventHandler<T> ItemChanged;
+    public event NotifyItemChangedEventHandler<T>? ItemChanged;
 
     public ViewModelCollection(IEnumerable<T> items)
       : base(items)
@@ -73,9 +73,11 @@ namespace PeerCastStation.WPF
       }
     }
 
-    private void OnItemPropertyChanged(object sender, PropertyChangedEventArgs e)
+    private void OnItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-      ItemChanged?.Invoke(this, new NotifyItemChangedEventArgs<T>((T)sender));
+      if (sender is T item) {
+        ItemChanged?.Invoke(this, new NotifyItemChangedEventArgs<T>(item));
+      }
     }
 
   }

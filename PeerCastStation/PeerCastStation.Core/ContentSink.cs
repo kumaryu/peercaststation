@@ -9,7 +9,7 @@ namespace PeerCastStation.Core
     : IContentSink
   {
     public IContentSink BaseSink { get; private set; }
-    public Content LastContent { get; private set; }
+    public Content? LastContent { get; private set; }
     private RateCounter packetRateCounter = new RateCounter(1000);
     public float PacketRate { get { return packetRateCounter.Rate; } }
     public BufferedContentSink(IContentSink base_sink)
@@ -144,7 +144,7 @@ namespace PeerCastStation.Core
     : IContentSink
   {
     public Channel Channel     { get; private set; }
-    public Content LastContent { get; private set; }
+    public Content? LastContent { get; private set; }
     public bool    UseContentBitrate { get; private set; }
     private RateCounter packetRateCounter = new RateCounter(1000);
     public float PacketRate { get { return packetRateCounter.Rate; } }

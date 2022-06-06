@@ -4,7 +4,9 @@
   {
     public static int Main(string[] args)
     {
-      var basepath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+      var basepath =
+        System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly()?.Location) ??
+        System.Environment.CurrentDirectory;
       return StandaloneApp.Run(basepath, args);
     }
   }

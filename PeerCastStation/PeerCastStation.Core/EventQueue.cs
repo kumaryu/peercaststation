@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace PeerCastStation.Core
 {
-  public class EventQueue<T>
+  public class EventQueue<T> where T: class
   {
     private Queue<T> queue = new Queue<T>();
     private Semaphore semaphore = new Semaphore(0, Int32.MaxValue);
@@ -24,15 +25,13 @@ namespace PeerCastStation.Core
 
     public T Dequeue()
     {
-      T value;
-      TryDequeue(Timeout.Infinite, out value);
-      return value;
+      TryDequeue(Timeout.Infinite, out var value);
+      return value!;
     }
 
     public T Dequeue(int timeout_ms)
     {
-      T value;
-      if (TryDequeue(timeout_ms, out value)) {
+      if (TryDequeue(timeout_ms, out var value)) {
         return value;
       }
       else {
@@ -42,8 +41,7 @@ namespace PeerCastStation.Core
 
     public T Dequeue(TimeSpan timeout)
     {
-      T value;
-      if (TryDequeue(timeout, out value)) {
+      if (TryDequeue(timeout, out var value)) {
         return value;
       }
       else {
@@ -51,7 +49,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    public bool TryDequeue(int timeout_ms, out T value)
+    public bool TryDequeue(int timeout_ms, [NotNullWhen(true)] out T? value)
     {
       lock (queue) {
         if (semaphore.WaitOne(timeout_ms, true)) {
@@ -60,13 +58,13 @@ namespace PeerCastStation.Core
           return true;
         }
         else {
-          value = default(T);
+          value = default;
           return false;
         }
       }
     }
 
-    public bool TryDequeue(TimeSpan timeout, out T value)
+    public bool TryDequeue(TimeSpan timeout, [NotNullWhen(true)] out T? value)
     {
       lock (queue) {
         if (semaphore.WaitOne(timeout, true)) {
@@ -75,7 +73,7 @@ namespace PeerCastStation.Core
           return true;
         }
         else {
-          value = default(T);
+          value = default;
           return false;
         }
       }

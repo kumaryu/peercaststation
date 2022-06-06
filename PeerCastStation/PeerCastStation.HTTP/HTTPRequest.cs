@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PeerCastStation.HTTP
 {
@@ -18,7 +19,7 @@ namespace PeerCastStation.HTTP
     /// <summary>
     /// リクエストされたUriを取得および設定します
     /// </summary>
-    public Uri Uri     { get; private set; }
+    public Uri? Uri { get; private set; }
     /// <summary>
     /// リクエストヘッダの値のコレクション取得します
     /// </summary>
@@ -33,8 +34,7 @@ namespace PeerCastStation.HTTP
         switch (Protocol) {
         case "HTTP/1.1":
           {
-            string value;
-            if (Headers.TryGetValue("CONNECTION", out value) && value=="close") {
+            if (Headers.TryGetValue("CONNECTION", out var value) && value=="close") {
               return false;
             }
             else {
@@ -43,8 +43,7 @@ namespace PeerCastStation.HTTP
           }
         case "HTTP/1.0":
           {
-            string value;
-            if (Headers.TryGetValue("CONNECTION", out value) && value=="keep-alive") {
+            if (Headers.TryGetValue("CONNECTION", out var value) && value=="keep-alive") {
               return true;
             }
             else {
@@ -59,8 +58,7 @@ namespace PeerCastStation.HTTP
 
     public bool ChunkedEncoding {
       get {
-        string value;
-        if (Headers.TryGetValue("Transfer-Encoding", out value)) {
+        if (Headers.TryGetValue("Transfer-Encoding", out var value)) {
           return value.Contains("chunked");
         }
         else {
@@ -69,65 +67,97 @@ namespace PeerCastStation.HTTP
       }
     }
 
+    private HTTPRequest(
+      string method,
+      string protocol,
+      Uri uri,
+      Dictionary<string, string> headers,
+      Dictionary<string, string> parameters,
+      Dictionary<string, string> cookies,
+      IList<string> pragmas)
+    {
+      Method = method;
+      Protocol = protocol;
+      Uri = Uri;
+      Headers = headers;
+      Parameters = parameters;
+      Cookies = cookies;
+      Pragmas = pragmas;
+    }
+
     /// <summary>
     /// HTTPリクエスト文字列からHTTPRequestオブジェクトを構築します
     /// </summary>
     /// <param name="requests">行毎に区切られたHTTPリクエストの文字列表現</param>
-    public HTTPRequest(IEnumerable<string> requests)
+    /// <param name="request">パースされたHTTPRequestオブジェクト</param>
+    /// <returns>パースできたら true 、それ以外は false</returns>
+    public static bool TryParse(IEnumerable<string> requests, [NotNullWhen(true)] out HTTPRequest? request)
     {
-      Headers    = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-      Parameters = new Dictionary<string, string>();
-      Cookies    = new Dictionary<string, string>();
-      List<string> pragmas = null;
-      Protocol   = "HTTP/1.0";
+      var headers    = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+      var parameters = new Dictionary<string, string>();
+      var cookies    = new Dictionary<string, string>();
+      List<string>? pragmas = null;
       string host = "localhost";
-      string path = "/";
+      HTTPRequestLine? requestLine = null;
       foreach (var req in requests) {
-        Match match = null;
-        if ((match = Regex.Match(req, @"^(\w+) +(\S+) +(HTTP/1.\d)$", RegexOptions.IgnoreCase)).Success) {
-          this.Method = match.Groups[1].Value.ToUpper();
-          path = match.Groups[2].Value;
-          Protocol = match.Groups[3].Value;
+        if (requestLine==null) {
+          requestLine = ParseRequestLine(req);
+          if (requestLine==null) {
+            request = null;
+            return false;
+          }
         }
-        else if ((match = Regex.Match(req, @"^Host:(.+)$", RegexOptions.IgnoreCase)).Success) {
-          host = match.Groups[1].Value.Trim();
-          Headers["HOST"] = host;
+        else if (String.IsNullOrEmpty(req)) {
+          break;
         }
-        else if ((match = Regex.Match(req, @"^Cookie:(\s*)(.+)(\s*)$", RegexOptions.IgnoreCase)).Success) {
-          foreach (var pair in match.Groups[2].Value.Split(';')) {
-            var md = Regex.Match(pair, @"^([A-Za-z0-9!#$%^&*_\-+|~`'"".]+)=(.*)$");
-            if (md.Success) {
-              Cookies.Add(md.Groups[1].Value, md.Groups[2].Value);
+        else {
+          Match match;
+          if ((match = Regex.Match(req, @"^Host:(.+)$", RegexOptions.IgnoreCase)).Success) {
+            host = match.Groups[1].Value.Trim();
+            headers["HOST"] = host;
+          }
+          else if ((match = Regex.Match(req, @"^Cookie:(\s*)(.+)(\s*)$", RegexOptions.IgnoreCase)).Success) {
+            foreach (var pair in match.Groups[2].Value.Split(';')) {
+              var md = Regex.Match(pair, @"^([A-Za-z0-9!#$%^&*_\-+|~`'"".]+)=(.*)$");
+              if (md.Success) {
+                cookies.Add(md.Groups[1].Value, md.Groups[2].Value);
+              }
             }
           }
-        }
-        else if ((match = Regex.Match(req, @"^Pragma:(.+)$", RegexOptions.IgnoreCase)).Success) {
-          if (pragmas==null) {
-            pragmas = new List<string>();
+          else if ((match = Regex.Match(req, @"^Pragma:(.+)$", RegexOptions.IgnoreCase)).Success) {
+            if (pragmas==null) {
+              pragmas = new List<string>();
+            }
+            pragmas.AddRange(match.Groups[1].Value.Split(',').Select(token => token.Trim().ToLowerInvariant()));
           }
-          pragmas.AddRange(match.Groups[1].Value.Split(',').Select(token => token.Trim().ToLowerInvariant()));
-        }
-        else if ((match = Regex.Match(req, @"^(\S*):(.+)$", RegexOptions.IgnoreCase)).Success) {
-          Headers[match.Groups[1].Value.ToUpper()] = match.Groups[2].Value.Trim();
+          else if ((match = Regex.Match(req, @"^(\S*):(.+)$", RegexOptions.IgnoreCase)).Success) {
+            headers[match.Groups[1].Value.ToUpper()] = match.Groups[2].Value.Trim();
+          }
         }
       }
-      Uri uri;
-      if (Uri.TryCreate("http://" + host + path, UriKind.Absolute, out uri)) {
-        this.Uri = uri;
+      if (requestLine==null) {
+        request = null;
+        return false;
+      }
+      if (Uri.TryCreate("http://" + host + requestLine.Path, UriKind.Absolute, out var uri)) {
         foreach (Match param in Regex.Matches(uri.Query, @"(&|\?)([^&=]+)=([^&=]+)")) {
-          this.Parameters.Add(
+          parameters.Add(
             Uri.UnescapeDataString(param.Groups[2].Value).ToLowerInvariant(),
             Uri.UnescapeDataString(param.Groups[3].Value));
         }
+        request = new HTTPRequest(
+          requestLine.Method,
+          requestLine.Protocol,
+          uri,
+          headers,
+          parameters,
+          cookies,
+          pragmas?.ToArray() ?? emptyPragmas);
+        return true;
       }
       else {
-        this.Uri = null;
-      }
-      if (pragmas!=null) {
-        Pragmas = pragmas;
-      }
-      else {
-        Pragmas = emptyPragmas;
+        request = null;
+        return false;
       }
     }
 
@@ -144,7 +174,7 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    public static HTTPRequestLine ParseRequestLine(string line)
+    public static HTTPRequestLine? ParseRequestLine(string line)
     {
       var match = RequestLineRegex.Match(line);
       if (match.Success) {

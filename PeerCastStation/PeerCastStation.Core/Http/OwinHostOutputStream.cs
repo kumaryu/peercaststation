@@ -11,7 +11,7 @@ namespace PeerCastStation.Core.Http
     : OutputStreamBase
   {
     private OwinHost owinHost;
-    public OwinHostOutputStream(PeerCast peercast, OwinHost host, ConnectionStream connection, AccessControlInfo access_control, Channel channel)
+    public OwinHostOutputStream(PeerCast peercast, OwinHost host, ConnectionStream connection, AccessControlInfo access_control, Channel? channel)
       : base(peercast, connection, access_control, channel)
     {
       owinHost = host;
@@ -23,7 +23,7 @@ namespace PeerCastStation.Core.Http
 
     public override ConnectionInfo GetConnectionInfo()
     {
-      return new ConnectionInfo("HTTP", ConnectionType.Interface, ConnectionStatus.Connected, RemoteEndPoint.ToString(), RemoteEndPoint as IPEndPoint, RemoteHostStatus.None, null, null, null, null, null, null, "Owin");
+      return new ConnectionInfo("HTTP", ConnectionType.Interface, ConnectionStatus.Connected, RemoteEndPoint?.ToString(), RemoteEndPoint as IPEndPoint, RemoteHostStatus.None, null, null, null, null, null, null, "Owin");
     }
 
     protected override async Task<StopReason> DoProcess(CancellationToken cancel_token)
@@ -31,7 +31,7 @@ namespace PeerCastStation.Core.Http
       try {
         var keep_count = 1000;
         while (!cancel_token.IsCancellationRequested && keep_count-->0) {
-          HttpRequest req;
+          HttpRequest? req;
           using (var requestTimeout=CancellationTokenSource.CreateLinkedTokenSource(cancel_token))
           using (var reader=new HttpRequestReader(Connection, true)) {
             requestTimeout.CancelAfter(7000);
@@ -40,7 +40,9 @@ namespace PeerCastStation.Core.Http
               return StopReason.OffAir;
             }
           }
-          var ctx = new OwinContext(PeerCast, req, Connection, LocalEndPoint as IPEndPoint, RemoteEndPoint as IPEndPoint, AccessControlInfo);
+          IPEndPoint localEndPoint = LocalEndPoint as IPEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
+          IPEndPoint remoteEndPoint = RemoteEndPoint as IPEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
+          var ctx = new OwinContext(PeerCast, req, Connection, localEndPoint, remoteEndPoint, AccessControlInfo);
           try {
             await ctx.Invoke(owinHost.OwinApp, cancel_token).ConfigureAwait(false);
           }
@@ -118,26 +120,29 @@ namespace PeerCastStation.Core.Http
     : PluginBase
   {
     private Logger logger = new Logger(typeof(OwinHostPlugin));
-    public OwinHost OwinHost { get; private set; }
-    private OwinHostOutputStreamFactory factory;
+    public OwinHost? OwinHost { get; private set; } = null;
+    private OwinHostOutputStreamFactory? factory = null;
 
     public override string Name {
       get { return nameof(OwinHostPlugin); }
     }
 
-    protected override void OnAttach()
+    protected override void OnAttach(PeerCastApplication app)
     {
-      OwinHost = new OwinHost(Application, Application.PeerCast);
+      var peercast = app.PeerCast;
+      OwinHost = new OwinHost(app, peercast);
       if (factory==null) {
-        factory = new OwinHostOutputStreamFactory(Application.PeerCast, OwinHost);
+        factory = new OwinHostOutputStreamFactory(peercast, OwinHost);
       }
-      Application.PeerCast.OutputStreamFactories.Add(factory);
+      peercast.OutputStreamFactories.Add(factory);
     }
 
-    protected override void OnDetach()
+    protected override void OnDetach(PeerCastApplication app)
     {
       OwinHost = null;
-      Application.PeerCast.OutputStreamFactories.Remove(factory);
+      if (factory!=null) {
+        app.PeerCast.OutputStreamFactories.Remove(factory);
+      }
     }
 
     protected override void OnStart()
@@ -146,7 +151,9 @@ namespace PeerCastStation.Core.Http
 
     protected override void OnStop()
     {
-      OwinHost.Dispose();
+      if (OwinHost!=null) {
+        OwinHost.Dispose();
+      }
     }
   }
 

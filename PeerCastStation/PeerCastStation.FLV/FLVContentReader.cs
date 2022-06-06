@@ -3,6 +3,7 @@ using System.IO;
 using PeerCastStation.Core;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PeerCastStation.FLV
 {
@@ -40,7 +41,7 @@ namespace PeerCastStation.FLV
       return new FLVContentReader(channel);
     }
 
-    public bool TryParseContentType(byte[] header, out string content_type, out string mime_type)
+    public bool TryParseContentType(byte[] header, [NotNullWhen(true)] out string? content_type, [NotNullWhen(true)] out string? mime_type)
     {
       if (header.Length>=13 && header[0]=='F' && header[1]=='L' && header[2]=='V') {
         content_type = "FLV";
@@ -62,16 +63,19 @@ namespace PeerCastStation.FLV
   {
     override public string Name { get { return "FLV Content Reader"; } }
 
-    private FLVContentReaderFactory factory;
-    override protected void OnAttach()
+    private FLVContentReaderFactory? factory;
+    override protected void OnAttach(PeerCastApplication app)
     {
       if (factory==null) factory = new FLVContentReaderFactory();
-      Application.PeerCast.ContentReaderFactories.Add(factory);
+      app.PeerCast.ContentReaderFactories.Add(factory);
     }
 
-    override protected void OnDetach()
+    override protected void OnDetach(PeerCastApplication app)
     {
-      Application.PeerCast.ContentReaderFactories.Remove(factory);
+      var f = Interlocked.Exchange(ref factory, null);
+      if (f!=null) {
+        app.PeerCast.ContentReaderFactories.Remove(f);
+      }
     }
   }
 }

@@ -3,11 +3,13 @@ using System.Linq;
 using System.Net;
 using System.Collections.Generic;
 using PeerCastStation.Core;
+using PeerCastStation.UI;
 using PeerCastStation.UI.HTTP.JSONRPC;
 using Newtonsoft.Json.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using PeerCastStation.Core.Http;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PeerCastStation.UI.HTTP
 {
@@ -16,8 +18,6 @@ namespace PeerCastStation.UI.HTTP
   {
     public LogWriter LogWriter { get; private set; } = new LogWriter(1000);
     public PeerCastApplication Application { get; private set; }
-    public int[] OpenedPortsV4 { get; set; }
-    public int[] OpenedPortsV6 { get; set; }
 
     private Updater updater = new Updater();
     private IEnumerable<VersionDescription> newVersions = Enumerable.Empty<VersionDescription>();
@@ -30,8 +30,14 @@ namespace PeerCastStation.UI.HTTP
       public bool IsCompleted { get { return UpdateTask.IsCompleted; } }
       public bool IsFaulted { get { return UpdateTask.IsFaulted; } }
       public bool IsSucceeded { get { return UpdateTask.IsCompleted && !UpdateTask.IsFaulted && !UpdateTask.IsCanceled; } }
+
+      public UpdateStatus(Func<UpdateStatus, Task> updateFunc)
+      {
+        Progress = 0.0f;
+        UpdateTask = updateFunc(this);
+      }
     }
-    private UpdateStatus updateStatus = null;
+    private UpdateStatus? updateStatus = null;
     private APIContext apiContext;
     private JSONRPCHost rpcHost;
 
@@ -79,7 +85,7 @@ namespace PeerCastStation.UI.HTTP
       return newVersions;
     }
 
-    public UpdateStatus UpdateAsync()
+    public UpdateStatus? UpdateAsync()
     {
       if (updateStatus!=null) return updateStatus;
       var latest =
@@ -87,18 +93,14 @@ namespace PeerCastStation.UI.HTTP
           .OrderByDescending(v => v.PublishDate)
           .FirstOrDefault();
       if (latest==null) return null;
-      var status = new UpdateStatus { UpdateTask = null, Progress = 0.0f };
-      status.UpdateTask = 
-        Updater.DownloadAsync(latest, progress => status.Progress = progress, CancellationToken.None)
-          .ContinueWith(prev => {
-            if (prev.IsFaulted || prev.IsCanceled) return;
-            Updater.Install(prev.Result);
-          });
-      updateStatus = status;
+      updateStatus = new UpdateStatus(async (s) => {
+        var downloadResult = await Updater.DownloadAsync(latest, progress => s.Progress = progress, CancellationToken.None).ConfigureAwait(false);
+        Updater.Install(downloadResult);
+      });
       return updateStatus;
     }
 
-    public UpdateStatus GetUpdateStatus()
+    public UpdateStatus? GetUpdateStatus()
     {
       return updateStatus;
     }
@@ -176,7 +178,7 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("getAuthToken", OutputStreamType.Interface | OutputStreamType.Play)]
-      public string GetAuthToken(OwinEnvironment ctx)
+      public string? GetAuthToken(OwinEnvironment ctx)
       {
         return ctx.GetAccessControlInfo()?.AuthenticationKey?.GetToken();
       }
@@ -243,7 +245,7 @@ namespace PeerCastStation.UI.HTTP
       private JArray GetExternalIPAddresses()
       {
         var addresses = Enumerable.Empty<IPAddress>();
-        var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
+        var port_mapper = owner.Application.Plugins.GetPlugin<PortMapperPlugin>();
         if (port_mapper!=null) {
           addresses = addresses.Concat(port_mapper.GetExternalAddresses());
         }
@@ -300,7 +302,7 @@ namespace PeerCastStation.UI.HTTP
         channelCleaner["mode"]          = (int)ChannelCleaner.Mode;
         channelCleaner["inactiveLimit"] = ChannelCleaner.InactiveLimit;
         res["channelCleaner"] = channelCleaner;
-        var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
+        var port_mapper = owner.Application.Plugins.GetPlugin<PortMapperPlugin>();
         if (port_mapper!=null) {
           var portMapper = new JObject();
           portMapper["enabled"] = port_mapper.Enabled;
@@ -340,7 +342,7 @@ namespace PeerCastStation.UI.HTTP
           channel_cleaner.TryGetThen("mode", v => ChannelCleaner.Mode = (ChannelCleaner.CleanupMode)v);
         });
         settings.TryGetThen("portMapper", (JObject mapper) => {
-          var port_mapper = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PortMapperPlugin>();
+          var port_mapper = owner.Application.Plugins.GetPlugin<PortMapperPlugin>();
           if (port_mapper!=null) {
             mapper.TryGetThen("enabled", v => port_mapper.Enabled = v);
             port_mapper.DiscoverAsync();
@@ -494,20 +496,20 @@ namespace PeerCastStation.UI.HTTP
         if (channel!=null && channel.IsBroadcasting) {
           if (info!=null) {
             var new_info = new AtomCollection(channel.ChannelInfo.Extra);
-            if (info["name"]!=null)    new_info.SetChanInfoName((string)info["name"]);
-            if (info["url"]!=null)     new_info.SetChanInfoURL((string)info["url"]);
-            if (info["genre"]!=null)   new_info.SetChanInfoGenre((string)info["genre"]);
-            if (info["desc"]!=null)    new_info.SetChanInfoDesc((string)info["desc"]);
-            if (info["comment"]!=null) new_info.SetChanInfoComment((string)info["comment"]);
+            info.TryGetThen("name", v => new_info.SetChanInfoName(v));
+            info.TryGetThen("url", v => new_info.SetChanInfoURL(v));
+            info.TryGetThen("genre", v => new_info.SetChanInfoGenre(v));
+            info.TryGetThen("desc", v => new_info.SetChanInfoDesc(v));
+            info.TryGetThen("comment", v => new_info.SetChanInfoComment(v));
             channel.ChannelInfo = new ChannelInfo(new_info);
           }
           if (track!=null) {
             var new_track = new AtomCollection(channel.ChannelTrack.Extra);
-            if (track["name"]!=null)    new_track.SetChanTrackTitle((string)track["name"]);
-            if (track["genre"]!=null)   new_track.SetChanTrackGenre((string)track["genre"]);
-            if (track["album"]!=null)   new_track.SetChanTrackAlbum((string)track["album"]);
-            if (track["creator"]!=null) new_track.SetChanTrackCreator((string)track["creator"]);
-            if (track["url"]!=null)     new_track.SetChanTrackURL((string)track["url"]);
+            track.TryGetThen("name", v => new_track.SetChanTrackTitle(v));
+            track.TryGetThen("genre", v => new_track.SetChanTrackGenre(v));
+            track.TryGetThen("album", v => new_track.SetChanTrackAlbum(v));
+            track.TryGetThen("creator", v => new_track.SetChanTrackCreator(v));
+            track.TryGetThen("url", v => new_track.SetChanTrackURL(v));
             channel.ChannelTrack = new ChannelTrack(new_track);
           }
         }
@@ -660,8 +662,8 @@ namespace PeerCastStation.UI.HTTP
         var host = node.Host;
         var endpoint = (host.GlobalEndPoint!=null && host.GlobalEndPoint.Port!=0) ? host.GlobalEndPoint : host.LocalEndPoint;
         res["sessionId"]    = host.SessionID.ToString("N").ToUpper();
-        res["address"]      = endpoint.Address.ToString();
-        res["port"]         = endpoint.Port;
+        res["address"]      = endpoint?.Address?.ToString() ?? "";
+        res["port"]         = endpoint?.Port ?? 0;
         res["isFirewalled"] = host.IsFirewalled;
         res["localRelays"]  = host.RelayCount;
         res["localDirects"] = host.DirectCount;
@@ -752,12 +754,12 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("addYellowPage")]
-      private JObject AddYellowPage(string protocol, string name, string uri=null, string announceUri=null, string channelsUri=null)
+      private JObject AddYellowPage(string protocol, string name, string? uri=null, string? announceUri=null, string? channelsUri=null)
       {
         var factory = PeerCast.YellowPageFactories.FirstOrDefault(p => protocol==p.Protocol);
         if (factory==null) throw new RPCError(RPCErrorCode.InvalidParams, "protocol Not Found");
         if (name==null) throw new RPCError(RPCErrorCode.InvalidParams, "name must be String");
-        Uri announce_uri = null;
+        Uri? announce_uri = null;
         try {
           if (String.IsNullOrEmpty(uri)) uri = announceUri;
           if (!String.IsNullOrEmpty(uri)) {
@@ -777,7 +779,7 @@ namespace PeerCastStation.UI.HTTP
         catch (UriFormatException) {
           throw new RPCError(RPCErrorCode.InvalidParams, "Invalid uri");
         }
-        Uri channels_uri = null;
+        Uri? channels_uri = null;
         try {
           if (!String.IsNullOrEmpty(channelsUri)) {
             channels_uri = new Uri(channelsUri, UriKind.Absolute);
@@ -819,7 +821,7 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("stopAnnounce")]
-      private void StopAnnounce(int yellowPageId, string channelId=null)
+      private void StopAnnounce(int yellowPageId, string? channelId=null)
       {
         var yp = PeerCast.YellowPages.FirstOrDefault(p => GetObjectId(p)==yellowPageId);
         if (yp!=null) {
@@ -837,7 +839,7 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("restartAnnounce")]
-      private void RestartAnnounce(int yellowPageId, string channelId=null)
+      private void RestartAnnounce(int yellowPageId, string? channelId=null)
       {
         var yp = PeerCast.YellowPages.FirstOrDefault(p => GetObjectId(p)==yellowPageId);
         if (yp!=null) {
@@ -910,19 +912,17 @@ namespace PeerCastStation.UI.HTTP
           bool localAuthorizationRequired=false,
           bool globalAuthorizationRequired=true)
       {
-        IPAddress addr;
-        OutputListener listener;
         IPEndPoint endpoint;
         if (address==null) {
           endpoint = new IPEndPoint(IPAddress.Any, port);
         }
-        else if (IPAddress.TryParse(address, out addr)) {
+        else if (IPAddress.TryParse(address, out var addr)) {
           endpoint = new IPEndPoint(addr, port);
         }
         else {
           throw new RPCError(RPCErrorCode.InvalidParams, "Invalid ip address");
         }
-        listener = PeerCast.StartListen(endpoint, (OutputStreamType)localAccepts, (OutputStreamType)globalAccepts);
+        OutputListener listener = PeerCast.StartListen(endpoint, (OutputStreamType)localAccepts, (OutputStreamType)globalAccepts);
         listener.LocalAuthorizationRequired  = localAuthorizationRequired;
         listener.GlobalAuthorizationRequired = globalAuthorizationRequired;
         owner.SaveSettings();
@@ -930,7 +930,7 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("resetListenerAuthenticationKey")]
-      private JObject resetListenerAuthenticationKey(int listenerId)
+      private JObject? resetListenerAuthenticationKey(int listenerId)
       {
         var listener = PeerCast.OutputListeners.Where(ol => GetObjectId(ol)==listenerId).FirstOrDefault();
         if (listener!=null) {
@@ -980,9 +980,9 @@ namespace PeerCastStation.UI.HTTP
         string contentReader,
         JObject info,
         JObject track,
-        string sourceStream=null)
+        string? sourceStream=null)
       {
-        IYellowPageClient yp = null;
+        IYellowPageClient? yp = null;
         if (yellowPageId.HasValue) {
           yp = PeerCast.YellowPages.FirstOrDefault(y => GetObjectId(y)==yellowPageId.Value);
           if (yp==null) throw new RPCError(RPCErrorCode.InvalidParams, "Yellow page not found");
@@ -1044,7 +1044,7 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("getBroadcastHistory")]
       public JArray GetBroadcastHistory()
       {
-        var settings = PeerCastApplication.Current.Settings.Get<UISettings>();
+        var settings = owner.Application.Settings.Get<UISettings>();
         return new JArray(settings.BroadcastHistory
           .OrderBy(info => info.Favorite ? 0 : 1)
           .Select(info => {
@@ -1074,25 +1074,25 @@ namespace PeerCastStation.UI.HTTP
       [RPCMethod("addBroadcastHistory")]
       public void AddBroadcastHistory(JObject info)
       {
-        var obj = new PeerCastStation.UI.BroadcastInfo();
-        info.TryGetThen("networkType", v => obj.NetworkType = ParseNetworkType(v));
-        info.TryGetThen("streamType",  v => obj.StreamType  = v);
-        info.TryGetThen("streamUrl",   v => obj.StreamUrl   = v);
-        info.TryGetThen("bitrate",     v => obj.Bitrate     = v);
-        info.TryGetThen("contentType", v => obj.ContentType = v);
-        info.TryGetThen("yellowPage",  v => obj.YellowPage  = v);
-        info.TryGetThen("channelName", v => obj.ChannelName = v);
-        info.TryGetThen("genre",       v => obj.Genre       = v);
-        info.TryGetThen("description", v => obj.Description = v);
-        info.TryGetThen("comment",     v => obj.Comment     = v);
-        info.TryGetThen("contactUrl",  v => obj.ContactUrl  = v);
-        info.TryGetThen("trackTitle",  v => obj.TrackTitle  = v);
-        info.TryGetThen("trackAlbum",  v => obj.TrackAlbum  = v);
-        info.TryGetThen("trackArtist", v => obj.TrackArtist = v);
-        info.TryGetThen("trackGenre",  v => obj.TrackGenre  = v);
-        info.TryGetThen("trackUrl",    v => obj.TrackUrl    = v);
-        info.TryGetThen("favorite",    v => obj.Favorite    = v);
-        var settings = PeerCastApplication.Current.Settings.Get<UISettings>();
+        var obj = new BroadcastInfo(
+          ParseNetworkType(info.GetValueAsString("networkType") ?? "IPv4"),
+          info.GetValueAsString("streamType") ?? "",
+          info.GetValueAsString("streamUrl") ?? "",
+          info.GetValueAsInt("bitrate") ?? 0,
+          info.GetValueAsString("contentType") ?? "",
+          info.GetValueAsString("yellowPage") ?? "",
+          info.GetValueAsString("channelName") ?? "",
+          info.GetValueAsString("genre") ?? "",
+          info.GetValueAsString("description") ?? "",
+          info.GetValueAsString("comment") ?? "",
+          info.GetValueAsString("contactUrl") ?? "",
+          info.GetValueAsString("trackTitle") ?? "",
+          info.GetValueAsString("trackAlbum") ?? "",
+          info.GetValueAsString("trackArtist") ?? "",
+          info.GetValueAsString("trackGenre") ?? "",
+          info.GetValueAsString("trackUrl") ?? "",
+          info.GetValueAsBool("favorite") ?? false);
+        var settings = owner.Application.Settings.Get<UISettings>();
         var item = settings.FindBroadcastHistroryItem(obj);
         if (item!=null) {
           info.TryGetThen("favorite", v => item.Favorite = v);
@@ -1137,8 +1137,7 @@ namespace PeerCastStation.UI.HTTP
           uri_key = "BandwidthChecker";
           break;
         }
-        Uri target_uri;
-        if (AppSettingsReader.TryGetUri(uri_key, out target_uri)) {
+        if (AppSettingsReader.TryGetUri(uri_key, out var target_uri)) {
           var checker = new BandwidthChecker(target_uri, network);
           var res = checker.Run();
           if (res.Succeeded) {
@@ -1149,26 +1148,16 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("checkPorts")]
-      public JArray CheckPorts()
+      public JArray? CheckPorts()
       {
-        List<int> results = null;
-        var port_checker = PeerCastApplication.Current.Plugins.GetPlugin<PeerCastStation.UI.PCPPortCheckerPlugin>();
+        List<int>? results = null;
+        var port_checker = owner.Application.Plugins.GetPlugin<PCPPortCheckerPlugin>();
         if (port_checker!=null) {
-          var task = port_checker.CheckAsync();
+          var task = port_checker.CheckAsync(PeerCast);
           task.Wait();
           foreach (var result in task.Result) {
             if (!result.Success) continue;
             PeerCast.SetPortStatus(result.LocalAddress, result.GlobalAddress, result.IsOpen ? PortStatus.Open : PortStatus.Firewalled);
-            switch (result.LocalAddress.AddressFamily) {
-            case System.Net.Sockets.AddressFamily.InterNetwork:
-              owner.OpenedPortsV4 = result.Ports;
-              break;
-            case System.Net.Sockets.AddressFamily.InterNetworkV6:
-              owner.OpenedPortsV6 = result.Ports;
-              break;
-            default:
-              break;
-            }
             if (results==null) {
               results = new List<int>(result.Ports);
             }
@@ -1192,7 +1181,7 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("updateAndRestart")]
-      public JObject UpdateAndRestart()
+      public JObject? UpdateAndRestart()
       {
         var status = owner.UpdateAsync();
         if (status!=null) {
@@ -1328,7 +1317,7 @@ namespace PeerCastStation.UI.HTTP
       {
         var settings = owner.Application.Settings.Get<UISettings>();
         if (!TrySetUIConfig(settings, key, value)) {
-          Dictionary<string, string> user_config;
+          Dictionary<string, string>? user_config;
           if (!settings.UserConfig.TryGetValue(user, out user_config)) {
             user_config = new Dictionary<string, string>();
             settings.UserConfig[user] = user_config;
@@ -1338,7 +1327,7 @@ namespace PeerCastStation.UI.HTTP
         owner.SaveSettings();
       }
 
-      private bool TryGetUIConfig(UISettings settings, string key, out JToken value)
+      private bool TryGetUIConfig(UISettings settings, string key, [NotNullWhen(true)] out JToken? value)
       {
         switch (key) {
         case "defaultPlayProtocol":
@@ -1357,7 +1346,7 @@ namespace PeerCastStation.UI.HTTP
       }
 
       [RPCMethod("getUserConfig")]
-      public JToken GetUserConfig(string user, string key)
+      public JToken? GetUserConfig(string user, string key)
       {
         var settings = owner.Application.Settings.Get<UISettings>();
         if (TryGetUIConfig(settings, key, out var value)) {
@@ -1400,7 +1389,7 @@ namespace PeerCastStation.UI.HTTP
 
     private AuthToken GetAuthToken(OwinEnvironment ctx)
     {
-      string token = null;
+      string? token = null;
       var auth = ctx.Request.Headers.Get("Authorization");
       if (auth!=null) {
         var md = System.Text.RegularExpressions.Regex.Match(
@@ -1459,7 +1448,7 @@ namespace PeerCastStation.UI.HTTP
           var buf = await ctx.Request.Body.ReadBytesAsync(len, timeout.Token).ConfigureAwait(false);
           var request_str = System.Text.Encoding.UTF8.GetString(buf);
           var res = rpcHost.ProcessRequest(ctx, request_str, grant => {
-            if ((grant & acinfo.Accepts)==0) return false;
+            if (acinfo==null || (grant & acinfo.Accepts)==0) return false;
             return authtoken.CheckAuthorization(acinfo);
           });
           if (res!=null) {
@@ -1498,7 +1487,11 @@ namespace PeerCastStation.UI.HTTP
 
     public static void BuildApp(IAppBuilder builder)
     {
-      var app = new APIHostOwinApp(builder.Properties[OwinEnvironment.PeerCastStation.PeerCastApplication] as PeerCastApplication);
+      var pecaApp = builder.Properties[OwinEnvironment.PeerCastStation.PeerCastApplication] as PeerCastApplication;
+      if (pecaApp==null) {
+        throw new InvalidOperationException($"Builder property {OwinEnvironment.PeerCastStation.PeerCastApplication} is required.");
+      }
+      var app = new APIHostOwinApp(pecaApp);
       builder.MapGET("/api/1/peercaststation.js", sub => {
         sub.UseAuth(OutputStreamType.Interface | OutputStreamType.Play);
         sub.Run(new PeerCastStationJSApp(typeof(APIContext)).Invoke);
@@ -1526,11 +1519,11 @@ namespace PeerCastStation.UI.HTTP
   {
     override public string Name { get { return "HTTP API Host UI"; } }
 
-    private IDisposable appRegistration = null;
+    private IDisposable? appRegistration = null;
 
-    protected override void OnStart()
+    protected override void OnStart(PeerCastApplication app)
     {
-      var owin = Application.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
+      var owin = app.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
       appRegistration = owin?.OwinHost?.Register(APIHostOwinApp.BuildApp);
     }
 

@@ -12,7 +12,7 @@ namespace PeerCastStation.Core.Http
     {
       var status = (int)HttpStatusCode.NotFound;
       try {
-        if (arg.TryGetValue(OwinEnvironment.Owin.ResponseStatusCode, out object code) && (Convert.ToInt32(code))/100==4) {
+        if (arg.TryGetValue(OwinEnvironment.Owin.ResponseStatusCode, out var code) && (Convert.ToInt32(code))/100==4) {
           status = Convert.ToInt32(code);
         }
       }
@@ -28,7 +28,7 @@ namespace PeerCastStation.Core.Http
   {
     public IDictionary<string, object> Properties { get; }
     private Func<IDictionary<string, object>, Task> nextApp;
-    private static Func<IDictionary<string, object>, Task> _defaultApp;
+    private static Func<IDictionary<string, object>, Task>? _defaultApp;
     public static Func<IDictionary<string, object>, Task> DefaultApp {
       get {
         if (_defaultApp==null) {
@@ -68,7 +68,10 @@ namespace PeerCastStation.Core.Http
           .Single();
         var middleware = constructor.Invoke(Enumerable.Concat(Enumerable.Repeat(nextApp, 1), Args).ToArray());
         var invoke = middleware.GetType().GetMethod("Invoke", new [] { typeof(IDictionary<string, object>) });
-        return (arg) => (Task)invoke.Invoke(middleware, new [] { arg });
+        if (invoke==null) {
+          throw new InvalidOperationException("Middleware must have suitable Invoke method.");
+        }
+        return (arg) => (Task)invoke.Invoke(middleware, new [] { arg })!;
       }
     }
     private Stack<MiddlewareRegistration> middlewares = new Stack<MiddlewareRegistration>();

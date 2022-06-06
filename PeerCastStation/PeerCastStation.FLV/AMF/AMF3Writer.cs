@@ -311,16 +311,16 @@ namespace PeerCastStation.FLV.AMF
         WriteStrictArray((AMFValue[])value);
         break;
       case AMFValueType.String:
-        WriteString((string)value);
+        WriteString((string?)value ?? "");
         break;
       case AMFValueType.Undefined:
         WriteMarker(AMF3Marker.Undefined);
         break;
       case AMFValueType.XML:
-        WriteXML((string)value);
+        WriteXML((string?)value ?? "");
         break;
       case AMFValueType.XMLDocument:
-        WriteXMLDocument((string)value);
+        WriteXMLDocument((string?)value ?? "");
         break;
       default:
         throw new ArgumentException();

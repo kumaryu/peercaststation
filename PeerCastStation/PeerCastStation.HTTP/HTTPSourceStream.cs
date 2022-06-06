@@ -21,7 +21,7 @@ namespace PeerCastStation.HTTP
   {
     public static async Task<HTTPResponse> ReadAsync(Stream stream, CancellationToken cancel_token)
     {
-      string line = null;
+      string? line = null;
       var requests = new List<string>();
       var buf = new List<byte>();
       var length = 0;
@@ -47,7 +47,7 @@ namespace PeerCastStation.HTTP
       var status   = 200;
       var reason_phrase = "";
       foreach (var req in requests) {
-        Match match = null;
+        Match match;
         if ((match = Regex.Match(req, @"^(HTTP/1.\d) (\d+) (.*)$")).Success) {
           protocol = match.Groups[1].Value;
           status   = Int32.Parse(match.Groups[2].Value);
@@ -92,7 +92,7 @@ namespace PeerCastStation.HTTP
   {
     private IContentReader contentReader;
     private BufferedContentSink contentSink;
-    private HTTPResponse response = null;
+    private HTTPResponse? response = null;
 
     public HTTPSourceConnection(
         PeerCast peercast,
@@ -106,7 +106,7 @@ namespace PeerCastStation.HTTP
       contentSink = new BufferedContentSink(new AsynchronousContentSink(new ChannelContentSink(channel, use_content_bitrate)));
     }
 
-    protected override async Task<SourceConnectionClient> DoConnect(Uri source, CancellationToken cancel_token)
+    protected override async Task<SourceConnectionClient?> DoConnect(Uri source, CancellationToken cancel_token)
     {
       try {
         var client = new TcpClient();
@@ -128,7 +128,7 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    protected override async Task DoProcess(CancellationToken cancel_token)
+    protected override async Task DoProcess(SourceConnectionClient connection, CancellationToken cancel_token)
     {
       try {
         this.Status = ConnectionStatus.Connecting;
@@ -149,7 +149,6 @@ namespace PeerCastStation.HTTP
         await connection.Stream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(request)).ConfigureAwait(false);
         Logger.Debug("Sending request:\n" + request);
 
-        response = null;
         response = await HTTPResponseReader.ReadAsync(connection.Stream, cancel_token).ConfigureAwait(false);
         if (response.Status!=200) {
           Logger.Error("Server responses {0} to GET {1}", response.Status, SourceUri.PathAndQuery);
@@ -175,8 +174,8 @@ namespace PeerCastStation.HTTP
 
     public override ConnectionInfo GetConnectionInfo()
     {
-      IPEndPoint endpoint = connection!=null ? connection.RemoteEndPoint : null;
-      string server_name = "";
+      IPEndPoint? endpoint = connection!=null ? connection.RemoteEndPoint : null;
+      string? server_name = "";
       if (response==null || !response.Headers.TryGetValue("SERVER", out server_name)) {
         server_name = "";
       }
@@ -211,9 +210,9 @@ namespace PeerCastStation.HTTP
 
     public override ConnectionInfo GetConnectionInfo()
     {
-      var conn = sourceConnection;
-      if (!conn.IsCompleted) {
-        return conn.Connection.GetConnectionInfo();
+      var connInfo = sourceConnection.GetConnectionInfo();
+      if (connInfo!=null) {
+        return connInfo;
       }
       else {
         ConnectionStatus status;
@@ -222,16 +221,14 @@ namespace PeerCastStation.HTTP
         case StopReason.UserShutdown:  status = ConnectionStatus.Idle; break;
         default:                       status = ConnectionStatus.Error; break;
         }
-        IPEndPoint endpoint = null;
-        string server_name = "";
         return new ConnectionInfoBuilder {
           ProtocolName     = "HTTP Source",
           Type             = ConnectionType.Source,
           Status           = status,
           RemoteName       = SourceUri.ToString(),
-          RemoteEndPoint   = endpoint,
+          RemoteEndPoint   = null,
           RemoteHostStatus = RemoteHostStatus.None,
-          AgentName        = server_name,
+          AgentName        = "",
         }.Build();
       }
     }
@@ -266,16 +263,19 @@ namespace PeerCastStation.HTTP
   {
     override public string Name { get { return "HTTP Source"; } }
 
-    private HTTPSourceStreamFactory factory;
-    override protected void OnAttach()
+    private HTTPSourceStreamFactory? factory = null;
+    override protected void OnAttach(PeerCastApplication app)
     {
-      if (factory==null) factory = new HTTPSourceStreamFactory(Application.PeerCast);
-      Application.PeerCast.SourceStreamFactories.Add(factory);
+      if (factory==null) factory = new HTTPSourceStreamFactory(app.PeerCast);
+      app.PeerCast.SourceStreamFactories.Add(factory);
     }
 
-    override protected void OnDetach()
+    override protected void OnDetach(PeerCastApplication app)
     {
-      Application.PeerCast.SourceStreamFactories.Remove(factory);
+      if (factory!=null) {
+        app.PeerCast.SourceStreamFactories.Remove(factory);
+      }
     }
   }
+
 }

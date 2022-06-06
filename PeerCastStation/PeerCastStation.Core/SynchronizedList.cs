@@ -115,7 +115,7 @@ namespace PeerCastStation.Core
         get { return enumerator.Current; }
       }
 
-      object IEnumerator.Current {
+      object? IEnumerator.Current {
         get { return enumerator.Current; }
       }
 

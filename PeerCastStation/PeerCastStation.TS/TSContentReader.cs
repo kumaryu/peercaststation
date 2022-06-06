@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -49,21 +50,18 @@ namespace PeerCastStation.TS
     {
       int streamIndex = -1;
       long contentPosition = 0;
-      DateTime streamOrigin = DateTime.Now;
       DateTime latestContentTime = DateTime.Now;
-      byte[] bytes188 = new byte[188];
       byte[] latestHead = new byte[0];
-      byte[] contentData = null;
 
       streamIndex = Channel.GenerateStreamID();
-      streamOrigin = DateTime.Now;
+      var streamOrigin = DateTime.Now;
       sink.OnContentHeader(new Content(streamIndex, TimeSpan.Zero, contentPosition, new byte[] {}, PCPChanPacketContinuation.None));
       
       try
       {
         while (!cancel_token.IsCancellationRequested)
         {
-          bytes188 = await stream.ReadBytesAsync(188, cancel_token).ConfigureAwait(false);
+          var bytes188 = await stream.ReadBytesAsync(188, cancel_token).ConfigureAwait(false);
           TSPacket packet = new TSPacket(bytes188);
           if (packet.sync_byte != 0x47) throw new Exception();
           if (packet.payload_unit_start_indicator > 0)
@@ -106,8 +104,7 @@ namespace PeerCastStation.TS
               }
             }
             if ((DateTime.Now - latestContentTime).Milliseconds > 50) {
-              TryParseContent(packet, out contentData);
-              if(contentData!=null) {
+              if (TryParseContent(packet, out var contentData)) {
                 sink.OnContent(new Content(streamIndex, DateTime.Now - streamOrigin, contentPosition, contentData, PCPChanPacketContinuation.None));
                 contentPosition += contentData.Length;
                 latestContentTime = DateTime.Now;
@@ -159,15 +156,17 @@ namespace PeerCastStation.TS
       }
     }
     
-    private bool TryParseContent(TSPacket packet, out byte[] data) {
-      data = null;
+    private bool TryParseContent(TSPacket packet, [NotNullWhen(true)] out byte[]? data) {
       if (packet.video_block || packet.audio_block) {
         cache.Close();
         data = cache.ToArray();
         cache = new MemoryStream();
         return true;
       }
-      return false;
+      else {
+        data = null;
+        return false;
+      }
     }
 
   }
@@ -182,7 +181,7 @@ namespace PeerCastStation.TS
       return new TSContentReader(channel);
     }
 
-    public bool TryParseContentType(byte[] header, out string content_type, out string mime_type)
+    public bool TryParseContentType(byte[] header, [NotNullWhen(true)] out string? content_type, [NotNullWhen(true)] out string? mime_type)
     {
       if (header.Length>=188 && header[0]==0x47) {
         content_type = "TS";
@@ -203,16 +202,19 @@ namespace PeerCastStation.TS
   {
     override public string Name { get { return "TS Content Reader"; } }
 
-    private TSContentReaderFactory factory;
-    override protected void OnAttach()
+    private TSContentReaderFactory? factory;
+    override protected void OnAttach(PeerCastApplication app)
     {
       if (factory == null) factory = new TSContentReaderFactory();
-      Application.PeerCast.ContentReaderFactories.Add(factory);
+      app.PeerCast.ContentReaderFactories.Add(factory);
     }
 
-    override protected void OnDetach()
+    override protected void OnDetach(PeerCastApplication app)
     {
-      Application.PeerCast.ContentReaderFactories.Remove(factory);
+      var f = Interlocked.Exchange(ref factory, null);
+      if (f!=null) {
+        app.PeerCast.ContentReaderFactories.Remove(f);
+      }
     }
   }
 }

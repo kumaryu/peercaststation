@@ -18,7 +18,7 @@ namespace PeerCastStation.UI.HTTP
         get { return reference.IsAlive; }
       }
 
-      public object Object {
+      public object? Object {
         get {
           try {
             return reference.Target;
@@ -29,7 +29,7 @@ namespace PeerCastStation.UI.HTTP
         }
       }
 
-      public override bool Equals(object other)
+      public override bool Equals(object? other)
       {
         if (other==null) return false;
         if (other.GetType()!=this.GetType()) return false;

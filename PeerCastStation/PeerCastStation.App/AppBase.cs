@@ -9,6 +9,16 @@ namespace PeerCastStation.App
   public class AppBase
     : PeerCastApplication
   {
+    public static string GetDefaultBasePath()
+    {
+      return 
+        System.IO.Path.GetDirectoryName(
+          (System.Reflection.Assembly.GetEntryAssembly()?.Location ??
+           System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ??
+           "").AsSpan()
+        ).ToString();
+    }
+
     private static Logger logger = new Logger(typeof(AppBase));
     private IEnumerable<IPlugin> plugins;
     override public IEnumerable<IPlugin> Plugins {
@@ -23,7 +33,7 @@ namespace PeerCastStation.App
       get { return settings; }
     }
 
-    public System.Diagnostics.Process LinkProcess { get; private set; }
+    public System.Diagnostics.Process? LinkProcess { get; private set; }
 
     private string basePath;
     public override string BasePath {
@@ -63,11 +73,11 @@ namespace PeerCastStation.App
       }
       settings = new PecaSettings(SettingsFileName);
       peerCast.AgentName = AppSettingsReader.GetString("AgentName", "PeerCastStation");
-      LoadPlugins();
+      plugins = LoadPlugins();
     }
 
     private TaskCompletionSource<int> stopTask = new TaskCompletionSource<int>();
-    private Action cleanupHandler = null;
+    private Action? cleanupHandler = null;
     override public void Stop(int exit_code, Action cleanupHandler)
     {
       if (stopTask.TrySetResult(exit_code)) {
@@ -127,12 +137,16 @@ namespace PeerCastStation.App
 
     IEnumerable<Type> LoadPluginAssemblies()
     {
-      return
-        LoadPluginAssembly(System.Reflection.Assembly.GetEntryAssembly())
-        .Concat(
-          System.IO.Directory.GetFiles(BasePath, "*.dll")
-            .SelectMany(dll => LoadPluginAssembly(dll))
-        )
+      var types = Enumerable.Empty<Type>();
+      var entry = System.Reflection.Assembly.GetEntryAssembly();
+      if (entry!=null) {
+        types = Enumerable.Concat(types, LoadPluginAssembly(entry));
+      }
+      types = Enumerable.Concat(
+        types,
+        System.IO.Directory.GetFiles(BasePath, "*.dll").SelectMany(dll => LoadPluginAssembly(dll))
+      );
+      return types
         .OrderBy(type => ((PluginAttribute)(type.GetCustomAttributes(typeof(PluginAttribute), true)[0])).Priority);
     }
 
@@ -155,18 +169,18 @@ namespace PeerCastStation.App
         var res = asm.GetTypes()
             .Where(type => type.GetCustomAttributes(typeof(PluginAttribute), true).Length>0)
             .Where(type => type.GetInterfaces().Contains(typeof(IPlugin)));
-        foreach (var settingtype in asm.GetTypes().Where(type => type.GetCustomAttributes(typeof(PecaSettingsAttribute), true).Length>0)) {
+        foreach (var settingtype in asm.GetTypes().Where(type => type.GetCustomAttributes(typeof(PecaSettingsAttribute), true).Length>0 && type.FullName!=null)) {
           foreach (var attr in settingtype.GetCustomAttributes(typeof(PecaSettingsAttribute), true).Cast<PecaSettingsAttribute>()) {
             if (attr.Alias!=null) {
               PecaSettings.RegisterType(attr.Alias, settingtype);
             }
             else {
-              PecaSettings.RegisterType(settingtype.FullName, settingtype);
+              PecaSettings.RegisterType(settingtype.FullName!, settingtype);
             }
           }
         }
         foreach (var enumtype in asm.GetTypes().Where(type => type.IsEnum && type.IsPublic && !type.IsNested)) {
-          PecaSettings.RegisterType(enumtype.FullName, enumtype);
+          PecaSettings.RegisterType(enumtype.FullName!, enumtype);
         }
         return res;
       }
@@ -178,9 +192,9 @@ namespace PeerCastStation.App
       }
     }
 
-    void LoadPlugins()
+    IEnumerable<IPlugin> LoadPlugins()
     {
-      plugins = LoadPluginAssemblies().Select(type => {
+      return LoadPluginAssemblies().Select(type => {
         var constructor = type.GetConstructor(Type.EmptyTypes);
         if (constructor!=null) {
           return constructor.Invoke(null) as IPlugin;
@@ -190,7 +204,7 @@ namespace PeerCastStation.App
         }
       })
       .Where(plugin => plugin!=null)
-      .ToArray();
+      .ToArray()!;
     }
 
     void LoadConfigurations()
@@ -229,6 +243,7 @@ namespace PeerCastStation.App
         if (s.Listeners!=null) {
           foreach (var listener in s.Listeners) {
             try {
+              if (listener.EndPoint==null) continue;
               var ol = peerCast.StartListen(listener.EndPoint, listener.LocalAccepts, listener.GlobalAccepts);
               ol.GlobalAuthorizationRequired = listener.GlobalAuthRequired;
               ol.LocalAuthorizationRequired  = listener.LocalAuthRequired;
@@ -267,6 +282,7 @@ namespace PeerCastStation.App
         if (s.YellowPages!=null) {
           foreach (var yellowpage in s.YellowPages) {
             try {
+              if (String.IsNullOrEmpty(yellowpage.Protocol) || String.IsNullOrEmpty(yellowpage.Name)) continue;
               peerCast.AddYellowPage(yellowpage.Protocol, yellowpage.Name, yellowpage.Uri, yellowpage.ChannelsUri);
             }
             catch (ArgumentException e) {

@@ -29,9 +29,9 @@ namespace PeerCastStation.HTTP
 
   public class HTTPUtils
   {
-    private static string GetAuthorizationToken(PeerCastStation.HTTP.HTTPRequest request)
+    private static string? GetAuthorizationToken(PeerCastStation.HTTP.HTTPRequest request)
     {
-      String result = null;
+      string? result = null;
       if (request.Headers.ContainsKey("AUTHORIZATION")) {
         var md = System.Text.RegularExpressions.Regex.Match(
           request.Headers["AUTHORIZATION"],
@@ -49,7 +49,7 @@ namespace PeerCastStation.HTTP
       return result;
     }
 
-    public static bool CheckAuthorization(string authorization_token, PeerCastStation.Core.AccessControlInfo acinfo)
+    public static bool CheckAuthorization(string? authorization_token, PeerCastStation.Core.AccessControlInfo acinfo)
     {
       if (!acinfo.AuthorizationRequired || acinfo.AuthenticationKey==null) return true;
       if (authorization_token==null) return false;
@@ -120,25 +120,6 @@ namespace PeerCastStation.HTTP
         writer.Write(header.ToString());
       }
       return mem.ToArray().Concat(bytes).ToArray();
-    }
-
-    public static Dictionary<string, string> ParseQuery(string query)
-    {
-      var res = new Dictionary<string, string>();
-      if (query!=null && query.StartsWith("?")) {
-        foreach (var q in query.Substring(1).Split('&')) {
-          var entry = q.Split('=');
-          var key = Uri.UnescapeDataString(entry[0]).Replace('+', ' ');
-          if (entry.Length>1) {
-            var value = Uri.UnescapeDataString(entry[1]).Replace('+', ' ');
-            res[key] = value;
-          }
-          else {
-            res[key] = null;
-          }
-        }
-      }
-      return res;
     }
 
     public static string GetReasonPhrase(int status_code)

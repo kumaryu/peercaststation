@@ -26,25 +26,25 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
 
     private static string GetTypeSignatureForDoc(Type type)
     {
+      var name = type.ToString().Replace('+', '.');
       if (type.IsGenericType && !type.IsGenericTypeDefinition) {
         return $"{GetTypeSignatureForDoc(type.GetGenericTypeDefinition())}{{{String.Join(",", type.GenericTypeArguments.Select(t => GetTypeSignatureForDoc(t)))}}}";
       }
       else if (type.IsGenericTypeDefinition) {
-        var name = type.FullName.Replace('+', '.');
         return name.Substring(0, name.Length-2);
       }
       else {
-        return type.FullName.Replace('+', '.');
+        return name;
       }
     }
 
     private static string GetMethodSignatureForDoc(MethodInfo method)
     {
-      return $"M:{GetTypeSignatureForDoc(method.DeclaringType)}.{method.Name}({String.Join(",", method.GetParameters().Select(param => GetTypeSignatureForDoc(param.ParameterType)))})";
+      return $"M:{GetTypeSignatureForDoc(method.DeclaringType!)}.{method.Name}({String.Join(",", method.GetParameters().Select(param => GetTypeSignatureForDoc(param.ParameterType)))})";
     }
 
     private static Dictionary<string, WeakReference<XDocument>> assemblyDocuments = new Dictionary<string, WeakReference<XDocument>>();
-    private static XDocument GetAssemblyDocument(Assembly asm)
+    private static XDocument? GetAssemblyDocument(Assembly asm)
     {
       lock (assemblyDocuments) {
         if (assemblyDocuments.TryGetValue(asm.Location, out var reference) && reference.TryGetTarget(out var doc)) {
@@ -52,15 +52,15 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
         }
         else {
           var path = System.IO.Path.ChangeExtension(asm.Location, ".xml");
-          XDocument xml = null;
+          XDocument? xml = null;
           try {
             xml = XDocument.Load(path);
+            assemblyDocuments[asm.Location] = new WeakReference<XDocument>(xml);
           }
           catch (System.IO.FileNotFoundException) {
           }
           catch (System.Security.SecurityException) {
           }
-          assemblyDocuments[asm.Location] = new WeakReference<XDocument>(xml);
           return xml;
         }
       }
@@ -73,8 +73,8 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
         Found,
       }
       public readonly CacheState State;
-      public readonly XElement Document;
-      public DocumentCache(CacheState state, XElement document)
+      public readonly XElement? Document;
+      public DocumentCache(CacheState state, XElement? document)
       {
         State = state;
         Document = document;
@@ -82,24 +82,26 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
     }
 
     private DocumentCache document;
-    private XElement GetMethodDocument()
+    private XElement? GetMethodDocument()
     {
       switch (document.State) {
       case DocumentCache.CacheState.NotInitialized:
         {
-          var doc = GetAssemblyDocument(Method.DeclaringType.Assembly);
+          var doc = Method.DeclaringType!=null ? GetAssemblyDocument(Method.DeclaringType.Assembly) : null;
           if (doc==null) {
             document = new DocumentCache(DocumentCache.CacheState.NotFound, null);
           }
-          var elt = doc
-            .Descendants("member")
-            .Where(m => m.Attribute("name")?.Value==GetMethodSignatureForDoc(Method))
-            .FirstOrDefault();
-          if (elt!=null) {
-            document = new DocumentCache(DocumentCache.CacheState.Found, elt);
-          }
           else {
-            document = new DocumentCache(DocumentCache.CacheState.NotFound, null);
+            var elt = doc
+              .Descendants("member")
+              .Where(m => m.Attribute("name")?.Value==GetMethodSignatureForDoc(Method))
+              .FirstOrDefault();
+            if (elt!=null) {
+              document = new DocumentCache(DocumentCache.CacheState.Found, elt);
+            }
+            else {
+              document = new DocumentCache(DocumentCache.CacheState.NotFound, null);
+            }
           }
           return document.Document;
         }
@@ -111,13 +113,13 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       }
     }
 
-    public string GetMethodSummary()
+    public string? GetMethodSummary()
     {
       var elt = GetMethodDocument();
       return elt?.Element("summary")?.Value?.Trim();
     }
 
-    public string GetResultSummary()
+    public string? GetResultSummary()
     {
       var elt = GetMethodDocument();
       if (elt==null) return null;
@@ -127,7 +129,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
           .FirstOrDefault();
     }
 
-    public string GetParameterSummary(string name)
+    public string? GetParameterSummary(string name)
     {
       var elt = GetMethodDocument();
       if (elt==null) return null;
@@ -170,13 +172,13 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       else                             return "Unknown type";
     }
 
-    private object ToObject(Type type, JToken value)
+    private object? ToObject(Type type, JToken value)
     {
            if (type==typeof(JToken))   return value;
       else if (type==typeof(JArray))   return (JArray)value;
       else if (type==typeof(JObject))  return (JObject)value;
-      else if (type==typeof(byte[]))   return (byte[])value;
-      else if (type==typeof(string))   return (string)value;
+      else if (type==typeof(byte[]))   return (byte[]?)value;
+      else if (type==typeof(string))   return (string?)value;
       else if (type==typeof(long?))    return (long?)value;
       else if (type==typeof(long))     return (long)value;
       else if (type==typeof(int?))     return (int?)value;
@@ -202,14 +204,17 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       else                             return value;
     }
 
-    private JToken FromObject(Type type, object value)
+    private JToken? FromObject(Type type, object? value)
     {
+      if (value==null) {
+        return null;
+      }
            if (type==typeof(void))     return null;
       else if (type==typeof(JToken))   return (JToken)value;
       else if (type==typeof(JArray))   return (JArray)value;
       else if (type==typeof(JObject))  return (JObject)value;
       else if (type==typeof(byte[]))   return (byte[])value;
-      else if (type==typeof(string))   return (string)value;
+      else if (type==typeof(string))   return (string?)value;
       else if (type==typeof(long?))    return (long?)value;
       else if (type==typeof(long))     return (long)value;
       else if (type==typeof(int?))     return (int?)value;
@@ -235,7 +240,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       else                             return JToken.FromObject(value);
     }
 
-    public JToken Invoke(OwinEnvironment ctx, JToken args)
+    public JToken? Invoke(OwinEnvironment ctx, JToken? args)
     {
       var param_infos = Method.GetParameters();
       if (param_infos.Length==0) {
@@ -244,13 +249,18 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
           return FromObject(Method.ReturnType, res);
         }
         catch (TargetInvocationException e) {
-          throw e.InnerException;
+          if (e.InnerException!=null) {
+            throw e.InnerException;
+          }
+          else {
+            throw;
+          }
         }
       }
       else {
         int pos = 0;
         int len = param_infos.Length;
-        var arguments = new object[param_infos.Length];
+        var arguments = new object?[param_infos.Length];
         if (param_infos[0].ParameterType==typeof(OwinEnvironment)) {
           arguments[0] = ctx;
           pos += 1;
@@ -262,7 +272,12 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
             return FromObject(Method.ReturnType, res);
           }
           catch (TargetInvocationException e) {
-            throw e.InnerException;
+            if (e.InnerException!=null) {
+              throw e.InnerException;
+            }
+            else {
+              throw;
+            }
           }
         }
         if (args==null) {
@@ -289,8 +304,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
         else if (args.Type==JTokenType.Object) {
           var obj = (JObject)args;
           for (var i=0; i<len; i++) {
-            JToken value;
-            if (obj.TryGetValue(param_infos[i+pos].Name, out value) && value.Type!=JTokenType.Undefined) {
+            if (obj.TryGetValue(param_infos[i+pos].Name!, out var value) && value.Type!=JTokenType.Undefined) {
               try {
                 arguments[i+pos] = ToObject(param_infos[i+pos].ParameterType, value);
               }
@@ -330,7 +344,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
             throw e.InnerException;
           }
           else {
-            throw new RPCError(RPCErrorCode.InternalError, e.InnerException.Message);
+            throw new RPCError(RPCErrorCode.InternalError, e.InnerException?.Message ?? e.Message);
           }
         }
       }
@@ -369,7 +383,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
     : ApplicationException
   {
     public RPCErrorCode Code { get; private set; }
-    public new JToken   Data { get; private set; }
+    public new JToken?  Data { get; private set; }
     public RPCError(RPCErrorCode error)
       : this(error, error.ToString())
     {
@@ -385,7 +399,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
     {
     }
 
-    public RPCError(RPCErrorCode error, string message, JToken data)
+    public RPCError(RPCErrorCode error, string message, JToken? data)
       : base(message)
     {
       this.Code = error;
@@ -404,11 +418,11 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
 
   public class RPCRequest
   {
-    public string Version    { get; private set; }
-    public string Method     { get; private set; }
-    public JToken Parameters { get; private set; }
-    public JToken Id         { get; private set; }
-    public RPCRequest(string version, string method, JToken parameters, JToken id)
+    public string Version     { get; }
+    public string Method      { get; }
+    public JToken? Parameters { get; }
+    public JToken? Id         { get; }
+    public RPCRequest(string version, string method, JToken? parameters, JToken? id)
     {
       this.Version = version;
       this.Method = method;
@@ -420,20 +434,19 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
     {
       if (req.Type!=JTokenType.Object) throw new RPCError(RPCErrorCode.InvalidRequest);
       var obj = (JObject)req;
-      JToken jsonrpc = obj["jsonrpc"];
-      JToken method  = obj["method"];
-      JToken args    = obj["params"];
-      JToken id      = obj["id"];
-      if (jsonrpc==null || jsonrpc.Type!=JTokenType.String || ((string)jsonrpc)!="2.0") {
+      var jsonrpc = obj.GetValueAsString("jsonrpc");
+      var method = obj.GetValueAsString("method");
+      var args = obj["params"];
+      if (jsonrpc!="2.0") {
         throw new RPCError(RPCErrorCode.InvalidRequest);
       }
-      if (method==null || method.Type!=JTokenType.String) {
+      if (method==null) {
         throw new RPCError(RPCErrorCode.InvalidRequest);
       }
       if (args!=null && (args.Type!=JTokenType.Object && args.Type!=JTokenType.Array)) {
         throw new RPCError(RPCErrorCode.InvalidRequest);
       }
-      if (obj.TryGetValue("id", out id)) {
+      if (obj.TryGetValue("id", out var id)) {
         switch (id.Type) {
         case JTokenType.Null:
         case JTokenType.Float:
@@ -444,23 +457,23 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
           throw new RPCError(RPCErrorCode.InvalidRequest);
         }
       }
-      return new RPCRequest((string)jsonrpc, (string)method, args, id);
+      return new RPCRequest(jsonrpc, method, args, id);
     }
   }
 
   public class RPCResponse
   {
-    public JToken   Id     { get; private set; }
-    public JToken   Result { get; private set; }
-    public RPCError Error  { get; private set; }
+    public JToken?   Id      { get; private set; }
+    public JToken?   Result { get; private set; }
+    public RPCError? Error  { get; private set; }
 
-    public RPCResponse(JToken id, RPCError error)
+    public RPCResponse(JToken? id, RPCError error)
     {
       this.Id = id;
       this.Error = error;
     }
 
-    public RPCResponse(JToken id, JToken result)
+    public RPCResponse(JToken? id, JToken? result)
     {
       this.Id = id;
       this.Result = result;
@@ -485,7 +498,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
   {
     private void ProcessRequest(OwinEnvironment ctx, JArray results, JToken request, Func<OutputStreamType,bool> authFunc)
     {
-      RPCRequest req = null;
+      RPCRequest req;
       try {
         req = RPCRequest.FromJson(request);
       }
@@ -521,7 +534,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       }
     }
 
-    public JToken ProcessRequest(OwinEnvironment ctx, JToken req, Func<OutputStreamType,bool> authFunc)
+    public JToken? ProcessRequest(OwinEnvironment ctx, JToken req, Func<OutputStreamType,bool> authFunc)
     {
       if (req==null) return null;
       if (req.Type==JTokenType.Array) {
@@ -538,7 +551,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       }
     }
 
-    public JToken ProcessRequest(OwinEnvironment ctx, string request_str, Func<OutputStreamType,bool> authFunc)
+    public JToken? ProcessRequest(OwinEnvironment ctx, string request_str, Func<OutputStreamType,bool> authFunc)
     {
       JToken req;
       try {
@@ -557,8 +570,8 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       this.host = host;
       this.methods =
         Enumerable.Concat(
-          Enumerable.Repeat(this.GetType().GetMethod("GenerateAPIDescription"), 1)
-          .Select(method => new RPCMethodInfo(this, method)),
+          Enumerable.Repeat(typeof(JSONRPCHost).GetMethod(nameof(GenerateAPIDescription)), 1)
+          .Select(method => new RPCMethodInfo(this, method!)),
           host.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
           .Where(method => Attribute.IsDefined(method, typeof(RPCMethodAttribute), true))
           .Select(method => new RPCMethodInfo(host, method))
@@ -603,7 +616,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       }
     }
 
-    private JObject GenerateParameterDescription(string name, ParameterInfo param, Type t, string summary)
+    private JObject GenerateParameterDescription(string name, ParameterInfo param, Type t, string? summary)
     {
       var schema = GenerateTypeSchema(t);
       if (!String.IsNullOrWhiteSpace(summary)) {
@@ -614,13 +627,16 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
       }
     }
 
-    private JObject GenerateParameterDescription(string name, ParameterInfo param, string summary)
+    private JObject GenerateParameterDescription(string name, ParameterInfo param, string? summary)
     {
       return GenerateParameterDescription(name, param, param.ParameterType, summary);
     }
 
-    private JObject GenerateParameterDescription(ParameterInfo param, string summary)
+    private JObject GenerateParameterDescription(ParameterInfo param, string? summary)
     {
+      if (param.Name==null) {
+        throw new ArgumentException("param must not be return parameter.", nameof(param));
+      }
       return GenerateParameterDescription(param.Name, param, param.ParameterType, summary);
     }
 
@@ -642,7 +658,7 @@ namespace PeerCastStation.UI.HTTP.JSONRPC
               var @params = new JArray(
                 m.Method.GetParameters()
                 .Where(p => p.ParameterType!=typeof(OwinEnvironment))
-                .Select(p => GenerateParameterDescription(p, m.GetParameterSummary(p.Name)))
+                .Select(p => GenerateParameterDescription(p, m.GetParameterSummary(p.Name!)))
                 .ToArray()
               );
               if (summary==null) {

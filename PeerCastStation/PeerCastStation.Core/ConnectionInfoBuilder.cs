@@ -8,7 +8,7 @@ namespace PeerCastStation.Core
     public string     ProtocolName    { get; set; } = "";
     public ConnectionType   Type      { get; set; } = ConnectionType.None;
     public ConnectionStatus Status    { get; set; } = ConnectionStatus.Idle;
-    public IPEndPoint RemoteEndPoint  { get; set; } = null;
+    public IPEndPoint? RemoteEndPoint  { get; set; } = null;
     public RemoteHostStatus RemoteHostStatus { get; set; } = RemoteHostStatus.None;
     public Guid?      RemoteSessionID { get; set; } = null;
     public long?      ContentPosition { get; set; } = null;
@@ -16,8 +16,8 @@ namespace PeerCastStation.Core
     public float?     SendRate        { get; set; } = null;
     public int?       LocalRelays     { get; set; } = null;
     public int?       LocalDirects    { get; set; } = null;
-    public string     AgentName       { get; set; } = null;
-    public string     RemoteName      { get; set; } = null;
+    public string?    AgentName       { get; set; } = null;
+    public string?    RemoteName      { get; set; } = null;
 
     public ConnectionInfoBuilder()
     {

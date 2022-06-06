@@ -36,17 +36,17 @@ namespace PeerCastStation.FLV.AMF
       case AMF0Marker.Object:
         return RegisterObject(new AMFValue(ReadObject()));
       case AMF0Marker.MovieClip:
-        return null; //Not supported
+        return new AMFValue(AMFValueType.NotSupported, AMFValue.Null); //Not supported
       case AMF0Marker.Null:
-        return new AMFValue(AMFValueType.Null, null);
+        return new AMFValue(AMFValueType.Null, AMFValue.Null);
       case AMF0Marker.Undefined:
-        return new AMFValue(AMFValueType.Undefined, null);
+        return new AMFValue(AMFValueType.Undefined, AMFValue.Null);
       case AMF0Marker.Reference:
         return new AMFValue(ReadReference());
       case AMF0Marker.Array:
         return RegisterObject(new AMFValue(ReadEcmaArray()));
       case AMF0Marker.ObjectEnd:
-        return new AMFValue(AMFValueType.ObjectEnd, null);
+        return new AMFValue(AMFValueType.ObjectEnd, AMFValue.Null);
       case AMF0Marker.StrictArray:
         return RegisterObject(new AMFValue(ReadStrictArray()));
       case AMF0Marker.Date:
@@ -54,15 +54,15 @@ namespace PeerCastStation.FLV.AMF
       case AMF0Marker.LongString:
         return new AMFValue(ReadLongString());
       case AMF0Marker.Unsupported:
-        return null; //Not supported
+        return new AMFValue(AMFValueType.NotSupported, AMFValue.Null); //Not supported
       case AMF0Marker.RecordSet:
-        return null; //Not supported
+        return new AMFValue(AMFValueType.NotSupported, AMFValue.Null); //Not supported
       case AMF0Marker.XMLDocument:
         return new AMFValue(AMFValueType.XMLDocument, ReadLongString());
       case AMF0Marker.TypedObject:
         return RegisterObject(new AMFValue(ReadTypedObject()));
       case AMF0Marker.AVMPlusObject:
-        return null; //Not supported
+        return new AMFValue(AMFValueType.NotSupported, AMFValue.Null); //Not supported
       default:
         throw new InvalidDataException();
       }

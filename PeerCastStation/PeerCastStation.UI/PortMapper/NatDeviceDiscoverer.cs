@@ -43,9 +43,9 @@ namespace PeerCastStation.UI.PortMapper
   public interface INatDevice
   {
     string Name { get; }
-    Task<MappedPort> MapAsync(MappingProtocol protocol, int port, TimeSpan lifetime, CancellationToken cancel_token);
+    Task<MappedPort?> MapAsync(MappingProtocol protocol, int port, TimeSpan lifetime, CancellationToken cancel_token);
     Task UnmapAsync(MappingProtocol protocol, int port, CancellationToken cancel_token);
-    Task<IPAddress> GetExternalAddressAsync(CancellationToken cancel_token);
+    Task<IPAddress?> GetExternalAddressAsync(CancellationToken cancel_token);
   }
 
   public interface INatDeviceDiscoverer

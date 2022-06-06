@@ -79,8 +79,8 @@ namespace PeerCastStation.WPF.CoreSettings
         localPlay       = (model.LocalOutputAccepts & OutputStreamType.Play)!=0;
         localInterface  = (model.LocalOutputAccepts & OutputStreamType.Interface)!=0;
         localAuthRequired = model.LocalAuthorizationRequired;
-        authId       = model.AuthenticationKey!=null ? model.AuthenticationKey.Id : null;
-        authPassword = model.AuthenticationKey!=null ? model.AuthenticationKey.Password : null;
+        authId       = model.AuthenticationKey!=null ? model.AuthenticationKey.Id : "";
+        authPassword = model.AuthenticationKey!=null ? model.AuthenticationKey.Password : "";
         isOpen = null;
         RegenerateAuthKey = new Command(DoRegenerateAuthKey);
       }
@@ -339,8 +339,8 @@ namespace PeerCastStation.WPF.CoreSettings
         }
       }
 
-      public IPEndPoint globalEndPoint = null;
-      public IPEndPoint GlobalEndPoint {
+      public IPEndPoint? globalEndPoint = null;
+      public IPEndPoint? GlobalEndPoint {
         get { return globalEndPoint; }
         set {
           if (globalEndPoint==value) return;
@@ -376,16 +376,16 @@ namespace PeerCastStation.WPF.CoreSettings
           break;
         }
       }
-      public event PropertyChangedEventHandler PropertyChanged;
+      public event PropertyChangedEventHandler? PropertyChanged;
     }
 
     internal class YellowPageClientViewModel
       : INotifyPropertyChanged
     {
-      private string name;
-      private Uri    announceUri;
-      private Uri    channelsUri;
-      private IYellowPageClientFactory protocol;
+      private string name = "";
+      private Uri?   announceUri;
+      private Uri?   channelsUri;
+      private IYellowPageClientFactory? protocol;
 
       public string Name {
         get { return name; }
@@ -396,7 +396,7 @@ namespace PeerCastStation.WPF.CoreSettings
         }
       }
 
-      public string AnnounceUri {
+      public string? AnnounceUri {
         get { return announceUri==null ? null : announceUri.ToString(); }
         set {
           if (String.IsNullOrEmpty(value)) {
@@ -405,7 +405,7 @@ namespace PeerCastStation.WPF.CoreSettings
             OnPropertyChanged(nameof(AnnounceUri));
             return;
           }
-          if (protocol==null) new ArgumentException("プロトコルが選択されていません");
+          if (protocol==null) throw new ArgumentException("プロトコルが選択されていません");
           if (Uri.TryCreate(value, UriKind.RelativeOrAbsolute, out var uri)) {
             var result = protocol.ValidateUriAsync(YellowPageUriType.Announce, uri).Result;
             if (result.IsValid) {
@@ -426,7 +426,7 @@ namespace PeerCastStation.WPF.CoreSettings
         }
       }
 
-      public string ChannelsUri {
+      public string? ChannelsUri {
         get { return channelsUri==null ? null : channelsUri.ToString(); }
         set {
           if (String.IsNullOrEmpty(value)) {
@@ -435,7 +435,7 @@ namespace PeerCastStation.WPF.CoreSettings
             OnPropertyChanged(nameof(ChannelsUri));
             return;
           }
-          if (protocol==null) new ArgumentException("プロトコルが選択されていません");
+          if (protocol==null) throw new ArgumentException("プロトコルが選択されていません");
           if (Uri.TryCreate(value, UriKind.RelativeOrAbsolute, out var uri)) {
             var result = protocol.ValidateUriAsync(YellowPageUriType.Channels, uri).Result;
             if (result.IsValid) {
@@ -456,7 +456,7 @@ namespace PeerCastStation.WPF.CoreSettings
         }
       }
 
-      public IYellowPageClientFactory Protocol {
+      public IYellowPageClientFactory? Protocol {
         get { return protocol; }
         set {
           if (protocol==value) return;
@@ -487,7 +487,7 @@ namespace PeerCastStation.WPF.CoreSettings
         this.protocol = owner.peerCast.YellowPageFactories.FirstOrDefault();
       }
 
-      public event PropertyChangedEventHandler PropertyChanged;
+      public event PropertyChangedEventHandler? PropertyChanged;
       private void OnPropertyChanged(string name)
       {
         if (PropertyChanged!=null) {
@@ -525,11 +525,11 @@ namespace PeerCastStation.WPF.CoreSettings
       }
     }
 
-    private OutputListenerViewModel PrimaryListenerV4 {
+    private OutputListenerViewModel? PrimaryListenerV4 {
       get { return ports.FirstOrDefault(port => port.NetworkType==NetworkType.IPv4); }
     }
 
-    private OutputListenerViewModel PrimaryListenerV6 {
+    private OutputListenerViewModel? PrimaryListenerV6 {
       get { return ports.FirstOrDefault(port => port.NetworkType==NetworkType.IPv6); }
     }
 
@@ -643,7 +643,7 @@ namespace PeerCastStation.WPF.CoreSettings
       get { return ports.Any(p => p.NetworkType==NetworkType.IPv4 && p.HtmlUIUrlVisibility==Visibility.Visible) ? Visibility.Visible : Visibility.Collapsed; }
     }
 
-    public string HtmlUIUrlIPv4 {
+    public string? HtmlUIUrlIPv4 {
       get { return ports.FirstOrDefault(p => p.NetworkType==NetworkType.IPv4 && p.HtmlUIUrlVisibility==Visibility.Visible)?.HtmlUIUrl; }
     }
 
@@ -651,7 +651,7 @@ namespace PeerCastStation.WPF.CoreSettings
       get { return ports.Any(p => p.NetworkType==NetworkType.IPv6 && p.HtmlUIUrlVisibility==Visibility.Visible) ? Visibility.Visible : Visibility.Collapsed; }
     }
 
-    public string HtmlUIUrlIPv6 {
+    public string? HtmlUIUrlIPv6 {
       get { return ports.FirstOrDefault(p => p.NetworkType==NetworkType.IPv6 && p.HtmlUIUrlVisibility==Visibility.Visible)?.HtmlUIUrl; }
     }
 
@@ -706,7 +706,7 @@ namespace PeerCastStation.WPF.CoreSettings
       get { return ports.Any(p => p.NetworkType==NetworkType.IPv4 && p.PlayUIUrlVisibility==Visibility.Visible) ? Visibility.Visible : Visibility.Collapsed; }
     }
 
-    public string PlayUIUrlIPv4 {
+    public string? PlayUIUrlIPv4 {
       get { return ports.FirstOrDefault(p => p.NetworkType==NetworkType.IPv4 && p.PlayUIUrlVisibility==Visibility.Visible)?.PlayUIUrl; }
     }
 
@@ -714,7 +714,7 @@ namespace PeerCastStation.WPF.CoreSettings
       get { return ports.Any(p => p.NetworkType==NetworkType.IPv6 && p.PlayUIUrlVisibility==Visibility.Visible) ? Visibility.Visible : Visibility.Collapsed; }
     }
 
-    public string PlayUIUrlIPv6 {
+    public string? PlayUIUrlIPv6 {
       get { return ports.FirstOrDefault(p => p.NetworkType==NetworkType.IPv6 && p.PlayUIUrlVisibility==Visibility.Visible)?.PlayUIUrl; }
     }
 
@@ -723,8 +723,8 @@ namespace PeerCastStation.WPF.CoreSettings
     public IEnumerable<OutputListenerViewModel> Ports {
       get { return ports; }
     }
-    private OutputListenerViewModel selectedPort;
-    public OutputListenerViewModel SelectedPort {
+    private OutputListenerViewModel? selectedPort;
+    public OutputListenerViewModel? SelectedPort {
       get { return selectedPort; }
       set { 
         if (SetProperty("SelectedPort", ref selectedPort, value)) {
@@ -800,8 +800,8 @@ namespace PeerCastStation.WPF.CoreSettings
       }
     }
 
-    private YellowPageClientViewModel selectedYellowPage;
-    public YellowPageClientViewModel SelectedYellowPage {
+    private YellowPageClientViewModel? selectedYellowPage;
+    public YellowPageClientViewModel? SelectedYellowPage {
       get { return selectedYellowPage; }
       set {
         if (SetProperty("SelectedYellowPage", ref selectedYellowPage, value)) {
@@ -814,8 +814,8 @@ namespace PeerCastStation.WPF.CoreSettings
     public Command RemoveYellowPageCommand { get; private set; }
 
     public class ChannelCleanupModeItem {
-      public string Name { get; set; }
-      public PeerCastStation.ChannelCleaner.CleanupMode Mode { get; set; }
+      public string Name { get; init; } = "";
+      public ChannelCleaner.CleanupMode Mode { get; init; }
     }
     private static ChannelCleanupModeItem[] channelCleanupModeItems = new ChannelCleanupModeItem[] {
       new ChannelCleanupModeItem { Name="自動切断しない", Mode=ChannelCleaner.CleanupMode.None },
@@ -827,8 +827,8 @@ namespace PeerCastStation.WPF.CoreSettings
       get { return channelCleanupModeItems; }
     }
 
-    private PeerCastStation.ChannelCleaner.CleanupMode channelCleanupMode;
-    public PeerCastStation.ChannelCleaner.CleanupMode ChannelCleanupMode {
+    private ChannelCleaner.CleanupMode channelCleanupMode;
+    public ChannelCleaner.CleanupMode ChannelCleanupMode {
       get { return channelCleanupMode; }
       set { SetProperty("ChannelCleanupMode", ref channelCleanupMode, value); }
     }
@@ -1067,12 +1067,12 @@ namespace PeerCastStation.WPF.CoreSettings
     {
       var port_checker = pecaApp.Plugins.GetPlugin<PeerCastStation.UI.PCPPortCheckerPlugin>();
       if (port_checker==null) return new PortCheckResult[0];
-      var results = await port_checker.CheckAsync();
+      var results = await port_checker.CheckAsync(peerCast);
       foreach (var result in results) {
         if (!result.Success) continue;
         foreach (var port in ports) {
           if (!port.EndPoint.Address.Equals(result.LocalAddress)) continue;
-          if (result.Ports.Contains(port.Port)) {
+          if (result.Ports.Contains(port.Port) && result.GlobalAddress!=null) {
             port.GlobalEndPoint = new IPEndPoint(result.GlobalAddress, port.Port);
           }
           else {
@@ -1232,8 +1232,9 @@ namespace PeerCastStation.WPF.CoreSettings
         foreach (var yp in yellowPages) {
           if (String.IsNullOrEmpty(yp.Name)) continue;
           if (String.IsNullOrEmpty(yp.AnnounceUri) && String.IsNullOrEmpty(yp.ChannelsUri)) continue;
-          Uri announce_uri = String.IsNullOrEmpty(yp.AnnounceUri) ? null : new Uri(yp.AnnounceUri, UriKind.Absolute);
-          Uri channels_uri = String.IsNullOrEmpty(yp.ChannelsUri) ? null : new Uri(yp.ChannelsUri, UriKind.Absolute);
+          if (yp.Protocol==null) continue;
+          Uri? announce_uri = String.IsNullOrEmpty(yp.AnnounceUri) ? null : new Uri(yp.AnnounceUri, UriKind.Absolute);
+          Uri? channels_uri = String.IsNullOrEmpty(yp.ChannelsUri) ? null : new Uri(yp.ChannelsUri, UriKind.Absolute);
           peerCast.AddYellowPage(yp.Protocol.Protocol, yp.Name, announce_uri, channels_uri);
         }
         isYellowPagesModified = false;

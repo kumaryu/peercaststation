@@ -55,12 +55,12 @@ namespace PeerCastStation.Core
   {
     protected static Logger logger = new Logger(typeof(Channel));
     private const int NodeLimit = 180000; //ms
-    private ISourceStream sourceStream = null;
+    private ISourceStream? sourceStream = null;
     private IChannelMonitor[] monitors = Array.Empty<IChannelMonitor>();
     private IChannelSink[] sinks = Array.Empty<IChannelSink>();
     private Host[] sourceNodes = new Host[0];
     private Host[] nodes = new Host[0];
-    private Content contentHeader = null;
+    private Content? contentHeader = null;
     private ContentCollection contents;
     private System.Diagnostics.Stopwatch uptimeTimer = new System.Diagnostics.Stopwatch();
     private int streamID = 0;
@@ -93,13 +93,13 @@ namespace PeerCastStation.Core
 
     public NetworkType Network { get; private set; }
     public Guid ChannelID   { get; private set; }
-    public Uri  SourceUri   { get; private set; }
+    public Uri? SourceUri   { get; private set; }
     public abstract bool IsBroadcasting { get; }
 
     /// <summary>
     /// ソースストリームを取得します
     /// </summary>
-    public ISourceStream SourceStream {
+    public ISourceStream? SourceStream {
       get {
         return sourceStream;
       }
@@ -163,8 +163,14 @@ namespace PeerCastStation.Core
     private class ChannelSinkSubscription
       : IDisposable
     {
-      public Channel Channel;
-      public IChannelSink Sink;
+      public readonly Channel Channel;
+      public readonly IChannelSink Sink;
+
+      public ChannelSinkSubscription(Channel channel, IChannelSink sink)
+      {
+        Channel = channel;
+        Sink = sink;
+      }
 
       public void Dispose()
       {
@@ -180,7 +186,7 @@ namespace PeerCastStation.Core
     public IDisposable AddOutputStream(IChannelSink stream)
     {
       ReplaceCollection(ref sinks, old => old.Add(stream));
-      return new ChannelSinkSubscription { Channel=this, Sink=stream };
+      return new ChannelSinkSubscription(this, stream);
     }
 
     /// <summary>
@@ -350,12 +356,15 @@ namespace PeerCastStation.Core
     /// <summary>
     /// ヘッダコンテントを取得および設定します
     /// </summary>
-    public Content ContentHeader
+    public Content? ContentHeader
     {
       get {
         return contentHeader;
       }
       set {
+        if (value==null) {
+          throw new ArgumentNullException(nameof(value));
+        }
         var old = Interlocked.Exchange(ref contentHeader, value);
         if (old!=value) {
           OnContentHeaderChanged(value);
@@ -505,11 +514,15 @@ namespace PeerCastStation.Core
     private class HostComparer
       : IEqualityComparer<Host>
     {
-      public bool Equals(Host x, Host y)
+      public bool Equals(Host? x, Host? y)
       {
         if (x==y) return true;
-        if (x!=null && y==null) return false;
-        if (x==null && y!=null) return false;
+        if (x==null) {
+          return y==null;
+        }
+        if (y==null) {
+          return false;
+        }
         return x.SessionID.Equals(y.SessionID);
       }
 
@@ -646,7 +659,7 @@ namespace PeerCastStation.Core
       else {
         old.Dispose();
       }
-      sourceStream.Run().ContinueWith(prev => {
+      source_stream.Run().ContinueWith(prev => {
         RemoveSourceStream(source_stream, prev.IsFaulted ? StopReason.NotIdentifiedError : prev.Result);
       });
     }
@@ -721,12 +734,12 @@ namespace PeerCastStation.Core
         if (source_uri!=null) Start(source_uri);
         break;
       default:
-        source.Reconnect();
+        source!.Reconnect();
         break;
       }
     }
 
-    public void Reconnect(Uri source_uri)
+    public void Reconnect(Uri? source_uri)
     {
       var uri = source_uri ?? this.SourceUri;
       if (uri!=null) {
@@ -740,7 +753,7 @@ namespace PeerCastStation.Core
     /// <param name="from">送信元のホスト</param>
     /// <param name="packet">送信するデータ</param>
     /// <param name="group">送信先グループ</param>
-    public virtual void Broadcast(Host from, Atom packet, BroadcastGroup group)
+    public virtual void Broadcast(Host? from, Atom packet, BroadcastGroup group)
     {
       if (group.HasFlag(BroadcastGroup.Trackers) || group.HasFlag(BroadcastGroup.Relays)) {
         var source = sourceStream;

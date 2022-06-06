@@ -7,148 +7,148 @@ open TestCommon
 
 let enclosuresAll = [|
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-windows-x86.zip",
-        InstallerType=InstallerType.Archive,
-        InstallerPlatform=InstallerPlatform.Unknown)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-windows-x86.zip",
+        InstallerType.Archive,
+        InstallerPlatform.Unknown)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-windows-x86.exe",
-        InstallerType=InstallerType.Installer,
-        InstallerPlatform=InstallerPlatform.Unknown)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-windows-x86.exe",
+        InstallerType.Installer,
+        InstallerPlatform.Unknown)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-windows-x86.msi",
-        InstallerType=InstallerType.ServiceInstaller,
-        InstallerPlatform=InstallerPlatform.Unknown)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-windows-x86.msi",
+        InstallerType.ServiceInstaller,
+        InstallerPlatform.Unknown)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-any.zip",
-        InstallerType=InstallerType.Archive,
-        InstallerPlatform=InstallerPlatform.Any)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-any.zip",
+        InstallerType.Archive,
+        InstallerPlatform.Any)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-windows-x64.zip",
-        InstallerType=InstallerType.Archive,
-        InstallerPlatform=InstallerPlatform.WindowsX64)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-windows-x64.zip",
+        InstallerType.Archive,
+        InstallerPlatform.WindowsX64)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-windows-x64.exe",
-        InstallerType=InstallerType.Installer,
-        InstallerPlatform=InstallerPlatform.WindowsX64)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-windows-x64.exe",
+        InstallerType.Installer,
+        InstallerPlatform.WindowsX64)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-windows-x64.msi",
-        InstallerType=InstallerType.ServiceInstaller,
-        InstallerPlatform=InstallerPlatform.WindowsX64)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-windows-x64.msi",
+        InstallerType.ServiceInstaller,
+        InstallerPlatform.WindowsX64)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-windows-x86.zip",
-        InstallerType=InstallerType.Archive,
-        InstallerPlatform=InstallerPlatform.WindowsX86)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-windows-x86.zip",
+        InstallerType.Archive,
+        InstallerPlatform.WindowsX86)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-windows-x86.zip",
-        InstallerType=InstallerType.Archive,
-        InstallerPlatform=InstallerPlatform.WindowsX86)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-windows-x86.zip",
+        InstallerType.Archive,
+        InstallerPlatform.WindowsX86)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-windows-x86.exe",
-        InstallerType=InstallerType.Installer,
-        InstallerPlatform=InstallerPlatform.WindowsX86)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-windows-x86.exe",
+        InstallerType.Installer,
+        InstallerPlatform.WindowsX86)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-windows-x86.msi",
-        InstallerType=InstallerType.ServiceInstaller,
-        InstallerPlatform=InstallerPlatform.WindowsX86)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-windows-x86.msi",
+        InstallerType.ServiceInstaller,
+        InstallerPlatform.WindowsX86)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-linux-x64.zip",
-        InstallerType=InstallerType.Archive,
-        InstallerPlatform=InstallerPlatform.LinuxX64)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-linux-x64.zip",
+        InstallerType.Archive,
+        InstallerPlatform.LinuxX64)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-linux-musl-x64.zip",
-        InstallerType=InstallerType.Archive,
-        InstallerPlatform=InstallerPlatform.LinuxMuslX64)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-linux-musl-x64.zip",
+        InstallerType.Archive,
+        InstallerPlatform.LinuxMuslX64)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-linux-arm.zip",
-        InstallerType=InstallerType.Archive,
-        InstallerPlatform=InstallerPlatform.LinuxArm)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-linux-arm.zip",
+        InstallerType.Archive,
+        InstallerPlatform.LinuxArm)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-linux-musl-arm.zip",
-        InstallerType=InstallerType.Archive,
-        InstallerPlatform=InstallerPlatform.LinuxMuslArm)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-linux-musl-arm.zip",
+        InstallerType.Archive,
+        InstallerPlatform.LinuxMuslArm)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-linux-arm64.zip",
-        InstallerType=InstallerType.Archive,
-        InstallerPlatform=InstallerPlatform.LinuxArm64)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-linux-arm64.zip",
+        InstallerType.Archive,
+        InstallerPlatform.LinuxArm64)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-linux-musl-arm64.zip",
-        InstallerType=InstallerType.Archive,
-        InstallerPlatform=InstallerPlatform.LinuxMuslArm64)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-linux-musl-arm64.zip",
+        InstallerType.Archive,
+        InstallerPlatform.LinuxMuslArm64)
 |]
 
 let enclosuresMin = [|
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-any.zip",
-        InstallerType=InstallerType.Archive,
-        InstallerPlatform=InstallerPlatform.Unknown)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-any.zip",
+        InstallerType.Archive,
+        InstallerPlatform.Unknown)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-any.exe",
-        InstallerType=InstallerType.Installer,
-        InstallerPlatform=InstallerPlatform.Unknown)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-any.exe",
+        InstallerType.Installer,
+        InstallerPlatform.Unknown)
     VersionEnclosure(
-        Title="hoge",
-        Length=12345L,
-        Type="application/octet-stream",
-        Url=Uri "http://example.com/files/hoge-any.msi",
-        InstallerType=InstallerType.ServiceInstaller,
-        InstallerPlatform=InstallerPlatform.Unknown)
+        "hoge",
+        12345L,
+        "application/octet-stream",
+        Uri "http://example.com/files/hoge-any.msi",
+        InstallerType.ServiceInstaller,
+        InstallerPlatform.Unknown)
 |]
 
 [<Fact>]
@@ -379,7 +379,24 @@ type TestApplication () =
 let ``アーカイブ内のインストールコマンドがアプリ終了時に実行される`` () =
     use tempDir = new TempDirectory()
     let zipFile = archiveFixture "fixtures/UpdateArchive" tempDir.FullName
-    let downloadResult = Updater.DownloadResult(zipFile, VersionDescription(), VersionEnclosure(InstallerType=InstallerType.Archive, InstallCommand="Updater"))
+    let downloadResult = Updater.DownloadResult(
+        zipFile,
+        VersionDescription(
+            DateTime.Now,
+            Uri "http://example.com/test.zip",
+            "test",
+            "test",
+            []
+        ),
+        VersionEnclosure(
+            "test",
+            0L,
+            "application/octet-stream",
+            Uri "http://example.com/test.zip",
+            InstallerType.Archive,
+            InstallerPlatform.Unknown,
+            "Updater")
+    )
     let doInstall () =
         use app = new TestApplication()
         let installResult = Updater.Install(downloadResult, tempDir.FullName)

@@ -7,6 +7,7 @@ using System.Xml;
 using System.Net;
 using System.Reflection;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PeerCastStation.Core
 {
@@ -24,13 +25,13 @@ namespace PeerCastStation.Core
       this.Alias = alias;
     }
 
-    public string Alias { get; private set; }
+    public string? Alias { get; private set; }
   }
 
   public class PecaSerializer
   {
     private Logger logger = new Logger(typeof(PecaSerializer));
-    private Type FindType(string name)
+    private Type? FindType(string name)
     {
       Type t;
       if (PecaSettings.SettingTypes.TryGetValue(name, out t)) {
@@ -55,8 +56,8 @@ namespace PeerCastStation.Core
     public class RoundtripObject
     {
       public string TypeName { get; private set; }
-      public Dictionary<string,object> Properties { get; private set; }
-      public RoundtripObject(string typename, Dictionary<string, object> properties)
+      public Dictionary<string,object?> Properties { get; private set; }
+      public RoundtripObject(string typename, Dictionary<string, object?> properties)
       {
         this.TypeName = typename;
         this.Properties = properties;
@@ -74,9 +75,9 @@ namespace PeerCastStation.Core
       }
     }
 
-    private void SerializeValue(XmlWriter writer, object obj)
+    private void SerializeValue(XmlWriter writer, object? obj)
     {
-           if (obj==null)     SerializeNull(writer, obj);
+           if (obj==null)     SerializeNull(writer);
       else if (obj is long)   SerializeInteger(writer, (long)obj);
       else if (obj is int)    SerializeInteger(writer, (long)(int)obj);
       else if (obj is short)  SerializeInteger(writer, (long)(short)obj);
@@ -241,7 +242,7 @@ namespace PeerCastStation.Core
       writer.WriteEndElement();
     }
 
-    private void SerializeNull(XmlWriter writer, object obj)
+    private void SerializeNull(XmlWriter writer)
     {
       writer.WriteElementString("null", null);
     }
@@ -253,7 +254,7 @@ namespace PeerCastStation.Core
       writer.WriteEndDocument();
     }
 
-    public bool TryDeserialize(XmlReader reader, out object result)
+    public bool TryDeserialize(XmlReader reader, out object? result)
     {
       if (reader.NodeType==XmlNodeType.None) reader.Read();
       if (!reader.IsStartElement()) {
@@ -280,14 +281,14 @@ namespace PeerCastStation.Core
       }
     }
 
-    public object Deserialize(XmlReader reader)
+    public object? Deserialize(XmlReader reader)
     {
-      object result;
+      object? result;
       TryDeserialize(reader, out result);
       return result;
     }
 
-    private object DeserializeNull(XmlReader reader)
+    private object? DeserializeNull(XmlReader reader)
     {
       reader.IsStartElement("null");
       if (reader.IsEmptyElement) {
@@ -299,9 +300,12 @@ namespace PeerCastStation.Core
       return null;
     }
 
-    private object ChangeType(object value, Type target)
+    private object? ChangeType(object? value, Type target)
     {
       if (target.IsArray) {
+        if (value==null) {
+          return null;
+        }
         var values = ((IEnumerable)value).OfType<object>().Select(obj => ChangeType(obj, target.GetElementType())).ToArray();
         var ary = Array.CreateInstance(target.GetElementType(), values.Length);
         for (var i=0; i<ary.Length; i++) {
@@ -311,18 +315,26 @@ namespace PeerCastStation.Core
       }
       else if (target.IsGenericType && !target.ContainsGenericParameters) {
         if (target.GetGenericTypeDefinition()==typeof(List<>)) {
+          var source = value as IEnumerable;
+          if (source==null) {
+            return null;
+          }
           var valuetype = target.GetGenericArguments()[0];
           var lst = (IList)(target.InvokeMember("", BindingFlags.CreateInstance, null, null, new object[] {}));
-          foreach (var v in ((IEnumerable)value)) {
+          foreach (var v in source) {
             lst.Add(ChangeType(v, valuetype));
           }
           return lst;
         }
         if (target.GetGenericTypeDefinition()==typeof(Dictionary<,>)) {
+          var source = value as IDictionary;
+          if (source==null) {
+            return null;
+          }
           var keytype   = target.GetGenericArguments()[0];
           var valuetype = target.GetGenericArguments()[1];
           var dic = (IDictionary)(target.InvokeMember("", BindingFlags.CreateInstance, null, null, new object[] {}));
-          foreach (DictionaryEntry kv in ((IDictionary)value)) {
+          foreach (DictionaryEntry kv in source) {
             dic.Add(ChangeType(kv.Key, keytype), ChangeType(kv.Value, valuetype));
           }
           return dic;
@@ -333,9 +345,9 @@ namespace PeerCastStation.Core
 
     private object DeserializeObject(XmlReader reader)
     {
-      if (!reader.IsStartElement("object")) return null;
+      System.Diagnostics.Debug.Assert(reader.IsStartElement("object"));
       var typename = reader.GetAttribute("type");
-      var properties = new Dictionary<string,object>();
+      var properties = new Dictionary<string,object?>();
       if (!reader.IsEmptyElement) {
         reader.Read();
         while (reader.IsStartElement("property")) {
@@ -374,15 +386,15 @@ namespace PeerCastStation.Core
 
     private object DeserializeArray(XmlReader reader)
     {
-      if (!reader.IsStartElement("array")) return null;
+      System.Diagnostics.Debug.Assert(reader.IsStartElement("array"));
       if (reader.IsEmptyElement) {
         reader.Read();
         return new object[0];
       }
       else {
         reader.Read();
-        var elements = new List<object>();
-        object value;
+        var elements = new List<object?>();
+        object? value;
         while (TryDeserialize(reader, out value)) {
           elements.Add(value);
         }
@@ -393,8 +405,8 @@ namespace PeerCastStation.Core
 
     private object DeserializeDictionary(XmlReader reader)
     {
-      if (!reader.IsStartElement("dictionary")) return null;
-      var dic = new Dictionary<object,object>();
+      System.Diagnostics.Debug.Assert(reader.IsStartElement("dictionary"));
+      var dic = new Dictionary<object?,object?>();
       if (reader.IsEmptyElement) {
         reader.Read();
         return dic;
@@ -456,7 +468,7 @@ namespace PeerCastStation.Core
       return value;
     }
 
-    private object DeserializeUri(XmlReader reader)
+    private object? DeserializeUri(XmlReader reader)
     {
       reader.ReadStartElement("uri");
       try {
@@ -479,7 +491,7 @@ namespace PeerCastStation.Core
       return value;
     }
 
-    private Type FindEnumType(string name)
+    private Type? FindEnumType(string name)
     {
       var t = FindType(name);
       if (t!=null && t.IsSubclassOf(typeof(Enum))) {
@@ -490,7 +502,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    private object DeserializeEnum(XmlReader reader)
+    private object? DeserializeEnum(XmlReader reader)
     {
       if (!reader.IsStartElement("enum")) return null;
       var typename = reader.GetAttribute("type");
@@ -624,7 +636,7 @@ namespace PeerCastStation.Core
       try {
         using (var reader=XmlReader.Create(FileName)) {
           var serializer = new PecaSerializer();
-          var ary = (object[])serializer.Deserialize(reader);
+          var ary = (object[]?)serializer.Deserialize(reader);
           if (ary!=null) {
             values = new List<object>(ary);
           }

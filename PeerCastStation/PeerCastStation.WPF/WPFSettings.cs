@@ -58,21 +58,21 @@ namespace PeerCastStation.WPF
   [PeerCastStation.Core.PecaSettings]
   public class BroadcastInfo
   {
-    public NetworkType NetworkType { get; set; }
-    public string StreamType  { get; set; }
-    public string StreamUrl   { get; set; }
-    public int    Bitrate     { get; set; }
-    public string ContentType { get; set; }
-    public string YellowPage  { get; set; }
-    public string ChannelName { get; set; }
-    public string Genre       { get; set; }
-    public string Description { get; set; }
-    public string Comment     { get; set; }
-    public string ContactUrl  { get; set; }
-    public string TrackTitle  { get; set; }
-    public string TrackAlbum  { get; set; }
-    public string TrackArtist { get; set; }
-    public string TrackGenre  { get; set; }
-    public string TrackUrl    { get; set; }
+    public NetworkType NetworkType { get; set; } = NetworkType.IPv4;
+    public string StreamType  { get; set; } = "";
+    public string StreamUrl   { get; set; } = "";
+    public int    Bitrate     { get; set; } = 0;
+    public string ContentType { get; set; } = "";
+    public string YellowPage  { get; set; } = "";
+    public string ChannelName { get; set; } = "";
+    public string Genre       { get; set; } = "";
+    public string Description { get; set; } = "";
+    public string Comment     { get; set; } = "";
+    public string ContactUrl  { get; set; } = "";
+    public string TrackTitle  { get; set; } = "";
+    public string TrackAlbum  { get; set; } = "";
+    public string TrackArtist { get; set; } = "";
+    public string TrackGenre  { get; set; } = "";
+    public string TrackUrl    { get; set; } = "";
   }
 }

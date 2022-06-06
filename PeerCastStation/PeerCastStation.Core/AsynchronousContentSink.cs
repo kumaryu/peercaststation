@@ -10,7 +10,7 @@ namespace PeerCastStation.Core
     public IContentSink TargetSink { get; private set; }
     private Task lastTask = Task.Delay(0);
     private CancellationTokenSource taskAbortedSource = new CancellationTokenSource();
-    public Exception Exception { get; private set; } = null;
+    public Exception? Exception { get; private set; } = null;
     public bool IsFaulted { get { return this.Exception!=null; } }
     
     public AsynchronousContentSink(IContentSink target_sink)

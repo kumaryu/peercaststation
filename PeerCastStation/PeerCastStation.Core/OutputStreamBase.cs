@@ -52,10 +52,10 @@ namespace PeerCastStation.Core
   {
     protected ConnectionStream Connection { get; private set; }
     protected Logger Logger { get; private set; }
-    public Channel Channel { get; private set; }
+    public Channel? Channel { get; private set; }
     public PeerCast PeerCast { get; private set; }
-    public EndPoint LocalEndPoint { get { return Connection.LocalEndPoint; } }
-    public EndPoint RemoteEndPoint { get { return Connection.RemoteEndPoint; } }
+    public EndPoint? LocalEndPoint { get { return Connection.LocalEndPoint; } }
+    public EndPoint? RemoteEndPoint { get { return Connection.RemoteEndPoint; } }
     public AccessControlInfo AccessControlInfo { get; private set; }
 
     /// <summary>
@@ -69,7 +69,7 @@ namespace PeerCastStation.Core
       PeerCast peercast,
       ConnectionStream connection,
       AccessControlInfo access_control,
-      Channel channel)
+      Channel? channel)
     {
       this.Logger = new Logger(this.GetType(), connection.RemoteEndPoint?.ToString() ?? "");
       this.Connection = connection;
@@ -182,12 +182,12 @@ namespace PeerCastStation.Core
       }
     }
 
-    protected virtual Task DoPost(Host from, Atom packet, CancellationToken cancel_token)
+    protected virtual Task DoPost(Host? from, Atom packet, CancellationToken cancel_token)
     {
       return Task.Delay(0);
     }
 
-    public void OnBroadcast(Host from, Atom packet)
+    public void OnBroadcast(Host? from, Atom packet)
     {
       if (isStopped.IsCancellationRequested) return;
       DoPost(from, packet, isStopped.Token);
@@ -199,7 +199,7 @@ namespace PeerCastStation.Core
       isStopped.Cancel();
     }
 
-    private static string ParseEndPoint(string text)
+    private static string? ParseEndPoint(string text)
     {
       var ipv4port = System.Text.RegularExpressions.Regex.Match(text, @"\A(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})\z");
       var ipv6port = System.Text.RegularExpressions.Regex.Match(text, @"\A\[([a-fA-F0-9:]+)\]:(\d{1,5})\z");
@@ -255,7 +255,7 @@ namespace PeerCastStation.Core
       return null;
     }
 
-    public static Uri CreateTrackerUri(Guid channel_id, string tip)
+    public static Uri? CreateTrackerUri(Guid channel_id, string? tip)
     {
       if (tip==null) return null;
       var endpoint = ParseEndPoint(tip);

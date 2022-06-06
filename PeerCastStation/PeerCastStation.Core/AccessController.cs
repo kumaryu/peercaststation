@@ -269,10 +269,6 @@ namespace PeerCastStation.Core
     public string Id       { get; private set; }
     public string Password { get; private set; }
 
-    public AuthenticationKey()
-    {
-    }
-
     public AuthenticationKey(string id, string password)
     {
       this.Id = id;

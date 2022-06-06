@@ -32,7 +32,6 @@ namespace PeerCastStation.WPF.CoreSettings
     protected override async void OnInitialized(EventArgs e)
     {
       base.OnInitialized(e);
-      Uri target_uri;
       string uri_key;
       switch (NetworkType) {
       case NetworkType.IPv6:
@@ -43,7 +42,7 @@ namespace PeerCastStation.WPF.CoreSettings
         uri_key = "BandwidthChecker";
         break;
       }
-      if (AppSettingsReader.TryGetUri(uri_key, out target_uri)) {
+      if (AppSettingsReader.TryGetUri(uri_key, out var target_uri)) {
         Status = "帯域測定中";
         IsChecking = true;
         cancellationTokenSource = new CancellationTokenSource();

@@ -42,7 +42,7 @@ namespace PeerCastStation.Core
     public abstract string           Name { get; }
     public abstract string           Scheme { get; }
     public abstract SourceStreamType Type { get; }
-    public abstract Uri              DefaultUri { get; }
+    public abstract Uri?             DefaultUri { get; }
     public abstract bool             IsContentReaderRequired { get; }
     public virtual ISourceStream Create(Channel channel, Uri tracker)
     {
@@ -68,12 +68,12 @@ namespace PeerCastStation.Core
 
     protected class ConnectionWrapper
     {
-      public ISourceConnection Connection { get; private set; }
-      public Uri SourceUri { get { return Connection?.SourceUri; } }
+      public ISourceConnection? Connection { get; private set; }
+      public Uri? SourceUri { get { return Connection?.SourceUri; } }
       public Task Task { get; private set; }
       public bool IsCompleted { get { return Task.IsCompleted; } }
-      public float SendRate { get { return Task.IsCompleted ? 0.0f : Connection.SendRate; } }
-      public float RecvRate { get { return Task.IsCompleted ? 0.0f : Connection.RecvRate; } }
+      public float SendRate { get { return Task.IsCompleted ? 0.0f : Connection?.SendRate ?? 0.0f; } }
+      public float RecvRate { get { return Task.IsCompleted ? 0.0f : Connection?.RecvRate ?? 0.0f; } }
 
       public ConnectionWrapper()
       {
@@ -90,14 +90,24 @@ namespace PeerCastStation.Core
       public void StopAndWait(StopReason reason)
       {
         if (IsCompleted) return;
-        Connection.Stop(reason);
+        Connection?.Stop(reason);
         Task.Wait();
       }
 
-      public void Post(Host from, Atom message)
+      public void Post(Host? from, Atom message)
       {
         if (IsCompleted) return;
-        Connection.Post(from, message);
+        Connection?.Post(from, message);
+      }
+
+      public ConnectionInfo? GetConnectionInfo()
+      {
+        if (Connection!=null && !IsCompleted) {
+          return Connection.GetConnectionInfo();
+        }
+        else {
+          return null;
+        }
       }
 
       static public ConnectionWrapper Run(ISourceConnection connection, Func<ConnectionWrapper,Task<StopReason>,Task> taskFunc)
@@ -114,7 +124,7 @@ namespace PeerCastStation.Core
     protected class ActionQueue
     {
       private Task lastTask = Task.Delay(0);
-      private object lastTaskId = null;
+      private object? lastTaskId = null;
       public bool Aborted { get; private set; } = false;
 
       public void Abort()
@@ -162,7 +172,7 @@ namespace PeerCastStation.Core
       {
         UnhandledException?.Invoke(this, new UnhandledExceptionEventArgs(ex, false));
       }
-      public event UnhandledExceptionEventHandler UnhandledException;
+      public event UnhandledExceptionEventHandler? UnhandledException;
     }
     private ActionQueue actionQueue;
 
@@ -188,7 +198,7 @@ namespace PeerCastStation.Core
     {
       public StopReason Reason { get; set; }
       public int Delay { get; set; } = 0;
-      public Uri IgnoreSource { get; set; } = null;
+      public Uri? IgnoreSource { get; set; } = null;
       public bool Reconnect { get; set; } = false;
     }
 
@@ -242,7 +252,7 @@ namespace PeerCastStation.Core
         }
         Queue("CONNECTION_CLEANUP", async () => {
           Logger.Debug($"Cleaning up connection (closed by {args.Reason})");
-          OnConnectionStopped(conn.Connection, args);
+          OnConnectionStopped(conn.Connection!, args);
           if (args.Delay>0) {
             await Task.Delay(args.Delay).ConfigureAwait(false);
           }
@@ -266,7 +276,7 @@ namespace PeerCastStation.Core
       sourceConnection.StopAndWait(reason);
     }
 
-    protected virtual Uri SelectSourceHost()
+    protected virtual Uri? SelectSourceHost()
     {
       return SourceUri;
     }
@@ -292,7 +302,7 @@ namespace PeerCastStation.Core
       ranTaskSource.TrySetResult(reason);
     }
 
-    protected virtual void DoPost(Host from, Atom message)
+    protected virtual void DoPost(Host? from, Atom message)
     {
       sourceConnection.Post(from, message);
     }
@@ -311,7 +321,7 @@ namespace PeerCastStation.Core
       return ranTaskSource.Task;
     }
 
-    public void Post(Host from, Atom packet)
+    public void Post(Host? from, Atom packet)
     {
       if (disposed) throw new ObjectDisposedException(this.GetType().Name);
       Queue(Tuple.Create(from, packet), () => { DoPost(from, packet); });

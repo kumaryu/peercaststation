@@ -41,9 +41,9 @@ namespace PeerCastStation.WPF
         PropertyChanged(this, new PropertyChangedEventArgs("AgentName"));
       }
     }
-    public event PropertyChangedEventHandler PropertyChanged;
+    public event PropertyChangedEventHandler? PropertyChanged;
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
       if (obj==null || obj.GetType()!=this.GetType()) return false;
       return Connection.Equals(((ChannelConnectionViewModel)obj).Connection);
@@ -55,9 +55,9 @@ namespace PeerCastStation.WPF
       return Connection.GetHashCode();
     }
 
-    protected string GetRemoteName(ConnectionInfo connection_info)
+    protected string? GetRemoteName(ConnectionInfo connection_info)
     {
-      var settings = PeerCastApplication.Current.Settings.Get<WPFSettings>();
+      var settings = PeerCastApplication.Current!.Settings.Get<WPFSettings>();
       switch (settings.RemoteNodeName) {
       case RemoteNodeName.EndPoint:
         return connection_info.RemoteEndPoint!=null ?
@@ -105,7 +105,7 @@ namespace PeerCastStation.WPF
     }
 
     public override string RemoteName {
-      get { return GetRemoteName(sourceStream.GetConnectionInfo()); }
+      get { return GetRemoteName(sourceStream.GetConnectionInfo()) ?? ""; }
     }
 
     public override string Bitrate {
@@ -125,7 +125,7 @@ namespace PeerCastStation.WPF
     }
 
     public override string AgentName {
-      get { return sourceStream.GetConnectionInfo().AgentName; }
+      get { return sourceStream.GetConnectionInfo().AgentName ?? ""; }
     }
 
     public override object Connection {
@@ -189,7 +189,7 @@ namespace PeerCastStation.WPF
     }
 
     public override string RemoteName {
-      get { return GetRemoteName(outputStream.GetConnectionInfo()); }
+      get { return GetRemoteName(outputStream.GetConnectionInfo()) ?? ""; }
     }
 
     public override string Bitrate {
@@ -217,7 +217,7 @@ namespace PeerCastStation.WPF
     }
 
     public override string AgentName {
-      get { return outputStream.GetConnectionInfo().AgentName; }
+      get { return outputStream.GetConnectionInfo().AgentName ?? ""; }
     }
 
     public override object Connection { get { return outputStream; } }
@@ -260,7 +260,7 @@ namespace PeerCastStation.WPF
     }
 
     public override string RemoteName {
-      get { return GetRemoteName(announcingChannel.GetConnectionInfo()); }
+      get { return GetRemoteName(announcingChannel.GetConnectionInfo()) ?? ""; }
     }
 
     public override string Bitrate {
@@ -280,7 +280,7 @@ namespace PeerCastStation.WPF
     }
 
     public override string AgentName {
-      get { return announcingChannel.GetConnectionInfo().AgentName; }
+      get { return announcingChannel.GetConnectionInfo().AgentName ?? ""; }
     }
 
     public override object Connection { get { return announcingChannel; } }

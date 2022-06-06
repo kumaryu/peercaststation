@@ -526,7 +526,7 @@ namespace PeerCastStation.FLV.RTMP
     {
       using (var reader=new AMF0Reader(new MemoryStream(x.Body))) {
 				reader.BaseStream.ReadByte();
-        this.propertyName = (string)reader.ReadValue();
+        this.propertyName = (string?)reader.ReadValue() ?? "";
         var arguments = new List<AMFValue>();
         while (reader.BaseStream.Position<reader.BaseStream.Length) {
           arguments.Add(reader.ReadValue());
@@ -571,7 +571,7 @@ namespace PeerCastStation.FLV.RTMP
       : base(x)
     {
       using (var reader=new AMF0Reader(new MemoryStream(x.Body))) {
-        this.propertyName = (string)reader.ReadValue();
+        this.propertyName = (string?)reader.ReadValue() ?? "";
         var arguments = new List<AMFValue>();
         while (reader.BaseStream.Position<reader.BaseStream.Length) {
           arguments.Add(reader.ReadValue());
@@ -666,12 +666,9 @@ namespace PeerCastStation.FLV.RTMP
     {
       using (var reader=new AMF0Reader(new MemoryStream(x.Body))) {
 				reader.BaseStream.ReadByte();
-        this.commandName   = (string)reader.ReadValue();
+        this.commandName   = (string?)reader.ReadValue() ?? "";
         this.transactionId = (int)reader.ReadValue();
         this.commandObject = reader.ReadValue();
-        if (AMFValue.IsNull(CommandObject)) {
-          this.commandObject = null;
-        }
         var args = new List<AMFValue>();
         while (reader.BaseStream.Position<reader.BaseStream.Length) {
           args.Add(reader.ReadValue());
@@ -732,12 +729,9 @@ namespace PeerCastStation.FLV.RTMP
       : base(x)
     {
       using (var reader=new AMF0Reader(new MemoryStream(x.Body))) {
-        this.commandName   = (string)reader.ReadValue();
+        this.commandName   = (string?)reader.ReadValue() ?? "";
         this.transactionId = (int)reader.ReadValue();
         this.commandObject = reader.ReadValue();
-        if (AMFValue.IsNull(CommandObject)) {
-          this.commandObject = null;
-        }
         var args = new List<AMFValue>();
         while (reader.BaseStream.Position<reader.BaseStream.Length) {
           args.Add(reader.ReadValue());
@@ -783,7 +777,7 @@ namespace PeerCastStation.FLV.RTMP
     public AggregateMessage(RTMPMessage x)
       : base(x)
     {
-      var messages = new List<RTMPMessage>();
+      Messages = new List<RTMPMessage>();
       using (var reader=new RTMPBinaryReader(new MemoryStream(x.Body))) {
         while (reader.BaseStream.Position<reader.BaseStream.Length) {
           var message_type = (RTMPMessageType)reader.ReadByte();
@@ -798,7 +792,7 @@ namespace PeerCastStation.FLV.RTMP
             body);
           var prevlen = reader.ReadUInt32();
           if (prevlen==body.Length+11) {
-            messages.Add(msg);
+            Messages.Add(msg);
           }
         }
       }

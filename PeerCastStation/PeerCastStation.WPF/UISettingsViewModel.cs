@@ -43,7 +43,7 @@ namespace PeerCastStation.WPF
       ui.BroadcastHistory = BroadcastHistory.Select(info => info.Save()).ToArray();
       ui.DefaultPlayProtocols["FLV"] = FLVPlayProtocol;
       wpf.BroadcastHistory = new BroadcastInfo[0];
-      PeerCastStation.Core.PeerCastApplication.Current.SaveSettings();
+      PeerCastStation.Core.PeerCastApplication.Current!.SaveSettings();
     }
 
     public void AddBroadcastHistory(BroadcastInfoViewModel info)
@@ -57,7 +57,7 @@ namespace PeerCastStation.WPF
       );
     }
 
-    public event PropertyChangedEventHandler PropertyChanged;
+    public event PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged(string name)
     {
       if (PropertyChanged!=null) {
@@ -116,25 +116,25 @@ namespace PeerCastStation.WPF
 
     public PeerCastStation.UI.BroadcastInfo Save()
     {
-      return new PeerCastStation.UI.BroadcastInfo() {
-        NetworkType = this.NetworkType,
-        StreamType  = this.StreamType,
-        StreamUrl   = this.StreamUrl,
-        Bitrate     = this.Bitrate,
-        ContentType = this.ContentType,
-        YellowPage  = this.YellowPage,
-        ChannelName = this.ChannelName,
-        Genre       = this.Genre,
-        Description = this.Description,
-        Comment     = this.Comment,
-        ContactUrl  = this.ContactUrl,
-        TrackTitle  = this.TrackTitle,
-        TrackAlbum  = this.TrackAlbum,
-        TrackArtist = this.TrackArtist,
-        TrackGenre  = this.TrackGenre,
-        TrackUrl    = this.TrackUrl,
-        Favorite    = this.Favorite,
-      };
+      return new PeerCastStation.UI.BroadcastInfo(
+        NetworkType,
+        StreamType,
+        StreamUrl,
+        Bitrate,
+        ContentType,
+        YellowPage,
+        ChannelName,
+        Genre,
+        Description,
+        Comment,
+        ContactUrl,
+        TrackTitle,
+        TrackAlbum,
+        TrackArtist,
+        TrackGenre,
+        TrackUrl,
+        Favorite
+      );
     }
 
     public string Name {
@@ -143,23 +143,23 @@ namespace PeerCastStation.WPF
       }
     }
 
-    private NetworkType networkType;
-    private string streamType;
-    private string streamUrl;
-    private int    bitrate;
-    private string contentType;
-    private string yellowPage;
-    private string channelName;
-    private string genre;
-    private string description;
-    private string comment;
-    private string contactUrl;
-    private string trackTitle;
-    private string trackAlbum;
-    private string trackArtist;
-    private string trackGenre;
-    private string trackUrl;
-    private bool   favorite;
+    private NetworkType networkType = NetworkType.IPv4;
+    private string streamType = "";
+    private string streamUrl = "";
+    private int    bitrate = 0;
+    private string contentType = "";
+    private string yellowPage = "";
+    private string channelName = "";
+    private string genre = "";
+    private string description = "";
+    private string comment = "";
+    private string contactUrl = "";
+    private string trackTitle = "";
+    private string trackAlbum = "";
+    private string trackArtist = "";
+    private string trackGenre = "";
+    private string trackUrl = "";
+    private bool   favorite = false;
 
     public NetworkType NetworkType {
       get { return networkType; }
@@ -230,7 +230,7 @@ namespace PeerCastStation.WPF
       set { if (favorite!=value) { favorite = value; OnPropertyChanged("Favorite"); } }
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
       if (obj==null || GetType()!=obj.GetType()) return false;
       var x = (BroadcastInfoViewModel)obj;
@@ -275,7 +275,7 @@ namespace PeerCastStation.WPF
        .Sum() % Int32.MaxValue);
     }
 
-    public event PropertyChangedEventHandler PropertyChanged;
+    public event PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged(string name)
     {
       if (PropertyChanged!=null) PropertyChanged(this, new PropertyChangedEventArgs(name));
