@@ -54,7 +54,7 @@ namespace PeerCastStation.FLV.RTMP
 
     public Channel? RequestChannel(Guid channel_id, Uri? tracker_uri)
     {
-      var channel = peerCast.RequestChannel(channel_id, tracker_uri, true);
+      var channel = peerCast.RequestChannel(channel_id, tracker_uri, request_relay: true);
       this.channel = channel;
       if (channel!=null && channel.IsPlayable(IsLocal)) {
         channel.AddOutputStream(this);

@@ -255,20 +255,6 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    private static async Task<Channel?> GetChannelAsync(OwinEnvironment ctx, ParsedRequest req, CancellationToken ct)
-    {
-      var tip = ctx.Request.Query.Get("tip");
-      var channel = ctx.GetPeerCast()?.RequestChannel(req.ChannelId, OutputStreamBase.CreateTrackerUri(req.ChannelId, tip), true);
-      if (channel==null) {
-        return null;
-      }
-      using (var cts=CancellationTokenSource.CreateLinkedTokenSource(ct)) {
-        cts.CancelAfter(10000);
-        await channel.WaitForReadyContentTypeAsync(cts.Token).ConfigureAwait(false);
-      }
-      return channel;
-    }
-
     private Uri AllocateNewSessionUri(OwinEnvironment ctx)
     {
       var source = ctx.Request.GetRemoteEndPoint().ToString();
@@ -373,16 +359,9 @@ namespace PeerCastStation.HTTP
         ctx.Response.StatusCode = req.Status;
         return;
       }
-      Channel? channel;
-      try {
-        channel = await GetChannelAsync(ctx, req, ct).ConfigureAwait(false);
-      }
-      catch (TaskCanceledException) {
-        ctx.Response.StatusCode = HttpStatusCode.GatewayTimeout;
-        return;
-      }
-      if (channel==null) {
-        ctx.Response.StatusCode = HttpStatusCode.NotFound;
+      var (statusCode, channel) = await HTTPDirectOwinApp.GetChannelAsync(ctx, req.ChannelId, ct).ConfigureAwait(false);
+      if (statusCode!=HttpStatusCode.OK) {
+        ctx.Response.StatusCode = statusCode;
         return;
       }
 

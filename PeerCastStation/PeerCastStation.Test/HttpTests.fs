@@ -63,6 +63,22 @@ module HttpOutputTest =
             results |> ignore
         }
 
+    [<Fact>]
+    let ``視聴数の最大数を超える視聴リクエストには503が返る`` () =
+        use peca = pecaWithOwinHost endpoint registerHttpDirect
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        peca.AddChannel channel
+        peca.AccessController.MaxPlays <- 1
+        let channelSink = DummyOutputStream(ConnectionType=ConnectionType.Direct)
+        use _ = channel.AddOutputStream channelSink
+        ["pls"; "stream"]
+        |> List.iter (fun subpath ->
+            sprintf "http://%s/%s/%s" (endpoint.ToString()) subpath (channel.ChannelID.ToString("N"))
+            |> HttpClient.get
+            |> Assert.statusCode HttpStatusCode.ServiceUnavailable
+        )
+
 module PlayListTest =
     let endpoint = allocateEndPoint IPAddress.Loopback
     let authinfo = { id="hoge"; pass="fuga" }

@@ -75,6 +75,23 @@ type DummySourceStream (sstype) =
         member this.Dispose () =
             runTask.TrySetResult(StopReason.UserShutdown) |> ignore
 
+type DummyOutputStream () =
+    let connectionInfo = ConnectionInfoBuilder()
+    member this.ConnectionType
+        with get ()    = connectionInfo.Type
+        and  set value = connectionInfo.Type <- value
+    member this.LocalDirects
+        with get ()    = connectionInfo.LocalDirects
+        and  set value = connectionInfo.LocalDirects <- value
+    member this.LocalRelays
+        with get ()    = connectionInfo.LocalRelays
+        and  set value = connectionInfo.LocalRelays <- value
+    interface IChannelSink with
+        member this.OnBroadcast(from, packet) = ()
+        member this.OnStopped(reason) = ()
+        member this.GetConnectionInfo() = connectionInfo.Build()
+
+
 type DummyBroadcastChannel (peercast, network, channelId, sourceStreamFactory) =
     inherit Channel(peercast, network, channelId)
 

@@ -90,18 +90,29 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    private static async Task<Channel?> GetChannelAsync(OwinEnvironment ctx, ParsedRequest req, CancellationToken ct)
+    internal static async Task<(HttpStatusCode, Channel)> GetChannelAsync(OwinEnvironment ctx, Guid channelId, CancellationToken ct)
     {
-      var tip = ctx.Request.Query.Get("tip");
-      var channel = ctx.GetPeerCast()?.RequestChannel(req.ChannelId, OutputStreamBase.CreateTrackerUri(req.ChannelId, tip), true);
-      if (channel==null) {
-        return null;
+      try {
+        var tip = ctx.Request.Query.Get("tip");
+        var channel = ctx.GetPeerCast()?.RequestChannel(channelId, OutputStreamBase.CreateTrackerUri(channelId, tip), request_relay: true);
+        if (channel==null) {
+          return (HttpStatusCode.NotFound, null!);
+        }
+        using (var cts = CancellationTokenSource.CreateLinkedTokenSource(ct)) {
+          cts.CancelAfter(10000);
+          await channel.WaitForReadyContentTypeAsync(cts.Token).ConfigureAwait(false);
+        }
+
+        var remoteEndPoint = ctx.Request.GetRemoteEndPoint();
+        if (!channel.IsPlayable(remoteEndPoint.Address.GetAddressLocality()<1)) {
+          return (HttpStatusCode.ServiceUnavailable, null!);
+        }
+
+        return (HttpStatusCode.OK, channel);
       }
-      using (var cts=CancellationTokenSource.CreateLinkedTokenSource(ct)) {
-        cts.CancelAfter(10000);
-        await channel.WaitForReadyContentTypeAsync(cts.Token).ConfigureAwait(false);
+      catch (TaskCanceledException) {
+        return (HttpStatusCode.GatewayTimeout, null!);
       }
-      return channel;
     }
 
     private static async Task PlayListHandler(OwinEnvironment ctx)
@@ -112,16 +123,10 @@ namespace PeerCastStation.HTTP
         ctx.Response.StatusCode = req.Status;
         return;
       }
-      Channel? channel;
-      try {
-        channel = await GetChannelAsync(ctx, req, ct).ConfigureAwait(false);
-      }
-      catch (TaskCanceledException) {
-        ctx.Response.StatusCode = HttpStatusCode.GatewayTimeout;
-        return;
-      }
-      if (channel==null) {
-        ctx.Response.StatusCode = HttpStatusCode.NotFound;
+
+      var (statusCode, channel) = await GetChannelAsync(ctx, req.ChannelId, ct).ConfigureAwait(false);
+      if (statusCode!=HttpStatusCode.OK) {
+        ctx.Response.StatusCode = statusCode;
         return;
       }
 
@@ -280,18 +285,12 @@ namespace PeerCastStation.HTTP
         ctx.Response.StatusCode = req.Status;
         return;
       }
-      Channel? channel;
-      try {
-        channel = await GetChannelAsync(ctx, req, ct).ConfigureAwait(false);
-      }
-      catch (TaskCanceledException) {
-        ctx.Response.StatusCode = HttpStatusCode.GatewayTimeout;
+      var (statusCode, channel) = await GetChannelAsync(ctx, req.ChannelId, ct).ConfigureAwait(false);
+      if (statusCode!=HttpStatusCode.OK) {
+        ctx.Response.StatusCode = statusCode;
         return;
       }
-      if (channel==null) {
-        ctx.Response.StatusCode = HttpStatusCode.NotFound;
-        return;
-      }
+
       var sink = new ChannelSink(ctx);
       using (channel.AddOutputStream(sink))
       using (channel.AddContentSink(sink)) {
