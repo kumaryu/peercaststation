@@ -31,10 +31,9 @@ namespace PeerCastStation.Core
   public class PecaSerializer
   {
     private Logger logger = new Logger(typeof(PecaSerializer));
-    private Type? FindType(string name)
+    private Type? FindType(string? name)
     {
-      Type t;
-      if (PecaSettings.SettingTypes.TryGetValue(name, out t)) {
+      if (name!=null && PecaSettings.SettingTypes.TryGetValue(name, out var t)) {
         return t;
       }
       else {
@@ -44,20 +43,22 @@ namespace PeerCastStation.Core
 
     private string FindTypeName(Type type)
     {
-      string name;
-      if (PecaSettings.SettingTypeNames.TryGetValue(type, out name)) {
+      if (PecaSettings.SettingTypeNames.TryGetValue(type, out var name)) {
         return name;
       }
-      else {
+      else if (type.FullName!=null) {
         return type.FullName;
+      }
+      else {
+        throw new ArgumentException($"Generic type {type} is specifed", nameof(type));
       }
     }
 
     public class RoundtripObject
     {
-      public string TypeName { get; private set; }
+      public string? TypeName { get; private set; }
       public Dictionary<string,object?> Properties { get; private set; }
-      public RoundtripObject(string typename, Dictionary<string, object?> properties)
+      public RoundtripObject(string? typename, Dictionary<string, object?> properties)
       {
         this.TypeName = typename;
         this.Properties = properties;
@@ -66,9 +67,9 @@ namespace PeerCastStation.Core
 
     public class RoundtripEnum
     {
-      public string TypeName { get; private set; }
+      public string? TypeName { get; private set; }
       public string Value { get; private set; }
-      public RoundtripEnum(string typename, string value)
+      public RoundtripEnum(string? typename, string value)
       {
         this.TypeName = typename;
         this.Value = value;
@@ -300,14 +301,26 @@ namespace PeerCastStation.Core
       return null;
     }
 
+    private T CreateInstance<T>(Type type) where T : notnull
+    {
+      if (!type.IsAssignableTo(typeof(T))) {
+        throw new ArgumentException($"The Type {type} is not compatible to {typeof(T)}", nameof(type));
+      }
+      if (type.IsGenericType && type.GetGenericTypeDefinition()==typeof(Nullable<>)) {
+        throw new ArgumentException($"Type must not be Nullable", nameof(type));
+      }
+      return (T)Activator.CreateInstance(type)!;
+    }
+
     private object? ChangeType(object? value, Type target)
     {
       if (target.IsArray) {
         if (value==null) {
           return null;
         }
-        var values = ((IEnumerable)value).OfType<object>().Select(obj => ChangeType(obj, target.GetElementType())).ToArray();
-        var ary = Array.CreateInstance(target.GetElementType(), values.Length);
+        var elementType = target.GetElementType()!;
+        var values = ((IEnumerable)value).OfType<object>().Select(obj => ChangeType(obj, elementType)).ToArray();
+        var ary = Array.CreateInstance(elementType, values.Length);
         for (var i=0; i<ary.Length; i++) {
           ary.SetValue(values[i], i);
         }
@@ -320,7 +333,7 @@ namespace PeerCastStation.Core
             return null;
           }
           var valuetype = target.GetGenericArguments()[0];
-          var lst = (IList)(target.InvokeMember("", BindingFlags.CreateInstance, null, null, new object[] {}));
+          var lst = CreateInstance<IList>(target);
           foreach (var v in source) {
             lst.Add(ChangeType(v, valuetype));
           }
@@ -333,9 +346,9 @@ namespace PeerCastStation.Core
           }
           var keytype   = target.GetGenericArguments()[0];
           var valuetype = target.GetGenericArguments()[1];
-          var dic = (IDictionary)(target.InvokeMember("", BindingFlags.CreateInstance, null, null, new object[] {}));
+          var dic = CreateInstance<IDictionary>(target);
           foreach (DictionaryEntry kv in source) {
-            dic.Add(ChangeType(kv.Key, keytype), ChangeType(kv.Value, valuetype));
+            dic.Add(ChangeType(kv.Key, keytype)!, ChangeType(kv.Value, valuetype));
           }
           return dic;
         }
@@ -355,7 +368,9 @@ namespace PeerCastStation.Core
           reader.Read();
           var value = Deserialize(reader);
           reader.ReadEndElement();
-          properties.Add(name, value);
+          if (name!=null) {
+            properties.Add(name, value);
+          }
         }
         reader.ReadEndElement();
       }
@@ -364,7 +379,7 @@ namespace PeerCastStation.Core
       }
       var type = FindType(typename);
       if (type!=null) {
-        var obj = type.InvokeMember("", BindingFlags.CreateInstance, null, null, new object[] {});
+        var obj = CreateInstance<object>(type);
         foreach (var prop in properties) {
           var member = type.GetMember(
             prop.Key,
@@ -406,7 +421,7 @@ namespace PeerCastStation.Core
     private object DeserializeDictionary(XmlReader reader)
     {
       System.Diagnostics.Debug.Assert(reader.IsStartElement("dictionary"));
-      var dic = new Dictionary<object?,object?>();
+      var dic = new Dictionary<object,object?>();
       if (reader.IsEmptyElement) {
         reader.Read();
         return dic;
@@ -419,7 +434,9 @@ namespace PeerCastStation.Core
         reader.ReadStartElement("value");
         var value = Deserialize(reader);
         reader.ReadEndElement();
-        dic.Add(key, value);
+        if (key!=null) {
+          dic.Add(key, value);
+        }
       }
       reader.ReadEndElement();
       return dic;
@@ -491,7 +508,7 @@ namespace PeerCastStation.Core
       return value;
     }
 
-    private Type? FindEnumType(string name)
+    private Type? FindEnumType(string? name)
     {
       var t = FindType(name);
       if (t!=null && t.IsSubclassOf(typeof(Enum))) {
@@ -556,7 +573,9 @@ namespace PeerCastStation.Core
       settingTypes.Add(name, type);
       settingTypeNames.Add(type, name);
       foreach (var t in type.GetNestedTypes()) {
-        RegisterType(name + "+" + t.FullName.Split('+').Last(), t);
+        if (t.FullName!=null) {
+          RegisterType(name + "+" + t.FullName.Split('+').Last(), t);
+        }
       }
     }
 
@@ -622,7 +641,10 @@ namespace PeerCastStation.Core
 
     public void Save()
     {
-      System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(FileName));
+      var dir = Path.GetDirectoryName(FileName);
+      if (!String.IsNullOrEmpty(dir)) {
+        Directory.CreateDirectory(dir);
+      }
       using (var writer=XmlWriter.Create(FileName, new XmlWriterSettings { Indent = true, })) {
         var serializer = new PecaSerializer();
         lock (values) {

@@ -98,9 +98,9 @@ namespace PeerCastStation.Core
       var version = info_version!=null ? info_version.InformationalVersion : file_version.FileVersion;
       return new PluginVersionInfo(
         System.IO.Path.GetFileName(asm.Location),
-        asm.FullName,
-        version,
-        file_version.LegalCopyright);
+        asm.FullName ?? "",
+        version ?? "",
+        file_version.LegalCopyright ?? "");
     }
 
     private PeerCastApplication? application = null;

@@ -1,12 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <OutputType>Library</OutputType>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\PeerCastStation\</SolutionDir>
     <RestorePackages>true</RestorePackages>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Nullable>enable</Nullable>
-    <LangVersion>9.0</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -22,9 +21,5 @@
   <ItemGroup>
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.7.0" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="4.7.1" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Remove="ChannelContentReader.cs" />
-    <Compile Remove="EventLogger.cs" />
   </ItemGroup>
 </Project>

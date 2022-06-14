@@ -327,9 +327,9 @@ namespace PeerCastStation.Core
       this.monitorTimer = new Timer(OnMonitorTimer, cancelSource.Token, 0, 5000);
     }
 
-    private void OnMonitorTimer(object state)
+    private void OnMonitorTimer(object? state)
     {
-      var cs = (CancellationToken)state;
+      var cs = (CancellationToken)state!;
       if (!cs.IsCancellationRequested) {
         DispatchMonitorEvent(mon => mon.OnTimer(), cs);
       }
@@ -375,7 +375,7 @@ namespace PeerCastStation.Core
       }
     }
 
-    private IPAddress GetInterfaceAddress(AddressFamily addr_family)
+    private IPAddress? GetInterfaceAddress(AddressFamily addr_family)
     {
       return System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
         .Where(intf => intf.OperationalStatus==System.Net.NetworkInformation.OperationalStatus.Up)
@@ -510,11 +510,14 @@ namespace PeerCastStation.Core
       var listener = outputListeners.FirstOrDefault(
         x => x.LocalEndPoint.AddressFamily==addr_family &&
              (x.GlobalOutputAccepts & connection_type)!=0);
-      var addr = listener.GlobalAddress;
-      if (listener!=null && addr!=null) {
-        return new IPEndPoint(addr, listener.LocalEndPoint.Port);
+      if (listener==null) {
+        return null;
       }
-      return null;
+      var addr = listener.GlobalAddress;
+      if (addr==null) {
+        return null;
+      }
+      return new IPEndPoint(addr, listener.LocalEndPoint.Port);
     }
 
     public IPEndPoint? GetLocalEndPoint(AddressFamily addr_family, OutputStreamType connection_type)

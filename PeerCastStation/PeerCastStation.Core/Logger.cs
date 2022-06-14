@@ -138,7 +138,7 @@ namespace PeerCastStation.Core
     /// </summary>
     public static IList<System.IO.TextWriter> Writers {
       get {
-        return uiListeners.Select(listener => listener.Writer).ToArray();
+        return uiListeners.Select(listener => listener.Writer).NotNull().ToArray();
       }
     }
 
@@ -291,14 +291,16 @@ namespace PeerCastStation.Core
       Trace.Close();
     }
 
-    static private void Output(LogLevel level, string source, string format, params object[] args)
+    static private void Output(LogLevel level, string source, string? format, params object[] args)
     {
-      outputQueue.Enqueue(new LogEntry { Level = level, Source = source, Message = String.Format(format, args) });
+      if (format!=null) {
+        outputQueue.Enqueue(new LogEntry { Level = level, Source = source, Message = String.Format(format, args) });
+      }
     }
 
     static private void Output(LogLevel level, string source, Exception e)
     {
-      Output(level, source, "{0} {1}\n{2}", e.GetType().Name, e.Message, e.StackTrace);
+      Output(level, source, $"{e.GetType().Name} {e.Message}\n{e.StackTrace}");
       if (e.InnerException!=null) {
         Output(level, source, e.InnerException);
       }
