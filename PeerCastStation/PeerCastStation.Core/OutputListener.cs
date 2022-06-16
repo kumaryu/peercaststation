@@ -230,7 +230,7 @@ namespace PeerCastStation.Core
           while (!cancel_token.IsCancellationRequested) {
             bound = true;
             var client = await server.AcceptTcpClientAsync().ConfigureAwait(false);
-            logger.Info("Client connected {0}", client.Client.RemoteEndPoint);
+            logger.Info($"Client connected {client.Client.RemoteEndPoint}");
             var client_task = ConnectionHandler.HandleClient(
               server.LocalEndpoint,
               client,

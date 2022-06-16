@@ -306,7 +306,7 @@ namespace PeerCastStation.Core.Http
         }
         set {
           if (value.HasValue) {
-            env.SetResponseHeader("Content-Length", value.ToString());
+            env.SetResponseHeader("Content-Length", value.Value.ToString());
           }
         }
       }
@@ -557,7 +557,7 @@ namespace PeerCastStation.Core.Http
     public IReadOnlyDictionary<string,string> GetRequestCookies()
     {
       if (cookieCache!=null) return cookieCache;
-      var cookies = GetRequestHeader("Cookie", new string[0]);
+      var cookies = GetRequestHeader("Cookie", new string[0]) ?? Enumerable.Empty<string>();
       var cache = new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);
       var entries =
         cookies

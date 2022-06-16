@@ -37,7 +37,7 @@ namespace PeerCastStation.Core.Http
     public Task Invoke(IDictionary<string, object> arg)
     {
       var env = new OwinEnvironment(arg);
-      var pathMatch = pathPattern.Match(env.Request.Path);
+      var pathMatch = pathPattern.Match(env.Request.Path ?? "");
       if (pathMatch.Success) {
         if (env.TryGetValue(OwinEnvironment.Owin.RequestMethod, out string? method) && methods.Contains(method)) {
           env.Response.StatusCode = System.Net.HttpStatusCode.OK;
