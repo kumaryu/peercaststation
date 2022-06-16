@@ -312,12 +312,19 @@ namespace PeerCastStation.Core
       return (T)Activator.CreateInstance(type)!;
     }
 
+    [return:NotNullIfNotNull("value")]
     private object? ChangeType(object? value, Type target)
     {
-      if (target.IsArray) {
-        if (value==null) {
+      if (value==null) {
+        if (target.IsValueType) {
+          return Activator.CreateInstance(target);
+        }
+        else {
           return null;
         }
+      }
+
+      if (target.IsArray) {
         var elementType = target.GetElementType()!;
         var values = ((IEnumerable)value).OfType<object>().Select(obj => ChangeType(obj, elementType)).ToArray();
         var ary = Array.CreateInstance(elementType, values.Length);
@@ -328,10 +335,7 @@ namespace PeerCastStation.Core
       }
       else if (target.IsGenericType && !target.ContainsGenericParameters) {
         if (target.GetGenericTypeDefinition()==typeof(List<>)) {
-          var source = value as IEnumerable;
-          if (source==null) {
-            return null;
-          }
+          var source = (IEnumerable)value;
           var valuetype = target.GetGenericArguments()[0];
           var lst = CreateInstance<IList>(target);
           foreach (var v in source) {
@@ -340,15 +344,12 @@ namespace PeerCastStation.Core
           return lst;
         }
         if (target.GetGenericTypeDefinition()==typeof(Dictionary<,>)) {
-          var source = value as IDictionary;
-          if (source==null) {
-            return null;
-          }
-          var keytype   = target.GetGenericArguments()[0];
+          var source = (IDictionary)value;
+          var keytype = target.GetGenericArguments()[0];
           var valuetype = target.GetGenericArguments()[1];
           var dic = CreateInstance<IDictionary>(target);
           foreach (DictionaryEntry kv in source) {
-            dic.Add(ChangeType(kv.Key, keytype)!, ChangeType(kv.Value, valuetype));
+            dic.Add(ChangeType(kv.Key, keytype), ChangeType(kv.Value, valuetype));
           }
           return dic;
         }
