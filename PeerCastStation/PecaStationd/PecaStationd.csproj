@@ -46,6 +46,6 @@
     <Content Include="..\peercaststation.ico" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.ServiceProcess.ServiceController" Version="4.7.0" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="6.0.0" />
   </ItemGroup>
 </Project>
