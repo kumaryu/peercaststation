@@ -51,9 +51,9 @@ namespace PeerCastStation.WPF.CoreSettings
       }
     }
 
-    private void PortCheckButton_Click(object sender, RoutedEventArgs args)
+    private async void PortCheckButton_Click(object sender, RoutedEventArgs args)
     {
-      ((SettingViewModel)this.DataContext).CheckPort();
+      await ((SettingViewModel)this.DataContext).CheckPort();
     }
 
   }
