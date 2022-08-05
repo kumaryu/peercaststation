@@ -31,8 +31,7 @@ module HttpOutputTest =
     [<Fact>]
     let ``無いチャンネルIDを指定すると404が返る`` () =
         use peca = pecaWithOwinHost endpoint registerHttpDirect
-        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
-        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfoBitrate "hoge" "FLV" 500)
         peca.AddChannel channel
         ["pls"; "stream"]
         |> List.iter (fun subpath ->
@@ -45,7 +44,7 @@ module HttpOutputTest =
     let ``チャンネル情報が無いチャンネルを指定すると10秒でタイムアウトして504が返る`` () =
         task {
             use peca = pecaWithOwinHost endpoint registerHttpDirect
-            let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
+            let channel = DummyRelayChannel(peca, NetworkType.IPv4, Guid.NewGuid())
             peca.AddChannel channel
             let! results =
                 ["pls"; "stream"]
@@ -66,8 +65,7 @@ module HttpOutputTest =
     [<Fact>]
     let ``視聴数の最大数を超える視聴リクエストには503が返る`` () =
         use peca = pecaWithOwinHost endpoint registerHttpDirect
-        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
-        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV")
         peca.AddChannel channel
         peca.AccessController.MaxPlays <- 1
         let channelSink = DummyOutputStream(ConnectionType=ConnectionType.Direct)
@@ -105,8 +103,7 @@ module PlayListTest =
     [<Fact>]
     let ``指定したチャンネルIDのプレイリストが取得できる`` () =
         use peca = pecaWithOwinHost endpoint registerHttpDirect
-        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
-        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV")
         peca.AddChannel channel
         let playlist =
             {
@@ -121,8 +118,7 @@ module PlayListTest =
     [<Fact>]
     let ``WMVチャンネルのプレイリストは標準でASXが返る`` () =
         use peca = pecaWithOwinHost endpoint registerHttpDirect
-        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
-        channel.ChannelInfo <- createChannelInfo "hoge" "WMV"
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "WMV")
         peca.AddChannel channel
         let playlist =
             {
@@ -137,8 +133,7 @@ module PlayListTest =
     [<Fact>]
     let ``クエリパラメータでスキームを変更できる`` () =
         use peca = pecaWithOwinHost endpoint registerHttpDirect
-        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
-        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV")
         peca.AddChannel channel
         let playlist =
             {
@@ -153,8 +148,7 @@ module PlayListTest =
     [<Fact>]
     let ``クエリパラメータか拡張子でフォーマットを変更できる`` () =
         use peca = pecaWithOwinHost endpoint registerHttpDirect
-        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
-        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV")
         peca.AddChannel channel
         [
             ("", "http", m3u);
@@ -177,8 +171,7 @@ module PlayListTest =
     [<Fact>]
     let ``m3u8のプレイリストを要求するとhlsのパスにリダイレクトされる`` () =
         use peca = pecaWithOwinHost endpoint registerHttpDirect
-        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid())
-        channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV")
         peca.AddChannel channel
         [
             ("?pls=m3u8", "");

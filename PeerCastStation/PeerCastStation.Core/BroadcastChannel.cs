@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Net;
 
 namespace PeerCastStation.Core
 {
@@ -7,6 +8,14 @@ namespace PeerCastStation.Core
     : Channel
   {
     public override bool IsBroadcasting { get { return true; } }
+    public override EndPoint? TrackerEndPoint {
+      get {
+        return
+          PeerCast.GetGlobalEndPoint(NetworkAddressFamily, OutputStreamType.Relay) ??
+          PeerCast.GetLocalEndPoint(NetworkAddressFamily, OutputStreamType.Relay);
+      }
+    }
+
     public ISourceStreamFactory? SourceStreamFactory { get; private set; }
     public IContentReaderFactory ContentReaderFactory { get; private set; }
 

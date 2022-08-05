@@ -91,14 +91,22 @@ type DummyOutputStream () =
         member this.OnStopped(reason) = ()
         member this.GetConnectionInfo() = connectionInfo.Build()
 
+type MockContentReaderFactory () =
+    interface IContentReaderFactory with
+        member this.Name = "MockContentReader"
+        member this.Create channel = NotImplementedException "not implemented" |> raise
+        member this.TryParseContentType (header, content_type, mime_type) =
+            content_type <- null
+            mime_type <- null
+            false
 
-type DummyBroadcastChannel (peercast, network, channelId, sourceStreamFactory) =
-    inherit Channel(peercast, network, channelId)
+type DummyBroadcastChannel (peercast, network, channelId, channelInfo, sourceStreamFactory) =
+    inherit BroadcastChannel(peercast, network, channelId, channelInfo, null, MockContentReaderFactory())
 
     let mutable relayable = true
 
-    new (peercast, network, channelId) =
-        DummyBroadcastChannel(peercast, network, channelId, fun _ -> new DummySourceStream(SourceStreamType.Broadcast) :> ISourceStream)
+    new (peercast, network, channelId, channelInfo) =
+        DummyBroadcastChannel(peercast, network, channelId, channelInfo, fun _ -> new DummySourceStream(SourceStreamType.Broadcast) :> ISourceStream)
 
     member this.Relayable
         with get ()    = relayable

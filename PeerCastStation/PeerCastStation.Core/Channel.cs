@@ -20,6 +20,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections;
+using System.Net;
 
 namespace PeerCastStation.Core
 {
@@ -95,6 +96,31 @@ namespace PeerCastStation.Core
     public Guid ChannelID   { get; private set; }
     public Uri? SourceUri   { get; private set; }
     public abstract bool IsBroadcasting { get; }
+
+    public virtual EndPoint? TrackerEndPoint {
+      get {
+        var source = SourceUri;
+        if (source==null) {
+          return null;
+        }
+        switch (source.HostNameType) {
+        case UriHostNameType.IPv4:
+        case UriHostNameType.IPv6:
+          if (IPAddress.TryParse(source.Host, out var addr)) {
+            return new IPEndPoint(addr, source.Port<0 ? 7144 : source.Port);
+          }
+          else {
+            return null;
+          }
+        case UriHostNameType.Dns:
+          return new DnsEndPoint(source.IdnHost, source.Port<0 ? 7144 : source.Port);
+        case UriHostNameType.Basic:
+        case UriHostNameType.Unknown:
+        default:
+          return null;
+        }
+      }
+    }
 
     /// <summary>
     /// ソースストリームを取得します

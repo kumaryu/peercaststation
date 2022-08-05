@@ -95,7 +95,7 @@ namespace PeerCastStation.UI.HTTP
 
     private static string BuildIndexTXTEntry(PeerCast peercast, Channel channel)
     {
-      var endpoint = peercast.GetGlobalEndPoint(channel.NetworkAddressFamily, OutputStreamType.Play);
+      var endpoint = channel.TrackerEndPoint;
       var enc_channel_name = Uri.EscapeDataString(channel.ChannelInfo.Name ?? "");
       var uptime = (int)channel.Uptime.TotalMinutes;
       var columns = new string[] {
