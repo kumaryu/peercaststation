@@ -60,7 +60,7 @@ namespace PeerCastStation.UI
             return checker.RunAsync();
           }
           else {
-            return Task.FromResult(new PortCheckResult(false, group.Key, null, Array.Empty<int>(), TimeSpan.Zero));
+            return Task.FromResult(new PortCheckResult(new InvalidOperationException($"PortCheck uri for {group.Key.AddressFamily} is empty"), group.Key, TimeSpan.Zero));
           }
         })
       ).ConfigureAwait(false);
@@ -69,20 +69,32 @@ namespace PeerCastStation.UI
 
   public class PortCheckResult
   {
-    public bool       Success      { get; private set; }
-    public int[]      Ports        { get; private set; }
-    public IPAddress  LocalAddress { get; private set; }
-    public IPAddress? GlobalAddress { get; private set; }
-    public TimeSpan   ElapsedTime  { get; private set; }
+    public bool       Success       { get; }
+    public int[]      Ports         { get; }
+    public IPAddress  LocalAddress  { get; }
+    public IPAddress? GlobalAddress { get; }
+    public TimeSpan   ElapsedTime   { get; }
+    public Exception? Exception     { get; }
     public bool IsOpen { get { return Ports.Length>0; } }
 
-    public PortCheckResult(bool success, IPAddress address, IPAddress? globalAddress, int[] ports, TimeSpan elapsed)
+    public PortCheckResult(IPAddress localAddress, IPAddress? globalAddress, int[] ports, TimeSpan elapsed)
     {
-      this.Success       = success;
-      this.LocalAddress  = address;
+      this.Success       = true;
+      this.LocalAddress  = localAddress;
       this.GlobalAddress = globalAddress;
       this.Ports         = ports;
       this.ElapsedTime   = elapsed;
+      this.Exception     = null;
+    }
+
+    public PortCheckResult(Exception exception, IPAddress localAddress, TimeSpan elapsed)
+    {
+      this.Success       = false;
+      this.LocalAddress  = localAddress;
+      this.GlobalAddress = null;
+      this.Ports         = Array.Empty<int>();
+      this.ElapsedTime   = TimeSpan.Zero;
+      this.Exception     = exception;
     }
   }
 
@@ -106,7 +118,6 @@ namespace PeerCastStation.UI
       var data   = new JObject();
       data["instanceId"] = InstanceId.ToString("N");
       data["ports"] = new JArray(this.Ports);
-      var succeeded = false;
       var stopwatch = new System.Diagnostics.Stopwatch();
       using var cancel = new CancellationTokenSource();
       string response_body;
@@ -117,7 +128,6 @@ namespace PeerCastStation.UI
         rsp.EnsureSuccessStatusCode();
         response_body = await rsp.Content.ReadAsStringAsync(cancel.Token).ConfigureAwait(false);
         stopwatch.Stop();
-        succeeded = true;
         var response = JObject.Parse(response_body);
         var response_ip = response.GetValueAsIPAddess("ip");
         var response_ports =
@@ -127,28 +137,15 @@ namespace PeerCastStation.UI
           ?.Where(v => v.HasValue)
           ?.Select(v => v!.Value);
         return new PortCheckResult(
-            succeeded,
             LocalAddress,
             response_ip,
             response_ports?.ToArray() ?? Array.Empty<int>(),
             stopwatch.Elapsed);
       }
-      catch (HttpRequestException) {
-        succeeded = false;
+      catch (Exception ex) {
         return new PortCheckResult(
-            succeeded,
+            ex,
             LocalAddress,
-            null,
-            new int[0],
-            stopwatch.Elapsed);
-      }
-      catch (Newtonsoft.Json.JsonReaderException) {
-        succeeded = false;
-        return new PortCheckResult(
-            succeeded,
-            LocalAddress,
-            null,
-            new int[0],
             stopwatch.Elapsed);
       }
     }

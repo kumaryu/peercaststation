@@ -1138,38 +1138,36 @@ namespace PeerCastStation.WPF.CoreSettings
       set { SetProperty(nameof(PortCheckV6Status), ref portCheckV6Status, value); }
     }
 
-    public void CheckPort()
+    public async Task CheckPort()
     {
       PortCheckStatus = PortCheckStatus.Checking;
-      CheckPortAsync().ContinueWith(prev => {
-        if (prev.IsCanceled || prev.IsFaulted) {
+      try {
+        var results = await CheckPortAsync();
+        var rv4 = results.Where(r => r.LocalAddress.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork);
+        if (rv4.Any(r => !r.Success)) {
           PortCheckStatus = PortCheckStatus.Failed;
-          PortCheckV6Status = PortCheckStatus.Failed;
+        }
+        else if (rv4.Any(r => r.IsOpen)) {
+          PortCheckStatus = PortCheckStatus.Opened;
         }
         else {
-          var results = prev.Result;
-          var rv4 = results.Where(r => r.LocalAddress.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork);
-          if (rv4.Any(r => !r.Success)) {
-            PortCheckStatus = PortCheckStatus.Failed;
-          }
-          else if (rv4.Any(r => r.IsOpen)) {
-            PortCheckStatus = PortCheckStatus.Opened;
-          }
-          else {
-            PortCheckStatus = PortCheckStatus.Closed;
-          }
-          var rv6 = results.Where(r => r.LocalAddress.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6);
-          if (rv6.Any(r => !r.Success)) {
-            PortCheckV6Status = PortCheckStatus.Failed;
-          }
-          else if (rv6.Any(r => r.IsOpen)) {
-            PortCheckV6Status = PortCheckStatus.Opened;
-          }
-          else {
-            PortCheckV6Status = PortCheckStatus.Closed;
-          }
+          PortCheckStatus = PortCheckStatus.Closed;
         }
-      });
+        var rv6 = results.Where(r => r.LocalAddress.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6);
+        if (rv6.Any(r => !r.Success)) {
+          PortCheckV6Status = PortCheckStatus.Failed;
+        }
+        else if (rv6.Any(r => r.IsOpen)) {
+          PortCheckV6Status = PortCheckStatus.Opened;
+        }
+        else {
+          PortCheckV6Status = PortCheckStatus.Closed;
+        }
+      }
+      catch {
+        PortCheckStatus = PortCheckStatus.Failed;
+        PortCheckV6Status = PortCheckStatus.Failed;
+      }
     }
 
     protected override void OnPropertyChanged(string propertyName)
