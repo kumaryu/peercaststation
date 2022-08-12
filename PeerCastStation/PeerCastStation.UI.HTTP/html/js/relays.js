@@ -554,7 +554,7 @@ var ChannelViewModel = function(owner, initial_value) {
       ext = ".m3u8";
       break;
     }
-    return self.infoName().replace(/((^\.)|[:\/\\~$<>?"*|])/g, '_') + ext;
+    return (self.infoName() || 'Unknown').replace(/((^\.)|[:\/\\~$<>?"*|])/g, '_') + ext;
   });
   self.playlistUrl = ko.computed(function () {
     var ext = "";
