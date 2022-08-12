@@ -10,7 +10,7 @@ open System.Net
 let ``チャンネルがリレー可能な時にMakeRelayableを呼んでもリレー不能なChannelSinkが止められない`` () =
     use peca = new PeerCast()
     peca.AccessController.MaxUpstreamRate <- 6000
-    let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfoBitrate "hoge" "FLV" 500)
+    let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfoBitrate "hoge" "FLV" 500, ChannelTrack.empty)
     peca.AddChannel(channel)
     let relays =
         [| 0; 1; 1; 2; 3; 0 |]
@@ -38,7 +38,7 @@ let ``チャンネルがリレー可能な時にMakeRelayableを呼んでもリ�
 let ``チャンネルがいっぱいの時にMakeRelayableで必要な分だけChannelSinkを止める`` () =
     use peca = new PeerCast()
     peca.AccessController.MaxUpstreamRate <- 3000
-    let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfoBitrate "hoge" "FLV" 500)
+    let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfoBitrate "hoge" "FLV" 500, ChannelTrack.empty)
     peca.AddChannel(channel)
     let relays =
         [| 0; 1; 1; 2; 3; 0 |]
@@ -66,7 +66,7 @@ let ``チャンネルがいっぱいの時にMakeRelayableで必要な分だけC
 let ``チャンネルがいっぱいの時にMakeRelayableで切れる分を切っても新しくリレーできない場合はfalseを返す`` () =
     use peca = new PeerCast()
     peca.AccessController.MaxUpstreamRate <- 2000
-    let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfoBitrate "hoge" "FLV" 500)
+    let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfoBitrate "hoge" "FLV" 500, ChannelTrack.empty)
     peca.AddChannel(channel)
     let relays =
         [| 0; 1; 1; 2; 3; 0 |]
@@ -93,8 +93,8 @@ let ``チャンネルがいっぱいの時にMakeRelayableで切れる分を切�
 [<Fact>]
 let ``指定したキーをBanするとHasBannedがtrueを返す`` () =
     use peca = new PeerCast()
-    let channel1 = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfoBitrate "hoge" "FLV" 500)
-    let channel2 = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfoBitrate "hoge" "FLV" 500)
+    let channel1 = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfoBitrate "hoge" "FLV" 500, ChannelTrack.empty)
+    let channel2 = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfoBitrate "hoge" "FLV" 500, ChannelTrack.empty)
     channel1.Ban("hoge", DateTimeOffset.Now.AddMilliseconds(100.0))
     channel2.Ban("fuga", DateTimeOffset.Now.AddMilliseconds(100.0))
     channel1.Ban("piyo", DateTimeOffset.Now.AddMilliseconds(100.0))
@@ -137,4 +137,19 @@ let ``ノード情報が変更されるとIChannelMonitorのOnNodeChangedが呼�
     Assert.Equal(64, List.length nodes)
     Assert.True(Array.forall (fun h -> List.contains (ChannelNodeAction.Updated, h) nodes) hosts)
     Assert.True(Array.forall (fun h -> List.contains (ChannelNodeAction.Removed, h) nodes) hosts)
+
+
+[<Fact>]
+let ``LoopbackSourceStreamで元のチャンネルのトラック情報がコピーされる`` () =
+    use peca = new PeerCast()
+    let channel1 = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfoBitrate "hoge" "FLV" 500, ChannelTrack.empty)
+    channel1.ChannelTrack <- ChannelTrackDesc.toChannelTrack { ChannelTrackDesc.empty with name=Some "fuga"; album=Some "piyo"; genre=Some "foo"; creator=Some "bar"; url=Some "http://example.com/index.html" }
+    peca.AddChannel channel1
+    channel1.Start("http://example.com/" |> Uri)
+    let channel2 = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty, fun peercast channel uri -> new LoopbackSourceStream(peercast, channel, uri))
+    peca.AddChannel channel2
+    channel2.Start(channel1.ChannelID.ToString("N") |> sprintf "loopback:%s" |> Uri)
+    TestCommon.waitForConditionOrTimeout (fun () -> channel2.ChannelInfo.Bitrate = 500) 1000
+    Assert.Equal(500, channel2.ChannelInfo.Bitrate)
+    Assert.Equal("fuga", channel2.ChannelTrack.Name)
 

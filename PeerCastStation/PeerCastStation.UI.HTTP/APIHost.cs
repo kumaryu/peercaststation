@@ -1022,22 +1022,22 @@ namespace PeerCastStation.UI.HTTP
         if (channel_info.Name==null || channel_info.Name=="") {
           throw new RPCError(RPCErrorCode.InvalidParams, "Channel name must not be empty");
         }
+        var new_track = new AtomCollection();
+        if (track!=null) {
+          track.TryGetThen("name",    v => new_track.SetChanTrackTitle(v));
+          track.TryGetThen("genre",   v => new_track.SetChanTrackGenre(v));
+          track.TryGetThen("album",   v => new_track.SetChanTrackAlbum(v));
+          track.TryGetThen("creator", v => new_track.SetChanTrackCreator(v));
+          track.TryGetThen("url",     v => new_track.SetChanTrackURL(v));
+        }
+        var channel_track = new ChannelTrack(new_track);
         var channel_id = PeerCastStation.Core.BroadcastChannel.CreateChannelID(
           PeerCast.BroadcastID,
           network_type,
           channel_info.Name,
           channel_info.Genre ?? "",
           source.ToString());
-        var channel = PeerCast.BroadcastChannel(network_type, yp, channel_id, channel_info, source, source_stream, content_reader);
-        if (track!=null) {
-          var new_track = new AtomCollection(channel.ChannelTrack.Extra);
-          track.TryGetThen("name",    v => new_track.SetChanTrackTitle(v));
-          track.TryGetThen("genre",   v => new_track.SetChanTrackGenre(v));
-          track.TryGetThen("album",   v => new_track.SetChanTrackAlbum(v));
-          track.TryGetThen("creator", v => new_track.SetChanTrackCreator(v));
-          track.TryGetThen("url",     v => new_track.SetChanTrackURL(v));
-          channel.ChannelTrack = new ChannelTrack(new_track);
-        }
+        var channel = PeerCast.BroadcastChannel(network_type, yp, channel_id, channel_info, channel_track, source, source_stream, content_reader);
         return channel.ChannelID.ToString("N").ToUpper();
       }
 

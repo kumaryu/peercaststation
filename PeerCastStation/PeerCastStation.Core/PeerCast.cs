@@ -234,12 +234,13 @@ namespace PeerCastStation.Core
       IYellowPageClient?    yp,
       Guid                  channel_id,
       ChannelInfo           channel_info,
+      ChannelTrack          channel_track,
       Uri                   source,
       ISourceStreamFactory? source_stream_factory,
       IContentReaderFactory content_reader_factory)
     {
       logger.Debug("Broadcasting channel {0} from {1}", channel_id.ToString("N"), source);
-      var channel = new BroadcastChannel(this, network, channel_id, channel_info, source_stream_factory, content_reader_factory);
+      var channel = new BroadcastChannel(this, network, channel_id, channel_info, channel_track, source_stream_factory, content_reader_factory);
       channel.Start(source);
       ReplaceCollection(ref channels, orig => orig.Add(channel));
       DispatchMonitorEvent(mon => mon.OnChannelChanged(PeerCastChannelAction.Added, channel));

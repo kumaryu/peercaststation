@@ -24,11 +24,13 @@ namespace PeerCastStation.Core
         NetworkType network,
         Guid channel_id,
         ChannelInfo channel_info,
+        ChannelTrack channel_track,
         ISourceStreamFactory? source_stream_factory,
         IContentReaderFactory content_reader_factory)
       : base(peercast, network, channel_id)
     {
       this.ChannelInfo = channel_info;
+      this.ChannelTrack = channel_track;
       this.SourceStreamFactory = source_stream_factory;
       this.ContentReaderFactory = content_reader_factory;
     }
