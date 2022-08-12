@@ -30,12 +30,29 @@ namespace PeerCastStation.UI
     {
     }
 
-    public void AddBroadcastHistory(BroadcastInfo info)
+    public BroadcastInfo[] AddBroadcastHistory(BroadcastInfo info)
     {
-      if (FindBroadcastHistroryItem(info)!=null) return;
-      var fav    = BroadcastHistory.Where(i =>  i.Favorite);
-      var others = BroadcastHistory.Where(i => !i.Favorite);
-      BroadcastHistory = fav.Concat(Enumerable.Repeat(info, 1).Concat(others.Take(19))).ToArray();
+      var fav = FindBroadcastHistroryItem(info)?.Favorite ?? false;
+      info.Favorite = fav;
+      var history = BroadcastHistory.Where(i => !i.Equals(info));
+      var favorites = history.Where(i =>  i.Favorite);
+      var others    = history.Where(i => !i.Favorite);
+      if (fav) {
+        favorites = Enumerable.Concat(Enumerable.Repeat(info, 1), favorites);
+      }
+      else {
+        others = Enumerable.Concat(Enumerable.Repeat(info, 1), others.Take(19));
+      }
+      BroadcastHistory = Enumerable.Concat(favorites, others).ToArray();
+      return BroadcastHistory;
+    }
+
+    public void SetFavorite(BroadcastInfo info, bool value)
+    {
+      var item = FindBroadcastHistroryItem(info);
+      if (item!=null && item.Favorite!=value) {
+        item.Favorite = value;
+      }
     }
 
     public BroadcastInfo? FindBroadcastHistroryItem(BroadcastInfo info)
@@ -122,6 +139,56 @@ namespace PeerCastStation.UI
       TrackUrl = trackUrl;
       Favorite = favorite;
     }
+
+    public override bool Equals(object? obj)
+    {
+      if (obj==null || GetType()!=obj.GetType()) return false;
+      return Equals((BroadcastInfo)obj);
+    }
+
+    public bool Equals(BroadcastInfo obj)
+    {
+      return NetworkType == obj.NetworkType &&
+             StreamUrl   == obj.StreamUrl   &&
+             StreamType  == obj.StreamType  &&
+             Bitrate     == obj.Bitrate     &&
+             ContentType == obj.ContentType &&
+             YellowPage  == obj.YellowPage  &&
+             ChannelName == obj.ChannelName &&
+             Genre       == obj.Genre       &&
+             Description == obj.Description &&
+             Comment     == obj.Comment     &&
+             ContactUrl  == obj.ContactUrl  &&
+             TrackTitle  == obj.TrackTitle  &&
+             TrackAlbum  == obj.TrackAlbum  &&
+             TrackArtist == obj.TrackArtist &&
+             TrackGenre  == obj.TrackGenre  &&
+             TrackUrl    == obj.TrackUrl;
+    }
+
+    public override int GetHashCode()
+    {
+      return (int)(new object[] {
+        NetworkType,
+        StreamType,
+        StreamUrl,
+        Bitrate,
+        ContentType,
+        YellowPage,
+        ChannelName,
+        Genre,
+        Description,
+        Comment,
+        ContactUrl,
+        TrackTitle,
+        TrackAlbum,
+        TrackArtist,
+        TrackGenre,
+        TrackUrl,
+      }.Select(o => (long)(o==null ? 0 : o.GetHashCode()))
+       .Sum() % Int32.MaxValue);
+    }
+
   }
 
 }

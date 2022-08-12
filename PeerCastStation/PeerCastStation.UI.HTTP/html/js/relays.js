@@ -335,7 +335,7 @@ var BroadcastDialog = new function() {
       }
     );
     PeerCastStation.addBroadcastHistory({
-      yellowPage:  self.yellowPage() ? self.yellowPage().name : null,
+      yellowPage:  self.yellowPage() ? self.yellowPage().yellowPageId : null,
       networkType: self.networkType(),
       streamType:  sourceStream,
       contentType: contentReader,

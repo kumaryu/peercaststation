@@ -14,9 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using PeerCastStation.Core;
+using PeerCastStation.UI;
 using PeerCastStation.WPF.Commons;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Windows;
@@ -55,10 +57,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
     private readonly IEnumerable<KeyValuePair<string,IYellowPageClient?>> yellowPages;
     public IEnumerable<KeyValuePair<string,IYellowPageClient?>> YellowPages { get { return yellowPages; } }
 
-    private UISettingsViewModel uiSettings;
-    public IEnumerable<BroadcastInfoViewModel> BroadcastHistory {
-      get { return uiSettings.BroadcastHistory.OrderBy(i => i.Favorite ? 0 : 1); }
-    }
+    public IEnumerable<BroadcastInfoViewModel> BroadcastHistory { get; private set; }
 
     private BroadcastInfoViewModel? selectedBroadcastHistory = null;
     public BroadcastInfoViewModel? SelectedBroadcastHistory {
@@ -308,7 +307,8 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
     public BroadcastViewModel(PeerCast peerCast)
     {
       this.peerCast = peerCast;
-      this.uiSettings = new UISettingsViewModel(PeerCastApplication.Current!.Settings);
+      var uiSettings = PeerCastApplication.Current!.Settings.Get<UISettings>();
+      BroadcastHistory = uiSettings.BroadcastHistory.OrderBy(i => i.Favorite ? 0 : 1).Select(i => new BroadcastInfoViewModel(i)).ToArray();
       start = new Command(OnBroadcast, () => CanBroadcast(StreamSource, ContentType, channelName));
       contentTypes = peerCast.ContentReaderFactories.ToArray();
       localChannels = peerCast.Channels.Select(c => new LocalChannelViewModel(c)).ToArray();
@@ -352,7 +352,7 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
         channel.ChannelTrack = channelTrack;
       }
 
-      var info = new BroadcastInfoViewModel {
+      var info = new BroadcastInfo {
         NetworkType = this.NetworkType,
         StreamUrl   = this.StreamUrl,
         StreamType  = this.SelectedSourceStream?.Name ?? "",
@@ -371,13 +371,15 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
         TrackUrl    = this.TrackUrl,
         Favorite    = false,
       };
-      uiSettings.AddBroadcastHistory(info);
-      uiSettings.Save();
+      var uiSettings = PeerCastApplication.Current!.Settings.Get<UISettings>();
+      BroadcastHistory = uiSettings.AddBroadcastHistory(info).OrderBy(i => i.Favorite ? 0 : 1).Select(i => new BroadcastInfoViewModel(i)).ToArray();
+      OnPropertyChanged(nameof(BroadcastHistory));
+      PeerCastApplication.Current!.Settings.Save();
     }
 
     public void Save()
     {
-      uiSettings.Save();
+      PeerCastApplication.Current!.Settings.Save();
     }
 
     private bool CanBroadcast([NotNullWhen(true)] Uri? streamSource, [NotNullWhen(true)] IContentReaderFactory? contentReaderFactory, [NotNullWhen(true)] string? channelName)
@@ -409,5 +411,53 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
       collection.SetChanTrackURL(viewModel.TrackUrl);
       return new ChannelTrack(collection);
     }
+  }
+
+  public class BroadcastInfoViewModel
+    : INotifyPropertyChanged
+  {
+    private BroadcastInfo model;
+    public BroadcastInfoViewModel(BroadcastInfo model)
+    {
+      this.model = model;
+      this.favorite = model.Favorite;
+    }
+
+    public string Name {
+      get {
+        return $"{NetworkType} {ChannelName} {Genre} {Description} - {Comment} Playing: {TrackTitle}";
+      }
+    }
+
+    public NetworkType NetworkType { get { return model.NetworkType; } }
+    public string StreamType { get { return model.StreamType; } }
+    public string StreamUrl { get { return model.StreamUrl; } }
+    public int    Bitrate { get { return model.Bitrate; } }
+    public string ContentType { get { return model.ContentType; } }
+    public string YellowPage { get { return model.YellowPage; } }
+    public string ChannelName { get { return model.ChannelName; } }
+    public string Genre { get { return model.Genre; } }
+    public string Description { get { return model.Description; } }
+    public string Comment { get { return model.Comment; } }
+    public string ContactUrl { get { return model.ContactUrl; } }
+    public string TrackTitle { get { return model.TrackTitle; } }
+    public string TrackAlbum { get { return model.TrackAlbum; } }
+    public string TrackArtist { get { return model.TrackArtist; } }
+    public string TrackGenre { get { return model.TrackGenre; } }
+    public string TrackUrl { get { return model.TrackUrl; } }
+
+    private bool favorite;
+    public bool Favorite {
+      get { return favorite; }
+      set {
+        if (favorite==value) return;
+        favorite = value;
+        var uiSettings = PeerCastApplication.Current!.Settings.Get<UISettings>();
+        uiSettings.SetFavorite(model, favorite);
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Favorite)));
+      }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
   }
 }
