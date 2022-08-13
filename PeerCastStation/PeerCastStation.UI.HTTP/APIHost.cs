@@ -3,7 +3,6 @@ using System.Linq;
 using System.Net;
 using System.Collections.Generic;
 using PeerCastStation.Core;
-using PeerCastStation.UI;
 using PeerCastStation.UI.HTTP.JSONRPC;
 using Newtonsoft.Json.Linq;
 using System.Threading;
@@ -1093,12 +1092,10 @@ namespace PeerCastStation.UI.HTTP
           info.GetValueAsString("trackUrl") ?? "",
           info.GetValueAsBool("favorite") ?? false);
         var settings = owner.Application.Settings.Get<UISettings>();
-        var item = settings.FindBroadcastHistroryItem(obj);
-        if (item!=null) {
-          info.TryGetThen("favorite", v => item.Favorite = v);
-        }
-        else {
-          settings.AddBroadcastHistory(obj);
+        settings.AddBroadcastHistory(obj);
+        var fav = info.GetValueAsBool("favorite");
+        if (fav.HasValue) {
+          settings.SetFavorite(obj, fav.Value);
         }
       }
 
