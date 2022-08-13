@@ -10,16 +10,16 @@
     * 一部のバージョン(特にzip版)からは自動アップデートが動かない可能性があります。その場合は3.0以降を手動で再インストールしてください。
 
   date: 2021-03-20T22:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.9.8.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.9.8.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.8.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.8.zip
     length: 1963106
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.8.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.8.exe
     length: 2481860
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.9.8.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.9.8.msi
     length: 2151600
 
 - name: Version 3.0.1 (2022年03月21日開発版)
@@ -40,35 +40,35 @@
     * zip版で3.0.0へのアップデートが正しく実行されないのを修正しました。
 
   date: 2022-03-21T16:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-3.0.1-any.zip
+  url: https://www.pecastation.org/files/PeerCastStation-3.0.1-any.zip
   enclosures:
   - type: archive
     platform: any
-    url: http://www.pecastation.org/files/PeerCastStation-3.0.1-any.zip
+    url: https://www.pecastation.org/files/PeerCastStation-3.0.1-any.zip
     length: 1963106
   - type: archive
     platform: win-x86
-    url: http://www.pecastation.org/files/PeerCastStation-3.0.1-x86.zip
+    url: https://www.pecastation.org/files/PeerCastStation-3.0.1-x86.zip
     length: 1963106
   - type: archive
     platform: win-x64
-    url: http://www.pecastation.org/files/PeerCastStation-3.0.1-x64.zip
+    url: https://www.pecastation.org/files/PeerCastStation-3.0.1-x64.zip
     length: 1963106
   - type: installer
     platform: win-x86
-    url: http://www.pecastation.org/files/PeerCastStation-3.0.1-x86.msi
+    url: https://www.pecastation.org/files/PeerCastStation-3.0.1-x86.msi
     length: 2481860
   - type: installer
     platform: win-x64
-    url: http://www.pecastation.org/files/PeerCastStation-3.0.1-x64.msi
+    url: https://www.pecastation.org/files/PeerCastStation-3.0.1-x64.msi
     length: 2481860
   - type: serviceinstaller
     platform: win-x86
-    url: http://www.pecastation.org/files/PecaStationd-3.0.1-x86.msi
+    url: https://www.pecastation.org/files/PecaStationd-3.0.1-x86.msi
     length: 2151600
   - type: serviceinstaller
     platform: win-x64
-    url: http://www.pecastation.org/files/PecaStationd-3.0.1-x64.msi
+    url: https://www.pecastation.org/files/PecaStationd-3.0.1-x64.msi
     length: 2151600
 
 - name: Version 2.8.1 (2021年03月19日安定版)
@@ -89,16 +89,16 @@
     * チャンネルのバッファを1秒から3秒に延長しました。送信が詰まった時に切断される可能性が少し減ります。
 
   date: 2021-03-19T13:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.8.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.8.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.8.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.8.1.zip
     length: 1963104
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.8.1.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.8.1.exe
     length: 2481852
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.8.1.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.8.1.msi
     length: 2151600
 
 - name: Version 2.9.7 (2021年03月17日開発版)
@@ -112,16 +112,16 @@
     * 2.9.4からチャンネル終了時の通知が出なくなっていたのを修正しました。
 
   date: 2021-03-17T13:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.9.7.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.9.7.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.7.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.7.zip
     length: 1963106
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.7.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.7.exe
     length: 2481860
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.9.7.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.9.7.msi
     length: 2151600
 
 - name: Version 2.9.6 (2021年03月05日開発版)
@@ -134,16 +134,16 @@
     * 2.9.5のGUIでチャンネルを選択しているとたまにクラッシュするようになっていたのを修正しました。
 
   date: 2021-03-05T14:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.9.6.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.9.6.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.6.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.6.zip
     length: 1963106
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.6.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.6.exe
     length: 1963106
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.9.6.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.9.6.msi
     length: 1963106
 
 - name: Version 2.9.5 (2021年03月04日開発版)
@@ -162,16 +162,16 @@
     * チャンネルのバッファを1秒から3秒に延長しました。送信が詰まった時に切断される可能性が少し減ります。
 
   date: 2021-03-04T14:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.9.5.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.9.5.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.5.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.5.zip
     length: 1963106
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.5.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.5.exe
     length: 1963106
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.9.5.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.9.5.msi
     length: 1963106
 
 - name: Version 2.8.0 (2021年02月11日安定版)
@@ -187,7 +187,7 @@
       アクセス用のURLもそこで取得できるようにしました。
     * 外部からの直接視聴を許可している場合に、HTML UIのリレーページに視聴専用ページへのリンクを表示するようにしました。
     * HTML UIの設定画面でユーザー設定(内蔵YPブラウザの設定)をエクスポート/インポートできるようにしました。
-    * http://localhost:7144/html/index.txt でリレー中チャンネル一覧をindex.txt形式で取得できるようにしました。
+    * https://localhost:7144/html/index.txt でリレー中チャンネル一覧をindex.txt形式で取得できるようにしました。
     * GUI のタイトルバーの文字列を設定できるようにしました。GUIのUI設定からバージョン番号付き・シンプル形式・視聴/リレー状態を選択できます。
 
     ## 改善点
@@ -212,16 +212,16 @@
     * その他いろいろと内部的な修正を行いました。
 
   date: 2021-02-11T00:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.8.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.8.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.8.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.8.0.zip
     length: 1961997
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.8.0.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.8.0.exe
     length: 2480806
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.8.0.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.8.0.msi
     length: 2151600
 
 - name: Version 2.9.4 (2020年12月16日開発版)
@@ -244,18 +244,18 @@
 
     ## 新機能
     * HTML UIの設定画面でユーザー設定(内蔵YPブラウザの設定)をエクスポート/インポートできるようにしました。
-    * http://localhost:7144/html/index.txt でリレー中チャンネル一覧をindex.txt形式で取得できるようにしました。
+    * https://localhost:7144/html/index.txt でリレー中チャンネル一覧をindex.txt形式で取得できるようにしました。
     * GUI のタイトルバーの文字列を設定できるようにしました。GUIのUI設定からバージョン番号付き・シンプル形式・視聴/リレー状態を選択できます。
 
   date: 2020-12-16T00:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.9.4.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.9.4.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.4.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.4.zip
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.4.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.4.exe
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.9.4.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.9.4.msi
 
 - name: Version 2.9.3 (2020年2月26日開発版)
   version: 2.9.3
@@ -267,16 +267,16 @@
     * 2.9.0以降でチャンネルの合計視聴/リレー数が少なく表示されていたのを修正しました。
 
   date: 2020-02-26T00:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.9.3.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.9.3.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.3.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.3.zip
     length: 2490533
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.3.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.3.exe
     length: 2619051
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.9.3.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.9.3.msi
     length: 2291138
 
 - name: Version 2.9.2 (2019年12月30日開発版)
@@ -291,16 +291,16 @@
     * キーフレーム間隔がある程度長い配信でHTTP Live Streamingの不具合があったのを修正しました。
 
   date: 2019-12-30T02:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.9.2.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.9.2.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.2.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.2.zip
     length: 2490180
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.2.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.2.exe
     length: 2619071
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.9.2.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.9.2.msi
     length: 2291138
 
 - name: Version 2.9.1 (2019年12月21日開発版)
@@ -315,16 +315,16 @@
     * 視聴時のCORSができなくなっていたのを修正しました。
 
   date: 2019-12-21T23:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.9.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.9.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.1.zip
     length: 2490159
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.1.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.1.exe
     length: 2619063
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.9.1.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.9.1.msi
     length: 2291138
 
 - name: Version 2.9.0 (2019年12月09日開発版)
@@ -353,16 +353,16 @@
     * その他いろいろと内部的な修正を行いました。
 
   date: 2019-12-05T02:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.9.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.9.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.0.zip
     length: 2490167
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.9.0.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.9.0.exe
     length: 2619057
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.9.0.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.9.0.msi
     length: 2291138
 
 - name: Version 2.6.2 (2019年07月03日安定版)
@@ -385,16 +385,16 @@
     * HTML UIのIPv6 Anyなポートの認証付きURLが不正になるのを修正しました。 (by plonk)
     * UPnPでのポート開放をしていると、起動時にポートが未開放と表示されることがあったのを修正しました。
   date: 2019-07-03T00:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.6.2.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.6.2.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.6.2.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.6.2.zip
     length: 2205812
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.6.2.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.6.2.exe
     length: 2376675
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.6.2.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.6.2.msi
     length: 2053046
 
 - name: Version 2.7.2.1 (2019年06月15日開発版)
@@ -407,16 +407,16 @@
     * 配信をYPに掲載しようとした時にERRORになっていたのを修正しました。
     * 2.7.2で最新を使ってるにもかかわらず更新通知が出てしまっていたのを修正しました。
   date: 2019-06-15T12:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.7.2.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.7.2.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.7.2.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.7.2.1.zip
     length: 2206440
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.7.2.1.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.7.2.1.exe
     length: 2376746
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.7.2.1.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.7.2.1.msi
     length: 2053046
 
 - name: Version 2.7.1 (2019年05月25日開発版)
@@ -439,16 +439,16 @@
     * HTML UIのIPv6 Anyなポートの認証付きURLが不正になるのを修正しました。 (by plonk)
     * UPnPでのポート開放をしていると、起動時にポートが未開放と表示されることがあったのを修正しました。
   date: 2019-05-25T01:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.7.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.7.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.7.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.7.1.zip
     length: 2205860
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.7.1.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.7.1.exe
     length: 2376709
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.7.1.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.7.1.msi
     length: 2053046
 
 - name: Version 2.6.1 (2019年04月21日安定版)
@@ -470,16 +470,16 @@
     * 帯域計測失敗時に落ちることがあったのを修正しました。 (by plonk)
     * HTML UIのIPv6 Anyなポートの認証付きURLが不正になるのを修正しました。 (by plonk)
   date: 2019-04-21T00:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.6.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.6.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.6.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.6.1.zip
     length: 2194643
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.6.1.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.6.1.exe
     length: 2371892
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.6.1.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.6.1.msi
     length: 2048950
 
 - name: Version 2.7.0 (2019年03月02日開発版)
@@ -498,16 +498,16 @@
     * ポート開放チェックがいつまでも終わらない場合があったのを5秒でタイムアウトするようにしました。
     * 帯域計測時に約256Mbpsを越えると負数になってしまっていたのを修正しました。
   date: 2019-03-02T14:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.7.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.7.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.7.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.7.0.zip
     length: 2191799
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.7.0.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.7.0.exe
     length: 2371903
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.7.0.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.7.0.msi
     length: 2048950
 
 - name: Version 2.6.0 (2019年02月11日安定版)
@@ -536,7 +536,7 @@
       次のアップデートから有効になります。
       インストーラ版は従来通りインストーラでアップデートします。
     * GUIの設定で通知を出さないよう設定できるようにしました。
-    * YPからのチャンネル情報取得を設定している場合に http://localhost:7144/ypchannels/index.txt でindex.txtの再配信がされるようにしました。
+    * YPからのチャンネル情報取得を設定している場合に https://localhost:7144/ypchannels/index.txt でindex.txtの再配信がされるようにしました。
     * 視聴時に外部コマンドにコンテンツ自体を通すことができるCustomFilterを追加しました。
     * FLVからMPEG-2 TSに変換しつつ視聴する機能を追加しました。FLV配信視聴時にストリームURLに"&filters=flvtots"をつけると中身はそのままに、コンテナだけMPEG-2 TSに変換して出力します。
     * RTMPからMPEG-2 TSに変換しつつ配信する機能を追加しました。RTMP配信開始時にURLに"&filters=flvtots"をつけるとFLVでなくMPEG-2 TSに入れて配信します。
@@ -579,16 +579,16 @@
     * 出力接続にNoDelayを設定するようにしました。
     * リレー時に古いPosition指定があるとリレーが切れやすかったのを修正しました。
   date: 2019-02-11T21:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.6.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.6.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.6.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.6.0.zip
     length: 2189692
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.6.0.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.6.0.exe
     length: 2369207
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.6.0.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.6.0.msi
     length: 2044854
 
 - name: Version 2.5.4 (2019年02月11日開発版)
@@ -603,16 +603,16 @@
     * FLVのチャンネルについて、GUIやHTML UIでプレイリストを開く時の視聴プロトコルを設定できるようにしました。
     * FLVのチャンネルをHTTP Live Streamingで視聴できるようにしました(β版くらいの機能)。プレイリストの末尾を.m3u8にするとHTTP Live Streamingで視聴できます。(thanks niwakazoider)
   date: 2019-02-11T03:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.5.4.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.5.4.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.5.4.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.5.4.zip
     length: 2189723
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.5.4.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.5.4.exe
     length: 2369233
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.5.4.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.5.4.msi
     length: 2044854
 
 - name: Version 2.5.3 (2018年06月25日開発版)
@@ -624,16 +624,16 @@
     * 起動プロセスが終了してもメインプロセスが残ってしまうのを修正しました。PeCaRecorderなどで一緒に終了が動かないのが直りました。
     * LinuxなどでIPv6の接続待ち受けが正しく行えないのを修正しました。
   date: 2018-06-25T01:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.5.3.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.5.3.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.5.3.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.5.3.zip
     length: 2156465
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.5.3.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.5.3.exe
     length: 2354248
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.5.3.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.5.3.msi
     length: 2036662
 
 - name: Version 2.5.2 (2018年06月11日開発版)
@@ -648,16 +648,16 @@
     * HTTPでの視聴時に`Access-Control-Allow-Origin:*`を返すようにしました(動画/プレイリスト共に)。
     * プレイリストのURLに`scheme=～`パラメータを追加することで、プレイリスト内の動画URLのschemeを指定できるようになりました。WMVの時にmmsやhttpを指定したり、FLVの時にrtmpを指定することができます。 (by shinji3)
   date: 2018-06-11T01:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.5.2.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.5.2.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.5.2.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.5.2.zip
     length: 2155374
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.5.2.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.5.2.exe
     length: 2353397
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.5.2.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.5.2.msi
     length: 2036662
 
 - name: Version 2.5.1 (2018年05月10日開発版)
@@ -678,16 +678,16 @@
     * タイミングによってクラッシュする可能性がある不具合を修正しました。
     * パフォーマンスの改善が期待できる修正を入れました。
   date: 2018-05-10T01:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.5.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.5.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.5.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.5.1.zip
     length: 2137884
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.5.1.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.5.1.exe
     length: 2341639
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.5.1.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.5.1.msi
     length: 2024226
 
 - name: Version 2.5.0 (2018年03月12日開発版)
@@ -706,16 +706,16 @@
     * 2.3.9で視聴時に一部データの順番が入れ替わって壊れる場合があったのを修正しました。
     * 設定に読み込めないデータがあった時に落ちる場合があったのを修正しました。
   date: 2018-03-12T01:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.5.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.5.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.5.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.5.0.zip
     length: 1660700
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.5.0.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.5.0.exe
     length: 2337995
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.5.0.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.5.0.msi
     length: 2024226
 
 - name: Version 2.3.9 (2017年10月15日開発版)
@@ -735,16 +735,16 @@
     * CustomFilterの設定ファイルが読み込まれなかったのを修正しました。
     * HTTP PushやRTMP配信時に接続待ち受けに失敗すると、エラーにならずにおかしな状態になっていたのを修正しました。
   date: 2017-10-15T00:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.3.9.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.3.9.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.9.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.9.zip
     length: 1646552
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.9.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.9.exe
     length: 2323345
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.3.9.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.3.9.msi
     length: 2011938
 
 - name: Version 2.3.8 (2017年06月02日開発版)
@@ -759,21 +759,21 @@
     * チャンネル情報を取得できないチャンネルを視聴しようとした時に接続が切れずに残っていたのを修正しました。
     * 起動時のポート開放確認で、ポート開放確認自体に失敗した時に未開放扱いになってしまっていたのを開放状態不明のままになるようにしました。
     * 配信開始時のビットレートに負数や空文字を設定するとビットレートが正しく設定されないのを修正しました。
-    * YPからのチャンネル情報取得を設定している場合に http://localhost:7144/ypchannels/index.txt でindex.txtの再配信がされるようにしました。
+    * YPからのチャンネル情報取得を設定している場合に https://localhost:7144/ypchannels/index.txt でindex.txtの再配信がされるようにしました。
     * RTMPの送信パケットサイズを1536に変更しました。RTMP視聴時に通信のオーバーヘッドが削減されます。
     * zip版でunblock.batで一部DLLのブロックが解除されなかったのを修正しました。
     * zip版にデバッグ用のpdbを追加しました。
   date: 2017-06-02T00:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.3.8.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.3.8.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.8.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.8.zip
     length: 2160689
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.8.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.8.exe
     length: 2323939
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.3.8.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.3.8.msi
     length: 2032488
 
 - name: Version 2.2.1 (2017年05月19日安定版)
@@ -798,16 +798,16 @@
     * monoでUPnPのポート自動開放が失敗することがあったのを修正しました。
     * 古いバージョン(1.2.0より前)の設定ファイルの読み込みを削除しました。
   date: 2017-05-15T02:30:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.2.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.2.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.2.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.2.1.zip
     length: 1612432
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.2.1.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.2.1.exe
     length: 2257964
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.2.1.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.2.1.msi
     length: 1966656
 
 - name: Version 2.3.7.1 (2017年05月08日開発版)
@@ -825,16 +825,16 @@
     * MKV配信のコンテンツ位置が正しく出力されず不安定になるのを修正しました。(by Yoteichi)
     * 2.3.7.0でリレー接続完了前にHTTP視聴を開始すると正しくデータを返さなかったのを修正しました。
   date: 2017-05-08T22:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.3.7.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.3.7.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.7.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.7.1.zip
     length: 1674110
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.7.1.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.7.1.exe
     length: 2322268
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.3.7.1.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.3.7.1.msi
     length: 2032488
 
 - name: Version 2.3.6 (2017年04月06日開発版)
@@ -850,16 +850,16 @@
     * FLVからMPEG-2 TSに変換しつつ視聴する機能を追加しました。FLV配信視聴時にストリームURLに"&filters=flvtots"をつけると中身はそのままに、コンテナだけMPEG-2 TSに変換して出力します。
     * RTMPからMPEG-2 TSに変換しつつ配信する機能を追加しました。RTMP配信開始時にURLに"&filters=flvtots"をつけるとFLVでなくMPEG-2 TSに入れて配信します。
   date: 2017-04-06T23:50:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.3.6.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.3.6.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.6.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.6.zip
     length: 1663284
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.6.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.6.exe
     length: 2305127
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.3.6.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.3.6.msi
     length: 2065074
 
 - name: Version 2.3.5 (2017年02月07日開発版)
@@ -873,16 +873,16 @@
     * デバッグ用のログ出力を少し変更しました。
     * HTTPで404を返す時に0バイトのContent-Lengthが付いてなかったのを修正しました。
   date: 2017-02-07T22:30:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.3.5.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.3.5.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.5.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.5.zip
     length: 1649073
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.5.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.5.exe
     length: 2286652
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.3.5.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.3.5.msi
     length: 2044520
 
 - name: Version 2.3.4 (2016年11月09日開発版)
@@ -899,16 +899,16 @@
     * リレーでUNKNOWNのContentTypeを受け取った時のContentType推定が上手く動かない場合があったのを修正しました。
     * 古いバージョン(1.2.0より前)の設定ファイルの読み込みを削除しました。
   date: 2016-11-09T09:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.3.4.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.3.4.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.4.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.4.zip
     length: 1642461
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.4.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.4.exe
     length: 2286273
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.3.4.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.3.4.msi
     length: 2044520
 
 - name: Version 2.3.3 (2016年9月29日開発版)
@@ -930,16 +930,16 @@
     * monoでチャンネル自動切断が効かなくなっていたのを修正しました。
     * Linuxのmono 4.6以降で接続待ち受け時に例外が出ていたのを修正しました。
   date: 2016-09-29T23:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.3.3.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.3.3.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.3.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.3.zip
     length: 1647501
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.3.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.3.exe
     length: 2292446
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.3.3.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.3.3.msi
     length: 2048616
 
 - name: Version 2.3.2 (2016年8月1日開発版)
@@ -952,16 +952,16 @@
     * 認証情報を変更しても表示が変わるだけで実際には全てデフォルト値と同じ扱いになっていたのを修正しました。
     * HTML版のアップデートページに間違いがあったのを修正しました (by ha2ne2)
   date: 2016-08-01T00:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.3.2.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.3.2.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.2.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.2.zip
     length: 1647166
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.2.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.2.exe
     length: 2285366
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.3.2.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.3.2.msi
     length: 2048616
 
 - name: Version 2.3.1 (2016年7月3日開発版)
@@ -972,16 +972,16 @@
 
     * 2.3.0でリレー接続のリクエストが間違ってて受信できなくなっていたのを修正しました。
   date: 2016-07-04T00:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.3.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.3.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.1.zip
     length: 1647100
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.1.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.1.exe
     length: 2285246
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.3.1.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.3.1.msi
     length: 2048616
 
 - name: Version 2.3.0 (2016年7月3日開発版)
@@ -999,16 +999,16 @@
     * 出力接続にNoDelayを設定するようにしました。
     * リレー時に古いPosition指定があるとリレーが切れやすかったのを修正しました。
   date: 2016-07-03T14:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.3.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.3.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.0.zip
     length: 1628319
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.3.0.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.3.0.exe
     length: 2285157
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.3.0.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.3.0.msi
     length: 2048616
 
 - name: Version 2.2.0 (2016年7月3日安定版)
@@ -1045,16 +1045,16 @@
       サービス版てなんだろうと思う人にはだいたい関係ないので気にしないでください。
     * OSのカレンダー形式が西暦でない場合にアップデート通知が出なかったのを修正しました。
   date: 2016-07-02 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.2.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.2.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.2.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.2.0.zip
     length: 1628319
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.2.0.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.2.0.exe
     length: 2259716
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.2.0.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.2.0.msi
     length: 2024040
 
 - name: Version 2.1.5 (2016年2月29日開発版)
@@ -1076,16 +1076,16 @@
     * ローカルIPアドレスの取得方法を一部変更しました。
     * 一部のログの表示レベルを落としました。
   date: 2016-02-29T23:50:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.1.5.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.1.5.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.1.5.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.1.5.zip
     length: 1628356
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.1.5.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.1.5.exe
     length: 2259767
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.1.5.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.1.5.msi
     length: 2024040
 
 - name: Version 2.1.4 (2016年1月24日開発版)
@@ -1104,16 +1104,16 @@
     * サービス版インストーラでインストール先が選択できなかったのを修正しました。
     * インストーラで自動的にインストールされる.NET Frameworkを4.5.2にしました。
   date: 2016-01-24T18:30:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.1.4.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.1.4.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.1.4.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.1.4.zip
     length: 1620608
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.1.4.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.1.4.exe
     length: 2251438
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.1.4.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.1.4.msi
     length: 2015848
 
 - name: Version 2.1.3 (2016年1月8日開発版)
@@ -1128,16 +1128,16 @@
       HTML UIでCSSが読み込めなかったりしたのが改善されます。
     * プレイリストのURLに.asxや.m3uの拡張子をつけることで強制的にプレイリストフォーマットを指定できるようにしました。
   date: 2016-01-08T23:45:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.1.3.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.1.3.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.1.3.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.1.3.zip
     length: 1619379
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.1.3.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.1.3.exe
     length: 2250307
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.1.3.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.1.3.msi
     length: 2015232
 
 - name: Version 2.1.2 (2015年12月29日開発版)
@@ -1153,16 +1153,16 @@
       Windowsではサービス版インストーラを使う必要があります。
       Monoではzip版のPecaStationd.exeをmono-serviceで実行することができます。
   date: 2015-12-29T13:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.1.2.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.1.2.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.1.2.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.1.2.zip
     length: 1614484
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.1.2.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.1.2.exe
     length: 2245589
   - type: serviceinstaller
-    url: http://www.pecastation.org/files/PecaStationd-2.1.2.msi
+    url: https://www.pecastation.org/files/PecaStationd-2.1.2.msi
     length: 2007040
 
 - name: Version 2.1.1 (2015年12月12日開発版)
@@ -1174,13 +1174,13 @@
     * UPnPでのポート開放を有効にすると一部のルータで落ちる場合があったのを修正しました。
     * OSのカレンダー形式が西暦でない場合にアップデート通知が出なかったのを修正しました。
   date: 2015-12-12T12:00:00+09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.1.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.1.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.1.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.1.1.zip
     length: 1590376
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.1.1.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.1.1.exe
     length: 2249729
 
 - name: Version 2.1.0 (2015年11月30日開発版)
@@ -1198,13 +1198,13 @@
     * kagamin2とwmrelayの対応のバグを修正 (by shinji3)
     * SafariでYPブラウザが正しく表示できないのを修正しました。
   date: 2015-11-30 02:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.1.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.1.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.1.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.1.0.zip
     length: 1589834
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.1.0.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.1.0.exe
     length: 2249018
 
 - name: Version 2.0.0 (2015年11月30日安定版)
@@ -1224,13 +1224,13 @@
     * 配信開始時のURLでホスト名にIPアドレスを指定すると落ちる場合があったのを修正しました。(by plonk)
     * 上流がFLVやMKVに対応していないPeerCastの場合にタイプがUNKNOWNになってしまうため、UNKNOWNの場合はタイプを自動判別できるようにしました。
   date: 2015-11-30 02:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-2.0.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-2.0.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-2.0.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-2.0.0.zip
     length: 1589757
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-2.0.0.exe
+    url: https://www.pecastation.org/files/PeerCastStation-2.0.0.exe
     length: 2248963
 
 - name: Version 1.8.1 (2015年5月9日安定版)
@@ -1253,10 +1253,10 @@
     * JSON RPC APIで掲載中YPの情報が取得できていなかったのを修正しました。
     * エンコーダからのHTTP Pullで配信する時のUserAgentをNSPlayerに変更しました。(by shinji3)
   date: 2015-05-09 17:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.8.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.8.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.8.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.8.1.zip
     length: 1276372
 - name: Version 1.9.2 (2015年4月29日開発版)
   version: 1.9.1.0
@@ -1273,13 +1273,13 @@
       これにより未対応の一部のツールが動かなくなります。
     * 配信開始時のURLでホスト名にIPアドレスを指定すると落ちる場合があったのを修正しました。(by plonk)
   date: 2015-01-29 16:30:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.9.2.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.9.2.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.9.2.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.9.2.zip
     length: 1474305
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-1.9.2.exe
+    url: https://www.pecastation.org/files/PeerCastStation-1.9.2.exe
     length: 2195345
 - name: Version 1.9.1 (2015年1月29日開発版)
   version: 1.9.1.0
@@ -1302,13 +1302,13 @@
     * JSON RPC APIで掲載中YPの情報が取得できていなかったのを修正しました。
     * エンコーダからのHTTP Pullで配信する時のUserAgentをNSPlayerに変更しました。(by shinji3)
   date: 2015-01-29 23:50:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.9.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.9.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.9.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.9.1.zip
     length: 1372371
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-1.9.1.exe
+    url: https://www.pecastation.org/files/PeerCastStation-1.9.1.exe
     length: 2025712
 - name: Version 1.9.0.2 (2014年10月25日開発版)
   version: 1.9.0.2
@@ -1319,13 +1319,13 @@
     * UPnP有効時に落ちる場合があったのでライブラリ(Mono.Nat.dll)を更新しました。
     * mono 3.0.7以前で動かすと落ちていたのでライブラリ(Newtonsoft.json.dll)を更新しました。
   date: 2014-10-25 23:50:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.9.0.2.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.9.0.2.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.9.0.2.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.9.0.2.zip
     length: 1398138
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-1.9.0.2.exe
+    url: https://www.pecastation.org/files/PeerCastStation-1.9.0.2.exe
     length: 1919992
 - name: Version 1.9.0.1 (2014年10月20日開発版)
   version: 1.9.0.1
@@ -1343,13 +1343,13 @@
     * アップデート通知をクリックした時に、アップデートの内容が表示されなかったのを修正しました。
     * アップデートの内容表示が改行も書式もないテキストで表示されてしまっていたのを修正しました。
   date: 2014-10-20 01:10:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.9.0.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.9.0.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.9.0.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.9.0.1.zip
     length: 1394395
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-1.9.0.1.exe
+    url: https://www.pecastation.org/files/PeerCastStation-1.9.0.1.exe
     length: 1917036
 - name: Version 1.9.0 (2014年10月19日開発版)
   version: 1.9.0
@@ -1363,13 +1363,13 @@
     * アップデート通知時にはインストーラ版とzip版を選択してダウンロードできるようになりました。また、GUI版ではブラウザを介さずに直接ダウンロードするようにしました。次回の更新以降で有効になります。
     * RTMP配信時に一部のエンコーダで正常に配信できない場合があったのを修正しました(by niwakazoider)
   date: 2014-10-19 19:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.9.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.9.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.9.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.9.0.zip
     length: 1372371
   - type: installer
-    url: http://www.pecastation.org/files/PeerCastStation-1.9.0.exe
+    url: https://www.pecastation.org/files/PeerCastStation-1.9.0.exe
     length: 1924462
 - name: Version 1.8.0 (2014年8月3日開発版)
   version: 1.8.0
@@ -1381,10 +1381,10 @@
     * 掲載用YPアドレスに不正なアドレスが指定されていると落ちる場合があったのを修正しました
     * ドキュメントを現状に合わせて更新しました
   date: 2014-08-03 23:50:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.8.0-dev.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.8.0-dev.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.8.0-dev.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.8.0-dev.zip
     length: 1254365
 - name: Version 1.8.0 (2014年8月3日安定版)
   version: 1.8.0
@@ -1403,10 +1403,10 @@
     * ファイルの実行ブロックを一括で解除するunblock.batを追加しました
     * その他いろいろと不具合の修正や使い勝手の向上をしました
   date: 2014-08-03 23:50:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.8.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.8.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.8.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.8.0.zip
     length: 1272923
 - name: Version 1.7.11 (2014年6月29日開発版)
   version: 1.7.11
@@ -1418,10 +1418,10 @@
     * 配信開始時に、エンコーダからのデータが受信されていない状態でもYPに載ってしまうのを修正しました。そのかわりYPに載るのに最大30秒ほど時間がかかる可能性があります
     * 1.7.10.1に無用になったdllがまだ入っていたのを入らないようにしました
   date: 2014-06-29 03:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.7.11.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.7.11.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.7.11.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.7.11.zip
     length: 1345104
 - name: Version 1.7.10.1 (2014年6月7日開発版)
   version: 1.7.10.1
@@ -1436,10 +1436,10 @@
     * 無用になったdllが入っていたのを入らないようにしました
     * unblock.batで必要なdll全てのブロックが解除できていなかったのを修正しました
   date: 2014-06-07 03:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.7.10.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.7.10.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.7.10.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.7.10.1.zip
     length: 1799033
 - name: Version 1.7.10 (2014年5月31日開発版)
   version: 1.7.10
@@ -1464,10 +1464,10 @@
     * 日本語設定のWindows以外では一部のチャンネル情報が文字化けするのを対処しました
     * ライセンスに互換性がないライブラリを使っていたのを取り除きました
   date: 2014-05-31 23:55:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.7.10.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.7.10.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.7.10.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.7.10.zip
     length: 1797975
 - name: Version 1.7.9.1 (2014年3月16日開発版)
   version: 1.7.9.1
@@ -1482,10 +1482,10 @@
     * 試聴しているチャンネルのデータが取得できていない時にプレイヤーの接続が切れるとCPUを無駄に食い潰すのを修正しました
     * ファイルの実行ブロックを一括で解除するunblock.batを追加しました
   date: 2014-03-16 23:30:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.7.9.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.7.9.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.7.9.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.7.9.1.zip
     length: 1781388
 - name: Version 1.7.9 (2014年3月16日開発版)
   version: 1.7.9
@@ -1499,10 +1499,10 @@
     * FLV、RTMP Source配信時に低ビットレートでは遅延がとても大きくなることがあるのを修正しました
     * ファイルの実行ブロックを一括で解除するunblock.batを追加しました
   date: 2014-03-16 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.7.9.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.7.9.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.7.9.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.7.9.zip
     length: 1780894
 - name: Version 1.7.8 (2014年2月11日開発版)
   version: 1.7.8
@@ -1512,10 +1512,10 @@
     * 設定に帯域測定ボタンを追加し、上り帯域の測定と設定を1ボタンで行えるようにしました
     * .NET3.5と.NET4(または4.5)がインストールされていた場合には.NET4で動作するようにしました
   date: 2014-02-11 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.7.8.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.7.8.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.7.8.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.7.8.zip
     length: 1742754
 - name: Version 1.7.7 (2013年12月31日開発版)
   version: 1.7.7
@@ -1528,10 +1528,10 @@
     * 壊れたデータを受け取った時に落ちることがあったのを修正しました
     * 新バージョンのチェックを2時間おきにやるようにしました
   date: 2013-12-31 02:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.7.7.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.7.7.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.7.7.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.7.7.zip
     length: 1731655
 - name: Version 1.6.3 (2013年12月23日安定版)
   version: 1.6.3
@@ -1551,10 +1551,10 @@
       通常はC:\Users\(ユーザー名)\AppData\Roaming\PeerCastStation\exception.logに書き出されます。
       落ちた場合の報告にはこのファイルの内容を記載してもらうと解析が進みますのでお願いします
   date: 2013-12-23 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.6.3.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.6.3.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.6.3.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.6.3.zip
     length: 1715969
 - name: Version 1.7.6 (2013年12月12日開発版)
   version: 1.7.6
@@ -1562,10 +1562,10 @@
   notes: |
     * 1.7.5でリレー先が切れた時に落ちることがあったのを修正しました
   date: 2013-12-12 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.7.6.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.7.6.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.7.6.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.7.6.zip
     length: 1730740
 - name: Version 1.7.5 (2013年12月11日開発版)
   version: 1.7.5
@@ -1574,10 +1574,10 @@
     * 1.7.4でリレー開始時にいくらかのデータを受信し損ねて正しく視聴できないことがあったのを修正しました
     * 受信処理の効率化をもうちょっと進めました
   date: 2013-12-11 18:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.7.5.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.7.5.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.7.5.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.7.5.zip
     length: 1710476
 - name: Version 1.7.4 (2013年12月10日開発版)
   version: 1.7.4
@@ -1589,10 +1589,10 @@
     * 動画パケットの保持量を100パケットから5秒に変更しました
     * リレー時のパケット受信処理を効率化しました。パケット数が多いチャンネルでも処理が滞らなくなりました
   date: 2013-12-10 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.7.4.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.7.4.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.7.4.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.7.4.zip
     length: 1730688
 - name: Version 1.7.3 (2013年11月30日開発版)
   version: 1.7.3
@@ -1600,10 +1600,10 @@
   notes: |
     * リレー可能なアドレスが無いノードが接続してきた場合に落ちる場合があったのを修正しました
   date: 2013-11-30 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.7.3.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.7.3.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.7.3.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.7.3.zip
     length: 1701959
 - name: Version 1.7.2 (2013年11月17日開発版)
   version: 1.7.2
@@ -1613,10 +1613,10 @@
       通常はC:\Users\(ユーザー名)\AppData\Roaming\PeerCastStation\exception.logに書き出されます。
       落ちた場合の報告にはこのファイルの内容を記載してもらうと解析が進みますのでお願いします
   date: 2013-11-17 03:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.7.2.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.7.2.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.7.2.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.7.2.zip
     length: 1701952
 - name: Version 1.7.1 (2013年10月27日開発版)
   version: 1.7.1
@@ -1629,10 +1629,10 @@
     * タスクトレイのアイコンにカーソルを合わせた時に名前が出るようにしました
     * LANの操作可能ポートがない時にタスクトレイからHTML UIやヘルプが表示できなかったのを修正しました
   date: 2013-10-27 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.7.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.7.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.7.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.7.1.zip
     length: 1700062
 - name: Version 1.7.0 (2013年10月21日開発版)
   version: 1.7.0
@@ -1647,10 +1647,10 @@
     * swpcでチャンネルのbumpや切断が動いていなかったのを対策しました
     * JSON RPCのオブジェクトIDがおかしくなる可能性があるのを修正しました
   date: 2013-10-21 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.7.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.7.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.7.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.7.0.zip
     length: 1699645
 - name: Version 1.6.2 (2013年11月30日版)
   version: 1.6.2
@@ -1658,10 +1658,10 @@
   notes: |
     * リレー可能なアドレスが無いノードが接続してきた場合に落ちる場合があったのを修正しました
   date: 2013-11-30 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.6.2.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.6.2.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.6.2.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.6.2.zip
     length: 1698548
 - name: Version 1.6.0 (2013年10月14日版)
   version: 1.6.0
@@ -1687,10 +1687,10 @@
     * 異常なHTTPリクエストを受け取った際に落ちることがあったのを修正しました
     * 外部からの視聴・操作にHTTPのBasic認証を設定できるようにしました。ポートの設定で「要認証」を有効にすると視聴と操作にのみBasic認証がかかります。今のところIDとパスワードは手動で設定できず自動生成のみになっています
   date: 2013-10-14 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.6.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.6.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.6.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.6.0.zip
     length: 1697942
 - name: Version 1.5.3 (2013年9月25日版)
   version: 1.5.3
@@ -1703,10 +1703,10 @@
     * リレーツリーの表示がよくわからないつながりになることがあるのもついでに解消されました
     * 下流へデータを送りきれないと判断して切断をする条件を3秒から10秒に緩和しました
   date: 2013-09-25 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.5.3.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.5.3.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.5.3.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.5.3.zip
     length: 1775782
 - name: Version 1.5.2 (2013年9月8日版)
   version: 1.5.2
@@ -1720,10 +1720,10 @@
     * GUIの表示を実行した時になるべく前面にウィンドウを持ってきて最小化も解除するようにしました
     * 外部ツールでウィンドウを表示させた時に真っ黒になるのに対処しました
   date: 2013-09-08 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.5.2.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.5.2.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.5.2.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.5.2.zip
     length: 1679049
 - name: Version 1.5.1 (2013年9月7日版)
   version: 1.5.1
@@ -1735,10 +1735,10 @@
     * GUIを非表示のまま終了すると次回起動時に落ちることがあったのを修正しました
     * ヘルプページの表示がちょっとかわりました。目次がつきました
   date: 2013-09-07 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.5.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.5.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.5.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.5.1.zip
     length: 1678158
 - name: Version 1.5.0 (2013年9月4日版)
   version: 1.5.0
@@ -1754,10 +1754,10 @@
     * PCP通信時に拡張バージョンとしてST150を出力するようにしました
     * 受信部を大幅に整理し、リレーの再接続などの安定化をしました
   date: 2013-09-04 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.5.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.5.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.5.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.5.0.zip
     length: 1647929
 - name: Version 1.4.2 (2013年7月13日版)
   version: 1.4.2
@@ -1772,10 +1772,10 @@
     * GUIのウィンドウの位置とサイズを保存するようにしました
     * 接続が切れているチャンネルに同時に複数の視聴要求がくると落ちることがあったのを修正しました
   date: 2013-07-13 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.4.2.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.4.2.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.4.2.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.4.2.zip
     length: 1114113
 - name: Version 1.4.1 (2013年6月19日版)
   version: 1.4.1
@@ -1790,10 +1790,10 @@
     * 視聴リクエストにつくtipパラメータに不正な値が設定されていた場合に落ちるのを修正しました
     * ログファイルがずっとロックされていたのを実際の書き込み中のみロックされるように変更しました
   date: 2013-06-19 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.4.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.4.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.4.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.4.1.zip
     length: 1080443
 - name: Version 1.4.0 (2013年5月29日版)
   version: 1.4.0
@@ -1808,10 +1808,10 @@
     * リレーしていたチャンネルが終了した時や接続失敗した時に通知が出るようにしました
     * 設定保存がPeerCastStation正常終了時のみ行われていたのを、設定変更時にすぐ保存するようにしました
   date: 2013-05-29 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.4.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.4.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.4.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.4.0.zip
     length: 1079867
 - name: Version 1.3.2 (2013年5月8日版)
   version: 1.3.2
@@ -1821,10 +1821,10 @@
 
     * HTML UIの設定ページでその他の設定を変更しても全く反映されないのを修正しました
   date: 2013-05-08 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.3.2.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.3.2.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.3.2.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.3.2.zip
     length: 1107730
 - name: Version 1.3.1 (2013年5月5日版)
   version: 1.3.1
@@ -1835,10 +1835,10 @@
     * HTML UIのチャンネル一覧ページで多くの操作がエラーになって動かなかったのを修正しました
     * User-AgentやServerをPeerCastStation/1.3.1.0のようなバージョンに即した値を出力するようにしました
   date: 2013-05-05 18:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.3.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.3.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.3.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.3.1.zip
     length: 1107524
 - name: Version 1.3.0 (2013年5月4日版)
   version: 1.3.0
@@ -1851,10 +1851,10 @@
     * 設定ファイルの内容が変更されました。ファイルの場所などは変更ありません
     * プラグインシステムの実装を変更しました。バージョン表示が少し変わりますが動作には何の影響もありません
   date: 2013-05-04 00:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.3.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.3.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.3.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.3.0.zip
     length: 1076766
 - name: Version 1.2.1 (2013年3月29日版)
   version: 1.2.1
@@ -1871,10 +1871,10 @@
     * 視聴できないチャンネルへの視聴リクエストを受けつけると落ちるのを修正しました
     * GUIでログ表示の設定を変更しても反映されていなかったのを修正しました
   date: 2013-03-29 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.2.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.2.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.2.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.2.1.zip
     length: 1097430
 - name: Version 1.2.0 (2013年2月28日版)
   version: 1.2.0
@@ -1885,15 +1885,15 @@
     * 一定時間接続されていないチャンネル(ERRORやIDLEのチャンネル)を自動的に切断するようにしました。既定値は30分ですがGUIの設定で変更できます。HTML UIからの設定はまだできてません
     * HTML UIにドキュメントを統合しました。一番上にあるナビゲーションからヘルプを選ぶと見ることができます
     * ステータスアイコンを右クリックしたメニューからヘルプを開けるようにしました
-    * HTTPで/を取得しようとした時(http://localhost:7144/などにアクセスした時)に/html/index.htmlに転送するようにしました
+    * HTTPで/を取得しようとした時(https://localhost:7144/などにアクセスした時)に/html/index.htmlに転送するようにしました
     * ウィンドウを起動時に開かない設定にするとリレー開始した時に落ちることがあったのを修正しました
     * monoの一部バージョンでHTML UIが動かないことがあるのに対処しました
     * 機能追加をやりやすくするために設定ファイルの保存場所および内容を変更しました。新旧の設定保存先はヘルプのその他を参照してください
   date: 2013-02-28 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.2.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.2.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.2.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.2.0.zip
     length: 1061682
 - name: Version 1.1.0 (2013年1月29日版)
   version: 1.1.0
@@ -1910,10 +1910,10 @@
     * viewxmlで取得できるxmlでチャンネル毎のuptimeとageの文字列がおかしかったのを修正しました
     * 一部のチャンネルでチャンネル情報が文字化けすることがあるのを仕方なく対処してやりました。本来はShift-JISなんかでチャンネル情報を流す方が悪い
   date: 2013-01-28 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.1.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.1.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.1.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.1.0.zip
     length: 1419469
 - name: Version 1.0.0 (2012年12月31日版)
   version: 1.0.0
@@ -1935,10 +1935,10 @@
     * 31日版:新バージョンチェック用の日付が11月のままだったのを修正しました
     * 31日版:HTML UIで起動時間・チャンネルリレー時間の計算が間違っていたのを修正しました
   date: 2012-12-30 02:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-1.0.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-1.0.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-1.0.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-1.0.0.zip
     length: 1250498
 - name: Version 0.9.0 (2012年11月29日版)
   version: 0.9.0
@@ -1948,10 +1948,10 @@
     * GUIでチャンネル一覧と接続一覧にリレー可否状況を記号で表示するようにしました
     * エンコードが停止再開されたあとやチャンネルの位置が4GBを越えた場合も安定して視聴やリレーができるように改善しました
   date: 2012-11-29 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-0.9.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-0.9.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-0.9.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-0.9.0.zip
     length: 1264693
 - name: Version 0.8.1 (2012年10月29日版)
   version: 0.8.1
@@ -1959,17 +1959,17 @@
   notes: |
     * リレーの再接続時に正しく再接続できずにERRORになることがあったのを修正しました
     * UIで現在の各接続における送受信ビットレートを表示するようにしました
-    * http://～/admin?cmd=stopとhttp://～/admin?cmd=bumpでチャンネルの停止と再接続ができるように対応しました
+    * https://～/admin?cmd=stopとhttps://～/admin?cmd=bumpでチャンネルの停止と再接続ができるように対応しました
     * 接続一覧に接続相手のUserAgentが正しく表示されるようにしました
     * リレーがいっぱいのでもリレー要求先に余計なデータを送っていたのを修正しました。リレー要求が来た時に他のリレーが不安定になっていた問題の修正です
     * GUIでYPのアドレス入力をしても追加できないことがあったのを修正しました
     * リレーや視聴してるチャンネルの位置が4GBを越えると止まってしまっていたのを修正しました
     * その他細かいバグ修正やコードの整理を行ないました
   date: 2012-10-29 23:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-0.8.1.zip
+  url: https://www.pecastation.org/files/PeerCastStation-0.8.1.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-0.8.1.zip
+    url: https://www.pecastation.org/files/PeerCastStation-0.8.1.zip
     length: 1262544
 - name: Version 0.8.0 (きゃすけっと2012秋版)
   version: 0.8.0
@@ -1982,8 +1982,8 @@
     * 配信時にYPへの掲載状況を接続先リストに表示できるようにしました。再接続もできます
     * おはおはが終わってしまったので対応を外しました
   date: 2012-09-17 16:00:00.000000000 +09:00
-  url: http://www.pecastation.org/files/PeerCastStation-0.8.0.zip
+  url: https://www.pecastation.org/files/PeerCastStation-0.8.0.zip
   enclosures:
   - type: archive
-    url: http://www.pecastation.org/files/PeerCastStation-0.8.0.zip
+    url: https://www.pecastation.org/files/PeerCastStation-0.8.0.zip
     length: 1222903
