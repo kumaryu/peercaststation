@@ -345,12 +345,10 @@ namespace PeerCastStation.WPF.ChannelLists.Dialogs
         yellowPage,
         channel_id,
         channelInfo,
+        channelTrack,
         source,
         source_stream,
         contentReaderFactory);
-      if (channel!=null) {
-        channel.ChannelTrack = channelTrack;
-      }
 
       var info = new BroadcastInfoViewModel {
         NetworkType = this.NetworkType,

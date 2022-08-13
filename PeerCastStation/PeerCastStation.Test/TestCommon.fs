@@ -42,10 +42,15 @@ let waitForConditionOrTimeout cond timeout =
             ()
     waitForCond ((timeout+99)/100)
 
-type DummySourceStream (sstype) =
+module ChannelTrack =
+    let empty = ChannelTrack(AtomCollection())
+
+type DummySourceStream (sstype, channel) =
     let runTask = System.Threading.Tasks.TaskCompletionSource<StopReason>()
     interface ISourceStream with 
         member this.Run () = 
+            let sink = ChannelContentSink(channel, false)
+            sink.OnContentHeader(Content(0, TimeSpan.Zero, 0l, ReadOnlyMemory<byte>.Empty, PCPChanPacketContinuation.None))
             runTask.Task
 
         member this.Reconnect () = ()
@@ -100,13 +105,13 @@ type MockContentReaderFactory () =
             mime_type <- null
             false
 
-type DummyBroadcastChannel (peercast, network, channelId, channelInfo, sourceStreamFactory) =
-    inherit BroadcastChannel(peercast, network, channelId, channelInfo, null, MockContentReaderFactory())
+type DummyBroadcastChannel (peercast, network, channelId, channelInfo, channelTrack, sourceStreamFactory: PeerCast -> Channel -> Uri -> ISourceStream) =
+    inherit BroadcastChannel(peercast, network, channelId, channelInfo, channelTrack, null, MockContentReaderFactory())
 
     let mutable relayable = true
 
-    new (peercast, network, channelId, channelInfo) =
-        DummyBroadcastChannel(peercast, network, channelId, channelInfo, fun _ -> new DummySourceStream(SourceStreamType.Broadcast) :> ISourceStream)
+    new (peercast, network, channelId, channelInfo, channelTrack) =
+        DummyBroadcastChannel(peercast, network, channelId, channelInfo, channelTrack, fun _ channel _ -> new DummySourceStream(SourceStreamType.Broadcast, channel) :> ISourceStream)
 
     member this.Relayable
         with get ()    = relayable
@@ -126,17 +131,17 @@ type DummyBroadcastChannel (peercast, network, channelId, channelInfo, sourceStr
 
     override this.IsBroadcasting = true
     override this.CreateSourceStream (source_uri) =
-        sourceStreamFactory source_uri
+        sourceStreamFactory peercast this source_uri
 
 type DummyRelayChannel (peercast, network, channelId, sourceStreamFactory) =
     inherit Channel(peercast, network, channelId)
 
     new (peercast, network, channelId) =
-        DummyRelayChannel(peercast, network, channelId, fun _ -> new DummySourceStream(SourceStreamType.Relay) :> ISourceStream)
+        DummyRelayChannel(peercast, network, channelId, fun _ channel _ -> new DummySourceStream(SourceStreamType.Relay, channel) :> ISourceStream)
 
     override this.IsBroadcasting = false
     override this.CreateSourceStream (source_uri) =
-        sourceStreamFactory source_uri
+        sourceStreamFactory peercast this source_uri
 
 let createChannelInfo name contentType =
     let info = AtomCollection()
@@ -150,6 +155,36 @@ let createChannelInfoBitrate name contentType bitrate =
     info.SetChanInfoType contentType
     info.SetChanInfoBitrate bitrate
     ChannelInfo info
+
+type ChannelTrackDesc = {
+    name: string option
+    album: string option
+    creator: string option
+    genre: string option
+    url: string option
+}
+
+module ChannelTrackDesc =
+    let empty = { name=None; album=None; creator=None; genre=None; url=None }
+    let toChannelTrack desc =
+        let atoms = AtomCollection()
+        if Option.isSome desc.name then
+            Option.get desc.name
+            |> atoms.SetChanTrackTitle
+        if Option.isSome desc.album then
+            Option.get desc.album
+            |> atoms.SetChanTrackAlbum
+        if Option.isSome desc.genre then
+            Option.get desc.genre
+            |> atoms.SetChanTrackGenre
+        if Option.isSome desc.creator then
+            Option.get desc.creator
+            |> atoms.SetChanTrackCreator
+        if Option.isSome desc.url then
+            Option.get desc.url
+            |> atoms.SetChanTrackURL
+        ChannelTrack(atoms)
+
 
 let registerApp path appFunc (owinHost:PeerCastStation.Core.Http.OwinHost) =
     owinHost.Register(

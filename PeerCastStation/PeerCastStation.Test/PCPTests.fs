@@ -241,11 +241,20 @@ module PCPPongServer =
 module RelaySinkTests =
     let endpoint = allocateEndPoint IPAddress.Loopback
 
+    let rec recvMetadata connection (metadata: {| hosts: Atom list; chans: Atom list |}) =
+        let atom = RelayClientConnection.recvAtom connection
+        if atom.Name = Atom.PCP_HOST then
+            {| metadata with hosts=(atom :: metadata.hosts) |}
+            |> recvMetadata connection
+        elif atom.Name = Atom.PCP_CHAN then
+            recvMetadata connection {| metadata with chans=(atom :: metadata.chans) |}
+        else
+            metadata, atom
+
     let rec recvHost connection hosts =
         let atom = RelayClientConnection.recvAtom connection
         if atom.Name = Atom.PCP_HOST then
-            atom :: hosts
-            |> recvHost connection
+            recvHost connection (atom :: hosts)
         else
             hosts, atom
 
@@ -263,9 +272,9 @@ module RelaySinkTests =
         RelayClientConnection.sendHelo connection
         let oleh = RelayClientConnection.recvAtom connection
         Assert.Equal(Atom.PCP_OLEH, oleh.Name)
-        let hosts, last = recvHost connection []
+        let metadata, last = recvMetadata connection {| hosts=[]; chans=[] |}
         Assert.ExpectAtomName Atom.PCP_QUIT last
-        hosts
+        metadata.hosts
 
     let expectRelay200 (channel:Channel) stopReason =
         use connection = RelayClientConnection.connect endpoint channel.ChannelID
@@ -277,9 +286,9 @@ module RelaySinkTests =
         |> Assert.ExpectAtomName Atom.PCP_OK
         let os = waitForOutputStream channel
         os.OnStopped(stopReason)
-        let hosts, last = recvHost connection []
+        let metadata, last = recvMetadata connection {| hosts=[]; chans=[] |}
         Assert.ExpectAtomName Atom.PCP_QUIT last
-        hosts
+        metadata.hosts
 
     [<Fact>]
     let ``チャンネルIDを渡さないとエラーが返る`` () =
@@ -297,7 +306,7 @@ module RelaySinkTests =
     [<Fact>]
     let ``無いチャンネルIDを指定すると404が返る`` () =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
-        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV")
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
         peca.AddChannel channel
         sprintf "http://%s/channel/%s" (endpoint.ToString()) (Guid.NewGuid().ToString("N"))
         |> HttpClient.get
@@ -306,7 +315,7 @@ module RelaySinkTests =
     [<Fact>]
     let ``受信状態でないチャンネルを指定すると404が返る`` () =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
-        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV")
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
         peca.AddChannel channel
         sprintf "http://%s/channel/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
         |> HttpClient.get
@@ -315,7 +324,7 @@ module RelaySinkTests =
     [<Fact>]
     let ``PCPバージョンが指定されていないと400が返る`` () =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
-        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV")
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
         channel.Start(null)
         peca.AddChannel channel
         sprintf "http://%s/channel/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
@@ -326,7 +335,7 @@ module RelaySinkTests =
     let ``ネットワークが違うチャンネルを指定すると404が返る`` () =
         let testNetwork (endpoint, network, pcpver) = 
             use peca = pecaWithOwinHost endpoint registerPCPRelay
-            let channel = DummyBroadcastChannel(peca, network, Guid.NewGuid(), createChannelInfo "hoge" "FLV")
+            let channel = DummyBroadcastChannel(peca, network, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
             channel.Start(null)
             peca.AddChannel channel
             sprintf "http://%s/channel/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
@@ -346,7 +355,7 @@ module RelaySinkTests =
     [<Fact>]
     let ``503の時は他のリレー候補を返して切る`` () =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
-        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV")
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
         channel.Relayable <- false
         channel.Start(null)
         Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
@@ -359,7 +368,7 @@ module RelaySinkTests =
     [<Fact>]
     let ``ブロードキャストされてきたホスト情報を保持する`` () =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
-        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV")
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
         channel.Relayable <- true
         channel.Start(null)
         peca.AddChannel channel
@@ -400,7 +409,7 @@ module RelaySinkTests =
     [<Fact>]
     let ``チャンネルがUnavailableで終了した時には他のリレー候補を返して切る`` () =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
-        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV")
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
         channel.Start(null)
         Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
         |> Seq.iter (channel.AddNode)
@@ -446,7 +455,7 @@ module RelaySinkTests =
     [<Fact>]
     let ``チャンネルがUnavailableで終了した時に接続していたIPアドレスが一定時間Banされる`` () =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
-        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV")
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
         channel.Start(null)
         Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
         |> Seq.iter (channel.AddNode)
@@ -457,7 +466,7 @@ module RelaySinkTests =
     [<Fact>]
     let ``BanされてるIPアドレスから接続すると一定時間503が返る`` () =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
-        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV")
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
         channel.Start(null)
         channel.Ban("127.0.0.1", DateTimeOffset.Now.AddMilliseconds(1000.0))
         Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
@@ -473,7 +482,7 @@ module RelaySinkTests =
     let ``PINGが設定されているとポートチェックをする`` () =
         let pongEndPoint = allocateEndPoint IPAddress.Loopback
         use peca = pecaWithOwinHost endpoint registerPCPRelay
-        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV")
+        let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
         channel.Relayable <- true
         channel.Start(null)
         peca.AddChannel channel

@@ -8,7 +8,7 @@ open TestCommon
 [<Fact>]
 let ``チャンネルのローカル視聴・リレー数が正しく取れる`` () =
     use peca = new PeerCast()
-    let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfoBitrate "hoge" "FLV" 500)
+    let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfoBitrate "hoge" "FLV" 500, ChannelTrack.empty)
     Assert.Equal(0, channel.LocalDirects)
     Assert.Equal(0, channel.LocalRelays)
     let directs =
@@ -50,7 +50,7 @@ let ``チャンネルのローカル視聴・リレー数が正しく取れる``
 [<Fact>]
 let ``チャンネルの合計視聴・リレー数が正しく取れる`` () =
     use peca = new PeerCast()
-    let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfoBitrate "hoge" "FLV" 500)
+    let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfoBitrate "hoge" "FLV" 500, ChannelTrack.empty)
     Assert.Equal(0, channel.TotalDirects)
     Assert.Equal(0, channel.TotalRelays)
     let directs =
