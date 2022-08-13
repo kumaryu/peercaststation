@@ -4,19 +4,25 @@ require 'optparse'
 require 'time'
 require 'yaml'
 
+module Channel
+  Development = :dev
+  Stable = :stable
+end
+
 BASE = File.dirname(__FILE__)
 date = Time.now
 url  = nil
+channel = nil
 
 opt = OptionParser.new
 opt.on('--appcast URL') do |v|
   url = v
 end
 opt.on('--dev') do
-  url = 'http://www.pecastation.org/files/appcast-dev.xml'
+  channel = Channel::Development
 end
 opt.on('--stable') do
-  url = 'http://www.pecastation.org/files/appcast.xml'
+  channel = Channel::Stable
 end
 opt.on('--date=DATE') do |v|
   date = Time.parse(v)
@@ -29,11 +35,51 @@ if ARGV.size<1 then
 end
 version = ARGV[0]
 
-if url.nil? then
-  url = 'http://www.pecastation.org/files/appcast.xml'
+if channel.nil? then
   md = /^(\d+)\.(\d+)/.match(version)
-  if md and md[2].to_i%2==1 then
-    url = 'http://www.pecastation.org/files/appcast-dev.xml'
+  major = md[1].to_i
+  minor = md[2].to_i
+  if major>=3 then
+    channel = 
+      if major%2 == 1 then
+        Channel::Development
+      else
+        Channel::Stable
+      end
+  else
+    channel = 
+      if minor%2 == 1 then
+        Channel::Development
+      else
+        Channel::Stable
+      end
+  end
+end
+
+if url.nil? then
+  md = /^(\d+)\.(\d+)/.match(version)
+  major = md[1].to_i
+  minor = md[2].to_i
+  if major>=3 then
+    url = 
+      case channel
+      when Channel::Development
+        'https://www.pecastation.org/files/appcast2-dev.xml'
+      when Channel::Stable
+        'https://www.pecastation.org/files/appcast2.xml'
+      else
+        'https://www.pecastation.org/files/appcast2.xml'
+      end
+  else
+    url = 
+      case channel
+      when Channel::Development
+        'http://www.pecastation.org/files/appcast-dev.xml'
+      when Channel::Stable
+        'http://www.pecastation.org/files/appcast.xml'
+      else
+        'http://www.pecastation.org/files/appcast.xml'
+      end
   end
 end
 
