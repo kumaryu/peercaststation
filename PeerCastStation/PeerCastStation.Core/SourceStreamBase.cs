@@ -253,15 +253,17 @@ namespace PeerCastStation.Core
         Queue("CONNECTION_CLEANUP", async () => {
           Logger.Debug($"Cleaning up connection (closed by {args.Reason})");
           OnConnectionStopped(conn.Connection!, args);
-          if (args.Delay>0) {
-            await Task.Delay(args.Delay).ConfigureAwait(false);
-          }
           if (sourceConnection==conn) {
             if (args.IgnoreSource!=null) {
               IgnoreSourceHost(args.IgnoreSource);
             }
             if (args.Reconnect) {
-              DoReconnect();
+              if (args.Delay>0) {
+                await Task.Delay(args.Delay).ConfigureAwait(false);
+              }
+              if (!disposed) {
+                DoReconnect();
+              }
             }
             else if (args.Reason!=StopReason.UserReconnect) {
               DoStopStream(args.Reason);
