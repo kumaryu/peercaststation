@@ -1,4 +1,54 @@
 ---
+- name: Version 3.1.0 (2022年08月14日開発版)
+  version: 3.1.0
+  channel: dev2
+  notes: |
+    3.0.xの不具合を修正しました。
+
+    ## 変更点
+    * 配信開始時の配信情報履歴で最近使ったものは上に並ぶようにしました。
+    * アップデート情報の取得と新バージョンのダウンロードにhttpsを使用するようにしました。
+
+    ## 修正点
+    * 視聴上限数がHTTPとHLS視聴の時に適用されていなかったのを修正しました。
+    * /html/index.txt が取得できなくなっていたのを修正しました。
+    * /html/index.txt の TIP に変な値が入っていたのをなるべくトラッカー(配信元)のIPが入るようにしました。
+    * ポートチェック時に一つのポートでチェック失敗すると、全てのポートでチェック失敗になっていたのを修正しました。
+    * 他のチャンネルをソースにした配信で、元チャンネルのトラック情報がコピーされないことがあったのを修正しました。
+    * RTMP配信でエンコーダを先に止めた状態でチャンネルを停止すると、エンコーダの接続待ちになってしまうことがあったのを修正しました。
+
+  date: 2022-03-14T23:30:00+09:00
+  url: https://www.pecastation.org/files/PeerCastStation-3.1.0-any.zip
+  enclosures:
+  - type: archive
+    platform: any
+    url: https://www.pecastation.org/files/PeerCastStation-3.1.0-any.zip
+    length: 2343416
+  - type: archive
+    platform: win-x86
+    url: https://www.pecastation.org/files/PeerCastStation-3.1.0-x86.zip
+    length: 64898600
+  - type: archive
+    platform: win-x64
+    url: https://www.pecastation.org/files/PeerCastStation-3.1.0-x64.zip
+    length: 70723943
+  - type: installer
+    platform: win-x86
+    url: https://www.pecastation.org/files/PeerCastStation-3.1.0-x86.msi
+    length: 64683697
+  - type: installer
+    platform: win-x64
+    url: https://www.pecastation.org/files/PeerCastStation-3.1.0-x64.msi
+    length: 70569503
+  - type: serviceinstaller
+    platform: win-x86
+    url: https://www.pecastation.org/files/PecaStationd-3.1.0-x86.msi
+    length: 32447399
+  - type: serviceinstaller
+    platform: win-x64
+    url: https://www.pecastation.org/files/PecaStationd-3.1.0-x64.msi
+    length: 35355413
+
 - name: Version 2.9.8 (2021年03月31日開発版)
   version: 2.9.8
   channel: dev
