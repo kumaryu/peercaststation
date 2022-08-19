@@ -60,7 +60,13 @@
                 </div>
                 <div class="btn-group">
                   <a class="btn btn-mini" data-bind="attr: { href: playlistUrl, download: playlistFilename }" rel="tooltip" title="再生"><i class="icon-play"></i></a>
-                  <a class="btn btn-mini" data-bind="click:showPlayer" rel="tooltip" title="再生"><i class="icon-play"></i></a>
+                  <button class="btn btn-mini dropdown-toggle" data-toggle="dropdown">
+                    <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a data-bind="attr: { href: playlistUrl, download: playlistFilename }">プレイリストを開く</a></li>
+                    <li><a data-bind="click:showPlayer">プレイヤーを開く</a></li>
+                  </ul>
                 </div>
               </div>
             </div>

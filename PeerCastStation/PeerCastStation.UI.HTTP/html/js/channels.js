@@ -450,6 +450,17 @@ var YPChannelsViewModel = function() {
     if (channel==null || !channel.isPlayable()) return "#";
     return channel.playlistUrl();
   })
+  self.showPlayer = function() {
+    var channel = self.selectedChannel();
+    if (channel==null) return false;
+    if (channel.isPlayable()) {
+      window.open('player.html?channelId=' + channel.channelId());
+      return true;
+    }
+    else {
+      return false;
+    }
+  };
 
   self.getMatchedFavorite = function(channel) {
     var fav_channels = self.favoriteChannels();
