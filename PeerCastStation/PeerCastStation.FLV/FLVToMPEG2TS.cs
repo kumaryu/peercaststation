@@ -382,6 +382,14 @@ namespace PeerCastStation.FLV
         Payload     = rbsp_bytes;
       }
 
+      public static NALUnit ReadFrom(ReadOnlySpan<byte> bytes, int len)
+      {
+        var data = bytes[0];
+        var nal_ref_idc   = (data & 0x60)>>5;
+        var nal_unit_type = (data & 0x1F);
+        return new NALUnit(nal_ref_idc, nal_unit_type, bytes.Slice(1, len-1).ToArray());
+      }
+
       public static NALUnit ReadFrom(Stream s, int len)
       {
         var data = s.ReadByte();
@@ -744,47 +752,50 @@ namespace PeerCastStation.FLV
         );
       }
 
-      private MemoryStream ReadSubstream(MemoryStream stream, int len)
+      private static byte ReadByte(ref ReadOnlySpan<byte> bytes)
       {
-        var substream = new MemoryStream(stream.GetBuffer(), (int)stream.Position, len, false);
-        stream.Seek(len, SeekOrigin.Current);
-        return substream;
+        var value = bytes[0];
+        bytes = bytes.Slice(1);
+        return value;
       }
 
-      private NALUnit[] ReadNALUnitArray(MemoryStream stream, int cnt)
+      private static NALUnit[] ReadNALUnitArray(ref ReadOnlySpan<byte> data, int cnt)
       {
-        return Enumerable.Range(0, cnt)
-          .Select(_ => {
-            var len = stream.ReadUInt16BE();
-            return NALUnit.ReadFrom(stream, len);
-          })
-          .ToArray();
+        var ary = new NALUnit[cnt];
+        for (int i = 0; i<cnt; i++) {
+          var len = System.Buffers.Binary.BinaryPrimitives.ReadUInt16BigEndian(data);
+          data = data.Slice(2);
+          ary[i] = NALUnit.ReadFrom(data, len);
+          data = data.Slice(len);
+        }
+        return ary;
       }
 
       private void OnAVCHeader(RTMPMessage msg)
       {
-        using (var data=new MemoryStream(msg.Body, 0, msg.Body.Length, false, true)) {
-          data.Seek(5, SeekOrigin.Current);
-          var configuratidn_version  = data.ReadByte();
-          var avc_profile_indication = data.ReadByte();
-          var profile_compatibility  = data.ReadByte();
-          var avc_level_indcation    = data.ReadByte();
-          this.nalSizeLen = (data.ReadByte() & 0x3) + 1;
-          var sps_count   = (data.ReadByte() & 0x1F);
-          this.sps        = ReadNALUnitArray(data, sps_count);
-          var pps_count   = data.ReadByte();
-          this.pps        = ReadNALUnitArray(data, pps_count);
-          if (data.Position<data.Length &&
-              (avc_profile_indication==100 ||
-               avc_profile_indication==110 ||
-               avc_profile_indication==122 ||
-               avc_profile_indication==144)) {
-            var sps_ext_count = data.ReadByte();
-            this.spsExt       = ReadNALUnitArray(data, sps_ext_count);
-          }
-          else {
-            this.spsExt = new NALUnit[0];
-          }
+        var data = new ReadOnlySpan<byte>(msg.Body, 5, msg.Body.Length-5);
+        var configuration_version  = ReadByte(ref data);
+        var avc_profile_indication = ReadByte(ref data);
+        var profile_compatibility  = ReadByte(ref data);
+        var avc_level_indcation    = ReadByte(ref data);
+        this.nalSizeLen = (ReadByte(ref data) & 0x3) + 1;
+        var sps_count   = (ReadByte(ref data) & 0x1F);
+        this.sps        = ReadNALUnitArray(ref data, sps_count);
+        var pps_count   = ReadByte(ref data);
+        this.pps        = ReadNALUnitArray(ref data, pps_count);
+        if (data.Length>0 &&
+            (avc_profile_indication==100 ||
+             avc_profile_indication==110 ||
+             avc_profile_indication==122 ||
+             avc_profile_indication==144)) {
+          var chroma_format = (ReadByte(ref data) & 0x3);
+          var bit_depth_luma = (ReadByte(ref data) & 0x7) + 8;
+          var bit_depth_chroma = (ReadByte(ref data) & 0x7) + 8;
+          var sps_ext_count = ReadByte(ref data);
+          this.spsExt       = ReadNALUnitArray(ref data, sps_ext_count);
+        }
+        else {
+          this.spsExt = new NALUnit[0];
         }
       }
 

@@ -59,7 +59,7 @@ namespace PeerCastStation.HTTP
         int r = 0;
         var bytes188 = new byte[188];
         while (r<content.Data.Length) {
-          content.Data.Slice(r).CopyTo(new Memory<byte>(bytes188));
+          content.Data.Slice(r, 188).CopyTo(new Memory<byte>(bytes188));
           var tsPacket = new TSPacket(bytes188);
           if (tsPacket.keyframe) {
             if (lastPcr.HasValue) {
