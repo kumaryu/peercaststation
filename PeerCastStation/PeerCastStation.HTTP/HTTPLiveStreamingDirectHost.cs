@@ -1,7 +1,6 @@
 ﻿using PeerCastStation.Core;
 using PeerCastStation.Core.Http;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -53,47 +52,164 @@ namespace PeerCastStation.HTTP
       }
     }
 
+    interface IContextHolder<TContext>
+      : IDisposable
+    {
+        TContext Context { get; }
+    }
+
+    class SharedContextCollection<TKey,TContext>
+      where TKey: notnull
+      where TContext: IDisposable
+    {
+      class SharedContext
+      {
+        public TContext Context { get; }
+        private int referenceCount = 0;
+
+        public SharedContext(SharedContextCollection<TKey,TContext> owner, TKey key, TContext context)
+        {
+          Context = context;
+        }
+
+        internal int AddRef()
+        {
+          return ++referenceCount;
+        }
+
+        internal int Release()
+        {
+          if (--referenceCount==0) {
+            Context.Dispose();
+          }
+          return referenceCount;
+        }
+      }
+
+      class ContextHolder
+        : IContextHolder<TContext>
+      {
+        public ContextHolder(SharedContextCollection<TKey, TContext> owner, TKey key, SharedContext sharedContext, Func<TContext, TimeSpan>? releaseDelayFunc = null)
+        {
+          this.owner = owner;
+          Key = key;
+          sharedContext.AddRef();
+          this.sharedContext = sharedContext;
+          this.releaseDelayFunc = releaseDelayFunc;
+        }
+
+        SharedContextCollection<TKey, TContext> owner;
+        SharedContext sharedContext;
+        bool disposed = false;
+        Func<TContext, TimeSpan>? releaseDelayFunc;
+
+        public TKey Key { get; }
+
+        public TContext Context {
+          get {
+            if (disposed) {
+              throw new ObjectDisposedException(GetType().Name);
+            }
+            return sharedContext.Context;
+          }
+        }
+
+        public void Dispose()
+        {
+          if (!disposed) {
+            disposed = true;
+            var delay = releaseDelayFunc?.Invoke(sharedContext.Context) ?? TimeSpan.Zero;
+            if (delay>TimeSpan.Zero) {
+              Task.Run(async () => {
+                await Task.Delay(delay).ConfigureAwait(false);
+                owner.Release(Key);
+              });
+            }
+            else {
+              owner.Release(Key);
+            }
+          }
+        }
+      }
+
+      private Dictionary<TKey,SharedContext> contexts = new ();
+
+      public IContextHolder<TContext> GetOrAdd(TKey key, Func<TContext> createContextFunc)
+      {
+        lock (contexts) {
+          if (contexts.TryGetValue(key, out var existingContext)) {
+            return new ContextHolder(this, key, existingContext);
+          }
+          else {
+            var newContext = new SharedContext(this, key, createContextFunc());
+            contexts.Add(key, newContext);
+            return new ContextHolder(this, key, newContext);
+          }
+        }
+      }
+
+      public IContextHolder<TContext> GetOrAdd(TKey key, Func<TContext> createContextFunc, Func<TContext, TimeSpan> releaseDelayFunc)
+      {
+        lock (contexts) {
+          if (contexts.TryGetValue(key, out var existingContext)) {
+            return new ContextHolder(this, key, existingContext, releaseDelayFunc);
+          }
+          else {
+            var newContext = new SharedContext(this, key, createContextFunc());
+            contexts.Add(key, newContext);
+            return new ContextHolder(this, key, newContext, releaseDelayFunc);
+          }
+        }
+      }
+
+      public void Release(TKey key)
+      {
+        lock (contexts) {
+          if (contexts.TryGetValue(key, out var existingContext)) {
+            if (existingContext.Release()==0) {
+              contexts.Remove(key);
+            }
+          }
+        }
+      }
+
+      public async Task ReleaseWithDelay(TKey key, TimeSpan delay)
+      {
+        await Task.Delay(delay).ConfigureAwait(false);
+        Release(key);
+      }
+    }
+
     class HLSContentSink
       : IDisposable
     {
       public HTTPLiveStreamingSegmenter Segmenter { get; private set; } = new HTTPLiveStreamingSegmenter();
       private HTTPLiveStreamingDirectOwinApp owner;
       private Channel channel;
-      private IDisposable? subscription = null;
-      private int referenceCount = 0;
+      private IDisposable subscription;
       private HLSContentSink(HTTPLiveStreamingDirectOwinApp owner, Channel channel)
       {
         this.owner = owner;
         this.channel = channel;
-      }
-
-      private HLSContentSink AddRef()
-      {
-        if (Interlocked.Increment(ref referenceCount)==1 && subscription==null) {
-          var sink =
-              "flvtots".Split(',')
-              .Select(name => channel.PeerCast.ContentFilters.FirstOrDefault(filter => filter.Name.ToLowerInvariant() == name.ToLowerInvariant()))
-              .Where(filter => filter != null)
-              .Aggregate((IContentSink)Segmenter, (r, filter) => filter!.Activate(r));
-          Interlocked.Exchange(ref subscription, channel.AddContentSink(sink))?.Dispose();
-        }
-        return this;
+        var sink =
+            "flvtots".Split(',')
+            .Select(name => channel.PeerCast.ContentFilters.FirstOrDefault(filter => filter.Name.ToLowerInvariant() == name.ToLowerInvariant()))
+            .Where(filter => filter != null)
+            .Aggregate((IContentSink)Segmenter, (r, filter) => filter!.Activate(r));
+        subscription = channel.AddContentSink(sink);
       }
 
       public void Dispose()
       {
-        if (subscription!=null && Interlocked.Decrement(ref referenceCount)==0) {
-          owner.contentSinks.TryRemove(channel, out var s);
-          Interlocked.Exchange(ref subscription, null)?.Dispose();
-        }
+        subscription.Dispose();
       }
 
-      public static HLSContentSink GetSubscription(HTTPLiveStreamingDirectOwinApp owner, Channel channel)
+      public static IContextHolder<HLSContentSink> GetSubscription(HTTPLiveStreamingDirectOwinApp owner, Channel channel)
       {
-        return owner.contentSinks.GetOrAdd(channel, k => new HLSContentSink(owner, channel)).AddRef();
+        return owner.contentSinks.GetOrAdd(channel, () => new HLSContentSink(owner, channel));
       }
     }
-    private ConcurrentDictionary<Channel,HLSContentSink> contentSinks = new ConcurrentDictionary<Channel,HLSContentSink>();
+    private SharedContextCollection<Channel,HLSContentSink> contentSinks = new ();
 
     class HLSChannelSink
       : IChannelSink,
@@ -103,48 +219,27 @@ namespace PeerCastStation.HTTP
       private ConnectionInfoBuilder connectionInfo = new ConnectionInfoBuilder();
       private Func<float>? getRecvRate = null;
       private Func<float>? getSendRate = null;
-      private Tuple<Channel,string> session;
+      private (Channel Channel,string SessionId) session;
       private CancellationTokenSource stoppedCancellationTokenSource = new CancellationTokenSource();
-      private HLSContentSink? contentSink = null;
+      private IContextHolder<HLSContentSink> contentSink;
+      private IDisposable subscription;
+      private StopReason stopReason = StopReason.None;
 
       public string SessionId {
-        get { return session.Item2; }
+        get { return session.SessionId; }
       }
       public Channel Channel {
-        get { return session.Item1; }
+        get { return session.Channel; }
       }
       public CancellationToken Stopped {
         get { return stoppedCancellationTokenSource.Token; }
       }
 
       public HTTPLiveStreamingSegmenter Segmenter {
-        get {
-          if (contentSink==null) {
-            throw new ObjectDisposedException(nameof(HLSChannelSink));
-          }
-          return contentSink.Segmenter;
-        }
+        get { return contentSink.Context.Segmenter; }
       }
 
-      public static HLSChannelSink GetSubscription(HTTPLiveStreamingDirectOwinApp owner, Channel channel, OwinEnvironment ctx, string session)
-      {
-        if (String.IsNullOrWhiteSpace(session)) {
-          var source = ctx.Request.GetRemoteEndPoint().ToString();
-          using (var md5=System.Security.Cryptography.MD5.Create()) {
-            session =
-              md5
-              .ComputeHash(System.Text.Encoding.ASCII.GetBytes(source))
-              .Aggregate(new System.Text.StringBuilder(), (builder,v) => builder.Append(v.ToString("X2")))
-              .ToString();
-          }
-        }
-        return owner.channelSinks.GetOrAdd(new Tuple<Channel,string>(channel, session), k => new HLSChannelSink(owner, ctx, k)).AddRef(ctx);
-      }
-
-      private IDisposable? subscription = null;
-      private int referenceCount = 0;
-
-      private HLSChannelSink(HTTPLiveStreamingDirectOwinApp owner, OwinEnvironment ctx, Tuple<Channel,string> session)
+      private HLSChannelSink(HTTPLiveStreamingDirectOwinApp owner, OwinEnvironment ctx, (Channel,string) session)
       {
         this.owner = owner;
         this.session = session;
@@ -168,9 +263,10 @@ namespace PeerCastStation.HTTP
         getRecvRate = ctx.Get<Func<float>>(OwinEnvironment.PeerCastStation.GetRecvRate);
         getSendRate = ctx.Get<Func<float>>(OwinEnvironment.PeerCastStation.GetSendRate);
         contentSink = HLSContentSink.GetSubscription(owner, Channel);
+        subscription = Channel.AddOutputStream(this);
       }
 
-      private HLSChannelSink AddRef(OwinEnvironment ctx)
+      private void UpdateClient(OwinEnvironment ctx)
       {
         connectionInfo.AgentName = ctx.Request.Headers.Get("User-Agent");
         var remoteEndPoint = ctx.Request.GetRemoteEndPoint();
@@ -184,43 +280,62 @@ namespace PeerCastStation.HTTP
         }
         getRecvRate = ctx.Get<Func<float>>(OwinEnvironment.PeerCastStation.GetRecvRate);
         getSendRate = ctx.Get<Func<float>>(OwinEnvironment.PeerCastStation.GetSendRate);
-        if (Interlocked.Increment(ref referenceCount)==1 && subscription==null) {
-          Interlocked.Exchange(ref subscription, Channel.AddOutputStream(this))?.Dispose();
+        switch (stopReason) {
+        case StopReason.UserReconnect:
+        case StopReason.UserShutdown:
+          stopReason = StopReason.None;
+          Interlocked.Exchange(ref stoppedCancellationTokenSource, new CancellationTokenSource()).Dispose();
+          Interlocked.Exchange(ref subscription, Channel.AddOutputStream(this)).Dispose();
+          Interlocked.Exchange(ref contentSink, HLSContentSink.GetSubscription(owner, Channel)).Dispose();
+          break;
         }
-        return this;
       }
 
       public void Dispose()
       {
-        Task.Run(async () => {
-          await Task.Delay(TimeSpan.FromSeconds((contentSink?.Segmenter.TargetDuration ?? 10.0)/0.7)).ConfigureAwait(false);
-          if (Interlocked.Decrement(ref referenceCount)==0) {
-            owner.channelSinks.TryRemove(session, out var s);
-            Interlocked.Exchange(ref subscription, null)?.Dispose();
-            Interlocked.Exchange(ref contentSink, null)?.Dispose();
-            stoppedCancellationTokenSource.Dispose();
-          }
-        });
+        subscription.Dispose();
+        contentSink.Dispose();
+        stoppedCancellationTokenSource.Dispose();
       }
 
-      public ConnectionInfo GetConnectionInfo()
+      ConnectionInfo IChannelSink.GetConnectionInfo()
       {
         connectionInfo.RecvRate = getRecvRate?.Invoke();
         connectionInfo.SendRate = getSendRate?.Invoke();
         return connectionInfo.Build();
       }
 
-      public void OnBroadcast(Host? from, Atom packet)
+      void IChannelSink.OnBroadcast(Host? from, Atom packet)
       {
       }
 
-      public void OnStopped(StopReason reason)
+      void IChannelSink.OnStopped(StopReason reason)
       {
+        stopReason = reason;
         stoppedCancellationTokenSource.Cancel();
-        Interlocked.Exchange(ref subscription, null)?.Dispose();
+        subscription.Dispose();
+        contentSink.Dispose();
       }
+
+      public static IContextHolder<HLSChannelSink> GetSubscription(HTTPLiveStreamingDirectOwinApp owner, Channel channel, OwinEnvironment ctx, string session)
+      {
+        if (String.IsNullOrWhiteSpace(session)) {
+          var source = ctx.Request.GetRemoteEndPoint().ToString();
+          using (var md5=System.Security.Cryptography.MD5.Create()) {
+            session =
+              md5
+              .ComputeHash(System.Text.Encoding.ASCII.GetBytes(source))
+              .Aggregate(new System.Text.StringBuilder(), (builder,v) => builder.Append(v.ToString("X2")))
+              .ToString();
+          }
+        }
+        var channelSink = owner.channelSinks.GetOrAdd((channel, session), () => new HLSChannelSink(owner, ctx, (channel, session)), contentSink => TimeSpan.FromSeconds(contentSink.Segmenter.TargetDuration/0.7));
+        channelSink.Context.UpdateClient(ctx);
+        return channelSink;
+      }
+
     }
-    private ConcurrentDictionary<Tuple<Channel,string>,HLSChannelSink> channelSinks = new ConcurrentDictionary<Tuple<Channel,string>, HLSChannelSink>();
+    private SharedContextCollection<(Channel Channel, string SessionId), HLSChannelSink> channelSinks = new ();
 
     private struct ParsedRequest
     {
@@ -289,7 +404,8 @@ namespace PeerCastStation.HTTP
       ctx.Response.Headers.Add("Cache-Disposition", "inline");
       ctx.Response.Headers.Add("Access-Control-Allow-Origin", "*");
       ctx.Response.ContentType = pls.MIMEType;
-      using (var subscription=HLSChannelSink.GetSubscription(this, channel, ctx, session)) {
+      using (var subscriptionContext=HLSChannelSink.GetSubscription(this, channel, ctx, session)) {
+        var subscription = subscriptionContext.Context;
         subscription.Stopped.ThrowIfCancellationRequested();
         byte[] body;
         try {
@@ -331,7 +447,8 @@ namespace PeerCastStation.HTTP
         ctx.Response.Redirect(AllocateNewSessionUri(ctx).ToString());
         return;
       }
-      using (var subscription=HLSChannelSink.GetSubscription(this, channel, ctx, session)) {
+      using (var subscriptionContext=HLSChannelSink.GetSubscription(this, channel, ctx, session)) {
+        var subscription = subscriptionContext.Context;
         subscription.Stopped.ThrowIfCancellationRequested();
         using (var cts=CancellationTokenSource.CreateLinkedTokenSource(ct, subscription.Stopped)) {
           cts.CancelAfter(10000);
