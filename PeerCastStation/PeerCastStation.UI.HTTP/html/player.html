@@ -23,6 +23,7 @@
       window.addEventListener('load', function () {
         var params = (new URL(document.location)).searchParams;
         var channelId = params.get('channelId');
+        var tracker = params.get('tip');
         var player = videojs('player');
         player.el().addEventListener('wheel', function (evt) {
           if (evt.deltaY!==0.0) {
@@ -37,7 +38,12 @@
           }
         });
         if (channelId) {
-          player.src({type: 'video/mpegURL', src: '/hls/' + channelId + '.m3u8'});
+          if (tracker) {
+            player.src({type: 'video/mpegURL', src: '/hls/' + channelId + '.m3u8?tip=' + tracker});
+          }
+          else {
+            player.src({type: 'video/mpegURL', src: '/hls/' + channelId + '.m3u8'});
+          }
         }
       });
     </script>

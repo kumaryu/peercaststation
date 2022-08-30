@@ -454,7 +454,7 @@ var YPChannelsViewModel = function() {
     var channel = self.selectedChannel();
     if (channel==null) return false;
     if (channel.isPlayable()) {
-      window.open('player.html?channelId=' + channel.channelId());
+      window.open('player.html?channelId=' + channel.channelId() + '&tip=' + channel.tracker());
       return true;
     }
     else {
