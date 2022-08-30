@@ -319,16 +319,6 @@ namespace PeerCastStation.HTTP
 
       public static IContextHolder<HLSChannelSink> GetSubscription(HTTPLiveStreamingDirectOwinApp owner, Channel channel, OwinEnvironment ctx, string session)
       {
-        if (String.IsNullOrWhiteSpace(session)) {
-          var source = ctx.Request.GetRemoteEndPoint().ToString();
-          using (var md5=System.Security.Cryptography.MD5.Create()) {
-            session =
-              md5
-              .ComputeHash(System.Text.Encoding.ASCII.GetBytes(source))
-              .Aggregate(new System.Text.StringBuilder(), (builder,v) => builder.Append(v.ToString("X2")))
-              .ToString();
-          }
-        }
         var channelSink = owner.channelSinks.GetOrAdd((channel, session), () => new HLSChannelSink(owner, ctx, (channel, session)), contentSink => TimeSpan.FromSeconds(contentSink.Segmenter.TargetDuration/0.7));
         channelSink.Context.UpdateClient(ctx);
         return channelSink;
@@ -374,9 +364,11 @@ namespace PeerCastStation.HTTP
     {
       var source = ctx.Request.GetRemoteEndPoint().ToString();
       using (var md5=System.Security.Cryptography.MD5.Create()) {
+        var bytes = new byte[16];
+        Random.Shared.NextBytes(bytes);
         var session =
           md5
-          .ComputeHash(System.Text.Encoding.ASCII.GetBytes(source))
+          .ComputeHash(bytes)
           .Aggregate(new System.Text.StringBuilder(), (builder,v) => builder.Append(v.ToString("X2")))
           .ToString();
         var location = new UriBuilder(ctx.Request.Uri);
@@ -476,17 +468,22 @@ namespace PeerCastStation.HTTP
         ctx.Response.StatusCode = req.Status;
         return;
       }
-      var (statusCode, channel) = await HTTPDirectOwinApp.GetChannelAsync(ctx, req.ChannelId, ct).ConfigureAwait(false);
-      if (statusCode!=HttpStatusCode.OK) {
-        ctx.Response.StatusCode = statusCode;
-        return;
-      }
 
-      if (req.FragmentNumber.HasValue) {
-        await FragmentHandler(ctx, req, channel).ConfigureAwait(false);
+      bool newSession = String.IsNullOrWhiteSpace(req.Session);
+      var (statusCode, channel) = await HTTPDirectOwinApp.GetChannelAsync(ctx, req.ChannelId, requestRelay:newSession, ct).ConfigureAwait(false);
+      if (statusCode==HttpStatusCode.OK) {
+        if (newSession) {
+          ctx.Response.Redirect(AllocateNewSessionUri(ctx).ToString());
+        }
+        else if (req.FragmentNumber.HasValue) {
+          await FragmentHandler(ctx, req, channel).ConfigureAwait(false);
+        }
+        else {
+          await PlayListHandler(ctx, req, channel).ConfigureAwait(false);
+        }
       }
       else {
-        await PlayListHandler(ctx, req, channel).ConfigureAwait(false);
+        ctx.Response.StatusCode = statusCode;
       }
     }
 
