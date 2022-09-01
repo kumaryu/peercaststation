@@ -616,6 +616,9 @@ namespace PeerCastStation.FLV
       private NALUnit[] spsExt = new NALUnit[0];
       private ProgramAssociationTable pat = new ProgramAssociationTable();
       private ProgramMapTable pmt = new ProgramMapTable();
+      private bool isHeaderSent = false;
+      private bool hasAudio = false;
+      private bool hasVideo = false;
       private ADTSHeader adtsHeader = ADTSHeader.Default;
       private int nalSizeLen = 0;
       private long ptsBase = -1;
@@ -637,6 +640,9 @@ namespace PeerCastStation.FLV
         spsExt = new NALUnit[0];
         pat = new ProgramAssociationTable();
         pmt = new ProgramMapTable();
+        isHeaderSent = false;
+        hasAudio = false;
+        hasVideo = false;
         adtsHeader = ADTSHeader.Default;
         nalSizeLen = 0;
         ptsBase = -1;
@@ -645,19 +651,27 @@ namespace PeerCastStation.FLV
       public void OnFLVHeader(FLVFileHeader header)
       {
         Clear();
-        if (header.HasVideo) {
+      }
+
+      private void WritePATPMT(TSWriter writer)
+      {
+        if (isHeaderSent) {
+          return;
+        }
+        if (hasVideo) {
           pmt.Table.Add(new ProgramMapEntry(VideoPID, 0x1B, new byte[0]));
           pmt.PCRPID = VideoPID;
         }
-        if (header.HasAudio) {
+        if (hasAudio) {
           pmt.Table.Add(new ProgramMapEntry(AudioPID, 0x0F, new byte[0]));
-          if (!header.HasVideo) {
+          if (!hasVideo) {
             pmt.PCRPID = AudioPID;
           }
         }
         pat.PIDToProgramNumber[ProgramMapTablePID] = 1;
         writer.WritePAT(pat);
         writer.WritePMT(ProgramMapTablePID, pmt);
+        isHeaderSent = true;
       }
 
       class BitReader
@@ -727,6 +741,7 @@ namespace PeerCastStation.FLV
             );
           }
         }
+        hasAudio = true;
       }
 
       private void OnAACBody(RTMPMessage msg)
@@ -744,6 +759,7 @@ namespace PeerCastStation.FLV
         using (pes_packet) {
           PESPacket.WriteTo(pes_packet, pes);
         }
+        WritePATPMT(writer);
         writer.WriteTSPackets(
           AudioPID,
           true,
@@ -797,6 +813,7 @@ namespace PeerCastStation.FLV
         else {
           this.spsExt = new NALUnit[0];
         }
+        hasVideo = true;
       }
 
       private void OnAVCBody(RTMPMessage msg, bool keyframe)
@@ -851,6 +868,7 @@ namespace PeerCastStation.FLV
         using (pes_packet) {
           PESPacket.WriteTo(pes_packet, pes);
         }
+        WritePATPMT(writer);
         writer.WriteTSPackets(
           VideoPID,
           msg.IsKeyFrame() || idr,
