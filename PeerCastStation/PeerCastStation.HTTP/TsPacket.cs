@@ -2,26 +2,26 @@
 
 namespace PeerCastStation.HTTP
 {
-  public class TSPacket
+  public struct TSPacket
   {
-    public int sync_byte { get; private set; }
-    public int transport_error_indicator { get; private set; }
-    public int payload_unit_start_indicator { get; private set; }
-    public int transport_priority { get; private set; }
-    public int PID { get; private set; }
-    public int PMTID { get; private set; }
-    public int transport_scrambling_control { get; private set; }
-    public int adaptation_field_control { get; private set; }
-    public int continuity_counter { get; private set; }
-    public int adaptation_field_length { get; private set; }
-    public int random_access_indicator { get; private set; }
-    public bool audio_block { get; private set; }
-    public bool video_block { get; private set; }
-    public bool keyframe { get; private set; }
-    public int payload_offset { get; private set; }
-    public double program_clock_reference = -1.0;
+    public int sync_byte { get; }
+    public int transport_error_indicator { get; }
+    public int payload_unit_start_indicator { get; }
+    public int transport_priority { get; }
+    public int PID { get; }
+    public int PMTID { get; }
+    public int transport_scrambling_control { get; }
+    public int adaptation_field_control { get; }
+    public int continuity_counter { get; }
+    public int adaptation_field_length { get; }
+    public int random_access_indicator { get; }
+    public bool audio_block { get; }
+    public bool video_block { get; }
+    public bool keyframe { get; }
+    public int payload_offset { get; }
+    public double program_clock_reference { get; } = -1.0;
 
-    public TSPacket(byte[] packet)
+    public TSPacket(ReadOnlySpan<byte> packet)
     {
       this.sync_byte = packet[0];
       this.transport_error_indicator = (packet[1] & 0x80) >> 7;
@@ -80,8 +80,7 @@ namespace PeerCastStation.HTTP
             //section_length-5byte[transport_stream_id ... last_section_number]-4byte[CRC_32]
             for(int i=0;i<section_length-5-4;i+=4)
             {
-              byte[] pmts = new byte[4];
-              Array.Copy(packet, payload_offset+8+i, pmts, 0, 4);//8byte[table_id ... last_section_number]
+              var pmts = packet.Slice(payload_offset+8+i, 4);
               int program_number = pmts[0] << 8 | pmts[1];
               int pmtid = (pmts[2] & 0x1F) << 8 | pmts[3];
               if(program_number>0) {

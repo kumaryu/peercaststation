@@ -1,6 +1,7 @@
 ﻿using PeerCastStation.Core;
 using PeerCastStation.FLV.RTMP;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -75,8 +76,14 @@ namespace PeerCastStation.FLV
 
   public class FLVToMPEG2TS
   {
+    public interface IMPEG2TSContentSink
+    {
+      void OnPAT(ReadOnlyMemory<byte> bytes);
+      void OnPMT(ReadOnlyMemory<byte> bytes);
+      void OnTSPackets(ReadOnlyMemory<byte> bytes);
+    }
+
     public class TSWriter
-      : IDisposable
     {
       private static readonly uint[] CRC32Table = new uint[] {
           0x00000000, 0xB71DC104, 0x6E3B8209, 0xD926430D, 0xDC760413, 0x6B6BC517,
@@ -124,93 +131,113 @@ namespace PeerCastStation.FLV
           0x6D66B4BC, 0xDA7B75B8, 0x035D36B5, 0xB440F7B1, 0x00000001
       };
 
-      private static uint CRC32(IEnumerable<byte> bytes, uint crc)
+      private static uint CRC32(ReadOnlySpan<byte> bytes, uint crc)
       {
-        return bytes.Aggregate(crc, (c,b) => CRC32Table[(c & 0xFF) ^ b] ^ (c >> 8));
-      }
-
-      public Stream BaseStream { get; private set; }
-      private Dictionary<int, int> continuityCounter = new Dictionary<int, int>();
-      private bool leaveOpen;
-
-      public TSWriter(Stream stream, bool leave_open)
-      {
-        this.BaseStream = stream;
-        this.leaveOpen = leave_open;
-      }
-
-      public void Dispose()
-      {
-        if (!leaveOpen) {
-          BaseStream.Dispose();
+        foreach (var b in bytes) {
+          crc = CRC32Table[(crc & 0xFF) ^ b] ^ (crc >> 8);
         }
+        return crc;
+      }
+
+      public IMPEG2TSContentSink Sink { get; }
+      private Dictionary<int, int> continuityCounter = new Dictionary<int, int>();
+
+      public TSWriter(IMPEG2TSContentSink sink)
+      {
+        Sink = sink;
+      }
+
+      private Span<byte> WriteUInt16BE(Span<byte> dst, int value)
+      {
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(dst, (ushort)value);
+        return dst.Slice(2);
+      }
+
+      private Span<byte> WriteUInt32LE(Span<byte> dst, uint value)
+      {
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(dst, value);
+        return dst.Slice(4);
+      }
+
+      private Span<byte> WriteByte(Span<byte> dst, int value)
+      {
+        dst[0] = (byte)value;
+        return dst.Slice(1);
+      }
+
+      private Span<byte> WriteBytes(Span<byte> dst, ReadOnlySpan<byte> value)
+      {
+        value.CopyTo(dst);
+        return dst.Slice(value.Length);
       }
 
       public void WritePAT(ProgramAssociationTable pat)
       {
-        var body = new MemoryStream();
-        using (body) {
-          body.WriteUInt16BE(pat.TransportStreamId);
-          body.WriteByte((3<<6) | (pat.Version << 1) | (pat.CurrentNextIndicator ? 1 : 0));
-          body.WriteByte(pat.SectionNumber);
-          body.WriteByte(pat.LastSectionNumber);
-          foreach (var kv in pat.PIDToProgramNumber) {
-            body.WriteUInt16BE(kv.Value);
-            body.WriteUInt16BE((7<<13) | kv.Key);
-          }
+        var table_sz = pat.PIDToProgramNumber.Aggregate(0, (sz, entry) => sz + 4);
+        var body_sz = 5 + table_sz;
+        using var bodyMem = MemoryPool<byte>.Shared.Rent(body_sz);
+        var body = bodyMem.Memory.Span;
+        body = WriteUInt16BE(body, pat.TransportStreamId);
+        body = WriteByte(body, (3<<6) | (pat.Version << 1) | (pat.CurrentNextIndicator ? 1 : 0));
+        body = WriteByte(body, pat.SectionNumber);
+        body = WriteByte(body, pat.LastSectionNumber);
+        foreach (var kv in pat.PIDToProgramNumber) {
+          body = WriteUInt16BE(body, kv.Value);
+          body = WriteUInt16BE(body, (7<<13) | kv.Key);
         }
-        WriteSection(0x00, 0x00, body.ToArray());
+        var writer = new ArrayBufferWriter<byte>(188);
+        WriteSection(writer, 0x00, 0x00, bodyMem.Memory.Span.Slice(0, body_sz));
+        Sink.OnPAT(writer.WrittenMemory);
       }
 
       public void WritePMT(int pid, ProgramMapTable pmt)
       {
-        var program_info = new MemoryStream();
-        using (program_info) {
-          foreach (var entry in pmt.ProgramInfo) {
-            program_info.WriteByte(entry.Tag);
-            program_info.WriteByte(entry.Data.Length);
-            program_info.Write(entry.Data, 0, entry.Data.Length);
-          }
-        }
+        var program_info_sz = pmt.ProgramInfo.Aggregate(0, (sz, entry) => sz + 2 + entry.Data.Length);
+        var table_sz = pmt.Table.Aggregate(0, (sz, entry) => sz + 5 + entry.ESInfo.Length);
+        var body_sz = 9 + program_info_sz + table_sz;
 
-        var body = new MemoryStream();
-        using (body) {
-          body.WriteUInt16BE(pmt.ProgramNumber);
-          body.WriteByte((3<<6) | (pmt.Version << 1) | (pmt.CurrentNextIndicator ? 1 : 0));
-          body.WriteByte(pmt.SectionNumber);
-          body.WriteByte(pmt.LastSectionNumber);
-          body.WriteUInt16BE((7<<13) | (pmt.PCRPID & 0x1FFF));
-          var program_info_ary = program_info.ToArray();
-          body.WriteUInt16BE((15<<12) | program_info_ary.Length);
-          body.Write(program_info_ary, 0, program_info_ary.Length);
-          foreach (var entry in pmt.Table) {
-            body.WriteByte(entry.StreamType);
-            body.WriteUInt16BE((7<<13) | (entry.PID & 0x1FFF));
-            body.WriteUInt16BE((15<<12) | (entry.ESInfo.Length & 0xFFF));
-            body.Write(entry.ESInfo, 0, entry.ESInfo.Length);
-          }
+        using var bodyMem = MemoryPool<byte>.Shared.Rent(body_sz);
+        var body = bodyMem.Memory.Span;
+        body = WriteUInt16BE(body, pmt.ProgramNumber);
+        body = WriteByte(body, (3<<6) | (pmt.Version << 1) | (pmt.CurrentNextIndicator ? 1 : 0));
+        body = WriteByte(body, pmt.SectionNumber);
+        body = WriteByte(body, pmt.LastSectionNumber);
+        body = WriteUInt16BE(body, (7<<13) | (pmt.PCRPID & 0x1FFF));
+        body = WriteUInt16BE(body, (15<<12) | program_info_sz);
+        foreach (var entry in pmt.ProgramInfo) {
+          body = WriteByte(body, entry.Tag);
+          body = WriteByte(body, entry.Data.Length);
+          body = WriteBytes(body, entry.Data);
         }
-        WriteSection(pid, 0x02, body.ToArray());
+        foreach (var entry in pmt.Table) {
+          body = WriteByte(body, entry.StreamType);
+          body = WriteUInt16BE(body, (7<<13) | (entry.PID & 0x1FFF));
+          body = WriteUInt16BE(body, (15<<12) | (entry.ESInfo.Length & 0xFFF));
+          body = WriteBytes(body, entry.ESInfo);
+        }
+        var writer = new ArrayBufferWriter<byte>(188);
+        WriteSection(writer, pid, 0x02, bodyMem.Memory.Span.Slice(0, body_sz));
+        Sink.OnPMT(writer.WrittenMemory);
       }
 
-      public void WriteSection(int pid, int table_id, byte[] body)
+      private void WriteSection(IBufferWriter<byte> writer, int pid, int table_id, ReadOnlySpan<byte> body)
       {
-        var section = new MemoryStream();
-        using (section) {
-          section.WriteByte(0); // pointer_field
-          var section_syntax_indicator = (1<<15);
-          var reserved                 = (3<<12);
-          var section_length           = body.Length+4;
-          section.WriteByte((byte)table_id);
-          section.WriteUInt16BE(section_syntax_indicator | reserved | (section_length & 0xFFF));
-          section.Write(body, 0, body.Length);
-          var crc = CRC32(section.ToArray().Skip(1), 0xFFFFFFFF);
-          section.WriteUInt32LE(crc);
-        }
-        WriteTSPackets(pid, false, null, section.ToArray());
+        var section_sz = 8 + body.Length;
+        using var sectionMem = MemoryPool<byte>.Shared.Rent(section_sz);
+        var section = sectionMem.Memory.Span;
+        section = WriteByte(section, 0); // pointer_field
+        var section_syntax_indicator = (1<<15);
+        var reserved                 = (3<<12);
+        var section_length           = body.Length+4;
+        section = WriteByte(section, table_id);
+        section = WriteUInt16BE(section, section_syntax_indicator | reserved | (section_length & 0xFFF));
+        section = WriteBytes(section, body);
+        var crc = CRC32(sectionMem.Memory.Span.Slice(1, section_length-1), 0xFFFFFFFF);
+        section = WriteUInt32LE(section, crc);
+        WriteTSPackets(writer, pid, false, null, sectionMem.Memory.Span.Slice(0, section_sz));
       }
 
-      public void WriteTSPackets(int pid, bool random_access, TSTimeStamp? pcr, byte[] body)
+      private void WriteTSPackets(IBufferWriter<byte> writer, int pid, bool random_access, TSTimeStamp? pcr, ReadOnlySpan<byte> body)
       {
         var pos = 0;
         var payload_unit_start_indicator = true;
@@ -252,20 +279,33 @@ namespace PeerCastStation.FLV
             }
           }
           var adaptation_field_control = adaptation_field!=null ? 0x03 : 0x01;
-          BaseStream.WriteByte(0x47);
-          BaseStream.WriteUInt16BE(((payload_unit_start_indicator ? 1 : 0)<<14) | (pid & 0x1FFF));
-          BaseStream.WriteByte((byte)((adaptation_field_control << 4) | (continuity_counter & 0xF)));
+          var dst = writer.GetSpan(4);
+          dst = WriteByte(dst, 0x47);
+          dst = WriteUInt16BE(dst, ((payload_unit_start_indicator ? 1 : 0)<<14) | (pid & 0x1FFF));
+          dst = WriteByte(dst, (byte)((adaptation_field_control << 4) | (continuity_counter & 0xF)));
+          writer.Advance(4);
           if (adaptation_field!=null) {
             adaptation_field.Close();
             var ary = adaptation_field.ToArray();
-            BaseStream.WriteByte((byte)ary.Length);
-            BaseStream.Write(ary, 0, ary.Length);
+            dst = writer.GetSpan(1 + ary.Length);
+            dst = WriteByte(dst, (byte)ary.Length);
+            dst = WriteBytes(dst, ary);
+            writer.Advance(1 + ary.Length);
           }
-          BaseStream.Write(body, pos, len);
+          dst = writer.GetSpan(len);
+          dst = WriteBytes(dst, body.Slice(pos, len));
+          writer.Advance(len);
           pos += len;
           payload_unit_start_indicator = false;
           continuityCounter[pid] = continuity_counter + 1;
         }
+      }
+
+      public void WriteTSPackets(int pid, bool random_access, TSTimeStamp? pcr, ReadOnlySpan<byte> body)
+      {
+        var writer = new ArrayBufferWriter<byte>(188);
+        WriteTSPackets(writer, pid, random_access, pcr, body);
+        Sink.OnTSPackets(writer.WrittenMemory);
       }
     }
 
@@ -623,14 +663,39 @@ namespace PeerCastStation.FLV
       private int nalSizeLen = 0;
       private long ptsBase = -1;
 
-      public Context(Stream stream)
+      private class MPEG2TSStreamWriter
+        : IMPEG2TSContentSink
       {
-        this.writer = new TSWriter(stream, true);
+        public Stream BaseStream { get; }
+        public MPEG2TSStreamWriter(Stream stream)
+        {
+          BaseStream = stream;
+        }
+
+        public void OnPAT(ReadOnlyMemory<byte> bytes)
+        {
+          BaseStream.Write(bytes.Span);
+        }
+
+        public void OnPMT(ReadOnlyMemory<byte> bytes)
+        {
+          BaseStream.Write(bytes.Span);
+        }
+
+        public void OnTSPackets(ReadOnlyMemory<byte> bytes)
+        {
+          BaseStream.Write(bytes.Span);
+        }
       }
 
-      public Context(TSWriter writer)
+      public Context(Stream stream)
       {
-        this.writer = writer;
+        this.writer = new TSWriter(new MPEG2TSStreamWriter(stream));
+      }
+
+      public Context(IMPEG2TSContentSink sink)
+      {
+        this.writer = new TSWriter(sink);
       }
 
       private void Clear()
@@ -954,10 +1019,64 @@ namespace PeerCastStation.FLV
         processorTask = ProcessMessagesAsync(sink, CancellationToken.None);
       }
 
+      class MPEG2TSSink
+        : FLVToMPEG2TS.IMPEG2TSContentSink
+      {
+        public IContentSink TargetSink { get; }
+        public Content? HeaderContent { get; set; } = null;
+        public Content? RecentContent { get; set; } = null;
+        private ReadOnlyMemory<byte> patBuffer = ReadOnlyMemory<byte>.Empty;
+        private ReadOnlyMemory<byte> pmtBuffer = ReadOnlyMemory<byte>.Empty;
+
+        public MPEG2TSSink(IContentSink targetSink)
+        {
+          TargetSink = targetSink;
+        }
+
+        public void OnPAT(ReadOnlyMemory<byte> bytes)
+        {
+          patBuffer = bytes;
+        }
+
+        public void OnPMT(ReadOnlyMemory<byte> bytes)
+        {
+          pmtBuffer = bytes;
+          if (patBuffer.Length>0 && pmtBuffer.Length>0 && HeaderContent!=null) {
+            var header = new Memory<byte>(new byte[patBuffer.Length + pmtBuffer.Length]);
+            patBuffer.CopyTo(header);
+            pmtBuffer.CopyTo(header.Slice(patBuffer.Length));
+            TargetSink.OnContentHeader(
+              new Content(
+                HeaderContent.Stream,
+                HeaderContent.Timestamp,
+                HeaderContent.Position,
+                header,
+                HeaderContent.ContFlag
+              )
+            );
+          }
+        }
+
+        public void OnTSPackets(ReadOnlyMemory<byte> bytes)
+        {
+          if (RecentContent!=null) {
+            TargetSink.OnContent(
+              new Content(
+                RecentContent.Stream,
+                RecentContent.Timestamp,
+                RecentContent.Position,
+                bytes,
+                RecentContent.ContFlag
+              )
+            );
+          }
+        }
+      }
+
       private async Task ProcessMessagesAsync(IContentSink targetSink, CancellationToken cancellationToken)
       {
-        var bufferStream = new MemoryStream();
-        var context = new FLVToMPEG2TS.Context(bufferStream);
+        var tsSink = new MPEG2TSSink(targetSink);
+        var context = new FLVToMPEG2TS.Context(tsSink);
         var contentBuffer = new MemoryStream();
         var fileParser = new FLVFileParser();
         var msg = await msgQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
@@ -971,6 +1090,7 @@ namespace PeerCastStation.FLV
             break;
           case ContentMessage.MessageType.ContentHeader:
             {
+              tsSink.HeaderContent = msg.Content;
               var buffer = contentBuffer;
               var pos = buffer.Position;
               buffer.Seek(0, SeekOrigin.End);
@@ -985,23 +1105,12 @@ namespace PeerCastStation.FLV
                 new_buf.Write(buf, (int)trim_pos, (int)(buf.Length-trim_pos));
                 new_buf.Position = 0;
                 contentBuffer = new_buf;
-              }
-              if (bufferStream.Position!=0) {
-                targetSink.OnContentHeader(
-                  new Content(
-                    msg.Content.Stream,
-                    msg.Content.Timestamp,
-                    msg.Content.Position,
-                    bufferStream.ToArray(),
-                    msg.Content.ContFlag
-                  )
-                );
-                bufferStream.SetLength(0);
               }
             }
             break;
           case ContentMessage.MessageType.ContentBody:
             {
+              tsSink.RecentContent = msg.Content;
               var buffer = contentBuffer;
               var pos = buffer.Position;
               buffer.Seek(0, SeekOrigin.End);
@@ -1016,18 +1125,6 @@ namespace PeerCastStation.FLV
                 new_buf.Write(buf, (int)trim_pos, (int)(buf.Length-trim_pos));
                 new_buf.Position = 0;
                 contentBuffer = new_buf;
-              }
-              if (bufferStream.Position!=0) {
-                targetSink.OnContent(
-                  new Content(
-                    msg.Content.Stream,
-                    msg.Content.Timestamp,
-                    msg.Content.Position,
-                    bufferStream.ToArray(),
-                    msg.Content.ContFlag
-                  )
-                );
-                bufferStream.SetLength(0);
               }
             }
             break;

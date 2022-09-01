@@ -453,8 +453,8 @@ namespace PeerCastStation.HTTP
             ctx.Response.StatusCode = HttpStatusCode.OK;
             ctx.Response.Headers.Add("Access-Control-Allow-Origin", "*");
             ctx.Response.ContentType = "video/MP2T";
-            ctx.Response.ContentLength = segment.Data.LongLength;
-            await ctx.Response.WriteAsync(segment.Data, cts.Token).ConfigureAwait(false);
+            ctx.Response.ContentLength = segment.Data.Value.Length;
+            await ctx.Response.WriteAsync(segment.Data.Value, cts.Token).ConfigureAwait(false);
           }
         }
       }

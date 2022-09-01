@@ -5,14 +5,15 @@ using System.Threading.Tasks;
 using PeerCastStation.Core;
 using System.IO;
 using System.Threading;
+using System.Runtime.Intrinsics.Arm;
 
 namespace PeerCastStation.HTTP
 {
   public struct HLSSegment {
     public readonly int Index;
-    public readonly byte[]? Data;
+    public readonly ReadOnlyMemory<byte>? Data;
     public readonly double Duration;
-    public HLSSegment(int index, byte[]? data, double duration)
+    public HLSSegment(int index, ReadOnlyMemory<byte>? data, double duration)
     {
       Index = index;
       Data = data;
@@ -56,10 +57,8 @@ namespace PeerCastStation.HTTP
       public void AddContent(Content content)
       {
         if (completed) return;
-        int r = 0;
-        var bytes188 = new byte[188];
-        while (r<content.Data.Length) {
-          content.Data.Slice(r, 188).CopyTo(new Memory<byte>(bytes188));
+        for (int r=0; r<content.Data.Length; r+=188) {
+          var bytes188 = content.Data.Span.Slice(r, 188);
           var tsPacket = new TSPacket(bytes188);
           if (tsPacket.keyframe) {
             if (lastPcr.HasValue) {
@@ -70,12 +69,11 @@ namespace PeerCastStation.HTTP
             lastPcr = tsPacket.program_clock_reference;
           }
           if (keyframeFound) {
-            segmentBuffer.Write(bytes188, 0, 188);
+            segmentBuffer.Write(bytes188);
             if (segmentBuffer.Length > 8 * 1024 * 1024) {
               throw new Exception("Buffer Overflow");
             }
           }
-          r += 188;
         }
       }
 
