@@ -167,7 +167,10 @@ var ChannelViewModel = function(owner, initial_value) {
   };
 
   self.showPlayer = function() {
-    window.open('player.html?channelId=' + self.channelId());
+    window.open('player.html?channelId=' + self.channelId(), 'PeerCastStation-Play-' + self.channelId(), "");
+  };
+  self.popupPlayer = function() {
+    window.open('player.html?channelId=' + self.channelId(), 'PeerCastStation-Play-' + self.channelId(), "popup");
   };
 
   self.update = function(c) {

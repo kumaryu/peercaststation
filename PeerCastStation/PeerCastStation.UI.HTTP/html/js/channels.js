@@ -437,29 +437,35 @@ var YPChannelsViewModel = function() {
   });
   self.channelPlayable = ko.computed(function () {
     var channel = self.selectedChannel();
-    if (channel==null) return false;
+    if (!channel) return false;
     return channel.isPlayable();
   });
   self.channelPlaylistFilename = ko.computed(function () {
     var channel = self.selectedChannel();
-    if (channel==null || !channel.isPlayable()) return "";
+    if (!channel || !channel.isPlayable()) return "";
     return channel.playlistFilename();
   })
   self.channelPlaylistUrl = ko.computed(function () {
     var channel = self.selectedChannel();
-    if (channel==null || !channel.isPlayable()) return "#";
+    if (!channel || !channel.isPlayable()) return "#";
     return channel.playlistUrl();
   })
-  self.showPlayer = function() {
+  self.openPlayer = function(popup) {
     var channel = self.selectedChannel();
-    if (channel==null) return false;
+    if (!channel) return false;
     if (channel.isPlayable()) {
-      window.open('player.html?channelId=' + channel.channelId() + '&tip=' + channel.tracker());
+      window.open('player.html?channelId=' + channel.channelId() + '&tip=' + channel.tracker(), 'PeerCastStation-Play-' + channel.channelId(), popup ? "popup" : "");
       return true;
     }
     else {
       return false;
     }
+  };
+  self.showPlayer = function() {
+    return self.openPlayer(false);
+  };
+  self.popupPlayer = function() {
+    return self.openPlayer(true);
   };
 
   self.getMatchedFavorite = function(channel) {
