@@ -72,7 +72,7 @@
         <div class="toolbar-inner">
           <div class="pull-left" style="margin-left:8px">
             <div class="btn-group">
-              <a class="btn hastooltip" title="再生" data-placement="right" data-container="body" data-bind="attr: { href: channelPlaylistUrl, download: channelPlaylistFilename }, css: { disabled: !channelPlayable() }" href="#"><i class="icon-play"></i></a>
+              <button class="btn hastooltip" title="再生" data-placement="right" data-container="body" data-bind="click:play, css: { disabled: !channelPlayable() }"><i class="icon-play"></i></button>
               <button class="btn dropdown-toggle" data-toggle="dropdown" data-bind="css: { disabled: !channelPlayable() }">
                 <span class="caret"></span>
               </button>

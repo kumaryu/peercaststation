@@ -249,7 +249,7 @@
             </div>
 
             <div class="ui-row">
-              <div class="ui-header">視聴方法</div>
+              <div class="ui-header">視聴方法(プレイリスト)</div>
               <div class="ui-label">FLV: </div>
               <div class="ui-control">
                 <select data-bind="value:defaultPlayProtocolFLV">
@@ -257,6 +257,19 @@
                   <option value="HTTP">HTTP</option>
                   <option value="RTMP">RTMP</option>
                   <option value="HLS">HTTP Live Streaming</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="ui-row">
+              <div class="ui-header">プレイヤー</div>
+              <div class="ui-label">FLV: </div>
+              <div class="ui-control">
+                <select data-bind="value:defaultPlayerFLV">
+                  <option value="Unknown">既定</option>
+                  <option value="playlist">プレイリストのダウンロード</option>
+                  <option value="html">プレイヤーをタブで開く</option>
+                  <option value="html-popup">プレイヤーを新しいウィンドウで開く</option>
                 </select>
               </div>
             </div>

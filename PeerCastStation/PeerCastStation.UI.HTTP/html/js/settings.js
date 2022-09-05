@@ -290,6 +290,14 @@ var SettingsViewModel = new function() {
       UserConfig.defaultPlayProtocol(obj);
     }
   });
+  self.defaultPlayerFLV          = ko.computed({
+    read: function() { return UserConfig.defaultPlayer()['FLV'] || 'Unknown'; },
+    write: function(value) {
+      var obj = UserConfig.defaultPlayer();
+      obj['FLV'] = value;
+      UserConfig.defaultPlayer(obj);
+    }
+  });
 
   $.each([
     self.maxRelays,
@@ -332,6 +340,7 @@ var SettingsViewModel = new function() {
   };
   $.each([
     UserConfig.defaultPlayProtocol,
+    UserConfig.defaultPlayer,
     self.remoteNodeName
   ], function (i, o) {
     o.subscribe(function (new_value) { if (!updating) self.submitUserConfig(); });

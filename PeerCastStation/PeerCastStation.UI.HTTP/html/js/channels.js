@@ -294,11 +294,45 @@ var YPChannelViewModel = function(owner, initial_value, new_channel) {
   };
 
   self.onOpened = function() {
-    if (!self.isPlayable()) return;
-    var a = document.createElement('a')
-    a.href = self.playlistUrl()
-    a.download = self.playlistFilename()
-    a.click()
+    return self.play();
+  };
+
+  self.play = function() {
+    var player = UserConfig.defaultPlayer()[self.infoContentType()] || 'Unknown';
+    switch (player) {
+    case 'html':
+      self.showPlayer();
+      break;
+    case 'html-popup':
+      self.popupPlayer();
+      break;
+    case 'playlist':
+    case 'Unknown':
+    default:
+      var a = document.createElement('a');
+      a.setAttribute("href", self.playlistUrl());
+      a.setAttribute("download", self.playlistFilename());
+      a.click();
+      break;
+    }
+  }
+  self.showPlayer = function() {
+    if (self.isPlayable()) {
+      window.open('player.html?channelId=' + self.channelId() + '&tip=' + self.tracker(), 'PeerCastStation-Play-' + self.channelId(), "");
+      return true;
+    }
+    else {
+      return false;
+    }
+  };
+  self.popupPlayer = function() {
+    if (self.isPlayable()) {
+      window.open('player.html?channelId=' + self.channelId() + '&tip=' + self.tracker(), 'PeerCastStation-Play-' + self.channelId(), "popup");
+      return true;
+    }
+    else {
+      return false;
+    }
   };
 
   self.toString = function() {
@@ -450,22 +484,20 @@ var YPChannelsViewModel = function() {
     if (!channel || !channel.isPlayable()) return "#";
     return channel.playlistUrl();
   })
-  self.openPlayer = function(popup) {
+  self.play = function() {
     var channel = self.selectedChannel();
     if (!channel) return false;
-    if (channel.isPlayable()) {
-      window.open('player.html?channelId=' + channel.channelId() + '&tip=' + channel.tracker(), 'PeerCastStation-Play-' + channel.channelId(), popup ? "popup" : "");
-      return true;
-    }
-    else {
-      return false;
-    }
-  };
+    return channel.play();
+  }
   self.showPlayer = function() {
-    return self.openPlayer(false);
+    var channel = self.selectedChannel();
+    if (!channel) return false;
+    return channel.showPlayer();
   };
   self.popupPlayer = function() {
-    return self.openPlayer(true);
+    var channel = self.selectedChannel();
+    if (!channel) return false;
+    return channel.popupPlayer();
   };
 
   self.getMatchedFavorite = function(channel) {

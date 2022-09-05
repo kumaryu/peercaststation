@@ -648,6 +648,25 @@ var ChannelViewModel = function(owner, initial_value) {
     $('#channelInfo-'+self.channelId()).slideToggle("fast");
   };
 
+  self.play = function () {
+    var player = UserConfig.defaultPlayer()[self.infoContentType()] || 'Unknown';
+    switch (player) {
+    case 'html':
+      self.showPlayer();
+      break;
+    case 'html-popup':
+      self.popupPlayer();
+      break;
+    case 'playlist':
+    case 'Unknown':
+    default:
+      var a = document.createElement('a');
+      a.setAttribute("href", self.playlistUrl());
+      a.setAttribute("download", self.playlistFilename());
+      a.click();
+      break;
+    }
+  };
   self.showPlayer = function() {
     window.open('player.html?channelId=' + self.channelId(), 'PeerCastStation-Play-' + self.channelId(), "");
   };
