@@ -38,11 +38,13 @@
             else {
               player.volume(player.volume() + dy);
             }
+            player.userActive(true);
+            player.getChild('ControlBar').getChild('VolumePanel').addClass('vjs-hover');
           }
         });
         player.on('volumechange', function (evt) {
           try {
-            window.localStorage.setItem('player.volume', player.volume().toString())
+            window.localStorage.setItem('player.volume', player.volume().toString());
           }
           catch {
           }
