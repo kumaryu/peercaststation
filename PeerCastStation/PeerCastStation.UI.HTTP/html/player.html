@@ -3,7 +3,10 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>再生</title>
-    <link href="https://vjs.zencdn.net/7.10.2/video-js.css" rel="stylesheet" />
+    <script type="text/javascript" src="/Scripts/es5-shim.min.js"></script>
+    <script type="text/javascript" src="/Scripts/es6-shim.min.js"></script>
+    <link href="https://vjs.zencdn.net/7.20.2/video-js.css" rel="stylesheet" />
+    <script src="https://vjs.zencdn.net/7.20.2/video.min.js"></script>
     <style>
   #player {
     position: absolute;
@@ -17,14 +20,14 @@
   <body>
     <video id="player" class="video-js" controls preload="auto" width="960" height="540" data-setup='{"liveui": true, "autoplay": true}'>
     </video>
-    <script src="https://vjs.zencdn.net/7.10.2/video.min.js"></script>
-    <script src="https://unpkg.com/@videojs/http-streaming@2.4.1/dist/videojs-http-streaming.min.js"></script>
     <script type="text/javascript">
       window.addEventListener('load', function () {
         var params = (new URL(document.location)).searchParams;
         var channelId = params.get('channelId');
         var tracker = params.get('tip');
         var player = videojs('player');
+        var lastVolume = parseFloat(window.localStorage.getItem('player.volume'))
+        player.volume(isNaN(lastVolume) ? 0.5 : lastVolume)
         player.el().addEventListener('wheel', function (evt) {
           if (evt.deltaY!==0.0) {
             var dy = (evt.deltaY < 0.0 ? 1.0 : -1.0) * 0.10;
@@ -35,6 +38,13 @@
             else {
               player.volume(player.volume() + dy);
             }
+          }
+        });
+        player.on('volumechange', function (evt) {
+          try {
+            window.localStorage.setItem('player.volume', player.volume().toString())
+          }
+          catch {
           }
         });
         if (channelId) {
