@@ -5,6 +5,7 @@
     <title>再生</title>
     <script type="text/javascript" src="/Scripts/es5-shim.min.js"></script>
     <script type="text/javascript" src="/Scripts/es6-shim.min.js"></script>
+    <script type="text/javascript" src="/api/1/peercaststation.js"></script>
     <link href="https://vjs.zencdn.net/7.20.2/video-js.css" rel="stylesheet" />
     <script src="https://vjs.zencdn.net/7.20.2/video.min.js"></script>
     <style>
@@ -48,6 +49,14 @@
           }
           catch {
           }
+        });
+        player.on('loadedmetadata', function (evt) {
+          PeerCastStation.getChannelInfo(channelId).then(function (result) {
+            if (result.info && result.info.name) {
+              document.title = result.info.name;
+            }
+          }).catch(function () {
+          });
         });
         if (channelId) {
           if (tracker) {
