@@ -19,14 +19,24 @@
     </style>
   </head>
   <body>
-    <video id="player" class="video-js" controls preload="auto" width="960" height="540" data-setup='{"liveui": true, "autoplay": true, "userActions": { "click": false } }'>
+    <video id="player" class="video-js" controls width="960" height="540">
     </video>
     <script type="text/javascript">
       window.addEventListener('load', function () {
         var params = (new URL(document.location)).searchParams;
         var channelId = params.get('channelId');
         var tracker = params.get('tip');
-        var player = videojs('player');
+        var player = videojs('player', {
+          liveui: true, 
+          autoplay: true,
+          userActions: { click: false },
+          html5: {
+            vhs: {
+              maxPlaylistRetries: 5,
+              blacklistDuration: Infinity
+            }
+          }
+        });
         var lastVolume = parseFloat(window.localStorage.getItem('player.volume'))
         player.volume(isNaN(lastVolume) ? 0.5 : lastVolume)
         player.el().addEventListener('wheel', function (evt) {
@@ -57,6 +67,58 @@
             }
           }).catch(function () {
           });
+        });
+        var onPlayerError = function (retry) {
+          PeerCastStation.getChannelStatus(channelId).then(function (result) {
+            switch (result.status) {
+            case "Idle":
+                player.getChild("errorDisplay").fillWith('チャンネルが終了しました');
+                break;
+            case "Receiving":
+                player.reset();
+                if (tracker) {
+                  player.src({type: 'video/mpegURL', src: '/hls/' + channelId + '.m3u8?tip=' + tracker});
+                }
+                else {
+                  player.src({type: 'video/mpegURL', src: '/hls/' + channelId + '.m3u8'});
+                }
+                break;
+            case "Searching":
+            case "Connecting":
+                player.getChild("errorDisplay").fillWith('チャンネル再接続中');
+                window.setTimeout(function () { onPlayerError(retry); }, 1.0);
+                break;
+            case "Error":
+                if (retry) {
+                  player.getChild("errorDisplay").fillWith('チャンネルに接続できません');
+                  PeerCastStation.bumpChannel(channelId).then(function () {
+                    window.setTimeout(function () { onPlayerError(retry); }, 1.0);
+                  }).catch(function () {
+                  });
+                }
+                break;
+            }
+          }).catch(function () {
+            player.getChild("errorDisplay").fillWith('チャンネルが切断されました');
+          });
+        }
+        player.on('error', function (evt) {
+          console.log('Player error', evt)
+          onPlayerError(true);
+        });
+        player.on('stalled', function (evt) {
+          console.log('Player stalled', evt)
+        });
+        player.on('ended', function (evt) {
+          console.log('Player ended', evt)
+          onPlayerError(true);
+        });
+        player.on('abort', function (evt) {
+          console.log('Player abort', evt)
+          onPlayerError(true);
+        });
+        player.on('emptied', function (evt) {
+          console.log('Player emptied', evt)
         });
         if (channelId) {
           if (tracker) {
