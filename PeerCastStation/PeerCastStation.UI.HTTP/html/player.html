@@ -38,7 +38,6 @@
           }
         });
         var lastVolume = parseFloat(window.localStorage.getItem('player.volume'))
-        player.volume(isNaN(lastVolume) ? 0.5 : lastVolume)
         player.el().addEventListener('wheel', function (evt) {
           if (evt.deltaY!==0.0) {
             var dy = (evt.deltaY < 0.0 ? 1.0 : -1.0) * 0.10;
@@ -55,7 +54,8 @@
         });
         player.on('volumechange', function (evt) {
           try {
-            window.localStorage.setItem('player.volume', player.volume().toString());
+            lastVolume = player.volume();
+            window.localStorage.setItem('player.volume', lastVolume.toString());
           }
           catch {
           }
@@ -68,6 +68,15 @@
           }).catch(function () {
           });
         });
+        var play = function () {
+          player.volume(isNaN(lastVolume) ? 0.5 : lastVolume)
+          if (tracker) {
+            player.src({type: 'video/mpegURL', src: '/hls/' + channelId + '.m3u8?tip=' + tracker + '&hash=' + Date.now()});
+          }
+          else {
+            player.src({type: 'video/mpegURL', src: '/hls/' + channelId + '.m3u8?hash=' + Date.now()});
+          }
+        };
         var onPlayerError = function (retry) {
           PeerCastStation.getChannelStatus(channelId).then(function (result) {
             switch (result.status) {
@@ -75,13 +84,7 @@
                 player.getChild("errorDisplay").fillWith('チャンネルが終了しました');
                 break;
             case "Receiving":
-                player.reset();
-                if (tracker) {
-                  player.src({type: 'video/mpegURL', src: '/hls/' + channelId + '.m3u8?tip=' + tracker});
-                }
-                else {
-                  player.src({type: 'video/mpegURL', src: '/hls/' + channelId + '.m3u8'});
-                }
+                play();
                 break;
             case "Searching":
             case "Connecting":
@@ -111,22 +114,15 @@
         });
         player.on('ended', function (evt) {
           console.log('Player ended', evt)
-          onPlayerError(true);
         });
         player.on('abort', function (evt) {
           console.log('Player abort', evt)
-          onPlayerError(true);
         });
         player.on('emptied', function (evt) {
           console.log('Player emptied', evt)
         });
         if (channelId) {
-          if (tracker) {
-            player.src({type: 'video/mpegURL', src: '/hls/' + channelId + '.m3u8?tip=' + tracker});
-          }
-          else {
-            player.src({type: 'video/mpegURL', src: '/hls/' + channelId + '.m3u8'});
-          }
+          play();
         }
       });
     </script>
