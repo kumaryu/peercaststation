@@ -1,4 +1,82 @@
 ---
+- name: Version 4.0.0 (2022年09月22日安定版)
+  version: 4.0.0
+  channel: stable2
+  notes: |
+    ランタイムを.NET6に移行しました。いまのところ基本的には動作は変わらず、不具合の修正が主です。
+
+    ## 変更点
+    * 今まで.NET Frameworkやmonoを使って起動するようにしていたのを.NET6に移行しました。
+    これで動作が変わるということは特にありませんが、Windowsではランタイムを同梱するようになったので別途ランタイムのインストールは必要ありません。Windows以外では.NET6のランタイムを別途インストールすることを推奨しますが、無い場合は起動時にランタイムを`~/.dotnet/`に自動的にインストールします。
+    * Windows版はx86版とx64版が分かれるようになりました。ARM64版はまだないので必要ならx86版を使用してください。
+    * 配信開始時の配信情報履歴で最近使ったものは上に並ぶようにしました。
+    * M3Uプレイリストの拡張情報にチャンネル名を含めるようにしました。
+    * HTML UIからプレイリストファイルをダウンロードする時にチャンネル名をファイル名とするようにしました。
+    * アップデート情報の取得と新バージョンのダウンロードにhttpsを使用するようにしました。
+
+    ## 修正点
+    * 視聴上限数がHTTPとHLS視聴の時に適用されていなかったのを修正しました。
+    * /html/index.txt の TIP に変な値が入っていたのをなるべくトラッカー(配信元)のIPが入るようにしました。
+    * ポートチェックを改善し、GUIではポート開放になっているのに実際接続すると開放にならない場合があったのを修正しました。
+    * ポートチェック時に一つのポートでチェック失敗すると、全てのポートでチェック失敗になっていたのを修正しました。
+    * 他のチャンネルをソースにした配信で、元チャンネルのトラック情報がコピーされないことがあったのを修正しました。
+    * RTMP配信でエンコーダを先に止めた状態でチャンネルを停止すると、エンコーダの接続待ちになってしまうことがあったのを修正しました。
+
+  date: 2022-09-22T17:00:00+09:00
+  url: https://www.pecastation.org/files/PeerCastStation-4.0.0-any.zip
+  enclosures:
+  - type: archive
+    platform: any
+    url: https://www.pecastation.org/files/PeerCastStation-4.0.0-any.zip
+    length: 2343342
+  - type: archive
+    platform: win-x86
+    url: https://www.pecastation.org/files/PeerCastStation-4.0.0-x86.zip
+    length: 64925358
+  - type: archive
+    platform: win-x64
+    url: https://www.pecastation.org/files/PeerCastStation-4.0.0-x64.zip
+    length: 70750602
+  - type: installer
+    platform: win-x86
+    url: https://www.pecastation.org/files/PeerCastStation-4.0.0-x86.msi
+    length: 64704156
+  - type: installer
+    platform: win-x64
+    url: https://www.pecastation.org/files/PeerCastStation-4.0.0-x64.msi
+    length: 70606346
+  - type: serviceinstaller
+    platform: win-x86
+    url: https://www.pecastation.org/files/PecaStationd-4.0.0-x86.msi
+    length: 32451495
+  - type: serviceinstaller
+    platform: win-x64
+    url: https://www.pecastation.org/files/PecaStationd-4.0.0-x64.msi
+    length: 35367701
+
+- name: Version 2.8.2 (2022年09月21日安定版)
+  version: 2.8.2
+  channel: stable
+  notes: |
+    4.0以降へのバージョンアップができるようにしました。
+
+    ## 変更点
+    * 2.8.2から4.0以降へのバージョンアップができるようにしました。このバージョンへの更新後、すぐに4.0以降のバージョンアップ通知が出ますので再度バージョンアップを行ってください。
+    * 一部のバージョン(特にzip版)からは自動アップデートが動かない可能性があります。その場合は4.0以降を手動で再インストールしてください。
+
+  date: 2022-09-21T17:00:00+09:00
+  url: https://www.pecastation.org/files/PeerCastStation-2.8.2.zip
+  enclosures:
+  - type: archive
+    url: https://www.pecastation.org/files/PeerCastStation-2.8.2.zip
+    length: 1971146
+  - type: installer
+    url: https://www.pecastation.org/files/PeerCastStation-2.8.2.exe
+    length: 2488810
+  - type: serviceinstaller
+    url: https://www.pecastation.org/files/PecaStationd-2.8.2.msi
+    length: 2155696
+
 - name: Version 3.1.0 (2022年08月14日開発版)
   version: 3.1.0
   channel: dev2

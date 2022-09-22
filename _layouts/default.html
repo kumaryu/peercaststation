@@ -21,7 +21,7 @@
 
         <ul>
           <li class="download" style="width:auto; height:auto">
-          {% assign stable = site.data.releasenotes | where:'channel','stable' | first %}
+          {% assign stable = site.data.releasenotes | where:'channel','stable2' | first %}
           <a class="buttons" href="{{ '/download-stable.html' | relative_url }}">安定版ダウンロード<br>{{ stable.name }}</a>
           </li>
           {% assign dev = site.data.releasenotes | where:'channel','dev2' | first %}
