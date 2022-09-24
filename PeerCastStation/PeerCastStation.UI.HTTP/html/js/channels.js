@@ -300,19 +300,19 @@ var YPChannelViewModel = function(owner, initial_value, new_channel) {
   self.play = function() {
     var player = UserConfig.defaultPlayer()[self.infoContentType()] || 'Unknown';
     switch (player) {
-    case 'html':
-      self.showPlayer();
-      break;
-    case 'html-popup':
-      self.popupPlayer();
-      break;
     case 'playlist':
-    case 'Unknown':
-    default:
       var a = document.createElement('a');
       a.setAttribute("href", self.playlistUrl());
       a.setAttribute("download", self.playlistFilename());
       a.click();
+      break;
+    case 'html':
+      self.showPlayer();
+      break;
+    case 'html-popup':
+    case 'Unknown':
+    default:
+      self.popupPlayer();
       break;
     }
   }
