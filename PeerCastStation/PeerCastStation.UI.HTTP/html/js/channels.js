@@ -294,11 +294,45 @@ var YPChannelViewModel = function(owner, initial_value, new_channel) {
   };
 
   self.onOpened = function() {
-    if (!self.isPlayable()) return;
-    var a = document.createElement('a')
-    a.href = self.playlistUrl()
-    a.download = self.playlistFilename()
-    a.click()
+    return self.play();
+  };
+
+  self.play = function() {
+    var player = UserConfig.defaultPlayer()[self.infoContentType()] || 'Unknown';
+    switch (player) {
+    case 'playlist':
+      var a = document.createElement('a');
+      a.setAttribute("href", self.playlistUrl());
+      a.setAttribute("download", self.playlistFilename());
+      a.click();
+      break;
+    case 'html':
+      self.showPlayer();
+      break;
+    case 'html-popup':
+    case 'Unknown':
+    default:
+      self.popupPlayer();
+      break;
+    }
+  }
+  self.showPlayer = function() {
+    if (self.isPlayable()) {
+      window.open('player.html?channelId=' + self.channelId() + '&tip=' + self.tracker(), 'PeerCastStation-Play-' + self.channelId(), "");
+      return true;
+    }
+    else {
+      return false;
+    }
+  };
+  self.popupPlayer = function() {
+    if (self.isPlayable()) {
+      window.open('player.html?channelId=' + self.channelId() + '&tip=' + self.tracker(), 'PeerCastStation-Play-' + self.channelId(), "popup");
+      return true;
+    }
+    else {
+      return false;
+    }
   };
 
   self.toString = function() {
@@ -437,19 +471,34 @@ var YPChannelsViewModel = function() {
   });
   self.channelPlayable = ko.computed(function () {
     var channel = self.selectedChannel();
-    if (channel==null) return false;
+    if (!channel) return false;
     return channel.isPlayable();
   });
   self.channelPlaylistFilename = ko.computed(function () {
     var channel = self.selectedChannel();
-    if (channel==null || !channel.isPlayable()) return "";
+    if (!channel || !channel.isPlayable()) return "";
     return channel.playlistFilename();
   })
   self.channelPlaylistUrl = ko.computed(function () {
     var channel = self.selectedChannel();
-    if (channel==null || !channel.isPlayable()) return "#";
+    if (!channel || !channel.isPlayable()) return "#";
     return channel.playlistUrl();
   })
+  self.play = function() {
+    var channel = self.selectedChannel();
+    if (!channel) return false;
+    return channel.play();
+  }
+  self.showPlayer = function() {
+    var channel = self.selectedChannel();
+    if (!channel) return false;
+    return channel.showPlayer();
+  };
+  self.popupPlayer = function() {
+    var channel = self.selectedChannel();
+    if (!channel) return false;
+    return channel.popupPlayer();
+  };
 
   self.getMatchedFavorite = function(channel) {
     var fav_channels = self.favoriteChannels();

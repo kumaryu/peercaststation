@@ -440,6 +440,17 @@ namespace PeerCastStation.UI.HTTP
         res["isRelayFull"]     = channel.IsRelayFull;
         res["isDirectFull"]    = channel.IsDirectFull;
         res["isReceiving"]     = channel.SelfNode.IsReceiving;
+        switch (PeerCast.GetPortStatus(channel.Network)) {
+        case PortStatus.Unknown:
+          res["isFirewalled"] = null;
+          break;
+        case PortStatus.Open:
+          res["isFirewalled"] = false;
+          break;
+        case PortStatus.Firewalled:
+          res["isFirewalled"] = true;
+          break;
+        }
         return res;
       }
 

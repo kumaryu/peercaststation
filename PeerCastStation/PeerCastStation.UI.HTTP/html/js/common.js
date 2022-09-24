@@ -48,6 +48,7 @@ var UserConfig = new function () {
   var loading = false;
   self.remoteNodeName = ko.observable("sessionId");
   self.defaultPlayProtocol = ko.observable({});
+  self.defaultPlayer = ko.observable({});
   self.ypChannels = ko.observable({});
 
   var loadingTask = null;
@@ -63,6 +64,12 @@ var UserConfig = new function () {
         if (!value) return;
         loading = true;
         self.defaultPlayProtocol(value);
+        loading = false;
+      }),
+      PeerCastStation.getUserConfig('default', 'defaultPlayer').then(function (value) {
+        if (!value) return;
+        loading = true;
+        self.defaultPlayer(value);
         loading = false;
       }),
       PeerCastStation.getUserConfig('default', 'ypChannels').then(function (value) {
@@ -86,6 +93,7 @@ var UserConfig = new function () {
     return Promise.all([
       PeerCastStation.setUserConfig('default', 'ui', ui),
       PeerCastStation.setUserConfig('default', 'defaultPlayProtocol', self.defaultPlayProtocol()),
+      PeerCastStation.setUserConfig('default', 'defaultPlayer', self.defaultPlayer()),
       PeerCastStation.setUserConfig('default', 'ypChannels', self.ypChannels())
     ]);
   };
@@ -94,6 +102,7 @@ var UserConfig = new function () {
     var defaultUser = {
       ui: { remoteNodeName: self.remoteNodeName() },
       defaultPlayProtocol: self.defaultPlayProtocol(),
+      defaultPlayer: self.defaultPlayer(),
       ypChannels: self.ypChannels()
     };
     return new Blob([JSON.stringify({ default: defaultUser }, null, 2)], { "type" : "application/json" });
@@ -116,6 +125,9 @@ var UserConfig = new function () {
           }
           if (doc.default.defaultPlayProtocol) {
             self.defaultPlayProtocol(doc.default.defaultPlayProtocol);
+          }
+          if (doc.default.defaultPlayer) {
+            self.defaultPlayer(doc.default.defaultPlayer);
           }
           if (doc.default.ypChannels) {
             self.ypChannels(doc.default.ypChannels);

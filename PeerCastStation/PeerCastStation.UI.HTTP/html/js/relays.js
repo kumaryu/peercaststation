@@ -648,6 +648,32 @@ var ChannelViewModel = function(owner, initial_value) {
     $('#channelInfo-'+self.channelId()).slideToggle("fast");
   };
 
+  self.play = function () {
+    var player = UserConfig.defaultPlayer()[self.infoContentType()] || 'Unknown';
+    switch (player) {
+    case 'playlist':
+      var a = document.createElement('a');
+      a.setAttribute("href", self.playlistUrl());
+      a.setAttribute("download", self.playlistFilename());
+      a.click();
+      break;
+    case 'html':
+      self.showPlayer();
+      break;
+    case 'html-popup':
+    case 'Unknown':
+    default:
+      self.popupPlayer();
+      break;
+    }
+  };
+  self.showPlayer = function() {
+    window.open('player.html?channelId=' + self.channelId(), 'PeerCastStation-Play-' + self.channelId(), "");
+  };
+  self.popupPlayer = function() {
+    window.open('player.html?channelId=' + self.channelId(), 'PeerCastStation-Play-' + self.channelId(), "popup");
+  };
+
   var updateConnections = function() {
     PeerCastStation.getChannelConnections(self.channelId()).then(function(result) {
       var connections = self.connections();

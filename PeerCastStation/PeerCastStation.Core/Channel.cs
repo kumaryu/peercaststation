@@ -191,6 +191,7 @@ namespace PeerCastStation.Core
     {
       public readonly Channel Channel;
       public readonly IChannelSink Sink;
+      private bool disposed = false;
 
       public ChannelSinkSubscription(Channel channel, IChannelSink sink)
       {
@@ -200,7 +201,10 @@ namespace PeerCastStation.Core
 
       public void Dispose()
       {
-        Channel.RemoveOutputStream(Sink);
+        if (!disposed) {
+          disposed = true;
+          Channel.RemoveOutputStream(Sink);
+        }
       }
     }
 

@@ -1,0 +1,219 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>再生 - PeerCastStation </title>
+    <script type="text/javascript" src="/Scripts/es5-shim.min.js"></script>
+    <script type="text/javascript" src="/Scripts/es6-shim.min.js"></script>
+    <script type="text/javascript" src="/api/1/peercaststation.js"></script>
+    <link type="text/css" href="css/index.css" rel="stylesheet" />
+    <link href="https://vjs.zencdn.net/7.20.2/video-js.css" rel="stylesheet" />
+    <script src="https://vjs.zencdn.net/7.20.2/video.min.js"></script>
+    <style>
+  #player {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+  }
+    </style>
+  </head>
+  <body>
+    <video id="player" class="video-js" controls width="960" height="540">
+    </video>
+    <script type="text/javascript">
+      var Component = videojs.getComponent('Component');
+      var ChannelStatus = videojs.extend(Component, {
+        constructor: function(player, options) {
+          Component.apply(this, arguments);
+          this.channelId = options.channelId;
+          this.setInterval(this.updateContent, 1000);
+        },
+        createEl: function() {
+          return videojs.dom.createEl('div', {
+            className: 'vjs-live-control'
+          }, {}, [
+            videojs.dom.createEl('i'),
+            videojs.dom.createEl('span'),
+            videojs.dom.createEl('span', { className: 'vjs-channel-info' }),
+            videojs.dom.createEl('span', { className: 'vjs-channel-info' }),
+          ]);
+        },
+        updateContent: function() {
+          var channelId = this.channelId;
+          var el = this.el();
+          PeerCastStation.getChannelInfo(channelId).then(function (channelInfo) {
+            PeerCastStation.getChannelStatus(channelId).then(function (channelStatus) {
+              el.children[0].className = (function () {
+                var result = "";
+                if (channelStatus.isReceiving) {
+                  if (channelStatus.isFirewalled) {
+                    if (channelStatus.localRelays && channelStatus.localRelays>0) {
+                      result = "firewalledRelaying";
+                    }
+                    else {
+                      result = "firewalled";
+                    }
+                  }
+                  else if (channelStatus.isRelayFull) {
+                    if (channelStatus.localRelays && channelStatus.localRelays>0) {
+                      result = "relayFull";
+                    }
+                    else {
+                      result = "notRelayable";
+                    }
+                  }
+                  else {
+                    result = "relayable";
+                  }
+                }
+                else {
+                  result = "notReceiving";
+                }
+                return result;
+              })();
+              if (channelInfo.info.url) {
+                if (!el.children[1].firstElementChild || el.children[1].firstElementChild.localName !== 'a') {
+                  videojs.dom.emptyEl(el.children[1]);
+                  videojs.dom.appendContent(el.children[1], videojs.dom.createEl('a', { className: 'vjs-channel-info' }, { href: channelInfo.info.url, target: '_blank' }, channelInfo.info.name));
+                }
+                else {
+                  el.children[1].firstElementChild.href = channelInfo.info.url
+                  el.children[1].firstElementChild.text = channelInfo.info.name
+                }
+              }
+              else {
+                if (!el.children[1].firstElementChild || el.children[1].firstElementChild.localName !== 'span') {
+                  videojs.dom.emptyEl(el.children[1]);
+                  videojs.dom.appendContent(el.children[1], videojs.dom.createEl('span', { className: 'vjs-channel-info' }, { }, channelInfo.info.name));
+                }
+                else {
+                  el.children[1].firstElementChild.text = channelInfo.info.name
+                }
+              }
+              el.children[2].textContent =
+                channelInfo.info.bitrate + 'kbps ' +
+                '(' + channelStatus.totalDirects + '/' + channelStatus.totalRelays + ') ' +
+                '[' + channelStatus.localDirects + '/' + channelStatus.localRelays + '] ' +
+                channelStatus.status;
+              el.children[3].textContent =
+                channelInfo.info.genre + ' - ' +
+                channelInfo.info.desc + ' ' +
+                channelInfo.info.comment + ' ' +
+                (channelInfo.track && channelInfo.track.name ? ' Playing: ' + channelInfo.track.name : '');
+            }).catch(function () {});
+          }).catch(function () {});
+        }
+      });
+      videojs.registerComponent('ChannelStatus', ChannelStatus);
+
+      window.addEventListener('load', function () {
+        var params = (new URL(document.location)).searchParams;
+        var channelId = params.get('channelId');
+        var tracker = params.get('tip');
+        var player = videojs('player', {
+          liveui: true, 
+          autoplay: true,
+          userActions: { click: false },
+          html5: {
+            vhs: {
+              maxPlaylistRetries: 5,
+              blacklistDuration: Infinity
+            }
+          }
+        });
+        player.getChild('ControlBar').addChild('ChannelStatus', { channelId: channelId }, 6);
+        player.getChild('ControlBar').removeChild('LiveDisplay');
+
+        var lastVolume = parseFloat(window.localStorage.getItem('player.volume'))
+        player.el().addEventListener('wheel', function (evt) {
+          if (evt.deltaY!==0.0) {
+            var dy = (evt.deltaY < 0.0 ? 1.0 : -1.0) * 0.10;
+            if (dy > 0.0 && player.muted()) {
+              player.volume(dy);
+              player.muted(false);
+            }
+            else {
+              player.volume(player.volume() + dy);
+            }
+            player.userActive(true);
+            player.getChild('ControlBar').getChild('VolumePanel').addClass('vjs-hover');
+          }
+        });
+        player.on('volumechange', function (evt) {
+          try {
+            lastVolume = player.volume();
+            window.localStorage.setItem('player.volume', lastVolume.toString());
+          }
+          catch {
+          }
+        });
+        player.on('loadedmetadata', function (evt) {
+          PeerCastStation.getChannelInfo(channelId).then(function (result) {
+            if (result.info && result.info.name) {
+              document.title = result.info.name;
+            }
+          }).catch(function () {
+          });
+        });
+        var play = function () {
+          player.volume(isNaN(lastVolume) ? 0.5 : lastVolume)
+          if (tracker) {
+            player.src({type: 'video/mpegURL', src: '/hls/' + channelId + '.m3u8?tip=' + tracker + '&hash=' + Date.now()});
+          }
+          else {
+            player.src({type: 'video/mpegURL', src: '/hls/' + channelId + '.m3u8?hash=' + Date.now()});
+          }
+        };
+        var onPlayerError = function (retry) {
+          PeerCastStation.getChannelStatus(channelId).then(function (result) {
+            switch (result.status) {
+            case "Idle":
+                player.getChild("errorDisplay").fillWith('チャンネルが終了しました');
+                break;
+            case "Receiving":
+                play();
+                break;
+            case "Searching":
+            case "Connecting":
+                player.getChild("errorDisplay").fillWith('チャンネル再接続中');
+                window.setTimeout(function () { onPlayerError(retry); }, 300);
+                break;
+            case "Error":
+                if (retry) {
+                  player.getChild("errorDisplay").fillWith('チャンネルに接続できません');
+                  PeerCastStation.bumpChannel(channelId).then(function () {
+                    window.setTimeout(function () { onPlayerError(retry); }, 300);
+                  }).catch(function () {
+                  });
+                }
+                break;
+            }
+          }).catch(function () {
+            player.getChild("errorDisplay").fillWith('チャンネルが切断されました');
+          });
+        }
+        player.on('error', function (evt) {
+          console.log('Player error', evt)
+          onPlayerError(true);
+        });
+        player.on('stalled', function (evt) {
+          console.log('Player stalled', evt)
+        });
+        player.on('ended', function (evt) {
+          console.log('Player ended', evt)
+        });
+        player.on('abort', function (evt) {
+          console.log('Player abort', evt)
+        });
+        player.on('emptied', function (evt) {
+          console.log('Player emptied', evt)
+        });
+        if (channelId) {
+          play();
+        }
+      });
+    </script>
+  </body>
+</html>

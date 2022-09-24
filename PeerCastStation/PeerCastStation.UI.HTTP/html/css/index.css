@@ -39,13 +39,13 @@ ul.relayTree {
 
 .ipv4 {
   display: inline-block;
-  vertical-align: text-top;
+  margin: auto 2px;
   width: 16px;
   height: 16px;
 }
 .ipv6{
   display: inline-block;
-  vertical-align: text-top;
+  margin: auto 2px;
   width: 16px;
   height: 16px;
   background-repeat: no-repeat;
@@ -54,7 +54,7 @@ ul.relayTree {
 
 .relayable {
   display: inline-block;
-  vertical-align: text-top;
+  margin: auto 2px;
   width: 16px;
   height: 16px;
   background-repeat: no-repeat;
@@ -62,7 +62,7 @@ ul.relayTree {
 }
 .relayFull {
   display: inline-block;
-  vertical-align: text-top;
+  margin: auto 2px;
   width: 16px;
   height: 16px;
   background-repeat: no-repeat;
@@ -70,7 +70,7 @@ ul.relayTree {
 }
 .notRelayable {
   display: inline-block;
-  vertical-align: text-top;
+  margin: auto 2px;
   width: 16px;
   height: 16px;
   background-repeat: no-repeat;
@@ -78,7 +78,7 @@ ul.relayTree {
 }
 .firewalled {
   display: inline-block;
-  vertical-align: text-top;
+  margin: auto 2px;
   width: 16px;
   height: 16px;
   background-repeat: no-repeat;
@@ -86,7 +86,7 @@ ul.relayTree {
 }
 .firewalledRelaying {
   display: inline-block;
-  vertical-align: text-top;
+  margin: auto 2px;
   width: 16px;
   height: 16px;
   background-repeat: no-repeat;
@@ -94,7 +94,7 @@ ul.relayTree {
 }
 .unknown {
   display: inline-block;
-  vertical-align: text-top;
+  margin: auto 2px;
   width: 16px;
   height: 16px;
   background-repeat: no-repeat;
@@ -102,7 +102,7 @@ ul.relayTree {
 }
 .notReceiving {
   display: inline-block;
-  vertical-align: text-top;
+  margin: auto 2px;
   width: 16px;
   height: 16px;
   background-repeat: no-repeat;
@@ -110,7 +110,7 @@ ul.relayTree {
 }
 .connectionToRoot {
   display: inline-block;
-  vertical-align: text-top;
+  margin: auto 2px;
   width: 16px;
   height: 16px;
   background-repeat: no-repeat;
@@ -118,7 +118,7 @@ ul.relayTree {
 }
 .connectionToTracker {
   display: inline-block;
-  vertical-align: text-top;
+  margin: auto 2px;
   width: 16px;
   height: 16px;
   background-repeat: no-repeat;
@@ -328,3 +328,10 @@ ul.relayTree {
   display:none;
 }
 
+.vjs-channel-info {
+  margin-left: 3px;
+  text-overflow:ellipsis;
+}
+a.vjs-channel-info {
+  color: inherit;
+}

@@ -90,11 +90,11 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    internal static async Task<(HttpStatusCode, Channel)> GetChannelAsync(OwinEnvironment ctx, Guid channelId, CancellationToken ct)
+    internal static async Task<(HttpStatusCode, Channel)> GetChannelAsync(OwinEnvironment ctx, Guid channelId, bool requestRelay, CancellationToken ct)
     {
       try {
         var tip = ctx.Request.Query.Get("tip");
-        var channel = ctx.GetPeerCast()?.RequestChannel(channelId, OutputStreamBase.CreateTrackerUri(channelId, tip), request_relay: true);
+        var channel = ctx.GetPeerCast()?.RequestChannel(channelId, OutputStreamBase.CreateTrackerUri(channelId, tip), request_relay: requestRelay);
         if (channel==null) {
           return (HttpStatusCode.NotFound, null!);
         }
@@ -124,7 +124,7 @@ namespace PeerCastStation.HTTP
         return;
       }
 
-      var (statusCode, channel) = await GetChannelAsync(ctx, req.ChannelId, ct).ConfigureAwait(false);
+      var (statusCode, channel) = await GetChannelAsync(ctx, req.ChannelId, requestRelay:true, ct).ConfigureAwait(false);
       if (statusCode!=HttpStatusCode.OK) {
         ctx.Response.StatusCode = statusCode;
         return;
@@ -285,7 +285,7 @@ namespace PeerCastStation.HTTP
         ctx.Response.StatusCode = req.Status;
         return;
       }
-      var (statusCode, channel) = await GetChannelAsync(ctx, req.ChannelId, ct).ConfigureAwait(false);
+      var (statusCode, channel) = await GetChannelAsync(ctx, req.ChannelId, requestRelay:true, ct).ConfigureAwait(false);
       if (statusCode!=HttpStatusCode.OK) {
         ctx.Response.StatusCode = statusCode;
         return;

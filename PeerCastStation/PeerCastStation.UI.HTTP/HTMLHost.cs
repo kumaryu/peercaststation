@@ -173,6 +173,7 @@ namespace PeerCastStation.UI.HTTP
         sub.Run(InvokeIndexTXT);
       });
       BuildPath(builder, "/html/play.html", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/play.html"));
+      BuildPath(builder, "/html/player.html", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/player.html"));
       BuildPath(builder, "/html/js", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/js"));
       BuildPath(builder, "/html/css", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/css"));
       BuildPath(builder, "/html/images", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/images"));

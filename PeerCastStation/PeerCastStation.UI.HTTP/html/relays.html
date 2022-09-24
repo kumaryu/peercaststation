@@ -116,7 +116,15 @@
                   <a href="#" class="btn btn-mini" data-bind="click:showRelayTree" rel="tooltip" title="リレーツリー"><i class="icon-signal"></i></a>
                 </div>
                 <div class="btn-group">
-                  <a class="btn btn-mini" data-bind="attr: { href: playlistUrl, download: playlistFilename }" rel="tooltip" title="再生"><i class="icon-play"></i></a>
+                  <button class="btn btn-mini" data-bind="click:play" rel="tooltip" title="再生"><i class="icon-play"></i></button>
+                  <button class="btn btn-mini dropdown-toggle" data-toggle="dropdown">
+                    <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a data-bind="attr: { href: playlistUrl, download: playlistFilename }">プレイリストを開く</a></li>
+                    <li><a data-bind="click:showPlayer">プレイヤーをタブで開く</a></li>
+                    <li><a data-bind="click:popupPlayer">プレイヤーを新しいウィンドウで開く</a></li>
+                  </ul>
                   <a href="#" class="btn btn-mini" data-bind="click:bump" rel="tooltip" title="再接続"><i class="icon-repeat"></i></a>
                   <a href="#" class="btn btn-mini" data-bind="click:stop" rel="tooltip" title="停止"><i class="icon-stop"></i></a>
                 </div>
