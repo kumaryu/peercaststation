@@ -1,0 +1,27 @@
+{
+  "name": "peercaststation.ui.http",
+  "version": "1.0.0",
+  "description": "",
+  "author": "",
+  "license": "ISC",
+  "source": [
+    "html/player.html"
+  ],
+  "targets": {
+    "default": {
+      "context": "browser",
+      "distDir": "./obj/dist"
+    }
+  },
+  "parcelIgnore": [
+    "api"
+  ],
+  "scripts": {
+    "build": "parcel build"
+  },
+  "devDependencies": {
+    "parcel": "^2.7.0",
+    "parcel-resolver-ignore": "^2.1.3",
+    "video.js": "^7.20.3"
+  }
+}
