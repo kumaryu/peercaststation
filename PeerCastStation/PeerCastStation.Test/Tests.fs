@@ -166,7 +166,7 @@ module OwinHostTest =
 
     [<Fact>]
     let ``EnvにLocalEndPointが入ってくる`` () =
-        let mutable localaddr : string = ""
+        let mutable localaddr : IPAddress = null
         let mutable localport : int option = Some -1
         use peca =
             pecaWithOwinHost endpoint (
@@ -183,12 +183,12 @@ module OwinHostTest =
         sprintf "http://%s/index.txt" (endpoint.ToString())
         |> HttpClient.getString
         |> Assert.equal ""
-        Assert.Equal(endpoint.Address.ToString(), localaddr)
+        Assert.Equal(endpoint.Address, localaddr)
         Assert.Equal(endpoint.Port, localport |> Option.defaultValue 80)
 
     [<Fact>]
     let ``EnvにRemoteEndPointが入ってくる`` () =
-        let mutable remoteaddr : string = ""
+        let mutable remoteaddr : IPAddress = null
         let mutable remoteport : int option = Some -1
         use peca =
             pecaWithOwinHost endpoint (
@@ -205,7 +205,7 @@ module OwinHostTest =
         sprintf "http://%s/index.txt" (endpoint.ToString())
         |> HttpClient.getString
         |> Assert.equal ""
-        Assert.Equal(endpoint.Address.ToString(), remoteaddr)
+        Assert.Equal(endpoint.Address, remoteaddr)
         Assert.NotEqual(endpoint.Port, remoteport |> Option.defaultValue 80)
 
     [<Fact>]

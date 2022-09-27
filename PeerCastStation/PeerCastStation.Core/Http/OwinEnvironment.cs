@@ -119,8 +119,16 @@ namespace PeerCastStation.Core.Http
         }
       }
 
-      public string? LocalIpAddress {
-        get { return env.Get(Server.LocalIpAddress, null); }
+      public IPAddress? LocalIpAddress {
+        get {
+          var addressStr = env.Get(Server.LocalIpAddress, null);
+          if (addressStr!=null && IPAddress.TryParse(addressStr, out IPAddress? addr)) {
+            return addr;
+          }
+          else {
+            return null;
+          }
+        }
       }
 
       public int? LocalPort {
@@ -135,13 +143,22 @@ namespace PeerCastStation.Core.Http
         }
       }
 
-      public string? RemoteIpAddress {
-        get { return env.Get(Server.RemoteIpAddress, null); }
+      public IPAddress? RemoteIpAddress {
+        get {
+          var addressStr = env.Get(Server.RemoteIpAddress, null);
+          if (addressStr!=null && IPAddress.TryParse(addressStr, out IPAddress? addr)) {
+            return addr;
+          }
+          else {
+            return null;
+          }
+        }
       }
 
       public int? RemotePort {
         get {
-          if (env.TryGetValue(Server.RemotePort, out int port)) {
+          if (env.TryGetValue(Server.RemotePort, out string? portStr) &&
+              int.TryParse(portStr, out int port)) {
             return port;
           }
           else {
@@ -152,12 +169,7 @@ namespace PeerCastStation.Core.Http
 
       public IPEndPoint GetRemoteEndPoint(IPEndPoint defaultValue)
       {
-        if (IPAddress.TryParse(RemoteIpAddress ?? "", out var address)) {
-          return new IPEndPoint(address, RemotePort ?? defaultValue.Port);
-        }
-        else {
-          return new IPEndPoint(defaultValue.Address, RemotePort ?? defaultValue.Port);
-        }
+        return new IPEndPoint(RemoteIpAddress ?? defaultValue.Address, RemotePort ?? defaultValue.Port);
       }
 
       public IPEndPoint GetRemoteEndPoint()
