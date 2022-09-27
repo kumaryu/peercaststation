@@ -18,7 +18,6 @@ using PeerCastStation.Core;
 using PeerCastStation.Core.Http;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Net;
 
 namespace PeerCastStation.PCP
 {
@@ -66,16 +65,6 @@ namespace PeerCastStation.PCP
     {
       if (Int64.TryParse(request.Headers.Get("x-peercast-pos"), out var pos)) {
         return pos;
-      }
-      else {
-        return null;
-      }
-    }
-
-    public static IPEndPoint? GetRemoteEndPoint(this OwinEnvironment.OwinRequest request)
-    {
-      if (IPAddress.TryParse(request.RemoteIpAddress, out var addr)) {
-        return new IPEndPoint(addr, request.RemotePort ?? 0);
       }
       else {
         return null;
