@@ -544,9 +544,13 @@ namespace PeerCastStation.PCP
         hostinfo.SetHostNumListeners(channel.TotalDirects);
         hostinfo.SetHostNumRelays(channel.TotalRelays);
         hostinfo.SetHostUptime(channel.Uptime);
-        if (channel.Contents.Count > 0) {
-          hostinfo.SetHostOldPos((uint)(channel.Contents.Oldest!.Position & 0xFFFFFFFFU));
-          hostinfo.SetHostNewPos((uint)(channel.Contents.Newest!.Position & 0xFFFFFFFFU));
+        var oldest = channel.Contents.Oldest;
+        if (oldest!=null) {
+          hostinfo.SetHostOldPos((uint)(oldest.Position & 0xFFFFFFFFU));
+        }
+        var newest = channel.Contents.Newest;
+        if (newest!=null) {
+          hostinfo.SetHostNewPos((uint)(newest.Position & 0xFFFFFFFFU));
         }
         PCPVersion.SetHostVersion(hostinfo);
         var relayable = channel.IsRelayable(false);
