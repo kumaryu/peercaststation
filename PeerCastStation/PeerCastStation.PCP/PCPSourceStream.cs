@@ -433,9 +433,13 @@ Stopped:
       host.SetHostNumListeners(Channel.LocalDirects);
       host.SetHostNumRelays(Channel.LocalRelays);
       host.SetHostUptime(Channel.Uptime);
-      if (Channel.Contents.Count > 0) {
-        host.SetHostOldPos((uint)(Channel.Contents.Oldest!.Position & 0xFFFFFFFFU));
-        host.SetHostNewPos((uint)(Channel.Contents.Newest!.Position & 0xFFFFFFFFU));
+      var oldest = Channel.Contents.Oldest;
+      if (oldest!=null) {
+        host.SetHostOldPos((uint)(oldest.Position & 0xFFFFFFFFU));
+      }
+      var newest = Channel.Contents.Newest;
+      if (newest!=null) {
+        host.SetHostNewPos((uint)(newest.Position & 0xFFFFFFFFU));
       }
       PCPVersion.SetHostVersion(host);
       host.SetHostFlags1(
