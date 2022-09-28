@@ -390,6 +390,10 @@ Stopped:
         Logger.Info(e);
         Stop(StopReason.ConnectionError);
       }
+      catch (Exception e) {
+        Logger.Error(e);
+        Stop(StopReason.NotIdentifiedError);
+      }
     }
 
     private static readonly ID4[] hostPackets = new []{ Atom.PCP_QUIT, Atom.PCP_HOST };
