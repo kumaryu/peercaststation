@@ -66,22 +66,23 @@ namespace PeerCastStation.Core
       }
     }
 
+    private static readonly TimeSpan WriteBufferReadTimeout = TimeSpan.FromMilliseconds(1000);
     private async Task ProcessWrite(Stream s)
     {
-      writeBuffer.ReadTimeout = 1000;
+      writeBuffer.ReadTimeout = Timeout.Infinite;
       var buf = new byte[64*1024];
       var ct = CancellationToken.None;
       try {
         async ValueTask<int> ReadFromBuffer(byte[] buf)
         {
+          int readCount;
           do {
-            try {
-              return await writeBuffer.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false);
-            }
-            catch (IOTimeoutException) {
+            readCount = await writeBuffer.ReadAsync(buf, 0, buf.Length, WriteBufferReadTimeout, ct).ConfigureAwait(false);
+            if (readCount<0) {
               await s.WriteAsync(Array.Empty<byte>(), 0, 0, ct).ConfigureAwait(false);
             }
-          } while (true);
+          } while (readCount<0);
+          return readCount;
         }
         var len = await ReadFromBuffer(buf).ConfigureAwait(false);
         while (len>0) {
