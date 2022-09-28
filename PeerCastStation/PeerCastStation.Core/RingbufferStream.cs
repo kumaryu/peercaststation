@@ -71,7 +71,7 @@ namespace PeerCastStation.Core
       return ReadAsync(buffer, offset, count, CancellationToken.None).Result;
     }
 
-    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    public async Task<int> ReadAsync(byte[] buffer, int offset, int count, TimeSpan timeout, CancellationToken cancellationToken)
     {
       if (buffer==null) throw new ArgumentNullException("buffer");
       if (offset<0)     throw new ArgumentOutOfRangeException("offset");
@@ -80,8 +80,8 @@ namespace PeerCastStation.Core
       if (length==0 && writeClosed) return 0;
     retry:
       while (length==0 && !writeClosed) {
-        if (!await readSemaphore.WaitAsync(ReadTimeout, cancellationToken).ConfigureAwait(false)) {
-          throw new IOTimeoutException();
+        if (!await readSemaphore.WaitAsync(timeout, cancellationToken).ConfigureAwait(false)) {
+          return -1;
         }
         if (readClosed) throw new ObjectDisposedException("ReadClosed");
       }
@@ -100,6 +100,17 @@ namespace PeerCastStation.Core
         position += count;
         writeSemaphore.Release();
         return count;
+      }
+    }
+
+    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    {
+      int readCount = await ReadAsync(buffer, offset, count, TimeSpan.FromMilliseconds(ReadTimeout), cancellationToken).ConfigureAwait(false);
+      if (readCount>=0) {
+        return readCount;
+      }
+      else {
+        throw new IOTimeoutException();
       }
     }
 
