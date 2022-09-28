@@ -15,6 +15,8 @@ namespace PeerCastStation.Core
     private RateCounter writeBytesCounter = new RateCounter(1000);
     private int         writeTimeout      = Timeout.Infinite;
     private CancellationTokenSource closedCancelSource = new CancellationTokenSource();
+    private CancellationTokenSource readCompletedCancelSource = new CancellationTokenSource();
+    private CancellationTokenSource writeCompletedCancelSource = new CancellationTokenSource();
 
     private RingbufferStream readBuffer = new RingbufferStream(64*1024);
     private RingbufferStream writeBuffer = new RingbufferStream(64*1024);
@@ -22,8 +24,10 @@ namespace PeerCastStation.Core
     private Task readTask;
     private Socket socket;
 
-    public IPEndPoint? LocalEndPoint { get; private set; }
-    public IPEndPoint? RemoteEndPoint { get; private set; }
+    public IPEndPoint? LocalEndPoint { get; }
+    public IPEndPoint? RemoteEndPoint { get; }
+    public CancellationToken ReadCompleted { get { return readCompletedCancelSource.Token; } }
+    public CancellationToken WriteCompleted { get { return writeCompletedCancelSource.Token; } }
 
     private async Task ProcessRead(Stream s)
     {
@@ -58,19 +62,32 @@ namespace PeerCastStation.Core
       }
       finally {
         readBuffer.CloseWrite();
+        readCompletedCancelSource.Cancel();
       }
     }
 
+    private static readonly TimeSpan WriteBufferReadTimeout = TimeSpan.FromMilliseconds(1000);
     private async Task ProcessWrite(Stream s)
     {
       writeBuffer.ReadTimeout = Timeout.Infinite;
       var buf = new byte[64*1024];
       var ct = CancellationToken.None;
       try {
-        var len = await writeBuffer.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false);
+        async ValueTask<int> ReadFromBuffer(byte[] buf)
+        {
+          int readCount;
+          do {
+            readCount = await writeBuffer.ReadAsync(buf, 0, buf.Length, WriteBufferReadTimeout, ct).ConfigureAwait(false);
+            if (readCount<0) {
+              await s.WriteAsync(Array.Empty<byte>(), 0, 0, ct).ConfigureAwait(false);
+            }
+          } while (readCount<0);
+          return readCount;
+        }
+        var len = await ReadFromBuffer(buf).ConfigureAwait(false);
         while (len>0) {
           await s.WriteAsync(buf, 0, len, ct).ConfigureAwait(false);
-          len = await writeBuffer.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false);
+          len = await ReadFromBuffer(buf).ConfigureAwait(false);
         }
         await s.FlushAsync(ct).ConfigureAwait(false);
         socket.Shutdown(SocketShutdown.Send);
@@ -88,6 +105,7 @@ namespace PeerCastStation.Core
       finally {
         writeBuffer.CloseRead();
         closedCancelSource.CancelAfter(CloseTimeout);
+        writeCompletedCancelSource.Cancel();
       }
     }
 

@@ -84,10 +84,11 @@ namespace PeerCastStation.Core.Http
       Func<IDictionary<string,object>, Task> func,
       CancellationToken cancellationToken)
     {
-      Environment.Environment[OwinEnvironment.Owin.CallCancelled] = cancellationToken;
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(ConnectionStream.WriteCompleted, cancellationToken);
+      Environment.Environment[OwinEnvironment.Owin.CallCancelled] = cts.Token;
       await func.Invoke(Environment.Environment).ConfigureAwait(false);
       if (opaqueHandler!=null) {
-        var opaqueEnv = new OpaqueEnvironment(ConnectionStream, cancellationToken);
+        var opaqueEnv = new OpaqueEnvironment(ConnectionStream, cts.Token);
         await opaqueHandler.Invoke(opaqueEnv.Environment).ConfigureAwait(false);
       }
       else {
