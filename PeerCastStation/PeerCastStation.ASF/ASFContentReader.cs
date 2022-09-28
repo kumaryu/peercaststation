@@ -303,6 +303,9 @@ namespace PeerCastStation.ASF
         var frame = new WMSPFrame(memory);
         return (frame, memory.Slice(4+frame.Length));
       }
+      catch (IndexOutOfRangeException ex) {
+        throw new EndOfStreamException(ex.Message, ex);
+      }
       catch (ArgumentOutOfRangeException ex) {
         throw new EndOfStreamException(ex.Message, ex);
       }
