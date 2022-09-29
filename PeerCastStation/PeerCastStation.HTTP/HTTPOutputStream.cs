@@ -104,7 +104,7 @@ namespace PeerCastStation.HTTP
         }
 
         var remoteEndPoint = ctx.Request.GetRemoteEndPoint();
-        if (!channel.IsPlayable(remoteEndPoint.Address.GetAddressLocality()<1)) {
+        if (!channel.IsPlayable(remoteEndPoint.Address.IsSiteLocal())) {
           return (HttpStatusCode.ServiceUnavailable, null!);
         }
 
