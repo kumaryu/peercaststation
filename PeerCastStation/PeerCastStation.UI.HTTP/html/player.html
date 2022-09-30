@@ -7,8 +7,8 @@
     <script type="text/javascript" src="/Scripts/es6-shim.min.js"></script>
     <script type="text/javascript" src="/api/1/peercaststation.js"></script>
     <link type="text/css" href="css/index.css" rel="stylesheet" />
-    <link href="https://vjs.zencdn.net/7.20.2/video-js.css" rel="stylesheet" />
-    <script src="https://vjs.zencdn.net/7.20.2/video.min.js"></script>
+    <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
+    <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
     <style>
   #player {
     position: absolute;
@@ -195,8 +195,14 @@
           });
         }
         player.on('error', function (evt) {
-          console.log('Player error', evt)
-          onPlayerError(true);
+          var err = player.error();
+          console.log('Player error', evt, err)
+          if (err && err.status === 503) {
+            player.getChild("errorDisplay").fillWith('視聴用の帯域がいっぱいです');
+          }
+          else {
+            onPlayerError(true);
+          }
         });
         player.on('stalled', function (evt) {
           console.log('Player stalled', evt)
