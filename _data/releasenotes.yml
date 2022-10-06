@@ -1,4 +1,47 @@
 ---
+- name: Version 4.1.0 (2022年10月07日安定版)
+  version: 4.1.0
+  channel: stable2
+  notes: |
+    リレーおよび視聴の不具合を修正しました。
+
+    ## 修正点
+    * リレー受信時にデータの受信具合によってそれ以降の受信が行われなくなる場合があったのを修正しました。
+    * データ受信がない時に切断されたリレーおよび視聴接続が残ってしまうのを修正しました。
+    * HTTP視聴時にLAN内別マシンからの視聴に帯域をチェックしてしまうのを修正しました。
+
+  date: 2022-10-07T00:00:00+09:00
+  url: https://www.pecastation.org/files/PeerCastStation-4.1.0-any.zip
+  enclosures:
+    - platform: win-x64
+      type: serviceinstaller
+      length: 35367701
+      url: https://www.pecastation.org/files/PecaStationd-4.1.0-x64.msi
+    - platform: win-x86
+      type: serviceinstaller
+      length: 32451495
+      url: https://www.pecastation.org/files/PecaStationd-4.1.0-x86.msi
+    - platform: any
+      type: archive
+      length: 2344557
+      url: https://www.pecastation.org/files/PeerCastStation-4.1.0-any.zip
+    - platform: win-x64
+      type: installer
+      length: 70606346
+      url: https://www.pecastation.org/files/PeerCastStation-4.1.0-x64.msi
+    - platform: win-x64
+      type: archive
+      length: 70751875
+      url: https://www.pecastation.org/files/PeerCastStation-4.1.0-x64.zip
+    - platform: win-x86
+      type: installer
+      length: 64708252
+      url: https://www.pecastation.org/files/PeerCastStation-4.1.0-x86.msi
+    - platform: win-x86
+      type: archive
+      length: 64926647
+      url: https://www.pecastation.org/files/PeerCastStation-4.1.0-x86.zip
+
 - name: Version 5.1.0 (2022年09月30日開発版)
   version: 5.1.0
   channel: dev2
