@@ -7,3 +7,5 @@ Thumbs.db
 *.suo
 packages
 *.metaproj
+*.trx
+.fake
