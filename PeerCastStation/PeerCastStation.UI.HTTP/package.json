@@ -10,7 +10,8 @@
   "targets": {
     "default": {
       "context": "browser",
-      "distDir": "./obj/dist"
+      "distDir": "./obj/dist",
+      "publicUrl": "/html"
     }
   },
   "parcelIgnore": [
