@@ -8,15 +8,15 @@
     <Nullable>enable</Nullable>
     <NoWarn>1701;1702;1591</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DocumentationFile>bin\Debug\PeerCastStation.UI.HTTP.xml</DocumentationFile>
-  </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>..\PeerCastStation.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+  <ItemGroup>
+    <None Remove="html\player.html" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Update="PeerCastStationJS1.cs">
       <AutoGen>True</AutoGen>
@@ -33,6 +33,26 @@
       <Link>PeerCastStation.snk</Link>
     </None>
   </ItemGroup>
+
+  <Target Name="RestoreNPMPackage" Inputs="package.json" Outputs="node_modules/.package-lock.json">
+    <Exec Command="npm install" />
+  </Target>
+
+  <ItemGroup>
+    <BrowserSources Include="html\*.html" />
+    <BrowserOutputs Include="@(BrowserSources->'$(OutputPath)%(Identity)')" />
+  </ItemGroup>
+  <Target Name="BuildHtml" Inputs="@(BrowserSources)" Outputs="@(BrowserOutputs)" BeforeTargets="BeforeBuild" DependsOnTargets="RestoreNPMPackage">
+    <Exec Command="npm run build" />
+    <ItemGroup>
+      <NpmBuildOutputs Include="obj\dist\**"/>
+      <Content Include="@(NpmBuildOutputs->'%(FullPath)')">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        <TargetPath>html\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+      </Content>
+    </ItemGroup>
+  </Target>
+
   <ItemGroup>
     <Content Include="Content\bootstrap-responsive.css">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -337,10 +357,5 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="System.CodeDom" Version="6.0.0" />
     <PackageReference Include="Twitter.Bootstrap" Version="2.2.2" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Update="html\player.html">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 </Project>

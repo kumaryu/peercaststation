@@ -6,6 +6,8 @@ Thumbs.db
 *.userprefs
 *.suo
 packages
+node_modules
 *.metaproj
 *.trx
 .fake
+.parcel-cache

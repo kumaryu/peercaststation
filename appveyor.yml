@@ -7,12 +7,14 @@ environment:
   GITHUB_ACTOR: kumaryu
   GITHUB_CR_TOKEN:
     secure: 4ZKkbwwriImTNatsCmqVWNFOsObxDOfbenDzznEtCtfwqqOctigBAOvgbwM9Ll9c
+  nodejs_version: "LTS"
 configuration: Release
 for:
 - matrix:
     only:
     - image: Visual Studio 2022
   install:
+  - ps: Install-Product node $env:nodejs_version
   - cmd: |-
       set PATH=C:\Ruby27-x64\bin;%PATH%
       gem install -N jekyll

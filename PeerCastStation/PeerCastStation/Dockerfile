@@ -5,6 +5,7 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build
 WORKDIR /src
 COPY . .
 WORKDIR "/src/PeerCastStation"
+RUN apk add npm
 RUN dotnet restore "PeerCastStation.csproj" -p:"Platform=Any CPU" -p:PeerCastUseGUI=false
 RUN dotnet build "PeerCastStation.csproj" -c Release -o /app/build -p:"Platform=Any CPU" -p:PeerCastUseGUI=false
 
