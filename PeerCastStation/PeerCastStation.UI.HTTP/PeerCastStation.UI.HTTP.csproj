@@ -34,7 +34,7 @@
     </None>
   </ItemGroup>
 
-  <Target Name="RestoreNPMPackage" AfterTargets="Restore">
+  <Target Name="RestoreNPMPackage" Inputs="package.json" Outputs="node_modules/.package-lock.json">
     <Exec Command="npm install" />
   </Target>
 
@@ -42,7 +42,7 @@
     <BrowserSources Include="html\*.html" />
     <BrowserOutputs Include="@(BrowserSources->'$(OutputPath)%(Identity)')" />
   </ItemGroup>
-  <Target Name="BuildHtml" Inputs="@(BrowserSources)" Outputs="@(BrowserOutputs)" BeforeTargets="BeforeBuild">
+  <Target Name="BuildHtml" Inputs="@(BrowserSources)" Outputs="@(BrowserOutputs)" BeforeTargets="BeforeBuild" DependsOnTargets="RestoreNPMPackage">
     <Exec Command="npm run build" />
     <ItemGroup>
       <NpmBuildOutputs Include="obj\dist\**"/>
