@@ -14,6 +14,7 @@ for:
     only:
     - image: Visual Studio 2022
   install:
+  - ps: Install-Product node $env:nodejs_version
   - cmd: |-
       set PATH=C:\Ruby27-x64\bin;%PATH%
       gem install -N jekyll
