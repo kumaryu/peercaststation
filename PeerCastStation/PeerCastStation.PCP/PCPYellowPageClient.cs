@@ -9,6 +9,7 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 
 namespace PeerCastStation.PCP
 {
@@ -180,6 +181,16 @@ namespace PeerCastStation.PCP
   internal class BundledYPConnectionPool
     : IDisposable
   {
+    private class QuitException : Exception
+    {
+      public int Code { get; set; }
+      public QuitException(int code)
+        : base()
+      {
+        this.Code = code;
+      }
+    }
+
     private class PCPYellowPageConnection
       : IDisposable
     {
@@ -220,16 +231,6 @@ namespace PeerCastStation.PCP
       public void Dispose()
       {
         disposedCancellation.Cancel();
-      }
-
-      private class QuitException : Exception
-      {
-        public int Code { get; set; }
-        public QuitException(int code)
-          : base()
-        {
-          this.Code = code;
-        }
       }
 
       private class BannedException : Exception {}
@@ -303,25 +304,8 @@ namespace PeerCastStation.PCP
       {
         do {
           var atom = await stream.ReadAtomAsync(ct).ConfigureAwait(false);
-          ProcessAtom(atom);
+          owner.ProcessAtom(atom);
         } while (refCount>0 && !ct.IsCancellationRequested);
-      }
-
-      private void OnPCPQuit(Atom atom)
-      {
-        logger.Debug("Connection aborted by PCP_QUIT ({0})", atom.GetInt32());
-        throw new QuitException(atom.GetInt32());
-      }
-
-      private void OnPCPBcst(Atom atom)
-      {
-        owner.OnPCPBcst(atom);
-      }
-
-      private void ProcessAtom(Atom atom)
-      {
-             if (atom.Name==Atom.PCP_BCST) OnPCPBcst(atom);
-        else if (atom.Name==Atom.PCP_QUIT) OnPCPQuit(atom);
       }
 
       private async Task DequeueAndUpdateChannelAsync(Stream stream, CancellationToken ct)
@@ -622,6 +606,8 @@ namespace PeerCastStation.PCP
         private PCPYellowPageClient yellowPageClient;
         private Channel channel;
         private YPConnectionPool connection;
+        private bool removed = false;
+        private List<CancellationTokenSource> removedCancellationTokens = new List<CancellationTokenSource>();
         public Channel Channel => channel;
         public AnnouncingStatus Status => connection.GetChannelStatus(channel);
         public IYellowPageClient YellowPage => yellowPageClient;
@@ -656,6 +642,30 @@ namespace PeerCastStation.PCP
         {
           connection.RemoveChannel(Channel);
         }
+
+        public void OnRemoved()
+        {
+          lock (removedCancellationTokens) {
+            foreach (var cts in removedCancellationTokens) {
+              cts.Cancel();
+            }
+            removedCancellationTokens.Clear();
+            removed = true;
+          }
+        }
+
+        public void CancelOnRemoved(CancellationTokenSource cts)
+        {
+          lock (removedCancellationTokens) {
+            if (removed) {
+              cts.Cancel();
+            }
+            else {
+              removedCancellationTokens.Add(cts);
+            }
+          }
+        }
+
       }
 
       private PCPYellowPageClient owner;
@@ -758,6 +768,7 @@ namespace PeerCastStation.PCP
         }
         channel.RemoveMonitor(announcing);
         connection.ChannelRemoved(channel);
+        announcing.OnRemoved();
         logger.Debug($"Stop announce channel {channel.ChannelID.ToString("N")} from {name}");
       }
 
@@ -788,11 +799,29 @@ namespace PeerCastStation.PCP
         return channels.Values;
       }
 
+      internal void ProcessAtom(Atom atom)
+      {
+             if (atom.Name==Atom.PCP_BCST) OnPCPBcst(atom);
+        else if (atom.Name==Atom.PCP_QUIT) OnPCPQuit(atom);
+        else if (atom.Name==Atom.PCP_PUSH) OnPCPPush(atom);
+      }
+
+      private void OnPCPQuit(Atom atom)
+      {
+        logger.Debug("Connection aborted by PCP_QUIT ({0})", atom.GetInt32());
+        throw new QuitException(atom.GetInt32());
+      }
+
       public void OnPCPBcst(Atom atom)
       {
         if (atom.Children==null) return;
+        var dest = atom.Children.GetBcstDest();
+        if (dest==null || dest==owner.PeerCast.SessionID) {
+          foreach (var c in atom.Children) {
+            ProcessAtom(c);
+          }
+        }
         var channel_id = atom.Children.GetBcstChannelID();
-        if (channel_id==null) return;
         var group = atom.Children.GetBcstGroup();
         var from  = atom.Children.GetBcstFrom();
         var ttl   = atom.Children.GetBcstTTL();
@@ -803,6 +832,33 @@ namespace PeerCastStation.PCP
           bcst.SetBcstTTL((byte)(ttl.Value-1));
           bcst.SetBcstHops((byte)((hops ?? 0)+1));
           channel.Broadcast(null, new Atom(Atom.PCP_BCST, bcst), group.Value);
+        }
+      }
+
+      public void OnPCPPush(Atom atom)
+      {
+        if (atom.Children==null) return;
+        var channel_id = atom.Children.GetPushChannelID();
+        var endpoint   = atom.Children.GetPushEndPoint();
+        var (channel, annoucing) = channels.FirstOrDefault(c => c.Key.ChannelID==channel_id);
+        if (channel_id!=null && channel!=null && endpoint!=null) {
+          //GIVする接続を作成する
+          Task.Run(async () => {
+            using var cts = new CancellationTokenSource();
+            using var client = new TcpClient();
+            annoucing.CancelOnRemoved(cts);
+            await client.ConnectAsync(endpoint, cts.Token).ConfigureAwait(false);
+            var stream = client.GetStream();
+            await stream.WriteUTF8Async($"GIV /{channel_id.Value.ToString("N")}\r\n\r\n", cts.Token).ConfigureAwait(false);
+            var handler = new ConnectionHandler(channel.PeerCast);
+            await handler.HandleClient(
+              (IPEndPoint)client.Client.LocalEndPoint!,
+              client,
+              stream,
+              new AccessControlInfo(OutputStreamType.Relay, false, AuthenticationKey.Generate()),
+              cts.Token
+            ).ConfigureAwait(false);
+          });
         }
       }
 

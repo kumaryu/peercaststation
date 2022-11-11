@@ -261,6 +261,10 @@ namespace PeerCastStation.Core
     public static readonly ID4 PCP_HOST_UPHOST_IP         = new ID4("upip");
     public static readonly ID4 PCP_HOST_UPHOST_PORT       = new ID4("uppt");
     public static readonly ID4 PCP_HOST_UPHOST_HOPS       = new ID4("uphp");
+    public static readonly ID4 PCP_PUSH                   = new ID4("push");
+    public static readonly ID4 PCP_PUSH_IP                = new ID4("ip");
+    public static readonly ID4 PCP_PUSH_PORT              = new ID4("port");
+    public static readonly ID4 PCP_PUSH_CHANID            = new ID4("cid");
     public static readonly ID4 PCP_QUIT                   = new ID4("quit");
     public static readonly ID4 PCP_CONNECT                = new ID4("pcp\n");
     public const byte PCP_HOST_FLAGS1_TRACKER = 0x01;

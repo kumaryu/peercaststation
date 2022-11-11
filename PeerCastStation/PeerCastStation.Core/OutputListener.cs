@@ -279,6 +279,7 @@ namespace PeerCastStation.Core
     public async Task HandleClient(
       EndPoint localEndPoint,
       TcpClient client,
+      NetworkStream stream,
       AccessControlInfo acinfo,
       CancellationToken cancellationToken)
     {
@@ -286,7 +287,6 @@ namespace PeerCastStation.Core
       client.ReceiveBufferSize = 256*1024;
       client.SendBufferSize    = 256*1024;
       client.NoDelay = true;
-      var stream = client.GetStream();
       int trying = 0;
       try {
         retry:
@@ -322,6 +322,15 @@ namespace PeerCastStation.Core
         stream.Close();
         client.Close();
       }
+    }
+
+    public Task HandleClient(
+      EndPoint localEndPoint,
+      TcpClient client,
+      AccessControlInfo acinfo,
+      CancellationToken cancellationToken)
+    {
+      return HandleClient(localEndPoint, client, client.GetStream(), acinfo, cancellationToken);
     }
 
     private async Task<IOutputStream?> CreateMatchedHandler(
