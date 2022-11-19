@@ -97,7 +97,7 @@ namespace PeerCastStation.PCP
   }
 
   public class PCPSourceConnection
-    : SourceConnectionBase,
+    : TCPSourceConnectionBase,
       IChannelMonitor
   {
     private TcpClient? client = null;
@@ -141,7 +141,17 @@ namespace PeerCastStation.PCP
       base.OnStopped();
     }
 
-    protected override async Task<SourceConnectionClient?> DoConnect(Uri source, CancellationToken cancel_token)
+    private class ConnectionStopException : Exception
+    {
+      public StopReason StopReason { get; }
+      public ConnectionStopException(StopReason reason)
+        : base()
+      {
+        StopReason = reason;
+      }
+    }
+
+    protected override async Task<SourceConnectionClient?> DoConnect(Uri source, CancellationTokenWithArg<StopReason> cancel_token)
     {
       TcpClient? client = null;
       try {
@@ -190,66 +200,90 @@ namespace PeerCastStation.PCP
       }
     }
 
-    protected override void DoPost(SourceConnectionClient connection, Host? from, Atom packet)
+    private async Task<StopReason> ProcessPost(SourceConnectionClient connection, WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancel_token)
     {
-      if (uphost==from) return;
-      if (postedAtoms.TryAdd(packet)) {
-        postedAtomsEvent.Release();
-      }
-    }
-
-    private BlockingCollection<Atom> postedAtoms = new BlockingCollection<Atom>(110);
-    private SemaphoreSlim postedAtomsEvent = new SemaphoreSlim(0);
-    private async Task ProcessPost(SourceConnectionClient connection, CancellationToken cancel_token)
-    {
-      while (!cancel_token.IsCancellationRequested) {
-        int delay = 0;
-        await postedAtomsEvent.WaitAsync(cancel_token).ConfigureAwait(false);
-        while (postedAtoms.TryTake(out var atom) && !cancel_token.IsCancellationRequested) {
-          await Task.Delay(delay).ConfigureAwait(false);
-          delay = Math.Min(delay+10, 90);
-          try {
-            await connection.Stream.WriteAsync(atom, cancel_token).ConfigureAwait(false);
-          }
-          catch (IOException e) {
-            Logger.Info(e);
-            Stop(StopReason.ConnectionError);
-          }
-          catch (Exception e) {
-            Logger.Info(e);
-          }
+      int delay = 0;
+      await foreach (var (from, msg) in postMessages.ForEach().WithCancellation(cancel_token).ConfigureAwait(false)) {
+        if (from==uphost) continue;
+        await Task.Delay(delay).ConfigureAwait(false);
+        delay = Math.Min(delay+10, 90);
+        try {
+          await connection.Stream.WriteAsync(msg, cancel_token).ConfigureAwait(false);
+        }
+        catch (IOException e) {
+          Logger.Info(e);
+          return StopReason.ConnectionError;
+        }
+        catch (Exception e) {
+          Logger.Info(e);
+        }
+        if (!postMessages.TryPeek(out var _)) {
+          delay = 0;
         }
       }
+      return cancel_token.Value;
     }
 
     //ハンドシェイク終了まで一定時間で終わらなかったらタイムアウトする
     //PeerCastのポート開放チェックが最悪15秒かかるのでそれより短くはしないこと
     public int PCPHandshakeTimeout { get; set; } = 18000;
-    protected override async Task DoProcess(SourceConnectionClient connection, CancellationToken cancel_token)
+    protected override async Task<StopReason> DoProcess(SourceConnectionClient connection, WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken)
     {
+      this.Status = ConnectionStatus.Connecting;
+      var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+      cts.CancelAfter(PCPHandshakeTimeout);
       try {
-        this.Status = ConnectionStatus.Connecting;
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(cancel_token);
-        cts.CancelAfter(PCPHandshakeTimeout);
         var relayResponse = await ProcessRelayRequest(connection, cts.Token).ConfigureAwait(false);
-        if (relayResponse==null || cts.IsCancellationRequested) goto Stopped;
         await ProcessHandshake(connection, cts.Token).ConfigureAwait(false);
-        if (cts.IsCancellationRequested) goto Stopped;
         if (relayResponse.StatusCode==503) {
           await ProcessHosts(connection, cts.Token).ConfigureAwait(false);
+          return StopReason.UnavailableError;
         }
-        if (relayResponse.StatusCode!=503) {
+        else {
           this.Status = ConnectionStatus.Connected;
-          await Task.WhenAll(
-            ProcessBody(connection, cancel_token),
-            ProcessPost(connection, cancel_token)
-          ).ConfigureAwait(false);
+          using var cts2 = CancellationTokenSourceWithArg<StopReason>.CreateLinkedTokenSource(cancellationToken);
+          var bodyTask = ProcessBody(connection, cts2.Token);
+          var postTask = ProcessPost(connection, postMessages, cts2.Token);
+          var completedTask = await Task.WhenAny(bodyTask, postTask).ConfigureAwait(false);
+          StopReason result;
+          try {
+            result = await completedTask.ConfigureAwait(false);
+          }
+          catch (OperationCanceledException) {
+            if (cancellationToken.IsCancellationRequested) {
+              result = cancellationToken.Value;
+            }
+            else {
+              result = StopReason.ConnectionError;
+            }
+          }
+          catch (ConnectionStopException ex) {
+            result = ex.StopReason;
+          }
+          cts2.TryCancel(result);
+          if (bodyTask==completedTask) {
+            await postTask.ConfigureAwait(false);
+          }
+          else {
+            await bodyTask.ConfigureAwait(false);
+          }
+          return result;
         }
       }
       catch (OperationCanceledException) {
+        if (cancellationToken.IsCancellationRequested) {
+          return cancellationToken.Value;
+        }
+        else {
+          return StopReason.ConnectionError;
+        }
       }
-Stopped:
-      Logger.Debug("Disconnected");
+      catch (ConnectionStopException ex) {
+        return ex.StopReason;
+      }
+      finally {
+        Logger.Debug("Disconnected");
+      }
     }
 
     private async Task<RelayRequestResponse> ReadRequestResponseAsync(Stream stream, CancellationToken cancel_token)
@@ -270,7 +304,7 @@ Stopped:
       return new RelayRequestResponse(responses);
     }
 
-    private async Task<RelayRequestResponse?> ProcessRelayRequest(SourceConnectionClient connection, CancellationToken cancel_token)
+    private async Task<RelayRequestResponse> ProcessRelayRequest(SourceConnectionClient connection, CancellationToken cancel_token)
     {
       Logger.Debug("Sending Relay request: /channel/{0}", Channel.ChannelID.ToString("N"));
       var host_header = remoteHost!=null ? $"Host:{remoteHost}\r\n" : "";
@@ -294,14 +328,12 @@ Stopped:
         }
         else {
           Logger.Info("Server responses {0} to GET {1}", relayResponse.StatusCode, SourceUri.PathAndQuery);
-          Stop(relayResponse.StatusCode==404 ? StopReason.OffAir : StopReason.ConnectionError);
+          throw new ConnectionStopException(relayResponse.StatusCode==404 ? StopReason.OffAir : StopReason.ConnectionError);
         }
-        return relayResponse;
       }
       catch (IOException e) {
         Logger.Info(e);
-        Stop(StopReason.ConnectionError);
-        return null;
+        throw new ConnectionStopException(StopReason.ConnectionError);
       }
     }
 
@@ -349,28 +381,34 @@ Stopped:
       }
       catch (InvalidDataException e) {
         Logger.Error(e);
-        Stop(StopReason.ConnectionError);
+        throw new ConnectionStopException(StopReason.ConnectionError);
       }
       catch (IOException e) {
         Logger.Info(e);
-        Stop(StopReason.ConnectionError);
+        throw new ConnectionStopException(StopReason.ConnectionError);
       }
     }
 
-    private async Task ProcessBody(SourceConnectionClient connection, CancellationToken cancel_token)
+    private async Task<StopReason> ProcessBody(SourceConnectionClient connection, CancellationTokenWithArg<StopReason> cancellationToken)
     {
+      StopReason result;
       try {
         BroadcastHostInfo();
         try {
-          while (!cancel_token.IsCancellationRequested) {
+          while (!cancellationToken.IsCancellationRequested) {
             if (CheckHostInfoUpdate()) {
               BroadcastHostInfo();
             }
-            var atom = await connection.Stream.ReadAtomAsync(cancel_token).ConfigureAwait(false);
+            var atom = await connection.Stream.ReadAtomAsync(cancellationToken).ConfigureAwait(false);
             ProcessAtom(atom);
           }
+          result = cancellationToken.Value;
+        }
+        catch (OperationCanceledWithArgException<StopReason> ex) {
+          result = ex.Value;
         }
         catch (OperationCanceledException) {
+          result = cancellationToken.IsCancellationRequested ? cancellationToken.Value : StopReason.UserShutdown;
         }
         try {
           using (var cts=new CancellationTokenSource(3000)) {
@@ -384,16 +422,17 @@ Stopped:
       }
       catch (InvalidDataException e) {
         Logger.Error(e);
-        Stop(StopReason.ConnectionError);
+        result = StopReason.ConnectionError;
       }
       catch (IOException e) {
         Logger.Info(e);
-        Stop(StopReason.ConnectionError);
+        result = StopReason.ConnectionError;
       }
       catch (Exception e) {
         Logger.Error(e);
-        Stop(StopReason.NotIdentifiedError);
+        result = StopReason.NotIdentifiedError;
       }
+      return result;
     }
 
     private static readonly ID4[] hostPackets = new []{ Atom.PCP_QUIT, Atom.PCP_HOST };
@@ -407,11 +446,11 @@ Stopped:
       }
       catch (InvalidDataException e) {
         Logger.Error(e);
-        Stop(StopReason.ConnectionError);
+        throw new ConnectionStopException(StopReason.ConnectionError);
       }
       catch (IOException e) {
         Logger.Info(e);
-        Stop(StopReason.ConnectionError);
+        throw new ConnectionStopException(StopReason.ConnectionError);
       }
     }
 
@@ -450,7 +489,7 @@ Stopped:
         (Channel.IsRelayable(false) ? PCPHostFlags1.Relay : 0) |
         (Channel.IsPlayable(false) ? PCPHostFlags1.Direct : 0) |
         (listener?.Status!=PortStatus.Open ? PCPHostFlags1.Firewalled : 0) |
-        (RecvRate>0 ? PCPHostFlags1.Receiving : 0));
+        (connection.RecvRate>0 ? PCPHostFlags1.Receiving : 0));
       if (connection.RemoteEndPoint!=null) {
         host.SetHostUphostIP(connection.RemoteEndPoint.Address);
         host.SetHostUphostPort(connection.RemoteEndPoint.Port);
@@ -720,10 +759,10 @@ Stopped:
     protected void OnPCPQuit(Atom atom)
     {
       if (atom.GetInt32()==Atom.PCP_ERROR_QUIT+Atom.PCP_ERROR_UNAVAILABLE) {
-        Stop(StopReason.UnavailableError);
+        throw new ConnectionStopException(StopReason.UnavailableError);
       }
       else {
-        Stop(StopReason.OffAir);
+        throw new ConnectionStopException(StopReason.OffAir);
       }
     }
 
@@ -781,8 +820,8 @@ Stopped:
         RemoteHostStatus = remote,
         RemoteSessionID  = uphost?.SessionID,
         ContentPosition  = lastPosition,
-        RecvRate         = RecvRate,
-        SendRate         = SendRate,
+        RecvRate         = connection?.RecvRate,
+        SendRate         = connection?.SendRate,
         AgentName        = server_name,
       }.Build();
     }
@@ -804,6 +843,7 @@ Stopped:
     public void OnStopped(StopReason reason)
     {
     }
+
   }
 
   public class PCPSourceStream
@@ -944,9 +984,9 @@ Stopped:
       }
     }
 
-    public override ConnectionInfo GetConnectionInfo()
+    protected override ConnectionInfo GetConnectionInfo(ISourceConnection? sourceConnection)
     {
-      var connInfo = sourceConnection.GetConnectionInfo();
+      var connInfo = sourceConnection?.GetConnectionInfo();
       if (connInfo!=null) {
         return connInfo;
       }
@@ -991,6 +1031,12 @@ Stopped:
         args.IgnoreSource = connection.SourceUri;
         args.Reconnect = true;
         break;
+      case StopReason.UserReconnect:
+        if (connection.SourceUri!=SourceUri) {
+          args.IgnoreSource = connection.SourceUri;
+        }
+        args.Reconnect = true;
+        break;
       case StopReason.ConnectionError:
       case StopReason.OffAir:
         if (connection.SourceUri!=this.SourceUri) {
@@ -999,14 +1045,6 @@ Stopped:
         }
         break;
       }
-    }
-
-    protected override void DoReconnect()
-    {
-      if (this.sourceConnection.SourceUri!=this.SourceUri && this.sourceConnection.SourceUri!=null) {
-        IgnoreSourceHost(this.sourceConnection.SourceUri);
-      }
-      base.DoReconnect();
     }
 
     public override SourceStreamType Type {

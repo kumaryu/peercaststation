@@ -48,9 +48,10 @@ module ChannelTrack =
 type DummySourceStream (sstype, channel) =
     let runTask = System.Threading.Tasks.TaskCompletionSource<StopReason>()
     interface ISourceStream with 
-        member this.Run () = 
+        member this.Run cancellationToken = 
             let sink = ChannelContentSink(channel, false)
             sink.OnContentHeader(Content(0, TimeSpan.Zero, 0l, ReadOnlyMemory<byte>.Empty, PCPChanPacketContinuation.None))
+            cancellationToken.Register (fun () -> runTask.TrySetResult(StopReason.UserShutdown) |> ignore) |> ignore
             runTask.Task
 
         member this.Reconnect () = ()
@@ -76,9 +77,6 @@ type DummySourceStream (sstype, channel) =
                     "PeerCastStation.Tests")
             | _ ->
                 ConnectionInfo("dummy", ConnectionType.Source, ConnectionStatus.Connected, "", null, RemoteHostStatus.Local, Nullable(), Nullable 0L, Nullable 0.0f, Nullable 0.0f, Nullable(), Nullable(), "dummy")
-
-        member this.Dispose () =
-            runTask.TrySetResult(StopReason.UserShutdown) |> ignore
 
 type DummyOutputStream () =
     let connectionInfo = ConnectionInfoBuilder()

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace PeerCastStation.Core
 {
   public class LoopbackSourceConnection
-    : ISourceConnection,
+    : SourceConnectionBase,
       IContentSink
   {
     public LoopbackSourceConnection(
@@ -14,42 +14,20 @@ namespace PeerCastStation.Core
         Channel channel,
         Uri source_uri,
         Channel? source_channel)
+      : base(peercast, channel, source_uri)
     {
-      PeerCast = peercast;
-      Channel = channel;
-      SourceUri = source_uri;
       SourceChannel = source_channel;
       if (SourceChannel!=null) {
-        channelContentSink = new ChannelContentSink(Channel, true);
+        channelContentSink = new ChannelContentSink(channel, true);
       }
     }
 
     private TaskCompletionSource<StopReason> taskSource = new TaskCompletionSource<StopReason>();
     private IContentSink? channelContentSink = null;
 
-    public PeerCast PeerCast { get; private set; }
-    public Channel Channel { get; private set; }
-    public Uri SourceUri { get; private set; }
     public Channel? SourceChannel { get; private set; }
 
-    public StopReason StoppedReason { get; private set; }
-
-    public bool IsStopped {
-      get { return StoppedReason!=StopReason.None; }
-    }
-
-    public float SendRate {
-      get {
-        return SourceChannel?.SourceStream?.GetConnectionInfo()?.SendRate ?? 0.0f;
-      }
-    }
-    public float RecvRate {
-      get {
-        return SourceChannel?.SourceStream?.GetConnectionInfo()?.RecvRate ?? 0.0f;
-      }
-    }
-
-    public ConnectionInfo GetConnectionInfo()
+    public override ConnectionInfo GetConnectionInfo()
     {
       var source_connection_info = SourceChannel?.SourceStream?.GetConnectionInfo();
       ConnectionStatus status;
@@ -83,10 +61,6 @@ namespace PeerCastStation.Core
         SendRate         = source_connection_info?.SendRate ?? 0.0f,
         AgentName        = "",
       }.Build();
-    }
-
-    public void Post(Host? from, Atom packet)
-    {
     }
 
     public void OnChannelInfo(ChannelInfo channel_info)
@@ -124,27 +98,21 @@ namespace PeerCastStation.Core
       taskSource.TrySetResult(reason);
     }
 
-    public Task<StopReason> Run()
+    protected override async Task<StopReason> DoProcessSource(WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken)
     {
+      using var _ = cancellationToken.Register(reason => taskSource.TrySetResult(reason));
       if (SourceChannel!=null) {
         SourceChannel.AddContentSink(this);
-        return taskSource.Task.ContinueWith(prev => {
-          SourceChannel.RemoveContentSink(this);
-          StoppedReason = prev.Result;
-          return prev.Result;
-        });
+        StopReason result = await taskSource.Task.ConfigureAwait(false);
+        SourceChannel.RemoveContentSink(this);
+        return result;
       }
       else {
-        StoppedReason = StopReason.NoHost;
         taskSource.TrySetResult(StopReason.NoHost);
-        return taskSource.Task;
+        return await taskSource.Task.ConfigureAwait(false);
       }
     }
 
-    public void Stop(StopReason reason)
-    {
-      taskSource.TrySetResult(reason);
-    }
   }
 
   public class LoopbackSourceStream
@@ -159,10 +127,10 @@ namespace PeerCastStation.Core
       get { return SourceStreamType.Broadcast; }
     }
 
-    public override ConnectionInfo GetConnectionInfo()
+    protected override ConnectionInfo GetConnectionInfo(ISourceConnection? sourceConnection)
     {
       return
-        sourceConnection.GetConnectionInfo() ??
+        sourceConnection?.GetConnectionInfo() ??
         new ConnectionInfoBuilder {
           ProtocolName     = "Loopback Source",
           Type             = ConnectionType.Source,
@@ -171,8 +139,8 @@ namespace PeerCastStation.Core
           RemoteEndPoint   = null,
           RemoteHostStatus = RemoteHostStatus.Local,
           ContentPosition  = 0,
-          RecvRate         = RecvRate,
-          SendRate         = SendRate,
+          RecvRate         = 0,
+          SendRate         = 0,
           AgentName        = "",
         }.Build();
     }

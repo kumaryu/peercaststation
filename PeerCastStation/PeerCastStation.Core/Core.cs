@@ -152,12 +152,12 @@ namespace PeerCastStation.Core
     /// </summary>
     IEnumerable<IAnnouncingChannel> GetAnnouncingChannels();
 
-		/// <summary>
-		/// YellowPageに掲載されているチャンネル一覧を取得します
-		/// </summary>
-		/// <param name="cancel_token">キャンセル用トークン</param>
-		/// <returns>取得したチャンネル一覧</returns>
-		Task<IEnumerable<IYellowPageChannel>> GetChannelsAsync(CancellationToken cancel_token);
+    /// <summary>
+    /// YellowPageに掲載されているチャンネル一覧を取得します
+    /// </summary>
+    /// <param name="cancel_token">キャンセル用トークン</param>
+    /// <returns>取得したチャンネル一覧</returns>
+    Task<IEnumerable<IYellowPageChannel>> GetChannelsAsync(CancellationToken cancel_token);
   }
 
   public class YellowPageUriValidationResult
@@ -435,13 +435,12 @@ namespace PeerCastStation.Core
   /// 上流からチャンネルにContentを追加するストリームを表すインターフェースです
   /// </summary>
   public interface ISourceStream
-    : IDisposable
   {
     /// <summary>
     /// ストリームの取得を開始します。
     /// チャンネルと取得元URIはISourceStreamFactory.Createに渡された物を使います
     /// </summary>
-    Task<StopReason> Run();
+    Task<StopReason> Run(CancellationToken cancellationToken);
     /// <summary>
     /// 現在の接続を切って新しいソースへの接続を試みます。
     /// </summary>

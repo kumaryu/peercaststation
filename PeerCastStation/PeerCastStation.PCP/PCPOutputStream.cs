@@ -232,7 +232,7 @@ namespace PeerCastStation.PCP
         }
       }
 
-      public Task<ChannelMessage> DequeueAsync(CancellationToken ct)
+      public ValueTask<ChannelMessage> DequeueAsync(CancellationToken ct)
       {
         return queue.DequeueAsync(ct);
       }

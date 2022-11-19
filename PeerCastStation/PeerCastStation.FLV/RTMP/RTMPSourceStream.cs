@@ -45,8 +45,18 @@ namespace PeerCastStation.FLV.RTMP
   }
 
   public class RTMPSourceConnection
-    : SourceConnectionBase
+    : TCPSourceConnectionBase
   {
+    private class ConnectionStopException : Exception
+    {
+      public StopReason StopReason { get; }
+      public ConnectionStopException(StopReason reason)
+        : base()
+      {
+        StopReason = reason;
+      }
+    }
+
     public RTMPSourceConnection(PeerCast peercast, Channel channel, Uri source_uri, bool use_content_bitrate)
       : base(peercast, channel, source_uri)
     {
@@ -63,7 +73,6 @@ namespace PeerCastStation.FLV.RTMP
       this.useContentBitrate = use_content_bitrate;
     }
 
-    private class ConnectionStoppedExcception : ApplicationException {}
     private FLVContentBuffer flvBuffer;
     private bool useContentBitrate;
 
@@ -89,8 +98,8 @@ namespace PeerCastStation.FLV.RTMP
         RemoteEndPoint   = endpoint,
         RemoteHostStatus = (endpoint!=null && endpoint.Address.IsSiteLocal()) ? RemoteHostStatus.Local : RemoteHostStatus.None,
         ContentPosition  = flvBuffer.Position,
-        RecvRate         = RecvRate,
-        SendRate         = SendRate,
+        RecvRate         = connection?.RecvRate,
+        SendRate         = connection?.SendRate,
         AgentName        = clientName,
       }.Build();
     }
@@ -123,7 +132,7 @@ namespace PeerCastStation.FLV.RTMP
       return addresses.Select(addr => new IPEndPoint(addr, uri.Port<0 ? 1935 : uri.Port));
     }
 
-    protected override async Task<SourceConnectionClient?> DoConnect(Uri source, CancellationToken cancellationToken)
+    protected override async Task<SourceConnectionClient?> DoConnect(Uri source, CancellationTokenWithArg<StopReason> cancellationToken)
     {
       TcpClient? client = null;
       var bind_addr = GetBindAddresses(source);
@@ -139,7 +148,7 @@ namespace PeerCastStation.FLV.RTMP
         return listener;
       }).ToArray();
       try {
-        var cancel_task = cancellationToken.CreateCancelTask<TcpClient>();
+        var cancel_task = cancellationToken.CancellationToken.CreateCancelTask<TcpClient>();
         var tasks = listeners.Select(listener => {
           listener.Start(1);
           Logger.Debug("Listening on {0}", listener.LocalEndpoint);
@@ -173,21 +182,33 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
-    protected override async Task DoProcess(SourceConnectionClient connection, CancellationToken cancellationToken)
+    protected override async Task<StopReason> DoProcess(SourceConnectionClient connection, WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken)
     {
       this.state = ConnectionState.Waiting;
       try {
-        await Handshake(connection, cancellationToken).ConfigureAwait(false);
-        await ProcessRTMPMessages(connection, cancellationToken).ConfigureAwait(false);
+        if (await Handshake(connection, cancellationToken).ConfigureAwait(false)) {
+          await ProcessRTMPMessages(connection, cancellationToken).ConfigureAwait(false);
+        }
         this.state = ConnectionState.Closed;
+        return StopReason.OffAir;
+      }
+      catch (ConnectionStopException e) {
+        this.state = ConnectionState.Closed;
+        return e.StopReason;
       }
       catch (IOException e) {
         Logger.Error(e);
-        Stop(StopReason.ConnectionError);
         this.state = ConnectionState.Error;
+        return StopReason.ConnectionError;
       }
-      catch (ConnectionStoppedExcception) {
+      catch (OperationCanceledException) {
         this.state = ConnectionState.Closed;
+        if (cancellationToken.IsCancellationRequested) {
+          return cancellationToken.Value;
+        }
+        else {
+          return StopReason.ConnectionError;
+        }
       }
     }
 
@@ -200,11 +221,6 @@ namespace PeerCastStation.FLV.RTMP
         await ProcessMessages(connection.Stream, messages, cancel_token).ConfigureAwait(false);
         messages.Clear();
       }
-    }
-
-    protected override void DoPost(SourceConnectionClient connection, Host? from, Atom packet)
-    {
-      //Do nothing
     }
 
     System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
@@ -553,7 +569,7 @@ namespace PeerCastStation.FLV.RTMP
     private Task OnSetChunkSize(SetChunkSizeMessage msg, CancellationToken cancel_token)
     {
       recvChunkSize = Math.Min(msg.ChunkSize, 0xFFFFFF);
-      return Task.Delay(0);
+      return Task.CompletedTask;
     }
 
     private Task OnAbort(AbortMessage msg, CancellationToken cancel_token)
@@ -561,19 +577,19 @@ namespace PeerCastStation.FLV.RTMP
       if (lastMessages.TryGetValue(msg.TargetChunkStream, out var builder)) {
         builder.Abort();
       }
-      return Task.Delay(0);
+      return Task.CompletedTask;
     }
 
     private Task OnUserControl(UserControlMessage msg, CancellationToken cancel_token)
     {
-      return Task.Delay(0);
+      return Task.CompletedTask;
     }
 
     private Task OnSetWindowSize(SetWindowSizeMessage msg, CancellationToken cancel_token)
     {
       recvWindowSize = msg.WindowSize;
       receivedSize = 0;
-      return Task.Delay(0);
+      return Task.CompletedTask;
     }
 
     private Task OnSetPeerBandwidth(SetPeerBandwidthMessage msg, CancellationToken cancel_token)
@@ -594,25 +610,25 @@ namespace PeerCastStation.FLV.RTMP
         }
         break;
       }
-      return Task.Delay(0);
+      return Task.CompletedTask;
     }
 
     private Task OnAudio(RTMPMessage msg, CancellationToken cancel_token)
     {
       flvBuffer.OnAudio(msg);
-      return Task.Delay(0);
+      return Task.CompletedTask;
     }
 
     private Task OnVideo(RTMPMessage msg, CancellationToken cancel_token)
     {
       flvBuffer.OnVideo(msg);
-      return Task.Delay(0);
+      return Task.CompletedTask;
     }
 
     private Task OnData(DataMessage msg, CancellationToken cancel_token)
     {
       flvBuffer.OnData(msg);
-      return Task.Delay(0);
+      return Task.CompletedTask;
     }
 
     private async Task OnCommand(Stream stream, CommandMessage msg, CancellationToken cancel_token)
@@ -682,12 +698,12 @@ namespace PeerCastStation.FLV.RTMP
 
     private Task OnCommandCall(CommandMessage msg, CancellationToken cancel_token)
     {
-      return Task.Delay(0);
+      return Task.CompletedTask;
     }
 
     private Task OnCommandClose(CommandMessage msg, CancellationToken cancel_token)
     {
-      return Task.Delay(0);
+      return Task.CompletedTask;
     }
 
     private async Task OnCommandCreateStream(Stream stream, CommandMessage msg, CancellationToken cancel_token)
@@ -709,8 +725,7 @@ namespace PeerCastStation.FLV.RTMP
 
     private Task OnCommandDeleteStream(CommandMessage msg, CancellationToken cancel_token)
     {
-      Stop(StopReason.OffAir);
-      return Task.Delay(0);
+      throw new ConnectionStopException(StopReason.OffAir);
     }
 
     private async Task OnCommandPublish(Stream stream, CommandMessage msg, CancellationToken cancel_token)
@@ -791,9 +806,9 @@ namespace PeerCastStation.FLV.RTMP
       get { return SourceStreamType.Broadcast; }
     }
 
-    public override ConnectionInfo GetConnectionInfo()
+    protected override ConnectionInfo GetConnectionInfo(ISourceConnection? sourceConnection)
     {
-      var connInfo = sourceConnection.GetConnectionInfo();
+      var connInfo = sourceConnection?.GetConnectionInfo();
       if (connInfo!=null) {
         return connInfo;
       }

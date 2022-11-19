@@ -5,18 +5,18 @@ namespace PeerCastStation.Core
 {
   public static class CancellationTokenExtension
   {
-    public static Task CreateCancelTask(this CancellationToken cancellationToken)
+    public static async Task CreateCancelTask(this CancellationToken cancellationToken)
     {
       var cancel_task = new TaskCompletionSource<bool>();
-      cancellationToken.Register(() => cancel_task.TrySetCanceled(), false);
-      return cancel_task.Task;
+      using var _ = cancellationToken.Register(() => cancel_task.TrySetCanceled(), false);
+      await cancel_task.Task.ConfigureAwait(false);
     }
 
-    public static Task<T> CreateCancelTask<T>(this CancellationToken cancellationToken)
+    public static async Task<T> CreateCancelTask<T>(this CancellationToken cancellationToken)
     {
       var cancel_task = new TaskCompletionSource<T>();
-      cancellationToken.Register(() => cancel_task.TrySetCanceled(), false);
-      return cancel_task.Task;
+      using var _ = cancellationToken.Register(() => cancel_task.TrySetCanceled(), false);
+      return await cancel_task.Task.ConfigureAwait(false);
     }
   }
 }
