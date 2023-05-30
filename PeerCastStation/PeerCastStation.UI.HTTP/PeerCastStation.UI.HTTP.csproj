@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <OutputType>Library</OutputType>
@@ -332,7 +332,7 @@
   <ItemGroup>
     <PackageReference Include="es5-shim" Version="2.3.0" />
     <PackageReference Include="es6-shim" Version="0.35.3" />
-    <PackageReference Include="jQuery" Version="1.8.3" />
+    <PackageReference Include="jQuery" Version="3.4.0" />
     <PackageReference Include="knockoutjs" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="System.CodeDom" Version="6.0.0" />
