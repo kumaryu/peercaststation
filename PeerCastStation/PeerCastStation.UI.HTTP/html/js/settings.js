@@ -461,7 +461,7 @@ var SettingsViewModel = new function() {
         self.checkBandwidthStatus("帯域測定完了: " + result + "kbps, 設定推奨値: " + rate + "kbps");
       },
       function (err) {
-        self.checkBandwidthStatus("帯域測定失敗。接続できませんでした: " + err);
+        self.checkBandwidthStatus("帯域測定失敗。接続できませんでした: " + err.message);
       }
     );
   };
@@ -475,7 +475,7 @@ var SettingsViewModel = new function() {
         self.checkBandwidthStatus("帯域測定完了: " + result + "kbps, 設定推奨値: " + rate + "kbps");
       },
       function (err) {
-        self.checkBandwidthStatus("帯域測定失敗。接続できませんでした: " + err);
+        self.checkBandwidthStatus("帯域測定失敗。接続できませんでした: " + err.message);
       }
     );
   };
