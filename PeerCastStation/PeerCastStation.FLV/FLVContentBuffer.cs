@@ -109,7 +109,7 @@ namespace PeerCastStation.FLV
 
     public void OnVideo(RTMPMessage msg)
     {
-      if (IsAVCHeader(msg)) {
+      if (IsAVCHeader(msg) || IsAV1Header(msg) || IsVP9Header(msg) || IsHEVCHeader(msg)) {
         videoHeader = msg;
         OnHeaderChanged(msg);
       }
@@ -143,6 +143,64 @@ namespace PeerCastStation.FLV
          msg.Body.Length>1 &&
         (msg.Body[0]==0xAF &&
          msg.Body[1]==0x00);
+    }
+
+    private bool IsAV1Header(RTMPMessage msg)
+    {
+      return
+         msg.MessageType==RTMPMessageType.Video &&
+         msg.Body.Length>4 &&
+        (IsExVideoTagHeaderPacketTypeSequenceStart(msg) || IsExVideoTagHeaderPacketTypeMPEG2TSSequenceStart(msg)) &&
+         msg.Body[1]==0x61 && //a
+         msg.Body[2]==0x76 && //v
+         msg.Body[3]==0x30 && //0
+         msg.Body[4]==0x31);  //1
+    }
+
+    private bool IsVP9Header(RTMPMessage msg)
+    {
+      return
+         msg.MessageType==RTMPMessageType.Video &&
+         msg.Body.Length>4 &&
+         IsExVideoTagHeaderPacketTypeSequenceStart(msg) &&
+         msg.Body[1]==0x76 && //v
+         msg.Body[2]==0x70 && //p
+         msg.Body[3]==0x30 && //0
+         msg.Body[4]==0x39);  //9
+    }
+
+    private bool IsHEVCHeader(RTMPMessage msg)
+    {
+      return
+         msg.MessageType==RTMPMessageType.Video &&
+         msg.Body.Length>4 &&
+         IsExVideoTagHeaderPacketTypeSequenceStart(msg) &&
+         msg.Body[1]==0x68 && //h
+         msg.Body[2]==0x76 && //v
+         msg.Body[3]==0x63 && //c
+         msg.Body[4]==0x31);  //1
+    }
+
+    private bool IsExVideoTagHeader(RTMPMessage msg)
+    {
+      return
+         msg.MessageType==RTMPMessageType.Video &&
+         msg.Body.Length>1 &&
+        (msg.Body[0]>>4 & 0b1000)!=0x00;
+    }
+
+    private bool IsExVideoTagHeaderPacketTypeSequenceStart(RTMPMessage msg)
+    {
+      return
+         IsExVideoTagHeader(RTMPMessage msg) &&
+        (msg.Body[0] & 0b1111)==0x00;
+    }
+
+    private bool IsExVideoTagHeaderPacketTypeMPEG2TSSequenceStart(RTMPMessage msg)
+    {
+      return
+         IsExVideoTagHeader(RTMPMessage msg) &&
+        (msg.Body[0] & 0b1111)==0x05;
     }
 
     private void WriteMessage(Stream stream, RTMPMessage msg, long time_origin)
