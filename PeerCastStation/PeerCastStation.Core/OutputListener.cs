@@ -29,6 +29,37 @@ namespace PeerCastStation.Core
     Task HandleClient(EndPoint localEndPoint, TcpClient client, AccessControlInfo acinfo, CancellationToken cancellationToken);
   }
 
+  public record ListenerInfo(PortStatus Status, IPEndPoint EndPoint, AccessControlInfo AccessControl)
+  {
+    public NetworkType NetworkType => EndPoint.AddressFamily.GetNetworkType();
+    public NetworkLocality Locality => EndPoint.Address.GetAddressLocality();
+  }
+
+
+  //public interface IListener
+  //{
+  //  NetworkType NetworkType { get; }
+  //  IPEndPoint LocalEndPoint { get; }
+  //  IPEndPoint? GlobalEndPoint { get; }
+  //  PortStatus Status { get; }
+  //  AccessControlInfo LoopbackAccessControlInfo  { get; }
+  //  AccessControlInfo LocalAccessControlInfo  { get; }
+  //  AccessControlInfo GlobalAccessControlInfo { get; }
+  //}
+
+  //public static class ListenerExtensions
+  //{
+  //  public static AccessControlInfo GetAccessControlInfo(this IListener listener, NetworkLocality locality)
+  //  {
+  //    return locality switch {
+  //      NetworkLocality.Loopback => listener.LoopbackAccessControlInfo,
+  //      NetworkLocality.Local => listener.LocalAccessControlInfo,
+  //      NetworkLocality.Global => listener.GlobalAccessControlInfo,
+  //      _ => throw new ArgumentException($"Unsupported value {locality}", nameof(locality))
+  //    };
+  //  }
+  //}
+
   /// <summary>
   /// 接続待ち受け処理を扱うクラスです
   /// </summary>
@@ -171,6 +202,44 @@ namespace PeerCastStation.Core
     public AccessControlInfo  GlobalAccessControlInfo { get; private set; }
     public IConnectionHandler ConnectionHandler { get; private set; }
 
+    private static IPAddress[]? localAddresses = null;
+    private static IEnumerable<IPAddress> GetInterfaceAddresses()
+    {
+      if (localAddresses==null) {
+        localAddresses = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+          .Where(intf => intf.OperationalStatus==System.Net.NetworkInformation.OperationalStatus.Up)
+          .Where(intf => intf.NetworkInterfaceType!=System.Net.NetworkInformation.NetworkInterfaceType.Loopback)
+          .Select(intf => intf.GetIPProperties())
+          .SelectMany(prop => prop.UnicastAddresses)
+          .Select(uaddr => uaddr.Address)
+          .ToArray();
+      }
+      return localAddresses;
+    }
+
+    public IEnumerable<ListenerInfo> GetListenerInfos()
+    {
+      if (LocalEndPoint.Port!=0) {
+        switch (LocalEndPoint.AddressFamily) {
+        case AddressFamily.InterNetwork:
+          yield return new ListenerInfo(portStatus, new IPEndPoint(IPAddress.Loopback, LocalEndPoint.Port), LoopbackAccessControlInfo);
+          break;
+        case AddressFamily.InterNetworkV6:
+          yield return new ListenerInfo(portStatus, new IPEndPoint(IPAddress.IPv6Loopback, LocalEndPoint.Port), LoopbackAccessControlInfo);
+          break;
+        default:
+          break;
+        }
+        foreach (var localAddr in GetInterfaceAddresses().Where(addr => addr.AddressFamily==LocalEndPoint.AddressFamily)) {
+          yield return new ListenerInfo(portStatus, new IPEndPoint(localAddr, LocalEndPoint.Port), LocalAccessControlInfo);
+        }
+        var globalAddress = GlobalAddress;
+        if (globalAddress!=null) {
+          yield return new ListenerInfo(portStatus, new IPEndPoint(globalAddress, LocalEndPoint.Port), GlobalAccessControlInfo);
+        }
+      }
+    }
+
     private TcpListener server;
     private CancellationTokenSource cancellationSource = new CancellationTokenSource();
     private Task listenTask;
@@ -269,9 +338,9 @@ namespace PeerCastStation.Core
     : IConnectionHandler
   {
     private static Logger logger = new Logger(typeof(ConnectionHandler));
-    public PeerCast PeerCast { get; private set; }
+    public IPeerCast PeerCast { get; private set; }
 
-    public ConnectionHandler(PeerCast peercast)
+    public ConnectionHandler(IPeerCast peercast)
     {
       this.PeerCast = peercast;
     }
@@ -279,6 +348,7 @@ namespace PeerCastStation.Core
     public async Task HandleClient(
       EndPoint localEndPoint,
       TcpClient client,
+      NetworkStream stream,
       AccessControlInfo acinfo,
       CancellationToken cancellationToken)
     {
@@ -286,7 +356,6 @@ namespace PeerCastStation.Core
       client.ReceiveBufferSize = 256*1024;
       client.SendBufferSize    = 256*1024;
       client.NoDelay = true;
-      var stream = client.GetStream();
       int trying = 0;
       try {
         retry:
@@ -324,6 +393,15 @@ namespace PeerCastStation.Core
       }
     }
 
+    public Task HandleClient(
+      EndPoint localEndPoint,
+      TcpClient client,
+      AccessControlInfo acinfo,
+      CancellationToken cancellationToken)
+    {
+      return HandleClient(localEndPoint, client, client.GetStream(), acinfo, cancellationToken);
+    }
+
     private async Task<IOutputStream?> CreateMatchedHandler(
         Socket socket,
         NetworkStream stream,
@@ -343,10 +421,8 @@ namespace PeerCastStation.Core
             offset += len;
             var header_ary = header.Take(offset).ToArray();
             foreach (var factory in output_factories) {
-              var channel_id = factory.ParseChannelID(header_ary, acinfo);
-              if (channel_id.HasValue) {
-                var connection = new ConnectionStream(socket, stream, header_ary);
-                return factory.Create(connection, acinfo, channel_id.Value);
+              if (factory.TryCreate(header_ary, acinfo, () => new ConnectionStream(socket, stream, header_ary), out var outputStream)) {
+                return outputStream;
               }
             }
           }

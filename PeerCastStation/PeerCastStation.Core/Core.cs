@@ -53,7 +53,7 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 掲載しようとしているチャンネルを取得します
     /// </summary>
-    Channel           Channel    { get; }
+    IChannel          Channel    { get; }
     /// <summary>
     /// YellowPageへの接続状況を取得します
     /// </summary>
@@ -123,7 +123,7 @@ namespace PeerCastStation.Core
     /// </summary>
     /// <param name="channel">載せるチャンネル</param>
     /// <returns>掲載するチャンネルの状態を保持するオブジェクト</returns>
-    IAnnouncingChannel? Announce(Channel channel);
+    IAnnouncingChannel? Announce(IChannel channel);
 
     /// <summary>
     /// YellowPageとの接続を終了し、載せているチャンネルを全て削除します
@@ -152,12 +152,12 @@ namespace PeerCastStation.Core
     /// </summary>
     IEnumerable<IAnnouncingChannel> GetAnnouncingChannels();
 
-		/// <summary>
-		/// YellowPageに掲載されているチャンネル一覧を取得します
-		/// </summary>
-		/// <param name="cancel_token">キャンセル用トークン</param>
-		/// <returns>取得したチャンネル一覧</returns>
-		Task<IEnumerable<IYellowPageChannel>> GetChannelsAsync(CancellationToken cancel_token);
+    /// <summary>
+    /// YellowPageに掲載されているチャンネル一覧を取得します
+    /// </summary>
+    /// <param name="cancel_token">キャンセル用トークン</param>
+    /// <returns>取得したチャンネル一覧</returns>
+    Task<IEnumerable<IYellowPageChannel>> GetChannelsAsync(CancellationToken cancel_token);
   }
 
   public class YellowPageUriValidationResult
@@ -435,13 +435,12 @@ namespace PeerCastStation.Core
   /// 上流からチャンネルにContentを追加するストリームを表すインターフェースです
   /// </summary>
   public interface ISourceStream
-    : IDisposable
   {
     /// <summary>
     /// ストリームの取得を開始します。
     /// チャンネルと取得元URIはISourceStreamFactory.Createに渡された物を使います
     /// </summary>
-    Task<StopReason> Run();
+    Task<StopReason> Run(CancellationToken cancellationToken);
     /// <summary>
     /// 現在の接続を切って新しいソースへの接続を試みます。
     /// </summary>
@@ -649,6 +648,8 @@ namespace PeerCastStation.Core
     /// <param name="header">クライアントから受け取ったリクエスト</param>
     /// <returns>headerからチャンネルIDを取得できた場合はチャンネルID、できなかった場合はnull</returns>
     Guid? ParseChannelID(byte[] header, AccessControlInfo acinfo);
+
+    bool TryCreate(byte[] header, AccessControlInfo acinfo, Func<ConnectionStream> connectionCreator, [NotNullWhen(true)] out IOutputStream? outputStream);
   }
 
   /// <summary>

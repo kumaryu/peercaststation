@@ -606,6 +606,33 @@ namespace PeerCastStation.Core
       return GetIntFrom(collection, Atom.PCP_HOST_UPHOST_HOPS);
     }
 
+    public static IPAddress? GetPushIP(this IAtomCollection collection)
+    {
+      return GetIPAddressFrom(collection, Atom.PCP_PUSH_IP);
+    }
+
+    public static int? GetPushPort(this IAtomCollection collection)
+    {
+      return GetIntFrom(collection, Atom.PCP_PUSH_PORT);
+    }
+
+    public static Guid? GetPushChannelID(this IAtomCollection collection)
+    {
+      return GetIDFrom(collection, Atom.PCP_PUSH_CHANID);
+    }
+
+    public static IPEndPoint? GetPushEndPoint(this IAtomCollection collection)
+    {
+      var ip   = GetIPAddressFrom(collection, Atom.PCP_PUSH_IP);
+      var port = GetIntFrom(collection, Atom.PCP_PUSH_PORT);
+      if (ip!=null && port!=null) {
+        return new IPEndPoint(ip, port.Value);
+      }
+      else {
+        return null;
+      }
+    }
+
     public static int? GetQuit(this IAtomCollection collection)
     {
       return GetIntFrom(collection, Atom.PCP_QUIT);
@@ -949,6 +976,26 @@ namespace PeerCastStation.Core
     public static void SetHostVersionEXPrefix(this IAtomCollection collection, byte[] value)
     {
       SetAtomTo(collection, new Atom(Atom.PCP_HOST_VERSION_EX_PREFIX, value));
+    }
+
+    public static void SetPush(this IAtomCollection collection, IAtomCollection value)
+    {
+      SetAtomTo(collection, new Atom(Atom.PCP_PUSH, value));
+    }
+
+    public static void SetPushIP(this IAtomCollection collection, IPAddress value)
+    {
+      SetAtomTo(collection, new Atom(Atom.PCP_PUSH_IP, value));
+    }
+
+    public static void SetPushPort(this IAtomCollection collection, int value)
+    {
+      SetAtomTo(collection, new Atom(Atom.PCP_PUSH_PORT, value));
+    }
+
+    public static void SetPushChannelID(this IAtomCollection collection, Guid value)
+    {
+      SetAtomTo(collection, new Atom(Atom.PCP_PUSH_CHANID, IDToByteArray(value)));
     }
 
     public static void SetOk(this IAtomCollection collection, int value)

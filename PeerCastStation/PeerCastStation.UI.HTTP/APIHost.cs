@@ -427,6 +427,7 @@ namespace PeerCastStation.UI.HTTP
       private JObject GetChannelStatus(string channelId)
       {
         var channel = GetChannel(channelId);
+        var host = HostTree.CreateChannelHost(PeerCast, channel);
         var res = new JObject();
         res["network"]         = channel.Network.ToString().ToLowerInvariant();
         res["status"]          = channel.Status.ToString();
@@ -439,7 +440,7 @@ namespace PeerCastStation.UI.HTTP
         res["isBroadcasting"]  = channel.IsBroadcasting;
         res["isRelayFull"]     = channel.IsRelayFull;
         res["isDirectFull"]    = channel.IsDirectFull;
-        res["isReceiving"]     = channel.SelfNode.IsReceiving;
+        res["isReceiving"]     = host.IsReceiving;
         switch (PeerCast.GetPortStatus(channel.Network)) {
         case PortStatus.Unknown:
           res["isFirewalled"] = null;
@@ -702,7 +703,7 @@ namespace PeerCastStation.UI.HTTP
       private JArray GetChannelRelayTree(string channelId)
       {
         var channel = GetChannel(channelId);
-        return new JArray(new HostTree(channel).Nodes.Select(node => CreateRelayTreeNode(node)));
+        return new JArray(new HostTree(PeerCast, channel).Nodes.Select(node => CreateRelayTreeNode(node)));
       }
 
       [RPCMethod("getContentReaders")]

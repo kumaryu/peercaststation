@@ -7,6 +7,7 @@ open System.Net
 open Xunit
 open System.Net.Http
 open System.Threading.Tasks
+open System.Threading
 
 [<assembly: Xunit.CollectionBehavior(DisableTestParallelization = true)>]
 do
@@ -45,12 +46,44 @@ let waitForConditionOrTimeout cond timeout =
 module ChannelTrack =
     let empty = ChannelTrack(AtomCollection())
 
+type MockSourceStreamFactory (scheme, sourceStreamType, creator) =
+    interface ISourceStreamFactory with
+        member this.Name = "MockContentReader"
+        member this.Scheme = scheme
+        member this.Type = sourceStreamType
+        member this.IsContentReaderRequired = false
+        member this.DefaultUri = null
+        member this.Create (channel, uri) =
+            creator channel uri
+        member this.Create (channel, uri, content_reader) =
+            NotImplementedException "not implemented" |> raise
+
+type MockSourceStreamFactoryWithContentReader (scheme, sourceStreamType, creator) =
+    interface ISourceStreamFactory with
+        member this.Name = "MockContentReader"
+        member this.Scheme = scheme
+        member this.Type = sourceStreamType
+        member this.IsContentReaderRequired = true
+        member this.DefaultUri = null
+        member this.Create (channel, uri) =
+            NotImplementedException "not implemented" |> raise
+        member this.Create (channel, uri, content_reader) =
+            creator channel uri content_reader
+
 type DummySourceStream (sstype, channel) =
     let runTask = System.Threading.Tasks.TaskCompletionSource<StopReason>()
+
+    static member FactoryForRelay = 
+        MockSourceStreamFactory("", SourceStreamType.Relay, fun channel _ -> DummySourceStream(SourceStreamType.Relay, channel))
+
+    static member FactoryForBroadcast = 
+        MockSourceStreamFactoryWithContentReader("", SourceStreamType.Broadcast, fun channel _ _ -> DummySourceStream(SourceStreamType.Broadcast, channel))
+
     interface ISourceStream with 
-        member this.Run () = 
+        member this.Run cancellationToken = 
             let sink = ChannelContentSink(channel, false)
             sink.OnContentHeader(Content(0, TimeSpan.Zero, 0l, ReadOnlyMemory<byte>.Empty, PCPChanPacketContinuation.None))
+            cancellationToken.Register (fun () -> runTask.TrySetResult(StopReason.UserShutdown) |> ignore) |> ignore
             runTask.Task
 
         member this.Reconnect () = ()
@@ -77,9 +110,6 @@ type DummySourceStream (sstype, channel) =
             | _ ->
                 ConnectionInfo("dummy", ConnectionType.Source, ConnectionStatus.Connected, "", null, RemoteHostStatus.Local, Nullable(), Nullable 0L, Nullable 0.0f, Nullable 0.0f, Nullable(), Nullable(), "dummy")
 
-        member this.Dispose () =
-            runTask.TrySetResult(StopReason.UserShutdown) |> ignore
-
 type DummyOutputStream () =
     let connectionInfo = ConnectionInfoBuilder()
     member this.ConnectionType
@@ -96,22 +126,131 @@ type DummyOutputStream () =
         member this.OnStopped(reason) = ()
         member this.GetConnectionInfo() = connectionInfo.Build()
 
+
+type MockContentReader (channel) =
+    interface IContentReader with
+        member this.Name = "MockContentReader"
+        member this.Channel = channel
+        member this.ReadAsync (sink, stream, cancel_token) =
+            Task.CompletedTask
+
 type MockContentReaderFactory () =
     interface IContentReaderFactory with
         member this.Name = "MockContentReader"
-        member this.Create channel = NotImplementedException "not implemented" |> raise
+        member this.Create channel =
+            MockContentReader channel
+
         member this.TryParseContentType (header, content_type, mime_type) =
             content_type <- null
             mime_type <- null
             false
 
-type DummyBroadcastChannel (peercast, network, channelId, channelInfo, channelTrack, sourceStreamFactory: PeerCast -> Channel -> Uri -> ISourceStream) =
-    inherit BroadcastChannel(peercast, network, channelId, channelInfo, channelTrack, null, MockContentReaderFactory())
+type ChannelStatus =
+    {
+        sourceStatus: SourceStreamStatus
+        uptime: TimeSpan
+        isBroadCasting: bool
+        localRelays: int
+        localDirects: int
+        totalRelays: int
+        totalDirects: int
+        channelInfo: ChannelInfo option
+        channelTrack: ChannelTrack option
+        oldestContentPosision: int64 option
+        newestContentPosision: int64 option
+        isRelayable: bool
+        isPlayable: bool
+    }
+    static member Default = 
+        {
+            sourceStatus=SourceStreamStatus.Idle
+            uptime=TimeSpan.Zero
+            isBroadCasting=false
+            localRelays=0
+            localDirects=0
+            totalRelays=0
+            totalDirects=0
+            channelInfo=None
+            channelTrack=None
+            oldestContentPosision=None
+            newestContentPosision=None
+            isRelayable=false
+            isPlayable=false
+        }
+
+type MockChannel (network, channelStatus) =
+    let channelID = Guid.NewGuid()
+    let mutable monitors = List.empty<IChannelMonitor>
+    let mutable channelStatus = channelStatus
+
+    member this.ChannelID = channelID
+    member this.ChannelStatus
+        with get () = channelStatus
+        and  set newStatus =
+            let oldStatus = channelStatus
+            channelStatus <- newStatus
+            if Option.isNone oldStatus.newestContentPosision && Option.isSome newStatus.newestContentPosision then
+                monitors |> List.iter (fun monitor -> monitor.OnContentChanged(ChannelContentType.ContentHeader))
+            if oldStatus.channelInfo<>newStatus.channelInfo then
+                monitors |> List.iter (fun monitor -> monitor.OnContentChanged(ChannelContentType.ChannelInfo))
+            if oldStatus.channelTrack<>newStatus.channelTrack then
+                monitors |> List.iter (fun monitor -> monitor.OnContentChanged(ChannelContentType.ChannelTrack))
+            ()
+
+    interface IChannel with
+        member this.ChannelID = channelID
+        member this.Network = network
+        member this.GetChannelStatus () =
+            let status = channelStatus
+            ChannelStatus(
+                channelID,
+                network,
+                status.sourceStatus,
+                status.uptime,
+                status.isBroadCasting,
+                status.localRelays,
+                status.localDirects,
+                status.totalRelays,
+                status.totalDirects,
+                Option.toObj status.channelInfo,
+                Option.toObj status.channelTrack,
+                status.oldestContentPosision |> Option.toNullable,
+                status.newestContentPosision |> Option.toNullable,
+                status.isRelayable,
+                status.isPlayable
+            )
+
+        member this.AddMonitor (monitor) =
+            monitors <- monitor :: monitors
+            {
+                new IDisposable with
+                    member this.Dispose () =
+                        monitors <- List.filter ((=) monitor) monitors
+            }
+
+        member this.Broadcast (from, packet, group) =
+            ()
+
+module MockChannel =
+    let relayChannel network =
+        MockChannel(network, { ChannelStatus.Default with isBroadCasting=false })
+
+    let broadcastingChannel network =
+        MockChannel(network, { ChannelStatus.Default with isBroadCasting=true })
+
+    let setChannelStatus newStatus (channel:MockChannel) =
+        channel.ChannelStatus <- newStatus
+        channel
+
+    let updateChannelStatus updater (channel:MockChannel) =
+        channel.ChannelStatus <- updater channel.ChannelStatus
+        channel
+
+
+type DummyBroadcastChannel (peercast, network, channelId, channelInfo, channelTrack) =
+    inherit BroadcastChannel(peercast, network, channelId, channelInfo, channelTrack, MockContentReaderFactory())
 
     let mutable relayable = true
-
-    new (peercast, network, channelId, channelInfo, channelTrack) =
-        DummyBroadcastChannel(peercast, network, channelId, channelInfo, channelTrack, fun _ channel _ -> new DummySourceStream(SourceStreamType.Broadcast, channel) :> ISourceStream)
 
     member this.Relayable
         with get ()    = relayable
@@ -129,19 +268,8 @@ type DummyBroadcastChannel (peercast, network, channelId, channelInfo, channelTr
         else
             false
 
-    override this.IsBroadcasting = true
-    override this.CreateSourceStream (source_uri) =
-        sourceStreamFactory peercast this source_uri
-
-type DummyRelayChannel (peercast, network, channelId, sourceStreamFactory) =
-    inherit Channel(peercast, network, channelId)
-
-    new (peercast, network, channelId) =
-        DummyRelayChannel(peercast, network, channelId, fun _ channel _ -> new DummySourceStream(SourceStreamType.Relay, channel) :> ISourceStream)
-
-    override this.IsBroadcasting = false
-    override this.CreateSourceStream (source_uri) =
-        sourceStreamFactory peercast this source_uri
+type DummyRelayChannel (peercast, network, channelId) =
+    inherit RelayChannel(peercast, network, channelId)
 
 let createChannelInfo name contentType =
     let info = AtomCollection()
@@ -391,6 +519,20 @@ module Assert =
             Assert.Equal(expected, actual)
         }
 
+    let isSome actual =
+        Assert.True(Option.isSome actual)
+
+    let isNone actual =
+        Assert.True(Option.isNone actual)
+
+    let hasFlag expected (actual:#Enum) =
+        actual.HasFlag(expected)
+        |> Assert.True
+
+    let hasNotFlag expected (actual:#Enum) =
+        actual.HasFlag(expected)
+        |> Assert.False
+
     let statusCode code (rsp:HttpResponseMessage) =
         Assert.Equal(code, rsp.StatusCode)
 
@@ -410,6 +552,14 @@ module Assert =
 
     let ExpectAtomName expected (atom:Atom) =
         Assert.Equal(expected, atom.Name)
+
+    let ExpectResultOk result =
+        match result with
+        | Ok _ ->
+            Assert.True(Result.isOk result)
+        | Error msg ->
+            Assert.Fail($"Result error with {msg}")
+        result
 
 type TempDirectory() =
     let name = System.IO.Path.GetTempFileName()

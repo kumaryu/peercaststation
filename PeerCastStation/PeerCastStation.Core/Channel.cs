@@ -49,14 +49,42 @@ namespace PeerCastStation.Core
     IPv6,
   }
 
+  public record ChannelStatus(
+    Guid ChannelID,
+    NetworkType Network,
+    SourceStreamStatus SourceStatus,
+    TimeSpan Uptime,
+    bool IsBroadCasting,
+    int LocalRelays,
+    int LocalDirects,
+    int TotalRelays,
+    int TotalDirects,
+    ChannelInfo? ChannelInfo,
+    ChannelTrack? ChannelTrack,
+    long? OldestContentPosision,
+    long? NewestContentPosision,
+    bool IsRelayable,
+    bool IsPlayable
+  );
+
+  public interface IChannel
+  {
+    Guid ChannelID { get; }
+    NetworkType Network { get; }
+    ChannelStatus GetChannelStatus();
+    IDisposable AddMonitor(IChannelMonitor monitor);
+    void Broadcast(Host? from, Atom packet, BroadcastGroup group);
+  }
+
   /// <summary>
   /// チャンネル接続を管理するクラスです
   /// </summary>
   public abstract class Channel
+    : IChannel
   {
     protected static Logger logger = new Logger(typeof(Channel));
     private const int NodeLimit = 180000; //ms
-    private ISourceStream? sourceStream = null;
+    private ChannelSourceSubscription? sourceStream = null;
     private IChannelMonitor[] monitors = Array.Empty<IChannelMonitor>();
     private IChannelSink[] sinks = Array.Empty<IChannelSink>();
     private Host[] sourceNodes = new Host[0];
@@ -69,13 +97,13 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 所属するPeerCastオブジェクトを取得します
     /// </summary>
-    public PeerCast PeerCast { get; private set; }
+    public IPeerCast PeerCast { get; private set; }
     /// <summary>
     /// チャンネルの状態を取得します
     /// </summary>
     public virtual SourceStreamStatus Status {
       get {
-        var source = sourceStream;
+        var source = sourceStream?.ChannelSource;
         return source!=null ? source.Status : SourceStreamStatus.Idle;
       }
     }
@@ -94,7 +122,11 @@ namespace PeerCastStation.Core
 
     public NetworkType Network { get; private set; }
     public Guid ChannelID   { get; private set; }
-    public Uri? SourceUri   { get; private set; }
+    private record ChannelSourceKey(ISourceStreamFactory SourceStreamFactory, Uri Uri);
+    private ChannelSourceKey? sourceKey;
+    public Uri? SourceUri {
+      get {  return sourceKey?.Uri; }
+    }
     public abstract bool IsBroadcasting { get; }
 
     public virtual EndPoint? TrackerEndPoint {
@@ -127,7 +159,7 @@ namespace PeerCastStation.Core
     /// </summary>
     public ISourceStream? SourceStream {
       get {
-        return sourceStream;
+        return sourceStream?.ChannelSource;
       }
     }
 
@@ -164,16 +196,6 @@ namespace PeerCastStation.Core
     /// </summary>
     public IReadOnlyCollection<IChannelSink> OutputStreams {
       get { return sinks; }
-    }
-
-    private void ReplaceCollection<T>(ref T collection, Func<T,T> newcollection_func) where T : class
-    {
-      bool replaced = false;
-      do {
-        var orig = collection;
-        var new_collection = newcollection_func(orig);
-        replaced = Object.ReferenceEquals(System.Threading.Interlocked.CompareExchange(ref collection, new_collection, orig), orig);
-      } while (!replaced);
     }
 
     private void ReplaceCollection<T>(ref T[] collection, Func<T[], T[]> newcollection_func) where T : class
@@ -243,16 +265,6 @@ namespace PeerCastStation.Core
       return Interlocked.Increment(ref streamID);
     }
 
-    public class ChannelInfoEventArgs
-      : EventArgs
-    {
-      public ChannelInfo ChannelInfo { get; private set; }
-      public ChannelInfoEventArgs(ChannelInfo channel_info)
-      {
-        this.ChannelInfo = channel_info;
-      }
-    }
-
     private ChannelInfo channelInfo = new ChannelInfo(new AtomCollection());
     /// <summary>
     /// チャンネル情報を取得および設定します
@@ -266,16 +278,6 @@ namespace PeerCastStation.Core
         if (old!=value) {
           OnChannelInfoChanged(value);
         }
-      }
-    }
-
-    public class ChannelTrackEventArgs
-      : EventArgs
-    {
-      public ChannelTrack ChannelTrack { get; private set; }
-      public ChannelTrackEventArgs(ChannelTrack channel_track)
-      {
-        this.ChannelTrack = channel_track;
       }
     }
 
@@ -331,10 +333,10 @@ namespace PeerCastStation.Core
 
     public virtual bool IsRelayable(bool local)
     {
-      return this.PeerCast.AccessController.IsChannelRelayable(this, local);
+      return this.PeerCast.IsChannelRelayable(this, local);
     }
 
-    public virtual bool MakeRelayable(string key, bool local)
+    public bool MakeRelayable(string key, bool local)
     {
       return !HasBanned(key) && MakeRelayable(local);
     }
@@ -373,7 +375,7 @@ namespace PeerCastStation.Core
 
     public virtual bool IsPlayable(bool local)
     {
-      return this.PeerCast.AccessController.IsChannelPlayable(this, local);
+      return this.PeerCast.IsChannelPlayable(this, local);
     }
 
     /// <summary>
@@ -649,23 +651,6 @@ namespace PeerCastStation.Core
       });
     }
 
-    public Host SelfNode {
-      get {
-        var source = this.SourceStream;
-        var host = new HostBuilder();
-        host.SessionID      = this.PeerCast.SessionID;
-        host.LocalEndPoint  = this.PeerCast.GetLocalEndPoint(this.NetworkAddressFamily, OutputStreamType.Relay);
-        host.GlobalEndPoint = this.PeerCast.GetGlobalEndPoint(this.NetworkAddressFamily, OutputStreamType.Relay);
-        host.IsFirewalled   = this.PeerCast.GetPortStatus(this.NetworkAddressFamily)!=PortStatus.Open;
-        host.DirectCount    = this.LocalDirects;
-        host.RelayCount     = this.LocalRelays;
-        host.IsDirectFull   = this.IsDirectFull;
-        host.IsRelayFull    = this.IsRelayFull;
-        host.IsReceiving    = source!=null && (source.GetConnectionInfo().RecvRate ?? 0.0f)>0;
-        return host.ToHost();
-      }
-    }
-
     public struct HLSSegment {
       public readonly int Index;
       public readonly byte[] Data;
@@ -678,27 +663,65 @@ namespace PeerCastStation.Core
       }
     }
 
-    protected void AddSourceStream(ISourceStream source_stream)
+    class ChannelSourceSubscription
+      : IDisposable
     {
-      var old = Interlocked.Exchange(ref sourceStream, source_stream);
-      if (old==null) {
-        this.contentHeader = null;
-        this.contents.Clear();
-        uptimeTimer.Restart();
+      public Channel Owner { get; }
+      public ISourceStream ChannelSource { get; }
+      private bool disposed = false;
+      private CancellationTokenSource cancellationTokenSource = new ();
+      private Task runningTask = Task.CompletedTask;
+      public ChannelSourceSubscription(Channel owner, ISourceStream channelSource)
+      {
+        Owner = owner;
+        ChannelSource = channelSource;
       }
-      else {
-        old.Dispose();
+
+      private async Task Run(ISourceStream channelSource, CancellationToken cancellationToken)
+      {
+        try {
+          var result = await channelSource.Run(cancellationToken).ConfigureAwait(false);
+          Owner.OnChannelSourceStopped(this, result);
+        }
+        catch (Exception) {
+          Owner.OnChannelSourceStopped(this, StopReason.NotIdentifiedError);
+        }
       }
-      source_stream.Run().ContinueWith(prev => {
-        RemoveSourceStream(source_stream, prev.IsFaulted ? StopReason.NotIdentifiedError : prev.Result);
-      });
+
+      public void Start()
+      {
+        if (disposed) {
+          throw new ObjectDisposedException(GetType().Name);
+        }
+        runningTask = Run(ChannelSource, cancellationTokenSource.Token);
+      }
+
+      public void Dispose()
+      {
+        if (disposed) {
+          return;
+        }
+        cancellationTokenSource.Cancel();
+        runningTask.Wait();
+        cancellationTokenSource.Dispose();
+        disposed = true;
+      }
     }
 
-    protected void RemoveSourceStream(ISourceStream source_stream, StopReason reason)
+    private void SetChannelSource(ISourceStreamFactory factory, ISourceStream source_stream)
     {
-      var old = Interlocked.CompareExchange(ref sourceStream, null, source_stream);
-      if (old!=source_stream) return;
-      old.Dispose();
+      var old = Interlocked.Exchange(ref sourceStream, new ChannelSourceSubscription(this, source_stream));
+      old?.Dispose();
+      this.contentHeader = null;
+      this.contents.Clear();
+      uptimeTimer.Restart();
+      sourceStream.Start();
+    }
+
+    private void OnChannelSourceStopped(ChannelSourceSubscription channelSourceSubscription, StopReason reason)
+    {
+      var old = Interlocked.CompareExchange(ref sourceStream, null, channelSourceSubscription);
+      if (old!=channelSourceSubscription) return;
       var ostreams = Interlocked.Exchange(ref sinks, Array.Empty<IChannelSink>());
       foreach (var os in ostreams) {
         os.OnStopped(reason);
@@ -745,23 +768,25 @@ namespace PeerCastStation.Core
       ReplaceCollection(ref monitors, orig => orig.Remove(monitor));
     }
 
-    public void Start(Uri source_uri)
+    public void Start(ISourceStreamFactory source_stream_factory, Uri source_uri)
     {
-      this.SourceUri = source_uri;
-      AddSourceStream(CreateSourceStream(source_uri));
+      this.sourceKey = new ChannelSourceKey(source_stream_factory, source_uri);
+      SetChannelSource(source_stream_factory, CreateSourceStream(source_stream_factory, source_uri));
     }
 
-    protected abstract ISourceStream CreateSourceStream(Uri source_uri);
+    protected abstract ISourceStream CreateSourceStream(ISourceStreamFactory source_stream_factory, Uri source_uri);
 
     public void Reconnect()
     {
-      var source = sourceStream;
+      var source = sourceStream?.ChannelSource;
       var status = source?.Status ?? SourceStreamStatus.Idle;
       switch (status) {
       case SourceStreamStatus.Idle:
       case SourceStreamStatus.Error:
-        var source_uri = this.SourceUri;
-        if (source_uri!=null) Start(source_uri);
+        var key = sourceKey;
+        if (key!=null) {
+          Start(key.SourceStreamFactory, key.Uri);
+        }
         break;
       default:
         source!.Reconnect();
@@ -769,12 +794,9 @@ namespace PeerCastStation.Core
       }
     }
 
-    public void Reconnect(Uri? source_uri)
+    public void Reconnect(ISourceStreamFactory source_stream_factory, Uri source_uri)
     {
-      var uri = source_uri ?? this.SourceUri;
-      if (uri!=null) {
-        Start(uri);
-      }
+      Start(source_stream_factory, source_uri);
     }
 
     /// <summary>
@@ -788,7 +810,7 @@ namespace PeerCastStation.Core
       if (group.HasFlag(BroadcastGroup.Trackers) || group.HasFlag(BroadcastGroup.Relays)) {
         var source = sourceStream;
         if (source!=null) {
-          source.Post(from, packet);
+          source.ChannelSource.Post(from, packet);
         }
       }
       if (group.HasFlag(BroadcastGroup.Relays)) {
@@ -862,12 +884,33 @@ namespace PeerCastStation.Core
       }
     }
 
+    public ChannelStatus GetChannelStatus()
+    {
+      return new ChannelStatus(
+        ChannelID,
+        Network,
+        Status,
+        Uptime,
+        IsBroadcasting,
+        LocalRelays,
+        LocalDirects,
+        TotalRelays,
+        TotalDirects,
+        ChannelInfo,
+        ChannelTrack,
+        Contents.Oldest?.Position,
+        Contents.Newest?.Position,
+        IsRelayable(false),
+        IsPlayable(false)
+      );
+    }
+
     /// <summary>
     /// チャンネルIDを指定してチャンネルを初期化します
     /// </summary>
     /// <param name="peercast">所属するPeerCastオブジェクト</param>
     /// <param name="channel_id">チャンネルID</param>
-    protected Channel(PeerCast peercast, NetworkType network, Guid channel_id)
+    protected Channel(IPeerCast peercast, NetworkType network, Guid channel_id)
     {
       this.PeerCast    = peercast;
       this.Network     = network;

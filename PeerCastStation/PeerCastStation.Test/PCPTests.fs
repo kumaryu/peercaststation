@@ -6,8 +6,6 @@ open System.Net
 open PeerCastStation.Core
 open PeerCastStation.PCP
 open TestCommon
-open System.Net.Http
-open System.Threading.Tasks
 
 let registerPCPRelay (host:PeerCastStation.Core.Http.OwinHost) =
     host.Register(fun builder -> PCPRelayOwinApp.BuildApp(builder))
@@ -178,7 +176,7 @@ module RelayClientConnection =
         |> Atom.setHeloAgent "TestClient"
         |> Atom.setHeloSessionID (Guid.NewGuid())
         |> Atom.setHeloVersion 1218
-        |> Atom.parentAtom Atom.PCP_HELO
+        |> Atom.fromChildren Atom.PCP_HELO
         |> connection.response.stream.Write
 
     let recvAtom connection =
@@ -325,7 +323,7 @@ module RelaySinkTests =
     let ``PCPバージョンが指定されていないと400が返る`` () =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
         let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
-        channel.Start(null)
+        channel.Start(DummySourceStream.FactoryForBroadcast, null)
         peca.AddChannel channel
         sprintf "http://%s/channel/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
         |> HttpClient.get
@@ -336,7 +334,7 @@ module RelaySinkTests =
         let testNetwork (endpoint, network, pcpver) = 
             use peca = pecaWithOwinHost endpoint registerPCPRelay
             let channel = DummyBroadcastChannel(peca, network, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
-            channel.Start(null)
+            channel.Start(DummySourceStream.FactoryForBroadcast, null)
             peca.AddChannel channel
             sprintf "http://%s/channel/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
             |> HttpClient.getWithHeader ["x-peercast-pcp", pcpver]
@@ -357,7 +355,7 @@ module RelaySinkTests =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
         let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
         channel.Relayable <- false
-        channel.Start(null)
+        channel.Start(DummySourceStream.FactoryForBroadcast, null)
         Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
         |> Seq.iter (channel.AddNode)
         peca.AddChannel channel
@@ -370,7 +368,7 @@ module RelaySinkTests =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
         let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
         channel.Relayable <- true
-        channel.Start(null)
+        channel.Start(DummySourceStream.FactoryForBroadcast, null)
         peca.AddChannel channel
         use connection = RelayClientConnection.connect endpoint (channel.ChannelID)
         Assert.Equal(200, connection.response.status)
@@ -386,7 +384,7 @@ module RelaySinkTests =
             host.SetHostNumListeners(1+i)
             host.SetHostNumRelays(1+i/2)
             host.SetHostUptime(TimeSpan.FromMinutes(42.0))
-            PCPVersion.SetHostVersion(host)
+            PCPVersion.Default.SetHostVersion(host)
             host.SetHostFlags1(PCPHostFlags1.Relay ||| PCPHostFlags1.Direct ||| PCPHostFlags1.Receiving)
             host.SetHostUphostIP((connection.connection.Client.RemoteEndPoint :?> IPEndPoint).Address)
             host.SetHostUphostPort((connection.connection.Client.RemoteEndPoint :?> IPEndPoint).Port)
@@ -397,7 +395,7 @@ module RelaySinkTests =
             bcst.SetBcstGroup(BroadcastGroup.Trackers)
             bcst.SetBcstHops(0uy)
             bcst.SetBcstTTL(11uy)
-            PCPVersion.SetBcstVersion(bcst)
+            PCPVersion.Default.SetBcstVersion(bcst)
             bcst.SetBcstChannelID(channel.ChannelID)
             bcst.Add(host)
             RelayClientConnection.sendAtom (Atom(Atom.PCP_BCST, bcst)) connection
@@ -410,7 +408,7 @@ module RelaySinkTests =
     let ``チャンネルがUnavailableで終了した時には他のリレー候補を返して切る`` () =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
         let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
-        channel.Start(null)
+        channel.Start(DummySourceStream.FactoryForBroadcast, null)
         Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
         |> Seq.iter (channel.AddNode)
         peca.AddChannel channel
@@ -423,7 +421,7 @@ module RelaySinkTests =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
         let channel = DummyRelayChannel(peca, NetworkType.IPv4, Guid.NewGuid())
         channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
-        channel.Start(null)
+        channel.Start(DummySourceStream.FactoryForRelay, null)
         Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
         |> Seq.iter (channel.AddNode)
         peca.AddChannel channel
@@ -436,7 +434,7 @@ module RelaySinkTests =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
         let channel = DummyRelayChannel(peca, NetworkType.IPv4, Guid.NewGuid())
         channel.ChannelInfo <- createChannelInfo "hoge" "FLV"
-        channel.Start(null)
+        channel.Start(DummySourceStream.FactoryForRelay, null)
         Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
         |> Seq.iter (channel.AddNode)
         peca.AddChannel channel
@@ -456,7 +454,7 @@ module RelaySinkTests =
     let ``チャンネルがUnavailableで終了した時に接続していたIPアドレスが一定時間Banされる`` () =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
         let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
-        channel.Start(null)
+        channel.Start(DummySourceStream.FactoryForBroadcast, null)
         Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
         |> Seq.iter (channel.AddNode)
         peca.AddChannel channel
@@ -467,7 +465,7 @@ module RelaySinkTests =
     let ``BanされてるIPアドレスから接続すると一定時間503が返る`` () =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
         let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
-        channel.Start(null)
+        channel.Start(DummySourceStream.FactoryForBroadcast, null)
         channel.Ban("127.0.0.1", DateTimeOffset.Now.AddMilliseconds(1000.0))
         Seq.init 32 (fun i -> Host(Guid.NewGuid(), Guid.Empty, IPEndPoint(IPAddress.Loopback, 1234+i), IPEndPoint(IPAddress.Loopback, 1234+i), 1+i, 1+i/2, false, false, false, false, true, false, Seq.empty, AtomCollection()))
         |> Seq.iter (channel.AddNode)
@@ -484,7 +482,7 @@ module RelaySinkTests =
         use peca = pecaWithOwinHost endpoint registerPCPRelay
         let channel = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
         channel.Relayable <- true
-        channel.Start(null)
+        channel.Start(DummySourceStream.FactoryForBroadcast, null)
         peca.AddChannel channel
         use connection = RelayClientConnection.connect endpoint (channel.ChannelID)
         Assert.Equal(200, connection.response.status)
@@ -497,7 +495,7 @@ module RelaySinkTests =
                 |> Atom.setHeloVersion 1218
                 |> Atom.setHeloPing pongEndPoint.Port
                 |> Atom.setHeloPort pongEndPoint.Port
-                |> Atom.parentAtom Atom.PCP_HELO
+                |> Atom.fromChildren Atom.PCP_HELO
                 |> connection.response.stream.Write
                 RelayClientConnection.sendHelo connection
                 RelayClientConnection.recvAtom connection
@@ -595,7 +593,8 @@ module RelaySourceTests =
         let channelId = Guid.NewGuid()
         let channel = RelayChannel(peca, NetworkType.IPv4, channelId)
         let client = RelayServerConnection.listen endpoint
-        channel.Start(sprintf "pcp://%s:%d/channel/%s" (endpoint.Address.ToString()) endpoint.Port (channelId.ToString("N")) |> Uri)
+        
+        channel.Start(factory, sprintf "pcp://%s:%d/channel/%s" (endpoint.Address.ToString()) endpoint.Port (channelId.ToString("N")) |> Uri)
         peca.AddChannel channel
         match Async.RunSynchronously client with
         | Ok conn ->
@@ -621,7 +620,7 @@ module RelaySourceTests =
         let channelId = Guid.NewGuid()
         let channel = RelayChannel(peca, NetworkType.IPv4, channelId)
         let client = RelayServerConnection.listen endpoint
-        channel.Start(sprintf "pcp://%s:%d/channel/%s" (endpoint.Address.ToString()) endpoint.Port (channelId.ToString("N")) |> Uri)
+        channel.Start(factory, sprintf "pcp://%s:%d/channel/%s" (endpoint.Address.ToString()) endpoint.Port (channelId.ToString("N")) |> Uri)
         peca.AddChannel channel
         match Async.RunSynchronously client with
         | Ok conn ->
@@ -645,7 +644,7 @@ module RelaySourceTests =
         let channelId = Guid.NewGuid()
         let channel = RelayChannel(peca, NetworkType.IPv4, channelId)
         let client = RelayServerConnection.listen endpoint
-        channel.Start(sprintf "pcp://%s:%d/channel/%s" (endpoint.Address.ToString()) endpoint.Port (channelId.ToString("N")) |> Uri)
+        channel.Start(factory, sprintf "pcp://%s:%d/channel/%s" (endpoint.Address.ToString()) endpoint.Port (channelId.ToString("N")) |> Uri)
         peca.AddChannel channel
         match Async.RunSynchronously client with
         | Ok conn ->

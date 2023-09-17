@@ -93,7 +93,6 @@ namespace PeerCastStation.Core
   }
 
   public class ContentCollection
-    : ICollection<Content>, IReadOnlyCollection<Content>
   {
     private struct ContentKey
       : IComparable<ContentKey>
@@ -204,16 +203,6 @@ namespace PeerCastStation.Core
       }
     }
 
-    IEnumerator<Content> IEnumerable<Content>.GetEnumerator()
-    {
-      return list.Values.GetEnumerator();
-    }
-
-    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-    {
-      return list.Values.GetEnumerator();
-    }
-
     public Content? GetOldest(int stream)
     {
       lock (list) {
@@ -231,14 +220,18 @@ namespace PeerCastStation.Core
     public Content? Newest
     {
       get {
-        return list.Values.LastOrDefault();
+        lock (list) {
+          return list.Values.LastOrDefault();
+        }
       }
     }
 
     public Content? Oldest
     {
       get {
-        return list.Values.FirstOrDefault();
+        lock (list) {
+          return list.Values.FirstOrDefault();
+        }
       }
     }
 

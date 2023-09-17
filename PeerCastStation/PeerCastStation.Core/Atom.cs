@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 
 namespace PeerCastStation.Core
 {
@@ -29,7 +30,7 @@ namespace PeerCastStation.Core
   /// </summary>
   [Serializable]
   public struct ID4
-    : IEquatable<ID4>
+    : IEquatable<ID4>, IComparable<ID4>, IComparable
   {
     private static System.Text.UTF8Encoding encoding = new System.Text.UTF8Encoding(false);
     private uint value;
@@ -58,9 +59,15 @@ namespace PeerCastStation.Core
       if (value.Length > 4) {
         throw new ArgumentException("ID4 length must be 4 or less.");
       }
-      var v = new byte[] { 0, 0, 0, 0 };
-      value.CopyTo(v, 0);
-      this.value = BitConverter.ToUInt32(v, 0);
+      this.value = BitConverter.ToUInt32(value, 0);
+    }
+
+    public ID4(ReadOnlySpan<byte> value)
+    {
+      if (value.Length > 4) {
+        throw new ArgumentException("ID4 length must be 4 or less.");
+      }
+      this.value = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(value);
     }
 
     /// <summary>
@@ -82,6 +89,11 @@ namespace PeerCastStation.Core
     public byte[] GetBytes()
     {
       return BitConverter.GetBytes(value);
+    }
+
+    public uint GetInternal()
+    {
+      return value;
     }
 
     /// <summary>
@@ -111,6 +123,22 @@ namespace PeerCastStation.Core
     public bool Equals(ID4 x)
     {
       return x.value == value;
+    }
+
+    public int CompareTo(ID4 other)
+    {
+      return value.CompareTo(other.value);
+    }
+
+    public int CompareTo(object? obj)
+    {
+      if (obj is ID4 other) {
+        return CompareTo(other);
+      }
+      else {
+        throw new ArgumentException("obj must be ID4", nameof(obj));
+      }
+      throw new NotImplementedException();
     }
 
     public static bool operator ==(ID4 a, ID4 b)
@@ -186,8 +214,10 @@ namespace PeerCastStation.Core
   /// 4文字以下の名前と対応する値を保持します
   /// </summary>
   [Serializable]
+  [DebuggerDisplay("Atom {Name}")]
   public class Atom
   {
+    public static readonly ID4 PCP_PCPn                   = new ID4("pcp\n");
     public static readonly ID4 PCP_HELO                   = new ID4("helo");
     public static readonly ID4 PCP_HELO_AGENT             = new ID4("agnt");
     public static readonly ID4 PCP_HELO_OSTYPE            = new ID4("ostp");
@@ -261,6 +291,10 @@ namespace PeerCastStation.Core
     public static readonly ID4 PCP_HOST_UPHOST_IP         = new ID4("upip");
     public static readonly ID4 PCP_HOST_UPHOST_PORT       = new ID4("uppt");
     public static readonly ID4 PCP_HOST_UPHOST_HOPS       = new ID4("uphp");
+    public static readonly ID4 PCP_PUSH                   = new ID4("push");
+    public static readonly ID4 PCP_PUSH_IP                = new ID4("ip");
+    public static readonly ID4 PCP_PUSH_PORT              = new ID4("port");
+    public static readonly ID4 PCP_PUSH_CHANID            = new ID4("cid");
     public static readonly ID4 PCP_QUIT                   = new ID4("quit");
     public static readonly ID4 PCP_CONNECT                = new ID4("pcp\n");
     public const byte PCP_HOST_FLAGS1_TRACKER = 0x01;
@@ -619,6 +653,68 @@ namespace PeerCastStation.Core
       else {
         res = null;
         return false;
+      }
+    }
+
+    public int GetLength()
+    {
+      if (value!=null) {
+        return value.Length + 8;
+      }
+      else if (children!=null) {
+        return children.Sum(c => c.GetLength()) + 8;
+      }
+      else {
+        return 8;
+      }
+    }
+
+    public int CopyTo(Span<byte> dest)
+    {
+      if (value!=null) {
+        if (dest.Length < value.Length+8) {
+          throw new ArgumentOutOfRangeException(nameof(dest), "Span has not enough length");
+        }
+        if (BitConverter.IsLittleEndian) {
+          System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(dest, Name.GetInternal());
+        }
+        else {
+          System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(dest, Name.GetInternal());
+        }
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(dest[4..], value.Length);
+        value.CopyTo(dest[8..]);
+        return 8+value.Length;
+      }
+      else if (children!=null) {
+        if (dest.Length < (children.Count+1)*8) {
+          throw new ArgumentOutOfRangeException(nameof(dest), "Span has not enough length");
+        }
+        if (BitConverter.IsLittleEndian) {
+          System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(dest, Name.GetInternal());
+        }
+        else {
+          System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(dest, Name.GetInternal());
+        }
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(dest[4..], 0x80000000U | (uint)children.Count);
+        var pos = 8;
+        foreach (var c in children) {
+          var len = c.CopyTo(dest[pos..]);
+          pos += len;
+        }
+        return pos;
+      }
+      else {
+        if (dest.Length < 8) {
+          throw new ArgumentOutOfRangeException(nameof(dest), "Span has not enough length");
+        }
+        if (BitConverter.IsLittleEndian) {
+          System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(dest, Name.GetInternal());
+        }
+        else {
+          System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(dest, Name.GetInternal());
+        }
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(dest[4..], 0);
+        return 8;
       }
     }
 

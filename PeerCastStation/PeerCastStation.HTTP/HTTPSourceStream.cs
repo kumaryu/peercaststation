@@ -88,7 +88,7 @@ namespace PeerCastStation.HTTP
   }
 
   public class HTTPSourceConnection
-    : SourceConnectionBase
+    : TCPSourceConnectionBase
   {
     private IContentReader contentReader;
     private BufferedContentSink contentSink;
@@ -106,7 +106,7 @@ namespace PeerCastStation.HTTP
       contentSink = new BufferedContentSink(new AsynchronousContentSink(new ChannelContentSink(channel, use_content_bitrate)));
     }
 
-    protected override async Task<SourceConnectionClient?> DoConnect(Uri source, CancellationToken cancel_token)
+    protected override async Task<SourceConnectionClient?> DoConnect(Uri source, CancellationTokenWithArg<StopReason> cancel_token)
     {
       try {
         var client = new TcpClient();
@@ -128,7 +128,7 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    protected override async Task DoProcess(SourceConnectionClient connection, CancellationToken cancel_token)
+    protected override async Task<ISourceConnectionResult> DoProcess(SourceConnectionClient connection, WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken)
     {
       try {
         this.Status = ConnectionStatus.Connecting;
@@ -149,27 +149,37 @@ namespace PeerCastStation.HTTP
         await connection.Stream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(request)).ConfigureAwait(false);
         Logger.Debug("Sending request:\n" + request);
 
-        response = await HTTPResponseReader.ReadAsync(connection.Stream, cancel_token).ConfigureAwait(false);
+        response = await HTTPResponseReader.ReadAsync(connection.Stream, cancellationToken).ConfigureAwait(false);
         if (response.Status!=200) {
           Logger.Error("Server responses {0} to GET {1}", response.Status, SourceUri.PathAndQuery);
-          Stop(response.Status==404 ? StopReason.OffAir : StopReason.UnavailableError);
+          this.Status = ConnectionStatus.Error;
+          return new SourceConnectionResult(response.Status==404 ? StopReason.OffAir : StopReason.UnavailableError);
         }
 
         this.Status = ConnectionStatus.Connected;
-        await contentReader.ReadAsync(contentSink, connection.Stream, cancel_token).ConfigureAwait(false);
-        Stop(StopReason.OffAir);
+        await contentReader.ReadAsync(contentSink, connection.Stream, cancellationToken).ConfigureAwait(false);
+        this.Status = ConnectionStatus.Idle;
+        return new SourceConnectionResult(StopReason.OffAir);
       }
       catch (InvalidDataException) {
-        Stop(StopReason.ConnectionError);
+        this.Status = ConnectionStatus.Error;
+        return new SourceConnectionResult(StopReason.ConnectionError);
       }
       catch (OperationCanceledException) {
-        Logger.Error("Recv content timed out");
-        Stop(StopReason.ConnectionError);
+        if (cancellationToken.IsCancellationRequested) {
+          this.Status = ConnectionStatus.Idle;
+          return new SourceConnectionResult(cancellationToken.Value);
+        }
+        else {
+          this.Status = ConnectionStatus.Error;
+          Logger.Error("Recv content timed out");
+          return new SourceConnectionResult(StopReason.ConnectionError);
+        }
       }
       catch (IOException) {
-        Stop(StopReason.ConnectionError);
+        this.Status = ConnectionStatus.Error;
+        return new SourceConnectionResult(StopReason.ConnectionError);
       }
-      this.Status = ConnectionStatus.Error;
     }
 
     public override ConnectionInfo GetConnectionInfo()
@@ -187,8 +197,8 @@ namespace PeerCastStation.HTTP
         RemoteEndPoint   = endpoint,
         RemoteHostStatus = (endpoint!=null && endpoint.Address.IsSiteLocal()) ? RemoteHostStatus.Local : RemoteHostStatus.None,
         ContentPosition  = contentSink.LastContent?.Position ?? 0,
-        RecvRate         = RecvRate,
-        SendRate         = SendRate,
+        RecvRate         = connection?.RecvRate,
+        SendRate         = connection?.SendRate,
         AgentName        = server_name,
       }.Build();
     }
@@ -208,9 +218,9 @@ namespace PeerCastStation.HTTP
       this.UseContentBitrate = channel.ChannelInfo==null || channel.ChannelInfo.Bitrate==0;
     }
 
-    public override ConnectionInfo GetConnectionInfo()
+    protected override ConnectionInfo GetConnectionInfo(ISourceConnection? sourceConnection)
     {
-      var connInfo = sourceConnection.GetConnectionInfo();
+      var connInfo = sourceConnection?.GetConnectionInfo();
       if (connInfo!=null) {
         return connInfo;
       }

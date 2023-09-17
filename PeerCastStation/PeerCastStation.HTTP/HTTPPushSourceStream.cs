@@ -45,7 +45,7 @@ namespace PeerCastStation.HTTP
   }
 
   public class HTTPPushSourceConnection
-    : SourceConnectionBase
+    : TCPSourceConnectionBase
   {
     public HTTPPushSourceConnection(PeerCast peercast, Channel channel, Uri source_uri, IContentReader content_reader, bool use_content_bitrate)
       : base(peercast, channel, source_uri)
@@ -56,8 +56,6 @@ namespace PeerCastStation.HTTP
     private BufferedContentSink contentSink;
 
     public IContentReader ContentReader { get; private set; }
-
-    private class ConnectionStoppedExcception : ApplicationException {}
 
     public override ConnectionInfo GetConnectionInfo()
     {
@@ -81,8 +79,8 @@ namespace PeerCastStation.HTTP
         RemoteEndPoint   = endpoint,
         RemoteHostStatus = (endpoint!=null && endpoint.Address.IsSiteLocal()) ? RemoteHostStatus.Local : RemoteHostStatus.None,
         ContentPosition  = contentSink.LastContent?.Position ?? 0,
-        RecvRate         = RecvRate,
-        SendRate         = SendRate,
+        RecvRate         = connection?.RecvRate,
+        SendRate         = connection?.SendRate,
         AgentName        = clientName,
       }.Build();
     }
@@ -115,7 +113,7 @@ namespace PeerCastStation.HTTP
       return addresses.Select(addr => new IPEndPoint(addr, uri.Port<0 ? 1935 : uri.Port));
     }
 
-    protected override async Task<SourceConnectionClient?> DoConnect(Uri source, CancellationToken cancellationToken)
+    protected override async Task<SourceConnectionClient?> DoConnect(Uri source, CancellationTokenWithArg<StopReason> cancellationToken)
     {
       TcpClient? client = null;
       var bind_addr = GetBindAddresses(source);
@@ -131,7 +129,7 @@ namespace PeerCastStation.HTTP
         return listener;
       }).ToArray();
       try {
-        var cancel_task = cancellationToken.CreateCancelTask<TcpClient>();
+        var cancel_task = cancellationToken.CancellationToken.CreateCancelTask<TcpClient>();
         var tasks = listeners.Select(listener => {
           listener.Start(1);
           Logger.Debug("Listening on {0}", listener.LocalEndpoint);
@@ -207,37 +205,38 @@ namespace PeerCastStation.HTTP
       var stream = GetChunkedStream(connection.Stream);
       this.state = ConnectionState.Receiving;
       await ContentReader.ReadAsync(contentSink, stream, cancel_token).ConfigureAwait(false);
-      Stop(StopReason.OffAir);
     }
 
-    protected override async Task DoProcess(SourceConnectionClient connection, CancellationToken cancellationToken)
+    protected override async Task<ISourceConnectionResult> DoProcess(SourceConnectionClient connection, WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken)
     {
       this.state = ConnectionState.Waiting;
       try {
-        if (connection!=null && !IsStopped) {
+        if (connection!=null && !cancellationToken.IsCancellationRequested) {
           await Handshake(connection, cancellationToken).ConfigureAwait(false);
           await ReadContents(connection, cancellationToken).ConfigureAwait(false);
         }
         this.state = ConnectionState.Closed;
+        return new SourceConnectionResult(StopReason.OffAir);
       }
       catch (HTTPError e) {
         await connection.Stream.WriteUTF8Async(HTTPUtils.CreateResponseHeader(e.StatusCode)).ConfigureAwait(false);
-        Stop(StopReason.BadAgentError);
         this.state = ConnectionState.Error;
+        return new SourceConnectionResult(StopReason.BadAgentError);
       }
       catch (IOException e) {
         Logger.Error(e);
-        Stop(StopReason.ConnectionError);
         this.state = ConnectionState.Error;
+        return new SourceConnectionResult(StopReason.ConnectionError);
       }
-      catch (ConnectionStoppedExcception) {
+      catch (OperationCanceledException) {
         this.state = ConnectionState.Closed;
+        if (cancellationToken.IsCancellationRequested) {
+          return new SourceConnectionResult(cancellationToken.Value);
+        }
+        else {
+          return new SourceConnectionResult(StopReason.ConnectionError);
+        }
       }
-    }
-
-    protected override void DoPost(SourceConnectionClient connection, Host? from, Atom packet)
-    {
-      //Do nothing
     }
 
   }
@@ -260,9 +259,9 @@ namespace PeerCastStation.HTTP
       get { return SourceStreamType.Broadcast; }
     }
 
-    public override ConnectionInfo GetConnectionInfo()
+    protected override ConnectionInfo GetConnectionInfo(ISourceConnection? sourceConnection)
     {
-      var connInfo = sourceConnection.GetConnectionInfo();
+      var connInfo = sourceConnection?.GetConnectionInfo();
       if (connInfo!=null) {
         return connInfo;
       }

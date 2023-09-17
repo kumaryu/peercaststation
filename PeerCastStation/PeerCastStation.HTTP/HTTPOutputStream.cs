@@ -220,7 +220,7 @@ namespace PeerCastStation.HTTP
         connectionInfo.RemoteName = remoteEndPoint.ToString();
         connectionInfo.RemoteSessionID = null;
         connectionInfo.RemoteHostStatus = RemoteHostStatus.Receiving;
-        if (remoteEndPoint.Address.GetAddressLocality()<2) {
+        if ((int)remoteEndPoint.Address.GetAddressLocality()<2) {
           connectionInfo.RemoteHostStatus |= RemoteHostStatus.Local;
         }
         connectionInfo.Status = ConnectionStatus.Connected;
@@ -229,7 +229,7 @@ namespace PeerCastStation.HTTP
         getSendRate = ctx.Get<Func<float>>(OwinEnvironment.PeerCastStation.GetSendRate);
       }
 
-      public Task<ChannelMessage> DequeueAsync(CancellationToken ct)
+      public ValueTask<ChannelMessage> DequeueAsync(CancellationToken ct)
       {
         return queue.DequeueAsync(ct);
       }

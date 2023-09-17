@@ -193,7 +193,7 @@ namespace PeerCastStation.HTTP
         this.channel = channel;
         var sink =
             "flvtots".Split(',')
-            .Select(name => channel.PeerCast.ContentFilters.FirstOrDefault(filter => filter.Name.ToLowerInvariant() == name.ToLowerInvariant()))
+            .Select(name => owner.peerCast.ContentFilters.FirstOrDefault(filter => filter.Name.ToLowerInvariant() == name.ToLowerInvariant()))
             .Where(filter => filter != null)
             .Aggregate((IContentSink)Segmenter, (r, filter) => filter!.Activate(r));
         subscription = channel.AddContentSink(sink);
@@ -209,7 +209,6 @@ namespace PeerCastStation.HTTP
         return owner.contentSinks.GetOrAdd(channel, () => new HLSContentSink(owner, channel));
       }
     }
-    private SharedContextCollection<Channel,HLSContentSink> contentSinks = new ();
 
     class HLSChannelSink
       : IChannelSink,
@@ -255,7 +254,7 @@ namespace PeerCastStation.HTTP
         connectionInfo.RemoteName = remoteEndPoint.ToString();
         connectionInfo.RemoteSessionID = null;
         connectionInfo.RemoteHostStatus = RemoteHostStatus.Receiving;
-        if (remoteEndPoint.Address.GetAddressLocality()<2) {
+        if ((int)remoteEndPoint.Address.GetAddressLocality()<2) {
           connectionInfo.RemoteHostStatus |= RemoteHostStatus.Local;
         }
         connectionInfo.Status = ConnectionStatus.Connected;
@@ -272,7 +271,7 @@ namespace PeerCastStation.HTTP
         var remoteEndPoint = ctx.Request.GetRemoteEndPoint();
         connectionInfo.RemoteEndPoint = remoteEndPoint;
         connectionInfo.RemoteName = remoteEndPoint.ToString();
-        if (remoteEndPoint.Address.GetAddressLocality()<2) {
+        if ((int)remoteEndPoint.Address.GetAddressLocality()<2) {
           connectionInfo.RemoteHostStatus |= RemoteHostStatus.Local;
         }
         else {
@@ -325,7 +324,6 @@ namespace PeerCastStation.HTTP
       }
 
     }
-    private SharedContextCollection<(Channel Channel, string SessionId), HLSChannelSink> channelSinks = new ();
 
     private struct ParsedRequest
     {
@@ -358,6 +356,15 @@ namespace PeerCastStation.HTTP
         req.Session = ctx.Request.Query.Get("session");
         return req;
       }
+    }
+
+    private PeerCast peerCast;
+    private SharedContextCollection<Channel,HLSContentSink> contentSinks = new ();
+    private SharedContextCollection<(Channel Channel, string SessionId), HLSChannelSink> channelSinks = new ();
+
+    public HTTPLiveStreamingDirectOwinApp(PeerCast peerCast)
+    {
+      this.peerCast = peerCast;
     }
 
     private Uri AllocateNewSessionUri(OwinEnvironment ctx)
@@ -487,13 +494,15 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    public static void BuildApp(IAppBuilder builder)
+    public static Action<IAppBuilder> BuildApp(PeerCastApplication peerCastApp)
     {
-      var app = new HTTPLiveStreamingDirectOwinApp();
-      builder.MapGET("/hls", sub => {
-        sub.UseAuth(OutputStreamType.Play);
-        sub.Run(app.HLSHandler);
-      });
+      return builder => {
+        var app = new HTTPLiveStreamingDirectOwinApp(peerCastApp.PeerCast);
+        builder.MapGET("/hls", sub => {
+          sub.UseAuth(OutputStreamType.Play);
+          sub.Run(app.HLSHandler);
+        });
+      };
     }
 
   }
@@ -508,7 +517,7 @@ namespace PeerCastStation.HTTP
     override protected void OnAttach(PeerCastApplication app)
     {
       var owin = app.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
-      appRegistration = owin?.OwinHost?.Register(HTTPLiveStreamingDirectOwinApp.BuildApp);
+      appRegistration = owin?.OwinHost?.Register(HTTPLiveStreamingDirectOwinApp.BuildApp(app));
     }
 
     override protected void OnDetach()

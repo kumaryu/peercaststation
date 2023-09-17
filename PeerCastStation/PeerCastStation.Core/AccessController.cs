@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace PeerCastStation.Core
@@ -23,10 +24,6 @@ namespace PeerCastStation.Core
   /// </summary>
   public class AccessController
   {
-    /// <summary>
-    /// 所属するPeerCastオブジェクトを取得します
-    /// </summary>
-    public PeerCast PeerCast { get; private set; }
     /// <summary>
     /// PeerCast全体での最大リレー数を取得および設定します。
     /// </summary>
@@ -127,23 +124,23 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 指定したチャンネルに新しいリレー接続ができるかどうかを取得します
     /// </summary>
+    /// <param name="channels">現在のチャンネル一覧</param>
     /// <param name="channel">リレー接続先のチャンネル</param>
     /// <param name="local">接続しようとする接続がローカル接続かどうか</param>
     /// <returns>リレー可能な場合はtrue、それ以外はfalse</returns>
-    public virtual bool IsChannelRelayable(Channel channel, bool local)
+    public bool IsChannelRelayable(IEnumerable<Channel> channels, Channel channel, bool local)
     {
       switch (channel.Network) {
       case NetworkType.IPv6:
-        return IsChannelRelayableIPv6(channel, local);
+        return IsChannelRelayableIPv6(channels.Where(c => c.Network==channel.Network), channel, local);
       case NetworkType.IPv4:
       default:
-        return IsChannelRelayableIPv4(channel, local);
+        return IsChannelRelayableIPv4(channels.Where(c => c.Network==channel.Network), channel, local);
       }
     }
 
-    protected bool IsChannelRelayableIPv4(Channel channel, bool local)
+    private bool IsChannelRelayableIPv4(IEnumerable<Channel> channels, Channel channel, bool local)
     {
-      var channels = PeerCast.Channels.Where(c => c.Network==channel.Network);
       int channel_bitrate = local ? 0 : channel.ChannelInfo.Bitrate;
       var total_upstream_rate = channels.Sum(c => c.GetUpstreamRate());
       var channel_upstream_rate = channel.GetUpstreamRate();
@@ -163,9 +160,8 @@ namespace PeerCastStation.Core
       }
     }
 
-    protected bool IsChannelRelayableIPv6(Channel channel, bool local)
+    private bool IsChannelRelayableIPv6(IEnumerable<Channel> channels, Channel channel, bool local)
     {
-      var channels = PeerCast.Channels.Where(c => c.Network==channel.Network);
       int channel_bitrate = local ? 0 : channel.ChannelInfo.Bitrate;
       var total_upstream_rate = channels.Sum(c => c.GetUpstreamRate());
       var channel_upstream_rate = channel.GetUpstreamRate();
@@ -188,23 +184,23 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 指定したチャンネルに新しい視聴接続ができるかどうかを取得します
     /// </summary>
+    /// <param name="channels">現在のチャンネル一覧</param>
     /// <param name="channel">視聴接続先のチャンネル</param>
     /// <param name="local">接続しようとする接続がローカル接続かどうか</param>
     /// <returns>視聴可能な場合はtrue、それ以外はfalse</returns>
-    public virtual bool IsChannelPlayable(Channel channel, bool local)
+    public bool IsChannelPlayable(IEnumerable<Channel> channels, Channel channel, bool local)
     {
       switch (channel.Network) {
       case NetworkType.IPv6:
-        return IsChannelPlayableIPv6(channel, local);
+        return IsChannelPlayableIPv6(channels.Where(c => c.Network==channel.Network), channel, local);
       case NetworkType.IPv4:
       default:
-        return IsChannelPlayableIPv4(channel, local);
+        return IsChannelPlayableIPv4(channels.Where(c => c.Network==channel.Network), channel, local);
       }
     }
 
-    protected bool IsChannelPlayableIPv4(Channel channel, bool local)
+    private bool IsChannelPlayableIPv4(IEnumerable<Channel> channels, Channel channel, bool local)
     {
-      var channels = PeerCast.Channels.Where(c => c.Network==channel.Network);
       int channel_bitrate = local ? 0 : channel.ChannelInfo.Bitrate;
       var total_upstream_rate = channels.Sum(c => c.GetUpstreamRate());
       var channel_upstream_rate = channel.GetUpstreamRate();
@@ -224,9 +220,8 @@ namespace PeerCastStation.Core
       }
     }
 
-    protected bool IsChannelPlayableIPv6(Channel channel, bool local)
+    private bool IsChannelPlayableIPv6(IEnumerable<Channel> channels, Channel channel, bool local)
     {
-      var channels = PeerCast.Channels.Where(c => c.Network==channel.Network);
       int channel_bitrate = local ? 0 : channel.ChannelInfo.Bitrate;
       var total_upstream_rate = channels.Sum(c => c.GetUpstreamRate());
       var channel_upstream_rate = channel.GetUpstreamRate();
@@ -244,15 +239,6 @@ namespace PeerCastStation.Core
           (this.MaxUpstreamRateIPv6<0 || this.MaxUpstreamRateIPv6>=total_upstream_rate+channel_bitrate) &&
           (this.MaxUpstreamRatePerRelayChannel<=0 || this.MaxUpstreamRatePerRelayChannel>=channel_upstream_rate+channel_bitrate);
       }
-    }
-
-    /// <summary>
-    /// AccessControllerオブジェクトを初期化します
-    /// </summary>
-    /// <param name="peercast">所属するPeerCastオブジェクト</param>
-    public AccessController(PeerCast peercast)
-    {
-      this.PeerCast = peercast;
     }
   }
 

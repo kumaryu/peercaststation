@@ -6,82 +6,46 @@ using System.Net.Sockets;
 
 namespace PeerCastStation.Core
 {
+
+  public abstract record ChannelSourceMessage();
+  public record ChannelSourceMessageStop(StopReason StopReason) : ChannelSourceMessage();
+  public record ChannelSourceMessageReconnect() : ChannelSourceMessage();
+  public record ChannelSourceMessagePost(Host? From, Atom Message) : ChannelSourceMessage();
+
+  public interface ISourceConnectionResult
+  {
+    StopReason StopReason { get; }
+  }
+
+  public class SourceConnectionResult
+    : ISourceConnectionResult
+  {
+    public StopReason StopReason { get; }
+    public SourceConnectionResult(StopReason stopReason)
+    {
+      StopReason = stopReason;
+    }
+  }
+
   public interface ISourceConnection
   {
     Uri        SourceUri     { get; }
     StopReason StoppedReason { get; }
-    bool       IsStopped     { get; }
-    float      SendRate      { get; }
-    float      RecvRate      { get; }
 
     ConnectionInfo GetConnectionInfo();
-    Task<StopReason> Run();
-    void Post(Host? from, Atom packet);
-    void Stop(StopReason reason);
+    Task<ISourceConnectionResult> Run(WaitableQueue<ChannelSourceMessage> channelSourceMessages);
   }
 
   public abstract class SourceConnectionBase
     : ISourceConnection
   {
     protected ConnectionStatus Status { get; set; }
-
     public PeerCast   PeerCast { get; private set; }
     public Channel    Channel { get; private set; }
     public Uri        SourceUri { get; private set; }
     public StopReason StoppedReason { get; private set; }
-    public float      SendRate { get { return connection!=null ? connection.Stream.WriteRate : 0; } }
-    public float      RecvRate { get { return connection!=null ? connection.Stream.ReadRate  : 0; } }
-
-    private CancellationTokenSource isStopped = new CancellationTokenSource();
-    public bool IsStopped {
-      get { return isStopped.IsCancellationRequested; }
-    }
-    protected CancellationToken StoppedCancellationToken {
-      get { return isStopped.Token; }
-    }
-
     protected Logger Logger { get; private set; }
-
-    protected class SourceConnectionClient
-      : IDisposable
-    {
-      public TcpClient Client { get; private set; }
-      public ConnectionStream Stream { get; private set; }
-      public SourceConnectionClient(TcpClient client)
-      {
-        this.Client = client;
-        this.Client.NoDelay = true;
-        this.Client.ReceiveBufferSize = 256 * 1024;
-        this.Client.SendBufferSize = 256 * 1024;
-        var stream = client.GetStream();
-        this.Stream = new ConnectionStream(client.Client, stream);
-        this.Stream.ReadTimeout = 10000;
-        this.Stream.WriteTimeout = 10000;
-      }
-
-      private IPEndPoint? remoteEndPoint = null;
-      public IPEndPoint? RemoteEndPoint {
-        get {
-          if (remoteEndPoint!=null) {
-            return remoteEndPoint;
-          }
-          else if (this.Client.Connected) {
-            remoteEndPoint = this.Client.Client.RemoteEndPoint as IPEndPoint;
-            return remoteEndPoint;
-          }
-          else {
-            return null;
-          }
-        }
-      }
-
-      public void Dispose()
-      {
-        remoteEndPoint = null;
-        this.Stream.Close();
-        this.Client.Close();
-      }
-    }
+    private Task runningTask = Task.CompletedTask;
 
     public SourceConnectionBase(
         PeerCast peercast,
@@ -96,6 +60,108 @@ namespace PeerCastStation.Core
       this.Status        = ConnectionStatus.Idle;
     }
 
+    public async Task<ISourceConnectionResult> Run(WaitableQueue<ChannelSourceMessage> channelSourceMessages)
+    {
+      this.Status = ConnectionStatus.Connecting;
+      var isStopped = new CancellationTokenSourceWithArg<StopReason>();
+      var postMessageQueue = new WaitableQueue<(Host? From, Atom Message)>();
+      var msgTask = Task.Run(async () => {
+        await foreach (var msg in channelSourceMessages.ForEach().WithCancellation(isStopped.Token.CancellationToken).ConfigureAwait(false)) {
+          switch (msg) {
+          case ChannelSourceMessageStop stopMsg:
+            isStopped.TryCancel(stopMsg.StopReason);
+            Logger.Debug($"Stop requested by reason {stopMsg.StopReason}");
+            break;
+          case ChannelSourceMessageReconnect:
+            isStopped.TryCancel(StopReason.UserReconnect);
+            Logger.Debug($"Stop requested by reason {StopReason.UserReconnect}");
+            break;
+          case ChannelSourceMessagePost postMsg:
+            postMessageQueue.Enqueue((postMsg.From, postMsg.Message));
+            break;
+          }
+        }
+      });
+      var sourceTask = Task.Run(async () => {
+        return await DoProcessSource(postMessageQueue, isStopped.Token).ConfigureAwait(false);
+      });
+      runningTask = sourceTask;
+      await Task.WhenAll(msgTask, sourceTask).ConfigureAwait(false);
+      return await sourceTask.ConfigureAwait(false);
+    }
+
+    protected Task GetRunningTask()
+    {
+      return runningTask;
+    }
+
+    protected abstract Task<ISourceConnectionResult> DoProcessSource(WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken);
+
+    public abstract ConnectionInfo GetConnectionInfo();
+  }
+
+  public abstract class TCPSourceConnectionBase
+    : SourceConnectionBase
+  {
+    protected class SourceConnectionClient
+      : IDisposable
+    {
+      public TcpClient? Client { get; private set; }
+      public ConnectionStream Stream { get; private set; }
+      public float RecvRate { get { return Stream.ReadRate; } }
+      public float SendRate { get { return Stream.WriteRate; } }
+      public SourceConnectionClient(TcpClient client)
+      {
+        this.Client = client;
+        this.Client.NoDelay = true;
+        this.Client.ReceiveBufferSize = 256 * 1024;
+        this.Client.SendBufferSize = 256 * 1024;
+        var stream = client.GetStream();
+        this.Stream = new ConnectionStream(client.Client, stream);
+        this.Stream.ReadTimeout = 10000;
+        this.Stream.WriteTimeout = 10000;
+      }
+
+      public SourceConnectionClient(ConnectionStream stream)
+      {
+        this.Stream = stream;
+        this.Stream.ReadTimeout = 10000;
+        this.Stream.WriteTimeout = 10000;
+      }
+
+      private IPEndPoint? remoteEndPoint = null;
+      public IPEndPoint? RemoteEndPoint {
+        get {
+          if (remoteEndPoint!=null) {
+            return remoteEndPoint;
+          }
+          else if (Client?.Connected ?? false) {
+            remoteEndPoint = this.Client.Client.RemoteEndPoint as IPEndPoint;
+            return remoteEndPoint;
+          }
+          else {
+            remoteEndPoint = Stream.RemoteEndPoint;
+            return remoteEndPoint;
+          }
+        }
+      }
+
+      public void Dispose()
+      {
+        remoteEndPoint = null;
+        Stream.Close();
+        Client?.Close();
+      }
+    }
+
+    public TCPSourceConnectionBase(
+        PeerCast peercast,
+        Channel  channel,
+        Uri      source_uri)
+      : base(peercast, channel, source_uri)
+    {
+    }
+
     protected virtual void OnStarted(SourceConnectionClient connection)
     {
     }
@@ -105,62 +171,50 @@ namespace PeerCastStation.Core
     }
 
     protected SourceConnectionClient? connection;
-    public async Task<StopReason> Run()
+    protected override async Task<ISourceConnectionResult> DoProcessSource(WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken)
     {
-      this.Status = ConnectionStatus.Connecting;
       try {
-        connection = await DoConnect(SourceUri, isStopped.Token).ConfigureAwait(false);
+        connection = await DoConnect(SourceUri, cancellationToken).ConfigureAwait(false);
         if (connection==null) {
-          Stop(StopReason.ConnectionError);
+          return new SourceConnectionResult(StopReason.ConnectionError);
         }
+      }
+      catch (OperationCanceledWithArgException<StopReason> ex) {
+        connection = null;
+        return new SourceConnectionResult(ex.Value);
       }
       catch (OperationCanceledException) {
         connection = null;
-        Stop(StopReason.UserShutdown);
+        return new SourceConnectionResult(StopReason.UserShutdown);
       }
       catch (BindErrorException e) {
         connection = null;
         Logger.Error(e);
-        Stop(StopReason.NoHost);
+        return new SourceConnectionResult(StopReason.NoHost);
       }
-      if (connection!=null && !IsStopped) {
+      if (!cancellationToken.IsCancellationRequested) {
         OnStarted(connection);
+        ISourceConnectionResult result;
         try {
-          await DoProcess(connection, isStopped.Token).ConfigureAwait(false);
+          result = await DoProcess(connection, postMessages, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledWithArgException<StopReason> ex) {
+          result = new SourceConnectionResult(ex.Value);
         }
         catch (OperationCanceledException) {
+          result = new SourceConnectionResult(StopReason.UserShutdown);
         }
         OnStopped();
-      }
-      if (connection!=null) {
         await DoClose(connection).ConfigureAwait(false);
-      }
-      return StoppedReason;
-    }
-
-    public void Post(Host? from, Atom packet)
-    {
-      if (IsStopped) return;
-      if (connection==null) return;
-      DoPost(connection, from, packet);
-    }
-
-    public virtual void Stop(StopReason reason)
-    {
-      if (reason==StopReason.None) throw new ArgumentException("Invalid value", "reason");
-      if (StoppedReason!=StopReason.UserShutdown) {
-        StoppedReason = reason;
-      }
-      if (IsStopped) {
-        Logger.Debug($"Stop requested by reason {reason} but already stopped");
+        return result;
       }
       else {
-        isStopped.Cancel();
-        Logger.Debug($"Stop requested by reason {reason}");
+        await DoClose(connection).ConfigureAwait(false);
+        return new SourceConnectionResult(cancellationToken.Value);
       }
     }
 
-    protected abstract Task<SourceConnectionClient?> DoConnect(Uri source, CancellationToken cancellationToken);
+    protected abstract Task<SourceConnectionClient?> DoConnect(Uri source, CancellationTokenWithArg<StopReason> cancellationToken);
 
     protected virtual async Task DoClose(SourceConnectionClient connection)
     {
@@ -170,13 +224,7 @@ namespace PeerCastStation.Core
       this.Status = ConnectionStatus.Error;
     }
 
-    protected virtual void DoPost(SourceConnectionClient connection, Host? from, Atom packet)
-    {
-    }
-
-    protected abstract Task DoProcess(SourceConnectionClient connection, CancellationToken cancellationToken);
-
-    public abstract ConnectionInfo GetConnectionInfo();
+    protected abstract Task<ISourceConnectionResult> DoProcess(SourceConnectionClient connection, WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken);
   }
 
 }

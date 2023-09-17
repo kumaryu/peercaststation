@@ -24,7 +24,6 @@ using System.Threading.Tasks;
 using PeerCastStation.Core;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
-using System.Collections.Concurrent;
 
 namespace PeerCastStation.PCP
 {
@@ -96,11 +95,22 @@ namespace PeerCastStation.PCP
     }
   }
 
+  public class PCPSourceConnectionResult
+    : SourceConnectionResult
+  {
+    public bool WaitForGiv { get; }
+
+    public PCPSourceConnectionResult(StopReason stopReason, bool waitForGiv)
+      : base(stopReason)
+    {
+      WaitForGiv = waitForGiv;
+    }
+  }
+
   public class PCPSourceConnection
-    : SourceConnectionBase,
+    : TCPSourceConnectionBase,
       IChannelMonitor
   {
-    private TcpClient? client = null;
     private RelayRequestResponse? relayResponse = null;
     private Host? uphost = null;
     private RemoteHostStatus remoteType = RemoteHostStatus.None;
@@ -109,6 +119,33 @@ namespace PeerCastStation.PCP
     private Content?     lastHeader = null;
     private ChannelInfo lastInfo;
     private OutputListener? listener = null;
+    private IChannelOperationHandler channelOperationHandler;
+
+    private interface IChannelOperationHandler
+    {
+      void AddSourceNode(Host host);
+      void Broadcast(Host? from, Atom packet, BroadcastGroup group);
+    }
+
+    private class DefaultChannelOperationHandler
+      : IChannelOperationHandler
+    {
+      public Channel Channel { get; }
+      public DefaultChannelOperationHandler(Channel channel)
+      {
+        Channel = channel;
+      }
+
+      public void AddSourceNode(Host host)
+      {
+        Channel.AddSourceNode(host);
+      }
+
+      public void Broadcast(Host? from, Atom packet, BroadcastGroup group)
+      {
+        Channel.Broadcast(from, packet, group);
+      }
+    }
 
     public PCPSourceConnection(
         PeerCast peercast,
@@ -120,6 +157,7 @@ namespace PeerCastStation.PCP
       remoteType = remote_type;
       contentSink = new AsynchronousContentSink(new ChannelContentSink(channel, true));
       lastInfo = Channel.ChannelInfo;
+      channelOperationHandler = new DefaultChannelOperationHandler(channel);
     }
 
     protected override void OnStarted(SourceConnectionClient connection)
@@ -141,115 +179,179 @@ namespace PeerCastStation.PCP
       base.OnStopped();
     }
 
-    protected override async Task<SourceConnectionClient?> DoConnect(Uri source, CancellationToken cancel_token)
+    private class ConnectionStopException : Exception
     {
-      TcpClient? client = null;
-      try {
-        var port = source.Port<0 ? PCPVersion.DefaultPort : source.Port;
-        if (source.HostNameType==UriHostNameType.IPv4 ||
-            source.HostNameType==UriHostNameType.IPv6) {
-          var addr = IPAddress.Parse(source.Host);
-          client = new TcpClient(addr.AddressFamily);
-          using (var cs = CancellationTokenSource.CreateLinkedTokenSource(cancel_token)) {
-            cs.CancelAfter(3000);
-            var task = await Task.WhenAny(
-              cs.Token.CreateCancelTask(),
-              client.ConnectAsync(addr, port)
-            ).ConfigureAwait(false);
-            await task.ConfigureAwait(false);
-          }
-        }
-        else {
-          client = new TcpClient(Channel.NetworkAddressFamily);
-          using (var cs = CancellationTokenSource.CreateLinkedTokenSource(cancel_token)) {
-            cs.CancelAfter(3000);
-            var task = await Task.WhenAny(
-              cs.Token.CreateCancelTask(),
-              client.ConnectAsync(source.DnsSafeHost, port)
-            ).ConfigureAwait(false);
-            await task.ConfigureAwait(false);
-          }
-        }
-        var connection = new SourceConnectionClient(client);
-        connection.Stream.ReadTimeout  = 30000;
-        connection.Stream.WriteTimeout = 8000;
-        remoteHost = new DnsEndPoint(source.Host, port);
-        Logger.Debug("Connected: {0}", source);
-        this.client = client;
-        return connection;
-      }
-      catch (OperationCanceledException) {
-        client?.Close();
-        Logger.Debug("Connection Cancelled: {0}", source);
-        return null;
-      }
-      catch (SocketException e) {
-        Logger.Debug("Connection Failed: {0}", source);
-        Logger.Debug(e);
-        return null;
+      public StopReason StopReason { get; }
+      public ConnectionStopException(StopReason reason)
+        : base()
+      {
+        StopReason = reason;
       }
     }
 
-    protected override void DoPost(SourceConnectionClient connection, Host? from, Atom packet)
+    private TaskCompletionSource<ConnectionStream>? waitingForGivClientTaskSource = null;
+    public Task SetGivClient(ConnectionStream stream)
     {
-      if (uphost==from) return;
-      if (postedAtoms.TryAdd(packet)) {
-        postedAtomsEvent.Release();
+      if (waitingForGivClientTaskSource?.TrySetResult(stream) ?? false) {
+        return GetRunningTask();
+      }
+      else {
+        return Task.CompletedTask;
       }
     }
 
-    private BlockingCollection<Atom> postedAtoms = new BlockingCollection<Atom>(110);
-    private SemaphoreSlim postedAtomsEvent = new SemaphoreSlim(0);
-    private async Task ProcessPost(SourceConnectionClient connection, CancellationToken cancel_token)
+
+    protected override async Task<SourceConnectionClient?> DoConnect(Uri source, CancellationTokenWithArg<StopReason> cancel_token)
     {
-      while (!cancel_token.IsCancellationRequested) {
-        int delay = 0;
-        await postedAtomsEvent.WaitAsync(cancel_token).ConfigureAwait(false);
-        while (postedAtoms.TryTake(out var atom) && !cancel_token.IsCancellationRequested) {
-          await Task.Delay(delay).ConfigureAwait(false);
-          delay = Math.Min(delay+10, 90);
-          try {
-            await connection.Stream.WriteAsync(atom, cancel_token).ConfigureAwait(false);
+      SourceConnectionClient connection;
+      if (source==PCPSourceStream.WaitForGivProxyUri) {
+        //GIV待ちモードになる
+        waitingForGivClientTaskSource = new TaskCompletionSource<ConnectionStream>();
+        using var _ = cancel_token.Register(_ => waitingForGivClientTaskSource.TrySetCanceled());
+        connection = new SourceConnectionClient(await waitingForGivClientTaskSource.Task.ConfigureAwait(false));
+        remoteHost = connection.RemoteEndPoint ?? new IPEndPoint(IPAddress.None, 0);
+      }
+      else {
+        TcpClient? client = null;
+        try {
+          var port = source.Port<0 ? PCPVersion.Default.DefaultPort : source.Port;
+          if (source.HostNameType==UriHostNameType.IPv4 ||
+              source.HostNameType==UriHostNameType.IPv6) {
+            var addr = IPAddress.Parse(source.Host);
+            client = new TcpClient(addr.AddressFamily);
+            using (var cs = CancellationTokenSource.CreateLinkedTokenSource(cancel_token)) {
+              cs.CancelAfter(3000);
+              var task = await Task.WhenAny(
+                cs.Token.CreateCancelTask(),
+                client.ConnectAsync(addr, port)
+              ).ConfigureAwait(false);
+              await task.ConfigureAwait(false);
+            }
           }
-          catch (IOException e) {
-            Logger.Info(e);
-            Stop(StopReason.ConnectionError);
+          else {
+            client = new TcpClient(Channel.NetworkAddressFamily);
+            using (var cs = CancellationTokenSource.CreateLinkedTokenSource(cancel_token)) {
+              cs.CancelAfter(3000);
+              var task = await Task.WhenAny(
+                cs.Token.CreateCancelTask(),
+                client.ConnectAsync(source.DnsSafeHost, port)
+              ).ConfigureAwait(false);
+              await task.ConfigureAwait(false);
+            }
           }
-          catch (Exception e) {
-            Logger.Info(e);
-          }
+          remoteHost = new DnsEndPoint(source.Host, port);
+          connection = new SourceConnectionClient(client);
+        }
+        catch (OperationCanceledException) {
+          client?.Close();
+          Logger.Debug("Connection Cancelled: {0}", source);
+          return null;
+        }
+        catch (SocketException e) {
+          Logger.Debug("Connection Failed: {0}", source);
+          Logger.Debug(e);
+          return null;
         }
       }
+      connection.Stream.ReadTimeout  = 30000;
+      connection.Stream.WriteTimeout = 8000;
+      Logger.Debug("Connected: {0}", source);
+      return connection;
+    }
+
+    private async Task<StopReason> ProcessPost(SourceConnectionClient connection, WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancel_token)
+    {
+      int delay = 0;
+      await foreach (var (from, msg) in postMessages.ForEach().WithCancellation(cancel_token).ConfigureAwait(false)) {
+        if (from==uphost) continue;
+        await Task.Delay(delay).ConfigureAwait(false);
+        delay = Math.Min(delay+10, 90);
+        try {
+          await connection.Stream.WriteAsync(msg, cancel_token).ConfigureAwait(false);
+        }
+        catch (IOException e) {
+          Logger.Info(e);
+          return StopReason.ConnectionError;
+        }
+        catch (Exception e) {
+          Logger.Info(e);
+        }
+        if (!postMessages.TryPeek(out var _)) {
+          delay = 0;
+        }
+      }
+      return cancel_token.Value;
     }
 
     //ハンドシェイク終了まで一定時間で終わらなかったらタイムアウトする
     //PeerCastのポート開放チェックが最悪15秒かかるのでそれより短くはしないこと
     public int PCPHandshakeTimeout { get; set; } = 18000;
-    protected override async Task DoProcess(SourceConnectionClient connection, CancellationToken cancel_token)
+    protected override async Task<ISourceConnectionResult> DoProcess(SourceConnectionClient connection, WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken)
     {
+      this.Status = ConnectionStatus.Connecting;
+      var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+      cts.CancelAfter(PCPHandshakeTimeout);
       try {
-        this.Status = ConnectionStatus.Connecting;
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(cancel_token);
-        cts.CancelAfter(PCPHandshakeTimeout);
         var relayResponse = await ProcessRelayRequest(connection, cts.Token).ConfigureAwait(false);
-        if (relayResponse==null || cts.IsCancellationRequested) goto Stopped;
         await ProcessHandshake(connection, cts.Token).ConfigureAwait(false);
-        if (cts.IsCancellationRequested) goto Stopped;
         if (relayResponse.StatusCode==503) {
-          await ProcessHosts(connection, cts.Token).ConfigureAwait(false);
+          var hosts = await ProcessHosts(connection, cts.Token).ConfigureAwait(false);
+          if (hosts.Count>0) {
+            foreach (var host in hosts) {
+              Channel.AddSourceNode(host);
+            }
+            return new SourceConnectionResult(StopReason.UnavailableError);
+          }
+          else {
+            //503 が返りつつホスト情報が送られてこなかったらGIV待ちになる
+            return new PCPSourceConnectionResult(StopReason.UnavailableError, true);
+          }
         }
-        if (relayResponse.StatusCode!=503) {
+        else {
           this.Status = ConnectionStatus.Connected;
-          await Task.WhenAll(
-            ProcessBody(connection, cancel_token),
-            ProcessPost(connection, cancel_token)
-          ).ConfigureAwait(false);
+          using var cts2 = CancellationTokenSourceWithArg<StopReason>.CreateLinkedTokenSource(cancellationToken);
+          var bodyTask = ProcessBody(connection, cts2.Token);
+          var postTask = ProcessPost(connection, postMessages, cts2.Token);
+          var completedTask = await Task.WhenAny(bodyTask, postTask).ConfigureAwait(false);
+          StopReason result;
+          try {
+            result = await completedTask.ConfigureAwait(false);
+          }
+          catch (OperationCanceledException) {
+            if (cancellationToken.IsCancellationRequested) {
+              result = cancellationToken.Value;
+            }
+            else {
+              result = StopReason.ConnectionError;
+            }
+          }
+          catch (ConnectionStopException ex) {
+            result = ex.StopReason;
+          }
+          cts2.TryCancel(result);
+          if (bodyTask==completedTask) {
+            await postTask.ConfigureAwait(false);
+          }
+          else {
+            await bodyTask.ConfigureAwait(false);
+          }
+          return new SourceConnectionResult(result);
         }
       }
       catch (OperationCanceledException) {
+        if (cancellationToken.IsCancellationRequested) {
+          return new SourceConnectionResult(cancellationToken.Value);
+        }
+        else {
+          return new SourceConnectionResult(StopReason.ConnectionError);
+        }
       }
-Stopped:
-      Logger.Debug("Disconnected");
+      catch (ConnectionStopException ex) {
+        return new SourceConnectionResult(ex.StopReason);
+      }
+      finally {
+        Logger.Debug("Disconnected");
+      }
     }
 
     private async Task<RelayRequestResponse> ReadRequestResponseAsync(Stream stream, CancellationToken cancel_token)
@@ -270,7 +372,7 @@ Stopped:
       return new RelayRequestResponse(responses);
     }
 
-    private async Task<RelayRequestResponse?> ProcessRelayRequest(SourceConnectionClient connection, CancellationToken cancel_token)
+    private async Task<RelayRequestResponse> ProcessRelayRequest(SourceConnectionClient connection, CancellationToken cancel_token)
     {
       Logger.Debug("Sending Relay request: /channel/{0}", Channel.ChannelID.ToString("N"));
       var host_header = remoteHost!=null ? $"Host:{remoteHost}\r\n" : "";
@@ -293,15 +395,13 @@ Stopped:
           return relayResponse;
         }
         else {
-          Logger.Info("Server responses {0} to GET {1}", relayResponse.StatusCode, SourceUri.PathAndQuery);
-          Stop(relayResponse.StatusCode==404 ? StopReason.OffAir : StopReason.ConnectionError);
+          Logger.Info($"Server responses {relayResponse.StatusCode} to GET /channel/{Channel.ChannelID.ToString("N")}");
+          throw new ConnectionStopException(relayResponse.StatusCode==404 ? StopReason.OffAir : StopReason.ConnectionError);
         }
-        return relayResponse;
       }
       catch (IOException e) {
         Logger.Info(e);
-        Stop(StopReason.ConnectionError);
-        return null;
+        throw new ConnectionStopException(StopReason.ConnectionError);
       }
     }
 
@@ -320,7 +420,7 @@ Stopped:
         helo.SetHeloPing(listener!.LocalEndPoint.Port);
         break;
       }
-      PCPVersion.SetHeloVersion(helo);
+      PCPVersion.Default.SetHeloVersion(helo);
       return new Atom(Atom.PCP_HELO, helo);
     }
 
@@ -335,12 +435,12 @@ Stopped:
           cancel_token.ThrowIfCancellationRequested();
           var atom = await connection.Stream.ReadAtomAsync(cancel_token).ConfigureAwait(false);
           if (atom.Name==Atom.PCP_OLEH) {
-            OnPCPOleh(connection, atom);
+            OnPCPOleh(channelOperationHandler, connection, atom);
             Logger.Debug("Handshake Finished");
             handshake_finished = true;
           }
           else if (atom.Name==Atom.PCP_OLEH) {
-            OnPCPQuit(atom);
+            OnPCPQuit(channelOperationHandler, atom);
           }
           else {
             //Ignore other packets
@@ -349,28 +449,34 @@ Stopped:
       }
       catch (InvalidDataException e) {
         Logger.Error(e);
-        Stop(StopReason.ConnectionError);
+        throw new ConnectionStopException(StopReason.ConnectionError);
       }
       catch (IOException e) {
         Logger.Info(e);
-        Stop(StopReason.ConnectionError);
+        throw new ConnectionStopException(StopReason.ConnectionError);
       }
     }
 
-    private async Task ProcessBody(SourceConnectionClient connection, CancellationToken cancel_token)
+    private async Task<StopReason> ProcessBody(SourceConnectionClient connection, CancellationTokenWithArg<StopReason> cancellationToken)
     {
+      StopReason result;
       try {
         BroadcastHostInfo();
         try {
-          while (!cancel_token.IsCancellationRequested) {
+          while (!cancellationToken.IsCancellationRequested) {
             if (CheckHostInfoUpdate()) {
               BroadcastHostInfo();
             }
-            var atom = await connection.Stream.ReadAtomAsync(cancel_token).ConfigureAwait(false);
-            ProcessAtom(atom);
+            var atom = await connection.Stream.ReadAtomAsync(cancellationToken).ConfigureAwait(false);
+            ProcessAtom(channelOperationHandler, atom);
           }
+          result = cancellationToken.Value;
+        }
+        catch (OperationCanceledWithArgException<StopReason> ex) {
+          result = ex.Value;
         }
         catch (OperationCanceledException) {
+          result = cancellationToken.IsCancellationRequested ? cancellationToken.Value : StopReason.UserShutdown;
         }
         try {
           using (var cts=new CancellationTokenSource(3000)) {
@@ -384,35 +490,61 @@ Stopped:
       }
       catch (InvalidDataException e) {
         Logger.Error(e);
-        Stop(StopReason.ConnectionError);
+        result = StopReason.ConnectionError;
       }
       catch (IOException e) {
         Logger.Info(e);
-        Stop(StopReason.ConnectionError);
+        result = StopReason.ConnectionError;
       }
       catch (Exception e) {
         Logger.Error(e);
-        Stop(StopReason.NotIdentifiedError);
+        result = StopReason.NotIdentifiedError;
+      }
+      return result;
+    }
+
+    class HostCollectChannelOperationHandler
+      : IChannelOperationHandler
+    {
+      public List<Host> SourceNodes { get; } = new();
+
+      public void AddSourceNode(Host host)
+      {
+        SourceNodes.Add(host);
+      }
+
+      public void Broadcast(Host? from, Atom packet, BroadcastGroup group)
+      {
+        //Ignore
       }
     }
 
+
     private static readonly ID4[] hostPackets = new []{ Atom.PCP_QUIT, Atom.PCP_HOST };
-    private async Task ProcessHosts(SourceConnectionClient connection, CancellationToken cancel_token)
+    private async Task<IList<Host>> ProcessHosts(SourceConnectionClient connection, CancellationToken cancel_token)
     {
-      try {
-        while (!cancel_token.IsCancellationRequested) {
+      var collector = new HostCollectChannelOperationHandler();
+      while (!cancel_token.IsCancellationRequested) {
+        try {
           var atom = await connection.Stream.ReadAtomAsync(cancel_token).ConfigureAwait(false);
-          ProcessAtom(atom, hostPackets);
+          ProcessAtom(collector, atom, hostPackets);
+        }
+        catch (ConnectionStopException) {
+          //QUITが来たので終了する
+          break;
+        }
+        catch (IOException e) {
+          //接続エラーも気にせず終了する
+          Logger.Info(e);
+          break;
+        }
+        catch (Exception e) {
+          //その他のエラーも気にせず終了する
+          Logger.Warn(e);
+          break;
         }
       }
-      catch (InvalidDataException e) {
-        Logger.Error(e);
-        Stop(StopReason.ConnectionError);
-      }
-      catch (IOException e) {
-        Logger.Info(e);
-        Stop(StopReason.ConnectionError);
-      }
+      return collector.SourceNodes;
     }
 
     /// <summary>
@@ -445,12 +577,12 @@ Stopped:
       if (newest!=null) {
         host.SetHostNewPos((uint)(newest.Position & 0xFFFFFFFFU));
       }
-      PCPVersion.SetHostVersion(host);
+      PCPVersion.Default.SetHostVersion(host);
       host.SetHostFlags1(
         (Channel.IsRelayable(false) ? PCPHostFlags1.Relay : 0) |
         (Channel.IsPlayable(false) ? PCPHostFlags1.Direct : 0) |
         (listener?.Status!=PortStatus.Open ? PCPHostFlags1.Firewalled : 0) |
-        (RecvRate>0 ? PCPHostFlags1.Receiving : 0));
+        (connection.RecvRate>0 ? PCPHostFlags1.Receiving : 0));
       if (connection.RemoteEndPoint!=null) {
         host.SetHostUphostIP(connection.RemoteEndPoint.Address);
         host.SetHostUphostPort(connection.RemoteEndPoint.Port);
@@ -471,7 +603,7 @@ Stopped:
       bcst.SetBcstGroup(group);
       bcst.SetBcstHops(0);
       bcst.SetBcstTTL(11);
-      PCPVersion.SetBcstVersion(bcst);
+      PCPVersion.Default.SetBcstVersion(bcst);
       bcst.SetBcstChannelID(Channel.ChannelID);
       bcst.Add(packet);
       return new Atom(Atom.PCP_BCST, bcst);
@@ -504,36 +636,37 @@ Stopped:
       lastHostInfo = hostInfo;
     }
 
-    protected bool ProcessAtom(Atom atom)
+
+    private bool ProcessAtom(IChannelOperationHandler channelHandler, Atom atom)
     {
       if (atom==null) return true;
-      else if (atom.Name==Atom.PCP_OK)         { OnPCPOk(atom);        return true; }
-      else if (atom.Name==Atom.PCP_CHAN)       { OnPCPChan(atom);      return true; }
-      else if (atom.Name==Atom.PCP_CHAN_PKT)   { OnPCPChanPkt(atom);   return true; }
-      else if (atom.Name==Atom.PCP_CHAN_INFO)  { OnPCPChanInfo(atom);  return true; }
-      else if (atom.Name==Atom.PCP_CHAN_TRACK) { OnPCPChanTrack(atom); return true; }
-      else if (atom.Name==Atom.PCP_BCST)       { OnPCPBcst(atom);      return true; }
-      else if (atom.Name==Atom.PCP_HOST)       { OnPCPHost(atom);      return true; }
-      else if (atom.Name==Atom.PCP_QUIT)       { OnPCPQuit(atom);      return false; }
+      else if (atom.Name==Atom.PCP_OK)         { OnPCPOk(channelHandler, atom);        return true; }
+      else if (atom.Name==Atom.PCP_CHAN)       { OnPCPChan(channelHandler, atom);      return true; }
+      else if (atom.Name==Atom.PCP_CHAN_PKT)   { OnPCPChanPkt(channelHandler, atom);   return true; }
+      else if (atom.Name==Atom.PCP_CHAN_INFO)  { OnPCPChanInfo(channelHandler, atom);  return true; }
+      else if (atom.Name==Atom.PCP_CHAN_TRACK) { OnPCPChanTrack(channelHandler, atom); return true; }
+      else if (atom.Name==Atom.PCP_BCST)       { OnPCPBcst(channelHandler, atom);      return true; }
+      else if (atom.Name==Atom.PCP_HOST)       { OnPCPHost(channelHandler, atom);      return true; }
+      else if (atom.Name==Atom.PCP_QUIT)       { OnPCPQuit(channelHandler, atom);      return false; }
       return true;
     }
 
-    protected bool ProcessAtom(Atom atom, ID4[] accepts)
+    private bool ProcessAtom(IChannelOperationHandler channelHandler, Atom atom, ID4[] accepts)
     {
       if (atom==null) return true;
       else if (!accepts.Contains(atom.Name)) return true;
-      else if (atom.Name==Atom.PCP_OK)         { OnPCPOk(atom);        return true; }
-      else if (atom.Name==Atom.PCP_CHAN)       { OnPCPChan(atom);      return true; }
-      else if (atom.Name==Atom.PCP_CHAN_PKT)   { OnPCPChanPkt(atom);   return true; }
-      else if (atom.Name==Atom.PCP_CHAN_INFO)  { OnPCPChanInfo(atom);  return true; }
-      else if (atom.Name==Atom.PCP_CHAN_TRACK) { OnPCPChanTrack(atom); return true; }
-      else if (atom.Name==Atom.PCP_BCST)       { OnPCPBcst(atom);      return true; }
-      else if (atom.Name==Atom.PCP_HOST)       { OnPCPHost(atom);      return true; }
-      else if (atom.Name==Atom.PCP_QUIT)       { OnPCPQuit(atom);      return false; }
+      else if (atom.Name==Atom.PCP_OK)         { OnPCPOk(channelHandler, atom);        return true; }
+      else if (atom.Name==Atom.PCP_CHAN)       { OnPCPChan(channelHandler, atom);      return true; }
+      else if (atom.Name==Atom.PCP_CHAN_PKT)   { OnPCPChanPkt(channelHandler, atom);   return true; }
+      else if (atom.Name==Atom.PCP_CHAN_INFO)  { OnPCPChanInfo(channelHandler, atom);  return true; }
+      else if (atom.Name==Atom.PCP_CHAN_TRACK) { OnPCPChanTrack(channelHandler, atom); return true; }
+      else if (atom.Name==Atom.PCP_BCST)       { OnPCPBcst(channelHandler, atom);      return true; }
+      else if (atom.Name==Atom.PCP_HOST)       { OnPCPHost(channelHandler, atom);      return true; }
+      else if (atom.Name==Atom.PCP_QUIT)       { OnPCPQuit(channelHandler, atom);      return false; }
       return true;
     }
 
-    protected void OnPCPOleh(SourceConnectionClient connection, Atom atom)
+    private void OnPCPOleh(IChannelOperationHandler channelHandler, SourceConnectionClient connection, Atom atom)
     {
       if (atom.Children==null) {
         throw new InvalidDataException($"{atom.Name} has no children.");
@@ -561,17 +694,17 @@ Stopped:
       }
     }
 
-    protected void OnPCPOk(Atom atom)
+    private void OnPCPOk(IChannelOperationHandler channelHandler, Atom atom)
     {
     }
 
-    protected void OnPCPChan(Atom atom)
+    private void OnPCPChan(IChannelOperationHandler channelHandler, Atom atom)
     {
       if (atom.Children==null) {
         throw new InvalidDataException($"{atom.Name} has no children.");
       }
       foreach (var c in atom.Children) {
-        ProcessAtom(c);
+        ProcessAtom(channelHandler, c);
       }
     }
 
@@ -600,7 +733,7 @@ Stopped:
     private int streamIndex = -1;
     private DateTime streamOrigin;
     private long     lastPosition = 0;
-    protected void OnPCPChanPkt(Atom atom)
+    private void OnPCPChanPkt(IChannelOperationHandler channelHandler, Atom atom)
     {
       if (atom.Children==null) {
         throw new InvalidDataException($"{atom.Name} has no children.");
@@ -633,7 +766,7 @@ Stopped:
       }
     }
 
-    protected void OnPCPChanInfo(Atom atom)
+    private void OnPCPChanInfo(IChannelOperationHandler channelHandler, Atom atom)
     {
       if (atom.Children==null) {
         throw new InvalidDataException($"{atom.Name} has no children.");
@@ -647,7 +780,7 @@ Stopped:
       BroadcastHostInfo();
     }
 
-    protected void OnPCPChanTrack(Atom atom)
+    private void OnPCPChanTrack(IChannelOperationHandler channelHandler, Atom atom)
     {
       if (atom.Children==null) {
         throw new InvalidDataException($"{atom.Name} has no children.");
@@ -655,14 +788,14 @@ Stopped:
       contentSink.OnChannelTrack(new ChannelTrack(atom.Children));
     }
 
-    protected void OnPCPBcst(Atom atom)
+    private void OnPCPBcst(IChannelOperationHandler channelHandler, Atom atom)
     {
       if (atom.Children==null) {
         throw new InvalidDataException($"{atom.Name} has no children.");
       }
       var dest = atom.Children.GetBcstDest();
       if (dest==null || dest==PeerCast.SessionID) {
-        foreach (var c in atom.Children) ProcessAtom(c);
+        foreach (var c in atom.Children) ProcessAtom(channelHandler, c);
       }
       var ttl = atom.Children.GetBcstTTL();
       var hops = atom.Children.GetBcstHops();
@@ -681,7 +814,7 @@ Stopped:
       }
     }
 
-    private void OnPCPHost(Atom atom)
+    private void OnPCPHost(IChannelOperationHandler channelHandler, Atom atom)
     {
       if (atom.Children==null) {
         throw new InvalidDataException($"{atom.Name} has no children.");
@@ -717,13 +850,13 @@ Stopped:
       }
     }
 
-    protected void OnPCPQuit(Atom atom)
+    private void OnPCPQuit(IChannelOperationHandler channelHandler, Atom atom)
     {
       if (atom.GetInt32()==Atom.PCP_ERROR_QUIT+Atom.PCP_ERROR_UNAVAILABLE) {
-        Stop(StopReason.UnavailableError);
+        throw new ConnectionStopException(StopReason.UnavailableError);
       }
       else {
-        Stop(StopReason.OffAir);
+        throw new ConnectionStopException(StopReason.OffAir);
       }
     }
 
@@ -768,10 +901,8 @@ Stopped:
       var remote = remoteType;
       var remote_endpoint = connection!=null ? connection.RemoteEndPoint : null;
       if (remote_endpoint!=null && remote_endpoint.Address.IsSiteLocal()) remote |= RemoteHostStatus.Local;
-      var remote_name = String.Format(
-        "{0}:{1}",
-        SourceUri.Host,
-        SourceUri.IsDefaultPort ? PCPVersion.DefaultPort : SourceUri.Port);
+
+      var remote_name = remoteHost?.ToString() ?? SourceUri.ToString();
       return new ConnectionInfoBuilder {
         ProtocolName     = "PCP Source",
         Type             = ConnectionType.Source,
@@ -781,8 +912,8 @@ Stopped:
         RemoteHostStatus = remote,
         RemoteSessionID  = uphost?.SessionID,
         ContentPosition  = lastPosition,
-        RecvRate         = RecvRate,
-        SendRate         = SendRate,
+        RecvRate         = connection?.RecvRate,
+        SendRate         = connection?.SendRate,
         AgentName        = server_name,
       }.Build();
     }
@@ -804,6 +935,7 @@ Stopped:
     public void OnStopped(StopReason reason)
     {
     }
+
   }
 
   public class PCPSourceStream
@@ -855,6 +987,7 @@ Stopped:
     }
     private static readonly TimeSpan ignoredTime = TimeSpan.FromMilliseconds(180000); //ms
     private IgnoredNodeCollection ignoredNodes = new IgnoredNodeCollection(ignoredTime);
+    private bool waitingForGiv = false;
 
     private bool IsIgnored(Uri uri)
     {
@@ -918,35 +1051,41 @@ Stopped:
       }
     }
 
+    public static readonly Uri WaitForGivProxyUri = new Uri("urn:uuid:c2c04f67-027e-425b-a80b-5fb424f43329");
     protected override Uri? SelectSourceHost()
     {
-      var rnd = new Random();
-      var res = GetConnectableNodes().OrderByDescending(n =>
-        (IsSiteLocal(n) ? 8000 : 0) +
-        rnd.NextDouble() * (
-          ( n.IsReceiving ? 4000 : 0) +
-          (!n.IsRelayFull ? 2000 : 0) +
-          (Math.Max(10-n.Hops, 0)*100) +
-          (n.RelayCount*10)
-        )
-      ).DefaultIfEmpty().First();
-      if (res!=null) {
-        var uri = CreateHostUri(res);
-        Logger.Debug("{0} is selected to source.", uri);
-        return uri;
-      }
-      else if (!IsIgnored(this.SourceUri)) {
-        Logger.Debug("Tracker {0} is selected to source.", this.SourceUri);
-        return this.SourceUri;
+      if (waitingForGiv) {
+        waitingForGiv = false;
+        return WaitForGivProxyUri;
       }
       else {
-        return null;
+        var res = GetConnectableNodes().OrderByDescending(n =>
+          (IsSiteLocal(n) ? 8000 : 0) +
+          Random.Shared.NextDouble() * (
+            (n.IsReceiving ? 4000 : 0) +
+            (!n.IsRelayFull ? 2000 : 0) +
+            (Math.Max(10-n.Hops, 0)*100) +
+            (n.RelayCount*10)
+          )
+        ).DefaultIfEmpty().First();
+        if (res!=null) {
+          var uri = CreateHostUri(res);
+          Logger.Debug("{0} is selected to source.", uri);
+          return uri;
+        }
+        else if (!IsIgnored(this.SourceUri)) {
+          Logger.Debug("Tracker {0} is selected to source.", this.SourceUri);
+          return this.SourceUri;
+        }
+        else {
+          return null;
+        }
       }
     }
 
-    public override ConnectionInfo GetConnectionInfo()
+    protected override ConnectionInfo GetConnectionInfo(ISourceConnection? sourceConnection)
     {
-      var connInfo = sourceConnection.GetConnectionInfo();
+      var connInfo = sourceConnection?.GetConnectionInfo();
       if (connInfo!=null) {
         return connInfo;
       }
@@ -974,11 +1113,15 @@ Stopped:
 
     protected override ISourceConnection CreateConnection(Uri source_uri)
     {
+      var remote_type = source_uri==this.SourceUri ? RemoteHostStatus.Tracker : RemoteHostStatus.None;
+      if (source_uri == WaitForGivProxyUri) {
+        remote_type |= RemoteHostStatus.Firewalled;
+      }
       var conn = new PCPSourceConnection(
         PeerCast,
         Channel,
         source_uri,
-        source_uri==this.SourceUri ? RemoteHostStatus.Tracker : RemoteHostStatus.None
+        remote_type
       );
       conn.PCPHandshakeTimeout = PCPHandshakeTimeout;
       return conn;
@@ -988,7 +1131,19 @@ Stopped:
     {
       switch (args.Reason) {
       case StopReason.UnavailableError:
+        if (args.Result is PCPSourceConnectionResult pcpSourceResult) {
+          waitingForGiv = pcpSourceResult.WaitForGiv;
+        }
+        else {
+          waitingForGiv = false;
+        }
         args.IgnoreSource = connection.SourceUri;
+        args.Reconnect = true;
+        break;
+      case StopReason.UserReconnect:
+        if (connection.SourceUri!=SourceUri) {
+          args.IgnoreSource = connection.SourceUri;
+        }
         args.Reconnect = true;
         break;
       case StopReason.ConnectionError:
@@ -1001,12 +1156,15 @@ Stopped:
       }
     }
 
-    protected override void DoReconnect()
+    public Task GivConnection(ConnectionStream stream)
     {
-      if (this.sourceConnection.SourceUri!=this.SourceUri && this.sourceConnection.SourceUri!=null) {
-        IgnoreSourceHost(this.sourceConnection.SourceUri);
+      if (GetCurrentConnection() is PCPSourceConnection connection) {
+        return connection.SetGivClient(stream);
       }
-      base.DoReconnect();
+      else {
+        return Task.CompletedTask;
+      }
+
     }
 
     public override SourceStreamType Type {

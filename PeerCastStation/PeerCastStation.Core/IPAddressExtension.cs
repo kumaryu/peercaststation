@@ -1,11 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 
 namespace PeerCastStation.Core
 {
+  public enum NetworkLocality {
+    Undefined = -1,
+    Loopback = 0,
+    Local = 1,
+    Global = 2,
+  }
+
   public static class IPAddressExtension
   {
     static public AddressFamily GetAddressFamily(this NetworkType type)
@@ -17,6 +22,15 @@ namespace PeerCastStation.Core
       }
     }
 
+    static public NetworkType GetNetworkType(this AddressFamily family)
+    {
+      return family switch {
+        AddressFamily.InterNetwork => NetworkType.IPv4,
+        AddressFamily.InterNetworkV6 => NetworkType.IPv6,
+        _ => throw new ArgumentException($"Unsupported address family {family}", nameof(family))
+      };
+    }
+
     static public bool IsIPv6UniqueLocal(this IPAddress addr)
     {
       if (addr.AddressFamily!=System.Net.Sockets.AddressFamily.InterNetworkV6) return false;
@@ -26,6 +40,9 @@ namespace PeerCastStation.Core
 
     static public bool IsSiteLocal(this IPAddress addr)
     {
+      if (addr.IsIPv4MappedToIPv6) {
+        return IsSiteLocal(new IPAddress(new ReadOnlySpan<byte>(addr.GetAddressBytes(), 12, 4)));
+      }
       switch (addr.AddressFamily) {
       case System.Net.Sockets.AddressFamily.InterNetwork:
         var addr_bytes = addr.GetAddressBytes();
@@ -47,21 +64,24 @@ namespace PeerCastStation.Core
       }
     }
 
-    static public int GetAddressLocality(this IPAddress addr)
+    static public NetworkLocality GetAddressLocality(this IPAddress addr)
     {
+      if (addr.IsIPv4MappedToIPv6) {
+        return GetAddressLocality(new IPAddress(new ReadOnlySpan<byte>(addr.GetAddressBytes(), 12, 4)));
+      }
       switch (addr.AddressFamily) {
       case System.Net.Sockets.AddressFamily.InterNetwork:
-        if (addr.Equals(IPAddress.Any) || addr.Equals(IPAddress.None) || addr.Equals(IPAddress.Broadcast)) return -1;
-        if (addr.Equals(IPAddress.Loopback)) return 0;
-        if (IsSiteLocal(addr)) return 1;
-        return 2;
+        if (addr.Equals(IPAddress.Any) || addr.Equals(IPAddress.None) || addr.Equals(IPAddress.Broadcast)) return NetworkLocality.Undefined;
+        if (addr.Equals(IPAddress.Loopback)) return NetworkLocality.Loopback;
+        if (IsSiteLocal(addr)) return NetworkLocality.Local;
+        return NetworkLocality.Global;
       case System.Net.Sockets.AddressFamily.InterNetworkV6:
-        if (addr.Equals(IPAddress.IPv6Any) || addr.Equals(IPAddress.IPv6None)) return -1;
-        if (addr.Equals(IPAddress.IPv6Loopback)) return 0;
-        if (IsSiteLocal(addr)) return 1;
-        return 2;
+        if (addr.Equals(IPAddress.IPv6Any) || addr.Equals(IPAddress.IPv6None)) return NetworkLocality.Undefined;
+        if (addr.Equals(IPAddress.IPv6Loopback)) return NetworkLocality.Loopback;
+        if (IsSiteLocal(addr)) return NetworkLocality.Local;
+        return NetworkLocality.Global;
       default:
-        return -1;
+        return NetworkLocality.Undefined;
       }
     }
 
