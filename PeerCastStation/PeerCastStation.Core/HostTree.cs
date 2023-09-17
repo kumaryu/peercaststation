@@ -13,8 +13,8 @@ namespace PeerCastStation.Core
       this.Nodes = nodes;
     }
 
-    public HostTree(Channel channel)
-      : this(new HostTreeNode[] { CreateChannelHostTree(channel) })
+    public HostTree(IPeerCast peerCast, Channel channel)
+      : this(new HostTreeNode[] { CreateChannelHostTree(peerCast, channel) })
     {
     }
 
@@ -39,7 +39,7 @@ namespace PeerCastStation.Core
       return topnodes;
     }
 
-    public static HostTreeNode CreateChannelHostTree(Channel channel)
+    public static HostTreeNode CreateChannelHostTree(IPeerCast peerCast, Channel channel)
     {
       var nodes = channel.Nodes;
       var children =
@@ -51,9 +51,36 @@ namespace PeerCastStation.Core
           .Where(node => node!=null);
       var tree = CreateHostTree(nodes);
       return new HostTreeNode(
-        channel.SelfNode,
+        CreateChannelHost(peerCast, channel),
         tree.Where(node => children.Contains(node.Host)).ToArray());
     }
+
+    public static Host CreateChannelHost(IPeerCast peerCast, Channel channel)
+    {
+      var source = channel.SourceStream;
+      var listeners = peerCast.GetListenerInfos().Where(
+          listener => listener.NetworkType==channel.Network &&
+          listener.AccessControl.Accepts.HasFlag(OutputStreamType.Relay)).ToArray();
+      var host = new HostBuilder();
+      host.SessionID      = peerCast.SessionID;
+      host.LocalEndPoint  = listeners.FirstOrDefault(listener => listener.Locality==NetworkLocality.Local)?.EndPoint;
+      host.GlobalEndPoint = listeners.FirstOrDefault(listener => listener.Locality==NetworkLocality.Global)?.EndPoint;
+      bool globalPortIsOpened =
+        peerCast.GetListenerInfos().Where(listener =>
+          listener.NetworkType==channel.Network &&
+          listener.Locality==NetworkLocality.Global &&
+          listener.AccessControl.Accepts.HasFlag(OutputStreamType.Relay) &&
+          listener.Status==PortStatus.Open)
+          .Any();
+      host.IsFirewalled   = !globalPortIsOpened;
+      host.DirectCount    = channel.LocalDirects;
+      host.RelayCount     = channel.LocalRelays;
+      host.IsDirectFull   = channel.IsDirectFull;
+      host.IsRelayFull    = channel.IsRelayFull;
+      host.IsReceiving    = source!=null && (source.GetConnectionInfo().RecvRate ?? 0.0f)>0;
+      return host.ToHost();
+    }
+
 
   }
 

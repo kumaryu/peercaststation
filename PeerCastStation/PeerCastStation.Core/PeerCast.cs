@@ -58,11 +58,52 @@ namespace PeerCastStation.Core
     Open        = 3,
   }
 
+  public interface IPeerCast
+  {
+    IEnumerable<ListenerInfo> GetListenerInfos();
+    void NotifyRemoteAddressAndPort(IPEndPoint remoteEndPoint, IPEndPoint localEndPoint, IPAddress? notifiedAddress, int? notifiedPort);
+    Guid SessionID { get; }
+    Guid BroadcastID { get; }
+    string AgentName { get; }
+
+    /// <summary>
+    /// 登録されているYellowPageファクトリのリストを取得します
+    /// </summary>
+    ICollection<IYellowPageClientFactory> YellowPageFactories { get; }
+    /// <summary>
+    /// 登録されているSourceStreamプロトコルのリストを取得します
+    /// </summary>
+    ICollection<ISourceStreamFactory> SourceStreamFactories { get; }
+    /// <summary>
+    /// 登録されているOutputStreamのリストを取得します
+    /// </summary>
+    ICollection<IOutputStreamFactory> OutputStreamFactories { get; }
+
+    bool IsChannelRelayable(Channel channel, bool local);
+    bool IsChannelPlayable(Channel channel, bool local);
+  }
+
+  public static class PeerCastExtensions
+  {
+    public static IPEndPoint? GetGlobalEndPoint(this IPeerCast peerCast, NetworkType network, OutputStreamType connection_type)
+    {
+      var listener = peerCast.GetListenerInfos().FirstOrDefault(info => info.NetworkType==network && info.Locality==NetworkLocality.Global && info.AccessControl.Accepts.HasFlag(connection_type));
+      return listener?.EndPoint;
+    }
+
+    public static IPEndPoint? GetLocalEndPoint(this IPeerCast peerCast, NetworkType network, OutputStreamType connection_type)
+    {
+      var listener = peerCast.GetListenerInfos().FirstOrDefault(info => info.NetworkType==network && info.Locality==NetworkLocality.Local && info.AccessControl.Accepts.HasFlag(connection_type));
+      return listener?.EndPoint;
+    }
+  }
+
+
   /// <summary>
   /// PeerCastStationの主要な動作を行ない、管理するクラスです
   /// </summary>
   public class PeerCast
-    : IDisposable
+    : IDisposable, IPeerCast
   {
     /// <summary>
     /// UserAgentやServerとして名乗る名前を取得および設定します。
@@ -94,19 +135,19 @@ namespace PeerCastStation.Core
     /// <summary>
     /// 登録されているYellowPageファクトリのリストを取得します
     /// </summary>
-    public IList<IYellowPageClientFactory> YellowPageFactories { get; private set; }
+    public ICollection<IYellowPageClientFactory> YellowPageFactories { get; private set; }
     /// <summary>
     /// 登録されているSourceStreamプロトコルのリストを取得します
     /// </summary>
-    public IList<ISourceStreamFactory> SourceStreamFactories { get; private set; }
+    public ICollection<ISourceStreamFactory> SourceStreamFactories { get; private set; }
     /// <summary>
     /// 登録されているOutputStreamのリストを取得します
     /// </summary>
-    public IList<IOutputStreamFactory> OutputStreamFactories { get; private set; }
+    public ICollection<IOutputStreamFactory> OutputStreamFactories { get; private set; }
     /// <summary>
     /// 登録されているIContentReaderFactoryのリストを取得します
     /// </summary>
-    public IList<IContentReaderFactory> ContentReaderFactories { get; private set; }
+    public ICollection<IContentReaderFactory> ContentReaderFactories { get; private set; }
     public IList<Action<IAppBuilder>> HttpApplicationFactories { get; private set; } = new List<Action<IAppBuilder>>();
     public IList<IContentFilter> ContentFilters { get; private set; }
     /// <summary>
@@ -179,7 +220,14 @@ namespace PeerCastStation.Core
     {
       logger.Debug("Requesting channel {0} from {1}", channel_id.ToString("N"), tracker);
       var channel = new RelayChannel(this, GetNetworkTypeFromUri(tracker), channel_id);
-      channel.Start(tracker);
+      var source_factory = SourceStreamFactories
+        .Where(factory => factory.Type.HasFlag(SourceStreamType.Relay))
+        .FirstOrDefault(factory => tracker.Scheme==factory.Scheme);
+      if (source_factory==null) {
+        logger.Error("Protocol `{0}' is not found", tracker.Scheme);
+        throw new ArgumentException(String.Format("Protocol `{0}' is not found", tracker.Scheme));
+      }
+      channel.Start(source_factory, tracker);
       ReplaceCollection(ref channels, orig => orig.Add(channel));
       DispatchMonitorEvent(mon => mon.OnChannelChanged(PeerCastChannelAction.Added, channel));
       return channel;
@@ -196,7 +244,7 @@ namespace PeerCastStation.Core
     /// チャンネルが無かった場合はrequest_relayがtrueならReleyChannelを呼び出した結果、
     /// request_relayがfalseならnull。
     /// </returns>
-    public virtual Channel? RequestChannel(Guid channel_id, Uri? tracker, bool request_relay)
+    public Channel? RequestChannel(Guid channel_id, Uri? tracker, bool request_relay)
     {
       Channel? channel = channels.FirstOrDefault(c => c.ChannelID==channel_id);
       if (request_relay) {
@@ -204,7 +252,7 @@ namespace PeerCastStation.Core
           if (!channel.IsBroadcasting &&
               (channel.Status==SourceStreamStatus.Error ||
                channel.Status==SourceStreamStatus.Idle)) {
-            channel.Reconnect(tracker);
+            channel = ReconnectChannel(channel, tracker);
           }
         }
         else {
@@ -215,6 +263,24 @@ namespace PeerCastStation.Core
             channel = RelayChannel(channel_id);
           }
         }
+      }
+      return channel;
+    }
+
+    private Channel ReconnectChannel(Channel channel, Uri? tracker)
+    {
+      if (tracker!=null) {
+        var source_factory = SourceStreamFactories
+          .Where(factory => factory.Type.HasFlag(SourceStreamType.Relay))
+          .FirstOrDefault(factory => tracker.Scheme==factory.Scheme);
+        if (source_factory==null) {
+          logger.Error("Protocol `{0}' is not found", tracker.Scheme);
+          throw new ArgumentException(String.Format("Protocol `{0}' is not found", tracker.Scheme));
+        }
+        channel.Reconnect(source_factory, tracker);
+      }
+      else {
+        channel.Reconnect();
       }
       return channel;
     }
@@ -240,8 +306,16 @@ namespace PeerCastStation.Core
       IContentReaderFactory content_reader_factory)
     {
       logger.Debug("Broadcasting channel {0} from {1}", channel_id.ToString("N"), source);
-      var channel = new BroadcastChannel(this, network, channel_id, channel_info, channel_track, source_stream_factory, content_reader_factory);
-      channel.Start(source);
+      var channel = new BroadcastChannel(this, network, channel_id, channel_info, channel_track, content_reader_factory);
+      var source_factory = source_stream_factory ??
+          SourceStreamFactories
+          .Where(factory => factory.Type.HasFlag(SourceStreamType.Relay))
+          .FirstOrDefault(factory => source.Scheme==factory.Scheme);
+      if (source_factory==null) {
+        logger.Error("Protocol `{0}' is not found", source.Scheme);
+        throw new ArgumentException(String.Format("Protocol `{0}' is not found", source.Scheme));
+      }
+      channel.Start(source_factory, source);
       ReplaceCollection(ref channels, orig => orig.Add(channel));
       DispatchMonitorEvent(mon => mon.OnChannelChanged(PeerCastChannelAction.Added, channel));
       if (yp!=null) yp.Announce(channel);
@@ -310,7 +384,7 @@ namespace PeerCastStation.Core
     public PeerCast()
     {
       logger.Info("Starting PeerCast");
-      this.AccessController = new AccessController(this);
+      this.AccessController = new AccessController();
       var filever = System.Diagnostics.FileVersionInfo.GetVersionInfo(
         System.Reflection.Assembly.GetExecutingAssembly().Location);
       this.AgentName = String.Format("{0}/{1}", filever.ProductName, filever.ProductVersion);
@@ -352,15 +426,15 @@ namespace PeerCastStation.Core
       }, cs);
     }
 
-		public void AddChannelMonitor(IPeerCastMonitor monitor)
-		{
-			ReplaceCollection(ref monitors, orig => orig.Add(monitor));
-		}
+    public void AddChannelMonitor(IPeerCastMonitor monitor)
+    {
+      ReplaceCollection(ref monitors, orig => orig.Add(monitor));
+    }
 
-		public void RemoveChannelMonitor(IPeerCastMonitor monitor)
-		{
-			ReplaceCollection(ref monitors, orig => orig.Remove(monitor));
-		}
+    public void RemoveChannelMonitor(IPeerCastMonitor monitor)
+    {
+      ReplaceCollection(ref monitors, orig => orig.Remove(monitor));
+    }
 
     private async Task StartMonitor(CancellationToken cancel_token)
     {
@@ -374,18 +448,6 @@ namespace PeerCastStation.Core
       }
       catch (OperationCanceledException) {
       }
-    }
-
-    private IPAddress? GetInterfaceAddress(AddressFamily addr_family)
-    {
-      return System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
-        .Where(intf => intf.OperationalStatus==System.Net.NetworkInformation.OperationalStatus.Up)
-        .Where(intf => intf.NetworkInterfaceType!=System.Net.NetworkInformation.NetworkInterfaceType.Loopback)
-        .Select(intf => intf.GetIPProperties())
-        .SelectMany(prop => prop.UnicastAddresses)
-        .Where(uaddr => uaddr.Address.AddressFamily==addr_family)
-        .Select(uaddr => uaddr.Address)
-        .FirstOrDefault();
     }
 
     public Guid SessionID { get; private set; }
@@ -425,6 +487,18 @@ namespace PeerCastStation.Core
         }
         listener.Status = value;
       }
+    }
+
+    private IPAddress? GetInterfaceAddress(AddressFamily addr_family)
+    {
+      return System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+        .Where(intf => intf.OperationalStatus==System.Net.NetworkInformation.OperationalStatus.Up)
+        .Where(intf => intf.NetworkInterfaceType!=System.Net.NetworkInformation.NetworkInterfaceType.Loopback)
+        .Select(intf => intf.GetIPProperties())
+        .SelectMany(prop => prop.UnicastAddresses)
+        .Where(uaddr => uaddr.Address.AddressFamily==addr_family)
+        .Select(uaddr => uaddr.Address)
+        .FirstOrDefault();
     }
 
     private IPAddress? localAddressV4 = null;
@@ -532,31 +606,81 @@ namespace PeerCastStation.Core
       return null;
     }
 
+    public IEnumerable<ListenerInfo> GetListenerInfos()
+    {
+      return outputListeners.SelectMany(listener => listener.GetListenerInfos());
+    }
+
+    public IEnumerable<OutputListener> FindListeners(NetworkType type, NetworkLocality locality, OutputStreamType connection_type)
+    {
+      switch (locality) {
+      case NetworkLocality.Loopback:
+        return outputListeners.Where(
+          x => x.LocalEndPoint.AddressFamily.GetNetworkType()==type &&
+               x.LoopbackAccessControlInfo.Accepts.HasFlag(connection_type)
+        );
+      case NetworkLocality.Local:
+        return outputListeners.Where(
+          x => x.LocalEndPoint.AddressFamily.GetNetworkType()==type &&
+               x.LocalAccessControlInfo.Accepts.HasFlag(connection_type)
+        );
+      case NetworkLocality.Global:
+        return outputListeners.Where(
+          x => x.LocalEndPoint.AddressFamily.GetNetworkType()==type &&
+               x.GlobalAccessControlInfo.Accepts.HasFlag(connection_type)
+        );
+      case NetworkLocality.Undefined:
+      default:
+        return Enumerable.Empty<OutputListener>();
+      }
+    }
+
+    public OutputListener? FindListener(NetworkType type, NetworkLocality locality, OutputStreamType connection_type)
+    {
+      return FindListeners(type, locality, connection_type).FirstOrDefault();
+    }
+
     public OutputListener? FindListener(IPAddress? remote_addr, OutputStreamType connection_type)
     {
       if (remote_addr==null) {
         return null;
       }
-      return FindListener(remote_addr.AddressFamily, remote_addr, connection_type);
+      return FindListener(remote_addr.AddressFamily.GetNetworkType(), remote_addr.GetAddressLocality(), connection_type);
     }
 
-    public OutputListener? FindListener(AddressFamily family, IPAddress? remote_addr, OutputStreamType connection_type)
+    public OutputListener? FindListener(NetworkType type, IPAddress? remote_addr, OutputStreamType connection_type)
     {
       if (remote_addr==null) {
         return null;
       }
-      if (remote_addr.IsSiteLocal()) {
-        var listener = outputListeners.FirstOrDefault(
-          x =>  x.LocalEndPoint.AddressFamily==family &&
-               (x.LocalOutputAccepts & connection_type)!=0);
-        return listener;
+      return FindListener(type, remote_addr.GetAddressLocality(), connection_type);
+    }
+
+    public void NotifyRemoteAddressAndPort(IPEndPoint remoteEndPoint, IPEndPoint localEndPoint, IPAddress? notifiedAddress, int? notifiedPort)
+    {
+      var listener = outputListeners.FirstOrDefault(listener => listener.GetListenerInfos().Any(info => info.EndPoint.Equals(localEndPoint)));
+      if (listener == null) {
+        return;
       }
-      else {
-        var listener = outputListeners.FirstOrDefault(
-          x => x.LocalEndPoint.AddressFamily==family &&
-               (x.GlobalOutputAccepts & connection_type)!=0);
-        return listener;
+      if (notifiedAddress!=null) {
+        var global_addr = listener.GlobalAddress;
+        if (global_addr==null || (int)global_addr.GetAddressLocality()<=(int)notifiedAddress.GetAddressLocality()) {
+          listener.GlobalAddress = notifiedAddress;
+        }
       }
+      if (notifiedPort.HasValue) {
+        listener.Status = notifiedPort.Value!=0 ? PortStatus.Open : PortStatus.Firewalled;
+      }
+    }
+
+    public bool IsChannelRelayable(Channel channel, bool local)
+    {
+      return AccessController.IsChannelRelayable(Channels, channel, local);
+    }
+
+    public bool IsChannelPlayable(Channel channel, bool local)
+    {
+      return AccessController.IsChannelPlayable(Channels, channel, local);
     }
 
     /// <summary>

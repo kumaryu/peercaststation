@@ -354,7 +354,7 @@ let readTextFile filename =
                 readTextFileInternal (retry - 1)
             else
                 reraise()
-    readTextFileInternal 5
+    readTextFileInternal 50
     
 type TestApplication () =
     inherit PeerCastStation.Core.PeerCastApplication()

@@ -311,9 +311,9 @@ namespace PeerCastStation.PCP
       //PeerCastのポート開放チェックが最悪15秒かかるのでそれより短くはしないこと
       public int PCPHandshakeTimeout { get; set; } = 18000;
 
-      public PCPRelayHandler(Channel channel, Logger logger)
+      public PCPRelayHandler(PeerCast peerCast, Channel channel, Logger logger)
       {
-        this.peerCast = channel.PeerCast;
+        this.peerCast = peerCast;
         this.channel = channel;
         this.logger = logger;
       }
@@ -432,7 +432,7 @@ namespace PeerCastStation.PCP
         oleh.SetHeloAgent(peerCast.AgentName);
         oleh.SetHeloSessionID(peerCast.SessionID);
         oleh.SetHeloRemotePort(remote_port);
-        PCPVersion.SetHeloVersion(oleh);
+        PCPVersion.Default.SetHeloVersion(oleh);
         await stream.WriteAsync(new Atom(Atom.PCP_OLEH, oleh), cancel_token).ConfigureAwait(false);
         return peer;
       }
@@ -703,7 +703,7 @@ namespace PeerCastStation.PCP
         bcst.SetBcstGroup(BroadcastGroup.Relays);
         bcst.SetBcstHops(0);
         bcst.SetBcstTTL(11);
-        PCPVersion.SetBcstVersion(bcst);
+        PCPVersion.Default.SetBcstVersion(bcst);
         bcst.SetBcstChannelID(channel.ChannelID);
         bcst.Add(new Atom(Atom.PCP_CHAN, chan));
         await stream.WriteAsync(new Atom(Atom.PCP_BCST, bcst), cancellationToken).ConfigureAwait(false);
@@ -897,7 +897,7 @@ namespace PeerCastStation.PCP
           if (!channel.IsBroadcasting &&
               src!=null &&
               src.RemoteEndPoint!=null &&
-              src.RemoteEndPoint.Address.GetAddressLocality()>=2 &&
+              (int)src.RemoteEndPoint.Address.GetAddressLocality()>=2 &&
               src.RemoteSessionID.HasValue &&
               src.RemoteSessionID.Value!=Guid.Empty) {
             var node = new HostBuilder();
@@ -935,17 +935,18 @@ namespace PeerCastStation.PCP
           ctx.Response.StatusCode = HttpStatusCode.BadRequest;
           return Task.Delay(0);
         }
-        if (!(channel.Network==NetworkType.IPv6 && ctx.Request.GetPCPVersion()==PCPVersion.ProtocolVersionIPv6 && remoteEndPoint.Address.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6) &&
-            !(channel.Network==NetworkType.IPv4 && ctx.Request.GetPCPVersion()==PCPVersion.ProtocolVersionIPv4 && remoteEndPoint.Address.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork)) {
+        if (!(channel.Network==NetworkType.IPv6 && ctx.Request.GetPCPVersion()==PCPVersion.Default.ProtocolVersionIPv6 && remoteEndPoint.Address.AddressFamily==System.Net.Sockets.AddressFamily.InterNetworkV6) &&
+            !(channel.Network==NetworkType.IPv4 && ctx.Request.GetPCPVersion()==PCPVersion.Default.ProtocolVersionIPv4 && remoteEndPoint.Address.AddressFamily==System.Net.Sockets.AddressFamily.InterNetwork)) {
           ctx.Response.StatusCode = HttpStatusCode.NotFound;
           return Task.Delay(0);
         }
         var requestPos = ctx.Request.GetPCPPos() ?? -1;
         ctx.Upgrade(async opaqueEnv => {
+          var peercast = ctx.GetPeerCast()!;
           var ct = (CancellationToken)opaqueEnv[OwinEnvironment.Opaque.CallCancelled];
           var stream = (Stream)opaqueEnv[OwinEnvironment.Opaque.Stream];
           stream.ReadTimeout = Timeout.Infinite;
-          var handler = new PCPRelayHandler(channel, logger);
+          var handler = new PCPRelayHandler(peercast, channel, logger);
           await handler.ProcessStream(stream, remoteEndPoint, requestPos, ct).ConfigureAwait(false);
         });
         return Task.Delay(0);

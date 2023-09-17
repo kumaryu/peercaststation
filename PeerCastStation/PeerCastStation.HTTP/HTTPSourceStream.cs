@@ -128,7 +128,7 @@ namespace PeerCastStation.HTTP
       }
     }
 
-    protected override async Task<StopReason> DoProcess(SourceConnectionClient connection, WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken)
+    protected override async Task<ISourceConnectionResult> DoProcess(SourceConnectionClient connection, WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken)
     {
       try {
         this.Status = ConnectionStatus.Connecting;
@@ -153,32 +153,32 @@ namespace PeerCastStation.HTTP
         if (response.Status!=200) {
           Logger.Error("Server responses {0} to GET {1}", response.Status, SourceUri.PathAndQuery);
           this.Status = ConnectionStatus.Error;
-          return response.Status==404 ? StopReason.OffAir : StopReason.UnavailableError;
+          return new SourceConnectionResult(response.Status==404 ? StopReason.OffAir : StopReason.UnavailableError);
         }
 
         this.Status = ConnectionStatus.Connected;
         await contentReader.ReadAsync(contentSink, connection.Stream, cancellationToken).ConfigureAwait(false);
         this.Status = ConnectionStatus.Idle;
-        return StopReason.OffAir;
+        return new SourceConnectionResult(StopReason.OffAir);
       }
       catch (InvalidDataException) {
         this.Status = ConnectionStatus.Error;
-        return StopReason.ConnectionError;
+        return new SourceConnectionResult(StopReason.ConnectionError);
       }
       catch (OperationCanceledException) {
         if (cancellationToken.IsCancellationRequested) {
           this.Status = ConnectionStatus.Idle;
-          return cancellationToken.Value;
+          return new SourceConnectionResult(cancellationToken.Value);
         }
         else {
           this.Status = ConnectionStatus.Error;
           Logger.Error("Recv content timed out");
-          return StopReason.ConnectionError;
+          return new SourceConnectionResult(StopReason.ConnectionError);
         }
       }
       catch (IOException) {
         this.Status = ConnectionStatus.Error;
-        return StopReason.ConnectionError;
+        return new SourceConnectionResult(StopReason.ConnectionError);
       }
     }
 

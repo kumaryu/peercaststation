@@ -70,7 +70,7 @@ namespace PeerCastStation.WPF.ChannelLists
 
     internal void UpdateChannelList()
     {
-      var new_list = peerCast.Channels.Select(ch => new ChannelViewModel(ch));
+      var new_list = peerCast.Channels.Select(ch => new ChannelViewModel(peerCast, ch));
       foreach (var item in channels.Where(item => !new_list.Contains(item)).ToArray()) {
         channels.Remove(item);
       }

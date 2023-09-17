@@ -71,10 +71,16 @@ namespace PeerCastStation.Core
 
     public class ConnectionStoppedArgs
     {
-      public StopReason Reason { get; set; }
+      public ISourceConnectionResult Result { get; }
+      public StopReason Reason { get { return Result.StopReason; } }
       public int Delay { get; set; } = 0;
       public Uri? IgnoreSource { get; set; } = null;
       public bool Reconnect { get; set; } = false;
+
+      public ConnectionStoppedArgs(ISourceConnectionResult result)
+      {
+        Result = result;
+      }
     }
 
     protected virtual void OnConnectionStopped(ISourceConnection connection, ConnectionStoppedArgs args)
@@ -116,12 +122,6 @@ namespace PeerCastStation.Core
     {
     }
 
-    protected virtual Task OnNoSourceHost(CancellationToken cancellationToken)
-    {
-      Stop(StopReason.NoHost);
-      return Task.CompletedTask;
-    }
-
     private Task<StopReason>? runningTask;
     public async Task<StopReason> Run(CancellationToken cancellationToken)
     {
@@ -144,24 +144,25 @@ namespace PeerCastStation.Core
         while (!cancellationToken.IsCancellationRequested) {
           var source = SelectSourceHost();
           if (source==null) {
-            await OnNoSourceHost(cancellationToken).ConfigureAwait(false);
+            result = StopReason.NoHost;
+            break;
           }
           else {
             using var _ = cancellationToken.Register(() => Stop(StopReason.UserShutdown));
-            var args = new ConnectionStoppedArgs();
+            ConnectionStoppedArgs args;
             try {
               var conn = CreateConnection(source);
               currentSourceConnection = conn;
               try {
-                args.Reason = await conn.Run(messageQueue).ConfigureAwait(false);
+                args = new ConnectionStoppedArgs(await conn.Run(messageQueue).ConfigureAwait(false));
                 Logger.Debug($"Connection stopped by reason {args.Reason}");
               }
               catch (OperationCanceledException) {
-                args.Reason = StopReason.UserShutdown;
+                args = new ConnectionStoppedArgs(new SourceConnectionResult(StopReason.UserShutdown));
                 Logger.Debug("Connection stopped by canceled");
               }
               catch (Exception e) {
-                args.Reason = StopReason.NotIdentifiedError;
+                args = new ConnectionStoppedArgs(new SourceConnectionResult(StopReason.NotIdentifiedError));
                 Logger.Debug("Connection stopped by Error");
                 Logger.Error(e);
               }
@@ -215,6 +216,11 @@ namespace PeerCastStation.Core
     public ConnectionInfo GetConnectionInfo()
     {
       return GetConnectionInfo(currentSourceConnection);
+    }
+
+    protected ISourceConnection? GetCurrentConnection()
+    {
+      return currentSourceConnection;
     }
 
 

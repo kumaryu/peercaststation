@@ -145,10 +145,12 @@ let ``LoopbackSourceStreamで元のチャンネルのトラック情報がコピ
     let channel1 = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfoBitrate "hoge" "FLV" 500, ChannelTrack.empty)
     channel1.ChannelTrack <- ChannelTrackDesc.toChannelTrack { ChannelTrackDesc.empty with name=Some "fuga"; album=Some "piyo"; genre=Some "foo"; creator=Some "bar"; url=Some "http://example.com/index.html" }
     peca.AddChannel channel1
-    channel1.Start("http://example.com/" |> Uri)
-    let channel2 = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty, fun peercast channel uri -> new LoopbackSourceStream(peercast, channel, uri))
+    channel1.Start(DummySourceStream.FactoryForBroadcast, "http://example.com/" |> Uri)
+
+    let channel2 = DummyBroadcastChannel(peca, NetworkType.IPv4, Guid.NewGuid(), createChannelInfo "hoge" "FLV", ChannelTrack.empty)
     peca.AddChannel channel2
-    channel2.Start(channel1.ChannelID.ToString("N") |> sprintf "loopback:%s" |> Uri)
+    channel2.Start(LoopbackSourceStreamFactory(peca), channel1.ChannelID.ToString("N") |> sprintf "loopback:%s" |> Uri)
+
     TestCommon.waitForConditionOrTimeout (fun () -> channel2.ChannelInfo.Bitrate = 500) 1000
     Assert.Equal(500, channel2.ChannelInfo.Bitrate)
     Assert.Equal("fuga", channel2.ChannelTrack.Name)

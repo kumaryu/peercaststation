@@ -182,7 +182,7 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
-    protected override async Task<StopReason> DoProcess(SourceConnectionClient connection, WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken)
+    protected override async Task<ISourceConnectionResult> DoProcess(SourceConnectionClient connection, WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken)
     {
       this.state = ConnectionState.Waiting;
       try {
@@ -190,24 +190,24 @@ namespace PeerCastStation.FLV.RTMP
           await ProcessRTMPMessages(connection, cancellationToken).ConfigureAwait(false);
         }
         this.state = ConnectionState.Closed;
-        return StopReason.OffAir;
+        return new SourceConnectionResult(StopReason.OffAir);
       }
       catch (ConnectionStopException e) {
         this.state = ConnectionState.Closed;
-        return e.StopReason;
+        return new SourceConnectionResult(e.StopReason);
       }
       catch (IOException e) {
         Logger.Error(e);
         this.state = ConnectionState.Error;
-        return StopReason.ConnectionError;
+        return new SourceConnectionResult(StopReason.ConnectionError);
       }
       catch (OperationCanceledException) {
         this.state = ConnectionState.Closed;
         if (cancellationToken.IsCancellationRequested) {
-          return cancellationToken.Value;
+          return new SourceConnectionResult(cancellationToken.Value);
         }
         else {
-          return StopReason.ConnectionError;
+          return new SourceConnectionResult(StopReason.ConnectionError);
         }
       }
     }

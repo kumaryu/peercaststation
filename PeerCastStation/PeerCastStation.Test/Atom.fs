@@ -4,7 +4,16 @@ open System
 open PeerCastStation.Core
 open System.Net
 
-let parentAtom name (collection : AtomCollection) =
+let getName (atom:Atom) =
+    atom.Name
+
+let createQUIT (code:int) =
+    Atom(Atom.PCP_QUIT, code)
+
+let fromQUIT (atom:Atom) =
+    atom.GetInt32()
+
+let fromChildren name (collection : AtomCollection) =
     Atom(name, collection)
 
 let setHelo value (collection : AtomCollection) =
@@ -31,6 +40,13 @@ let setHeloPort value (collection : AtomCollection) =
     collection.SetHeloPort(value)
     collection
 
+let setHeloPortOptional value collection =
+    match value with
+    | Some value ->
+        setHeloPort value collection
+    | None ->
+        collection
+
 let setHeloRemotePort value (collection : AtomCollection) =
     collection.SetHeloRemotePort(value)
     collection
@@ -38,6 +54,17 @@ let setHeloRemotePort value (collection : AtomCollection) =
 let setHeloRemoteIP value (collection : AtomCollection) =
     collection.SetHeloRemoteIP(value)
     collection
+
+let setHeloRemoteIPOptional (value:EndPoint option) collection =
+    match value with
+    | Some value ->
+        match value with
+        | :? IPEndPoint as value ->
+            setHeloRemoteIP value.Address collection
+        | _ ->
+            collection
+    | None ->
+        collection
 
 let setHeloSessionID value (collection : AtomCollection) =
     collection.SetHeloSessionID(value)
@@ -287,7 +314,212 @@ let setOleh value (collection : AtomCollection) =
     collection.SetOleh(value)
     collection
 
+let setPush value (collection : AtomCollection) =
+    collection.SetPush(value)
+    collection
+
+let setPushChannelID value (collection : AtomCollection) =
+    collection.SetPushChannelID(value)
+    collection
+
+let setPushIP value (collection : AtomCollection) =
+    collection.SetPushIP(value)
+    collection
+
+let setPushPort value (collection : AtomCollection) =
+    collection.SetPushPort(value)
+    collection
+
+let setPushEndPoint (value:IPEndPoint) (collection : AtomCollection) =
+    collection.SetPushIP(value.Address)
+    collection.SetPushPort(value.Port)
+    collection
+
 let setQuit value (collection : AtomCollection) =
     collection.SetQuit(value)
     collection
+
+let getHeloPort (collection : IAtomCollection) =
+    collection.GetHeloPort() |> Option.ofNullable
+
+let getHeloPing (collection : IAtomCollection) =
+    collection.GetHeloPing() |> Option.ofNullable
+
+let getHeloSessionID (collection : IAtomCollection) =
+    collection.GetHeloSessionID() |> Option.ofNullable
+
+let getHeloBCID (collection : IAtomCollection) =
+    collection.GetHeloBCID() |> Option.ofNullable
+
+let getHeloAgent (collection : IAtomCollection) =
+    collection.GetHeloAgent() |> Option.ofObj
+
+let getHeloDisable (collection : IAtomCollection) =
+    collection.GetHeloDisable() |> Option.ofNullable
+
+let getHeloVersion (collection : IAtomCollection) =
+    collection.GetHeloVersion() |> Option.ofNullable
+
+let getHeloRemoteIP (collection : IAtomCollection) =
+    collection.GetHeloRemoteIP() |> Option.ofObj
+
+let getHeloRemotePort (collection : IAtomCollection) =
+    collection.GetHeloRemotePort() |> Option.ofNullable
+
+let getBcstChannelID (collection : IAtomCollection) =
+    collection.GetBcstChannelID() |> Option.ofNullable
+
+let getBcstGroup (collection : IAtomCollection) =
+    collection.GetBcstGroup() |> Option.ofNullable
+
+let getBcstTTL (collection : IAtomCollection) =
+    collection.GetBcstTTL() |> Option.ofNullable
+
+let getBcstHops (collection : IAtomCollection) =
+    collection.GetBcstHops() |> Option.ofNullable
+
+let getBcstFrom (collection : IAtomCollection) =
+    collection.GetBcstFrom() |> Option.ofNullable
+
+let getBcstVersion (collection : IAtomCollection) =
+    collection.GetBcstVersion() |> Option.ofNullable
+
+let getChan (collection : IAtomCollection) =
+    collection.GetChan() |> Option.ofObj
+
+let getChanByAtom (collection : IAtomCollection) =
+    collection.GetChan()
+    |> Option.ofObj
+    |> Option.map (fun children -> Atom(Atom.PCP_CHAN,  children))
+
+let getHost (collection : IAtomCollection) =
+    collection.GetHost() |> Option.ofObj
+
+let getHostByAtom (collection : IAtomCollection) =
+    collection.GetHost()
+    |> Option.ofObj
+    |> Option.map (fun children -> Atom(Atom.PCP_HOST,  children))
+
+let getHostChannelID (collection : IAtomCollection) =
+    collection.GetHostChannelID() |> Option.ofNullable
+
+let getHostClapPP (collection : IAtomCollection) =
+    collection.GetHostClapPP() |> Option.ofNullable
+
+let getHostFlags1 (collection : IAtomCollection) =
+    collection.GetHostFlags1() |> Option.ofNullable
+
+let getHostIP (collection : IAtomCollection) =
+    collection.GetHostIP() |> Option.ofObj
+
+let getHostIPs (collection : IAtomCollection) =
+    collection
+    |> Seq.filter (fun atom -> atom.Name=Atom.PCP_HOST_IP)
+    |> Seq.map (fun atom -> atom.GetIPAddress())
+
+let getHostNewPos (collection : IAtomCollection) =
+    collection.GetHostNewPos() |> Option.ofNullable
+
+let getHostOldPos (collection : IAtomCollection) =
+    collection.GetHostOldPos() |> Option.ofNullable
+
+let getHostNumListeners (collection : IAtomCollection) =
+    collection.GetHostNumListeners() |> Option.ofNullable
+
+let getHostNumRelays (collection : IAtomCollection) =
+    collection.GetHostNumRelays() |> Option.ofNullable
+
+let getHostPort (collection : IAtomCollection) =
+    collection.GetHostPort() |> Option.ofNullable
+
+let getHostPorts (collection : IAtomCollection) =
+    collection
+    |> Seq.filter (fun atom -> atom.Name=Atom.PCP_HOST_PORT)
+    |> Seq.map (fun atom -> atom.GetUInt16())
+
+let getHostSessionID (collection : IAtomCollection) =
+    collection.GetHostSessionID() |> Option.ofNullable
+
+let getHostUphostHops (collection : IAtomCollection) =
+    collection.GetHostUphostHops() |> Option.ofNullable
+
+let getHostUphostIP (collection : IAtomCollection) =
+    collection.GetHostUphostIP() |> Option.ofObj
+
+let getHostUphostPort (collection : IAtomCollection) =
+    collection.GetHostUphostPort() |> Option.ofNullable
+
+let getHostUptime (collection : IAtomCollection) =
+    collection.GetHostUptime() |> Option.ofNullable
+
+let getHostVersion (collection : IAtomCollection) =
+    collection.GetHostVersion() |> Option.ofNullable
+
+let getHostVersionVP (collection : IAtomCollection) =
+    collection.GetHostVersionVP() |> Option.ofNullable
+
+let getHostVersionEXNumber (collection : IAtomCollection) =
+    collection.GetHostVersionEXNumber() |> Option.ofNullable
+
+let getHostVersionEXPrefix (collection : IAtomCollection) =
+    collection.GetHostVersionEXPrefix() |> Option.ofObj
+
+let getChanBCID (collection : IAtomCollection) =
+    collection.GetChanBCID() |> Option.ofNullable
+
+let getChanID (collection : IAtomCollection) =
+    collection.GetChanID() |> Option.ofNullable
+
+let getChanInfo (collection : IAtomCollection) =
+    collection.GetChanInfo() |> Option.ofObj
+
+let getChanInfoBitrate (collection : IAtomCollection) =
+    collection.GetChanInfoBitrate() |> Option.ofNullable
+
+let getChanInfoPPFlags (collection : IAtomCollection) =
+    collection.GetChanInfoPPFlags() |> Option.ofNullable
+
+let getChanInfoComment (collection : IAtomCollection) =
+    collection.GetChanInfoComment() |> Option.ofObj
+
+let getChanInfoDesc (collection : IAtomCollection) =
+    collection.GetChanInfoDesc() |> Option.ofObj
+
+let getChanInfoGenre (collection : IAtomCollection) =
+    collection.GetChanInfoGenre() |> Option.ofObj
+
+let getChanInfoName (collection : IAtomCollection) =
+    collection.GetChanInfoName() |> Option.ofObj
+
+let getChanInfoType (collection : IAtomCollection) =
+    collection.GetChanInfoType() |> Option.ofObj
+
+let getChanInfoURL (collection : IAtomCollection) =
+    collection.GetChanInfoURL() |> Option.ofObj
+
+let getChanInfoStreamType (collection : IAtomCollection) =
+    collection.GetChanInfoStreamType() |> Option.ofObj
+
+let getChanInfoStreamExt (collection : IAtomCollection) =
+    collection.GetChanInfoStreamExt() |> Option.ofObj
+
+let getChanTrack (collection : IAtomCollection) =
+    collection.GetChanTrack() |> Option.ofObj
+
+let getChanTrackAlbum (collection : IAtomCollection) =
+    collection.GetChanTrackAlbum() |> Option.ofObj
+
+let getChanTrackGenre (collection : IAtomCollection) =
+    collection.GetChanTrackGenre() |> Option.ofObj
+
+let getChanTrackCreator (collection : IAtomCollection) =
+    collection.GetChanTrackCreator() |> Option.ofObj
+
+let getChanTrackTitle (collection : IAtomCollection) =
+    collection.GetChanTrackTitle() |> Option.ofObj
+
+let getChanTrackURL (collection : IAtomCollection) =
+    collection.GetChanTrackURL() |> Option.ofObj
+
+
 

@@ -11,8 +11,21 @@ namespace PeerCastStation.Core
   public record ChannelSourceMessageStop(StopReason StopReason) : ChannelSourceMessage();
   public record ChannelSourceMessageReconnect() : ChannelSourceMessage();
   public record ChannelSourceMessagePost(Host? From, Atom Message) : ChannelSourceMessage();
-  
 
+  public interface ISourceConnectionResult
+  {
+    StopReason StopReason { get; }
+  }
+
+  public class SourceConnectionResult
+    : ISourceConnectionResult
+  {
+    public StopReason StopReason { get; }
+    public SourceConnectionResult(StopReason stopReason)
+    {
+      StopReason = stopReason;
+    }
+  }
 
   public interface ISourceConnection
   {
@@ -20,7 +33,7 @@ namespace PeerCastStation.Core
     StopReason StoppedReason { get; }
 
     ConnectionInfo GetConnectionInfo();
-    Task<StopReason> Run(WaitableQueue<ChannelSourceMessage> channelSourceMessages);
+    Task<ISourceConnectionResult> Run(WaitableQueue<ChannelSourceMessage> channelSourceMessages);
   }
 
   public abstract class SourceConnectionBase
@@ -32,6 +45,7 @@ namespace PeerCastStation.Core
     public Uri        SourceUri { get; private set; }
     public StopReason StoppedReason { get; private set; }
     protected Logger Logger { get; private set; }
+    private Task runningTask = Task.CompletedTask;
 
     public SourceConnectionBase(
         PeerCast peercast,
@@ -46,7 +60,7 @@ namespace PeerCastStation.Core
       this.Status        = ConnectionStatus.Idle;
     }
 
-    public async Task<StopReason> Run(WaitableQueue<ChannelSourceMessage> channelSourceMessages)
+    public async Task<ISourceConnectionResult> Run(WaitableQueue<ChannelSourceMessage> channelSourceMessages)
     {
       this.Status = ConnectionStatus.Connecting;
       var isStopped = new CancellationTokenSourceWithArg<StopReason>();
@@ -71,11 +85,17 @@ namespace PeerCastStation.Core
       var sourceTask = Task.Run(async () => {
         return await DoProcessSource(postMessageQueue, isStopped.Token).ConfigureAwait(false);
       });
+      runningTask = sourceTask;
       await Task.WhenAll(msgTask, sourceTask).ConfigureAwait(false);
       return await sourceTask.ConfigureAwait(false);
     }
 
-    protected abstract Task<StopReason> DoProcessSource(WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken);
+    protected Task GetRunningTask()
+    {
+      return runningTask;
+    }
+
+    protected abstract Task<ISourceConnectionResult> DoProcessSource(WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken);
 
     public abstract ConnectionInfo GetConnectionInfo();
   }
@@ -86,7 +106,7 @@ namespace PeerCastStation.Core
     protected class SourceConnectionClient
       : IDisposable
     {
-      public TcpClient Client { get; private set; }
+      public TcpClient? Client { get; private set; }
       public ConnectionStream Stream { get; private set; }
       public float RecvRate { get { return Stream.ReadRate; } }
       public float SendRate { get { return Stream.WriteRate; } }
@@ -102,18 +122,26 @@ namespace PeerCastStation.Core
         this.Stream.WriteTimeout = 10000;
       }
 
+      public SourceConnectionClient(ConnectionStream stream)
+      {
+        this.Stream = stream;
+        this.Stream.ReadTimeout = 10000;
+        this.Stream.WriteTimeout = 10000;
+      }
+
       private IPEndPoint? remoteEndPoint = null;
       public IPEndPoint? RemoteEndPoint {
         get {
           if (remoteEndPoint!=null) {
             return remoteEndPoint;
           }
-          else if (this.Client.Connected) {
+          else if (Client?.Connected ?? false) {
             remoteEndPoint = this.Client.Client.RemoteEndPoint as IPEndPoint;
             return remoteEndPoint;
           }
           else {
-            return null;
+            remoteEndPoint = Stream.RemoteEndPoint;
+            return remoteEndPoint;
           }
         }
       }
@@ -121,8 +149,8 @@ namespace PeerCastStation.Core
       public void Dispose()
       {
         remoteEndPoint = null;
-        this.Stream.Close();
-        this.Client.Close();
+        Stream.Close();
+        Client?.Close();
       }
     }
 
@@ -143,38 +171,38 @@ namespace PeerCastStation.Core
     }
 
     protected SourceConnectionClient? connection;
-    protected override async Task<StopReason> DoProcessSource(WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken)
+    protected override async Task<ISourceConnectionResult> DoProcessSource(WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken)
     {
       try {
         connection = await DoConnect(SourceUri, cancellationToken).ConfigureAwait(false);
         if (connection==null) {
-          return StopReason.ConnectionError;
+          return new SourceConnectionResult(StopReason.ConnectionError);
         }
       }
       catch (OperationCanceledWithArgException<StopReason> ex) {
         connection = null;
-        return ex.Value;
+        return new SourceConnectionResult(ex.Value);
       }
       catch (OperationCanceledException) {
         connection = null;
-        return StopReason.UserShutdown;
+        return new SourceConnectionResult(StopReason.UserShutdown);
       }
       catch (BindErrorException e) {
         connection = null;
         Logger.Error(e);
-        return StopReason.NoHost;
+        return new SourceConnectionResult(StopReason.NoHost);
       }
       if (!cancellationToken.IsCancellationRequested) {
         OnStarted(connection);
-        StopReason result;
+        ISourceConnectionResult result;
         try {
           result = await DoProcess(connection, postMessages, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledWithArgException<StopReason> ex) {
-          result = ex.Value;
+          result = new SourceConnectionResult(ex.Value);
         }
         catch (OperationCanceledException) {
-          result = StopReason.UserShutdown;
+          result = new SourceConnectionResult(StopReason.UserShutdown);
         }
         OnStopped();
         await DoClose(connection).ConfigureAwait(false);
@@ -182,7 +210,7 @@ namespace PeerCastStation.Core
       }
       else {
         await DoClose(connection).ConfigureAwait(false);
-        return cancellationToken.Value;
+        return new SourceConnectionResult(cancellationToken.Value);
       }
     }
 
@@ -196,7 +224,7 @@ namespace PeerCastStation.Core
       this.Status = ConnectionStatus.Error;
     }
 
-    protected abstract Task<StopReason> DoProcess(SourceConnectionClient connection, WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken);
+    protected abstract Task<ISourceConnectionResult> DoProcess(SourceConnectionClient connection, WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken);
   }
 
 }

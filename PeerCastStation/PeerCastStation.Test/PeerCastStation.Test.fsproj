@@ -9,7 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
+    <PackageReference Include="FSharp.Control.Reactive" Version="5.0.5" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
+    <PackageReference Include="System.IO.Pipelines" Version="7.0.0" />
     <PackageReference Include="xunit" Version="2.4.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
       <PrivateAssets>all</PrivateAssets>
@@ -32,7 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="6.0.5" />
+    <PackageReference Update="FSharp.Core" Version="7.0.200" />
   </ItemGroup>
 
   <ItemGroup>
@@ -44,12 +46,14 @@
     </None>
     <Compile Include="TestCommon.fs" />
     <Compile Include="Atom.fs" />
+    <Compile Include="PeerCastServer.fs" />
     <Compile Include="CoreTests.fs" />
     <Compile Include="OWINTest.fs" />
     <Compile Include="ChannelTests.fs" />
     <Compile Include="HttpTests.fs" />
     <Compile Include="Tests.fs" />
     <Compile Include="PCPTests.fs" />
+    <Compile Include="PCPYellowPageClientTests.fs" />
     <Compile Include="AppTest.fs" />
     <Compile Include="UpdaterTests.fs" />
   </ItemGroup>

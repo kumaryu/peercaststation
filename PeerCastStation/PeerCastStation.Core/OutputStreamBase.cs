@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -33,10 +34,13 @@ namespace PeerCastStation.Core
     public abstract string Name { get; }
     public abstract OutputStreamType OutputStreamType { get; }
     public virtual int Priority { get { return 0; } }
-    public abstract IOutputStream Create(
+    public virtual IOutputStream Create(
       ConnectionStream connection,
       AccessControlInfo access_control,
-      Guid channel_id);
+      Guid channel_id)
+    {
+      throw new NotImplementedException();
+    }
 
     public virtual Guid? ParseChannelID(byte[] header, AccessControlInfo acinfo)
     {
@@ -44,7 +48,23 @@ namespace PeerCastStation.Core
       return ParseChannelID(header);
     }
 
-    public abstract Guid? ParseChannelID(byte[] header);
+    public virtual Guid? ParseChannelID(byte[] header)
+    {
+      throw new NotImplementedException();
+    }
+
+    public virtual bool TryCreate(byte[] header, AccessControlInfo acinfo, Func<ConnectionStream> connectionCreator, [NotNullWhen(true)] out IOutputStream? outputStream)
+    {
+      var channelID = ParseChannelID(header, acinfo);
+      if (channelID.HasValue) {
+        outputStream = Create(connectionCreator(), acinfo, channelID.Value);
+        return true;
+      }
+      else {
+        outputStream = null;
+        return false;
+      }
+    }
   }
 
   public abstract class OutputStreamBase

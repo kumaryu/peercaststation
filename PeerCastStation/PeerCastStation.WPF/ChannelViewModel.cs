@@ -24,10 +24,12 @@ namespace PeerCastStation.WPF
   public class ChannelViewModel
     : INotifyPropertyChanged
   {
+    public PeerCast PeerCast { get; private set; }
     public Channel Model { get; private set; }
     public UISettings UISettings { get; private set; }
-    public ChannelViewModel(Channel model)
+    public ChannelViewModel(PeerCast peerCast, Channel model)
     {
+      this.PeerCast = peerCast;
       this.Model = model;
       this.UISettings = PeerCastApplication.Current!.Settings.Get<UISettings>();
     }
@@ -45,7 +47,7 @@ namespace PeerCastStation.WPF
 
     public Uri? PlayListUri {
       get {
-        var endpoint = Model.PeerCast.GetLocalEndPoint(System.Net.Sockets.AddressFamily.InterNetwork, OutputStreamType.Play);
+        var endpoint = PeerCast.GetLocalEndPoint(System.Net.Sockets.AddressFamily.InterNetwork, OutputStreamType.Play);
         if (endpoint==null) return null;
         var parameters = new List<string>();
         var ext = "";
@@ -82,7 +84,7 @@ namespace PeerCastStation.WPF
     public Uri? StreamUri {
       get {
         var ext = Model.ChannelInfo.ContentExtension;
-        var endpoint = Model.PeerCast.GetLocalEndPoint(System.Net.Sockets.AddressFamily.InterNetwork, OutputStreamType.Play);
+        var endpoint = PeerCast.GetLocalEndPoint(System.Net.Sockets.AddressFamily.InterNetwork, OutputStreamType.Play);
         if (endpoint==null) return null;
         if (endpoint.Address.Equals(System.Net.IPAddress.Any)) {
           return new Uri(String.Format("http://localhost:{0}/stream/{1}{2}", endpoint.Port, Model.ChannelID.ToString("N"), ext));
@@ -107,7 +109,7 @@ namespace PeerCastStation.WPF
 
     public void Disconnect()
     {
-      Model.PeerCast.CloseChannel(Model);
+      PeerCast.CloseChannel(Model);
     }
 
     public void Reconnect()
@@ -180,7 +182,7 @@ namespace PeerCastStation.WPF
 
     public ConnectionStatus ConnectionStatus {
       get {
-        if (Model.PeerCast.GetPortStatus(Model.NetworkAddressFamily)!=PortStatus.Open) {
+        if (PeerCast.GetPortStatus(Model.NetworkAddressFamily)!=PortStatus.Open) {
           if (Model.LocalRelays>0) {
             return ConnectionStatus.FirewalledRelaying;
           }
@@ -217,7 +219,7 @@ namespace PeerCastStation.WPF
 
     public HostTree CreateHostTree()
     {
-      return new HostTree(Model);
+      return new HostTree(PeerCast, Model);
     }
 
     public IEnumerable<ChannelConnectionViewModel> Connections {
@@ -226,7 +228,7 @@ namespace PeerCastStation.WPF
         if (Model.SourceStream!=null) {
           connections.Add(new SourceChannelConnectionViewModel(Model.SourceStream));
         }
-        var announcings = Model.PeerCast.YellowPages
+        var announcings = PeerCast.YellowPages
           .Select(yp => yp.GetAnnouncingChannels().FirstOrDefault(c => c.Channel.ChannelID==Model.ChannelID))
           .NotNull();
         foreach (var announcing in announcings) {

@@ -7,7 +7,7 @@ namespace PeerCastStation.PCP
   {
     public static int GetPCPVersion(this Channel channel)
     {
-      return PCPVersion.GetPCPVersionForNetworkType(channel.Network);
+      return PCPVersion.Default.GetPCPVersionForNetworkType(channel.Network);
     }
 
   }

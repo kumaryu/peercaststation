@@ -98,18 +98,18 @@ namespace PeerCastStation.Core
       taskSource.TrySetResult(reason);
     }
 
-    protected override async Task<StopReason> DoProcessSource(WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken)
+    protected override async Task<ISourceConnectionResult> DoProcessSource(WaitableQueue<(Host? From, Atom Message)> postMessages, CancellationTokenWithArg<StopReason> cancellationToken)
     {
       using var _ = cancellationToken.Register(reason => taskSource.TrySetResult(reason));
       if (SourceChannel!=null) {
         SourceChannel.AddContentSink(this);
         StopReason result = await taskSource.Task.ConfigureAwait(false);
         SourceChannel.RemoveContentSink(this);
-        return result;
+        return new SourceConnectionResult(result);
       }
       else {
         taskSource.TrySetResult(StopReason.NoHost);
-        return await taskSource.Task.ConfigureAwait(false);
+        return new SourceConnectionResult(await taskSource.Task.ConfigureAwait(false));
       }
     }
 

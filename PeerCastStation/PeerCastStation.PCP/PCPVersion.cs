@@ -1,19 +1,20 @@
-﻿using System;
-using PeerCastStation.Core;
+﻿using PeerCastStation.Core;
 
 namespace PeerCastStation.PCP
 {
-  public static class PCPVersion
+  public class PCPVersion
   {
-    public static readonly int    DefaultPort = 7144;
-    public static readonly int    ServantVersion         = 1218;
-    public static readonly int    ServantVersionVP       = 27;
-    public static readonly byte[] ServantVersionEXPrefix = new byte[] { (byte)'S', (byte)'T' };
-    public static readonly short  ServantVersionEXNumber = 510;
-    public static readonly int    ProtocolVersionIPv4    = 1;
-    public static readonly int    ProtocolVersionIPv6    = 100;
+    public static PCPVersion Default = new PCPVersion();
 
-    public static int GetPCPVersionForNetworkType(NetworkType type)
+    public int    DefaultPort            { get; init; } = 7144;
+    public int    ServantVersion         { get; init; } = 1218;
+    public int    ServantVersionVP       { get; init; } = 27;
+    public byte[] ServantVersionEXPrefix { get; init; } = new byte[] { (byte)'S', (byte)'T' };
+    public short  ServantVersionEXNumber { get; init; } = 510;
+    public int    ProtocolVersionIPv4    { get; init; } = 1;
+    public int    ProtocolVersionIPv6    { get; init; } = 100;
+
+    public int GetPCPVersionForNetworkType(NetworkType type)
     {
       switch (type) {
       case NetworkType.IPv6:
@@ -24,12 +25,12 @@ namespace PeerCastStation.PCP
       }
     }
 
-    public static void SetHeloVersion(IAtomCollection helo)
+    public void SetHeloVersion(IAtomCollection helo)
     {
       helo.SetHeloVersion(ServantVersion);
     }
 
-    public static void SetHostVersion(IAtomCollection host)
+    public void SetHostVersion(IAtomCollection host)
     {
       host.SetHostVersion(ServantVersion);
       host.SetHostVersionVP(ServantVersionVP);
@@ -37,7 +38,7 @@ namespace PeerCastStation.PCP
       host.SetHostVersionEXNumber(ServantVersionEXNumber);
     }
 
-    public static void SetBcstVersion(IAtomCollection bcst)
+    public void SetBcstVersion(IAtomCollection bcst)
     {
       bcst.SetBcstVersion(ServantVersion);
       bcst.SetBcstVersionVP(ServantVersionVP);
@@ -45,4 +46,6 @@ namespace PeerCastStation.PCP
       bcst.SetBcstVersionEXNumber(ServantVersionEXNumber);
     }
   }
+
 }
+
