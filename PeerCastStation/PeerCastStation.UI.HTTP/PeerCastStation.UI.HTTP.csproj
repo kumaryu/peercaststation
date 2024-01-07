@@ -27,6 +27,7 @@
   <ItemGroup>
     <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj" />
     <ProjectReference Include="..\PeerCastStation.UI\PeerCastStation.UI.csproj" />
+    <ProjectReference Include="..\PeerCastStation.FLV\PeerCastStation.FLV.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\PeerCastStation.snk">
@@ -284,6 +285,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="html\js\play.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="html\filestream.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="html\js\filestream.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="PeerCastStationJS.tt">
