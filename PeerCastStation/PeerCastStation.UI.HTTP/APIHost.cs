@@ -4,14 +4,11 @@ using System.Net;
 using System.Collections.Generic;
 using PeerCastStation.Core;
 using PeerCastStation.UI.HTTP.JSONRPC;
-using PeerCastStation.FLV.RTMP;
 using Newtonsoft.Json.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using PeerCastStation.Core.Http;
 using System.Diagnostics.CodeAnalysis;
-using PeerCastStation.FLV.AMF;
-using System.IO;
 
 namespace PeerCastStation.UI.HTTP
 {
@@ -1111,36 +1108,6 @@ namespace PeerCastStation.UI.HTTP
         if (fav.HasValue) {
           settings.SetFavorite(obj, fav.Value);
         }
-      }
-
-      [RPCMethod("sendBase64Message")]
-      public void sendBase64Message(string base64data)
-      {
-        var channel = PeerCast.Channels.Where(c => c.IsBroadcasting).FirstOrDefault();
-        if(channel == null) return;
-        var binary = StringToAMF0BinaryData("base64image", base64data);
-        var content = new Content(0, channel.Uptime, channel.ContentPosition, binary, PCPChanPacketContinuation.None);
-        channel.Contents.Add(content);
-      }
-      
-      private static byte[] StringToAMF0BinaryData(string name, string value)
-      {
-        var amf0ms = new MemoryStream();
-        var w = new AMF0Writer(amf0ms);
-        w.WriteString(name);
-        w.WriteString(value);
-        var msg = new RTMPMessage(RTMPMessageType.DataAMF0, 0, 0, amf0ms.ToArray());
-        var stream = new MemoryStream();
-        using (var writer=new RTMPBinaryWriter(stream, true)) {
-          writer.Write((byte)msg.MessageType);
-          writer.WriteUInt24(msg.Body.Length);
-          writer.WriteUInt24((int)0 & 0xFFFFFF);
-          writer.Write((byte)((0>>24) & 0xFF));
-          writer.WriteUInt24(0);
-          writer.Write(msg.Body, 0, msg.Body.Length);
-          writer.Write(msg.Body.Length+11);
-        }
-        return stream.ToArray();
       }
 
       [RPCMethod("getNotificationMessages")]
