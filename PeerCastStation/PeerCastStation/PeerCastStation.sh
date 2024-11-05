@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 DOTNET=dotnet 
-VERSION=6.0
+VERSION=8.0
 ENTRYPOINT="$(cd $(dirname $0);pwd)/PeerCastStation.dll"
 
 has_command() {
