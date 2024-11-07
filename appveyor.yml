@@ -6,7 +6,7 @@ version: 5.1.0.{build}
 environment:
   GITHUB_ACTOR: kumaryu
   GITHUB_CR_TOKEN:
-    secure: 4ZKkbwwriImTNatsCmqVWNFOsObxDOfbenDzznEtCtfwqqOctigBAOvgbwM9Ll9c
+    secure: CiRUmGK1cJukeEv5BjXLJbWoKQt3QlzdHlJK/4GAU1E/klITx518jvYWKfg2cMIt
 configuration: Release
 for:
 - matrix:
