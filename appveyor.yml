@@ -1,7 +1,7 @@
 ---
 image:
 - Visual Studio 2022
-- Ubuntu2004
+- Ubuntu2204
 version: 5.1.0.{build}
 environment:
   GITHUB_ACTOR: kumaryu
@@ -14,7 +14,7 @@ for:
     - image: Visual Studio 2022
   install:
   - cmd: |-
-      set PATH=C:\Ruby27-x64\bin;%PATH%
+      set PATH=C:\Ruby23-x64\bin;%PATH%
       gem install -N jekyll
   before_build:
   - cmd: |-
@@ -58,11 +58,11 @@ for:
     name: PeerCastStation-$(APPVEYOR_BUILD_VERSION)-x64-ja-JP.msi
 - matrix:
     only:
-    - image: Ubuntu2004
+    - image: Ubuntu2204
   services:
   - docker
   install:
-  - rvm use 2.7
+  - rvm use 3.3
   before_build:
   - ruby bumpversion.rb $APPVEYOR_BUILD_VERSION
   - docker run --rm --volume=`pwd`:/srv/jekyll -t jekyll/jekyll jekyll build --config
