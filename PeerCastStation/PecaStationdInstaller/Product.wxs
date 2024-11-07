@@ -1,98 +1,71 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
-     xmlns:firewall="http://schemas.microsoft.com/wix/FirewallExtension"
-     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:firewall="http://wixtoolset.org/schemas/v4/wxs/firewall" xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
   <?if $(sys.BUILDARCH) = x64 ?>
     <?define PlatformProgramFilesFolder = ProgramFiles64Folder ?>
   <?else?>
     <?define PlatformProgramFilesFolder = ProgramFilesFolder ?>
-  <?endif ?>
-  <Product Id="*"
-      Name="PeerCastStation Service"
-      Language="1041"
-      Version="!(bind.FileVersion.PecaStationd.exe)"
-      Manufacturer="pecastation.org"
-      UpgradeCode="5b0f0db9-4cd2-4640-8b49-5a8132d33ddf">
-    <Package InstallerVersion="400" Compressed="yes" InstallScope="perMachine"/>
+  <?endif?>
+  <Package Name="PeerCastStation Service" Language="1041" Version="!(bind.FileVersion.PecaStationd.exe)" Manufacturer="pecastation.org" UpgradeCode="5b0f0db9-4cd2-4640-8b49-5a8132d33ddf" InstallerVersion="400">
+    
 
     <MajorUpgrade DowngradeErrorMessage="!(loc.NewerVersionAlreadyInstalled)" />
-    <MediaTemplate EmbedCab="yes"/>
+    <MediaTemplate EmbedCab="yes" />
 
-    <Feature Id="Service" Title="!(loc.PeerCastStationService)" Level="1" Absent="disallow" AllowAdvertise="no" ConfigurableDirectory="INSTALLFOLDER">
-      <ComponentGroupRef Id="PecaStationd"/>
+    <Feature Id="Service" Title="!(loc.PeerCastStationService)" Level="1" AllowAdvertise="no" ConfigurableDirectory="INSTALLFOLDER" AllowAbsent="no">
+      <ComponentGroupRef Id="PecaStationd" />
       <ComponentGroupRef Id="ProductComponents" />
     </Feature>
 
     <Feature Id="Menu" Title="!(loc.AddProgramMenu)" Level="1" AllowAdvertise="no">
-      <ComponentRef Id="ProgramMenu"/>
+      <ComponentRef Id="ProgramMenu" />
     </Feature>
 
     <Property Id="INSTALLED_CU" Secure="yes">
-      <RegistrySearch Id="InstallDir_CU" Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' Type='directory'/>
+      <RegistrySearch Id="InstallDir_CU" Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="InstallDir" Type="directory" />
     </Property>
     <Property Id="INSTALLED_LM" Secure="yes">
-      <RegistrySearch Id="InstallDir_LM" Root='HKLM' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' Type='directory'/>
+      <RegistrySearch Id="InstallDir_LM" Root="HKLM" Key="Software\[Manufacturer]\[ProductName]" Name="InstallDir" Type="directory" />
     </Property>
-    <SetProperty Id='INSTALLFOLDER' Action='SetINSTALLFOLDER_CU' Value='[INSTALLED_CU]' After='FileCost'>NOT Installed AND (NOT INSTALLFOLDER) AND INSTALLED_CU</SetProperty>
-    <SetProperty Id='INSTALLFOLDER' Action='SetINSTALLFOLDER_LM' Value='[INSTALLED_LM]' After='FileCost'>NOT Installed AND (NOT INSTALLFOLDER) AND INSTALLED_LM</SetProperty>
+    <SetProperty Id="INSTALLFOLDER" Action="SetINSTALLFOLDER_CU" Value="[INSTALLED_CU]" After="FileCost" Condition="NOT Installed AND (NOT INSTALLFOLDER) AND INSTALLED_CU" />
+    <SetProperty Id="INSTALLFOLDER" Action="SetINSTALLFOLDER_LM" Value="[INSTALLED_LM]" After="FileCost" Condition="NOT Installed AND (NOT INSTALLFOLDER) AND INSTALLED_LM" />
 
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="!(loc.OpenHTMLUI)" />
     <Property Id="WixShellExecTarget" Value="http://127.0.0.1:7144/" />
-    <CustomAction Id="OpenHTMLUIAction" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
-    <UIRef Id="WixUI_MyMondo"/>
+    <CustomAction Id="OpenHTMLUIAction" DllEntry="WixShellExec" Impersonate="yes" BinaryRef="Wix4UtilCA_X86" />
+    <UIRef Id="WixUI_MyMondo" />
     <UIRef Id="WixUI_ErrorProgressText" />
-  </Product>
+  </Package>
 
   <Fragment>
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
       <Component Id="ProductComponent">
         <File Id="PecaStationd.exe" Source="$(var.PecaStationd.TargetDir)\PecaStationd.exe" KeyPath="yes">
-          <firewall:FirewallException Id="PecaStationd.exe.firewall" Name="PeerCastStation Service" Scope="any" IgnoreFailure="yes"/>
+          <firewall:FirewallException Id="PecaStationd.exe.firewall" Name="PeerCastStation Service" Scope="any" IgnoreFailure="yes" />
         </File>
-        <ServiceInstall Id="ServiceInstall"
-                        Type="ownProcess"
-                        Name="PeerCastStationService"
-                        DisplayName="!(loc.PeerCastStationService)"
-                        Description="!(loc.PeerCastStationService)"
-                        ErrorControl="normal"
-                        Start="auto"
-                        Interactive="no"
-                        Vital="yes"/>
-        <ServiceControl Id="StartService"
-                        Start="install"
-                        Stop="both"
-                        Remove="uninstall"
-                        Name="PeerCastStationService"
-                        Wait="yes"/>
+        <ServiceInstall Id="ServiceInstall" Type="ownProcess" Name="PeerCastStationService" DisplayName="!(loc.PeerCastStationService)" Description="!(loc.PeerCastStationService)" ErrorControl="normal" Start="auto" Interactive="no" Vital="yes" />
+        <ServiceControl Id="StartService" Start="install" Stop="both" Remove="uninstall" Name="PeerCastStationService" Wait="yes" />
       </Component>
     </ComponentGroup>
   </Fragment>
 
   <Fragment>
-    <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="$(var.PlatformProgramFilesFolder)">
         <Directory Id="INSTALLFOLDER" Name="PeerCastStationService" />
       </Directory>
 
-      <Directory Id="ProgramMenuFolder" Name="Programs">
+      <StandardDirectory Id="ProgramMenuFolder">
         <Directory Id="ProgramMenu" Name="!(loc.PeerCastStationService)">
           <Component Id="ProgramMenu" Guid="7C056F91-DFA5-4FAC-9BE9-4595AFB10164">
-            <util:InternetShortcut
-              Id="HTMLUIStartMenuShortcut"
-              Name="PeerCastStation HTML UI"
-              Target="http://127.0.0.1:7144/"
-              Type="url"/>
-            <RemoveFolder Id='ProgramMenu' On='uninstall' />
-            <RegistryValue Root='HKMU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
-            <RegistryValue Root='HKMU' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' Type='string' Value='[INSTALLFOLDER]'/>
-            <RegistryValue Root='HKMU' Key='Software\[Manufacturer]\[ProductName]' Name='Version' Type='string' Value='[ProductVersion]'/>
+            <util:InternetShortcut Id="HTMLUIStartMenuShortcut" Name="PeerCastStation HTML UI" Target="http://127.0.0.1:7144/" Type="url" />
+            <RemoveFolder Id="ProgramMenu" On="uninstall" />
+            <RegistryValue Root="HKMU" Key="Software\[Manufacturer]\[ProductName]" Type="string" Value="" KeyPath="yes" />
+            <RegistryValue Root="HKMU" Key="Software\[Manufacturer]\[ProductName]" Name="InstallDir" Type="string" Value="[INSTALLFOLDER]" />
+            <RegistryValue Root="HKMU" Key="Software\[Manufacturer]\[ProductName]" Name="Version" Type="string" Value="[ProductVersion]" />
           </Component>
 
         </Directory>
-      </Directory>
-    </Directory>
-  </Fragment>
+      </StandardDirectory>
+    </Fragment>
 
   <Fragment>
     <UI Id="WixUI_MyMondo">
@@ -112,33 +85,33 @@
       <DialogRef Id="ResumeDlg" />
       <DialogRef Id="UserExit" />
 
-      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999">1</Publish>
-      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="OpenHTMLUIAction">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
+      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="OpenHTMLUIAction" Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed" />
 
-      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="SetupTypeDlg">NOT Installed AND NOT PATCH</Publish>
-      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">Installed AND PATCH</Publish>
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="SetupTypeDlg" Condition="NOT Installed AND NOT PATCH" />
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Condition="Installed AND PATCH" />
 
-      <Publish Dialog="SetupTypeDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg">1</Publish>
-      <Publish Dialog="SetupTypeDlg" Control="TypicalButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
-      <Publish Dialog="SetupTypeDlg" Control="CustomButton" Event="NewDialog" Value="CustomizeDlg">1</Publish>
-      <Publish Dialog="SetupTypeDlg" Control="CompleteButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <Publish Dialog="SetupTypeDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" />
+      <Publish Dialog="SetupTypeDlg" Control="TypicalButton" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="SetupTypeDlg" Control="CustomButton" Event="NewDialog" Value="CustomizeDlg" />
+      <Publish Dialog="SetupTypeDlg" Control="CompleteButton" Event="NewDialog" Value="VerifyReadyDlg" />
 
-      <Publish Dialog="CustomizeDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="1">WixUI_InstallMode = "Change"</Publish>
-      <Publish Dialog="CustomizeDlg" Control="Back" Event="NewDialog" Value="SetupTypeDlg" Order="2">WixUI_InstallMode = "InstallCustom"</Publish>
-      <Publish Dialog="CustomizeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <Publish Dialog="CustomizeDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="1" Condition="WixUI_InstallMode = &quot;Change&quot;" />
+      <Publish Dialog="CustomizeDlg" Control="Back" Event="NewDialog" Value="SetupTypeDlg" Order="2" Condition="WixUI_InstallMode = &quot;InstallCustom&quot;" />
+      <Publish Dialog="CustomizeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" />
 
-      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="CustomizeDlg" Order="1">WixUI_InstallMode = "InstallCustom"</Publish>
-      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="SetupTypeDlg" Order="2">WixUI_InstallMode = "InstallTypical" OR WixUI_InstallMode = "InstallComplete"</Publish>
-      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="CustomizeDlg" Order="3">WixUI_InstallMode = "Change"</Publish>
-      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="4">WixUI_InstallMode = "Repair" OR WixUI_InstallMode = "Remove"</Publish>
-      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">WixUI_InstallMode = "Update"</Publish>
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="CustomizeDlg" Order="1" Condition="WixUI_InstallMode = &quot;InstallCustom&quot;" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="SetupTypeDlg" Order="2" Condition="WixUI_InstallMode = &quot;InstallTypical&quot; OR WixUI_InstallMode = &quot;InstallComplete&quot;" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="CustomizeDlg" Order="3" Condition="WixUI_InstallMode = &quot;Change&quot;" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="4" Condition="WixUI_InstallMode = &quot;Repair&quot; OR WixUI_InstallMode = &quot;Remove&quot;" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2" Condition="WixUI_InstallMode = &quot;Update&quot;" />
 
-      <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg">1</Publish>
+      <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg" />
 
-      <Publish Dialog="MaintenanceTypeDlg" Control="ChangeButton" Event="NewDialog" Value="CustomizeDlg">1</Publish>
-      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
-      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
-      <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="ChangeButton" Event="NewDialog" Value="CustomizeDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg" />
     </UI>
 
     <UIRef Id="WixUI_Common" />

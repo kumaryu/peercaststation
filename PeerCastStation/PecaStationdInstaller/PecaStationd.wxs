@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
     <Fragment>
         <DirectoryRef Id="INSTALLFOLDER">
             <Component Id="cmpF22D40156F8E16FBFA89C752FF9D0EF9" Guid="{F9A36522-8AB4-4EE3-A2C4-00D3B904F12E}">
