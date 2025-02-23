@@ -2,7 +2,7 @@
 image:
 - Visual Studio 2022
 - Ubuntu2204
-version: 5.1.0.{build}
+version: 7.0.0.{build}
 environment:
   GITHUB_ACTOR: kumaryu
   GITHUB_CR_TOKEN:
