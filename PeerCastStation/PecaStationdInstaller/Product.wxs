@@ -1,12 +1,8 @@
-﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:firewall="http://wixtoolset.org/schemas/v4/wxs/firewall" xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
-  <?if $(sys.BUILDARCH) = x64 ?>
-    <?define PlatformProgramFilesFolder = ProgramFiles64Folder ?>
-  <?else?>
-    <?define PlatformProgramFilesFolder = ProgramFilesFolder ?>
-  <?endif?>
+﻿<Wix
+  xmlns="http://wixtoolset.org/schemas/v4/wxs"
+  xmlns:firewall="http://wixtoolset.org/schemas/v4/wxs/firewall"
+  xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
   <Package Name="PeerCastStation Service" Language="1041" Version="!(bind.FileVersion.PecaStationd.exe)" Manufacturer="pecastation.org" UpgradeCode="5b0f0db9-4cd2-4640-8b49-5a8132d33ddf" InstallerVersion="400">
-    
-
     <MajorUpgrade DowngradeErrorMessage="!(loc.NewerVersionAlreadyInstalled)" />
     <MediaTemplate EmbedCab="yes" />
 
@@ -46,13 +42,24 @@
         <ServiceControl Id="StartService" Start="install" Stop="both" Remove="uninstall" Name="PeerCastStationService" Wait="yes" />
       </Component>
     </ComponentGroup>
+
+    <ComponentGroup Id="PecaStationd">
+      <Files Directory="INSTALLFOLDER" Include="$(var.PecaStationd.TargetDir)\**">
+        <Exclude Files="$(var.PecaStationd.TargetDir)\PecaStationd.exe" />
+      </Files>
+    </ComponentGroup>
   </Fragment>
 
   <Fragment>
-      <Directory Id="$(var.PlatformProgramFilesFolder)">
+  <?if $(sys.BUILDARCH) = x64 ?>
+      <StandardDirectory Id="ProgramFiles64Folder">
         <Directory Id="INSTALLFOLDER" Name="PeerCastStationService" />
-      </Directory>
-
+      </StandardDirectory>
+  <?else?>
+      <StandardDirectory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="PeerCastStationService" />
+      </StandardDirectory>
+  <?endif?>
       <StandardDirectory Id="ProgramMenuFolder">
         <Directory Id="ProgramMenu" Name="!(loc.PeerCastStationService)">
           <Component Id="ProgramMenu" Guid="7C056F91-DFA5-4FAC-9BE9-4595AFB10164">

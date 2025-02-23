@@ -1,5 +1,4 @@
-<Project>
-  <Import Project="Sdk.props" Sdk="WixToolset.Sdk" Version="5.0.2" />
+﻿<Project Sdk="WixToolset.Sdk/5.0.2">
   <PropertyGroup>
     <ProductVersion>3.8</ProductVersion>
     <TargetFramework>net8.0-windows</TargetFramework>
@@ -41,15 +40,5 @@
     <PackageReference Include="WixToolset.Firewall.wixext" Version="5.0.2" />
     <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />
     <PackageReference Include="WixToolset.Util.wixext" Version="5.0.2" />
-    <PackageReference Include="WixToolset.Heat" Version="5.0.2" />
   </ItemGroup>
-  <Import Project="Sdk.targets" Sdk="WixToolset.Sdk" Version="5.0.2" />
-  <Target Name="BeforeBuild">
-    <Exec Command="dotnet publish ..\PeerCastStation\PeerCastStation.csproj -c $(Configuration) -p:Platform=$(Platform) -r win-$(Platform) --self-contained" />
-    <PropertyGroup>
-      <LinkerBaseInputPaths>..\PeerCastStation\bin\$(Platform)\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish</LinkerBaseInputPaths>
-      <DefineConstants>BasePath=..\PeerCastStation\bin\$(Platform)\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish</DefineConstants>
-    </PropertyGroup>
-    <HeatDirectory OutputFile="PeerCastStation.wxs" DirectoryRefId="INSTALLFOLDER" ComponentGroupName="PeerCastStation" SuppressCom="true" Directory="..\PeerCastStation\bin\$(Platform)\$(Configuration)\$(TargetFramework)\win-$(Platform)\publish" SuppressFragments="true" SuppressRegistry="true" SuppressRootDirectory="true" AutoGenerateGuids="false" GenerateGuidsNow="true" ToolPath="$(WixToolPath)" PreprocessorVariable="var.BasePath" />
-  </Target>
 </Project>

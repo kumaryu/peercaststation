@@ -1,12 +1,6 @@
-﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:firewall="http://wixtoolset.org/schemas/v4/wxs/firewall">
-  <?if $(sys.BUILDARCH) = x64 ?>
-    <?define PlatformProgramFilesFolder = ProgramFiles64Folder ?>
-  <?else?>
-    <?define PlatformProgramFilesFolder = ProgramFilesFolder ?>
-  <?endif?>
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:firewall="http://wixtoolset.org/schemas/v4/wxs/firewall">
   <Package Name="PeerCastStation" Language="1041" Version="!(bind.FileVersion.PeerCastStation.exe)" Manufacturer="pecastation.org" UpgradeCode="f0ddea2a-37af-428c-88ab-6fe829f20552" InstallerVersion="400">
-    
-
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
@@ -48,12 +42,24 @@
         </File>
       </Component>
     </ComponentGroup>
+
+    <ComponentGroup Id="PeerCastStation">
+      <Files Directory="INSTALLFOLDER" Include="$(var.PeerCastStation.TargetDir)\**">
+        <Exclude Files="$(var.PeerCastStation.TargetDir)\PeerCastStation.exe" />
+      </Files>
+    </ComponentGroup>
   </Fragment>
 
   <Fragment>
-      <Directory Id="$(var.PlatformProgramFilesFolder)">
+  <?if $(sys.BUILDARCH) = x64 ?>
+      <StandardDirectory Id="ProgramFiles64Folder">
         <Directory Id="INSTALLFOLDER" Name="PeerCastStation" />
-      </Directory>
+      </StandardDirectory>
+  <?else?>
+      <StandardDirectory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="PeerCastStation" />
+      </StandardDirectory>
+  <?endif?>
 
       <StandardDirectory Id="ProgramMenuFolder">
         <Directory Id="ProgramMenu" Name="PeerCastStation">
