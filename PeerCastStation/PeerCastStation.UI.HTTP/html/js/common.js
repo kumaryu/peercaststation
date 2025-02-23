@@ -6,11 +6,11 @@ var UIViewModel = new function() {
   self.refresh = function () {
     PeerCastStation.getNotificationMessages().then(function(results) {
       self.alerts.push.apply(self.alerts, $.map(results, function (data) {
-        var alert = "";
+        var color = "";
         switch (data.type) {
-        case "info":    alert = "alert-info"; break;
-        case "warning": alert = "alert-danger"; break;
-        case "error":   alert = "alert-error"; break;
+        case "info":    color = "text-bg-info"; break;
+        case "warning": color = "text-bg-warning"; break;
+        case "error":   color = "text-bg-danger"; break;
         }
         var closed = false;
         return {
@@ -28,7 +28,7 @@ var UIViewModel = new function() {
           close: function () {
             closed = true;
           },
-          alert: alert
+          color: color
         };
       }));
     });
