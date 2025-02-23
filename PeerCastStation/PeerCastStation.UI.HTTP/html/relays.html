@@ -3,16 +3,19 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="robots" content="noindex,nofollow">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>リレー情報 - PeerCastStation </title>
     <link rel="shortcut icon" href="favicon.ico" type="image/vnd.microsoft.icon" />
     <link rel="icon" href="favicon.ico" type="image/vnd.microsoft.icon" />
-    <link type="text/css" href="/Content/bootstrap.min.css" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/cerulean/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha256-9kPW/n5nn53j4WMRYAxe9c1rCY96Oogo/MKSVdKzPmI=" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/knockout@3.5.1/build/output/knockout-latest.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha256-3gQJhtmj7YnV1fmtbVcnAV6eI4ws0Tr48bVZCThtCGQ=" crossorigin="anonymous"></script>
+
     <link type="text/css" href="css/index.css" rel="stylesheet" />
-    <script type="text/javascript" src="/Scripts/es5-shim.min.js"></script>
-    <script type="text/javascript" src="/Scripts/es6-shim.min.js"></script>
-    <script type="text/javascript" src="/Scripts/jquery-1.8.3.min.js"></script>
-    <script type="text/javascript" src="/Scripts/knockout-2.2.0.js"></script>
-    <script type="text/javascript" src="/Scripts/bootstrap.min.js"></script>
     <script type="text/javascript" src="/api/1/peercaststation.js"></script>
     <script type="text/javascript" src="js/common.js"></script>
     <script type="text/javascript" src="js/relays.js"></script>
@@ -25,16 +28,18 @@
       });
     </script>
     <script type="text/html" id='alert'>
-      <div class="alert alert-block fade in" data-bind="css:'alert-'+type, click:clicked">
-        <a class="close" data-dismiss="alert" data-bind="css:'alert-'+type, click:close" href="#">&times;</a>
-        <h4 data-bind="text:title"></h4>
-        <p data-bind="text:message"></p>
+      <div class="toast fade show" data-bind="css:color, click:clicked">
+        <div class="toast-header px-2 py-1">
+          <h5 class="col mb-0" data-bind="text:title"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body py-1" data-bind="text:message"></div>
       </div>
     </script>
     <script type="text/html" id="relayTreeTemplate">
       <li>
         <i data-bind="attr:{ class: connectionStatus }"></i>
-        <span data-bind="text:connectionName"></span>
+        <span class="d-none d-md-inline" data-bind="text:connectionName"></span>
         <span data-bind="text:connections"></span>
         <span data-bind="text:agentVersion"></span>
         <ul class="relayTree" data-bind="template: { name:'relayTreeTemplate', foreach:children }"></ul>
@@ -68,39 +73,44 @@
     </style>
   </head>
   <body>
-    <div id="header">
-      <div class="alerts" data-bind="template: { name: 'alert', foreach: alerts }"></div>
-      <div class="navbar">
-        <div class="navbar-inner">
-          <div class="container-fluid">
-            <a class="brand" href="#">PeerCastStation</a>
-            <ul class="nav">
-              <li><a href="index.html">情報</a></li>
-              <li><a href="channels.html">Yellow Page</a></li>
-              <li class="active"><a href="relays.html">リレー</a></li>
-              <li><a href="settings.html">設定</a></li>
-              <li><a href="logs.html">ログ</a></li>
-              <li><a href="/help/index.html">ヘルプ</a></li>
+    <div id="header" class="mb-2">
+      <div class="alerts toast-container" data-bind="template: { name: 'alert', foreach: alerts }"></div>
+      <nav class="navbar navbar-expand-sm bg-body-tertiary shadow-sm">
+        <div class="container-fluid">
+          <a class="navbar-brand h1" href="index.html"><i class="d-none d-sm-inline d-md-none bi bi-info-square"></i><span class="d-inline d-sm-none d-md-inline">PeerCast<wbr/>Station</span></a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+              <li class="nav-item me-lg-2"><a class="nav-link" href="channels.html"><i class="bi bi-book"></i> Yellow Page</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link active" href="relays.html"><i class="bi bi-collection-play"></i> チャンネル</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="settings.html"><i class="bi bi-gear"></i> 設定</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="logs.html"><i class="bi bi-journal-text"></i> ログ</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="/help/index.html"><i class="bi bi-question-square"></i> ヘルプ</a></li>
             </ul>
-            <a class="btn btn-primary pull-right" style="margin-left:4px" href="#" onclick="BroadcastDialog.show()">配信</a>
-            <a class="btn btn-warning pull-right" data-bind="css:{hidden:!newVersionAvailable()}" href="update.html" target="_blank">バージョンアップ</a>
+            <button class="btn btn-primary ms-auto" style="margin-left:4px" onclick="BroadcastDialog.show()"><i class="bi bi-megaphone"></i> 配信</button>
+            <a class="btn btn-warning ms-1" data-bind="css:{'d-none':!newVersionAvailable()}" href="update.html" target="_blank">バージョン<wbr/>アップ</a>
           </div>
         </div>
-      </div>
+      </nav>
     </div>
 
-		<div class="container-fluid" id="channels">
-      <div class="row-fluid">
-        <div class="span3">チャンネル</div>
-        <div class="span1">状態</div>
-        <div class="span6">詳細</div>
-        <div class="span1">内容</div>
-        <div class="span1">時間</div>
+    <div class="container-fluid" id="channels">
+      <div class="channel">
+        <div class="row">
+          <div class="col-9 col-sm-6 col-md-3">チャンネル</div>
+          <div class="col-3 col-sm-2 col-md-1">状態</div>
+          <div class="d-none d-sm-block col-2 col-md-1 order-md-2">内容</div>
+          <div class="d-none d-sm-block col-2 col-md-1 order-md-2">時間</div>
+          <div class="col order-md-1">詳細</div>
+        </div>
       </div>
+
       <div data-bind="foreach: channels">
-        <div class="channel">
-          <div class="row-fluid">
-            <div class="span3">
+        <div class="channel mb-1">
+          <div class="row">
+            <div class="col-9 col-sm-6 col-md-3">
               <div data-bind="css: { 'source-tracker': isSourceTracker }">
                 <i data-bind="attr:{class:network}"></i>
                 <i data-bind="attr:{class:connectionStatus}"></i>
@@ -109,28 +119,26 @@
                 -
                 <span data-bind="text: infoGenre"></span>
               </div>
-              <div class="btn-toolbar">
-                <div class="btn-group" data-toggle="buttons-checkbox">
-                  <a href="#" class="btn btn-mini" data-bind="click:showInfo" rel="tooltip" title="情報"><i class="icon-info-sign"></i></a>
-                  <a href="#" class="btn btn-mini" data-bind="click:showConnections" rel="tooltip" title="接続一覧"><i class="icon-th-list"></i></a>
-                  <a href="#" class="btn btn-mini" data-bind="click:showRelayTree" rel="tooltip" title="リレーツリー"><i class="icon-signal"></i></a>
-                </div>
-                <div class="btn-group">
-                  <button class="btn btn-mini" data-bind="click:play" rel="tooltip" title="再生"><i class="icon-play"></i></button>
-                  <button class="btn btn-mini dropdown-toggle" data-toggle="dropdown">
-                    <span class="caret"></span>
-                  </button>
+              <div class="btn-toolbar mt-1">
+                <div class="btn-group btn-group-sm me-1">
+                  <button class="btn btn-secondary" data-bind="click:play" rel="tooltip" title="再生"><i class="bi bi-play-fill"></i></button>
+                  <button class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" style="--bs-btn-padding-x: 0.25rem; --bs-btn-font-size: .75rem;"></button>
                   <ul class="dropdown-menu">
-                    <li><a data-bind="attr: { href: playlistUrl, download: playlistFilename }">プレイリストを開く</a></li>
-                    <li><a data-bind="click:showPlayer">プレイヤーをタブで開く</a></li>
-                    <li><a data-bind="click:popupPlayer">プレイヤーを新しいウィンドウで開く</a></li>
+                    <li><a class="dropdown-item" data-bind="attr: { href: playlistUrl, download: playlistFilename }">プレイリストを開く</a></li>
+                    <li><a class="dropdown-item" data-bind="click:showPlayer">プレイヤーをタブで開く</a></li>
+                    <li><a class="dropdown-item" data-bind="click:popupPlayer">プレイヤーを新しいウィンドウで開く</a></li>
                   </ul>
-                  <a href="#" class="btn btn-mini" data-bind="click:bump" rel="tooltip" title="再接続"><i class="icon-repeat"></i></a>
-                  <a href="#" class="btn btn-mini" data-bind="click:stop" rel="tooltip" title="停止"><i class="icon-stop"></i></a>
+                  <a href="#" class="btn btn-secondary" data-bind="click:bump" rel="tooltip" title="再接続"><i class="bi bi-arrow-repeat"></i></a>
+                  <a href="#" class="btn btn-secondary" data-bind="click:stop" rel="tooltip" title="停止"><i class="bi bi-stop-fill"></i></a>
+                </div>
+                <div class="btn-group btn-group-sm">
+                  <a href="#" class="btn btn-secondary" data-bs-toggle="button" data-bind="click:showInfo" rel="tooltip" title="情報"><i class="bi bi-info-circle"></i></a>
+                  <a href="#" class="btn btn-secondary" data-bs-toggle="button" data-bind="click:showConnections" rel="tooltip" title="接続一覧"><i class="bi bi-list-ul"></i></a>
+                  <a href="#" class="btn btn-secondary" data-bs-toggle="button" data-bind="click:showRelayTree" rel="tooltip" title="リレーツリー"><i class="bi bi-reception-4"></i></a>
                 </div>
               </div>
             </div>
-            <div class="span1">
+            <div class="col-3 col-sm-2 col-md-1">
               <div>
                  <span data-bind="text:totalDirects"></span>/<span data-bind="text:totalRelays"></span>
                 [<span data-bind="text:localDirects"></span>/<span data-bind="text:localRelays"></span>]
@@ -139,7 +147,18 @@
                 <span class="label" data-bind="text:status, css: { 'label-important': isFirewalled(), 'label-not-relayable': !isFirewalled() && isRelayFull() && localRelays()==0, 'label-info': !isFirewalled() && isRelayFull() && localRelays()>0, 'label-success': !isFirewalled() && !isRelayFull() }"></span>
               </div>
             </div>
-            <div class="span6">
+            <div class="d-none d-sm-block col-sm-2 col-md-1 order-md-2">
+              <div>
+                <a data-bind="attr: {href:streamUrl}, text:infoContentType"></a>
+              </div>
+              <div>
+                <span data-bind="text:infoBitrate"></span> kbps
+              </div>
+            </div>
+            <div class="d-none d-sm-block col-sm-2 col-md-1 order-md-2">
+              <span data-bind="text:uptimeReadable"></span>
+            </div>
+            <div class="col order-md-1">
               <div>
                 <span data-bind="text:infoDesc"></span>
                 -
@@ -151,21 +170,10 @@
                 <span data-bind="text:trackName"></span>
               </div>
             </div>
-            <div class="span1">
-              <div>
-                <a data-bind="attr: {href:streamUrl}, text:infoContentType"></a>
-              </div>
-              <div>
-                <span data-bind="text:infoBitrate"></span> kbps
-              </div>
-            </div>
-            <div class="span1">
-              <span data-bind="text:uptimeReadable"></span>
-            </div>
           </div>
-          <div data-bind="attr: { id: 'channelInfo-'+channelId()}" class="row-fluid" style="display:none">
-            <div class="span12">
-              <table class="table table-bordered table-striped table-condensed">
+          <div data-bind="attr: { id: 'channelInfo-'+channelId()}" class="row" style="display:none">
+            <div class="col-12">
+              <table class="table table-bordered table-striped table-sm">
                 <tr><th>チャンネル名</th>       <td data-bind="text: infoName       "></td></tr>
                 <tr><th>ネットワーク</th>       <td data-bind="text: networkType    "></td></tr>
                 <tr><th>ステータス</th>         <td data-bind="text: status         "></td></tr>
@@ -192,121 +200,132 @@
                 <tr data-bind="if: isBroadcasting">
                   <th>掲載中YellowPage</th>
                   <td>
-                    <ul class="unstyled" data-bind="foreach: yellowPages">
-                      <li><a class="btn btn-mini" href="#" data-bind="click:reconnect"><i class="icon-repeat"></i></a>
-                          <span class="label" data-bind="text:status"></span>
+                    <ul class="list-unstyled" data-bind="foreach: yellowPages">
+                      <li><a class="btn btn-sm btn-secondary" href="#" data-bind="click:reconnect"><i class="bi bi-arrow-repeat"></i></a>
+                          <span class="badge bg-secondary" data-bind="text:status"></span>
                           <span data-bind="text:name"></span>
                           (<span data-bind="text:uri"></span>)
                       </li>
                     </ul>
                   </td>
                 </tr>
-                <tr data-bind="if: isBroadcasting"><td colspan="2"><button class="btn" data-bind="click:editChannelInfo">編集</button></td></tr>
+                <tr data-bind="if: isBroadcasting"><td colspan="2"><button class="btn btn-primary" data-bind="click:editChannelInfo">編集</button></td></tr>
               </table>
             </div>
           </div>
-          <div data-bind="attr: { id: 'channelConnections-'+channelId()}" class="row-fluid" style="display:none">
-            <table class="table-striped table-condensed">
-              <tbody data-bind="foreach: connections">
-                <tr>
-                  <td>
-                    <a class="btn btn-mini" href="#" data-bind="click:stop"><i class="icon-remove"></i></a>
-                    <a class="btn btn-mini" href="#" data-bind="click:restart"><i class="icon-repeat"></i></a>
-                  </td>
-                  <td><i data-bind="attr:{class:connectionStatus}"></i></td>
-                  <td><span data-bind="text:protocolName"></span></td>
-                  <td><span data-bind="text:status"></span></td>
-                  <td><span data-bind="text:connectionName"></span></td>
-                  <td><span data-bind="text:connections"></span></td>
-                  <td><span data-bind="text:bitrate"></span>kbps</td>
-                  <td><span data-bind="text:agentName"></span></td>
-                </tr>
-              </tbody>
-            </table>
+          <div data-bind="attr: { id: 'channelConnections-'+channelId()}" class="row mt-1" style="display:none">
+            <div data-bind="foreach: connections">
+              <div class="row">
+                <div class="col-auto">
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-secondary" data-bind="click:stop"><i class="bi bi-x-circle-fill"></i></button>
+                    <button class="btn btn-secondary" data-bind="click:restart"><i class="bi bi-arrow-repeat"></i></button>
+                  </div>
+                </div>
+                <div class="col">
+                  <i data-bind="attr:{class:connectionStatus}"></i>
+                  <span data-bind="text:protocolName"></span>
+                  <span class="d-none d-md-inline" data-bind="text:status"></span>
+                  <span class="d-none d-sm-inline" data-bind="text:connectionName"></span>
+                  <span data-bind="text:connections"></span>
+                  <span data-bind="text:bitrate"></span>kbps
+                  <span class="d-none d-md-inline" data-bind="text:agentName"></span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div data-bind="attr: { id: 'channelRelayTree-'+channelId()}" class="row-fluid" style="display:none">
+          <div data-bind="attr: { id: 'channelRelayTree-'+channelId()}" class="row" style="display:none">
             <ul class="relayTree" data-bind="template: { name:'relayTreeTemplate', foreach:nodes }">
             </ul>
           </div>
         </div>
       </div>
       <div id="footer" data-bind="foreach: playPageUrls">
-        <div class="row-fluid">
-          <span class="pull-right"><a data-bind="attr: {href:url}">視聴専用ページ<span data-bind="text: family"></span></a></span> 
+        <div class="row">
+          <span class="ms-auto"><a data-bind="attr: {href:url}">視聴専用ページ<span data-bind="text: family"></span></a></span> 
         </div>
       </div>
     </div>
 
-    <div id="channelEditDialog" class="modal" style="display: none">
-      <div class="modal-header">
-        <a class="close" data-dismiss="modal">×</a>
-        <h3>チャンネル情報編集</h3>
-      </div>
-      <div class="modal-body">
-        <table style="width: 100%">
-          <tr><th>チャンネル名</th>    <td><input type="text" name="infoName" data-bind="value:infoName"></td></tr>
-          <tr><th>ソースURL</th>       <td data-bind="text: source         "></td></tr>
-          <tr><th>ビットレート</th>    <td data-bind="text: infoBitrate    "></td></tr>
-          <tr><th>ストリームタイプ</th><td data-bind="text: infoContentType"></td></tr>
-          <tr><th>ジャンル</th>        <td><input type="text" name="infoGenre"    data-bind="value:infoGenre  "></td></tr>
-          <tr><th>概要</th>            <td><input type="text" name="infoDesc"     data-bind="value:infoDesc   "></td></tr>
-          <tr><th>配信者コメント</th>  <td><input type="text" name="infoComment"  data-bind="value:infoComment"></td></tr>
-          <tr><th>コンタクトURL</th>   <td><input type="text" name="infoUrl"      data-bind="value:infoUrl    "></td></tr>
-          <tr><th colspan='2'>配信中のトラック情報</th></tr>
-          <tr><th>タイトル</th>        <td><input type="text" name="trackName"    data-bind="value:trackName   "></td></tr>
-          <tr><th>アルバム</th>        <td><input type="text" name="trackAlbum"   data-bind="value:trackAlbum  "></td></tr>
-          <tr><th>アーティスト</th>    <td><input type="text" name="trackCreator" data-bind="value:trackCreator"></td></tr>
-          <tr><th>ジャンル</th>        <td><input type="text" name="trackGenre"   data-bind="value:trackGenre  "></td></tr>
-          <tr><th>URL</th>             <td><input type="text" name="trackUrl"     data-bind="value:trackUrl    "></td></tr>
-        </table>
-      </div>
-      <div class="modal-footer">
-        <a data-dismiss="modal" class="btn">閉じる</a>
-        <a href="#" data-bind="click:onUpdate" class="btn btn-primary">更新</a>
+    <div id="channelEditDialog" class="modal" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable modal-md modal-fullscreen-md-down">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>チャンネル情報編集</h3>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form>
+              <div class="row mb-2"><div class="form-floating"><input type="text" class="form-control" name="infoName" data-bind="value:infoName">           <label>チャンネル名</label>    </div></div>
+              <div class="row mb-2"><div class="form-floating"><input type="text" readonly class="form-control-plaintext" data-bind="value: source">         <label>ソースURL</label>       </div></div>
+              <div class="row mb-2"><div class="form-floating"><input type="text" readonly class="form-control-plaintext" data-bind="value: infoBitrate">    <label>ビットレート</label>    </div></div>
+              <div class="row mb-2"><div class="form-floating"><input type="text" readonly class="form-control-plaintext" data-bind="value: infoContentType"><label>ストリームタイプ</label></div></div>
+              <div class="row mb-2"><div class="form-floating"><input type="text" class="form-control" name="infoGenre"    data-bind="value:infoGenre  ">    <label>ジャンル</label>        </div></div>
+              <div class="row mb-2"><div class="form-floating"><input type="text" class="form-control" name="infoDesc"     data-bind="value:infoDesc   ">    <label>概要</label>            </div></div>
+              <div class="row mb-2"><div class="form-floating"><input type="text" class="form-control" name="infoComment"  data-bind="value:infoComment">    <label>配信者コメント</label>  </div></div>
+              <div class="row mb-2"><div class="form-floating"><input type="text" class="form-control" name="infoUrl"      data-bind="value:infoUrl    ">    <label>コンタクトURL</label>   </div></div>
+              <h4 class="row mb-2">配信中のトラック情報</h4>
+              <div class="row mb-2"><div class="form-floating"><input type="text" class="form-control" name="trackName"    data-bind="value:trackName   ">   <label>タイトル</label>        </div></div>
+              <div class="row mb-2"><div class="form-floating"><input type="text" class="form-control" name="trackAlbum"   data-bind="value:trackAlbum  ">   <label>アルバム</label>        </div></div>
+              <div class="row mb-2"><div class="form-floating"><input type="text" class="form-control" name="trackCreator" data-bind="value:trackCreator">   <label>アーティスト</label>    </div></div>
+              <div class="row mb-2"><div class="form-floating"><input type="text" class="form-control" name="trackGenre"   data-bind="value:trackGenre  ">   <label>ジャンル</label>        </div></div>
+              <div class="row mb-2"><div class="form-floating"><input type="text" class="form-control" name="trackUrl"     data-bind="value:trackUrl    ">   <label>URL</label>             </div></div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">閉じる</button>
+            <button type="button" data-bind="click:onUpdate" class="btn btn-primary">更新</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div id="broadcastDialog" class="modal" style="display: none">
-      <div class="modal-header">
-        <a class="close" data-dismiss="modal">×</a>
-        <h3>配信</h3>
-      </div>
-      <div class="modal-body">
-        <table>
-          <tr><th>履歴</th>              <td>
-            <div class="btn-group">
-              <button class="btn" data-toggle="dropdown" data-bind="text:selectedHistory().name"></button>
-              <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
-              <ul class="dropdown-menu" data-bind="foreach:broadcastHistory">
-                <li><a href="#" data-bind="click:select"><span data-bind="text:name"></span><button class="favorite btn btn-mini btn-link" href="#" data-bind="click:toggleFavorite"><i class="fav-off" data-bind="css:{fav:favorite}"></i></button></a></li>
+    <div id="broadcastDialog" class="modal" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable modal-md modal-fullscreen-md-down">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>配信</h3>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form>
+              <div class="row mb-2"><div class="form-floating"><select class="form-select" data-bind="options:networkTypes, optionsText: 'name', optionsValue: 'value', value:networkType"></select><label>ネットワーク</label> </div></div>
+              <div class="row mb-2"><div class="form-floating"><select class="form-select" data-bind="options:sourceStreams, optionsText: 'desc', value:sourceStream"></select><label>ソース</label></div></div>
+              <div class="row mb-2" data-bind="visible:localChannelVisibility"><div class="form-floating"> <select class="form-select" data-bind="options:localChannels, optionsText: 'name', value:sourceChannel"></select> <label>元チャンネル</label></div></div>
+              <div class="row mb-2" data-bind="visible:!localChannelVisibility()"><div class="form-floating"> <input class="form-control" type="text" name="sourceUrl"       data-bind="value:source          "><label>ストリームURL</label></div></div>
+              <div class="row mb-2"><div class="form-floating"><input class="form-control" type="text" name="infoBitrate"     data-bind="value:infoBitrate     "><label>ビットレート</label></div></div>
+              <div class="row mb-2" data-bind="visible:contentTypeVisibility"><div class="form-floating"> <select class="form-select" data-bind="options:contentTypes, optionsText: 'desc', value:contentType"></select><label>ストリームタイプ</label></div></div>
+              <div class="row mb-2"><div class="form-floating"><select class="form-select" data-bind="options: yellowPages, optionsText: 'name', value:yellowPage"></select><label>掲載YP</label></div></div>
+              <div class="row mb-2"><div class="form-floating"><input class="form-control" type="text" name="infoName"        data-bind="value:infoName        "><label>チャンネル名</label></div></div>
+              <div class="row mb-2"><div class="form-floating"><input class="form-control" type="text" name="infoGenre"       data-bind="value:infoGenre       "><label>ジャンル</label></div></div>
+              <div class="row mb-2"><div class="form-floating"><input class="form-control" type="text" name="infoDesc"        data-bind="value:infoDesc        "><label>概要</label></div></div>
+              <div class="row mb-2"><div class="form-floating"><input class="form-control" type="text" name="infoComment"     data-bind="value:infoComment     "><label>配信者コメント</label></div></div>
+              <div class="row mb-2"><div class="form-floating"><input class="form-control" type="text" name="infoUrl"         data-bind="value:infoUrl         "><label>コンタクトURL</label></div></div>
+              <h4 class="row ms-2 mb-2">配信中のトラック情報</h4>
+              <div class="row mb-2"><div class="form-floating"><input class="form-control" type="text" name="trackName"       data-bind="value:trackName       "><label>タイトル</label></div></div>
+              <div class="row mb-2"><div class="form-floating"><input class="form-control" type="text" name="trackAlbum"      data-bind="value:trackAlbum      "><label>アルバム</label></div></div>
+              <div class="row mb-2"><div class="form-floating"><input class="form-control" type="text" name="trackCreator"    data-bind="value:trackCreator    "><label>アーティスト</label></div></div>
+              <div class="row mb-2"><div class="form-floating"><input class="form-control" type="text" name="trackGenre"      data-bind="value:trackGenre      "><label>ジャンル</label></div></div>
+              <div class="row mb-2"><div class="form-floating"><input class="form-control" type="text" name="trackUrl"        data-bind="value:trackUrl        "><label>URL</label></div></div>
+            </form>
+          </div>
+          <div class="modal-footer justify-content-start">
+            <div class="btn-group dropup me-auto">
+              <button class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">履歴からコピー</button>
+              <ul class="dropdown-menu overflow-y-auto" style="max-height:50vh" data-bind="foreach:broadcastHistory">
+                <li class="dropdown-item hstack">
+                  <button class="btn btn-sm" data-bind="click:select, text:name"></button>
+                  <button class="favorite btn btn-sm" data-bind="click:toggleFavorite"><i class="fav-off" data-bind="css:{fav:favorite}"></i></button>
+                </li>
               </ul>
             </div>
-          </td></tr>
-          <tr><th>ネットワーク</th>      <td><select data-bind="options:networkTypes, optionsText: 'name', optionsValue: 'value', value:networkType"></select></td></tr>
-          <tr><th>ソース</th>            <td><select data-bind="options:sourceStreams, optionsText: 'desc', value:sourceStream"></select></td></tr>
-          <tr data-bind="visible:localChannelVisibility"><th>元チャンネル</th>       <td><select data-bind="options:localChannels, optionsText: 'name', value:sourceChannel"></select></td></tr>
-          <tr data-bind="visible:!localChannelVisibility()"><th>ストリームURL</th>      <td><input type="text" name="sourceUrl"       data-bind="value:source          "></td></tr>
-          <tr><th>ビットレート</th>       <td><input type="text" name="infoBitrate"     data-bind="value:infoBitrate     "></td></tr>
-          <tr data-bind="visible:contentTypeVisibility"><th>ストリームタイプ</th>   <td><select data-bind="options:contentTypes, optionsText: 'desc', value:contentType"></select></td></tr>
-          <tr><th>掲載YP</th>            <td><select data-bind="options: yellowPages, optionsText: 'name', value:yellowPage"></select></td></tr>
-          <tr><th>チャンネル名</th>       <td><input type="text" name="infoName"        data-bind="value:infoName        "></td></tr>
-          <tr><th>ジャンル</th>           <td><input type="text" name="infoGenre"       data-bind="value:infoGenre       "></td></tr>
-          <tr><th>概要</th>               <td><input type="text" name="infoDesc"        data-bind="value:infoDesc        "></td></tr>
-          <tr><th>配信者コメント</th>     <td><input type="text" name="infoComment"     data-bind="value:infoComment     "></td></tr>
-          <tr><th>コンタクトURL</th>      <td><input type="text" name="infoUrl"         data-bind="value:infoUrl         "></td></tr>
-          <tr><th colspan='2'>配信中のトラック情報</th></tr>
-          <tr><th>タイトル</th>           <td><input type="text" name="trackName"       data-bind="value:trackName       "></td></tr>
-          <tr><th>アルバム</th>           <td><input type="text" name="trackAlbum"      data-bind="value:trackAlbum      "></td></tr>
-          <tr><th>アーティスト</th>       <td><input type="text" name="trackCreator"    data-bind="value:trackCreator    "></td></tr>
-          <tr><th>ジャンル</th>           <td><input type="text" name="trackGenre"      data-bind="value:trackGenre      "></td></tr>
-          <tr><th>URL</th>                <td><input type="text" name="trackUrl"        data-bind="value:trackUrl        "></td></tr>
-        </table>
-      </div>
-      <div class="modal-footer">
-        <a data-dismiss="modal" class="btn">閉じる</a>
-        <a href="#" data-bind="click:onBroadcast" class="btn btn-primary">配信開始</a>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">閉じる</button>
+            <button data-bind="click:onBroadcast" class="btn btn-primary">配信開始</button>
+          </div>
+        </div>
       </div>
     </div>
+
   </body>
 </html>
 

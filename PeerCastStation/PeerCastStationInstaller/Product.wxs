@@ -1,78 +1,69 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
-     xmlns:firewall="http://schemas.microsoft.com/wix/FirewallExtension">
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:firewall="http://wixtoolset.org/schemas/v4/wxs/firewall">
   <?if $(sys.BUILDARCH) = x64 ?>
     <?define PlatformProgramFilesFolder = ProgramFiles64Folder ?>
   <?else?>
     <?define PlatformProgramFilesFolder = ProgramFilesFolder ?>
-  <?endif ?>
-  <Product Id="*"
-      Name="PeerCastStation"
-      Language="1041"
-      Version="!(bind.FileVersion.PeerCastStation.exe)"
-      Manufacturer="pecastation.org"
-      UpgradeCode="f0ddea2a-37af-428c-88ab-6fe829f20552">
-    <Package InstallerVersion="400" Compressed="yes" InstallScope="perMachine"/>
+  <?endif?>
+  <Package Name="PeerCastStation" Language="1041" Version="!(bind.FileVersion.PeerCastStation.exe)" Manufacturer="pecastation.org" UpgradeCode="f0ddea2a-37af-428c-88ab-6fe829f20552" InstallerVersion="400">
+    
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
-    <MediaTemplate EmbedCab="yes"/>
+    <MediaTemplate EmbedCab="yes" />
 
     <Feature Id="Complete" Title="PeerCastStation" Level="1">
-      <ComponentRef Id="ProgramMenu"/>
-      <ComponentGroupRef Id="PeerCastStation"/>
-      <ComponentGroupRef Id="ProductComponents"/>
+      <ComponentRef Id="ProgramMenu" />
+      <ComponentGroupRef Id="PeerCastStation" />
+      <ComponentGroupRef Id="ProductComponents" />
     </Feature>
 
     <Property Id="INSTALLED_CU" Secure="yes">
-      <RegistrySearch Id="InstallDir_CU" Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' Type='directory'/>
+      <RegistrySearch Id="InstallDir_CU" Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="InstallDir" Type="directory" />
     </Property>
     <Property Id="INSTALLED_LM" Secure="yes">
-      <RegistrySearch Id="InstallDir_LM" Root='HKLM' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' Type='directory'/>
+      <RegistrySearch Id="InstallDir_LM" Root="HKLM" Key="Software\[Manufacturer]\[ProductName]" Name="InstallDir" Type="directory" />
     </Property>
-    <SetProperty Id='INSTALLFOLDER' Action='SetINSTALLFOLDER_CU' Value='[INSTALLED_CU]' After='FileCost'>NOT Installed AND (NOT INSTALLFOLDER) AND INSTALLED_CU</SetProperty>
-    <SetProperty Id='INSTALLFOLDER' Action='SetINSTALLFOLDER_LM' Value='[INSTALLED_LM]' After='FileCost'>NOT Installed AND (NOT INSTALLFOLDER) AND INSTALLED_LM</SetProperty>
+    <SetProperty Id="INSTALLFOLDER" Action="SetINSTALLFOLDER_CU" Value="[INSTALLED_CU]" After="FileCost" Condition="NOT Installed AND (NOT INSTALLFOLDER) AND INSTALLED_CU" />
+    <SetProperty Id="INSTALLFOLDER" Action="SetINSTALLFOLDER_LM" Value="[INSTALLED_LM]" After="FileCost" Condition="NOT Installed AND (NOT INSTALLFOLDER) AND INSTALLED_LM" />
 
     <Property Id="WixShellExecTarget" Value="[#PeerCastStation.exe]" />
-    <CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
+    <CustomAction Id="LaunchApplication" DllEntry="WixShellExec" Impersonate="yes" BinaryRef="Wix4UtilCA_X86" />
 
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="!(loc.LaunchPeerCastStation)" />
     <UI>
        <UIRef Id="MyUI" />
        <UIRef Id="WixUI_ErrorProgressText" />
-       <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApplication">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
+       <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApplication" Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed" />
     </UI>
-  </Product>
+  </Package>
 
   <Fragment>
-    <Icon Id="PeerCastStation.exe" SourceFile="$(var.PeerCastStation.TargetDir)\PeerCastStation.exe"/>
+    <Icon Id="PeerCastStation.exe" SourceFile="$(var.PeerCastStation.TargetDir)\PeerCastStation.exe" />
     <Property Id="ARPPRODUCTICON" Value="PeerCastStation.exe" />
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
       <Component Id="ProductComponent">
         <File Id="PeerCastStation.exe" Source="$(var.PeerCastStation.TargetDir)\PeerCastStation.exe" KeyPath="yes">
-          <Shortcut Id='PeerCastStation.exe.lnk' Directory='ProgramMenu' Name='PeerCastStation' Icon='PeerCastStation.exe' Advertise='yes'/>
-          <firewall:FirewallException Id="PeerCastStation.exe.firewall" Name="PeerCastStation" Scope="any" IgnoreFailure="yes"/>
+          <Shortcut Id="PeerCastStation.exe.lnk" Directory="ProgramMenu" Name="PeerCastStation" Icon="PeerCastStation.exe" Advertise="yes" />
+          <firewall:FirewallException Id="PeerCastStation.exe.firewall" Name="PeerCastStation" Scope="any" IgnoreFailure="yes" />
         </File>
       </Component>
     </ComponentGroup>
   </Fragment>
 
   <Fragment>
-    <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="$(var.PlatformProgramFilesFolder)">
         <Directory Id="INSTALLFOLDER" Name="PeerCastStation" />
       </Directory>
 
-      <Directory Id="ProgramMenuFolder" Name="Programs">
+      <StandardDirectory Id="ProgramMenuFolder">
         <Directory Id="ProgramMenu" Name="PeerCastStation">
           <Component Id="ProgramMenu" Guid="a1107ec4-3dfb-41a9-9bb8-f9c710f1d6df">
-            <RemoveFolder Id='ProgramMenu' On='uninstall' />
-            <RegistryValue Root='HKMU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
-            <RegistryValue Root='HKMU' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' Type='string' Value='[INSTALLFOLDER]'/>
-            <RegistryValue Root='HKMU' Key='Software\[Manufacturer]\[ProductName]' Name='Version' Type='string' Value='[ProductVersion]'/>
+            <RemoveFolder Id="ProgramMenu" On="uninstall" />
+            <RegistryValue Root="HKMU" Key="Software\[Manufacturer]\[ProductName]" Type="string" Value="" KeyPath="yes" />
+            <RegistryValue Root="HKMU" Key="Software\[Manufacturer]\[ProductName]" Name="InstallDir" Type="string" Value="[INSTALLFOLDER]" />
+            <RegistryValue Root="HKMU" Key="Software\[Manufacturer]\[ProductName]" Name="Version" Type="string" Value="[ProductVersion]" />
           </Component>
         </Directory>
-      </Directory>
-    </Directory>
-  </Fragment>
+      </StandardDirectory>
+    </Fragment>
 </Wix>

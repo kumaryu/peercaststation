@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\PeerCastStation\</SolutionDir>
     <RestorePackages>true</RestorePackages>
@@ -10,12 +10,8 @@
     <Platforms>AnyCPU;x86;x64</Platforms>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'Any CPU'">
-    <TargetFramework>net6.0</TargetFramework>
-    <PeerCastUseGUI>false</PeerCastUseGUI>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">
-    <TargetFramework>net6.0</TargetFramework>
+  <PropertyGroup Condition="'$(Platform)' == 'Any CPU' or '$(Platform)' == 'AnyCPU'">
+    <TargetFramework>net8.0</TargetFramework>
     <PeerCastUseGUI>false</PeerCastUseGUI>
   </PropertyGroup>
   <PropertyGroup>

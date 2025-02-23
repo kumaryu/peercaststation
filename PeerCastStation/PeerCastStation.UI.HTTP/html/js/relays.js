@@ -3,10 +3,10 @@ var ChannelEditDialog = new function() {
   var self = this;
   var dialog = null;
   $(document).ready(function() {
-    dialog = $('#channelEditDialog');
-    dialog.modal({show: false});
-    dialog.on('hide', self.onHide);
-    ko.applyBindings(self, dialog.get(0));
+    var elt = $('#channelEditDialog');
+    dialog = new bootstrap.Modal('#channelEditDialog');
+    elt.on('hidden.bs.modal', self.onHide);
+    ko.applyBindings(self, elt.get(0));
   });
 
   self.channelId       = ko.observable(null);
@@ -41,7 +41,7 @@ var ChannelEditDialog = new function() {
     self.trackAlbum(channel.trackAlbum());
     self.trackUrl(channel.trackUrl());
     self.source(channel.source());
-    dialog.modal('show');
+    dialog.show();
   };
   self.onUpdate = function() {
     var info = {
@@ -64,7 +64,7 @@ var ChannelEditDialog = new function() {
     PeerCastStation.setChannelInfo(self.channelId(), info, track).then(
       function () {
         refresh();
-        dialog.modal('hide');
+        dialog.hide();
       }
     );
   };
@@ -147,9 +147,9 @@ var BroadcastDialog = new function() {
   var self = this;
   var dialog = null;
   $(document).ready(function() {
-    dialog = $('#broadcastDialog');
-    dialog.modal({show: false});
-    dialog.on('hide', self.onHide);
+    var elt = $('#broadcastDialog');
+    dialog = new bootstrap.Modal('#broadcastDialog');
+    elt.on('hidden.bs.modal', self.onHide);
     PeerCastStation.getContentReaders().then(function(result) {
       self.contentTypes.push.apply(self.contentTypes, result);
     });
@@ -160,7 +160,7 @@ var BroadcastDialog = new function() {
         }
       }
     });
-    ko.applyBindings(self, dialog.get(0));
+    ko.applyBindings(self, elt.get(0));
   });
 
   self.networkType  = ko.observable("ipv4");
@@ -275,7 +275,7 @@ var BroadcastDialog = new function() {
   });
 
   self.show = function() {
-    dialog.modal('show');
+    dialog.show();
     PeerCastStation.getYellowPages().then(function(result) {
       self.yellowPages(
         [
@@ -326,12 +326,12 @@ var BroadcastDialog = new function() {
     ).then(
       function (res) {
         refresh();
-        dialog.modal('hide');
+        dialog.hide();
       },
       function(err) {
         alert("エラー: " + err.message);
         refresh();
-        dialog.modal('hide');
+        dialog.hide();
       }
     );
     PeerCastStation.addBroadcastHistory({

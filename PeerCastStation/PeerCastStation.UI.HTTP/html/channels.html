@@ -3,22 +3,25 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="robots" content="noindex,nofollow">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>YPチャンネル一覧 - PeerCastStation </title>
     <link rel="shortcut icon" href="favicon.ico" type="image/vnd.microsoft.icon" />
     <link rel="icon" href="favicon.ico" type="image/vnd.microsoft.icon" />
-    <link type="text/css" href="/Content/bootstrap.min.css" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/cerulean/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha256-9kPW/n5nn53j4WMRYAxe9c1rCY96Oogo/MKSVdKzPmI=" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/knockout@3.5.1/build/output/knockout-latest.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha256-3gQJhtmj7YnV1fmtbVcnAV6eI4ws0Tr48bVZCThtCGQ=" crossorigin="anonymous"></script>
+
     <link type="text/css" href="css/index.css" rel="stylesheet" />
-    <script type="text/javascript" src="/Scripts/es5-shim.min.js"></script>
-    <script type="text/javascript" src="/Scripts/es6-shim.min.js"></script>
-    <script type="text/javascript" src="/Scripts/jquery-1.8.3.min.js"></script>
-    <script type="text/javascript" src="/Scripts/knockout-2.2.0.js"></script>
-    <script type="text/javascript" src="/Scripts/bootstrap.min.js"></script>
     <script type="text/javascript" src="/api/1/peercaststation.js"></script>
     <script type="text/javascript" src="js/common.js"></script>
     <script type="text/javascript" src="js/channels.js"></script>
     <script type="text/javascript">
       $(function() {
-        $('.alert').alert();
+        //$('.alert').alert();
         $(document).on('mouseenter', ".channel-column", function () {
           var $this = $(this);
           if (this.offsetWidth < this.scrollWidth && !$this.attr('title')) {
@@ -39,172 +42,244 @@
       });
     </script>
     <script type="text/html" id='alert'>
-      <div class="alert alert-block fade in" data-bind="css:'alert-'+type, click:clicked">
-        <a class="close" data-dismiss="alert" data-bind="css:'alert-'+type, click:close" href="#">&times;</a>
-        <h4 data-bind="text:title"></h4>
-        <p data-bind="text:message"></p>
+      <div class="toast fade show" data-bind="css:color, click:clicked">
+        <div class="toast-header px-2 py-1">
+          <h5 class="col mb-0" data-bind="text:title"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body py-1" data-bind="text:message"></div>
       </div>
     </script>
   </head>
   <body>
     <div id="header">
-      <div class="alerts" data-bind="template: { name: 'alert', foreach: ui.alerts }"></div>
-      <div class="navbar" style="margin-bottom:0">
-        <div class="navbar-inner">
-          <div class="container-fluid">
-            <a class="brand" href="#">PeerCastStation</a>
-            <ul class="nav">
-              <li><a href="index.html">情報</a></li>
-              <li class="active"><a href="channels.html">Yellow Page</a></li>
-              <li><a href="relays.html">リレー</a></li>
-              <li><a href="settings.html">設定</a></li>
-              <li><a href="logs.html">ログ</a></li>
-              <li><a href="/help/index.html">ヘルプ</a></li>
+      <div class="alerts toast-container" data-bind="template: { name: 'alert', foreach: ui.alerts }"></div>
+      <nav class="navbar navbar-expand-sm bg-body-tertiary shadow-sm">
+        <div class="container-fluid">
+          <a class="navbar-brand h1" href="index.html"><i class="d-none d-sm-inline d-md-none bi bi-info-square"></i><span class="d-inline d-sm-none d-md-inline">PeerCast<wbr/>Station</span></a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+              <li class="nav-item me-lg-2"><a class="nav-link active" href="channels.html"><i class="bi bi-book"></i> Yellow Page</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="relays.html"><i class="bi bi-collection-play"></i> チャンネル</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="settings.html"><i class="bi bi-gear"></i> 設定</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="logs.html"><i class="bi bi-journal-text"></i> ログ</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="/help/index.html"><i class="bi bi-question-square"></i> ヘルプ</a></li>
             </ul>
-            <a class="btn btn-warning pull-right" data-bind="css:{hidden:!ui.newVersionAvailable()}" href="update.html" target="_blank">バージョンアップ</a>
+            <a class="btn btn-warning ms-1" data-bind="css:{'d-none':!ui.newVersionAvailable()}" href="update.html" target="_blank">バージョン<wbr/>アップ</a>
           </div>
         </div>
-      </div>
+      </nav>
     </div>
 
-		<div id="channels">
-      <div class="toolbar" data-spy="affix" data-offset-top="42">
-        <div class="toolbar-inner">
-          <div class="pull-left" style="margin-left:8px">
-            <div class="btn-group">
-              <button class="btn hastooltip" title="再生" data-placement="right" data-container="body" data-bind="click:play, css: { disabled: !channelPlayable() }"><i class="icon-play"></i></button>
-              <button class="btn dropdown-toggle" data-toggle="dropdown" data-bind="css: { disabled: !channelPlayable() }">
-                <span class="caret"></span>
-              </button>
-              <ul class="dropdown-menu">
-                <li><a data-bind="attr: { href: channelPlaylistUrl, download: channelPlaylistFilename }">プレイリストを開く</a></li>
-                <li><a data-bind="click:showPlayer">プレイヤーをタブで開く</a></li>
-                <li><a data-bind="click:popupPlayer">プレイヤーを新しいウィンドウで開く</a></li>
-              </ul>
-            </div>
-            <a class="btn hastooltip" title="お気に入り" data-placement="right" data-container="body" data-bind="css: { disabled: !isChannelSelected() }, click: favChannel" href="#"><i class="icon-heart"></i></a>
-          </div>
-          <div class="pull-left" style="margin-left:8px">
-            <ul class="filter-tabs nav nav-tabs" data-bind="foreach: filters">
-              <li data-bind="css: { active: isSelected }"><a href="#" data-bind="click: select"><span data-bind="text:name"></span> <span class="badge-mini badge-info" data-bind="css:{hidden: macthedCount()==0}, text:macthedCount"></span></a></li>
+    <div class="container-fluid g-0" id="channels">
+      <div class="toolbar row ps-1 pe-1 bg-body-tertiary g-2 mt-0 position-sticky top-0 z-1">
+        <div class="col-auto">
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-secondary hastooltip" title="再生" data-bs-placement="right" data-bs-container="body" data-bind="click:play, css: { disabled: !channelPlayable() }"><i class="bi bi-play"></i></button>
+            <button class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" data-bind="css: { disabled: !channelPlayable() }">
+              <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" data-bind="attr: { href: channelPlaylistUrl, download: channelPlaylistFilename }">プレイリストを開く</a></li>
+              <li><a class="dropdown-item" data-bind="click:showPlayer">プレイヤーをタブで開く</a></li>
+              <li><a class="dropdown-item" data-bind="click:popupPlayer">プレイヤーを新しいウィンドウで開く</a></li>
             </ul>
           </div>
-          <div class="pull-right" style="margin-left:4px">
-            <a id="update_button" class="btn btn-primary" data-loading-text="更新中" href="#" data-bind="click: update"><i class="icon-refresh icon-white"></i> 更新</a>
+          <button class="btn btn-sm btn-secondary hastooltip" title="お気に入り" data-bind="css: { disabled: !isChannelSelected() }, click: favChannel"><i class="bi bi-heart"></i></button>
+        </div>
+        <div class="col">
+          <ul class="filter-tabs nav nav-tabs d-none d-sm-inline-flex" style="--bs-nav-link-padding-y:5px" data-bind="foreach: filters">
+            <li class="nav-item"><a class="nav-link" href="#" data-bind="click: select, css: { active: isSelected }"><span data-bind="text:name"></span> <span class="badge bg-info" data-bind="css:{'d-none': macthedCount()==0}, text:macthedCount"></span></a></li>
+          </ul>
+          <div class="dropdown d-sm-none d-inline">
+            <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"><span data-bind="text: selectedFilter().name"></span> <span class="badge bg-info" data-bind="css:{'d-none': selectedFilter().macthedCount()==0}, text:selectedFilter().macthedCount"></span></button>
+            <ul class="dropdown-menu" data-bind="foreach: filters">
+              <li class="dropdown-item" data-bind="css: { active: isSelected }"><a class="nav-link" href="#" data-bind="click: select"><span data-bind="text:name"></span> <span class="badge bg-info" data-bind="css:{'d-none': macthedCount()==0}, text:macthedCount"></span></a></li>
+            </ul>
           </div>
-          <form class="pull-right">
-            <a class="btn hastooltip" title="設定" data-placement="right" data-container="body" href="#" data-bind="click: editFilters"><i class="icon-cog"></i></a>
-            <input style="width:100px" type="text" class="search-query" placeholder="検索" data-bind="value: searchText, valueUpdate: 'afterkeydown'">
-          </form>
+        </div>
+        <div class="col-auto d-flex">
+          <div class="col-auto">
+            <a class="btn btn-sm btn-secondary hastooltip" title="設定" href="#" data-bind="click: editFilters"><i class="bi bi-gear"></i></a>
+          </div>
+          <div class="col">
+            <input type="text" class="search-query form-control form-control-sm d-none d-md-block" placeholder="検索" data-bind="value: searchText, valueUpdate: 'afterkeydown'">
+            <div class="dropdown d-md-none d-block">
+              <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-search"></i></button>
+              <form class="dropdown-menu">
+                <input type="text" class="search-query form-control form-control-sm" placeholder="検索" data-bind="value: searchText, valueUpdate: 'afterkeydown'">
+              </form>
+            </div>
+          </div>
+          <div class="col-auto">
+            <button id="update_button" class="btn btn-primary btn-sm" data-bs-loading-text="更新中" data-bind="click: update"><i class="bi bi-arrow-repeat"></i><span class="d-none d-sm-inline"> 更新</span></button>
+          </div>
         </div>
       </div>
-      <table class="table table-striped table-hover table-condensed channel-list">
-        <thead class="theader" data-spy="affix" data-offset-top="42">
-          <tr>
-            <th class="column-play dropdown"><a class="hastooltip" title="列の選択" data-placement="right" data-toggle="dropdown" href="#">...</a>
-              <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
-                <li><a href="#" data-bind="click: toggleColumnVisibility('name')"><i data-bind="css:{ 'icon-white': !columnVisibilities.name(), 'icon-ok': columnVisibilities.name() }"></i> チャンネル名</a></li>
-                <li><a href="#" data-bind="click: toggleColumnVisibility('genre')"><i data-bind="css:{ 'icon-white': !columnVisibilities.genre(), 'icon-ok': columnVisibilities.genre() }"></i> ジャンル</a></li>
-                <li><a href="#" data-bind="click: toggleColumnVisibility('desc')"><i data-bind="css:{ 'icon-white': !columnVisibilities.desc(), 'icon-ok': columnVisibilities.desc() }"></i> 詳細</a></li>
-                <li><a href="#" data-bind="click: toggleColumnVisibility('bitrate')"><i data-bind="css:{ 'icon-white': !columnVisibilities.bitrate(), 'icon-ok': columnVisibilities.bitrate() }"></i> kbps</a></li>
-                <li><a href="#" data-bind="click: toggleColumnVisibility('uptime')"><i data-bind="css:{ 'icon-white': !columnVisibilities.uptime(), 'icon-ok': columnVisibilities.uptime() }"></i> 時間</a></li>
-                <li><a href="#" data-bind="click: toggleColumnVisibility('listeners')"><i data-bind="css:{ 'icon-white': !columnVisibilities.listeners(), 'icon-ok': columnVisibilities.listeners() }"></i> L/R数</a></li>
-                <li><a href="#" data-bind="click: toggleColumnVisibility('type')"><i data-bind="css:{ 'icon-white': !columnVisibilities.type(), 'icon-ok': columnVisibilities.type() }"></i> Type</a></li>
-                <li><a href="#" data-bind="click: toggleColumnVisibility('yp')"><i data-bind="css:{ 'icon-white': !columnVisibilities.yp(), 'icon-ok': columnVisibilities.yp() }"></i> YP</a></li>
-              </ul>
-            </th>
-            <th class="column-name" data-bind="css:{hidden: !columnVisibilities.name()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoName'        }, click: setSort('infoName')">チャンネル名</a></th>
-            <th class="column-genre" data-bind="css:{hidden: !columnVisibilities.genre()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoGenre'       }, click: setSort('infoGenre')">ジャンル</a></th>
-            <th class="column-desc" data-bind="css:{hidden: !columnVisibilities.desc()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoDesc'        }, click: setSort('infoDesc')">詳細</a></th>
-            <th class="column-bitrate" data-bind="css:{hidden: !columnVisibilities.bitrate()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoBitrate'     }, click: setSort('infoBitrate')">kbps</a></th>
-            <th class="column-uptime" data-bind="css:{hidden: !columnVisibilities.uptime()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'uptime'          }, click: setSort('uptime')">時間</a></th>
-            <th class="column-listeners" data-bind="css:{hidden: !columnVisibilities.listeners()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'listeners'       }, click: setSort('listeners')">L/R数</a></th>
-            <th class="column-type" data-bind="css:{hidden: !columnVisibilities.type()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoContentType' }, click: setSort('infoContentType')">Type</a></th>
-            <th class="column-yp" data-bind="css:{hidden: !columnVisibilities.yp()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'yellowPage'      }, click: setSort('yellowPage')">YP</a></th>
-          </tr>
-        </thead>
-        <tbody data-bind="foreach: channelList">
-          <tr data-bind="css: { selected: isSelected, info: color()==='blue', success: color()==='green', error: color()==='red', warning: color()==='orange' }, click: onSelected, event: { dblclick: onOpened }, attr: { title: tags }">
-            <td class="column-play"><i data-bind="css: channelIcon"></i></td>
-            <td class="channel-column column-name" data-bind="css:{hidden: !$parent.columnVisibilities.name()}"><span data-bind="if: infoUrl"><a data-bind="attr: { href: infoUrl }, text: infoName" target='_blank'></a></span><span data-bind="ifnot: infoUrl"><span data-bind="text:infoName"></span></span></td>
-            <td class="channel-column column-genre" data-bind="css:{hidden: !$parent.columnVisibilities.genre()}"><span data-bind="text: infoGenre"></span></td>
-            <td class="channel-column column-desc" data-bind="css:{hidden: !$parent.columnVisibilities.desc()}">
+      <section class="channel-list channel-table d-none d-sm-block ">
+        <div class="row g-0 border-bottom">
+          <div class="column-play dropdown"><a class="hastooltip" title="列の選択" data-bs-placement="right" data-bs-toggle="dropdown" href="#">...</a>
+            <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+              <li><a class="dropdown-item" href="#" data-bind="click: toggleColumnVisibility('name')"><i data-bind="css:{ 'bi bi-check': columnVisibilities.name(), 'bi bi-x': !columnVisibilities.name() }"></i> チャンネル名</a></li>
+              <li><a class="dropdown-item" href="#" data-bind="click: toggleColumnVisibility('genre')"><i data-bind="css:{ 'bi bi-check': columnVisibilities.genre(), 'bi bi-x': !columnVisibilities.genre() }"></i> ジャンル</a></li>
+              <li><a class="dropdown-item" href="#" data-bind="click: toggleColumnVisibility('desc')"><i data-bind="css:{ 'bi bi-check': columnVisibilities.desc(), 'bi bi-x': !columnVisibilities.desc() }"></i> 詳細</a></li>
+              <li><a class="dropdown-item" href="#" data-bind="click: toggleColumnVisibility('bitrate')"><i data-bind="css:{ 'bi bi-check': columnVisibilities.bitrate(), 'bi bi-x': !columnVisibilities.bitrate() }"></i> kbps</a></li>
+              <li><a class="dropdown-item" href="#" data-bind="click: toggleColumnVisibility('uptime')"><i data-bind="css:{ 'bi bi-check': columnVisibilities.uptime(), 'bi bi-x': !columnVisibilities.uptime() }"></i> 時間</a></li>
+              <li><a class="dropdown-item" href="#" data-bind="click: toggleColumnVisibility('listeners')"><i data-bind="css:{ 'bi bi-check': columnVisibilities.listeners(), 'bi bi-x': !columnVisibilities.listeners() }"></i> L/R数</a></li>
+              <li><a class="dropdown-item" href="#" data-bind="click: toggleColumnVisibility('type')"><i data-bind="css:{ 'bi bi-check': columnVisibilities.type(), 'bi bi-x': !columnVisibilities.type() }"></i> Type</a></li>
+              <li><a class="dropdown-item" href="#" data-bind="click: toggleColumnVisibility('yp')"><i data-bind="css:{ 'bi bi-check': columnVisibilities.yp(), 'bi bi-x': !columnVisibilities.yp() }"></i> YP</a></li>
+            </ul>
+          </div>
+          <div class="column-name" data-bind="css:{'d-none': !columnVisibilities.name()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoName'        }, click: setSort('infoName')">チャンネル名</a></div>
+          <div class="column-genre" data-bind="css:{'d-none': !columnVisibilities.genre()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoGenre'       }, click: setSort('infoGenre')">ジャンル</a></div>
+          <div class="column-desc" data-bind="css:{'d-none': !columnVisibilities.desc()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoDesc'        }, click: setSort('infoDesc')">詳細</a></div>
+          <div class="column-bitrate" data-bind="css:{'d-none': !columnVisibilities.bitrate()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoBitrate'     }, click: setSort('infoBitrate')">kbps</a></div>
+          <div class="column-uptime" data-bind="css:{'d-none': !columnVisibilities.uptime()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'uptime'          }, click: setSort('uptime')">時間</a></div>
+          <div class="column-listeners" data-bind="css:{'d-none': !columnVisibilities.listeners()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'listeners'       }, click: setSort('listeners')">L/R数</a></div>
+          <div class="column-type" data-bind="css:{'d-none': !columnVisibilities.type()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'infoContentType' }, click: setSort('infoContentType')">Type</a></div>
+          <div class="column-yp" data-bind="css:{'d-none': !columnVisibilities.yp()}"><a href="#" data-bind="css: { sorted: sortColumn().sortBy == 'yellowPage'      }, click: setSort('yellowPage')">YP</a></div>
+        </div>
+        <div class="channel-list-body" data-bind="foreach: channelList">
+          <div class="row g-0 border-bottom" style="padding:2px" data-bind="css: { selected: isSelected, 'bg-info-subtle': color()==='blue', 'bg-success-subtle': color()==='green', 'bg-danger-subtle': color()==='red', 'bg-warning-subtle': color()==='orange' }, click: onSelected, event: { dblclick: onOpened }, attr: { title: tags }">
+            <div class="column-play"><i data-bind="css: channelIcon"></i></div>
+            <div class="channel-column column-name" data-bind="css:{'d-none': !$parent.columnVisibilities.name()}"><span data-bind="if: infoUrl"><a data-bind="attr: { href: infoUrl }, text: infoName" target='_blank'></a></span><span data-bind="ifnot: infoUrl"><span data-bind="text:infoName"></span></span></div>
+            <div class="channel-column column-genre" data-bind="css:{'d-none': !$parent.columnVisibilities.genre()}"><span data-bind="text: infoGenre"></span></div>
+            <div class="channel-column column-desc" data-bind="css:{'d-none': !$parent.columnVisibilities.desc()}">
               <span data-bind="text: infoDesc"></span> - <span data-bind="text: infoComment"></span>
               Playing:<span data-bind="text: trackCreator"></span> <span data-bind="text: trackName"></span>
-            </td>
-            <td class="channel-column column-bitrate" data-bind="css:{hidden: !$parent.columnVisibilities.bitrate()}"><span data-bind="text: infoBitrate"></span></td>
-            <td class="channel-column column-uptime" data-bind="css:{hidden: !$parent.columnVisibilities.uptime()}"><span data-bind="text: uptimeReadable"></span></td>
-            <td class="channel-column column-listeners" data-bind="css:{hidden: !$parent.columnVisibilities.listeners()}"><span data-bind="text: listeners"></span>/<span data-bind="text: relays"></span></td>
-            <td class="channel-column column-type" data-bind="css:{hidden: !$parent.columnVisibilities.type()}"><a data-bind="attr: {href:streamUrl}, text: infoContentType"></a></td>
-            <td class="channel-column column-yp" data-bind="css:{hidden: !$parent.columnVisibilities.yp()}"><span data-bind="text: yellowPage"></span></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div id="tagsEditDialog" class="modal" style="display: none">
-      <div class="modal-header">
-        <a class="close" data-dismiss="modal">×</a>
-        <h3>お気に入り編集</h3>
-      </div>
-      <div class="modal-body">
-        <table style="width: 100%">
-          <tr><th>チャンネル名</th><td><input type="text" name="pattern" data-bind="value:pattern"></td></tr>
-          <tr><th>タグ</th><td><input type="text" name="tags" data-bind="value:tags"></td></tr>
-          <tr><th>色</th><td>
-              <div class="btn-group">
-                <a href="#" class="btn"             data-bind="css: { active: color()==='default' }, click: setColor('default')">無</a>
-                <a href="#" class="btn btn-info"    data-bind="css: { active: color()==='blue' }, click: setColor('blue')">青</a>
-                <a href="#" class="btn btn-success" data-bind="css: { active: color()==='green' }, click: setColor('green')">緑</a>
-                <a href="#" class="btn btn-danger"  data-bind="css: { active: color()==='red' }, click: setColor('red')">赤</a>
-                <a href="#" class="btn btn-warning" data-bind="css: { active: color()==='orange' }, click: setColor('orange')">橙</a>
-              </div>
-          </td></tr>
-        </table>
-      </div>
-      <div class="modal-footer">
-        <a data-dismiss="modal" class="btn">閉じる</a>
-        <a href="#" data-bind="click:onOK" class="btn btn-primary">OK</a>
-      </div>
-    </div>
-
-    <div id="filtersEditDialog" class="modal" style="display: none">
-      <div class="modal-header">
-        <a class="close" data-dismiss="modal">×</a>
-        <h3>フィルタ編集</h3>
-      </div>
-      <div class="modal-body">
-        <div style="display:flex; flex-flow:row">
-          <div style="flex:1">
-            <select style="width:100%" size="7" data-bind="options:filters, optionsText:'name', value:selectedFilter"></select>
-            <a class="btn" data-bind="click:add">追加</a>
-            <a class="btn" data-bind="click:remove,css:{ disabled: !selectedFilter() }">削除</a>
+            </div>
+            <div class="channel-column column-bitrate" data-bind="css:{'d-none': !$parent.columnVisibilities.bitrate()}"><span data-bind="text: infoBitrate"></span></div>
+            <div class="channel-column column-uptime" data-bind="css:{'d-none': !$parent.columnVisibilities.uptime()}"><span data-bind="text: uptimeReadable"></span></div>
+            <div class="channel-column column-listeners" data-bind="css:{'d-none': !$parent.columnVisibilities.listeners()}"><span data-bind="text: listeners"></span>/<span data-bind="text: relays"></span></div>
+            <div class="channel-column column-type" data-bind="css:{'d-none': !$parent.columnVisibilities.type()}"><a data-bind="attr: {href:streamUrl}, text: infoContentType"></a></div>
+            <div class="channel-column column-yp" data-bind="css:{'d-none': !$parent.columnVisibilities.yp()}"><span data-bind="text: yellowPage"></span></div>
           </div>
-          <div style="flex:2">
-            <table style="width:100%">
-              <tr><th>種類</th><td><select data-bind="value:type,options:types,optionsText:'name',optionsValue:'value'"></select></td></tr>
-              <tr><th>フィルタ名</th><td><input type="text" name="name" data-bind="value:name"></td></tr>
-              <tr><th>検索文字列</th><td><input type="text" name="pattern" data-bind="value:pattern"></td></tr>
-              <tr data-bind="css:{hidden: type()!=='favorite'}"><th>タグ</th><td><input type="text" name="tags" data-bind="value:tags"></td></tr>
-              <tr><th>色</th><td>
-                  <div class="btn-group">
-                    <a href="#" class="btn"             data-bind="css: { active: color()==='default' }, click: setColor('default')">無</a>
-                    <a href="#" class="btn btn-info"    data-bind="css: { active: color()==='blue' }, click: setColor('blue')">青</a>
-                    <a href="#" class="btn btn-success" data-bind="css: { active: color()==='green' }, click: setColor('green')">緑</a>
-                    <a href="#" class="btn btn-danger"  data-bind="css: { active: color()==='red' }, click: setColor('red')">赤</a>
-                    <a href="#" class="btn btn-warning" data-bind="css: { active: color()==='orange' }, click: setColor('orange')">橙</a>
+        </div>
+      </section>
+      <section class="channel-list d-sm-none">
+        <div class="channel-list-body" data-bind="foreach: channelList">
+          <div class="row g-1" data-bind="click: onSelected, event: { dblclick: onOpened }, attr: { title: tags }">
+            <div class="col">
+              <div class="card rounded-0" data-bind="css: { selected: isSelected, 'bg-info-subtle': color()==='blue', 'bg-success-subtle': color()==='green', 'bg-danger-subtle': color()==='red', 'bg-warning-subtle': color()==='orange' }">
+                <h5 class="card-header p-2">
+                  <span><i data-bind="css: channelIcon"></i></span>
+                  <span data-bind="if: infoUrl"><a data-bind="attr: { href: infoUrl }, text: infoName" target='_blank'></a></span><span data-bind="ifnot: infoUrl"><span data-bind="text:infoName"></span></span>
+                  <small class="text-body-secondary" data-bind="text: infoGenre">With faded secondary text</small>
+                </h5>
+                <div class="card-body p-2 ps-4">
+                  <div><span data-bind="text: infoDesc"></span> - <span data-bind="text: infoComment"></span></div>
+                  <div>Playing:<span data-bind="text: trackCreator"></span> <span data-bind="text: trackName"></span></div>
+                </div>
+                <div class="card-footer p-1">
+                  <div class="row g-2 small">
+                    <div class="col"></div>
+                    <div class="col-auto"><span data-bind="text: infoBitrate"></span>kbps</div>
+                    <div class="col-auto"><span data-bind="text: uptimeReadable"></span></div>
+                    <div class="col-auto">[<span data-bind="text: listeners"></span>/<span data-bind="text: relays"></span>]</div>
+                    <div class="col-auto"><a data-bind="attr: {href:streamUrl}, text: infoContentType"></a></div>
+                    <div class="col-auto"><span data-bind="text: yellowPage"></span></div>
                   </div>
-              </td></tr>
-            </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="tagsEditDialog" class="modal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-scrollable modal-lg modal-fullscreen-lg-down">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 class="modal-title">お気に入り編集</h3>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="form-floating mb-2">
+              <input type="text" name="pattern" class="form-control" data-bind="value:pattern">
+              <label>チャンネル名</label>
+            </div>
+            <div class="form-floating mb-2">
+              <input type="text" name="tags" class="form-control" data-bind="value:tags">
+              <label>タグ</label>
+            </div>
+            <div class="row mb-2">
+              <div class="col-auto">表示色</div>
+              <div class="col">
+                <div class="btn-group" role="group">
+                  <button type="button" class="btn btn-outline-secondary" data-bind="css: { active: color()==='default' }, click: setColor('default')">無</button>
+                  <button type="button" class="btn btn-outline-info" data-bind="css: { active: color()==='blue' }, click: setColor('blue')">青</button>
+                  <button type="button" class="btn btn-outline-success" data-bind="css: { active: color()==='green' }, click: setColor('green')">緑</button>
+                  <button type="button" class="btn btn-outline-danger" data-bind="css: { active: color()==='red' }, click: setColor('red')">赤</button>
+                  <button type="button" class="btn btn-outline-warning" data-bind="css: { active: color()==='orange' }, click: setColor('orange')">橙</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+            <button type="button" class="btn btn-primary" data-bind="click:onOK">OK</button>
           </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <a data-dismiss="modal" class="btn">閉じる</a>
-        <a href="#" data-bind="click:onOK" class="btn btn-primary">OK</a>
-      </div>
     </div>
 
+    <div id="filtersEditDialog" class="modal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-scrollable modal-lg modal-fullscreen-lg-down">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 class="modal-title">フィルタ編集</h3>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row row-cols-1 row-cols-sm-2 g-2">
+              <div class="col">
+                <select class="form-select" size="7" data-bind="options:filters, optionsText:'name', value:selectedFilter"></select>
+                <button type="button" class="btn btn-secondary mt-2" data-bind="click:add">追加</button>
+                <button type="button" class="btn btn-secondary mt-2" data-bind="click:remove,css:{ disabled: !selectedFilter() }">削除</button>
+              </div>
+              <div class="col">
+                <div class="form-floating mb-2">
+                  <select class="form-select" data-bind="value:type,options:types,optionsText:'name',optionsValue:'value'"></select>
+                  <label>種類</label>
+                </div>
+                <div class="form-floating mb-2">
+                  <input type="text" name="name" class="form-control" data-bind="value:name">
+                  <label>フィルタ名</label>
+                </div>
+                <div class="form-floating mb-2">
+                  <input type="text" name="pattern" class="form-control" data-bind="value:pattern">
+                  <label>検索文字列</label>
+                </div>
+                <div class="form-floating mb-2" data-bind="css:{'d-none': type()!=='favorite'}">
+                  <input type="text" name="tags" class="form-control" data-bind="value:tags">
+                  <label>タグ</label>
+                </div>
+                <div class="row mb-2">
+                  <div class="col-auto">表示色</div>
+                  <div class="col">
+                    <div class="btn-group" role="group">
+                      <button type="button" class="btn btn-outline-secondary" data-bind="css: { active: color()==='default' }, click: setColor('default')">無</button>
+                      <button type="button" class="btn btn-outline-info" data-bind="css: { active: color()==='blue' }, click: setColor('blue')">青</button>
+                      <button type="button" class="btn btn-outline-success" data-bind="css: { active: color()==='green' }, click: setColor('green')">緑</button>
+                      <button type="button" class="btn btn-outline-danger" data-bind="css: { active: color()==='red' }, click: setColor('red')">赤</button>
+                      <button type="button" class="btn btn-outline-warning" data-bind="css: { active: color()==='orange' }, click: setColor('orange')">橙</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+            <button type="button" class="btn btn-primary" data-bind="click:onOK">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
 

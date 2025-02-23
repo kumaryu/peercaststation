@@ -37,6 +37,34 @@ var UIViewModel = new function() {
     });
   };
 
+  self.alert = function (type, title, message, klass)
+  {
+    var color = "";
+    switch (type) {
+    case "info":    color = "text-bg-info"; break;
+    case "warning": color = "text-bg-warning"; break;
+    case "error":   color = "text-bg-danger"; break;
+    }
+    var closed = false;
+    self.alerts.push({
+      title:   title,
+      message: message,
+      type:    type,
+      clicked: function () {
+        if (closed) return;
+        switch (klass) {
+        case "newversion":
+          window.open("update.html", "_blank");
+          break;
+        }
+      },
+      close: function () {
+        closed = true;
+      },
+      color: color
+    });
+  };
+
   self.bind = function (target) {
     ko.applyBindings(self, target);
   }

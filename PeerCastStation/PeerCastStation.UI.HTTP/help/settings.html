@@ -3,67 +3,184 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="robots" content="noindex,nofollow">
-    <title>PeerCastStation - 設定</title>
-    <link type="text/css" href="bootstrap/css/bootstrap.min.css" rel="stylesheet" />
-    <script type="text/javascript" src="jquery/jquery-1.8.3.min.js"></script>
-    <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
-    <style type="text/css">img { max-width:none; }</style>
-    <script type="text/javascript">
-      $(function() {
-        $('.dropdown-toggle').dropdown();
-      });
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>設定</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/cerulean/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha256-9kPW/n5nn53j4WMRYAxe9c1rCY96Oogo/MKSVdKzPmI=" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/knockout@3.5.1/build/output/knockout-latest.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha256-3gQJhtmj7YnV1fmtbVcnAV6eI4ws0Tr48bVZCThtCGQ=" crossorigin="anonymous"></script>
+    <style type="text/css">img { max-width:100%; }</style>
   </head>
-  <body>
-    <div class="navbar">
-      <div class="navbar-inner">
+  <body data-bs-spy="scroll" data-bs-target="#nav-contents" data-bs-smooth-scroll="true">
+    <div id="header" class="mb-2">
+      <nav class="navbar navbar-expand-sm bg-body-tertiary shadow-sm">
         <div class="container-fluid">
-          <a class="brand" href="#">PeerCastStation</a>
-          <ul class="nav">
-            <li><a href="/html/index.html">情報</a></li>
-            <li><a href="/html/channels.html">Yellow Page</a></li>
-            <li><a href="/html/relays.html">リレー</a></li>
-            <li><a href="/html/settings.html">設定</a></li>
-            <li><a href="/html/logs.html">ログ</a></li>
-            <li class="active"><a href="index.html">ヘルプ</a></li>
-          </ul>
+          <a class="navbar-brand" href="/html/index.html"><i class="d-none d-sm-inline d-md-none bi bi-info-square"></i><span class="d-inline d-sm-none d-md-inline">PeerCastStation</span></a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+              <li class="nav-item me-lg-2"><a class="nav-link" href="/html/channels.html"><i class="bi bi-book"></i> Yellow Page</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="/html/relays.html"><i class="bi bi-collection-play"></i> チャンネル</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="/html/settings.html"><i class="bi bi-gear"></i> 設定</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="/html/logs.html"><i class="bi bi-journal-text"></i> ログ</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link active" href="/help/index.html"><i class="bi bi-question-square"></i> ヘルプ</a></li>
+            </ul>
+          </div>
         </div>
+      </nav>
+    </div>
+
+    <div id="nav-offcanvas" class="offcanvas offcanvas-start">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title">目次</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body">
+    <nav class="nav nav-pills flex-column">
+
+      <h5 class="nav-header">PeerCastStationについて</h5>
+
+
+
+      <a class="nav-link " href="/help/">PeerCastStationについて</a>
+
+
+
+      <h5 class="nav-header">使い方</h5>
+
+
+
+      <a class="nav-link " href="/help/usage.html">使い方</a>
+
+
+
+
+      <a class="nav-link " href="/help/ypbrowser.html">YPブラウザの使い方</a>
+
+
+
+      <h5 class="nav-header">設定</h5>
+
+
+
+      <a class="nav-link active" data-bs-toggle="collapse" href="#nav-contents2" role="button" aria-expanded="true">設定</a>
+      <div id="nav-contents2" class="list-group collapse show">
+        <a class='list-group-item list-group-item-action' href='#設定---gui編'>設定 - GUI編</a>
+<a class='list-group-item list-group-item-action' href='#全般'>全般</a>
+<a class='list-group-item list-group-item-action' href='#接続待ち受け'>接続待ち受け</a>
+<a class='list-group-item list-group-item-action' href='#最大上り帯域'>最大上り帯域</a>
+<a class='list-group-item list-group-item-action' href='#チャンネル自動切断'>チャンネル自動切断</a>
+<a class='list-group-item list-group-item-action' href='#イエローページ'>イエローページ</a>
+<a class='list-group-item list-group-item-action' href='#ui設定'>UI設定</a>
+<a class='list-group-item list-group-item-action' href='#接続待ち受け-1'>接続待ち受け</a>
+<a class='list-group-item list-group-item-action' href='#接続数設定'>接続数設定</a>
+<a class='list-group-item list-group-item-action' href='#最大リレー数'>最大リレー数</a>
+<a class='list-group-item list-group-item-action' href='#最大視聴数'>最大視聴数</a>
+<a class='list-group-item list-group-item-action' href='#最大上り帯域-1'>最大上り帯域</a>
+<a class='list-group-item list-group-item-action' href='#チャンネル自動切断-1'>チャンネル自動切断</a>
+<a class='list-group-item list-group-item-action' href='#設定---html-ui編'>設定 - HTML UI編</a>
+      </div>
+
+
+
+      <h5 class="nav-header">配信</h5>
+
+
+
+      <a class="nav-link " href="/help/broadcast.html">配信</a>
+
+
+
+      <h5 class="nav-header">その他</h5>
+
+
+
+      <a class="nav-link " href="/help/misc.html">その他</a>
+
+
+
+    </nav>
       </div>
     </div>
+
     <div class="container-fluid">
-      <div class="row-fluid">
-        <ul class="span12 nav nav-tabs">
-          <li ><a href="index.html"    >PeerCastStationについて</a></li>
-          <li ><a href="usage.html"    >使い方</a></li>
-          <li ><a href="ypbrowser.html">YPブラウザ</a></li>
-          <li ><a href="broadcast.html">配信</a></li>
-          <li  class="active" ><a href="settings.html" >設定</a></li>
-          <li ><a href="misc.html"     >その他</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="container-fluid">
-      <div class="row-fluid">
-        <div class="span3">
-          <ul class="nav nav-tabs nav-stacked">
-            <li><a href='#gui'>設定 - GUI編</a></li>
-<li><a href='#section'>全般</a></li>
-<li><a href='#section-1'>接続待ち受け</a></li>
-<li><a href='#section-2'>最大上り帯域</a></li>
-<li><a href='#section-3'>チャンネル自動切断</a></li>
-<li><a href='#section-4'>イエローページ</a></li>
-<li><a href='#ui'>UI設定</a></li>
-<li><a href='#section-5'>接続待ち受け</a></li>
-<li><a href='#section-6'>接続数設定</a></li>
-<li><a href='#section-7'>最大リレー数</a></li>
-<li><a href='#section-8'>最大視聴数</a></li>
-<li><a href='#section-9'>最大上り帯域</a></li>
-<li><a href='#section-10'>チャンネル自動切断</a></li>
-<li><a href='#html-ui'>設定 - HTML UI編</a></li>
-          </ul>
+      <div class="row">
+        <div class="col-3 d-none d-sm-block">
+          <nav class="nav nav-pills flex-column sticky-top">
+
+            <h5 class="nav-header">PeerCastStationについて</h5>
+
+
+
+            <a class="nav-link " href="/help/">PeerCastStationについて</a>
+
+
+
+            <h5 class="nav-header">使い方</h5>
+
+
+
+            <a class="nav-link " href="/help/usage.html">使い方</a>
+
+
+
+
+            <a class="nav-link " href="/help/ypbrowser.html">YPブラウザの使い方</a>
+
+
+
+            <h5 class="nav-header">設定</h5>
+
+
+
+            <a class="nav-link active" data-bs-toggle="collapse" href="#nav-contents" role="button" aria-expanded="true">設定</a>
+            <div id="nav-contents" class="list-group collapse show">
+              <a class='list-group-item list-group-item-action' href='#設定---gui編'>設定 - GUI編</a>
+<a class='list-group-item list-group-item-action' href='#全般'>全般</a>
+<a class='list-group-item list-group-item-action' href='#接続待ち受け'>接続待ち受け</a>
+<a class='list-group-item list-group-item-action' href='#最大上り帯域'>最大上り帯域</a>
+<a class='list-group-item list-group-item-action' href='#チャンネル自動切断'>チャンネル自動切断</a>
+<a class='list-group-item list-group-item-action' href='#イエローページ'>イエローページ</a>
+<a class='list-group-item list-group-item-action' href='#ui設定'>UI設定</a>
+<a class='list-group-item list-group-item-action' href='#接続待ち受け-1'>接続待ち受け</a>
+<a class='list-group-item list-group-item-action' href='#接続数設定'>接続数設定</a>
+<a class='list-group-item list-group-item-action' href='#最大リレー数'>最大リレー数</a>
+<a class='list-group-item list-group-item-action' href='#最大視聴数'>最大視聴数</a>
+<a class='list-group-item list-group-item-action' href='#最大上り帯域-1'>最大上り帯域</a>
+<a class='list-group-item list-group-item-action' href='#チャンネル自動切断-1'>チャンネル自動切断</a>
+<a class='list-group-item list-group-item-action' href='#設定---html-ui編'>設定 - HTML UI編</a>
+            </div>
+
+
+
+            <h5 class="nav-header">配信</h5>
+
+
+
+            <a class="nav-link " href="/help/broadcast.html">配信</a>
+
+
+
+            <h5 class="nav-header">その他</h5>
+
+
+
+            <a class="nav-link " href="/help/misc.html">その他</a>
+
+
+
+          </nav>
         </div>
-        <div class="span9">
-          <h1 id="gui">設定 - GUI編</h1>
+        <div class="col">
+          <div class="row d-flex d-sm-none sticky-top">
+            <button class="col-auto ms-auto btn btn-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#nav-offcanvas"><i class="bi bi-bookmarks"></i> 目次</button>
+          </div>
+          <h1 id="設定---gui編">設定 - GUI編</h1>
 <p>メニューからツール(T)→設定(S)を選択すると出る設定画面で各種設定を編集することができます。</p>
 
 <p><img src="images/gui_settings.png" alt="設定画面" /></p>
@@ -73,12 +190,12 @@
 
 <p>左のタブでカテゴリを選んで設定してください。</p>
 
-<h2 id="section">全般</h2>
+<h2 id="全般">全般</h2>
 <p>基本的な設定を集めたカテゴリです。</p>
 
 <p><img src="images/gui_settings.png" alt="全般設定画面" /></p>
 
-<h3 id="section-1">接続待ち受け</h3>
+<h3 id="接続待ち受け">接続待ち受け</h3>
 <p>ポート番号には外からのリレー接続やプレイヤーの視聴接続を待ち受けるポート番号を指定します。
 通常は既定値(7144)で問題ありません。</p>
 
@@ -120,7 +237,7 @@
 
 <p>ポート番号を変更して開放確認を行う場合は、ポート番号を変更したあと適用ボタンを押してからポート開放確認ボタンを押してください。一度適用を押さないと変更前のポート番号に対し開放確認を行ってしまいます。</p>
 
-<h3 id="section-2">最大上り帯域</h3>
+<h3 id="最大上り帯域">最大上り帯域</h3>
 <p>リレーに使える帯域をkbps単位で設定します。初期値は0ですが、このままではリレーが一切できないので正しく設定してください。
 また、実際に使える以上の帯域を設定すると、リレーが安定せず下についた人が正しく視聴できなくなるので、無理に大き目に設定するのは絶対にやめてください。</p>
 
@@ -130,7 +247,7 @@
 
 <p>合計の方は0を指定しても制限無しではなく0になります。</p>
 
-<h3 id="section-3">チャンネル自動切断</h3>
+<h3 id="チャンネル自動切断">チャンネル自動切断</h3>
 <p>一度受信したチャンネルは視聴が終わってもチャンネル一覧に残り、正しく接続されていればリレーも行われます。
 自動切断を指定すると視聴やリレーが終わったチャンネルを自動的に切断し、チャンネル一覧から削除します。</p>
 
@@ -161,7 +278,7 @@
 
 <p>自分で配信しているチャンネルに対してはチャンネル自動切断は効きません。</p>
 
-<h2 id="section-4">イエローページ</h2>
+<h2 id="イエローページ">イエローページ</h2>
 <p>自分で配信をする際に掲載するイエローページや、YPブラウザでチャンネルを取得するイエローページを設定します。
 配信開始時には、ここで設定したイエローページの中からどこに掲載するか選択することになります。</p>
 
@@ -183,14 +300,14 @@ yp.example.comやyp.example.com:7146のような形式で入力してくださ�
 
 <p>掲載用URLやチャンネル一覧URLはどちらかだけ設定することも可能です。必要ない欄は空欄にしておいてください。</p>
 
-<h2 id="ui">UI設定</h2>
+<h2 id="ui設定">UI設定</h2>
 <p>画面表示に関する設定をします。</p>
 
 <p><img src="images/gui_uisettings.png" alt="UI設定画面" /></p>
 
 <p>起動時にウィンドウを表示するにチェックが入った状態では、PeerCastStationが起動する度にウィンドウが表示されます。オフにすると次回起動以降はウィンドウが表示されないので、必要な場合はステータスアイコンから表示させてください。</p>
 
-<h2 id="section-5">接続待ち受け</h2>
+<h2 id="接続待ち受け-1">接続待ち受け</h2>
 <p>左下の詳細設定を選択すると出てくる画面です。
 2つ以上の接続待ち受け設定ができます。</p>
 
@@ -211,7 +328,7 @@ yp.example.comやyp.example.com:7146のような形式で入力してくださ�
     </tr>
     <tr>
       <td>LAN内からの接続を許可</td>
-      <td>このポートにLAN内から接続された時に許可する操作を指定します。 リレーはリレー接続の受け付けを許可、視聴は直接視聴接続の受け付けを許可、操作はHTML UIへの接続など操作系への受け付けを許可します。要認証を有効にすると操作と視聴のアクセスがされた場合にIDとパスワードの入力を要求します。通常は要証以外全部ONで大丈夫です。</td>
+      <td>このポートにLAN内から接続された時に許可する操作を指定します。 リレーはリレー接続の受け付けを許可、視聴は直接視聴接続の受け付けを許可、操作はHTML UIへの接続など操作系への受け付けを許可します。要認証を有効にすると操作と視聴のアクセスがされた場合にIDとパスワードの入力を要求します。通常は要認証以外全部ONで大丈夫です。</td>
     </tr>
     <tr>
       <td>WANからの接続を許可</td>
@@ -266,13 +383,13 @@ yp.example.comやyp.example.com:7146のような形式で入力してくださ�
 
 <p>開放確認は外部からのリレー接続ができるかを確認するためのものですので、WANからのリレー接続が許可されていないポートに対してはポート開放確認は行われません。</p>
 
-<h2 id="section-6">接続数設定</h2>
+<h2 id="接続数設定">接続数設定</h2>
 <p>左下の詳細設定を選択すると出てくる画面です。
 最大接続数などの設定を変更することができます。</p>
 
 <p><img src="images/gui_connectionsettings.png" alt="接続数設定画面" /></p>
 
-<h3 id="section-7">最大リレー数</h3>
+<h3 id="最大リレー数">最大リレー数</h3>
 <p>チャンネルのリレー本数制限を指定します。0を設定すると制限無しになります。通常は制限無しで問題ありません。
 基本的には最大上り帯域で制限をかける方を推奨しますが、さらに細かい制御をしたい場合に設定してください。</p>
 
@@ -280,7 +397,7 @@ yp.example.comやyp.example.com:7146のような形式で入力してくださ�
 
 <p>チャンネル毎は一つのチャンネルに対する最大リレー本数を指定します。0を設定すると制限無しになります。特定のチャンネルでリレーが埋まるのを回避したい場合に使用することができますが、たいていはチャンネル毎の最大上り帯域を設定すれば足ります。</p>
 
-<h3 id="section-8">最大視聴数</h3>
+<h3 id="最大視聴数">最大視聴数</h3>
 <p>WANからの視聴用接続の最大本数を指定します。
 LAN内からの視聴接続には制限はかかりません。
 WANからの直接視聴接続を許可している場合に設定してください。</p>
@@ -288,10 +405,10 @@ WANからの直接視聴接続を許可している場合に設定してくだ�
 <p>合計にはPeerCastStation全体で許可する最大直接視聴数を指定します。0を設定すると制限無しになります。通常、視聴はLAN内のみなので制限無しで問題ありません。
 WANからの視聴の場合にのみ有効ですが、その場合は最大上り帯域の制限もかかります。上り帯域を視聴のみで潰すと困る場合などに使用してください。</p>
 
-<p>チャンネル毎に許可する最大直接視聴数を指定します。0を設定すると制限無しになります。
+<p>チャンネル毎にはチャンネル毎に許可する最大直接視聴数を指定します。0を設定すると制限無しになります。
 こちらもWANからの視聴の場合にのみ有効で、最大上り帯域の制限もかかります。通常は制限無しで問題ないと思います。</p>
 
-<h3 id="section-9">最大上り帯域</h3>
+<h3 id="最大上り帯域-1">最大上り帯域</h3>
 <p>リレーに使える帯域をkbps単位で設定します。初期値は0ですが、このままではリレーが一切できないので正しく設定してください。
 また、実際に使える以上の帯域を設定すると、リレーが安定せず下についた人が正しく視聴できなくなるので、無理に大き目に設定するのは絶対にやめてください。</p>
 
@@ -301,7 +418,7 @@ WANからの視聴の場合にのみ有効ですが、その場合は最大上�
 
 <p>合計の方は0を指定しても制限無しではなく0になります。</p>
 
-<h3 id="section-10">チャンネル自動切断</h3>
+<h3 id="チャンネル自動切断-1">チャンネル自動切断</h3>
 <p>一度受信したチャンネルは視聴が終わってもチャンネル一覧に残り、正しく接続されていればリレーも行われます。
 自動切断を指定すると視聴やリレーが終わったチャンネルを自動的に切断し、チャンネル一覧から削除します。</p>
 
@@ -332,7 +449,7 @@ WANからの視聴の場合にのみ有効ですが、その場合は最大上�
 
 <p>自分で配信しているチャンネルに対してはチャンネル自動切断は効きません。</p>
 
-<h2 id="html-ui">設定 - HTML UI編</h2>
+<h2 id="設定---html-ui編">設定 - HTML UI編</h2>
 <p>ナビゲーションの設定リンクから各種設定のページを開きます。</p>
 
 <p><img src="images/htmlui_settings.png" alt="設定ページ" /></p>

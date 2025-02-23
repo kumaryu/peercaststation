@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
-<WixLocalization Culture="ja-JP" xmlns="http://schemas.microsoft.com/wix/2006/localization">
-	<String Id="LaunchPeerCastStation">PeerCastStationを起動する</String>
+﻿<WixLocalization Culture="ja-JP" xmlns="http://wixtoolset.org/schemas/v4/wxl">
+	<String Id="LaunchPeerCastStation" Value="PeerCastStationを起動する" />
 </WixLocalization>

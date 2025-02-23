@@ -3,16 +3,19 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="robots" content="noindex,nofollow">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>設定 - PeerCastStation </title>
     <link rel="shortcut icon" href="favicon.ico" type="image/vnd.microsoft.icon" />
     <link rel="icon" href="favicon.ico" type="image/vnd.microsoft.icon" />
-    <link type="text/css" href="/Content/bootstrap.min.css" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/cerulean/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha256-9kPW/n5nn53j4WMRYAxe9c1rCY96Oogo/MKSVdKzPmI=" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/knockout@3.5.1/build/output/knockout-latest.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha256-3gQJhtmj7YnV1fmtbVcnAV6eI4ws0Tr48bVZCThtCGQ=" crossorigin="anonymous"></script>
+
     <link type="text/css" href="css/index.css" rel="stylesheet" />
-    <script type="text/javascript" src="/Scripts/es5-shim.min.js"></script>
-    <script type="text/javascript" src="/Scripts/es6-shim.min.js"></script>
-    <script type="text/javascript" src="/Scripts/jquery-1.8.3.min.js"></script>
-    <script type="text/javascript" src="/Scripts/knockout-2.2.0.js"></script>
-    <script type="text/javascript" src="/Scripts/bootstrap.min.js"></script>
     <script type="text/javascript" src="/api/1/peercaststation.js"></script>
     <script type="text/javascript" src="js/common.js"></script>
     <script type="text/javascript" src="js/settings.js"></script>
@@ -24,362 +27,492 @@
       });
     </script>
     <script type="text/html" id='alert'>
-      <div class="alert alert-block fade in" data-bind="css:'alert-'+type, click:clicked">
-        <a class="close" data-dismiss="alert" data-bind="css:'alert-'+type, click:close" href="#">&times;</a>
-        <h4 data-bind="text:title"></h4>
-        <p data-bind="text:message"></p>
+      <div class="toast fade show" data-bind="css:color, click:clicked">
+        <div class="toast-header px-2 py-1">
+          <h5 class="col mb-0" data-bind="text:title"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body py-1" data-bind="text:message"></div>
       </div>
     </script>
   </head>
   <body>
-    <div id="header">
-      <div class="alerts" data-bind="template: { name: 'alert', foreach: alerts }"></div>
-      <div class="navbar">
-        <div class="navbar-inner">
-          <div class="container-fluid">
-            <a class="brand" href="#">PeerCastStation</a>
-            <ul class="nav">
-              <li><a href="index.html">情報</a></li>
-              <li><a href="channels.html">Yellow Page</a></li>
-              <li><a href="relays.html">リレー</a></li>
-              <li class="active"><a href="settings.html">設定</a></li>
-              <li><a href="logs.html">ログ</a></li>
-              <li><a href="/help/index.html">ヘルプ</a></li>
+    <div id="header" class="mb-2">
+      <div class="alerts toast-container" data-bind="template: { name: 'alert', foreach: alerts }"></div>
+      <nav class="navbar navbar-expand-sm bg-body-tertiary shadow-sm">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="index.html"><i class="d-none d-sm-inline d-md-none bi bi-info-square"></i><span class="d-inline d-sm-none d-md-inline">PeerCastStation</span></a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+              <li class="nav-item me-lg-2"><a class="nav-link" href="channels.html"><i class="bi bi-book"></i> Yellow Page</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="relays.html"><i class="bi bi-collection-play"></i> チャンネル</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link active" href="settings.html"><i class="bi bi-gear"></i> 設定</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="logs.html"><i class="bi bi-journal-text"></i> ログ</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="/help/index.html"><i class="bi bi-question-square"></i> ヘルプ</a></li>
             </ul>
-            <a class="btn btn-warning pull-right" data-bind="css:{hidden:!newVersionAvailable()}" href="update.html" target="_blank">バージョンアップ</a>
+            <a class="btn btn-warning ms-1" data-bind="css:{'d-none':!newVersionAvailable()}" href="update.html" target="_blank">バージョン<wbr/>アップ</a>
           </div>
         </div>
-      </div>
+      </nav>
     </div>
 
+
     <div class="container-fluid" id="settings">
-      <div class="row-fluid">
-        <div class="span12">
-          <h2>ポート一覧</h2>
-          <table class="table table-condensed">
-            <thead>
-              <tr>
-                <th>選択</th>
-                <th>アドレス</th>
-                <th>ポート</th>
-                <th>開放状態</th>
-                <th>LAN接続許可</th>
-                <th>WAN接続許可</th>
-                <th>認証付URL</th>
-                <th>認証ID・パスワード</th>
-              </tr>
-            </thead>
-            <tfoot>
-              <tr>
-                <td class="form-actions" colspan="8">
-                  <button class="btn" data-bind="click:addListener">追加</button>
-                  <button class="btn" data-bind="click:removeListener">削除</button>
-                  <button class="btn" data-bind="click:resetListenerAuthenticationKey">ID・パスワード再生成</button>
-                </td>
-              </tr>
-              <tr>
-                <td class="form-actions" colspan="8">
-                  <label class="checkbox"><input type="checkbox" data-bind="checked:portMapperEnabled">ポート自動開放(UPnP/PMP-NAT)</label>
-                  <label>外部アドレス:
-                    <span data-bind="if:externalIPAddresses()==''">ルータ未発見</span>
-                    <span data-bind="text:externalIPAddresses"></span>
-                  </label>
-                  <button class="btn" data-bind="click:checkPorts">ポート開放確認</button>
-                  <span data-bind="text:checkPortsStatus"></span>
-                </td>
-              </tr>
-            </tfoot>
-            <tbody data-bind="foreach: listeners">
-              <tr>
-                <td><input type="checkbox" data-bind="checked:checked" /></td>
-                <td><span data-bind="text:addressLabel"></span></td>
-                <td><span data-bind="text:port"></span></td>
-                <td><span data-bind="text:portStatusStr"></span></td>
-                <td>
-                  <label class="checkbox"><input type="checkbox" data-bind="checked:lanPlayAccept">視聴</label>
-                  <label class="checkbox"><input type="checkbox" data-bind="checked:lanRelayAccept">リレー</label>
-                  <label class="checkbox"><input type="checkbox" data-bind="checked:lanInterfaceAccept">操作</label>
-                  <label class="checkbox"><input type="checkbox" data-bind="checked:localAuthRequired">要認証</label>
-                </td>
-                <td>
-                  <label class="checkbox"><input type="checkbox" data-bind="checked:wanPlayAccept">視聴</label>
-                  <label class="checkbox"><input type="checkbox" data-bind="checked:wanRelayAccept">リレー</label>
-                  <label class="checkbox"><input type="checkbox" data-bind="checked:wanInterfaceAccept">操作</label>
-                  <label class="checkbox"><input type="checkbox" data-bind="checked:globalAuthRequired">要認証</label>
-                </td>
-                <td><a data-bind="attr:{href: authUrl}">リンク</a></td>
-                <td>
-                  <div data-bind="if: authenticationInfoVisibility">
-                    ID: <span data-bind="text:authenticationId"></span><br>
-                    パスワード: <span data-bind="text:authenticationPassword"></span>
+      <section class="row mt-2">
+        <h2>ポート設定</h2>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-2 mt-0">
+          <!-- ko foreach: listeners -->
+          <div class="col">
+            <div class="card h-100">
+              <h5 class="card-header d-flex"><span data-bind="text:addressLabel"></span>:<span data-bind="text:port"></span><button class="ms-auto btn btn-sm btn-secondary" data-bind="click:editListener"><i class="bi bi-pencil"></i> 編集</button></h5>
+              <div class="card-body">
+                <div class="row">
+                  <h6 class="col">開放状態:</h6>
+                  <div class="col" data-bind="text:portStatusStr"></div>
+                </div>
+                <div class="row">
+                  <h6 class="col">LAN接続許可:</h6>
+                  <div class="col">
+                    <span data-bind="css:{hidden: !lanPlayAccept()}">視聴</span>
+                    <span data-bind="css:{hidden: !lanRelayAccept()}">リレー</span>
+                    <span data-bind="css:{hidden: !lanInterfaceAccept()}">操作 </span>
+                    <span data-bind="css:{hidden: !localAuthRequired()}">要認証</span>
                   </div>
-                  <div data-bind="ifnot: authenticationInfoVisibility">
-                    <button class="btn" data-bind="click:showAuthenticationInfo">認証情報の表示</button> 
+                </div>
+                <div class="row">
+                  <h6 class="col">WAN接続許可:</h6>
+                  <div class="col">
+                    <span data-bind="css:{hidden: !wanPlayAccept()}">視聴</span>
+                    <span data-bind="css:{hidden: !wanRelayAccept()}">リレー</span>
+                    <span data-bind="css:{hidden: !wanInterfaceAccept()}">操作</span>
+                    <span data-bind="css:{hidden: !globalAuthRequired()}">要認証</span>
                   </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </div>
+                <div class="row" data-bind="css:{hidden: !localAuthRequired() && !globalAuthRequired()}">
+                  <h6 class="col">認証付URL:</h6>
+                  <div class="col"><a data-bind="attr:{href: authUrl}">リンク</a></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /ko -->
+          <div class="col">
+            <div class="card h-100">
+              <div class="card-body d-flex"><button class="mt-auto mb-auto ms-auto me-auto btn btn-secondary" data-bind="click:addListener"><i class="bi bi-plus-square"></i> 追加</button></div>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="row-fluid">
-        <div class="span12">
-          <h2>接続設定</h2>
-          <div class="ui-grid">
-            <div class="ui-row">
-              <div class="ui-header">最大リレー数</div>
-              <div class="ui-label">合計</div>
-              <div class="ui-control"><input class="input-small" type="text" data-bind="value:maxRelays"></div>
-              <div class="ui-label">チャンネル毎(配信時)</div>
-              <div class="ui-control"><input class="input-small" type="text" data-bind="value:maxRelaysPerBroadcastChannel"></div>
-              <div class="ui-label">チャンネル毎(視聴時)</div>
-              <div class="ui-control"><input class="input-small" type="text" data-bind="value:maxRelaysPerRelayChannel"></div>
-            </div>
-            <div class="ui-row">
-              <div class="ui-header">最大視聴数</div>
-              <div class="ui-label">合計</div>
-              <div class="ui-control"><input class="input-small" type="text" data-bind="value:maxDirects"></div>
-              <div class="ui-label">チャンネル毎(配信時)</div>
-              <div class="ui-control"><input class="input-small" type="text" data-bind="value:maxDirectsPerBroadcastChannel"></div>
-              <div class="ui-label">チャンネル毎(視聴時)</div>
-              <div class="ui-control"><input class="input-small" type="text" data-bind="value:maxDirectsPerRelayChannel"></div>
-            </div>
-            <div class="ui-row">
-              <div class="ui-header">最大上り帯域</div>
-              <div class="ui-label">合計(IPv4)</div>
-              <div class="ui-control">
-                <input class="input-small" type="text" data-bind="value:maxUpstreamRate">
-                <span class="help-inline">kbps</span>
-                <button class="btn" data-bind="click:checkBandwidth">自動設定</button>
-              </div>
-              <div class="ui-label">チャンネル毎(配信時)</div>
-              <div class="ui-control">
-                <input class="input-small" type="text" data-bind="value:maxUpstreamRatePerBroadcastChannel">
-                <span class="help-inline">kbps</span>
-              </div>
-              <div class="ui-label">チャンネル毎(視聴時)</div>
-              <div class="ui-control">
-                <input class="input-small" type="text" data-bind="value:maxUpstreamRatePerRelayChannel">
-                <span class="help-inline">kbps</span>
+        <div class="row row-cols-1 row-cols-sm-2 g-2 mt-0">
+          <div class="col">
+            <div class="card h-100">
+              <h5 class="card-header">ポート自動解放</h5>
+              <div class="card-body">
+                <div class="form-check form-switch">
+                  <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked:portMapperEnabled"> ポート自動開放(UPnP/PMP-NAT)</label>
+                </div>
+                <label>外部アドレス:
+                  <span data-bind="if:externalIPAddresses()==''">ルータ未発見</span>
+                  <span data-bind="text:externalIPAddresses"></span>
+                </label>
               </div>
             </div>
-            <div class="ui-row">
-              <div class="ui-header"></div>
-              <div class="ui-label">合計(IPv6)</div>
-              <div class="ui-control">
-                <input class="input-small" type="text" data-bind="value:maxUpstreamRateIPv6">
-                <span class="help-inline">kbps</span>
-                <button class="btn" data-bind="click:checkBandwidthIPv6">自動設定</button>
-              </div>
-            </div>
-            <div class="ui-row">
-              <div class="ui-header"></div>
-              <div class="ui-label"></div>
-              <div class="ui-control">
-                <span data-bind="text:checkBandwidthStatus"></span>
-              </div>
-            </div>
-            <div class="ui-row">
-              <div class="ui-header">自動切断</div>
-              <div class="ui-label">チャンネル状態</div>
-              <div class="ui-control">
-                <select data-bind="value:channelCleanupMode">
-                  <option value="0">自動切断しない</option>
-                  <option value="1">接続していないチャンネル</option>
-                  <option value="2">視聴・リレーをしていないチャンネル</option>
-                  <option value="3">視聴していないチャンネル</option>
-                </select>
-              </div>
-              <div class="ui-label">切断までの時間</div>
-              <div class="ui-control">
-                <input class="input-small" type="text" data-bind="value:inactiveChannelLimit">
-                <span class="help-inline">分</span>
+          </div>
+          <div class="col">
+            <div class="card h-100">
+              <h5 class="card-header">ポート解放確認</h5>
+              <div class="card-body">
+                <button class="btn btn-primary" data-bind="click:checkPorts"><i class="bi bi-telephone-inbound"></i> ポート開放確認</button>
+                <div data-bind="text:checkPortsStatus"></div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="row-fluid">
-        <div class="span12">
-          <h2>YP一覧</h2>
-          <table class="table table-condensed">
-            <thead>
-              <tr>
-                <th>選択</th>
-                <th>YP名</th>
-                <th>プロトコル</th>
-                <th>配信掲載URL</th>
-                <th>チャンネル一覧URL</th>
-              </tr>
-            </thead>
-            <tfoot>
-              <tr>
-                <td class="form-actions" colspan="5">
-                  <button class="btn" data-bind="click:addYellowPage">追加</button>
-                  <button class="btn" data-bind="click:removeYellowPages">削除</button>
-                  <button class="btn" data-bind="click:editYellowPage">編集</button>
-                </td>
-              </tr>
-            </tfoot>
-            <tbody data-bind="foreach: yellowPages">
-              <tr>
-                <td><input type="checkbox" data-bind="checked:checked"></td>
-                <td><span data-bind="text:name"></span></td>
-                <td><span data-bind="text:protocol"></span></td>
-                <td><span data-bind="text:announceUri"></span></td>
-                <td><span data-bind="text:channelsUri"></span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="row-fluid">
-        <div class="span12">
-          <h2>UI設定</h2>
-          <div class="ui-grid">
-            <div class="ui-row">
-              <div class="ui-header">接続先表示</div>
-              <div class="ui-label"></div>
-              <div class="ui-control">
-                <select data-bind="value:remoteNodeName">
-                  <option value="sessionId">セッションID</option>
-                  <option value="uri">アドレス</option>
-                </select>
-              </div>
-            </div>
+      </section>
 
-            <div class="ui-row">
-              <div class="ui-header">視聴方法(プレイリスト)</div>
-              <div class="ui-label">FLV: </div>
-              <div class="ui-control">
-                <select data-bind="value:defaultPlayProtocolFLV">
-                  <option value="Unknown">既定</option>
-                  <option value="HTTP">HTTP</option>
-                  <option value="RTMP">RTMP</option>
-                  <option value="HLS">HTTP Live Streaming</option>
-                </select>
+      <section class="row mt-2">
+        <h2>接続設定</h2>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-2 mt-0">
+          <div class="col">
+            <div class="card h-100">
+              <h5 class="card-header">最大リレー数</h5>
+              <div class="card-body">
+                <div class="form-floating">
+                  <input class="form-control form-control-sm" type="text" data-bind="value:maxRelays">
+                  <label>合計</label>
+                </div>
+                <div class="form-floating">
+                  <input class="form-control form-control-sm" type="text" data-bind="value:maxRelaysPerBroadcastChannel">
+                  <label>チャンネル毎(配信時)</label>
+                </div>
+                <div class="form-floating">
+                  <input class="form-control form-control-sm" type="text" data-bind="value:maxRelaysPerRelayChannel">
+                  <label>チャンネル毎(視聴時)</label>
+                </div>
               </div>
             </div>
+          </div>
+          <div class="col">
+            <div class="card h-100">
+              <h5 class="card-header">最大視聴数</h5>
+              <div class="card-body">
+                <div class="form-floating">
+                  <input class="form-control form-control-sm" type="text" data-bind="value:maxDirects">
+                  <label>合計</label>
+                </div>
+                <div class="form-floating">
+                  <input class="form-control form-control-sm" type="text" data-bind="value:maxDirectsPerBroadcastChannel">
+                  <label>チャンネル毎(配信時)</label>
+                </div>
+                <div class="form-floating">
+                  <input class="form-control form-control-sm" type="text" data-bind="value:maxDirectsPerRelayChannel">
+                  <label>チャンネル毎(視聴時)</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="card h-100">
+              <h5 class="card-header">最大上り帯域</h5>
+              <div class="card-body">
+                <div class="input-group">
+                  <div class="form-floating">
+                    <input class="form-control form-control-sm" type="text" data-bind="value:maxUpstreamRate">
+                    <label>合計(IPv4)</label>
+                  </div>
+                  <span class="input-group-text">kbps</span>
+                  <button class="btn btn-primary btn-sm" data-bind="click:checkBandwidth"><i class="bi bi-speedometer"></i> 計測</button>
+                </div>
 
-            <div class="ui-row">
-              <div class="ui-header">プレイヤー</div>
-              <div class="ui-label">FLV: </div>
-              <div class="ui-control">
-                <select data-bind="value:defaultPlayerFLV">
-                  <option value="Unknown">既定</option>
-                  <option value="playlist">プレイリストのダウンロード</option>
-                  <option value="html">プレイヤーをタブで開く</option>
-                  <option value="html-popup">プレイヤーを新しいウィンドウで開く</option>
-                </select>
-              </div>
-            </div>
+                <div class="input-group">
+                  <div class="form-floating">
+                    <input class="form-control form-control-sm" type="text" data-bind="value:maxUpstreamRateIPv6">
+                    <label>合計(IPv6)</label>
+                  </div>
+                  <span class="input-group-text">kbps</span>
+                  <button class="btn btn-primary btn-sm" data-bind="click:checkBandwidthIPv6"><i class="bi bi-speedometer"></i> 計測</button>
+                </div>
+                <div data-bind="text:checkBandwidthStatus"></div>
 
-            <div class="ui-row">
-              <div class="ui-header">ユーザー設定</div>
-              <div class="ui-label">エクスポート</div>
-              <div class="ui-control">
-                <a class="btn" download="peercaststation-userconfig.json" href="#" data-bind="click:exportUserConfig">エクスポート</a>
+                <div class="input-group">
+                  <div class="form-floating">
+                    <input class="form-control form-control-sm" type="text" data-bind="value:maxUpstreamRatePerBroadcastChannel">
+                    <label>チャンネル毎(配信時)</label>
+                  </div>
+                  <span class="input-group-text">kbps</span>
+                </div>
+                <div class="input-group">
+                  <div class="form-floating">
+                    <input class="form-control form-control-sm" type="text" data-bind="value:maxUpstreamRatePerRelayChannel">
+                    <label>チャンネル毎(視聴時)</label>
+                  </div>
+                  <span class="input-group-text">kbps</span>
+                </div>
               </div>
             </div>
-            <div class="ui-row">
-              <div class="ui-header"></div>
-              <div class="ui-label">インポート</div>
-              <div class="ui-control">
-                <input id="importUserConfigFile" type="file" accept="application/json,.json">
-                <a class="btn" href="#" data-bind="click:importUserConfig">インポート</a>
+          </div>
+          <div class="col">
+            <div class="card h-100">
+              <h5 class="card-header">自動切断</h5>
+              <div class="card-body">
+                <div class="form-floating">
+                  <select class="form-select" data-bind="value:channelCleanupMode">
+                    <option value="0">自動切断しない</option>
+                    <option value="1">接続していないチャンネル</option>
+                    <option value="2">視聴・リレーをしていないチャンネル</option>
+                    <option value="3">視聴していないチャンネル</option>
+                  </select>
+                  <label>チャンネル状態</label>
+                </div>
+                が
+                <div class="input-group">
+                  <div class="form-floating">
+                    <input class="form-control" type="text" data-bind="value:inactiveChannelLimit">
+                    <label>切断までの時間</label>
+                  </div>
+                  <span class="input-group-text">分</span>
+                </div>
+                間継続で自動切断
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      <section class="row mt-2">
+        <h2>YelloPage設定</h2>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-2 mt-0">
+          <!-- ko foreach: yellowPages -->
+          <div class="col">
+            <div class="card h-100">
+              <h5 class="card-header d-flex"><span data-bind="text:name"></span><button class="ms-auto btn btn-sm btn-secondary" data-bind="click:editYellowPage"><i class="bi bi-pencil"></i> 編集</button></h5>
+              <div class="card-body">
+                <div>プロトコル: <span data-bind="text:protocol"></span></div>
+                <div>配信掲載URL: <span data-bind="text:announceUri"></span></div>
+                <div>チャンネル一覧URL: <span data-bind="text:channelsUri"></span></div>
+              </div>
+            </div>
+          </div>
+          <!-- /ko -->
+          <div class="col">
+            <div class="card h-100">
+              <div class="card-body d-flex"><button class="mt-auto mb-auto ms-auto me-auto btn btn-secondary" data-bind="click:addYellowPage"><i class="bi bi-plus-square"></i> 追加</button> </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="row mt-2">
+        <h2>UI設定</h2>
+        <div class="row">
+          <div class="form-floating">
+            <select class="form-select" data-bind="value:remoteNodeName">
+              <option value="sessionId">セッションID</option>
+              <option value="uri">アドレス</option>
+            </select>
+            <label>接続先表示</label>
+          </div>
+          <div class="form-floating">
+              <select class="form-select" data-bind="value:defaultPlayProtocolFLV">
+                <option value="Unknown">既定</option>
+                <option value="HTTP">HTTP</option>
+                <option value="RTMP">RTMP</option>
+                <option value="HLS">HTTP Live Streaming</option>
+            </select>
+            <label>FLV視聴方法(プレイリスト)</label>
+          </div>
+          <div class="form-floating">
+            <select class="form-select" data-bind="value:defaultPlayerFLV">
+              <option value="Unknown">既定</option>
+              <option value="playlist">プレイリストのダウンロード</option>
+              <option value="html">プレイヤーをタブで開く</option>
+              <option value="html-popup">プレイヤーを新しいウィンドウで開く</option>
+            </select>
+            <label>FLVプレイヤー</label>
+          </div>
+          <h5>ユーザー設定のインポート・エクスポート</h5>
+          <div class="row">
+            <input class="hidden" id="importUserConfigFile" type="file" accept="application/json,.json">
+            <div class="col">
+              <button class="btn btn-secondary" data-bind="click:importUserConfig">インポート</button>
+              <button class="btn btn-secondary" download="peercaststation-userconfig.json" data-bind="click:exportUserConfig">エクスポート</button>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
 
     <div id="yellowPageEditDialog" class="modal" style="display: none; max-height: inherit">
-      <div class="modal-header">
-        <a class="close" data-dismiss="modal">×</a>
-        <h3>YP編集</h3>
-      </div>
-      <div class="modal-body">
-        <div class="form-horizontal">
-          <div class="control-group">
-            <label class="control-label">YP名</label>
-            <div class="controls">
-              <input type="text" data-bind="value:name">
+      <div class="modal-dialog modal-dialog-scrollable modal-md modal-fullscreen-md-down">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 class="modal-title">YelloPage設定編集</h3>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="form-floating">
+              <input class="form-control" type="text" data-bind="value:name">
+              <label>YellowPage表示名</label>
+            </div>
+            <div class="form-floating">
+              <select class="form-select" data-bind="options:yellowPageProtocols, optionsText:'name', optionsValue:'protocol', value:protocol"></select>
+              <label>プロトコル</label>
+            </div>
+            <div class="form-floating">
+              <input class="form-control" type="text" data-bind="value:announceUri">
+              <label>配信掲載URL</label>
+            </div>
+            <div class="form-floating">
+              <input class="form-control" type="text" data-bind="value:channelsUri">
+              <label>チャンネル一覧URL</label>
             </div>
           </div>
-          <div class="control-group">
-            <label class="control-label">プロトコル</label>
-            <div class="controls">
-              <select data-bind="options:yellowPageProtocols, optionsText:'name', optionsValue:'protocol', value:protocol"></select>
-            </div>
-          </div>
-          <div class="control-group">
-            <label class="control-label">配信掲載URL</label>
-            <div class="controls">
-              <input type="text" data-bind="value:announceUri">
-            </div>
-          </div>
-          <div class="control-group">
-            <label class="control-label">チャンネル一覧URL</label>
-            <div class="controls">
-              <input type="text" data-bind="value:channelsUri">
-            </div>
+          <div class="modal-footer">
+            <button data-bind="click:onDelete" class="btn btn-danger me-auto">削除</button>
+            <button class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+            <button data-bind="click:onUpdate" class="btn btn-primary">更新</button>
           </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <a data-dismiss="modal" class="btn">閉じる</a>
-        <a href="#" data-bind="click:onUpdate" class="btn btn-primary">保存</a>
       </div>
     </div>
 
-    <div id="listenerEditDialog" class="modal" style="display: none; max-height: inherit">
-      <div class="modal-header">
-        <a class="close" data-dismiss="modal">×</a>
-        <h3>ポート追加</h3>
-      </div>
-      <div class="modal-body">
-        <div class="form-horizontal">
-          <div class="control-group">
-            <label class="control-label">アドレス</label>
-            <div class="controls">
-              <select data-bind="value:address">
-                <option value="0.0.0.0">IPv4 Any</option>
-                <option value="0::0">IPv6 Any</option>
-              </select>
+    <div id="yellowPageAddDialog" class="modal" style="display: none; max-height: inherit">
+      <div class="modal-dialog modal-dialog-scrollable modal-md modal-fullscreen-md-down">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 class="modal-title">YelloPage設定追加</h3>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="form-floating">
+              <input class="form-control" type="text" data-bind="value:name">
+              <label>YellowPage表示名</label>
+            </div>
+            <div class="form-floating">
+              <select class="form-select" data-bind="options:yellowPageProtocols, optionsText:'name', optionsValue:'protocol', value:protocol"></select>
+              <label>プロトコル</label>
+            </div>
+            <div class="form-floating">
+              <input class="form-control" type="text" data-bind="value:announceUri">
+              <label>配信掲載URL</label>
+            </div>
+            <div class="form-floating">
+              <input class="form-control" type="text" data-bind="value:channelsUri">
+              <label>チャンネル一覧URL</label>
             </div>
           </div>
-          <div class="control-group">
-            <label class="control-label">ポート番号</label>
-            <div class="controls">
-              <input type="text" data-bind="value:port">
-            </div>
-          </div>
-          <div class="control-group">
-            <label class="control-label">LAN接続許可</label>
-            <div class="controls">
-              <label class="checkbox inline"><input type="checkbox" data-bind="checked:lanPlayAccept">視聴</label>
-              <label class="checkbox inline"><input type="checkbox" data-bind="checked:lanRelayAccept">リレー</label>
-              <label class="checkbox inline"><input type="checkbox" data-bind="checked:lanInterfaceAccept">操作</label>
-              <label class="checkbox inline"><input type="checkbox" data-bind="checked:localAuthRequired">要認証</label>
-            </div>
-          </div>
-          <div class="control-group">
-            <label class="control-label">WAN接続許可</label>
-            <div class="controls">
-              <label class="checkbox inline"><input type="checkbox" data-bind="checked:wanPlayAccept">視聴</label>
-              <label class="checkbox inline"><input type="checkbox" data-bind="checked:wanRelayAccept">リレー</label>
-              <label class="checkbox inline"><input type="checkbox" data-bind="checked:wanInterfaceAccept">操作</label>
-              <label class="checkbox inline"><input type="checkbox" data-bind="checked:globalAuthRequired">要認証</label>
-            </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+            <button data-bind="click:onUpdate" class="btn btn-primary">追加</button>
           </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <a data-dismiss="modal" class="btn">閉じる</a>
-        <a href="#" data-bind="click:onUpdate" class="btn btn-primary">追加</a>
+    </div>
+
+
+    <div id="listenerEditDialog" class="modal" style="display: none; max-height: inherit">
+      <div class="modal-dialog modal-dialog-scrollable modal-md modal-fullscreen-md-down">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 class="modal-title">ポート設定編集</h3>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <h5>待ち受けアドレス・ポート</h5>
+            <div class="form-floating">
+              <input class="form-control-plaintext" readonly type="text" data-bind="value:address">
+              <label>待ち受けアドレス</label>
+            </div>
+            <div class="form-floating">
+              <input class="form-control-plaintext" readonly type="text" data-bind="value:port">
+              <label>ポート番号</label>
+            </div>
+            <div class="row g-0 mb-2 mt-2 row-cols-2">
+              <div class="col">
+                <h5>LAN接続許可</h5>
+                <div class="col form-check form-switch">
+                  <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked:lanPlayAccept"> 視聴</label>
+                </div>
+                <div class="col form-check form-switch">
+                  <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked:lanRelayAccept"> リレー</label>
+                </div>
+                <div class="col form-check form-switch">
+                  <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked:lanInterfaceAccept"> 操作</label>
+                </div>
+                <div class="col form-check form-switch">
+                  <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked:localAuthRequired"> 要認証</label>
+                </div>
+              </div>
+              <div class="col">
+                <h5>WAN接続許可</h5>
+                <div class="col form-check form-switch">
+                  <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked:wanPlayAccept"> 視聴</label>
+                </div>
+                <div class="col form-check form-switch">
+                  <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked:wanRelayAccept"> リレー</label>
+                </div>
+                <div class="col form-check form-switch">
+                  <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked:wanInterfaceAccept"> 操作</label>
+                </div>
+                <div class="col form-check form-switch">
+                  <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked:globalAuthRequired"> 要認証</label>
+                </div>
+              </div>
+            </div>
+            <div class="row g-0 mb-2 mt-2" data-bind="css:{hidden: !localAuthRequired() && !globalAuthRequired()}">
+              <h5>認証ID・パスワード</h5>
+              <button class="btn btn-outline-warning" data-bs-toggle="collapse" data-bs-target="#listenerAuthenticationInfo" aria-expanded="false">認証情報の表示</button>
+              <div id="listenerAuthenticationInfo" class="collapse">
+                <div class="row row-cols-2">
+                  <div class="col form-floating">
+                    <input class="form-control-plaintext" readonly type="text" data-bind="value:authenticationId">
+                    <label>ID</label>
+                  </div>
+                  <div class="col form-floating">
+                    <input class="form-control-plaintext" readonly type="text" data-bind="value:authenticationPassword">
+                    <label>パスワード</label>
+                  </div>
+                </div>
+                <div class="row">
+                  <h6 class="col-auto">認証付URL:</h6>
+                  <div class="col"><a data-bind="attr:{href: authUrl}, text:authUrl"></a></div>
+                </div>
+                <button class="btn btn-danger" data-bind="click:resetAuthenticationKey">ID・パスワードの再生成</button>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button data-bind="click:onDelete" class="btn btn-danger me-auto">削除</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+            <button data-bind="click:onUpdate" class="btn btn-primary">更新</button>
+          </div>
+        </div>
       </div>
     </div>
+
+    <div id="listenerAddDialog" class="modal" style="display: none; max-height: inherit">
+      <div class="modal-dialog modal-dialog-scrollable modal-md modal-fullscreen-md-down">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 class="modal-title">ポート追加</h3>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <h5>待ち受けアドレス・ポート</h5>
+            <div class="form-floating">
+              <select class="form-select" data-bind="value:address">
+                <option value="0.0.0.0">IPv4 Any</option>
+                <option value="0::0">IPv6 Any</option>
+              </select>
+              <label>待ち受けアドレス</label>
+            </div>
+            <div class="form-floating">
+              <input class="form-control" type="text" data-bind="value:port">
+              <label>ポート番号</label>
+            </div>
+            <div class="row g-0 mb-2 mt-2 row-cols-2">
+              <div class="col">
+                <h5>LAN接続許可</h5>
+                <div class="col form-check form-switch">
+                  <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked:lanPlayAccept"> 視聴</label>
+                </div>
+                <div class="col form-check form-switch">
+                  <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked:lanRelayAccept"> リレー</label>
+                </div>
+                <div class="col form-check form-switch">
+                  <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked:lanInterfaceAccept"> 操作</label>
+                </div>
+                <div class="col form-check form-switch">
+                  <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked:localAuthRequired"> 要認証</label>
+                </div>
+              </div>
+              <div class="col">
+                <h5>WAN接続許可</h5>
+                <div class="col form-check form-switch">
+                  <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked:wanPlayAccept"> 視聴</label>
+                </div>
+                <div class="col form-check form-switch">
+                  <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked:wanRelayAccept"> リレー</label>
+                </div>
+                <div class="col form-check form-switch">
+                  <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked:wanInterfaceAccept"> 操作</label>
+                </div>
+                <div class="col form-check form-switch">
+                  <label class="form-check-label"><input class="form-check-input" type="checkbox" data-bind="checked:globalAuthRequired"> 要認証</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+            <button data-bind="click:onUpdate" class="btn btn-primary">追加</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </body>
 </html>
 

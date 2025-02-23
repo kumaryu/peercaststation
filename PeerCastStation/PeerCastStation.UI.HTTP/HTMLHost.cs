@@ -172,15 +172,15 @@ namespace PeerCastStation.UI.HTTP
         sub.UseAuth(OutputStreamType.Interface | OutputStreamType.Play);
         sub.Run(InvokeIndexTXT);
       });
-      BuildPath(builder, "/html/play.html", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/play.html"));
-      BuildPath(builder, "/html/player.html", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/player.html"));
-      BuildPath(builder, "/html/js", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/js"));
-      BuildPath(builder, "/html/css", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/css"));
-      BuildPath(builder, "/html/images", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "html/images"));
-      BuildPath(builder, "/html", OutputStreamType.Interface, Path.Combine(basepath, "html"));
-      BuildPath(builder, "/help", OutputStreamType.Interface, Path.Combine(basepath, "help"));
-      BuildPath(builder, "/Content", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "Content"));
-      BuildPath(builder, "/Scripts", OutputStreamType.Interface | OutputStreamType.Play, Path.Combine(basepath, "Scripts"));
+      BuildPath(builder, "/html/play.html", OutputStreamType.Interface | OutputStreamType.Play, Path.Join(basepath, "html/play.html"));
+      BuildPath(builder, "/html/player.html", OutputStreamType.Interface | OutputStreamType.Play, Path.Join(basepath, "html/player.html"));
+      BuildPath(builder, "/html/js", OutputStreamType.Interface | OutputStreamType.Play, Path.Join(basepath, "html/js"));
+      BuildPath(builder, "/html/css", OutputStreamType.Interface | OutputStreamType.Play, Path.Join(basepath, "html/css"));
+      BuildPath(builder, "/html/images", OutputStreamType.Interface | OutputStreamType.Play, Path.Join(basepath, "html/images"));
+      BuildPath(builder, "/html", OutputStreamType.Interface, Path.Join(basepath, "html"));
+      BuildPath(builder, "/help", OutputStreamType.Interface, Path.Join(basepath, "help"));
+      BuildPath(builder, "/js", OutputStreamType.Interface | OutputStreamType.Play, Path.Join(basepath, "js"));
+      BuildPath(builder, "/css", OutputStreamType.Interface | OutputStreamType.Play, Path.Join(basepath, "css"));
       builder.MapGET(new Regex("^/?$"), sub => {
         sub.UseAuth(OutputStreamType.Interface);
         sub.Run(InvokeRedirect);
@@ -198,7 +198,7 @@ namespace PeerCastStation.UI.HTTP
     protected override void OnStart(PeerCastApplication app)
     {
       var owin = app.Plugins.OfType<OwinHostPlugin>().FirstOrDefault();
-      appRegistration = owin?.OwinHost?.Register(builder => HTMLHostOwinApp.BuildApp(builder, app.BasePath));
+      appRegistration = owin?.OwinHost?.Register(builder => HTMLHostOwinApp.BuildApp(builder, Path.Join(app.BasePath, "wwwroot")));
     }
 
     protected override void OnStop()

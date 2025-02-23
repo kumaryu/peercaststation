@@ -3,64 +3,176 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="robots" content="noindex,nofollow">
-    <title>PeerCastStation - 使い方</title>
-    <link type="text/css" href="bootstrap/css/bootstrap.min.css" rel="stylesheet" />
-    <script type="text/javascript" src="jquery/jquery-1.8.3.min.js"></script>
-    <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
-    <style type="text/css">img { max-width:none; }</style>
-    <script type="text/javascript">
-      $(function() {
-        $('.dropdown-toggle').dropdown();
-      });
-    </script>
-  </head>
-  <body>
-    <div class="navbar">
-      <div class="navbar-inner">
-        <div class="container-fluid">
-          <a class="brand" href="#">PeerCastStation</a>
-          <ul class="nav">
-            <li><a href="/html/index.html">情報</a></li>
-            <li><a href="/html/channels.html">Yellow Page</a></li>
-            <li><a href="/html/relays.html">リレー</a></li>
-            <li><a href="/html/settings.html">設定</a></li>
-            <li><a href="/html/logs.html">ログ</a></li>
-            <li class="active"><a href="index.html">ヘルプ</a></li>
-          </ul>
-        </div>
-      </div>
-    </div>
-    <div class="container-fluid">
-      <div class="row-fluid">
-        <ul class="span12 nav nav-tabs">
-          <li ><a href="index.html"    >PeerCastStationについて</a></li>
-          <li  class="active" ><a href="usage.html"    >使い方</a></li>
-          <li ><a href="ypbrowser.html">YPブラウザ</a></li>
-          <li ><a href="broadcast.html">配信</a></li>
-          <li ><a href="settings.html" >設定</a></li>
-          <li ><a href="misc.html"     >その他</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="container-fluid">
-      <div class="row-fluid">
-        <div class="span3">
-          <ul class="nav nav-tabs nav-stacked">
-            <li><a href='#section'>使い方</a></li>
-<li><a href='#gui'>使い方 - GUI編</a></li>
-<li><a href='#section-1'>設定</a></li>
-<li><a href='#section-2'>配信を見る</a></li>
-<li><a href='#html-ui'>使い方 - HTML UI編</a></li>
-<li><a href='#section-3'>設定</a></li>
-<li><a href='#section-4'>配信を見る</a></li>
-<li><a href='#section-5'>使い方 - その他</a></li>
-<li><a href='#section-6'>自動リレー管理について</a></li>
-          </ul>
-        </div>
-        <div class="span9">
-          <h1 id="section">使い方</h1>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>使い方</title>
 
-<h2 id="gui">使い方 - GUI編</h2>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/cerulean/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha256-9kPW/n5nn53j4WMRYAxe9c1rCY96Oogo/MKSVdKzPmI=" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/knockout@3.5.1/build/output/knockout-latest.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha256-3gQJhtmj7YnV1fmtbVcnAV6eI4ws0Tr48bVZCThtCGQ=" crossorigin="anonymous"></script>
+    <style type="text/css">img { max-width:100%; }</style>
+  </head>
+  <body data-bs-spy="scroll" data-bs-target="#nav-contents" data-bs-smooth-scroll="true">
+    <div id="header" class="mb-2">
+      <nav class="navbar navbar-expand-sm bg-body-tertiary shadow-sm">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="/html/index.html"><i class="d-none d-sm-inline d-md-none bi bi-info-square"></i><span class="d-inline d-sm-none d-md-inline">PeerCastStation</span></a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+              <li class="nav-item me-lg-2"><a class="nav-link" href="/html/channels.html"><i class="bi bi-book"></i> Yellow Page</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="/html/relays.html"><i class="bi bi-collection-play"></i> チャンネル</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="/html/settings.html"><i class="bi bi-gear"></i> 設定</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="/html/logs.html"><i class="bi bi-journal-text"></i> ログ</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link active" href="/help/index.html"><i class="bi bi-question-square"></i> ヘルプ</a></li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div id="nav-offcanvas" class="offcanvas offcanvas-start">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title">目次</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body">
+    <nav class="nav nav-pills flex-column">
+
+      <h5 class="nav-header">PeerCastStationについて</h5>
+
+
+
+      <a class="nav-link " href="/help/">PeerCastStationについて</a>
+
+
+
+      <h5 class="nav-header">使い方</h5>
+
+
+
+      <a class="nav-link active" data-bs-toggle="collapse" href="#nav-contents2" role="button" aria-expanded="true">使い方</a>
+      <div id="nav-contents2" class="list-group collapse show">
+        <a class='list-group-item list-group-item-action' href='#使い方'>使い方</a>
+<a class='list-group-item list-group-item-action' href='#使い方---gui編'>使い方 - GUI編</a>
+<a class='list-group-item list-group-item-action' href='#設定'>設定</a>
+<a class='list-group-item list-group-item-action' href='#配信を見る'>配信を見る</a>
+<a class='list-group-item list-group-item-action' href='#使い方---html-ui編'>使い方 - HTML UI編</a>
+<a class='list-group-item list-group-item-action' href='#設定-1'>設定</a>
+<a class='list-group-item list-group-item-action' href='#配信を見る-1'>配信を見る</a>
+<a class='list-group-item list-group-item-action' href='#使い方---その他'>使い方 - その他</a>
+<a class='list-group-item list-group-item-action' href='#自動リレー管理について'>自動リレー管理について</a>
+      </div>
+
+
+
+
+      <a class="nav-link " href="/help/ypbrowser.html">YPブラウザの使い方</a>
+
+
+
+      <h5 class="nav-header">設定</h5>
+
+
+
+      <a class="nav-link " href="/help/settings.html">設定</a>
+
+
+
+      <h5 class="nav-header">配信</h5>
+
+
+
+      <a class="nav-link " href="/help/broadcast.html">配信</a>
+
+
+
+      <h5 class="nav-header">その他</h5>
+
+
+
+      <a class="nav-link " href="/help/misc.html">その他</a>
+
+
+
+    </nav>
+      </div>
+    </div>
+
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-3 d-none d-sm-block">
+          <nav class="nav nav-pills flex-column sticky-top">
+
+            <h5 class="nav-header">PeerCastStationについて</h5>
+
+
+
+            <a class="nav-link " href="/help/">PeerCastStationについて</a>
+
+
+
+            <h5 class="nav-header">使い方</h5>
+
+
+
+            <a class="nav-link active" data-bs-toggle="collapse" href="#nav-contents" role="button" aria-expanded="true">使い方</a>
+            <div id="nav-contents" class="list-group collapse show">
+              <a class='list-group-item list-group-item-action' href='#使い方'>使い方</a>
+<a class='list-group-item list-group-item-action' href='#使い方---gui編'>使い方 - GUI編</a>
+<a class='list-group-item list-group-item-action' href='#設定'>設定</a>
+<a class='list-group-item list-group-item-action' href='#配信を見る'>配信を見る</a>
+<a class='list-group-item list-group-item-action' href='#使い方---html-ui編'>使い方 - HTML UI編</a>
+<a class='list-group-item list-group-item-action' href='#設定-1'>設定</a>
+<a class='list-group-item list-group-item-action' href='#配信を見る-1'>配信を見る</a>
+<a class='list-group-item list-group-item-action' href='#使い方---その他'>使い方 - その他</a>
+<a class='list-group-item list-group-item-action' href='#自動リレー管理について'>自動リレー管理について</a>
+            </div>
+
+
+
+
+            <a class="nav-link " href="/help/ypbrowser.html">YPブラウザの使い方</a>
+
+
+
+            <h5 class="nav-header">設定</h5>
+
+
+
+            <a class="nav-link " href="/help/settings.html">設定</a>
+
+
+
+            <h5 class="nav-header">配信</h5>
+
+
+
+            <a class="nav-link " href="/help/broadcast.html">配信</a>
+
+
+
+            <h5 class="nav-header">その他</h5>
+
+
+
+            <a class="nav-link " href="/help/misc.html">その他</a>
+
+
+
+          </nav>
+        </div>
+        <div class="col">
+          <div class="row d-flex d-sm-none sticky-top">
+            <button class="col-auto ms-auto btn btn-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#nav-offcanvas"><i class="bi bi-bookmarks"></i> 目次</button>
+          </div>
+          <h1 id="使い方">使い方</h1>
+
+<h2 id="使い方---gui編">使い方 - GUI編</h2>
 <p>起動すると次のような画面になります。</p>
 
 <p><img src="images/gui_main.png" alt="起動イメージ" /></p>
@@ -71,7 +183,7 @@
 
 <p><img src="images/gui_statusmenu.png" alt="ステータスアイコン・メニュー" /></p>
 
-<h3 id="section-1">設定</h3>
+<h3 id="設定">設定</h3>
 <p>まずはメニューからツール(T)→設定(S)…メニューを選択して設定画面を出します。</p>
 
 <p><img src="images/gui_settings.png" alt="設定画面" /></p>
@@ -84,7 +196,7 @@
 <p>ポート番号を変更した場合は開放確認ボタンを押す前に右下の適用ボタンを押しておいてください。</p>
 
 <p>あとは最大上り帯域を設定しましょう。
-最大上り帯域の合計は自動設定ボタンを押すことでできます。しばらく時間がかかるので(長くて30秒程度)押したら気長に待ってください。
+最大上り帯域の合計は自動設定ボタンを押すことで設定できます。しばらく時間がかかるので(長くて30秒程度)押したら気長に待ってください。
 計測した上り帯域数の80%の値が自動的に設定されます。</p>
 
 <p>最大上り帯域のチャンネル毎の方は制限無しのままで問題ありません。一つのチャンネルで帯域が埋まると困るなど判断できる場合に適度に設定してください。</p>
@@ -93,7 +205,7 @@
 
 <p>配信を見るだけならここまで設定すれば十分です。OKボタンを押して閉じてください。</p>
 
-<h3 id="section-2">配信を見る</h3>
+<h3 id="配信を見る">配信を見る</h3>
 <p>新しく配信を見るのは、WebブラウザでYPのページからPlayリンクで再生するか、各種YPブラウザで再生を開始してください。
 PeerCastStation内蔵のYPブラウザを使用するには<a href="ypbrowser.html">YPブラウザのヘルプ</a>を見てください。</p>
 
@@ -207,9 +319,9 @@ PeerCastStation内蔵のYPブラウザを使用するには<a href="ypbrowser.ht
 
 <p><img src="images/gui_channelinfo.png" alt="チャンネル情報" /></p>
 
-<p>視聴しているチャンネルは見るだけですが、自分で配信しているチャンネル情報は編集ができます。編集した場合は一番下の更新ボタンを押してください。</p>
+<p>視聴しているチャンネルは見るだけですが、自分で配信しているチャンネルの情報は編集ができます。編集した場合は一番下の更新ボタンを押してください。</p>
 
-<h2 id="html-ui">使い方 - HTML UI編</h2>
+<h2 id="使い方---html-ui編">使い方 - HTML UI編</h2>
 <p>起動後 <a href="http://localhost:7144/html/index.html">http://localhost:7144/html/index.html</a> にアクセスするとHTML UIが表示されます。</p>
 
 <p><img src="images/gui_statusmenu.png" alt="ステータスアイコン・メニュー" /></p>
@@ -220,7 +332,7 @@ PeerCastStation内蔵のYPブラウザを使用するには<a href="ypbrowser.ht
 
 <p>アクセスできない場合は7144ポートが開けない可能性があります。他に7144ポートを使用しているアプリケーションがあれば終了させてからPeerCastStation.exeを再起動してください。</p>
 
-<h3 id="section-3">設定</h3>
+<h3 id="設定-1">設定</h3>
 <p>一番上のナビゲーションリンクから設定をクリックしましょう。</p>
 
 <p><img src="images/htmlui_settings.png" alt="設定ページ" /></p>
@@ -235,7 +347,7 @@ PeerCastStation内蔵のYPブラウザを使用するには<a href="ypbrowser.ht
 「未開放です」になった場合は使っているマシンに向けてポートが開放されていません。設定の方法はルータの説明を見てください。</p>
 
 <p>あとは最大上り帯域を設定しましょう。
-最大上り帯域の合計は自動設定ボタンを押すことでできます。しばらく時間がかかるので(長くて30秒程度)押したら気長に待ってください。
+最大上り帯域の合計は自動設定ボタンを押すことで設定できます。しばらく時間がかかるので(長くて30秒程度)押したら気長に待ってください。
 計測した上り帯域数の80%の値が自動的に設定されます。</p>
 
 <p>最大上り帯域のチャンネル毎の方は0(=制限無し)のままで問題ありません。一つのチャンネルで帯域が埋まると困るなど判断できる場合に適度に設定してください。他にも最大リレー数・最大視聴数がありますが、これらも通常は0(=制限無し)で問題ありません。</p>
@@ -244,7 +356,7 @@ PeerCastStation内蔵のYPブラウザを使用するには<a href="ypbrowser.ht
 
 <p>配信を見るだけならここまで設定すれば十分です。設定はすぐ反映されています。</p>
 
-<h3 id="section-4">配信を見る</h3>
+<h3 id="配信を見る-1">配信を見る</h3>
 <p>新しく配信を見るのはPeerCastStation単体ではできません。
 WebブラウザでYPのページからPlayリンクで再生するか、各種YPブラウザで再生を開始してください。
 PeerCastStation内蔵のYPブラウザを使用するには<a href="ypbrowser.html">YPブラウザのヘルプ</a>を見てください。</p>
@@ -290,15 +402,15 @@ PeerCastStation内蔵のYPブラウザを使用するには<a href="ypbrowser.ht
 
 <p>また、内容の列にあるWMVなどのストリームタイプの部分にはストリームURLへのリンクが張られます。</p>
 
-<p>チャンネル情報のボタンを押すと選択しているチャンネル情報の確認ができます。</p>
+<p>チャンネル情報のボタンを押すと選択しているチャンネルの情報の確認ができます。</p>
 
 <p><img src="images/htmlui_channelinfo.png" alt="チャンネル情報" /></p>
 
-<p>視聴しているチャンネルは見るだけですが、自分で配信しているチャンネル情報は編集ボタンで変更することができます。</p>
+<p>視聴しているチャンネルは見るだけですが、自分で配信しているチャンネルの情報は編集ボタンで変更することができます。</p>
 
-<h2 id="section-5">使い方 - その他</h2>
+<h2 id="使い方---その他">使い方 - その他</h2>
 
-<h3 id="section-6">自動リレー管理について</h3>
+<h3 id="自動リレー管理について">自動リレー管理について</h3>
 <p>1.4.0から自動リレー管理機能がつきました。自動で行ううえに設定する物もないので、使ってる上で気にすることもないのですが、気になる人のために解説しておきます。</p>
 
 <p>自動リレー管理は以下の条件が全て満たされた時に行われます</p>
