@@ -165,28 +165,23 @@ namespace PeerCastStation.UI.PortMapper
 
     public async Task<ActionResult> SendActionAsync(string action, Dictionary<string, string> parameters, CancellationToken cancel_token)
     {
-      try {
-        var request = CreateActionRequest(action, parameters);
-        var writer = new StringWriter();
-        request.Save(writer);
+      var request = CreateActionRequest(action, parameters);
+      var writer = new StringWriter();
+      request.Save(writer);
 
-        logger.Debug("Sending UPnP Action {0} to {1}", this.ServiceDescription.ServiceType+"#"+action, this.ServiceDescription.ControlUrl);
-        try {
-          var content = new StringContent(writer.ToString(), System.Text.Encoding.UTF8, "text/xml");
-          content.Headers.Add("SOAPACTION", "\"" + this.ServiceDescription.ServiceType+"#"+action + "\"");
-          using (var client=new HttpClient()) {
-            return await ParseActionResponse(
-                action,
-                await client.PostAsync(this.ServiceDescription.ControlUrl, content, cancel_token).ConfigureAwait(false)).ConfigureAwait(false);
-          }
-        }
-        catch (Exception e) {
-          logger.Debug("Send UPnP Action {0} failed:{1}", this.ServiceDescription.ServiceType+"#"+action, e);
-          return new ActionResult(action, e);
+      logger.Debug("Sending UPnP Action {0} to {1}", this.ServiceDescription.ServiceType+"#"+action, this.ServiceDescription.ControlUrl);
+      try {
+        var content = new StringContent(writer.ToString(), System.Text.Encoding.UTF8, "text/xml");
+        content.Headers.Add("SOAPACTION", "\"" + this.ServiceDescription.ServiceType+"#"+action + "\"");
+        using (var client=new HttpClient()) {
+          return await ParseActionResponse(
+              action,
+              await client.PostAsync(this.ServiceDescription.ControlUrl, content, cancel_token).ConfigureAwait(false)).ConfigureAwait(false);
         }
       }
-      catch (OperationCanceledException e) {
-        throw e;
+      catch (Exception e) {
+        logger.Debug("Send UPnP Action {0} failed:{1}", this.ServiceDescription.ServiceType+"#"+action, e);
+        return new ActionResult(action, e);
       }
     }
 

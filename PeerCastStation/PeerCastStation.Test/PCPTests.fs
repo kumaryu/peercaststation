@@ -63,7 +63,7 @@ module HTTPHandler =
         client
 
     let listen (endpoint:IPEndPoint) =
-        let server = TcpListener(endpoint)
+        let server = new TcpListener(endpoint)
         server.Start()
         async {
             let! client = server.AcceptTcpClientAsync() |> Async.AwaitTask
