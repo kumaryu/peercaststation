@@ -215,12 +215,12 @@ var YPChannelViewModel = function(owner, initial_value, new_channel) {
     return self.listeners()<-1;
   });
   self.channelIcon = ko.computed(function () {
-    if (self.isFavorite())    return 'icon-heart';
-    if (self.isPlaying())     return 'icon-bullhorn';
-    if (self.isInfoChannel()) return 'icon-info-sign';
-    if (!self.isPlayable())   return 'icon-ban-circle';
-    if (self.isNewChannel())  return 'icon-flag';
-    return 'icon-white';
+    if (self.isFavorite())    return 'bi-heart-fill';
+    if (self.isPlaying())     return 'bi-megaphone-fill';
+    if (self.isInfoChannel()) return 'bi-info-circle-fill';
+    if (!self.isPlayable())   return 'bi-x-circle-fill';
+    if (self.isNewChannel())  return 'bi-flag-fill';
+    return '';
   });
   self.attrRel = ko.computed(function() {
     return (self.tags()!=null && self.tags()!=='') ? 'tooltip' : '';

@@ -75,6 +75,10 @@ var UpdateViewModel = new function() {
     }
   };
 
+  self.close = function () {
+    window.close();
+  }
+
   self.bind = function (target) {
     ko.applyBindings(self, target);
     self.refresh();

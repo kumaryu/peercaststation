@@ -3,70 +3,179 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="robots" content="noindex,nofollow">
-    <title>YPブラウザの使い方 - PeerCastStation</title>
-    <link type="text/css" href="bootstrap/css/bootstrap.min.css" rel="stylesheet" />
-    <script type="text/javascript" src="jquery/jquery-1.8.3.min.js"></script>
-    <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
-    <style type="text/css">img { max-width:none; }</style>
-    <script type="text/javascript">
-      $(function() {
-        $('.dropdown-toggle').dropdown();
-      });
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>YPブラウザの使い方</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/cerulean/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha256-9kPW/n5nn53j4WMRYAxe9c1rCY96Oogo/MKSVdKzPmI=" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/knockout@3.5.1/build/output/knockout-latest.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha256-3gQJhtmj7YnV1fmtbVcnAV6eI4ws0Tr48bVZCThtCGQ=" crossorigin="anonymous"></script>
+    <style type="text/css">img { max-width:100%; }</style>
   </head>
-  <body>
-    <div class="navbar">
-      <div class="navbar-inner">
+  <body data-bs-spy="scroll" data-bs-target="#nav-contents" data-bs-smooth-scroll="true">
+    <div id="header" class="mb-2">
+      <nav class="navbar navbar-expand-sm bg-body-tertiary shadow-sm">
         <div class="container-fluid">
-          <a class="brand" href="#">PeerCastStation</a>
-          <ul class="nav">
-            <li><a href="/html/index.html">情報</a></li>
-            <li><a href="/html/channels.html">Yellow Page</a></li>
-            <li><a href="/html/relays.html">リレー</a></li>
-            <li><a href="/html/settings.html">設定</a></li>
-            <li><a href="/html/logs.html">ログ</a></li>
-            <li class="active"><a href="index.html">ヘルプ</a></li>
-          </ul>
+          <a class="navbar-brand" href="/html/index.html"><i class="d-none d-sm-inline d-md-none bi bi-info-square"></i><span class="d-inline d-sm-none d-md-inline">PeerCastStation</span></a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+              <li class="nav-item me-lg-2"><a class="nav-link" href="/html/channels.html"><i class="bi bi-book"></i> Yellow Page</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="/html/relays.html"><i class="bi bi-collection-play"></i> チャンネル</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="/html/settings.html"><i class="bi bi-gear"></i> 設定</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link" href="/html/logs.html"><i class="bi bi-journal-text"></i> ログ</a></li>
+              <li class="nav-item me-lg-2"><a class="nav-link active" href="/help/index.html"><i class="bi bi-question-square"></i> ヘルプ</a></li>
+            </ul>
+          </div>
         </div>
+      </nav>
+    </div>
+
+    <div id="nav-offcanvas" class="offcanvas offcanvas-start">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title">目次</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body">
+    <nav class="nav nav-pills flex-column">
+
+      <h5 class="nav-header">PeerCastStationについて</h5>
+
+
+
+      <a class="nav-link " href="/help/">PeerCastStationについて</a>
+
+
+
+      <h5 class="nav-header">使い方</h5>
+
+
+
+      <a class="nav-link " href="/help/usage.html">使い方</a>
+
+
+
+
+      <a class="nav-link active" data-bs-toggle="collapse" href="#nav-contents2" role="button" aria-expanded="true">YPブラウザの使い方</a>
+      <div id="nav-contents2" class="list-group collapse show">
+        <a class='list-group-item list-group-item-action' href='#yellowpageブラウザの使い方'>YellowPageブラウザの使い方</a>
+<a class='list-group-item list-group-item-action' href='#yellowpageの登録'>YellowPageの登録</a>
+<a class='list-group-item list-group-item-action' href='#yellowpageブラウザを開く'>YellowPageブラウザを開く</a>
+<a class='list-group-item list-group-item-action' href='#視聴する'>視聴する</a>
+<a class='list-group-item list-group-item-action' href='#チャンネルを探す'>チャンネルを探す</a>
+<a class='list-group-item list-group-item-action' href='#表示の設定'>表示の設定</a>
+      </div>
+
+
+
+      <h5 class="nav-header">設定</h5>
+
+
+
+      <a class="nav-link " href="/help/settings.html">設定</a>
+
+
+
+      <h5 class="nav-header">配信</h5>
+
+
+
+      <a class="nav-link " href="/help/broadcast.html">配信</a>
+
+
+
+      <h5 class="nav-header">その他</h5>
+
+
+
+      <a class="nav-link " href="/help/misc.html">その他</a>
+
+
+
+    </nav>
       </div>
     </div>
+
     <div class="container-fluid">
-      <div class="row-fluid">
-        <ul class="span12 nav nav-tabs">
-          <li ><a href="index.html"    >PeerCastStationについて</a></li>
-          <li ><a href="usage.html"    >使い方</a></li>
-          <li  class="active" ><a href="ypbrowser.html">YPブラウザ</a></li>
-          <li ><a href="broadcast.html">配信</a></li>
-          <li ><a href="settings.html" >設定</a></li>
-          <li ><a href="misc.html"     >その他</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="container-fluid">
-      <div class="row-fluid">
-        <div class="span3">
-          <ul class="nav nav-tabs nav-stacked">
-            <li><a href='#yellowpage'>YellowPageブラウザの使い方</a></li>
-<li><a href='#yellowpage-1'>YellowPageの登録</a></li>
-<li><a href='#yellowpage-2'>YellowPageブラウザを開く</a></li>
-<li><a href='#section'>視聴する</a></li>
-<li><a href='#section-1'>チャンネルを探す</a></li>
-<li><a href='#section-2'>表示の設定</a></li>
-          </ul>
+      <div class="row">
+        <div class="col-3 d-none d-sm-block">
+          <nav class="nav nav-pills flex-column sticky-top">
+
+            <h5 class="nav-header">PeerCastStationについて</h5>
+
+
+
+            <a class="nav-link " href="/help/">PeerCastStationについて</a>
+
+
+
+            <h5 class="nav-header">使い方</h5>
+
+
+
+            <a class="nav-link " href="/help/usage.html">使い方</a>
+
+
+
+
+            <a class="nav-link active" data-bs-toggle="collapse" href="#nav-contents" role="button" aria-expanded="true">YPブラウザの使い方</a>
+            <div id="nav-contents" class="list-group collapse show">
+              <a class='list-group-item list-group-item-action' href='#yellowpageブラウザの使い方'>YellowPageブラウザの使い方</a>
+<a class='list-group-item list-group-item-action' href='#yellowpageの登録'>YellowPageの登録</a>
+<a class='list-group-item list-group-item-action' href='#yellowpageブラウザを開く'>YellowPageブラウザを開く</a>
+<a class='list-group-item list-group-item-action' href='#視聴する'>視聴する</a>
+<a class='list-group-item list-group-item-action' href='#チャンネルを探す'>チャンネルを探す</a>
+<a class='list-group-item list-group-item-action' href='#表示の設定'>表示の設定</a>
+            </div>
+
+
+
+            <h5 class="nav-header">設定</h5>
+
+
+
+            <a class="nav-link " href="/help/settings.html">設定</a>
+
+
+
+            <h5 class="nav-header">配信</h5>
+
+
+
+            <a class="nav-link " href="/help/broadcast.html">配信</a>
+
+
+
+            <h5 class="nav-header">その他</h5>
+
+
+
+            <a class="nav-link " href="/help/misc.html">その他</a>
+
+
+
+          </nav>
         </div>
-        <div class="span9">
-          <h1 id="yellowpage">YellowPageブラウザの使い方</h1>
+        <div class="col">
+          <div class="row d-flex d-sm-none sticky-top">
+            <button class="col-auto ms-auto btn btn-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#nav-offcanvas"><i class="bi bi-bookmarks"></i> 目次</button>
+          </div>
+          <h1 id="yellowpageブラウザの使い方">YellowPageブラウザの使い方</h1>
 <p>配信の視聴を開始するには各YellowPage(YP)をWebブラウザで見てPlayリンクをクリックすることでできますが、複数のYPを見る場合にはYPブラウザを使用すると便利です。
 ここではPeerCastStation内蔵のYPブラウザ機能について説明します。</p>
 
-<h2 id="yellowpage-1">YellowPageの登録</h2>
+<h2 id="yellowpageの登録">YellowPageの登録</h2>
 <p>まずは見たいチャンネルが掲載されてるYPをPeerCastStationに登録します。</p>
 
 <p><a href="settings.html">設定のイエローページ設定画面</a>でYPを追加してチャンネル一覧URLを記入してください。
 チャンネル一覧URLはYP毎に異なりますが、一般的にはWebブラウザでYPを見たときのURLにindex.txtをくっつけた物になります(例:http://example.com/index.txt)。
 詳しくは各YPの説明を見てください。</p>
 
-<h2 id="yellowpage-2">YellowPageブラウザを開く</h2>
+<h2 id="yellowpageブラウザを開く">YellowPageブラウザを開く</h2>
 <p>YPブラウザはいまのところHTML UIにしかありません。
 GUIを使ってる場合はメニューからファイル→ブラウザで表示を選択してHTML UIを表示してください。</p>
 
@@ -78,14 +187,14 @@ GUIを使ってる場合はメニューからファイル→ブラウザで表�
 
 <p>YPブラウザページを開いた時にはチャンネル情報の取得を行いますが、その後は右上の更新ボタンで手動更新を行ってください。</p>
 
-<h2 id="section">視聴する</h2>
+<h2 id="視聴する">視聴する</h2>
 <p>視聴したいチャンネルをクリックすると選択されるので、左上の再生ボタンを押すか、そのままチャンネルをダブルクリックすることで視聴開始をすることができます。通常はプレイリストファイルがダウンロードされるので、そのファイルを開いて再生してください。</p>
 
 <p>ストリームタイプの列(WMVやFLVなど)にはプレイリストでなくストリーム本体へのリンクが設定されています。</p>
 
 <p>コンタクトURLが設定されているチャンネルは、チャンネル名をクリックすると設定されたURLが別ページで開きます。</p>
 
-<h2 id="section-1">チャンネルを探す</h2>
+<h2 id="チャンネルを探す">チャンネルを探す</h2>
 <p>右上の検索テキストボックスに文字を入力すると、チャンネル情報に入力した文字が含まれるチャンネルだけが表示されます。</p>
 
 <p>チャンネルを選択して左上の♥ボタンを押すとお気に入りに追加できます。
@@ -102,7 +211,7 @@ GUIを使ってる場合はメニューからファイル→ブラウザで表�
 
 <p>お気に入りやフィルタの設定はPeerCastStation本体に保存されるので、別なマシンやブラウザから見た時もそのまま使えます。</p>
 
-<h2 id="section-2">表示の設定</h2>
+<h2 id="表示の設定">表示の設定</h2>
 <p>チャンネル一覧の項目名(チャンネル名・ジャンル・詳細など)をクリックすると、その項目で並び換えができます。同じ項目名をもう一度クリックすると昇順・降順を切り替えます。標準では時間の昇順になっています。</p>
 
 <p>項目名の左端にある「…」をクリックすると項目名一覧が出るので、各項目をクリックすることで表示・非表示を切り替えることができます。</p>

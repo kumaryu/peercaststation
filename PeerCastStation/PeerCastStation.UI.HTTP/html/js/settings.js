@@ -19,6 +19,54 @@ var YellowPageEditDialog = new function() {
   self.announceUri = ko.observable("");
   self.channelsUri = ko.observable("");
   self.onOK        = null;
+  self.onRemove    = null;
+
+  self.show = function(update, remove) {
+    self.onOK = update;
+    self.onRemove = remove;
+    dialog.modal('show');
+  };
+
+  self.onUpdate = function() {
+    self.onOK(self);
+    dialog.modal('hide');
+  };
+
+  self.onDelete = function() {
+    if (window.confirm('本当に設定を削除しますか？')) {
+      self.onRemove(self);
+      dialog.modal('hide');
+    }
+  };
+
+  self.clear = function() {
+    self.name("");
+    self.protocol("");
+    self.announceUri("");
+    self.channelsUri("");
+  };
+};
+
+var YellowPageAddDialog = new function() {
+  var self = this;
+  var dialog = null;
+  $(document).ready(function() {
+    dialog = $('#yellowPageAddDialog');
+    dialog.modal({show: false});
+    dialog.on('hide', self.onHide);
+    ko.applyBindings(self, dialog.get(0));
+    PeerCastStation.getYellowPageProtocols().then(function(result) {
+      self.yellowPageProtocols.splice.apply(
+        self.yellowPageProtocols,
+        [0, self.yellowPageProtocols().length].concat(result));
+    });
+  });
+  self.yellowPageProtocols = ko.observableArray();
+  self.name        = ko.observable("");
+  self.protocol    = ko.observable("pcp");
+  self.announceUri = ko.observable("");
+  self.channelsUri = ko.observable("");
+  self.onOK        = null;
 
   self.show = function(ok) {
     self.onOK = ok;
@@ -32,7 +80,7 @@ var YellowPageEditDialog = new function() {
 
   self.clear = function() {
     self.name("");
-    self.protocol("");
+    self.protocol("pcp");
     self.announceUri("");
     self.channelsUri("");
   };
@@ -41,8 +89,138 @@ var YellowPageEditDialog = new function() {
 var ListenerEditDialog = new function() {
   var self = this;
   var dialog = null;
+  self.target = ko.observable(null);
   $(document).ready(function() {
     dialog = $('#listenerEditDialog');
+    dialog.modal({show: false});
+    dialog.on('hide', self.onHide);
+    ko.applyBindings(self, dialog.get(0));
+  });
+  self.address = ko.computed(function () {
+    var target = self.target();
+    if (target == null) return "";
+    return target.address();
+  });
+  self.port = ko.computed(function () {
+    var target = self.target();
+    if (target == null) return null;
+    return target.port();
+  });
+  self.localAccepts       = ko.observable(15);
+  self.localAuthRequired  = ko.observable(false);
+  self.globalAccepts      = ko.observable(PeerCastStation.OutputStreamType.Relay | PeerCastStation.OutputStreamType.Metadata);
+  self.globalAuthRequired = ko.observable(true);
+  self.onOK = null;
+  self.onRemove = null;
+
+  self.authUrl = ko.computed(function () {
+    var target = self.target();
+    if (target == null) return "";
+    var token = target.authToken();
+    var addr = self.address();
+    var ipv6 = !!addr.match(/\:/);
+    if (addr=='0.0.0.0' || addr=='0::0' || addr=='::') {
+      return "http://" + window.location.hostname + ":" + self.port() + "/?auth=" + token;
+    } else if (ipv6) {
+      return "http://[" + addr + "]:" + self.port() + "/?auth=" + token;
+    } else {
+      return "http://" + addr + ":" + self.port() + "/?auth=" + token;
+    }
+  });
+
+  self.authenticationId = ko.computed(function () {
+    var target = self.target();
+    if (target == null) return "";
+    return target.authenticationId();
+  });
+
+  self.authenticationPassword = ko.computed(function () {
+    var target = self.target();
+    if (target == null) return "";
+    return target.authenticationPassword();
+  });
+
+  self.lanPlayAccept = ko.computed({
+    read: function() { return (self.localAccepts() & PeerCastStation.OutputStreamType.Play)!=0; },
+    write: function(value) {
+      if (value) self.localAccepts(self.localAccepts() | PeerCastStation.OutputStreamType.Play);
+      else       self.localAccepts(self.localAccepts() & ~PeerCastStation.OutputStreamType.Play);
+    }
+  });
+
+  self.lanRelayAccept = ko.computed({
+    read: function() { return (self.localAccepts() & PeerCastStation.OutputStreamType.Relay)!=0; },
+    write: function(value) {
+      if (value) self.localAccepts(self.localAccepts() | PeerCastStation.OutputStreamType.Relay);
+      else       self.localAccepts(self.localAccepts() & ~PeerCastStation.OutputStreamType.Relay);
+    }
+  });
+
+  self.lanInterfaceAccept = ko.computed({
+    read: function() { return (self.localAccepts() & PeerCastStation.OutputStreamType.Interface)!=0; },
+    write: function(value) {
+      if (value) self.localAccepts(self.localAccepts() | PeerCastStation.OutputStreamType.Interface);
+      else       self.localAccepts(self.localAccepts() & ~PeerCastStation.OutputStreamType.Interface);
+    }
+  });
+
+  self.wanPlayAccept = ko.computed({
+    read: function() { return (self.globalAccepts() & PeerCastStation.OutputStreamType.Play)!=0; },
+    write: function(value) {
+      if (value) self.globalAccepts(self.globalAccepts() | PeerCastStation.OutputStreamType.Play);
+      else       self.globalAccepts(self.globalAccepts() & ~PeerCastStation.OutputStreamType.Play);
+    }
+  });
+
+  self.wanRelayAccept = ko.computed({
+    read: function() { return (self.globalAccepts() & PeerCastStation.OutputStreamType.Relay)!=0; },
+    write: function(value) {
+      if (value) self.globalAccepts(self.globalAccepts() | PeerCastStation.OutputStreamType.Relay);
+      else       self.globalAccepts(self.globalAccepts() & ~PeerCastStation.OutputStreamType.Relay);
+    }
+  });
+
+  self.wanInterfaceAccept = ko.computed({
+    read: function() { return (self.globalAccepts() & PeerCastStation.OutputStreamType.Interface)!=0; },
+    write: function(value) {
+      if (value) self.globalAccepts(self.globalAccepts() | PeerCastStation.OutputStreamType.Interface);
+      else       self.globalAccepts(self.globalAccepts() & ~PeerCastStation.OutputStreamType.Interface);
+    }
+  });
+
+  self.show = function(target, update, remove) {
+    self.target(target);
+    self.localAccepts(target.localAccepts());
+    self.localAuthRequired(target.localAuthRequired());
+    self.globalAccepts(target.globalAccepts());
+    self.globalAuthRequired(target.globalAuthRequired());
+    self.onOK = update;
+    self.onRemove = remove;
+    dialog.modal('show');
+  };
+
+  self.onUpdate = function() {
+    self.onOK(self);
+    dialog.modal('hide');
+  };
+
+  self.onDelete = function() {
+    if (window.confirm('本当に設定を削除しますか？')) {
+      self.onRemove(self);
+      dialog.modal('hide');
+    }
+  };
+
+  self.resetAuthenticationKey = function () {
+    self.target().resetAuthenticationKey();
+  };
+};
+
+var ListenerAddDialog = new function() {
+  var self = this;
+  var dialog = null;
+  $(document).ready(function() {
+    dialog = $('#listenerAddDialog');
     dialog.modal({show: false});
     dialog.on('hide', self.onHide);
     ko.applyBindings(self, dialog.get(0));
@@ -114,7 +292,7 @@ var ListenerEditDialog = new function() {
   };
 };
 
-var ListenerViewModel = function(value) {
+var ListenerViewModel = function(owner, value) {
   var self = this;
   self.id                     = ko.observable(value.listenerId);
   self.address                = ko.observable(value.address);
@@ -149,7 +327,6 @@ var ListenerViewModel = function(value) {
     default: return "";
     }
   });
-  self.checked                = ko.observable(false);
   self.setAccepts = function() {
     PeerCastStation.setListenerAccepts(self.id(), self.localAccepts(), self.globalAccepts());
   };
@@ -179,6 +356,7 @@ var ListenerViewModel = function(value) {
     self.globalAuthRequired(data.globalAuthorizationRequired);
     self.authenticationId(data.authenticationId);
     self.authenticationPassword(data.authenticationPassword);
+    self.authToken(data.authToken);
   };
 
   self.addressLabel = ko.computed(function() {
@@ -247,16 +425,63 @@ var ListenerViewModel = function(value) {
       self.update(data);
     });
   };
+
+  self.editListener = function() {
+    function onUpdate(dlg) {
+      self.localAccepts(dlg.localAccepts());
+      self.globalAccepts(dlg.globalAccepts());
+      self.localAuthRequired(dlg.localAuthRequired());
+      self.globalAuthRequired(dlg.globalAuthRequired());
+    }
+    function onRemove(dlg) {
+      PeerCastStation.removeListener(self.id()).then(function() { owner.update(); });
+    }
+    ListenerEditDialog.show(self, onUpdate, onRemove);
+  };
 };
 
-var YellowPageViewModel = function(value) {
+var YellowPageViewModel = function(owner, value) {
   var self = this;
   self.id          = ko.observable(value.yellowPageId);
   self.name        = ko.observable(value.name);
   self.announceUri = ko.observable(value.announceUri);
   self.channelsUri = ko.observable(value.channelsUri);
   self.protocol    = ko.observable(value.protocol);
-  self.checked     = ko.observable(false);
+
+  self.editYellowPage = function() {
+    YellowPageEditDialog.name(self.name());
+    YellowPageEditDialog.announceUri(self.announceUri());
+    YellowPageEditDialog.channelsUri(self.channelsUri());
+    YellowPageEditDialog.protocol(self.protocol());
+
+    function onRemove(yp) {
+      PeerCastStation.removeYellowPage(self.id()).then(function() { owner.update(); });
+    }
+
+    function onUpdate(yp) {
+      var announce_uri = yp.announceUri();
+      if (announce_uri==null || announce_uri==="") {
+        announce_uri = null;
+      }
+      else if (!announce_uri.match(/^\w+:\/\//)) {
+        announce_uri = yp.protocol() + '://' + yp.announceUri();
+      }
+      var channels_uri = yp.channelsUri();
+      if (channels_uri==null || channels_uri==="") {
+        channels_uri = null;
+      }
+      PeerCastStation.addYellowPage(yp.protocol(), yp.name(), null, announce_uri, channels_uri).then(
+        function (res) {
+          PeerCastStation.removeYellowPage(self.id()).then(function () { owner.update(); });
+        },
+        function (err) {
+          alert("YPの追加に失敗しました: " + err.message);
+          YellowPageEditDialog.show(onUpdate, onRemove);
+        }
+      );
+    }
+    YellowPageEditDialog.show(onUpdate, onRemove);
+  };
 };
 
 var SettingsViewModel = new function() {
@@ -350,8 +575,8 @@ var SettingsViewModel = new function() {
   };
 
   self.addYellowPage = function() {
-    YellowPageEditDialog.clear();
-    YellowPageEditDialog.show(function onOK(yp) {
+    YellowPageAddDialog.clear();
+    YellowPageAddDialog.show(function onOK(yp) {
       var announce_uri = yp.announceUri();
       if (announce_uri==null || announce_uri==="") {
         announce_uri = null;
@@ -369,63 +594,14 @@ var SettingsViewModel = new function() {
         },
         function (err) {
           alert("YPの追加に失敗しました: " + err.message);
-          YellowPageEditDialog.show(onOK);
-        }
-      );
-    });
-  }
-
-  self.removeYellowPages = function() {
-    var removed = self.yellowPages.remove(function(yp) { return yp.checked(); });
-    $.each(removed, function(i, yp) {
-      PeerCastStation.removeYellowPage(yp.id()).then(function() { self.update(); });
-    });
-  }
-
-  self.editYellowPage = function() {
-    var checkedItems = self.yellowPages().filter(function (yp) { return yp.checked(); });
-
-    if (checkedItems.length == 0) {
-      alert("編集するYPを1つ選択してください。");
-      return;
-    }
-    if (checkedItems.length > 1) {
-      alert("選択するYPは1つにしてください。");
-      return;
-    }
-
-    var target = checkedItems[0];
-    YellowPageEditDialog.name(target.name());
-    YellowPageEditDialog.announceUri(target.announceUri());
-    YellowPageEditDialog.channelsUri(target.channelsUri());
-    YellowPageEditDialog.protocol(target.protocol());
-
-    YellowPageEditDialog.show(function onOK(yp) {
-      var announce_uri = yp.announceUri();
-      if (announce_uri==null || announce_uri==="") {
-        announce_uri = null;
-      }
-      else if (!announce_uri.match(/^\w+:\/\//)) {
-        announce_uri = yp.protocol() + '://' + yp.announceUri();
-      }
-      var channels_uri = yp.channelsUri();
-      if (channels_uri==null || channels_uri==="") {
-        channels_uri = null;
-      }
-      PeerCastStation.addYellowPage(yp.protocol(), yp.name(), null, announce_uri, channels_uri).then(
-        function (res) {
-          PeerCastStation.removeYellowPage(target.id()).then(function () { self.update(); });
-        },
-        function (err) {
-          alert("YPの追加に失敗しました: " + err.message);
-          YellowPageEditDialog.show(onOK);
+          YellowPageAddDialog.show(onOK);
         }
       );
     });
   }
 
   self.addListener = function() {
-    ListenerEditDialog.show(function(listener) {
+    ListenerAddDialog.show(function(listener) {
       PeerCastStation.addListener(
         listener.address(),
         Number(listener.port()),
@@ -434,21 +610,6 @@ var SettingsViewModel = new function() {
         listener.localAuthRequired(),
         listener.globalAuthRequired()
       ).then(function() { self.update(); });
-    });
-  };
-
-  self.removeListener = function() {
-    var removed = self.listeners.remove(function(listener) { return listener.checked(); });
-    $.each(removed, function(i, listener) {
-      PeerCastStation.removeListener(listener.id()).then(function() { self.update(); });
-    });
-  };
-
-  self.resetListenerAuthenticationKey = function() {
-    $.each(self.listeners(), function(i, listener) {
-      if (listener.checked()) {
-        listener.resetAuthenticationKey();
-      }
     });
   };
 
@@ -523,7 +684,7 @@ var SettingsViewModel = new function() {
     PeerCastStation.getListeners().then(function(result) {
       updating = true;
       var new_listeners = $.map(result, function(listener) {
-        return new ListenerViewModel(listener);
+        return new ListenerViewModel(self, listener);
       });
       self.listeners.splice.apply(
         self.listeners,
@@ -533,7 +694,7 @@ var SettingsViewModel = new function() {
     PeerCastStation.getYellowPages().then(function(result) {
       updating = true;
       var new_yps = $.map(result, function(yp) {
-        return new YellowPageViewModel(yp);
+        return new YellowPageViewModel(self, yp);
       });
       self.yellowPages.splice.apply(
         self.yellowPages,
