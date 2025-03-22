@@ -16,6 +16,8 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Threading;
 
 namespace PeerCastStation.Core
 {
@@ -93,34 +95,31 @@ namespace PeerCastStation.Core
   }
 
   public class ContentCollection
-    : ICollection<Content>, IReadOnlyCollection<Content>
   {
-    private struct ContentKey
-      : IComparable<ContentKey>
+    private class ContentComparer
+      : IComparer<Content>
     {
-      public int      Stream;
-      public TimeSpan Timestamp;
-      public long     Position;
-
-      public ContentKey(int stream, TimeSpan timestamp, long position)
+      public int Compare(Content? x, Content? y)
       {
-        Stream = stream;
-        Timestamp = timestamp;
-        Position = position;
-      }
-
-      public int CompareTo(ContentKey other)
-      {
-        var s = Stream.CompareTo(other.Stream);
+        if (x==y) {
+          return 0;
+        }
+        else if (x==null) {
+          return -1;
+        }
+        else if (y==null) {
+          return 1;
+        }
+        var s = x.Stream.CompareTo(y.Stream);
         if (s!=0) return s;
-        var t = Timestamp.CompareTo(other.Timestamp);
+        var t = x.Timestamp.CompareTo(y.Timestamp);
         if (t!=0) return t;
-        return Position.CompareTo(other.Position);
+        return x.Position.CompareTo(y.Position);
       }
     }
 
     private long serial = 0;
-    private SortedList<ContentKey, Content> list = new SortedList<ContentKey, Content>();
+    private ImmutableSortedSet<Content> list = ImmutableSortedSet.Create<Content>(new ContentComparer());
     public TimeSpan PacketTimeLimit { get; set; } = TimeSpan.FromSeconds(3);
     private Channel owner;
     public ContentCollection(Channel owner)
@@ -128,35 +127,29 @@ namespace PeerCastStation.Core
       this.owner = owner;
     }
 
-    public int Count {
-      get {
-        lock (list) {
-          return list.Count;
-        }
-      }
+    private ImmutableSortedSet<Content> ModifyContentList(ref ImmutableSortedSet<Content> contents, Func<ImmutableSortedSet<Content>, ImmutableSortedSet<Content>> modifier)
+    {
+      ImmutableSortedSet<Content> org;
+      ImmutableSortedSet<Content> old;
+      do {
+        org = contents;
+        old = Interlocked.CompareExchange(ref contents, modifier(org), org);
+      } while (!Object.ReferenceEquals(org, old));
+      return old;
     }
-    public bool IsReadOnly { get { return false; } }
 
     public void Add(Content item)
     {
-      bool added = false;
-      lock (list) {
-        try {
-          list.Add(new ContentKey(item.Stream, item.Timestamp, item.Position), new Content(item, serial++));
-          added = true;
-        }
-        catch (ArgumentException) {}
-        while (
-          list.Count>1 &&
-          (
-           (list.First().Key.Stream<item.Stream) ||
-           (list.First().Key.Stream==item.Stream &&
-            item.Timestamp-list.First().Key.Timestamp>PacketTimeLimit)
-          )
-        ) {
-          list.RemoveAt(0);
-        }
-      }
+      var new_content = new Content(item, Interlocked.Increment(ref serial));
+      var old_list = ModifyContentList(ref list, contents => contents.Add(new_content));
+      bool added = old_list!=list;
+      ModifyContentList(ref list, contents => contents.Except(
+        old_list.Where(content =>
+           (content.Stream<item.Stream) ||
+           (content.Stream==item.Stream &&
+            item.Timestamp-content.Timestamp>PacketTimeLimit)
+        )
+      ));
       if (added) {
         owner.OnContentAdded(item);
       }
@@ -164,152 +157,83 @@ namespace PeerCastStation.Core
 
     public void Clear()
     {
-      lock (list) {
-        list.Clear();
-      }
+      ModifyContentList(ref list, contents => contents.Clear());
     }
 
-    public bool Contains(Content item)
+    public IReadOnlyCollection<Content> ToReadOnlyCollection()
     {
-      lock (list) {
-        return list.ContainsKey(new ContentKey(item.Stream, item.Timestamp, item.Position));
-      }
-    }
-
-    public void CopyTo(Content[] array, int arrayIndex)
-    {
-      lock (list) {
-        list.Values.CopyTo(array, arrayIndex);
-      }
-    }
-
-    public Content[] ToArray()
-    {
-      lock (list) {
-        return list.Values.ToArray();
-      }
-    }
-
-    public bool Remove(Content item)
-    {
-      bool res;
-      lock (list) {
-        res = list.Remove(new ContentKey(item.Stream, item.Timestamp, item.Position));
-      }
-      if (res) {
-        return true;
-      }
-      else {
-        return false;
-      }
-    }
-
-    IEnumerator<Content> IEnumerable<Content>.GetEnumerator()
-    {
-      return list.Values.GetEnumerator();
-    }
-
-    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-    {
-      return list.Values.GetEnumerator();
-    }
-
-    public Content? GetOldest(int stream)
-    {
-      lock (list) {
-        return list.Values.Where(c => c.Stream>=stream).FirstOrDefault();
-      }
-    }
-
-    public Content? GetNewest(int stream)
-    {
-      lock (list) {
-        return list.Values.Where(c => c.Stream>=stream).LastOrDefault();
-      }
+      return list;
     }
 
     public Content? Newest
     {
       get {
-        return list.Values.LastOrDefault();
+        var contents = list;
+        if (contents.Count==0) {
+          return null;
+        }
+        else {
+          return contents.Max;
+        }
       }
     }
 
     public Content? Oldest
     {
       get {
-        return list.Values.FirstOrDefault();
+        var contents = list;
+        if (contents.Count==0) {
+          return null;
+        }
+        else {
+          return contents.Min;
+        }
       }
     }
 
-    private Content? GetFirstContent(int stream, TimeSpan t, long position)
+    public IEnumerable<Content> GetFirstContents(int stream, TimeSpan t, long position)
     {
-      lock (list) {
-        return list.Values.LastOrDefault(c =>
-          c.Stream>stream ||
-          (c.Stream==stream &&
-           c.ContFlag==PCPChanPacketContinuation.None &&
-           (c.Timestamp>t ||
-            (c.Timestamp==t && c.Position>position)
-           )
-          )
-        ) ??
-        list.Values.LastOrDefault(c =>
-          c.Stream>stream ||
-          (c.Stream==stream &&
-           (c.Timestamp>t ||
-            (c.Timestamp==t && c.Position>position)
-           )
-          )
-        );
+      var contents = list;
+      var fst = GetFirstContent(contents, stream, t, position);
+      if (fst!=null) {
+        yield return fst;
+        foreach (var content in GetNewerContents(contents, fst.Stream, fst.Timestamp, fst.Position)) {
+          yield return content;
+        }
       }
     }
 
-    public IList<Content> GetFirstContents(int stream, TimeSpan t, long position)
+    private Content? GetFirstContent(ImmutableSortedSet<Content> contents, int stream, TimeSpan t, long position)
     {
-      lock (list) {
-        var fst = GetFirstContent(stream, t, position);
-        if (fst==null) return new Content[0];
-        return Enumerable.Concat(new Content[] { fst }, GetNewerContents(fst.Stream, fst.Timestamp, fst.Position)).ToArray();
-      }
+      return contents.Reverse().FirstOrDefault(c =>
+        c.Stream>stream ||
+        (c.Stream==stream &&
+         c.ContFlag==PCPChanPacketContinuation.None &&
+         (c.Timestamp>t ||
+          (c.Timestamp==t && c.Position>position)
+         )
+        )
+      ) ??
+      contents.Reverse().FirstOrDefault(c =>
+        c.Stream>stream ||
+        (c.Stream==stream &&
+         (c.Timestamp>t ||
+          (c.Timestamp==t && c.Position>position)
+         )
+        )
+      );
     }
 
-    public IList<Content> GetNewerContents(int stream, TimeSpan t, long position)
+    private IEnumerable<Content> GetNewerContents(ImmutableSortedSet<Content> contents, int stream, TimeSpan t, long position)
     {
-      lock (list) {
-        return list.Values.Where(c =>
-          c.Stream>stream ||
-          (c.Stream==stream &&
-           (c.Timestamp>t ||
-            (c.Timestamp==t && c.Position>position)
-           )
-          )
-        ).ToArray();
-      }
-    }
-
-    public Content? GetNewerContent(Content content, out bool skipped)
-    {
-      Content? res;
-      lock (list) {
-        res = list.Values.Where(c =>
-          c.Stream>content.Stream ||
-          (c.Stream==content.Stream &&
-           (c.Timestamp>content.Timestamp ||
-            (c.Timestamp==content.Timestamp && c.Position>content.Position)
-           )
-          )
-        ).FirstOrDefault();
-      }
-      skipped = res!=null && content.Serial>=0 && res.Serial>content.Serial+1;
-      return res;
-    }
-
-    public Content? FindNextByPosition(int stream, long pos)
-    {
-      lock (list) {
-        return list.Values.Where(c => c.Stream>=stream && pos<c.Position).FirstOrDefault();
-      }
+      return contents.Where(c =>
+        c.Stream>stream ||
+        (c.Stream==stream &&
+         (c.Timestamp>t ||
+          (c.Timestamp==t && c.Position>position)
+         )
+        )
+      );
     }
 
   }
