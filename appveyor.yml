@@ -2,7 +2,7 @@
 image:
 - Visual Studio 2022
 - Ubuntu2204
-version: 7.0.0.{build}
+version: 7.1.0.{build}
 environment:
   GITHUB_ACTOR: kumaryu
   GITHUB_CR_TOKEN:
@@ -14,7 +14,7 @@ for:
     - image: Visual Studio 2022
   install:
   - cmd: |-
-      set PATH=C:\Ruby23-x64\bin;%PATH%
+      set PATH=C:\Ruby33-x64\bin;%PATH%
       gem install -N jekyll
   before_build:
   - cmd: |-
