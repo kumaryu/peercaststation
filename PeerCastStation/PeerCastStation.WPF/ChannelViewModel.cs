@@ -125,7 +125,7 @@ namespace PeerCastStation.WPF
 
     public IReadOnlyCollection<Content> GetContents()
     {
-      return Model.Contents.ToArray();
+      return Model.Contents.ToReadOnlyCollection();
     }
 
     public ChannelInfo ChannelInfo {
