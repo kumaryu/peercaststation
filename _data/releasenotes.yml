@@ -1,4 +1,45 @@
 ---
+- name: Version 7.1.0 (2025年3月23日開発版)
+  version: 7.1.0
+  channel: dev2
+  notes: |
+    リレー受信中にエラーでチャンネルが止まることがあったのを修正しました。
+
+    ## 修正点
+    * リレー受信中にエラーでチャンネルが止まることがあったのを修正しました。
+
+  date: 2025-03-23T23:00:00+09:00
+  url: https://www.pecastation.org/files/PeerCastStation-7.0.0-any.zip
+  enclosures:
+    - platform: win-x64
+      type: serviceinstaller
+      length: 32830339
+      url: https://www.pecastation.org/files/PecaStationd-7.1.0-x64.msi
+    - platform: win-x86
+      type: serviceinstaller
+      length: 30143333
+      url: https://www.pecastation.org/files/PecaStationd-7.1.0-x86.msi
+    - platform: any
+      type: archive
+      length: 1930886
+      url: https://www.pecastation.org/files/PeerCastStation-7.1.0-any.zip
+    - platform: win-x64
+      type: installer
+      length: 107331683
+      url: https://www.pecastation.org/files/PeerCastStation-7.1.0-x64.msi
+    - platform: win-x64
+      type: archive
+      length: 71453939
+      url: https://www.pecastation.org/files/PeerCastStation-7.1.0-x64.zip
+    - platform: win-x86
+      type: installer
+      length: 94044243
+      url: https://www.pecastation.org/files/PeerCastStation-7.1.0-x86.msi
+    - platform: win-x86
+      type: archive
+      length: 66232467
+      url: https://www.pecastation.org/files/PeerCastStation-7.1.0-x86.zip
+
 - name: Version 7.0.0 (2025年2月24日開発版)
   version: 7.0.0
   channel: dev2
