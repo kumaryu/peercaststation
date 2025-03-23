@@ -14,7 +14,6 @@ for:
     - image: Visual Studio 2022
   install:
   - cmd: |-
-      set PATH=C:\Ruby33-x64\bin;%PATH%
       gem install -N jekyll
   before_build:
   - cmd: |-
