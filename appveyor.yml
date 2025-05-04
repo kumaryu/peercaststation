@@ -2,7 +2,7 @@
 image:
 - Visual Studio 2022
 - Ubuntu2204
-version: 7.1.0.{build}
+version: 6.0.0.{build}
 environment:
   GITHUB_ACTOR: kumaryu
   GITHUB_CR_TOKEN:
@@ -13,8 +13,7 @@ for:
     only:
     - image: Visual Studio 2022
   install:
-  - cmd: |-
-      gem install -N jekyll
+  - cmd: gem install -N jekyll
   before_build:
   - cmd: |-
       ruby bumpversion.rb %APPVEYOR_BUILD_VERSION%
