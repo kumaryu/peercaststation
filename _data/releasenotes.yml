@@ -1,4 +1,50 @@
 ---
+- name: Version 6.0.0 (2025年5月4日安定版)
+  version: 7.0.0
+  channel: stable2
+  notes: |
+    HTML UIを狭い画面でも操作しやすいように改善しました。
+
+    ## 変更点
+    * HTML UIおよびヘルプを狭い画面でも操作しやすいように変更しました。
+    * HTML UIおよびヘルプで参照していた外部のライブラリを同梱せずにCDNから参照するようにしました。
+    
+    ## 修正点
+    * HLS視聴をしている時にたまにチャンネルが切断されてしまうことがあったのを修正しました。
+    * 各種依存ライブラリを最新に更新しました。
+
+  date: 2025-05-04T23:00:00+09:00
+  url: https://www.pecastation.org/files/PeerCastStation-6.0.0-any.zip
+  enclosures:
+    - platform: win-x64
+      type: serviceinstaller
+      length: 32830339
+      url: https://www.pecastation.org/files/PecaStationd-6.0.0-x64.msi
+    - platform: win-x86
+      type: serviceinstaller
+      length: 30143333
+      url: https://www.pecastation.org/files/PecaStationd-6.0.0-x86.msi
+    - platform: any
+      type: archive
+      length: 1930706
+      url: https://www.pecastation.org/files/PeerCastStation-6.0.0-any.zip
+    - platform: win-x64
+      type: installer
+      length: 119500964
+      url: https://www.pecastation.org/files/PeerCastStation-6.0.0-x64.msi
+    - platform: win-x64
+      type: archive
+      length: 71457159
+      url: https://www.pecastation.org/files/PeerCastStation-6.0.0-x64.zip
+    - platform: win-x86
+      type: installer
+      length: 110084244
+      url: https://www.pecastation.org/files/PeerCastStation-6.0.0-x86.msi
+    - platform: win-x86
+      type: archive
+      length: 66237321
+      url: https://www.pecastation.org/files/PeerCastStation-6.0.0-x86.zip
+
 - name: Version 7.1.0 (2025年3月23日開発版)
   version: 7.1.0
   channel: dev2
