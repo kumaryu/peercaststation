@@ -1,6 +1,6 @@
 ---
-- name: Version 6.0.0 (2025年5月4日安定版)
-  version: 7.0.0
+- name: Version 6.0.1 (2025年5月4日安定版)
+  version: 6.0.1
   channel: stable2
   notes: |
     HTML UIを狭い画面でも操作しやすいように改善しました。
@@ -12,79 +12,81 @@
     ## 修正点
     * HLS視聴をしている時にたまにチャンネルが切断されてしまうことがあったのを修正しました。
     * 各種依存ライブラリを最新に更新しました。
+    * ZIP版でWindows以外での環境での起動用シェルスクリプトが改行コードがおかしいため起動しないのを修正しました。
 
   date: 2025-05-04T23:00:00+09:00
-  url: https://www.pecastation.org/files/PeerCastStation-6.0.0-any.zip
+  url: https://www.pecastation.org/files/PeerCastStation-6.0.1-any.zip
   enclosures:
     - platform: win-x64
       type: serviceinstaller
       length: 32830339
-      url: https://www.pecastation.org/files/PecaStationd-6.0.0-x64.msi
+      url: https://www.pecastation.org/files/PecaStationd-6.0.1-x64.msi
     - platform: win-x86
       type: serviceinstaller
       length: 30143333
-      url: https://www.pecastation.org/files/PecaStationd-6.0.0-x86.msi
+      url: https://www.pecastation.org/files/PecaStationd-6.0.1-x86.msi
     - platform: any
       type: archive
-      length: 1930706
-      url: https://www.pecastation.org/files/PeerCastStation-6.0.0-any.zip
+      length: 1930777
+      url: https://www.pecastation.org/files/PeerCastStation-6.0.1-any.zip
     - platform: win-x64
       type: installer
-      length: 119500964
-      url: https://www.pecastation.org/files/PeerCastStation-6.0.0-x64.msi
+      length: 119582904
+      url: https://www.pecastation.org/files/PeerCastStation-6.0.1-x64.msi
     - platform: win-x64
       type: archive
-      length: 71457159
-      url: https://www.pecastation.org/files/PeerCastStation-6.0.0-x64.zip
+      length: 71457988
+      url: https://www.pecastation.org/files/PeerCastStation-6.0.1-x64.zip
     - platform: win-x86
       type: installer
-      length: 110084244
-      url: https://www.pecastation.org/files/PeerCastStation-6.0.0-x86.msi
+      length: 110162088
+      url: https://www.pecastation.org/files/PeerCastStation-6.0.1-x86.msi
     - platform: win-x86
       type: archive
-      length: 66237321
-      url: https://www.pecastation.org/files/PeerCastStation-6.0.0-x86.zip
+      length: 66238237
+      url: https://www.pecastation.org/files/PeerCastStation-6.0.1-x86.zip
 
-- name: Version 7.1.0 (2025年3月23日開発版)
-  version: 7.1.0
+- name: Version 7.1.1 (2025年3月23日開発版)
+  version: 7.1.1
   channel: dev2
   notes: |
     リレー受信中にエラーでチャンネルが止まることがあったのを修正しました。
 
     ## 修正点
     * リレー受信中にエラーでチャンネルが止まることがあったのを修正しました。
+    * ZIP版でWindows以外での環境での起動用シェルスクリプトが改行コードがおかしいため起動しないのを修正しました。
 
   date: 2025-03-23T23:00:00+09:00
-  url: https://www.pecastation.org/files/PeerCastStation-7.0.0-any.zip
+  url: https://www.pecastation.org/files/PeerCastStation-7.1.1-any.zip
   enclosures:
     - platform: win-x64
       type: serviceinstaller
       length: 32830339
-      url: https://www.pecastation.org/files/PecaStationd-7.1.0-x64.msi
+      url: https://www.pecastation.org/files/PecaStationd-7.1.1-x64.msi
     - platform: win-x86
       type: serviceinstaller
       length: 30143333
-      url: https://www.pecastation.org/files/PecaStationd-7.1.0-x86.msi
+      url: https://www.pecastation.org/files/PecaStationd-7.1.1-x86.msi
     - platform: any
       type: archive
-      length: 1930886
-      url: https://www.pecastation.org/files/PeerCastStation-7.1.0-any.zip
+      length: 1930732
+      url: https://www.pecastation.org/files/PeerCastStation-7.1.1-any.zip
     - platform: win-x64
       type: installer
-      length: 107331683
-      url: https://www.pecastation.org/files/PeerCastStation-7.1.0-x64.msi
+      length: 119595204
+      url: https://www.pecastation.org/files/PeerCastStation-7.1.1-x64.msi
     - platform: win-x64
       type: archive
-      length: 71453939
-      url: https://www.pecastation.org/files/PeerCastStation-7.1.0-x64.zip
+      length: 71457926
+      url: https://www.pecastation.org/files/PeerCastStation-7.1.1-x64.zip
     - platform: win-x86
       type: installer
-      length: 94044243
-      url: https://www.pecastation.org/files/PeerCastStation-7.1.0-x86.msi
+      length: 110571700
+      url: https://www.pecastation.org/files/PeerCastStation-7.1.1-x86.msi
     - platform: win-x86
       type: archive
-      length: 66232467
-      url: https://www.pecastation.org/files/PeerCastStation-7.1.0-x86.zip
+      length: 66238163
+      url: https://www.pecastation.org/files/PeerCastStation-7.1.1-x86.zip
 
 - name: Version 7.0.0 (2025年2月24日開発版)
   version: 7.0.0
