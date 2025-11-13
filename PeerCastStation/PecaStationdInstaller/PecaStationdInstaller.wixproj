@@ -1,6 +1,6 @@
 ﻿<Project Sdk="WixToolset.Sdk/5.0.2">
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <MyVersion Condition=" '$(APPVEYOR_BUILD_VERSION)' != ''">$(APPVEYOR_BUILD_VERSION)</MyVersion>
     <MyVersion Condition=" '$(APPVEYOR_BUILD_VERSION)' == ''">0.0.0.0</MyVersion>
     <OutputName>PecaStationd-$(MyVersion)-$(Platform)</OutputName>

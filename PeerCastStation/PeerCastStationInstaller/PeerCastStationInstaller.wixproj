@@ -1,7 +1,7 @@
 ﻿<Project Sdk="WixToolset.Sdk/5.0.2">
   <PropertyGroup>
     <ProductVersion>3.8</ProductVersion>
-    <TargetFramework>net9.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <MyVersion Condition=" '$(APPVEYOR_BUILD_VERSION)' != ''">$(APPVEYOR_BUILD_VERSION)</MyVersion>
     <MyVersion Condition=" '$(APPVEYOR_BUILD_VERSION)' == ''">0.0.0.0</MyVersion>
     <OutputName>PeerCastStation-$(MyVersion)-$(Platform)</OutputName>
