@@ -339,7 +339,7 @@ Stopped:
             Logger.Debug("Handshake Finished");
             handshake_finished = true;
           }
-          else if (atom.Name==Atom.PCP_OLEH) {
+          else if (atom.Name==Atom.PCP_QUIT) {
             OnPCPQuit(atom);
           }
           else {
