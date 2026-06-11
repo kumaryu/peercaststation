@@ -127,6 +127,7 @@ jobs:
         run: |
           docker run --rm \
             --volume="$(pwd):/srv/jekyll" \
+            --user "$(id -u):$(id -g)" \
             -t jekyll/jekyll \
             jekyll build \
             --config doc/help/_config.yml \
