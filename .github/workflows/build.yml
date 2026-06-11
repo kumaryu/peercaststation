@@ -134,8 +134,7 @@ jobs:
         run: gem install -N jekyll kramdown
 
       - name: Build help docs
-        working-directory: doc/help
-        run: jekyll build
+        run: jekyll build --config doc/help/_config.yml -s doc/help -d PeerCastStation/PeerCastStation.UI.HTTP/help
 
       - name: Restore
         run: dotnet restore -p:Configuration=$CONFIGURATION -p:"Platform=Any CPU" PeerCastStation/PeerCastStation/PeerCastStation.csproj
