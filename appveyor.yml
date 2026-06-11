@@ -1,7 +1,7 @@
 ---
 image:
-- Visual Studio 2022
-- Ubuntu2204
+- Visual Studio 2026
+- Ubuntu
 version: 7.1.1.{build}
 environment:
   GITHUB_ACTOR: kumaryu
@@ -11,7 +11,7 @@ configuration: Release
 for:
 - matrix:
     only:
-    - image: Visual Studio 2022
+    - image: Visual Studio 2026
   install:
   - cmd: gem install -N jekyll
   before_build:
@@ -56,7 +56,7 @@ for:
     name: PeerCastStation-$(APPVEYOR_BUILD_VERSION)-x64-ja-JP.msi
 - matrix:
     only:
-    - image: Ubuntu2204
+    - image: Ubuntu
   services:
   - docker
   install:
