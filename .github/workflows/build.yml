@@ -29,6 +29,9 @@ jobs:
         working-directory: doc/help
         run: jekyll build
 
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
       - name: Restore (x86)
         run: dotnet restore -p:Configuration=$env:CONFIGURATION -p:Platform=x86 PeerCastStation/PeerCastStation.sln
 
