@@ -13,6 +13,7 @@ for:
     only:
     - image: Visual Studio 2026
   install:
+  - cmd: set PATH=C:\Ruby34-x64\bin;%PATH%
   - cmd: gem install -N jekyll
   before_build:
   - cmd: |-
@@ -60,7 +61,7 @@ for:
   services:
   - docker
   install:
-  - rvm use 3.3
+  - rvm use 3.4
   before_build:
   - ruby bumpversion.rb $APPVEYOR_BUILD_VERSION
   - docker run --rm --volume=`pwd`:/srv/jekyll -t jekyll/jekyll jekyll build --config
