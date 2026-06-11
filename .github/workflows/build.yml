@@ -130,16 +130,12 @@ jobs:
       - name: Bump version
         run: ruby bumpversion.rb $BUILD_VERSION
 
+      - name: Install Jekyll
+        run: gem install -N jekyll kramdown
+
       - name: Build help docs
-        run: |
-          docker run --rm \
-            --volume="$(pwd):/srv/jekyll" \
-            --user "$(id -u):$(id -g)" \
-            -t jekyll/jekyll \
-            jekyll build \
-            --config doc/help/_config.yml \
-            -s doc/help \
-            -d PeerCastStation/PeerCastStation.UI.HTTP/help
+        working-directory: doc/help
+        run: jekyll build
 
       - name: Restore
         run: dotnet restore -p:Configuration=$CONFIGURATION -p:"Platform=Any CPU" PeerCastStation/PeerCastStation/PeerCastStation.csproj
