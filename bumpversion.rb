@@ -124,7 +124,7 @@ replace_files(File.join(BASE, '**/AssemblyInfo.cs')) do |f, line|
   end
 end
 
-if ENV['APPVEYOR'] then
+if ENV['APPVEYOR'] || ENV['GITHUB_ACTIONS'] then
   replace_setting('PeerCastStation/PeerCastStation', 'InstallerType', "Archive")
   replace_setting('PeerCastStation/PecaStationd', 'InstallerType', "Archive")
 end
