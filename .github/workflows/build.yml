@@ -120,10 +120,12 @@ jobs:
   build-linux:
     name: Build (Linux)
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
     env:
       CONFIGURATION: Release
       BUILD_VERSION: 7.1.1.${{ github.run_number }}
-
     steps:
       - uses: actions/checkout@v4
 
