@@ -47,6 +47,7 @@
     </None>
     <Compile Include="TestCommon.fs" />
     <Compile Include="MKVTests.fs" />
+    <Compile Include="RTMPConnectTests.fs" />
     <Compile Include="Atom.fs" />
     <Compile Include="CoreTests.fs" />
     <Compile Include="OWINTest.fs" />

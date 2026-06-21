@@ -2,6 +2,10 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+// テストプロジェクト(同一 snk で署名)から internal の EnhancedRTMP 等へアクセスするための friend 宣言。
+// 署名アセンブリ間なので full public key の指定が必須(同一 snk なので MKV と同じ値)。
+[assembly: InternalsVisibleTo("PeerCastStation.Test, PublicKey=00240000048000009400000006020000002400005253413100040000010001003b4def7d493cd15e2de42ec2a7edc4f90390af0e8c535e8494b2b4b99e6b95b0c1a6176ee25750801d0698c07dd70f6e131b46e1196e256d5c36d8dd510f73bb5efa555d75bd23d8a93f5f7dbf272876789a3c5f83b8e01914f3e5926b79b61c385a93ef654be66d4ee5f3d485f0d3d94ceecdd96cafc377f7dbf0995b9a5dba")]
+
 // アセンブリに関する一般情報は以下の属性セットをとおして制御されます。
 // アセンブリに関連付けられている情報を変更するには、
 // これらの属性値を変更してください。

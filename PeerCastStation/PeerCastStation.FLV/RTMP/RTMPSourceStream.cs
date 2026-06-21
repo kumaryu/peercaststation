@@ -603,8 +603,15 @@ namespace PeerCastStation.FLV.RTMP
       return Task.Delay(0);
     }
 
+    private bool loggedEnhancedVideo = false;
     private Task OnVideo(RTMPMessage msg, CancellationToken cancel_token)
     {
+      // Enhanced RTMP のビデオパケットは先頭バイトの最上位ビット(IsExHeader)が立つ。
+      // M1 では到達確認のため初回のみログ出力する(remux は M2 以降)。
+      if (!loggedEnhancedVideo && msg.Body.Length>0 && (msg.Body[0] & 0x80)!=0) {
+        loggedEnhancedVideo = true;
+        Logger.Debug("Enhanced RTMP video packet (ExHeader) を検出");
+      }
       flvBuffer.OnVideo(msg);
       return Task.Delay(0);
     }
@@ -651,7 +658,9 @@ namespace PeerCastStation.FLV.RTMP
     {
       objectEncoding = ((int)msg.CommandObject["objectEncoding"])==3 ? 3 : 0;
       clientName     = (string?)msg.CommandObject["flashVer"] ?? "";
-      Logger.Debug($"connect: objectEncoding {objectEncoding}, flashVer: {clientName}");
+      var clientFourCc = EnhancedRTMP.ParseClientFourCcList(msg.CommandObject);
+      var fourCcList   = EnhancedRTMP.NegotiateVideoFourCc(clientFourCc);
+      Logger.Debug($"connect: objectEncoding {objectEncoding}, flashVer: {clientName}, fourCcList: [{String.Join(",", clientFourCc)}] -> advertising [{String.Join(",", fourCcList)}]");
       await SendMessage(stream, 2, new SetWindowSizeMessage(this.Now, 0, recvWindowSize), cancel_token).ConfigureAwait(false);
       await SendMessage(stream, 2, new SetPeerBandwidthMessage(this.Now, 0, sendWindowSize, PeerBandwidthLimitType.Hard), cancel_token).ConfigureAwait(false);
       await SendMessage(stream, 2, new UserControlMessage.StreamBeginMessage(this.Now, 0, 0), cancel_token).ConfigureAwait(false);
@@ -673,6 +682,9 @@ namespace PeerCastStation.FLV.RTMP
           { "data",           new AMF.AMFObject { { "version", "3,5,5,2004" } } },
           { "clientId",       nextClientId++ },
           { "objectEncoding", objectEncoding },
+          // Enhanced RTMP: 対応コーデックを広告して OBS の拡張コーデック配信を許可する。
+          { "capsEx",         EnhancedRTMP.CapsEx },
+          { "fourCcList",     new AMF.AMFValue(fourCcList.Select(s => new AMF.AMFValue(s))) },
         })
       );
       if (msg.TransactionId!=0) {
