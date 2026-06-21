@@ -35,6 +35,29 @@ namespace PeerCastStation.MKV
       return this.Binary.SequenceEqual(bin);
     }
 
+    /// <summary>
+    /// 要素サイズ用の VInt を生成する。ReadUInt と対称で、生成した Binary を
+    /// 読み戻すと Value==value になる。最小バイト長を選び、全ビット 1 の
+    /// "unknown size" と衝突する値は 1 バイト繰り上げる。
+    /// </summary>
+    public static VInt FromSize(long value)
+    {
+      if (value<0) throw new ArgumentOutOfRangeException(nameof(value));
+      for (int len=1; len<=8; len++) {
+        long max = (1L<<(7*len)) - 2; //全ビット1(=-1相当)は unknown size 用に予約
+        if (value<=max) {
+          long encoded = (1L<<(7*len)) | value;
+          var bin = new byte[len];
+          for (int i=len-1; i>=0; i--) {
+            bin[i] = (byte)(encoded & 0xFF);
+            encoded >>= 8;
+          }
+          return new VInt(value, bin);
+        }
+      }
+      throw new ArgumentOutOfRangeException(nameof(value));
+    }
+
     public static async Task<VInt> ReadUIntAsync(Stream s, CancellationToken cancel_token)
     {
       int first = await s.ReadByteAsync().ConfigureAwait(false);

@@ -6,6 +6,9 @@
     <IsPackable>false</IsPackable>
 
     <Platforms>AnyCPU;x86;x64</Platforms>
+
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\PeerCastStation.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -43,6 +46,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Compile Include="TestCommon.fs" />
+    <Compile Include="MKVTests.fs" />
     <Compile Include="Atom.fs" />
     <Compile Include="CoreTests.fs" />
     <Compile Include="OWINTest.fs" />
