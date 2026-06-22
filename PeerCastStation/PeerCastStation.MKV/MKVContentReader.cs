@@ -58,6 +58,23 @@ namespace PeerCastStation.MKV
       throw new ArgumentOutOfRangeException(nameof(value));
     }
 
+    /// <summary>
+    /// "unknown size"(全ビット 1)の VInt を生成する。ライブ mux で全長未確定の
+    /// Segment を開くのに使う。読み戻すと IsUnknown==true になる。
+    /// </summary>
+    public static VInt Unknown(int len)
+    {
+      if (len<1 || len>8) throw new ArgumentOutOfRangeException(nameof(len));
+      long value = (1L<<(7*len)) - 1;       //値部の 7*len ビットが全 1
+      long encoded = (1L<<(7*len)) | value; //長さマーカー込みで len バイト全 0xFF
+      var bin = new byte[len];
+      for (int i=len-1; i>=0; i--) {
+        bin[i] = (byte)(encoded & 0xFF);
+        encoded >>= 8;
+      }
+      return new VInt(value, bin);
+    }
+
     public static async Task<VInt> ReadUIntAsync(Stream s, CancellationToken cancel_token)
     {
       int first = await s.ReadByteAsync().ConfigureAwait(false);
@@ -233,6 +250,20 @@ namespace PeerCastStation.MKV
     public static readonly byte[] Chapters      = { 0x10,0x43,0xA7,0x70 };
     public static readonly byte[] Tags          = { 0x12,0x54,0xC3,0x67 };
     public static readonly byte[] TimecodeScale = { 0x2A,0xD1,0xB1 };
+    public static readonly byte[] MuxingApp     = { 0x4D,0x80 };
+    public static readonly byte[] WritingApp    = { 0x57,0x41 };
+    public static readonly byte[] TrackEntry    = { 0xAE };
+    public static readonly byte[] TrackNumber   = { 0xD7 };
+    public static readonly byte[] TrackUID      = { 0x73,0xC5 };
+    public static readonly byte[] TrackType     = { 0x83 };
+    public static readonly byte[] CodecID       = { 0x86 };
+    public static readonly byte[] CodecPrivate  = { 0x63,0xA2 };
+    public static readonly byte[] Video         = { 0xE0 };
+    public static readonly byte[] PixelWidth    = { 0xB0 };
+    public static readonly byte[] PixelHeight   = { 0xBA };
+    public static readonly byte[] Audio         = { 0xE1 };
+    public static readonly byte[] SamplingFrequency = { 0xB5 };
+    public static readonly byte[] Channels      = { 0x9F };
     public static readonly byte[] BlockGroup    = { 0xA0 };
     public static readonly byte[] SimpleBlock   = { 0xA3 };
     public static readonly byte[] Timecode      = { 0xE7 };

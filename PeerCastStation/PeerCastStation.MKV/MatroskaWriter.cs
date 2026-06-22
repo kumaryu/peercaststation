@@ -35,6 +35,16 @@ namespace PeerCastStation.MKV
       }
     }
 
+    /// <summary>
+    /// unknown-size(全ビット 1)で開く master 要素のヘッダ(ID + サイズ VInt のみ)。
+    /// ライブ mux で全長未確定の Segment を開くのに使う。子要素はこのヘッダの後ろに
+    /// 連続して書き出す。リーダーは Element.NoData として読む。
+    /// </summary>
+    public static ElementHeader MakeUnknownSizeHeader(byte[] id)
+    {
+      return new ElementHeader(IdVInt(id), VInt.Unknown(1));
+    }
+
     /// <summary>符号なし整数要素(big-endian, 最小バイト長)。</summary>
     public static Element MakeUInt(byte[] id, ulong value)
     {
