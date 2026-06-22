@@ -23,8 +23,14 @@ namespace PeerCastStation.FLV.RTMP
   internal class MatroskaContentBuffer
     : IRTMPContentSink
   {
+    private static readonly Logger Logger = new Logger(typeof(MatroskaContentBuffer));
+
     private const ulong VideoTrackNumber = 1;
     private const ulong AudioTrackNumber = 2;
+
+    // 映像・音声の config が揃ってから、この数の CodedFrame が来ても onMetaData が
+    // 得られない場合は、CodecPrivate だけで init を組み立てる(width/height 不明のまま)。
+    private const int MetadataWaitFrames = 60;
 
     public Channel      TargetChannel { get; private set; }
     public IContentSink ContentSink   { get; private set; }
@@ -52,6 +58,14 @@ namespace PeerCastStation.FLV.RTMP
     private bool hasTimestampOrigin = false;
     private long timestampOrigin = 0;
     private long currentClusterTimecode = 0;
+
+    // §B-1: config が揃ってから metadata 無しで経過した CodedFrame 数。
+    private int  framesSinceConfigReady = 0;
+    private bool metadataFallback       = false;
+    // 1 回だけ出す警告のためのフラグ(ログのスパム防止)。
+    private bool warnedUnexpectedCts       = false;
+    private bool warnedTimecodeSaturation  = false;
+    private int  parseFailureCount         = 0;
 
     public MatroskaContentBuffer(Channel target_channel, IContentSink content_sink)
     {
@@ -91,10 +105,15 @@ namespace PeerCastStation.FLV.RTMP
       channels          = (int)ReadDouble(meta, "audiochannels", channels);
       hasMetadata = pixelWidth>0 && pixelHeight>0;
 
-      var info = new AtomCollection();
-      info.SetChanInfoType("MKV");
-      info.SetChanInfoStreamType("video/x-matroska");
-      info.SetChanInfoStreamExt(".mkv");
+      SendChannelInfo(ReadBitrate(meta));
+
+      TrySendInit();
+    }
+
+    // §D: onMetaData から bitrate(kbps)を取り出す。無ければ 0。FLVContentBuffer と同方針で
+    // maxBitrate(優先)→videodatarate、それに audiodatarate を加算する。
+    private static double ReadBitrate(AMFValue meta)
+    {
       var bitrate = 0.0;
       var val = meta["maxBitrate"];
       if (!AMFValue.IsNull(val)) {
@@ -110,12 +129,24 @@ namespace PeerCastStation.FLV.RTMP
       if (!AMFValue.IsNull(val = meta["audiodatarate"])) {
         bitrate += (double)val;
       }
+      return bitrate;
+    }
+
+    // §D: ChannelInfo(MKV)を送る。bitrate 不明(0)時は FLVContentBuffer 同様に値を捏造せず
+    //     未設定のままにする(AccessController のリレー計算に誤った値を与えないため)。
+    private void SendChannelInfo(double bitrate)
+    {
+      var info = new AtomCollection();
+      info.SetChanInfoType("MKV");
+      info.SetChanInfoStreamType("video/x-matroska");
+      info.SetChanInfoStreamExt(".mkv");
       if (bitrate>0) {
         info.SetChanInfoBitrate((int)bitrate);
       }
+      else {
+        Logger.Debug("Channel bitrate unknown (no maxBitrate/videodatarate in onMetaData)");
+      }
       ContentSink.OnChannelInfo(new ChannelInfo(info));
-
-      TrySendInit();
     }
 
     private static double ReadDouble(AMFValue meta, string key, double fallback)
@@ -133,29 +164,50 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
+    // §B-3: パース失敗の連続を検知できるよう最初の数回だけログする(スパム防止)。
+    private const int MaxParseFailureLogs = 5;
+
     public void OnVideo(RTMPMessage msg)
     {
-      if (!ERTMPDepacketizer.TryParseVideo(msg, out var frame)) return;
+      if (!ERTMPDepacketizer.TryParseVideo(msg, out var frame)) {
+        LogParseFailure("video", msg);
+        return;
+      }
       HandleFrame(frame);
     }
 
     public void OnAudio(RTMPMessage msg)
     {
-      if (!ERTMPDepacketizer.TryParseAudio(msg, out var frame)) return;
+      if (!ERTMPDepacketizer.TryParseAudio(msg, out var frame)) {
+        LogParseFailure("audio", msg);
+        return;
+      }
       HandleFrame(frame);
+    }
+
+    private void LogParseFailure(string kind, RTMPMessage msg)
+    {
+      if (parseFailureCount>=MaxParseFailureLogs) return;
+      parseFailureCount++;
+      Logger.Debug("Failed to depacketize {0} message (len={1}){2}",
+        kind, msg.Body?.Length ?? 0,
+        parseFailureCount==MaxParseFailureLogs ? " [further parse failures suppressed]" : "");
     }
 
     private void HandleFrame(DepacketizedFrame frame)
     {
       switch (frame.Kind) {
       case DepacketizedFrameKind.SequenceHeader:
+        var newConfig = ToArray(frame.Payload);
         if (frame.TrackType==DepacketizedTrackType.Video) {
+          WarnIfConfigChanged("video", videoFourCc, videoCodecPrivate, frame.FourCc, newConfig);
           videoFourCc       = frame.FourCc;
-          videoCodecPrivate = ToArray(frame.Payload);
+          videoCodecPrivate = newConfig;
         }
         else {
+          WarnIfConfigChanged("audio", audioFourCc, audioCodecPrivate, frame.FourCc, newConfig);
           audioFourCc       = frame.FourCc;
-          audioCodecPrivate = ToArray(frame.Payload);
+          audioCodecPrivate = newConfig;
         }
         TrySendInit();
         break;
@@ -170,22 +222,55 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
+    // §B-2: init 送出後に config(コーデック/CodecPrivate)が変わったら Info で可視化する。
+    // init は再送しない(後発参加者 resync の不変条件を壊さないため)。将来対応の足場。
+    private void WarnIfConfigChanged(string kind, string? oldFourCc, byte[]? oldConfig, string newFourCc, byte[] newConfig)
+    {
+      if (!initSent || oldConfig==null) return;
+      if (oldFourCc==newFourCc && BytesEqual(oldConfig, newConfig)) return;
+      Logger.Info(
+        "Mid-stream {0} config change ignored (init not resent): {1} -> {2}",
+        kind, oldFourCc ?? "?", newFourCc);
+    }
+
+    private static bool BytesEqual(byte[] a, byte[] b)
+    {
+      if (a.Length!=b.Length) return false;
+      for (var i=0; i<a.Length; i++) {
+        if (a[i]!=b[i]) return false;
+      }
+      return true;
+    }
+
+    private bool ConfigReady {
+      get {
+        return videoFourCc!=null && videoCodecPrivate!=null
+            && audioFourCc!=null && audioCodecPrivate!=null;
+      }
+    }
+
     private void TrySendInit()
     {
       if (initSent) return;
-      if (!hasMetadata) return;
-      if (videoFourCc==null || videoCodecPrivate==null) return;
-      if (audioFourCc==null || audioCodecPrivate==null) return;
+      if (!ConfigReady) return;
+      // §B-1: 通常は onMetaData(解像度)が揃うのを待つが、来ない配信でも
+      //       metadataFallback が立てば config だけで init を出す(width/height=0)。
+      if (!hasMetadata && !metadataFallback) return;
+
+      // metadata が無いまま init する場合は ChannelInfo(MKV)もここで送っておく。
+      if (!hasMetadata) {
+        SendChannelInfo(0.0);
+      }
 
       var video = new MatroskaVideoTrack {
-        FourCc       = videoFourCc,
-        CodecPrivate = videoCodecPrivate,
+        FourCc       = videoFourCc!,
+        CodecPrivate = videoCodecPrivate!,
         PixelWidth   = pixelWidth,
         PixelHeight  = pixelHeight,
       };
       var audio = new MatroskaAudioTrack {
-        FourCc            = audioFourCc,
-        CodecPrivate      = audioCodecPrivate,
+        FourCc            = audioFourCc!,
+        CodecPrivate      = audioCodecPrivate!,
         SamplingFrequency = samplingFrequency,
         Channels          = channels,
       };
@@ -198,23 +283,48 @@ namespace PeerCastStation.FLV.RTMP
         new Content(streamIndex, TimeSpan.Zero, position, init, PCPChanPacketContinuation.None));
       position += init.Length;
       initSent = true;
+      Logger.Info(
+        "Matroska init sent: video={0} {1}x{2} (codecPrivate={3}B), audio={4} {5}Hz {6}ch (codecPrivate={7}B){8}",
+        videoFourCc!, pixelWidth, pixelHeight, videoCodecPrivate!.Length,
+        audioFourCc!, (int)samplingFrequency, channels, audioCodecPrivate!.Length,
+        hasMetadata ? "" : " [no onMetaData; dimensions unknown]");
     }
 
     private void WriteFrame(DepacketizedFrame frame)
     {
-      if (!initSent) return;
+      if (!initSent) {
+        // §B-1: config は揃っているが onMetaData 待ちの間にフレームが来続けたら、
+        //       一定数を超えたところで config だけの init にフォールバックする。
+        if (ConfigReady && !hasMetadata && !metadataFallback) {
+          if (++framesSinceConfigReady>=MetadataWaitFrames) {
+            metadataFallback = true;
+            Logger.Debug("onMetaData not received after {0} frames; falling back to config-only init", framesSinceConfigReady);
+            TrySendInit();
+          }
+        }
+        if (!initSent) return;
+      }
 
       var isVideo = frame.TrackType==DepacketizedTrackType.Video;
       // 最初の映像キーフレーム到達までは破棄(Cluster はキーフレームで開く)。
       if (!seenFirstKeyFrame) {
         if (!(isVideo && frame.IsKeyFrame)) return;
         seenFirstKeyFrame = true;
+        Logger.Debug("First video keyframe reached; starting Matroska cluster output");
       }
+
+      // §A: 提示時刻(PTS)= DTS + CompositionTimeOffset を使う。avc1/hvc1 は B フレームで
+      //     CTS が乗る。av01 は CTS を持たない(常に 0)ので実質 DTS=PTS。
+      if (isVideo && frame.CompositionTimeOffset!=0 && frame.FourCc=="av01" && !warnedUnexpectedCts) {
+        Logger.Warn("Unexpected non-zero CTS ({0}ms) on av01 frame; av01 should not carry CompositionTime", frame.CompositionTimeOffset);
+        warnedUnexpectedCts = true;
+      }
+      var pts = frame.Timestamp + frame.CompositionTimeOffset;
       if (!hasTimestampOrigin) {
-        timestampOrigin    = frame.Timestamp;
+        timestampOrigin    = pts;
         hasTimestampOrigin = true;
       }
-      var rebased = frame.Timestamp - timestampOrigin;
+      var rebased = pts - timestampOrigin;
 
       using (var ms=new MemoryStream()) {
         // 映像キーフレームごとに新しい Cluster を開く。
@@ -223,7 +333,16 @@ namespace PeerCastStation.FLV.RTMP
           MatroskaWriter.MakeUnknownSizeHeader(Elements.Cluster).Write(ms);
           MatroskaWriter.MakeUInt(Elements.Timecode, (ulong)Math.Max(0, currentClusterTimecode)).Write(ms);
         }
-        var relative = (short)Math.Max(short.MinValue, Math.Min(short.MaxValue, rebased - currentClusterTimecode));
+        // §E: 相対 timecode は符号付き int16(±約32.7秒)。Cluster は映像キーフレームでしか
+        //     開かないため、GOP が ~32秒を超えると後半フレームが飽和して timestamp が壊れる。
+        //     Cluster 分割は「全 Cluster はキーフレームで始まる」resync 不変条件を壊すので
+        //     本質修正はせず、検知のみ警告する(通常 GOP ≤4秒では発生しない)。
+        var rawRelative = rebased - currentClusterTimecode;
+        if ((rawRelative>short.MaxValue || rawRelative<short.MinValue) && !warnedTimecodeSaturation) {
+          Logger.Warn("SimpleBlock relative timecode {0}ms exceeds int16 range; GOP may be too long (>~32s). Timestamp clamped.", rawRelative);
+          warnedTimecodeSaturation = true;
+        }
+        var relative = (short)Math.Max(short.MinValue, Math.Min(short.MaxValue, rawRelative));
         var track    = isVideo ? VideoTrackNumber : AudioTrackNumber;
         MatroskaWriter.MakeSimpleBlock(track, relative, frame.IsKeyFrame, frame.Payload).Write(ms);
 

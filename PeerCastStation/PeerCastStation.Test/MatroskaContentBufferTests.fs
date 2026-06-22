@@ -61,6 +61,17 @@ let private sendVideo (buf: MatroskaContentBuffer) msg = (buf :> IRTMPContentSin
 let private sendAudio (buf: MatroskaContentBuffer) msg = (buf :> IRTMPContentSink).OnAudio(msg)
 let private sendData  (buf: MatroskaContentBuffer) msg = (buf :> IRTMPContentSink).OnData(msg)
 
+// 符号付き 24bit big-endian の CompositionTime(CTS)を 3 バイトにする。
+let private cts24 (v: int) = [ byte ((v >>> 16) &&& 0xFF); byte ((v >>> 8) &&& 0xFF); byte (v &&& 0xFF) ]
+
+// Enhanced RTMP の avc1。avc1/hvc1 だけが CTS をワイヤに乗せる。
+// 映像 avc1 SequenceStart(config)。0x90 = ExHeader|FrameType1|PacketType0。
+let private videoConfigAvc = videoMsg 0L ([0x90uy] @ fourCc "avc1" @ [0x01uy; 0x42uy])
+// avc1 キーフレーム CodedFrames(PacketType1)。0x91 = ExHeader|FrameType1|PacketType1。CTS あり。
+let private videoKeyAvc ts cts = videoMsg ts ([0x91uy] @ fourCc "avc1" @ cts24 cts @ [0xDEuy; 0xADuy])
+// avc1 非キーフレーム CodedFrames。0xA1 = ExHeader|FrameType2|PacketType1。CTS あり。
+let private videoInterAvc ts cts = videoMsg ts ([0xA1uy] @ fourCc "avc1" @ cts24 cts @ [0xBEuy; 0xEFuy])
+
 // config(映像+音声)と onMetaData が揃うと init(EBML→Tracks)を OnContentHeader する。
 [<Fact>]
 let ``config と metadata が揃うと init を OnContentHeader する`` () =
@@ -143,3 +154,72 @@ let ``キーフレームで Cluster を開き SimpleBlock を出力する`` () =
     Assert.True(hBlk2.ID.BinaryEquals(Elements.SimpleBlock))
     let blk2 = Element.ReadBody(&hBlk2, ms1)
     Assert.Equal<byte[]>([| 0x82uy; 0x00uy; 0x14uy; 0x80uy; 0xCAuy; 0xFEuy |], blk2.Data)
+
+// §A: avc1/hvc1 は CTS が乗る。SimpleBlock の timecode は DTS ではなく
+//     PTS(=DTS+CTS)を原点 rebase した値になる。
+[<Fact>]
+let ``avc1 では CTS を加えた PTS で SimpleBlock の timecode を決める`` () =
+    use peca = new PeerCast()
+    let sink = CollectingSink()
+    let buf = MatroskaContentBuffer(makeChannel peca, sink)
+    sendData buf (metaMsg())
+    sendVideo buf videoConfigAvc
+    sendAudio buf audioConfig
+    // キーフレーム DTS=100, CTS=10 → PTS=110。これが出力原点。Cluster timecode=0。
+    sendVideo buf (videoKeyAvc 100L 10)
+    // 非キー DTS=120, CTS=30 → PTS=150 → rebased=40=0x0028。
+    // CTS を無視して DTS だけだと 120-100=20=0x14 になる(=回帰検出)。
+    sendVideo buf (videoInterAvc 120L 30)
+    Assert.Equal(2, sink.Contents.Count)
+
+    // 1 つ目: Cluster(unknown-size) → Timecode(=0, 原点 rebase) → キーフレーム SimpleBlock(相対 0)
+    use ms0 = new MemoryStream(sink.Contents.[0])
+    let hCluster = ElementHeader.Read(ms0)
+    Assert.True(hCluster.ID.BinaryEquals(Elements.Cluster))
+    let mutable hTc = ElementHeader.Read(ms0)
+    Assert.True(hTc.ID.BinaryEquals(Elements.Timecode))
+    let tc = Element.ReadBody(&hTc, ms0)
+    Assert.Equal(0L, Element.ReadUInt(new MemoryStream(tc.Data), tc.Data.LongLength))
+
+    // 2 つ目: 非キー SimpleBlock(track1, 相対 tc=40=0x0028, 非キーなので flag=0x00)
+    use ms1 = new MemoryStream(sink.Contents.[1])
+    let mutable hBlk = ElementHeader.Read(ms1)
+    Assert.True(hBlk.ID.BinaryEquals(Elements.SimpleBlock))
+    let blk = Element.ReadBody(&hBlk, ms1)
+    Assert.Equal<byte[]>([| 0x81uy; 0x00uy; 0x28uy; 0x00uy; 0xBEuy; 0xEFuy |], blk.Data)
+
+// §B-1: onMetaData が来なくても、config が揃って一定数フレームが流れたら
+//       CodecPrivate だけで init をフォールバック送出する。
+[<Fact>]
+let ``metadata が来なくても一定フレーム後に config だけで init を出す`` () =
+    use peca = new PeerCast()
+    let sink = CollectingSink()
+    let buf = MatroskaContentBuffer(makeChannel peca, sink)
+    // metadata は送らない。config だけ揃える。
+    sendVideo buf videoConfig
+    sendAudio buf audioConfig
+    // しきい値(MetadataWaitFrames=60)未満では init は出ない。
+    for i in 1..59 do
+        sendVideo buf (videoKey (int64 i))
+    Assert.Equal(0, sink.Headers.Count)
+    // 60 フレーム目でフォールバック init が出る。
+    sendVideo buf (videoKey 60L)
+    Assert.Equal(1, sink.Headers.Count)
+
+// §E: 相対 timecode が int16(±約32.7秒)を超えたら飽和クランプする(GOP 過大時の安全網)。
+[<Fact>]
+let ``int16 を超える相対 timecode は飽和クランプされる`` () =
+    use peca = new PeerCast()
+    let sink = CollectingSink()
+    let buf = MatroskaContentBuffer(makeChannel peca, sink)
+    sendData buf (metaMsg())
+    sendVideo buf videoConfig
+    sendAudio buf audioConfig
+    sendVideo buf (videoKey 0L)      // Cluster 開始、原点=0
+    sendAudio buf (audioRaw 40000L)  // 相対 40000ms > 32767 → 0x7FFF にクランプ
+    Assert.Equal(2, sink.Contents.Count)
+    use ms1 = new MemoryStream(sink.Contents.[1])
+    let mutable hBlk = ElementHeader.Read(ms1)
+    Assert.True(hBlk.ID.BinaryEquals(Elements.SimpleBlock))
+    let blk = Element.ReadBody(&hBlk, ms1)
+    Assert.Equal<byte[]>([| 0x82uy; 0x7Fuy; 0xFFuy; 0x80uy; 0xCAuy; 0xFEuy |], blk.Data)

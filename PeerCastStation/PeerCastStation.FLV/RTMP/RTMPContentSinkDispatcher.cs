@@ -19,6 +19,8 @@ namespace PeerCastStation.FLV.RTMP
   internal class RTMPContentSinkDispatcher
     : IRTMPContentSink
   {
+    private static readonly Logger Logger = new Logger(typeof(RTMPContentSinkDispatcher));
+
     private const byte ExHeaderFlag = 0x80;
     // 映像が一切来ないまま(=音声のみ配信)この件数までバッファしたら旧 FLV 経路へ確定する。
     // Enhanced RTMP は配信開始直後に映像を送るため、映像があればこの閾値より前に判定が済む。
@@ -69,6 +71,9 @@ namespace PeerCastStation.FLV.RTMP
     {
       if (sink==null) {
         var enhanced = msg.Body!=null && msg.Body.Length>0 && (msg.Body[0] & ExHeaderFlag)!=0;
+        Logger.Debug("Codec dispatch: first video byte=0x{0:X2} -> {1}",
+          msg.Body!=null && msg.Body.Length>0 ? msg.Body[0] : 0,
+          enhanced ? "Matroska (Enhanced RTMP)" : "FLV (legacy)");
         Commit(enhanced
           ? (IRTMPContentSink)new MatroskaContentBuffer(targetChannel, contentSink)
           : new FLVContentBuffer(targetChannel, contentSink));
@@ -81,6 +86,7 @@ namespace PeerCastStation.FLV.RTMP
     private void FallbackIfBufferFull()
     {
       if (sink==null && buffered.Count>=FallbackToFlvAfter) {
+        Logger.Debug("No video after {0} buffered messages; falling back to FLV (audio-only stream)", buffered.Count);
         Commit(new FLVContentBuffer(targetChannel, contentSink));
       }
     }
@@ -91,6 +97,8 @@ namespace PeerCastStation.FLV.RTMP
       foreach (var action in buffered) {
         action(sink);
       }
+      Logger.Debug("Content sink committed ({0}); replayed {1} buffered message(s)",
+        chosen.GetType().Name, buffered.Count);
       buffered.Clear();
     }
   }
