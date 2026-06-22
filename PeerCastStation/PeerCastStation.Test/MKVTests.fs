@@ -132,6 +132,34 @@ let ``FourCcToCodecId は未対応 FourCc を拒否する`` () =
         MatroskaInitBuilder.FourCcToCodecId("xxxx") |> ignore)
     |> ignore
 
+// MakeSimpleBlock: [トラック VInt][相対 timecode int16 BE][フラグ][payload] を組み立て、
+// SimpleBlock(0xA3)要素として読み戻せる。track1→0x81, track2→0x82。
+[<Fact>]
+let ``MakeSimpleBlock は track1 keyframe を正しく組み立てる`` () =
+    let payload = System.ArraySegment<byte>([| 0xAAuy; 0xBBuy |])
+    let elt = MatroskaWriter.MakeSimpleBlock(1UL, 0s, true, payload)
+    use ms = new MemoryStream(elt.ToArray())
+    let mutable h = ElementHeader.Read(ms)
+    Assert.True(h.ID.BinaryEquals(Elements.SimpleBlock))
+    let body = Element.ReadBody(&h, ms)
+    // 0x81(track1 VInt), 0x00 0x00(tc=0), 0x80(keyframe), payload
+    Assert.Equal<byte[]>([| 0x81uy; 0x00uy; 0x00uy; 0x80uy; 0xAAuy; 0xBBuy |], body.Data)
+
+[<Fact>]
+let ``MakeSimpleBlock は track2 非keyframe で負の相対timecodeを符号化する`` () =
+    let payload = System.ArraySegment<byte>([| 0xCCuy |])
+    let elt = MatroskaWriter.MakeSimpleBlock(2UL, -2s, false, payload)
+    use ms = new MemoryStream(elt.ToArray())
+    let mutable h = ElementHeader.Read(ms)
+    let body = Element.ReadBody(&h, ms)
+    // 0x82(track2), 0xFF 0xFE(tc=-2), 0x00(非keyframe), payload
+    Assert.Equal<byte[]>([| 0x82uy; 0xFFuy; 0xFEuy; 0x00uy; 0xCCuy |], body.Data)
+
+[<Fact>]
+let ``MakeSimpleBlock は空payloadでもヘッダ4byteを保つ`` () =
+    let elt = MatroskaWriter.MakeSimpleBlock(1UL, 100s, true, System.ArraySegment<byte>([||]))
+    Assert.Equal<byte[]>([| 0x81uy; 0x00uy; 0x64uy; 0x80uy |], elt.Data)
+
 // init 領域内の特定 master 要素を読み出すヘルパ(トップレベルを線形走査)。
 let private readTopLevel (init: byte[]) (id: byte[]) =
     use ms = new MemoryStream(init)

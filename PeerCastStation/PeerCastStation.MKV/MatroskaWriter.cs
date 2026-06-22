@@ -51,6 +51,28 @@ namespace PeerCastStation.MKV
       return MakeElement(id, MinimalUIntBytes(value));
     }
 
+    /// <summary>
+    /// SimpleBlock(0xA3)要素を作る。ライブ mux のフレーム 1 つ分。
+    /// ボディは [トラック番号 VInt][相対 timecode int16 big-endian][フラグ][payload]。
+    /// 相対 timecode は所属 Cluster の Timecode からの差(ミリ秒, 符号付き int16)。
+    /// keyframe なら最上位ビット(0x80)を立てる。lacing は使わない。
+    /// payload は中身を解析せず透過コピーする(NAL/OBU をそのまま入れる)。
+    /// </summary>
+    public static Element MakeSimpleBlock(ulong trackNumber, short relativeTimecode, bool isKeyFrame, ArraySegment<byte> payload)
+    {
+      var track = VInt.FromSize((long)trackNumber).Binary;
+      using (var ms=new MemoryStream()) {
+        ms.Write(track, 0, track.Length);
+        ms.WriteByte((byte)((relativeTimecode>>8) & 0xFF));
+        ms.WriteByte((byte)(relativeTimecode & 0xFF));
+        ms.WriteByte((byte)(isKeyFrame ? 0x80 : 0x00));
+        if (payload.Count>0) {
+          ms.Write(payload.Array!, payload.Offset, payload.Count);
+        }
+        return MakeElement(Elements.SimpleBlock, ms.ToArray());
+      }
+    }
+
     /// <summary>UTF-8 文字列要素。</summary>
     public static Element MakeString(byte[] id, string value)
     {

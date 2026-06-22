@@ -15,6 +15,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj" />
+    <ProjectReference Include="..\PeerCastStation.MKV\PeerCastStation.MKV.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\PeerCastStation.snk">

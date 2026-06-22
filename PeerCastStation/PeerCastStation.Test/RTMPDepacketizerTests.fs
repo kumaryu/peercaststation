@@ -101,6 +101,19 @@ let ``Enhanced CodedFrames(hvc1) は3byteCTSを読みPayloadは8byte目から`` 
     Assert.Equal<byte[]>([| 0x11uy; 0x22uy |], payloadBytes frame)
 
 [<Fact>]
+let ``Enhanced CodedFrames(av01) は CTS を食わずPayloadは5byte目から`` () =
+    // av01 は CodedFrames でも CompositionTime を持たない(Enhanced RTMP 仕様)。
+    // 0x80 | (FrameType 1)<<4 | (PacketType 1 CodedFrames) = 0x91
+    // FourCC 直後(5byte目)から OBU ストリーム。3byte 食うと壊れる。
+    let msg = videoMsg 500L ([0x91uy] @ fourCc "av01" @ [0x12uy; 0x00uy; 0x32uy; 0x10uy])
+    let ok, frame = ERTMPDepacketizer.TryParseVideo(msg)
+    Assert.True(ok)
+    Assert.Equal("av01", frame.FourCc)
+    Assert.Equal(DepacketizedFrameKind.CodedFrame, frame.Kind)
+    Assert.Equal(0, frame.CompositionTimeOffset)
+    Assert.Equal<byte[]>([| 0x12uy; 0x00uy; 0x32uy; 0x10uy |], payloadBytes frame)
+
+[<Fact>]
 let ``Enhanced CodedFramesX は CTS=0 でPayloadは5byte目から`` () =
     // 0x80 | (FrameType 1)<<4 | (PacketType 3 CodedFramesX) = 0x93
     let msg = videoMsg 0L ([0x93uy] @ fourCc "av01" @ [0x33uy; 0x44uy; 0x55uy])

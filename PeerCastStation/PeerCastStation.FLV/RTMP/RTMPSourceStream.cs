@@ -59,12 +59,12 @@ namespace PeerCastStation.FLV.RTMP
           .Select(name => PeerCast.ContentFilters.FirstOrDefault(filter => filter.Name.ToLowerInvariant()==name.ToLowerInvariant()))
           .NotNull()
           .Aggregate(sink, (r,filter) => filter.Activate(r));
-      this.flvBuffer = new FLVContentBuffer(channel, new AsynchronousContentSink(sink));
+      this.contentSink = new RTMPContentSinkDispatcher(channel, new AsynchronousContentSink(sink));
       this.useContentBitrate = use_content_bitrate;
     }
 
     private class ConnectionStoppedExcception : ApplicationException {}
-    private FLVContentBuffer flvBuffer;
+    private RTMPContentSinkDispatcher contentSink;
     private bool useContentBitrate;
 
     public override ConnectionInfo GetConnectionInfo()
@@ -88,7 +88,7 @@ namespace PeerCastStation.FLV.RTMP
         RemoteName       = SourceUri.ToString(),
         RemoteEndPoint   = endpoint,
         RemoteHostStatus = (endpoint!=null && endpoint.Address.IsSiteLocal()) ? RemoteHostStatus.Local : RemoteHostStatus.None,
-        ContentPosition  = flvBuffer.Position,
+        ContentPosition  = contentSink.Position,
         RecvRate         = RecvRate,
         SendRate         = SendRate,
         AgentName        = clientName,
@@ -597,45 +597,21 @@ namespace PeerCastStation.FLV.RTMP
       return Task.Delay(0);
     }
 
-    private bool loggedAudioConfig = false;
     private Task OnAudio(RTMPMessage msg, CancellationToken cancel_token)
     {
-      // M2: デパケタイザで正規化し、config(SequenceHeader)到達時に判定をログ出力して検証する。
-      // 受信本体は従来どおり FLVContentBuffer へ流す(Sink 切替・Matroska 化は M4)。
-      if (ERTMPDepacketizer.TryParseAudio(msg, out var frame) &&
-          (frame.Kind==DepacketizedFrameKind.SequenceHeader || !loggedAudioConfig)) {
-        loggedAudioConfig = true;
-        LogDepacketized(frame);
-      }
-      flvBuffer.OnAudio(msg);
+      contentSink.OnAudio(msg);
       return Task.Delay(0);
     }
 
-    private bool loggedVideoConfig = false;
     private Task OnVideo(RTMPMessage msg, CancellationToken cancel_token)
     {
-      // M2: デパケタイザで正規化し、config(SequenceHeader)到達時または初回に判定をログ出力する。
-      // Enhanced RTMP(先頭バイト 0x80 の ExHeader)と旧 FLV(AVC)を同一構造体に正規化して検証する。
-      if (ERTMPDepacketizer.TryParseVideo(msg, out var frame) &&
-          (frame.Kind==DepacketizedFrameKind.SequenceHeader || !loggedVideoConfig)) {
-        loggedVideoConfig = true;
-        LogDepacketized(frame);
-      }
-      flvBuffer.OnVideo(msg);
+      contentSink.OnVideo(msg);
       return Task.Delay(0);
-    }
-
-    private void LogDepacketized(DepacketizedFrame frame)
-    {
-      Logger.Debug(
-        "Depacketized {0}: fourCC='{1}' kind={2} key={3} dts={4} cts={5} payload={6}B",
-        frame.TrackType, frame.FourCc, frame.Kind, frame.IsKeyFrame,
-        frame.Timestamp, frame.CompositionTimeOffset, frame.Payload.Count);
     }
 
     private Task OnData(DataMessage msg, CancellationToken cancel_token)
     {
-      flvBuffer.OnData(msg);
+      contentSink.OnData(msg);
       return Task.Delay(0);
     }
 

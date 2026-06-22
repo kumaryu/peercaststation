@@ -147,11 +147,19 @@ namespace PeerCastStation.FLV.RTMP
         frame.Payload = Segment(body, 5);
         return true;
       case VideoPacketTypeCodedFrames:
-        // FourCC の後に 3byte の符号付き CompositionTime が続く。
-        if (body.Length<8) return false;
-        frame.Kind    = DepacketizedFrameKind.CodedFrame;
-        frame.CompositionTimeOffset = ReadSInt24(body, 5);
-        frame.Payload = Segment(body, 8);
+        // 3byte の符号付き CompositionTime は avc1/hvc1 のときだけ存在する(Enhanced RTMP 仕様)。
+        // av01 等は CompositionTime を持たず、FourCC 直後から本体が始まる。FourCC 非依存で
+        // 常に 3byte 読むと av01 の OBU ストリームが 3byte ずれて壊れる(mpv/dav1d がデコード失敗)。
+        frame.Kind = DepacketizedFrameKind.CodedFrame;
+        if (frame.FourCc=="avc1" || frame.FourCc=="hvc1") {
+          if (body.Length<8) return false;
+          frame.CompositionTimeOffset = ReadSInt24(body, 5);
+          frame.Payload = Segment(body, 8);
+        }
+        else {
+          frame.CompositionTimeOffset = 0;
+          frame.Payload = Segment(body, 5);
+        }
         return true;
       case VideoPacketTypeCodedFramesX:
         // CompositionTime 無し(=0)。
