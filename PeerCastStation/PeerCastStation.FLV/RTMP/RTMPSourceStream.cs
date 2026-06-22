@@ -597,23 +597,40 @@ namespace PeerCastStation.FLV.RTMP
       return Task.Delay(0);
     }
 
+    private bool loggedAudioConfig = false;
     private Task OnAudio(RTMPMessage msg, CancellationToken cancel_token)
     {
+      // M2: デパケタイザで正規化し、config(SequenceHeader)到達時に判定をログ出力して検証する。
+      // 受信本体は従来どおり FLVContentBuffer へ流す(Sink 切替・Matroska 化は M4)。
+      if (ERTMPDepacketizer.TryParseAudio(msg, out var frame) &&
+          (frame.Kind==DepacketizedFrameKind.SequenceHeader || !loggedAudioConfig)) {
+        loggedAudioConfig = true;
+        LogDepacketized(frame);
+      }
       flvBuffer.OnAudio(msg);
       return Task.Delay(0);
     }
 
-    private bool loggedEnhancedVideo = false;
+    private bool loggedVideoConfig = false;
     private Task OnVideo(RTMPMessage msg, CancellationToken cancel_token)
     {
-      // Enhanced RTMP のビデオパケットは先頭バイトの最上位ビット(IsExHeader)が立つ。
-      // M1 では到達確認のため初回のみログ出力する(remux は M2 以降)。
-      if (!loggedEnhancedVideo && msg.Body.Length>0 && (msg.Body[0] & 0x80)!=0) {
-        loggedEnhancedVideo = true;
-        Logger.Debug("Enhanced RTMP video packet (ExHeader) を検出");
+      // M2: デパケタイザで正規化し、config(SequenceHeader)到達時または初回に判定をログ出力する。
+      // Enhanced RTMP(先頭バイト 0x80 の ExHeader)と旧 FLV(AVC)を同一構造体に正規化して検証する。
+      if (ERTMPDepacketizer.TryParseVideo(msg, out var frame) &&
+          (frame.Kind==DepacketizedFrameKind.SequenceHeader || !loggedVideoConfig)) {
+        loggedVideoConfig = true;
+        LogDepacketized(frame);
       }
       flvBuffer.OnVideo(msg);
       return Task.Delay(0);
+    }
+
+    private void LogDepacketized(DepacketizedFrame frame)
+    {
+      Logger.Debug(
+        "Depacketized {0}: fourCC='{1}' kind={2} key={3} dts={4} cts={5} payload={6}B",
+        frame.TrackType, frame.FourCc, frame.Kind, frame.IsKeyFrame,
+        frame.Timestamp, frame.CompositionTimeOffset, frame.Payload.Count);
     }
 
     private Task OnData(DataMessage msg, CancellationToken cancel_token)
