@@ -13,8 +13,8 @@ namespace PeerCastStation.FLV.RTMP
 
   /// <summary>
   /// 1 つの RTMP メッセージ(映像/音声)が運ぶデータの種類。
-  /// コーデック非依存で正規化したうえで、Matroska 化(M3/M4)で
-  /// CodecPrivate(SequenceHeader)と SimpleBlock(CodedFrame)に振り分ける。
+  /// コーデック非依存で正規化したうえで、Matroska化で
+  /// CodecPrivate(SequenceHeader)とSimpleBlock(CodedFrame)に振り分ける。
   /// </summary>
   internal enum DepacketizedFrameKind
   {
@@ -51,16 +51,24 @@ namespace PeerCastStation.FLV.RTMP
 
   /// <summary>
   /// RTMPMessage(映像/音声)を <see cref="DepacketizedFrame"/> に正規化する純粋パーサ。
-  /// 副作用を持たないため単体テスト可能(internal、テストへは InternalsVisibleTo で公開)。
-  /// M2 時点では出力はダンプ/ユニットテストのみで、Matroska 化(CodecPrivate/Cluster)は M3/M4。
   /// </summary>
+  /// <remarks>
+  /// 副作用を持たないため単体テスト可能(internal、テストへは InternalsVisibleTo で公開)。
+  /// </remarks>
   internal static class ERTMPDepacketizer
   {
-    // 旧 FLV ビデオの CodecID(VideoTagHeader 下位 4bit)。
+    /// <summary>
+    /// 旧 FLV ビデオの CodecID(VideoTagHeader 下位 4bit)。
+    /// </summary>
     private const int FlvVideoCodecAvc = 7;
-    // 旧 FLV オーディオの SoundFormat(AudioTagHeader 上位 4bit)。
+    /// <summary>
+    /// 旧 FLV オーディオの SoundFormat(AudioTagHeader 上位 4bit)。
+    /// </summary>
     private const int FlvAudioFormatAac          = 10;
-    private const int FlvAudioFormatExHeader     = 9; // Enhanced RTMP v2 の音声 ExHeader 識別子(将来対応)
+    /// <summary>
+    /// Enhanced RTMP v2 の音声 ExHeader 識別子(将来対応)
+    /// </summary>
+    private const int FlvAudioFormatExHeader     = 9;
 
     // Enhanced RTMP video packet type(byte0 の下位 4bit)。
     private const int VideoPacketTypeSequenceStart        = 0;
@@ -70,11 +78,13 @@ namespace PeerCastStation.FLV.RTMP
     private const int VideoPacketTypeMetadata             = 4;
     private const int VideoPacketTypeMpeg2TsSequenceStart = 5;
 
-    // Enhanced RTMP の ExHeader を示す byte0 の最上位ビット。
+    /// <summary>
+    /// Enhanced RTMP の ExHeader を示す byte0 の最上位ビット。
+    /// </summary>
     private const int ExHeaderFlag = 0x80;
 
     /// <summary>
-    /// 映像 RTMPMessage を正規化する。解釈不能(短すぎる等)なら false。
+    /// 映像RTMPMessageを正規化する。解釈不能(短すぎる等)ならfalse。
     /// </summary>
     public static bool TryParseVideo(RTMPMessage msg, out DepacketizedFrame frame)
     {
@@ -96,7 +106,7 @@ namespace PeerCastStation.FLV.RTMP
     }
 
     /// <summary>
-    /// 音声 RTMPMessage を正規化する。当面 AAC を主対象とし、Enhanced 音声 ExHeader は枠のみ。
+    /// 音声RTMPMessageを正規化する。当面AACを主対象とし、Enhancedな音声のExHeaderは枠のみ。
     /// </summary>
     public static bool TryParseAudio(RTMPMessage msg, out DepacketizedFrame frame)
     {
@@ -115,13 +125,13 @@ namespace PeerCastStation.FLV.RTMP
       case FlvAudioFormatAac:
         return TryParseLegacyAac(msg, ref frame);
       case FlvAudioFormatExHeader:
-        // Enhanced RTMP v2 の音声 ExHeader(Opus/FLAC/AC-3 等)。将来対応。
+        // Enhanced RTMP v2の音声ExHeader(Opus/FLAC/AC-3 等)。将来対応。
         frame.Kind    = DepacketizedFrameKind.Unknown;
         frame.FourCc  = "";
         frame.Payload = new ArraySegment<byte>(body, Math.Min(1, body.Length), Math.Max(0, body.Length-1));
         return true;
       default:
-        // MP3 等のその他レガシ音声。当面は本体だけ持たせる(remux 対象外)。
+        // MP3等のその他レガシ音声。当面は本体だけ持たせる(remux対象外)。
         frame.Kind    = DepacketizedFrameKind.Unknown;
         frame.FourCc  = "";
         frame.Payload = new ArraySegment<byte>(body, Math.Min(1, body.Length), Math.Max(0, body.Length-1));
@@ -147,9 +157,9 @@ namespace PeerCastStation.FLV.RTMP
         frame.Payload = Segment(body, 5);
         return true;
       case VideoPacketTypeCodedFrames:
-        // 3byte の符号付き CompositionTime は avc1/hvc1 のときだけ存在する(Enhanced RTMP 仕様)。
-        // av01 等は CompositionTime を持たず、FourCC 直後から本体が始まる。FourCC 非依存で
-        // 常に 3byte 読むと av01 の OBU ストリームが 3byte ずれて壊れる(mpv/dav1d がデコード失敗)。
+        // 3byteの符号付きCompositionTimeはavc1/hvc1のときだけ存在する(Enhanced RTMP 仕様)。
+        // av01等はCompositionTimeを持たず、FourCC 直後から本体が始まる。FourCC 非依存で
+        // 常に3byte読むとav01のOBUストリームが3byteずれて壊れる(mpv/dav1d がデコード失敗)。
         frame.Kind = DepacketizedFrameKind.CodedFrame;
         if (frame.FourCc=="avc1" || frame.FourCc=="hvc1") {
           if (body.Length<8) return false;

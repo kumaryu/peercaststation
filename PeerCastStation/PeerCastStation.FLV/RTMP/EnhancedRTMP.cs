@@ -7,22 +7,28 @@ namespace PeerCastStation.FLV.RTMP
 {
   /// <summary>
   /// Enhanced RTMP の connect 能力交渉に関する純粋なヘルパ。
-  /// 副作用を持たないため単体テスト可能(internal、テストへは InternalsVisibleTo で公開)。
   /// </summary>
+  /// <remarks>
+  /// 副作用を持たないため単体テスト可能(internal、テストへは InternalsVisibleTo で公開)。
+  /// </remarks>
   internal static class EnhancedRTMP
   {
     /// <summary>
     /// サーバがサポートを広告する映像コーデックの FourCC。
-    /// 当面の現実解は AV1/HEVC + AAC で、後方互換として AVC も広告する。
     /// </summary>
+    /// <remarks>
+    /// 当面の現実解は AV1/HEVC + AAC で、後方互換として AVC(H.264) も広告する。
+    /// </remarks>
     public static readonly string[] SupportedVideoFourCc = { "av01", "hvc1", "avc1" };
 
     /// <summary>
     /// connect 応答に載せる拡張能力ビットマスク。
     /// reconnect/multitrack/modEx/nano-timestamp はいずれも未対応なので 0。
     /// フィールド自体を返すことで「Enhanced RTMP を理解するサーバ」であることを示す。
-    /// 各ビットの正確な意味は後続マイルストーン(M2 以降)で必要に応じ精緻化する。
     /// </summary>
+    /// <remarks>
+    /// Enhanced RTMPに対応する機能が実装された場合、この定数を変更する必要がある。
+    /// </remarks>
     public const int CapsEx = 0;
 
     /// <summary>

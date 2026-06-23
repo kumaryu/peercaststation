@@ -28,9 +28,9 @@ namespace PeerCastStation.MKV
   /// <summary>
   /// Enhanced RTMP / 旧 FLV から取り出したコーデック config とメタ情報から、
   /// Matroska の init 領域(EBML Header → Segment 開始 → Info → Tracks)の
-  /// バイト列を組み立てる。Cluster は含めない(ライブ出力は M4)。
+  /// バイト列を組み立てる。Clusterは含めない。
   /// 単一映像 + 単一音声トラック前提(capsEx=0、multitrack 非対応)。
-  /// CodecPrivate は中身を解析せず透過コピーする(M2 で av1C=20B / ASC=5B を確認)。
+  /// CodecPrivate は中身を解析せず透過コピーする(av1C=20B / ASC=5Bを確認)。
   /// </summary>
   internal static class MatroskaInitBuilder
   {
