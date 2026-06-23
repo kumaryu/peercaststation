@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// (C) 2026 Philmist
 module MatroskaContentBufferTests
 
 open System
