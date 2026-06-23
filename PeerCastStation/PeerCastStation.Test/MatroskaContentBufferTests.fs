@@ -230,6 +230,41 @@ let ``ContFlag はキーフレームのみ None、中間は InterFrame、音声�
            PCPChanPacketContinuation.None |],
         sink.ContFlags.ToArray())
 
+// 時間境界 Cluster: GOP(キーフレーム間隔)が長くても、前 Cluster から ClusterTimeLimitMs
+// (1000ms)以上経過した映像フレームで新 Cluster(ContFlag=None の join 点)を開く。
+// これにより内容バッファ(3秒)より長い GOP でも直近 join 点がバッファ内に残る。
+[<Fact>]
+let ``GOP が長くても一定時間ごとに Cluster(None join点)を開く`` () =
+    use peca = new PeerCast()
+    let sink = CollectingSink()
+    let buf = MatroskaContentBuffer(makeChannel peca, sink)
+    sendData buf (metaMsg())
+    sendVideo buf videoConfig
+    sendAudio buf audioConfig
+    sendVideo buf (videoKey 0L)      // キーフレーム → Cluster 開始(原点0)
+    sendVideo buf (videoInter 500L)  // +500ms: しきい値未満 → 新 Cluster 無し → InterFrame
+    sendVideo buf (videoInter 1200L) // +1200ms: しきい値超 → 非キーフレームでも新 Cluster → None
+    Assert.Equal(3, sink.Contents.Count)
+    Assert.Equal<PCPChanPacketContinuation[]>(
+        [| PCPChanPacketContinuation.None         // キーフレーム Cluster
+           PCPChanPacketContinuation.InterFrame   // しきい値未満の中間フレーム
+           PCPChanPacketContinuation.None |],      // 時間境界 Cluster(非キーフレーム始まり)
+        sink.ContFlags.ToArray())
+    // 3 つ目は Cluster ヘッダ(unknown-size)+ Timecode(=1200, 原点 rebase)で始まる。
+    use ms2 = new MemoryStream(sink.Contents.[2])
+    let hCluster = ElementHeader.Read(ms2)
+    Assert.True(hCluster.ID.BinaryEquals(Elements.Cluster))
+    Assert.True(hCluster.Size.IsUnknown)
+    let mutable hTc = ElementHeader.Read(ms2)
+    Assert.True(hTc.ID.BinaryEquals(Elements.Timecode))
+    let tc = Element.ReadBody(&hTc, ms2)
+    Assert.Equal(1200L, Element.ReadUInt(new MemoryStream(tc.Data), tc.Data.LongLength))
+    // 続く SimpleBlock は新 Cluster 基準で相対 timecode=0、非キーフレーム(flag=0x00)。
+    let mutable hBlk = ElementHeader.Read(ms2)
+    Assert.True(hBlk.ID.BinaryEquals(Elements.SimpleBlock))
+    let blk = Element.ReadBody(&hBlk, ms2)
+    Assert.Equal<byte[]>([| 0x81uy; 0x00uy; 0x00uy; 0x00uy; 0xBEuy; 0xEFuy |], blk.Data)
+
 // §E: 相対 timecode が int16(±約32.7秒)を超えたら飽和クランプする(GOP 過大時の安全網)。
 [<Fact>]
 let ``int16 を超える相対 timecode は飽和クランプされる`` () =

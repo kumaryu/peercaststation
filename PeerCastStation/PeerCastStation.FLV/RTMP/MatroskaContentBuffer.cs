@@ -12,13 +12,15 @@ namespace PeerCastStation.FLV.RTMP
   ///
   /// onMetaData と 映像+音声の SequenceHeader(config)が揃うと
   /// <see cref="MatroskaInitBuilder.BuildInit"/> で init 領域(EBML/Segment/Info/Tracks)を作り
-  /// OnContentHeader で送出する。以降は映像キーフレームごとに新しい Cluster を開き、
+  /// OnContentHeader で送出する。以降は映像キーフレーム、および前 Cluster から一定時間
+  /// (<see cref="ClusterTimeLimitMs"/>)が経過した映像フレームで新しい Cluster を開き、
   /// 各フレームを SimpleBlock として OnContent で送出する。
   ///
-  /// 「全 Cluster はキーフレームで始まる」を不変条件とし、後発参加者は次の Cluster ID から
-  /// resync できる(既存 MKVContentReader の挙動と対称)。init 完了かつ最初の映像キーフレーム
-  /// 到達までは全フレームを破棄する。低遅延 B フレーム無し運用前提で DTS=PTS とみなす(CTS は M5)。
-  /// 単一映像 + 単一音声トラック前提。
+  /// Cluster を開くパケットを <see cref="PCPChanPacketContinuation.None"/> にすることで、Core の
+  /// GetFirstContent が後発参加者を必ず Cluster 境界から開始させる(Cluster 外の裸 SimpleBlock を
+  /// 配信しない)。GOP が内容バッファ(3秒)より長くても、時間境界 Cluster により直近の join 点が
+  /// バッファ内に残る。init 完了かつ最初の映像キーフレーム到達までは全フレームを破棄する。
+  /// CTS→PTS を適用(avc1/hvc1 は B フレームで CTS が乗る)。単一映像 + 単一音声トラック前提。
   /// </summary>
   internal class MatroskaContentBuffer
     : IRTMPContentSink
@@ -31,6 +33,12 @@ namespace PeerCastStation.FLV.RTMP
     // 映像・音声の config が揃ってから、この数の CodedFrame が来ても onMetaData が
     // 得られない場合は、CodecPrivate だけで init を組み立てる(width/height 不明のまま)。
     private const int MetadataWaitFrames = 60;
+
+    // 後発参加者の join 点(Cluster 境界)は内容バッファ(ContentCollection.PacketTimeLimit
+    // =3秒)に残っている必要がある。GOP がこれより長い配信ではキーフレームが追い出され
+    // join 点が消えてしまうため、キーフレームに加えてこの媒体時間ごとにも新 Cluster を開く。
+    // 3秒より十分短く取る。
+    private const long ClusterTimeLimitMs = 1000;
 
     public Channel      TargetChannel { get; private set; }
     public IContentSink ContentSink   { get; private set; }
@@ -326,36 +334,42 @@ namespace PeerCastStation.FLV.RTMP
       }
       var rebased = pts - timestampOrigin;
 
+      // Cluster を開く条件:映像キーフレーム、または前 Cluster から ClusterTimeLimitMs 以上の
+      // 媒体時間が経過した映像フレーム。後者により GOP が内容バッファ(3秒)より長い配信でも
+      // 直近 Cluster 境界が必ずバッファ内に残り、後発参加者がそこから再生開始できる。
+      // 非キーフレーム始まりの Cluster でもコンテナは有効で、次の本物のキーフレームまで映像は
+      // 乱れるが音声は出る(自己完結タグの FLV 経路と同等の挙動)。Cluster は映像フレームでのみ
+      // 開く(先頭ブロックを映像にし、relative timecode の基準を素直に保つため)。
+      var openCluster =
+        isVideo && (frame.IsKeyFrame ||
+                    rebased - currentClusterTimecode >= ClusterTimeLimitMs);
+
       using (var ms=new MemoryStream()) {
-        // 映像キーフレームごとに新しい Cluster を開く。
-        if (isVideo && frame.IsKeyFrame) {
+        if (openCluster) {
           currentClusterTimecode = rebased;
           MatroskaWriter.MakeUnknownSizeHeader(Elements.Cluster).Write(ms);
           MatroskaWriter.MakeUInt(Elements.Timecode, (ulong)Math.Max(0, currentClusterTimecode)).Write(ms);
         }
-        // §E: 相対 timecode は符号付き int16(±約32.7秒)。Cluster は映像キーフレームでしか
-        //     開かないため、GOP が ~32秒を超えると後半フレームが飽和して timestamp が壊れる。
-        //     Cluster 分割は「全 Cluster はキーフレームで始まる」resync 不変条件を壊すので
-        //     本質修正はせず、検知のみ警告する(通常 GOP ≤4秒では発生しない)。
+        // 相対 timecode は符号付き int16(±約32.7秒)。Cluster を最大 ClusterTimeLimitMs ごとに
+        // 開くため通常は飽和しないが、安全網として検知時に 1 度だけ警告しクランプする。
         var rawRelative = rebased - currentClusterTimecode;
         if ((rawRelative>short.MaxValue || rawRelative<short.MinValue) && !warnedTimecodeSaturation) {
-          Logger.Warn("SimpleBlock relative timecode {0}ms exceeds int16 range; GOP may be too long (>~32s). Timestamp clamped.", rawRelative);
+          Logger.Warn("SimpleBlock relative timecode {0}ms exceeds int16 range; timestamp clamped.", rawRelative);
           warnedTimecodeSaturation = true;
         }
         var relative = (short)Math.Max(short.MinValue, Math.Min(short.MaxValue, rawRelative));
         var track    = isVideo ? VideoTrackNumber : AudioTrackNumber;
         MatroskaWriter.MakeSimpleBlock(track, relative, frame.IsKeyFrame, frame.Payload).Write(ms);
 
-        // 後発参加者のリシンク点を Core の GetFirstContent に正しく伝える。
-        // GetFirstContent は ContFlag==None のパケットを join 点に選ぶので、Cluster を
-        // 開く映像キーフレームのパケットだけを None にする。中間フレーム/音声を None に
-        // すると Cluster 途中(裸の SimpleBlock)から配信が始まり、プレイヤーが
-        // 「Cluster 外の SimpleBlock」として壊れたファイルと判断する(厳格な新しい
-        // mpv 内蔵デマクサで顕著)。
+        // 後発参加者のリシンク点を Core の GetFirstContent に伝える。GetFirstContent は
+        // ContFlag==None のパケットを join 点に選ぶので、Cluster を開くパケット(キーフレーム
+        // および時間境界)を None にする。これにより GOP がバッファより長くても直近 Cluster
+        // から再生開始でき、Cluster 外の裸 SimpleBlock(厳格な新 mpv が壊れ判定)を防ぐ。
+        // 中間映像は InterFrame、音声は AudioFrame。
         var contFlag =
-          (isVideo && frame.IsKeyFrame) ? PCPChanPacketContinuation.None :
-          isVideo                       ? PCPChanPacketContinuation.InterFrame :
-                                          PCPChanPacketContinuation.AudioFrame;
+          openCluster ? PCPChanPacketContinuation.None :
+          isVideo     ? PCPChanPacketContinuation.InterFrame :
+                        PCPChanPacketContinuation.AudioFrame;
 
         var bytes = ms.ToArray();
         ContentSink.OnContent(
