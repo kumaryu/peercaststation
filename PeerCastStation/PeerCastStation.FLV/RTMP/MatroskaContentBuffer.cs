@@ -67,7 +67,7 @@ namespace PeerCastStation.FLV.RTMP
     private long timestampOrigin = 0;
     private long currentClusterTimecode = 0;
 
-    // §B-1: config が揃ってから metadata 無しで経過した CodedFrame 数。
+    // config が揃ってから metadata 無しで経過した CodedFrame 数。
     private int  framesSinceConfigReady = 0;
     private bool metadataFallback       = false;
     // 1 回だけ出す警告のためのフラグ(ログのスパム防止)。
@@ -118,7 +118,7 @@ namespace PeerCastStation.FLV.RTMP
       TrySendInit();
     }
 
-    // §D: onMetaData から bitrate(kbps)を取り出す。無ければ 0。FLVContentBuffer と同方針で
+    // onMetaData から bitrate(kbps)を取り出す。無ければ 0。FLVContentBuffer と同方針で
     // maxBitrate(優先)→videodatarate、それに audiodatarate を加算する。
     private static double ReadBitrate(AMFValue meta)
     {
@@ -140,8 +140,8 @@ namespace PeerCastStation.FLV.RTMP
       return bitrate;
     }
 
-    // §D: ChannelInfo(MKV)を送る。bitrate 不明(0)時は FLVContentBuffer 同様に値を捏造せず
-    //     未設定のままにする(AccessController のリレー計算に誤った値を与えないため)。
+    // ChannelInfo(MKV)を送る。bitrate 不明(0)時は FLVContentBuffer 同様に値を捏造せず
+    // 未設定のままにする(AccessController のリレー計算に誤った値を与えないため)。
     private void SendChannelInfo(double bitrate)
     {
       var info = new AtomCollection();
@@ -172,7 +172,7 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
-    // §B-3: パース失敗の連続を検知できるよう最初の数回だけログする(スパム防止)。
+    // パース失敗の連続を検知できるよう最初の数回だけログする(スパム防止)。
     private const int MaxParseFailureLogs = 5;
 
     public void OnVideo(RTMPMessage msg)
@@ -230,7 +230,7 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
-    // §B-2: init 送出後に config(コーデック/CodecPrivate)が変わったら Info で可視化する。
+    // init 送出後に config(コーデック/CodecPrivate)が変わったら Info で可視化する。
     // init は再送しない(後発参加者 resync の不変条件を壊さないため)。将来対応の足場。
     private void WarnIfConfigChanged(string kind, string? oldFourCc, byte[]? oldConfig, string newFourCc, byte[] newConfig)
     {
@@ -261,8 +261,8 @@ namespace PeerCastStation.FLV.RTMP
     {
       if (initSent) return;
       if (!ConfigReady) return;
-      // §B-1: 通常は onMetaData(解像度)が揃うのを待つが、来ない配信でも
-      //       metadataFallback が立てば config だけで init を出す(width/height=0)。
+      // 通常は onMetaData(解像度)が揃うのを待つが、来ない配信でも
+      // metadataFallback が立てば config だけで init を出す(width/height=0)。
       if (!hasMetadata && !metadataFallback) return;
 
       // metadata が無いまま init する場合は ChannelInfo(MKV)もここで送っておく。
@@ -301,8 +301,8 @@ namespace PeerCastStation.FLV.RTMP
     private void WriteFrame(DepacketizedFrame frame)
     {
       if (!initSent) {
-        // §B-1: config は揃っているが onMetaData 待ちの間にフレームが来続けたら、
-        //       一定数を超えたところで config だけの init にフォールバックする。
+        // config は揃っているが onMetaData 待ちの間にフレームが来続けたら、
+        // 一定数を超えたところで config だけの init にフォールバックする。
         if (ConfigReady && !hasMetadata && !metadataFallback) {
           if (++framesSinceConfigReady>=MetadataWaitFrames) {
             metadataFallback = true;
@@ -321,8 +321,8 @@ namespace PeerCastStation.FLV.RTMP
         Logger.Debug("First video keyframe reached; starting Matroska cluster output");
       }
 
-      // §A: 提示時刻(PTS)= DTS + CompositionTimeOffset を使う。avc1/hvc1 は B フレームで
-      //     CTS が乗る。av01 は CTS を持たない(常に 0)ので実質 DTS=PTS。
+      // 提示時刻(PTS)= DTS + CompositionTimeOffset を使う。avc1/hvc1 は B フレームで
+      // CTS が乗る。av01 は CTS を持たない(常に 0)ので実質 DTS=PTS。
       if (isVideo && frame.CompositionTimeOffset!=0 && frame.FourCc=="av01" && !warnedUnexpectedCts) {
         Logger.Warn("Unexpected non-zero CTS ({0}ms) on av01 frame; av01 should not carry CompositionTime", frame.CompositionTimeOffset);
         warnedUnexpectedCts = true;
