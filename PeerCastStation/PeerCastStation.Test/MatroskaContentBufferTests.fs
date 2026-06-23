@@ -159,8 +159,8 @@ let ``キーフレームで Cluster を開き SimpleBlock を出力する`` () =
     let blk2 = Element.ReadBody(&hBlk2, ms1)
     Assert.Equal<byte[]>([| 0x82uy; 0x00uy; 0x14uy; 0x80uy; 0xCAuy; 0xFEuy |], blk2.Data)
 
-// §A: avc1/hvc1 は CTS が乗る。SimpleBlock の timecode は DTS ではなく
-//     PTS(=DTS+CTS)を原点 rebase した値になる。
+// avc1/hvc1 は CTS が乗る。SimpleBlock の timecode は DTS ではなく
+// PTS(=DTS+CTS)を原点 rebase した値になる。
 [<Fact>]
 let ``avc1 では CTS を加えた PTS で SimpleBlock の timecode を決める`` () =
     use peca = new PeerCast()
@@ -192,8 +192,8 @@ let ``avc1 では CTS を加えた PTS で SimpleBlock の timecode を決める
     let blk = Element.ReadBody(&hBlk, ms1)
     Assert.Equal<byte[]>([| 0x81uy; 0x00uy; 0x28uy; 0x00uy; 0xBEuy; 0xEFuy |], blk.Data)
 
-// §B-1: onMetaData が来なくても、config が揃って一定数フレームが流れたら
-//       CodecPrivate だけで init をフォールバック送出する。
+// onMetaData が来なくても、config が揃って一定数フレームが流れたら
+// CodecPrivate だけで init をフォールバック送出する。
 [<Fact>]
 let ``metadata が来なくても一定フレーム後に config だけで init を出す`` () =
     use peca = new PeerCast()
@@ -267,7 +267,7 @@ let ``GOP が長くても一定時間ごとに Cluster(None join点)を開く`` 
     let blk = Element.ReadBody(&hBlk, ms2)
     Assert.Equal<byte[]>([| 0x81uy; 0x00uy; 0x00uy; 0x00uy; 0xBEuy; 0xEFuy |], blk.Data)
 
-// §E: 相対 timecode が int16(±約32.7秒)を超えたら飽和クランプする(GOP 過大時の安全網)。
+// 相対 timecode が int16(±約32.7秒)を超えたら飽和クランプする(GOP 過大時の安全網)。
 [<Fact>]
 let ``int16 を超える相対 timecode は飽和クランプされる`` () =
     use peca = new PeerCast()
