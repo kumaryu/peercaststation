@@ -14,15 +14,17 @@ open Xunit
 type private CollectingSink() =
     let headers  = List<byte[]>()
     let contents = List<byte[]>()
+    let contFlags = List<PCPChanPacketContinuation>()
     let infos    = List<ChannelInfo>()
     member _.Headers  = headers
     member _.Contents = contents
+    member _.ContFlags = contFlags
     member _.Infos    = infos
     interface IContentSink with
         member _.OnChannelInfo(info)     = infos.Add(info)
         member _.OnChannelTrack(_)       = ()
         member _.OnContentHeader(header) = headers.Add(header.Data.ToArray())
-        member _.OnContent(content)      = contents.Add(content.Data.ToArray())
+        member _.OnContent(content)      = contents.Add(content.Data.ToArray()); contFlags.Add(content.ContFlag)
         member _.OnStop(_)               = ()
 
 let private makeChannel (peca: PeerCast) =
@@ -205,6 +207,28 @@ let ``metadata が来なくても一定フレーム後に config だけで init 
     // 60 フレーム目でフォールバック init が出る。
     sendVideo buf (videoKey 60L)
     Assert.Equal(1, sink.Headers.Count)
+
+// 後発参加者のリシンク: Cluster を開く映像キーフレームのパケットだけ ContFlag=None、
+// 中間フレームは InterFrame、音声は AudioFrame。これにより Core の GetFirstContent が
+// 後発参加者を必ず Cluster 境界(キーフレーム)から開始させ、孤児 SimpleBlock を防ぐ。
+[<Fact>]
+let ``ContFlag はキーフレームのみ None、中間は InterFrame、音声は AudioFrame`` () =
+    use peca = new PeerCast()
+    let sink = CollectingSink()
+    let buf = MatroskaContentBuffer(makeChannel peca, sink)
+    sendData buf (metaMsg())
+    sendVideo buf videoConfig
+    sendAudio buf audioConfig
+    sendVideo buf (videoKey 0L)     // キーフレーム → Cluster 開始 → None
+    sendAudio buf (audioRaw 10L)    // 音声 → AudioFrame
+    sendVideo buf (videoInter 20L)  // 中間フレーム → InterFrame
+    sendVideo buf (videoKey 100L)   // 次のキーフレーム → 新 Cluster → None
+    Assert.Equal<PCPChanPacketContinuation[]>(
+        [| PCPChanPacketContinuation.None
+           PCPChanPacketContinuation.AudioFrame
+           PCPChanPacketContinuation.InterFrame
+           PCPChanPacketContinuation.None |],
+        sink.ContFlags.ToArray())
 
 // §E: 相対 timecode が int16(±約32.7秒)を超えたら飽和クランプする(GOP 過大時の安全網)。
 [<Fact>]

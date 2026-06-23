@@ -346,9 +346,20 @@ namespace PeerCastStation.FLV.RTMP
         var track    = isVideo ? VideoTrackNumber : AudioTrackNumber;
         MatroskaWriter.MakeSimpleBlock(track, relative, frame.IsKeyFrame, frame.Payload).Write(ms);
 
+        // 後発参加者のリシンク点を Core の GetFirstContent に正しく伝える。
+        // GetFirstContent は ContFlag==None のパケットを join 点に選ぶので、Cluster を
+        // 開く映像キーフレームのパケットだけを None にする。中間フレーム/音声を None に
+        // すると Cluster 途中(裸の SimpleBlock)から配信が始まり、プレイヤーが
+        // 「Cluster 外の SimpleBlock」として壊れたファイルと判断する(厳格な新しい
+        // mpv 内蔵デマクサで顕著)。
+        var contFlag =
+          (isVideo && frame.IsKeyFrame) ? PCPChanPacketContinuation.None :
+          isVideo                       ? PCPChanPacketContinuation.InterFrame :
+                                          PCPChanPacketContinuation.AudioFrame;
+
         var bytes = ms.ToArray();
         ContentSink.OnContent(
-          new Content(streamIndex, DateTime.Now-streamOrigin, position, bytes, PCPChanPacketContinuation.None));
+          new Content(streamIndex, DateTime.Now-streamOrigin, position, bytes, contFlag));
         position += bytes.Length;
       }
     }
