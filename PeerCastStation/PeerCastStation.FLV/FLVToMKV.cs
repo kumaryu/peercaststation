@@ -293,7 +293,6 @@ namespace PeerCastStation.FLV
 
       private void OnContent(RTMPMessage msg)
       {
-        if (ptsBase<0 && msg.Timestamp>0) ptsBase = msg.Timestamp;
         switch (msg.GetPacketType()) {
         case FLVPacketType.AACSequenceHeader:
           OnAACHeader(msg);
@@ -346,7 +345,11 @@ namespace PeerCastStation.FLV
         WriteHeaderIfNeeded();
         if (!audioEnabled) return;
         if (msg.Body.Length<=2) return;
-        var pts = msg.Timestamp - Math.Max(0, ptsBase);
+        // 最初のメディアフレーム(ts=0を含む)を基準に正規化する。
+        // 2番目のフレームで確定すると先頭フレームとPTSが衝突・逆行し、
+        // PTSのみを持つMKVではH.264のPOC再構成が壊れる。
+        if (ptsBase<0) ptsBase = msg.Timestamp;
+        var pts = msg.Timestamp - ptsBase;
         EnsureCluster(pts, false);
         var payload = new byte[msg.Body.Length-2];
         Array.Copy(msg.Body, 2, payload, 0, payload.Length);
@@ -357,7 +360,9 @@ namespace PeerCastStation.FLV
       {
         WriteHeaderIfNeeded();
         if (!videoEnabled || videoHandler==null) return;
-        var dts = msg.Timestamp - Math.Max(0, ptsBase);
+        // OnAACBody と同様、最初のメディアフレームを基準に正規化する。
+        if (ptsBase<0) ptsBase = msg.Timestamp;
+        var dts = msg.Timestamp - ptsBase;
         var pts = dts + videoHandler.CompositionTimeOffset(msg);
         var keyframe = msg.IsKeyFrame();
         EnsureCluster(pts, keyframe);
@@ -561,8 +566,16 @@ namespace PeerCastStation.FLV
         : FLVToMKV.IMKVContentSink
       {
         public IContentSink TargetSink { get; }
+        // 上流のContentは ProcessMessagesAsync が設定するが、出力Contentの位置採番には用いない。
+        // MKVは1フレームから複数Content(Cluster + SimpleBlock)を出すため、上流の位置をそのまま流用すると
+        // (Stream,Timestamp,Position) が衝突し ContentCollection の重複排除でキーフレームごとドロップされる。
+        // 従ってネイティブの MKVContentReader と同様、出力側で独自に連番Positionを採番する。
         public Content? HeaderContent { get; set; } = null;
         public Content? RecentContent { get; set; } = null;
+
+        private int streamId = -1;
+        private long position = 0;
+        private DateTime streamOrigin = DateTime.Now;
 
         public MKVSink(IContentSink targetSink)
         {
@@ -571,42 +584,34 @@ namespace PeerCastStation.FLV
 
         public void OnHeader(ReadOnlyMemory<byte> bytes)
         {
-          if (HeaderContent!=null) {
-            TargetSink.OnContentHeader(
-              new Content(
-                HeaderContent.Stream,
-                HeaderContent.Timestamp,
-                HeaderContent.Position,
-                bytes,
-                HeaderContent.ContFlag
-              )
-            );
-          }
+          // 新しい EBML/Segment は新しい論理ストリーム。stream idを進め位置を0へ戻す。
+          streamId += 1;
+          position = 0;
+          streamOrigin = DateTime.Now;
+          TargetSink.OnContentHeader(
+            new Content(streamId, TimeSpan.Zero, 0, bytes, PCPChanPacketContinuation.None)
+          );
+          position += bytes.Length;
         }
 
         public void OnCluster(ReadOnlyMemory<byte> bytes)
         {
-          EmitContent(bytes);
+          // Cluster境界 = 途中参加の開始点。None でマークし GetFirstContent に拾わせる。
+          EmitContent(bytes, PCPChanPacketContinuation.None);
         }
 
         public void OnBlock(ReadOnlyMemory<byte> bytes)
         {
-          EmitContent(bytes);
+          // Cluster内の継続パケット。Fragment でマークし開始点に選ばれないようにする。
+          EmitContent(bytes, PCPChanPacketContinuation.Fragment);
         }
 
-        private void EmitContent(ReadOnlyMemory<byte> bytes)
+        private void EmitContent(ReadOnlyMemory<byte> bytes, PCPChanPacketContinuation cont)
         {
-          if (RecentContent!=null) {
-            TargetSink.OnContent(
-              new Content(
-                RecentContent.Stream,
-                RecentContent.Timestamp,
-                RecentContent.Position,
-                bytes,
-                RecentContent.ContFlag
-              )
-            );
-          }
+          TargetSink.OnContent(
+            new Content(streamId, DateTime.Now-streamOrigin, position, bytes, cont)
+          );
+          position += bytes.Length;
         }
       }
 
