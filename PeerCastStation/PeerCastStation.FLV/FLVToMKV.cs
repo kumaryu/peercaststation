@@ -147,57 +147,48 @@ namespace PeerCastStation.FLV
       void OnBlock(ReadOnlyMemory<byte> bytes);
     }
 
-    /// <summary>映像コーデック固有処理のシーム。AV1/HEVC は実装を足すだけで対応できる。</summary>
+    /// <summary>
+    /// 映像コーデック固有処理のシーム。ペイロード切り出し(オフセット適用)は呼び出し側が行い、
+    /// ハンドラは CodecID・CodecPrivate と SimpleBlock ペイロードの組み立てのみを担当する。
+    /// avc1/hvc1/av01 はいずれも CodecPrivate・Block ともコンテナ無加工で流用できる。
+    /// </summary>
     public interface IVideoCodecHandler
     {
-      /// <summary>コーデックのシーケンスヘッダ(FLVの xVCSequenceHeader)を取り込む。</summary>
-      bool TryConsumeSequenceHeader(RTMPMessage msg);
       /// <summary>Matroska の CodecID。</summary>
       string CodecId { get; }
-      /// <summary>Matroska の CodecPrivate。</summary>
+      /// <summary>Matroska の CodecPrivate(取り込んだシーケンスヘッダ)。</summary>
       byte[] CodecPrivate { get; }
-      /// <summary>1フレームの SimpleBlock ペイロード(コンテナ無加工のコーデックデータ)。</summary>
-      byte[] BuildBlockPayload(RTMPMessage msg);
-      /// <summary>表示時刻補正(CTS, ミリ秒)。PTS = DTS + これ。</summary>
-      int CompositionTimeOffset(RTMPMessage msg);
+      /// <summary>シーケンスヘッダ(コンテナ無加工のコーデック設定)を取り込む。</summary>
+      void SetSequenceHeader(byte[] payload);
+      /// <summary>確定済みペイロードスライスから SimpleBlock ペイロードを組み立てる。</summary>
+      byte[] BuildBlockPayload(ReadOnlySpan<byte> payload);
     }
 
     /// <summary>
-    /// H.264 ハンドラ。FLV の AVC データは avcC 形式(長さ付きNAL)なので、
-    /// CodecPrivate(avcC)・Blockペイロードともに FLV body の5バイト目以降を無加工で使える。
+    /// CodecPrivate もフレームデータも無加工で流用できるコーデック(avc1/hvc1/av01)用の共通ハンドラ。
+    /// CodecID 文字列だけが異なる。
     /// </summary>
-    public class H264VideoCodecHandler
+    public class PassthroughVideoCodecHandler
       : IVideoCodecHandler
     {
-      private byte[] avcC = Array.Empty<byte>();
+      private byte[] codecPrivate = Array.Empty<byte>();
 
-      public string CodecId { get { return "V_MPEG4/ISO/AVC"; } }
-      public byte[] CodecPrivate { get { return avcC; } }
+      public string CodecId { get; }
+      public byte[] CodecPrivate { get { return codecPrivate; } }
 
-      public bool TryConsumeSequenceHeader(RTMPMessage msg)
+      public PassthroughVideoCodecHandler(string codecId)
       {
-        // body: [0]=frametype|codecid, [1]=AVCPacketType(0), [2..4]=cts, [5..]=AVCDecoderConfigurationRecord(avcC)
-        if (msg.Body.Length<=5) return false;
-        avcC = new byte[msg.Body.Length-5];
-        Array.Copy(msg.Body, 5, avcC, 0, avcC.Length);
-        return true;
+        CodecId = codecId;
       }
 
-      public byte[] BuildBlockPayload(RTMPMessage msg)
+      public void SetSequenceHeader(byte[] payload)
       {
-        var len = msg.Body.Length-5;
-        if (len<=0) return Array.Empty<byte>();
-        var payload = new byte[len];
-        Array.Copy(msg.Body, 5, payload, 0, len);
-        return payload;
+        codecPrivate = payload;
       }
 
-      public int CompositionTimeOffset(RTMPMessage msg)
+      public byte[] BuildBlockPayload(ReadOnlySpan<byte> payload)
       {
-        if (msg.Body.Length<5) return 0;
-        int cts = (msg.Body[2]<<16) | (msg.Body[3]<<8) | msg.Body[4];
-        if (cts>=0x800000) cts -= 0x1000000; // 符号付き24bit
-        return cts;
+        return payload.ToArray();
       }
     }
 
@@ -231,6 +222,8 @@ namespace PeerCastStation.FLV
       private bool audioEnabled = false;
       private bool headerSent = false;
       private bool warnedNoResolution = false;
+      private bool warnedUnsupportedVideo = false;
+      private bool warnedUnsupportedAudio = false;
       private long ptsBase = -1;
       private bool clusterOpen = false;
       private long clusterBaseMs = 0;
@@ -254,6 +247,8 @@ namespace PeerCastStation.FLV
         audioEnabled = false;
         headerSent = false;
         warnedNoResolution = false;
+        warnedUnsupportedVideo = false;
+        warnedUnsupportedAudio = false;
         ptsBase = -1;
         clusterOpen = false;
         clusterBaseMs = 0;
@@ -285,40 +280,158 @@ namespace PeerCastStation.FLV
 
       public void OnAudio(RTMPMessage msg)
       {
-        OnContent(msg);
+        // レガシー/enhanced の差異は Ex ヘッダ解析で吸収し、経路だけ分ける(指摘点6)。
+        if (!ExAudioTagHeader.TryParse(msg.Body, out var header)) return;
+        if (!header.IsExHeader) {
+          OnLegacyAudio(msg);
+          return;
+        }
+        OnExAudio(msg, header);
       }
 
       public void OnVideo(RTMPMessage msg)
       {
-        OnContent(msg);
+        if (!ExVideoTagHeader.TryParse(msg.Body, out var header)) return;
+        if (!header.IsExHeader) {
+          OnLegacyVideo(msg);
+          return;
+        }
+        OnExVideo(msg, header);
       }
 
-      private void OnContent(RTMPMessage msg)
+      private void OnLegacyAudio(RTMPMessage msg)
       {
         switch (msg.GetPacketType()) {
         case FLVPacketType.AACSequenceHeader:
-          OnAACHeader(msg);
+          OnAudioHeader(msg.Body, 2); // [0]=AF, [1]=AACPacketType, [2..]=AudioSpecificConfig
           break;
         case FLVPacketType.AACRawData:
-          OnAACBody(msg);
-          break;
-        case FLVPacketType.AVCSequenceHeader:
-          OnVideoHeader(msg);
-          break;
-        case FLVPacketType.AVCNALUnitKeyFrame:
-        case FLVPacketType.AVCNALUnitInterFrame:
-          OnVideoBody(msg);
+          OnAudioBody(msg, 2);
           break;
         default:
           break;
         }
       }
 
-      private void OnAACHeader(RTMPMessage msg)
+      private void OnExAudio(RTMPMessage msg, ExAudioTagHeader header)
       {
-        if (msg.Body.Length<=2) return;
-        audioConfig = new byte[msg.Body.Length-2];
-        Array.Copy(msg.Body, 2, audioConfig, 0, audioConfig.Length);
+        if (header.IsMultitrack || header.FourCc!="mp4a") {
+          WarnUnsupportedAudio(header.FourCc);
+          return;
+        }
+        switch (header.PacketType) {
+        case AudioPacketType.SequenceStart:
+          OnAudioHeader(msg.Body, header.PayloadOffset);
+          break;
+        case AudioPacketType.CodedFrames:
+          OnAudioBody(msg, header.PayloadOffset);
+          break;
+        default:
+          break;
+        }
+      }
+
+      private void OnLegacyVideo(RTMPMessage msg)
+      {
+        switch (msg.GetPacketType()) {
+        case FLVPacketType.AVCSequenceHeader: {
+          // body: [0]=frametype|codecid, [1]=AVCPacketType(0), [2..4]=cts, [5..]=avcC
+          var avcc = SliceFrom(msg.Body, 5);
+          if (avcc.Length>0) SetVideoHandler("V_MPEG4/ISO/AVC", avcc);
+          break;
+        }
+        case FLVPacketType.AVCNALUnitKeyFrame:
+        case FLVPacketType.AVCNALUnitInterFrame:
+          OnVideoBody(msg, 5, LegacyVideoCts(msg.Body), msg.IsKeyFrame());
+          break;
+        default:
+          break;
+        }
+      }
+
+      private void OnExVideo(RTMPMessage msg, ExVideoTagHeader header)
+      {
+        if (header.IsMultitrack) {
+          WarnUnsupportedVideo(header.FourCc);
+          return;
+        }
+        var codecId = MapVideoCodecId(header.FourCc);
+        if (codecId==null) {
+          WarnUnsupportedVideo(header.FourCc);
+          return;
+        }
+        switch (header.PacketType) {
+        case VideoPacketType.SequenceStart: {
+          var cp = SliceFrom(msg.Body, header.PayloadOffset);
+          if (cp.Length>0) SetVideoHandler(codecId, cp);
+          break;
+        }
+        case VideoPacketType.CodedFrames:
+        case VideoPacketType.CodedFramesX: {
+          // FrameType==1(key) または ==4(generated key)を keyframe とする(指摘点5)。
+          var keyframe = header.FrameType==1 || header.FrameType==4;
+          OnVideoBody(msg, header.PayloadOffset, header.CompositionTime, keyframe);
+          break;
+        }
+        default:
+          break;
+        }
+      }
+
+      private static string? MapVideoCodecId(string? fourcc)
+      {
+        switch (fourcc) {
+        case "avc1": return "V_MPEG4/ISO/AVC";
+        case "hvc1":
+        case "hev1": return "V_MPEGH/ISO/HEVC";
+        case "av01": return "V_AV1"; // Matroska の AV1 CodecID(FourCC の av01 とは異なる)
+        default:     return null;
+        }
+      }
+
+      private static int LegacyVideoCts(byte[] body)
+      {
+        if (body.Length<5) return 0;
+        int cts = (body[2]<<16) | (body[3]<<8) | body[4];
+        if (cts>=0x800000) cts -= 0x1000000; // 符号付き24bit
+        return cts;
+      }
+
+      private static byte[] SliceFrom(byte[] body, int offset)
+      {
+        if (offset<0 || body.Length<=offset) return Array.Empty<byte>();
+        var r = new byte[body.Length-offset];
+        Array.Copy(body, offset, r, 0, r.Length);
+        return r;
+      }
+
+      private void SetVideoHandler(string codecId, byte[] codecPrivate)
+      {
+        var handler = new PassthroughVideoCodecHandler(codecId);
+        handler.SetSequenceHeader(codecPrivate);
+        videoHandler = handler;
+        hasVideo = true;
+      }
+
+      private void WarnUnsupportedVideo(string? fourcc)
+      {
+        if (warnedUnsupportedVideo) return;
+        logger.Warn("FLVToMKV: 未対応の映像コーデック/構成のため破棄します (FourCC={0})", fourcc ?? "(none)");
+        warnedUnsupportedVideo = true;
+      }
+
+      private void WarnUnsupportedAudio(string? fourcc)
+      {
+        if (warnedUnsupportedAudio) return;
+        logger.Warn("FLVToMKV: 未対応の音声コーデック/構成のため破棄します (FourCC={0})", fourcc ?? "(none)");
+        warnedUnsupportedAudio = true;
+      }
+
+      private void OnAudioHeader(byte[] body, int offset)
+      {
+        if (offset<0 || body.Length<=offset) return;
+        audioConfig = new byte[body.Length-offset];
+        Array.Copy(body, offset, audioConfig, 0, audioConfig.Length);
         using (var s=new MemoryStream(audioConfig, false))
         using (var bs=new BitReader(s)) {
           var type = bs.ReadBits(5);
@@ -332,43 +445,34 @@ namespace PeerCastStation.FLV
         hasAudio = true;
       }
 
-      private void OnVideoHeader(RTMPMessage msg)
-      {
-        // 現状はレガシーFLV(codecid=7=AVC)のみ。E-RTMP合流時はここで FourCC からハンドラを選択する。
-        var handler = new H264VideoCodecHandler();
-        if (handler.TryConsumeSequenceHeader(msg)) {
-          videoHandler = handler;
-          hasVideo = true;
-        }
-      }
-
-      private void OnAACBody(RTMPMessage msg)
+      private void OnAudioBody(RTMPMessage msg, int offset)
       {
         WriteHeaderIfNeeded();
         if (!audioEnabled) return;
-        if (msg.Body.Length<=2) return;
+        if (offset<0 || msg.Body.Length<=offset) return;
         // 最初のメディアフレーム(ts=0を含む)を基準に正規化する。
         // 2番目のフレームで確定すると先頭フレームとPTSが衝突・逆行し、
         // PTSのみを持つMKVではH.264のPOC再構成が壊れる。
         if (ptsBase<0) ptsBase = msg.Timestamp;
         var pts = msg.Timestamp - ptsBase;
         EnsureCluster(pts, false);
-        var payload = new byte[msg.Body.Length-2];
-        Array.Copy(msg.Body, 2, payload, 0, payload.Length);
+        var payload = new byte[msg.Body.Length-offset];
+        Array.Copy(msg.Body, offset, payload, 0, payload.Length);
         WriteSimpleBlock(AudioTrackNumber, pts, true, payload);
       }
 
-      private void OnVideoBody(RTMPMessage msg)
+      private void OnVideoBody(RTMPMessage msg, int offset, int cts, bool keyframe)
       {
         WriteHeaderIfNeeded();
         if (!videoEnabled || videoHandler==null) return;
-        // OnAACBody と同様、最初のメディアフレームを基準に正規化する。
+        if (offset<0 || msg.Body.Length<=offset) return;
+        // OnAudioBody と同様、最初のメディアフレームを基準に正規化する。
         if (ptsBase<0) ptsBase = msg.Timestamp;
         var dts = msg.Timestamp - ptsBase;
-        var pts = dts + videoHandler.CompositionTimeOffset(msg);
-        var keyframe = msg.IsKeyFrame();
+        var pts = dts + cts;
         EnsureCluster(pts, keyframe);
-        WriteSimpleBlock(VideoTrackNumber, pts, keyframe, videoHandler.BuildBlockPayload(msg));
+        var slice = new ReadOnlySpan<byte>(msg.Body, offset, msg.Body.Length-offset);
+        WriteSimpleBlock(VideoTrackNumber, pts, keyframe, videoHandler.BuildBlockPayload(slice));
       }
 
       private void WriteHeaderIfNeeded()
