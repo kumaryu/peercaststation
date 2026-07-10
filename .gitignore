@@ -9,3 +9,7 @@ packages
 *.metaproj
 *.trx
 .fake
+.scratch
+.parcel-cache
+node_modules
+UpgradeLog.htm
