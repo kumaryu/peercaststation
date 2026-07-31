@@ -172,6 +172,35 @@ namespace PeerCastStation.FLV
       Body,
     };
     private ReaderState state = ReaderState.Header;
+    private static readonly Logger logger = new Logger(typeof(FLVFileParser));
+
+    /// <summary>
+    /// 読み終えた1タグを sink へ配る。
+    /// タグ本体はストリームから完全に読み出せているため、ここで出る EndOfStreamException は
+    /// 「データ待ち」ではなくタグ内容の破損(切り詰められた AMF や AudioSpecificConfig 等)である。
+    /// 呼び出し元の catch(EndOfStreamException) に巻き込むとタグ先頭まで巻き戻してしまい、
+    /// 同じ毒タグを永久に再パースし続ける(=出力の恒久停止とバッファの無限成長)ため、
+    /// ここで区別して握り、次のタグへ進む。
+    /// </summary>
+    private static void DispatchTag(FLVTag tag, IRTMPContentSink sink)
+    {
+      try {
+        switch (tag.Type) {
+        case TagType.Audio:
+          sink.OnAudio(tag.ToRTMPMessage());
+          break;
+        case TagType.Video:
+          sink.OnVideo(tag.ToRTMPMessage());
+          break;
+        case TagType.Script:
+          sink.OnData(new DataAMF0Message(tag.ToRTMPMessage()));
+          break;
+        }
+      }
+      catch (EndOfStreamException) {
+        logger.Debug("破損したタグを読み飛ばしました (type={0}, size={1})", tag.Type, tag.Body.Length);
+      }
+    }
 
     public bool Read(Stream stream, IRTMPContentSink sink)
     {
@@ -205,17 +234,7 @@ namespace PeerCastStation.FLV
                 if (FLVTag.TryReadTag(this, header.Value, stream, out var tag)) {
                   if (tag.IsValidFooter) {
                     read_valid = true;
-                    switch (tag.Type) {
-                    case TagType.Audio:
-                      sink.OnAudio(tag.ToRTMPMessage());
-                      break;
-                    case TagType.Video:
-                      sink.OnVideo(tag.ToRTMPMessage());
-                      break;
-                    case TagType.Script:
-                      sink.OnData(new DataAMF0Message(tag.ToRTMPMessage()));
-                      break;
-                    }
+                    DispatchTag(tag, sink);
                   }
                 }
                 else {
@@ -298,17 +317,7 @@ namespace PeerCastStation.FLV
             if (tag.IsValidFooter) {
               len = 0;
               read_valid = true;
-              switch (tag.Type) {
-              case TagType.Audio:
-                sink.OnAudio(tag.ToRTMPMessage());
-                break;
-              case TagType.Video:
-                sink.OnVideo(tag.ToRTMPMessage());
-                break;
-              case TagType.Script:
-                sink.OnData(new DataAMF0Message(tag.ToRTMPMessage()));
-                break;
-              }
+              DispatchTag(tag, sink);
             }
           }
           else {

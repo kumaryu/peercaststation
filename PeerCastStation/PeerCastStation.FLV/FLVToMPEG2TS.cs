@@ -10,70 +10,6 @@ using System.Threading.Tasks;
 
 namespace PeerCastStation.FLV
 {
-  internal enum FLVPacketType {
-    Unknown,
-    AudioData,
-    VideoData,
-    AACSequenceHeader,
-    AACRawData,
-    AVCSequenceHeader,
-    AVCNALUnitKeyFrame,
-    AVCNALUnitInterFrame,
-    AVCEOS,
-  }
-
-  internal static class RTMPMessageExtension {
-    public static FLVPacketType GetPacketType(this RTMPMessage msg)
-    {
-      switch (msg.MessageType) {
-      case RTMPMessageType.Audio:
-        if (msg.Body.Length<2) return FLVPacketType.AudioData;
-        switch ((msg.Body[0] & 0xF0)>>4) {
-        case 10:
-          if (msg.Body[1]==0) {
-            return FLVPacketType.AACSequenceHeader;
-          }
-          else {
-            return FLVPacketType.AACRawData;
-          }
-        default:
-          return FLVPacketType.AudioData;
-        }
-      case RTMPMessageType.Video:
-        if (msg.Body.Length<2) return FLVPacketType.VideoData;
-        switch (msg.Body[0] & 0x0F) {
-        case 7:
-          switch (msg.Body[1]) {
-          case 0:
-            return FLVPacketType.AVCSequenceHeader;
-          case 1:
-            switch ((msg.Body[0] & 0xF0)>>4) {
-            case 1:
-            case 4:
-              return FLVPacketType.AVCNALUnitKeyFrame;
-            default:
-              return FLVPacketType.AVCNALUnitInterFrame;
-            }
-          case 2:
-            return FLVPacketType.AVCEOS;
-          default:
-            return FLVPacketType.VideoData;
-          }
-        default:
-          return FLVPacketType.VideoData;
-        }
-      default:
-        return FLVPacketType.Unknown;
-      }
-    }
-
-    public static bool IsKeyFrame(this RTMPMessage msg)
-    {
-      return msg.GetPacketType()!=FLVPacketType.AVCNALUnitInterFrame;
-    }
-
-  }
-
   public class FLVToMPEG2TS
   {
     public interface IMPEG2TSContentSink
@@ -662,6 +598,10 @@ namespace PeerCastStation.FLV
       private ADTSHeader adtsHeader = ADTSHeader.Default;
       private int nalSizeLen = 0;
       private long ptsBase = -1;
+      private bool warnedBrokenAudioConfig = false;
+      private bool warnedUnsupportedVideo = false;
+      private bool warnedUnsupportedAudio = false;
+      private readonly Logger logger = new Logger(typeof(FLVToMPEG2TS));
 
       private class MPEG2TSStreamWriter
         : IMPEG2TSContentSink
@@ -711,6 +651,9 @@ namespace PeerCastStation.FLV
         adtsHeader = ADTSHeader.Default;
         nalSizeLen = 0;
         ptsBase = -1;
+        warnedBrokenAudioConfig = false;
+        warnedUnsupportedVideo = false;
+        warnedUnsupportedAudio = false;
       }
 
       public void OnFLVHeader(FLVFileHeader header)
@@ -739,85 +682,109 @@ namespace PeerCastStation.FLV
         isHeaderSent = true;
       }
 
+      /// <summary>
+      /// バイト配列からMSB詰めでビットを読む。データ不足は例外ではなく false で返す
+      /// (FLVFileParser の「EndOfStreamException=データ待ち」判定と混線させないため)。
+      /// </summary>
       class BitReader
-        : IDisposable
       {
-        public Stream BaseStream { get; private set; }
-        private bool leaveOpen = false;
-        private int buffer = 0;
-        private int bufferLen = 0;
-        public BitReader(Stream baseStream, bool leaveOpen)
+        private readonly byte[] data;
+        private int bitPos = 0;
+
+        public BitReader(byte[] data)
         {
-          this.BaseStream = baseStream;
-          this.leaveOpen  = leaveOpen;
+          this.data = data;
         }
 
-        public void Dispose()
+        public bool TryReadBits(int bits, out int result)
         {
-          if (!leaveOpen) {
-            this.BaseStream.Dispose();
+          result = 0;
+          if (bits<0 || bits>31) return false;
+          if ((long)bitPos+bits > (long)data.Length*8) return false;
+          for (var i=0; i<bits; i++) {
+            var p = bitPos+i;
+            result = (result<<1) | ((data[p>>3] >> (7-(p & 7))) & 1);
           }
-        }
-
-        public int ReadBits(int bits)
-        {
-          while (bufferLen<bits) {
-            var b = BaseStream.ReadByte();
-            if (b<0) throw new EndOfStreamException();
-            buffer = (buffer<<8) | b;
-            bufferLen += 8;
-          }
-          int result = (buffer >> (bufferLen-bits)) & ((1<<bits)-1);
-          bufferLen -= bits;
-          buffer = buffer & ((1<<bufferLen)-1);
-          return result;
+          bitPos += bits;
+          return true;
         }
       }
 
-      private void OnAACHeader(RTMPMessage msg)
+      /// <summary>
+      /// AudioSpecificConfig(ISO/IEC 14496-3)先頭の audioObjectType/samplingFrequencyIndex/
+      /// channelConfiguration を取り出す。ビットが不足する場合は false を返す(例外は投げない)。
+      /// </summary>
+      private static bool TryParseAudioSpecificConfig(byte[] config, out int type, out int samplingFreqIdx, out int channelConfiguration)
       {
-        using (var s=new MemoryStream(msg.Body, false)) {
-          s.Seek(2, SeekOrigin.Current);
-          using (var bs=new BitReader(s, true)) {
-            var type = bs.ReadBits(5);
-            if (type==31) {
-              type = bs.ReadBits(6)+32;
-            }
-            var sampling_freq_idx = bs.ReadBits(4);
-            var sampling_freq = sampling_freq_idx==0x0F ? bs.ReadBits(24) : sampling_freq_idx;
-            var channel_configuration = bs.ReadBits(4);
-            this.adtsHeader = new ADTSHeader(
-              0xFFF, //sync
-              0, //ID
-              0, //Layer
-              true, //CRC Absent
-              type-1, //Profile
-              sampling_freq_idx, //Sampling frequency index
-              0, //Private
-              channel_configuration, //Channel configuration
-              0, //Original/Copy
-              0, //home
-              0, //Copyright identification bit
-              0, //Copyright identification start
-              0, //frame length
-              0x7FF, //buffer fullness
-              0, //number of raw data blocks in frame
-              0  //CRC
-            );
-          }
+        type                 = 0;
+        samplingFreqIdx      = 0;
+        channelConfiguration = 0;
+        var reader = new BitReader(config);
+        if (!reader.TryReadBits(5, out type)) return false;
+        if (type==31) {
+          if (!reader.TryReadBits(6, out var ext)) return false;
+          type = ext+32;
         }
+        if (!reader.TryReadBits(4, out samplingFreqIdx)) return false;
+        // samplingFrequency(24bit)は ADTS ヘッダには使わないが、後続ビット位置のため読み進める。
+        if (samplingFreqIdx==0x0F && !reader.TryReadBits(24, out _)) return false;
+        return reader.TryReadBits(4, out channelConfiguration);
+      }
+
+      private void OnAACHeader(byte[] body, int offset)
+      {
+        // 切り詰められた AudioSpecificConfig はここで捨てる。ビット読み出しで例外を投げると
+        // FLVFileParser.Read の EndOfStreamException catch がタグ先頭まで巻き戻すため
+        // (=「データ待ち」と誤認される)、毒タグがバッファ先頭に残って以後の全パースが
+        // 再スローし続け、出力が恒久停止したうえで contentBuffer が無限に成長する。
+        if (offset<0 || body.Length<=offset) {
+          WarnBrokenAudioConfig();
+          return;
+        }
+        var config = new byte[body.Length-offset];
+        Array.Copy(body, offset, config, 0, config.Length);
+        if (!TryParseAudioSpecificConfig(config, out var type, out var sampling_freq_idx, out var channel_configuration)) {
+          WarnBrokenAudioConfig();
+          return;
+        }
+        this.adtsHeader = new ADTSHeader(
+          0xFFF, //sync
+          0, //ID
+          0, //Layer
+          true, //CRC Absent
+          type-1, //Profile
+          sampling_freq_idx, //Sampling frequency index
+          0, //Private
+          channel_configuration, //Channel configuration
+          0, //Original/Copy
+          0, //home
+          0, //Copyright identification bit
+          0, //Copyright identification start
+          0, //frame length
+          0x7FF, //buffer fullness
+          0, //number of raw data blocks in frame
+          0  //CRC
+        );
         hasAudio = true;
       }
 
-      private void OnAACBody(RTMPMessage msg)
+      private void WarnBrokenAudioConfig()
       {
+        if (warnedBrokenAudioConfig) return;
+        logger.Warn("FLVToMPEG2TS: AudioSpecificConfigが不完全なため音声シーケンスヘッダを破棄します");
+        warnedBrokenAudioConfig = true;
+      }
+
+      private void OnAACBody(RTMPMessage msg, int offset)
+      {
+        if (offset<0 || msg.Body.Length<=offset) return;
         var pts = msg.Timestamp - Math.Max(0, ptsBase);
-        var raw_length = msg.Body.Length-2;
+        var raw_length = msg.Body.Length-offset;
         var header = new ADTSHeader(adtsHeader, raw_length + adtsHeader.Bytesize);
         var pes_payload = new MemoryStream();
         using (pes_payload) {
           ADTSHeader.WriteTo(pes_payload, header);
-          pes_payload.Write(msg.Body, 2, raw_length);
+          pes_payload.Write(msg.Body, offset, raw_length);
         }
         var pes = new PESPacket(0xC0, TSTimeStamp.FromMilliseconds(pts), null, pes_payload.ToArray());
         var pes_packet = new MemoryStream();
@@ -852,9 +819,10 @@ namespace PeerCastStation.FLV
         return ary;
       }
 
-      private void OnAVCHeader(RTMPMessage msg)
+      private void OnAVCHeader(byte[] body, int offset)
       {
-        var data = new ReadOnlySpan<byte>(msg.Body, 5, msg.Body.Length-5);
+        if (offset<0 || body.Length<=offset) return;
+        var data = new ReadOnlySpan<byte>(body, offset, body.Length-offset);
         var configuration_version  = ReadByte(ref data);
         var avc_profile_indication = ReadByte(ref data);
         var profile_compatibility  = ReadByte(ref data);
@@ -881,13 +849,10 @@ namespace PeerCastStation.FLV
         hasVideo = true;
       }
 
-      private void OnAVCBody(RTMPMessage msg, bool keyframe)
+      private void OnAVCBody(RTMPMessage msg, int offset, int cts, bool keyframe)
       {
+        if (offset<0 || msg.Body.Length<=offset) return;
         var pts = msg.Timestamp - Math.Max(0, ptsBase);
-        var cts = msg.Body.Skip(2).Take(3).Aggregate(0, (r,v) => (r<<8) | v);
-        if (cts>=0x800000) {
-          cts = 0x1000000 - cts;
-        }
         var dts = pts;
         pts = pts + cts;
         var access_unit_delimiter = false;
@@ -896,7 +861,7 @@ namespace PeerCastStation.FLV
         int units = 0;
         using (nalbytestream)
         using (var body=new MemoryStream(msg.Body, 0, msg.Body.Length)) {
-          body.Seek(5, SeekOrigin.Begin);
+          body.Seek(offset, SeekOrigin.Begin);
           while (body.Position<body.Length) {
             var len = body.ReadBytes(nalSizeLen).Aggregate(0, (r,v) => (r<<8) | v);
             var nalu = NALUnit.ReadFrom(body, len);
@@ -936,44 +901,74 @@ namespace PeerCastStation.FLV
         WritePATPMT(writer);
         writer.WriteTSPackets(
           VideoPID,
-          msg.IsKeyFrame() || idr,
+          keyframe || idr,
           idr ? (TSTimeStamp?)TSTimeStamp.FromMilliseconds(dts) : null,
           pes_packet.ToArray()
         );
       }
 
-      private void OnContent(RTMPMessage msg)
+      // タグ分類は共有分類器(FLVTagClassifier)に一本化する。
+      // 以前はここで body[0]&0x0F を codecId として直接読んでいたため、E-RTMP チャンネルでは
+      // Ex タグの packetType を codecId と誤読し(例: ModEx の 7 を AVC と誤認)、
+      // ゴミTSを出力していた。本フィルタは H.264/AAC のみ対応なので、
+      // それ以外はレガシー/Ex を問わず警告して破棄する。
+      public void OnAudio(RTMPMessage msg)
       {
+        var info = FLVTagClassifier.Classify(msg);
         if (ptsBase<0 && msg.Timestamp>0) ptsBase = msg.Timestamp;
-        switch (msg.GetPacketType()) {
-        case FLVPacketType.AACSequenceHeader:
-          OnAACHeader(msg);
+        if (info.Kind==FLVTagKind.AudioSequenceEnd) return;
+        if (info.FourCc!=FLVTagClassifier.FourCcAac) {
+          WarnUnsupportedAudio(info.FourCc);
+          return;
+        }
+        switch (info.Kind) {
+        case FLVTagKind.AudioSequenceHeader:
+          OnAACHeader(msg.Body, info.PayloadOffset);
           break;
-        case FLVPacketType.AACRawData:
-          OnAACBody(msg);
-          break;
-        case FLVPacketType.AVCSequenceHeader:
-          OnAVCHeader(msg);
-          break;
-        case FLVPacketType.AVCNALUnitKeyFrame:
-          OnAVCBody(msg, true);
-          break;
-        case FLVPacketType.AVCNALUnitInterFrame:
-          OnAVCBody(msg, false);
+        case FLVTagKind.AudioFrame:
+          OnAACBody(msg, info.PayloadOffset);
           break;
         default:
+          WarnUnsupportedAudio(info.FourCc);
           break;
         }
       }
 
-      public void OnAudio(RTMPMessage msg)
-      {
-        OnContent(msg);
-      }
-
       public void OnVideo(RTMPMessage msg)
       {
-        OnContent(msg);
+        var info = FLVTagClassifier.Classify(msg);
+        if (ptsBase<0 && msg.Timestamp>0) ptsBase = msg.Timestamp;
+        if (info.Kind==FLVTagKind.VideoSequenceEnd) return;
+        if (info.FourCc!=FLVTagClassifier.FourCcAvc) {
+          WarnUnsupportedVideo(info.FourCc);
+          return;
+        }
+        switch (info.Kind) {
+        case FLVTagKind.VideoSequenceHeader:
+          OnAVCHeader(msg.Body, info.PayloadOffset);
+          break;
+        case FLVTagKind.VideoKeyFrame:
+        case FLVTagKind.VideoInterFrame:
+          OnAVCBody(msg, info.PayloadOffset, info.CompositionTime, info.Kind==FLVTagKind.VideoKeyFrame);
+          break;
+        default:
+          WarnUnsupportedVideo(info.FourCc);
+          break;
+        }
+      }
+
+      private void WarnUnsupportedVideo(string? fourcc)
+      {
+        if (warnedUnsupportedVideo) return;
+        logger.Warn("FLVToMPEG2TS: 未対応の映像コーデック/構成のため破棄します (FourCC={0})", fourcc ?? "(none)");
+        warnedUnsupportedVideo = true;
+      }
+
+      private void WarnUnsupportedAudio(string? fourcc)
+      {
+        if (warnedUnsupportedAudio) return;
+        logger.Warn("FLVToMPEG2TS: 未対応の音声コーデック/構成のため破棄します (FourCC={0})", fourcc ?? "(none)");
+        warnedUnsupportedAudio = true;
       }
 
       public void OnData(DataMessage msg)
@@ -996,6 +991,7 @@ namespace PeerCastStation.FLV
     public class FLVToTSContentFilterSink
       : IContentSink
     {
+      private static readonly Logger logger = new Logger(typeof(FLVToTSContentFilter));
       private Task processorTask;
       struct ContentMessage
       {
@@ -1075,10 +1071,26 @@ namespace PeerCastStation.FLV
 
       private async Task ProcessMessagesAsync(IContentSink targetSink, CancellationToken cancellationToken)
       {
+        try {
+          await ProcessMessagesLoopAsync(targetSink, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) {
+          targetSink.OnStop(StopReason.UserShutdown);
+        }
+        catch (Exception e) {
+          // 例外でこのタスクが落ちたまま OnContent が enqueue を続けると、消費者のいない
+          // 無制限キューにストリームビットレートで積み上がりメモリリークになる。
+          // 下流を明示的に停止し、以後の enqueue は各メソッドの IsCompleted チェックで短絡させる。
+          logger.Error(e);
+          targetSink.OnStop(StopReason.NotIdentifiedError);
+        }
+      }
+
+      private async Task ProcessMessagesLoopAsync(IContentSink targetSink, CancellationToken cancellationToken)
+      {
         var tsSink = new MPEG2TSSink(targetSink);
         var context = new FLVToMPEG2TS.Context(tsSink);
-        var contentBuffer = new MemoryStream();
-        var fileParser = new FLVFileParser();
+        var parseBuffer = new FLVParseBuffer();
         var msg = await msgQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
         while (msg.Type!=ContentMessage.MessageType.Stop) {
           switch (msg.Type) {
@@ -1088,45 +1100,15 @@ namespace PeerCastStation.FLV
           case ContentMessage.MessageType.ChannelTrack:
             targetSink.OnChannelTrack(msg.ChannelTrack);
             break;
+          // MPEG2TSSink は出力Contentの位置採番に上流Contentを流用するため、
+          // どちらを受けたかを覚えてからバッファへ流す。
           case ContentMessage.MessageType.ContentHeader:
-            {
-              tsSink.HeaderContent = msg.Content;
-              var buffer = contentBuffer;
-              var pos = buffer.Position;
-              buffer.Seek(0, SeekOrigin.End);
-              buffer.Write(msg.Content.Data.Span);
-              buffer.Position = pos;
-              fileParser.Read(buffer, context);
-              if (buffer.Position!=0) {
-                var new_buf = new MemoryStream();
-                var trim_pos = buffer.Position;
-                buffer.Close();
-                var buf = buffer.ToArray();
-                new_buf.Write(buf, (int)trim_pos, (int)(buf.Length-trim_pos));
-                new_buf.Position = 0;
-                contentBuffer = new_buf;
-              }
-            }
+            tsSink.HeaderContent = msg.Content;
+            parseBuffer.Feed(msg.Content.Data.Span, context);
             break;
           case ContentMessage.MessageType.ContentBody:
-            {
-              tsSink.RecentContent = msg.Content;
-              var buffer = contentBuffer;
-              var pos = buffer.Position;
-              buffer.Seek(0, SeekOrigin.End);
-              buffer.Write(msg.Content.Data.Span);
-              buffer.Position = pos;
-              fileParser.Read(buffer, context);
-              if (buffer.Position!=0) {
-                var new_buf = new MemoryStream();
-                var trim_pos = buffer.Position;
-                buffer.Close();
-                var buf = buffer.ToArray();
-                new_buf.Write(buf, (int)trim_pos, (int)(buf.Length-trim_pos));
-                new_buf.Position = 0;
-                contentBuffer = new_buf;
-              }
-            }
+            tsSink.RecentContent = msg.Content;
+            parseBuffer.Feed(msg.Content.Data.Span, context);
             break;
           }
           msg = await msgQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
@@ -1134,8 +1116,17 @@ namespace PeerCastStation.FLV
         targetSink.OnStop(msg.StopReason);
       }
 
+      /// <summary>
+      /// 処理タスクが終了(正常終了・フォルトいずれも)した後は消費者がいないため、
+      /// enqueue し続けるとキューが無制限に成長する。積むのをやめる。
+      /// </summary>
+      private bool IsProcessorAlive {
+        get { return !processorTask.IsCompleted; }
+      }
+
       public void OnChannelInfo(ChannelInfo channel_info)
       {
+        if (!IsProcessorAlive) return;
         var info = new AtomCollection(channel_info.Extra);
         info.SetChanInfoType("TS");
         info.SetChanInfoStreamType("video/mp2t");
@@ -1145,22 +1136,29 @@ namespace PeerCastStation.FLV
 
       public void OnChannelTrack(ChannelTrack channel_track)
       {
+        if (!IsProcessorAlive) return;
         msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ChannelTrack, ChannelTrack=channel_track });
       }
 
       public void OnContent(Content content)
       {
+        if (!IsProcessorAlive) return;
         msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ContentBody, Content=content });
       }
 
       public void OnContentHeader(Content content_header)
       {
+        if (!IsProcessorAlive) return;
         msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ContentHeader, Content=content_header });
       }
 
       public void OnStop(StopReason reason)
       {
-        msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.Stop, StopReason=reason });
+        // 既にフォルトしている場合、下流の OnStop は ProcessMessagesAsync の catch が
+        // 呼び済み。Wait() は完了済みタスクに対して即座に返る(例外も握り潰し済み)。
+        if (IsProcessorAlive) {
+          msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.Stop, StopReason=reason });
+        }
         processorTask.Wait();
       }
     }

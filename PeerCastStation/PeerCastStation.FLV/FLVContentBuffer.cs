@@ -107,9 +107,15 @@ namespace PeerCastStation.FLV
       }
     }
 
+    // シーケンスヘッダ判定は共有分類器(FLVTagClassifier)に委ね、レガシー/Ex の差は
+    // そちらで吸収する。加えて、種別だけでなくコーデック設定の実体があることまで要求する。
+    // 切り詰めタグをチャンネルヘッダに昇格させると、設定を持たないゴミが下流に配られる上に
+    // OnHeaderChanged がストリームIDを再生成するため、1パケットで繰り返し全視聴者を
+    // 再初期化させられる(Multitrack は PayloadOffset=-1 のためここで除外される)。
     public void OnVideo(RTMPMessage msg)
     {
-      if (IsAVCHeader(msg) || IsExVideoSequenceStart(msg)) {
+      var info = FLVTagClassifier.Classify(msg);
+      if (info.IsVideoSequenceStart && info.HasPayload(msg.Body)) {
         videoHeader = msg;
         OnHeaderChanged(msg);
       }
@@ -118,50 +124,12 @@ namespace PeerCastStation.FLV
 
     public void OnAudio(RTMPMessage msg)
     {
-      if (IsAACHeader(msg) || IsExAudioSequenceStart(msg)) {
+      var info = FLVTagClassifier.Classify(msg);
+      if (info.Kind==FLVTagKind.AudioSequenceHeader && info.HasPayload(msg.Body)) {
         audioHeader = msg;
         OnHeaderChanged(msg);
       }
       OnContentChanged(msg);
-    }
-
-    private bool IsAVCHeader(RTMPMessage msg)
-    {
-      return
-         msg.MessageType==RTMPMessageType.Video &&
-         msg.Body.Length>3 &&
-        (msg.Body[0]==0x17 &&
-         msg.Body[1]==0x00 &&
-         msg.Body[2]==0x00 &&
-         msg.Body[3]==0x00);
-    }
-
-    private bool IsAACHeader(RTMPMessage msg)
-    {
-      return
-         msg.MessageType==RTMPMessageType.Audio &&
-         msg.Body.Length>1 &&
-        (msg.Body[0]==0xAF &&
-         msg.Body[1]==0x00);
-    }
-
-    private bool IsExVideoSequenceStart(RTMPMessage msg)
-    {
-      return
-         msg.MessageType==RTMPMessageType.Video &&
-         ExVideoTagHeader.TryParse(msg.Body, out var header) &&
-         header.IsExHeader &&
-        (header.PacketType==VideoPacketType.SequenceStart ||
-         header.PacketType==VideoPacketType.MPEG2TSSequenceStart);
-    }
-
-    private bool IsExAudioSequenceStart(RTMPMessage msg)
-    {
-      return
-         msg.MessageType==RTMPMessageType.Audio &&
-         ExAudioTagHeader.TryParse(msg.Body, out var header) &&
-         header.IsExHeader &&
-         header.PacketType==AudioPacketType.SequenceStart;
     }
 
     private void WriteMessage(Stream stream, RTMPMessage msg, long time_origin)

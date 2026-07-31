@@ -5,6 +5,7 @@ using PeerCastStation.FLV.AMF;
 using PeerCastStation.FLV.RTMP;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -160,8 +161,14 @@ namespace PeerCastStation.FLV
       byte[] CodecPrivate { get; }
       /// <summary>シーケンスヘッダ(コンテナ無加工のコーデック設定)を取り込む。</summary>
       void SetSequenceHeader(byte[] payload);
-      /// <summary>確定済みペイロードスライスから SimpleBlock ペイロードを組み立てる。</summary>
-      byte[] BuildBlockPayload(ReadOnlySpan<byte> payload);
+      /// <summary>組み立て後の SimpleBlock ペイロードのバイト数。</summary>
+      int GetBlockPayloadLength(ReadOnlySpan<byte> payload);
+      /// <summary>
+      /// SimpleBlock ペイロードを dest へ直接書き出す。
+      /// 呼び出し側が確保済みの出力配列に書かせることで、フレームごとの中間配列を作らない。
+      /// dest の長さは <see cref="GetBlockPayloadLength"/> と一致する。
+      /// </summary>
+      void WriteBlockPayload(ReadOnlySpan<byte> payload, Span<byte> dest);
     }
 
     /// <summary>
@@ -186,9 +193,14 @@ namespace PeerCastStation.FLV
         codecPrivate = payload;
       }
 
-      public byte[] BuildBlockPayload(ReadOnlySpan<byte> payload)
+      public int GetBlockPayloadLength(ReadOnlySpan<byte> payload)
       {
-        return payload.ToArray();
+        return payload.Length;
+      }
+
+      public void WriteBlockPayload(ReadOnlySpan<byte> payload, Span<byte> dest)
+      {
+        payload.CopyTo(dest);
       }
     }
 
@@ -224,6 +236,7 @@ namespace PeerCastStation.FLV
       private bool warnedNoResolution = false;
       private bool warnedUnsupportedVideo = false;
       private bool warnedUnsupportedAudio = false;
+      private bool warnedBrokenAudioConfig = false;
       private long ptsBase = -1;
       private bool clusterOpen = false;
       private long clusterBaseMs = 0;
@@ -249,6 +262,7 @@ namespace PeerCastStation.FLV
         warnedNoResolution = false;
         warnedUnsupportedVideo = false;
         warnedUnsupportedAudio = false;
+        warnedBrokenAudioConfig = false;
         ptsBase = -1;
         clusterOpen = false;
         clusterBaseMs = 0;
@@ -268,112 +282,87 @@ namespace PeerCastStation.FLV
         if (info.Type!=AMFValueType.ECMAArray && info.Type!=AMFValueType.Object) return;
         var wv = info.ContainsKey("width")  ? info["width"]  : AMFValue.Null;
         var hv = info.ContainsKey("height") ? info["height"] : AMFValue.Null;
-        if (!AMFValue.IsNull(wv) && !AMFValue.IsNull(hv)) {
-          var w = (int)wv;
-          var h = (int)hv;
-          if (w>0 && h>0) {
-            videoWidth = w;
-            videoHeight = h;
-          }
+        if (TryGetDimension(wv, out var w) && TryGetDimension(hv, out var h)) {
+          videoWidth = w;
+          videoHeight = h;
         }
       }
 
+      /// <summary>
+      /// onMetaData の解像度フィールドを防御的に解釈する。
+      /// 値は配信者由来で型が保証されないため、AMFValue の int キャスト演算子は使わない
+      /// (String に Int32.Parse を掛けて FormatException、その他の型で InvalidCastException を
+      /// 投げ、FLVFileParser.Read が捕捉しないまま processorTask をフォルトさせる)。
+      /// FLVContentBuffer.OnMetaData と同じく型判定+TryParse で受ける。
+      /// </summary>
+      private static bool TryGetDimension(AMFValue value, out int result)
+      {
+        result = 0;
+        if (AMFValue.IsNull(value)) return false;
+        double d;
+        switch (value.Value) {
+        case int i:
+          d = i;
+          break;
+        case double v:
+          d = v;
+          break;
+        case string s:
+          if (!Double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out d)) return false;
+          break;
+        default:
+          return false;
+        }
+        if (Double.IsNaN(d) || d<1 || d>Int32.MaxValue) return false;
+        result = (int)d;
+        return true;
+      }
+
+      // タグ分類は共有分類器(FLVTagClassifier)に一本化し、レガシー/enhanced の差は
+      // そちらで吸収する。ここは種別ごとの処理だけを持つ。
       public void OnAudio(RTMPMessage msg)
       {
-        // レガシー/enhanced の差異は Ex ヘッダ解析で吸収し、経路だけ分ける(指摘点6)。
-        if (!ExAudioTagHeader.TryParse(msg.Body, out var header)) return;
-        if (!header.IsExHeader) {
-          OnLegacyAudio(msg);
+        var info = FLVTagClassifier.Classify(msg);
+        if (info.Kind==FLVTagKind.AudioSequenceEnd) return;
+        if (info.FourCc!=FLVTagClassifier.FourCcAac) {
+          WarnUnsupportedAudio(info.FourCc);
           return;
         }
-        OnExAudio(msg, header);
+        switch (info.Kind) {
+        case FLVTagKind.AudioSequenceHeader:
+          OnAudioHeader(msg.Body, info.PayloadOffset);
+          break;
+        case FLVTagKind.AudioFrame:
+          OnAudioBody(msg, info.PayloadOffset);
+          break;
+        default:
+          WarnUnsupportedAudio(info.FourCc);
+          break;
+        }
       }
 
       public void OnVideo(RTMPMessage msg)
       {
-        if (!ExVideoTagHeader.TryParse(msg.Body, out var header)) return;
-        if (!header.IsExHeader) {
-          OnLegacyVideo(msg);
-          return;
-        }
-        OnExVideo(msg, header);
-      }
-
-      private void OnLegacyAudio(RTMPMessage msg)
-      {
-        switch (msg.GetPacketType()) {
-        case FLVPacketType.AACSequenceHeader:
-          OnAudioHeader(msg.Body, 2); // [0]=AF, [1]=AACPacketType, [2..]=AudioSpecificConfig
-          break;
-        case FLVPacketType.AACRawData:
-          OnAudioBody(msg, 2);
-          break;
-        default:
-          break;
-        }
-      }
-
-      private void OnExAudio(RTMPMessage msg, ExAudioTagHeader header)
-      {
-        if (header.IsMultitrack || header.FourCc!="mp4a") {
-          WarnUnsupportedAudio(header.FourCc);
-          return;
-        }
-        switch (header.PacketType) {
-        case AudioPacketType.SequenceStart:
-          OnAudioHeader(msg.Body, header.PayloadOffset);
-          break;
-        case AudioPacketType.CodedFrames:
-          OnAudioBody(msg, header.PayloadOffset);
-          break;
-        default:
-          break;
-        }
-      }
-
-      private void OnLegacyVideo(RTMPMessage msg)
-      {
-        switch (msg.GetPacketType()) {
-        case FLVPacketType.AVCSequenceHeader: {
-          // body: [0]=frametype|codecid, [1]=AVCPacketType(0), [2..4]=cts, [5..]=avcC
-          var avcc = SliceFrom(msg.Body, 5);
-          if (avcc.Length>0) SetVideoHandler("V_MPEG4/ISO/AVC", avcc);
-          break;
-        }
-        case FLVPacketType.AVCNALUnitKeyFrame:
-        case FLVPacketType.AVCNALUnitInterFrame:
-          OnVideoBody(msg, 5, LegacyVideoCts(msg.Body), msg.IsKeyFrame());
-          break;
-        default:
-          break;
-        }
-      }
-
-      private void OnExVideo(RTMPMessage msg, ExVideoTagHeader header)
-      {
-        if (header.IsMultitrack) {
-          WarnUnsupportedVideo(header.FourCc);
-          return;
-        }
-        var codecId = MapVideoCodecId(header.FourCc);
+        var info = FLVTagClassifier.Classify(msg);
+        if (info.Kind==FLVTagKind.VideoSequenceEnd) return;
+        var codecId = MapVideoCodecId(info.FourCc);
         if (codecId==null) {
-          WarnUnsupportedVideo(header.FourCc);
+          WarnUnsupportedVideo(info.FourCc);
           return;
         }
-        switch (header.PacketType) {
-        case VideoPacketType.SequenceStart: {
-          var cp = SliceFrom(msg.Body, header.PayloadOffset);
+        switch (info.Kind) {
+        case FLVTagKind.VideoSequenceHeader: {
+          var cp = SliceFrom(msg.Body, info.PayloadOffset);
           if (cp.Length>0) SetVideoHandler(codecId, cp);
           break;
         }
-        case VideoPacketType.CodedFrames:
-        case VideoPacketType.CodedFramesX: {
-          // FrameType==1(key) または ==4(generated key)を keyframe とする(指摘点5)。
-          var keyframe = header.FrameType==1 || header.FrameType==4;
-          OnVideoBody(msg, header.PayloadOffset, header.CompositionTime, keyframe);
+        case FLVTagKind.VideoKeyFrame:
+        case FLVTagKind.VideoInterFrame:
+          OnVideoBody(msg, info.PayloadOffset, info.CompositionTime, info.Kind==FLVTagKind.VideoKeyFrame);
           break;
-        }
         default:
+          // MPEG2TSSequenceStart はコーデック設定の生バイトではないため CodecPrivate に使えない。
+          WarnUnsupportedVideo(info.FourCc);
           break;
         }
       }
@@ -381,20 +370,12 @@ namespace PeerCastStation.FLV
       private static string? MapVideoCodecId(string? fourcc)
       {
         switch (fourcc) {
-        case "avc1": return "V_MPEG4/ISO/AVC";
+        case FLVTagClassifier.FourCcAvc: return "V_MPEG4/ISO/AVC";
         case "hvc1":
         case "hev1": return "V_MPEGH/ISO/HEVC";
         case "av01": return "V_AV1"; // Matroska の AV1 CodecID(FourCC の av01 とは異なる)
         default:     return null;
         }
-      }
-
-      private static int LegacyVideoCts(byte[] body)
-      {
-        if (body.Length<5) return 0;
-        int cts = (body[2]<<16) | (body[3]<<8) | body[4];
-        if (cts>=0x800000) cts -= 0x1000000; // 符号付き24bit
-        return cts;
       }
 
       private static byte[] SliceFrom(byte[] body, int offset)
@@ -430,19 +411,48 @@ namespace PeerCastStation.FLV
       private void OnAudioHeader(byte[] body, int offset)
       {
         if (offset<0 || body.Length<=offset) return;
-        audioConfig = new byte[body.Length-offset];
-        Array.Copy(body, offset, audioConfig, 0, audioConfig.Length);
-        using (var s=new MemoryStream(audioConfig, false))
-        using (var bs=new BitReader(s)) {
-          var type = bs.ReadBits(5);
-          if (type==31) type = bs.ReadBits(6)+32;
-          var freqIdx = bs.ReadBits(4);
-          audioSampleRate = freqIdx==0x0F
-            ? bs.ReadBits(24)
-            : (freqIdx<SamplingFrequencies.Length ? SamplingFrequencies[freqIdx] : 0);
-          audioChannels = bs.ReadBits(4);
+        var config = new byte[body.Length-offset];
+        Array.Copy(body, offset, config, 0, config.Length);
+        // 切り詰められた AudioSpecificConfig はここで捨てる。ビット読み出しで例外を投げると
+        // FLVFileParser.Read の EndOfStreamException catch がタグ先頭まで巻き戻すため
+        // (=「データ待ち」と誤認される)、毒タグがバッファ先頭に残って以後の全パースが
+        // 再スローし続け、出力が恒久停止したうえで contentBuffer が無限に成長する。
+        if (!TryParseAudioSpecificConfig(config, out var sampleRate, out var channels)) {
+          WarnBrokenAudioConfig();
+          return;
         }
+        audioConfig = config;
+        audioSampleRate = sampleRate;
+        audioChannels = channels;
         hasAudio = true;
+      }
+
+      /// <summary>
+      /// AudioSpecificConfig(ISO/IEC 14496-3)先頭の audioObjectType/samplingFrequency/
+      /// channelConfiguration を取り出す。ビットが不足する場合は false を返す(例外は投げない)。
+      /// </summary>
+      private static bool TryParseAudioSpecificConfig(byte[] config, out int sampleRate, out int channels)
+      {
+        sampleRate = 0;
+        channels   = 0;
+        var reader = new BitReader(config);
+        if (!reader.TryReadBits(5, out var type)) return false;
+        if (type==31 && !reader.TryReadBits(6, out _)) return false;
+        if (!reader.TryReadBits(4, out var freqIdx)) return false;
+        if (freqIdx==0x0F) {
+          if (!reader.TryReadBits(24, out sampleRate)) return false;
+        }
+        else {
+          sampleRate = freqIdx<SamplingFrequencies.Length ? SamplingFrequencies[freqIdx] : 0;
+        }
+        return reader.TryReadBits(4, out channels);
+      }
+
+      private void WarnBrokenAudioConfig()
+      {
+        if (warnedBrokenAudioConfig) return;
+        logger.Warn("FLVToMKV: AudioSpecificConfigが不完全なため音声シーケンスヘッダを破棄します");
+        warnedBrokenAudioConfig = true;
       }
 
       private void OnAudioBody(RTMPMessage msg, int offset)
@@ -456,9 +466,10 @@ namespace PeerCastStation.FLV
         if (ptsBase<0) ptsBase = msg.Timestamp;
         var pts = msg.Timestamp - ptsBase;
         EnsureCluster(pts, false);
-        var payload = new byte[msg.Body.Length-offset];
-        Array.Copy(msg.Body, offset, payload, 0, payload.Length);
-        WriteSimpleBlock(AudioTrackNumber, pts, true, payload);
+        var length = msg.Body.Length-offset;
+        var block = AllocateSimpleBlock(AudioTrackNumber, pts, true, length, out var dest);
+        new ReadOnlySpan<byte>(msg.Body, offset, length).CopyTo(dest);
+        sink.OnBlock(block);
       }
 
       private void OnVideoBody(RTMPMessage msg, int offset, int cts, bool keyframe)
@@ -472,7 +483,10 @@ namespace PeerCastStation.FLV
         var pts = dts + cts;
         EnsureCluster(pts, keyframe);
         var slice = new ReadOnlySpan<byte>(msg.Body, offset, msg.Body.Length-offset);
-        WriteSimpleBlock(VideoTrackNumber, pts, keyframe, videoHandler.BuildBlockPayload(slice));
+        var block = AllocateSimpleBlock(
+          VideoTrackNumber, pts, keyframe, videoHandler.GetBlockPayloadLength(slice), out var dest);
+        videoHandler.WriteBlockPayload(slice, dest);
+        sink.OnBlock(block);
       }
 
       private void WriteHeaderIfNeeded()
@@ -566,67 +580,82 @@ namespace PeerCastStation.FLV
         }
         else {
           if (rel>=AudioClusterDurationMs) need = true; // 音声のみは時間ベース
+          // タイムスタンプの32bitラップやソース再開で rel が巨大な負値になると、
+          // 上の条件だけでは二度と分割されず全ブロックが rel=-32768 に張り付く。
+          // 映像パスと対称に負方向の安全弁を置く。
+          if (rel<=-ClusterSignedLimitMs) need = true;
         }
         if (need) OpenCluster(ptsMs);
       }
 
       private void OpenCluster(long baseMs)
       {
-        clusterBaseMs = baseMs;
+        // Cluster Timecode は符号なしなので負値をクランプする。clusterBaseMs を
+        // クランプ前のままにすると、以降のブロックの相対timecodeが実際に書いた Timecode と
+        // ずれ、そのクラスタ内の全ブロックが |baseMs| ぶんシフトして A/V 同期が飛ぶ。
+        var timecode = Math.Max(0, baseMs);
+        clusterBaseMs = timecode;
         clusterOpen = true;
         var ms = new MemoryStream();
         EBMLWriter.WriteMasterUnknown(ms, EBMLWriter.Cluster);
-        EBMLWriter.WriteElement(ms, EBMLWriter.Timecode, EBMLWriter.EncodeUInt((ulong)Math.Max(0, baseMs)));
+        EBMLWriter.WriteElement(ms, EBMLWriter.Timecode, EBMLWriter.EncodeUInt((ulong)timecode));
         sink.OnCluster(ms.ToArray());
       }
 
-      private void WriteSimpleBlock(int trackNumber, long ptsMs, bool keyframe, ReadOnlySpan<byte> payload)
+      /// <summary>
+      /// SimpleBlock 要素(ID+サイズ+ブロックヘッダ+ペイロード)を1つの配列として確保し、
+      /// ペイロード領域を <paramref name="payload"/> で返す。
+      /// 要素の総サイズは事前に計算できるので、呼び出し側がここへ直接書けば
+      /// フレームあたりのペイロードコピーは1回で済む。
+      /// </summary>
+      private byte[] AllocateSimpleBlock(int trackNumber, long ptsMs, bool keyframe, int payloadLength, out Span<byte> payload)
       {
         var rel = ptsMs - clusterBaseMs;
         if (rel>32767) rel = 32767;
         if (rel<-32768) rel = -32768;
         var track = EBMLWriter.EncodeVInt((ulong)trackNumber);
-        var content = new byte[track.Length + 2 + 1 + payload.Length];
+        var contentLength = track.Length + 2 + 1 + payloadLength;
+        var size = EBMLWriter.EncodeVInt((ulong)contentLength);
+        var block = new byte[EBMLWriter.SimpleBlock.Length + size.Length + contentLength];
         var pos = 0;
-        Array.Copy(track, 0, content, pos, track.Length);
+        Array.Copy(EBMLWriter.SimpleBlock, 0, block, pos, EBMLWriter.SimpleBlock.Length);
+        pos += EBMLWriter.SimpleBlock.Length;
+        Array.Copy(size, 0, block, pos, size.Length);
+        pos += size.Length;
+        Array.Copy(track, 0, block, pos, track.Length);
         pos += track.Length;
-        content[pos++] = (byte)((rel>>8) & 0xFF);
-        content[pos++] = (byte)(rel & 0xFF);
-        content[pos++] = (byte)(keyframe ? 0x80 : 0x00);
-        payload.CopyTo(new Span<byte>(content, pos, payload.Length));
-        var ms = new MemoryStream();
-        EBMLWriter.WriteElement(ms, EBMLWriter.SimpleBlock, content);
-        sink.OnBlock(ms.ToArray());
+        block[pos++] = (byte)((rel>>8) & 0xFF);
+        block[pos++] = (byte)(rel & 0xFF);
+        block[pos++] = (byte)(keyframe ? 0x80 : 0x00);
+        payload = new Span<byte>(block, pos, payloadLength);
+        return block;
       }
 
+      /// <summary>
+      /// バイト配列からMSB詰めでビットを読む。データ不足は例外ではなく false で返す
+      /// (FLVFileParser の「EndOfStreamException=データ待ち」判定と混線させないため)。
+      /// </summary>
       private class BitReader
-        : IDisposable
       {
-        private readonly Stream baseStream;
-        private int buffer = 0;
-        private int bufferLen = 0;
+        private readonly byte[] data;
+        private int bitPos = 0;
 
-        public BitReader(Stream baseStream)
+        public BitReader(byte[] data)
         {
-          this.baseStream = baseStream;
+          this.data = data;
         }
 
-        public void Dispose()
+        public bool TryReadBits(int bits, out int result)
         {
-        }
-
-        public int ReadBits(int bits)
-        {
-          while (bufferLen<bits) {
-            var b = baseStream.ReadByte();
-            if (b<0) throw new EndOfStreamException();
-            buffer = (buffer<<8) | b;
-            bufferLen += 8;
+          result = 0;
+          if (bits<0 || bits>31) return false;
+          if ((long)bitPos+bits > (long)data.Length*8) return false;
+          for (var i=0; i<bits; i++) {
+            var p = bitPos+i;
+            result = (result<<1) | ((data[p>>3] >> (7-(p & 7))) & 1);
           }
-          int result = (buffer >> (bufferLen-bits)) & ((1<<bits)-1);
-          bufferLen -= bits;
-          buffer = buffer & ((1<<bufferLen)-1);
-          return result;
+          bitPos += bits;
+          return true;
         }
       }
     }
@@ -645,6 +674,7 @@ namespace PeerCastStation.FLV
     public class FLVToMKVContentFilterSink
       : IContentSink
     {
+      private static readonly Logger logger = new Logger(typeof(FLVToMKVContentFilter));
       private Task processorTask;
       struct ContentMessage
       {
@@ -672,13 +702,10 @@ namespace PeerCastStation.FLV
         : FLVToMKV.IMKVContentSink
       {
         public IContentSink TargetSink { get; }
-        // 上流のContentは ProcessMessagesAsync が設定するが、出力Contentの位置採番には用いない。
-        // MKVは1フレームから複数Content(Cluster + SimpleBlock)を出すため、上流の位置をそのまま流用すると
-        // (Stream,Timestamp,Position) が衝突し ContentCollection の重複排除でキーフレームごとドロップされる。
-        // 従ってネイティブの MKVContentReader と同様、出力側で独自に連番Positionを採番する。
-        public Content? HeaderContent { get; set; } = null;
-        public Content? RecentContent { get; set; } = null;
-
+        // MKVは1フレームから複数Content(Cluster + SimpleBlock)を出すため、上流Contentの位置を
+        // そのまま流用すると (Stream,Timestamp,Position) が衝突し、ContentCollection の重複排除で
+        // キーフレームごとドロップされる。従ってネイティブの MKVContentReader と同様、
+        // 上流Contentは参照せず出力側で独自に連番Positionを採番する。
         private int streamId = -1;
         private long position = 0;
         private DateTime streamOrigin = DateTime.Now;
@@ -723,10 +750,26 @@ namespace PeerCastStation.FLV
 
       private async Task ProcessMessagesAsync(IContentSink targetSink, CancellationToken cancellationToken)
       {
+        try {
+          await ProcessMessagesLoopAsync(targetSink, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) {
+          targetSink.OnStop(StopReason.UserShutdown);
+        }
+        catch (Exception e) {
+          // 例外でこのタスクが落ちたまま OnContent が enqueue を続けると、消費者のいない
+          // 無制限キューにストリームビットレートで積み上がりメモリリークになる。
+          // 下流を明示的に停止し、以後の enqueue は各メソッドの IsCompleted チェックで短絡させる。
+          logger.Error(e);
+          targetSink.OnStop(StopReason.NotIdentifiedError);
+        }
+      }
+
+      private async Task ProcessMessagesLoopAsync(IContentSink targetSink, CancellationToken cancellationToken)
+      {
         var mkvSink = new MKVSink(targetSink);
         var context = new FLVToMKV.Context(mkvSink);
-        var contentBuffer = new MemoryStream();
-        var fileParser = new FLVFileParser();
+        var parseBuffer = new FLVParseBuffer();
         var msg = await msgQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
         while (msg.Type!=ContentMessage.MessageType.Stop) {
           switch (msg.Type) {
@@ -736,45 +779,10 @@ namespace PeerCastStation.FLV
           case ContentMessage.MessageType.ChannelTrack:
             targetSink.OnChannelTrack(msg.ChannelTrack);
             break;
+          // MKVSink は上流Contentを参照しないため、ヘッダも本体も同じくバッファへ流すだけでよい。
           case ContentMessage.MessageType.ContentHeader:
-            {
-              mkvSink.HeaderContent = msg.Content;
-              var buffer = contentBuffer;
-              var pos = buffer.Position;
-              buffer.Seek(0, SeekOrigin.End);
-              buffer.Write(msg.Content.Data.Span);
-              buffer.Position = pos;
-              fileParser.Read(buffer, context);
-              if (buffer.Position!=0) {
-                var new_buf = new MemoryStream();
-                var trim_pos = buffer.Position;
-                buffer.Close();
-                var buf = buffer.ToArray();
-                new_buf.Write(buf, (int)trim_pos, (int)(buf.Length-trim_pos));
-                new_buf.Position = 0;
-                contentBuffer = new_buf;
-              }
-            }
-            break;
           case ContentMessage.MessageType.ContentBody:
-            {
-              mkvSink.RecentContent = msg.Content;
-              var buffer = contentBuffer;
-              var pos = buffer.Position;
-              buffer.Seek(0, SeekOrigin.End);
-              buffer.Write(msg.Content.Data.Span);
-              buffer.Position = pos;
-              fileParser.Read(buffer, context);
-              if (buffer.Position!=0) {
-                var new_buf = new MemoryStream();
-                var trim_pos = buffer.Position;
-                buffer.Close();
-                var buf = buffer.ToArray();
-                new_buf.Write(buf, (int)trim_pos, (int)(buf.Length-trim_pos));
-                new_buf.Position = 0;
-                contentBuffer = new_buf;
-              }
-            }
+            parseBuffer.Feed(msg.Content.Data.Span, context);
             break;
           }
           msg = await msgQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
@@ -782,8 +790,17 @@ namespace PeerCastStation.FLV
         targetSink.OnStop(msg.StopReason);
       }
 
+      /// <summary>
+      /// 処理タスクが終了(正常終了・フォルトいずれも)した後は消費者がいないため、
+      /// enqueue し続けるとキューが無制限に成長する。積むのをやめる。
+      /// </summary>
+      private bool IsProcessorAlive {
+        get { return !processorTask.IsCompleted; }
+      }
+
       public void OnChannelInfo(ChannelInfo channel_info)
       {
+        if (!IsProcessorAlive) return;
         var info = new AtomCollection(channel_info.Extra);
         info.SetChanInfoType("MKV");
         info.SetChanInfoStreamType("video/x-matroska");
@@ -793,22 +810,29 @@ namespace PeerCastStation.FLV
 
       public void OnChannelTrack(ChannelTrack channel_track)
       {
+        if (!IsProcessorAlive) return;
         msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ChannelTrack, ChannelTrack=channel_track });
       }
 
       public void OnContent(Content content)
       {
+        if (!IsProcessorAlive) return;
         msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ContentBody, Content=content });
       }
 
       public void OnContentHeader(Content content_header)
       {
+        if (!IsProcessorAlive) return;
         msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ContentHeader, Content=content_header });
       }
 
       public void OnStop(StopReason reason)
       {
-        msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.Stop, StopReason=reason });
+        // 既にフォルトしている場合、下流の OnStop は ProcessMessagesAsync の catch が
+        // 呼び済み。Wait() は完了済みタスクに対して即座に返る(例外も握り潰し済み)。
+        if (IsProcessorAlive) {
+          msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.Stop, StopReason=reason });
+        }
         processorTask.Wait();
       }
     }

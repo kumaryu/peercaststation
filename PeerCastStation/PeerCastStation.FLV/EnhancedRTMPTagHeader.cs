@@ -97,25 +97,28 @@ namespace PeerCastStation.FLV
         pos++;
         if (multitrack_type!=(int)AvMultitrackType.ManyTracksManyCodecs) {
           fourcc = ReadFourCc(body, ref pos);
+          if (fourcc==null) return false;
         }
         // Multitrack の per-track フレーミングは未対応。payload_offset は無効(-1)のまま。
       }
       else {
         fourcc = ReadFourCc(body, ref pos);
-        if (fourcc!=null) {
-          // E-RTMP v2 仕様: CodedFrames で 24bit compositionTimeOffset を持つのは
-          // AVC/HEVC/VVC のみ。AV1/VP8/VP9 は body 先頭が即コーデックデータ(AV1なら
-          // temporal unit の OBU 列)なので、ここで読むとフレーム先頭3バイトを欠落させる。
-          // VVC(vvc1)は未対応のため対象外。CodedFramesX は CTS=0(常に持たない)。
-          if (packet_type==(int)VideoPacketType.CodedFrames &&
-              (fourcc=="avc1" || fourcc=="hvc1" || fourcc=="hev1")) {
-            if (pos+3>body.Length) return false;
-            composition_time = (body[pos]<<16) | (body[pos+1]<<8) | body[pos+2];
-            if (composition_time>=0x800000) composition_time -= 0x1000000;
-            pos += 3;
-          }
-          payload_offset = pos;
+        // 非 Multitrack の Ex タグは仕様上必ず FourCC を持つ。読めない = 切り詰められた
+        // 不正タグなので、FourCc=null・PayloadOffset=-1 の半端な結果を成功として返さない。
+        // (呼び出し側がこれをコーデック設定付きのタグと誤認するのを防ぐ)
+        if (fourcc==null) return false;
+        // E-RTMP v2 仕様: CodedFrames で 24bit compositionTimeOffset を持つのは
+        // AVC/HEVC/VVC のみ。AV1/VP8/VP9 は body 先頭が即コーデックデータ(AV1なら
+        // temporal unit の OBU 列)なので、ここで読むとフレーム先頭3バイトを欠落させる。
+        // VVC(vvc1)は未対応のため対象外。CodedFramesX は CTS=0(常に持たない)。
+        if (packet_type==(int)VideoPacketType.CodedFrames &&
+            (fourcc=="avc1" || fourcc=="hvc1" || fourcc=="hev1")) {
+          if (pos+3>body.Length) return false;
+          composition_time = (body[pos]<<16) | (body[pos+1]<<8) | body[pos+2];
+          if (composition_time>=0x800000) composition_time -= 0x1000000;
+          pos += 3;
         }
+        payload_offset = pos;
       }
 
       result = new ExVideoTagHeader(true, frame_type, (VideoPacketType)packet_type, fourcc, is_multitrack, payload_offset, composition_time);
@@ -204,12 +207,15 @@ namespace PeerCastStation.FLV
         pos++;
         if (multitrack_type!=(int)AvMultitrackType.ManyTracksManyCodecs) {
           fourcc = ReadFourCc(body, ref pos);
+          if (fourcc==null) return false;
         }
         // Multitrack の per-track フレーミングは未対応。payload_offset は無効(-1)のまま。
       }
       else {
+        // 映像側と同じく、FourCC が読めない切り詰めタグは解析失敗として扱う。
         fourcc = ReadFourCc(body, ref pos);
-        if (fourcc!=null) payload_offset = pos;
+        if (fourcc==null) return false;
+        payload_offset = pos;
       }
 
       result = new ExAudioTagHeader(true, (AudioPacketType)packet_type, fourcc, is_multitrack, payload_offset);
