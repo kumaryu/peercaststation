@@ -50,6 +50,7 @@
     <Compile Include="HttpTests.fs" />
     <Compile Include="Tests.fs" />
     <Compile Include="PCPTests.fs" />
+    <Compile Include="FLVTestHelpers.fs" />
     <Compile Include="FLVToMKVTests.fs" />
     <Compile Include="FLVToMPEG2TSTests.fs" />
     <Compile Include="FLVContentBufferTests.fs" />

@@ -689,34 +689,6 @@ namespace PeerCastStation.FLV
       }
 
       /// <summary>
-      /// バイト配列からMSB詰めでビットを読む。データ不足は例外ではなく false で返す
-      /// (FLVFileParser の「EndOfStreamException=データ待ち」判定と混線させないため)。
-      /// </summary>
-      class BitReader
-      {
-        private readonly byte[] data;
-        private int bitPos = 0;
-
-        public BitReader(byte[] data)
-        {
-          this.data = data;
-        }
-
-        public bool TryReadBits(int bits, out int result)
-        {
-          result = 0;
-          if (bits<0 || bits>31) return false;
-          if ((long)bitPos+bits > (long)data.Length*8) return false;
-          for (var i=0; i<bits; i++) {
-            var p = bitPos+i;
-            result = (result<<1) | ((data[p>>3] >> (7-(p & 7))) & 1);
-          }
-          bitPos += bits;
-          return true;
-        }
-      }
-
-      /// <summary>
       /// AudioSpecificConfig(ISO/IEC 14496-3)先頭の audioObjectType/samplingFrequencyIndex/
       /// channelConfiguration を取り出す。ビットが不足する場合は false を返す(例外は投げない)。
       /// </summary>
@@ -1087,31 +1059,18 @@ namespace PeerCastStation.FLV
     }
 
     public class FLVToTSContentFilterSink
-      : IContentSink
+      : FLVContentFilterSinkBase
     {
       private static readonly Logger logger = new Logger(typeof(FLVToTSContentFilter));
-      private Task processorTask;
-      struct ContentMessage
-      {
-        public enum MessageType {
-          ChannelInfo,
-          ChannelTrack,
-          ContentHeader,
-          ContentBody,
-          Stop,
-        }
-        public MessageType  Type;
-        public StopReason   StopReason;
-        public Content      Content;
-        public ChannelInfo  ChannelInfo;
-        public ChannelTrack ChannelTrack;
-      }
-      private WaitableQueue<ContentMessage> msgQueue = new WaitableQueue<ContentMessage>();
 
       public FLVToTSContentFilterSink(IContentSink sink)
+        : base(sink, logger)
       {
-        processorTask = ProcessMessagesAsync(sink, CancellationToken.None);
       }
+
+      protected override string ContentType      { get { return "TS"; } }
+      protected override string MimeType         { get { return "video/mp2t"; } }
+      protected override string ContentExtension { get { return ".ts"; } }
 
       class MPEG2TSSink
         : FLVToMPEG2TS.IMPEG2TSContentSink
@@ -1167,29 +1126,12 @@ namespace PeerCastStation.FLV
         }
       }
 
-      private async Task ProcessMessagesAsync(IContentSink targetSink, CancellationToken cancellationToken)
-      {
-        try {
-          await ProcessMessagesLoopAsync(targetSink, cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) {
-          targetSink.OnStop(StopReason.UserShutdown);
-        }
-        catch (Exception e) {
-          // 例外でこのタスクが落ちたまま OnContent が enqueue を続けると、消費者のいない
-          // 無制限キューにストリームビットレートで積み上がりメモリリークになる。
-          // 下流を明示的に停止し、以後の enqueue は各メソッドの IsCompleted チェックで短絡させる。
-          logger.Error(e);
-          targetSink.OnStop(StopReason.NotIdentifiedError);
-        }
-      }
-
-      private async Task ProcessMessagesLoopAsync(IContentSink targetSink, CancellationToken cancellationToken)
+      protected override async Task ProcessMessagesLoopAsync(IContentSink targetSink, CancellationToken cancellationToken)
       {
         var tsSink = new MPEG2TSSink(targetSink);
         var context = new FLVToMPEG2TS.Context(tsSink);
         var parseBuffer = new FLVParseBuffer();
-        var msg = await msgQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
+        var msg = await MessageQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
         while (msg.Type!=ContentMessage.MessageType.Stop) {
           switch (msg.Type) {
           case ContentMessage.MessageType.ChannelInfo:
@@ -1209,55 +1151,9 @@ namespace PeerCastStation.FLV
             parseBuffer.Feed(msg.Content.Data.Span, context);
             break;
           }
-          msg = await msgQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
+          msg = await MessageQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
         }
         targetSink.OnStop(msg.StopReason);
-      }
-
-      /// <summary>
-      /// 処理タスクが終了(正常終了・フォルトいずれも)した後は消費者がいないため、
-      /// enqueue し続けるとキューが無制限に成長する。積むのをやめる。
-      /// </summary>
-      private bool IsProcessorAlive {
-        get { return !processorTask.IsCompleted; }
-      }
-
-      public void OnChannelInfo(ChannelInfo channel_info)
-      {
-        if (!IsProcessorAlive) return;
-        var info = new AtomCollection(channel_info.Extra);
-        info.SetChanInfoType("TS");
-        info.SetChanInfoStreamType("video/mp2t");
-        info.SetChanInfoStreamExt(".ts");
-        msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ChannelInfo, ChannelInfo=new ChannelInfo(info) });
-      }
-
-      public void OnChannelTrack(ChannelTrack channel_track)
-      {
-        if (!IsProcessorAlive) return;
-        msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ChannelTrack, ChannelTrack=channel_track });
-      }
-
-      public void OnContent(Content content)
-      {
-        if (!IsProcessorAlive) return;
-        msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ContentBody, Content=content });
-      }
-
-      public void OnContentHeader(Content content_header)
-      {
-        if (!IsProcessorAlive) return;
-        msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ContentHeader, Content=content_header });
-      }
-
-      public void OnStop(StopReason reason)
-      {
-        // 既にフォルトしている場合、下流の OnStop は ProcessMessagesAsync の catch が
-        // 呼び済み。Wait() は完了済みタスクに対して即座に返る(例外も握り潰し済み)。
-        if (IsProcessorAlive) {
-          msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.Stop, StopReason=reason });
-        }
-        processorTask.Wait();
       }
     }
 

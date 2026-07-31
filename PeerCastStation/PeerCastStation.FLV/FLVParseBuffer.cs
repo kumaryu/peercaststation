@@ -36,16 +36,11 @@ namespace PeerCastStation.FLV
       var consumed = buffer.Position;
       if (consumed==0) return;
       var remain = (int)(buffer.Length - consumed);
-      if (remain>0 && buffer.TryGetBuffer(out var seg)) {
-        Array.Copy(seg.Array!, seg.Offset+(int)consumed, seg.Array!, seg.Offset, remain);
-      }
-      else if (remain>0) {
-        // TryGetBuffer が使えない構成のための保険。
-        var rest = new byte[remain];
-        buffer.Position = consumed;
-        buffer.ReadExactly(rest, 0, remain);
-        buffer.Position = 0;
-        buffer.Write(rest, 0, remain);
+      if (remain>0) {
+        // buffer は自前の new MemoryStream() なので内部配列は常に公開されている
+        // (publiclyVisible=true)。GetBuffer() が失敗する経路は存在しない。
+        var raw = buffer.GetBuffer();
+        Array.Copy(raw, (int)consumed, raw, 0, remain);
       }
       buffer.SetLength(remain);
       buffer.Position = 0;

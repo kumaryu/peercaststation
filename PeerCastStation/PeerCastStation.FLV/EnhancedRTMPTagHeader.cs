@@ -35,6 +35,46 @@ namespace PeerCastStation.FLV
   }
 
   /// <summary>
+  /// Ex タグヘッダ(映像/音声)に共通する読み出し処理。
+  /// ModEx プレフィックスと FourCC の形式は E-RTMP 仕様上どちらもコーデック非依存で
+  /// 完全に同一なので、音声側・映像側で実装を分けず一箇所にまとめる。
+  /// </summary>
+  internal static class ExTagHeaderReader
+  {
+    /// <summary>
+    /// ModEx プレフィックスを1つ読み飛ばし、後続バイトの packetType を返す。
+    /// バイトが不足する場合は false を返す(例外は投げない)。
+    /// </summary>
+    public static bool SkipModEx(byte[] body, ref int pos, out int packet_type)
+    {
+      packet_type = 0;
+      if (pos>=body.Length) return false;
+      var size = body[pos] + 1;
+      pos++;
+      if (size==256) {
+        if (pos+1>=body.Length) return false;
+        size = ((body[pos]<<8) | body[pos+1]) + 1;
+        pos += 2;
+      }
+      pos += size; // modExData を読み飛ばす
+      if (pos>=body.Length) return false;
+      // 次バイト: 上位ニブル=packetModExType, 下位ニブル=packetType
+      packet_type = body[pos] & 0x0F;
+      pos++;
+      return true;
+    }
+
+    /// <summary>FourCC を4バイト読む。バイトが不足する場合は null を返す。</summary>
+    public static string? ReadFourCc(byte[] body, ref int pos)
+    {
+      if (pos+4>body.Length) return null;
+      var s = Encoding.ASCII.GetString(body, pos, 4);
+      pos += 4;
+      return s;
+    }
+  }
+
+  /// <summary>
   /// Enhanced RTMP(E-RTMP) v2 の ExVideoTagHeader を解析した結果。
   /// ModEx/Multitrack を剥がした後の packetType と共通 FourCC を保持する。
   /// </summary>
@@ -82,7 +122,7 @@ namespace PeerCastStation.FLV
 
       // ModEx: 実 packetType が現れるまでプレフィックスを読み飛ばす
       while (packet_type==(int)VideoPacketType.ModEx) {
-        if (!SkipModEx(body, ref pos, out packet_type)) return false;
+        if (!ExTagHeaderReader.SkipModEx(body, ref pos, out packet_type)) return false;
       }
 
       var is_multitrack = false;
@@ -96,13 +136,13 @@ namespace PeerCastStation.FLV
         packet_type = body[pos] & 0x0F;
         pos++;
         if (multitrack_type!=(int)AvMultitrackType.ManyTracksManyCodecs) {
-          fourcc = ReadFourCc(body, ref pos);
+          fourcc = ExTagHeaderReader.ReadFourCc(body, ref pos);
           if (fourcc==null) return false;
         }
         // Multitrack の per-track フレーミングは未対応。payload_offset は無効(-1)のまま。
       }
       else {
-        fourcc = ReadFourCc(body, ref pos);
+        fourcc = ExTagHeaderReader.ReadFourCc(body, ref pos);
         // 非 Multitrack の Ex タグは仕様上必ず FourCC を持つ。読めない = 切り詰められた
         // 不正タグなので、FourCc=null・PayloadOffset=-1 の半端な結果を成功として返さない。
         // (呼び出し側がこれをコーデック設定付きのタグと誤認するのを防ぐ)
@@ -123,33 +163,6 @@ namespace PeerCastStation.FLV
 
       result = new ExVideoTagHeader(true, frame_type, (VideoPacketType)packet_type, fourcc, is_multitrack, payload_offset, composition_time);
       return true;
-    }
-
-    private static bool SkipModEx(byte[] body, ref int pos, out int packet_type)
-    {
-      packet_type = 0;
-      if (pos>=body.Length) return false;
-      var size = body[pos] + 1;
-      pos++;
-      if (size==256) {
-        if (pos+1>=body.Length) return false;
-        size = ((body[pos]<<8) | body[pos+1]) + 1;
-        pos += 2;
-      }
-      pos += size; // modExData を読み飛ばす
-      if (pos>=body.Length) return false;
-      // 次バイト: 上位ニブル=packetModExType, 下位ニブル=packetType
-      packet_type = body[pos] & 0x0F;
-      pos++;
-      return true;
-    }
-
-    private static string? ReadFourCc(byte[] body, ref int pos)
-    {
-      if (pos+4>body.Length) return null;
-      var s = Encoding.ASCII.GetString(body, pos, 4);
-      pos += 4;
-      return s;
     }
   }
 
@@ -193,7 +206,7 @@ namespace PeerCastStation.FLV
       var pos = 1;
 
       while (packet_type==(int)AudioPacketType.ModEx) {
-        if (!SkipModEx(body, ref pos, out packet_type)) return false;
+        if (!ExTagHeaderReader.SkipModEx(body, ref pos, out packet_type)) return false;
       }
 
       var is_multitrack = false;
@@ -206,46 +219,20 @@ namespace PeerCastStation.FLV
         packet_type = body[pos] & 0x0F;
         pos++;
         if (multitrack_type!=(int)AvMultitrackType.ManyTracksManyCodecs) {
-          fourcc = ReadFourCc(body, ref pos);
+          fourcc = ExTagHeaderReader.ReadFourCc(body, ref pos);
           if (fourcc==null) return false;
         }
         // Multitrack の per-track フレーミングは未対応。payload_offset は無効(-1)のまま。
       }
       else {
         // 映像側と同じく、FourCC が読めない切り詰めタグは解析失敗として扱う。
-        fourcc = ReadFourCc(body, ref pos);
+        fourcc = ExTagHeaderReader.ReadFourCc(body, ref pos);
         if (fourcc==null) return false;
         payload_offset = pos;
       }
 
       result = new ExAudioTagHeader(true, (AudioPacketType)packet_type, fourcc, is_multitrack, payload_offset);
       return true;
-    }
-
-    private static bool SkipModEx(byte[] body, ref int pos, out int packet_type)
-    {
-      packet_type = 0;
-      if (pos>=body.Length) return false;
-      var size = body[pos] + 1;
-      pos++;
-      if (size==256) {
-        if (pos+1>=body.Length) return false;
-        size = ((body[pos]<<8) | body[pos+1]) + 1;
-        pos += 2;
-      }
-      pos += size;
-      if (pos>=body.Length) return false;
-      packet_type = body[pos] & 0x0F;
-      pos++;
-      return true;
-    }
-
-    private static string? ReadFourCc(byte[] body, ref int pos)
-    {
-      if (pos+4>body.Length) return null;
-      var s = Encoding.ASCII.GetString(body, pos, 4);
-      pos += 4;
-      return s;
     }
   }
 

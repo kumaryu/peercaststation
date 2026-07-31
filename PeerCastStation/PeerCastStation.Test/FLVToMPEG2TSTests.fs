@@ -7,64 +7,9 @@ open System
 open PeerCastStation.Core
 open PeerCastStation.FLV
 open PeerCastStation.FLV.RTMP
+open FLVTestHelpers
 
 // ---- helpers ----
-
-let private ascii (s:string) = System.Text.Encoding.ASCII.GetBytes(s)
-
-/// FLVタグ(11バイトヘッダ + body + 4バイトPreviousTagSize)を組み立てる。
-let private makeTag (typ:int) (timestamp:int) (body:byte[]) =
-    let ds = body.Length
-    let header =
-        [| byte typ
-           byte (ds>>>16); byte (ds>>>8); byte ds
-           byte (timestamp>>>16); byte (timestamp>>>8); byte timestamp; byte (timestamp>>>24)
-           0uy; 0uy; 0uy |]
-    let tagsize = ds + 11
-    let footer = [| byte (tagsize>>>24); byte (tagsize>>>16); byte (tagsize>>>8); byte tagsize |]
-    Array.concat [ header; body; footer ]
-
-let private flvHeader =
-    [| 0x46uy;0x4Cuy;0x56uy; 1uy; 0x05uy; 0uy;0uy;0uy;9uy; 0uy;0uy;0uy;0uy |]
-
-/// nalSizeLen=4、SPS/PPS を1つずつ持つ最小の avcC。
-let private avcC =
-    [| 1uy;0x42uy;0x00uy;0x1Fuy;0xFFuy;0xE1uy;0x00uy;0x04uy;0x67uy;0x42uy;0x00uy;0x1Fuy;0x01uy;0x00uy;0x04uy;0x68uy;0xCEuy;0x3Cuy;0x80uy |]
-
-let private hvcC = [| 1uy;0x01uy;0x60uy;0x00uy;0x00uy;0x03uy;0x00uy;0x90uy;0x12uy;0x34uy |]
-
-/// 4バイト長プレフィックス付きの NAL ユニット列(IDR)。
-let private avcNalus = [| 0uy;0uy;0uy;2uy;0x65uy;0x88uy |]
-
-/// enhanced 映像 SequenceStart(frameType=1, packetType=0)。
-let private exVideoSeq (fourcc:string) (config:byte[]) =
-    Array.concat [ [| 0x90uy |]; ascii fourcc; config ]
-
-/// enhanced 映像 SequenceStart を ModEx(1バイトの modExData)で包んだもの。
-/// byte0=0x97 は packetType=7(ModEx)。レガシー解釈では codecId=7(AVC)と誤読される。
-let private exVideoSeqModEx (fourcc:string) (config:byte[]) =
-    Array.concat [ [| 0x97uy; 0x00uy; 0xAAuy; 0x00uy |]; ascii fourcc; config ]
-
-/// enhanced 映像 CodedFrames(packetType=1)。AVC/HEVC は FourCC 直後に符号付き24bit CTS を持つ。
-let private exVideoCodedFrames (fourcc:string) (frameType:int) (cts:int) (payload:byte[]) =
-    let b0 = 0x80 ||| ((frameType &&& 0x07) <<< 4) ||| 0x01
-    Array.concat [ [| byte b0 |]; ascii fourcc; [| byte (cts>>>16); byte (cts>>>8); byte cts |]; payload ]
-
-type private CaptureSink() =
-    let header = System.Collections.Generic.List<byte>()
-    let content = System.Collections.Generic.List<byte>()
-    member val ChannelType : string = null with get, set
-    member _.Header = header.ToArray()
-    member _.Content = content.ToArray()
-    interface IContentSink with
-        member this.OnChannelInfo(ci) = this.ChannelType <- ci.ContentType
-        member _.OnChannelTrack(_) = ()
-        member _.OnContentHeader(c) = header.AddRange(c.Data.ToArray())
-        member _.OnContent(c) = content.AddRange(c.Data.ToArray())
-        member _.OnStop(_) = ()
-
-let private newContent (data:byte[]) =
-    Content(0, TimeSpan.Zero, 0L, data, 0, data.Length, PCPChanPacketContinuation.None)
 
 /// 出力が MPEG-2 TS パケット列(188バイト境界、同期バイト 0x47)であることを確認する。
 let private assertValidTS (bytes:byte[]) =
