@@ -27,6 +27,16 @@ let private indexOf (haystack:byte[]) (needle:byte[]) =
 let private contains (haystack:byte[]) (needle:byte[]) =
     indexOf haystack needle >= 0
 
+let private countOf (haystack:byte[]) (needle:byte[]) =
+    if needle.Length=0 then 0
+    else
+        let mutable count = 0
+        for i in 0..(haystack.Length - needle.Length) do
+            let mutable j = 0
+            while j<needle.Length && haystack.[i+j]=needle.[j] do j <- j+1
+            if j=needle.Length then count <- count+1
+        count
+
 let private startsWith (haystack:byte[]) (needle:byte[]) =
     haystack.Length>=needle.Length &&
     Array.forall2 (=) (Array.sub haystack 0 needle.Length) needle
@@ -83,12 +93,15 @@ let private flvHeader =
     // "FLV" v1 flags(audio+video) DataOffset=9 PreviousTagSize0=0
     [| 0x46uy;0x4Cuy;0x56uy; 1uy; 0x05uy; 0uy;0uy;0uy;9uy; 0uy;0uy;0uy;0uy |]
 
-let private onMetaDataBody (width:float) (height:float) =
+let private onMetaDataBodyOf (width:AMFValue) (height:AMFValue) =
     let dict = System.Collections.Generic.Dictionary<string, AMFValue>()
-    dict.["width"]  <- AMFValue(width)
-    dict.["height"] <- AMFValue(height)
+    dict.["width"]  <- width
+    dict.["height"] <- height
     let meta = AMFValue(dict)
     (DataAMF0Message(0L, 0L, "onMetaData", [| meta |])).Body
+
+let private onMetaDataBody (width:float) (height:float) =
+    onMetaDataBodyOf (AMFValue(width)) (AMFValue(height))
 
 // 最小の avcC(中身は検証では問わない。先頭5バイトを除いた部分が CodecPrivate になる)
 let private avcC =
@@ -422,3 +435,179 @@ let ``enhanced Multitrack 映像は破棄し音声のみ構成する`` () =
     let hdr = capture.Header
     Assert.True(contains hdr (ascii "A_AAC"), "音声トラックは構成される")
     Assert.False(contains hdr (ascii "V_MPEGH/ISO/HEVC"), "Multitrack 映像は CodecID を出さない")
+
+// ---- 破損入力に対する回帰テスト ----
+
+let private legacyAvcSeq = Array.concat [ [| 0x17uy;0x00uy;0x00uy;0x00uy;0x00uy |]; avcC ]
+let private legacyAvcKey = Array.concat [ [| 0x17uy;0x01uy;0x00uy;0x00uy;0x00uy |]; [| 0uy;0uy;0uy;2uy;0x65uy;0x88uy |] ]
+
+/// 映像キーフレーム SimpleBlock(track=1, timecode=0, keyframe フラグ)。
+let private videoKeyBlockAtZero = [| 0x81uy;0x00uy;0x00uy;0x80uy |]
+
+[<Fact>]
+let ``切り詰められた AudioSpecificConfig を捨てて出力を継続する`` () =
+    let capture = CaptureSink()
+    let sink = FLVToMKVContentFilter().Activate(capture)
+
+    // ASC が1バイトしかなく、samplingFrequencyIndex 以降のビットが足りない。
+    // 例外を投げると FLVFileParser がタグ先頭に巻き戻し「データ待ち」と誤認するため、
+    // この毒タグがバッファ先頭に残って以後の全パースが再スローし、出力が恒久停止していた。
+    let truncatedAacSeq = [| 0xAFuy;0x00uy;0x12uy |]
+    let headerData =
+        Array.concat [
+            flvHeader
+            makeTag 18 0 (onMetaDataBody 640.0 360.0)
+            makeTag 9 0 legacyAvcSeq
+            makeTag 8 0 truncatedAacSeq
+        ]
+    let bodyData = makeTag 9 0 legacyAvcKey
+
+    sink.OnChannelInfo(ChannelInfo(AtomCollection()))
+    sink.OnContentHeader(newContent headerData)
+    sink.OnContent(newContent bodyData)
+    sink.OnStop(StopReason.OffAir)
+
+    let hdr = capture.Header
+    Assert.True(contains hdr (ascii "V_MPEG4/ISO/AVC"), "映像トラックは構成される")
+    Assert.False(contains hdr (ascii "A_AAC"), "壊れた ASC の音声トラックは除外される")
+    Assert.True(contains capture.Content videoKeyBlockAtZero, "毒タグの後も映像フレームが出力される")
+
+[<Fact>]
+let ``切り詰められた enhanced タグを挟んでも出力を継続する`` () =
+    let capture = CaptureSink()
+    let sink = FLVToMKVContentFilter().Activate(capture)
+
+    let headerData =
+        Array.concat [
+            flvHeader
+            makeTag 18 0 (onMetaDataBody 640.0 360.0)
+            makeTag 9 0 legacyAvcSeq
+        ]
+    // body=[0x80] は Ex ヘッダのマーカーだけで FourCC まで届かない切り詰めタグ。
+    let bodyData =
+        Array.concat [
+            makeTag 9 0 [| 0x80uy |]
+            makeTag 9 0 legacyAvcKey
+        ]
+
+    sink.OnChannelInfo(ChannelInfo(AtomCollection()))
+    sink.OnContentHeader(newContent headerData)
+    sink.OnContent(newContent bodyData)
+    sink.OnStop(StopReason.OffAir)
+
+    Assert.True(contains capture.Header (ascii "V_MPEG4/ISO/AVC"), "映像トラックは構成される")
+    Assert.True(contains capture.Content videoKeyBlockAtZero, "切り詰めタグの後も映像フレームが出力される")
+
+[<Fact>]
+let ``onMetaData の解像度が文字列でも解釈する`` () =
+    let capture = CaptureSink()
+    let sink = FLVToMKVContentFilter().Activate(capture)
+
+    // "1280.0" は Int32.Parse では FormatException になる。以前はこれで処理タスクが
+    // フォルトし、出力が一切出なくなっていた。
+    let headerData =
+        Array.concat [
+            flvHeader
+            makeTag 18 0 (onMetaDataBodyOf (AMFValue("1280.0")) (AMFValue("720.0")))
+            makeTag 9 0 legacyAvcSeq
+        ]
+    let bodyData = makeTag 9 0 legacyAvcKey
+
+    sink.OnChannelInfo(ChannelInfo(AtomCollection()))
+    sink.OnContentHeader(newContent headerData)
+    sink.OnContent(newContent bodyData)
+    sink.OnStop(StopReason.OffAir)
+
+    let hdr = capture.Header
+    Assert.True(contains hdr (ascii "V_MPEG4/ISO/AVC"), "映像トラックが構成される")
+    // PixelWidth=0xB0 に 1280(0x0500)、PixelHeight=0xBA に 720(0x02D0)
+    Assert.True(contains hdr [| 0xB0uy;0x82uy;0x05uy;0x00uy |], "PixelWidth=1280")
+    Assert.True(contains hdr [| 0xBAuy;0x82uy;0x02uy;0xD0uy |], "PixelHeight=720")
+    Assert.True(contains capture.Content videoKeyBlockAtZero, "映像フレームが出力される")
+
+[<Fact>]
+let ``onMetaData の解像度が数値でない型でもフォルトしない`` () =
+    let capture = CaptureSink()
+    let sink = FLVToMKVContentFilter().Activate(capture)
+
+    // 数値にも文字列にもできない型(Date)。以前は AMFValue の int キャスト演算子が
+    // InvalidCastException を投げ、処理タスクごとフォルトしていた。
+    let nonNumeric () = AMFValue(DateTime(2026, 7, 31, 0, 0, 0, DateTimeKind.Local))
+    let headerData =
+        Array.concat [
+            flvHeader
+            makeTag 18 0 (onMetaDataBodyOf (nonNumeric()) (nonNumeric()))
+            makeTag 9 0 legacyAvcSeq
+            makeTag 8 0 legacyAacSeq
+        ]
+    let bodyData =
+        Array.concat [
+            makeTag 9 0 legacyAvcKey
+            makeTag 8 0 legacyAacRaw
+        ]
+
+    sink.OnChannelInfo(ChannelInfo(AtomCollection()))
+    sink.OnContentHeader(newContent headerData)
+    sink.OnContent(newContent bodyData)
+    sink.OnStop(StopReason.OffAir)
+
+    let hdr = capture.Header
+    // 解像度が取れないので映像は除外されるが、音声は通常どおり構成される
+    Assert.True(contains hdr (ascii "A_AAC"), "音声トラックは構成される")
+    Assert.False(contains hdr (ascii "V_MPEG4/ISO/AVC"), "解像度不明の映像は除外される")
+    Assert.True(contains capture.Content [| 0x82uy;0x00uy;0x00uy;0x80uy |], "音声フレームが出力される")
+
+[<Fact>]
+let ``先頭フレームが負CTSでも Cluster Timecode とブロック相対値が整合する`` () =
+    let capture = CaptureSink()
+    let sink = FLVToMKVContentFilter().Activate(capture)
+
+    let headerData =
+        Array.concat [
+            flvHeader
+            makeTag 18 0 (onMetaDataBody 640.0 360.0)
+            makeTag 9 0 (exVideoSeq "hvc1" hvcC)
+        ]
+    // pts = dts(0) + cts(-40) = -40。Cluster Timecode は符号なしなので 0 にクランプされる。
+    let bodyData =
+        makeTag 9 0 (exVideoCodedFrames "hvc1" 1 -40 [| 0x00uy;0x00uy;0x00uy;0x02uy;0x26uy;0x01uy |])
+
+    sink.OnChannelInfo(ChannelInfo(AtomCollection()))
+    sink.OnContentHeader(newContent headerData)
+    sink.OnContent(newContent bodyData)
+    sink.OnStop(StopReason.OffAir)
+
+    let body = capture.Content
+    Assert.True(contains body [| 0xE7uy;0x81uy;0x00uy |], "Cluster Timecode は 0 にクランプされる")
+    // clusterBaseMs もクランプ後の 0 なので rel は -40(0xFFD8)。
+    // クランプ前の -40 を基準にすると rel=0 になり、クラスタ全体が 40ms ずれる。
+    Assert.True(contains body [| 0x81uy;0xFFuy;0xD8uy;0x80uy |], "ブロック相対値は Timecode=0 基準の -40")
+
+[<Fact>]
+let ``音声のみでタイムスタンプが後退したらクラスタを開き直す`` () =
+    let capture = CaptureSink()
+    let sink = FLVToMKVContentFilter().Activate(capture)
+
+    let headerData =
+        Array.concat [
+            flvHeader
+            makeTag 8 0 legacyAacSeq
+        ]
+    // 50000ms まで進んだ後に 10000ms へ後退する(ソース再開やタイムスタンプラップ相当)。
+    let bodyData =
+        Array.concat [
+            makeTag 8 0     legacyAacRaw
+            makeTag 8 50000 legacyAacRaw
+            makeTag 8 10000 legacyAacRaw
+        ]
+
+    sink.OnChannelInfo(ChannelInfo(AtomCollection()))
+    sink.OnContentHeader(newContent headerData)
+    sink.OnContent(newContent bodyData)
+    sink.OnStop(StopReason.OffAir)
+
+    let body = capture.Content
+    // 負方向の再クラスタ分岐が無いと3つ目は同じクラスタに留まり、
+    // rel が signed16 の下限 -32768(0x8000)に張り付いたままになる。
+    Assert.Equal(3, countOf body [| 0x1Fuy;0x43uy;0xB6uy;0x75uy |])
+    Assert.False(contains body [| 0x82uy;0x80uy;0x00uy;0x80uy |], "rel が -32768 に張り付かない")

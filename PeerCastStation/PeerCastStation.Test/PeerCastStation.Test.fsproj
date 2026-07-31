@@ -51,6 +51,7 @@
     <Compile Include="Tests.fs" />
     <Compile Include="PCPTests.fs" />
     <Compile Include="FLVToMKVTests.fs" />
+    <Compile Include="FLVToMPEG2TSTests.fs" />
     <Compile Include="AppTest.fs" />
     <Compile Include="UpdaterTests.fs" />
   </ItemGroup>
