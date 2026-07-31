@@ -112,10 +112,14 @@ namespace PeerCastStation.FLV
     // 切り詰めタグをチャンネルヘッダに昇格させると、設定を持たないゴミが下流に配られる上に
     // OnHeaderChanged がストリームIDを再生成するため、1パケットで繰り返し全視聴者を
     // 再初期化させられる(Multitrack は PayloadOffset=-1 のためここで除外される)。
+    // 昇格させるのは avcC 等のコーデック設定を持つ VideoSequenceHeader のみ。
+    // VideoMpeg2TsSequenceHeader(E-RTMP の MPEG2TSSequenceStart)はコーデック設定ではなく
+    // TS ブートストラップの生バイト列なので、チャンネルヘッダに埋めても下流の初期化に使えず、
+    // 昇格させると GenerateStreamID() で無意味に全視聴者を再初期化することになる。
     public void OnVideo(RTMPMessage msg)
     {
       var info = FLVTagClassifier.Classify(msg);
-      if (info.IsVideoSequenceStart && info.HasPayload(msg.Body)) {
+      if (info.Kind==FLVTagKind.VideoSequenceHeader && info.HasPayload(msg.Body)) {
         videoHeader = msg;
         OnHeaderChanged(msg);
       }

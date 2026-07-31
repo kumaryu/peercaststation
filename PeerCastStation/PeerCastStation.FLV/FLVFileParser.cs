@@ -174,15 +174,23 @@ namespace PeerCastStation.FLV
     private ReaderState state = ReaderState.Header;
     private static readonly Logger logger = new Logger(typeof(FLVFileParser));
 
+    private bool warnedBrokenTag = false;
+
     /// <summary>
     /// 読み終えた1タグを sink へ配る。
-    /// タグ本体はストリームから完全に読み出せているため、ここで出る EndOfStreamException は
+    /// タグ本体はストリームから完全に読み出せているため、ここで出る例外は
     /// 「データ待ち」ではなくタグ内容の破損(切り詰められた AMF や AudioSpecificConfig 等)である。
-    /// 呼び出し元の catch(EndOfStreamException) に巻き込むとタグ先頭まで巻き戻してしまい、
-    /// 同じ毒タグを永久に再パースし続ける(=出力の恒久停止とバッファの無限成長)ため、
-    /// ここで区別して握り、次のタグへ進む。
+    /// 呼び出し元の catch(EndOfStreamException)/catch(BadDataException) に巻き込むと
+    /// タグ先頭まで巻き戻してしまい、同じ毒タグを永久に再パースし続ける
+    /// (=出力の恒久停止とバッファの無限成長)ため、ここで区別して握り、次のタグへ進む。
+    ///
+    /// 握る例外は EndOfStreamException だけでは足りない。Script タグは
+    /// DataAMF0Message(RTMPMessage) のコンストラクタで即座に AMF0 解析されるが、
+    /// 未知マーカーや不正な参照は切り詰めではないため InvalidDataException になる。
+    /// これを取り逃がすと ProcessMessagesAsync の catch まで抜けて
+    /// OnStop(NotIdentifiedError) となり、1つの壊れたタグで配信全体が落ちる。
     /// </summary>
-    private static void DispatchTag(FLVTag tag, IRTMPContentSink sink)
+    private void DispatchTag(FLVTag tag, IRTMPContentSink sink)
     {
       try {
         switch (tag.Type) {
@@ -198,8 +206,40 @@ namespace PeerCastStation.FLV
         }
       }
       catch (EndOfStreamException) {
-        logger.Debug("破損したタグを読み飛ばしました (type={0}, size={1})", tag.Type, tag.Body.Length);
+        LogBrokenTag(tag, "タグ内容が途中で終わっています");
       }
+      catch (Exception e) when (IsBrokenTagException(e)) {
+        LogBrokenTag(tag, e.Message);
+      }
+    }
+
+    /// <summary>
+    /// タグ内容の破損として握り潰してよい例外か。
+    /// OutOfMemoryException や OperationCanceledException のように、握っても回復しない
+    /// / 呼び出し側が扱うべき例外は意図的に含めない。
+    /// </summary>
+    private static bool IsBrokenTagException(Exception e)
+    {
+      return e is InvalidDataException      // AMF0Reader: 未知マーカー/不正な参照
+          || e is BadDataException
+          || e is ArgumentException         // Span.Slice 等の範囲外
+          || e is IndexOutOfRangeException
+          || e is OverflowException
+          || e is FormatException;
+    }
+
+    /// <summary>
+    /// 破損タグの読み飛ばしを記録する。壊れた入力では毎タグ発生しうるので
+    /// 警告は最初の1回だけにし、以降は Debug に落とす。
+    /// </summary>
+    private void LogBrokenTag(FLVTag tag, string reason)
+    {
+      if (warnedBrokenTag) {
+        logger.Debug("破損したタグを読み飛ばしました (type={0}, size={1}): {2}", tag.Type, tag.Body.Length, reason);
+        return;
+      }
+      logger.Warn("破損したタグを読み飛ばしました (type={0}, size={1}): {2}", tag.Type, tag.Body.Length, reason);
+      warnedBrokenTag = true;
     }
 
     public bool Read(Stream stream, IRTMPContentSink sink)

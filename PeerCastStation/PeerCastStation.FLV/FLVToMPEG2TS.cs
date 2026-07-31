@@ -599,6 +599,9 @@ namespace PeerCastStation.FLV
       private int nalSizeLen = 0;
       private long ptsBase = -1;
       private bool warnedBrokenAudioConfig = false;
+      private bool warnedBrokenVideoConfig = false;
+      private bool warnedMissingVideoConfig = false;
+      private bool warnedBrokenVideoFrame = false;
       private bool warnedUnsupportedVideo = false;
       private bool warnedUnsupportedAudio = false;
       private readonly Logger logger = new Logger(typeof(FLVToMPEG2TS));
@@ -652,6 +655,9 @@ namespace PeerCastStation.FLV
         nalSizeLen = 0;
         ptsBase = -1;
         warnedBrokenAudioConfig = false;
+        warnedBrokenVideoConfig = false;
+        warnedMissingVideoConfig = false;
+        warnedBrokenVideoFrame = false;
         warnedUnsupportedVideo = false;
         warnedUnsupportedAudio = false;
       }
@@ -800,71 +806,157 @@ namespace PeerCastStation.FLV
         );
       }
 
-      private static byte ReadByte(ref ReadOnlySpan<byte> bytes)
+      private static bool TryReadByte(ref ReadOnlySpan<byte> bytes, out byte value)
       {
-        var value = bytes[0];
+        if (bytes.Length<1) {
+          value = 0;
+          return false;
+        }
+        value = bytes[0];
         bytes = bytes.Slice(1);
-        return value;
+        return true;
       }
 
-      private static NALUnit[] ReadNALUnitArray(ref ReadOnlySpan<byte> data, int cnt)
+      private static bool TryReadNALUnitArray(ref ReadOnlySpan<byte> data, int cnt, out NALUnit[] result)
       {
+        result = new NALUnit[0];
         var ary = new NALUnit[cnt];
         for (int i = 0; i<cnt; i++) {
+          if (data.Length<2) return false;
           var len = System.Buffers.Binary.BinaryPrimitives.ReadUInt16BigEndian(data);
           data = data.Slice(2);
+          // NALUnit.ReadFrom は先頭1バイトをヘッダとして消費するので len>=1 が要る。
+          if (len<1 || data.Length<len) return false;
           ary[i] = NALUnit.ReadFrom(data, len);
           data = data.Slice(len);
         }
-        return ary;
+        result = ary;
+        return true;
       }
 
-      private void OnAVCHeader(byte[] body, int offset)
+      /// <summary>
+      /// AVCDecoderConfigurationRecord(avcC, ISO/IEC 14496-15)を解析する。
+      /// バイトが不足する場合は false を返す(例外は投げない)。
+      /// 方針は音声側の TryParseAudioSpecificConfig と揃えてある。
+      /// </summary>
+      private static bool TryParseAVCDecoderConfig(
+        ReadOnlySpan<byte> data,
+        out int nal_size_len,
+        out NALUnit[] sps,
+        out NALUnit[] pps,
+        out NALUnit[] sps_ext)
       {
-        if (offset<0 || body.Length<=offset) return;
-        var data = new ReadOnlySpan<byte>(body, offset, body.Length-offset);
-        var configuration_version  = ReadByte(ref data);
-        var avc_profile_indication = ReadByte(ref data);
-        var profile_compatibility  = ReadByte(ref data);
-        var avc_level_indcation    = ReadByte(ref data);
-        this.nalSizeLen = (ReadByte(ref data) & 0x3) + 1;
-        var sps_count   = (ReadByte(ref data) & 0x1F);
-        this.sps        = ReadNALUnitArray(ref data, sps_count);
-        var pps_count   = ReadByte(ref data);
-        this.pps        = ReadNALUnitArray(ref data, pps_count);
+        nal_size_len = 0;
+        sps     = new NALUnit[0];
+        pps     = new NALUnit[0];
+        sps_ext = new NALUnit[0];
+        if (!TryReadByte(ref data, out var configuration_version)) return false;
+        if (!TryReadByte(ref data, out var avc_profile_indication)) return false;
+        if (!TryReadByte(ref data, out var profile_compatibility)) return false;
+        if (!TryReadByte(ref data, out var avc_level_indication)) return false;
+        if (!TryReadByte(ref data, out var length_size_minus_one)) return false;
+        nal_size_len = (length_size_minus_one & 0x3) + 1;
+        if (!TryReadByte(ref data, out var sps_count)) return false;
+        if (!TryReadNALUnitArray(ref data, sps_count & 0x1F, out sps)) return false;
+        if (!TryReadByte(ref data, out var pps_count)) return false;
+        if (!TryReadNALUnitArray(ref data, pps_count, out pps)) return false;
         if (data.Length>0 &&
             (avc_profile_indication==100 ||
              avc_profile_indication==110 ||
              avc_profile_indication==122 ||
              avc_profile_indication==144)) {
-          var chroma_format = (ReadByte(ref data) & 0x3);
-          var bit_depth_luma = (ReadByte(ref data) & 0x7) + 8;
-          var bit_depth_chroma = (ReadByte(ref data) & 0x7) + 8;
-          var sps_ext_count = ReadByte(ref data);
-          this.spsExt       = ReadNALUnitArray(ref data, sps_ext_count);
+          // chroma_format / bit_depth_luma / bit_depth_chroma は使わないが位置を進める。
+          if (!TryReadByte(ref data, out _)) return false;
+          if (!TryReadByte(ref data, out _)) return false;
+          if (!TryReadByte(ref data, out _)) return false;
+          if (!TryReadByte(ref data, out var sps_ext_count)) return false;
+          if (!TryReadNALUnitArray(ref data, sps_ext_count, out sps_ext)) return false;
         }
-        else {
-          this.spsExt = new NALUnit[0];
+        return true;
+      }
+
+      private void OnAVCHeader(byte[] body, int offset)
+      {
+        // 切り詰められた/矛盾した avcC はここで捨てる。音声側(OnAACHeader)と同じ理由で、
+        // 境界外アクセスの例外を投げると FLVFileParser がタグ先頭まで巻き戻して
+        // 同じ毒タグを永久に再パースし、出力が恒久停止する。
+        // sps_count/pps_count は実データ量と無関係に最大31/255を名乗れるので、
+        // 読み出し前に必ず残バイト数と照合する。
+        if (offset<0 || body.Length<=offset) {
+          WarnBrokenVideoConfig();
+          return;
         }
+        var data = new ReadOnlySpan<byte>(body, offset, body.Length-offset);
+        if (!TryParseAVCDecoderConfig(data, out var nal_size_len, out var sps, out var pps, out var sps_ext)) {
+          WarnBrokenVideoConfig();
+          return;
+        }
+        this.nalSizeLen = nal_size_len;
+        this.sps        = sps;
+        this.pps        = pps;
+        this.spsExt     = sps_ext;
         hasVideo = true;
+      }
+
+      private void WarnBrokenVideoConfig()
+      {
+        if (warnedBrokenVideoConfig) return;
+        logger.Warn("FLVToMPEG2TS: avcCが不完全なため映像シーケンスヘッダを破棄します");
+        warnedBrokenVideoConfig = true;
+      }
+
+      private void WarnMissingVideoConfig()
+      {
+        if (warnedMissingVideoConfig) return;
+        logger.Warn("FLVToMPEG2TS: 映像シーケンスヘッダ(avcC)より前のフレームを破棄します");
+        warnedMissingVideoConfig = true;
+      }
+
+      private void WarnBrokenVideoFrame()
+      {
+        if (warnedBrokenVideoFrame) return;
+        logger.Warn("FLVToMPEG2TS: NALユニット長が不正なため映像フレームを破棄します");
+        warnedBrokenVideoFrame = true;
       }
 
       private void OnAVCBody(RTMPMessage msg, int offset, int cts, bool keyframe)
       {
         if (offset<0 || msg.Body.Length<=offset) return;
+        // avcC(シーケンスヘッダ)より先に CodedFrames が来ると nalSizeLen が 0 のまま。
+        // その場合 NAL 長は常に 0 と読めてしまい NALUnit.ReadFrom が new byte[-1] で落ちる。
+        // NAL の区切りが分からない以上このフレームは復号できないので破棄する。
+        if (nalSizeLen<1) {
+          WarnMissingVideoConfig();
+          return;
+        }
         var pts = msg.Timestamp - Math.Max(0, ptsBase);
         var dts = pts;
         pts = pts + cts;
         var access_unit_delimiter = false;
         var idr = false;
+        var broken = false;
         var nalbytestream = new MemoryStream();
         int units = 0;
         using (nalbytestream)
         using (var body=new MemoryStream(msg.Body, 0, msg.Body.Length)) {
           body.Seek(offset, SeekOrigin.Begin);
           while (body.Position<body.Length) {
-            var len = body.ReadBytes(nalSizeLen).Aggregate(0, (r,v) => (r<<8) | v);
-            var nalu = NALUnit.ReadFrom(body, len);
+            // 長さは符号なしで読む。seed 0 の Aggregate は符号付き Int32 なので、
+            // nalSizeLen==4(lengthSizeMinusOne=3、一般的な既定値)で最上位ビットが立つと
+            // 負値になり new byte[負数] で OverflowException、0x7FFFFFFF なら
+            // 約2GBの確保を試みて OutOfMemoryException になる。
+            if (body.Length-body.Position < nalSizeLen) {
+              broken = true;
+              break;
+            }
+            var len = body.ReadBytes(nalSizeLen).Aggregate(0L, (r,v) => (r<<8) | v);
+            // NALUnit.ReadFrom は先頭1バイトをヘッダとして消費するので len>=1 が要る。
+            // 残バイト数を超える長さは壊れた入力なのでフレームごと捨てる。
+            if (len<1 || len > body.Length-body.Position) {
+              broken = true;
+              break;
+            }
+            var nalu = NALUnit.ReadFrom(body, (int)len);
             if (nalu.NALUnitType==9) {
               access_unit_delimiter = true;
             }
@@ -887,6 +979,12 @@ namespace PeerCastStation.FLV
             NALUnit.WriteToByteStream(nalbytestream, nalu);
             units += 1;
           }
+        }
+        // 途中で壊れたフレームは部分出力せず丸ごと捨てる。
+        // 中途半端な NAL 列を流すと下流のデコーダを壊すだけで得がない。
+        if (broken) {
+          WarnBrokenVideoFrame();
+          return;
         }
         var pes = new PESPacket(
           0xE0,

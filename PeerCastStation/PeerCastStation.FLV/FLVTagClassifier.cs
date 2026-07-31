@@ -63,14 +63,6 @@ namespace PeerCastStation.FLV
     {
       return PayloadOffset>=0 && PayloadOffset<body.Length;
     }
-
-    /// <summary>映像のシーケンス開始(通常/MPEG-2 TS 形式のいずれか)か。</summary>
-    public bool IsVideoSequenceStart {
-      get {
-        return Kind==FLVTagKind.VideoSequenceHeader ||
-               Kind==FLVTagKind.VideoMpeg2TsSequenceHeader;
-      }
-    }
   }
 
   /// <summary>
