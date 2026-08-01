@@ -97,6 +97,34 @@ let ``レガシー映像の非キーフレームをシーケンスヘッダと�
     Assert.Equal(1, capture.HeaderCount)
 
 [<Fact>]
+let ``小数点付きの videodatarate をホストのロケールに依らず解釈する`` () =
+    // onMetaData の数値文字列は配信者側のエンコーダが '.' を小数点として書くもので、
+    // ホストのロケールとは無関係。カルチャ依存の TryParse で読んでいたため、
+    // '.' を桁区切りとする de-DE のホストでは "2500.5" が 25005 になり、
+    // ChanInfo のビットレートが約10倍で PCP に広告されて全ノードのリレー判断を狂わせていた。
+    let onMetaData =
+        Array.concat [
+            amf0String "onMetaData"
+            [| 0x08uy; 0uy;0uy;0uy;1uy |] // ECMAArray(associative-count=1)
+            amf0Key "videodatarate"
+            amf0String "2500.5"
+            [| 0uy;0uy;0x09uy |]          // object end marker
+        ]
+    let original = Thread.CurrentThread.CurrentCulture
+    try
+        Thread.CurrentThread.CurrentCulture <- Globalization.CultureInfo.GetCultureInfo("de-DE")
+        let capture =
+            run (Array.concat [
+                    flvHeader
+                    makeTag 18 0 onMetaData
+                    makeTag 9 0  (exVideoSeq "avc1" avcC)
+                 ])
+        Assert.NotNull(capture.ChannelInfo)
+        Assert.Equal(2500, capture.ChannelInfo.Bitrate)
+    finally
+        Thread.CurrentThread.CurrentCulture <- original
+
+[<Fact>]
 let ``数値でない videodatarate を含む onMetaData で停止しない`` () =
     // videodatarate は (double) キャストで読んでいたため、文字列だと FormatException、
     // 非数値型だと InvalidCastException になる。FLVFileParser を経由しない RTMP 受信経路では

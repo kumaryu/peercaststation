@@ -34,8 +34,24 @@ let private videoPesHeaders (bytes:byte[]) =
                     (hi <<< 30) ||| (mid <<< 15) ||| lo
             yield (len, pts) ]
 
+/// 出力から ADTS ヘッダ(syncword 0xFFF)を探し (profile, samplingFreqIndex, channelConfiguration)
+/// を出現順に取り出す。syncword だけで探すと TS の adaptation field を埋める
+/// スタッフィングバイト(0xFF の連続)を拾ってしまうため、syncword に続く
+/// layer(2bit、常に 0)まで含めて絞る(0xFF は layer=3 になり除外される)。
+let private adtsHeaders (bytes:byte[]) =
+    [ for i in 0 .. bytes.Length-7 do
+        if bytes.[i]=0xFFuy && (bytes.[i+1] &&& 0xF6uy)=0xF0uy then
+            let profile = (int bytes.[i+2] >>> 6) &&& 0x03
+            let freqIdx = (int bytes.[i+2] >>> 2) &&& 0x0F
+            let channels =
+                ((int bytes.[i+2] &&& 0x01) <<< 2) ||| ((int bytes.[i+3] >>> 6) &&& 0x03)
+            yield (profile, freqIdx, channels) ]
+
 /// AAC-LC 44100Hz 2ch の AudioSpecificConfig を持つレガシー音声シーケンスヘッダ。
 let private legacyAacSeq = [| 0xAFuy;0x00uy;0x12uy;0x10uy |]
+
+/// 任意の AudioSpecificConfig を持つレガシー音声シーケンスヘッダ。
+let private legacyAacSeqWith (asc:byte[]) = Array.concat [ [| 0xAFuy;0x00uy |]; asc ]
 
 /// レガシー AAC の生フレーム。
 let private legacyAacFrame (payload:byte[]) = Array.concat [ [| 0xAFuy;0x01uy |]; payload ]
@@ -216,11 +232,98 @@ let ``ADTSのframe_lengthに収まらない音声フレームを捨てて出力�
     Assert.Equal(baseline, capture.Content.Length)
 
 [<Fact>]
-let ``ADTSのprofileに収まらないaudioObjectTypeの設定を破棄する`` () =
-    // ADTS の profile は2bit(AOT 1..4 のみ)。明示signalingのHE-AAC(AOT=5)を書くと
-    // 下位2bitに丸められて profile=0(Main)と嘘をつく。設定ごと破棄する。
-    // 0x2A 0x10 = AOT 5 / freqIdx 4(44100) / 2ch。
+let ``SBRの明示signalingを名乗るのに拡張情報を持たない設定を破棄する`` () =
+    // 0x2A 0x10 = AOT 5(SBR の明示signaling)/ freqIdx 4(44100)/ 1ch。AOT 5 は
+    // 拡張レートとコア audioObjectType が後続する形式なのに、そこで打ち切られている。
+    // コアの audioObjectType が判らない以上 ADTS の profile を決められないので破棄する。
     let capture =
         run (makeTag 8 0 [| 0xAFuy;0x00uy;0x2Auy;0x10uy |])
             (makeTag 8 20 (legacyAacFrame (Array.create 32 0x55uy)))
     Assert.Empty(capture.Content)
+
+[<Fact>]
+let ``HE-AAC(SBRの明示signaling)の音声を出力する`` () =
+    // AOT=5 を「ADTS の profile 2bit に収まらない」として設定ごと破棄していたため、
+    // libfdk_aac -profile:a aac_he のような配信は hasAudio が立たず、以後の全AACフレームが
+    // 捨てられたうえ PMT も音声ES抜きで確定し、TS が恒久的に無音になっていた。
+    // ADTS は SBR を暗黙signalingで運ぶ形式なので、通知されたコアの audioObjectType
+    // (AAC LC=2)で profile を決めれば正しく再生できる。
+    // コア 22050Hz(freqIdx=7)/拡張 44100Hz(freqIdx=4)/2ch の HE-AAC v1。
+    let asc = audioSpecificConfigSbr 5 7 2 4 2
+    let capture =
+        run (makeTag 8 0 (legacyAacSeqWith asc))
+            (makeTag 8 20 (legacyAacFrame (Array.create 32 0x55uy)))
+    assertValidTS capture.Content
+    // profile は コアAOT-1 = 1(AAC LC)、samplingFreqIndex はコア側の 7 のまま。
+    Assert.Equal<(int*int*int) list>([ (1, 7, 2) ], adtsHeaders capture.Content)
+
+[<Fact>]
+let ``明示レートで通知されたサンプリング周波数を表引きインデックスに直して出力する`` () =
+    // samplingFrequencyIndex=0x0F は「続く24bitが実レート」の合法なエスケープ。
+    // これを予約値(13/14)と一緒に弾いていたため、明示レートで通知する配信は
+    // 音声が丸ごと出なくなっていた。実レートが表にあるなら ADTS で表現できる。
+    let asc = audioSpecificConfigExplicitRate 2 44100 2
+    let capture =
+        run (makeTag 8 0 (legacyAacSeqWith asc))
+            (makeTag 8 20 (legacyAacFrame (Array.create 32 0x55uy)))
+    assertValidTS capture.Content
+    // 44100Hz は表引きインデックス 4。
+    Assert.Equal<(int*int*int) list>([ (1, 4, 2) ], adtsHeaders capture.Content)
+
+[<Fact>]
+let ``表引きできない明示レートの設定は破棄する`` () =
+    // 表にない実レートは ADTS の4bitインデックスで表現できない。禁止インデックスを
+    // 書くくらいなら設定ごと捨てる(既存の予約値13/14と同じ扱い)。
+    let asc = audioSpecificConfigExplicitRate 2 44056 2
+    let capture =
+        run (makeTag 8 0 (legacyAacSeqWith asc))
+            (makeTag 8 20 (legacyAacFrame (Array.create 32 0x55uy)))
+    Assert.Empty(capture.Content)
+
+[<Fact>]
+let ``ADTSで表現できないchannelConfigurationの設定を破棄する`` () =
+    // channel_configuration は3bit。0 はレイアウトを PCE で運ぶ指定だが裸の ADTS には
+    // PCE を載せないため受信側が構成を determine できず、多くのデコーダが音声ESごと捨てる。
+    // 予約値(8-15)は3bitに収まらず、以前は BitWriter が黙って下位3bitへ丸めていた
+    // (8→0、9→1 と別のレイアウトに化ける)。どちらも設定として不正なので破棄する。
+    for ch in [ 0; 8; 15 ] do
+        let capture =
+            run (makeTag 8 0 (legacyAacSeqWith (audioSpecificConfig 2 4 ch)))
+                (makeTag 8 20 (legacyAacFrame (Array.create 32 0x55uy)))
+        Assert.Empty(capture.Content)
+
+[<Fact>]
+let ``7_1chのAACをchannelConfigurationそのままで出力する`` () =
+    // channelConfiguration=7 は 8ch(7.1)を意味するインデックス。ADTS の
+    // channel_configuration はインデックスをそのまま載せる形式なので 7 のまま書く。
+    let capture =
+        run (makeTag 8 0 (legacyAacSeqWith (audioSpecificConfig 2 4 7)))
+            (makeTag 8 20 (legacyAacFrame (Array.create 32 0x55uy)))
+    assertValidTS capture.Content
+    Assert.Equal<(int*int*int) list>([ (1, 4, 7) ], adtsHeaders capture.Content)
+
+[<Fact>]
+let ``キーフレーム以外として通知されたavcCでも映像を出力する`` () =
+    // avcC を frameType=2(inter)で送るエンコーダ/中継実装が実在する。分類器が
+    // frameType でシーケンスヘッダを絞っていたため avcC を取り逃し、nalSizeLen が
+    // 決まらないまま以後の全フレームが捨てられて映像が一切出なくなっていた。
+    let capture =
+        run (makeTag 9 0 (Array.concat [ [| 0x27uy;0x00uy;0x00uy;0x00uy;0x00uy |]; avcC ]))
+            (makeTag 9 0 (Array.concat [ [| 0x17uy;0x01uy;0x00uy;0x00uy;0x00uy |]; avcNalus ]))
+    assertValidTS capture.Content
+    Assert.NotEmpty(videoPesHeaders capture.Content)
+
+[<Fact>]
+let ``frameType5のコマンドフレームをコーデック設定として扱わない`` () =
+    // frameType=5 は video info/command frame で、body[1] は AVCPacketType ではなく
+    // コマンド番号(0=StartOfClientSeek)。AVCPacketType 0 として解釈すると
+    // コマンドフレームの中身を avcC として読んでしまう。
+    let capture =
+        run (Array.concat [
+                makeTag 9 0 (Array.concat [ [| 0x57uy;0x00uy;0x00uy;0x00uy;0x00uy |]; Array.create 8 0xAAuy ])
+                makeTag 9 0 (Array.concat [ [| 0x17uy;0x00uy;0x00uy;0x00uy;0x00uy |]; avcC ])
+             ])
+            (makeTag 9 0 (Array.concat [ [| 0x17uy;0x01uy;0x00uy;0x00uy;0x00uy |]; avcNalus ]))
+    // コマンドフレームで壊れず、後続の本物の avcC で映像が出る。
+    assertValidTS capture.Content
+    Assert.NotEmpty(videoPesHeaders capture.Content)

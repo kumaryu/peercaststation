@@ -41,6 +41,22 @@ namespace PeerCastStation.FLV
     /// 同じ onMetaData を送り直す配信者と3秒間隔の再接続を繰り返すことになる。
     /// ビットレート表示のためだけの値なので、読めないフィールドは黙って無視する。
     /// </summary>
+    /// <summary>
+    /// AMF の数値文字列をカルチャ非依存で読む。onMetaData に入る数値文字列は
+    /// 配信者側のエンコーダが小数点に '.' を使って書くもので、ホストのロケールとは無関係。
+    /// 既定のオーバーロードはホストのカルチャで解釈するため、例えば de-DE のホストでは
+    /// "2500.5" の '.' が桁区切りと解釈されて 25005 になり、ChanInfo のビットレートが
+    /// 約10倍でPCPに広告されて全ノードのリレー判断を狂わせる。
+    /// </summary>
+    private static bool TryParseInvariant(string s, out double result)
+    {
+      return double.TryParse(
+        s,
+        System.Globalization.NumberStyles.Float,
+        System.Globalization.CultureInfo.InvariantCulture,
+        out result);
+    }
+
     private static bool TryGetNumber(AMF.AMFValue value, out double result)
     {
       switch (value.Type) {
@@ -50,7 +66,7 @@ namespace PeerCastStation.FLV
         result = (double)value;
         return true;
       case AMF.AMFValueType.String:
-        return double.TryParse((string?)value ?? "", out result);
+        return TryParseInvariant((string?)value ?? "", out result);
       default:
         result = 0;
         return false;
@@ -93,7 +109,7 @@ namespace PeerCastStation.FLV
         if (!AMF.AMFValue.IsNull(val)) {
           double maxBitrate;
           string maxBitrateStr = System.Text.RegularExpressions.Regex.Replace((string?)val ?? "", @"([\d]+)k", "$1");
-          if (double.TryParse(maxBitrateStr, out maxBitrate)) {
+          if (TryParseInvariant(maxBitrateStr, out maxBitrate)) {
             bitrate += maxBitrate;
           }
         }
@@ -153,10 +169,15 @@ namespace PeerCastStation.FLV
     // VideoMpeg2TsSequenceHeader(E-RTMP の MPEG2TSSequenceStart)はコーデック設定ではなく
     // TS ブートストラップの生バイト列なので、チャンネルヘッダに埋めても下流の初期化に使えず、
     // 昇格させると GenerateStreamID() で無意味に全視聴者を再初期化することになる。
+    // さらに、キーフレームとして通知されたシーケンスヘッダのみを昇格させる。分類器は
+    // frameType=2(inter)のシーケンスヘッダも取りこぼさず拾う(そうしないと avcC を落とす
+    // エンコーダで映像が全く出ない)が、それをそのまま昇格させると AVCPacketType が 0 に
+    // 化けた壊れたインターフレーム1つで全視聴者の再初期化を繰り返し起こせてしまう。
+    // 再多重化(FLVToMKV/FLVToMPEG2TS)にはこの制限は不要なので、ここだけで絞る。
     public void OnVideo(RTMPMessage msg)
     {
       var info = FLVTagClassifier.Classify(msg);
-      if (info.Kind==FLVTagKind.VideoSequenceHeader && info.HasPayload(msg.Body)) {
+      if (info.Kind==FLVTagKind.VideoSequenceHeader && info.IsKeyFrameSignaled && info.HasPayload(msg.Body)) {
         videoHeader = msg;
         OnHeaderChanged(msg);
       }

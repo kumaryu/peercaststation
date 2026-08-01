@@ -83,8 +83,16 @@ namespace PeerCastStation.FLV
         Sink = sink;
       }
 
+      /// <summary>
+      /// 16bit フィールドを書く。BitWriter.Write と同じく、宣言幅に収まらない値は
+      /// 黙って切り捨てず例外にする。セクション長やディスクリプタ長がここで溢れると
+      /// 構造だけ妥当で長さが嘘の TS が出来上がり、デマルチプレクサが同期を失う。
+      /// </summary>
       private Span<byte> WriteUInt16BE(Span<byte> dst, int value)
       {
+        if (value<0 || value>0xFFFF) {
+          throw new ArgumentOutOfRangeException(nameof(value), value, "16bitのフィールドに収まらない値です");
+        }
         System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(dst, (ushort)value);
         return dst.Slice(2);
       }
@@ -97,6 +105,9 @@ namespace PeerCastStation.FLV
 
       private Span<byte> WriteByte(Span<byte> dst, int value)
       {
+        if (value<0 || value>0xFF) {
+          throw new ArgumentOutOfRangeException(nameof(value), value, "8bitのフィールドに収まらない値です");
+        }
         dst[0] = (byte)value;
         return dst.Slice(1);
       }
@@ -105,6 +116,20 @@ namespace PeerCastStation.FLV
       {
         value.CopyTo(dst);
         return dst.Slice(value.Length);
+      }
+
+      /// <summary>
+      /// 12bit の長さフィールドを検証して返す。予約ビット(15&lt;&lt;12 等)と OR して書くため、
+      /// 溢れた分は上位の予約ビットに吸収されて WriteUInt16BE の範囲検査に掛からない。
+      /// 長さフィールドの食い違いはデマルチプレクサ側でテーブル全体の読み違えになるので、
+      /// OR する前にここで弾く。
+      /// </summary>
+      private static int Check12BitLength(int value, string name)
+      {
+        if (value<0 || value>0xFFF) {
+          throw new ArgumentOutOfRangeException(name, value, "12bitの長さフィールドに収まらない値です");
+        }
+        return value;
       }
 
       public void WritePAT(ProgramAssociationTable pat)
@@ -139,7 +164,7 @@ namespace PeerCastStation.FLV
         body = WriteByte(body, pmt.SectionNumber);
         body = WriteByte(body, pmt.LastSectionNumber);
         body = WriteUInt16BE(body, (7<<13) | (pmt.PCRPID & 0x1FFF));
-        body = WriteUInt16BE(body, (15<<12) | program_info_sz);
+        body = WriteUInt16BE(body, (15<<12) | Check12BitLength(program_info_sz, "program_info_length"));
         foreach (var entry in pmt.ProgramInfo) {
           body = WriteByte(body, entry.Tag);
           body = WriteByte(body, entry.Data.Length);
@@ -148,7 +173,7 @@ namespace PeerCastStation.FLV
         foreach (var entry in pmt.Table) {
           body = WriteByte(body, entry.StreamType);
           body = WriteUInt16BE(body, (7<<13) | (entry.PID & 0x1FFF));
-          body = WriteUInt16BE(body, (15<<12) | (entry.ESInfo.Length & 0xFFF));
+          body = WriteUInt16BE(body, (15<<12) | Check12BitLength(entry.ESInfo.Length, "ES_info_length"));
           body = WriteBytes(body, entry.ESInfo);
         }
         var writer = new ArrayBufferWriter<byte>(188);
@@ -166,7 +191,9 @@ namespace PeerCastStation.FLV
         var reserved                 = (3<<12);
         var section_length           = body.Length+4;
         section = WriteByte(section, table_id);
-        section = WriteUInt16BE(section, section_syntax_indicator | reserved | (section_length & 0xFFF));
+        section = WriteUInt16BE(
+          section,
+          section_syntax_indicator | reserved | Check12BitLength(section_length, "section_length"));
         section = WriteBytes(section, body);
         var crc = CRC32(sectionMem.Memory.Span.Slice(1, section_length-1), 0xFFFFFFFF);
         section = WriteUInt32LE(section, crc);
@@ -425,9 +452,24 @@ namespace PeerCastStation.FLV
         bufferLen = 0;
       }
 
+      /// <summary>
+      /// 値を指定ビット幅で書く。宣言した幅に収まらない値は例外にする。
+      /// 黙って下位ビットへ丸めると、構造としては妥当なのに内容が別物のビットストリームが
+      /// 出来上がり、視聴側の症状(音が出ない/同期が外れる)からは原因を追えなくなる。
+      /// フィールドごとの妥当性は呼び出し側が事前に検証する契約とし、
+      /// 破った場合は実装のバグとして表に出す。
+      /// </summary>
       public void Write(int bits, int value)
       {
-        buffer = (buffer << bits) | ((long)value & ((1<<bits)-1));
+        if (bits<0 || bits>32) {
+          throw new ArgumentOutOfRangeException(nameof(bits), bits, "ビット幅は0-32の範囲で指定してください");
+        }
+        var max = bits==32 ? uint.MaxValue : (1u<<bits)-1;
+        if (value<0 || (uint)value>max) {
+          throw new ArgumentOutOfRangeException(
+            nameof(value), value, $"{bits}bitのフィールドに収まらない値です");
+        }
+        buffer = (buffer << bits) | ((long)value & ((1L<<bits)-1));
         bufferLen += bits;
         while (bufferLen>=8) {
           BaseStream.WriteByte((byte)(buffer >> (bufferLen-8)));
@@ -707,33 +749,48 @@ namespace PeerCastStation.FLV
         // (=「データ待ち」と誤認される)、毒タグがバッファ先頭に残って以後の全パースが
         // 再スローし続け、出力が恒久停止したうえで contentBuffer が無限に成長する。
         if (offset<0 || body.Length<=offset) {
-          WarnBrokenAudioConfig();
+          WarnBrokenAudioConfig("ペイロードがありません");
           return;
         }
         var config = new byte[body.Length-offset];
         Array.Copy(body, offset, config, 0, config.Length);
         if (!AudioSpecificConfig.TryParse(config, out var asc)) {
-          WarnBrokenAudioConfig();
+          WarnBrokenAudioConfig("AudioSpecificConfigが不完全です");
           return;
         }
-        // ADTS は表引きインデックス(0-12)しか表現できない。明示レートのエスケープ(15)や
-        // 予約値(13/14)をそのまま書くと禁止インデックス入りの ADTS が全フレームに付き、
-        // デコーダが黙って全音声を拒否するため、設定ごと破棄する。
-        if (asc.SamplingFrequencyIndex>=13) {
-          WarnBrokenAudioConfig();
-          return;
+        // ADTS の samplingFrequencyIndex は表引きインデックス(0-12)しか表現できない。
+        // 明示レートのエスケープ(15)は、通知された実レートから表引きインデックスを逆引きして救う
+        // (実レートが表にある限り ADTS で正しく表現できる)。逆引きできない実レートと
+        // 予約値(13/14)だけは禁止インデックス入りの ADTS になりデコーダが全音声を拒否するため、
+        // 設定ごと破棄する。
+        var sampling_freq_idx = asc.SamplingFrequencyIndex;
+        if (sampling_freq_idx>=13) {
+          if (sampling_freq_idx!=0x0F ||
+              !AudioSpecificConfig.TryGetSamplingFrequencyIndex(asc.SampleRate, out sampling_freq_idx)) {
+            WarnBrokenAudioConfig($"ADTSで表現できないサンプリング周波数です (index={asc.SamplingFrequencyIndex}, rate={asc.SampleRate})");
+            return;
+          }
         }
         // ADTS の profile は2bit(audioObjectType-1、すなわち AOT 1..4 のみ表現できる)。
-        // 範囲外をそのまま書くと BitWriter が下位2bitに丸め、明示signalingのHE-AAC(AOT=5)は
-        // profile=0(Main)と嘘をつき、AOT=0 は予約値の3になってデコーダが全フレームを拒否する。
-        // サンプリング周波数インデックスと同じく、設定ごと破棄する。
-        if (asc.AudioObjectType<1 || asc.AudioObjectType>4) {
-          WarnBrokenAudioConfig();
+        // HE-AAC(AOT=5)/HE-AACv2(AOT=29)は SBR/PS の明示signalingで、コアの audioObjectType
+        // (通常 AAC LC=2)を別途通知している。ADTS は SBR を暗黙signalingで運ぶ形式なので、
+        // 通知どおりコア側の AOT で profile を決めれば正しく再生できる。
+        // ここで AOT=5 ごと破棄すると、HE-AAC 配信の音声が丸ごと出なくなる
+        // (hasAudio が立たないため以後の全フレームが捨てられ、PMT も音声ES抜きで確定する)。
+        var type = asc.CoreAudioObjectType;
+        if (type<1 || type>4) {
+          WarnBrokenAudioConfig($"ADTSで表現できないaudioObjectTypeです (type={asc.AudioObjectType}, core={asc.CoreAudioObjectType})");
           return;
         }
-        var type = asc.AudioObjectType;
-        var sampling_freq_idx = asc.SamplingFrequencyIndex;
+        // channel_configuration は3bit。0 はレイアウトを PCE で運ぶ指定だが、裸の ADTS には
+        // PCE を載せないため受信側がチャンネル構成を determine できない。予約値(8-15)は
+        // 3bit に収まらず、BitWriter の範囲検査で例外になる。どちらもフレーム単位ではなく
+        // 設定として不正なので、ここで破棄して以後のフレームを捨てる。
         var channel_configuration = asc.ChannelConfiguration;
+        if (channel_configuration<1 || channel_configuration>7) {
+          WarnBrokenAudioConfig($"ADTSで表現できないchannelConfigurationです ({channel_configuration})");
+          return;
+        }
         this.adtsHeader = new ADTSHeader(
           0xFFF, //sync
           0, //ID
@@ -755,10 +812,10 @@ namespace PeerCastStation.FLV
         hasAudio = true;
       }
 
-      private void WarnBrokenAudioConfig()
+      private void WarnBrokenAudioConfig(string reason)
       {
         if (warnedBrokenAudioConfig) return;
-        logger.Warn("FLVToMPEG2TS: AudioSpecificConfigが不完全なため音声シーケンスヘッダを破棄します");
+        logger.Warn("FLVToMPEG2TS: 音声シーケンスヘッダを破棄します ({0})", reason);
         warnedBrokenAudioConfig = true;
       }
 

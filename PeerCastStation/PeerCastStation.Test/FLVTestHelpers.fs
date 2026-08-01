@@ -44,6 +44,35 @@ let flvHeader =
     // "FLV" v1 flags(audio+video) DataOffset=9 PreviousTagSize0=0
     [| 0x46uy;0x4Cuy;0x56uy; 1uy; 0x05uy; 0uy;0uy;0uy;9uy; 0uy;0uy;0uy;0uy |]
 
+// ---- ビット詰めヘッダの組み立て ----
+
+/// (ビット幅, 値) の並びを MSB 詰めでバイト列にする。末尾は 0 でパディングする。
+/// AudioSpecificConfig のようなバイト境界に揃わないヘッダを、手計算の16進数ではなく
+/// フィールド単位で書けるようにする(手計算はビットのずれをテスト側に持ち込む)。
+let packBits (fields:(int*int) seq) =
+    let bits = ResizeArray<int>()
+    for (width, value) in fields do
+        for i in (width-1) .. -1 .. 0 do
+            bits.Add((value >>> i) &&& 1)
+    while bits.Count % 8 <> 0 do bits.Add(0)
+    [| for i in 0 .. (bits.Count/8 - 1) ->
+         let mutable b = 0
+         for j in 0..7 do b <- (b <<< 1) ||| bits.[i*8+j]
+         byte b |]
+
+/// AudioSpecificConfig。audioObjectType / samplingFrequencyIndex / channelConfiguration のみ。
+let audioSpecificConfig (aot:int) (freqIdx:int) (channels:int) =
+    packBits [ (5, aot); (4, freqIdx); (4, channels) ]
+
+/// SBR/PS の明示signaling付き AudioSpecificConfig(HE-AAC は AOT=5、HE-AACv2 は AOT=29)。
+/// コアの samplingFrequencyIndex に続けて拡張レートと本来のコア audioObjectType が並ぶ。
+let audioSpecificConfigSbr (aot:int) (freqIdx:int) (channels:int) (extFreqIdx:int) (coreAot:int) =
+    packBits [ (5, aot); (4, freqIdx); (4, channels); (4, extFreqIdx); (5, coreAot) ]
+
+/// samplingFrequencyIndex に明示レートのエスケープ(0x0F)を使った AudioSpecificConfig。
+let audioSpecificConfigExplicitRate (aot:int) (rate:int) (channels:int) =
+    packBits [ (5, aot); (4, 0x0F); (24, rate); (4, channels) ]
+
 // ---- コーデック設定/ペイロードのサンプル ----
 
 /// nalSizeLen=4、SPS/PPS を1つずつ持つ最小の avcC。
@@ -82,12 +111,15 @@ type CaptureSink() =
     let headers = System.Collections.Generic.List<byte[]>()
     let content = System.Collections.Generic.List<byte>()
     member val ChannelType : string = null with get, set
+    member val ChannelInfo : ChannelInfo = null with get, set
     member _.Header = Array.concat headers
     member _.Headers = headers.ToArray()
     member _.HeaderCount = headers.Count
     member _.Content = content.ToArray()
     interface IContentSink with
-        member this.OnChannelInfo(ci) = this.ChannelType <- ci.ContentType
+        member this.OnChannelInfo(ci) =
+            this.ChannelType <- ci.ContentType
+            this.ChannelInfo <- ci
         member _.OnChannelTrack(_) = ()
         member _.OnContentHeader(c) = headers.Add(c.Data.ToArray())
         member _.OnContent(c) = content.AddRange(c.Data.ToArray())

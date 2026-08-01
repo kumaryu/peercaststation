@@ -54,16 +54,29 @@ namespace PeerCastStation.FLV
     public int PayloadOffset { get; }
     /// <summary>CompositionTime(CTS, ミリ秒)。映像フレーム以外は 0。</summary>
     public int CompositionTime { get; }
+    /// <summary>
+    /// タグの frameType がキーフレーム(1 または 4)として通知されていたか。
+    /// 多重化にはキーフレームか否かを表す <see cref="FLVTagKind"/> を使えば足りるが、
+    /// シーケンスヘッダについては「キーフレームとして送られてきたか」を別途知りたい
+    /// 利用者(チャンネルヘッダへの昇格可否を決める FLVContentBuffer)がいるため公開する。
+    /// </summary>
+    public bool IsKeyFrameSignaled { get; }
 
     // レガシー/Ex の区別は下流のどこも見ない(見る必要が出ないよう Kind と FourCc に
     // 正規化するのがこの型の役目)ため保持しない。読み手のいない位置指定 bool を
     // 引数に残すと、引数の入れ替わりをコンパイラもテストも検出できなくなる。
-    public FLVTagInfo(FLVTagKind kind, string? fourcc, int payload_offset, int composition_time)
+    public FLVTagInfo(
+      FLVTagKind kind,
+      string? fourcc,
+      int payload_offset,
+      int composition_time,
+      bool key_frame_signaled = false)
     {
-      Kind            = kind;
-      FourCc          = fourcc;
-      PayloadOffset   = payload_offset;
-      CompositionTime = composition_time;
+      Kind               = kind;
+      FourCc             = fourcc;
+      PayloadOffset      = payload_offset;
+      CompositionTime    = composition_time;
+      IsKeyFrameSignaled = key_frame_signaled;
     }
 
     /// <summary>コーデック設定/フレームの実体が body 内に存在するか。</summary>
@@ -150,14 +163,17 @@ namespace PeerCastStation.FLV
       var keyframe = IsKeyFrameType(header.FrameType);
       switch (header.PacketType) {
       case VideoPacketType.SequenceStart:
-        return new FLVTagInfo(FLVTagKind.VideoSequenceHeader, header.FourCc, header.PayloadOffset, 0);
+        return new FLVTagInfo(
+          FLVTagKind.VideoSequenceHeader, header.FourCc, header.PayloadOffset, 0,
+          key_frame_signaled: keyframe);
       case VideoPacketType.MPEG2TSSequenceStart:
         return new FLVTagInfo(FLVTagKind.VideoMpeg2TsSequenceHeader, header.FourCc, header.PayloadOffset, 0);
       case VideoPacketType.CodedFrames:
       case VideoPacketType.CodedFramesX:
         return new FLVTagInfo(
           keyframe ? FLVTagKind.VideoKeyFrame : FLVTagKind.VideoInterFrame,
-          header.FourCc, header.PayloadOffset, header.CompositionTime);
+          header.FourCc, header.PayloadOffset, header.CompositionTime,
+          key_frame_signaled: keyframe);
       case VideoPacketType.SequenceEnd:
         return new FLVTagInfo(FLVTagKind.VideoSequenceEnd, header.FourCc, header.PayloadOffset, 0);
       case VideoPacketType.Metadata:
@@ -179,22 +195,29 @@ namespace PeerCastStation.FLV
         // H.264 以外のレガシーコーデック(Sorenson/VP6 等)は扱わない。
         return new FLVTagInfo(FLVTagKind.Unsupported, null, -1, 0);
       }
+      // frameType=5 は video info/command frame で、body[1] は AVCPacketType ではなく
+      // コマンド番号(0=StartOfClientSeek)。AVCPacketType として解釈すると
+      // コマンド 0 をコーデック設定と誤認するので、多重化しない制御パケットとして扱う。
+      if (frame_type==5) {
+        return new FLVTagInfo(FLVTagKind.Control, FourCcAvc, -1, 0);
+      }
+      var keyframe = IsKeyFrameType(frame_type);
       switch (body[1]) {
       case 0:
-        // AVC シーケンスヘッダはキーフレームとして送られる。frameType を見ずに
-        // AVCPacketType だけで判定すると、AVCPacketType が 0 に化けた壊れたインターフレーム
-        // (0x27 0x00 ...)や frameType=5 のコマンドフレーム(body[1] は AVCPacketType ではなく
-        // コマンド番号で、0=StartOfClientSeek)までコーデック設定として扱ってしまう。
-        // FLVContentBuffer はこれをチャンネルヘッダへ昇格させ GenerateStreamID() を呼ぶため、
-        // タグ1つで全視聴者の再初期化を繰り返し起こせる。master の判定(body[0]==0x17)に合わせて絞る。
-        if (!IsKeyFrameType(frame_type)) {
-          return new FLVTagInfo(FLVTagKind.Unsupported, FourCcAvc, -1, 0);
-        }
-        return new FLVTagInfo(FLVTagKind.VideoSequenceHeader, FourCcAvc, 5, 0);
+        // AVC シーケンスヘッダは通常キーフレームとして送られるが、frameType=2(inter)を
+        // 立てて送るエンコーダ/中継実装が実在する。ここで frameType を条件にすると
+        // avcC を取り逃し、nalSizeLen が決まらないまま以後の全フレームが捨てられて
+        // 映像が一切出なくなる(TS/MKV 双方)ため、分類はキーフレームか否かで絞らない。
+        // 一方でこれをチャンネルヘッダへ昇格させるかは別の判断で、壊れたインターフレーム
+        // (0x27 0x00 ...)を昇格させると GenerateStreamID() が呼ばれ、タグ1つで全視聴者の
+        // 再初期化を繰り返し起こせる。判断材料として IsKeyFrameSignaled だけを渡し、
+        // 昇格の可否は FLVContentBuffer 側で決める。
+        return new FLVTagInfo(
+          FLVTagKind.VideoSequenceHeader, FourCcAvc, 5, 0, key_frame_signaled: keyframe);
       case 1:
         return new FLVTagInfo(
-          IsKeyFrameType(frame_type) ? FLVTagKind.VideoKeyFrame : FLVTagKind.VideoInterFrame,
-          FourCcAvc, 5, LegacyCompositionTime(body));
+          keyframe ? FLVTagKind.VideoKeyFrame : FLVTagKind.VideoInterFrame,
+          FourCcAvc, 5, LegacyCompositionTime(body), key_frame_signaled: keyframe);
       case 2:
         return new FLVTagInfo(FLVTagKind.VideoSequenceEnd, FourCcAvc, -1, 0);
       default:
