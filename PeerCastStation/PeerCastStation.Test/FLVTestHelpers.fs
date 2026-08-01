@@ -76,8 +76,50 @@ let audioSpecificConfigExplicitRate (aot:int) (rate:int) (channels:int) =
 // ---- コーデック設定/ペイロードのサンプル ----
 
 /// nalSizeLen=4、SPS/PPS を1つずつ持つ最小の avcC。
+/// SPS は解像度を取り出せるところまでは書かれていない(中身を見ない試験用)。
 let avcC =
     [| 1uy;0x42uy;0x00uy;0x1Fuy;0xFFuy;0xE1uy;0x00uy;0x04uy;0x67uy;0x42uy;0x00uy;0x1Fuy;0x01uy;0x00uy;0x04uy;0x68uy;0xCEuy;0x3Cuy;0x80uy |]
+
+/// 符号なし Exp-Golomb(ue(v))のビット列。packBits に渡す形で返す。
+let ue (v:int) =
+    let x = v + 1
+    let mutable bits = 0
+    let mutable t = x
+    while t>1 do
+        t <- t >>> 1
+        bits <- bits + 1
+    [ (bits, 0); (bits+1, x) ]
+
+/// 解像度を取り出せる H.264 SPS の NAL ユニット(baseline profile)。
+/// width  = (widthMbsMinus1+1)*16 - 2*(cropLeft+cropRight)
+/// height = (heightMapUnitsMinus1+1)*16 - 2*(cropTop+cropBottom)
+let h264Sps (widthMbsMinus1:int) (heightMapUnitsMinus1:int) (cropBottom:int) =
+    let bits =
+        [ [ (8, 66); (8, 0); (8, 31) ] // profile_idc(baseline) / constraint flags / level_idc
+          ue 0                          // seq_parameter_set_id
+          ue 0                          // log2_max_frame_num_minus4
+          ue 2                          // pic_order_cnt_type
+          ue 1                          // max_num_ref_frames
+          [ (1, 0) ]                    // gaps_in_frame_num_value_allowed_flag
+          ue widthMbsMinus1
+          ue heightMapUnitsMinus1
+          [ (1, 1) ]                    // frame_mbs_only_flag
+          [ (1, 1) ]                    // direct_8x8_inference_flag
+          [ (1, 1) ]                    // frame_cropping_flag
+          ue 0; ue 0; ue 0; ue cropBottom
+          [ (1, 0) ]                    // vui_parameters_present_flag
+          [ (1, 1) ]                    // rbsp_stop_one_bit
+        ] |> List.concat
+    Array.append [| 0x67uy |] (packBits bits)
+
+/// 指定した SPS を持つ avcC。PPS は既存の avcC と同じダミー。
+let avcCWith (sps:byte[]) =
+    Array.concat [
+        [| 1uy;0x42uy;0x00uy;0x1Fuy;0xFFuy;0xE1uy |]
+        [| byte (sps.Length>>>8); byte sps.Length |]
+        sps
+        [| 0x01uy;0x00uy;0x04uy;0x68uy;0xCEuy;0x3Cuy;0x80uy |]
+    ]
 
 /// ダミーの hvcC(構造検証では中身は問わない)。
 let hvcC = [| 1uy;0x01uy;0x60uy;0x00uy;0x00uy;0x03uy;0x00uy;0x90uy;0x12uy;0x34uy |]

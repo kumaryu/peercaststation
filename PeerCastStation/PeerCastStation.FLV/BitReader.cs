@@ -31,6 +31,36 @@ namespace PeerCastStation.FLV
       bitPos += bits;
       return true;
     }
+
+    /// <summary>
+    /// 符号なし Exp-Golomb(ue(v))を読む。H.264 の SPS 等で使う。
+    /// 先行ゼロが 30 を超えるものは、値が int に収まらないうえ実データではありえないので
+    /// 壊れた入力として false を返す(1&lt;&lt;31 のオーバーフローを避ける意味もある)。
+    /// </summary>
+    public bool TryReadUnsignedExpGolomb(out int result)
+    {
+      result = 0;
+      var zeros = 0;
+      while (true) {
+        if (!TryReadBits(1, out var b)) return false;
+        if (b==1) break;
+        zeros++;
+        if (zeros>30) return false;
+      }
+      if (zeros==0) return true;
+      if (!TryReadBits(zeros, out var rest)) return false;
+      result = (1<<zeros) - 1 + rest;
+      return true;
+    }
+
+    /// <summary>符号付き Exp-Golomb(se(v))を読む。</summary>
+    public bool TryReadSignedExpGolomb(out int result)
+    {
+      result = 0;
+      if (!TryReadUnsignedExpGolomb(out var k)) return false;
+      result = (k % 2)==0 ? -(k/2) : (k+1)/2;
+      return true;
+    }
   }
 
   /// <summary>

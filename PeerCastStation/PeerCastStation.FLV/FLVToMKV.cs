@@ -350,10 +350,12 @@ namespace PeerCastStation.FLV
         OnVideoBody(msg, offset, compositionTime, keyframe);
       }
 
+      private const string CodecIdAvc = "V_MPEG4/ISO/AVC";
+
       private static string? MapVideoCodecId(string? fourcc)
       {
         switch (fourcc) {
-        case FLVTagClassifier.FourCcAvc: return "V_MPEG4/ISO/AVC";
+        case FLVTagClassifier.FourCcAvc: return CodecIdAvc;
         case "hvc1":
         case "hev1": return "V_MPEGH/ISO/HEVC";
         case "av01": return "V_AV1"; // Matroska の AV1 CodecID(FourCC の av01 とは異なる)
@@ -374,6 +376,17 @@ namespace PeerCastStation.FLV
         var handler = new PassthroughVideoCodecHandler(codecId);
         handler.SetSequenceHeader(codecPrivate);
         videoHandler = handler;
+        // Matroska は Video 要素に PixelWidth/PixelHeight を要求するので、解像度が判らないと
+        // 映像トラックを作れない。本来は onMetaData が運ぶが、これを送らない(あるいは
+        // width/height を欠く)配信は実在し、その場合 avcC を受け取っていても
+        // 音声だけの MKV になってしまう。H.264 は avcC 内の SPS から導出できるので拠り所にする。
+        // HEVC(hvcC)/AV1(av1C)は解析していないため、引き続き onMetaData 頼りになる。
+        if ((videoWidth<1 || videoHeight<1) && codecId==CodecIdAvc) {
+          if (H264Sps.TryGetResolutionFromAvcC(codecPrivate, out var w, out var h)) {
+            videoWidth  = w;
+            videoHeight = h;
+          }
+        }
       }
 
       private void OnAudioHeader(byte[] body, int offset)

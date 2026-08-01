@@ -27,6 +27,10 @@ let private startsWith (haystack:byte[]) (needle:byte[]) =
     haystack.Length>=needle.Length &&
     Array.forall2 (=) (Array.sub haystack 0 needle.Length) needle
 
+/// EBML 要素(ID + サイズVINT + payload)のバイト列を組み立てる。
+let private ebmlElement (id:byte[]) (payload:byte[]) =
+    Array.concat [ id; EBMLWriter.EncodeVInt(uint64 payload.Length); payload ]
+
 // ---- EBMLWriter primitive unit tests ----
 
 [<Fact>]
@@ -125,7 +129,49 @@ let ``FLV(H264+AAC) を MKV に変換し EBML 構造が成立する`` () =
     Assert.True(contains body [| 0x81uy;0x00uy;0x00uy;0x80uy |], "映像キーフレーム SimpleBlock")
 
 [<Fact>]
-let ``onMetaData が無い場合は映像を除外し音声のみで構成する`` () =
+let ``onMetaData が無くても avcC の SPS から解像度を取って映像トラックを作る`` () =
+    // Matroska は Video 要素に PixelWidth/PixelHeight を要求するため、解像度が判らないと
+    // 映像トラックを作れない。onMetaData を送らない配信は実在し(ffmpeg -flvflags no_metadata 等)、
+    // 従来はそこで映像を丸ごと落として音声のみの MKV を出していた。
+    // H.264 は avcC 内の SPS から解像度を導出できる。
+    let capture = CaptureSink()
+    let sink = FLVToMKVContentFilter().Activate(capture)
+    // 640x360: (39+1)*16=640 / (22+1)*16=368 から下辺を 2*4=8 だけ削る
+    let sps = h264Sps 39 22 4
+    let avcSeq = Array.concat [ [| 0x17uy;0x00uy;0x00uy;0x00uy;0x00uy |]; avcCWith sps ]
+    let avcKey = Array.concat [ [| 0x17uy;0x01uy;0x00uy;0x00uy;0x00uy |]; avcNalus ]
+    sink.OnChannelInfo(ChannelInfo(AtomCollection()))
+    sink.OnContentHeader(newContent (Array.concat [ flvHeader; makeTag 9 0 avcSeq ]))
+    sink.OnContent(newContent (makeTag 9 0 avcKey))
+    sink.OnStop(StopReason.OffAir)
+    let hdr = capture.Header
+    Assert.True(contains hdr (ascii "V_MPEG4/ISO/AVC"), "映像 CodecID が含まれる")
+    Assert.True(contains hdr (ebmlElement EBMLWriter.PixelWidth  (EBMLWriter.EncodeUInt(640UL))),
+                "PixelWidth は SPS 由来の 640")
+    Assert.True(contains hdr (ebmlElement EBMLWriter.PixelHeight (EBMLWriter.EncodeUInt(360UL))),
+                "PixelHeight は SPS 由来の 360")
+
+[<Fact>]
+let ``onMetaData の解像度は SPS より優先される`` () =
+    // onMetaData は配信者が明示的に与えた値なので、SPS からの導出はあくまで代替。
+    let capture = CaptureSink()
+    let sink = FLVToMKVContentFilter().Activate(capture)
+    let sps = h264Sps 39 22 4 // 640x360
+    let avcSeq = Array.concat [ [| 0x17uy;0x00uy;0x00uy;0x00uy;0x00uy |]; avcCWith sps ]
+    let avcKey = Array.concat [ [| 0x17uy;0x01uy;0x00uy;0x00uy;0x00uy |]; avcNalus ]
+    sink.OnChannelInfo(ChannelInfo(AtomCollection()))
+    sink.OnContentHeader(newContent (Array.concat [
+        flvHeader
+        makeTag 18 0 (onMetaDataBody 1280.0 720.0)
+        makeTag 9 0 avcSeq ]))
+    sink.OnContent(newContent (makeTag 9 0 avcKey))
+    sink.OnStop(StopReason.OffAir)
+    let hdr = capture.Header
+    Assert.True(contains hdr (ebmlElement EBMLWriter.PixelWidth (EBMLWriter.EncodeUInt(1280UL))),
+                "PixelWidth は onMetaData の 1280")
+
+[<Fact>]
+let ``解像度を取り出せない場合は映像を除外し音声のみで構成する`` () =
     let capture = CaptureSink()
     let filter = FLVToMKVContentFilter()
     let sink = filter.Activate(capture)
@@ -158,10 +204,6 @@ let ``onMetaData が無い場合は映像を除外し音声のみで構成する
     Assert.False(contains hdr (ascii "V_MPEG4/ISO/AVC"), "映像 CodecID は含まない")
 
 // ---- 音声トラックの宣言(AudioSpecificConfig の解釈) ----
-
-/// EBML 要素(ID + サイズVINT + payload)のバイト列を組み立てる。
-let private ebmlElement (id:byte[]) (payload:byte[]) =
-    Array.concat [ id; EBMLWriter.EncodeVInt(uint64 payload.Length); payload ]
 
 /// 指定した AudioSpecificConfig を持つ音声のみの入力を流し、生成された MKV ヘッダを得る。
 let private mkvHeaderForAsc (asc:byte[]) =
