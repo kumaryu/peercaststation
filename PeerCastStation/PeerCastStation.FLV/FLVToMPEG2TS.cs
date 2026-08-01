@@ -647,7 +647,6 @@ namespace PeerCastStation.FLV
       private bool hasVideo = false;
       private ADTSHeader adtsHeader = ADTSHeader.Default;
       private int nalSizeLen = 0;
-      private long ptsBase = -1;
       private static readonly Logger logger = new Logger(typeof(FLVToMPEG2TS));
 
       protected override string FilterName { get { return "FLVToMPEG2TS"; } }
@@ -700,7 +699,7 @@ namespace PeerCastStation.FLV
         hasVideo = false;
         adtsHeader = ADTSHeader.Default;
         nalSizeLen = 0;
-        ptsBase = -1;
+        ResetTimestampBase();
         ResetWarnings();
       }
 
@@ -736,11 +735,8 @@ namespace PeerCastStation.FLV
         // FLVFileParser.Read の EndOfStreamException catch がタグ先頭まで巻き戻すため
         // (=「データ待ち」と誤認される)、毒タグがバッファ先頭に残って以後の全パースが
         // 再スローし続け、出力が恒久停止したうえで contentBuffer が無限に成長する。
+        // ペイロードの実体があることは FLVRemuxContextBase が保証している。
         var config = FLVTagInfo.SlicePayload(body, offset);
-        if (config.Length==0) {
-          WarnBrokenAudioConfig("ペイロードがありません");
-          return;
-        }
         if (!AudioSpecificConfig.TryParse(config, out var asc)) {
           WarnBrokenAudioConfig("AudioSpecificConfigが不完全です");
           return;
@@ -823,11 +819,8 @@ namespace PeerCastStation.FLV
           WarnOversizedAudioFrame();
           return;
         }
-        // 最初に実際に出力するフレーム(ts=0を含む)を基準にする。FLVToMKV.OnAudioBody と同じ規則。
-        if (ptsBase<0) ptsBase = msg.Timestamp;
-        // ptsBase より小さいタイムスタンプで負になった PTS は、PESPacket のビット詰めで
-        // 2^33 にラップした値として出力されるためクランプする。
-        var pts = Math.Max(0, msg.Timestamp - Math.Max(0, ptsBase));
+        // 時刻原点の取り方と負値のクランプは基底の共通規則。
+        var pts = NormalizeTimestamp(msg.Timestamp);
         var header = new ADTSHeader(adtsHeader, frame_length);
         // 出来上がりのサイズは ADTS ヘッダ+生フレームで確定しているので、伸長しながら書いて
         // 最後に ToArray() で複製する形にせず、必要な長さの配列へ直接組み立てる
@@ -1035,14 +1028,10 @@ namespace PeerCastStation.FLV
           WarnBrokenVideoFrame();
           return;
         }
-        // 最初に実際に出力するフレーム(ts=0を含む)を基準にする。FLVToMKV.OnVideoBody と同じ規則。
-        // 破棄したタグや2番目のフレームで基準を確定させると、先頭フレームと PTS が衝突・逆行する。
-        if (ptsBase<0) ptsBase = msg.Timestamp;
-        // ptsBase より小さいタイムスタンプや先頭Bフレームの負CTS(符号拡張済み)で
-        // pts/dts が負になると、PESPacket のビット詰めで 2^33 にラップした
-        // 約26.5時間先のタイムスタンプとして出力されるためクランプする。
+        // 時刻原点の取り方と負値のクランプは基底の共通規則。
+        var dts = NormalizeTimestamp(msg.Timestamp);
+        // 先頭Bフレームの負CTS(符号拡張済み)で pts が負に振れる分はここでクランプする。
         // pts>=dts のクランプは MPEG-TS の PTS>=DTS 制約の維持も兼ねる。
-        var dts = Math.Max(0, msg.Timestamp - Math.Max(0, ptsBase));
         var pts = Math.Max(dts, dts + cts);
         var pes = new PESPacket(
           0xE0,

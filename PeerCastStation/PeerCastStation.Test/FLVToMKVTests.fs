@@ -592,7 +592,7 @@ let ``onMetaData の解像度が数値でない型でもフォルトしない`` 
     Assert.True(contains capture.Content [| 0x82uy;0x00uy;0x00uy;0x80uy |], "音声フレームが出力される")
 
 [<Fact>]
-let ``先頭フレームが負CTSでも Cluster Timecode とブロック相対値が整合する`` () =
+let ``先頭フレームが負CTSでも絶対タイムスタンプが負にならない`` () =
     let capture = CaptureSink()
     let sink = FLVToMKVContentFilter().Activate(capture)
 
@@ -602,7 +602,8 @@ let ``先頭フレームが負CTSでも Cluster Timecode とブロック相対�
             makeTag 18 0 (onMetaDataBody 640.0 360.0)
             makeTag 9 0 (exVideoSeq "hvc1" hvcC)
         ]
-    // pts = dts(0) + cts(-40) = -40。Cluster Timecode は符号なしなので 0 にクランプされる。
+    // dts(0) + cts(-40) = -40。クランプしないと Cluster Timecode=0 に対して
+    // 相対値 -40 のブロックになり、絶対時刻が負のブロックを出すことになる。
     let bodyData =
         makeTag 9 0 (exVideoCodedFrames "hvc1" 1 -40 [| 0x00uy;0x00uy;0x00uy;0x02uy;0x26uy;0x01uy |])
 
@@ -612,10 +613,10 @@ let ``先頭フレームが負CTSでも Cluster Timecode とブロック相対�
     sink.OnStop(StopReason.OffAir)
 
     let body = capture.Content
-    Assert.True(contains body [| 0xE7uy;0x81uy;0x00uy |], "Cluster Timecode は 0 にクランプされる")
-    // clusterBaseMs もクランプ後の 0 なので rel は -40(0xFFD8)。
-    // クランプ前の -40 を基準にすると rel=0 になり、クラスタ全体が 40ms ずれる。
-    Assert.True(contains body [| 0x81uy;0xFFuy;0xD8uy;0x80uy |], "ブロック相対値は Timecode=0 基準の -40")
+    Assert.True(contains body [| 0xE7uy;0x81uy;0x00uy |], "Cluster Timecode は 0")
+    // pts は dts 未満にならないようクランプされるので相対値も 0。
+    Assert.True(contains body [| 0x81uy;0x00uy;0x00uy;0x80uy |], "ブロック相対値は 0")
+    Assert.False(contains body [| 0x81uy;0xFFuy;0xD8uy;0x80uy |], "負の相対値は出力しない")
 
 [<Fact>]
 let ``音声のみでタイムスタンプが後退したらクラスタを開き直す`` () =

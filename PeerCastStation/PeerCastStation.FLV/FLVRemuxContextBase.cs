@@ -48,6 +48,36 @@ namespace PeerCastStation.FLV
       warned.Clear();
     }
 
+    /// <summary>コンテナ上の時刻原点。最初に出力したメディアフレームのタイムスタンプ。</summary>
+    private long ptsBase = -1;
+
+    /// <summary>
+    /// FLV のタイムスタンプをコンテナの時刻原点からの相対値に直す。
+    ///
+    /// 原点は最初に実際に出力したメディアフレーム(ts=0 を含む)で確定させる。2番目の
+    /// フレームや破棄したタグで確定させると、先頭フレームと PTS が衝突・逆行する。
+    /// 原点は音声と映像で共有するので、先に出力できた側が決める。
+    ///
+    /// 原点より前のタイムスタンプ(音声が先行した後に届いた映像など)は 0 に丸める。
+    /// 負のまま出すと MPEG-TS では PES のビット詰めで 2^33 にラップした約26.5時間先の
+    /// 時刻になり、Matroska では負のクラスタ相対timecodeを持つブロックになる。
+    ///
+    /// 音声と映像で規則がずれると同じ配信でも A/V の原点が食い違うため、
+    /// フィルタごとに書かず共通の規則としてここに置く。
+    /// </summary>
+    protected long NormalizeTimestamp(long timestamp)
+    {
+      if (ptsBase<0) ptsBase = timestamp;
+      var normalized = timestamp - ptsBase;
+      return normalized<0 ? 0 : normalized;
+    }
+
+    /// <summary>新しいストリームの開始時に時刻原点を捨てる。</summary>
+    protected void ResetTimestampBase()
+    {
+      ptsBase = -1;
+    }
+
     /// <summary>この変換器が扱える音声コーデックか。</summary>
     protected abstract bool IsSupportedAudioCodec(string? fourcc);
     /// <summary>この変換器が扱える映像コーデックか。</summary>
@@ -82,6 +112,14 @@ namespace PeerCastStation.FLV
         WarnOnce(WarnKeyUnsupportedAudio, "未対応の音声コーデック/構成のため破棄します (FourCC={0})", info.FourCc ?? "(none)");
         return;
       }
+      // 実体があることをここで保証してからハンドラへ渡す。切り詰められたタグ
+      // (レガシー AAC の [0xAF,0x00] だけ等)は分類器が種別を返しつつ PayloadOffset が
+      // 本体長に並ぶので、境界を見ずに body[offset] を触ると範囲外になる。
+      // 判定を派生ごとに書くと種別を増やしたときに追従漏れが出るため、基底の契約にする。
+      if (!info.HasPayload(msg.Body)) {
+        WarnOnce(WarnKeyBrokenAudioTag, "実体のない音声タグを破棄します (kind={0}, size={1})", info.Kind, msg.Body.Length);
+        return;
+      }
       switch (info.Kind) {
       case FLVTagKind.AudioSequenceHeader:
         OnAudioConfig(msg.Body, info.PayloadOffset);
@@ -108,6 +146,11 @@ namespace PeerCastStation.FLV
       }
       if (!IsSupportedVideoCodec(info.FourCc)) {
         WarnOnce(WarnKeyUnsupportedVideo, "未対応の映像コーデック/構成のため破棄します (FourCC={0})", info.FourCc ?? "(none)");
+        return;
+      }
+      // 音声側と同じ理由で、実体があることを基底の契約として保証する。
+      if (!info.HasPayload(msg.Body)) {
+        WarnOnce(WarnKeyBrokenVideoTag, "実体のない映像タグを破棄します (kind={0}, size={1})", info.Kind, msg.Body.Length);
         return;
       }
       switch (info.Kind) {

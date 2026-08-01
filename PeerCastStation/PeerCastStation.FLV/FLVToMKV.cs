@@ -202,7 +202,6 @@ namespace PeerCastStation.FLV
       private bool videoEnabled = false;
       private bool audioEnabled = false;
       private bool headerSent = false;
-      private long ptsBase = -1;
       private bool clusterOpen = false;
       private long clusterBaseMs = 0;
 
@@ -225,7 +224,7 @@ namespace PeerCastStation.FLV
         audioEnabled = false;
         headerSent = false;
         ResetWarnings();
-        ptsBase = -1;
+        ResetTimestampBase();
         clusterOpen = false;
         clusterBaseMs = 0;
       }
@@ -385,11 +384,9 @@ namespace PeerCastStation.FLV
         WriteHeaderIfNeeded();
         if (!audioEnabled) return;
         if (offset<0 || msg.Body.Length<=offset) return;
-        // 最初のメディアフレーム(ts=0を含む)を基準に正規化する。
-        // 2番目のフレームで確定すると先頭フレームとPTSが衝突・逆行し、
-        // PTSのみを持つMKVではH.264のPOC再構成が壊れる。
-        if (ptsBase<0) ptsBase = msg.Timestamp;
-        var pts = msg.Timestamp - ptsBase;
+        // 時刻原点の取り方は音声・映像で共有する規則なので基底に置いてある。
+        // ずれると PTS が衝突・逆行し、PTS のみを持つ MKV では H.264 の POC 再構成が壊れる。
+        var pts = NormalizeTimestamp(msg.Timestamp);
         EnsureCluster(pts, false);
         var length = msg.Body.Length-offset;
         var block = AllocateSimpleBlock(AudioTrackNumber, pts, true, length, out var dest);
@@ -402,10 +399,11 @@ namespace PeerCastStation.FLV
         WriteHeaderIfNeeded();
         if (!videoEnabled) return;
         if (offset<0 || msg.Body.Length<=offset) return;
-        // OnAudioBody と同様、最初のメディアフレームを基準に正規化する。
-        if (ptsBase<0) ptsBase = msg.Timestamp;
-        var dts = msg.Timestamp - ptsBase;
-        var pts = dts + cts;
+        var dts = NormalizeTimestamp(msg.Timestamp);
+        // 先頭Bフレームの負CTS(符号拡張済み)で pts が負に振れることがある。
+        // SimpleBlock のクラスタ相対timecodeは符号付き16bitなので、負値はそのまま
+        // 書けてしまい、ブロックを拒否したり順序を誤るプレイヤーがある。
+        var pts = Math.Max(dts, dts + cts);
         EnsureCluster(pts, keyframe);
         // 対応コーデックはいずれもフレームデータを無加工で SimpleBlock に載せられる。
         var length = msg.Body.Length-offset;
