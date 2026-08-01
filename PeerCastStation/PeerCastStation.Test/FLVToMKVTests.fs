@@ -152,6 +152,27 @@ let ``onMetaData が無くても avcC の SPS から解像度を取って映像�
                 "PixelHeight は SPS 由来の 360")
 
 [<Fact>]
+let ``同じシーケンスヘッダを送り直されても出力が変わらない`` () =
+    // 多くのエンコーダは GOP ごとにシーケンスヘッダを送り直す。ヘッダ送信後は
+    // CodecPrivate を差し替えても出力に反映されないので、取り込み直さず読み飛ばす。
+    let capture = CaptureSink()
+    let sink = FLVToMKVContentFilter().Activate(capture)
+    let sps = h264Sps 39 22 4
+    let avcSeq = Array.concat [ [| 0x17uy;0x00uy;0x00uy;0x00uy;0x00uy |]; avcCWith sps ]
+    let avcKey = Array.concat [ [| 0x17uy;0x01uy;0x00uy;0x00uy;0x00uy |]; avcNalus ]
+    sink.OnChannelInfo(ChannelInfo(AtomCollection()))
+    sink.OnContentHeader(newContent (Array.concat [ flvHeader; makeTag 9 0 avcSeq ]))
+    sink.OnContent(newContent (Array.concat [
+        makeTag 9 0  avcKey
+        makeTag 9 10 avcSeq   // GOP ごとの送り直し
+        makeTag 9 10 avcKey
+     ]))
+    sink.OnStop(StopReason.OffAir)
+    // CodecPrivate はヘッダに1度だけ現れ、送り直しでは増えない。
+    Assert.Equal(1, countOf capture.Header (ebmlElement EBMLWriter.CodecPrivate (avcCWith sps)))
+    Assert.True(capture.Content.Length>0, "映像フレームは出力され続ける")
+
+[<Fact>]
 let ``onMetaData の解像度は SPS より優先される`` () =
     // onMetaData は配信者が明示的に与えた値なので、SPS からの導出はあくまで代替。
     let capture = CaptureSink()

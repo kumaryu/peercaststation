@@ -829,13 +829,16 @@ namespace PeerCastStation.FLV
         // 2^33 にラップした値として出力されるためクランプする。
         var pts = Math.Max(0, msg.Timestamp - Math.Max(0, ptsBase));
         var header = new ADTSHeader(adtsHeader, frame_length);
-        var pes_payload = new MemoryStream();
-        using (pes_payload) {
-          ADTSHeader.WriteTo(pes_payload, header);
-          pes_payload.Write(msg.Body, offset, raw_length);
+        // 出来上がりのサイズは ADTS ヘッダ+生フレームで確定しているので、伸長しながら書いて
+        // 最後に ToArray() で複製する形にせず、必要な長さの配列へ直接組み立てる
+        // (音声フレームは毎秒40回以上流れる)。
+        var pes_payload = new byte[frame_length];
+        using (var s = new MemoryStream(pes_payload, true)) {
+          ADTSHeader.WriteTo(s, header);
         }
-        var pes = new PESPacket(0xC0, TSTimeStamp.FromMilliseconds(pts), null, pes_payload.ToArray());
-        var pes_packet = new MemoryStream();
+        Buffer.BlockCopy(msg.Body, offset, pes_payload, adtsHeader.Bytesize, raw_length);
+        var pes = new PESPacket(0xC0, TSTimeStamp.FromMilliseconds(pts), null, pes_payload);
+        var pes_packet = new MemoryStream(frame_length + 32);
         using (pes_packet) {
           PESPacket.WriteTo(pes_packet, pes);
         }

@@ -61,20 +61,37 @@ namespace PeerCastStation.FLV
     public static readonly byte[] Timecode           = { 0xE7 };
     public static readonly byte[] SimpleBlock        = { 0xA3 };
 
-    /// <summary>値を最短長のVINT(要素サイズ等)としてエンコードする。</summary>
-    public static byte[] EncodeVInt(ulong value)
+    /// <summary>値を最短長のVINTで表したときのバイト数。</summary>
+    public static int GetVIntLength(ulong value)
     {
       int length = 1;
       // 全データビットが1の値は unknown-size に予約されているため value <= 2^(7L)-2 となる最小Lを選ぶ
       while (length<8 && value >= ((1UL<<(7*length))-1)) {
         length++;
       }
+      return length;
+    }
+
+    /// <summary>
+    /// 最短長のVINTを dest の先頭へ書き、書いたバイト数を返す。
+    /// フレームごとに呼ばれる経路で使うため、配列を作らずに済む形も用意する。
+    /// </summary>
+    public static int WriteVInt(Span<byte> dest, ulong value)
+    {
+      var length = GetVIntLength(value);
       ulong v = value | (1UL<<(7*length)); // 先頭の長さマーカービット
-      var bin = new byte[length];
       for (int i=length-1; i>=0; i--) {
-        bin[i] = (byte)(v & 0xFF);
+        dest[i] = (byte)(v & 0xFF);
         v >>= 8;
       }
+      return length;
+    }
+
+    /// <summary>値を最短長のVINT(要素サイズ等)としてエンコードする。</summary>
+    public static byte[] EncodeVInt(ulong value)
+    {
+      var bin = new byte[GetVIntLength(value)];
+      WriteVInt(bin, value);
       return bin;
     }
 
@@ -289,8 +306,15 @@ namespace PeerCastStation.FLV
       {
         // IsSupportedVideoCodec を通っているので、この FourCC には必ず CodecID が対応する。
         var codecId = MapVideoCodecId(fourcc)!;
-        var cp = FLVTagInfo.SlicePayload(msg.Body, offset);
-        if (cp.Length>0) SetVideoCodec(codecId, cp);
+        if (offset<0 || msg.Body.Length<=offset) return;
+        var payload = new ReadOnlySpan<byte>(msg.Body, offset, msg.Body.Length-offset);
+        // 多くのエンコーダは GOP ごとにシーケンスヘッダを送り直す。同じ内容なら取り込み直す
+        // 意味はなく(ヘッダ送信後は CodecPrivate を差し替えても出力に反映されない)、
+        // 数時間の配信では取りこぼしのないコピーがそのまま無駄になる。
+        if (videoCodecId==codecId && videoCodecPrivate!=null && payload.SequenceEqual(videoCodecPrivate)) {
+          return;
+        }
+        SetVideoCodec(codecId, payload.ToArray());
       }
 
       protected override void OnVideoFrame(RTMPMessage msg, int offset, int compositionTime, bool keyframe)
@@ -330,8 +354,13 @@ namespace PeerCastStation.FLV
 
       private void OnAudioHeader(byte[] body, int offset)
       {
+        if (offset<0 || body.Length<=offset) return;
+        // 映像側と同じく、同じ設定の送り直しではコピーも解析もしない。
+        if (audioConfig!=null &&
+            new ReadOnlySpan<byte>(body, offset, body.Length-offset).SequenceEqual(audioConfig)) {
+          return;
+        }
         var config = FLVTagInfo.SlicePayload(body, offset);
-        if (config.Length==0) return;
         // 切り詰められた AudioSpecificConfig はここで捨てる。ビット読み出しで例外を投げると
         // FLVFileParser.Read の EndOfStreamException catch がタグ先頭まで巻き戻すため
         // (=「データ待ち」と誤認される)、毒タグがバッファ先頭に残って以後の全パースが
@@ -532,17 +561,16 @@ namespace PeerCastStation.FLV
         var rel = ptsMs - clusterBaseMs;
         if (rel>32767) rel = 32767;
         if (rel<-32768) rel = -32768;
-        var track = EBMLWriter.EncodeVInt((ulong)trackNumber);
-        var contentLength = track.Length + 2 + 1 + payloadLength;
-        var size = EBMLWriter.EncodeVInt((ulong)contentLength);
-        var block = new byte[EBMLWriter.SimpleBlock.Length + size.Length + contentLength];
+        // フレームごとに呼ばれるので、VINT は一時配列を作らず block へ直接書く。
+        var trackLength   = EBMLWriter.GetVIntLength((ulong)trackNumber);
+        var contentLength = trackLength + 2 + 1 + payloadLength;
+        var sizeLength    = EBMLWriter.GetVIntLength((ulong)contentLength);
+        var block = new byte[EBMLWriter.SimpleBlock.Length + sizeLength + contentLength];
         var pos = 0;
         Array.Copy(EBMLWriter.SimpleBlock, 0, block, pos, EBMLWriter.SimpleBlock.Length);
         pos += EBMLWriter.SimpleBlock.Length;
-        Array.Copy(size, 0, block, pos, size.Length);
-        pos += size.Length;
-        Array.Copy(track, 0, block, pos, track.Length);
-        pos += track.Length;
+        pos += EBMLWriter.WriteVInt(new Span<byte>(block, pos, sizeLength), (ulong)contentLength);
+        pos += EBMLWriter.WriteVInt(new Span<byte>(block, pos, trackLength), (ulong)trackNumber);
         block[pos++] = (byte)((rel>>8) & 0xFF);
         block[pos++] = (byte)(rel & 0xFF);
         block[pos++] = (byte)(keyframe ? 0x80 : 0x00);
@@ -589,7 +617,9 @@ namespace PeerCastStation.FLV
         // 上流Contentは参照せず出力側で独自に連番Positionを採番する。
         private int streamId = -1;
         private long position = 0;
-        private DateTime streamOrigin = DateTime.Now;
+        // 経過時間にしか使わないので、ローカル時刻への変換ぶん重い DateTime.Now は使わない
+        // (フレームごとに参照される)。
+        private DateTime streamOrigin = DateTime.UtcNow;
 
         public MKVSink(IContentSink targetSink)
         {
@@ -601,7 +631,7 @@ namespace PeerCastStation.FLV
           // 新しい EBML/Segment は新しい論理ストリーム。stream idを進め位置を0へ戻す。
           streamId += 1;
           position = 0;
-          streamOrigin = DateTime.Now;
+          streamOrigin = DateTime.UtcNow;
           TargetSink.OnContentHeader(
             new Content(streamId, TimeSpan.Zero, 0, bytes, PCPChanPacketContinuation.None)
           );
@@ -623,7 +653,7 @@ namespace PeerCastStation.FLV
         private void EmitContent(ReadOnlyMemory<byte> bytes, PCPChanPacketContinuation cont)
         {
           TargetSink.OnContent(
-            new Content(streamId, DateTime.Now-streamOrigin, position, bytes, cont)
+            new Content(streamId, DateTime.UtcNow-streamOrigin, position, bytes, cont)
           );
           position += bytes.Length;
         }

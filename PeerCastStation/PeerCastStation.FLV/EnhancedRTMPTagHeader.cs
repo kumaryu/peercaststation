@@ -64,13 +64,55 @@ namespace PeerCastStation.FLV
       return true;
     }
 
-    /// <summary>FourCC を4バイト読む。バイトが不足する場合は null を返す。</summary>
+    /// <summary>
+    /// FourCC を4バイト読む。バイトが不足する場合は null を返す。
+    ///
+    /// メディアタグ1つごとに呼ばれるので、既知の FourCC は共有インスタンスを返して
+    /// 文字列の割り当てを避ける(1080p30 の映像+AAC なら毎秒70回以上通る)。
+    /// 未知の FourCC は警告に載せるだけなので、その時だけ組み立てる。
+    /// </summary>
     public static string? ReadFourCc(byte[] body, ref int pos)
     {
       if (pos+4>body.Length) return null;
-      var s = Encoding.ASCII.GetString(body, pos, 4);
+      var value = ((uint)body[pos]<<24) | ((uint)body[pos+1]<<16) | ((uint)body[pos+2]<<8) | body[pos+3];
+      var known = KnownFourCc(value);
+      var s = known ?? Encoding.ASCII.GetString(body, pos, 4);
       pos += 4;
       return s;
+    }
+
+    private static uint FourCcValue(string s)
+    {
+      return ((uint)s[0]<<24) | ((uint)s[1]<<16) | ((uint)s[2]<<8) | s[3];
+    }
+
+    // E-RTMP v2 が定めるコーデックと、本実装が名前で扱うもの。
+    private static readonly uint ValueAvc1 = FourCcValue("avc1");
+    private static readonly uint ValueHvc1 = FourCcValue("hvc1");
+    private static readonly uint ValueHev1 = FourCcValue("hev1");
+    private static readonly uint ValueAv01 = FourCcValue("av01");
+    private static readonly uint ValueVp09 = FourCcValue("vp09");
+    private static readonly uint ValueMp4a = FourCcValue("mp4a");
+    private static readonly uint ValueOpus = FourCcValue("Opus");
+    private static readonly uint ValueAc3  = FourCcValue("ac-3");
+    private static readonly uint ValueEc3  = FourCcValue("ec-3");
+    private static readonly uint ValueFlac = FourCcValue("fLaC");
+    private static readonly uint ValueMp3  = FourCcValue(".mp3");
+
+    private static string? KnownFourCc(uint value)
+    {
+      if (value==ValueAvc1) return "avc1";
+      if (value==ValueHvc1) return "hvc1";
+      if (value==ValueHev1) return "hev1";
+      if (value==ValueAv01) return "av01";
+      if (value==ValueVp09) return "vp09";
+      if (value==ValueMp4a) return "mp4a";
+      if (value==ValueOpus) return "Opus";
+      if (value==ValueAc3)  return "ac-3";
+      if (value==ValueEc3)  return "ec-3";
+      if (value==ValueFlac) return "fLaC";
+      if (value==ValueMp3)  return ".mp3";
+      return null;
     }
 
     /// <summary>
