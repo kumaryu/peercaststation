@@ -131,11 +131,17 @@ namespace PeerCastStation.FLV
       var sub_height_c = chroma_array_type==1 ? 2 : 1;
       var crop_unit_x = chroma_array_type==0 ? 1 : sub_width_c;
       var crop_unit_y = (chroma_array_type==0 ? 1 : sub_height_c) * (2 - frame_mbs_only);
-      var w = (width_mbs_minus1+1)*16 - crop_unit_x*(crop_left+crop_right);
-      var h = (2-frame_mbs_only)*(height_map_units_minus1+1)*16 - crop_unit_y*(crop_top+crop_bottom);
+      // crop は ue(v) なのでマクロブロック数と違って上限が無く、1フィールドで int の
+      // ほぼ全域(最大 2^31-2)を名乗れる。int のまま足すと既定の unchecked 演算で
+      // 桁があふれ、ラップした結果が下の w<1/h<1 検査をすり抜けて不正な解像度が
+      // トラックヘッダに書かれる。long で計算してから範囲を確かめる。
+      var crop_x = (long)crop_unit_x*((long)crop_left + crop_right);
+      var crop_y = (long)crop_unit_y*((long)crop_top + crop_bottom);
+      var w = (long)(width_mbs_minus1+1)*16 - crop_x;
+      var h = (long)(2-frame_mbs_only)*(height_map_units_minus1+1)*16 - crop_y;
       if (w<1 || h<1) return false;
-      width  = w;
-      height = h;
+      width  = (int)w;
+      height = (int)h;
       return true;
     }
 
