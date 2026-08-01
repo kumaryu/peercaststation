@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+﻿// SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Philmist
 using PeerCastStation.Core;
 using PeerCastStation.FLV.AMF;

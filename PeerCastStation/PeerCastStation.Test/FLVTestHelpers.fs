@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+﻿// SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Philmist
 /// FLV/E-RTMP のフィルタ試験で共通に使うタグ組み立て・キャプチャ用のヘルパ。
 /// FLVToMKVTests / FLVToMPEG2TSTests / FLVContentBufferTests が同じタグ形式を
