@@ -18,6 +18,16 @@ open FLVTestHelpers
 let private exVideoMpeg2TsSeq (fourcc:string) (payload:byte[]) =
     Array.concat [ [| 0x95uy |]; ascii fourcc; payload ]
 
+/// AMF0 の文字列(マーカー付き)。
+let private amf0String (s:string) =
+    let b = ascii s
+    Array.concat [ [| 0x02uy; byte (b.Length>>>8); byte b.Length |]; b ]
+
+/// AMF0 の連想配列キー(マーカー無しの UTF-8)。
+let private amf0Key (s:string) =
+    let b = ascii s
+    Array.concat [ [| byte (b.Length>>>8); byte b.Length |]; b ]
+
 /// FLVContentReader 経由で FLVContentBuffer にタグ列を流す。
 let private run (data:byte[]) =
     use peca = new PeerCast()
@@ -62,3 +72,52 @@ let ``MPEG2TSSequenceStart をチャンネルヘッダに昇格させない`` ()
                  "TS ブートストラップはチャンネルヘッダに埋め込まれない")
     // ヘッダ生成は最初のコンテンツで1回だけ。昇格させていると2回以上になる。
     Assert.Equal(1, capture.HeaderCount)
+
+[<Fact>]
+let ``レガシー映像の非キーフレームをシーケンスヘッダとして昇格させない`` () =
+    // レガシー AVC の判定を AVCPacketType(body[1]==0)だけで行うと、AVCPacketType が
+    // 0 に化けた壊れたインターフレーム(0x27 0x00 ...)や frameType=5 のコマンドフレーム
+    // (body[1] はコマンド番号で 0=StartOfClientSeek)までコーデック設定と見なしてしまう。
+    // 昇格すると OnHeaderChanged が GenerateStreamID() を呼ぶので、この手のタグ1つで
+    // 全視聴者の再初期化を繰り返し起こせる。master は body[0]==0x17 を要求していた。
+    let garbage = [| 0xAAuy;0xBBuy;0xCCuy;0xDDuy |]
+    let capture =
+        run (Array.concat [
+                flvHeader
+                makeTag 9 0  (Array.concat [ [| 0x17uy;0x00uy;0x00uy;0x00uy;0x00uy |]; avcC ])
+                makeTag 9 10 (Array.concat [ [| 0x27uy;0x00uy;0x00uy;0x00uy;0x00uy |]; garbage ]) // インターフレーム
+                makeTag 9 15 (Array.concat [ [| 0x57uy;0x00uy;0x00uy;0x00uy;0x00uy |]; garbage ]) // コマンドフレーム
+                makeTag 9 20 (Array.concat [ [| 0x17uy;0x01uy;0x00uy;0x00uy;0x00uy |]; avcNalus ])
+             ])
+    Assert.False(capture.Headers |> Array.exists (fun h -> contains h garbage),
+                 "非キーフレームの中身はチャンネルヘッダに埋め込まれない")
+    Assert.True(capture.Headers |> Array.exists (fun h -> contains h avcC),
+                "本物の avcC は昇格する")
+    // ヘッダ生成は本物の avcC による1回だけ。昇格させていると破損タグごとに増える。
+    Assert.Equal(1, capture.HeaderCount)
+
+[<Fact>]
+let ``数値でない videodatarate を含む onMetaData で停止しない`` () =
+    // videodatarate は (double) キャストで読んでいたため、文字列だと FormatException、
+    // 非数値型だと InvalidCastException になる。FLVFileParser を経由しない RTMP 受信経路では
+    // これが接続ごと落とし、配信者が同じ onMetaData を送り直すので再接続を繰り返す。
+    let onMetaData =
+        Array.concat [
+            amf0String "onMetaData"
+            [| 0x08uy; 0uy;0uy;0uy;1uy |] // ECMAArray(associative-count=1)
+            amf0Key "videodatarate"
+            amf0String "2500k"
+            [| 0uy;0uy;0x09uy |]          // object end marker
+        ]
+    let capture =
+        run (Array.concat [
+                flvHeader
+                makeTag 18 0 onMetaData
+                makeTag 9 0  (exVideoSeq "avc1" avcC)
+                makeTag 9 20 (exVideoCodedFrames "avc1" 1 0 avcNalus)
+             ])
+    // onMetaData が最後まで処理されればチャンネルヘッダが生成される。
+    // 途中で例外になっていればタグごと読み飛ばされ、ヘッダにも現れない。
+    Assert.True(capture.Headers |> Array.exists (fun h -> contains h (ascii "videodatarate")),
+                "onMetaData がチャンネルヘッダに取り込まれる")
+    Assert.True(capture.Content.Length>0, "後続のフレームが流れ続ける")

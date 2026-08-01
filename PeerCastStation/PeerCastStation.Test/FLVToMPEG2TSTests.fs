@@ -18,6 +18,28 @@ let private assertValidTS (bytes:byte[]) =
     for i in 0..(bytes.Length/188 - 1) do
         Assert.Equal(0x47uy, bytes.[i*188])
 
+/// 映像 PES(stream_id=0xE0)のヘッダから (PES_packet_length, PTS) を出現順に取り出す。
+/// PES ヘッダは PUSI 付き TS パケットの先頭側に収まるので連続バイトとして読める。
+let private videoPesHeaders (bytes:byte[]) =
+    [ for i in 0 .. bytes.Length-14 do
+        if bytes.[i]=0uy && bytes.[i+1]=0uy && bytes.[i+2]=1uy && bytes.[i+3]=0xE0uy then
+            let len = (int bytes.[i+4] <<< 8) ||| int bytes.[i+5]
+            let flags = (int bytes.[i+7] >>> 6) &&& 0x03
+            let pts =
+                if flags=0 then -1L
+                else
+                    let hi  = ((int64 bytes.[i+9]) >>> 1) &&& 0x07L
+                    let mid = ((((int64 bytes.[i+10]) <<< 8) ||| (int64 bytes.[i+11])) >>> 1) &&& 0x7FFFL
+                    let lo  = ((((int64 bytes.[i+12]) <<< 8) ||| (int64 bytes.[i+13])) >>> 1) &&& 0x7FFFL
+                    (hi <<< 30) ||| (mid <<< 15) ||| lo
+            yield (len, pts) ]
+
+/// AAC-LC 44100Hz 2ch の AudioSpecificConfig を持つレガシー音声シーケンスヘッダ。
+let private legacyAacSeq = [| 0xAFuy;0x00uy;0x12uy;0x10uy |]
+
+/// レガシー AAC の生フレーム。
+let private legacyAacFrame (payload:byte[]) = Array.concat [ [| 0xAFuy;0x01uy |]; payload ]
+
 /// FLVヘッダ+シーケンスヘッダを ContentHeader、フレームを ContentBody として流す。
 let private run (seqTags:byte[]) (frameTags:byte[]) =
     let capture = CaptureSink()
@@ -148,3 +170,57 @@ let ``壊れた Script タグを挟んでも TS 出力を継続する`` () =
              ])
     assertValidTS capture.Content
     Assert.Equal(baselineContentLength(), capture.Content.Length)
+
+[<Fact>]
+let ``最初に出力するフレームを基準に PTS を正規化する`` () =
+    // ptsBase を「Timestamp>0 の最初のタグ」で確定させていたため、ts=0 のフレームでは
+    // 基準が決まらず、2番目のフレーム(ts=10)で ts=10 が基準になっていた。
+    // 結果 PTS は 0,0,900 となり先頭2フレームが同じ時刻に潰れる。
+    let capture =
+        run (makeTag 9 0 (exVideoSeq "avc1" avcC))
+            (Array.concat [
+                makeTag 9 0  (exVideoCodedFrames "avc1" 1 0 avcNalus)
+                makeTag 9 10 (exVideoCodedFrames "avc1" 1 0 avcNalus)
+                makeTag 9 20 (exVideoCodedFrames "avc1" 1 0 avcNalus)
+             ])
+    let pts = videoPesHeaders capture.Content |> List.map snd
+    Assert.Equal<int64 list>([ 0L; 900L; 1800L ], pts)
+
+[<Fact>]
+let ``65535バイトを超える映像フレームの PES 長を 0 にする`` () =
+    // PES_packet_length は16bit。WriteUInt16BE が黙って下位16bitに丸めるため、
+    // 1080pのIDRのような大きなアクセスユニットでは嘘の長さを宣言していた。
+    // 映像ESに限り 0(長さ未指定)が許されているのでそちらを使う。
+    let bigNal = Array.append [| 0x41uy |] (Array.create 69999 0x55uy)
+    let payload = Array.concat [ [| 0uy;0x01uy;0x11uy;0x70uy |]; bigNal ] // 4バイト長 = 70000
+    let capture =
+        run (makeTag 9 0 (exVideoSeq "avc1" avcC))
+            (makeTag 9 0 (exVideoCodedFrames "avc1" 1 0 payload))
+    assertValidTS capture.Content
+    let lengths = videoPesHeaders capture.Content |> List.map fst
+    Assert.Equal<int list>([ 0 ], lengths)
+
+[<Fact>]
+let ``ADTSのframe_lengthに収まらない音声フレームを捨てて出力を継続する`` () =
+    // frame_length は13bit(最大8191)。超過分を BitWriter が落とすと実長と食い違う長さを
+    // 宣言することになり、ADTS は次フレームをこの長さで探すため以降の同期が壊れる。
+    let small = legacyAacFrame (Array.create 32 0x55uy)
+    let baseline = (run (makeTag 8 0 legacyAacSeq) (makeTag 8 20 small)).Content.Length
+    let capture =
+        run (makeTag 8 0 legacyAacSeq)
+            (Array.concat [
+                makeTag 8 0  (legacyAacFrame (Array.create 8200 0x55uy))
+                makeTag 8 20 small
+             ])
+    assertValidTS capture.Content
+    Assert.Equal(baseline, capture.Content.Length)
+
+[<Fact>]
+let ``ADTSのprofileに収まらないaudioObjectTypeの設定を破棄する`` () =
+    // ADTS の profile は2bit(AOT 1..4 のみ)。明示signalingのHE-AAC(AOT=5)を書くと
+    // 下位2bitに丸められて profile=0(Main)と嘘をつく。設定ごと破棄する。
+    // 0x2A 0x10 = AOT 5 / freqIdx 4(44100) / 2ch。
+    let capture =
+        run (makeTag 8 0 [| 0xAFuy;0x00uy;0x2Auy;0x10uy |])
+            (makeTag 8 20 (legacyAacFrame (Array.create 32 0x55uy)))
+    Assert.Empty(capture.Content)

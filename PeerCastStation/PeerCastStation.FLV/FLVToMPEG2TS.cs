@@ -318,6 +318,14 @@ namespace PeerCastStation.FLV
           };
         }
         var packet_length = pkt.Payload.Length + 3 + pes_header_data.Length;
+        // PES_packet_length は16bit。WriteUInt16BE は黙って下位16bitに丸めるため、
+        // 65535を超えるアクセスユニット(1080pのIDRフレームなど珍しくない)では
+        // 実長と無関係な短い長さを宣言してしまい、下流のデマルチプレクサが同期を失う。
+        // 映像ESに限り 0 = 長さ未指定が許されている(次の PES 開始まで)ので 0 を書く。
+        // 音声(ADTS)は OnAACBody が 0x1FFF 上限で弾くためここには到達しない。
+        if (packet_length>0xFFFF && (pkt.StreamId & 0xF0)==0xE0) {
+          packet_length = 0;
+        }
 
         s.Write(PESStartPrefix, 0, PESStartPrefix.Length);
         s.WriteByte(pkt.StreamId);
@@ -600,6 +608,8 @@ namespace PeerCastStation.FLV
       private long ptsBase = -1;
       private bool warnedBrokenAudioConfig = false;
       private bool warnedBrokenVideoConfig = false;
+      private bool warnedMissingAudioConfig = false;
+      private bool warnedOversizedAudioFrame = false;
       private bool warnedMissingVideoConfig = false;
       private bool warnedBrokenVideoFrame = false;
       private bool warnedUnsupportedVideo = false;
@@ -656,6 +666,8 @@ namespace PeerCastStation.FLV
         ptsBase = -1;
         warnedBrokenAudioConfig = false;
         warnedBrokenVideoConfig = false;
+        warnedMissingAudioConfig = false;
+        warnedOversizedAudioFrame = false;
         warnedMissingVideoConfig = false;
         warnedBrokenVideoFrame = false;
         warnedUnsupportedVideo = false;
@@ -688,27 +700,6 @@ namespace PeerCastStation.FLV
         isHeaderSent = true;
       }
 
-      /// <summary>
-      /// AudioSpecificConfig(ISO/IEC 14496-3)先頭の audioObjectType/samplingFrequencyIndex/
-      /// channelConfiguration を取り出す。ビットが不足する場合は false を返す(例外は投げない)。
-      /// </summary>
-      private static bool TryParseAudioSpecificConfig(byte[] config, out int type, out int samplingFreqIdx, out int channelConfiguration)
-      {
-        type                 = 0;
-        samplingFreqIdx      = 0;
-        channelConfiguration = 0;
-        var reader = new BitReader(config);
-        if (!reader.TryReadBits(5, out type)) return false;
-        if (type==31) {
-          if (!reader.TryReadBits(6, out var ext)) return false;
-          type = ext+32;
-        }
-        if (!reader.TryReadBits(4, out samplingFreqIdx)) return false;
-        // samplingFrequency(24bit)は ADTS ヘッダには使わないが、後続ビット位置のため読み進める。
-        if (samplingFreqIdx==0x0F && !reader.TryReadBits(24, out _)) return false;
-        return reader.TryReadBits(4, out channelConfiguration);
-      }
-
       private void OnAACHeader(byte[] body, int offset)
       {
         // 切り詰められた AudioSpecificConfig はここで捨てる。ビット読み出しで例外を投げると
@@ -721,10 +712,28 @@ namespace PeerCastStation.FLV
         }
         var config = new byte[body.Length-offset];
         Array.Copy(body, offset, config, 0, config.Length);
-        if (!TryParseAudioSpecificConfig(config, out var type, out var sampling_freq_idx, out var channel_configuration)) {
+        if (!AudioSpecificConfig.TryParse(config, out var asc)) {
           WarnBrokenAudioConfig();
           return;
         }
+        // ADTS は表引きインデックス(0-12)しか表現できない。明示レートのエスケープ(15)や
+        // 予約値(13/14)をそのまま書くと禁止インデックス入りの ADTS が全フレームに付き、
+        // デコーダが黙って全音声を拒否するため、設定ごと破棄する。
+        if (asc.SamplingFrequencyIndex>=13) {
+          WarnBrokenAudioConfig();
+          return;
+        }
+        // ADTS の profile は2bit(audioObjectType-1、すなわち AOT 1..4 のみ表現できる)。
+        // 範囲外をそのまま書くと BitWriter が下位2bitに丸め、明示signalingのHE-AAC(AOT=5)は
+        // profile=0(Main)と嘘をつき、AOT=0 は予約値の3になってデコーダが全フレームを拒否する。
+        // サンプリング周波数インデックスと同じく、設定ごと破棄する。
+        if (asc.AudioObjectType<1 || asc.AudioObjectType>4) {
+          WarnBrokenAudioConfig();
+          return;
+        }
+        var type = asc.AudioObjectType;
+        var sampling_freq_idx = asc.SamplingFrequencyIndex;
+        var channel_configuration = asc.ChannelConfiguration;
         this.adtsHeader = new ADTSHeader(
           0xFFF, //sync
           0, //ID
@@ -756,9 +765,28 @@ namespace PeerCastStation.FLV
       private void OnAACBody(RTMPMessage msg, int offset)
       {
         if (offset<0 || msg.Body.Length<=offset) return;
-        var pts = msg.Timestamp - Math.Max(0, ptsBase);
+        // シーケンスヘッダ未受信のまま流すと adtsHeader が Default(sync=0 の全ゼロ)のままで、
+        // ゴミ ADTS が AudioPID に出力される上、最初の WritePATPMT が音声 ES 抜きの PMT を
+        // 確定させてしまう。映像側(nalSizeLen<1)と同様に破棄する。
+        if (!hasAudio) {
+          WarnMissingAudioConfig();
+          return;
+        }
         var raw_length = msg.Body.Length-offset;
-        var header = new ADTSHeader(adtsHeader, raw_length + adtsHeader.Bytesize);
+        var frame_length = raw_length + adtsHeader.Bytesize;
+        // ADTS の frame_length は13bit。超過分を BitWriter が黙って落とすと実長と食い違う
+        // 長さを宣言することになり、ADTS は次フレームの位置をこの長さで求めるため
+        // 以降のフレーム同期が丸ごと壊れる。部分出力に意味はないのでフレームごと捨てる。
+        if (frame_length>0x1FFF) {
+          WarnOversizedAudioFrame();
+          return;
+        }
+        // 最初に実際に出力するフレーム(ts=0を含む)を基準にする。FLVToMKV.OnAudioBody と同じ規則。
+        if (ptsBase<0) ptsBase = msg.Timestamp;
+        // ptsBase より小さいタイムスタンプで負になった PTS は、PESPacket のビット詰めで
+        // 2^33 にラップした値として出力されるためクランプする。
+        var pts = Math.Max(0, msg.Timestamp - Math.Max(0, ptsBase));
+        var header = new ADTSHeader(adtsHeader, frame_length);
         var pes_payload = new MemoryStream();
         using (pes_payload) {
           ADTSHeader.WriteTo(pes_payload, header);
@@ -877,6 +905,20 @@ namespace PeerCastStation.FLV
         warnedBrokenVideoConfig = true;
       }
 
+      private void WarnMissingAudioConfig()
+      {
+        if (warnedMissingAudioConfig) return;
+        logger.Warn("FLVToMPEG2TS: 音声シーケンスヘッダ(AudioSpecificConfig)より前のフレームを破棄します");
+        warnedMissingAudioConfig = true;
+      }
+
+      private void WarnOversizedAudioFrame()
+      {
+        if (warnedOversizedAudioFrame) return;
+        logger.Warn("FLVToMPEG2TS: ADTSのframe_length(13bit)に収まらない音声フレームを破棄します");
+        warnedOversizedAudioFrame = true;
+      }
+
       private void WarnMissingVideoConfig()
       {
         if (warnedMissingVideoConfig) return;
@@ -901,9 +943,6 @@ namespace PeerCastStation.FLV
           WarnMissingVideoConfig();
           return;
         }
-        var pts = msg.Timestamp - Math.Max(0, ptsBase);
-        var dts = pts;
-        pts = pts + cts;
         var access_unit_delimiter = false;
         var idr = false;
         var broken = false;
@@ -913,15 +952,18 @@ namespace PeerCastStation.FLV
         using (var body=new MemoryStream(msg.Body, 0, msg.Body.Length)) {
           body.Seek(offset, SeekOrigin.Begin);
           while (body.Position<body.Length) {
-            // 長さは符号なしで読む。seed 0 の Aggregate は符号付き Int32 なので、
-            // nalSizeLen==4(lengthSizeMinusOne=3、一般的な既定値)で最上位ビットが立つと
+            // 長さは long に符号なしで読む。Int32 で読むと nalSizeLen==4
+            // (lengthSizeMinusOne=3、一般的な既定値)で最上位ビットが立つ入力が
             // 負値になり new byte[負数] で OverflowException、0x7FFFFFFF なら
             // 約2GBの確保を試みて OutOfMemoryException になる。
             if (body.Length-body.Position < nalSizeLen) {
               broken = true;
               break;
             }
-            var len = body.ReadBytes(nalSizeLen).Aggregate(0L, (r,v) => (r<<8) | v);
+            var len = 0L;
+            for (var i=0; i<nalSizeLen; i++) {
+              len = (len<<8) | (uint)body.ReadByte();
+            }
             // NALUnit.ReadFrom は先頭1バイトをヘッダとして消費するので len>=1 が要る。
             // 残バイト数を超える長さは壊れた入力なのでフレームごと捨てる。
             if (len<1 || len > body.Length-body.Position) {
@@ -958,6 +1000,15 @@ namespace PeerCastStation.FLV
           WarnBrokenVideoFrame();
           return;
         }
+        // 最初に実際に出力するフレーム(ts=0を含む)を基準にする。FLVToMKV.OnVideoBody と同じ規則。
+        // 破棄したタグや2番目のフレームで基準を確定させると、先頭フレームと PTS が衝突・逆行する。
+        if (ptsBase<0) ptsBase = msg.Timestamp;
+        // ptsBase より小さいタイムスタンプや先頭Bフレームの負CTS(符号拡張済み)で
+        // pts/dts が負になると、PESPacket のビット詰めで 2^33 にラップした
+        // 約26.5時間先のタイムスタンプとして出力されるためクランプする。
+        // pts>=dts のクランプは MPEG-TS の PTS>=DTS 制約の維持も兼ねる。
+        var dts = Math.Max(0, msg.Timestamp - Math.Max(0, ptsBase));
+        var pts = Math.Max(dts, dts + cts);
         var pes = new PESPacket(
           0xE0,
           TSTimeStamp.FromMilliseconds(pts),
@@ -985,8 +1036,7 @@ namespace PeerCastStation.FLV
       public void OnAudio(RTMPMessage msg)
       {
         var info = FLVTagClassifier.Classify(msg);
-        if (ptsBase<0 && msg.Timestamp>0) ptsBase = msg.Timestamp;
-        if (info.Kind==FLVTagKind.AudioSequenceEnd) return;
+        if (info.Kind==FLVTagKind.AudioSequenceEnd || info.Kind==FLVTagKind.Control) return;
         if (info.FourCc!=FLVTagClassifier.FourCcAac) {
           WarnUnsupportedAudio(info.FourCc);
           return;
@@ -1007,8 +1057,7 @@ namespace PeerCastStation.FLV
       public void OnVideo(RTMPMessage msg)
       {
         var info = FLVTagClassifier.Classify(msg);
-        if (ptsBase<0 && msg.Timestamp>0) ptsBase = msg.Timestamp;
-        if (info.Kind==FLVTagKind.VideoSequenceEnd) return;
+        if (info.Kind==FLVTagKind.VideoSequenceEnd || info.Kind==FLVTagKind.Control) return;
         if (info.FourCc!=FLVTagClassifier.FourCcAvc) {
           WarnUnsupportedVideo(info.FourCc);
           return;

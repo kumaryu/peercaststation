@@ -214,11 +214,6 @@ namespace PeerCastStation.FLV
       private const long ClusterSignedLimitMs   = 30000;
       private const long AudioClusterDurationMs = 1000;
 
-      private static readonly int[] SamplingFrequencies = {
-        96000, 88200, 64000, 48000, 44100, 32000,
-        24000, 22050, 16000, 12000, 11025, 8000, 7350,
-      };
-
       private readonly IMKVContentSink sink;
       private readonly Logger logger = new Logger(typeof(FLVToMKV));
 
@@ -323,7 +318,7 @@ namespace PeerCastStation.FLV
       public void OnAudio(RTMPMessage msg)
       {
         var info = FLVTagClassifier.Classify(msg);
-        if (info.Kind==FLVTagKind.AudioSequenceEnd) return;
+        if (info.Kind==FLVTagKind.AudioSequenceEnd || info.Kind==FLVTagKind.Control) return;
         if (info.FourCc!=FLVTagClassifier.FourCcAac) {
           WarnUnsupportedAudio(info.FourCc);
           return;
@@ -344,7 +339,7 @@ namespace PeerCastStation.FLV
       public void OnVideo(RTMPMessage msg)
       {
         var info = FLVTagClassifier.Classify(msg);
-        if (info.Kind==FLVTagKind.VideoSequenceEnd) return;
+        if (info.Kind==FLVTagKind.VideoSequenceEnd || info.Kind==FLVTagKind.Control) return;
         var codecId = MapVideoCodecId(info.FourCc);
         if (codecId==null) {
           WarnUnsupportedVideo(info.FourCc);
@@ -417,35 +412,21 @@ namespace PeerCastStation.FLV
         // FLVFileParser.Read の EndOfStreamException catch がタグ先頭まで巻き戻すため
         // (=「データ待ち」と誤認される)、毒タグがバッファ先頭に残って以後の全パースが
         // 再スローし続け、出力が恒久停止したうえで contentBuffer が無限に成長する。
-        if (!TryParseAudioSpecificConfig(config, out var sampleRate, out var channels)) {
+        if (!AudioSpecificConfig.TryParse(config, out var asc)) {
+          WarnBrokenAudioConfig();
+          return;
+        }
+        // 予約インデックス(13/14)や明示レート0はサンプリング周波数が確定しない。
+        // SamplingFrequency 要素を省略すると Matroska 既定の 8000Hz と誤宣言され
+        // 誤速度・誤ピッチで再生されるため、壊れた設定として破棄する。
+        if (asc.SampleRate<=0) {
           WarnBrokenAudioConfig();
           return;
         }
         audioConfig = config;
-        audioSampleRate = sampleRate;
-        audioChannels = channels;
+        audioSampleRate = asc.SampleRate;
+        audioChannels = asc.ChannelConfiguration;
         hasAudio = true;
-      }
-
-      /// <summary>
-      /// AudioSpecificConfig(ISO/IEC 14496-3)先頭の audioObjectType/samplingFrequency/
-      /// channelConfiguration を取り出す。ビットが不足する場合は false を返す(例外は投げない)。
-      /// </summary>
-      private static bool TryParseAudioSpecificConfig(byte[] config, out int sampleRate, out int channels)
-      {
-        sampleRate = 0;
-        channels   = 0;
-        var reader = new BitReader(config);
-        if (!reader.TryReadBits(5, out var type)) return false;
-        if (type==31 && !reader.TryReadBits(6, out _)) return false;
-        if (!reader.TryReadBits(4, out var freqIdx)) return false;
-        if (freqIdx==0x0F) {
-          if (!reader.TryReadBits(24, out sampleRate)) return false;
-        }
-        else {
-          sampleRate = freqIdx<SamplingFrequencies.Length ? SamplingFrequencies[freqIdx] : 0;
-        }
-        return reader.TryReadBits(4, out channels);
       }
 
       private void WarnBrokenAudioConfig()
@@ -558,9 +539,10 @@ namespace PeerCastStation.FLV
         EBMLWriter.WriteElement(e, EBMLWriter.CodecID,      EBMLWriter.EncodeString("A_AAC"));
         EBMLWriter.WriteElement(e, EBMLWriter.CodecPrivate, audioConfig!);
         var audio = new MemoryStream();
-        if (audioSampleRate>0) {
-          EBMLWriter.WriteElement(audio, EBMLWriter.SamplingFrequency, EBMLWriter.EncodeFloat(audioSampleRate));
-        }
+        // SamplingFrequency は必ず書く。省略すると Matroska の既定値 8000Hz と解釈され、
+        // 実レートと食い違った音声トラックになる。OnAudioHeader が sampleRate<=0 の設定を
+        // 弾いているので、ここに来た時点で audioSampleRate は必ず正。
+        EBMLWriter.WriteElement(audio, EBMLWriter.SamplingFrequency, EBMLWriter.EncodeFloat(audioSampleRate));
         EBMLWriter.WriteElement(audio, EBMLWriter.Channels, EBMLWriter.EncodeUInt((ulong)Math.Max(1, audioChannels)));
         EBMLWriter.WriteElement(e, EBMLWriter.Audio, audio.ToArray());
         return e.ToArray();

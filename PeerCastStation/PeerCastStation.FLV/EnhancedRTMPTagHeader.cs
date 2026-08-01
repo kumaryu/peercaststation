@@ -72,6 +72,37 @@ namespace PeerCastStation.FLV
       pos += 4;
       return s;
     }
+
+    /// <summary>
+    /// 符号付き24bit ビッグエンディアン値(compositionTimeOffset)を読む。
+    /// レガシータグ(FLVTagClassifier)と Ex タグで同じ符号拡張が要るのでここに置く。
+    /// 呼び出し側が pos+3&lt;=body.Length を保証すること。
+    /// </summary>
+    public static int ReadInt24Signed(byte[] body, int pos)
+    {
+      var value = (body[pos]<<16) | (body[pos+1]<<8) | body[pos+2];
+      return value>=0x800000 ? value-0x1000000 : value;
+    }
+
+    /// <summary>
+    /// Multitrack サブヘッダ(multitrackType/実packetType、ManyTracksManyCodecs 以外は
+    /// 共通 FourCC)を読む。形式は映像/音声で完全に同一なのでここに一本化する。
+    /// バイトが不足する場合は false を返す。
+    /// </summary>
+    public static bool TryReadMultitrack(byte[] body, ref int pos, out int packet_type, out string? fourcc)
+    {
+      packet_type = 0;
+      fourcc = null;
+      if (pos>=body.Length) return false;
+      var multitrack_type = (body[pos]>>4) & 0x0F;
+      packet_type = body[pos] & 0x0F;
+      pos++;
+      if (multitrack_type!=(int)AvMultitrackType.ManyTracksManyCodecs) {
+        fourcc = ReadFourCc(body, ref pos);
+        if (fourcc==null) return false;
+      }
+      return true;
+    }
   }
 
   /// <summary>
@@ -131,14 +162,7 @@ namespace PeerCastStation.FLV
       int composition_time = 0;
       if (packet_type==(int)VideoPacketType.Multitrack) {
         is_multitrack = true;
-        if (pos>=body.Length) return false;
-        var multitrack_type = (body[pos]>>4) & 0x0F;
-        packet_type = body[pos] & 0x0F;
-        pos++;
-        if (multitrack_type!=(int)AvMultitrackType.ManyTracksManyCodecs) {
-          fourcc = ExTagHeaderReader.ReadFourCc(body, ref pos);
-          if (fourcc==null) return false;
-        }
+        if (!ExTagHeaderReader.TryReadMultitrack(body, ref pos, out packet_type, out fourcc)) return false;
         // Multitrack の per-track フレーミングは未対応。payload_offset は無効(-1)のまま。
       }
       else {
@@ -154,8 +178,7 @@ namespace PeerCastStation.FLV
         if (packet_type==(int)VideoPacketType.CodedFrames &&
             (fourcc=="avc1" || fourcc=="hvc1" || fourcc=="hev1")) {
           if (pos+3>body.Length) return false;
-          composition_time = (body[pos]<<16) | (body[pos+1]<<8) | body[pos+2];
-          if (composition_time>=0x800000) composition_time -= 0x1000000;
+          composition_time = ExTagHeaderReader.ReadInt24Signed(body, pos);
           pos += 3;
         }
         payload_offset = pos;
@@ -214,14 +237,7 @@ namespace PeerCastStation.FLV
       int payload_offset = -1;
       if (packet_type==(int)AudioPacketType.Multitrack) {
         is_multitrack = true;
-        if (pos>=body.Length) return false;
-        var multitrack_type = (body[pos]>>4) & 0x0F;
-        packet_type = body[pos] & 0x0F;
-        pos++;
-        if (multitrack_type!=(int)AvMultitrackType.ManyTracksManyCodecs) {
-          fourcc = ExTagHeaderReader.ReadFourCc(body, ref pos);
-          if (fourcc==null) return false;
-        }
+        if (!ExTagHeaderReader.TryReadMultitrack(body, ref pos, out packet_type, out fourcc)) return false;
         // Multitrack の per-track フレーミングは未対応。payload_offset は無効(-1)のまま。
       }
       else {

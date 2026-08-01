@@ -178,38 +178,47 @@ namespace PeerCastStation.FLV
 
     /// <summary>
     /// 読み終えた1タグを sink へ配る。
-    /// タグ本体はストリームから完全に読み出せているため、ここで出る例外は
-    /// 「データ待ち」ではなくタグ内容の破損(切り詰められた AMF や AudioSpecificConfig 等)である。
+    ///
+    /// Script タグは DataAMF0Message(RTMPMessage) のコンストラクタで即座に AMF0 解析される。
+    /// タグ本体はストリームから完全に読み出せているため、ここで出る例外は「データ待ち」ではなく
+    /// タグ内容の破損(切り詰められた AMF、未知マーカー、不正な参照)である。
     /// 呼び出し元の catch(EndOfStreamException)/catch(BadDataException) に巻き込むと
     /// タグ先頭まで巻き戻してしまい、同じ毒タグを永久に再パースし続ける
     /// (=出力の恒久停止とバッファの無限成長)ため、ここで区別して握り、次のタグへ進む。
     ///
-    /// 握る例外は EndOfStreamException だけでは足りない。Script タグは
-    /// DataAMF0Message(RTMPMessage) のコンストラクタで即座に AMF0 解析されるが、
-    /// 未知マーカーや不正な参照は切り詰めではないため InvalidDataException になる。
-    /// これを取り逃がすと ProcessMessagesAsync の catch まで抜けて
-    /// OnStop(NotIdentifiedError) となり、1つの壊れたタグで配信全体が落ちる。
+    /// 握るのは AMF の復号だけで、sink の呼び出しは try の外に置く。
+    /// IsBrokenTagException は ArgumentException や IndexOutOfRangeException を含むため、
+    /// sink 呼び出しまで囲うと下流(FLVContentBuffer / FLVToMKV / FLVToMPEG2TS)の
+    /// 実装バグが「壊れた入力」として毎タグ握り潰され、出力が無音のまま止まっているのに
+    /// ログには入力のせいだと書かれる状態になる。下流側は各自 TryParse と範囲チェックで
+    /// 破損入力を弾く責任を持ち、それでも出る例外は本物のバグとして表に出す。
     /// </summary>
     private void DispatchTag(FLVTag tag, IRTMPContentSink sink)
     {
-      try {
-        switch (tag.Type) {
-        case TagType.Audio:
-          sink.OnAudio(tag.ToRTMPMessage());
-          break;
-        case TagType.Video:
-          sink.OnVideo(tag.ToRTMPMessage());
-          break;
-        case TagType.Script:
-          sink.OnData(new DataAMF0Message(tag.ToRTMPMessage()));
-          break;
+      switch (tag.Type) {
+      case TagType.Audio:
+        sink.OnAudio(tag.ToRTMPMessage());
+        break;
+      case TagType.Video:
+        sink.OnVideo(tag.ToRTMPMessage());
+        break;
+      case TagType.Script:
+        {
+          DataAMF0Message data;
+          try {
+            data = new DataAMF0Message(tag.ToRTMPMessage());
+          }
+          catch (EndOfStreamException) {
+            LogBrokenTag(tag, "タグ内容が途中で終わっています");
+            return;
+          }
+          catch (Exception e) when (IsBrokenTagException(e)) {
+            LogBrokenTag(tag, e.Message);
+            return;
+          }
+          sink.OnData(data);
         }
-      }
-      catch (EndOfStreamException) {
-        LogBrokenTag(tag, "タグ内容が途中で終わっています");
-      }
-      catch (Exception e) when (IsBrokenTagException(e)) {
-        LogBrokenTag(tag, e.Message);
+        break;
       }
     }
 
@@ -225,7 +234,8 @@ namespace PeerCastStation.FLV
           || e is ArgumentException         // Span.Slice 等の範囲外
           || e is IndexOutOfRangeException
           || e is OverflowException
-          || e is FormatException;
+          || e is FormatException
+          || e is InvalidCastException;     // AMFValue の数値キャスト演算子(非数値型のメタデータ値)
     }
 
     /// <summary>
@@ -249,6 +259,13 @@ namespace PeerCastStation.FLV
       while (!eos) {
         retry:
         var start_pos = stream.Position;
+        // データ不足で抜けるときは通常タグ先頭まで巻き戻し、次の Feed を待つ。
+        // ただし再同期スキャンがタグ候補バイトを1つも見つけないまま末尾へ達した場合、
+        // 走査済みの範囲にタグ先頭はあり得ないので巻き戻してはならない。
+        // 巻き戻すと FLVParseBuffer.Trim が consumed==0 と判断して何も捨てられず、
+        // 次の Feed が同じゴミを先頭から再走査するため、0xFF 埋めのような壊れた入力で
+        // バッファが無制限に伸び、走査量がバイト数の二乗で増える。
+        var resume_pos = start_pos;
         try {
           switch (state) {
           case ReaderState.Header:
@@ -297,6 +314,8 @@ namespace PeerCastStation.FLV
                 var b = stream.ReadByte();
                 while (true) {
                   if (b<0) {
+                    // 走査した範囲にタグ候補は存在しないので、丸ごと消費済みとして捨てさせる。
+                    resume_pos = stream.Position;
                     eos = true;
                     goto error;
                   }
@@ -322,8 +341,7 @@ namespace PeerCastStation.FLV
         }
       error:
         if (eos) {
-          stream.Position = start_pos;
-          eos = true;
+          stream.Position = resume_pos;
         }
       }
       return processed;

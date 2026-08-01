@@ -30,8 +30,39 @@ namespace PeerCastStation.FLV
       this.ContentSink   = new BufferedContentSink(content_sink);
     }
 
+    /// <summary>
+    /// AMF の数値フィールドを例外を投げずに読む。
+    /// AMFValue の double キャスト演算子は非数値型で InvalidCastException を、
+    /// 数値化できない文字列で FormatException を投げる。onMetaData の中身は
+    /// 配信者側のエンコーダが自由に詰めるため、"2500k" のような文字列や独自型が実際に届く
+    /// (すぐ上の maxBitrate が文字列前提の処理になっているのがその証拠)。
+    /// これをそのまま投げると、FLVFileParser を経由しない RTMP 受信経路
+    /// (RTMPSourceConnection.OnData → FLVContentBuffer.OnData)では接続ごと落ち、
+    /// 同じ onMetaData を送り直す配信者と3秒間隔の再接続を繰り返すことになる。
+    /// ビットレート表示のためだけの値なので、読めないフィールドは黙って無視する。
+    /// </summary>
+    private static bool TryGetNumber(AMF.AMFValue value, out double result)
+    {
+      switch (value.Type) {
+      case AMF.AMFValueType.Double:
+      case AMF.AMFValueType.Integer:
+      case AMF.AMFValueType.Boolean:
+        result = (double)value;
+        return true;
+      case AMF.AMFValueType.String:
+        return double.TryParse((string?)value ?? "", out result);
+      default:
+        result = 0;
+        return false;
+      }
+    }
+
+    // 引数の個数は配信者側のメッセージ次第で、規定数に満たないものが実際に届く。
+    // FLVFileParser は AMF の復号だけを保護して sink 内の例外は通すので、
+    // ここで足りない引数を弾かないと壊れたメッセージ1つで配信が落ちる。
     private void SetDataFrame(DataMessage msg)
     {
+      if (msg.Arguments.Count<2) return;
       var name = (string?)msg.Arguments[0] ?? "";
       var data_msg = new DataAMF0Message(msg.Timestamp, 0, name, new AMF.AMFValue[] { msg.Arguments[1] });
       OnData(data_msg);
@@ -39,6 +70,7 @@ namespace PeerCastStation.FLV
 
     private void ClearDataFrame(DataMessage msg)
     {
+      if (msg.Arguments.Count<1) return;
       var name = (string?)msg.Arguments[0];
       switch (name) {
       case "onMetaData":
@@ -54,7 +86,8 @@ namespace PeerCastStation.FLV
       info.SetChanInfoType("FLV");
       info.SetChanInfoStreamType("video/x-flv");
       info.SetChanInfoStreamExt(".flv");
-      if (metadata.Arguments[0].Type==AMF.AMFValueType.ECMAArray || metadata.Arguments[0].Type==AMF.AMFValueType.Object){
+      if (metadata.Arguments.Count>0 &&
+          (metadata.Arguments[0].Type==AMF.AMFValueType.ECMAArray || metadata.Arguments[0].Type==AMF.AMFValueType.Object)) {
         var bitrate = 0.0;
         var val = metadata.Arguments[0]["maxBitrate"];
         if (!AMF.AMFValue.IsNull(val)) {
@@ -65,10 +98,14 @@ namespace PeerCastStation.FLV
           }
         }
         else if (!AMF.AMFValue.IsNull(val = metadata.Arguments[0]["videodatarate"])) {
-          bitrate += (double)val;
+          if (TryGetNumber(val, out var videodatarate)) {
+            bitrate += videodatarate;
+          }
         }
         if (!AMF.AMFValue.IsNull(val = metadata.Arguments[0]["audiodatarate"])) {
-          bitrate += (double)val;
+          if (TryGetNumber(val, out var audiodatarate)) {
+            bitrate += audiodatarate;
+          }
         }
         info.SetChanInfoBitrate((int)bitrate);
       }
