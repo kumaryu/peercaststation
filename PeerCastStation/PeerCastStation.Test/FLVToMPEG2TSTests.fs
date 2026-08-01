@@ -191,6 +191,20 @@ let ``NALユニット長が不正な映像フレームを捨てて TS 出力を�
     Assert.Equal(baselineContentLength(), capture.Content.Length)
 
 [<Fact>]
+let ``NALユニット長が末尾で切れても読めた範囲を出力する`` () =
+    // 先頭の NAL は長さが整合しており単体で復号できる。末尾が切れているというだけで
+    // アクセスユニットごと捨てるとフレームが1枚丸ごと欠け、キーフレームなら
+    // SPS/PPS ごと落ちて次のGOPまで映像が出ない。
+    let truncated =
+        [| 0x00uy;0x00uy;0x00uy;0x02uy;0x65uy;0x88uy   // 長さの整合した NAL
+           0x00uy;0x00uy;0x00uy;0x10uy;0x41uy |]       // 残バイトを超える長さ
+    let capture =
+        run (makeTag 9 0 (exVideoSeq "avc1" avcC))
+            (makeTag 9 0 (exVideoCodedFrames "avc1" 1 0 truncated))
+    assertValidTS capture.Content
+    Assert.NotEmpty(capture.Content)
+
+[<Fact>]
 let ``壊れた Script タグを挟んでも TS 出力を継続する`` () =
     // Script タグは DispatchTag 内の DataAMF0Message コンストラクタで即座に AMF0 解析される。
     // 未知マーカー(0xFF)は切り詰めではないので InvalidDataException になり、
@@ -300,15 +314,24 @@ let ``表引きできない明示レートの設定は破棄する`` () =
 
 [<Fact>]
 let ``ADTSで表現できないchannelConfigurationの設定を破棄する`` () =
-    // channel_configuration は3bit。0 はレイアウトを PCE で運ぶ指定だが裸の ADTS には
-    // PCE を載せないため受信側が構成を determine できず、多くのデコーダが音声ESごと捨てる。
     // 予約値(8-15)は3bitに収まらず、以前は BitWriter が黙って下位3bitへ丸めていた
-    // (8→0、9→1 と別のレイアウトに化ける)。どちらも設定として不正なので破棄する。
-    for ch in [ 0; 8; 15 ] do
+    // (8→0、9→1 と別のレイアウトに化ける)。設定として不正なので破棄する。
+    for ch in [ 8; 15 ] do
         let capture =
             run (makeTag 8 0 (legacyAacSeqWith (audioSpecificConfig 2 4 ch)))
                 (makeTag 8 20 (legacyAacFrame (Array.create 32 0x55uy)))
         Assert.Empty(capture.Content)
+
+[<Fact>]
+let ``channelConfiguration0のAACをそのまま出力する`` () =
+    // 0 はチャンネルレイアウトを PCE で運ぶという指定で、その PCE は raw_data_block の
+    // 先頭に入っている。ADTS はそこを素通しするので 0 のまま宣言してよい。
+    // ここで破棄すると PCE でレイアウトを送る配信の音声が丸ごと出なくなる。
+    let capture =
+        run (makeTag 8 0 (legacyAacSeqWith (audioSpecificConfig 2 4 0)))
+            (makeTag 8 20 (legacyAacFrame (Array.create 32 0x55uy)))
+    assertValidTS capture.Content
+    Assert.Equal<(int*int*int) list>([ (1, 4, 0) ], adtsHeaders capture.Content)
 
 [<Fact>]
 let ``7_1chのAACをchannelConfigurationそのままで出力する`` () =

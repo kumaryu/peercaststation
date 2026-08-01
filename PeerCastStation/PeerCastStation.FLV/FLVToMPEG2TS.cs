@@ -765,12 +765,14 @@ namespace PeerCastStation.FLV
           WarnBrokenAudioConfig($"ADTSで表現できないaudioObjectTypeです (type={asc.AudioObjectType}, core={asc.CoreAudioObjectType})");
           return;
         }
-        // channel_configuration は3bit。0 はレイアウトを PCE で運ぶ指定だが、裸の ADTS には
-        // PCE を載せないため受信側がチャンネル構成を determine できない。予約値(8-15)は
-        // 3bit に収まらず、BitWriter の範囲検査で例外になる。どちらもフレーム単位ではなく
-        // 設定として不正なので、ここで破棄して以後のフレームを捨てる。
+        // channel_configuration は3bit。0 はチャンネルレイアウトを PCE で運ぶという指定で、
+        // その PCE は raw_data_block の先頭に入っている。ADTS はここを素通しするので
+        // 0 のまま宣言してよく、デコーダは raw_data_block の PCE でレイアウトを知る。
+        // 逆にここで破棄すると、PCE でレイアウトを送る配信(5.1ch 超やカスタム配置)の
+        // 音声が hasAudio ごと落ちて、PMT も音声ES抜きで確定してしまう。
+        // 予約値(8-15)だけは3bitに収まらず BitWriter の範囲検査で例外になるので破棄する。
         var channel_configuration = asc.ChannelConfiguration;
-        if (channel_configuration<1 || channel_configuration>7) {
+        if (channel_configuration<0 || channel_configuration>7) {
           WarnBrokenAudioConfig($"ADTSで表現できないchannelConfigurationです ({channel_configuration})");
           return;
         }
@@ -956,9 +958,14 @@ namespace PeerCastStation.FLV
         WarnOnce("missingVideoConfig", "映像シーケンスヘッダ(avcC)より前のフレームを破棄します");
       }
 
-      private void WarnBrokenVideoFrame()
+      private void WarnBrokenVideoFrame(int units)
       {
-        WarnOnce("brokenVideoFrame", "NALユニット長が不正なため映像フレームを破棄します");
+        if (units<1) {
+          WarnOnce("brokenVideoFrame", "NALユニット長が不正なため映像フレームを破棄します");
+        }
+        else {
+          WarnOnce("truncatedVideoFrame", "NALユニット長が不正なため映像フレームの末尾を切り捨てます");
+        }
       }
 
       private void OnAVCBody(RTMPMessage msg, int offset, int cts, bool keyframe)
@@ -1022,11 +1029,14 @@ namespace PeerCastStation.FLV
             units += 1;
           }
         }
-        // 途中で壊れたフレームは部分出力せず丸ごと捨てる。
-        // 中途半端な NAL 列を流すと下流のデコーダを壊すだけで得がない。
+        // 末尾の NAL 長が残りバイト数と合わない場合でも、そこまでに読み切れた NAL は
+        // 長さが整合しており単体で復号できるので出力し、切れた末尾だけを捨てる。
+        // アクセスユニットごと捨てるとフレームが1枚丸ごと欠け、キーフレームなら
+        // SPS/PPS ごと落ちて次のGOPまで映像が出ない。
+        // 読めた NAL が1つも無いときだけ、出せるものが無いのでフレームごと捨てる。
         if (broken) {
-          WarnBrokenVideoFrame();
-          return;
+          WarnBrokenVideoFrame(units);
+          if (units<1) return;
         }
         // 時刻原点の取り方と負値のクランプは基底の共通規則。
         var dts = NormalizeTimestamp(msg.Timestamp);
