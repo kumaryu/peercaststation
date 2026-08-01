@@ -23,8 +23,9 @@ namespace PeerCastStation.FLV
     /// <summary>一度だけ出す警告の識別子。壊れた入力では毎タグ発生しうるため回数を絞る。</summary>
     private const string WarnKeyUnsupportedAudio = "unsupportedAudio";
     private const string WarnKeyUnsupportedVideo = "unsupportedVideo";
-    private const string WarnKeyBrokenAudioTag   = "brokenAudioTag";
-    private const string WarnKeyBrokenVideoTag   = "brokenVideoTag";
+    private const string WarnKeyBrokenAudioTag    = "brokenAudioTag";
+    private const string WarnKeyBrokenVideoTag    = "brokenVideoTag";
+    private const string WarnKeyBrokenAudioConfig = "brokenAudioConfig";
 
     private readonly HashSet<string> warned = new HashSet<string>();
 
@@ -76,6 +77,16 @@ namespace PeerCastStation.FLV
     protected void ResetTimestampBase()
     {
       ptsBase = -1;
+    }
+
+    /// <summary>
+    /// 音声のコーデック設定を破棄したことを1回だけ報告する。破棄の条件はコンテナごとに
+    /// 違う(ADTS で表現できるか、Matroska の Audio 要素を埋められるか)が、
+    /// 「設定を捨てたので以後の音声が出ない」という報告内容は共通なのでここに置く。
+    /// </summary>
+    protected void WarnBrokenAudioConfig(string reason)
+    {
+      WarnOnce(WarnKeyBrokenAudioConfig, "音声シーケンスヘッダを破棄します ({0})", reason);
     }
 
     /// <summary>この変換器が扱える音声コーデックか。</summary>

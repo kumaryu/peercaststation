@@ -797,11 +797,6 @@ namespace PeerCastStation.FLV
         hasAudio = true;
       }
 
-      private void WarnBrokenAudioConfig(string reason)
-      {
-        WarnOnce("brokenAudioConfig", "音声シーケンスヘッダを破棄します ({0})", reason);
-      }
-
       private void OnAACBody(RTMPMessage msg, int offset)
       {
         if (offset<0 || msg.Body.Length<=offset) return;

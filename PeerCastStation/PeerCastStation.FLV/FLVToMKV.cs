@@ -154,10 +154,11 @@ namespace PeerCastStation.FLV
   }
 
   /// <summary>
-  /// FLV(H.264/AAC) を Matroska(MKV) にリマックスするマルチプレクサ。
+  /// FLV/E-RTMP を Matroska(MKV) にリマックスするマルチプレクサ。
   /// FLVToMPEG2TS の構造に倣い、TS固有部を EBML 出力に置き換えたもの。
-  /// 映像コーデック固有処理は <see cref="IVideoCodecHandler"/> に分離し、現状 H.264 のみ実装する
-  /// (将来 AV1/HEVC を handler 追加で対応可能にするためのシーム)。
+  /// 対応コーデック(H.264/HEVC/AV1 と AAC)はいずれも CodecPrivate もフレームデータも
+  /// 無加工で流用できるため、コーデック固有の処理は持たず
+  /// <see cref="Context.MapVideoCodecId"/> の対応表だけで振り分ける。
   /// </summary>
   public class FLVToMKV
   {
@@ -376,11 +377,6 @@ namespace PeerCastStation.FLV
         audioOutputSampleRate = asc.OutputSampleRate;
         audioChannels = asc.ChannelCount;
         RestartSegmentIfTrackAvailable();
-      }
-
-      private void WarnBrokenAudioConfig(string reason)
-      {
-        WarnOnce("brokenAudioConfig", "音声シーケンスヘッダを破棄します ({0})", reason);
       }
 
       private void OnAudioBody(RTMPMessage msg, int offset)
