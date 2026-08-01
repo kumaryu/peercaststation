@@ -736,12 +736,11 @@ namespace PeerCastStation.FLV
         // FLVFileParser.Read の EndOfStreamException catch がタグ先頭まで巻き戻すため
         // (=「データ待ち」と誤認される)、毒タグがバッファ先頭に残って以後の全パースが
         // 再スローし続け、出力が恒久停止したうえで contentBuffer が無限に成長する。
-        if (offset<0 || body.Length<=offset) {
+        var config = FLVTagInfo.SlicePayload(body, offset);
+        if (config.Length==0) {
           WarnBrokenAudioConfig("ペイロードがありません");
           return;
         }
-        var config = new byte[body.Length-offset];
-        Array.Copy(body, offset, config, 0, config.Length);
         if (!AudioSpecificConfig.TryParse(config, out var asc)) {
           WarnBrokenAudioConfig("AudioSpecificConfigが不完全です");
           return;
@@ -1184,34 +1183,21 @@ namespace PeerCastStation.FLV
         }
       }
 
-      protected override async Task ProcessMessagesLoopAsync(IContentSink targetSink, CancellationToken cancellationToken)
+      protected override ContentProcessor CreateProcessor(IContentSink targetSink)
       {
         var tsSink = new MPEG2TSSink(targetSink);
-        var context = new FLVToMPEG2TS.Context(tsSink);
-        var parseBuffer = new FLVParseBuffer();
-        var msg = await MessageQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
-        while (msg.Type!=ContentMessage.MessageType.Stop) {
-          switch (msg.Type) {
-          case ContentMessage.MessageType.ChannelInfo:
-            targetSink.OnChannelInfo(msg.ChannelInfo);
-            break;
-          case ContentMessage.MessageType.ChannelTrack:
-            targetSink.OnChannelTrack(msg.ChannelTrack);
-            break;
-          // MPEG2TSSink は出力Contentの位置採番に上流Contentを流用するため、
-          // どちらを受けたかを覚えてからバッファへ流す。
-          case ContentMessage.MessageType.ContentHeader:
-            tsSink.HeaderContent = msg.Content;
-            parseBuffer.Feed(msg.Content.Data.Span, context);
-            break;
-          case ContentMessage.MessageType.ContentBody:
-            tsSink.RecentContent = msg.Content;
-            parseBuffer.Feed(msg.Content.Data.Span, context);
-            break;
-          }
-          msg = await MessageQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
-        }
-        targetSink.OnStop(msg.StopReason);
+        // MPEG2TSSink は出力Contentの位置採番に上流Contentを流用するため、
+        // どちらを受けたかを覚えてからバッファへ流す。
+        return new ContentProcessor(
+          new FLVToMPEG2TS.Context(tsSink),
+          (content, is_header) => {
+            if (is_header) {
+              tsSink.HeaderContent = content;
+            }
+            else {
+              tsSink.RecentContent = content;
+            }
+          });
       }
     }
 

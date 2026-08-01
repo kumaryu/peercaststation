@@ -154,62 +154,6 @@ namespace PeerCastStation.FLV
       void OnBlock(ReadOnlyMemory<byte> bytes);
     }
 
-    /// <summary>
-    /// 映像コーデック固有処理のシーム。ペイロード切り出し(オフセット適用)は呼び出し側が行い、
-    /// ハンドラは CodecID・CodecPrivate と SimpleBlock ペイロードの組み立てのみを担当する。
-    /// avc1/hvc1/av01 はいずれも CodecPrivate・Block ともコンテナ無加工で流用できる。
-    /// </summary>
-    public interface IVideoCodecHandler
-    {
-      /// <summary>Matroska の CodecID。</summary>
-      string CodecId { get; }
-      /// <summary>Matroska の CodecPrivate(取り込んだシーケンスヘッダ)。</summary>
-      byte[] CodecPrivate { get; }
-      /// <summary>シーケンスヘッダ(コンテナ無加工のコーデック設定)を取り込む。</summary>
-      void SetSequenceHeader(byte[] payload);
-      /// <summary>組み立て後の SimpleBlock ペイロードのバイト数。</summary>
-      int GetBlockPayloadLength(ReadOnlySpan<byte> payload);
-      /// <summary>
-      /// SimpleBlock ペイロードを dest へ直接書き出す。
-      /// 呼び出し側が確保済みの出力配列に書かせることで、フレームごとの中間配列を作らない。
-      /// dest の長さは <see cref="GetBlockPayloadLength"/> と一致する。
-      /// </summary>
-      void WriteBlockPayload(ReadOnlySpan<byte> payload, Span<byte> dest);
-    }
-
-    /// <summary>
-    /// CodecPrivate もフレームデータも無加工で流用できるコーデック(avc1/hvc1/av01)用の共通ハンドラ。
-    /// CodecID 文字列だけが異なる。
-    /// </summary>
-    public class PassthroughVideoCodecHandler
-      : IVideoCodecHandler
-    {
-      private byte[] codecPrivate = Array.Empty<byte>();
-
-      public string CodecId { get; }
-      public byte[] CodecPrivate { get { return codecPrivate; } }
-
-      public PassthroughVideoCodecHandler(string codecId)
-      {
-        CodecId = codecId;
-      }
-
-      public void SetSequenceHeader(byte[] payload)
-      {
-        codecPrivate = payload;
-      }
-
-      public int GetBlockPayloadLength(ReadOnlySpan<byte> payload)
-      {
-        return payload.Length;
-      }
-
-      public void WriteBlockPayload(ReadOnlySpan<byte> payload, Span<byte> dest)
-      {
-        payload.CopyTo(dest);
-      }
-    }
-
     public class Context
       : FLVRemuxContextBase
     {
@@ -228,7 +172,10 @@ namespace PeerCastStation.FLV
 
       // 「設定を受け取ったか」は設定そのものの有無で判る。真偽値を別に持つと
       // 片方だけ更新する経路が生まれ、トラックが黙って落ちるか null 参照になる。
-      private IVideoCodecHandler? videoHandler = null;
+      // 対応コーデック(avc1/hvc1/av01)はいずれも CodecPrivate もフレームデータも
+      // コンテナ無加工で流用できるので、コーデック固有の処理は持たない。
+      private string? videoCodecId = null;
+      private byte[]? videoCodecPrivate = null;
       private byte[]? audioConfig = null; // AudioSpecificConfig
       private int audioChannels = 0;
       private int audioSampleRate = 0;
@@ -249,7 +196,8 @@ namespace PeerCastStation.FLV
 
       private void Clear()
       {
-        videoHandler = null;
+        videoCodecId = null;
+        videoCodecPrivate = null;
         audioConfig = null;
         audioChannels = 0;
         audioSampleRate = 0;
@@ -341,8 +289,8 @@ namespace PeerCastStation.FLV
       {
         // IsSupportedVideoCodec を通っているので、この FourCC には必ず CodecID が対応する。
         var codecId = MapVideoCodecId(fourcc)!;
-        var cp = SliceFrom(msg.Body, offset);
-        if (cp.Length>0) SetVideoHandler(codecId, cp);
+        var cp = FLVTagInfo.SlicePayload(msg.Body, offset);
+        if (cp.Length>0) SetVideoCodec(codecId, cp);
       }
 
       protected override void OnVideoFrame(RTMPMessage msg, int offset, int compositionTime, bool keyframe)
@@ -363,19 +311,10 @@ namespace PeerCastStation.FLV
         }
       }
 
-      private static byte[] SliceFrom(byte[] body, int offset)
+      private void SetVideoCodec(string codecId, byte[] codecPrivate)
       {
-        if (offset<0 || body.Length<=offset) return Array.Empty<byte>();
-        var r = new byte[body.Length-offset];
-        Array.Copy(body, offset, r, 0, r.Length);
-        return r;
-      }
-
-      private void SetVideoHandler(string codecId, byte[] codecPrivate)
-      {
-        var handler = new PassthroughVideoCodecHandler(codecId);
-        handler.SetSequenceHeader(codecPrivate);
-        videoHandler = handler;
+        videoCodecId      = codecId;
+        videoCodecPrivate = codecPrivate;
         // Matroska は Video 要素に PixelWidth/PixelHeight を要求するので、解像度が判らないと
         // 映像トラックを作れない。本来は onMetaData が運ぶが、これを送らない(あるいは
         // width/height を欠く)配信は実在し、その場合 avcC を受け取っていても
@@ -391,9 +330,8 @@ namespace PeerCastStation.FLV
 
       private void OnAudioHeader(byte[] body, int offset)
       {
-        if (offset<0 || body.Length<=offset) return;
-        var config = new byte[body.Length-offset];
-        Array.Copy(body, offset, config, 0, config.Length);
+        var config = FLVTagInfo.SlicePayload(body, offset);
+        if (config.Length==0) return;
         // 切り詰められた AudioSpecificConfig はここで捨てる。ビット読み出しで例外を投げると
         // FLVFileParser.Read の EndOfStreamException catch がタグ先頭まで巻き戻すため
         // (=「データ待ち」と誤認される)、毒タグがバッファ先頭に残って以後の全パースが
@@ -448,26 +386,26 @@ namespace PeerCastStation.FLV
       private void OnVideoBody(RTMPMessage msg, int offset, int cts, bool keyframe)
       {
         WriteHeaderIfNeeded();
-        if (!videoEnabled || videoHandler==null) return;
+        if (!videoEnabled) return;
         if (offset<0 || msg.Body.Length<=offset) return;
         // OnAudioBody と同様、最初のメディアフレームを基準に正規化する。
         if (ptsBase<0) ptsBase = msg.Timestamp;
         var dts = msg.Timestamp - ptsBase;
         var pts = dts + cts;
         EnsureCluster(pts, keyframe);
-        var slice = new ReadOnlySpan<byte>(msg.Body, offset, msg.Body.Length-offset);
-        var block = AllocateSimpleBlock(
-          VideoTrackNumber, pts, keyframe, videoHandler.GetBlockPayloadLength(slice), out var dest);
-        videoHandler.WriteBlockPayload(slice, dest);
+        // 対応コーデックはいずれもフレームデータを無加工で SimpleBlock に載せられる。
+        var length = msg.Body.Length-offset;
+        var block = AllocateSimpleBlock(VideoTrackNumber, pts, keyframe, length, out var dest);
+        new ReadOnlySpan<byte>(msg.Body, offset, length).CopyTo(dest);
         sink.OnBlock(block);
       }
 
       private void WriteHeaderIfNeeded()
       {
         if (headerSent) return;
-        videoEnabled = videoHandler!=null && videoWidth>0 && videoHeight>0;
+        videoEnabled = videoCodecPrivate!=null && videoWidth>0 && videoHeight>0;
         audioEnabled = audioConfig!=null;
-        if (videoHandler!=null && !videoEnabled) {
+        if (videoCodecPrivate!=null && !videoEnabled) {
           WarnOnce("noResolution", "解像度が取得できないため映像トラックを除外します");
         }
         if (!videoEnabled && !audioEnabled) return;
@@ -511,8 +449,8 @@ namespace PeerCastStation.FLV
         EBMLWriter.WriteElement(e, EBMLWriter.TrackUID,     EBMLWriter.EncodeUInt((ulong)VideoTrackNumber));
         EBMLWriter.WriteElement(e, EBMLWriter.TrackType,    EBMLWriter.EncodeUInt(1)); // video
         EBMLWriter.WriteElement(e, EBMLWriter.FlagLacing,   EBMLWriter.EncodeUInt(0));
-        EBMLWriter.WriteElement(e, EBMLWriter.CodecID,      EBMLWriter.EncodeString(videoHandler!.CodecId));
-        EBMLWriter.WriteElement(e, EBMLWriter.CodecPrivate, videoHandler!.CodecPrivate);
+        EBMLWriter.WriteElement(e, EBMLWriter.CodecID,      EBMLWriter.EncodeString(videoCodecId!));
+        EBMLWriter.WriteElement(e, EBMLWriter.CodecPrivate, videoCodecPrivate!);
         var video = new MemoryStream();
         EBMLWriter.WriteElement(video, EBMLWriter.PixelWidth,  EBMLWriter.EncodeUInt((ulong)videoWidth));
         EBMLWriter.WriteElement(video, EBMLWriter.PixelHeight, EBMLWriter.EncodeUInt((ulong)videoHeight));
@@ -691,29 +629,10 @@ namespace PeerCastStation.FLV
         }
       }
 
-      protected override async Task ProcessMessagesLoopAsync(IContentSink targetSink, CancellationToken cancellationToken)
+      // MKVSink は上流Contentを参照しないため、ヘッダも本体も同じくバッファへ流すだけでよい。
+      protected override ContentProcessor CreateProcessor(IContentSink targetSink)
       {
-        var mkvSink = new MKVSink(targetSink);
-        var context = new FLVToMKV.Context(mkvSink);
-        var parseBuffer = new FLVParseBuffer();
-        var msg = await MessageQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
-        while (msg.Type!=ContentMessage.MessageType.Stop) {
-          switch (msg.Type) {
-          case ContentMessage.MessageType.ChannelInfo:
-            targetSink.OnChannelInfo(msg.ChannelInfo);
-            break;
-          case ContentMessage.MessageType.ChannelTrack:
-            targetSink.OnChannelTrack(msg.ChannelTrack);
-            break;
-          // MKVSink は上流Contentを参照しないため、ヘッダも本体も同じくバッファへ流すだけでよい。
-          case ContentMessage.MessageType.ContentHeader:
-          case ContentMessage.MessageType.ContentBody:
-            parseBuffer.Feed(msg.Content.Data.Span, context);
-            break;
-          }
-          msg = await MessageQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
-        }
-        targetSink.OnStop(msg.StopReason);
+        return new ContentProcessor(new FLVToMKV.Context(new MKVSink(targetSink)));
       }
     }
   }

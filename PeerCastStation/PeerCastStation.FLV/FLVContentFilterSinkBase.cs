@@ -4,6 +4,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using PeerCastStation.Core;
+using PeerCastStation.FLV.RTMP;
 
 namespace PeerCastStation.FLV
 {
@@ -54,10 +55,65 @@ namespace PeerCastStation.FLV
     protected abstract string ContentExtension { get; }
 
     /// <summary>
-    /// 変換ループ本体。<see cref="MessageQueue"/> から Stop が出るまで取り出し続け、
-    /// 最後に targetSink.OnStop を呼ぶところまでが責務。
+    /// 上流 Content をタグへ解くための変換器と解析バッファの組。
+    /// 派生ごとに作り方が違うだけで、ループでの扱いは同じ。
     /// </summary>
-    protected abstract Task ProcessMessagesLoopAsync(IContentSink targetSink, CancellationToken cancellationToken);
+    protected sealed class ContentProcessor
+    {
+      public IRTMPContentSink Context { get; }
+      private readonly FLVParseBuffer parseBuffer = new FLVParseBuffer();
+      private readonly Action<Content, bool>? beforeFeed;
+
+      /// <param name="before_feed">
+      /// 解析へ渡す前に上流 Content を覚えておきたい場合の処理。第2引数はヘッダかどうか。
+      /// MPEG2TS 側は出力 Content の位置採番に上流 Content を流用するため必要になる。
+      /// </param>
+      public ContentProcessor(IRTMPContentSink context, Action<Content, bool>? before_feed = null)
+      {
+        Context    = context;
+        beforeFeed = before_feed;
+      }
+
+      public void Feed(Content content, bool is_header)
+      {
+        beforeFeed?.Invoke(content, is_header);
+        parseBuffer.Feed(content.Data.Span, Context);
+      }
+    }
+
+    /// <summary>
+    /// 変換器を作る。ループの構造(キューの取り出し、停止条件、OnStop の呼び出し)は
+    /// 基底が持つので、派生は出力先 sink と変換器の組み立てだけを担当する。
+    /// </summary>
+    protected abstract ContentProcessor CreateProcessor(IContentSink targetSink);
+
+    /// <summary>
+    /// 変換ループ本体。Stop が出るまでキューから取り出し続け、最後に targetSink.OnStop を呼ぶ。
+    /// 停止条件と OnStop の呼び忘れは下流を止められなくなる間違いなので、ここに一本化する。
+    /// </summary>
+    private async Task ProcessMessagesLoopAsync(IContentSink targetSink, CancellationToken cancellationToken)
+    {
+      var processor = CreateProcessor(targetSink);
+      var msg = await MessageQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
+      while (msg.Type!=ContentMessage.MessageType.Stop) {
+        switch (msg.Type) {
+        case ContentMessage.MessageType.ChannelInfo:
+          targetSink.OnChannelInfo(msg.ChannelInfo);
+          break;
+        case ContentMessage.MessageType.ChannelTrack:
+          targetSink.OnChannelTrack(msg.ChannelTrack);
+          break;
+        case ContentMessage.MessageType.ContentHeader:
+          processor.Feed(msg.Content, true);
+          break;
+        case ContentMessage.MessageType.ContentBody:
+          processor.Feed(msg.Content, false);
+          break;
+        }
+        msg = await MessageQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
+      }
+      targetSink.OnStop(msg.StopReason);
+    }
 
     protected FLVContentFilterSinkBase(IContentSink sink, Logger logger)
     {

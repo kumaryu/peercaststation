@@ -84,6 +84,26 @@ namespace PeerCastStation.FLV
     {
       return PayloadOffset>=0 && PayloadOffset<body.Length;
     }
+
+    /// <summary>コーデック設定/フレームの実体を切り出す。実体が無い場合は空配列。</summary>
+    public byte[] GetPayload(byte[] body)
+    {
+      return SlicePayload(body, PayloadOffset);
+    }
+
+    /// <summary>
+    /// タグ本体からコーデックデータ部を切り出す。オフセットが無効(Multitrack の -1 など)か
+    /// 本体が尽きている場合は空配列を返す。
+    /// 同じ境界判定を利用側ごとに書くと、オフセットの取り決めを変えたときに
+    /// 追従漏れが出るのでここへ集約する。
+    /// </summary>
+    public static byte[] SlicePayload(byte[] body, int offset)
+    {
+      if (offset<0 || body.Length<=offset) return System.Array.Empty<byte>();
+      var result = new byte[body.Length-offset];
+      System.Array.Copy(body, offset, result, 0, result.Length);
+      return result;
+    }
   }
 
   /// <summary>
