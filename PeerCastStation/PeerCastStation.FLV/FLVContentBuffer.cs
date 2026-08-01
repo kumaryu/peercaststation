@@ -88,12 +88,18 @@ namespace PeerCastStation.FLV
     /// <summary>
     /// onMetaData の maxBitrate を数値として読む。"2500k" のような単位付きの文字列で
     /// 来る前提の項目だが、型も書式も配信者のエンコーダ次第なので読めないことがある。
+    /// 文字列以外の型は TryGetDouble に委ねる。string キャスト経由で文字列化すると
+    /// 現在カルチャの ToString と InvariantCulture の解析が食い違い、小数点がカンマの
+    /// 環境で数値型の maxBitrate が読めなくなる。
     /// </summary>
     private static bool TryGetMaxBitrate(AMF.AMFValue value, out double result)
     {
       result = 0.0;
       if (AMF.AMFValue.IsNull(value)) return false;
-      var text = System.Text.RegularExpressions.Regex.Replace((string?)value ?? "", @"([\d]+)k", "$1");
+      if (value.Type!=AMF.AMFValueType.String) {
+        return AMF.AMFValue.TryGetDouble(value, out result);
+      }
+      var text = System.Text.RegularExpressions.Regex.Replace((string)value.Value, @"([\d]+)k", "$1");
       return Double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
     }
 

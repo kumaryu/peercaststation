@@ -292,8 +292,8 @@ namespace PeerCastStation.FLV
       protected override void OnVideoConfig(RTMPMessage msg, int offset, string? fourcc)
       {
         // IsSupportedVideoCodec を通っているので、この FourCC には必ず CodecID が対応する。
+        // ペイロードの実体は FLVRemuxContextBase が保証している。
         var codecId = MapVideoCodecId(fourcc)!;
-        if (offset<0 || msg.Body.Length<=offset) return;
         var payload = new ReadOnlySpan<byte>(msg.Body, offset, msg.Body.Length-offset);
         // 多くのエンコーダは GOP ごとにシーケンスヘッダを送り直す。同じ内容なら取り込み直す
         // 意味はなく(ヘッダ送信後は CodecPrivate を差し替えても出力に反映されない)、
@@ -324,6 +324,11 @@ namespace PeerCastStation.FLV
 
       private void SetVideoCodec(string codecId, byte[] codecPrivate)
       {
+        // OnVideoConfig が同一内容の送り直しを弾いているので、設定済みでここへ来たら
+        // 実体の変わった再設定。送出済み Tracks の CodecPrivate は後から差し替えられない
+        // ため、Segment を作り直して新しい設定で宣言し直す。放置すると新しい SPS/PPS を
+        // 参照するフレームが古い CodecPrivate の下で多重化され、映像が乱れる。
+        var replaced = videoCodecPrivate!=null;
         videoCodecId      = codecId;
         videoCodecPrivate = codecPrivate;
         // Matroska は Video 要素に PixelWidth/PixelHeight を要求するので、解像度が判らないと
@@ -331,18 +336,25 @@ namespace PeerCastStation.FLV
         // width/height を欠く)配信は実在し、その場合 avcC を受け取っていても
         // 音声だけの MKV になってしまう。H.264 は avcC 内の SPS から導出できるので拠り所にする。
         // HEVC(hvcC)/AV1(av1C)は解析していないため、引き続き onMetaData 頼りになる。
-        if ((videoWidth<1 || videoHeight<1) && codecId==CodecIdAvc) {
+        // 再設定では解像度も変わりうるので、onMetaData 由来の値が残っていても
+        // 実際の符号化を規定する新しい SPS から取り直す。
+        if ((replaced || videoWidth<1 || videoHeight<1) && codecId==CodecIdAvc) {
           if (H264Sps.TryGetResolutionFromAvcC(codecPrivate, out var w, out var h)) {
             videoWidth  = w;
             videoHeight = h;
           }
         }
-        RestartSegmentIfTrackAvailable();
+        if (replaced) {
+          RestartSegment();
+        }
+        else {
+          RestartSegmentIfTrackAvailable();
+        }
       }
 
       private void OnAudioHeader(byte[] body, int offset)
       {
-        if (offset<0 || body.Length<=offset) return;
+        // ペイロードの実体は FLVRemuxContextBase が保証している。
         // 映像側と同じく、同じ設定の送り直しではコピーも解析もしない。
         if (audioConfig!=null &&
             new ReadOnlySpan<byte>(body, offset, body.Length-offset).SequenceEqual(audioConfig)) {
@@ -372,18 +384,25 @@ namespace PeerCastStation.FLV
           WarnBrokenAudioConfig($"チャンネル数が確定しません (channelConfiguration={asc.ChannelConfiguration})");
           return;
         }
+        // 映像側(SetVideoCodec)と同じく、設定済みへの再設定は Segment の作り直しが要る。
+        // 送出済みの SamplingFrequency/Channels は差し替えられない。
+        var replaced = audioConfig!=null;
         audioConfig = config;
         audioSampleRate = asc.SampleRate;
         audioOutputSampleRate = asc.OutputSampleRate;
         audioChannels = asc.ChannelCount;
-        RestartSegmentIfTrackAvailable();
+        if (replaced) {
+          RestartSegment();
+        }
+        else {
+          RestartSegmentIfTrackAvailable();
+        }
       }
 
       private void OnAudioBody(RTMPMessage msg, int offset)
       {
         WriteHeaderIfNeeded();
         if (!audioEnabled) return;
-        if (offset<0 || msg.Body.Length<=offset) return;
         // 時刻原点の取り方は音声・映像で共有する規則なので基底に置いてある。
         // ずれると PTS が衝突・逆行し、PTS のみを持つ MKV では H.264 の POC 再構成が壊れる。
         var pts = NormalizeTimestamp(msg.Timestamp);
@@ -398,12 +417,9 @@ namespace PeerCastStation.FLV
       {
         WriteHeaderIfNeeded();
         if (!videoEnabled) return;
-        if (offset<0 || msg.Body.Length<=offset) return;
         var dts = NormalizeTimestamp(msg.Timestamp);
-        // 先頭Bフレームの負CTS(符号拡張済み)で pts が負に振れることがある。
-        // SimpleBlock のクラスタ相対timecodeは符号付き16bitなので、負値はそのまま
-        // 書けてしまい、ブロックを拒否したり順序を誤るプレイヤーがある。
-        var pts = Math.Max(dts, dts + cts);
+        // 負CTSのクランプは両フィルタ共通の規則なので基底に置いてある。
+        var pts = ComputeVideoPts(dts, cts);
         EnsureCluster(pts, keyframe);
         // 対応コーデックはいずれもフレームデータを無加工で SimpleBlock に載せられる。
         var length = msg.Body.Length-offset;
@@ -441,8 +457,18 @@ namespace PeerCastStation.FLV
       /// </summary>
       private void RestartSegmentIfTrackAvailable()
       {
-        if (!headerSent) return;
         if (CanEnableVideo()==videoEnabled && CanEnableAudio()==audioEnabled) return;
+        RestartSegment();
+      }
+
+      /// <summary>
+      /// ヘッダ未送出の状態へ戻し、次のメディアフレームで Segment を作り直す。
+      /// トラック構成の変化(<see cref="RestartSegmentIfTrackAvailable"/>)だけでなく、
+      /// 有効なままのトラックのコーデック設定が実体ごと変わった場合にも要る。
+      /// </summary>
+      private void RestartSegment()
+      {
+        if (!headerSent) return;
         headerSent = false;
         clusterOpen = false;
         ResetTimestampBase();

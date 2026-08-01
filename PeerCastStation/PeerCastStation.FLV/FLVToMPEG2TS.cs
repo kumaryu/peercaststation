@@ -647,6 +647,9 @@ namespace PeerCastStation.FLV
       private bool hasVideo = false;
       private ADTSHeader adtsHeader = ADTSHeader.Default;
       private int nalSizeLen = 0;
+      // 受理済みシーケンスヘッダの生バイト。同一内容の送り直しを再解析せず弾くために持つ。
+      private byte[]? audioConfigRaw = null;
+      private byte[]? videoConfigRaw = null;
       private static readonly Logger logger = new Logger(typeof(FLVToMPEG2TS));
 
       protected override string FilterName { get { return "FLVToMPEG2TS"; } }
@@ -699,6 +702,10 @@ namespace PeerCastStation.FLV
         hasVideo = false;
         adtsHeader = ADTSHeader.Default;
         nalSizeLen = 0;
+        // キャッシュを残すと、リセット後に届いた同一設定が弾かれて hasAudio/hasVideo が
+        // 立たないまま全フレームが破棄される。
+        audioConfigRaw = null;
+        videoConfigRaw = null;
         ResetTimestampBase();
         ResetWarnings();
       }
@@ -731,6 +738,12 @@ namespace PeerCastStation.FLV
 
       private void OnAACHeader(byte[] body, int offset)
       {
+        // 多くのエンコーダは GOP ごとにシーケンスヘッダを送り直す。同じ内容なら
+        // コピーも再解析も要らない(FLVToMKV 側と同じ規則)。
+        if (audioConfigRaw!=null &&
+            new ReadOnlySpan<byte>(body, offset, body.Length-offset).SequenceEqual(audioConfigRaw)) {
+          return;
+        }
         // 切り詰められた AudioSpecificConfig はここで捨てる。ビット読み出しで例外を投げると
         // FLVFileParser.Read の EndOfStreamException catch がタグ先頭まで巻き戻すため
         // (=「データ待ち」と誤認される)、毒タグがバッファ先頭に残って以後の全パースが
@@ -794,12 +807,13 @@ namespace PeerCastStation.FLV
           0, //number of raw data blocks in frame
           0  //CRC
         );
+        audioConfigRaw = config;
         hasAudio = true;
       }
 
       private void OnAACBody(RTMPMessage msg, int offset)
       {
-        if (offset<0 || msg.Body.Length<=offset) return;
+        // ペイロードの実体は FLVRemuxContextBase が保証している。
         // シーケンスヘッダ未受信のまま流すと adtsHeader が Default(sync=0 の全ゼロ)のままで、
         // ゴミ ADTS が AudioPID に出力される上、最初の WritePATPMT が音声 ES 抜きの PMT を
         // 確定させてしまう。映像側(nalSizeLen<1)と同様に破棄する。
@@ -853,15 +867,17 @@ namespace PeerCastStation.FLV
 
       private void OnAVCHeader(byte[] body, int offset)
       {
+        // ペイロードの実体は FLVRemuxContextBase が保証している。
+        var data = new ReadOnlySpan<byte>(body, offset, body.Length-offset);
+        // 音声側と同じく、同じ内容の送り直しでは再解析しない。avcC の再解析は
+        // SPS/PPS の配列割り当てを伴うので、GOP ごとの送り直しが数時間分積もる。
+        if (videoConfigRaw!=null && data.SequenceEqual(videoConfigRaw)) {
+          return;
+        }
         // 切り詰められた/矛盾した avcC はここで捨てる。音声側(OnAACHeader)と同じ理由で、
         // 境界外アクセスの例外を投げると FLVFileParser がタグ先頭まで巻き戻して
         // 同じ毒タグを永久に再パースし、出力が恒久停止する。
         // avcC の走査そのものは AvcDecoderConfig に集約してある。
-        if (offset<0 || body.Length<=offset) {
-          WarnBrokenVideoConfig();
-          return;
-        }
-        var data = new ReadOnlySpan<byte>(body, offset, body.Length-offset);
         if (!AvcDecoderConfig.TryParse(data, out var config)) {
           WarnBrokenVideoConfig();
           return;
@@ -870,6 +886,7 @@ namespace PeerCastStation.FLV
         this.sps        = ToNALUnits(config.SequenceParameterSets);
         this.pps        = ToNALUnits(config.PictureParameterSets);
         this.spsExt     = ToNALUnits(config.SequenceParameterSetExtensions);
+        videoConfigRaw  = data.ToArray();
         hasVideo = true;
       }
 
@@ -905,7 +922,7 @@ namespace PeerCastStation.FLV
 
       private void OnAVCBody(RTMPMessage msg, int offset, int cts, bool keyframe)
       {
-        if (offset<0 || msg.Body.Length<=offset) return;
+        // ペイロードの実体は FLVRemuxContextBase が保証している。
         // avcC(シーケンスヘッダ)より先に CodedFrames が来ると nalSizeLen が 0 のまま。
         // その場合 NAL 長は常に 0 と読めてしまい NALUnit.ReadFrom が new byte[-1] で落ちる。
         // NAL の区切りが分からない以上このフレームは復号できないので破棄する。
@@ -973,11 +990,9 @@ namespace PeerCastStation.FLV
           WarnBrokenVideoFrame(units);
           if (units<1) return;
         }
-        // 時刻原点の取り方と負値のクランプは基底の共通規則。
+        // 時刻原点の取り方と負CTSのクランプは基底の共通規則。
         var dts = NormalizeTimestamp(msg.Timestamp);
-        // 先頭Bフレームの負CTS(符号拡張済み)で pts が負に振れる分はここでクランプする。
-        // pts>=dts のクランプは MPEG-TS の PTS>=DTS 制約の維持も兼ねる。
-        var pts = Math.Max(dts, dts + cts);
+        var pts = ComputeVideoPts(dts, cts);
         var pes = new PESPacket(
           0xE0,
           TSTimeStamp.FromMilliseconds(pts),

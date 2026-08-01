@@ -157,11 +157,25 @@ namespace PeerCastStation.FLV
         return true;
       }
 
-      public static async Task<FLVTag> TryReadTagAsync(FLVTagHeader header, Stream stream, CancellationToken cancel_token)
+      /// <summary>
+      /// ヘッダの後ろに読み過ぎたバイト(buffered)があれば本体の先頭として取り込み、
+      /// 残りをストリームから読む。再同期後はヘッダ11バイトより多く貯まっていることがあり、
+      /// 余剰を捨てると本体が1バイトずれて footer 検査に失敗し、正常なタグごと失われる。
+      /// </summary>
+      public static async Task<FLVTag> TryReadTagAsync(FLVTagHeader header, ReadOnlyMemory<byte> buffered, Stream stream, CancellationToken cancel_token)
       {
-        var body = await stream.ReadBytesAsync(header.DataSize, cancel_token).ConfigureAwait(false);
-        var footer = await stream.ReadBytesAsync(4, cancel_token).ConfigureAwait(false);
-        var tagsize = FLVFileParser.GetUInt32(footer);
+        var body = new byte[header.DataSize];
+        var body_pre = Math.Min(buffered.Length, body.Length);
+        buffered.Slice(0, body_pre).CopyTo(body);
+        if (body.Length>body_pre) {
+          await stream.ReadBytesAsync(body, body_pre, body.Length-body_pre, cancel_token).ConfigureAwait(false);
+        }
+        var footer = new byte[4];
+        var footer_pre = Math.Min(buffered.Length-body_pre, footer.Length);
+        buffered.Slice(body_pre, footer_pre).CopyTo(footer);
+        if (footer.Length>footer_pre) {
+          await stream.ReadBytesAsync(footer, footer_pre, footer.Length-footer_pre, cancel_token).ConfigureAwait(false);
+        }
         return new FLVTag(header, body, footer);
       }
 
@@ -295,6 +309,17 @@ namespace PeerCastStation.FLV
     /// 破損タグの読み飛ばしを記録する。壊れた入力では毎タグ発生しうるので
     /// 警告は最初の1回だけにし、以降は Debug に落とす。
     /// </summary>
+    /// <summary>
+    /// FLV ファイルヘッダを sink へ配る。新しいストリームの開始なので、警告の抑止状態も
+    /// ここで捨てる。リセットしないと、パーサはチャンネルと同寿命のため、最初の破損以降は
+    /// 再起動後のストリームの破損まで Debug でしか記録されなくなる。
+    /// </summary>
+    private void DispatchFLVHeader(FLVFileHeader header, IRTMPContentSink sink)
+    {
+      warnedBrokenTag = false;
+      sink.OnFLVHeader(header);
+    }
+
     private void LogBrokenTag(FLVTag tag, string reason)
     {
       if (warnedBrokenTag) {
@@ -410,7 +435,7 @@ namespace PeerCastStation.FLV
         // ここから先は try の外。ストリーム位置は確定済みなので、下流が投げても
         // 巻き戻しは起きず、同じタグを再配信し続けることはない。
         if (pending_header!=null) {
-          sink.OnFLVHeader(pending_header);
+          DispatchFLVHeader(pending_header, sink);
         }
         if (pending_tag!=null) {
           DispatchTag(pending_tag, sink);
@@ -434,7 +459,7 @@ namespace PeerCastStation.FLV
       }
       var header = new FLVFileHeader(bin);
       if (!header.IsValid) throw new BadDataException();
-      sink.OnFLVHeader(header);
+      DispatchFLVHeader(header, sink);
       len = 0;
 
       bool eos = false;
@@ -445,10 +470,18 @@ namespace PeerCastStation.FLV
         FLVTag? pending_tag = null;
         FLVFileHeader? pending_header = null;
         try {
-          len += await stream.ReadBytesAsync(bin, len, 11-len, cancel_token).ConfigureAwait(false);
+          // 再同期やファイルヘッダ判定の後は 11 バイトより多く貯まっていることがある。
+          // その場合に 11-len を負のまま渡すと ReadBytesAsync が負値をそのまま返して
+          // len を壊し、貯めたバイトを黙って失う。
+          if (len<11) {
+            len += await stream.ReadBytesAsync(bin, len, 11-len, cancel_token).ConfigureAwait(false);
+          }
           var read_valid = false;
           if (FLVTagHeader.TryCreate(bin, out var tagheader)) {
-            var tag = await FLVTag.TryReadTagAsync(tagheader.Value, stream, cancel_token).ConfigureAwait(false);
+            // ヘッダ11バイトの後ろに貯まった余剰バイトはタグ本体の先頭にあたる。
+            var surplus = new ReadOnlyMemory<byte>(bin, 11, len-11);
+            len = 11;
+            var tag = await FLVTag.TryReadTagAsync(tagheader.Value, surplus, stream, cancel_token).ConfigureAwait(false);
             if (tag.IsValidFooter) {
               len = 0;
               read_valid = true;
@@ -459,6 +492,9 @@ namespace PeerCastStation.FLV
             len += await stream.ReadBytesAsync(bin, len, FLVFileHeaderSize-len, cancel_token).ConfigureAwait(false);
             var fileheader = new FLVFileHeader(bin);
             if (fileheader.IsValid) {
+              // 貯めた13バイトはこのヘッダとして消費済み。残したまま次の反復に入ると
+              // 11-len が負になり、パーサが恒久的にデシンクする。
+              len = 0;
               read_valid = true;
               pending_header = fileheader;
             }
@@ -483,7 +519,7 @@ namespace PeerCastStation.FLV
           eos = true;
         }
         if (pending_header!=null) {
-          sink.OnFLVHeader(pending_header);
+          DispatchFLVHeader(pending_header, sink);
         }
         if (pending_tag!=null) {
           DispatchTag(pending_tag, sink);

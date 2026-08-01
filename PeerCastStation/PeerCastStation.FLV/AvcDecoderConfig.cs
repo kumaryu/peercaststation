@@ -49,18 +49,24 @@ namespace PeerCastStation.FLV
       if (!TryReadNalUnits(ref data, sps_count & 0x1F, out var sps)) return false;
       if (!TryReadByte(ref data, out var pps_count)) return false;
       if (!TryReadNalUnits(ref data, pps_count, out var pps)) return false;
+      // High プロファイル系の拡張ブロックはベストエフォートで読む。ISO/IEC 14496-15 は
+      // 既知の構造より後ろの余剰バイトを無視するよう定めており、拡張を省略する古い muxer や
+      // 末尾を切り詰め・パディングした avcC も実在する。ここの不整合で record 全体を
+      // 拒否すると、健全な SPS/PPS まで捨てられて以後の全フレームが破棄され、
+      // 拡張なしで再生できたはずの配信の映像が丸ごと失われる。
       var sps_ext = Array.Empty<byte[]>();
-      if (data.Length>0 &&
+      if (data.Length>=4 &&
           (profile_indication==100 ||
            profile_indication==110 ||
            profile_indication==122 ||
            profile_indication==144)) {
         // chroma_format / bit_depth_luma / bit_depth_chroma は使わないが位置を進める。
-        if (!TryReadByte(ref data, out _)) return false;
-        if (!TryReadByte(ref data, out _)) return false;
-        if (!TryReadByte(ref data, out _)) return false;
-        if (!TryReadByte(ref data, out var sps_ext_count)) return false;
-        if (!TryReadNalUnits(ref data, sps_ext_count, out sps_ext)) return false;
+        data = data.Slice(3);
+        TryReadByte(ref data, out var sps_ext_count);
+        if (!TryReadNalUnits(ref data, sps_ext_count, out sps_ext)) {
+          // 拡張の実データが数え上げと矛盾していても SPS/PPS は独立して有効。
+          sps_ext = Array.Empty<byte[]>();
+        }
       }
       result = new AvcDecoderConfig(nal_size_length, sps, pps, sps_ext);
       return true;

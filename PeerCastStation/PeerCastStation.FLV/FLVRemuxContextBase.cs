@@ -80,6 +80,18 @@ namespace PeerCastStation.FLV
     }
 
     /// <summary>
+    /// CompositionTime から映像の PTS を導く。先頭Bフレームの負CTS(符号拡張済み)で
+    /// pts が dts より前へ振れる分をクランプする。負のままだと MPEG-TS では PTS&gt;=DTS
+    /// 制約に反し、Matroska では SimpleBlock の符号付き16bit timecode に負値が載る。
+    /// <see cref="NormalizeTimestamp"/> と同じく、フィルタごとに書くと A/V の時刻規則が
+    /// ずれるので共通の規則としてここに置く。
+    /// </summary>
+    protected long ComputeVideoPts(long dts, int compositionTime)
+    {
+      return System.Math.Max(dts, dts + compositionTime);
+    }
+
+    /// <summary>
     /// 音声のコーデック設定を破棄したことを1回だけ報告する。破棄の条件はコンテナごとに
     /// 違う(ADTS で表現できるか、Matroska の Audio 要素を埋められるか)が、
     /// 「設定を捨てたので以後の音声が出ない」という報告内容は共通なのでここに置く。
