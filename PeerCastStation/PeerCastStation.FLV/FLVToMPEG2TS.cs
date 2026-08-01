@@ -841,73 +841,14 @@ namespace PeerCastStation.FLV
         );
       }
 
-      private static bool TryReadByte(ref ReadOnlySpan<byte> bytes, out byte value)
+      private static NALUnit[] ToNALUnits(byte[][] units)
       {
-        if (bytes.Length<1) {
-          value = 0;
-          return false;
+        if (units.Length==0) return Array.Empty<NALUnit>();
+        var result = new NALUnit[units.Length];
+        for (var i=0; i<units.Length; i++) {
+          result[i] = NALUnit.ReadFrom(units[i], units[i].Length);
         }
-        value = bytes[0];
-        bytes = bytes.Slice(1);
-        return true;
-      }
-
-      private static bool TryReadNALUnitArray(ref ReadOnlySpan<byte> data, int cnt, out NALUnit[] result)
-      {
-        result = new NALUnit[0];
-        var ary = new NALUnit[cnt];
-        for (int i = 0; i<cnt; i++) {
-          if (data.Length<2) return false;
-          var len = System.Buffers.Binary.BinaryPrimitives.ReadUInt16BigEndian(data);
-          data = data.Slice(2);
-          // NALUnit.ReadFrom は先頭1バイトをヘッダとして消費するので len>=1 が要る。
-          if (len<1 || data.Length<len) return false;
-          ary[i] = NALUnit.ReadFrom(data, len);
-          data = data.Slice(len);
-        }
-        result = ary;
-        return true;
-      }
-
-      /// <summary>
-      /// AVCDecoderConfigurationRecord(avcC, ISO/IEC 14496-15)を解析する。
-      /// バイトが不足する場合は false を返す(例外は投げない)。
-      /// 方針は音声側の TryParseAudioSpecificConfig と揃えてある。
-      /// </summary>
-      private static bool TryParseAVCDecoderConfig(
-        ReadOnlySpan<byte> data,
-        out int nal_size_len,
-        out NALUnit[] sps,
-        out NALUnit[] pps,
-        out NALUnit[] sps_ext)
-      {
-        nal_size_len = 0;
-        sps     = new NALUnit[0];
-        pps     = new NALUnit[0];
-        sps_ext = new NALUnit[0];
-        if (!TryReadByte(ref data, out var configuration_version)) return false;
-        if (!TryReadByte(ref data, out var avc_profile_indication)) return false;
-        if (!TryReadByte(ref data, out var profile_compatibility)) return false;
-        if (!TryReadByte(ref data, out var avc_level_indication)) return false;
-        if (!TryReadByte(ref data, out var length_size_minus_one)) return false;
-        nal_size_len = (length_size_minus_one & 0x3) + 1;
-        if (!TryReadByte(ref data, out var sps_count)) return false;
-        if (!TryReadNALUnitArray(ref data, sps_count & 0x1F, out sps)) return false;
-        if (!TryReadByte(ref data, out var pps_count)) return false;
-        if (!TryReadNALUnitArray(ref data, pps_count, out pps)) return false;
-        if (data.Length>0 &&
-            (avc_profile_indication==100 ||
-             avc_profile_indication==110 ||
-             avc_profile_indication==122 ||
-             avc_profile_indication==144)) {
-          // chroma_format / bit_depth_luma / bit_depth_chroma は使わないが位置を進める。
-          if (!TryReadByte(ref data, out _)) return false;
-          if (!TryReadByte(ref data, out _)) return false;
-          if (!TryReadByte(ref data, out _)) return false;
-          if (!TryReadByte(ref data, out var sps_ext_count)) return false;
-          if (!TryReadNALUnitArray(ref data, sps_ext_count, out sps_ext)) return false;
-        }
-        return true;
+        return result;
       }
 
       private void OnAVCHeader(byte[] body, int offset)
@@ -915,21 +856,20 @@ namespace PeerCastStation.FLV
         // 切り詰められた/矛盾した avcC はここで捨てる。音声側(OnAACHeader)と同じ理由で、
         // 境界外アクセスの例外を投げると FLVFileParser がタグ先頭まで巻き戻して
         // 同じ毒タグを永久に再パースし、出力が恒久停止する。
-        // sps_count/pps_count は実データ量と無関係に最大31/255を名乗れるので、
-        // 読み出し前に必ず残バイト数と照合する。
+        // avcC の走査そのものは AvcDecoderConfig に集約してある。
         if (offset<0 || body.Length<=offset) {
           WarnBrokenVideoConfig();
           return;
         }
         var data = new ReadOnlySpan<byte>(body, offset, body.Length-offset);
-        if (!TryParseAVCDecoderConfig(data, out var nal_size_len, out var sps, out var pps, out var sps_ext)) {
+        if (!AvcDecoderConfig.TryParse(data, out var config)) {
           WarnBrokenVideoConfig();
           return;
         }
-        this.nalSizeLen = nal_size_len;
-        this.sps        = sps;
-        this.pps        = pps;
-        this.spsExt     = sps_ext;
+        this.nalSizeLen = config.NalSizeLength;
+        this.sps        = ToNALUnits(config.SequenceParameterSets);
+        this.pps        = ToNALUnits(config.PictureParameterSets);
+        this.spsExt     = ToNALUnits(config.SequenceParameterSetExtensions);
         hasVideo = true;
       }
 

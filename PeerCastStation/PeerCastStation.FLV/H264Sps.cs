@@ -30,19 +30,11 @@ namespace PeerCastStation.FLV
     {
       width  = 0;
       height = 0;
-      // configurationVersion / profile / compatibility / level / lengthSizeMinusOne / numOfSPS
-      if (avcc.Length<6) return false;
-      var sps_count = avcc[5] & 0x1F;
-      var pos = 6;
-      for (var i=0; i<sps_count; i++) {
-        if (pos+2>avcc.Length) return false;
-        var len = (avcc[pos]<<8) | avcc[pos+1];
-        pos += 2;
-        if (len<0 || pos+len>avcc.Length) return false;
-        if (TryGetResolution(new ReadOnlySpan<byte>(avcc, pos, len), out width, out height)) {
-          return true;
-        }
-        pos += len;
+      // avcC の走査は AvcDecoderConfig に集約してある。TS 出力と同じ判定を通すことで、
+      // 同じ avcC を一方のフィルタだけが受け入れるという食い違いを避ける。
+      if (!AvcDecoderConfig.TryParse(avcc, out var config)) return false;
+      foreach (var sps in config.SequenceParameterSets) {
+        if (TryGetResolution(sps, out width, out height)) return true;
       }
       return false;
     }
