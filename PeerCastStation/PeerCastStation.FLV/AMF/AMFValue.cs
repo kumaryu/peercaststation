@@ -347,9 +347,10 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
-    public bool Equals(AMFValue obj)
+    public bool Equals(AMFValue? obj)
     {
-      if (obj.Type!=obj.Type) return false;
+      if (obj==null) return false;
+      if (this.Type!=obj.Type) return false;
       switch (obj.Type) {
       case AMFValueType.Null:
       case AMFValueType.Undefined:
@@ -368,10 +369,17 @@ namespace PeerCastStation.FLV.AMF
 
     public override int GetHashCode()
     {
-      return new int[] {
-        (int)this.Type,
-        this.GetHashCode(),
-      }.GetHashCode();
+      // 自身の GetHashCode() を呼ぶと無限再帰で StackOverflow になる。また値なしの型
+      // (Null/Undefined/ObjectEnd)は Equals が Value を見ないので Type だけで決める
+      // (AMFValue.Null は Value に自分自身を持つため、Value を見ると同じく再帰する)。
+      switch (this.Type) {
+      case AMFValueType.Null:
+      case AMFValueType.Undefined:
+      case AMFValueType.ObjectEnd:
+        return (int)this.Type;
+      default:
+        return ((int)this.Type*397) ^ this.Value.GetHashCode();
+      }
     }
 
   }
