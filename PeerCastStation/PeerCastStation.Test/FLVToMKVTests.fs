@@ -157,6 +157,71 @@ let ``onMetaData が無い場合は映像を除外し音声のみで構成する
     Assert.True(contains hdr (ascii "A_AAC"), "音声 CodecID は含む")
     Assert.False(contains hdr (ascii "V_MPEG4/ISO/AVC"), "映像 CodecID は含まない")
 
+// ---- 音声トラックの宣言(AudioSpecificConfig の解釈) ----
+
+/// EBML 要素(ID + サイズVINT + payload)のバイト列を組み立てる。
+let private ebmlElement (id:byte[]) (payload:byte[]) =
+    Array.concat [ id; EBMLWriter.EncodeVInt(uint64 payload.Length); payload ]
+
+/// 指定した AudioSpecificConfig を持つ音声のみの入力を流し、生成された MKV ヘッダを得る。
+let private mkvHeaderForAsc (asc:byte[]) =
+    let capture = CaptureSink()
+    let sink = FLVToMKVContentFilter().Activate(capture)
+    let aacSeq = Array.concat [ [| 0xAFuy;0x00uy |]; asc ]
+    let aacRaw = Array.concat [ [| 0xAFuy;0x01uy |]; [| 0x21uy;0x10uy;0x04uy |] ]
+    sink.OnChannelInfo(ChannelInfo(AtomCollection()))
+    sink.OnContentHeader(newContent (Array.concat [ flvHeader; makeTag 8 0 aacSeq ]))
+    sink.OnContent(newContent (makeTag 8 0 aacRaw))
+    sink.OnStop(StopReason.OffAir)
+    capture.Header
+
+[<Fact>]
+let ``7_1chのAACをチャンネル数8として宣言する`` () =
+    // channelConfiguration はチャンネル数ではなくインデックスで、7 は 8ch(7.1)を指す。
+    // インデックスをそのまま Channels に書くと 7ch と宣言され、Audio 要素を信じる
+    // プレイヤーのチャンネルマスク/ダウンミックスが狂う。
+    let hdr = mkvHeaderForAsc (audioSpecificConfig 2 4 7)
+    Assert.True(contains hdr (ascii "A_AAC"), "音声トラックが含まれる")
+    Assert.True(contains hdr (ebmlElement EBMLWriter.Channels (EBMLWriter.EncodeUInt(8UL))),
+                "Channels は 8 として宣言される")
+
+[<Fact>]
+let ``ステレオのAACをチャンネル数2として宣言する`` () =
+    // インデックス 1-6 は個数と一致するので、変換を入れても従来の値を保つ。
+    let hdr = mkvHeaderForAsc (audioSpecificConfig 2 4 2)
+    Assert.True(contains hdr (ebmlElement EBMLWriter.Channels (EBMLWriter.EncodeUInt(2UL))),
+                "Channels は 2 として宣言される")
+
+[<Fact>]
+let ``チャンネル数が確定しないAACの設定を破棄する`` () =
+    // 0 はレイアウトを PCE で運ぶ指定、8-15 は予約値。いずれも個数が確定しないため、
+    // 誤ったチャンネル数を宣言するより設定ごと捨てる(サンプリング周波数と同じ扱い)。
+    for ch in [ 0; 8; 15 ] do
+        let hdr = mkvHeaderForAsc (audioSpecificConfig 2 4 ch)
+        Assert.False(contains hdr (ascii "A_AAC"),
+                     sprintf "channelConfiguration=%d の音声トラックは作らない" ch)
+
+[<Fact>]
+let ``HE-AACの実際の出力サンプリング周波数を宣言する`` () =
+    // SBR の明示signaling では SamplingFrequency にコア(出力の半分)のレートを書く決まりで、
+    // 実レートは OutputSamplingFrequency で別途宣言する。これが無いと CodecPrivate を
+    // 読み直さないプレイヤーがトラックを半分のレートと解釈し、A/V がずれていく。
+    // コア 22050Hz(freqIdx=7)/拡張 44100Hz(freqIdx=4)/2ch の HE-AAC v1。
+    let hdr = mkvHeaderForAsc (audioSpecificConfigSbr 5 7 2 4 2)
+    Assert.True(contains hdr (ebmlElement EBMLWriter.SamplingFrequency (EBMLWriter.EncodeFloat(22050.0))),
+                "SamplingFrequency はコアのレート")
+    Assert.True(contains hdr (ebmlElement EBMLWriter.OutputSamplingFrequency (EBMLWriter.EncodeFloat(44100.0))),
+                "OutputSamplingFrequency は実際の出力レート")
+
+[<Fact>]
+let ``SBRでないAACにはOutputSamplingFrequencyを付けない`` () =
+    // コアと出力が同じレートなら冗長なので出さない(既定でコアのレートが出力レート)。
+    let hdr = mkvHeaderForAsc (audioSpecificConfig 2 4 2)
+    Assert.True(contains hdr (ebmlElement EBMLWriter.SamplingFrequency (EBMLWriter.EncodeFloat(44100.0))),
+                "SamplingFrequency は 44100Hz")
+    Assert.False(contains hdr EBMLWriter.OutputSamplingFrequency,
+                 "OutputSamplingFrequency は出力されない")
+
 // ---- E-RTMP(enhanced タグ)経路 ----
 
 // ダミーのコーデック設定(構造検証では中身は問わない。CodecPrivate へ無加工で入ることだけ確認する)

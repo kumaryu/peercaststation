@@ -49,6 +49,12 @@ namespace PeerCastStation.FLV
     public static readonly byte[] PixelHeight        = { 0xBA };
     public static readonly byte[] Audio              = { 0xE1 };
     public static readonly byte[] SamplingFrequency  = { 0xB5 };
+    /// <summary>
+    /// SBR/PS でデコード後のレートがコアのレートと異なる場合に、実際の出力レートを示す。
+    /// SamplingFrequency にはコア側を書く決まりなので、これが無いと HE-AAC のトラックが
+    /// 実レートの半分として宣言される。
+    /// </summary>
+    public static readonly byte[] OutputSamplingFrequency = { 0x78, 0xB5 };
     public static readonly byte[] Channels           = { 0x9F };
     // Cluster
     public static readonly byte[] Cluster            = { 0x1F, 0x43, 0xB6, 0x75 };
@@ -221,6 +227,7 @@ namespace PeerCastStation.FLV
       private byte[]? audioConfig = null; // AudioSpecificConfig
       private int audioChannels = 0;
       private int audioSampleRate = 0;
+      private int audioOutputSampleRate = 0;
       private int videoWidth = 0;
       private int videoHeight = 0;
       private bool hasVideo = false;
@@ -247,6 +254,7 @@ namespace PeerCastStation.FLV
         audioConfig = null;
         audioChannels = 0;
         audioSampleRate = 0;
+        audioOutputSampleRate = 0;
         videoWidth = 0;
         videoHeight = 0;
         hasVideo = false;
@@ -413,26 +421,35 @@ namespace PeerCastStation.FLV
         // (=「データ待ち」と誤認される)、毒タグがバッファ先頭に残って以後の全パースが
         // 再スローし続け、出力が恒久停止したうえで contentBuffer が無限に成長する。
         if (!AudioSpecificConfig.TryParse(config, out var asc)) {
-          WarnBrokenAudioConfig();
+          WarnBrokenAudioConfig("AudioSpecificConfigが不完全です");
           return;
         }
         // 予約インデックス(13/14)や明示レート0はサンプリング周波数が確定しない。
         // SamplingFrequency 要素を省略すると Matroska 既定の 8000Hz と誤宣言され
         // 誤速度・誤ピッチで再生されるため、壊れた設定として破棄する。
         if (asc.SampleRate<=0) {
-          WarnBrokenAudioConfig();
+          WarnBrokenAudioConfig($"サンプリング周波数が確定しません (index={asc.SamplingFrequencyIndex})");
+          return;
+        }
+        // channelConfiguration はチャンネル数ではなくインデックス(7 は 8ch)。個数として
+        // そのまま書くと 7.1ch のトラックが 7ch と宣言され、Audio 要素を信じるプレイヤーの
+        // チャンネルマスク/ダウンミックスが狂う。0(レイアウトを PCE で運ぶ)と予約値(8-15)は
+        // 個数が確定しないので、サンプリング周波数と同じく設定ごと破棄する。
+        if (asc.ChannelCount<=0) {
+          WarnBrokenAudioConfig($"チャンネル数が確定しません (channelConfiguration={asc.ChannelConfiguration})");
           return;
         }
         audioConfig = config;
         audioSampleRate = asc.SampleRate;
-        audioChannels = asc.ChannelConfiguration;
+        audioOutputSampleRate = asc.OutputSampleRate;
+        audioChannels = asc.ChannelCount;
         hasAudio = true;
       }
 
-      private void WarnBrokenAudioConfig()
+      private void WarnBrokenAudioConfig(string reason)
       {
         if (warnedBrokenAudioConfig) return;
-        logger.Warn("FLVToMKV: AudioSpecificConfigが不完全なため音声シーケンスヘッダを破棄します");
+        logger.Warn("FLVToMKV: 音声シーケンスヘッダを破棄します ({0})", reason);
         warnedBrokenAudioConfig = true;
       }
 
@@ -543,7 +560,15 @@ namespace PeerCastStation.FLV
         // 実レートと食い違った音声トラックになる。OnAudioHeader が sampleRate<=0 の設定を
         // 弾いているので、ここに来た時点で audioSampleRate は必ず正。
         EBMLWriter.WriteElement(audio, EBMLWriter.SamplingFrequency, EBMLWriter.EncodeFloat(audioSampleRate));
-        EBMLWriter.WriteElement(audio, EBMLWriter.Channels, EBMLWriter.EncodeUInt((ulong)Math.Max(1, audioChannels)));
+        // HE-AAC/HE-AACv2 は SamplingFrequency にコア(出力の半分)のレートを書く決まりなので、
+        // 実際の出力レートは OutputSamplingFrequency で別途宣言する。これが無いと
+        // CodecPrivate を読み直さず Audio 要素を信じるプレイヤーがトラックを半分のレートと
+        // 解釈し、ms 単位の映像タイムコードに対して A/V がずれていく。
+        if (audioOutputSampleRate>0 && audioOutputSampleRate!=audioSampleRate) {
+          EBMLWriter.WriteElement(audio, EBMLWriter.OutputSamplingFrequency, EBMLWriter.EncodeFloat(audioOutputSampleRate));
+        }
+        // OnAudioHeader が ChannelCount<=0 の設定を弾いているので、ここでは必ず正。
+        EBMLWriter.WriteElement(audio, EBMLWriter.Channels, EBMLWriter.EncodeUInt((ulong)audioChannels));
         EBMLWriter.WriteElement(e, EBMLWriter.Audio, audio.ToArray());
         return e.ToArray();
       }
