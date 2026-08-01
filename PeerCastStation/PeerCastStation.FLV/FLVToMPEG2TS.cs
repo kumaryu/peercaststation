@@ -1161,7 +1161,10 @@ namespace PeerCastStation.FLV
     public string Name { get { return "FLVToTS"; } }
     public IContentSink Activate(IContentSink sink)
     {
-      return new FLVToTSContentFilterSink(sink);
+      // 変換ループの起動はコンストラクタではなくここで行う(FLVContentFilterSinkBase.Start)。
+      var filter_sink = new FLVToTSContentFilterSink(sink);
+      filter_sink.Start();
+      return filter_sink;
     }
 
     public class FLVToTSContentFilterSink

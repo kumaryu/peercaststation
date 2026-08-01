@@ -69,6 +69,33 @@ let private run (seqTags:byte[]) (frameTags:byte[]) =
 // ---- tests ----
 
 [<Fact>]
+let ``Activate 前に構築されたフィルタは変換ループを開始していない`` () =
+    // 変換ループを基底コンストラクタから起動すると、派生クラスのコンストラクタ本体より
+    // 先にループが走り出す。派生が状態を初期化する前にループがそれを読むと NRE になり、
+    // ProcessMessagesAsync の catch 経由で下流が NotIdentifiedError で止まるため、
+    // 症状は「配信が途中で死ぬ」でログには構築順の話が出てこない。
+    // Activate が Start を呼ぶ二相構築になっていることを、二重 Start の拒否で確認する。
+    let capture = CaptureSink()
+    let sink = FLVToTSContentFilter().Activate(capture) :?> FLVContentFilterSinkBase
+    Assert.Throws<InvalidOperationException>(fun () -> sink.Start()) |> ignore
+    sink.OnStop(StopReason.OffAir)
+
+[<Fact>]
+let ``停止後に届いたコンテンツを積み上げない`` () =
+    // 変換ループの終了後も enqueue を受け付けると、消費者のいないキューに
+    // ストリームビットレートで積み上がる。OnStop 後の呼び出しは黙って捨てる。
+    let capture = CaptureSink()
+    let sink = FLVToTSContentFilter().Activate(capture)
+    sink.OnChannelInfo(ChannelInfo(AtomCollection()))
+    sink.OnContentHeader(newContent (Array.concat [ flvHeader; makeTag 9 0 (Array.concat [ [| 0x17uy;0x00uy;0x00uy;0x00uy;0x00uy |]; avcC ]) ]))
+    sink.OnStop(StopReason.OffAir)
+    let after = capture.Content.Length
+    // 停止後の呼び出しは例外にならず、出力も増えない。
+    sink.OnContent(newContent (makeTag 9 0 (Array.concat [ [| 0x17uy;0x01uy;0x00uy;0x00uy;0x00uy |]; avcNalus ])))
+    sink.OnStop(StopReason.OffAir)
+    Assert.Equal(after, capture.Content.Length)
+
+[<Fact>]
 let ``レガシー FLV(H264) を TS に変換する`` () =
     let capture =
         run (makeTag 9 0 (Array.concat [ [| 0x17uy;0x00uy;0x00uy;0x00uy;0x00uy |]; avcC ]))

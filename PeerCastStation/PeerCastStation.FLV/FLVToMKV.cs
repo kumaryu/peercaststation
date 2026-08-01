@@ -647,7 +647,10 @@ namespace PeerCastStation.FLV
 
     public IContentSink Activate(IContentSink sink)
     {
-      return new FLVToMKVContentFilterSink(sink);
+      // 変換ループの起動はコンストラクタではなくここで行う(FLVContentFilterSinkBase.Start)。
+      var filter_sink = new FLVToMKVContentFilterSink(sink);
+      filter_sink.Start();
+      return filter_sink;
     }
 
     public class FLVToMKVContentFilterSink

@@ -37,7 +37,11 @@ namespace PeerCastStation.FLV
     }
 
     private readonly Logger logger;
-    private readonly Task processorTask;
+    private readonly IContentSink targetSink;
+    /// <summary>キューへの投入と「消費者がいなくなった」の確定を直列化する。</summary>
+    private readonly object queueLock = new object();
+    private bool acceptingMessages = true;
+    private Task? processorTask = null;
 
     /// <summary>上流から積まれ、変換ループが取り出すメッセージキュー。</summary>
     protected WaitableQueue<ContentMessage> MessageQueue { get; } = new WaitableQueue<ContentMessage>();
@@ -55,15 +59,29 @@ namespace PeerCastStation.FLV
     /// </summary>
     protected abstract Task ProcessMessagesLoopAsync(IContentSink targetSink, CancellationToken cancellationToken);
 
-    /// <remarks>
-    /// ここで起動するタスクは派生クラスのコンストラクタ本体より先に走り出す。
-    /// 派生側は変換ループで使う状態をフィールド初期化子(基底コンストラクタより前に走る)か
-    /// ループ内のローカル変数に置くこと。
-    /// </remarks>
     protected FLVContentFilterSinkBase(IContentSink sink, Logger logger)
     {
+      this.targetSink = sink;
       this.logger = logger;
-      this.processorTask = ProcessMessagesAsync(sink, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// 変換ループを開始する。<see cref="IContentFilter.Activate"/> が、オブジェクトを
+    /// 完全に構築し終えてから呼ぶこと。
+    ///
+    /// コンストラクタから起動すると、派生クラスのコンストラクタ本体より先に
+    /// <see cref="ProcessMessagesLoopAsync"/> が走り出す。今は派生のコンストラクタが
+    /// どちらも空なので表面化しないが、引数を1つ増やして状態を初期化した時点で、
+    /// ループ側がその状態を null のまま掴んで NullReferenceException になる。
+    /// それは ProcessMessagesAsync の catch に拾われて下流が NotIdentifiedError で
+    /// 止まるため、症状は「配信が途中で死ぬ」でログには構築順の話が出てこない。
+    /// </summary>
+    public void Start()
+    {
+      if (processorTask!=null) {
+        throw new InvalidOperationException("変換ループは既に開始しています");
+      }
+      processorTask = ProcessMessagesAsync(targetSink, CancellationToken.None);
     }
 
     private async Task ProcessMessagesAsync(IContentSink targetSink, CancellationToken cancellationToken)
@@ -77,56 +95,66 @@ namespace PeerCastStation.FLV
       catch (Exception e) {
         // 例外でこのタスクが落ちたまま OnContent が enqueue を続けると、消費者のいない
         // 無制限キューにストリームビットレートで積み上がりメモリリークになる。
-        // 下流を明示的に停止し、以後の enqueue は各メソッドの IsCompleted チェックで短絡させる。
+        // 下流を明示的に停止し、以後の enqueue は TryEnqueue で短絡させる。
+        // 停止理由は上流の都合ではなくフィルタが落ちたことなので NotIdentifiedError でよい。
         logger.Error(e);
         targetSink.OnStop(StopReason.NotIdentifiedError);
+      }
+      finally {
+        // ここから先に積まれたメッセージを取り出す者はいない。
+        lock (queueLock) {
+          acceptingMessages = false;
+        }
       }
     }
 
     /// <summary>
-    /// 処理タスクが終了(正常終了・フォルトいずれも)した後は消費者がいないため、
-    /// enqueue し続けるとキューが無制限に成長する。積むのをやめる。
+    /// 消費者が生きている間だけキューへ積む。
+    /// 「タスクが完了しているか調べてから積む」形にすると、調べた直後にタスクが
+    /// 終了した場合に消費者のいないキューへ積んでしまうため、投入と打ち切りの確定を
+    /// 同じロックで直列化する。
     /// </summary>
-    private bool IsProcessorAlive {
-      get { return !processorTask.IsCompleted; }
+    private bool TryEnqueue(ContentMessage message)
+    {
+      lock (queueLock) {
+        if (!acceptingMessages) return false;
+        MessageQueue.Enqueue(message);
+        return true;
+      }
     }
 
     public void OnChannelInfo(ChannelInfo channel_info)
     {
-      if (!IsProcessorAlive) return;
       var info = new AtomCollection(channel_info.Extra);
       info.SetChanInfoType(ContentType);
       info.SetChanInfoStreamType(MimeType);
       info.SetChanInfoStreamExt(ContentExtension);
-      MessageQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ChannelInfo, ChannelInfo=new ChannelInfo(info) });
+      TryEnqueue(new ContentMessage { Type=ContentMessage.MessageType.ChannelInfo, ChannelInfo=new ChannelInfo(info) });
     }
 
     public void OnChannelTrack(ChannelTrack channel_track)
     {
-      if (!IsProcessorAlive) return;
-      MessageQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ChannelTrack, ChannelTrack=channel_track });
+      TryEnqueue(new ContentMessage { Type=ContentMessage.MessageType.ChannelTrack, ChannelTrack=channel_track });
     }
 
     public void OnContent(Content content)
     {
-      if (!IsProcessorAlive) return;
-      MessageQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ContentBody, Content=content });
+      TryEnqueue(new ContentMessage { Type=ContentMessage.MessageType.ContentBody, Content=content });
     }
 
     public void OnContentHeader(Content content_header)
     {
-      if (!IsProcessorAlive) return;
-      MessageQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ContentHeader, Content=content_header });
+      TryEnqueue(new ContentMessage { Type=ContentMessage.MessageType.ContentHeader, Content=content_header });
     }
 
     public void OnStop(StopReason reason)
     {
-      // 既にフォルトしている場合、下流の OnStop は ProcessMessagesAsync の catch が
-      // 呼び済み。Wait() は完了済みタスクに対して即座に返る(例外も握り潰し済み)。
-      if (IsProcessorAlive) {
-        MessageQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.Stop, StopReason=reason });
-      }
-      processorTask.Wait();
+      var task = processorTask;
+      if (task==null) return;
+      // TryEnqueue が false のときは変換ループが既に終了しており、下流の OnStop は
+      // ループ自身か ProcessMessagesAsync の catch が呼び済み。二重には送らない。
+      TryEnqueue(new ContentMessage { Type=ContentMessage.MessageType.Stop, StopReason=reason });
+      task.Wait();
     }
   }
 
