@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.IO;
 using PeerCastStation.Core;
@@ -28,49 +29,6 @@ namespace PeerCastStation.FLV
     {
       this.TargetChannel = target_channel;
       this.ContentSink   = new BufferedContentSink(content_sink);
-    }
-
-    /// <summary>
-    /// AMF の数値フィールドを例外を投げずに読む。
-    /// AMFValue の double キャスト演算子は非数値型で InvalidCastException を、
-    /// 数値化できない文字列で FormatException を投げる。onMetaData の中身は
-    /// 配信者側のエンコーダが自由に詰めるため、"2500k" のような文字列や独自型が実際に届く
-    /// (すぐ上の maxBitrate が文字列前提の処理になっているのがその証拠)。
-    /// これをそのまま投げると、FLVFileParser を経由しない RTMP 受信経路
-    /// (RTMPSourceConnection.OnData → FLVContentBuffer.OnData)では接続ごと落ち、
-    /// 同じ onMetaData を送り直す配信者と3秒間隔の再接続を繰り返すことになる。
-    /// ビットレート表示のためだけの値なので、読めないフィールドは黙って無視する。
-    /// </summary>
-    /// <summary>
-    /// AMF の数値文字列をカルチャ非依存で読む。onMetaData に入る数値文字列は
-    /// 配信者側のエンコーダが小数点に '.' を使って書くもので、ホストのロケールとは無関係。
-    /// 既定のオーバーロードはホストのカルチャで解釈するため、例えば de-DE のホストでは
-    /// "2500.5" の '.' が桁区切りと解釈されて 25005 になり、ChanInfo のビットレートが
-    /// 約10倍でPCPに広告されて全ノードのリレー判断を狂わせる。
-    /// </summary>
-    private static bool TryParseInvariant(string s, out double result)
-    {
-      return double.TryParse(
-        s,
-        System.Globalization.NumberStyles.Float,
-        System.Globalization.CultureInfo.InvariantCulture,
-        out result);
-    }
-
-    private static bool TryGetNumber(AMF.AMFValue value, out double result)
-    {
-      switch (value.Type) {
-      case AMF.AMFValueType.Double:
-      case AMF.AMFValueType.Integer:
-      case AMF.AMFValueType.Boolean:
-        result = (double)value;
-        return true;
-      case AMF.AMFValueType.String:
-        return TryParseInvariant((string?)value ?? "", out result);
-      default:
-        result = 0;
-        return false;
-      }
     }
 
     // 引数の個数は配信者側のメッセージ次第で、規定数に満たないものが実際に届く。
@@ -105,23 +63,21 @@ namespace PeerCastStation.FLV
       if (metadata.Arguments.Count>0 &&
           (metadata.Arguments[0].Type==AMF.AMFValueType.ECMAArray || metadata.Arguments[0].Type==AMF.AMFValueType.Object)) {
         var bitrate = 0.0;
+        // 値の型も中身も配信者側のエンコーダ次第なので、AMFValue のキャスト演算子ではなく
+        // 例外を投げない読み出し(AMFValue.TryGetDouble)を通す。
         var val = metadata.Arguments[0]["maxBitrate"];
         if (!AMF.AMFValue.IsNull(val)) {
-          double maxBitrate;
+          // maxBitrate は "2500k" のような単位付きの文字列で来る前提の項目。
           string maxBitrateStr = System.Text.RegularExpressions.Regex.Replace((string?)val ?? "", @"([\d]+)k", "$1");
-          if (TryParseInvariant(maxBitrateStr, out maxBitrate)) {
+          if (Double.TryParse(maxBitrateStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var maxBitrate)) {
             bitrate += maxBitrate;
           }
         }
-        else if (!AMF.AMFValue.IsNull(val = metadata.Arguments[0]["videodatarate"])) {
-          if (TryGetNumber(val, out var videodatarate)) {
-            bitrate += videodatarate;
-          }
+        else if (AMF.AMFValue.TryGetDouble(metadata.Arguments[0]["videodatarate"], out var videodatarate)) {
+          bitrate += videodatarate;
         }
-        if (!AMF.AMFValue.IsNull(val = metadata.Arguments[0]["audiodatarate"])) {
-          if (TryGetNumber(val, out var audiodatarate)) {
-            bitrate += audiodatarate;
-          }
+        if (AMF.AMFValue.TryGetDouble(metadata.Arguments[0]["audiodatarate"], out var audiodatarate)) {
+          bitrate += audiodatarate;
         }
         info.SetChanInfoBitrate((int)bitrate);
       }

@@ -251,32 +251,17 @@ namespace PeerCastStation.FLV
       }
 
       /// <summary>
-      /// onMetaData の解像度フィールドを防御的に解釈する。
-      /// 値は配信者由来で型が保証されないため、AMFValue の int キャスト演算子は使わない
-      /// (String に Int32.Parse を掛けて FormatException、その他の型で InvalidCastException を
-      /// 投げ、FLVFileParser.Read が捕捉しないまま processorTask をフォルトさせる)。
-      /// FLVContentBuffer.OnMetaData と同じく型判定+TryParse で受ける。
+      /// onMetaData の解像度フィールドを解釈する。値は配信者由来で型が保証されないため、
+      /// 例外を投げない読み出し(AMFValue.TryGetInt32)を通したうえで、
+      /// 解像度として使える範囲かどうかを見る。
       /// </summary>
       private static bool TryGetDimension(AMFValue value, out int result)
       {
-        result = 0;
-        if (AMFValue.IsNull(value)) return false;
-        double d;
-        switch (value.Value) {
-        case int i:
-          d = i;
-          break;
-        case double v:
-          d = v;
-          break;
-        case string s:
-          if (!Double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out d)) return false;
-          break;
-        default:
+        if (!AMFValue.TryGetInt32(value, out result)) return false;
+        if (result<1) {
+          result = 0;
           return false;
         }
-        if (Double.IsNaN(d) || d<1 || d>Int32.MaxValue) return false;
-        result = (int)d;
         return true;
       }
 

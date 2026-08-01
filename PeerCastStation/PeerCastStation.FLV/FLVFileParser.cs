@@ -250,6 +250,11 @@ namespace PeerCastStation.FLV
     /// タグ内容の破損として握り潰してよい例外か。
     /// OutOfMemoryException や OperationCanceledException のように、握っても回復しない
     /// / 呼び出し側が扱うべき例外は意図的に含めない。
+    ///
+    /// ここで拾うのは AMF の復号中に出たものだけで、sink の呼び出しは範囲外
+    /// (DispatchTag の注記を参照)。メタデータの値を読む側は AMFValue.TryGetDouble 等の
+    /// 投げない読み出しを使う約束にしてあるが、AMF0Reader が構造そのものを復号する
+    /// 過程では依然これらの例外が出るため、型の列挙は残している。
     /// </summary>
     private static bool IsBrokenTagException(Exception e)
     {
@@ -259,7 +264,7 @@ namespace PeerCastStation.FLV
           || e is IndexOutOfRangeException
           || e is OverflowException
           || e is FormatException
-          || e is InvalidCastException;     // AMFValue の数値キャスト演算子(非数値型のメタデータ値)
+          || e is InvalidCastException;
     }
 
     /// <summary>
