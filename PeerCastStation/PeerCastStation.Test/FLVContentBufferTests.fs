@@ -13,11 +13,6 @@ open FLVTestHelpers
 
 // ---- helpers ----
 
-/// enhanced 映像 MPEG2TSSequenceStart(frameType=1, packetType=5)。
-/// 中身はコーデック設定ではなく MPEG-2 TS のブートストラップ生バイト列。
-let private exVideoMpeg2TsSeq (fourcc:string) (payload:byte[]) =
-    Array.concat [ [| 0x95uy |]; ascii fourcc; payload ]
-
 /// AMF0 の文字列(マーカー付き)。
 let private amf0String (s:string) =
     let b = ascii s

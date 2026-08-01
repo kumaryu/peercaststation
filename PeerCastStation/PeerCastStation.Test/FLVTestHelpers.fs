@@ -26,6 +26,17 @@ let indexOf (haystack:byte[]) (needle:byte[]) =
 
 let contains (haystack:byte[]) (needle:byte[]) = indexOf haystack needle >= 0
 
+/// haystack 中に needle が現れる回数(重なりも数える)。
+let countOf (haystack:byte[]) (needle:byte[]) =
+    if needle.Length=0 then 0
+    else
+        let mutable count = 0
+        for i in 0..(haystack.Length - needle.Length) do
+            let mutable j = 0
+            while j<needle.Length && haystack.[i+j]=needle.[j] do j <- j+1
+            if j=needle.Length then count <- count+1
+        count
+
 // ---- FLV コンテナ ----
 
 /// FLVタグ(11バイトヘッダ + body + 4バイトPreviousTagSize)を組み立てる。
@@ -143,6 +154,51 @@ let exVideoSeqModEx (fourcc:string) (config:byte[]) =
 let exVideoCodedFrames (fourcc:string) (frameType:int) (cts:int) (payload:byte[]) =
     let b0 = 0x80 ||| ((frameType &&& 0x07) <<< 4) ||| 0x01
     Array.concat [ [| byte b0 |]; ascii fourcc; [| byte (cts>>>16); byte (cts>>>8); byte cts |]; payload ]
+
+/// enhanced 映像 CodedFrames のうち CTS フィールドを持たないもの(AV1/VP9 は FourCC 直後が即ペイロード)。
+let exVideoCodedFramesNoCts (fourcc:string) (frameType:int) (payload:byte[]) =
+    let b0 = 0x80 ||| ((frameType &&& 0x07) <<< 4) ||| 0x01
+    Array.concat [ [| byte b0 |]; ascii fourcc; payload ]
+
+/// enhanced 映像 MPEG2TSSequenceStart(frameType=1, packetType=5)。
+/// 中身はコーデック設定ではなく MPEG-2 TS のブートストラップ生バイト列。
+let exVideoMpeg2TsSeq (fourcc:string) (payload:byte[]) =
+    Array.concat [ [| 0x95uy |]; ascii fourcc; payload ]
+
+/// enhanced 映像 Multitrack(OneTrack)SequenceStart。payloadOffset は無効化される想定。
+/// byte0=0x96(frameType=1,packetType=6=Multitrack) / 0x00(multitrackType=0,実packetType=0)
+let exVideoMultitrackSeq (fourcc:string) (config:byte[]) =
+    Array.concat [ [| 0x96uy; 0x00uy |]; ascii fourcc; config ]
+
+/// enhanced 音声 SequenceStart(soundFormat=9, packetType=0)。
+let exAudioSeq (fourcc:string) (asc:byte[]) =
+    Array.concat [ [| 0x90uy |]; ascii fourcc; asc ]
+
+/// enhanced 音声 CodedFrames(soundFormat=9, packetType=1)。音声に CTS は無い。
+let exAudioCodedFrames (fourcc:string) (raw:byte[]) =
+    Array.concat [ [| 0x91uy |]; ascii fourcc; raw ]
+
+// ---- レガシータグの組み立て ----
+
+/// AAC-LC 44100Hz 2ch の AudioSpecificConfig を持つレガシー音声シーケンスヘッダ。
+let legacyAacSeq = [| 0xAFuy;0x00uy;0x12uy;0x10uy |]
+
+/// 任意の AudioSpecificConfig を持つレガシー音声シーケンスヘッダ。
+let legacyAacSeqWith (asc:byte[]) = Array.concat [ [| 0xAFuy;0x00uy |]; asc ]
+
+/// レガシー AAC の生フレーム。
+let legacyAacFrame (payload:byte[]) = Array.concat [ [| 0xAFuy;0x01uy |]; payload ]
+
+/// レガシー AAC の生フレーム(既定のダミーペイロード)。
+let legacyAacRaw = legacyAacFrame [| 0x21uy;0x10uy;0x04uy |]
+
+/// レガシー AVC のシーケンスヘッダ(キーフレーム)。
+let legacyAvcSeq (config:byte[]) =
+    Array.concat [ [| 0x17uy;0x00uy;0x00uy;0x00uy;0x00uy |]; config ]
+
+/// レガシー AVC のキーフレーム。
+let legacyAvcKey (nalus:byte[]) =
+    Array.concat [ [| 0x17uy;0x01uy;0x00uy;0x00uy;0x00uy |]; nalus ]
 
 // ---- IContentSink のキャプチャ ----
 

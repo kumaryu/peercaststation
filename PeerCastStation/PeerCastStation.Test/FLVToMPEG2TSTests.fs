@@ -47,15 +47,6 @@ let private adtsHeaders (bytes:byte[]) =
                 ((int bytes.[i+2] &&& 0x01) <<< 2) ||| ((int bytes.[i+3] >>> 6) &&& 0x03)
             yield (profile, freqIdx, channels) ]
 
-/// AAC-LC 44100Hz 2ch の AudioSpecificConfig を持つレガシー音声シーケンスヘッダ。
-let private legacyAacSeq = [| 0xAFuy;0x00uy;0x12uy;0x10uy |]
-
-/// 任意の AudioSpecificConfig を持つレガシー音声シーケンスヘッダ。
-let private legacyAacSeqWith (asc:byte[]) = Array.concat [ [| 0xAFuy;0x00uy |]; asc ]
-
-/// レガシー AAC の生フレーム。
-let private legacyAacFrame (payload:byte[]) = Array.concat [ [| 0xAFuy;0x01uy |]; payload ]
-
 /// FLVヘッダ+シーケンスヘッダを ContentHeader、フレームを ContentBody として流す。
 let private run (seqTags:byte[]) (frameTags:byte[]) =
     let capture = CaptureSink()

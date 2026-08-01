@@ -13,16 +13,6 @@ open FLVTestHelpers
 
 // ---- helpers ----
 
-let private countOf (haystack:byte[]) (needle:byte[]) =
-    if needle.Length=0 then 0
-    else
-        let mutable count = 0
-        for i in 0..(haystack.Length - needle.Length) do
-            let mutable j = 0
-            while j<needle.Length && haystack.[i+j]=needle.[j] do j <- j+1
-            if j=needle.Length then count <- count+1
-        count
-
 let private startsWith (haystack:byte[]) (needle:byte[]) =
     haystack.Length>=needle.Length &&
     Array.forall2 (=) (Array.sub haystack 0 needle.Length) needle
@@ -290,26 +280,9 @@ let ``SBRでないAACにはOutputSamplingFrequencyを付けない`` () =
 // ダミーのコーデック設定(構造検証では中身は問わない。CodecPrivate へ無加工で入ることだけ確認する)
 let private av1C = [| 0x81uy;0x0Cuy;0x3Buy;0x00uy;0x0Auy;0x0Buy;0x77uy;0x88uy |]
 
-/// enhanced AV1 CodedFrames(packetType=1)。AV1 は CTS フィールドを持たない(FourCC 直後が即ペイロード)。
+/// AV1 は CTS フィールドを持たない(FourCC 直後が即ペイロード)。
 let private exAv1CodedFrames (frameType:int) (obu:byte[]) =
-    let b0 = 0x80 ||| ((frameType &&& 0x07) <<< 4) ||| 0x01
-    Array.concat [ [| byte b0 |]; ascii "av01"; obu ]
-
-/// enhanced 映像 Multitrack(OneTrack)SequenceStart。payloadOffset は無効化される想定。
-let private exVideoMultitrackSeq (fourcc:string) (config:byte[]) =
-    // byte0=0x96(frameType=1,packetType=6=Multitrack) / 0x00(multitrackType=0,実packetType=0) / FourCC / config
-    Array.concat [ [| 0x96uy; 0x00uy |]; ascii fourcc; config ]
-
-/// enhanced 音声 SequenceStart(soundFormat=9, packetType=0)。
-let private exAudioSeq (fourcc:string) (asc:byte[]) =
-    Array.concat [ [| 0x90uy |]; ascii fourcc; asc ]
-
-/// enhanced 音声 CodedFrames(soundFormat=9, packetType=1)。音声に CTS は無い。
-let private exAudioCodedFrames (fourcc:string) (raw:byte[]) =
-    Array.concat [ [| 0x91uy |]; ascii fourcc; raw ]
-
-let private legacyAacSeq = [| 0xAFuy;0x00uy;0x12uy;0x10uy |]
-let private legacyAacRaw = Array.concat [ [| 0xAFuy;0x01uy |]; [| 0x21uy;0x10uy;0x04uy |] ]
+    exVideoCodedFramesNoCts "av01" frameType obu
 
 [<Fact>]
 let ``E-RTMP(HEVC+AAC) を MKV に変換する`` () =
