@@ -39,6 +39,19 @@ namespace PeerCastStation.FLV
 
   public class FLVFileParser
   {
+    /// <summary>
+    /// FLV ファイルヘッダのバイト数。再同期時に「次の Feed でヘッダに育つかもしれない
+    /// 末尾の断片」を判断するためにも使う。
+    /// </summary>
+    private const int FLVFileHeaderSize = 13;
+
+    /// <summary>
+    /// タグ本体として受け入れる最大バイト数。DataSize フィールドの上限(24bit=16MB)ではなく、
+    /// 実際の配信で起こりうる大きさで頭打ちにして、破損した長さフィールドで
+    /// パーサが延々とデータを待ち続けるのを防ぐ。
+    /// </summary>
+    private const int MaxTagDataSize = 8*1024*1024;
+
     private enum TagType {
       Audio  = 8,
       Video  = 9,
@@ -71,14 +84,21 @@ namespace PeerCastStation.FLV
           return false;
         }
         var type = (TagType)(binary[0] & 0x1F);
-        if (type==TagType.Audio || type==TagType.Video || type==TagType.Script) {
-          header = new FLVTagHeader(binary);
-          return true;
-        }
-        else {
+        if (type!=TagType.Audio && type!=TagType.Video && type!=TagType.Script) {
           header = null;
           return false;
         }
+        // DataSize は24bitなので、破損した1バイトだけで最大16MBのタグ長になりうる。
+        // その長さが揃うまでパーサはタグを読み出せず、待っている間バッファは伸び続ける
+        // (2Mbps の配信なら数分ぶん貯め込んだうえ、その間は何も出力されない)。
+        // 実在のタグは大きなキーフレームでも上限に遠く及ばないので、桁違いの長さは
+        // タグ先頭ではないと判断して再同期スキャンに回す。
+        if (((binary[1]<<16) | (binary[2]<<8) | binary[3])>MaxTagDataSize) {
+          header = null;
+          return false;
+        }
+        header = new FLVTagHeader(binary);
+        return true;
       }
     }
 
@@ -192,6 +212,10 @@ namespace PeerCastStation.FLV
     /// 実装バグが「壊れた入力」として毎タグ握り潰され、出力が無音のまま止まっているのに
     /// ログには入力のせいだと書かれる状態になる。下流側は各自 TryParse と範囲チェックで
     /// 破損入力を弾く責任を持ち、それでも出る例外は本物のバグとして表に出す。
+    ///
+    /// このメソッド自体も Read/ReadAsync のパース用 try の外から呼ぶ必要がある。
+    /// 中から呼ぶと、下流の EndOfStreamException を catch がデータ待ちと誤認して
+    /// タグ先頭へ巻き戻し、同じタグを永久に再パースし続けることになる。
     /// </summary>
     private void DispatchTag(FLVTag tag, IRTMPContentSink sink)
     {
@@ -239,6 +263,25 @@ namespace PeerCastStation.FLV
     }
 
     /// <summary>
+    /// 再同期スキャンの停止位置になりうるバイトか。
+    /// タグヘッダの先頭(予約ビットが 0 で type が 8/9/18)に加えて、
+    /// FLV ファイルヘッダの先頭('F')でも止まる。
+    ///
+    /// 'F' を含めないと、ヘッダの途中で切れた入力を拾えない。"FLV" もヘッダ内の
+    /// 0x01/0x05/0x00 もタグ候補バイトではないため、スキャンは末尾まで空振りして
+    /// その範囲を走査済み(=消費してよい)と判断し、断片ごと捨ててしまう。
+    /// OnFLVHeader は下流フィルタが状態をリセットする唯一の契機なので、取りこぼすと
+    /// 古い avcC やヘッダ送信済みフラグを抱えたまま新しいストリームを処理することになる。
+    /// 'F' で止まった後にヘッダ13バイトが揃っていなければ、続く読み出しがデータ不足で
+    /// 抜けて 'F' の位置まで巻き戻るので、断片は次の Feed まで保持される。
+    /// </summary>
+    private static bool IsResyncCandidate(int b)
+    {
+      if (b=='F') return true;
+      return (b & 0xC0)==0 && ((b & 0x1F)==8 || (b & 0x1F)==9 || (b & 0x1F)==18);
+    }
+
+    /// <summary>
     /// 破損タグの読み飛ばしを記録する。壊れた入力では毎タグ発生しうるので
     /// 警告は最初の1回だけにし、以降は Debug に落とす。
     /// </summary>
@@ -266,15 +309,24 @@ namespace PeerCastStation.FLV
         // 次の Feed が同じゴミを先頭から再走査するため、0xFF 埋めのような壊れた入力で
         // バッファが無制限に伸び、走査量がバイト数の二乗で増える。
         var resume_pos = start_pos;
+        // sink への配信はパース用の try の外で行う。下流(FLVContentBuffer / FLVToMKV /
+        // FLVToMPEG2TS)が投げた EndOfStreamException をここの catch が拾うと、
+        // 「データ待ち」と誤認してタグ先頭へ巻き戻す。FLVParseBuffer.Trim は consumed==0 で
+        // 何も捨てないので、次の Feed が同じ毒タグを再配信して再び例外になり、
+        // 出力が恒久停止したうえでバッファが配信レートのまま伸び続ける。
+        // 下流は各自 TryParse と範囲チェックで破損入力を弾く責任を持ち、
+        // それでも出る例外は本物のバグとして表に出す。
+        FLVTag? pending_tag = null;
+        FLVFileHeader? pending_header = null;
         try {
           switch (state) {
           case ReaderState.Header:
             {
-              var bin = ReadBytes(stream, 13, out eos);
+              var bin = ReadBytes(stream, FLVFileHeaderSize, out eos);
               if (eos) goto error;
               var header = new FLVFileHeader(bin);
               if (header.IsValid) {
-                sink.OnFLVHeader(header);
+                pending_header = header;
                 state = ReaderState.Body;
               }
               else {
@@ -291,7 +343,7 @@ namespace PeerCastStation.FLV
                 if (FLVTag.TryReadTag(this, header.Value, stream, out var tag)) {
                   if (tag.IsValidFooter) {
                     read_valid = true;
-                    DispatchTag(tag, sink);
+                    pending_tag = tag;
                   }
                 }
                 else {
@@ -301,12 +353,12 @@ namespace PeerCastStation.FLV
               }
               else {
                 stream.Position = start_pos;
-                var headerbin = ReadBytes(stream, 13, out eos);
+                var headerbin = ReadBytes(stream, FLVFileHeaderSize, out eos);
                 if (eos) goto error;
                 var fileheader = new FLVFileHeader(headerbin);
                 if (fileheader.IsValid) {
                   read_valid = true;
-                  sink.OnFLVHeader(fileheader);
+                  pending_header = fileheader;
                 }
               }
               if (!read_valid) {
@@ -314,12 +366,14 @@ namespace PeerCastStation.FLV
                 var b = stream.ReadByte();
                 while (true) {
                   if (b<0) {
-                    // 走査した範囲にタグ候補は存在しないので、丸ごと消費済みとして捨てさせる。
+                    // 走査した範囲に再同期候補は存在しないので、丸ごと消費済みとして捨てさせる。
+                    // ヘッダ断片は IsResyncCandidate が 'F' で止まることで保持されるため、
+                    // ここへ来た範囲に残す価値のあるバイトはない。
                     resume_pos = stream.Position;
                     eos = true;
                     goto error;
                   }
-                  if ((b & 0xC0)==0 && ((b & 0x1F)==8 || (b & 0x1F)==9 || (b & 0x1F)==18)) {
+                  if (IsResyncCandidate(b)) {
                     break;
                   }
                   b = stream.ReadByte();
@@ -342,6 +396,14 @@ namespace PeerCastStation.FLV
       error:
         if (eos) {
           stream.Position = resume_pos;
+        }
+        // ここから先は try の外。ストリーム位置は確定済みなので、下流が投げても
+        // 巻き戻しは起きず、同じタグを再配信し続けることはない。
+        if (pending_header!=null) {
+          sink.OnFLVHeader(pending_header);
+        }
+        if (pending_tag!=null) {
+          DispatchTag(pending_tag, sink);
         }
       }
       return processed;
@@ -367,6 +429,11 @@ namespace PeerCastStation.FLV
 
       bool eos = false;
       while (!eos) {
+        // Read と同じ理由で sink への配信は try の外に出す。こちらは巻き戻さないので
+        // 無限ループにはならないが、下流の EndOfStreamException を「入力の終わり」と
+        // 誤認して、配信が正常終了したかのように黙って読み取りを打ち切ってしまう。
+        FLVTag? pending_tag = null;
+        FLVFileHeader? pending_header = null;
         try {
           len += await stream.ReadBytesAsync(bin, len, 11-len, cancel_token).ConfigureAwait(false);
           var read_valid = false;
@@ -375,22 +442,21 @@ namespace PeerCastStation.FLV
             if (tag.IsValidFooter) {
               len = 0;
               read_valid = true;
-              DispatchTag(tag, sink);
+              pending_tag = tag;
             }
           }
           else {
-            len += await stream.ReadBytesAsync(bin, len, 13-len, cancel_token).ConfigureAwait(false);
+            len += await stream.ReadBytesAsync(bin, len, FLVFileHeaderSize-len, cancel_token).ConfigureAwait(false);
             var fileheader = new FLVFileHeader(bin);
             if (fileheader.IsValid) {
               read_valid = true;
-              sink.OnFLVHeader(fileheader);
+              pending_header = fileheader;
             }
           }
           if (!read_valid) {
             int pos = 1;
             for (; pos<len; pos++) {
-              var b = bin[pos];
-              if ((b & 0xC0)==0 && ((b & 0x1F)==8 || (b & 0x1F)==9 || (b & 0x1F)==18)) {
+              if (IsResyncCandidate(bin[pos])) {
                 break;
               }
             }
@@ -405,6 +471,12 @@ namespace PeerCastStation.FLV
         }
         catch (EndOfStreamException) {
           eos = true;
+        }
+        if (pending_header!=null) {
+          sink.OnFLVHeader(pending_header);
+        }
+        if (pending_tag!=null) {
+          DispatchTag(pending_tag, sink);
         }
       }
 

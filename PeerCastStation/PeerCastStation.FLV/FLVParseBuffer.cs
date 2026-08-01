@@ -12,6 +12,11 @@ namespace PeerCastStation.FLV
   /// </summary>
   internal class FLVParseBuffer
   {
+    /// <summary>詰め替え後に確保しておく容量。平常時のタグはこの範囲に収まる。</summary>
+    private const int CompactedCapacity = 64*1024;
+    /// <summary>この容量を超えたときだけ詰め替えを検討する(平常時は再確保しない)。</summary>
+    private const int CompactThreshold = 256*1024;
+
     private readonly FLVFileParser parser = new FLVFileParser();
     private MemoryStream buffer = new MemoryStream();
 
@@ -44,6 +49,13 @@ namespace PeerCastStation.FLV
       }
       buffer.SetLength(remain);
       buffer.Position = 0;
+      // SetLength は Length を縮めるだけで内部配列を解放しない。大きなキーフレームや
+      // 破損した長さフィールドで一度伸びた配列は、そのままチャンネルの寿命(数時間)ぶん
+      // フィルタインスタンスごとに保持され続ける。残量に対して明らかに過大なときだけ
+      // 詰め替える(毎回作り直すと平常時のコピーが増えるのでしきい値を設ける)。
+      if (buffer.Capacity>CompactThreshold && buffer.Capacity>remain*4) {
+        buffer.Capacity = Math.Max(remain, CompactedCapacity);
+      }
     }
   }
 
