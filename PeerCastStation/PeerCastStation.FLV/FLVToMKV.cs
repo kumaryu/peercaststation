@@ -211,7 +211,7 @@ namespace PeerCastStation.FLV
     }
 
     public class Context
-      : IRTMPContentSink
+      : FLVRemuxContextBase
     {
       public int VideoTrackNumber { get; set; } = 1;
       public int AudioTrackNumber { get; set; } = 2;
@@ -221,8 +221,13 @@ namespace PeerCastStation.FLV
       private const long AudioClusterDurationMs = 1000;
 
       private readonly IMKVContentSink sink;
-      private readonly Logger logger = new Logger(typeof(FLVToMKV));
+      private static readonly Logger logger = new Logger(typeof(FLVToMKV));
 
+      protected override string FilterName { get { return "FLVToMKV"; } }
+      protected override Logger Logger { get { return logger; } }
+
+      // 「設定を受け取ったか」は設定そのものの有無で判る。真偽値を別に持つと
+      // 片方だけ更新する経路が生まれ、トラックが黙って落ちるか null 参照になる。
       private IVideoCodecHandler? videoHandler = null;
       private byte[]? audioConfig = null; // AudioSpecificConfig
       private int audioChannels = 0;
@@ -230,15 +235,9 @@ namespace PeerCastStation.FLV
       private int audioOutputSampleRate = 0;
       private int videoWidth = 0;
       private int videoHeight = 0;
-      private bool hasVideo = false;
-      private bool hasAudio = false;
       private bool videoEnabled = false;
       private bool audioEnabled = false;
       private bool headerSent = false;
-      private bool warnedNoResolution = false;
-      private bool warnedUnsupportedVideo = false;
-      private bool warnedUnsupportedAudio = false;
-      private bool warnedBrokenAudioConfig = false;
       private long ptsBase = -1;
       private bool clusterOpen = false;
       private long clusterBaseMs = 0;
@@ -257,26 +256,21 @@ namespace PeerCastStation.FLV
         audioOutputSampleRate = 0;
         videoWidth = 0;
         videoHeight = 0;
-        hasVideo = false;
-        hasAudio = false;
         videoEnabled = false;
         audioEnabled = false;
         headerSent = false;
-        warnedNoResolution = false;
-        warnedUnsupportedVideo = false;
-        warnedUnsupportedAudio = false;
-        warnedBrokenAudioConfig = false;
+        ResetWarnings();
         ptsBase = -1;
         clusterOpen = false;
         clusterBaseMs = 0;
       }
 
-      public void OnFLVHeader(FLVFileHeader header)
+      public override void OnFLVHeader(FLVFileHeader header)
       {
         Clear();
       }
 
-      public void OnData(DataMessage msg)
+      public override void OnData(DataMessage msg)
       {
         // 解像度は onMetaData の width/height から取得する(コーデック非依存)。
         if (msg.PropertyName!="onMetaData") return;
@@ -321,53 +315,39 @@ namespace PeerCastStation.FLV
         return true;
       }
 
-      // タグ分類は共有分類器(FLVTagClassifier)に一本化し、レガシー/enhanced の差は
-      // そちらで吸収する。ここは種別ごとの処理だけを持つ。
-      public void OnAudio(RTMPMessage msg)
+      // タグ分類は共有分類器(FLVTagClassifier)、種別ごとの振り分けは FLVRemuxContextBase に
+      // 一本化してある。ここは種別ごとの処理だけを持つ。
+      protected override bool IsSupportedAudioCodec(string? fourcc)
       {
-        var info = FLVTagClassifier.Classify(msg);
-        if (info.Kind==FLVTagKind.AudioSequenceEnd || info.Kind==FLVTagKind.Control) return;
-        if (info.FourCc!=FLVTagClassifier.FourCcAac) {
-          WarnUnsupportedAudio(info.FourCc);
-          return;
-        }
-        switch (info.Kind) {
-        case FLVTagKind.AudioSequenceHeader:
-          OnAudioHeader(msg.Body, info.PayloadOffset);
-          break;
-        case FLVTagKind.AudioFrame:
-          OnAudioBody(msg, info.PayloadOffset);
-          break;
-        default:
-          WarnUnsupportedAudio(info.FourCc);
-          break;
-        }
+        return fourcc==FLVTagClassifier.FourCcAac;
       }
 
-      public void OnVideo(RTMPMessage msg)
+      protected override bool IsSupportedVideoCodec(string? fourcc)
       {
-        var info = FLVTagClassifier.Classify(msg);
-        if (info.Kind==FLVTagKind.VideoSequenceEnd || info.Kind==FLVTagKind.Control) return;
-        var codecId = MapVideoCodecId(info.FourCc);
-        if (codecId==null) {
-          WarnUnsupportedVideo(info.FourCc);
-          return;
-        }
-        switch (info.Kind) {
-        case FLVTagKind.VideoSequenceHeader: {
-          var cp = SliceFrom(msg.Body, info.PayloadOffset);
-          if (cp.Length>0) SetVideoHandler(codecId, cp);
-          break;
-        }
-        case FLVTagKind.VideoKeyFrame:
-        case FLVTagKind.VideoInterFrame:
-          OnVideoBody(msg, info.PayloadOffset, info.CompositionTime, info.Kind==FLVTagKind.VideoKeyFrame);
-          break;
-        default:
-          // MPEG2TSSequenceStart はコーデック設定の生バイトではないため CodecPrivate に使えない。
-          WarnUnsupportedVideo(info.FourCc);
-          break;
-        }
+        return MapVideoCodecId(fourcc)!=null;
+      }
+
+      protected override void OnAudioConfig(byte[] body, int offset)
+      {
+        OnAudioHeader(body, offset);
+      }
+
+      protected override void OnAudioFrame(RTMPMessage msg, int offset)
+      {
+        OnAudioBody(msg, offset);
+      }
+
+      protected override void OnVideoConfig(RTMPMessage msg, int offset, string? fourcc)
+      {
+        // IsSupportedVideoCodec を通っているので、この FourCC には必ず CodecID が対応する。
+        var codecId = MapVideoCodecId(fourcc)!;
+        var cp = SliceFrom(msg.Body, offset);
+        if (cp.Length>0) SetVideoHandler(codecId, cp);
+      }
+
+      protected override void OnVideoFrame(RTMPMessage msg, int offset, int compositionTime, bool keyframe)
+      {
+        OnVideoBody(msg, offset, compositionTime, keyframe);
       }
 
       private static string? MapVideoCodecId(string? fourcc)
@@ -394,21 +374,6 @@ namespace PeerCastStation.FLV
         var handler = new PassthroughVideoCodecHandler(codecId);
         handler.SetSequenceHeader(codecPrivate);
         videoHandler = handler;
-        hasVideo = true;
-      }
-
-      private void WarnUnsupportedVideo(string? fourcc)
-      {
-        if (warnedUnsupportedVideo) return;
-        logger.Warn("FLVToMKV: 未対応の映像コーデック/構成のため破棄します (FourCC={0})", fourcc ?? "(none)");
-        warnedUnsupportedVideo = true;
-      }
-
-      private void WarnUnsupportedAudio(string? fourcc)
-      {
-        if (warnedUnsupportedAudio) return;
-        logger.Warn("FLVToMKV: 未対応の音声コーデック/構成のため破棄します (FourCC={0})", fourcc ?? "(none)");
-        warnedUnsupportedAudio = true;
       }
 
       private void OnAudioHeader(byte[] body, int offset)
@@ -443,14 +408,11 @@ namespace PeerCastStation.FLV
         audioSampleRate = asc.SampleRate;
         audioOutputSampleRate = asc.OutputSampleRate;
         audioChannels = asc.ChannelCount;
-        hasAudio = true;
       }
 
       private void WarnBrokenAudioConfig(string reason)
       {
-        if (warnedBrokenAudioConfig) return;
-        logger.Warn("FLVToMKV: 音声シーケンスヘッダを破棄します ({0})", reason);
-        warnedBrokenAudioConfig = true;
+        WarnOnce("brokenAudioConfig", "音声シーケンスヘッダを破棄します ({0})", reason);
       }
 
       private void OnAudioBody(RTMPMessage msg, int offset)
@@ -490,11 +452,10 @@ namespace PeerCastStation.FLV
       private void WriteHeaderIfNeeded()
       {
         if (headerSent) return;
-        videoEnabled = hasVideo && videoHandler!=null && videoWidth>0 && videoHeight>0;
-        audioEnabled = hasAudio && audioConfig!=null;
-        if (hasVideo && videoHandler!=null && !videoEnabled && !warnedNoResolution) {
-          logger.Warn("FLVToMKV: onMetaDataから解像度が取得できないため映像トラックを除外します");
-          warnedNoResolution = true;
+        videoEnabled = videoHandler!=null && videoWidth>0 && videoHeight>0;
+        audioEnabled = audioConfig!=null;
+        if (videoHandler!=null && !videoEnabled) {
+          WarnOnce("noResolution", "解像度が取得できないため映像トラックを除外します");
         }
         if (!videoEnabled && !audioEnabled) return;
 

@@ -630,7 +630,7 @@ namespace PeerCastStation.FLV
     }
 
     public class Context
-      : IRTMPContentSink
+      : FLVRemuxContextBase
     {
       public int VideoPID { get; set; } = 0x100;
       public int AudioPID { get; set; } = 0x101;
@@ -648,15 +648,10 @@ namespace PeerCastStation.FLV
       private ADTSHeader adtsHeader = ADTSHeader.Default;
       private int nalSizeLen = 0;
       private long ptsBase = -1;
-      private bool warnedBrokenAudioConfig = false;
-      private bool warnedBrokenVideoConfig = false;
-      private bool warnedMissingAudioConfig = false;
-      private bool warnedOversizedAudioFrame = false;
-      private bool warnedMissingVideoConfig = false;
-      private bool warnedBrokenVideoFrame = false;
-      private bool warnedUnsupportedVideo = false;
-      private bool warnedUnsupportedAudio = false;
-      private readonly Logger logger = new Logger(typeof(FLVToMPEG2TS));
+      private static readonly Logger logger = new Logger(typeof(FLVToMPEG2TS));
+
+      protected override string FilterName { get { return "FLVToMPEG2TS"; } }
+      protected override Logger Logger { get { return logger; } }
 
       private class MPEG2TSStreamWriter
         : IMPEG2TSContentSink
@@ -706,17 +701,10 @@ namespace PeerCastStation.FLV
         adtsHeader = ADTSHeader.Default;
         nalSizeLen = 0;
         ptsBase = -1;
-        warnedBrokenAudioConfig = false;
-        warnedBrokenVideoConfig = false;
-        warnedMissingAudioConfig = false;
-        warnedOversizedAudioFrame = false;
-        warnedMissingVideoConfig = false;
-        warnedBrokenVideoFrame = false;
-        warnedUnsupportedVideo = false;
-        warnedUnsupportedAudio = false;
+        ResetWarnings();
       }
 
-      public void OnFLVHeader(FLVFileHeader header)
+      public override void OnFLVHeader(FLVFileHeader header)
       {
         Clear();
       }
@@ -814,9 +802,7 @@ namespace PeerCastStation.FLV
 
       private void WarnBrokenAudioConfig(string reason)
       {
-        if (warnedBrokenAudioConfig) return;
-        logger.Warn("FLVToMPEG2TS: 音声シーケンスヘッダを破棄します ({0})", reason);
-        warnedBrokenAudioConfig = true;
+        WarnOnce("brokenAudioConfig", "音声シーケンスヘッダを破棄します ({0})", reason);
       }
 
       private void OnAACBody(RTMPMessage msg, int offset)
@@ -957,37 +943,27 @@ namespace PeerCastStation.FLV
 
       private void WarnBrokenVideoConfig()
       {
-        if (warnedBrokenVideoConfig) return;
-        logger.Warn("FLVToMPEG2TS: avcCが不完全なため映像シーケンスヘッダを破棄します");
-        warnedBrokenVideoConfig = true;
+        WarnOnce("brokenVideoConfig", "avcCが不完全なため映像シーケンスヘッダを破棄します");
       }
 
       private void WarnMissingAudioConfig()
       {
-        if (warnedMissingAudioConfig) return;
-        logger.Warn("FLVToMPEG2TS: 音声シーケンスヘッダ(AudioSpecificConfig)より前のフレームを破棄します");
-        warnedMissingAudioConfig = true;
+        WarnOnce("missingAudioConfig", "音声シーケンスヘッダ(AudioSpecificConfig)より前のフレームを破棄します");
       }
 
       private void WarnOversizedAudioFrame()
       {
-        if (warnedOversizedAudioFrame) return;
-        logger.Warn("FLVToMPEG2TS: ADTSのframe_length(13bit)に収まらない音声フレームを破棄します");
-        warnedOversizedAudioFrame = true;
+        WarnOnce("oversizedAudioFrame", "ADTSのframe_length(13bit)に収まらない音声フレームを破棄します");
       }
 
       private void WarnMissingVideoConfig()
       {
-        if (warnedMissingVideoConfig) return;
-        logger.Warn("FLVToMPEG2TS: 映像シーケンスヘッダ(avcC)より前のフレームを破棄します");
-        warnedMissingVideoConfig = true;
+        WarnOnce("missingVideoConfig", "映像シーケンスヘッダ(avcC)より前のフレームを破棄します");
       }
 
       private void WarnBrokenVideoFrame()
       {
-        if (warnedBrokenVideoFrame) return;
-        logger.Warn("FLVToMPEG2TS: NALユニット長が不正なため映像フレームを破棄します");
-        warnedBrokenVideoFrame = true;
+        WarnOnce("brokenVideoFrame", "NALユニット長が不正なため映像フレームを破棄します");
       }
 
       private void OnAVCBody(RTMPMessage msg, int offset, int cts, bool keyframe)
@@ -1085,69 +1061,42 @@ namespace PeerCastStation.FLV
         );
       }
 
-      // タグ分類は共有分類器(FLVTagClassifier)に一本化する。
-      // 以前はここで body[0]&0x0F を codecId として直接読んでいたため、E-RTMP チャンネルでは
-      // Ex タグの packetType を codecId と誤読し(例: ModEx の 7 を AVC と誤認)、
-      // ゴミTSを出力していた。本フィルタは H.264/AAC のみ対応なので、
-      // それ以外はレガシー/Ex を問わず警告して破棄する。
-      public void OnAudio(RTMPMessage msg)
+      // タグ分類は共有分類器(FLVTagClassifier)、種別ごとの振り分けは FLVRemuxContextBase に
+      // 一本化してある。以前はここで body[0]&0x0F を codecId として直接読んでいたため、
+      // E-RTMP チャンネルでは Ex タグの packetType を codecId と誤読し
+      // (例: ModEx の 7 を AVC と誤認)、ゴミTSを出力していた。
+      // 本フィルタは H.264/AAC のみ対応なので、それ以外はレガシー/Ex を問わず破棄する。
+      protected override bool IsSupportedAudioCodec(string? fourcc)
       {
-        var info = FLVTagClassifier.Classify(msg);
-        if (info.Kind==FLVTagKind.AudioSequenceEnd || info.Kind==FLVTagKind.Control) return;
-        if (info.FourCc!=FLVTagClassifier.FourCcAac) {
-          WarnUnsupportedAudio(info.FourCc);
-          return;
-        }
-        switch (info.Kind) {
-        case FLVTagKind.AudioSequenceHeader:
-          OnAACHeader(msg.Body, info.PayloadOffset);
-          break;
-        case FLVTagKind.AudioFrame:
-          OnAACBody(msg, info.PayloadOffset);
-          break;
-        default:
-          WarnUnsupportedAudio(info.FourCc);
-          break;
-        }
+        return fourcc==FLVTagClassifier.FourCcAac;
       }
 
-      public void OnVideo(RTMPMessage msg)
+      protected override bool IsSupportedVideoCodec(string? fourcc)
       {
-        var info = FLVTagClassifier.Classify(msg);
-        if (info.Kind==FLVTagKind.VideoSequenceEnd || info.Kind==FLVTagKind.Control) return;
-        if (info.FourCc!=FLVTagClassifier.FourCcAvc) {
-          WarnUnsupportedVideo(info.FourCc);
-          return;
-        }
-        switch (info.Kind) {
-        case FLVTagKind.VideoSequenceHeader:
-          OnAVCHeader(msg.Body, info.PayloadOffset);
-          break;
-        case FLVTagKind.VideoKeyFrame:
-        case FLVTagKind.VideoInterFrame:
-          OnAVCBody(msg, info.PayloadOffset, info.CompositionTime, info.Kind==FLVTagKind.VideoKeyFrame);
-          break;
-        default:
-          WarnUnsupportedVideo(info.FourCc);
-          break;
-        }
+        return fourcc==FLVTagClassifier.FourCcAvc;
       }
 
-      private void WarnUnsupportedVideo(string? fourcc)
+      protected override void OnAudioConfig(byte[] body, int offset)
       {
-        if (warnedUnsupportedVideo) return;
-        logger.Warn("FLVToMPEG2TS: 未対応の映像コーデック/構成のため破棄します (FourCC={0})", fourcc ?? "(none)");
-        warnedUnsupportedVideo = true;
+        OnAACHeader(body, offset);
       }
 
-      private void WarnUnsupportedAudio(string? fourcc)
+      protected override void OnAudioFrame(RTMPMessage msg, int offset)
       {
-        if (warnedUnsupportedAudio) return;
-        logger.Warn("FLVToMPEG2TS: 未対応の音声コーデック/構成のため破棄します (FourCC={0})", fourcc ?? "(none)");
-        warnedUnsupportedAudio = true;
+        OnAACBody(msg, offset);
       }
 
-      public void OnData(DataMessage msg)
+      protected override void OnVideoConfig(RTMPMessage msg, int offset, string? fourcc)
+      {
+        OnAVCHeader(msg.Body, offset);
+      }
+
+      protected override void OnVideoFrame(RTMPMessage msg, int offset, int compositionTime, bool keyframe)
+      {
+        OnAVCBody(msg, offset, compositionTime, keyframe);
+      }
+
+      public override void OnData(DataMessage msg)
       {
       }
 

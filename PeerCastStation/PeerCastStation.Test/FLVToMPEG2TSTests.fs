@@ -330,6 +330,27 @@ let ``7_1chのAACをchannelConfigurationそのままで出力する`` () =
     Assert.Equal<(int*int*int) list>([ (1, 4, 7) ], adtsHeaders capture.Content)
 
 [<Fact>]
+let ``解釈できないタグが後続の正常なタグの処理を妨げない`` () =
+    // 切り詰められて構造を解釈できないタグは FourCc も当てにならない。これを
+    // 「未対応コーデック」として扱うと理由が誤りなうえ、1回だけの警告枠を使い切って
+    // 本当に未対応なコーデックが無警告になる。破棄の扱い自体は変わらないので、
+    // ここでは後続の正常なタグが影響を受けないことを確認する。
+    let capture =
+        run (Array.concat [
+                makeTag 9 0 [| 0x17uy |]                   // 1バイトで切れた映像タグ
+                makeTag 8 0 [| 0xAFuy |]                   // 1バイトで切れた音声タグ
+                makeTag 9 0 (Array.concat [ [| 0x17uy;0x00uy;0x00uy;0x00uy;0x00uy |]; avcC ])
+                makeTag 8 0 legacyAacSeq
+             ])
+            (Array.concat [
+                makeTag 9 0  (Array.concat [ [| 0x17uy;0x01uy;0x00uy;0x00uy;0x00uy |]; avcNalus ])
+                makeTag 8 20 (legacyAacFrame (Array.create 32 0x55uy))
+             ])
+    assertValidTS capture.Content
+    Assert.NotEmpty(videoPesHeaders capture.Content)
+    Assert.NotEmpty(adtsHeaders capture.Content)
+
+[<Fact>]
 let ``キーフレーム以外として通知されたavcCでも映像を出力する`` () =
     // avcC を frameType=2(inter)で送るエンコーダ/中継実装が実在する。分類器が
     // frameType でシーケンスヘッダを絞っていたため avcC を取り逃し、nalSizeLen が
