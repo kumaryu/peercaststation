@@ -65,13 +65,12 @@ namespace PeerCastStation.FLV
         var bitrate = 0.0;
         // 値の型も中身も配信者側のエンコーダ次第なので、AMFValue のキャスト演算子ではなく
         // 例外を投げない読み出し(AMFValue.TryGetDouble)を通す。
-        var val = metadata.Arguments[0]["maxBitrate"];
-        if (!AMF.AMFValue.IsNull(val)) {
-          // maxBitrate は "2500k" のような単位付きの文字列で来る前提の項目。
-          string maxBitrateStr = System.Text.RegularExpressions.Regex.Replace((string?)val ?? "", @"([\d]+)k", "$1");
-          if (Double.TryParse(maxBitrateStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var maxBitrate)) {
-            bitrate += maxBitrate;
-          }
+        // maxBitrate の有無ではなく「数値として読めたか」で videodatarate へ落とす。
+        // 存在の有無だけで分岐すると、maxBitrate が空文字や非数値だった場合に
+        // videodatarate まで諦めることになり、読める videodatarate を持つ配信が
+        // 0kbps として公開される。
+        if (TryGetMaxBitrate(metadata.Arguments[0]["maxBitrate"], out var maxBitrate)) {
+          bitrate += maxBitrate;
         }
         else if (AMF.AMFValue.TryGetDouble(metadata.Arguments[0]["videodatarate"], out var videodatarate)) {
           bitrate += videodatarate;
@@ -84,6 +83,18 @@ namespace PeerCastStation.FLV
       OnChannelInfoChanged(info);
       OnHeaderChanged(msg);
       OnContentChanged(msg);
+    }
+
+    /// <summary>
+    /// onMetaData の maxBitrate を数値として読む。"2500k" のような単位付きの文字列で
+    /// 来る前提の項目だが、型も書式も配信者のエンコーダ次第なので読めないことがある。
+    /// </summary>
+    private static bool TryGetMaxBitrate(AMF.AMFValue value, out double result)
+    {
+      result = 0.0;
+      if (AMF.AMFValue.IsNull(value)) return false;
+      var text = System.Text.RegularExpressions.Regex.Replace((string?)value ?? "", @"([\d]+)k", "$1");
+      return Double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
     }
 
     public void OnFLVHeader(FLVFileHeader header)
