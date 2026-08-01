@@ -246,6 +246,8 @@ namespace PeerCastStation.FLV
         if (TryGetDimension(wv, out var w) && TryGetDimension(hv, out var h)) {
           videoWidth = w;
           videoHeight = h;
+          // 解像度が判らず映像トラックを落としていた場合、ここで条件が揃う。
+          RestartSegmentIfTrackAvailable();
         }
       }
 
@@ -334,6 +336,7 @@ namespace PeerCastStation.FLV
             videoHeight = h;
           }
         }
+        RestartSegmentIfTrackAvailable();
       }
 
       private void OnAudioHeader(byte[] body, int offset)
@@ -372,6 +375,7 @@ namespace PeerCastStation.FLV
         audioSampleRate = asc.SampleRate;
         audioOutputSampleRate = asc.OutputSampleRate;
         audioChannels = asc.ChannelCount;
+        RestartSegmentIfTrackAvailable();
       }
 
       private void WarnBrokenAudioConfig(string reason)
@@ -412,13 +416,49 @@ namespace PeerCastStation.FLV
         sink.OnBlock(block);
       }
 
+      /// <summary>映像トラックを構成できるだけの情報が揃っているか。</summary>
+      private bool CanEnableVideo()
+      {
+        return videoCodecPrivate!=null && videoWidth>0 && videoHeight>0;
+      }
+
+      /// <summary>音声トラックを構成できるだけの情報が揃っているか。</summary>
+      private bool CanEnableAudio()
+      {
+        return audioConfig!=null;
+      }
+
+      /// <summary>
+      /// ヘッダ送出後に、除外していたトラックの条件が揃ったら Segment を作り直す。
+      ///
+      /// Matroska の Tracks は Segment の先頭にしか置けないため、送出済みのヘッダへ
+      /// 後からトラックを足すことはできない。にもかかわらず有効トラックは最初の
+      /// メディアフレームで確定するので、音声のシーケンスヘッダが最初の映像フレームより
+      /// 後に届く配信(再接続や途中参加で AAC ヘッダがキーフレームより後になる場合)では、
+      /// 以後どれだけ AudioSpecificConfig が届いても音声トラックが作られず、
+      /// そのセッションが最後まで無音になっていた。解像度が onMetaData で後から判る
+      /// HEVC/AV1 の映像トラックも同じ理由で落ちたままになる。
+      ///
+      /// MKVSink.OnHeader は新しい論理ストリームとして stream id を進め位置を 0 へ戻すので、
+      /// ここでヘッダ未送出の状態へ戻せば途中からでもトラックを増やせる。設定の送り直しは
+      /// OnVideoConfig/OnAudioHeader が同一内容として弾くため GOP ごとには発生しない。
+      /// </summary>
+      private void RestartSegmentIfTrackAvailable()
+      {
+        if (!headerSent) return;
+        if (CanEnableVideo()==videoEnabled && CanEnableAudio()==audioEnabled) return;
+        headerSent = false;
+        clusterOpen = false;
+        ResetTimestampBase();
+      }
+
       private void WriteHeaderIfNeeded()
       {
         if (headerSent) return;
-        videoEnabled = videoCodecPrivate!=null && videoWidth>0 && videoHeight>0;
-        audioEnabled = audioConfig!=null;
+        videoEnabled = CanEnableVideo();
+        audioEnabled = CanEnableAudio();
         if (videoCodecPrivate!=null && !videoEnabled) {
-          WarnOnce("noResolution", "解像度が取得できないため映像トラックを除外します");
+          WarnOnce("noResolution", "解像度が取得できないため映像トラックを除外します (codec={0})", videoCodecId ?? "(none)");
         }
         if (!videoEnabled && !audioEnabled) return;
 

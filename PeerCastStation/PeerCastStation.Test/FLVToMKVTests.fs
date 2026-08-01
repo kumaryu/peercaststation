@@ -592,6 +592,37 @@ let ``onMetaData の解像度が数値でない型でもフォルトしない`` 
     Assert.True(contains capture.Content [| 0x82uy;0x00uy;0x00uy;0x80uy |], "音声フレームが出力される")
 
 [<Fact>]
+let ``最初の映像フレームより後に届いた音声設定でもトラックを構成する`` () =
+    // Matroska の Tracks は Segment 先頭にしか置けないため、有効トラックを最初の
+    // メディアフレームで確定したままにすると、後から届いた AudioSpecificConfig が
+    // 永久に無視されセッション全体が無音になる。Segment を作り直して取り込む。
+    let capture = CaptureSink()
+    let sink = FLVToMKVContentFilter().Activate(capture)
+
+    let headerData =
+        Array.concat [
+            flvHeader
+            makeTag 18 0 (onMetaDataBody 640.0 360.0)
+            makeTag 9 0 legacyAvcSeq
+        ]
+    let bodyData =
+        Array.concat [
+            makeTag 9 0  legacyAvcKey  // ここで映像のみのヘッダが確定していた
+            makeTag 8 20 legacyAacSeq  // 音声設定は最初の映像フレームより後
+            makeTag 8 20 legacyAacRaw
+        ]
+
+    sink.OnChannelInfo(ChannelInfo(AtomCollection()))
+    sink.OnContentHeader(newContent headerData)
+    sink.OnContent(newContent bodyData)
+    sink.OnStop(StopReason.OffAir)
+
+    Assert.Equal(2, capture.HeaderCount)
+    let last = capture.Headers.[capture.HeaderCount-1]
+    Assert.True(contains last (ascii "A_AAC"), "作り直したヘッダに音声トラックが入る")
+    Assert.True(contains last (ascii "V_MPEG4/ISO/AVC"), "映像トラックも維持される")
+
+[<Fact>]
 let ``先頭フレームが負CTSでも絶対タイムスタンプが負にならない`` () =
     let capture = CaptureSink()
     let sink = FLVToMKVContentFilter().Activate(capture)
