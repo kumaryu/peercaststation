@@ -69,12 +69,13 @@ let ``MPEG2TSSequenceStart をチャンネルヘッダに昇格させない`` ()
     Assert.Equal(1, capture.HeaderCount)
 
 [<Fact>]
-let ``レガシー映像の非キーフレームをシーケンスヘッダとして昇格させない`` () =
+let ``壊れた非キーフレームタグをシーケンスヘッダとして昇格させない`` () =
     // レガシー AVC の判定を AVCPacketType(body[1]==0)だけで行うと、AVCPacketType が
     // 0 に化けた壊れたインターフレーム(0x27 0x00 ...)や frameType=5 のコマンドフレーム
     // (body[1] はコマンド番号で 0=StartOfClientSeek)までコーデック設定と見なしてしまう。
     // 昇格すると OnHeaderChanged が GenerateStreamID() を呼ぶので、この手のタグ1つで
-    // 全視聴者の再初期化を繰り返し起こせる。master は body[0]==0x17 を要求していた。
+    // 全視聴者の再初期化を繰り返し起こせる。非キーフレームの昇格はペイロードが
+    // avcC として内容検証を通る場合に限る(通る場合のテストは別項)。
     let garbage = [| 0xAAuy;0xBBuy;0xCCuy;0xDDuy |]
     let capture =
         run (Array.concat [
@@ -90,6 +91,97 @@ let ``レガシー映像の非キーフレームをシーケンスヘッダと�
                 "本物の avcC は昇格する")
     // ヘッダ生成は本物の avcC による1回だけ。昇格させていると破損タグごとに増える。
     Assert.Equal(1, capture.HeaderCount)
+
+[<Fact>]
+let ``frameType=2で送られた有効なavcCも内容検証で昇格する`` () =
+    // avcC を frameType=2(inter)で送るエンコーダ/中継は実在する(FLVTagClassifier の注記)。
+    // キーフレーム通知だけを昇格条件にすると、再多重化(TS/MKV)では映像が出るのに
+    // 素通しFLVの遅延参加視聴者だけがデコーダー設定を受け取れない。AVC については
+    // ペイロードが avcC として解析でき SPS/PPS を伴うことを内容で確かめて昇格させる。
+    let capture =
+        run (Array.concat [
+                flvHeader
+                makeTag 9 0  (Array.concat [ [| 0x27uy;0x00uy;0x00uy;0x00uy;0x00uy |]; avcC ])
+                makeTag 9 20 (Array.concat [ [| 0x17uy;0x01uy;0x00uy;0x00uy;0x00uy |]; avcNalus ])
+             ])
+    Assert.True(capture.Headers |> Array.exists (fun h -> contains h avcC),
+                "frameType=2 の avcC がチャンネルヘッダに埋め込まれる")
+
+[<Fact>]
+let ``未知のFourCCのEx音声シーケンスヘッダを昇格させない`` () =
+    // レガシーの予約 soundFormat 9 は E-RTMP の Ex エスケープと同じビットパターンのため、
+    // 0x9? で始まる壊れた音声タグは Ex の SequenceStart として分類され、任意の4バイトが
+    // FourCC として読める。昇格させると OnHeaderChanged が GenerateStreamID() を呼ぶので、
+    // 内容を変えながら送るだけで全視聴者を毎タグ再初期化させられる。
+    let garbage1 = exAudioSeq "ZZZZ" [| 0xDEuy;0xADuy |]
+    let garbage2 = exAudioSeq "ZZZZ" [| 0xBEuy;0xEFuy |]
+    let capture =
+        run (Array.concat [
+                flvHeader
+                makeTag 9 0  (exVideoSeq "avc1" avcC)
+                makeTag 8 5  garbage1
+                makeTag 8 10 garbage2
+                makeTag 8 15 legacyAacSeq
+             ])
+    Assert.False(capture.Headers |> Array.exists (fun h -> contains h (ascii "ZZZZ")),
+                 "未知の FourCC のタグはチャンネルヘッダに埋め込まれない")
+    Assert.True(capture.Headers |> Array.exists (fun h -> contains h legacyAacSeq),
+                "本物の AAC シーケンスヘッダは昇格する")
+    // ヘッダ生成は avcC と AAC の昇格による2回だけ。ゴミタグを昇格させていると4回になる。
+    Assert.Equal(2, capture.HeaderCount)
+
+[<Fact>]
+let ``レジストリ登録済みコーデックのEx映像シーケンスヘッダは昇格する`` () =
+    // 既知コーデックの判定は FourCcRegistry の1テーブルに集約されている。
+    // vvc1 は変換フィルタ未対応だが E-RTMP v2 の既知映像コーデックなので、
+    // 素通しFLVのチャンネルヘッダには昇格する(テーブルへの登録だけで判定が揃うことの確認)。
+    let vvcC = [| 0x01uy; 0x02uy; 0x03uy; 0x04uy |]
+    let capture =
+        run (Array.concat [
+                flvHeader
+                makeTag 9 0 (exVideoSeq "vvc1" vvcC)
+             ])
+    Assert.True(capture.Headers |> Array.exists (fun h -> contains h vvcC),
+                "vvc1 の設定がチャンネルヘッダに埋め込まれる")
+
+[<Fact>]
+let ``同一内容のシーケンスヘッダ再送で全視聴者を再初期化しない`` () =
+    // 多くのエンコーダは GOP ごとにシーケンスヘッダを送り直す。内容が同じなら
+    // チャンネルヘッダは変わらないのに、そのたびに GenerateStreamID() で新しい論理
+    // ストリームを始めると、再送のたびに全視聴者の再生が初期化される。
+    let capture =
+        run (Array.concat [
+                flvHeader
+                makeTag 9 0  (exVideoSeq "avc1" avcC)
+                makeTag 8 5  legacyAacSeq
+                makeTag 9 20 (exVideoCodedFrames "avc1" 1 0 avcNalus)
+                makeTag 9 40 (exVideoSeq "avc1" avcC)   // GOP 境界の再送
+                makeTag 8 45 legacyAacSeq               // 同上
+             ])
+    // ヘッダ生成は初回の avcC と AAC の2回だけ。再送で増えない。
+    Assert.Equal(2, capture.HeaderCount)
+
+[<Fact>]
+let ``intに収まらない videodatarate をビットレートとして公開しない`` () =
+    // TryGetDouble は "1e300" のような指数表記も受理する。未チェックの (int) キャストは
+    // int.MinValue になり、負の巨大ビットレートが ChanInfo として全ネットワークに
+    // 公開される。int で表現できない値は読めなかったもの(0kbps)として扱う。
+    let onMetaData =
+        Array.concat [
+            amf0String "onMetaData"
+            [| 0x08uy; 0uy;0uy;0uy;1uy |] // ECMAArray(associative-count=1)
+            amf0Key "videodatarate"
+            amf0String "1e300"
+            [| 0uy;0uy;0x09uy |]          // object end marker
+        ]
+    let capture =
+        run (Array.concat [
+                flvHeader
+                makeTag 18 0 onMetaData
+                makeTag 9 0  (exVideoSeq "avc1" avcC)
+             ])
+    Assert.NotNull(capture.ChannelInfo)
+    Assert.Equal(0, capture.ChannelInfo.Bitrate)
 
 [<Fact>]
 let ``小数点付きの videodatarate をホストのロケールに依らず解釈する`` () =

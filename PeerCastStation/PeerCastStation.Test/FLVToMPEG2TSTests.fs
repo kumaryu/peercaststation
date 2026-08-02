@@ -96,6 +96,18 @@ let ``レガシー FLV(H264) を TS に変換する`` () =
     assertValidTS capture.Content
 
 [<Fact>]
+let ``SPS/PPSを欠くavcCでも映像フレームを出力し続ける`` () =
+    // avcC がパラメータセットを運ばず in-band の SPS/PPS に頼る運用は仕様上あり得る。
+    // TS はフレーム内の NAL が素通しで流れるため、IDR への注入が空振りすることを
+    // 警告するだけで設定ごと破棄はしない(CodecPrivate が唯一の拠り所の MKV 側は破棄する)。
+    let emptyAvcC = [| 1uy;0x42uy;0x00uy;0x1Fuy;0xFFuy;0xE0uy;0x00uy |] // numSPS=0, numPPS=0
+    let capture =
+        run (makeTag 9 0 (Array.concat [ [| 0x17uy;0x00uy;0x00uy;0x00uy;0x00uy |]; emptyAvcC ]))
+            (makeTag 9 0 (Array.concat [ [| 0x17uy;0x01uy;0x00uy;0x00uy;0x00uy |]; avcNalus ]))
+    assertValidTS capture.Header
+    assertValidTS capture.Content
+
+[<Fact>]
 let ``E-RTMP(avc1) のタグを TS に変換する`` () =
     // 共有分類器を使う前は body[0]&0x0F を codecId として読んでいたため、
     // Ex タグ(SequenceStart は 0、CodedFrames は 1)はいずれも AVC と認識されず

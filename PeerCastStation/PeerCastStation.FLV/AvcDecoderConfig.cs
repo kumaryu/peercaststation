@@ -36,6 +36,17 @@ namespace PeerCastStation.FLV
       SequenceParameterSetExtensions = sps_ext;
     }
 
+    /// <summary>
+    /// 復号初期化に足る SPS/PPS を少なくとも1つずつ含むか。
+    /// ISO/IEC 14496-15 上は 0 個(パラメータセットを in-band で運ぶ運用)も合法なので、
+    /// <see cref="TryParse"/> は構造の妥当性だけを見てこれを成功条件にしない。
+    /// 設定として配ってよいかはコンテナごとに事情が違う(CodecPrivate が唯一の拠り所の
+    /// Matroska では必須、素通しの TS では in-band で補える)ため、利用側がこれで判断する。
+    /// </summary>
+    public bool HasParameterSets {
+      get { return SequenceParameterSets.Length>0 && PictureParameterSets.Length>0; }
+    }
+
     public static bool TryParse(ReadOnlySpan<byte> data, out AvcDecoderConfig result)
     {
       result = default;

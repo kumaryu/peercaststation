@@ -158,7 +158,7 @@ namespace PeerCastStation.FLV
   /// FLVToMPEG2TS の構造に倣い、TS固有部を EBML 出力に置き換えたもの。
   /// 対応コーデック(H.264/HEVC/AV1 と AAC)はいずれも CodecPrivate もフレームデータも
   /// 無加工で流用できるため、コーデック固有の処理は持たず
-  /// <see cref="Context.MapVideoCodecId"/> の対応表だけで振り分ける。
+  /// <see cref="FourCcRegistry"/> の記述子(MkvCodecId)だけで振り分ける。
   /// </summary>
   public class FLVToMKV
   {
@@ -269,14 +269,16 @@ namespace PeerCastStation.FLV
 
       // タグ分類は共有分類器(FLVTagClassifier)、種別ごとの振り分けは FLVRemuxContextBase に
       // 一本化してある。ここは種別ごとの処理だけを持つ。
-      protected override bool IsSupportedAudioCodec(string? fourcc)
+      // 音声は AudioSpecificConfig の解析(OnAudioHeader)が AAC 前提なので、Matroska に
+      // CodecID があるかではなく AAC そのものであることを要求する。
+      protected override bool IsSupportedAudioCodec(FourCcCodec? codec)
       {
-        return fourcc==FLVTagClassifier.FourCcAac;
+        return codec==FourCcRegistry.Aac;
       }
 
-      protected override bool IsSupportedVideoCodec(string? fourcc)
+      protected override bool IsSupportedVideoCodec(FourCcCodec? codec)
       {
-        return MapVideoCodecId(fourcc)!=null;
+        return codec?.MkvCodecId!=null;
       }
 
       protected override void OnAudioConfig(byte[] body, int offset)
@@ -289,19 +291,32 @@ namespace PeerCastStation.FLV
         OnAudioBody(msg, offset);
       }
 
-      protected override void OnVideoConfig(RTMPMessage msg, int offset, string? fourcc)
+      protected override void OnVideoConfig(RTMPMessage msg, int offset, FourCcCodec? codec)
       {
-        // IsSupportedVideoCodec を通っているので、この FourCC には必ず CodecID が対応する。
+        // IsSupportedVideoCodec を通っているので、記述子は非 null で必ず CodecID を持つ。
         // ペイロードの実体は FLVRemuxContextBase が保証している。
-        var codecId = MapVideoCodecId(fourcc)!;
+        var codecId = codec!.MkvCodecId!;
         var payload = new ReadOnlySpan<byte>(msg.Body, offset, msg.Body.Length-offset);
         // 多くのエンコーダは GOP ごとにシーケンスヘッダを送り直す。同じ内容なら取り込み直す
         // 意味はなく(ヘッダ送信後は CodecPrivate を差し替えても出力に反映されない)、
         // 数時間の配信では取りこぼしのないコピーがそのまま無駄になる。
+        // 比較は CodecID で行う(hvc1/hev1 は Matroska 上は同じトラック宣言になるため)。
+        // 受理済みの設定はこの検査を通っているので、内容検証より先に弾いてよい。
         if (videoCodecId==codecId && videoCodecPrivate!=null && payload.SequenceEqual(videoCodecPrivate)) {
           return;
         }
-        SetVideoCodec(codecId, payload.ToArray());
+        // Matroska の V_MPEG4/ISO/AVC は CodecPrivate(avcC)が復号初期化の唯一の拠り所。
+        // 構造が壊れているか SPS/PPS を欠く avcC を受理すると、全プレイヤーが
+        // デコーダー初期化に失敗する映像トラックを、フィルタは健全と信じたまま宣言し続ける。
+        // (SPS/PPS を in-band で運ぶ運用は仕様上あり得るが、Matroska では表現できない。
+        // フレームが素通しの TS 側は同じ入力を警告付きで受理する — コンテナ由来の非対称。)
+        // HEVC/AV1 の CodecPrivate は解析器が無いため従来どおり無検査で通す。
+        if (codec==FourCcRegistry.Avc &&
+            (!AvcDecoderConfig.TryParse(payload, out var avcc) || !avcc.HasParameterSets)) {
+          WarnBrokenVideoConfig("avcCが不完全かSPS/PPSを欠いています");
+          return;
+        }
+        SetVideoCodec(codec, payload.ToArray());
       }
 
       protected override void OnVideoFrame(RTMPMessage msg, int offset, int compositionTime, bool keyframe)
@@ -309,27 +324,14 @@ namespace PeerCastStation.FLV
         OnVideoBody(msg, offset, compositionTime, keyframe);
       }
 
-      private const string CodecIdAvc = "V_MPEG4/ISO/AVC";
-
-      private static string? MapVideoCodecId(string? fourcc)
-      {
-        switch (fourcc) {
-        case FLVTagClassifier.FourCcAvc: return CodecIdAvc;
-        case "hvc1":
-        case "hev1": return "V_MPEGH/ISO/HEVC";
-        case "av01": return "V_AV1"; // Matroska の AV1 CodecID(FourCC の av01 とは異なる)
-        default:     return null;
-        }
-      }
-
-      private void SetVideoCodec(string codecId, byte[] codecPrivate)
+      private void SetVideoCodec(FourCcCodec codec, byte[] codecPrivate)
       {
         // OnVideoConfig が同一内容の送り直しを弾いているので、設定済みでここへ来たら
         // 実体の変わった再設定。送出済み Tracks の CodecPrivate は後から差し替えられない
         // ため、Segment を作り直して新しい設定で宣言し直す。放置すると新しい SPS/PPS を
         // 参照するフレームが古い CodecPrivate の下で多重化され、映像が乱れる。
         var replaced = videoCodecPrivate!=null;
-        videoCodecId      = codecId;
+        videoCodecId      = codec.MkvCodecId;
         videoCodecPrivate = codecPrivate;
         // Matroska は Video 要素に PixelWidth/PixelHeight を要求するので、解像度が判らないと
         // 映像トラックを作れない。本来は onMetaData が運ぶが、これを送らない(あるいは
@@ -338,7 +340,7 @@ namespace PeerCastStation.FLV
         // HEVC(hvcC)/AV1(av1C)は解析していないため、引き続き onMetaData 頼りになる。
         // 再設定では解像度も変わりうるので、onMetaData 由来の値が残っていても
         // 実際の符号化を規定する新しい SPS から取り直す。
-        if ((replaced || videoWidth<1 || videoHeight<1) && codecId==CodecIdAvc) {
+        if ((replaced || videoWidth<1 || videoHeight<1) && codec==FourCcRegistry.Avc) {
           if (H264Sps.TryGetResolutionFromAvcC(codecPrivate, out var w, out var h)) {
             videoWidth  = w;
             videoHeight = h;

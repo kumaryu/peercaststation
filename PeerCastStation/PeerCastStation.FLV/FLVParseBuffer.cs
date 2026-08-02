@@ -17,8 +17,22 @@ namespace PeerCastStation.FLV
     /// <summary>この容量を超えたときだけ詰め替えを検討する(平常時は再確保しない)。</summary>
     private const int CompactThreshold = 256*1024;
 
-    private readonly FLVFileParser parser = new FLVFileParser();
+    private readonly FLVFileParser parser;
     private MemoryStream buffer = new MemoryStream();
+
+    public FLVParseBuffer()
+      : this(new FLVFileParser())
+    {
+    }
+
+    /// <summary>
+    /// 既存のパーサ(とその状態)を使ってバッファを組み立てる。
+    /// FLVFileParser.ReadAsync が自分自身を増分パーサとして回すために使う。
+    /// </summary>
+    public FLVParseBuffer(FLVFileParser parser)
+    {
+      this.parser = parser;
+    }
 
     /// <summary>受信データを追記し、読める分だけタグとして sink へ流す。</summary>
     public void Feed(ReadOnlySpan<byte> data, IRTMPContentSink sink)

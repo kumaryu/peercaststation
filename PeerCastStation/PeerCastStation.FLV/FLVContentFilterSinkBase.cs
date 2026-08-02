@@ -62,21 +62,14 @@ namespace PeerCastStation.FLV
     {
       public IRTMPContentSink Context { get; }
       private readonly FLVParseBuffer parseBuffer = new FLVParseBuffer();
-      private readonly Action<Content, bool>? beforeFeed;
 
-      /// <param name="before_feed">
-      /// 解析へ渡す前に上流 Content を覚えておきたい場合の処理。第2引数はヘッダかどうか。
-      /// MPEG2TS 側は出力 Content の位置採番に上流 Content を流用するため必要になる。
-      /// </param>
-      public ContentProcessor(IRTMPContentSink context, Action<Content, bool>? before_feed = null)
+      public ContentProcessor(IRTMPContentSink context)
       {
-        Context    = context;
-        beforeFeed = before_feed;
+        Context = context;
       }
 
-      public void Feed(Content content, bool is_header)
+      public void Feed(Content content)
       {
-        beforeFeed?.Invoke(content, is_header);
         parseBuffer.Feed(content.Data.Span, Context);
       }
     }
@@ -104,10 +97,8 @@ namespace PeerCastStation.FLV
           targetSink.OnChannelTrack(msg.ChannelTrack);
           break;
         case ContentMessage.MessageType.ContentHeader:
-          processor.Feed(msg.Content, true);
-          break;
         case ContentMessage.MessageType.ContentBody:
-          processor.Feed(msg.Content, false);
+          processor.Feed(msg.Content);
           break;
         }
         msg = await MessageQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);

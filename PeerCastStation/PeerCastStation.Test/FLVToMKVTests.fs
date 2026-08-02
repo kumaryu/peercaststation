@@ -119,6 +119,31 @@ let ``FLV(H264+AAC) を MKV に変換し EBML 構造が成立する`` () =
     Assert.True(contains body [| 0x81uy;0x00uy;0x00uy;0x80uy |], "映像キーフレーム SimpleBlock")
 
 [<Fact>]
+let ``SPS/PPSを欠くavcCで映像トラックを宣言しない`` () =
+    // 壊れたエンコーダは SPS/PPS を1つも含まない avcC(切り詰めの7バイト等)を送ることが
+    // ある。Matroska は CodecPrivate が復号初期化の唯一の拠り所なので、これを受理すると
+    // 全プレイヤーがデコーダー初期化に失敗する映像トラックを健全と信じたまま宣言し続ける。
+    // onMetaData が解像度を運んでいて解像度ゲートを通る場合でも弾くこと。
+    let capture = CaptureSink()
+    let filter = FLVToMKVContentFilter()
+    let sink = filter.Activate(capture)
+    let emptyAvcC = [| 1uy;0x42uy;0x00uy;0x1Fuy;0xFFuy;0xE0uy;0x00uy |] // numSPS=0, numPPS=0
+    let headerData =
+        Array.concat [
+            flvHeader
+            makeTag 18 0 (onMetaDataBody 640.0 360.0)
+            makeTag 9 0 (Array.concat [ [| 0x17uy;0x00uy;0x00uy;0x00uy;0x00uy |]; emptyAvcC ])
+            makeTag 8 0 [| 0xAFuy;0x00uy;0x12uy;0x10uy |]
+        ]
+    sink.OnChannelInfo(ChannelInfo(AtomCollection()))
+    sink.OnContentHeader(newContent headerData)
+    sink.OnContent(newContent (makeTag 8 0 (Array.concat [ [| 0xAFuy;0x01uy |]; [| 0x21uy;0x10uy;0x04uy |] ])))
+    sink.OnStop(StopReason.OffAir)
+    let hdr = capture.Header
+    Assert.False(contains hdr (ascii "V_MPEG4/ISO/AVC"), "SPS/PPS の無い avcC は映像トラックにならない")
+    Assert.True(contains hdr (ascii "A_AAC"), "音声トラックは通常どおり宣言される")
+
+[<Fact>]
 let ``onMetaData が無くても avcC の SPS から解像度を取って映像トラックを作る`` () =
     // Matroska は Video 要素に PixelWidth/PixelHeight を要求するため、解像度が判らないと
     // 映像トラックを作れない。onMetaData を送らない配信は実在し(ffmpeg -flvflags no_metadata 等)、

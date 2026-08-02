@@ -46,8 +46,14 @@ namespace PeerCastStation.FLV
   {
     public FLVTagKind Kind { get; }
     /// <summary>
-    /// コーデック識別子。レガシータグも E-RTMP の FourCC に正規化する
-    /// (AVC は avc1、AAC は mp4a)。特定できない場合は null。
+    /// 既知コーデックの記述子。レガシータグも E-RTMP 相当の記述子に正規化する
+    /// (AVC は FourCcRegistry.Avc、AAC は FourCcRegistry.Aac)。
+    /// 未知の FourCC・特定不能の場合は null。
+    /// </summary>
+    public FourCcCodec? Codec { get; }
+    /// <summary>
+    /// 表示用のコーデック識別子。既知なら記述子の名前、未知でも読めた4文字は警告用に返す。
+    /// 特定できない場合は null。
     /// </summary>
     public string? FourCc { get; }
     /// <summary>コーデックデータの先頭オフセット。取得できない場合は -1。</summary>
@@ -62,18 +68,20 @@ namespace PeerCastStation.FLV
     /// </summary>
     public bool IsKeyFrameSignaled { get; }
 
-    // レガシー/Ex の区別は下流のどこも見ない(見る必要が出ないよう Kind と FourCc に
+    // レガシー/Ex の区別は下流のどこも見ない(見る必要が出ないよう Kind と Codec に
     // 正規化するのがこの型の役目)ため保持しない。読み手のいない位置指定 bool を
     // 引数に残すと、引数の入れ替わりをコンパイラもテストも検出できなくなる。
     public FLVTagInfo(
       FLVTagKind kind,
-      string? fourcc,
+      FourCcCodec? codec,
       int payload_offset,
       int composition_time,
-      bool key_frame_signaled = false)
+      bool key_frame_signaled = false,
+      string? raw_fourcc = null)
     {
       Kind               = kind;
-      FourCc             = fourcc;
+      Codec              = codec;
+      FourCc             = codec?.Name ?? raw_fourcc;
       PayloadOffset      = payload_offset;
       CompositionTime    = composition_time;
       IsKeyFrameSignaled = key_frame_signaled;
@@ -111,11 +119,6 @@ namespace PeerCastStation.FLV
   /// </summary>
   internal static class FLVTagClassifier
   {
-    /// <summary>H.264。レガシー codecId 7 もこれに正規化する。</summary>
-    public const string FourCcAvc = "avc1";
-    /// <summary>AAC。レガシー soundFormat 10 もこれに正規化する。</summary>
-    public const string FourCcAac = "mp4a";
-
     private static readonly FLVTagInfo Unknown =
       new FLVTagInfo(FLVTagKind.Unknown, null, -1, 0);
 
@@ -136,19 +139,19 @@ namespace PeerCastStation.FLV
       if (!ExAudioTagHeader.TryParse(body, out var header)) return Unknown;
       if (!header.IsExHeader) return ClassifyLegacyAudio(body);
       if (header.IsMultitrack) {
-        return new FLVTagInfo(FLVTagKind.Unsupported, header.FourCc, -1, 0);
+        return new FLVTagInfo(FLVTagKind.Unsupported, header.Codec, -1, 0, raw_fourcc: header.FourCc);
       }
       switch (header.PacketType) {
       case AudioPacketType.SequenceStart:
-        return new FLVTagInfo(FLVTagKind.AudioSequenceHeader, header.FourCc, header.PayloadOffset, 0);
+        return new FLVTagInfo(FLVTagKind.AudioSequenceHeader, header.Codec, header.PayloadOffset, 0, raw_fourcc: header.FourCc);
       case AudioPacketType.CodedFrames:
-        return new FLVTagInfo(FLVTagKind.AudioFrame, header.FourCc, header.PayloadOffset, 0);
+        return new FLVTagInfo(FLVTagKind.AudioFrame, header.Codec, header.PayloadOffset, 0, raw_fourcc: header.FourCc);
       case AudioPacketType.SequenceEnd:
-        return new FLVTagInfo(FLVTagKind.AudioSequenceEnd, header.FourCc, header.PayloadOffset, 0);
+        return new FLVTagInfo(FLVTagKind.AudioSequenceEnd, header.Codec, header.PayloadOffset, 0, raw_fourcc: header.FourCc);
       case AudioPacketType.MultichannelConfig:
-        return new FLVTagInfo(FLVTagKind.Control, header.FourCc, header.PayloadOffset, 0);
+        return new FLVTagInfo(FLVTagKind.Control, header.Codec, header.PayloadOffset, 0, raw_fourcc: header.FourCc);
       default:
-        return new FLVTagInfo(FLVTagKind.Unsupported, header.FourCc, header.PayloadOffset, 0);
+        return new FLVTagInfo(FLVTagKind.Unsupported, header.Codec, header.PayloadOffset, 0, raw_fourcc: header.FourCc);
       }
     }
 
@@ -164,7 +167,7 @@ namespace PeerCastStation.FLV
         return new FLVTagInfo(FLVTagKind.Unsupported, null, -1, 0);
       }
       var kind = body[1]==0 ? FLVTagKind.AudioSequenceHeader : FLVTagKind.AudioFrame;
-      return new FLVTagInfo(kind, FourCcAac, 2, 0);
+      return new FLVTagInfo(kind, FourCcRegistry.Aac, 2, 0);
     }
 
     private static FLVTagInfo ClassifyVideo(byte[] body)
@@ -172,28 +175,28 @@ namespace PeerCastStation.FLV
       if (!ExVideoTagHeader.TryParse(body, out var header)) return Unknown;
       if (!header.IsExHeader) return ClassifyLegacyVideo(body);
       if (header.IsMultitrack) {
-        return new FLVTagInfo(FLVTagKind.Unsupported, header.FourCc, -1, 0);
+        return new FLVTagInfo(FLVTagKind.Unsupported, header.Codec, -1, 0, raw_fourcc: header.FourCc);
       }
       var keyframe = IsKeyFrameType(header.FrameType);
       switch (header.PacketType) {
       case VideoPacketType.SequenceStart:
         return new FLVTagInfo(
-          FLVTagKind.VideoSequenceHeader, header.FourCc, header.PayloadOffset, 0,
-          key_frame_signaled: keyframe);
+          FLVTagKind.VideoSequenceHeader, header.Codec, header.PayloadOffset, 0,
+          key_frame_signaled: keyframe, raw_fourcc: header.FourCc);
       case VideoPacketType.MPEG2TSSequenceStart:
-        return new FLVTagInfo(FLVTagKind.VideoMpeg2TsSequenceHeader, header.FourCc, header.PayloadOffset, 0);
+        return new FLVTagInfo(FLVTagKind.VideoMpeg2TsSequenceHeader, header.Codec, header.PayloadOffset, 0, raw_fourcc: header.FourCc);
       case VideoPacketType.CodedFrames:
       case VideoPacketType.CodedFramesX:
         return new FLVTagInfo(
           keyframe ? FLVTagKind.VideoKeyFrame : FLVTagKind.VideoInterFrame,
-          header.FourCc, header.PayloadOffset, header.CompositionTime,
-          key_frame_signaled: keyframe);
+          header.Codec, header.PayloadOffset, header.CompositionTime,
+          key_frame_signaled: keyframe, raw_fourcc: header.FourCc);
       case VideoPacketType.SequenceEnd:
-        return new FLVTagInfo(FLVTagKind.VideoSequenceEnd, header.FourCc, header.PayloadOffset, 0);
+        return new FLVTagInfo(FLVTagKind.VideoSequenceEnd, header.Codec, header.PayloadOffset, 0, raw_fourcc: header.FourCc);
       case VideoPacketType.Metadata:
-        return new FLVTagInfo(FLVTagKind.Control, header.FourCc, header.PayloadOffset, 0);
+        return new FLVTagInfo(FLVTagKind.Control, header.Codec, header.PayloadOffset, 0, raw_fourcc: header.FourCc);
       default:
-        return new FLVTagInfo(FLVTagKind.Unsupported, header.FourCc, header.PayloadOffset, 0);
+        return new FLVTagInfo(FLVTagKind.Unsupported, header.Codec, header.PayloadOffset, 0, raw_fourcc: header.FourCc);
       }
     }
 
@@ -213,7 +216,7 @@ namespace PeerCastStation.FLV
       // コマンド番号(0=StartOfClientSeek)。AVCPacketType として解釈すると
       // コマンド 0 をコーデック設定と誤認するので、多重化しない制御パケットとして扱う。
       if (frame_type==5) {
-        return new FLVTagInfo(FLVTagKind.Control, FourCcAvc, -1, 0);
+        return new FLVTagInfo(FLVTagKind.Control, FourCcRegistry.Avc, -1, 0);
       }
       var keyframe = IsKeyFrameType(frame_type);
       switch (body[1]) {
@@ -227,15 +230,15 @@ namespace PeerCastStation.FLV
         // 再初期化を繰り返し起こせる。判断材料として IsKeyFrameSignaled だけを渡し、
         // 昇格の可否は FLVContentBuffer 側で決める。
         return new FLVTagInfo(
-          FLVTagKind.VideoSequenceHeader, FourCcAvc, 5, 0, key_frame_signaled: keyframe);
+          FLVTagKind.VideoSequenceHeader, FourCcRegistry.Avc, 5, 0, key_frame_signaled: keyframe);
       case 1:
         return new FLVTagInfo(
           keyframe ? FLVTagKind.VideoKeyFrame : FLVTagKind.VideoInterFrame,
-          FourCcAvc, 5, LegacyCompositionTime(body), key_frame_signaled: keyframe);
+          FourCcRegistry.Avc, 5, LegacyCompositionTime(body), key_frame_signaled: keyframe);
       case 2:
-        return new FLVTagInfo(FLVTagKind.VideoSequenceEnd, FourCcAvc, -1, 0);
+        return new FLVTagInfo(FLVTagKind.VideoSequenceEnd, FourCcRegistry.Avc, -1, 0);
       default:
-        return new FLVTagInfo(FLVTagKind.Unsupported, FourCcAvc, -1, 0);
+        return new FLVTagInfo(FLVTagKind.Unsupported, FourCcRegistry.Avc, -1, 0);
       }
     }
 

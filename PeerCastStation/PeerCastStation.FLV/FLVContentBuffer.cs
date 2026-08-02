@@ -38,7 +38,17 @@ namespace PeerCastStation.FLV
     {
       if (msg.Arguments.Count<2) return;
       var name = (string?)msg.Arguments[0] ?? "";
-      var data_msg = new DataAMF0Message(msg.Timestamp, 0, name, new AMF.AMFValue[] { msg.Arguments[1] });
+      DataAMF0Message data_msg;
+      try {
+        data_msg = new DataAMF0Message(msg.Timestamp, 0, name, new AMF.AMFValue[] { msg.Arguments[1] });
+      }
+      catch (ArgumentException) {
+        // AMF0Reader は未対応マーカー(MovieClip/Unsupported/AVM+切替等)を例外にせず
+        // NotSupported 値として復号するが、AMF0Writer はそれを直列化できず
+        // ArgumentException を投げる(値は入れ子の奥にも入りうるので事前の型検査では
+        // 防ぎきれない)。再エンコードできないメッセージとしてここで捨てる。
+        return;
+      }
       OnData(data_msg);
     }
 
@@ -77,6 +87,14 @@ namespace PeerCastStation.FLV
         }
         if (AMF.AMFValue.TryGetDouble(metadata.Arguments[0]["audiodatarate"], out var audiodatarate)) {
           bitrate += audiodatarate;
+        }
+        // TryGetDouble は "1e300" のような指数表記も受理するので、個々の値が読めても
+        // 合計が int に収まるとは限らない。未チェックの (int) キャストは int.MinValue に
+        // なり、負の巨大ビットレートが ChanInfo として全ネットワークへ公開される。
+        // AMFValue.TryGetInt32 と同じ規則で、int で表現できない値は読めなかったもの
+        // (0kbps)として扱う。
+        if (Double.IsNaN(bitrate) || bitrate<0 || bitrate>Int32.MaxValue) {
+          bitrate = 0;
         }
         info.SetChanInfoBitrate((int)bitrate);
       }
@@ -142,29 +160,74 @@ namespace PeerCastStation.FLV
     // VideoMpeg2TsSequenceHeader(E-RTMP の MPEG2TSSequenceStart)はコーデック設定ではなく
     // TS ブートストラップの生バイト列なので、チャンネルヘッダに埋めても下流の初期化に使えず、
     // 昇格させると GenerateStreamID() で無意味に全視聴者を再初期化することになる。
-    // さらに、キーフレームとして通知されたシーケンスヘッダのみを昇格させる。分類器は
-    // frameType=2(inter)のシーケンスヘッダも取りこぼさず拾う(そうしないと avcC を落とす
-    // エンコーダで映像が全く出ない)が、それをそのまま昇格させると AVCPacketType が 0 に
-    // 化けた壊れたインターフレーム1つで全視聴者の再初期化を繰り返し起こせてしまう。
-    // 再多重化(FLVToMKV/FLVToMPEG2TS)にはこの制限は不要なので、ここだけで絞る。
+    // さらに昇格には IsPromotableVideoConfig の条件(キーフレーム通知、または AVC で
+    // ペイロードが avcC として内容検証を通ること)を課す。詳細はそちらの注記を参照。
+    // 既知コーデックであること(FourCcRegistry の記述子が引けたこと)も要求する
+    // (Ex タグの FourCC フィールドは任意の4バイトが通るため)。
+    // 保持中のヘッダと同一内容の再送は IsSameHeader で弾く。
     public void OnVideo(RTMPMessage msg)
     {
       var info = FLVTagClassifier.Classify(msg);
-      if (info.Kind==FLVTagKind.VideoSequenceHeader && info.IsKeyFrameSignaled && info.HasPayload(msg.Body)) {
+      if (info.Kind==FLVTagKind.VideoSequenceHeader &&
+          info.HasPayload(msg.Body) &&
+          info.Codec?.IsAudio==false &&
+          IsPromotableVideoConfig(info, msg.Body) &&
+          !IsSameHeader(videoHeader, msg)) {
         videoHeader = msg;
         OnHeaderChanged(msg);
       }
       OnContentChanged(msg);
     }
 
+    /// <summary>
+    /// 昇格してよい映像シーケンスヘッダか。キーフレームとして通知されたものは信用する。
+    ///
+    /// 分類器は frameType=2(inter)のシーケンスヘッダも取りこぼさず拾い(そうしないと
+    /// avcC を inter で送る実在のエンコーダ/中継で映像が全く出ない)、再多重化
+    /// (FLVToMKV/FLVToMPEG2TS)はそれを受け入れる。一方ここで無条件に昇格させると、
+    /// AVCPacketType が 0 に化けた壊れたインターフレーム1つで全視聴者の再初期化を
+    /// 繰り返し起こせてしまう。フラグでは両者を区別できないので、AVC については
+    /// ペイロードが avcC として解析でき SPS/PPS を伴うことを内容で確かめて昇格させる
+    /// (壊れたフレームの中身が偶然この検証を通る見込みはまず無い)。
+    /// AVC 以外は設定を解析できず内容で確かめようがないため、キーフレーム通知を要求する。
+    /// </summary>
+    private static bool IsPromotableVideoConfig(FLVTagInfo info, byte[] body)
+    {
+      if (info.IsKeyFrameSignaled) return true;
+      if (info.Codec!=FourCcRegistry.Avc) return false;
+      return AvcDecoderConfig.TryParse(
+               new ReadOnlySpan<byte>(body, info.PayloadOffset, body.Length-info.PayloadOffset),
+               out var config) &&
+             config.HasParameterSets;
+    }
+
+    // 音声には frameType が無いのでキーフレーム相当の絞り込みはできない。代わりに
+    // 既知コーデックの記述子(レガシー AAC は FourCcRegistry.Aac に正規化される)を要求する。
+    // レガシーの予約 soundFormat 9 は Ex エスケープと同じビットパターンのため、
+    // 0x9? で始まる壊れたタグが Ex の SequenceStart に化けて任意の4バイトが FourCC に
+    // なる。これを無条件に昇格させると、ゴミタグ1つごとに GenerateStreamID() が走り
+    // 全視聴者を繰り返し再初期化させられる(映像側の IsKeyFrameSignaled と対になる制限)。
     public void OnAudio(RTMPMessage msg)
     {
       var info = FLVTagClassifier.Classify(msg);
-      if (info.Kind==FLVTagKind.AudioSequenceHeader && info.HasPayload(msg.Body)) {
+      if (info.Kind==FLVTagKind.AudioSequenceHeader && info.HasPayload(msg.Body) &&
+          info.Codec?.IsAudio==true &&
+          !IsSameHeader(audioHeader, msg)) {
         audioHeader = msg;
         OnHeaderChanged(msg);
       }
       OnContentChanged(msg);
+    }
+
+    /// <summary>
+    /// 保持中のヘッダと同一内容の再送か。多くのエンコーダは GOP ごとにシーケンスヘッダを
+    /// 送り直すが、内容が同じならチャンネルヘッダは変わらない。昇格し直すと
+    /// OnHeaderChanged が GenerateStreamID() で新しい論理ストリームを始めるため、
+    /// 再送のたびに全視聴者の再生が初期化されてしまう。
+    /// </summary>
+    private static bool IsSameHeader(RTMPMessage? current, RTMPMessage msg)
+    {
+      return current!=null && current.Body.AsSpan().SequenceEqual(msg.Body);
     }
 
     private void WriteMessage(Stream stream, RTMPMessage msg, long time_origin)

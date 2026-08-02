@@ -101,6 +101,27 @@ let ``桁違いのDataSizeを持つヘッダをタグとして受け付けない
     Assert.True(remain<=12, sprintf "未消費が %d バイト残っている" remain)
 
 [<Fact>]
+let ``非同期読みでフッター破損タグの後の正常タグを失わない`` () =
+    // 非同期側が独自の再同期を持っていたときは、フッター不一致で破棄したタグの
+    // 古いヘッダ11バイトだけを再走査していた(本体・フッターとして消費したバイトは
+    // 再走査されない)。残骸のタグ候補バイトが先頭に残ったまま次のストリームバイトと
+    // 連結され、非連続なキメラヘッダを TryCreate が受理して後続の正常データを
+    // 最大タグ長ぶん誤消費できた。パースを Read の増分コアへ一本化したことで、
+    // 実ストリームを1バイトずつ再走査する同期側の規則が非同期経路にも適用される。
+    let sink = RecordingSink()
+    let parser = FLVFileParser()
+    let broken =
+        let t = makeTag 9 0 avcSeq
+        t.[t.Length-1] <- 0xEEuy   // 末尾4バイトの PreviousTagSize を壊す
+        t
+    let data = Array.concat [ flvHeader; broken; makeTag 9 10 avcSeq; makeTag 9 20 avcKey ]
+    use ms = new MemoryStream(data)
+    parser.ReadAsync(ms, sink, System.Threading.CancellationToken.None).Wait()
+    Assert.Equal(1, sink.FLVHeaderCount)
+    // フッター破損タグは破棄されるが、後続の正常な2タグは失われない。
+    Assert.Equal(2, sink.VideoCount)
+
+[<Fact>]
 let ``下流が投げた例外を握り潰さず同じタグを再配信しない`` () =
     // sink の呼び出しをパース用の try の中で行うと、下流の EndOfStreamException を
     // 「データ待ち」と誤認してタグ先頭へ巻き戻す。未消費のまま同じ毒タグが残るので、

@@ -26,6 +26,7 @@ namespace PeerCastStation.FLV
     private const string WarnKeyBrokenAudioTag    = "brokenAudioTag";
     private const string WarnKeyBrokenVideoTag    = "brokenVideoTag";
     private const string WarnKeyBrokenAudioConfig = "brokenAudioConfig";
+    private const string WarnKeyBrokenVideoConfig = "brokenVideoConfig";
 
     private readonly HashSet<string> warned = new HashSet<string>();
 
@@ -65,6 +66,13 @@ namespace PeerCastStation.FLV
     ///
     /// 音声と映像で規則がずれると同じ配信でも A/V の原点が食い違うため、
     /// フィルタごとに書かず共通の規則としてここに置く。
+    ///
+    /// TODO: 32bit タイムスタンプのソース(FLV ファイル、RTMP type-0 チャンク)が
+    /// 約49.7日の連続配信でラップすると、以後のタイムスタンプはすべて ptsBase を
+    /// 下回り続け、このクランプにより全フレームが PTS=0 に張り付いて全視聴者の
+    /// 再生が凍結する(ソース再起動まで回復しない)。修正には大きな負方向ジャンプの
+    /// 検出による再基準化だけでなく、送出済みヘッダとの整合(FLVToMKV の Segment
+    /// 再構築、FLVToMPEG2TS のテーブル再送・PCR 連続性)との連携設計が要る。
     /// </summary>
     protected long NormalizeTimestamp(long timestamp)
     {
@@ -101,19 +109,26 @@ namespace PeerCastStation.FLV
       WarnOnce(WarnKeyBrokenAudioConfig, "音声シーケンスヘッダを破棄します ({0})", reason);
     }
 
-    /// <summary>この変換器が扱える音声コーデックか。</summary>
-    protected abstract bool IsSupportedAudioCodec(string? fourcc);
+    /// <summary>音声側と同じ趣旨の、映像のコーデック設定を破棄したことの報告。</summary>
+    protected void WarnBrokenVideoConfig(string reason)
+    {
+      WarnOnce(WarnKeyBrokenVideoConfig, "映像シーケンスヘッダを破棄します ({0})", reason);
+    }
+
+    /// <summary>この変換器が扱える音声コーデックか。未知の FourCC は記述子が null で渡る。</summary>
+    protected abstract bool IsSupportedAudioCodec(FourCcCodec? codec);
     /// <summary>この変換器が扱える映像コーデックか。</summary>
-    protected abstract bool IsSupportedVideoCodec(string? fourcc);
+    protected abstract bool IsSupportedVideoCodec(FourCcCodec? codec);
 
     /// <summary>音声のコーデック設定(AAC の AudioSpecificConfig 等)。</summary>
     protected abstract void OnAudioConfig(byte[] body, int offset);
     protected abstract void OnAudioFrame(RTMPMessage msg, int offset);
     /// <summary>
     /// 映像のコーデック設定(avcC/hvcC/av1C 等の生バイト)。
-    /// コンテナ側の CodecID を引くのに FourCC が要るので、分類し直さずに済むよう渡す。
+    /// コンテナ側の CodecID を引くのに記述子が要るので、分類し直さずに済むよう渡す。
+    /// IsSupportedVideoCodec を通ってから呼ばれるため、対応コーデックなら null ではない。
     /// </summary>
-    protected abstract void OnVideoConfig(RTMPMessage msg, int offset, string? fourcc);
+    protected abstract void OnVideoConfig(RTMPMessage msg, int offset, FourCcCodec? codec);
     protected abstract void OnVideoFrame(RTMPMessage msg, int offset, int compositionTime, bool keyframe);
 
     public void OnAudio(RTMPMessage msg)
@@ -131,7 +146,7 @@ namespace PeerCastStation.FLV
         WarnOnce(WarnKeyBrokenAudioTag, "解釈できない音声タグを破棄します (size={0})", msg.Body.Length);
         return;
       }
-      if (!IsSupportedAudioCodec(info.FourCc)) {
+      if (!IsSupportedAudioCodec(info.Codec)) {
         WarnOnce(WarnKeyUnsupportedAudio, "未対応の音声コーデック/構成のため破棄します (FourCC={0})", info.FourCc ?? "(none)");
         return;
       }
@@ -167,7 +182,7 @@ namespace PeerCastStation.FLV
         WarnOnce(WarnKeyBrokenVideoTag, "解釈できない映像タグを破棄します (size={0})", msg.Body.Length);
         return;
       }
-      if (!IsSupportedVideoCodec(info.FourCc)) {
+      if (!IsSupportedVideoCodec(info.Codec)) {
         WarnOnce(WarnKeyUnsupportedVideo, "未対応の映像コーデック/構成のため破棄します (FourCC={0})", info.FourCc ?? "(none)");
         return;
       }
@@ -178,7 +193,7 @@ namespace PeerCastStation.FLV
       }
       switch (info.Kind) {
       case FLVTagKind.VideoSequenceHeader:
-        OnVideoConfig(msg, info.PayloadOffset, info.FourCc);
+        OnVideoConfig(msg, info.PayloadOffset, info.Codec);
         break;
       case FLVTagKind.VideoKeyFrame:
       case FLVTagKind.VideoInterFrame:
