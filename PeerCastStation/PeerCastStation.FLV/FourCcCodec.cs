@@ -6,14 +6,15 @@ namespace PeerCastStation.FLV
 {
   /// <summary>
   /// E-RTMP の FourCC 1つぶんのコーデック記述子。プロセスで1インスタンスを共有する。
-  ///
+  /// </summary>
+  /// <remarks>
   /// コーデックの知識(名前、CTS の有無、コンテナ側の CodecID)は以前、
   /// ExTagHeaderReader の intern テーブル・CTS 判定の文字列比較・FLVTagClassifier の
   /// 既知判定・FLVToMKV の対応表と複数系統に分かれていた。コーデックを1つ足すには
   /// 全部を同期して編集する必要があり、特に CTS 判定を見落とすと、フレーム先頭
   /// 3バイトをコーデックデータと誤読した壊れた出力がパースエラーなしで出る。
   /// 知識は <see cref="FourCcRegistry"/> の1テーブルへ集約し、利用側は属性を参照する。
-  /// </summary>
+  /// </remarks>
   public sealed class FourCcCodec
   {
     /// <summary>E-RTMP 上の FourCC 文字列。共有インスタンスなので毎タグの割り当てが出ない。</summary>

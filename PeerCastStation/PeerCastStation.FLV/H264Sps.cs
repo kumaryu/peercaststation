@@ -6,21 +6,25 @@ namespace PeerCastStation.FLV
 {
   /// <summary>
   /// H.264 の SPS(Sequence Parameter Set)から解像度を取り出す。
-  ///
+  /// </summary>
+  /// <remarks>
   /// Matroska は Video 要素に PixelWidth/PixelHeight を要求するため、解像度が判らないと
   /// 映像トラックを作れない。FLV の解像度は本来 onMetaData が運ぶが、これを送らない
   /// (あるいは width/height を欠く)配信は実在するので、その場合の拠り所として使う。
   /// 解析は失敗しうる前提で、例外は投げず false を返す。
-  /// </summary>
+  /// </remarks>
   internal static class H264Sps
   {
     /// <summary>SPS を示す nal_unit_type。</summary>
     private const int NalUnitTypeSps = 7;
 
     /// <summary>
-    /// マクロブロック数の上限。level 6.2 の 4096x2304 でも 256x144 マクロブロックなので、
-    /// これを超える値は壊れた入力。(x+1)*16 の掛け算をオーバーフローさせないためにも要る。
+    /// マクロブロック数の上限。
     /// </summary>
+    /// <remarks>
+    /// level 6.2 の 4096x2304 でも 256x144 マクロブロックなので、
+    /// これを超える値は壊れた入力。(x+1)*16 の掛け算をオーバーフローさせないためにも要る。
+    /// </remarks>
     private const int MaxMacroblocks = 4096;
 
     /// <summary>
@@ -167,9 +171,11 @@ namespace PeerCastStation.FLV
 
     /// <summary>
     /// NAL ユニットのペイロードから emulation prevention byte を取り除いて RBSP にする。
+    /// </summary>
+    /// <remarks>
     /// 0x000000/0x000001 がスタートコードと衝突しないよう符号化側が 0x000003 を挿んでいるので、
     /// これを外さないとビット位置がずれて解析結果が狂う。
-    /// </summary>
+    /// </remarks>
     private static byte[] ToRbsp(ReadOnlySpan<byte> data)
     {
       var result = new byte[data.Length];

@@ -6,7 +6,8 @@ namespace PeerCastStation.FLV
 {
   /// <summary>
   /// avcC(AVCDecoderConfigurationRecord, ISO/IEC 14496-15)の解析結果。
-  ///
+  /// </summary>
+  /// <remarks>
   /// 固定長ヘッダの後ろに「16bit ビッグエンディアンの長さを前置きした NAL 配列」が
   /// SPS/PPS/SPSExt と並ぶという配置は、解像度取得(<see cref="H264Sps"/>)と
   /// TS 出力(FLVToMPEG2TS)の双方が必要とする。別々に歩くと、片方だけ境界検査や
@@ -16,7 +17,7 @@ namespace PeerCastStation.FLV
   /// バイトが不足する場合や個数が実データと矛盾する場合は例外を投げず false を返す。
   /// numOfSPS/numOfPPS は実データ量と無関係に最大31/255を名乗れるため、
   /// 読み出し前に必ず残バイト数と照合する。
-  /// </summary>
+  /// </remarks>
   internal readonly struct AvcDecoderConfig
   {
     /// <summary>NAL ユニット長を表すバイト数(1..4)。</summary>
@@ -38,11 +39,13 @@ namespace PeerCastStation.FLV
 
     /// <summary>
     /// 復号初期化に足る SPS/PPS を少なくとも1つずつ含むか。
+    /// </summary>
+    /// <remarks>
     /// ISO/IEC 14496-15 上は 0 個(パラメータセットを in-band で運ぶ運用)も合法なので、
     /// <see cref="TryParse"/> は構造の妥当性だけを見てこれを成功条件にしない。
     /// 設定として配ってよいかはコンテナごとに事情が違う(CodecPrivate が唯一の拠り所の
     /// Matroska では必須、素通しの TS では in-band で補える)ため、利用側がこれで判断する。
-    /// </summary>
+    /// </remarks>
     public bool HasParameterSets {
       get { return SequenceParameterSets.Length>0 && PictureParameterSets.Length>0; }
     }

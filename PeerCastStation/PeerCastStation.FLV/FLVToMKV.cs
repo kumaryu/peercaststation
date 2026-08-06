@@ -49,11 +49,11 @@ namespace PeerCastStation.FLV
     public static readonly byte[] PixelHeight        = { 0xBA };
     public static readonly byte[] Audio              = { 0xE1 };
     public static readonly byte[] SamplingFrequency  = { 0xB5 };
-    /// <summary>
+    /// <remarks>
     /// SBR/PS でデコード後のレートがコアのレートと異なる場合に、実際の出力レートを示す。
     /// SamplingFrequency にはコア側を書く決まりなので、これが無いと HE-AAC のトラックが
     /// 実レートの半分として宣言される。
-    /// </summary>
+    /// </remarks>
     public static readonly byte[] OutputSamplingFrequency = { 0x78, 0xB5 };
     public static readonly byte[] Channels           = { 0x9F };
     // Cluster
@@ -156,10 +156,12 @@ namespace PeerCastStation.FLV
   /// <summary>
   /// FLV/E-RTMP を Matroska(MKV) にリマックスするマルチプレクサ。
   /// FLVToMPEG2TS の構造に倣い、TS固有部を EBML 出力に置き換えたもの。
+  /// </summary>
+  /// <remarks>
   /// 対応コーデック(H.264/HEVC/AV1 と AAC)はいずれも CodecPrivate もフレームデータも
   /// 無加工で流用できるため、コーデック固有の処理は持たず
   /// <see cref="FourCcRegistry"/> の記述子(MkvCodecId)だけで振り分ける。
-  /// </summary>
+  /// </remarks>
   public class FLVToMKV
   {
     public interface IMKVContentSink
@@ -444,7 +446,8 @@ namespace PeerCastStation.FLV
 
       /// <summary>
       /// ヘッダ送出後に、除外していたトラックの条件が揃ったら Segment を作り直す。
-      ///
+      /// </summary>
+      /// <remarks>
       /// Matroska の Tracks は Segment の先頭にしか置けないため、送出済みのヘッダへ
       /// 後からトラックを足すことはできない。にもかかわらず有効トラックは最初の
       /// メディアフレームで確定するので、音声のシーケンスヘッダが最初の映像フレームより
@@ -456,7 +459,7 @@ namespace PeerCastStation.FLV
       /// MKVSink.OnHeader は新しい論理ストリームとして stream id を進め位置を 0 へ戻すので、
       /// ここでヘッダ未送出の状態へ戻せば途中からでもトラックを増やせる。設定の送り直しは
       /// OnVideoConfig/OnAudioHeader が同一内容として弾くため GOP ごとには発生しない。
-      /// </summary>
+      /// </remarks>
       private void RestartSegmentIfTrackAvailable()
       {
         if (CanEnableVideo()==videoEnabled && CanEnableAudio()==audioEnabled) return;
@@ -465,9 +468,11 @@ namespace PeerCastStation.FLV
 
       /// <summary>
       /// ヘッダ未送出の状態へ戻し、次のメディアフレームで Segment を作り直す。
+      /// </summary>
+      /// <remarks>
       /// トラック構成の変化(<see cref="RestartSegmentIfTrackAvailable"/>)だけでなく、
       /// 有効なままのトラックのコーデック設定が実体ごと変わった場合にも要る。
-      /// </summary>
+      /// </remarks>
       private void RestartSegment()
       {
         if (!headerSent) return;
@@ -600,9 +605,11 @@ namespace PeerCastStation.FLV
       /// <summary>
       /// SimpleBlock 要素(ID+サイズ+ブロックヘッダ+ペイロード)を1つの配列として確保し、
       /// ペイロード領域を <paramref name="payload"/> で返す。
+      /// </summary>
+      /// <remarks>
       /// 要素の総サイズは事前に計算できるので、呼び出し側がここへ直接書けば
       /// フレームあたりのペイロードコピーは1回で済む。
-      /// </summary>
+      /// </remarks>
       private byte[] AllocateSimpleBlock(int trackNumber, long ptsMs, bool keyframe, int payloadLength, out Span<byte> payload)
       {
         var rel = ptsMs - clusterBaseMs;

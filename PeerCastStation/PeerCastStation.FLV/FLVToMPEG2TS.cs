@@ -84,10 +84,13 @@ namespace PeerCastStation.FLV
       }
 
       /// <summary>
-      /// 16bit フィールドを書く。BitWriter.Write と同じく、宣言幅に収まらない値は
-      /// 黙って切り捨てず例外にする。セクション長やディスクリプタ長がここで溢れると
-      /// 構造だけ妥当で長さが嘘の TS が出来上がり、デマルチプレクサが同期を失う。
+      /// 16bit フィールドを書く。
+      /// BitWriter.Write と同じく、宣言幅に収まらない値は黙って切り捨てず例外にする。
       /// </summary>
+      /// <remarks>
+      /// セクション長やディスクリプタ長がここで溢れると
+      /// 構造だけ妥当で長さが嘘の TS が出来上がり、デマルチプレクサが同期を失う。
+      /// </remarks>
       private Span<byte> WriteUInt16BE(Span<byte> dst, int value)
       {
         if (value<0 || value>0xFFFF) {
@@ -119,11 +122,14 @@ namespace PeerCastStation.FLV
       }
 
       /// <summary>
-      /// 12bit の長さフィールドを検証して返す。予約ビット(15&lt;&lt;12 等)と OR して書くため、
+      /// 12bit の長さフィールドを検証して返す。
+      /// </summary>
+      /// <remarks>
+      /// 予約ビット(15&lt;&lt;12 等)と OR して書くため、
       /// 溢れた分は上位の予約ビットに吸収されて WriteUInt16BE の範囲検査に掛からない。
       /// 長さフィールドの食い違いはデマルチプレクサ側でテーブル全体の読み違えになるので、
       /// OR する前にここで弾く。
-      /// </summary>
+      /// </remarks>
       private static int Check12BitLength(int value, string name)
       {
         if (value<0 || value>0xFFF) {
@@ -289,12 +295,14 @@ namespace PeerCastStation.FLV
 
     /// <summary>
     /// PES パケットヘッダの書き出し。
+    /// </summary>
+    /// <remarks>
     /// ヘッダ長は PTS/DTS の有無だけで決まるので、呼び出し側は GetHeaderSize で
     /// 出力全体を1つの配列として確保し、先頭をここで埋めてから続きへペイロードを
     /// 直接組み立てられる。以前はペイロードを持つオブジェクト+伸長する MemoryStream +
     /// ToArray() の構成で、フレームごとに複製が2回余計に発生していた
     /// (メディアタグごとに通る経路なので毎秒70回以上)。
-    /// </summary>
+    /// </remarks>
     public static class PESPacket
     {
       public static int GetHeaderSize(bool has_pts, bool has_dts)
@@ -424,11 +432,13 @@ namespace PeerCastStation.FLV
 
       /// <summary>
       /// 値を指定ビット幅で書く。宣言した幅に収まらない値は例外にする。
+      /// </summary>
+      /// <remarks>
       /// 黙って下位ビットへ丸めると、構造としては妥当なのに内容が別物のビットストリームが
       /// 出来上がり、視聴側の症状(音が出ない/同期が外れる)からは原因を追えなくなる。
       /// フィールドごとの妥当性は呼び出し側が事前に検証する契約とし、
       /// 破った場合は実装のバグとして表に出す。
-      /// </summary>
+      /// </remarks>
       public void Write(int bits, int value)
       {
         if (bits<0 || bits>32) {
@@ -737,14 +747,15 @@ namespace PeerCastStation.FLV
 
       /// <summary>
       /// 送出済みの PMT にないトラックが後から揃ったら、version を進めて再送を予約する。
-      ///
+      /// </summary>
+      /// <remarks>
       /// 再接続や途中参加では音声のシーケンスヘッダが最初の映像フレームより後に届くことが
       /// あり(FLVToMKV の RestartSegmentIfTrackAvailable と同じ事情)、最初のフレームで
       /// 確定した PMT に映像しか載っていないと、以後の音声 PES はどの PMT にも宣言されない
       /// PID へ流れ続けて規格準拠のデマルチプレクサに捨てられる(そのセッションは最後まで
       /// 無音になる)。PMT は version_number を進めれば途中で更新できるので、Segment を
       /// 作り直すしかない Matroska と違いテーブルの再送だけでよい。
-      /// </summary>
+      /// </remarks>
       private void RestartTablesIfTrackChanged()
       {
         if (!isHeaderSent) return;

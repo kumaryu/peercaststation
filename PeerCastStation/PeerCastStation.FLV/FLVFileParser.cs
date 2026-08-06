@@ -39,21 +39,23 @@ namespace PeerCastStation.FLV
   public class FLVFileParser
   {
     /// <summary>
-    /// FLV ファイルヘッダのバイト数。再同期時に「次の Feed でヘッダに育つかもしれない
-    /// 末尾の断片」を判断するためにも使う。
+    /// FLV ファイルヘッダのバイト数。
+    /// 再同期時に「次の Feed でヘッダに育つかもしれない末尾の断片」を判断するためにも使う。
     /// </summary>
     private const int FLVFileHeaderSize = 13;
 
     /// <summary>
-    /// タグ本体として受け入れる最大バイト数。DataSize フィールドの上限(24bit=16MB)ではなく、
+    /// タグ本体として受け入れる最大バイト数。
+    /// </summary>
+    /// <remarks>
+    /// DataSize フィールドの上限(24bit=16MB)ではなく、
     /// 実際の配信で起こりうる大きさで頭打ちにして、破損した長さフィールドで
     /// パーサが延々とデータを待ち続けるのを防ぐ。
-    ///
     /// 上限を下げすぎると、正当な巨大タグ(超高ビットレートのキーフレームや大きな
     /// スクリプトタグ)をヘッダ破損と誤判定して再同期スキャンに回し、そのタグを
     /// 落としたうえでパーサが同期を失う。この誤判定の窓を狭めるため、想定しうる
     /// 最大のタグより十分に大きく、かつフィールド上限(16MB)より下に置く。
-    /// </summary>
+    /// </remarks>
     private const int MaxTagDataSize = 12*1024*1024;
 
     private enum TagType {
@@ -190,7 +192,8 @@ namespace PeerCastStation.FLV
 
     /// <summary>
     /// 読み終えた1タグを sink へ配る。
-    ///
+    /// </summary>
+    /// <remarks>
     /// Script タグは DataAMF0Message(RTMPMessage) のコンストラクタで即座に AMF0 解析される。
     /// タグ本体はストリームから完全に読み出せているため、ここで出る例外は「データ待ち」ではなく
     /// タグ内容の破損(切り詰められた AMF、未知マーカー、不正な参照)である。
@@ -208,7 +211,7 @@ namespace PeerCastStation.FLV
     /// このメソッド自体も Read/ReadAsync のパース用 try の外から呼ぶ必要がある。
     /// 中から呼ぶと、下流の EndOfStreamException を catch がデータ待ちと誤認して
     /// タグ先頭へ巻き戻し、同じタグを永久に再パースし続けることになる。
-    /// </summary>
+    /// </remarks>
     private void DispatchTag(FLVTag tag, IRTMPContentSink sink)
     {
       switch (tag.Type) {
@@ -242,12 +245,13 @@ namespace PeerCastStation.FLV
     /// タグ内容の破損として握り潰してよい例外か。
     /// OutOfMemoryException や OperationCanceledException のように、握っても回復しない
     /// / 呼び出し側が扱うべき例外は意図的に含めない。
-    ///
+    /// </summary>
+    /// <remarks>
     /// ここで拾うのは AMF の復号中に出たものだけで、sink の呼び出しは範囲外
     /// (DispatchTag の注記を参照)。メタデータの値を読む側は AMFValue.TryGetDouble 等の
     /// 投げない読み出しを使う約束にしてあるが、AMF0Reader が構造そのものを復号する
     /// 過程では依然これらの例外が出るため、型の列挙は残している。
-    /// </summary>
+    /// </remarks>
     private static bool IsBrokenTagException(Exception e)
     {
       return e is InvalidDataException      // AMF0Reader: 未知マーカー/不正な参照
@@ -263,7 +267,8 @@ namespace PeerCastStation.FLV
     /// 再同期スキャンの停止位置になりうるバイトか。
     /// タグヘッダの先頭(予約ビットが 0 で type が 8/9/18)に加えて、
     /// FLV ファイルヘッダの先頭('F')でも止まる。
-    ///
+    /// </summary>
+    /// <remarks>
     /// 'F' を含めないと、ヘッダの途中で切れた入力を拾えない。"FLV" もヘッダ内の
     /// 0x01/0x05/0x00 もタグ候補バイトではないため、スキャンは末尾まで空振りして
     /// その範囲を走査済み(=消費してよい)と判断し、断片ごと捨ててしまう。
@@ -271,7 +276,7 @@ namespace PeerCastStation.FLV
     /// 古い avcC やヘッダ送信済みフラグを抱えたまま新しいストリームを処理することになる。
     /// 'F' で止まった後にヘッダ13バイトが揃っていなければ、続く読み出しがデータ不足で
     /// 抜けて 'F' の位置まで巻き戻るので、断片は次の Feed まで保持される。
-    /// </summary>
+    /// </remarks>
     private static bool IsResyncCandidate(int b)
     {
       if (b=='F') return true;
@@ -279,14 +284,13 @@ namespace PeerCastStation.FLV
     }
 
     /// <summary>
-    /// 破損タグの読み飛ばしを記録する。壊れた入力では毎タグ発生しうるので
-    /// 警告は最初の1回だけにし、以降は Debug に落とす。
+    /// FLV ファイルヘッダを sink へ配る。
     /// </summary>
-    /// <summary>
-    /// FLV ファイルヘッダを sink へ配る。新しいストリームの開始なので、警告の抑止状態も
+    /// <remarks>
+    /// 新しいストリームの開始なので、警告の抑止状態も
     /// ここで捨てる。リセットしないと、パーサはチャンネルと同寿命のため、最初の破損以降は
     /// 再起動後のストリームの破損まで Debug でしか記録されなくなる。
-    /// </summary>
+    /// </remarks>
     private void DispatchFLVHeader(FLVFileHeader header, IRTMPContentSink sink)
     {
       warnedBrokenTag = false;
@@ -419,7 +423,8 @@ namespace PeerCastStation.FLV
 
     /// <summary>
     /// 非同期ストリームを読み、チャンクごとに <see cref="Read"/> と同じ増分パーサへ流す。
-    ///
+    /// </summary>
+    /// <remarks>
     /// 以前はタグの状態機械を非同期側にも別実装していたが、再同期の規則が同期側と
     /// 食い違っていた。非同期側はフッター不一致で破棄したタグの古いヘッダ11バイトしか
     /// 再走査せず(本体・フッターとして消費したバイトは再走査されない)、残骸のタグ候補
@@ -432,7 +437,7 @@ namespace PeerCastStation.FLV
     /// 先頭13バイトだけは厳格に検査する。ここが FLV ファイルヘッダでない入力は
     /// コンテンツタイプの誤判定なので、ゴミを再同期スキャンし続けるより
     /// BadDataException で呼び出し元へ伝えて早期に打ち切る。
-    /// </summary>
+    /// </remarks>
     public async Task ReadAsync(
       Stream stream,
       IRTMPContentSink sink,

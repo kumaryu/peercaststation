@@ -104,12 +104,15 @@ namespace PeerCastStation.FLV
     }
 
     /// <summary>
-    /// onMetaData の maxBitrate を数値として読む。"2500k" のような単位付きの文字列で
-    /// 来る前提の項目だが、型も書式も配信者のエンコーダ次第なので読めないことがある。
+    /// onMetaData の maxBitrate を数値として読む。
+    /// </summary>
+    /// <remarks>
+    /// "2500k" のような単位付きの文字列で来る前提の項目だが、
+    /// 型も書式も配信者のエンコーダ次第なので読めないことがある。
     /// 文字列以外の型は TryGetDouble に委ねる。string キャスト経由で文字列化すると
     /// 現在カルチャの ToString と InvariantCulture の解析が食い違い、小数点がカンマの
     /// 環境で数値型の maxBitrate が読めなくなる。
-    /// </summary>
+    /// </remarks>
     private static bool TryGetMaxBitrate(AMF.AMFValue value, out double result)
     {
       result = 0.0;
@@ -181,7 +184,8 @@ namespace PeerCastStation.FLV
 
     /// <summary>
     /// 昇格してよい映像シーケンスヘッダか。キーフレームとして通知されたものは信用する。
-    ///
+    /// </summary>
+    /// <remarks>
     /// 分類器は frameType=2(inter)のシーケンスヘッダも取りこぼさず拾い(そうしないと
     /// avcC を inter で送る実在のエンコーダ/中継で映像が全く出ない)、再多重化
     /// (FLVToMKV/FLVToMPEG2TS)はそれを受け入れる。一方ここで無条件に昇格させると、
@@ -190,7 +194,7 @@ namespace PeerCastStation.FLV
     /// ペイロードが avcC として解析でき SPS/PPS を伴うことを内容で確かめて昇格させる
     /// (壊れたフレームの中身が偶然この検証を通る見込みはまず無い)。
     /// AVC 以外は設定を解析できず内容で確かめようがないため、キーフレーム通知を要求する。
-    /// </summary>
+    /// </remarks>
     private static bool IsPromotableVideoConfig(FLVTagInfo info, byte[] body)
     {
       if (info.IsKeyFrameSignaled) return true;
@@ -220,11 +224,14 @@ namespace PeerCastStation.FLV
     }
 
     /// <summary>
-    /// 保持中のヘッダと同一内容の再送か。多くのエンコーダは GOP ごとにシーケンスヘッダを
+    /// 保持中のヘッダと同一内容の再送か。
+    /// </summary>
+    /// <remarks>
+    /// 多くのエンコーダは GOP ごとにシーケンスヘッダを
     /// 送り直すが、内容が同じならチャンネルヘッダは変わらない。昇格し直すと
     /// OnHeaderChanged が GenerateStreamID() で新しい論理ストリームを始めるため、
     /// 再送のたびに全視聴者の再生が初期化されてしまう。
-    /// </summary>
+    /// </remarks>
     private static bool IsSameHeader(RTMPMessage? current, RTMPMessage msg)
     {
       return current!=null && current.Body.AsSpan().SequenceEqual(msg.Body);

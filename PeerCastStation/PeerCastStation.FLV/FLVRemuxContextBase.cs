@@ -8,7 +8,8 @@ namespace PeerCastStation.FLV
 {
   /// <summary>
   /// FLV/E-RTMP のメディアタグを別コンテナへ載せ替える変換器の共通土台。
-  ///
+  /// </summary>
+  /// <remarks>
   /// 分類そのものは <see cref="FLVTagClassifier"/> に一本化してあるが、分類結果を
   /// 「設定・フレーム・黙って捨てる・警告して捨てる」のどれに割り振るかという方針は
   /// FLVToMKV と FLVToMPEG2TS が各自で書いており、種別を1つ増やすたびに両方へ
@@ -16,7 +17,7 @@ namespace PeerCastStation.FLV
   /// 「未対応コーデック」という誤った理由で黙って捨てられる)。その方針をここへ集約する。
   ///
   /// 派生クラスが与えるのは、対応コーデックの判定と種別ごとの処理だけ。
-  /// </summary>
+  /// </remarks>
   public abstract class FLVRemuxContextBase
     : IRTMPContentSink
   {
@@ -55,7 +56,8 @@ namespace PeerCastStation.FLV
 
     /// <summary>
     /// FLV のタイムスタンプをコンテナの時刻原点からの相対値に直す。
-    ///
+    /// </summary>
+    /// <remarks>
     /// 原点は最初に実際に出力したメディアフレーム(ts=0 を含む)で確定させる。2番目の
     /// フレームや破棄したタグで確定させると、先頭フレームと PTS が衝突・逆行する。
     /// 原点は音声と映像で共有するので、先に出力できた側が決める。
@@ -73,7 +75,7 @@ namespace PeerCastStation.FLV
     /// 再生が凍結する(ソース再起動まで回復しない)。修正には大きな負方向ジャンプの
     /// 検出による再基準化だけでなく、送出済みヘッダとの整合(FLVToMKV の Segment
     /// 再構築、FLVToMPEG2TS のテーブル再送・PCR 連続性)との連携設計が要る。
-    /// </summary>
+    /// </remarks>
     protected long NormalizeTimestamp(long timestamp)
     {
       if (ptsBase<0) ptsBase = timestamp;
@@ -88,22 +90,28 @@ namespace PeerCastStation.FLV
     }
 
     /// <summary>
-    /// CompositionTime から映像の PTS を導く。先頭Bフレームの負CTS(符号拡張済み)で
+    /// CompositionTime から映像の PTS を導く。
+    /// </summary>
+    /// <remarks>
+    /// 先頭Bフレームの負CTS(符号拡張済み)で
     /// pts が dts より前へ振れる分をクランプする。負のままだと MPEG-TS では PTS&gt;=DTS
     /// 制約に反し、Matroska では SimpleBlock の符号付き16bit timecode に負値が載る。
     /// <see cref="NormalizeTimestamp"/> と同じく、フィルタごとに書くと A/V の時刻規則が
     /// ずれるので共通の規則としてここに置く。
-    /// </summary>
+    /// </remarks>
     protected long ComputeVideoPts(long dts, int compositionTime)
     {
       return System.Math.Max(dts, dts + compositionTime);
     }
 
     /// <summary>
-    /// 音声のコーデック設定を破棄したことを1回だけ報告する。破棄の条件はコンテナごとに
-    /// 違う(ADTS で表現できるか、Matroska の Audio 要素を埋められるか)が、
-    /// 「設定を捨てたので以後の音声が出ない」という報告内容は共通なのでここに置く。
+    /// 音声のコーデック設定を破棄したことを1回だけ報告する。
     /// </summary>
+    /// <remarks>
+    /// 破棄の条件はコンテナごとに違う(ADTS で表現できるか、
+    /// Matroska の Audio 要素を埋められるか)が、
+    /// 「設定を捨てたので以後の音声が出ない」という報告内容は共通なのでここに置く。
+    /// </remarks>
     protected void WarnBrokenAudioConfig(string reason)
     {
       WarnOnce(WarnKeyBrokenAudioConfig, "音声シーケンスヘッダを破棄します ({0})", reason);
@@ -125,9 +133,11 @@ namespace PeerCastStation.FLV
     protected abstract void OnAudioFrame(RTMPMessage msg, int offset);
     /// <summary>
     /// 映像のコーデック設定(avcC/hvcC/av1C 等の生バイト)。
+    /// </summary>
+    /// <remarks>
     /// コンテナ側の CodecID を引くのに記述子が要るので、分類し直さずに済むよう渡す。
     /// IsSupportedVideoCodec を通ってから呼ばれるため、対応コーデックなら null ではない。
-    /// </summary>
+    /// </remarks>
     protected abstract void OnVideoConfig(RTMPMessage msg, int offset, FourCcCodec? codec);
     protected abstract void OnVideoFrame(RTMPMessage msg, int offset, int compositionTime, bool keyframe);
 

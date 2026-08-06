@@ -36,9 +36,11 @@ namespace PeerCastStation.FLV
 
   /// <summary>
   /// Ex タグヘッダ(映像/音声)に共通する読み出し処理。
+  /// </summary>
+  /// <remarks>
   /// ModEx プレフィックスと FourCC の形式は E-RTMP 仕様上どちらもコーデック非依存で
   /// 完全に同一なので、音声側・映像側で実装を分けず一箇所にまとめる。
-  /// </summary>
+  /// </remarks>
   internal static class ExTagHeaderReader
   {
     /// <summary>
@@ -67,11 +69,12 @@ namespace PeerCastStation.FLV
     /// <summary>
     /// FourCC を4バイト読み、既知コーデックの記述子と表示用の名前を返す。
     /// バイトが不足する場合は false を返す。
-    ///
+    /// </summary>
+    /// <remarks>
     /// メディアタグ1つごとに呼ばれるので、既知の FourCC は <see cref="FourCcRegistry"/> の
     /// 共有インスタンス(の名前)を返して文字列の割り当てを避ける(1080p30 の映像+AAC なら
     /// 毎秒70回以上通る)。未知の FourCC は警告に載せるだけなので、その時だけ組み立てる。
-    /// </summary>
+    /// </remarks>
     public static bool TryReadFourCc(byte[] body, ref int pos, out FourCcCodec? codec, out string? name)
     {
       codec = null;
@@ -86,9 +89,11 @@ namespace PeerCastStation.FLV
 
     /// <summary>
     /// 符号付き24bit ビッグエンディアン値(compositionTimeOffset)を読む。
+    /// </summary>
+    /// <remarks>
     /// レガシータグ(FLVTagClassifier)と Ex タグで同じ符号拡張が要るのでここに置く。
     /// 呼び出し側が pos+3&lt;=body.Length を保証すること。
-    /// </summary>
+    /// </remarks>
     public static int ReadInt24Signed(byte[] body, int pos)
     {
       var value = (body[pos]<<16) | (body[pos+1]<<8) | body[pos+2];

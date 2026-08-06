@@ -8,8 +8,10 @@ namespace PeerCastStation.FLV
 {
   /// <summary>
   /// 上流 Content を貯めて <see cref="FLVFileParser"/> に食わせ、消費済み分を捨てるバッファ。
-  /// FLVToMPEG2TS / FLVToMKV の両コンテンツフィルタが同じ手順を必要とするため共有する。
   /// </summary>
+  /// <remarks>
+  /// FLVToMPEG2TS / FLVToMKV の両コンテンツフィルタが同じ手順を必要とするため共有する。
+  /// </remarks>
   internal class FLVParseBuffer
   {
     /// <summary>詰め替え後に確保しておく容量。平常時のタグはこの範囲に収まる。</summary>
@@ -47,9 +49,11 @@ namespace PeerCastStation.FLV
 
     /// <summary>
     /// パーサが消費した先頭部分を捨てる。
+    /// </summary>
+    /// <remarks>
     /// 未消費分だけを先頭へ詰め直すので、コピー量はパケットごとのバッファ全体ではなく
     /// 「タグ途中で切れた端数」に比例する。
-    /// </summary>
+    /// </remarks>
     private void Trim()
     {
       var consumed = buffer.Position;

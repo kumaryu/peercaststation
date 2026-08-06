@@ -5,10 +5,11 @@ namespace PeerCastStation.FLV
   /// <summary>
   /// バイト配列からMSB詰めでビットを読む。データ不足は例外ではなく false で返す
   /// (FLVFileParser の「EndOfStreamException=データ待ち」判定と混線させないため)。
-  ///
+  /// </summary>
+  /// <remarks>
   /// AudioSpecificConfig 等のビット詰めヘッダを FLVToMKV / FLVToMPEG2TS の
   /// 双方が解析するため、実装はここに一本化する。
-  /// </summary>
+  /// </remarks>
   internal class BitReader
   {
     private readonly byte[] data;
@@ -65,11 +66,13 @@ namespace PeerCastStation.FLV
 
   /// <summary>
   /// AudioSpecificConfig(ISO/IEC 14496-3)先頭部の解析結果。
+  /// </summary>
+  /// <remarks>
   /// FLVToMKV は SampleRate/ChannelConfiguration を、FLVToMPEG2TS は
   /// AudioObjectType/SamplingFrequencyIndex/ChannelConfiguration を使う。
   /// 解析は1実装に集約し、フィルタごとの解釈差(31拡張の+32補正の有無など)が
   /// 生じないようにする。
-  /// </summary>
+  /// </remarks>
   internal readonly struct AudioSpecificConfig
   {
     private static readonly int[] SamplingFrequencies = {
@@ -78,10 +81,13 @@ namespace PeerCastStation.FLV
     };
 
     /// <summary>
-    /// channelConfiguration が示すチャンネル数。インデックスであって個数ではなく、
-    /// 7 は 8ch(7.1)を意味する。0 は PCE でレイアウトを運ぶ指定、8-15 は予約値で
-    /// いずれも個数を determine できないため 0。
+    /// channelConfiguration が示すチャンネル数。
     /// </summary>
+    /// <remarks>
+    /// インデックスであって個数ではなく、7 は 8ch(7.1)を意味する。
+    /// 0 は PCE でレイアウトを運ぶ指定、8-15 は予約値で
+    /// いずれも個数を determine できないため 0。
+    /// </remarks>
     private static readonly int[] ChannelCounts = {
       0, 1, 2, 3, 4, 5, 6, 8,
       0, 0, 0, 0, 0, 0, 0, 0,
@@ -92,8 +98,10 @@ namespace PeerCastStation.FLV
     /// <summary>
     /// SBR/PS の明示signaling(AOT 5/29)時に後続で通知されるコア audioObjectType。
     /// 明示signalingでない場合は <see cref="AudioObjectType"/> と同じ。
-    /// HE-AAC を AAC LC のフレームとして扱う経路(ADTS 等)はこちらを使う。
     /// </summary>
+    /// <remarks>
+    /// HE-AAC を AAC LC のフレームとして扱う経路(ADTS 等)はこちらを使う。
+    /// </remarks>
     public int CoreAudioObjectType { get; }
     /// <summary>4bit の samplingFrequencyIndex。0x0F は明示レートのエスケープ。</summary>
     public int SamplingFrequencyIndex { get; }

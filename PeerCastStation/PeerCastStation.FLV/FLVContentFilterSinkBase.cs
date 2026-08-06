@@ -10,14 +10,15 @@ namespace PeerCastStation.FLV
 {
   /// <summary>
   /// FLV を別コンテナへ変換するコンテンツフィルタの共通土台。
-  ///
+  /// </summary>
+  /// <remarks>
   /// 上流からの呼び出しを一旦キューへ積み、専用タスクで順に取り出して変換する構造は
   /// FLVToMKV / FLVToMPEG2TS で完全に同じで、キューの停止条件やフォルト時に
   /// 下流を止める手当てのような間違えやすい部分まで重複していた。ここへ集約する。
   ///
   /// 派生クラスが与えるのは実際の変換ループ(<see cref="ProcessMessagesLoopAsync"/>)と、
   /// 下流へ通知するチャンネル情報の3つの文字列だけ。
-  /// </summary>
+  /// </remarks>
   public abstract class FLVContentFilterSinkBase
     : IContentSink
   {
@@ -115,14 +116,15 @@ namespace PeerCastStation.FLV
     /// <summary>
     /// 変換ループを開始する。<see cref="IContentFilter.Activate"/> が、オブジェクトを
     /// 完全に構築し終えてから呼ぶこと。
-    ///
+    /// </summary>
+    /// <remarks>
     /// コンストラクタから起動すると、派生クラスのコンストラクタ本体より先に
     /// <see cref="ProcessMessagesLoopAsync"/> が走り出す。今は派生のコンストラクタが
     /// どちらも空なので表面化しないが、引数を1つ増やして状態を初期化した時点で、
     /// ループ側がその状態を null のまま掴んで NullReferenceException になる。
     /// それは ProcessMessagesAsync の catch に拾われて下流が NotIdentifiedError で
     /// 止まるため、症状は「配信が途中で死ぬ」でログには構築順の話が出てこない。
-    /// </summary>
+    /// </remarks>
     public void Start()
     {
       if (processorTask!=null) {
@@ -157,10 +159,12 @@ namespace PeerCastStation.FLV
 
     /// <summary>
     /// 消費者が生きている間だけキューへ積む。
+    /// </summary>
+    /// <remarks>
     /// 「タスクが完了しているか調べてから積む」形にすると、調べた直後にタスクが
     /// 終了した場合に消費者のいないキューへ積んでしまうため、投入と打ち切りの確定を
     /// 同じロックで直列化する。
-    /// </summary>
+    /// </remarks>
     private bool TryEnqueue(ContentMessage message)
     {
       lock (queueLock) {

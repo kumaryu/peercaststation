@@ -17,10 +17,12 @@ namespace PeerCastStation.FLV
     /// <summary>
     /// 対応コーデックの正常な制御パケットで、多重化には使わないもの
     /// (E-RTMP の映像 Metadata=HDR colorInfo 等、音声 MultichannelConfig)。
+    /// </summary>
+    /// <remarks>
     /// 健全な配信で普通に流れてくるため Unsupported と分けて黙って捨てる。
     /// 一緒くたにすると「未対応コーデック」警告が正常な配信で出るうえ、
     /// 1回だけの警告枠をこれらが使い切って本当の非対応コーデックが無警告になる。
-    /// </summary>
+    /// </remarks>
     Control,
     /// <summary>音声のコーデック設定(AAC の AudioSpecificConfig 等)。</summary>
     AudioSequenceHeader,
@@ -62,10 +64,12 @@ namespace PeerCastStation.FLV
     public int CompositionTime { get; }
     /// <summary>
     /// タグの frameType がキーフレーム(1 または 4)として通知されていたか。
+    /// </summary>
+    /// <remarks>
     /// 多重化にはキーフレームか否かを表す <see cref="FLVTagKind"/> を使えば足りるが、
     /// シーケンスヘッダについては「キーフレームとして送られてきたか」を別途知りたい
     /// 利用者(チャンネルヘッダへの昇格可否を決める FLVContentBuffer)がいるため公開する。
-    /// </summary>
+    /// </remarks>
     public bool IsKeyFrameSignaled { get; }
 
     // レガシー/Ex の区別は下流のどこも見ない(見る必要が出ないよう Kind と Codec に
@@ -96,9 +100,11 @@ namespace PeerCastStation.FLV
     /// <summary>
     /// タグ本体からコーデックデータ部を切り出す。オフセットが無効(Multitrack の -1 など)か
     /// 本体が尽きている場合は空配列を返す。
+    /// </summary>
+    /// <remarks>
     /// 同じ境界判定を利用側ごとに書くと、オフセットの取り決めを変えたときに
     /// 追従漏れが出るのでここへ集約する。
-    /// </summary>
+    /// </remarks>
     public static byte[] SlicePayload(byte[] body, int offset)
     {
       if (offset<0 || body.Length<=offset) return System.Array.Empty<byte>();
@@ -111,12 +117,13 @@ namespace PeerCastStation.FLV
   /// <summary>
   /// FLV/RTMP のメディアタグ分類器。
   /// レガシータグと E-RTMP の Ex タグを同じ <see cref="FLVTagInfo"/> に正規化する。
-  ///
+  /// </summary>
+  /// <remarks>
   /// FLVContentBuffer(チャンネルヘッダ判定)・FLVToMKV・FLVToMPEG2TS が
   /// 個別に body[0] を解釈していると、E-RTMP チャンネルが成立した際に
   /// 一方だけが Ex タグを理解し、他方が packetType を codecId と誤読する
   /// (例: Ex の ModEx(7) を AVC と誤認する)。分類はここに一本化する。
-  /// </summary>
+  /// </remarks>
   internal static class FLVTagClassifier
   {
     private static readonly FLVTagInfo Unknown =
@@ -242,10 +249,10 @@ namespace PeerCastStation.FLV
       }
     }
 
-    /// <summary>
+    /// <remarks>
     /// FrameType==1(key)と ==4(generated key)をキーフレームとする。
     /// レガシー/Ex の両経路が同じ規則を使うよう一箇所にまとめる。
-    /// </summary>
+    /// </remarks>
     private static bool IsKeyFrameType(int frame_type)
     {
       return frame_type==1 || frame_type==4;

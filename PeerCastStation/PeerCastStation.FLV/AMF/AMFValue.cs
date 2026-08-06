@@ -168,7 +168,7 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
-    public static bool IsNull(AMFValue value)
+    public static bool IsNull(AMFValue? value)
     {
       return value==null || value.Type==AMFValueType.Null;
     }
@@ -237,16 +237,19 @@ namespace PeerCastStation.FLV.AMF
     }
 
     /// <summary>
-    /// 数値として読めれば true を返す。double へのキャスト演算子は非数値型で
-    /// InvalidCastException を、数値化できない文字列で FormatException を投げるが、
-    /// onMetaData の中身は配信者側のエンコーダが自由に詰めるもので、"2500k" のような
-    /// 文字列や独自型が実際に届く。読み手ごとに型判定と TryParse を書くと防ぎ漏れが出る
+    /// 数値として読めれば true を返す。
+    /// </summary>
+    /// <remarks>
+    /// double へのキャスト演算子は非数値型でInvalidCastException を、
+    /// 数値化できない文字列で FormatException を投げるが、
+    /// onMetaData の中身は配信者側のエンコーダが自由に詰めるもので、
+    /// "2500k" のような文字列や独自型が実際に届く。読み手ごとに型判定と TryParse を書くと防ぎ漏れが出る
     /// (漏れた例外はフィルタのタスクをフォルトさせるか、RTMP 受信経路では接続ごと落とす)。
     ///
     /// 文字列の解釈はホストのロケールに依存させない。区切り文字は配信者側の表記であって
     /// 受信側の地域設定とは無関係で、依存させると同じ配信が環境ごとに違う値になる
     /// (例えば de-DE では "2500.5" の '.' が桁区切りと解釈されて 25005 になる)。
-    /// </summary>
+    /// </remarks>
     public static bool TryGetDouble(AMFValue? value, out double result)
     {
       result = 0;
