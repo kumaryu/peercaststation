@@ -209,7 +209,7 @@ namespace PeerCastStation.MKV
     public static readonly byte[] Attachments   = { 0x19,0x41,0xA4,0x69 };
     public static readonly byte[] Chapters      = { 0x10,0x43,0xA7,0x70 };
     public static readonly byte[] Tags          = { 0x12,0x54,0xC3,0x67 };
-    public static readonly byte[] TimecodeScale = { 0x2A,0xD1,0xB1 };
+    public static readonly byte[] TimecodeScale = { 0x2A,0xD7,0xB1 };
     public static readonly byte[] BlockGroup    = { 0xA0 };
     public static readonly byte[] SimpleBlock   = { 0xA3 };
     public static readonly byte[] Timecode      = { 0xE7 };
