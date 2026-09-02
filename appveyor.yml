@@ -1,7 +1,7 @@
 ---
 image:
 - Visual Studio 2026
-- Ubuntu
+- Ubuntu2404
 version: 7.1.1.{build}
 environment:
   GITHUB_ACTOR: kumaryu
@@ -13,7 +13,7 @@ for:
     only:
     - image: Visual Studio 2026
   install:
-  - cmd: set PATH=C:\Ruby34-x64\bin;%PATH%
+  - cmd: set PATH=C:\Ruby40-x64\bin;%PATH%
   - cmd: ridk enable
   - cmd: gem install -N jekyll
   before_build:
@@ -58,7 +58,7 @@ for:
     name: PeerCastStation-$(APPVEYOR_BUILD_VERSION)-x64-ja-JP.msi
 - matrix:
     only:
-    - image: Ubuntu
+    - image: Ubuntu2404
   services:
   - docker
   install:
