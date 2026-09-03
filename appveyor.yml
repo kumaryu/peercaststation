@@ -14,16 +14,15 @@ for:
     - image: Visual Studio 2026
   install:
   - cmd: |-
-      ridk use /40-/
-      ridk enable
-      gem install -N jekyll
+      ridk disable
+      bash -c "pacman  -S --needed --noconfirm base-devel autotools gcc gmp-devel libffi-devel libgdbm-devel libiconv-devel libreadline-devel libxcrypt-devel libyaml-devel openssl-devel zlib-devel"
+      bash -c "gem install -N jekyll"
   before_build:
   - cmd: |-
-      ridk use /40-/
-      ridk enable
-      ruby bumpversion.rb %APPVEYOR_BUILD_VERSION%
+      ridk disable
+      bash -c "ruby bumpversion.rb $APPVEYOR_BUILD_VERSION"
       cd doc\help
-      jekyll build
+      bash -c "jekyll build"
       cd ..\..
   build_script:
   - cmd: |-
