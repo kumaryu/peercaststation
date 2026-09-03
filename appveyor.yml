@@ -16,15 +16,15 @@ for:
   - cmd: |-
       ridk disable
       set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
-      pacman -S --needed --noconfirm base-devel autotools gcc gmp-devel libffi-devel libgdbm-devel libiconv-devel libreadline-devel libxcrypt-devel libyaml-devel openssl-devel zlib-devel"
-      bash -c "gem install -N jekyll"
+      C:\msys64\usr\bin\pacman -S --needed --noconfirm base-devel autotools gcc gmp-devel libffi-devel libgdbm-devel libiconv-devel libreadline-devel libxcrypt-devel libyaml-devel openssl-devel zlib-devel"
+      C:\msys64\ucrt64\bin\gem install -N jekyll
   before_build:
   - cmd: |-
       ridk disable
       set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
-      ruby bumpversion.rb %APPVEYOR_BUILD_VERSION%
+      C:\msys64\ucrt64\bin\ruby bumpversion.rb %APPVEYOR_BUILD_VERSION%
       cd doc\help
-      bash -c "jekyll build"
+      C:\msys64\ucrt64\bin\jekyll build
       cd ..\..
   build_script:
   - cmd: |-
