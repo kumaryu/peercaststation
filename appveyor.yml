@@ -15,12 +15,14 @@ for:
   install:
   - cmd: |-
       ridk disable
-      bash -c "pacman  -S --needed --noconfirm base-devel autotools gcc gmp-devel libffi-devel libgdbm-devel libiconv-devel libreadline-devel libxcrypt-devel libyaml-devel openssl-devel zlib-devel"
+      set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
+      pacman -S --needed --noconfirm base-devel autotools gcc gmp-devel libffi-devel libgdbm-devel libiconv-devel libreadline-devel libxcrypt-devel libyaml-devel openssl-devel zlib-devel"
       bash -c "gem install -N jekyll"
   before_build:
   - cmd: |-
       ridk disable
-      bash -c "ruby bumpversion.rb $APPVEYOR_BUILD_VERSION"
+      set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
+      ruby bumpversion.rb %APPVEYOR_BUILD_VERSION%
       cd doc\help
       bash -c "jekyll build"
       cd ..\..
