@@ -13,11 +13,14 @@ for:
     only:
     - image: Visual Studio 2026
   install:
-  - cmd: set PATH=C:\Ruby40-x64\bin;%PATH%
-  - cmd: ridk enable
-  - cmd: gem install -N jekyll
+  - cmd: |-
+      ridk use /40-/
+      ridk enable
+      gem install -N jekyll
   before_build:
   - cmd: |-
+      ridk use /40-/
+      ridk enable
       ruby bumpversion.rb %APPVEYOR_BUILD_VERSION%
       cd doc\help
       jekyll build
