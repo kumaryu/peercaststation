@@ -357,7 +357,7 @@ module HttpClient =
         req.Headers.TransferEncodingChunked <- true
         send req
 
-    let getWithTimeout timeout_ms (url:string) =
+    let getWithTimeout (timeout_ms:float) (url:string) =
         let task = task {
             use client = new HttpClient()
             client.Timeout <- TimeSpan.FromMilliseconds(timeout_ms)
