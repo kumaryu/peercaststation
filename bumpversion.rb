@@ -106,7 +106,7 @@ def replace_setting(project, name, value)
 end
 
 def replace_yaml(file, &block)
-  doc = YAML.load_file(File.join(BASE, 'appveyor.yml'))
+  doc = YAML.load_file(file)
   block.call(doc)
   File.open(file, 'w:utf-8') do |f|
     YAML.dump(doc, f)
@@ -145,7 +145,4 @@ replace_files(File.join(BASE, 'PeerCastStation/PeerCastStation.PCP/PCPVersion.cs
   end
 end
 
-replace_yaml(File.join(BASE, 'appveyor.yml')) do |doc|
-  doc['version'] = version.split('.')[0,3].join('.') + '.{build}'
-end
 
