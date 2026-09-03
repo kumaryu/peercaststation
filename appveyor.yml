@@ -17,14 +17,14 @@ for:
       ridk disable
       set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
       C:\msys64\usr\bin\pacman -S --needed --noconfirm base-devel autotools gcc gmp-devel libffi-devel libgdbm-devel libiconv-devel libreadline-devel libxcrypt-devel libyaml-devel openssl-devel zlib-devel"
-      C:\msys64\ucrt64\bin\gem install -N jekyll
+      C:\msys64\ucrt64\bin\gem.cmd install -N jekyll
   before_build:
   - cmd: |-
       ridk disable
       set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
       C:\msys64\ucrt64\bin\ruby bumpversion.rb %APPVEYOR_BUILD_VERSION%
       cd doc\help
-      C:\msys64\ucrt64\bin\jekyll build
+      C:\msys64\ucrt64\bin\jekyll.bat build
       cd ..\..
   build_script:
   - cmd: |-
