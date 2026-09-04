@@ -26,7 +26,7 @@ let isIPv6Supported =
         false
 
 let allocateEndPoint localAddr =
-    let listener = System.Net.Sockets.TcpListener(localAddr, 0)
+    use listener = new System.Net.Sockets.TcpListener(localAddr, 0)
     try
         listener.Start()
         listener.LocalEndpoint :?> IPEndPoint
