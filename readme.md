@@ -7,7 +7,7 @@ PeerCastStationはPeerCastクローンです。
 
 ビルド方法
 ==========
-PeerCastStation/PeerCastStation.slnをVisualStudio 2026以降で開いて普通にビルドしてください。
+PeerCastStation/PeerCastStation.slnxをVisualStudio 2026以降で開いて普通にビルドしてください。
 .NET 10 SDKが必要です。
 
 ドキュメントはrubyとjekyllを入れてdoc/helpで`jekyll build`を実行してください。

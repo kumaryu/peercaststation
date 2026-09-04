@@ -18,11 +18,11 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
 
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
+          ruby-version: '4.0'
 
       - name: Install Jekyll
         run: gem install -N jekyll kramdown
@@ -38,16 +38,16 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       - name: Restore (x86)
-        run: dotnet restore -p:Configuration=$env:CONFIGURATION -p:Platform=x86 PeerCastStation/PeerCastStation.sln
+        run: dotnet restore -p:Configuration=$env:CONFIGURATION -p:Platform=x86 PeerCastStation/PeerCastStation.slnx
 
       - name: Restore (x64)
-        run: dotnet restore -p:Configuration=$env:CONFIGURATION -p:Platform=x64 PeerCastStation/PeerCastStation.sln
+        run: dotnet restore -p:Configuration=$env:CONFIGURATION -p:Platform=x64 PeerCastStation/PeerCastStation.slnx
 
       - name: Build (x86)
-        run: msbuild -p:Configuration=$env:CONFIGURATION -p:Platform=x86 PeerCastStation/PeerCastStation.sln
+        run: msbuild -p:Configuration=$env:CONFIGURATION -p:Platform=x86 PeerCastStation/PeerCastStation.slnx
 
       - name: Build (x64)
-        run: msbuild -p:Configuration=$env:CONFIGURATION -p:Platform=x64 PeerCastStation/PeerCastStation.sln
+        run: msbuild -p:Configuration=$env:CONFIGURATION -p:Platform=x64 PeerCastStation/PeerCastStation.slnx
 
       - name: Publish win-x64
         run: |
