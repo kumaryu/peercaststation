@@ -2,7 +2,7 @@
 
 require 'optparse'
 require 'time'
-require 'yaml'
+require 'psych/pure'
 
 module Channel
   Development = :dev
@@ -106,10 +106,10 @@ def replace_setting(project, name, value)
 end
 
 def replace_yaml(file, &block)
-  doc = YAML.load_file(file)
+  doc = Psych::Pure.load(File.read(file, encoding: 'utf-8'), comments: true)
   block.call(doc)
   File.open(file, 'w:utf-8') do |f|
-    YAML.dump(doc, f)
+    f.write(Psych::Pure.dump(doc))
   end
 end
 

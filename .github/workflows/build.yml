@@ -1,6 +1,6 @@
 ---
 name: Build
-true:
+on:
   pull_request:
     branches:
     - master
@@ -22,7 +22,7 @@ jobs:
       with:
         ruby-version: '4.0'
     - name: Install Jekyll
-      run: gem install -N jekyll kramdown
+      run: gem install -N jekyll kramdown psych-pure
     - name: Bump version
       run: ruby bumpversion.rb $env:BUILD_VERSION
     - name: Build help docs
@@ -124,10 +124,10 @@ jobs:
     - uses: ruby/setup-ruby@v1
       with:
         ruby-version: '4.0'
+    - name: Install Jekyll
+      run: gem install -N jekyll kramdown psych-pure
     - name: Bump version
       run: ruby bumpversion.rb $BUILD_VERSION
-    - name: Install Jekyll
-      run: gem install -N jekyll kramdown
     - name: Build help docs
       run: jekyll build --config doc/help/_config.yml -s doc/help -d PeerCastStation/PeerCastStation.UI.HTTP/help
     - name: Restore
