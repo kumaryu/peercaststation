@@ -161,6 +161,9 @@ namespace PeerCastStation.App
       catch (System.IO.FileLoadException) {
         return Enumerable.Empty<Type>();
       }
+      catch (System.IO.FileNotFoundException) {
+        return Enumerable.Empty<Type>();
+      }
     }
 
     IEnumerable<Type> LoadPluginAssembly(System.Reflection.Assembly asm)
