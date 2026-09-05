@@ -339,7 +339,7 @@ module RelaySinkTests =
             channel.Start(null)
             peca.AddChannel channel
             sprintf "http://%s/channel/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
-            |> HttpClient.getWithHeader ["x-peercast-pcp", pcpver]
+            |> HttpClient.getWithHeader [("x-peercast-pcp", pcpver)]
             |> Assert.statusCode HttpStatusCode.NotFound
         [
             (allocateEndPoint IPAddress.Loopback, NetworkType.IPv6, "1")
