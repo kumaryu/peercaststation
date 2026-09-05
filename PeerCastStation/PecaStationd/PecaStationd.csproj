@@ -4,14 +4,10 @@
     <OutputType>WinExe</OutputType>
     <Platforms>AnyCPU;x86;x64</Platforms>
     <Nullable>enable</Nullable>
-    <FileVersion>7.1.1.0</FileVersion>
+    <ProductVersion Condition=" '$(BUILD_VERSION)' != ''">$(BUILD_VERSION)</ProductVersion>
+    <ProductVersion Condition=" '$(BUILD_VERSION)' == ''">0.0.0.0</ProductVersion>
+    <FileVersion>$(ProductVersion)</FileVersion>
     <Copyright>Copyright ©  2014</Copyright>
-  </PropertyGroup>
-  <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>..\PeerCastStation.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>..\peercaststation.ico</ApplicationIcon>
@@ -39,9 +35,6 @@
     <ProjectReference Include="..\PeerCastStation.TS\PeerCastStation.TS.csproj" />
     <ProjectReference Include="..\PeerCastStation.UI.HTTP\PeerCastStation.UI.HTTP.csproj" />
     <ProjectReference Include="..\PeerCastStation.UI\PeerCastStation.UI.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\PeerCastStation.snk" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\peercaststation.ico" />

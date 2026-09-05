@@ -4,7 +4,9 @@
     <OutputType>Exe</OutputType>
     <Platforms>AnyCPU;x86;x64</Platforms>
     <Nullable>enable</Nullable>
-    <FileVersion>7.1.1.0</FileVersion>
+    <ProductVersion Condition=" '$(BUILD_VERSION)' != ''">$(BUILD_VERSION)</ProductVersion>
+    <ProductVersion Condition=" '$(BUILD_VERSION)' == ''">0.0.0.0</ProductVersion>
+    <FileVersion>$(ProductVersion)</FileVersion>
     <Copyright>Copyright ©  2015</Copyright>
   </PropertyGroup>
   <ItemGroup>

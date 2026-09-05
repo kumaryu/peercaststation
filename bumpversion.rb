@@ -113,14 +113,9 @@ def replace_yaml(file, &block)
   end
 end
 
-replace_files(File.join(BASE, '**/AssemblyInfo.cs')) do |f, line|
-  case line
-  when /\[assembly: AssemblyFileVersion\("\S+"\)\]/
-    f.puts %Q/[assembly: AssemblyFileVersion("#{version}")]/
-  when /\[assembly: AssemblyInformationalVersion\("\S+"\)\]/
-    f.puts %Q/[assembly: AssemblyInformationalVersion("#{version}")]/
-  else
-    f.puts line
+replace_yaml('.github/workflows/build.yml') do |doc|
+  if doc.include?('env') then
+    doc['env']['BUILD_VERSION'] = "#{version.split('.')[0,3].join('.')}.${{ github.run_number }}"
   end
 end
 

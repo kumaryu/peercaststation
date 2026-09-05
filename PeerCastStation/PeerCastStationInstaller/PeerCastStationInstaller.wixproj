@@ -1,10 +1,9 @@
 ﻿<Project Sdk="WixToolset.Sdk/5.0.2">
   <PropertyGroup>
-    <ProductVersion>3.8</ProductVersion>
     <TargetFramework>net10.0-windows</TargetFramework>
-    <MyVersion Condition=" '$(APPVEYOR_BUILD_VERSION)' != ''">$(APPVEYOR_BUILD_VERSION)</MyVersion>
-    <MyVersion Condition=" '$(APPVEYOR_BUILD_VERSION)' == ''">0.0.0.0</MyVersion>
-    <OutputName>PeerCastStation-$(MyVersion)-$(Platform)</OutputName>
+    <ProductVersion Condition=" '$(BUILD_VERSION)' != ''">$(BUILD_VERSION)</ProductVersion>
+    <ProductVersion Condition=" '$(BUILD_VERSION)' == ''">0.0.0.0</ProductVersion>
+    <OutputName>PeerCastStation-$(ProductVersion)-$(Platform)</OutputName>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DefineConstants>Debug</DefineConstants>
