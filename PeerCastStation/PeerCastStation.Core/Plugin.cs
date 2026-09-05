@@ -94,12 +94,10 @@ namespace PeerCastStation.Core
     {
       var asm = this.GetType().Assembly;
       var file_version = FileVersionInfo.GetVersionInfo(asm.Location);
-      var info_version = asm.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false).FirstOrDefault() as System.Reflection.AssemblyInformationalVersionAttribute;
-      var version = info_version!=null ? info_version.InformationalVersion : file_version.FileVersion;
       return new PluginVersionInfo(
         System.IO.Path.GetFileName(asm.Location),
         asm.FullName ?? "",
-        version ?? "",
+        file_version.FileVersion ?? "",
         file_version.LegalCopyright ?? "");
     }
 
