@@ -28,8 +28,6 @@ jobs:
     - name: Build help docs
       working-directory: doc/help
       run: jekyll build
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
     - name: Build (x86)
       run: dotnet build -p:Configuration=$env:CONFIGURATION -p:Platform=x86 PeerCastStation/PeerCastStation.slnx
     - name: Build (x64)
