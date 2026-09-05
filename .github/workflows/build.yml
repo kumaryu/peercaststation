@@ -9,13 +9,13 @@ env:
 jobs:
   build-windows:
     name: Build (Windows)
-    runs-on: windows-2022
+    runs-on: windows-2025-vs2026
     env:
       CONFIGURATION: Release
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v6
       with:
         dotnet-version: 10.0.x
     - uses: ruby/setup-ruby@v1
@@ -30,14 +30,10 @@ jobs:
       run: jekyll build
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
-    - name: Restore (x86)
-      run: dotnet restore -p:Configuration=$env:CONFIGURATION -p:Platform=x86 PeerCastStation/PeerCastStation.slnx
-    - name: Restore (x64)
-      run: dotnet restore -p:Configuration=$env:CONFIGURATION -p:Platform=x64 PeerCastStation/PeerCastStation.slnx
     - name: Build (x86)
-      run: msbuild -p:Configuration=$env:CONFIGURATION -p:Platform=x86 PeerCastStation/PeerCastStation.slnx
+      run: dotnet build -p:Configuration=$env:CONFIGURATION -p:Platform=x86 PeerCastStation/PeerCastStation.slnx
     - name: Build (x64)
-      run: msbuild -p:Configuration=$env:CONFIGURATION -p:Platform=x64 PeerCastStation/PeerCastStation.slnx
+      run: dotnet build -p:Configuration=$env:CONFIGURATION -p:Platform=x64 PeerCastStation/PeerCastStation.slnx
     - name: Publish win-x64
       run: |
         dotnet publish -c $env:CONFIGURATION --self-contained -r win-x64 -o win-x64 PeerCastStation/PeerCastStation/PeerCastStation.csproj
@@ -50,62 +46,62 @@ jobs:
       run: dotnet run --project "PeerCastStation/PeerCastStation.Test/PeerCastStation.Test.fsproj"
         -v n -c $env:CONFIGURATION
     - name: Upload win-x64
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: PeerCastStation-${{ env.BUILD_VERSION }}-win-x64
         path: win-x64
     - name: Upload win-x86
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: PeerCastStation-${{ env.BUILD_VERSION }}-win-x86
         path: win-x86
     - name: Upload PecaStationd x86 MSI (en-US)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: PecaStationd-${{ env.BUILD_VERSION }}-x86-en-US.msi
-        path: PeerCastStation/PecaStationdInstaller/bin/${{ env.CONFIGURATION }}/en-US/PecaStationd-${{
+        path: PeerCastStation/PecaStationdInstaller/bin/x86/${{ env.CONFIGURATION }}/en-US/PecaStationd-${{
           env.BUILD_VERSION }}-x86.msi
     - name: Upload PecaStationd x86 MSI (ja-JP)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: PecaStationd-${{ env.BUILD_VERSION }}-x86-ja-JP.msi
-        path: PeerCastStation/PecaStationdInstaller/bin/${{ env.CONFIGURATION }}/ja-JP/PecaStationd-${{
+        path: PeerCastStation/PecaStationdInstaller/bin/x86/${{ env.CONFIGURATION }}/ja-JP/PecaStationd-${{
           env.BUILD_VERSION }}-x86.msi
     - name: Upload PecaStationd x64 MSI (en-US)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: PecaStationd-${{ env.BUILD_VERSION }}-x64-en-US.msi
-        path: PeerCastStation/PecaStationdInstaller/bin/${{ env.CONFIGURATION }}/en-US/PecaStationd-${{
+        path: PeerCastStation/PecaStationdInstaller/bin/x64/${{ env.CONFIGURATION }}/en-US/PecaStationd-${{
           env.BUILD_VERSION }}-x64.msi
     - name: Upload PecaStationd x64 MSI (ja-JP)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: PecaStationd-${{ env.BUILD_VERSION }}-x64-ja-JP.msi
-        path: PeerCastStation/PecaStationdInstaller/bin/${{ env.CONFIGURATION }}/ja-JP/PecaStationd-${{
+        path: PeerCastStation/PecaStationdInstaller/bin/x64/${{ env.CONFIGURATION }}/ja-JP/PecaStationd-${{
           env.BUILD_VERSION }}-x64.msi
     - name: Upload PeerCastStation x86 MSI (en-US)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: PeerCastStation-${{ env.BUILD_VERSION }}-x86-en-US.msi
-        path: PeerCastStation/PeerCastStationInstaller/bin/${{ env.CONFIGURATION }}/en-US/PeerCastStation-${{
+        path: PeerCastStation/PeerCastStationInstaller/bin/x86/${{ env.CONFIGURATION }}/en-US/PeerCastStation-${{
           env.BUILD_VERSION }}-x86.msi
     - name: Upload PeerCastStation x86 MSI (ja-JP)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: PeerCastStation-${{ env.BUILD_VERSION }}-x86-ja-JP.msi
-        path: PeerCastStation/PeerCastStationInstaller/bin/${{ env.CONFIGURATION }}/ja-JP/PeerCastStation-${{
+        path: PeerCastStation/PeerCastStationInstaller/bin/x86/${{ env.CONFIGURATION }}/ja-JP/PeerCastStation-${{
           env.BUILD_VERSION }}-x86.msi
     - name: Upload PeerCastStation x64 MSI (en-US)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: PeerCastStation-${{ env.BUILD_VERSION }}-x64-en-US.msi
-        path: PeerCastStation/PeerCastStationInstaller/bin/${{ env.CONFIGURATION }}/en-US/PeerCastStation-${{
+        path: PeerCastStation/PeerCastStationInstaller/bin/x64/${{ env.CONFIGURATION }}/en-US/PeerCastStation-${{
           env.BUILD_VERSION }}-x64.msi
     - name: Upload PeerCastStation x64 MSI (ja-JP)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: PeerCastStation-${{ env.BUILD_VERSION }}-x64-ja-JP.msi
-        path: PeerCastStation/PeerCastStationInstaller/bin/${{ env.CONFIGURATION }}/ja-JP/PeerCastStation-${{
+        path: PeerCastStation/PeerCastStationInstaller/bin/x64/${{ env.CONFIGURATION }}/ja-JP/PeerCastStation-${{
           env.BUILD_VERSION }}-x64.msi
   build-linux:
     name: Build (Linux)
@@ -116,9 +112,9 @@ jobs:
     env:
       CONFIGURATION: Release
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v6
       with:
         dotnet-version: 10.0.x
     - uses: ruby/setup-ruby@v1
@@ -130,8 +126,6 @@ jobs:
       run: ruby bumpversion.rb $BUILD_VERSION
     - name: Build help docs
       run: jekyll build --config doc/help/_config.yml -s doc/help -d PeerCastStation/PeerCastStation.UI.HTTP/help
-    - name: Restore
-      run: dotnet restore -p:Configuration=$CONFIGURATION -p:"Platform=Any CPU" PeerCastStation/PeerCastStation/PeerCastStation.csproj
     - name: Publish (any)
       run: dotnet publish -c $CONFIGURATION -p:"Platform=Any CPU" --no-self-contained
         -r any -o any PeerCastStation/PeerCastStation/PeerCastStation.csproj
@@ -159,12 +153,12 @@ jobs:
         echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
         docker push ghcr.io/${{ github.repository_owner }}/peercaststation:$BUILD_VERSION
     - name: Upload Docker image tar
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: peercaststation-${{ env.BUILD_VERSION }}.tar
         path: peercaststation-${{ env.BUILD_VERSION }}.tar
     - name: Upload any
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: PeerCastStation-${{ env.BUILD_VERSION }}-any
         path: any
