@@ -89,7 +89,7 @@ namespace PeerCastStation.FLV.AMF
     {
       var len = ReadUI16();
       var buf = new byte[len];
-      BaseStream.Read(buf, 0, len);
+      BaseStream.ReadExactly(buf, 0, len);
       return System.Text.Encoding.UTF8.GetString(buf);
     }
 
@@ -109,7 +109,7 @@ namespace PeerCastStation.FLV.AMF
     private long ReadUI32()
     {
       var buf = new byte[4];
-      BaseStream.Read(buf, 0, 4);
+      BaseStream.ReadExactly(buf, 0, 4);
       if (BitConverter.IsLittleEndian) Array.Reverse(buf);
       return BitConverter.ToUInt32(buf, 0);
     }
@@ -117,7 +117,7 @@ namespace PeerCastStation.FLV.AMF
     private int ReadUI16()
     {
       var buf = new byte[2];
-      BaseStream.Read(buf, 0, 2);
+      BaseStream.ReadExactly(buf, 0, 2);
       if (BitConverter.IsLittleEndian) Array.Reverse(buf);
       return BitConverter.ToUInt16(buf, 0);
     }
@@ -132,7 +132,7 @@ namespace PeerCastStation.FLV.AMF
     private double ReadDouble()
     {
       var buf = new byte[8];
-      BaseStream.Read(buf, 0, 8);
+      BaseStream.ReadExactly(buf, 0, 8);
       if (BitConverter.IsLittleEndian) Array.Reverse(buf);
       return BitConverter.ToDouble(buf, 0);
     }

@@ -436,7 +436,7 @@ namespace PeerCastStation.FLV
         var nal_ref_idc   = (data & 0x60)>>5;
         var nal_unit_type = (data & 0x1F);
         var rbsp_bytes = new byte[len-1];
-        s.Read(rbsp_bytes, 0, rbsp_bytes.Length);
+        s.ReadExactly(rbsp_bytes, 0, rbsp_bytes.Length);
         return new NALUnit(nal_ref_idc, nal_unit_type, rbsp_bytes);
       }
 
