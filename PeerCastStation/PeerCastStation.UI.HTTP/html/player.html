@@ -5,8 +5,10 @@
     <title>再生 - PeerCastStation </title>
     <script type="text/javascript" src="/api/1/peercaststation.js"></script>
     <link type="text/css" href="css/index.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/video.js@7.20.3/dist/video-js.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/video.js@7.20.3/dist/video.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/video.js@7.21.7/dist/video-js.min.css" integrity="sha256-MQILNoDAnXbaJT0pfW0/qpj9a1UcHHUYKduMEqn0oa0=" crossorigin="anonymous" />
+    <script src="https://cdn.jsdelivr.net/npm/video.js@7.21.7/dist/video.min.js" integrity="sha256-ggOI7P+bvYEIBH86fzkTg1YTdzlAuN1CUn1YDMhimsA=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.8.2/dist/mpegts.js" integrity="sha256-vaMXSHNqacthDC7fRiPmM/H09Htb2oNmjI0oflGww6g=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/videojs-mpegts@0.2.0/dist/videojs-mpegts.min.js" integrity="sha256-MTbGj2uXcQDw0Q4whEZMn8a3HFEOV1avOz5ooVLOvWo=" crossorigin="anonymous"></script>
     <style>
   #player {
     position: absolute;
@@ -114,6 +116,14 @@
           liveui: true, 
           autoplay: true,
           userActions: { click: false },
+          techOrder: ['mpegts', 'html5'],
+          mpegts: {
+            mediaDataSource: {
+              isLive: true,
+              cors: true,
+              withCredentials: false,
+            }
+          },
           html5: {
             vhs: {
               maxPlaylistRetries: 5,
@@ -158,10 +168,10 @@
         var play = function () {
           player.volume(isNaN(lastVolume) ? 0.5 : lastVolume)
           if (tracker) {
-            player.src({type: 'video/mpegURL', src: '/hls/' + channelId + '.m3u8?tip=' + tracker + '&hash=' + Date.now()});
+            player.src({type: 'video/x-flv', src: '/stream/' + channelId + '.flv?tip=' + tracker + '&hash=' + Date.now()});
           }
           else {
-            player.src({type: 'video/mpegURL', src: '/hls/' + channelId + '.m3u8?hash=' + Date.now()});
+            player.src({type: 'video/x-flv', src: '/stream/' + channelId + '.flv?hash=' + Date.now()});
           }
         };
         var onPlayerError = function (retry) {
