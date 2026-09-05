@@ -4,9 +4,10 @@
     <OutputType>Library</OutputType>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\PeerCastStation\</SolutionDir>
     <RestorePackages>true</RestorePackages>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Nullable>enable</Nullable>
     <NoWarn>1701;1702;1591</NoWarn>
+    <FileVersion>7.1.1.0</FileVersion>
+    <Copyright>Copyright ©  2011</Copyright>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DocumentationFile>bin\Debug\PeerCastStation.UI.HTTP.xml</DocumentationFile>

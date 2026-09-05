@@ -4,11 +4,12 @@
     <OutputType>WinExe</OutputType>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\PeerCastStation\</SolutionDir>
     <RestorePackages>true</RestorePackages>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <UseAppHost Condition="'$(RuntimeIdentifier)' == 'any'">false</UseAppHost>
     <PeerCastUseGUI>true</PeerCastUseGUI>
     <Platforms>AnyCPU;x86;x64</Platforms>
     <Nullable>enable</Nullable>
+    <FileVersion>7.1.1.0</FileVersion>
+    <Copyright>Copyright © arekuma 2011</Copyright>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'Any CPU' or '$(Platform)' == 'AnyCPU'">
     <TargetFramework>net9.0</TargetFramework>

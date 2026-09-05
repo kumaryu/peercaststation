@@ -4,8 +4,11 @@
     <OutputType>Library</OutputType>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Nullable>enable</Nullable>
+    <AssemblyTitle>PeerCastStation.Utils</AssemblyTitle>
+    <Product>PeerCastStation.Utils</Product>
+    <FileVersion>7.1.1.0</FileVersion>
+    <Copyright>Copyright ©  2014</Copyright>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>

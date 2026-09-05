@@ -2,8 +2,9 @@
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <OutputType>Library</OutputType>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Nullable>enable</Nullable>
+    <FileVersion>7.1.1.0</FileVersion>
+    <Copyright>Copyright ©  2017</Copyright>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
