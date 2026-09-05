@@ -568,9 +568,9 @@ module RelaySourceTests =
     let expectHelo connection =
         let helo = RelayServerConnection.recvAtom connection
         Assert.ExpectAtomName Atom.PCP_HELO helo
-        Assert.NotNull(helo.Children.GetHeloSessionID())
-        Assert.NotNull(helo.Children.GetHeloAgent())
-        Assert.NotNull(helo.Children.GetHeloVersion())
+        Assert.NotNull(helo.Children.GetHeloSessionID()) |> ignore
+        Assert.NotNull(helo.Children.GetHeloAgent()) |> ignore
+        Assert.NotNull(helo.Children.GetHeloVersion()) |> ignore
 
     let sendOleh sessionId connection =
         let oleh = AtomCollection()
