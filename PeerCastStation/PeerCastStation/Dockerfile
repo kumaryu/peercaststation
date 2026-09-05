@@ -11,7 +11,7 @@ RUN dotnet build "PeerCastStation.csproj" -c Release -o /app/build -p:"Platform=
 FROM build AS test
 WORKDIR /src
 RUN apk add bash
-CMD ["dotnet", "test", "PeerCastStation.Test/PeerCastStation.Test.fsproj", "-v", "n", "-c", "Release", "-o", "/app/build", "-p:Platform=Any CPU", "-p:PeerCastUseGUI=false"]
+CMD ["dotnet", "run", "--project", "PeerCastStation.Test/PeerCastStation.Test.fsproj", "-v", "n", "-c", "Release", "-p:Platform=Any CPU", "-p:PeerCastUseGUI=false"]
 
 FROM build AS publish
 RUN dotnet publish "PeerCastStation.csproj" --no-self-contained -r any -c Release -o /app/publish -p:"Platform=Any CPU" -p:PeerCastUseGUI=false

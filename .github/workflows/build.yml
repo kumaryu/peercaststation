@@ -47,7 +47,7 @@ jobs:
         dotnet publish -c $env:CONFIGURATION --self-contained -r win-x86 -o win-x86 PeerCastStation/PeerCastStation/PeerCastStation.csproj
         dotnet publish -c $env:CONFIGURATION --self-contained -r win-x86 -o win-x86 PeerCastStation/PecaStationd/PecaStationd.csproj
     - name: Test
-      run: dotnet test "PeerCastStation/PeerCastStation.Test/PeerCastStation.Test.fsproj"
+      run: dotnet run --project "PeerCastStation/PeerCastStation.Test/PeerCastStation.Test.fsproj"
         -v n -c $env:CONFIGURATION
     - name: Upload win-x64
       uses: actions/upload-artifact@v4
