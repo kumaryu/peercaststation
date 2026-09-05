@@ -46,7 +46,7 @@ namespace PeerCastStation.FLV.RTMP
     public int ReadUInt16()
     {
       var bytes = new byte[2];
-      BaseStream.Read(bytes, 0, 2);
+      BaseStream.ReadExactly(bytes, 0, 2);
       if (BitConverter.IsLittleEndian) Array.Reverse(bytes);
       return BitConverter.ToUInt16(bytes, 0);
     }
@@ -54,7 +54,7 @@ namespace PeerCastStation.FLV.RTMP
     public int ReadInt32()
     {
       var bytes = new byte[4];
-      BaseStream.Read(bytes, 0, 4);
+      BaseStream.ReadExactly(bytes, 0, 4);
       if (BitConverter.IsLittleEndian) Array.Reverse(bytes);
       return BitConverter.ToInt32(bytes, 0);
     }
@@ -62,14 +62,14 @@ namespace PeerCastStation.FLV.RTMP
     public int ReadUInt24()
     {
       var bytes = new byte[3];
-      BaseStream.Read(bytes, 0, 3);
+      BaseStream.ReadExactly(bytes, 0, 3);
       return (bytes[0]<<16) | (bytes[1]<<8) | bytes[2];
     }
 
     public long ReadUInt32()
     {
       var bytes = new byte[4];
-      BaseStream.Read(bytes, 0, 4);
+      BaseStream.ReadExactly(bytes, 0, 4);
       if (BitConverter.IsLittleEndian) Array.Reverse(bytes);
       return BitConverter.ToUInt32(bytes, 0);
     }
@@ -77,7 +77,7 @@ namespace PeerCastStation.FLV.RTMP
     public long ReadUInt32LE()
     {
       var bytes = new byte[4];
-      BaseStream.Read(bytes, 0, 4);
+      BaseStream.ReadExactly(bytes, 0, 4);
       if (!BitConverter.IsLittleEndian) Array.Reverse(bytes);
       return BitConverter.ToUInt32(bytes, 0);
     }
@@ -85,7 +85,7 @@ namespace PeerCastStation.FLV.RTMP
     public byte[] ReadBytes(int len)
     {
       var bytes = new byte[len];
-      BaseStream.Read(bytes, 0, len);
+      BaseStream.ReadExactly(bytes, 0, len);
       return bytes;
     }
   }

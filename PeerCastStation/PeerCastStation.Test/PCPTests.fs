@@ -339,7 +339,7 @@ module RelaySinkTests =
             channel.Start(null)
             peca.AddChannel channel
             sprintf "http://%s/channel/%s" (endpoint.ToString()) (channel.ChannelID.ToString("N"))
-            |> HttpClient.getWithHeader ["x-peercast-pcp", pcpver]
+            |> HttpClient.getWithHeader [("x-peercast-pcp", pcpver)]
             |> Assert.statusCode HttpStatusCode.NotFound
         [
             (allocateEndPoint IPAddress.Loopback, NetworkType.IPv6, "1")
@@ -568,9 +568,9 @@ module RelaySourceTests =
     let expectHelo connection =
         let helo = RelayServerConnection.recvAtom connection
         Assert.ExpectAtomName Atom.PCP_HELO helo
-        Assert.NotNull(helo.Children.GetHeloSessionID())
-        Assert.NotNull(helo.Children.GetHeloAgent())
-        Assert.NotNull(helo.Children.GetHeloVersion())
+        Assert.NotNull(helo.Children.GetHeloSessionID()) |> ignore
+        Assert.NotNull(helo.Children.GetHeloAgent()) |> ignore
+        Assert.NotNull(helo.Children.GetHeloVersion()) |> ignore
 
     let sendOleh sessionId connection =
         let oleh = AtomCollection()

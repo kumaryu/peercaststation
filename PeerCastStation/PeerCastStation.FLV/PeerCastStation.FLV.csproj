@@ -1,25 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <OutputType>Library</OutputType>
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\PeerCastStation\</SolutionDir>
-    <RestorePackages>true</RestorePackages>
     <Nullable>enable</Nullable>
-    <FileVersion>7.1.1.0</FileVersion>
+    <ProductVersion Condition=" '$(BUILD_VERSION)' != ''">$(BUILD_VERSION)</ProductVersion>
+    <ProductVersion Condition=" '$(BUILD_VERSION)' == ''">0.0.0.0</ProductVersion>
+    <FileVersion>$(ProductVersion)</FileVersion>
     <Copyright>Copyright ©  2012</Copyright>
-  </PropertyGroup>
-  <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>..\PeerCastStation.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\PeerCastStation.Core\PeerCastStation.Core.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\PeerCastStation.snk">
-      <Link>PeerCastStation.snk</Link>
-    </None>
   </ItemGroup>
 </Project>

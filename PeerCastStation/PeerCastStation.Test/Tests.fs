@@ -404,7 +404,7 @@ module OwinHostTest =
             pecaWithOwinHost endpoint (fun owinHost ->
                 registerApp "/index.txt" (fun env ->
                     async {
-                        env.Response.OnSendingHeaders((fun _ -> env.Response.Headers.Set("x-hoge", "fuga")), ())
+                        env.Response.OnSendingHeaders((fun _ -> env.Response.Headers.Set("x-hoge", "fuga")), null)
                         env.Response.ContentType <- "text/plain"
                         do!
                             OwinResponse.writeStrAsync env.Response "Hello World!"

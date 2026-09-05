@@ -1,18 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net9.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\PeerCastStation\</SolutionDir>
-    <RestorePackages>true</RestorePackages>
     <UseAppHost Condition="'$(RuntimeIdentifier)' == 'any'">false</UseAppHost>
     <PeerCastUseGUI>true</PeerCastUseGUI>
     <Platforms>AnyCPU;x86;x64</Platforms>
     <Nullable>enable</Nullable>
-    <FileVersion>7.1.1.0</FileVersion>
+    <ProductVersion Condition=" '$(BUILD_VERSION)' != ''">$(BUILD_VERSION)</ProductVersion>
+    <ProductVersion Condition=" '$(BUILD_VERSION)' == ''">0.0.0.0</ProductVersion>
+    <FileVersion>$(ProductVersion)</FileVersion>
     <Copyright>Copyright © arekuma 2011</Copyright>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'Any CPU' or '$(Platform)' == 'AnyCPU'">
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <PeerCastUseGUI>false</PeerCastUseGUI>
   </PropertyGroup>
   <PropertyGroup>
@@ -23,12 +23,6 @@
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>peercaststation.ico</ApplicationIcon>
-  </PropertyGroup>
-  <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>..\PeerCastStation.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -67,10 +61,5 @@
     <Content Include="unblock.bat">
       <CopyToOutputDirectory Condition="'$(Platform)' != 'Any CPU'">PreserveNewest</CopyToOutputDirectory>
     </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\PeerCastStation.snk">
-      <Link>PeerCastStation.snk</Link>
-    </None>
   </ItemGroup>
 </Project>

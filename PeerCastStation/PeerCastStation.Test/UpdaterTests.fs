@@ -350,7 +350,7 @@ let readTextFile filename =
         with
         | :? System.IO.FileNotFoundException ->
             if retry>0 then
-                System.Threading.Thread.Sleep(100)
+                System.Threading.Thread.Sleep(1000)
                 readTextFileInternal (retry - 1)
             else
                 reraise()
