@@ -168,10 +168,16 @@
         var play = function () {
           player.volume(isNaN(lastVolume) ? 0.5 : lastVolume)
           if (tracker) {
-            player.src({type: 'video/x-flv', src: '/stream/' + channelId + '.flv?tip=' + tracker + '&hash=' + Date.now()});
+            player.src([
+              {type: 'video/x-flv', src: '/stream/' + channelId + '.flv?tip=' + tracker + '&hash=' + Date.now()},
+              {type: 'application/x-mpegURL', src: '/stream/' + channelId + '.m3u8?tip=' + tracker + '&hash=' + Date.now()}
+            ]);
           }
           else {
-            player.src({type: 'video/x-flv', src: '/stream/' + channelId + '.flv?hash=' + Date.now()});
+            player.src([
+              {type: 'video/x-flv', src: '/stream/' + channelId + '.flv?hash=' + Date.now()},
+              {type: 'application/x-mpegURL', src: '/stream/' + channelId + '.m3u8?hash=' + Date.now()}
+            ]);
           }
         };
         var onPlayerError = function (retry) {
