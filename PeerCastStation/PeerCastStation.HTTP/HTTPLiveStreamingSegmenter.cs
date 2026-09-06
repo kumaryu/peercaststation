@@ -57,9 +57,22 @@ namespace PeerCastStation.HTTP
       public void AddContent(Content content)
       {
         if (completed) return;
+        Span<byte> modifiedPacket = stackalloc byte[188];
         for (int r=0; r<content.Data.Length; r+=188) {
           var bytes188 = content.Data.Span.Slice(r, 188);
           var tsPacket = new TSPacket(bytes188);
+          bool modified = false;
+          // Video PES start code: [00 00 01 E0]
+          // 直後の 2byte PES_packet_length を0に補正する
+          if (tsPacket.payload_unit_start_indicator != 0 && tsPacket.payload_offset >= 0) {
+            int o = tsPacket.payload_offset;
+            if (o+5<bytes188.Length && bytes188[o] == 0x00 && bytes188[o+1] == 0x00 && bytes188[o+2] == 0x01 && bytes188[o+3] == 0xE0) {
+              bytes188.CopyTo(modifiedPacket);
+              modifiedPacket[o+4] = 0x00;
+              modifiedPacket[o+5] = 0x00;
+              modified = true;
+            }
+          }
           if (tsPacket.keyframe) {
             if (lastPcr.HasValue) {
               var duration = tsPacket.program_clock_reference - lastPcr.Value;
@@ -69,7 +82,12 @@ namespace PeerCastStation.HTTP
             lastPcr = tsPacket.program_clock_reference;
           }
           if (keyframeFound) {
-            segmentBuffer.Write(bytes188);
+            if (modified) {
+              segmentBuffer.Write(modifiedPacket);
+            }
+            else {
+              segmentBuffer.Write(bytes188);
+            }
             if (segmentBuffer.Length > 8 * 1024 * 1024) {
               throw new Exception("Buffer Overflow");
             }
