@@ -383,6 +383,12 @@ namespace PeerCastStation.FLV
         }
         var packet_length = pkt.Payload.Length + 3 + pes_header_data.Length;
 
+        // Video PES packets may use an unspecified length when they exceed 16 bits.
+        // StreamId values for video streams are in the range 0xE0-0xEF.
+        if ((pkt.StreamId & 0xF0) == 0xE0 && packet_length > (int)UInt16.MaxValue) {
+          packet_length = 0;
+        }
+
         s.Write(PESStartPrefix, 0, PESStartPrefix.Length);
         s.WriteByte(pkt.StreamId);
         s.WriteUInt16BE(packet_length);
