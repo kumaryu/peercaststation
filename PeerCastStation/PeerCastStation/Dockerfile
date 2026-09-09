@@ -1,17 +1,16 @@
-FROM mcr.microsoft.com/dotnet/runtime:9.0-alpine AS base
+FROM mcr.microsoft.com/dotnet/runtime:10.0-alpine AS base
 WORKDIR /app
 
-FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /src
 COPY . .
 WORKDIR "/src/PeerCastStation"
-RUN dotnet restore "PeerCastStation.csproj" -p:"Platform=Any CPU" -p:PeerCastUseGUI=false
 RUN dotnet build "PeerCastStation.csproj" -c Release -o /app/build -p:"Platform=Any CPU" -p:PeerCastUseGUI=false
 
 FROM build AS test
 WORKDIR /src
 RUN apk add bash
-CMD ["dotnet", "test", "PeerCastStation.Test/PeerCastStation.Test.fsproj", "-v", "n", "-c", "Release", "-o", "/app/build", "-p:Platform=Any CPU", "-p:PeerCastUseGUI=false"]
+CMD ["dotnet", "run", "--project", "PeerCastStation.Test/PeerCastStation.Test.fsproj", "-v", "n", "-c", "Release", "-p:Platform=Any CPU", "-p:PeerCastUseGUI=false"]
 
 FROM build AS publish
 RUN dotnet publish "PeerCastStation.csproj" --no-self-contained -r any -c Release -o /app/publish -p:"Platform=Any CPU" -p:PeerCastUseGUI=false

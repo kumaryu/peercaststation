@@ -1,0 +1,63 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Project Path="PecaStationd/PecaStationd.csproj">
+    <BuildDependency Project="PeerCastStation.ASF/PeerCastStation.ASF.csproj" />
+    <BuildDependency Project="PeerCastStation.FLV/PeerCastStation.FLV.csproj" />
+    <BuildDependency Project="PeerCastStation.HTTP/PeerCastStation.HTTP.csproj" />
+    <BuildDependency Project="PeerCastStation.MKV/PeerCastStation.MKV.csproj" />
+    <BuildDependency Project="PeerCastStation.PCP/PeerCastStation.PCP.csproj" />
+    <BuildDependency Project="PeerCastStation.UI.HTTP/PeerCastStation.UI.HTTP.csproj" />
+    <BuildDependency Project="PeerCastStation.UI/PeerCastStation.UI.csproj" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+  </Project>
+  <Project Path="PecaStationdDebug/PecaStationdDebug.csproj">
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+  </Project>
+  <Project Path="PecaStationdInstaller/PecaStationdInstaller.wixproj">
+    <Platform Solution="*|Any CPU" Project="x86" />
+    <Build Solution="Release|x64" />
+    <Build Solution="Release|x86" />
+  </Project>
+  <Project Path="PeerCastStation.App/PeerCastStation.App.csproj" />
+  <Project Path="PeerCastStation.ASF/PeerCastStation.ASF.csproj" />
+  <Project Path="PeerCastStation.Core/PeerCastStation.Core.csproj" />
+  <Project Path="PeerCastStation.CustomFilter/PeerCastStation.CustomFilter.csproj" />
+  <Project Path="PeerCastStation.FLV/PeerCastStation.FLV.csproj" />
+  <Project Path="PeerCastStation.HTTP/PeerCastStation.HTTP.csproj" />
+  <Project Path="PeerCastStation.MKV/PeerCastStation.MKV.csproj" />
+  <Project Path="PeerCastStation.PCP/PeerCastStation.PCP.csproj">
+    <BuildDependency Project="PeerCastStation.Core/PeerCastStation.Core.csproj" />
+  </Project>
+  <Project Path="PeerCastStation.Test/PeerCastStation.Test.fsproj">
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+  </Project>
+  <Project Path="PeerCastStation.TS/PeerCastStation.TS.csproj" />
+  <Project Path="PeerCastStation.UI.HTTP/PeerCastStation.UI.HTTP.csproj" />
+  <Project Path="PeerCastStation.UI/PeerCastStation.UI.csproj" />
+  <Project Path="PeerCastStation.WPF/PeerCastStation.WPF.csproj">
+    <Platform Solution="*|Any CPU" Project="x64" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
+  <Project Path="PeerCastStation/PeerCastStation.csproj">
+    <BuildDependency Project="PeerCastStation.UI.HTTP/PeerCastStation.UI.HTTP.csproj" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+  </Project>
+  <Project Path="PeerCastStationInstaller/PeerCastStationInstaller.wixproj">
+    <Platform Solution="*|Any CPU" Project="x86" />
+    <Build Solution="Release|x64" />
+    <Build Solution="Release|x86" />
+  </Project>
+</Solution>

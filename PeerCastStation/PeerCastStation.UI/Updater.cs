@@ -540,7 +540,10 @@ namespace PeerCastStation.UI
       }
       else {
         startinfo = new ProcessStartInfo("/bin/sh") {
-          Arguments = $"-c 'command -v {ShellEscape(exefile)}'",
+          ArgumentList = {
+            "-c",
+            $"command -v {ShellEscape(exefile)}",
+          },
           UseShellExecute = false,
           RedirectStandardOutput = true,
         };

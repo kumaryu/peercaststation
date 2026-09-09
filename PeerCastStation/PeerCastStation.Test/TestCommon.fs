@@ -26,7 +26,7 @@ let isIPv6Supported =
         false
 
 let allocateEndPoint localAddr =
-    let listener = System.Net.Sockets.TcpListener(localAddr, 0)
+    use listener = new System.Net.Sockets.TcpListener(localAddr, 0)
     try
         listener.Start()
         listener.LocalEndpoint :?> IPEndPoint
@@ -357,7 +357,7 @@ module HttpClient =
         req.Headers.TransferEncodingChunked <- true
         send req
 
-    let getWithTimeout timeout_ms (url:string) =
+    let getWithTimeout (timeout_ms:float) (url:string) =
         let task = task {
             use client = new HttpClient()
             client.Timeout <- TimeSpan.FromMilliseconds(timeout_ms)

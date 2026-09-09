@@ -76,7 +76,7 @@ namespace PeerCastStation.FLV.AMF
       if ((len&0x01)==0) return GetRegisteredString(len>>1);
       len = len>>1;
       var buf = new byte[len];
-      BaseStream.Read(buf, 0, len);
+      BaseStream.ReadExactly(buf, 0, len);
       return RegisterString(System.Text.Encoding.UTF8.GetString(buf));
     }
 
@@ -87,7 +87,7 @@ namespace PeerCastStation.FLV.AMF
       if ((len&0x01)==0) return GetRegisteredObject(len>>1);
       len = len>>1;
       var buf = new byte[len];
-      BaseStream.Read(buf, 0, len);
+      BaseStream.ReadExactly(buf, 0, len);
       return RegisterObject(new AMFValue(type, System.Text.Encoding.UTF8.GetString(buf)));
     }
 
@@ -98,7 +98,7 @@ namespace PeerCastStation.FLV.AMF
       if ((len&0x01)==0) return GetRegisteredObject(len>>1);
       len = len>>1;
       var buf = new byte[len];
-      BaseStream.Read(buf, 0, len);
+      BaseStream.ReadExactly(buf, 0, len);
       return RegisterObject(new AMFValue(buf));
     }
 
@@ -152,7 +152,7 @@ namespace PeerCastStation.FLV.AMF
     private double ReadDouble()
     {
       var buf = new byte[8];
-      BaseStream.Read(buf, 0, 8);
+      BaseStream.ReadExactly(buf, 0, 8);
       if (BitConverter.IsLittleEndian) Array.Reverse(buf);
       return BitConverter.ToDouble(buf, 0);
     }

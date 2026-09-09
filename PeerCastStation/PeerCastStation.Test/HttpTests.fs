@@ -52,7 +52,7 @@ module HttpOutputTest =
                     let url = sprintf "http://%s/%s/%s" (endpoint.ToString()) subpath (channel.ChannelID.ToString("N"))
                     task {
                         use client = new System.Net.Http.HttpClient()
-                        client.Timeout <- TimeSpan.FromMilliseconds(11000)
+                        client.Timeout <- TimeSpan.FromSeconds(11.0)
                         let! rsp = client.GetAsync(url)
                         rsp
                         |> Assert.statusCode HttpStatusCode.GatewayTimeout

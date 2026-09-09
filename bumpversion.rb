@@ -2,7 +2,7 @@
 
 require 'optparse'
 require 'time'
-require 'yaml'
+require 'psych/pure'
 
 module Channel
   Development = :dev
@@ -106,21 +106,16 @@ def replace_setting(project, name, value)
 end
 
 def replace_yaml(file, &block)
-  doc = YAML.load_file(File.join(BASE, 'appveyor.yml'))
+  doc = Psych::Pure.load(File.read(file, encoding: 'utf-8'), comments: true)
   block.call(doc)
   File.open(file, 'w:utf-8') do |f|
-    YAML.dump(doc, f)
+    f.write(Psych::Pure.dump(doc))
   end
 end
 
-replace_files(File.join(BASE, '**/AssemblyInfo.cs')) do |f, line|
-  case line
-  when /\[assembly: AssemblyFileVersion\("\S+"\)\]/
-    f.puts %Q/[assembly: AssemblyFileVersion("#{version}")]/
-  when /\[assembly: AssemblyInformationalVersion\("\S+"\)\]/
-    f.puts %Q/[assembly: AssemblyInformationalVersion("#{version}")]/
-  else
-    f.puts line
+replace_yaml('.github/workflows/build.yml') do |doc|
+  if doc.include?('env') then
+    doc['env']['BUILD_VERSION'] = "#{version.split('.')[0,3].join('.')}.${{ github.run_number }}"
   end
 end
 
@@ -145,7 +140,4 @@ replace_files(File.join(BASE, 'PeerCastStation/PeerCastStation.PCP/PCPVersion.cs
   end
 end
 
-replace_yaml(File.join(BASE, 'appveyor.yml')) do |doc|
-  doc['version'] = version.split('.')[0,3].join('.') + '.{build}'
-end
 
