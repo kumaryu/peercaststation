@@ -168,7 +168,7 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
-    public static bool IsNull(AMFValue value)
+    public static bool IsNull(AMFValue? value)
     {
       return value==null || value.Type==AMFValueType.Null;
     }
@@ -236,6 +236,58 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
+    /// <summary>
+    /// 数値として読めれば true を返す。
+    /// </summary>
+    /// <remarks>
+    /// double へのキャスト演算子は非数値型でInvalidCastException を、
+    /// 数値化できない文字列で FormatException を投げるが、
+    /// onMetaData の中身は配信者側のエンコーダが自由に詰めるもので、
+    /// "2500k" のような文字列や独自型が実際に届く。読み手ごとに型判定と TryParse を書くと防ぎ漏れが出る
+    /// (漏れた例外はフィルタのタスクをフォルトさせるか、RTMP 受信経路では接続ごと落とす)。
+    ///
+    /// 文字列の解釈はホストのロケールに依存させない。区切り文字は配信者側の表記であって
+    /// 受信側の地域設定とは無関係で、依存させると同じ配信が環境ごとに違う値になる
+    /// (例えば de-DE では "2500.5" の '.' が桁区切りと解釈されて 25005 になる)。
+    /// </remarks>
+    public static bool TryGetDouble(AMFValue? value, out double result)
+    {
+      result = 0;
+      if (IsNull(value)) return false;
+      switch (value!.Type) {
+      case AMFValueType.Boolean:
+        result = ((bool)value.Value) ? 1 : 0;
+        return true;
+      case AMFValueType.Double:
+        result = (double)value.Value;
+        return true;
+      case AMFValueType.Integer:
+        result = (int)value.Value;
+        return true;
+      case AMFValueType.String:
+        return Double.TryParse(
+          (string)value.Value,
+          System.Globalization.NumberStyles.Float,
+          System.Globalization.CultureInfo.InvariantCulture,
+          out result);
+      default:
+        return false;
+      }
+    }
+
+    /// <summary>
+    /// 整数として読めれば true を返す。<see cref="TryGetDouble"/> と同じ方針で、
+    /// NaN/無限大や int に収まらない値は読めなかったものとして扱う。
+    /// </summary>
+    public static bool TryGetInt32(AMFValue? value, out int result)
+    {
+      result = 0;
+      if (!TryGetDouble(value, out var d)) return false;
+      if (Double.IsNaN(d) || d<Int32.MinValue || d>Int32.MaxValue) return false;
+      result = (int)d;
+      return true;
+    }
+
     public static explicit operator double(AMFValue value)
     {
       switch (value.Type) {
@@ -298,9 +350,10 @@ namespace PeerCastStation.FLV.AMF
       }
     }
 
-    public bool Equals(AMFValue obj)
+    public bool Equals(AMFValue? obj)
     {
-      if (obj.Type!=obj.Type) return false;
+      if (obj==null) return false;
+      if (this.Type!=obj.Type) return false;
       switch (obj.Type) {
       case AMFValueType.Null:
       case AMFValueType.Undefined:
@@ -319,10 +372,17 @@ namespace PeerCastStation.FLV.AMF
 
     public override int GetHashCode()
     {
-      return new int[] {
-        (int)this.Type,
-        this.GetHashCode(),
-      }.GetHashCode();
+      // 自身の GetHashCode() を呼ぶと無限再帰で StackOverflow になる。また値なしの型
+      // (Null/Undefined/ObjectEnd)は Equals が Value を見ないので Type だけで決める
+      // (AMFValue.Null は Value に自分自身を持つため、Value を見ると同じく再帰する)。
+      switch (this.Type) {
+      case AMFValueType.Null:
+      case AMFValueType.Undefined:
+      case AMFValueType.ObjectEnd:
+        return (int)this.Type;
+      default:
+        return ((int)this.Type*397) ^ this.Value.GetHashCode();
+      }
     }
 
   }

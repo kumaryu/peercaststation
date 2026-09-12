@@ -1,0 +1,223 @@
+﻿// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Philmist
+using System.Collections.Generic;
+using PeerCastStation.Core;
+using PeerCastStation.FLV.RTMP;
+
+namespace PeerCastStation.FLV
+{
+  /// <summary>
+  /// FLV/E-RTMP のメディアタグを別コンテナへ載せ替える変換器の共通土台。
+  /// </summary>
+  /// <remarks>
+  /// 分類そのものは <see cref="FLVTagClassifier"/> に一本化してあるが、分類結果を
+  /// 「設定・フレーム・黙って捨てる・警告して捨てる」のどれに割り振るかという方針は
+  /// FLVToMKV と FLVToMPEG2TS が各自で書いており、種別を1つ増やすたびに両方へ
+  /// 同じ分岐を足す必要があった(片方を忘れると default に落ちて
+  /// 「未対応コーデック」という誤った理由で黙って捨てられる)。その方針をここへ集約する。
+  ///
+  /// 派生クラスが与えるのは、対応コーデックの判定と種別ごとの処理だけ。
+  /// </remarks>
+  public abstract class FLVRemuxContextBase
+    : IRTMPContentSink
+  {
+    /// <summary>一度だけ出す警告の識別子。壊れた入力では毎タグ発生しうるため回数を絞る。</summary>
+    private const string WarnKeyUnsupportedAudio = "unsupportedAudio";
+    private const string WarnKeyUnsupportedVideo = "unsupportedVideo";
+    private const string WarnKeyBrokenAudioTag    = "brokenAudioTag";
+    private const string WarnKeyBrokenVideoTag    = "brokenVideoTag";
+    private const string WarnKeyBrokenAudioConfig = "brokenAudioConfig";
+    private const string WarnKeyBrokenVideoConfig = "brokenVideoConfig";
+
+    private readonly HashSet<string> warned = new HashSet<string>();
+
+    /// <summary>ログの先頭に付けるフィルタ名。例: "FLVToMKV"。</summary>
+    protected abstract string FilterName { get; }
+    protected abstract Logger Logger { get; }
+
+    /// <summary>
+    /// 同じ理由の警告を1回だけ出す。フラグを種類ごとに持つとリセット漏れが起きるため、
+    /// 識別子で管理して <see cref="ResetWarnings"/> でまとめて消す。
+    /// </summary>
+    protected void WarnOnce(string key, string format, params object?[] args)
+    {
+      if (!warned.Add(key)) return;
+      Logger.Warn(FilterName + ": " + format, args);
+    }
+
+    /// <summary>新しいストリームの開始時に警告の抑止状態を捨てる。</summary>
+    protected void ResetWarnings()
+    {
+      warned.Clear();
+    }
+
+    /// <summary>コンテナ上の時刻原点。最初に出力したメディアフレームのタイムスタンプ。</summary>
+    private long ptsBase = -1;
+
+    /// <summary>
+    /// FLV のタイムスタンプをコンテナの時刻原点からの相対値に直す。
+    /// </summary>
+    /// <remarks>
+    /// 原点は最初に実際に出力したメディアフレーム(ts=0 を含む)で確定させる。2番目の
+    /// フレームや破棄したタグで確定させると、先頭フレームと PTS が衝突・逆行する。
+    /// 原点は音声と映像で共有するので、先に出力できた側が決める。
+    ///
+    /// 原点より前のタイムスタンプ(音声が先行した後に届いた映像など)は 0 に丸める。
+    /// 負のまま出すと MPEG-TS では PES のビット詰めで 2^33 にラップした約26.5時間先の
+    /// 時刻になり、Matroska では負のクラスタ相対timecodeを持つブロックになる。
+    ///
+    /// 音声と映像で規則がずれると同じ配信でも A/V の原点が食い違うため、
+    /// フィルタごとに書かず共通の規則としてここに置く。
+    ///
+    /// TODO: 32bit タイムスタンプのソース(FLV ファイル、RTMP type-0 チャンク)が
+    /// 約49.7日の連続配信でラップすると、以後のタイムスタンプはすべて ptsBase を
+    /// 下回り続け、このクランプにより全フレームが PTS=0 に張り付いて全視聴者の
+    /// 再生が凍結する(ソース再起動まで回復しない)。修正には大きな負方向ジャンプの
+    /// 検出による再基準化だけでなく、送出済みヘッダとの整合(FLVToMKV の Segment
+    /// 再構築、FLVToMPEG2TS のテーブル再送・PCR 連続性)との連携設計が要る。
+    /// </remarks>
+    protected long NormalizeTimestamp(long timestamp)
+    {
+      if (ptsBase<0) ptsBase = timestamp;
+      var normalized = timestamp - ptsBase;
+      return normalized<0 ? 0 : normalized;
+    }
+
+    /// <summary>新しいストリームの開始時に時刻原点を捨てる。</summary>
+    protected void ResetTimestampBase()
+    {
+      ptsBase = -1;
+    }
+
+    /// <summary>
+    /// CompositionTime から映像の PTS を導く。
+    /// </summary>
+    /// <remarks>
+    /// 先頭Bフレームの負CTS(符号拡張済み)で
+    /// pts が dts より前へ振れる分をクランプする。負のままだと MPEG-TS では PTS&gt;=DTS
+    /// 制約に反し、Matroska では SimpleBlock の符号付き16bit timecode に負値が載る。
+    /// <see cref="NormalizeTimestamp"/> と同じく、フィルタごとに書くと A/V の時刻規則が
+    /// ずれるので共通の規則としてここに置く。
+    /// </remarks>
+    protected long ComputeVideoPts(long dts, int compositionTime)
+    {
+      return System.Math.Max(dts, dts + compositionTime);
+    }
+
+    /// <summary>
+    /// 音声のコーデック設定を破棄したことを1回だけ報告する。
+    /// </summary>
+    /// <remarks>
+    /// 破棄の条件はコンテナごとに違う(ADTS で表現できるか、
+    /// Matroska の Audio 要素を埋められるか)が、
+    /// 「設定を捨てたので以後の音声が出ない」という報告内容は共通なのでここに置く。
+    /// </remarks>
+    protected void WarnBrokenAudioConfig(string reason)
+    {
+      WarnOnce(WarnKeyBrokenAudioConfig, "音声シーケンスヘッダを破棄します ({0})", reason);
+    }
+
+    /// <summary>音声側と同じ趣旨の、映像のコーデック設定を破棄したことの報告。</summary>
+    protected void WarnBrokenVideoConfig(string reason)
+    {
+      WarnOnce(WarnKeyBrokenVideoConfig, "映像シーケンスヘッダを破棄します ({0})", reason);
+    }
+
+    /// <summary>この変換器が扱える音声コーデックか。未知の FourCC は記述子が null で渡る。</summary>
+    protected abstract bool IsSupportedAudioCodec(FourCcCodec? codec);
+    /// <summary>この変換器が扱える映像コーデックか。</summary>
+    protected abstract bool IsSupportedVideoCodec(FourCcCodec? codec);
+
+    /// <summary>音声のコーデック設定(AAC の AudioSpecificConfig 等)。</summary>
+    protected abstract void OnAudioConfig(byte[] body, int offset);
+    protected abstract void OnAudioFrame(RTMPMessage msg, int offset);
+    /// <summary>
+    /// 映像のコーデック設定(avcC/hvcC/av1C 等の生バイト)。
+    /// </summary>
+    /// <remarks>
+    /// コンテナ側の CodecID を引くのに記述子が要るので、分類し直さずに済むよう渡す。
+    /// IsSupportedVideoCodec を通ってから呼ばれるため、対応コーデックなら null ではない。
+    /// </remarks>
+    protected abstract void OnVideoConfig(RTMPMessage msg, int offset, FourCcCodec? codec);
+    protected abstract void OnVideoFrame(RTMPMessage msg, int offset, int compositionTime, bool keyframe);
+
+    public void OnAudio(RTMPMessage msg)
+    {
+      var info = FLVTagClassifier.Classify(msg);
+      switch (info.Kind) {
+      case FLVTagKind.AudioSequenceEnd:
+      case FLVTagKind.Control:
+        // 健全な配信で普通に流れてくる制御パケット。黙って捨てる。
+        return;
+      case FLVTagKind.Unknown:
+        // 構造を解釈できていないので FourCc も当てにならない。「未対応コーデック」として
+        // 報告すると理由が誤りなうえ、1回だけの警告枠を切り詰めタグが使い切って
+        // 本当に未対応なコーデックが無警告になる。
+        WarnOnce(WarnKeyBrokenAudioTag, "解釈できない音声タグを破棄します (size={0})", msg.Body.Length);
+        return;
+      }
+      if (!IsSupportedAudioCodec(info.Codec)) {
+        WarnOnce(WarnKeyUnsupportedAudio, "未対応の音声コーデック/構成のため破棄します (FourCC={0})", info.FourCc ?? "(none)");
+        return;
+      }
+      // 実体があることをここで保証してからハンドラへ渡す。切り詰められたタグ
+      // (レガシー AAC の [0xAF,0x00] だけ等)は分類器が種別を返しつつ PayloadOffset が
+      // 本体長に並ぶので、境界を見ずに body[offset] を触ると範囲外になる。
+      // 判定を派生ごとに書くと種別を増やしたときに追従漏れが出るため、基底の契約にする。
+      if (!info.HasPayload(msg.Body)) {
+        WarnOnce(WarnKeyBrokenAudioTag, "実体のない音声タグを破棄します (kind={0}, size={1})", info.Kind, msg.Body.Length);
+        return;
+      }
+      switch (info.Kind) {
+      case FLVTagKind.AudioSequenceHeader:
+        OnAudioConfig(msg.Body, info.PayloadOffset);
+        break;
+      case FLVTagKind.AudioFrame:
+        OnAudioFrame(msg, info.PayloadOffset);
+        break;
+      default:
+        WarnOnce(WarnKeyUnsupportedAudio, "未対応の音声タグ種別のため破棄します (kind={0})", info.Kind);
+        break;
+      }
+    }
+
+    public void OnVideo(RTMPMessage msg)
+    {
+      var info = FLVTagClassifier.Classify(msg);
+      switch (info.Kind) {
+      case FLVTagKind.VideoSequenceEnd:
+      case FLVTagKind.Control:
+        return;
+      case FLVTagKind.Unknown:
+        WarnOnce(WarnKeyBrokenVideoTag, "解釈できない映像タグを破棄します (size={0})", msg.Body.Length);
+        return;
+      }
+      if (!IsSupportedVideoCodec(info.Codec)) {
+        WarnOnce(WarnKeyUnsupportedVideo, "未対応の映像コーデック/構成のため破棄します (FourCC={0})", info.FourCc ?? "(none)");
+        return;
+      }
+      // 音声側と同じ理由で、実体があることを基底の契約として保証する。
+      if (!info.HasPayload(msg.Body)) {
+        WarnOnce(WarnKeyBrokenVideoTag, "実体のない映像タグを破棄します (kind={0}, size={1})", info.Kind, msg.Body.Length);
+        return;
+      }
+      switch (info.Kind) {
+      case FLVTagKind.VideoSequenceHeader:
+        OnVideoConfig(msg, info.PayloadOffset, info.Codec);
+        break;
+      case FLVTagKind.VideoKeyFrame:
+      case FLVTagKind.VideoInterFrame:
+        OnVideoFrame(msg, info.PayloadOffset, info.CompositionTime, info.Kind==FLVTagKind.VideoKeyFrame);
+        break;
+      default:
+        // MPEG2TSSequenceStart はコーデック設定の生バイトではないので CodecPrivate に使えない。
+        WarnOnce(WarnKeyUnsupportedVideo, "未対応の映像タグ種別のため破棄します (kind={0})", info.Kind);
+        break;
+      }
+    }
+
+    public abstract void OnFLVHeader(FLVFileHeader header);
+    public abstract void OnData(DataMessage msg);
+  }
+
+}

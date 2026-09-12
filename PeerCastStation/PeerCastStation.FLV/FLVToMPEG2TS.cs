@@ -10,70 +10,6 @@ using System.Threading.Tasks;
 
 namespace PeerCastStation.FLV
 {
-  internal enum FLVPacketType {
-    Unknown,
-    AudioData,
-    VideoData,
-    AACSequenceHeader,
-    AACRawData,
-    AVCSequenceHeader,
-    AVCNALUnitKeyFrame,
-    AVCNALUnitInterFrame,
-    AVCEOS,
-  }
-
-  internal static class RTMPMessageExtension {
-    public static FLVPacketType GetPacketType(this RTMPMessage msg)
-    {
-      switch (msg.MessageType) {
-      case RTMPMessageType.Audio:
-        if (msg.Body.Length<2) return FLVPacketType.AudioData;
-        switch ((msg.Body[0] & 0xF0)>>4) {
-        case 10:
-          if (msg.Body[1]==0) {
-            return FLVPacketType.AACSequenceHeader;
-          }
-          else {
-            return FLVPacketType.AACRawData;
-          }
-        default:
-          return FLVPacketType.AudioData;
-        }
-      case RTMPMessageType.Video:
-        if (msg.Body.Length<2) return FLVPacketType.VideoData;
-        switch (msg.Body[0] & 0x0F) {
-        case 7:
-          switch (msg.Body[1]) {
-          case 0:
-            return FLVPacketType.AVCSequenceHeader;
-          case 1:
-            switch ((msg.Body[0] & 0xF0)>>4) {
-            case 1:
-            case 4:
-              return FLVPacketType.AVCNALUnitKeyFrame;
-            default:
-              return FLVPacketType.AVCNALUnitInterFrame;
-            }
-          case 2:
-            return FLVPacketType.AVCEOS;
-          default:
-            return FLVPacketType.VideoData;
-          }
-        default:
-          return FLVPacketType.VideoData;
-        }
-      default:
-        return FLVPacketType.Unknown;
-      }
-    }
-
-    public static bool IsKeyFrame(this RTMPMessage msg)
-    {
-      return msg.GetPacketType()!=FLVPacketType.AVCNALUnitInterFrame;
-    }
-
-  }
-
   public class FLVToMPEG2TS
   {
     public interface IMPEG2TSContentSink
@@ -147,8 +83,19 @@ namespace PeerCastStation.FLV
         Sink = sink;
       }
 
+      /// <summary>
+      /// 16bit フィールドを書く。
+      /// BitWriter.Write と同じく、宣言幅に収まらない値は黙って切り捨てず例外にする。
+      /// </summary>
+      /// <remarks>
+      /// セクション長やディスクリプタ長がここで溢れると
+      /// 構造だけ妥当で長さが嘘の TS が出来上がり、デマルチプレクサが同期を失う。
+      /// </remarks>
       private Span<byte> WriteUInt16BE(Span<byte> dst, int value)
       {
+        if (value<0 || value>0xFFFF) {
+          throw new ArgumentOutOfRangeException(nameof(value), value, "16bitのフィールドに収まらない値です");
+        }
         System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(dst, (ushort)value);
         return dst.Slice(2);
       }
@@ -161,6 +108,9 @@ namespace PeerCastStation.FLV
 
       private Span<byte> WriteByte(Span<byte> dst, int value)
       {
+        if (value<0 || value>0xFF) {
+          throw new ArgumentOutOfRangeException(nameof(value), value, "8bitのフィールドに収まらない値です");
+        }
         dst[0] = (byte)value;
         return dst.Slice(1);
       }
@@ -169,6 +119,23 @@ namespace PeerCastStation.FLV
       {
         value.CopyTo(dst);
         return dst.Slice(value.Length);
+      }
+
+      /// <summary>
+      /// 12bit の長さフィールドを検証して返す。
+      /// </summary>
+      /// <remarks>
+      /// 予約ビット(15&lt;&lt;12 等)と OR して書くため、
+      /// 溢れた分は上位の予約ビットに吸収されて WriteUInt16BE の範囲検査に掛からない。
+      /// 長さフィールドの食い違いはデマルチプレクサ側でテーブル全体の読み違えになるので、
+      /// OR する前にここで弾く。
+      /// </remarks>
+      private static int Check12BitLength(int value, string name)
+      {
+        if (value<0 || value>0xFFF) {
+          throw new ArgumentOutOfRangeException(name, value, "12bitの長さフィールドに収まらない値です");
+        }
+        return value;
       }
 
       public void WritePAT(ProgramAssociationTable pat)
@@ -203,7 +170,7 @@ namespace PeerCastStation.FLV
         body = WriteByte(body, pmt.SectionNumber);
         body = WriteByte(body, pmt.LastSectionNumber);
         body = WriteUInt16BE(body, (7<<13) | (pmt.PCRPID & 0x1FFF));
-        body = WriteUInt16BE(body, (15<<12) | program_info_sz);
+        body = WriteUInt16BE(body, (15<<12) | Check12BitLength(program_info_sz, "program_info_length"));
         foreach (var entry in pmt.ProgramInfo) {
           body = WriteByte(body, entry.Tag);
           body = WriteByte(body, entry.Data.Length);
@@ -212,7 +179,7 @@ namespace PeerCastStation.FLV
         foreach (var entry in pmt.Table) {
           body = WriteByte(body, entry.StreamType);
           body = WriteUInt16BE(body, (7<<13) | (entry.PID & 0x1FFF));
-          body = WriteUInt16BE(body, (15<<12) | (entry.ESInfo.Length & 0xFFF));
+          body = WriteUInt16BE(body, (15<<12) | Check12BitLength(entry.ESInfo.Length, "ES_info_length"));
           body = WriteBytes(body, entry.ESInfo);
         }
         var writer = new ArrayBufferWriter<byte>(188);
@@ -230,7 +197,9 @@ namespace PeerCastStation.FLV
         var reserved                 = (3<<12);
         var section_length           = body.Length+4;
         section = WriteByte(section, table_id);
-        section = WriteUInt16BE(section, section_syntax_indicator | reserved | (section_length & 0xFFF));
+        section = WriteUInt16BE(
+          section,
+          section_syntax_indicator | reserved | Check12BitLength(section_length, "section_length"));
         section = WriteBytes(section, body);
         var crc = CRC32(sectionMem.Memory.Span.Slice(1, section_length-1), 0xFFFFFFFF);
         section = WriteUInt32LE(section, crc);
@@ -324,94 +293,68 @@ namespace PeerCastStation.FLV
       }
     }
 
-    public class PESPacket
+    /// <summary>
+    /// PES パケットヘッダの書き出し。
+    /// </summary>
+    /// <remarks>
+    /// ヘッダ長は PTS/DTS の有無だけで決まるので、呼び出し側は GetHeaderSize で
+    /// 出力全体を1つの配列として確保し、先頭をここで埋めてから続きへペイロードを
+    /// 直接組み立てられる。以前はペイロードを持つオブジェクト+伸長する MemoryStream +
+    /// ToArray() の構成で、フレームごとに複製が2回余計に発生していた
+    /// (メディアタグごとに通る経路なので毎秒70回以上)。
+    /// </remarks>
+    public static class PESPacket
     {
-      public byte StreamId { get; private set; }
-      public TSTimeStamp? PTS { get; private set; }
-      public TSTimeStamp? DTS { get; private set; }
-      public byte[] Payload { get; private set; }
-
-      public PESPacket(byte stream_id, TSTimeStamp? pts, TSTimeStamp? dts, byte[] payload)
+      public static int GetHeaderSize(bool has_pts, bool has_dts)
       {
-        StreamId = stream_id;
-        PTS = pts;
-        DTS = dts;
-        Payload = payload;
+        return 9 + (has_pts ? (has_dts ? 10 : 5) : 0);
       }
 
-      private static readonly byte[] PESStartPrefix = new byte[] { 0, 0, 1 };
-      public static void WriteTo(Stream s, PESPacket pkt)
+      public static void WriteHeader(Span<byte> dst, byte stream_id, TSTimeStamp? pts, TSTimeStamp? dts, int payload_length)
       {
-        var pes_scrambling_control    = 0;
-        var pes_priority              = false;
-        var data_alignment_indicator  = false;
-        var copyright                 = false;
-        var original_or_copy          = false;
-        var pts_dts_flags             = (pkt.PTS.HasValue ? (pkt.DTS.HasValue ? 3 : 2) : 0);
-        var escr_flag                 = false;
-        var es_rate_flag              = false;
-        var dsm_trick_mode_flag       = false;
-        var additional_copy_info_flag = false;
-        var pes_crc_flag              = false;
-        var pes_extension_flag        = false;
-        var pes_header_data = new byte[0];
-        if (pkt.PTS.HasValue && pkt.DTS.HasValue) {
-          var pts = pkt.PTS.Value.Tick / 300;
-          var dts = pkt.DTS.Value.Tick / 300;
-          pes_header_data = new byte[10] {
-            (byte)((0x3 << 4) | (((pts >> 30) & 0x0007)<<1) | 1),
-            (byte)((            (((pts >> 15) & 0x7FFF)<<1) | 1)>>8),
-            (byte)((            (((pts >> 15) & 0x7FFF)<<1) | 1)&0xFF),
-            (byte)((            (((pts >>  0) & 0x7FFF)<<1) | 1)>>8),
-            (byte)((            (((pts >>  0) & 0x7FFF)<<1) | 1)&0xFF),
-            (byte)((0x1 << 4) | (((dts >> 30) & 0x0007)<<1) | 1),
-            (byte)((            (((dts >> 15) & 0x7FFF)<<1) | 1)>>8),
-            (byte)((            (((dts >> 15) & 0x7FFF)<<1) | 1)&0xFF),
-            (byte)((            (((dts >>  0) & 0x7FFF)<<1) | 1)>>8),
-            (byte)((            (((dts >>  0) & 0x7FFF)<<1) | 1)&0xFF),
-          };
+        var header_data_length = (pts.HasValue ? (dts.HasValue ? 10 : 5) : 0);
+        var packet_length = payload_length + 3 + header_data_length;
+        // PES_packet_length は16bit。黙って下位16bitに丸めると、65535を超える
+        // アクセスユニット(1080pのIDRフレームなど珍しくない)で実長と無関係な短い長さを
+        // 宣言してしまい、下流のデマルチプレクサが同期を失う。
+        // 映像ESに限り 0 = 長さ未指定が許されている(次の PES 開始まで)ので 0 を書く。
+        // 音声(ADTS)は OnAACBody が 0x1FFF 上限で弾くため到達しない想定だが、
+        // 黙って丸めず不変条件の破れとして表に出す。
+        if (packet_length>0xFFFF) {
+          if ((stream_id & 0xF0)==0xE0) {
+            packet_length = 0;
+          }
+          else {
+            throw new ArgumentOutOfRangeException(nameof(payload_length), payload_length, "映像以外のPESは16bitの長さフィールドに収まる必要があります");
+          }
         }
-        else if (pkt.PTS.HasValue) {
-          var pts = pkt.PTS.Value.Tick / 300;
-          pes_header_data = new byte[5] {
-            (byte)((0x2 << 4) | (((pts >> 30) & 0x0007)<<1) | 1),
-            (byte)((            (((pts >> 15) & 0x7FFF)<<1) | 1)>>8),
-            (byte)((            (((pts >> 15) & 0x7FFF)<<1) | 1)&0xFF),
-            (byte)((            (((pts >>  0) & 0x7FFF)<<1) | 1)>>8),
-            (byte)((            (((pts >>  0) & 0x7FFF)<<1) | 1)&0xFF),
-          };
+        dst[0] = 0;
+        dst[1] = 0;
+        dst[2] = 1;
+        dst[3] = stream_id;
+        dst[4] = (byte)(packet_length>>8);
+        dst[5] = (byte)packet_length;
+        // '10' + scrambling/priority/alignment/copyright/original の各フラグ0
+        dst[6] = 0x80;
+        // pts_dts_flags + escr/es_rate/trick/copy_info/crc/extension の各フラグ0
+        dst[7] = (byte)(((pts.HasValue ? (dts.HasValue ? 3 : 2) : 0) & 0x3) << 6);
+        dst[8] = (byte)header_data_length;
+        if (pts.HasValue) {
+          WriteTimestamp(dst.Slice(9), dts.HasValue ? 0x3 : 0x2, pts.Value.Tick/300);
         }
-        var packet_length = pkt.Payload.Length + 3 + pes_header_data.Length;
+        if (dts.HasValue) {
+          WriteTimestamp(dst.Slice(14), 0x1, dts.Value.Tick/300);
+        }
+      }
 
-        // Video PES packets may use an unspecified length when they exceed 16 bits.
-        // StreamId values for video streams are in the range 0xE0-0xEF.
-        if ((pkt.StreamId & 0xF0) == 0xE0 && packet_length > (int)UInt16.MaxValue) {
-          packet_length = 0;
-        }
-
-        s.Write(PESStartPrefix, 0, PESStartPrefix.Length);
-        s.WriteByte(pkt.StreamId);
-        s.WriteUInt16BE(packet_length);
-        var header_data1 =
-          (0x2 << 6) |
-          ((pes_scrambling_control & 0x3) << 4) |
-          ((pes_priority             ? 1 : 0) << 3) |
-          ((data_alignment_indicator ? 1 : 0) << 2) |
-          ((copyright                ? 1 : 0) << 1) |
-          ((original_or_copy         ? 1 : 0) << 0);
-        s.WriteByte((byte)header_data1);
-        var header_data2 =
-          ((pts_dts_flags & 0x3) << 6) |
-          ((escr_flag                 ? 1 : 0) << 5) |
-          ((es_rate_flag              ? 1 : 0) << 4) |
-          ((dsm_trick_mode_flag       ? 1 : 0) << 3) |
-          ((additional_copy_info_flag ? 1 : 0) << 2) |
-          ((pes_crc_flag              ? 1 : 0) << 1) |
-          ((pes_extension_flag        ? 1 : 0) << 0);
-        s.WriteByte((byte)header_data2);
-        s.WriteByte((byte)pes_header_data.Length);
-        s.Write(pes_header_data, 0, pes_header_data.Length);
-        s.Write(pkt.Payload, 0, pkt.Payload.Length);
+      /// <summary>33bit タイムスタンプの 5 バイト詰め(4bitマーカー + 3-15-15 分割、各末尾に marker_bit)。</summary>
+      private static void WriteTimestamp(Span<byte> dst, int marker, long value)
+      {
+        dst[0] = (byte)((marker << 4) | (int)(((value >> 30) & 0x0007)<<1) | 1);
+        dst[1] = (byte)(((((value >> 15) & 0x7FFF)<<1) | 1)>>8);
+        dst[2] = (byte)(((((value >> 15) & 0x7FFF)<<1) | 1)&0xFF);
+        dst[3] = (byte)(((((value >>  0) & 0x7FFF)<<1) | 1)>>8);
+        dst[4] = (byte)(((((value >>  0) & 0x7FFF)<<1) | 1)&0xFF);
       }
     }
 
@@ -436,22 +379,22 @@ namespace PeerCastStation.FLV
         return new NALUnit(nal_ref_idc, nal_unit_type, bytes.Slice(1, len-1).ToArray());
       }
 
-      public static NALUnit ReadFrom(Stream s, int len)
+      /// <summary>スタートコード(4バイト)+NALヘッダ+ペイロードとして書いたときの長さ。</summary>
+      public static int GetByteSize(NALUnit unit)
       {
-        var data = s.ReadByte();
-        var nal_ref_idc   = (data & 0x60)>>5;
-        var nal_unit_type = (data & 0x1F);
-        var rbsp_bytes = new byte[len-1];
-        s.ReadExactly(rbsp_bytes, 0, rbsp_bytes.Length);
-        return new NALUnit(nal_ref_idc, nal_unit_type, rbsp_bytes);
+        return 4 + 1 + unit.Payload.Length;
       }
 
-      private static readonly byte[] WritePrefix = new byte[] { 0, 0, 0, 1 };
-      public static void WriteToByteStream(Stream s, NALUnit unit)
+      /// <summary>dst の先頭へ書き、書いた長さを返す。dst は GetByteSize 以上あること。</summary>
+      public static int WriteTo(Span<byte> dst, NALUnit unit)
       {
-        s.Write(WritePrefix, 0, WritePrefix.Length);
-        s.WriteByte((byte)((unit.NALRefIdc << 5) | (unit.NALUnitType & 0x1F)));
-        s.Write(unit.Payload, 0, unit.Payload.Length);
+        dst[0] = 0;
+        dst[1] = 0;
+        dst[2] = 0;
+        dst[3] = 1;
+        dst[4] = (byte)((unit.NALRefIdc << 5) | (unit.NALUnitType & 0x1F));
+        unit.Payload.CopyTo(dst.Slice(5));
+        return 5 + unit.Payload.Length;
       }
 
       public static readonly NALUnit AccessUnitDelimiter = new NALUnit(0, 9, new byte[] { 240 });
@@ -487,9 +430,26 @@ namespace PeerCastStation.FLV
         bufferLen = 0;
       }
 
+      /// <summary>
+      /// 値を指定ビット幅で書く。宣言した幅に収まらない値は例外にする。
+      /// </summary>
+      /// <remarks>
+      /// 黙って下位ビットへ丸めると、構造としては妥当なのに内容が別物のビットストリームが
+      /// 出来上がり、視聴側の症状(音が出ない/同期が外れる)からは原因を追えなくなる。
+      /// フィールドごとの妥当性は呼び出し側が事前に検証する契約とし、
+      /// 破った場合は実装のバグとして表に出す。
+      /// </remarks>
       public void Write(int bits, int value)
       {
-        buffer = (buffer << bits) | ((long)value & ((1<<bits)-1));
+        if (bits<0 || bits>32) {
+          throw new ArgumentOutOfRangeException(nameof(bits), bits, "ビット幅は0-32の範囲で指定してください");
+        }
+        var max = bits==32 ? uint.MaxValue : (1u<<bits)-1;
+        if (value<0 || (uint)value>max) {
+          throw new ArgumentOutOfRangeException(
+            nameof(value), value, $"{bits}bitのフィールドに収まらない値です");
+        }
+        buffer = (buffer << bits) | ((long)value & ((1L<<bits)-1));
         bufferLen += bits;
         while (bufferLen>=8) {
           BaseStream.WriteByte((byte)(buffer >> (bufferLen-8)));
@@ -650,7 +610,7 @@ namespace PeerCastStation.FLV
     }
 
     public class Context
-      : IRTMPContentSink
+      : FLVRemuxContextBase
     {
       public int VideoPID { get; set; } = 0x100;
       public int AudioPID { get; set; } = 0x101;
@@ -665,9 +625,27 @@ namespace PeerCastStation.FLV
       private bool isHeaderSent = false;
       private bool hasAudio = false;
       private bool hasVideo = false;
+      // 最後に送った PMT に宣言したトラック構成。後から揃ったトラックを反映する再送
+      // (RestartTablesIfTrackChanged)の要否をこれで判定する。
+      private bool declaredAudio = false;
+      private bool declaredVideo = false;
+      // PMT の version_number(5bit)。内容を変えて再送するときに進めないと、
+      // 同じ版番号の PMT はデマルチプレクサに「変更なし」として無視される。
+      private int pmtVersion = 0;
+      // 設定を「まだ受信していない」のではなく「受信したが表現できず破棄した」ことの記録。
+      // この場合は待っても状況が変わらないので、フレーム破棄時にも PAT/PMT だけは送出して
+      // 出力が完全な無データ(視聴側からは死んだチャンネル)になるのを避ける。
+      private bool audioConfigRejected = false;
+      private bool videoConfigRejected = false;
       private ADTSHeader adtsHeader = ADTSHeader.Default;
       private int nalSizeLen = 0;
-      private long ptsBase = -1;
+      // 受理済みシーケンスヘッダの生バイト。同一内容の送り直しを再解析せず弾くために持つ。
+      private byte[]? audioConfigRaw = null;
+      private byte[]? videoConfigRaw = null;
+      private static readonly Logger logger = new Logger(typeof(FLVToMPEG2TS));
+
+      protected override string FilterName { get { return "FLVToMPEG2TS"; } }
+      protected override Logger Logger { get { return logger; } }
 
       private class MPEG2TSStreamWriter
         : IMPEG2TSContentSink
@@ -714,12 +692,22 @@ namespace PeerCastStation.FLV
         isHeaderSent = false;
         hasAudio = false;
         hasVideo = false;
+        declaredAudio = false;
+        declaredVideo = false;
+        pmtVersion = 0;
+        audioConfigRejected = false;
+        videoConfigRejected = false;
         adtsHeader = ADTSHeader.Default;
         nalSizeLen = 0;
-        ptsBase = -1;
+        // キャッシュを残すと、リセット後に届いた同一設定が弾かれて hasAudio/hasVideo が
+        // 立たないまま全フレームが破棄される。
+        audioConfigRaw = null;
+        videoConfigRaw = null;
+        ResetTimestampBase();
+        ResetWarnings();
       }
 
-      public void OnFLVHeader(FLVFileHeader header)
+      public override void OnFLVHeader(FLVFileHeader header)
       {
         Clear();
       }
@@ -729,260 +717,415 @@ namespace PeerCastStation.FLV
         if (isHeaderSent) {
           return;
         }
+        // トラック構成の変化による再送があるので、テーブルは毎回作り直す。
+        // 前回のエントリへ追記すると同じ ES が重複宣言される。
+        pmt.Table.Clear();
         if (hasVideo) {
           pmt.Table.Add(new ProgramMapEntry(VideoPID, 0x1B, new byte[0]));
-          pmt.PCRPID = VideoPID;
         }
         if (hasAudio) {
           pmt.Table.Add(new ProgramMapEntry(AudioPID, 0x0F, new byte[0]));
-          if (!hasVideo) {
-            pmt.PCRPID = AudioPID;
-          }
         }
+        if (hasVideo) {
+          pmt.PCRPID = VideoPID;
+        }
+        else if (hasAudio) {
+          pmt.PCRPID = AudioPID;
+        }
+        else {
+          // どの ES も宣言できないときの「PCR なし」は 0x1FFF と決められている。
+          pmt.PCRPID = 0x1FFF;
+        }
+        pmt.Version = pmtVersion;
         pat.PIDToProgramNumber[ProgramMapTablePID] = 1;
         writer.WritePAT(pat);
         writer.WritePMT(ProgramMapTablePID, pmt);
+        declaredAudio = hasAudio;
+        declaredVideo = hasVideo;
         isHeaderSent = true;
       }
 
-      class BitReader
-        : IDisposable
+      /// <summary>
+      /// 送出済みの PMT にないトラックが後から揃ったら、version を進めて再送を予約する。
+      /// </summary>
+      /// <remarks>
+      /// 再接続や途中参加では音声のシーケンスヘッダが最初の映像フレームより後に届くことが
+      /// あり(FLVToMKV の RestartSegmentIfTrackAvailable と同じ事情)、最初のフレームで
+      /// 確定した PMT に映像しか載っていないと、以後の音声 PES はどの PMT にも宣言されない
+      /// PID へ流れ続けて規格準拠のデマルチプレクサに捨てられる(そのセッションは最後まで
+      /// 無音になる)。PMT は version_number を進めれば途中で更新できるので、Segment を
+      /// 作り直すしかない Matroska と違いテーブルの再送だけでよい。
+      /// </remarks>
+      private void RestartTablesIfTrackChanged()
       {
-        public Stream BaseStream { get; private set; }
-        private bool leaveOpen = false;
-        private int buffer = 0;
-        private int bufferLen = 0;
-        public BitReader(Stream baseStream, bool leaveOpen)
-        {
-          this.BaseStream = baseStream;
-          this.leaveOpen  = leaveOpen;
-        }
-
-        public void Dispose()
-        {
-          if (!leaveOpen) {
-            this.BaseStream.Dispose();
-          }
-        }
-
-        public int ReadBits(int bits)
-        {
-          while (bufferLen<bits) {
-            var b = BaseStream.ReadByte();
-            if (b<0) throw new EndOfStreamException();
-            buffer = (buffer<<8) | b;
-            bufferLen += 8;
-          }
-          int result = (buffer >> (bufferLen-bits)) & ((1<<bits)-1);
-          bufferLen -= bits;
-          buffer = buffer & ((1<<bufferLen)-1);
-          return result;
-        }
+        if (!isHeaderSent) return;
+        if (declaredAudio==hasAudio && declaredVideo==hasVideo) return;
+        pmtVersion = (pmtVersion+1) & 0x1F;
+        isHeaderSent = false;
       }
 
-      private void OnAACHeader(RTMPMessage msg)
+      private void OnAACHeader(byte[] body, int offset)
       {
-        using (var s=new MemoryStream(msg.Body, false)) {
-          s.Seek(2, SeekOrigin.Current);
-          using (var bs=new BitReader(s, true)) {
-            var type = bs.ReadBits(5);
-            if (type==31) {
-              type = bs.ReadBits(6)+32;
-            }
-            var sampling_freq_idx = bs.ReadBits(4);
-            var sampling_freq = sampling_freq_idx==0x0F ? bs.ReadBits(24) : sampling_freq_idx;
-            var channel_configuration = bs.ReadBits(4);
-            this.adtsHeader = new ADTSHeader(
-              0xFFF, //sync
-              0, //ID
-              0, //Layer
-              true, //CRC Absent
-              type-1, //Profile
-              sampling_freq_idx, //Sampling frequency index
-              0, //Private
-              channel_configuration, //Channel configuration
-              0, //Original/Copy
-              0, //home
-              0, //Copyright identification bit
-              0, //Copyright identification start
-              0, //frame length
-              0x7FF, //buffer fullness
-              0, //number of raw data blocks in frame
-              0  //CRC
-            );
+        // 多くのエンコーダは GOP ごとにシーケンスヘッダを送り直す。同じ内容なら
+        // コピーも再解析も要らない(FLVToMKV 側と同じ規則)。
+        if (audioConfigRaw!=null &&
+            new ReadOnlySpan<byte>(body, offset, body.Length-offset).SequenceEqual(audioConfigRaw)) {
+          return;
+        }
+        // 切り詰められた AudioSpecificConfig はここで捨てる。ビット読み出しで例外を投げると
+        // FLVFileParser.Read の EndOfStreamException catch がタグ先頭まで巻き戻すため
+        // (=「データ待ち」と誤認される)、毒タグがバッファ先頭に残って以後の全パースが
+        // 再スローし続け、出力が恒久停止したうえで contentBuffer が無限に成長する。
+        // ペイロードの実体があることは FLVRemuxContextBase が保証している。
+        var config = FLVTagInfo.SlicePayload(body, offset);
+        if (!AudioSpecificConfig.TryParse(config, out var asc)) {
+          WarnBrokenAudioConfig("AudioSpecificConfigが不完全です");
+          audioConfigRejected = true;
+          return;
+        }
+        // ADTS の samplingFrequencyIndex は表引きインデックス(0-12)しか表現できない。
+        // 明示レートのエスケープ(15)は、通知された実レートから表引きインデックスを逆引きして救う
+        // (実レートが表にある限り ADTS で正しく表現できる)。逆引きできない実レートと
+        // 予約値(13/14)だけは禁止インデックス入りの ADTS になりデコーダが全音声を拒否するため、
+        // 設定ごと破棄する。
+        var sampling_freq_idx = asc.SamplingFrequencyIndex;
+        if (sampling_freq_idx>=13) {
+          if (sampling_freq_idx!=0x0F ||
+              !AudioSpecificConfig.TryGetSamplingFrequencyIndex(asc.SampleRate, out sampling_freq_idx)) {
+            WarnBrokenAudioConfig($"ADTSで表現できないサンプリング周波数です (index={asc.SamplingFrequencyIndex}, rate={asc.SampleRate})");
+            audioConfigRejected = true;
+            return;
           }
         }
-        hasAudio = true;
-      }
-
-      private void OnAACBody(RTMPMessage msg)
-      {
-        var pts = msg.Timestamp - Math.Max(0, ptsBase);
-        var raw_length = msg.Body.Length-2;
-        var header = new ADTSHeader(adtsHeader, raw_length + adtsHeader.Bytesize);
-        var pes_payload = new MemoryStream();
-        using (pes_payload) {
-          ADTSHeader.WriteTo(pes_payload, header);
-          pes_payload.Write(msg.Body, 2, raw_length);
+        // ADTS の profile は2bit(audioObjectType-1、すなわち AOT 1..4 のみ表現できる)。
+        // HE-AAC(AOT=5)/HE-AACv2(AOT=29)は SBR/PS の明示signalingで、コアの audioObjectType
+        // (通常 AAC LC=2)を別途通知している。ADTS は SBR を暗黙signalingで運ぶ形式なので、
+        // 通知どおりコア側の AOT で profile を決めれば正しく再生できる。
+        // ここで AOT=5 ごと破棄すると、HE-AAC 配信の音声が丸ごと出なくなる
+        // (hasAudio が立たないため以後の全フレームが捨てられ、PMT も音声ES抜きで確定する)。
+        var type = asc.CoreAudioObjectType;
+        if (type<1 || type>4) {
+          WarnBrokenAudioConfig($"ADTSで表現できないaudioObjectTypeです (type={asc.AudioObjectType}, core={asc.CoreAudioObjectType})");
+          audioConfigRejected = true;
+          return;
         }
-        var pes = new PESPacket(0xC0, TSTimeStamp.FromMilliseconds(pts), null, pes_payload.ToArray());
-        var pes_packet = new MemoryStream();
-        using (pes_packet) {
-          PESPacket.WriteTo(pes_packet, pes);
+        // channel_configuration は3bit。0 はチャンネルレイアウトを PCE で運ぶという指定で、
+        // その PCE は raw_data_block の先頭に入っている。ADTS はここを素通しするので
+        // 0 のまま宣言してよく、デコーダは raw_data_block の PCE でレイアウトを知る。
+        // 逆にここで破棄すると、PCE でレイアウトを送る配信(5.1ch 超やカスタム配置)の
+        // 音声が hasAudio ごと落ちて、PMT も音声ES抜きで確定してしまう。
+        // 予約値(8-15)だけは3bitに収まらず BitWriter の範囲検査で例外になるので破棄する。
+        var channel_configuration = asc.ChannelConfiguration;
+        if (channel_configuration<0 || channel_configuration>7) {
+          WarnBrokenAudioConfig($"ADTSで表現できないchannelConfigurationです ({channel_configuration})");
+          audioConfigRejected = true;
+          return;
         }
-        WritePATPMT(writer);
-        writer.WriteTSPackets(
-          AudioPID,
-          true,
-          null,
-          pes_packet.ToArray()
+        this.adtsHeader = new ADTSHeader(
+          0xFFF, //sync
+          0, //ID
+          0, //Layer
+          true, //CRC Absent
+          type-1, //Profile
+          sampling_freq_idx, //Sampling frequency index
+          0, //Private
+          channel_configuration, //Channel configuration
+          0, //Original/Copy
+          0, //home
+          0, //Copyright identification bit
+          0, //Copyright identification start
+          0, //frame length
+          0x7FF, //buffer fullness
+          0, //number of raw data blocks in frame
+          0  //CRC
         );
+        audioConfigRaw = config;
+        audioConfigRejected = false;
+        hasAudio = true;
+        // 最初の映像フレームより後に音声設定が届いた場合、確定済みの PMT に音声 ES を
+        // 足すためにテーブルを再送する。
+        RestartTablesIfTrackChanged();
       }
 
-      private static byte ReadByte(ref ReadOnlySpan<byte> bytes)
+      private void OnAACBody(RTMPMessage msg, int offset)
       {
-        var value = bytes[0];
-        bytes = bytes.Slice(1);
-        return value;
-      }
-
-      private static NALUnit[] ReadNALUnitArray(ref ReadOnlySpan<byte> data, int cnt)
-      {
-        var ary = new NALUnit[cnt];
-        for (int i = 0; i<cnt; i++) {
-          var len = System.Buffers.Binary.BinaryPrimitives.ReadUInt16BigEndian(data);
-          data = data.Slice(2);
-          ary[i] = NALUnit.ReadFrom(data, len);
-          data = data.Slice(len);
+        // ペイロードの実体は FLVRemuxContextBase が保証している。
+        // シーケンスヘッダ未受信のまま流すと adtsHeader が Default(sync=0 の全ゼロ)のままで、
+        // ゴミ ADTS が AudioPID に出力される上、最初の WritePATPMT が音声 ES 抜きの PMT を
+        // 確定させてしまう。映像側(nalSizeLen<1)と同様に破棄する。
+        if (!hasAudio) {
+          WarnMissingAudioConfig();
+          // 設定が「まだ来ていない」だけなら黙って待つ。「来たが表現できず破棄した」なら
+          // 待っても状況は変わらないので、宣言できるトラックだけの PAT/PMT を送って
+          // 出力が完全な無データ(視聴側からは死んだチャンネル)になるのを避ける。
+          if (audioConfigRejected) {
+            WritePATPMT(writer);
+          }
+          return;
         }
-        return ary;
+        var raw_length = msg.Body.Length-offset;
+        var frame_length = raw_length + adtsHeader.Bytesize;
+        // ADTS の frame_length は13bit。超過分を BitWriter が黙って落とすと実長と食い違う
+        // 長さを宣言することになり、ADTS は次フレームの位置をこの長さで求めるため
+        // 以降のフレーム同期が丸ごと壊れる。部分出力に意味はないのでフレームごと捨てる。
+        if (frame_length>0x1FFF) {
+          WarnOversizedAudioFrame();
+          return;
+        }
+        // 時刻原点の取り方と負値のクランプは基底の共通規則。
+        var pts = NormalizeTimestamp(msg.Timestamp);
+        var header = new ADTSHeader(adtsHeader, frame_length);
+        // PES ヘッダ長(PTS のみ)も ADTS ヘッダ+生フレームのサイズも確定しているので、
+        // PES パケット全体を1つの正確な長さの配列へ直接組み立てる。伸長しながら書いて
+        // 最後に ToArray() で複製する形は避ける(音声フレームは毎秒40回以上流れる)。
+        var header_size = PESPacket.GetHeaderSize(has_pts: true, has_dts: false);
+        var pes_packet = new byte[header_size + frame_length];
+        PESPacket.WriteHeader(
+          pes_packet.AsSpan(0, header_size),
+          0xC0,
+          TSTimeStamp.FromMilliseconds(pts),
+          null,
+          frame_length);
+        using (var s = new MemoryStream(pes_packet, header_size, adtsHeader.Bytesize, true)) {
+          ADTSHeader.WriteTo(s, header);
+        }
+        Buffer.BlockCopy(msg.Body, offset, pes_packet, header_size+adtsHeader.Bytesize, raw_length);
+        WritePATPMT(writer);
+        writer.WriteTSPackets(AudioPID, true, null, pes_packet);
       }
 
-      private void OnAVCHeader(RTMPMessage msg)
+      private static NALUnit[] ToNALUnits(byte[][] units)
       {
-        var data = new ReadOnlySpan<byte>(msg.Body, 5, msg.Body.Length-5);
-        var configuration_version  = ReadByte(ref data);
-        var avc_profile_indication = ReadByte(ref data);
-        var profile_compatibility  = ReadByte(ref data);
-        var avc_level_indcation    = ReadByte(ref data);
-        this.nalSizeLen = (ReadByte(ref data) & 0x3) + 1;
-        var sps_count   = (ReadByte(ref data) & 0x1F);
-        this.sps        = ReadNALUnitArray(ref data, sps_count);
-        var pps_count   = ReadByte(ref data);
-        this.pps        = ReadNALUnitArray(ref data, pps_count);
-        if (data.Length>0 &&
-            (avc_profile_indication==100 ||
-             avc_profile_indication==110 ||
-             avc_profile_indication==122 ||
-             avc_profile_indication==144)) {
-          var chroma_format = (ReadByte(ref data) & 0x3);
-          var bit_depth_luma = (ReadByte(ref data) & 0x7) + 8;
-          var bit_depth_chroma = (ReadByte(ref data) & 0x7) + 8;
-          var sps_ext_count = ReadByte(ref data);
-          this.spsExt       = ReadNALUnitArray(ref data, sps_ext_count);
+        if (units.Length==0) return Array.Empty<NALUnit>();
+        var result = new NALUnit[units.Length];
+        for (var i=0; i<units.Length; i++) {
+          result[i] = NALUnit.ReadFrom(units[i], units[i].Length);
+        }
+        return result;
+      }
+
+      private void OnAVCHeader(byte[] body, int offset)
+      {
+        // ペイロードの実体は FLVRemuxContextBase が保証している。
+        var data = new ReadOnlySpan<byte>(body, offset, body.Length-offset);
+        // 音声側と同じく、同じ内容の送り直しでは再解析しない。avcC の再解析は
+        // SPS/PPS の配列割り当てを伴うので、GOP ごとの送り直しが数時間分積もる。
+        if (videoConfigRaw!=null && data.SequenceEqual(videoConfigRaw)) {
+          return;
+        }
+        // 切り詰められた/矛盾した avcC はここで捨てる。音声側(OnAACHeader)と同じ理由で、
+        // 境界外アクセスの例外を投げると FLVFileParser がタグ先頭まで巻き戻して
+        // 同じ毒タグを永久に再パースし、出力が恒久停止する。
+        // avcC の走査そのものは AvcDecoderConfig に集約してある。
+        if (!AvcDecoderConfig.TryParse(data, out var config)) {
+          WarnBrokenVideoConfig("avcCが不完全です");
+          videoConfigRejected = true;
+          return;
+        }
+        // SPS/PPS を欠く avcC は仕様上あり得る(パラメータセットを in-band で運ぶ運用)。
+        // TS ではフレーム内の SPS/PPS NAL が素通しで流れるので出力自体は成立しうる。
+        // IDR への注入が空振りすることだけ警告して続行する。CodecPrivate が復号初期化の
+        // 唯一の拠り所である MKV 側(OnVideoConfig)はこれを破棄する — コンテナ由来の非対称。
+        if (!config.HasParameterSets) {
+          WarnOnce("emptyAvcParameterSets", "avcCにSPS/PPSが含まれていません。in-bandのパラメータセット前提で続行します");
+        }
+        this.nalSizeLen = config.NalSizeLength;
+        this.sps        = ToNALUnits(config.SequenceParameterSets);
+        this.pps        = ToNALUnits(config.PictureParameterSets);
+        this.spsExt     = ToNALUnits(config.SequenceParameterSetExtensions);
+        videoConfigRaw  = data.ToArray();
+        videoConfigRejected = false;
+        hasVideo = true;
+        // 最初の音声フレームより後に映像設定が届いた場合、確定済みの PMT に映像 ES を
+        // 足すためにテーブルを再送する。
+        RestartTablesIfTrackChanged();
+      }
+
+      private void WarnMissingAudioConfig()
+      {
+        WarnOnce("missingAudioConfig", "音声シーケンスヘッダ(AudioSpecificConfig)より前のフレームを破棄します");
+      }
+
+      private void WarnOversizedAudioFrame()
+      {
+        WarnOnce("oversizedAudioFrame", "ADTSのframe_length(13bit)に収まらない音声フレームを破棄します");
+      }
+
+      private void WarnMissingVideoConfig()
+      {
+        WarnOnce("missingVideoConfig", "映像シーケンスヘッダ(avcC)より前のフレームを破棄します");
+      }
+
+      private void WarnBrokenVideoFrame(int units)
+      {
+        if (units<1) {
+          WarnOnce("brokenVideoFrame", "NALユニット長が不正なため映像フレームを破棄します");
         }
         else {
-          this.spsExt = new NALUnit[0];
+          WarnOnce("truncatedVideoFrame", "NALユニット長が不正なため映像フレームの末尾を切り捨てます");
         }
-        hasVideo = true;
       }
 
-      private void OnAVCBody(RTMPMessage msg, bool keyframe)
+      private void OnAVCBody(RTMPMessage msg, int offset, int cts, bool keyframe)
       {
-        var pts = msg.Timestamp - Math.Max(0, ptsBase);
-        var cts = msg.Body.Skip(2).Take(3).Aggregate(0, (r,v) => (r<<8) | v);
-        if (cts>=0x800000) {
-          cts = 0x1000000 - cts;
-        }
-        var dts = pts;
-        pts = pts + cts;
-        var access_unit_delimiter = false;
-        var idr = false;
-        var nalbytestream = new MemoryStream();
-        int units = 0;
-        using (nalbytestream)
-        using (var body=new MemoryStream(msg.Body, 0, msg.Body.Length)) {
-          body.Seek(5, SeekOrigin.Begin);
-          while (body.Position<body.Length) {
-            var len = body.ReadBytes(nalSizeLen).Aggregate(0, (r,v) => (r<<8) | v);
-            var nalu = NALUnit.ReadFrom(body, len);
-            if (nalu.NALUnitType==9) {
-              access_unit_delimiter = true;
-            }
-            if (!access_unit_delimiter) {
-              NALUnit.WriteToByteStream(nalbytestream, NALUnit.AccessUnitDelimiter);
-              access_unit_delimiter = true;
-            }
-            if (nalu.NALUnitType==5) {
-              idr = true;
-              foreach (var unit in sps) {
-                NALUnit.WriteToByteStream(nalbytestream, unit);
-              }
-              foreach (var unit in pps) {
-                NALUnit.WriteToByteStream(nalbytestream, unit);
-              }
-              foreach (var unit in spsExt) {
-                NALUnit.WriteToByteStream(nalbytestream, unit);
-              }
-            }
-            NALUnit.WriteToByteStream(nalbytestream, nalu);
-            units += 1;
+        // ペイロードの実体は FLVRemuxContextBase が保証している。
+        // avcC(シーケンスヘッダ)より先に CodedFrames が来ると nalSizeLen が 0 のまま。
+        // その場合 NAL 長は常に 0 と読めてしまい区切りが分からないので、
+        // このフレームは復号できないものとして破棄する。
+        if (nalSizeLen<1) {
+          WarnMissingVideoConfig();
+          // 音声側と同じ理由で、破棄が確定している場合だけ PAT/PMT を送る。
+          if (videoConfigRejected) {
+            WritePATPMT(writer);
           }
+          return;
         }
-        var pes = new PESPacket(
+        // 1パス目: NAL 長を検証しながら、出力サイズと AUD/IDR(SPS/PPS注入)の要否を数える。
+        // 2パス目で PES パケット全体を正確な長さの配列へ直接組み立てるための下拵え。
+        // 以前は NAL ごとの配列確保 → 伸長する MemoryStream → ToArray() → 2つ目の
+        // MemoryStream → ToArray() と、フレームの中身を5回前後複製していた
+        // (1080p30 なら毎秒20MB超の回避可能なアロケーション。キーフレームは LOH に乗る)。
+        var body = msg.Body;
+        var idr = false;
+        var broken = false;
+        var units = 0;
+        var payload_size = 0L;
+        var inject_size = 0;
+        foreach (var unit in sps)    inject_size += NALUnit.GetByteSize(unit);
+        foreach (var unit in pps)    inject_size += NALUnit.GetByteSize(unit);
+        foreach (var unit in spsExt) inject_size += NALUnit.GetByteSize(unit);
+        var pos = offset;
+        while (pos<body.Length) {
+          // 長さは long に符号なしで読む。Int32 で読むと nalSizeLen==4
+          // (lengthSizeMinusOne=3、一般的な既定値)で最上位ビットが立つ入力が
+          // 負値になり、残量検査(len>残バイト数)をすり抜ける。
+          if (body.Length-pos < nalSizeLen) {
+            broken = true;
+            break;
+          }
+          var len = 0L;
+          for (var i=0; i<nalSizeLen; i++) {
+            len = (len<<8) | body[pos+i];
+          }
+          // 先頭1バイトは NAL ヘッダなので len>=1 が要る。
+          // 残バイト数を超える長さは壊れた入力なのでそこで打ち切る。
+          if (len<1 || len > body.Length-pos-nalSizeLen) {
+            broken = true;
+            break;
+          }
+          var nal_type = body[pos+nalSizeLen] & 0x1F;
+          // 先頭が AUD でなければ AUD を差し込む(2パス目も同じ規則で書く)。
+          if (units==0 && nal_type!=9) {
+            payload_size += NALUnit.GetByteSize(NALUnit.AccessUnitDelimiter);
+          }
+          if (nal_type==5) {
+            idr = true;
+            payload_size += inject_size;
+          }
+          payload_size += 4 + len; // スタートコード + NAL(ヘッダ含む)
+          pos += nalSizeLen + (int)len;
+          units += 1;
+        }
+        // 末尾の NAL 長が残りバイト数と合わない場合でも、そこまでに読み切れた NAL は
+        // 長さが整合しており単体で復号できるので出力し、切れた末尾だけを捨てる。
+        // アクセスユニットごと捨てるとフレームが1枚丸ごと欠け、キーフレームなら
+        // SPS/PPS ごと落ちて次のGOPまで映像が出ない。
+        // 読めた NAL が1つも無いときだけ、出せるものが無いのでフレームごと捨てる。
+        if (broken) {
+          WarnBrokenVideoFrame(units);
+          if (units<1) return;
+        }
+        // 現実のフレームがこの規模になることはない(タグ長は12MB上限)が、細工された入力
+        // (小さな IDR NAL の羅列×注入の繰り返し)で合計が int を溢れることだけは防ぐ。
+        var header_size = PESPacket.GetHeaderSize(has_pts: true, has_dts: true);
+        if (payload_size > int.MaxValue - header_size) {
+          WarnBrokenVideoFrame(0);
+          return;
+        }
+        // 時刻原点の取り方と負CTSのクランプは基底の共通規則。
+        var dts = NormalizeTimestamp(msg.Timestamp);
+        var pts = ComputeVideoPts(dts, cts);
+        var pes_packet = new byte[header_size + (int)payload_size];
+        PESPacket.WriteHeader(
+          pes_packet.AsSpan(0, header_size),
           0xE0,
           TSTimeStamp.FromMilliseconds(pts),
           TSTimeStamp.FromMilliseconds(dts),
-          nalbytestream.ToArray()
-        );
-        var pes_packet = new MemoryStream();
-        using (pes_packet) {
-          PESPacket.WriteTo(pes_packet, pes);
+          (int)payload_size);
+        // 2パス目: 1パス目で検証済みの units 個の NAL をそのまま書き写す。
+        var dst = pes_packet.AsSpan(header_size);
+        pos = offset;
+        for (var n=0; n<units; n++) {
+          var len = 0;
+          for (var i=0; i<nalSizeLen; i++) {
+            len = (len<<8) | body[pos+i];
+          }
+          pos += nalSizeLen;
+          var nal_type = body[pos] & 0x1F;
+          if (n==0 && nal_type!=9) {
+            dst = dst.Slice(NALUnit.WriteTo(dst, NALUnit.AccessUnitDelimiter));
+          }
+          if (nal_type==5) {
+            foreach (var unit in sps)    dst = dst.Slice(NALUnit.WriteTo(dst, unit));
+            foreach (var unit in pps)    dst = dst.Slice(NALUnit.WriteTo(dst, unit));
+            foreach (var unit in spsExt) dst = dst.Slice(NALUnit.WriteTo(dst, unit));
+          }
+          dst[0] = 0;
+          dst[1] = 0;
+          dst[2] = 0;
+          dst[3] = 1;
+          new ReadOnlySpan<byte>(body, pos, len).CopyTo(dst.Slice(4));
+          // forbidden_zero ビットは従来(NAL ヘッダを再構築していた頃)と同じく 0 に正規化する。
+          dst[4] &= 0x7F;
+          dst = dst.Slice(4+len);
+          pos += len;
         }
         WritePATPMT(writer);
         writer.WriteTSPackets(
           VideoPID,
-          msg.IsKeyFrame() || idr,
+          keyframe || idr,
           idr ? (TSTimeStamp?)TSTimeStamp.FromMilliseconds(dts) : null,
-          pes_packet.ToArray()
+          pes_packet
         );
       }
 
-      private void OnContent(RTMPMessage msg)
+      // タグ分類は共有分類器(FLVTagClassifier)、種別ごとの振り分けは FLVRemuxContextBase に
+      // 一本化してある。以前はここで body[0]&0x0F を codecId として直接読んでいたため、
+      // E-RTMP チャンネルでは Ex タグの packetType を codecId と誤読し
+      // (例: ModEx の 7 を AVC と誤認)、ゴミTSを出力していた。
+      // 本フィルタは H.264/AAC のみ対応なので、それ以外はレガシー/Ex を問わず破棄する。
+      // 記述子は共有インスタンスなので参照比較でよい。
+      protected override bool IsSupportedAudioCodec(FourCcCodec? codec)
       {
-        if (ptsBase<0 && msg.Timestamp>0) ptsBase = msg.Timestamp;
-        switch (msg.GetPacketType()) {
-        case FLVPacketType.AACSequenceHeader:
-          OnAACHeader(msg);
-          break;
-        case FLVPacketType.AACRawData:
-          OnAACBody(msg);
-          break;
-        case FLVPacketType.AVCSequenceHeader:
-          OnAVCHeader(msg);
-          break;
-        case FLVPacketType.AVCNALUnitKeyFrame:
-          OnAVCBody(msg, true);
-          break;
-        case FLVPacketType.AVCNALUnitInterFrame:
-          OnAVCBody(msg, false);
-          break;
-        default:
-          break;
-        }
+        return codec==FourCcRegistry.Aac;
       }
 
-      public void OnAudio(RTMPMessage msg)
+      protected override bool IsSupportedVideoCodec(FourCcCodec? codec)
       {
-        OnContent(msg);
+        return codec==FourCcRegistry.Avc;
       }
 
-      public void OnVideo(RTMPMessage msg)
+      protected override void OnAudioConfig(byte[] body, int offset)
       {
-        OnContent(msg);
+        OnAACHeader(body, offset);
       }
 
-      public void OnData(DataMessage msg)
+      protected override void OnAudioFrame(RTMPMessage msg, int offset)
+      {
+        OnAACBody(msg, offset);
+      }
+
+      protected override void OnVideoConfig(RTMPMessage msg, int offset, FourCcCodec? codec)
+      {
+        OnAVCHeader(msg.Body, offset);
+      }
+
+      protected override void OnVideoFrame(RTMPMessage msg, int offset, int compositionTime, bool keyframe)
+      {
+        OnAVCBody(msg, offset, compositionTime, keyframe);
+      }
+
+      public override void OnData(DataMessage msg)
       {
       }
 
@@ -996,43 +1139,41 @@ namespace PeerCastStation.FLV
     public string Name { get { return "FLVToTS"; } }
     public IContentSink Activate(IContentSink sink)
     {
-      return new FLVToTSContentFilterSink(sink);
+      // 変換ループの起動はコンストラクタではなくここで行う(FLVContentFilterSinkBase.Start)。
+      var filter_sink = new FLVToTSContentFilterSink(sink);
+      filter_sink.Start();
+      return filter_sink;
     }
 
     public class FLVToTSContentFilterSink
-      : IContentSink
+      : FLVContentFilterSinkBase
     {
-      private Task processorTask;
-      struct ContentMessage
-      {
-        public enum MessageType {
-          ChannelInfo,
-          ChannelTrack,
-          ContentHeader,
-          ContentBody,
-          Stop,
-        }
-        public MessageType  Type;
-        public StopReason   StopReason;
-        public Content      Content;
-        public ChannelInfo  ChannelInfo;
-        public ChannelTrack ChannelTrack;
-      }
-      private WaitableQueue<ContentMessage> msgQueue = new WaitableQueue<ContentMessage>();
+      private static readonly Logger logger = new Logger(typeof(FLVToTSContentFilter));
 
       public FLVToTSContentFilterSink(IContentSink sink)
+        : base(sink, logger)
       {
-        processorTask = ProcessMessagesAsync(sink, CancellationToken.None);
       }
+
+      protected override string ContentType      { get { return "TS"; } }
+      protected override string MimeType         { get { return "video/mp2t"; } }
+      protected override string ContentExtension { get { return ".ts"; } }
 
       class MPEG2TSSink
         : FLVToMPEG2TS.IMPEG2TSContentSink
       {
         public IContentSink TargetSink { get; }
-        public Content? HeaderContent { get; set; } = null;
-        public Content? RecentContent { get; set; } = null;
+        // TS も1つの上流Contentから複数の出力(PAT/PMT とタグごとの PES バースト)を出すため、
+        // 上流Contentの位置を流用すると (Stream,Timestamp,Position) が衝突し、
+        // ContentCollection の重複排除で2件目以降が黙って落ちる(BufferedContentSink が
+        // 複数タグを1つの Content に束ねるので、これは通常運用で常に起きる)。
+        // MKVSink と同様、上流Contentは参照せず出力側で独自に連番Positionを採番する。
+        private int streamId = -1;
+        private long position = 0;
+        // 経過時間にしか使わないので、ローカル時刻への変換ぶん重い DateTime.Now は使わない
+        // (PESバーストごとに参照される)。
+        private DateTime streamOrigin = DateTime.UtcNow;
         private ReadOnlyMemory<byte> patBuffer = ReadOnlyMemory<byte>.Empty;
-        private ReadOnlyMemory<byte> pmtBuffer = ReadOnlyMemory<byte>.Empty;
 
         public MPEG2TSSink(IContentSink targetSink)
         {
@@ -1046,128 +1187,36 @@ namespace PeerCastStation.FLV
 
         public void OnPMT(ReadOnlyMemory<byte> bytes)
         {
-          pmtBuffer = bytes;
-          if (patBuffer.Length>0 && pmtBuffer.Length>0 && HeaderContent!=null) {
-            var header = new Memory<byte>(new byte[patBuffer.Length + pmtBuffer.Length]);
-            patBuffer.CopyTo(header);
-            pmtBuffer.CopyTo(header.Slice(patBuffer.Length));
-            TargetSink.OnContentHeader(
-              new Content(
-                HeaderContent.Stream,
-                HeaderContent.Timestamp,
-                HeaderContent.Position,
-                header,
-                HeaderContent.ContFlag
-              )
-            );
-          }
+          if (patBuffer.Length==0) return;
+          var header = new Memory<byte>(new byte[patBuffer.Length + bytes.Length]);
+          patBuffer.CopyTo(header);
+          bytes.CopyTo(header.Slice(patBuffer.Length));
+          // 新しい PAT/PMT(初回と、トラック構成が変わったときの再送)は新しい論理ストリーム。
+          // stream id を進め位置を 0 へ戻す。
+          streamId += 1;
+          position = 0;
+          streamOrigin = DateTime.UtcNow;
+          TargetSink.OnContentHeader(
+            new Content(streamId, TimeSpan.Zero, 0, header, PCPChanPacketContinuation.None)
+          );
+          position += header.Length;
         }
 
         public void OnTSPackets(ReadOnlyMemory<byte> bytes)
         {
-          if (RecentContent!=null) {
-            TargetSink.OnContent(
-              new Content(
-                RecentContent.Stream,
-                RecentContent.Timestamp,
-                RecentContent.Position,
-                bytes,
-                RecentContent.ContFlag
-              )
-            );
-          }
+          // Context は必ず WritePATPMT を先に呼ぶので、ヘッダ前にここへは来ない。
+          if (streamId<0) return;
+          TargetSink.OnContent(
+            new Content(streamId, DateTime.UtcNow-streamOrigin, position, bytes, PCPChanPacketContinuation.None)
+          );
+          position += bytes.Length;
         }
       }
 
-      private async Task ProcessMessagesAsync(IContentSink targetSink, CancellationToken cancellationToken)
+      // MPEG2TSSink は上流Contentを参照しないため、ヘッダも本体も同じくバッファへ流すだけでよい。
+      protected override ContentProcessor CreateProcessor(IContentSink targetSink)
       {
-        var tsSink = new MPEG2TSSink(targetSink);
-        var context = new FLVToMPEG2TS.Context(tsSink);
-        var contentBuffer = new MemoryStream();
-        var fileParser = new FLVFileParser();
-        var msg = await msgQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
-        while (msg.Type!=ContentMessage.MessageType.Stop) {
-          switch (msg.Type) {
-          case ContentMessage.MessageType.ChannelInfo:
-            targetSink.OnChannelInfo(msg.ChannelInfo);
-            break;
-          case ContentMessage.MessageType.ChannelTrack:
-            targetSink.OnChannelTrack(msg.ChannelTrack);
-            break;
-          case ContentMessage.MessageType.ContentHeader:
-            {
-              tsSink.HeaderContent = msg.Content;
-              var buffer = contentBuffer;
-              var pos = buffer.Position;
-              buffer.Seek(0, SeekOrigin.End);
-              buffer.Write(msg.Content.Data.Span);
-              buffer.Position = pos;
-              fileParser.Read(buffer, context);
-              if (buffer.Position!=0) {
-                var new_buf = new MemoryStream();
-                var trim_pos = buffer.Position;
-                buffer.Close();
-                var buf = buffer.ToArray();
-                new_buf.Write(buf, (int)trim_pos, (int)(buf.Length-trim_pos));
-                new_buf.Position = 0;
-                contentBuffer = new_buf;
-              }
-            }
-            break;
-          case ContentMessage.MessageType.ContentBody:
-            {
-              tsSink.RecentContent = msg.Content;
-              var buffer = contentBuffer;
-              var pos = buffer.Position;
-              buffer.Seek(0, SeekOrigin.End);
-              buffer.Write(msg.Content.Data.Span);
-              buffer.Position = pos;
-              fileParser.Read(buffer, context);
-              if (buffer.Position!=0) {
-                var new_buf = new MemoryStream();
-                var trim_pos = buffer.Position;
-                buffer.Close();
-                var buf = buffer.ToArray();
-                new_buf.Write(buf, (int)trim_pos, (int)(buf.Length-trim_pos));
-                new_buf.Position = 0;
-                contentBuffer = new_buf;
-              }
-            }
-            break;
-          }
-          msg = await msgQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
-        }
-        targetSink.OnStop(msg.StopReason);
-      }
-
-      public void OnChannelInfo(ChannelInfo channel_info)
-      {
-        var info = new AtomCollection(channel_info.Extra);
-        info.SetChanInfoType("TS");
-        info.SetChanInfoStreamType("video/mp2t");
-        info.SetChanInfoStreamExt(".ts");
-        msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ChannelInfo, ChannelInfo=new ChannelInfo(info) });
-      }
-
-      public void OnChannelTrack(ChannelTrack channel_track)
-      {
-        msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ChannelTrack, ChannelTrack=channel_track });
-      }
-
-      public void OnContent(Content content)
-      {
-        msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ContentBody, Content=content });
-      }
-
-      public void OnContentHeader(Content content_header)
-      {
-        msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.ContentHeader, Content=content_header });
-      }
-
-      public void OnStop(StopReason reason)
-      {
-        msgQueue.Enqueue(new ContentMessage { Type=ContentMessage.MessageType.Stop, StopReason=reason });
-        processorTask.Wait();
+        return new ContentProcessor(new FLVToMPEG2TS.Context(new MPEG2TSSink(targetSink)));
       }
     }
 
