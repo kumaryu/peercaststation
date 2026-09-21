@@ -524,22 +524,40 @@ namespace PeerCastStation.FLV.RTMP
     public DataAMF3Message(RTMPMessage x)
       : base(x)
     {
-      using (var reader=new AMF0Reader(new MemoryStream(x.Body))) {
-				reader.BaseStream.ReadByte();
-        this.propertyName = (string?)reader.ReadValue() ?? "";
-        var arguments = new List<AMFValue>();
-        while (reader.BaseStream.Position<reader.BaseStream.Length) {
-          arguments.Add(reader.ReadValue());
+      if (x.Body.Length==0) throw new EndOfStreamException();
+      // 最初の1バイトで AMF3 か AMF0 かが入っている
+      switch (x.Body[0]) {
+      case 0x11: // AVMPlusObject
+        // 本当に AMF3
+        using (var reader=new AMF3Reader(new MemoryStream(x.Body, 1, x.Body.Length - 1))) {
+          this.propertyName = (string?)reader.ReadValue() ?? "";
+          var arguments = new List<AMFValue>();
+          while (reader.BaseStream.Position<reader.BaseStream.Length) {
+            arguments.Add(reader.ReadValue());
+          }
+          this.arguments = arguments;
         }
-        this.arguments = arguments;
+        break;
+      case 0: // AMF0
+      default: // わからない場合はとりあえず AMF0 として扱う
+        using (var reader=new AMF0Reader(new MemoryStream(x.Body, 1, x.Body.Length - 1))) {
+          this.propertyName = (string?)reader.ReadValue() ?? "";
+          var arguments = new List<AMFValue>();
+          while (reader.BaseStream.Position<reader.BaseStream.Length) {
+            arguments.Add(reader.ReadValue());
+          }
+          this.arguments = arguments;
+        }
+        break;
       }
     }
 
     private static byte[] CreateBody(string property_name, IEnumerable<AMFValue> arguments)
     {
       var s = new MemoryStream();
-      using (var writer=new AMF0Writer(s)) {
-				writer.BaseStream.WriteByte(0);
+      // AMF3 であることを示すために 0x11 を先頭に書き込む
+      s.WriteByte(0x11); // AVMPlusObject
+      using (var writer=new AMF3Writer(s)) {
         writer.WriteString(property_name);
         foreach (var arg in arguments) {
           writer.WriteValue(arg);
@@ -664,16 +682,35 @@ namespace PeerCastStation.FLV.RTMP
     public CommandAMF3Message(RTMPMessage x)
       : base(x)
     {
-      using (var reader=new AMF0Reader(new MemoryStream(x.Body))) {
-				reader.BaseStream.ReadByte();
-        this.commandName   = (string?)reader.ReadValue() ?? "";
-        this.transactionId = (int)reader.ReadValue();
-        this.commandObject = reader.ReadValue();
-        var args = new List<AMFValue>();
-        while (reader.BaseStream.Position<reader.BaseStream.Length) {
-          args.Add(reader.ReadValue());
+      if (x.Body.Length==0) throw new EndOfStreamException();
+      // 最初の1バイトで AMF3 か AMF0 かが入っている
+      switch (x.Body[0]) {
+      case 0x11: // AVMPlusObject
+        // 本当に AMF3
+        using (var reader=new AMF3Reader(new MemoryStream(x.Body, 1, x.Body.Length - 1))) {
+          this.commandName   = (string?)reader.ReadValue() ?? "";
+          this.transactionId = (int)reader.ReadValue();
+          this.commandObject = reader.ReadValue();
+          var args = new List<AMFValue>();
+          while (reader.BaseStream.Position<reader.BaseStream.Length) {
+            args.Add(reader.ReadValue());
+          }
+          this.arguments = args;
         }
-        this.arguments = args;
+        break;
+      case 0: // AMF0
+      default: // わからない場合はとりあえず AMF0 として扱う
+        using (var reader=new AMF0Reader(new MemoryStream(x.Body, 1, x.Body.Length - 1))) {
+          this.commandName   = (string?)reader.ReadValue() ?? "";
+          this.transactionId = (int)reader.ReadValue();
+          this.commandObject = reader.ReadValue();
+          var args = new List<AMFValue>();
+          while (reader.BaseStream.Position<reader.BaseStream.Length) {
+            args.Add(reader.ReadValue());
+          }
+          this.arguments = args;
+        }
+        break;
       }
     }
 
@@ -684,8 +721,9 @@ namespace PeerCastStation.FLV.RTMP
       IEnumerable<AMFValue> arguments)
     {
       var s = new MemoryStream();
-      using (var writer=new AMF0Writer(s)) {
-				writer.BaseStream.WriteByte(0);
+      // AMF3 であることを示すために 0x11 を先頭に書き込む
+      s.WriteByte(0x11); // AVMPlusObject
+      using (var writer=new AMF3Writer(s)) {
         writer.WriteString(command_name);
         writer.WriteNumber(transaction_id);
         writer.WriteValue(command_object);

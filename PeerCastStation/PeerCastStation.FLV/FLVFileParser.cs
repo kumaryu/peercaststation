@@ -42,6 +42,7 @@ namespace PeerCastStation.FLV
     private enum TagType {
       Audio  = 8,
       Video  = 9,
+      ScriptAMF3 = 15,
       Script = 18,
     }
 
@@ -71,7 +72,7 @@ namespace PeerCastStation.FLV
           return false;
         }
         var type = (TagType)(binary[0] & 0x1F);
-        if (type==TagType.Audio || type==TagType.Video || type==TagType.Script) {
+        if (type is TagType.Audio or TagType.Video or TagType.ScriptAMF3 or TagType.Script) {
           header = new FLVTagHeader(binary);
           return true;
         }
@@ -112,7 +113,7 @@ namespace PeerCastStation.FLV
           return false;
         }
         var type = (TagType)(binary[0] & 0x1F);
-        return type==TagType.Audio || type==TagType.Video || type==TagType.Script;
+        return type is TagType.Audio or TagType.Video or TagType.ScriptAMF3 or TagType.Script;
       }
 
       public static bool TryReadTag(FLVFileParser owner, FLVTagHeader header, Stream stream, [NotNullWhen(true)] out FLVTag? tag)
@@ -212,6 +213,9 @@ namespace PeerCastStation.FLV
                     case TagType.Video:
                       sink.OnVideo(tag.ToRTMPMessage());
                       break;
+                    case TagType.ScriptAMF3:
+                      sink.OnData(new DataAMF3Message(tag.ToRTMPMessage()));
+                      break;
                     case TagType.Script:
                       sink.OnData(new DataAMF0Message(tag.ToRTMPMessage()));
                       break;
@@ -304,6 +308,9 @@ namespace PeerCastStation.FLV
                 break;
               case TagType.Video:
                 sink.OnVideo(tag.ToRTMPMessage());
+                break;
+              case TagType.ScriptAMF3:
+                sink.OnData(new DataAMF3Message(tag.ToRTMPMessage()));
                 break;
               case TagType.Script:
                 sink.OnData(new DataAMF0Message(tag.ToRTMPMessage()));
