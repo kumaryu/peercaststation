@@ -1,4 +1,51 @@
 ---
+- name: Version 9.0.0 (2026年9月23日開発版)
+  version: 9.0.0
+  channel: dev2
+  notes: |
+    HEVC(H.265)やAV1での配信ができるようになりました。HTML UIでのブラウザ内視聴でHEVCやAV1の再生もできるようになりました。
+
+    ## 変更点
+    * .NET 10に移行しました。
+    * Enhanced RTMP v2に対応しました。これによりHEVC(H.265)やAV1での配信が可能になりました。実際にエンコードできるか、再生できるかは使用するエンコーダやプレイヤーの対応状況に依存します。
+    * HTML UIでのブラウザ内視聴でFLV直接再生を使用するようにしました。従来のHLSより遅延が少なくなり、ブラウザが対応していればHEVCやAV1の再生も可能です。
+
+    ## 修正点
+    * HLS視聴の不具合を修正しました。(by niwakazoider)
+    * MKV配信の不具合を修正しました。(by Philmist)
+
+  date: 2026-09-23T02:00:00+09:00
+  url: https://www.pecastation.org/files/PeerCastStation-9.0.0-any.zip
+  enclosures:
+    - platform: win-x64
+      type: serviceinstaller
+      length: 32948568
+      url: https://www.pecastation.org/files/PecaStationd-9.0.0-x64.msi
+    - platform: win-x86
+      type: serviceinstaller
+      length: 30179656
+      url: https://www.pecastation.org/files/PecaStationd-9.0.0-x86.msi
+    - platform: any
+      type: archive
+      length: 1929968
+      url: https://www.pecastation.org/files/PeerCastStation-9.0.0-any.zip
+    - platform: win-x64
+      type: installer
+      length: 64985064
+      url: https://www.pecastation.org/files/PeerCastStation-9.0.0-x64.msi
+    - platform: win-x64
+      type: archive
+      length: 75211014
+      url: https://www.pecastation.org/files/PeerCastStation-9.0.0-x64.zip
+    - platform: win-x86
+      type: installer
+      length: 60479374
+      url: https://www.pecastation.org/files/PeerCastStation-9.0.0-x86.msi
+    - platform: win-x86
+      type: archive
+      length: 70202727
+      url: https://www.pecastation.org/files/PeerCastStation-9.0.0-x86.zip
+
 - name: Version 6.0.1 (2025年5月4日安定版)
   version: 6.0.1
   channel: stable2
