@@ -145,11 +145,6 @@ jobs:
     - name: Save Docker image
       run: docker save -o peercaststation-$BUILD_VERSION.tar ghcr.io/${{ github.repository_owner
         }}/peercaststation:$BUILD_VERSION
-    - name: Push Docker image
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: |
-        echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-        docker push ghcr.io/${{ github.repository_owner }}/peercaststation:$BUILD_VERSION
     - name: Upload Docker image tar
       uses: actions/upload-artifact@v7
       with:

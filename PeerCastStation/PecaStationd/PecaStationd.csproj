@@ -8,6 +8,7 @@
     <ProductVersion Condition=" '$(BUILD_VERSION)' == ''">0.0.0.0</ProductVersion>
     <FileVersion>$(ProductVersion)</FileVersion>
     <Copyright>Copyright ©  2014</Copyright>
+    <SelfContained>true</SelfContained>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>..\peercaststation.ico</ApplicationIcon>

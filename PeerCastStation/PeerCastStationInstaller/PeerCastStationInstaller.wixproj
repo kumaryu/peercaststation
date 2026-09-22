@@ -1,6 +1,8 @@
-﻿<Project Sdk="WixToolset.Sdk/5.0.2">
+﻿<Project Sdk="WixToolset.Sdk/7.0.0">
   <PropertyGroup>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <AcceptEula>wix7</AcceptEula>
+  </PropertyGroup>
+  <PropertyGroup>
     <ProductVersion Condition=" '$(BUILD_VERSION)' != ''">$(BUILD_VERSION)</ProductVersion>
     <ProductVersion Condition=" '$(BUILD_VERSION)' == ''">0.0.0.0</ProductVersion>
     <OutputName>PeerCastStation-$(ProductVersion)-$(Platform)</OutputName>
@@ -26,7 +28,7 @@
     <Cultures>en-US;ja-JP</Cultures>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\PeerCastStation\PeerCastStation.csproj">
+    <ProjectReference Include="..\PeerCastStation\PeerCastStation.csproj" Publish="True">
       <Name>PeerCastStation</Name>
       <Project>{3d030f73-33a1-4fef-9a3f-d8cd34fc63a2}</Project>
       <Private>True</Private>
@@ -36,8 +38,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="WixToolset.Firewall.wixext" Version="5.0.2" />
-    <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />
-    <PackageReference Include="WixToolset.Util.wixext" Version="5.0.2" />
+    <PackageReference Include="WixToolset.Firewall.wixext" Version="7.0.0" />
+    <PackageReference Include="WixToolset.UI.wixext" Version="7.0.0" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="7.0.0" />
   </ItemGroup>
 </Project>

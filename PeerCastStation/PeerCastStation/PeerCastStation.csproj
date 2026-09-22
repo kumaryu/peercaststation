@@ -10,10 +10,12 @@
     <ProductVersion Condition=" '$(BUILD_VERSION)' == ''">0.0.0.0</ProductVersion>
     <FileVersion>$(ProductVersion)</FileVersion>
     <Copyright>Copyright © arekuma 2011</Copyright>
+    <SelfContained>true</SelfContained>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'Any CPU' or '$(Platform)' == 'AnyCPU'">
     <TargetFramework>net10.0</TargetFramework>
     <PeerCastUseGUI>false</PeerCastUseGUI>
+    <SelfContained>false</SelfContained>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
