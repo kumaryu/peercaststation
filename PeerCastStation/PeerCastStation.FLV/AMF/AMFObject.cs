@@ -92,6 +92,11 @@ namespace PeerCastStation.FLV.AMF
       this.Add(key, new AMFValue(value));
     }
 
+    public void Add(string key, IReadOnlyList<AMFValue> value)
+    {
+      this.Add(key, new AMFValue(value));
+    }
+
     public IEnumerator<KeyValuePair<string, AMFValue>> GetEnumerator()
     {
       return this.Data.GetEnumerator();

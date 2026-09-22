@@ -16,6 +16,7 @@ namespace PeerCastStation.FLV.RTMP
     private RTMPPlayConnection connection;
     private CancellationTokenSource isStopped = new CancellationTokenSource();
     private Channel? channel;
+    private Logger logger;
 
     public RTMPOutputStream(
         PeerCast peercast,
@@ -29,7 +30,8 @@ namespace PeerCastStation.FLV.RTMP
       this.inputStream    = connection;
       this.outputStream   = connection;
       this.accessControl  = access_control;
-      this.connection = new RTMPPlayConnection(this, this.inputStream, this.outputStream);
+      this.connection     = new RTMPPlayConnection(this, this.inputStream, this.outputStream);
+      this.logger         = new Logger(this.GetType(), channel_id.ToString());
     }
 
     public ConnectionInfo GetConnectionInfo()
@@ -85,6 +87,16 @@ namespace PeerCastStation.FLV.RTMP
       using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, isStopped.Token)) {
         try {
           await connection.Run(cts.Token).ConfigureAwait(false);
+        }
+        catch (System.IO.IOException e) {
+          if (!cancellationToken.IsCancellationRequested) {
+            logger.Error(e);
+          }
+        }
+        catch (OperationCanceledException e) {
+          if (!cancellationToken.IsCancellationRequested) {
+            logger.Error(e);
+          }
         }
         finally {
           this.channel?.RemoveOutputStream(this);

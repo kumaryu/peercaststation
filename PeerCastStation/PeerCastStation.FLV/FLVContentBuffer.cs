@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.IO;
 using PeerCastStation.Core;
 using PeerCastStation.FLV.RTMP;
@@ -20,6 +18,7 @@ namespace PeerCastStation.FLV
     private DataMessage? metadata        = null;
     private RTMPMessage? audioHeader     = null;
     private RTMPMessage? videoHeader     = null;
+    private RTMPMessage? videoMetadata   = null;
     private MemoryStream bodyBuffer      = new MemoryStream();
 
     public FLVContentBuffer(
@@ -107,78 +106,102 @@ namespace PeerCastStation.FLV
       }
     }
 
+    private enum VideoMessageType
+    {
+      Content,
+      SequenceStart,
+      VideoMetadata,
+    }
+
     public void OnVideo(RTMPMessage msg)
     {
-      if (IsAVCHeader(msg) || IsAV1Header(msg) || IsVP9Header(msg) || IsHEVCHeader(msg)) {
+      switch (GetVideoMessageType(msg)) {
+      case VideoMessageType.SequenceStart:
         videoHeader = msg;
         OnHeaderChanged(msg);
+        break;
+      case VideoMessageType.VideoMetadata:
+        videoMetadata = msg;
+        OnHeaderChanged(msg);
+        break;
       }
       OnContentChanged(msg);
+    }
+    private VideoMessageType GetVideoMessageType(RTMPMessage msg)
+    {
+      if (msg.MessageType!=RTMPMessageType.Video) {
+        throw new ArgumentException("Not a video message", nameof(msg));
+      }
+      if (msg.Body.Length>3 &&
+          (msg.Body[0]==0x17 && msg.Body[1]==0x00 && msg.Body[2]==0x00 && msg.Body[3]==0x00)) { // AVC sequence header
+        return VideoMessageType.SequenceStart;
+      }
+      else if (IsExVideoTagHeader(msg)) {
+        var type = GetExVideoTagHeaderPacketType(msg);
+        return type switch {
+          ExVideoPacketType.SequenceStart or ExVideoPacketType.MPEG2TSSequenceStart => VideoMessageType.SequenceStart,
+          ExVideoPacketType.Metadata => VideoMessageType.VideoMetadata,
+          _ => VideoMessageType.Content,
+        };
+      }
+      else {
+        return VideoMessageType.Content;
+      }
+    }
+
+
+    private enum AudioMessageType
+    {
+      Content,
+      SequenceStart,
     }
 
     public void OnAudio(RTMPMessage msg)
     {
-      if (IsAACHeader(msg)) {
+      switch (GetAudioMessageType(msg)) {
+      case AudioMessageType.SequenceStart:
         audioHeader = msg;
         OnHeaderChanged(msg);
+        break;
       }
       OnContentChanged(msg);
     }
 
-    private bool IsAVCHeader(RTMPMessage msg)
+    private AudioMessageType GetAudioMessageType(RTMPMessage msg)
     {
-      return
-         msg.MessageType==RTMPMessageType.Video &&
-         msg.Body.Length>3 &&
-        (msg.Body[0]==0x17 &&
-         msg.Body[1]==0x00 &&
-         msg.Body[2]==0x00 &&
-         msg.Body[3]==0x00);
+      if (msg.MessageType!=RTMPMessageType.Audio) {
+        throw new ArgumentException("Not an audio message", nameof(msg));
+      }
+      if (msg.Body.Length>1 && (msg.Body[0]==0xAF && msg.Body[1]==0x00)) { // AAC sequence header
+        return AudioMessageType.SequenceStart;
+      }
+      else if (IsExAudioTagHeader(msg)) {
+        var type = GetExAudioTagHeaderPacketType(msg);
+        return type switch {
+          ExAudioPacketType.SequenceStart => AudioMessageType.SequenceStart,
+          _ => AudioMessageType.Content,
+        };
+      }
+      else {
+        return AudioMessageType.Content;
+      }
     }
 
-    private bool IsAACHeader(RTMPMessage msg)
-    {
-      return
-         msg.MessageType==RTMPMessageType.Audio &&
-         msg.Body.Length>1 &&
-        (msg.Body[0]==0xAF &&
-         msg.Body[1]==0x00);
+    private enum ExVideoPacketType {
+      SequenceStart = 0,
+      CodedFrames = 1,
+      SequenceEnd = 2,
+      CodedFramesX = 3,
+      Metadata = 4,
+      MPEG2TSSequenceStart = 5,
+      Multitrack = 6,
+      ModEx = 7,
     }
 
-    private bool IsAV1Header(RTMPMessage msg)
-    {
-      return
-         msg.MessageType==RTMPMessageType.Video &&
-         msg.Body.Length>4 &&
-        (IsExVideoTagHeaderPacketTypeSequenceStart(msg) || IsExVideoTagHeaderPacketTypeMPEG2TSSequenceStart(msg)) &&
-         msg.Body[1]==0x61 && //a
-         msg.Body[2]==0x76 && //v
-         msg.Body[3]==0x30 && //0
-         msg.Body[4]==0x31;   //1
-    }
-
-    private bool IsVP9Header(RTMPMessage msg)
-    {
-      return
-         msg.MessageType==RTMPMessageType.Video &&
-         msg.Body.Length>4 &&
-         IsExVideoTagHeaderPacketTypeSequenceStart(msg) &&
-         msg.Body[1]==0x76 && //v
-         msg.Body[2]==0x70 && //p
-         msg.Body[3]==0x30 && //0
-         msg.Body[4]==0x39;   //9
-    }
-
-    private bool IsHEVCHeader(RTMPMessage msg)
-    {
-      return
-         msg.MessageType==RTMPMessageType.Video &&
-         msg.Body.Length>4 &&
-         IsExVideoTagHeaderPacketTypeSequenceStart(msg) &&
-         msg.Body[1]==0x68 && //h
-         msg.Body[2]==0x76 && //v
-         msg.Body[3]==0x63 && //c
-         msg.Body[4]==0x31;   //1
+    private enum AVMultitrackType {
+      OneTrack = 0,
+      ManyTracks = 1,
+      ManyTracksManyCodecs = 2,
     }
 
     private bool IsExVideoTagHeader(RTMPMessage msg)
@@ -189,18 +212,79 @@ namespace PeerCastStation.FLV
         (msg.Body[0]>>4 & 0b1000)!=0x00;
     }
 
-    private bool IsExVideoTagHeaderPacketTypeSequenceStart(RTMPMessage msg)
+    private ExVideoPacketType GetExVideoTagHeaderPacketType(RTMPMessage msg)
     {
-      return
-         IsExVideoTagHeader(msg) &&
-        (msg.Body[0] & 0b1111)==0x00;
+      if (!IsExVideoTagHeader(msg)) {
+        throw new ArgumentException("Not an ExVideo tag header", nameof(msg));
+      }
+      using (var reader = new RTMPBinaryReader(msg.Body)) {
+        var type = (ExVideoPacketType)(reader.ReadByte() & 0b1111);
+        while (type==ExVideoPacketType.ModEx){
+          int modex_datasize = reader.ReadByte() + 1;
+          if (modex_datasize==256) {
+            modex_datasize = reader.ReadUInt16() + 1;
+          }
+          // ModExData そのものはここでは使わないので読み飛ばす
+          reader.ReadBytes(modex_datasize);
+          // 真の ExVidoePacketType を取得する
+          // ただしまだ ModExData の可能性もあるのでその時はループする
+          type = (ExVideoPacketType)(reader.ReadByte() & 0b1111);
+        }
+
+        // Multitrack の時も真の ExVideoPacketType を取得する必要がある
+        if (type==ExVideoPacketType.Multitrack) {
+          var type_byte = reader.ReadByte();
+          var multitrack_type = (AVMultitrackType)((type_byte & 0b11110000) >> 4);
+          type = (ExVideoPacketType)(type_byte & 0b1111);
+        }
+        return type;
+      }
     }
 
-    private bool IsExVideoTagHeaderPacketTypeMPEG2TSSequenceStart(RTMPMessage msg)
+    private enum ExAudioPacketType {
+      SequenceStart = 0,
+      CodedFrames = 1,
+      SequenceEnd = 2,
+      MultichannelConfig = 4,
+      Multitrack = 5,
+      ModEx = 7,
+    }
+
+    private bool IsExAudioTagHeader(RTMPMessage msg)
     {
       return
-         IsExVideoTagHeader(msg) &&
-        (msg.Body[0] & 0b1111)==0x05;
+         msg.MessageType==RTMPMessageType.Audio &&
+         msg.Body.Length>1 &&
+        ((msg.Body[0] & 0xF0)>>4)==9;
+    }
+
+    private ExAudioPacketType GetExAudioTagHeaderPacketType(RTMPMessage msg)
+    {
+      if (!IsExAudioTagHeader(msg)) {
+        throw new ArgumentException("Not an ExAudio tag header", nameof(msg));
+      }
+      using (var reader = new RTMPBinaryReader(msg.Body)) {
+        var type = (ExAudioPacketType)(reader.ReadByte() & 0b1111);
+        while (type==ExAudioPacketType.ModEx){
+          int modex_datasize = reader.ReadByte() + 1;
+          if (modex_datasize==256) {
+            modex_datasize = reader.ReadUInt16() + 1;
+          }
+          // ModExData そのものはここでは使わないので読み飛ばす
+          reader.ReadBytes(modex_datasize);
+          // 真の ExAudioPacketType を取得する
+          // ただしまだ ModExData の可能性もあるのでその時はループする
+          type = (ExAudioPacketType)(reader.ReadByte() & 0b1111);
+        }
+
+        // Multitrack の時も真の ExAudioPacketType を取得する必要がある
+        if (type==ExAudioPacketType.Multitrack) {
+          var type_byte = reader.ReadByte();
+          var multitrack_type = (AVMultitrackType)((type_byte & 0b11110000) >> 4);
+          type = (ExAudioPacketType)(type_byte & 0b1111);
+        }
+        return type;
+      }
     }
 
     private void WriteMessage(Stream stream, RTMPMessage msg, long time_origin)
@@ -230,9 +314,10 @@ namespace PeerCastStation.FLV
           writer.WriteUInt32(9);
           writer.WriteUInt32(0);
         }
-        if (metadata!=null)    WriteMessage(s, metadata,    0xFFFFFFFF);
-        if (audioHeader!=null) WriteMessage(s, audioHeader, 0xFFFFFFFF);
-        if (videoHeader!=null) WriteMessage(s, videoHeader, 0xFFFFFFFF);
+        if (metadata!=null)      WriteMessage(s, metadata,    0xFFFFFFFF);
+        if (audioHeader!=null)   WriteMessage(s, audioHeader, 0xFFFFFFFF);
+        if (videoHeader!=null)   WriteMessage(s, videoHeader, 0xFFFFFFFF);
+        if (videoMetadata!=null) WriteMessage(s, videoMetadata, 0xFFFFFFFF);
       }
       streamIndex     = TargetChannel.GenerateStreamID();
       streamOrigin    = DateTime.Now;

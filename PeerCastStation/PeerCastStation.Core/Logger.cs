@@ -294,7 +294,12 @@ namespace PeerCastStation.Core
     static private void Output(LogLevel level, string source, string? format, params object[] args)
     {
       if (format!=null) {
-        outputQueue.Enqueue(new LogEntry { Level = level, Source = source, Message = String.Format(format, args) });
+        if (args.Length==0) {
+          outputQueue.Enqueue(new LogEntry { Level = level, Source = source, Message = format });
+        }
+        else {
+          outputQueue.Enqueue(new LogEntry { Level = level, Source = source, Message = String.Format(format, args) });
+        }
       }
     }
 

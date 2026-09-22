@@ -42,6 +42,23 @@ namespace PeerCastStation.FLV.RTMP
       Dispose();
     }
 
+    [Flags]
+    public enum FourCcInfoMask {
+      None       = 0x00,
+      CanDecode  = 0x01,
+      CanEncode  = 0x02,
+      CanForward = 0x04,
+    }
+
+    [Flags]
+    public enum CapsExMask {
+      None                = 0x00,
+      Reconnect           = 0x01, // Support for reconnection
+      Multitrack          = 0x02, // Support for multitrack
+      ModEx               = 0x04, // Can parse ModEx signal
+      TimestampNanoOffset = 0x08, // Support for nano offset
+    }
+
     private class QueuedMessage
     {
       public enum MessageDirection {
@@ -68,11 +85,11 @@ namespace PeerCastStation.FLV.RTMP
         this.TimeStamp     = Stopwatch.Elapsed;
       }
     }
-    private MessageQueue<QueuedMessage> messageQueue = new MessageQueue<QueuedMessage>();
+    private MessageQueue<QueuedMessage> outMessageQueue = new MessageQueue<QueuedMessage>();
 
     protected void PostMessage(int chunk_stream_id, RTMPMessage msg)
     {
-      messageQueue.Enqueue(new QueuedMessage(QueuedMessage.MessageDirection.Out, chunk_stream_id, msg));
+      outMessageQueue.Enqueue(new QueuedMessage(QueuedMessage.MessageDirection.Out, chunk_stream_id, msg));
     }
 
     public async Task Run(CancellationToken cancel_token)
@@ -81,16 +98,6 @@ namespace PeerCastStation.FLV.RTMP
         cancel_token.ThrowIfCancellationRequested();
         await Handshake(cancel_token).ConfigureAwait(false);
         await RecvAndProcessMessages(cancel_token).ConfigureAwait(false);
-      }
-      catch (IOException e) {
-        if (!disposed) {
-          logger.Error(e);
-        }
-      }
-      catch (AggregateException e) {
-        if (!disposed) {
-          logger.Error(e);
-        }
       }
       finally {
         Close();
@@ -105,19 +112,12 @@ namespace PeerCastStation.FLV.RTMP
     protected async Task RecvAndProcessMessages(CancellationToken cancel_token)
     {
       using (var local_cancel=CancellationTokenSource.CreateLinkedTokenSource(cancel_token)) {
-        var recv_message_task = Task.Run(async () => {
-          try {
-            while (!local_cancel.IsCancellationRequested) {
-              await RecvMessage(messageQueue, local_cancel.Token).ConfigureAwait(false);
-            }
-          }
-          finally {
-            local_cancel.Cancel();
-          }
-        });
         try {
+          Task<QueuedMessage> inMessageTask = RecvMessage(local_cancel.Token);
+          Task<QueuedMessage> outMessageTask = outMessageQueue.DequeueAsync(local_cancel.Token);
           while (!local_cancel.IsCancellationRequested) {
-            var msg = await messageQueue.DequeueAsync(local_cancel.Token).ConfigureAwait(false);
+            var task = await Task.WhenAny(inMessageTask, outMessageTask);
+            var msg = await task.ConfigureAwait(false);
             switch (msg.Direction) {
             case QueuedMessage.MessageDirection.In:
               await ProcessMessage(msg.Message, local_cancel.Token).ConfigureAwait(false);
@@ -127,6 +127,20 @@ namespace PeerCastStation.FLV.RTMP
               await SendMessage(msg.ChunkStreamId, msg.Message, local_cancel.Token).ConfigureAwait(false);
               break;
             }
+
+            // 完了してる方のタスクを再度開始する
+            if (task==inMessageTask) {
+              inMessageTask = RecvMessage(local_cancel.Token);
+            }
+            else {
+              outMessageTask = outMessageQueue.DequeueAsync(local_cancel.Token);
+            }
+          }
+          if (!inMessageTask.IsCompleted) {
+            await inMessageTask.ConfigureAwait(false);
+          }
+          if (!outMessageTask.IsCompleted) {
+            await outMessageTask.ConfigureAwait(false);
           }
         }
         catch (OperationCanceledException) {
@@ -134,7 +148,6 @@ namespace PeerCastStation.FLV.RTMP
         if (cancel_token.IsCancellationRequested) {
           await OnStopAsync(CancellationToken.None);
         }
-        await recv_message_task.ConfigureAwait(false);
       }
     }
 
@@ -336,6 +349,9 @@ namespace PeerCastStation.FLV.RTMP
     int nextClientId    = 1;
     int nextStreamId    = 1;
     int objectEncoding  = 0;
+    CapsExMask capsEx   = CapsExMask.None;
+    Dictionary<string, FourCcInfoMask> videoFourCcInfoMap = new Dictionary<string, FourCcInfoMask>();
+    Dictionary<string, FourCcInfoMask> audioFourCcInfoMap = new Dictionary<string, FourCcInfoMask>();
     int sendChunkSize   = 1536;
     int recvChunkSize   = 128;
     long sendWindowSize = 0x7FFFFFFF;
@@ -449,93 +465,95 @@ namespace PeerCastStation.FLV.RTMP
     }
 
     private Dictionary<int, RTMPMessageBuilder> lastMessages = new Dictionary<int,RTMPMessageBuilder>();
-    private async Task<bool> RecvMessage(MessageQueue<QueuedMessage> messages, CancellationToken cancel_token)
+    private async Task<QueuedMessage> RecvMessage(CancellationToken cancel_token)
     {
-      var basic_header = (await RecvStream(1, cancel_token).ConfigureAwait(false))[0];
-      var chunk_stream_id = basic_header & 0x3F;
-      if (chunk_stream_id==0) {
-        chunk_stream_id = (await RecvStream(1, cancel_token).ConfigureAwait(false))[0] + 64;
-      }
-      else if (chunk_stream_id==1) {
-        var buf = await RecvStream(2, cancel_token).ConfigureAwait(false);
-        chunk_stream_id = (buf[1]*256 | buf[0]) + 64;
-      }
+      while (!cancel_token.IsCancellationRequested) {
+        var basic_header = (await RecvStream(1, cancel_token).ConfigureAwait(false))[0];
+        var chunk_stream_id = basic_header & 0x3F;
+        if (chunk_stream_id==0) {
+          chunk_stream_id = (await RecvStream(1, cancel_token).ConfigureAwait(false))[0] + 64;
+        }
+        else if (chunk_stream_id==1) {
+          var buf = await RecvStream(2, cancel_token).ConfigureAwait(false);
+          chunk_stream_id = (buf[1]*256 | buf[0]) + 64;
+        }
 
-      RTMPMessageBuilder msg;
-      RTMPMessageBuilder? last_msg;
-      if (!lastMessages.TryGetValue(chunk_stream_id, out last_msg)) {
-        last_msg = RTMPMessageBuilder.NullPacket;
-      }
-      switch ((basic_header & 0xC0)>>6) {
-      case 0:
-      default:
-        using (var reader=new RTMPBinaryReader(await RecvStream(11, cancel_token).ConfigureAwait(false))) {
-          long timestamp  = reader.ReadUInt24();
-          var body_length = reader.ReadUInt24();
-          var type_id     = reader.ReadByte();
-          var stream_id   = reader.ReadUInt32LE();
-          if (timestamp==0xFFFFFF) {
-            using (var ext_reader=new RTMPBinaryReader(await RecvStream(4, cancel_token).ConfigureAwait(false))) {
-              timestamp = ext_reader.ReadUInt32();
-            }
-          }
-          msg = new RTMPMessageBuilder(
-            last_msg,
-            timestamp,
-            type_id,
-            stream_id,
-            body_length);
-          lastMessages[chunk_stream_id] = msg;
+        RTMPMessageBuilder msg;
+        RTMPMessageBuilder? last_msg;
+        if (!lastMessages.TryGetValue(chunk_stream_id, out last_msg)) {
+          last_msg = RTMPMessageBuilder.NullPacket;
         }
-        break;
-      case 1:
-        using (var reader=new RTMPBinaryReader(await RecvStream(7, cancel_token).ConfigureAwait(false))) {
-          long timestamp_delta = reader.ReadUInt24();
-          var body_length      = reader.ReadUInt24();
-          var type_id          = reader.ReadByte();
-          if (timestamp_delta==0xFFFFFF) {
-            using (var ext_reader=new RTMPBinaryReader(await RecvStream(4, cancel_token).ConfigureAwait(false))) {
-              timestamp_delta = ext_reader.ReadUInt32();
+        switch ((basic_header & 0xC0)>>6) {
+        case 0:
+        default:
+          using (var reader=new RTMPBinaryReader(await RecvStream(11, cancel_token).ConfigureAwait(false))) {
+            long timestamp  = reader.ReadUInt24();
+            var body_length = reader.ReadUInt24();
+            var type_id     = reader.ReadByte();
+            var stream_id   = reader.ReadUInt32LE();
+            if (timestamp==0xFFFFFF) {
+              using (var ext_reader=new RTMPBinaryReader(await RecvStream(4, cancel_token).ConfigureAwait(false))) {
+                timestamp = ext_reader.ReadUInt32();
+              }
             }
+            msg = new RTMPMessageBuilder(
+              last_msg,
+              timestamp,
+              type_id,
+              stream_id,
+              body_length);
+            lastMessages[chunk_stream_id] = msg;
           }
-          msg = new RTMPMessageBuilder(
-            last_msg,
-            timestamp_delta,
-            type_id,
-            body_length);
-          lastMessages[chunk_stream_id] = msg;
-        }
-        break;
-      case 2:
-        using (var reader=new RTMPBinaryReader(await RecvStream(3, cancel_token).ConfigureAwait(false))) {
-          long timestamp_delta = reader.ReadUInt24();
-          if (timestamp_delta==0xFFFFFF) {
-            using (var ext_reader=new RTMPBinaryReader(await RecvStream(4, cancel_token).ConfigureAwait(false))) {
-              timestamp_delta = ext_reader.ReadUInt32();
+          break;
+        case 1:
+          using (var reader=new RTMPBinaryReader(await RecvStream(7, cancel_token).ConfigureAwait(false))) {
+            long timestamp_delta = reader.ReadUInt24();
+            var body_length      = reader.ReadUInt24();
+            var type_id          = reader.ReadByte();
+            if (timestamp_delta==0xFFFFFF) {
+              using (var ext_reader=new RTMPBinaryReader(await RecvStream(4, cancel_token).ConfigureAwait(false))) {
+                timestamp_delta = ext_reader.ReadUInt32();
+              }
             }
+            msg = new RTMPMessageBuilder(
+              last_msg,
+              timestamp_delta,
+              type_id,
+              body_length);
+            lastMessages[chunk_stream_id] = msg;
           }
-          msg = new RTMPMessageBuilder(last_msg, timestamp_delta);
-          lastMessages[chunk_stream_id] = msg;
+          break;
+        case 2:
+          using (var reader=new RTMPBinaryReader(await RecvStream(3, cancel_token).ConfigureAwait(false))) {
+            long timestamp_delta = reader.ReadUInt24();
+            if (timestamp_delta==0xFFFFFF) {
+              using (var ext_reader=new RTMPBinaryReader(await RecvStream(4, cancel_token).ConfigureAwait(false))) {
+                timestamp_delta = ext_reader.ReadUInt32();
+              }
+            }
+            msg = new RTMPMessageBuilder(last_msg, timestamp_delta);
+            lastMessages[chunk_stream_id] = msg;
+          }
+          break;
+        case 3:
+          msg = last_msg;
+          if (msg.ReceivedLength>=msg.BodyLength) {
+            msg = new RTMPMessageBuilder(last_msg);
+            lastMessages[chunk_stream_id] = msg;
+          }
+          break;
         }
-        break;
-      case 3:
-        msg = last_msg;
+
+        msg.ReceivedLength += await RecvStream(
+          msg.Body,
+          msg.ReceivedLength,
+          Math.Min(recvChunkSize, msg.BodyLength-msg.ReceivedLength),
+          cancel_token).ConfigureAwait(false);
         if (msg.ReceivedLength>=msg.BodyLength) {
-          msg = new RTMPMessageBuilder(last_msg);
-          lastMessages[chunk_stream_id] = msg;
+          return new QueuedMessage(QueuedMessage.MessageDirection.In, chunk_stream_id, msg.ToMessage());
         }
-        break;
       }
-
-      msg.ReceivedLength += await RecvStream(
-        msg.Body,
-        msg.ReceivedLength,
-        Math.Min(recvChunkSize, msg.BodyLength-msg.ReceivedLength),
-        cancel_token).ConfigureAwait(false);
-      if (msg.ReceivedLength>=msg.BodyLength) {
-        messages.Enqueue(new QueuedMessage(QueuedMessage.MessageDirection.In, chunk_stream_id, msg.ToMessage()));
-      }
-      return true; //TODO:接続エラー時はfalseを返す
+      throw new OperationCanceledException(cancel_token);
     }
 
     protected async Task SendMessage(int chunk_stream_id, RTMPMessage msg, CancellationToken cancel_token)
@@ -720,7 +738,7 @@ namespace PeerCastStation.FLV.RTMP
         logger.Debug("NetStream ({0}) command: {1}", msg.StreamId, msg.CommandName);
         //NetStream commands
         switch (msg.CommandName) {
-        case "publish": await OnCommandPublish(msg, cancel_token).ConfigureAwait(false); break;
+        case "publish":      await OnCommandPublish(msg, cancel_token).ConfigureAwait(false); break;
         case "deleteStream": await OnCommandDeleteStream(msg, cancel_token).ConfigureAwait(false); break;
         case "play":         await OnCommandPlay(msg, cancel_token).ConfigureAwait(false); break;
         case "play2":
@@ -735,11 +753,52 @@ namespace PeerCastStation.FLV.RTMP
       }
     }
 
+    private static readonly string[] VideoFourCcList = {
+      "*", "vp08", "vp09", "av01", "avc1", "hvc1", "vvc1",
+    };
+
+    private static readonly string[] AudioFourCcList = {
+      "*", "ac-3", "ec-3", "Opus", ".mp3", "fLaC", "mp4a",
+    };
+
+    private string FourCcInfoMapToString(Dictionary<string, FourCcInfoMask> map)
+    {
+      return "{" + string.Join(", ", map.Select(kv => $"{kv.Key}: {kv.Value}")) + "}";
+    }
+
     private async Task OnCommandConnect(CommandMessage msg, CancellationToken cancel_token)
     {
       objectEncoding = ((int)msg.CommandObject["objectEncoding"])==3 ? 3 : 0;
       ClientName     = (string?)msg.CommandObject["flashVer"];
-      logger.Debug($"connect: objectEncoding {objectEncoding}, flashVer: {ClientName}");
+      capsEx         = (CapsExMask)(int)msg.CommandObject["capsEx"];
+      if (msg.CommandObject.ContainsKey("videoFourCcInfoMap")) {
+        var map = (AMF.AMFObject)msg.CommandObject["videoFourCcInfoMap"];
+        foreach (var kv in map) {
+          videoFourCcInfoMap[kv.Key] = (FourCcInfoMask)(int)kv.Value;
+        }
+      }
+      if (msg.CommandObject.ContainsKey("audioFourCcInfoMap")) {
+        var map = (AMF.AMFObject)msg.CommandObject["audioFourCcInfoMap"];
+        foreach (var kv in map) {
+          audioFourCcInfoMap[kv.Key] = (FourCcInfoMask)(int)kv.Value;
+        }
+      }
+      if (msg.CommandObject.ContainsKey("fourCcList")) {
+        foreach (var value in (AMF.AMFValue[])msg.CommandObject["fourCcList"]) {
+          var fourcc = (string?)value;
+          if (fourcc==null) {
+            continue;
+          }
+          // fourCcList は古い仕様なので、新しい仕様である videoFourCcInfoMap と audioFourCcInfoMap があればそちらを優先する。
+          if (VideoFourCcList.Contains(fourcc) && !videoFourCcInfoMap.ContainsKey(fourcc)) {
+            videoFourCcInfoMap[fourcc] = FourCcInfoMask.CanEncode | FourCcInfoMask.CanDecode | FourCcInfoMask.CanForward;
+          }
+          if (AudioFourCcList.Contains(fourcc) && !audioFourCcInfoMap.ContainsKey(fourcc)) {
+            audioFourCcInfoMap[fourcc] = FourCcInfoMask.CanEncode | FourCcInfoMask.CanDecode | FourCcInfoMask.CanForward;
+          }
+        }
+      }
+      logger.Debug($"connect: objectEncoding {objectEncoding}, flashVer: {ClientName}, capsEx: {capsEx}, videoFourCcInfoMap: {FourCcInfoMapToString(videoFourCcInfoMap)}, audioFourCcInfoMap: {FourCcInfoMapToString(audioFourCcInfoMap)}");
       await SendMessage(2, new SetChunkSizeMessage(this.Now, 0, sendChunkSize), cancel_token).ConfigureAwait(false);
       await SendMessage(2, new SetWindowSizeMessage(this.Now, 0, recvWindowSize), cancel_token).ConfigureAwait(false);
       await SendMessage(2, new SetPeerBandwidthMessage(this.Now, 0, sendWindowSize, PeerBandwidthLimitType.Hard), cancel_token).ConfigureAwait(false);
@@ -762,6 +821,44 @@ namespace PeerCastStation.FLV.RTMP
           { "data",           new AMF.AMFObject { { "version", "3,5,5,2004" } } },
           { "clientId",       nextClientId++ },
           { "objectEncoding", objectEncoding },
+          { "fourCcList",     [
+            // Video
+            new AMF.AMFValue("vp08"),
+            new AMF.AMFValue("vp09"),
+            new AMF.AMFValue("av01"),
+            new AMF.AMFValue("avc1"),
+            new AMF.AMFValue("hvc1"),
+            new AMF.AMFValue("vvc1"),
+            // Audio
+            new AMF.AMFValue("ac-3"),
+            new AMF.AMFValue("ec-3"),
+            new AMF.AMFValue("Opus"),
+            new AMF.AMFValue(".mp3"),
+            new AMF.AMFValue("fLaC"),
+            new AMF.AMFValue("mp4a"),
+          ] },
+          { "videoFourCcInfoMap",
+            new AMF.AMFObject { 
+              { "vp08", (int)FourCcInfoMask.CanForward },
+              { "vp09", (int)FourCcInfoMask.CanForward },
+              { "av01", (int)FourCcInfoMask.CanForward },
+              { "avc1", (int)FourCcInfoMask.CanForward },
+              { "hvc1", (int)FourCcInfoMask.CanForward },
+              { "vvc1", (int)FourCcInfoMask.CanForward },
+            }
+          },
+          { "audioFourCcInfoMap",
+            new AMF.AMFObject { 
+              { "ac-3", (int)FourCcInfoMask.CanForward },
+              { "ec-3", (int)FourCcInfoMask.CanForward },
+              { "Opus", (int)FourCcInfoMask.CanForward },
+              { ".mp3", (int)FourCcInfoMask.CanForward },
+              { "fLaC", (int)FourCcInfoMask.CanForward },
+              { "mp4a", (int)FourCcInfoMask.CanForward },
+            }
+          },
+          // クライアントが対応している拡張機能のうち、サーバーが対応しているものを返す。
+          { "capsEx", (int)(capsEx & (CapsExMask.Reconnect | CapsExMask.Multitrack | CapsExMask.ModEx | CapsExMask.TimestampNanoOffset)) },
         })
       );
       if (msg.TransactionId!=0) {
