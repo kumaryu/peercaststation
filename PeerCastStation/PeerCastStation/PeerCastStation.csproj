@@ -11,6 +11,10 @@
     <FileVersion>$(ProductVersion)</FileVersion>
     <Copyright>Copyright © arekuma 2011</Copyright>
     <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>any</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(Platform)' == 'x64'">win-x64</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(Platform)' == 'x86'">win-x86</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</RuntimeIdentifier>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'Any CPU' or '$(Platform)' == 'AnyCPU'">
     <TargetFramework>net10.0</TargetFramework>

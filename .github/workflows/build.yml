@@ -5,7 +5,7 @@ on:
     branches:
     - master
 env:
-  BUILD_VERSION: 7.1.1.${{ github.run_number }}
+  BUILD_VERSION: 9.0.0.${{ github.run_number }}
 jobs:
   build-windows:
     name: Build (Windows)
