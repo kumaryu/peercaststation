@@ -275,7 +275,9 @@ namespace PeerCastStation.FLV.RTMP
 
       using (var c2reader = await RecvAsync(1536, cancel_token).ConfigureAwait(false)) {
         var c2 = c2reader.ReadBytes(1536);
-        if (!ValidateClientHandshakeDigest2(c2, s1, DigestPosition.First)) {
+        //ffmpegはpublish時にC2としてS1をそのまま返すのでそれも受け付ける
+        if (!ValidateClientHandshakeDigest2(c2, s1, DigestPosition.First) &&
+            !c2.Skip(8).SequenceEqual(s1.Skip(8))) {
           throw new InvalidDataException("C2 digest is not matched.");
         }
       }
